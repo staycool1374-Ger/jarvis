@@ -1,0 +1,120 @@
+:root {
+    --hasshold-primary: #739C5D;
+    --hasshold-dark: #243F12;
+    --hasshold-light: #9BC56F;
+}
+
+.bg-hasshold {
+    background-color: var(--hasshold-primary) !important;
+}
+
+.bg-hasshold-dark {
+    background-color: var(--hasshold-dark) !important;
+}
+
+.text-hasshold {
+    color: var(--hasshold-primary) !important;
+}
+
+.btn-hasshold {
+    background-color: var(--hasshold-primary);
+    border-color: var(--hasshold-primary);
+    color: white;
+}
+
+.btn-hasshold:hover {
+    background-color: var(--hasshold-dark);
+    border-color: var(--hasshold-dark);
+    color: white;
+}
+
+.btn-outline-hasshold {
+    color: var(--hasshold-primary);
+    border-color: var(--hasshold-primary);
+}
+
+.btn-outline-hasshold:hover {
+    background-color: var(--hasshold-primary);
+    border-color: var(--hasshold-primary);
+    color: white;
+}
+
+.border-hasshold {
+    border-color: var(--hasshold-primary) !important;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link.active {
+    color: white;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(115, 156, 93, 0.1);
+}
+
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: var(--hasshold-light);
+    color: var(--hasshold-dark);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid var(--hasshold-primary);
+    color: var(--hasshold-primary);
+}
+
+.badge {
+    font-weight: 500;
+}
+
+footer {
+    border-radius: 0;
+}
+
+body {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--hasshold-primary);
+}
+
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}

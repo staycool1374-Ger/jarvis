@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ firma }} - Aufträge{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-hasshold text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Aufträge</h4>
+                <span class="badge bg-light text-dark fs-6">{{ anzahl }} Aufträge</span>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/auftraege" class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" name="q" class="form-control" 
+                                   placeholder="Suche nach Kunde, Bauvorhaben, Ort..." 
+                                   value="{{ suchbegriff }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select">
+                            <option value="">Alle Status</option>
+                            <option value="offen" {% if status == 'offen' %}selected{% endif %}>Offen / in Arbeit</option>
+                            <option value="erledigt" {% if status == 'erledigt' %}selected{% endif %}>Erledigt / Storno</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-hasshold w-100">Filtern</button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="/auftraege" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if suchbegriff or status %}
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>{{ anzahl }}</strong> Auftrag/Aufträge gefunden
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="text-muted mb-2">Offene Aufträge Wert</h6>
+                <h3 class="text-hasshold mb-0">{{ "%.2f"|format(gesamtwert) }} €</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th><a href="?sort=Auftragsdatum&order={% if sort_by == 'Auftragsdatum' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark">Datum {% if sort_by == 'Auftragsdatum' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th><a href="?sort=Name&order={% if sort_by == 'Name' %}asc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark">Kunde</a></th>
+                        <th>Bauvorhaben</th>
+                        <th>Art</th>
+                        <th>Status</th>
+                        <th><a href="?sort=Auftragswert&order={% if sort_by == 'Auftragswert' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}{% if status %}&status={{ status }}{% endif %}" class="text-decoration-none text-dark">Wert {% if sort_by == 'Auftragswert' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for auftrag, kunde in auftraege %}
+                    <tr>
+                        <td class="text-muted">{{ auftrag.idAuftrag }}</td>
+                        <td>{{ auftrag.Auftragsdatum.strftime('%d.%m.%Y') if auftrag.Auftragsdatum else '-' }}</td>
+                        <td>
+                            <a href="/kunde/{{ kunde.idKunde }}" class="text-decoration-none">{{ kunde.Name }}</a>
+                        </td>
+                        <td>
+                            {% if auftrag.Bauvorhaben %}
+                            <i class="bi bi-geo-alt me-1 text-muted"></i>{{ auftrag.Bauvorhaben }}
+                            {% endif %}
+                            {% if auftrag.Ort %}<br><small class="text-muted">{{ auftrag.Ort }}</small>{% endif %}
+                        </td>
+                        <td>{{ auftrag.Auftragsart or '-' }}</td>
+                        <td>
+                            {% if auftrag.Erledigt == 'Ausgeführt' or auftrag.Erledigt == 'Ausgeführt ' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Ausgeführt</span>
+                            {% elif auftrag.Erledigt == 'Storno' %}
+                            <span class="badge bg-dark"><i class="bi bi-x-circle me-1"></i>Storno</span>
+                            {% elif auftrag.Erledigt == 'offen' %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Offen</span>
+                            {% elif auftrag.Erledigt == 'in Arbeit/z.T. offen' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>In Arbeit</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ auftrag.Erledigt or 'Offen' }}</span>
+                            {% endif %}
+                            {% if auftrag.Priorität and auftrag.Priorität != 'Normal' %}
+                            <span class="badge bg-info text-dark">{{ auftrag.Priorität }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">{{ "%.2f"|format(auftrag.Auftragswert) if auftrag.Auftragswert else '0,00' }} €</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Keine Aufträge gefunden
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

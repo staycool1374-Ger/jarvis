@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{{ firma }} - {{ kunde.Name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/" class="text-hasshold">Startseite</a></li>
+        <li class="breadcrumb-item"><a href="/kunden" class="text-hasshold">Kunden</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ kunde.Name }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-hasshold text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Kundendaten</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="text-muted small">Name</label>
+                    <p class="mb-1 fw-semibold fs-5">{% if kunde.Anrede %}{{ kunde.Anrede }} {% endif %}{% if kunde.Titel %}{{ kunde.Titel }} {% endif %}{{ kunde.Name }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Adresse</label>
+                    <p class="mb-0">{{ kunde.Strasse }}<br>{{ kunde.PLZ }} {{ kunde.Ort }}</p>
+                </div>
+                
+                {% if kunde.Telefon %}
+                <div class="mb-3">
+                    <label class="text-muted small">Telefon</label>
+                    <p class="mb-0">
+                        <a href="tel:{{ kunde.Telefon }}" class="text-decoration-none">
+                            <i class="bi bi-telephone me-1"></i>{{ kunde.Telefon }}
+                        </a>
+                    </p>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Stammkunde</label>
+                    <p class="mb-0">
+                        {% if kunde.Stammkunde == 'Ja' %}
+                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Ja</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Nein</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Kundennummer</label>
+                    <p class="mb-0">{{ kunde.idKunde }}</p>
+                </div>
+                
+                <div class="mb-0">
+                    <label class="text-muted small">Gesamtauftragswert</label>
+                    <p class="mb-0 fs-4 fw-bold text-hasshold">{{ "%.2f"|format(gesamtwert) }} €</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active text-hasshold" id="auftraege-tab" data-bs-toggle="tab" data-bs-target="#auftraege" type="button" role="tab">
+                    <i class="bi bi-clipboard-check me-1"></i>Aufträge ({{ auftraege|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-hasshold" id="angebote-tab" data-bs-toggle="tab" data-bs-target="#angebote" type="button" role="tab">
+                    <i class="bi bi-file-earmark-text me-1"></i>Angebote ({{ angebote|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-hasshold" id="rechnungen-tab" data-bs-toggle="tab" data-bs-target="#rechnungen" type="button" role="tab">
+                    <i class="bi bi-receipt me-1"></i>Rechnungen ({{ rechnungen|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-hasshold" id="notizen-tab" data-bs-toggle="tab" data-bs-target="#notizen" type="button" role="tab">
+                    <i class="bi bi-chat-left-text me-1"></i>Notizen ({{ crm_eintraege|length }})
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="auftraege" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Datum</th>
+                                        <th>Bauvorhaben</th>
+                                        <th>Art</th>
+                                        <th>Erledigt</th>
+                                        <th>Wert</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for a in auftraege %}
+                                    <tr>
+                                        <td>{{ a.idAuftrag }}</td>
+                                        <td>{{ a.Auftragsdatum.strftime('%d.%m.%Y') if a.Auftragsdatum else '-' }}</td>
+                                        <td>
+                                            {% if a.Bauvorhaben %}
+                                            <i class="bi bi-geo-alt me-1 text-muted"></i>{{ a.Bauvorhaben }}
+                                            {% endif %}
+                                            {% if a.Ort %}<br><small class="text-muted">{{ a.Ort }}</small>{% endif %}
+                                        </td>
+                                        <td>{{ a.Auftragsart or '-' }}</td>
+                                        <td>
+                                            {% if a.Erledigt == 'Ja' %}
+                                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Ja</span>
+                                            {% elif a.Erledigt == 'Nein' %}
+                                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Nein</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ a.Erledigt or 'Offen' }}</span>
+                                            {% endif %}
+                                            {% if a.Priorität and a.Priorität != 'Normal' %}
+                                            <span class="badge bg-warning text-dark">{{ a.Priorität }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">{{ "%.2f"|format(a.Auftragswert) if a.Auftragswert else '0,00' }} €</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Keine Aufträge vorhanden
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="angebote" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nr.</th>
+                                        <th>Datum</th>
+                                        <th>Jahr</th>
+                                        <th>Wert</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ag in angebote %}
+                                    <tr>
+                                        <td>{{ ag.LfdNr or ag.id }}</td>
+                                        <td>{{ ag.Angebotsdatum.strftime('%d.%m.%Y') if ag.Angebotsdatum else '-' }}</td>
+                                        <td>{{ ag.Angebotjahr }}</td>
+                                        <td class="text-end">{{ "%.2f"|format(ag.Angebotswert) if ag.Angebotswert else '0,00' }} €</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Keine Angebote vorhanden
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="rechnungen" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nr.</th>
+                                        <th>Datum</th>
+                                        <th>Wert</th>
+                                        <th>Bezahlt am</th>
+                                        <th>Mahnung</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for r in rechnungen %}
+                                    <tr>
+                                        <td>{{ r.Rechnungsnummer or r.idRechnung }}</td>
+                                        <td>{{ r.Rechnungsdatum.strftime('%d.%m.%Y') if r.Rechnungsdatum else '-' }}</td>
+                                        <td class="text-end">{{ "%.2f"|format(r.Rechnungswert) if r.Rechnungswert else '0,00' }} €</td>
+                                        <td>
+                                            {% if r.Bezahldatum %}
+                                            <span class="text-success">{{ r.Bezahldatum.strftime('%d.%m.%Y') }}</span>
+                                            {% else %}
+                                            <span class="badge bg-warning text-dark">Ausstehend</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if r.Mahnung %}
+                                            <span class="badge bg-danger">{{ r.Mahnung }}</span>
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Keine Rechnungen vorhanden
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="notizen" role="tabpanel">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        {% for crm in crm_eintraege %}
+                        <div class="border-start border-3 border-hasshold ps-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <small class="text-muted">{{ crm.Datum.strftime('%d.%m.%Y') if crm.Datum else 'Kein Datum' }}</small>
+                                    {% if crm.Mitarbeiter %}
+                                    <span class="badge bg-secondary ms-2">{{ crm.Mitarbeiter }}</span>
+                                    {% endif %}
+                                    {% if crm.Zu_Besuchen %}
+                                    <span class="badge bg-primary ms-1"><i class="bi bi-calendar-event me-1"></i>Zu Besuchen</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <p class="mb-0 mt-1">{{ crm.Notiz }}</p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Keine Notizen vorhanden
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

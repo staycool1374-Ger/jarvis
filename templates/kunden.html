@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ firma }} - Kundenverwaltung{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-hasshold text-white">
+                <h4 class="mb-0"><i class="bi bi-people me-2"></i>Kundenverwaltung</h4>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/kunden" class="row g-3">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" name="q" class="form-control" 
+                                   placeholder="Suche nach Name, Straße, Ort, PLZ oder Telefon..." 
+                                   value="{{ suchbegriff }}">
+                            <button type="submit" class="btn btn-hasshold">Suchen</button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="/kunden" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Zurücksetzen
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if suchbegriff %}
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>{{ anzahl }}</strong> Kunde(n) gefunden für "{{ suchbegriff }}"
+</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th><a href="?sort=idKunde&order={% if sort_by == 'idKunde' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}" class="text-decoration-none text-dark">ID {% if sort_by == 'idKunde' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th><a href="?sort=Name&order={% if sort_by == 'Name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}" class="text-decoration-none text-dark">Name {% if sort_by == 'Name' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th><a href="?sort=Strasse&order={% if sort_by == 'Strasse' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}" class="text-decoration-none text-dark">Straße {% if sort_by == 'Strasse' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th><a href="?sort=Ort&order={% if sort_by == 'Ort' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}" class="text-decoration-none text-dark">Ort {% if sort_by == 'Ort' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th>PLZ</th>
+                        <th><a href="?sort=Telefon&order={% if sort_by == 'Telefon' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if suchbegriff %}&q={{ suchbegriff }}{% endif %}" class="text-decoration-none text-dark">Telefon {% if sort_by == 'Telefon' %}<i class="bi bi-caret-{% if sort_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}</a></th>
+                        <th>Stammkunde</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in kunden %}
+                    <tr>
+                        <td class="text-muted">{{ k.idKunde }}</td>
+                        <td class="fw-semibold">{{ k.Name }}</td>
+                        <td>{{ k.Strasse or '-' }}</td>
+                        <td>{{ k.Ort or '-' }}</td>
+                        <td>{{ k.PLZ or '-' }}</td>
+                        <td>
+                            {% if k.Telefon %}
+                            <a href="tel:{{ k.Telefon }}" class="text-decoration-none">
+                                <i class="bi bi-telephone me-1"></i>{{ k.Telefon }}
+                            </a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if k.Stammkunde == 'Ja' %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Ja</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Nein</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/kunde/{{ k.idKunde }}" class="btn btn-sm btn-hasshold">
+                                <i class="bi bi-eye me-1"></i>Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            {% if suchbegriff %}
+                            Keine Kunden gefunden
+                            {% else %}
+                            Keine Kunden vorhanden
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
