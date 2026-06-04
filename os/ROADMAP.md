@@ -40,15 +40,35 @@
 - [x] Fix: Blank screen bug (triple fault im Task-Kontextwechsel)
 
 ## Version 0.0.6 — Finale Optimierung & Stabilität (AKTUELL)
+- [x] Build auf -O3 umgestellt
+- [x] Keine Compiler-Warnungen unter -O3
+- [x] Keine Compiler-Fehler unter -O3
+- [x] Mandelbrot-CPU-Benchmark gegen Linux (RTOS: 35 ms, Linux: 29 ms = 83%)
 - [ ] Vollständiger Clean-Code-Review
 - [ ] Letzte Optimierungsrunde
 - [ ] Ausstehende Bugfixes
 
-## Version 0.0.7 — Optimierung auf -O3
-- [x] Build auf -O3 umgestellt
-- [x] Keine Compiler-Warnungen unter -O3
-- [x] Keine Compiler-Fehler unter -O3
-- [ ] Performanceregressionen analysieren
+## Version 0.0.7 — Userspace-Infrastruktur
+- [ ] Ring-3-Wechsel (IRETQ in Userspace, SYSRET fixen)
+- [ ] Prozess-Objekt mit eigenem Page-Table, PID, Addressraum
+- [ ] Userspace-Start über execve-ähnlichen Aufruf
+
+## Version 0.0.8 — ELF-Loader + initrd
+- [ ] ELF64-Loader für statisch gelinkte Binaries
+- [ ] initrd (cpio-Archiv) im Boot-Image
+- [ ] Dateisyscall-Grundgerüst (open, read, close)
+
+## Version 0.0.9 — libc-Portierung (newlib/musl)
+- [ ] newlib oder musl an Jarvis-Syscalls anbinden
+- [ ] crt0 für Userspace-Binaries
+- [ ] Standard-Header (stdio.h, stdlib.h, string.h, unistd.h, ...)
+- [ ] Kommandozeilen-Argumente, Environment-Variablen
+
+## Version 0.1.0 — Userspace-Shell + Programme
+- [ ] Userspace-Shell (zsh statisch gelinkt oder eigene)
+- [ ] ls, cat (via initrd)
+- [ ] top (via Syscall)
+- [ ] cd, export als Built-ins
 
 ## Version 1.0.0 — Finale Version
 - [ ] Stabilitäts-Check
