@@ -2,3 +2,5 @@ __pycache__/
 venv/
 *.pyc
 .DS_Store
+bench_mandelbrot
+bench_mandelbrot.cpp
