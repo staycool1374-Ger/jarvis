@@ -32,17 +32,23 @@
 - [x] Standard-Hardware-Treiber als Module
 - [x] Driver-Initialisierung beim Boot
 
-## Version 0.0.5 — Test Methodology + Benchmark (AKTUELL)
+## Version 0.0.5 — Test Methodology + Benchmark
 - [x] Benchmark-Shell-Befehl (cpu, alloc)
 - [x] Kernel-interne Self-Test-Registry
 - [x] Self-Tests für PMM, String, Utils, ErrorOr, IPC, MemPool
 - [x] selftest Shell-Befehl (alle Tests oder nach Name)
-- [ ] Ergebnisse tracken (docs/benchmarks/)
+- [x] Fix: Blank screen bug (triple fault im Task-Kontextwechsel)
 
-## Version 0.0.6 — Finale Optimierung & Stabilität
+## Version 0.0.6 — Finale Optimierung & Stabilität (AKTUELL)
 - [ ] Vollständiger Clean-Code-Review
 - [ ] Letzte Optimierungsrunde
 - [ ] Ausstehende Bugfixes
+
+## Version 0.0.7 — Optimierung auf -O3
+- [x] Build auf -O3 umgestellt
+- [x] Keine Compiler-Warnungen unter -O3
+- [x] Keine Compiler-Fehler unter -O3
+- [ ] Performanceregressionen analysieren
 
 ## Version 1.0.0 — Finale Version
 - [ ] Stabilitäts-Check

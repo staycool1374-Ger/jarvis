@@ -3,7 +3,7 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
             -fno-threadsafe-statics -m64 -mno-red-zone \
             -mgeneral-regs-only -Wall -Wextra -Werror \
-            -I src -I src/lib -O2 -pipe
+            -I src -I src/lib -O3 -pipe
 AS       := nasm
 ASFLAGS  := -f elf64
 LD       := ld

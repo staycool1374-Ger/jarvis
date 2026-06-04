@@ -10,7 +10,7 @@ namespace kernel {
 struct Version {
     static constexpr unsigned major = 0;
     static constexpr unsigned minor = 0;
-    static constexpr unsigned patch = 5;
+    static constexpr unsigned patch = 6;
     static constexpr const char* stage = "dev";
 
     static const char* string();
