@@ -1,0 +1,74 @@
+/// @file driver.cpp
+/// @brief Implementation of the driver registry.
+
+#include <kernel/driver/driver.hpp>
+
+namespace kernel {
+
+Driver* DriverRegistry::drivers_[MAX_DRIVERS] = {};
+size_t DriverRegistry::count_ = 0;
+
+void DriverRegistry::init() {
+    count_ = 0;
+}
+
+void DriverRegistry::register_driver(
+    const char* name,
+    const char* description,
+    bool (*init)(),
+    void (*exit)(),
+    uint32_t irq_line)
+{
+    if (count_ >= MAX_DRIVERS) return;
+    auto* drv = new Driver{name, description, init, exit, DriverState::UNLOADED, irq_line};
+    drivers_[count_++] = drv;
+}
+
+bool DriverRegistry::load(const char* name) {
+    for (size_t i = 0; i < count_; ++i) {
+        auto* drv = drivers_[i];
+        if (!drv || !drv->name) continue;
+        const char* a = drv->name;
+        const char* b = name;
+        while (*a && *b && *a == *b) { ++a; ++b; }
+        if (*a || *b) continue;
+
+        if (drv->state == DriverState::LOADED) return true;
+        if (!drv->init) return false;
+        bool ok = drv->init();
+        drv->state = ok ? DriverState::LOADED : DriverState::ERROR;
+        return ok;
+    }
+    return false;
+}
+
+void DriverRegistry::unload(const char* name) {
+    for (size_t i = 0; i < count_; ++i) {
+        auto* drv = drivers_[i];
+        if (!drv || !drv->name) continue;
+        const char* a = drv->name;
+        const char* b = name;
+        while (*a && *b && *a == *b) { ++a; ++b; }
+        if (*a || *b) continue;
+
+        if (drv->state == DriverState::LOADED && drv->exit) {
+            drv->exit();
+        }
+        drv->state = DriverState::UNLOADED;
+        return;
+    }
+}
+
+const Driver* DriverRegistry::find(const char* name) {
+    for (size_t i = 0; i < count_; ++i) {
+        auto* drv = drivers_[i];
+        if (!drv || !drv->name) continue;
+        const char* a = drv->name;
+        const char* b = name;
+        while (*a && *b && *a == *b) { ++a; ++b; }
+        if (*a == '\0' && *b == '\0') return drv;
+    }
+    return nullptr;
+}
+
+} // namespace kernel

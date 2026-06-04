@@ -1,0 +1,7 @@
+build/
+*.o
+iso/boot/kernel.elf
+jarvis-rtos.iso
+docs/doxygen/
+jarvis/
+

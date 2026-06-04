@@ -1,0 +1,76 @@
+/// @file scheduler.hpp
+/// @brief Rate-monotonic scheduler for task management and dispatching.
+
+#pragma once
+
+#include <types.hpp>
+#include <kernel/task/task.hpp>
+
+namespace kernel {
+
+/// @brief Preemptive, rate-monotonic scheduler managing up to MAX_TASKS tasks.
+/// @note Scheduler is tick-driven and supports periodic and aperiodic tasks.
+class Scheduler {
+public:
+    /// @brief Initialises the scheduler and creates the idle task.
+    static void init();
+
+    /// @brief Adds a task to the scheduler's run queue.
+    /// @param task Pointer to the task to add.
+    static void add_task(TaskControlBlock* task);
+    /// @brief Removes a task from the scheduler's run queue.
+    /// @param task Pointer to the task to remove.
+    static void remove_task(TaskControlBlock* task);
+
+    /// @brief Returns the currently running task.
+    /// @return Pointer to the current TaskControlBlock.
+    static TaskControlBlock* current_task() noexcept;
+    /// @brief Returns the total number of managed tasks.
+    /// @return Task count.
+    static uint64_t task_count() noexcept;
+    /// @brief Returns the task at a given index in the task array.
+    /// @param index Index into the task array.
+    /// @return Pointer to the TaskControlBlock, or nullptr.
+    static TaskControlBlock* task_at(uint64_t index) noexcept;
+
+    /// @brief Called on each timer tick; updates scheduling state.
+    static void on_tick() noexcept;
+
+    /// @brief Checks if a context switch is needed (reschedule flag).
+    /// @return True if a switch is pending.
+    static bool needs_switch() noexcept;
+    /// @brief Selects the next task to run according to RM policy.
+    /// @return Pointer to the next TaskControlBlock.
+    static TaskControlBlock* next_task() noexcept;
+    /// @brief Sets the current running task.
+    /// @param task Pointer to the task to set as current.
+    static void set_current(TaskControlBlock* task) noexcept;
+
+    /// @brief Returns whether the scheduler can be preempted.
+    /// @return True if preemption is enabled.
+    static bool is_preemptible() noexcept { return preempt_enabled_; }
+    /// @brief Enables or disables preemption.
+    /// @param en True to enable preemption.
+    static void set_preemptible(bool en) noexcept { preempt_enabled_ = en; }
+
+private:
+    static constexpr uint64_t MAX_TASKS = 64;
+    static TaskControlBlock* tasks_[MAX_TASKS];
+    static uint64_t task_count_;
+    static uint64_t current_index_;
+    static bool preempt_enabled_;
+
+    static TaskControlBlock* idle_task_;
+
+    /// @brief Performs rate-monotonic scheduling decision.
+    static void rate_monotonic_schedule() noexcept;
+};
+
+extern "C" {
+    /// @brief Address to save the current RSP into during context switch.
+    extern uint64_t volatile* scheduler_save_rsp_to;
+    /// @brief RSP value to load during context switch restore.
+    extern uint64_t volatile scheduler_load_rsp_from;
+}
+
+} // namespace kernel
