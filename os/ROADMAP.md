@@ -136,14 +136,17 @@
 - [ ] Shell-Pipeline-Unterstützung (|, >, <)
 
 ### Version 0.2.2 — Exception-Safe Userspace
-- [ ] User-Exception-Handler: #GP, #PF, #DE, #UD in Ring 3 → Task kill statt Kernel Panic
+- [ ] User-Exception-Handler: #GP, #PF, #DE, #UD in Ring 3 → User-Exception-Signal (SIGSEGV, SIGFPE, SIGILL) statt Kernel Panic
+- [ ] Signal-Dispatch vor Task-Kill: User-Programm erhält Chance auf Cleanup (FDs, Mailbox-Locks)
 - [ ] `SYS_KILL(pid)` syscall
-- [ ] `SYS_GETPID` syscall
-- [ ] Task-Tree: Eltern/Kind-Beziehung + `SYS_WAITPID`
+- `SYS_GETPID` syscall
+- [ ] Task-Tree: Eltern/Kind-Beziehung + `SYS_WAITPID` (waitpid bereits in 0.2.1)
 - [ ] Task-Exit-Code + Resource-Cleanup bei Terminate (Pages, FDs, Mailboxes)
 - [ ] Guard-Pages unter User-Stacks (Stack-Overflow-Erkennung)
 - [ ] OOM-Handler: kill low-priority task statt Panic
-- [ ] Syscall-Argument-Validation (userptr-Prüfung, Boundary-Checks)
+- [ ] Syscall-Argument-Validation: `CheckedPointer<T>` + `copy_from_user`/`copy_to_user`
+- [ ] ELF-Loader: Boundary-Checks für `phdr->offset`, `phdr->filesz ≤ memsz`, Kernel-Bereichs-Grenze
+- [ ] VMM: `Page-Ownership`-Check in `free_user_pages` (Bitset: USER/KERNEL)
 - [ ] 95 Tests PASS
 
 ### Version 0.2.3 — Userspace-Signale + Syscall-Erweiterung
@@ -154,6 +157,13 @@
 - [ ] `SYS_UNAME` (System-Info)
 - [ ] Userspace sleep() via Alarm-Timer
 - [ ] 100 Tests PASS
+
+### Version 0.2.4 — Code Quality & Logging
+- [ ] Syscall-Dispatcher: switch-Block durch Funktionspointer-Tabelle ersetzen
+- [ ] `Arch::Serial`-Klasse (Stream-Interface statt bare `outb`-Aufrufe)
+- [ ] Logger-Interface für einheitliches Logging (anstelle direkter `debug_write`-Aufrufe)
+- [ ] Entfernung aller direkten `outb`-Aufrufe aus Nicht-Arch-Code
+- [ ] 97 Tests PASS
 
 ## Version 0.3.x — Harte Echtzeit: Scheduler + Timing
 *Alle Topics rund um deterministisches Scheduling, Timing-Präzision und WCRT*

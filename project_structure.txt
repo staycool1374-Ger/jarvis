@@ -1,0 +1,78 @@
+.
+├── app.py
+├── bench_mandelbrot
+├── bench_mandelbrot.cpp
+├── config.py
+├── models.py
+├── os
+│   ├── build
+│   │   ├── boot
+│   │   ├── initrd
+│   │   ├── kernel
+│   │   ├── kernel.elf
+│   │   ├── lib
+│   │   ├── libc
+│   │   ├── programs
+│   │   └── services
+│   ├── docs
+│   │   ├── benchmarks
+│   │   ├── doxygen
+│   │   └── TESTLOG.md
+│   ├── Doxyfile
+│   ├── initrd.cpio
+│   ├── iso
+│   │   └── boot
+│   ├── jarvis
+│   │   ├── jarvis.vbox
+│   │   ├── jarvis.vbox-prev
+│   │   ├── jarvis.vdi
+│   │   └── Logs
+│   ├── jarvis-rtos.iso
+│   ├── linker.ld
+│   ├── Makefile
+│   ├── ROADMAP.md
+│   ├── src
+│   │   ├── boot
+│   │   ├── initrd
+│   │   ├── kernel
+│   │   ├── lib
+│   │   ├── libc
+│   │   ├── programs
+│   │   └── services
+│   └── userspace
+│       ├── cat.c
+│       ├── cat.c.elf
+│       ├── hello
+│       ├── ls.c
+│       ├── ls.c.elf
+│       ├── top.c
+│       └── top.c.elf
+├── project_structure.txt
+├── __pycache__
+│   ├── app.cpython-312.pyc
+│   ├── config.cpython-312.pyc
+│   └── models.cpython-312.pyc
+├── requirements.txt
+├── static
+│   └── css
+│       └── style.css
+├── templates
+│   ├── auftraege.html
+│   ├── base.html
+│   ├── index.html
+│   ├── kunde_detail.html
+│   ├── kunden.html
+│   └── rechnungen.html
+└── venv
+    ├── bin
+    │   ├── python -> python3
+    │   ├── python3 -> /usr/bin/python3
+    │   └── python3.12 -> python3
+    ├── include
+    │   └── python3.12
+    ├── lib
+    │   └── python3.12
+    ├── lib64 -> lib
+    └── pyvenv.cfg
+
+38 directories, 38 files

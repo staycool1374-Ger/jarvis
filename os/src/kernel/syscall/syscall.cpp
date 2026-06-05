@@ -6,6 +6,7 @@
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/memory/checked_ptr.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <services/terminal/terminal.hpp>
@@ -13,11 +14,18 @@
 
 namespace kernel {
 
+static constexpr uint64_t MAX_PATH = 256;
+
 void Syscall::init() {
 }
 
 static TaskControlBlock* task() {
     return Scheduler::current_task();
+}
+
+static bool is_user_task() {
+    auto* t = task();
+    return t && t->page_table_ != 0;
 }
 
 static int task_open(vfs::Vnode* vn, uint64_t flags) {
@@ -52,22 +60,25 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         msg.sender_id = cur ? cur->id : 0;
         msg.type = arg2;
         msg.data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
-        auto* data_ptr = reinterpret_cast<const uint8_t*>(arg1);
+        auto data = checked(reinterpret_cast<const uint8_t*>(arg1), msg.data_size);
+        if (is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
         for (size_t i = 0; i < msg.data_size; ++i) {
-            msg.data[i] = data_ptr[i];
+            msg.data[i] = data.read(i);
         }
         return IPC::send(dest_id, msg) ? 0 : static_cast<uint64_t>(-1);
     }
 
     case SyscallNumber::RECEIVE: {
         uint64_t src_id = arg0;
-        auto* buf = reinterpret_cast<uint8_t*>(arg1);
         uint64_t max_size = arg2;
+        auto buf = checked(reinterpret_cast<uint8_t*>(arg1), max_size);
+        if (is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+        uint8_t* raw_buf = buf.unsafe_ptr();
         Message msg{};
         if (IPC::receive(src_id, msg)) {
             uint64_t copy_size = msg.data_size;
             if (copy_size > max_size) copy_size = max_size;
-            for (size_t i = 0; i < copy_size; ++i) buf[i] = msg.data[i];
+            for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
             return msg.type;
         }
         auto* mb = IPC::find_mailbox(src_id);
@@ -80,7 +91,7 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         if (IPC::receive(src_id, msg)) {
             uint64_t copy_size = msg.data_size;
             if (copy_size > max_size) copy_size = max_size;
-            for (size_t i = 0; i < copy_size; ++i) buf[i] = msg.data[i];
+            for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
             return msg.type;
         }
         return static_cast<uint64_t>(-1);
@@ -88,22 +99,24 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
 
     case SyscallNumber::SEND_SYNC: {
         uint64_t dest_id = arg0;
-        auto* data_ptr = reinterpret_cast<const uint8_t*>(arg1);
         uint64_t type = arg2;
         uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+        auto data = checked(reinterpret_cast<const uint8_t*>(arg1), data_size);
+        if (is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
+        auto data_rw = checked(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(arg1)), data_size);
         Message msg{};
         auto* cur = task();
         if (!cur) return static_cast<uint64_t>(-1);
         msg.sender_id = cur->id;
         msg.type = type;
         msg.data_size = data_size;
-        for (size_t i = 0; i < data_size; ++i) msg.data[i] = data_ptr[i];
+        for (size_t i = 0; i < data_size; ++i) msg.data[i] = data.read(i);
         Message reply{};
         if (!IPC::send_sync(dest_id, msg, reply)) return static_cast<uint64_t>(-1);
         uint64_t copy_size = reply.data_size;
         if (copy_size > IPC_MAX_MSG_SIZE) copy_size = IPC_MAX_MSG_SIZE;
         for (size_t i = 0; i < copy_size; ++i)
-            const_cast<uint8_t*>(data_ptr)[i] = reply.data[i];
+            data_rw.write(reply.data[i], i);
         return reply.type;
     }
 
@@ -147,7 +160,8 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
 
     case SyscallNumber::WAITPID: {
         uint64_t target_pid = arg0;
-        auto* status_ptr = reinterpret_cast<uint64_t*>(arg1);
+        auto status = checked(reinterpret_cast<uint64_t*>(arg1));
+        auto* status_ptr = (!is_user_task() || status.valid()) ? status.unsafe_ptr() : nullptr;
         auto* cur = task();
         if (!cur) return static_cast<uint64_t>(-1);
         TaskControlBlock* child = nullptr;
@@ -165,7 +179,9 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         if (child->state == TaskState::TERMINATED) {
             if (status_ptr) *status_ptr = child->exit_code;
             uint64_t cid = child->id;
+            child->cleanup();
             Scheduler::remove_task(child);
+            delete child;
             return cid;
         }
         if (arg2 & 1) return 0;
@@ -182,18 +198,27 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         return 0;
 
     case SyscallNumber::OPEN: {
-        const char* path = reinterpret_cast<const char*>(arg0);
-        int fd = path_open(path, arg1);
+        const char* user_path = reinterpret_cast<const char*>(arg0);
+        int fd;
+        if (is_user_task()) {
+            char path_buf[MAX_PATH];
+            if (!strncpy_from_user(path_buf, user_path, MAX_PATH))
+                return static_cast<uint64_t>(-1);
+            fd = path_open(path_buf, arg1);
+        } else {
+            fd = path_open(user_path, arg1);
+        }
         return static_cast<uint64_t>(static_cast<int64_t>(fd));
     }
 
     case SyscallNumber::READ: {
         auto* f = task()->fd_table.get(static_cast<int>(arg0));
         if (!f) return static_cast<uint64_t>(-1);
-        auto* buf = reinterpret_cast<uint8_t*>(arg1);
         uint64_t count = arg2;
+        auto buf = checked(reinterpret_cast<uint8_t*>(arg1), count);
+        if (is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
         if (!f->vnode || !f->vnode->ops->read) return static_cast<uint64_t>(-1);
-        int64_t r = f->vnode->ops->read(f->vnode, buf, count, f->offset);
+        int64_t r = f->vnode->ops->read(f->vnode, buf.unsafe_ptr(), count, f->offset);
         if (r > 0) f->offset += static_cast<uint64_t>(r);
         return static_cast<uint64_t>(r >= 0 ? r : -1);
     }
@@ -214,9 +239,10 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     case SyscallNumber::WRITE: {
         auto* f = task()->fd_table.get(static_cast<int>(arg0));
         if (!f || !f->vnode || !f->vnode->ops->write) return static_cast<uint64_t>(-1);
-        const auto* buf = reinterpret_cast<const uint8_t*>(arg1);
         uint64_t count = arg2;
-        int64_t r = f->vnode->ops->write(f->vnode, buf, count, f->offset);
+        auto buf = checked(reinterpret_cast<const uint8_t*>(arg1), count);
+        if (is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+        int64_t r = f->vnode->ops->write(f->vnode, buf.unsafe_ptr(), count, f->offset);
         if (r > 0) f->offset += static_cast<uint64_t>(r);
         return static_cast<uint64_t>(r >= 0 ? r : 0);
     }
@@ -238,21 +264,29 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     case SyscallNumber::READDIR: {
         auto* f = task()->fd_table.get(static_cast<int>(arg0));
         if (!f || !f->vnode || !f->vnode->ops->readdir) return static_cast<uint64_t>(-1);
-        auto* pos = reinterpret_cast<uint64_t*>(arg1);
-        auto* dent = reinterpret_cast<vfs::Dirent*>(arg2);
-        if (!pos || !dent) return static_cast<uint64_t>(-1);
-        uint64_t p = *pos;
-        int r = f->vnode->ops->readdir(f->vnode, &p, dent);
-        if (r == 0) *pos = p;
+        auto pos_chk = checked(reinterpret_cast<uint64_t*>(arg1));
+        auto dent_chk = checked(reinterpret_cast<vfs::Dirent*>(arg2));
+        if (is_user_task() && (!pos_chk.valid() || !dent_chk.valid())) return static_cast<uint64_t>(-1);
+        uint64_t p = pos_chk.read();
+        int r = f->vnode->ops->readdir(f->vnode, &p, dent_chk.unsafe_ptr());
+        if (r == 0) pos_chk.write(p);
         return static_cast<uint64_t>(r == 0 ? 0 : -1);
     }
 
     case SyscallNumber::STAT: {
-        const char* path = reinterpret_cast<const char*>(arg0);
-        vfs::Vnode* vn = vfs::resolve(path);
+        vfs::Vnode* vn;
+        if (is_user_task()) {
+            char path_buf[MAX_PATH];
+            if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), MAX_PATH))
+                return static_cast<uint64_t>(-1);
+            vn = vfs::resolve(path_buf);
+        } else {
+            vn = vfs::resolve(reinterpret_cast<const char*>(arg0));
+        }
         if (!vn || !vn->ops->fstat) return static_cast<uint64_t>(-1);
-        auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
-        return static_cast<uint64_t>(vn->ops->fstat(vn, st));
+        auto st = checked(reinterpret_cast<vfs::VfsStat*>(arg1));
+        if (is_user_task() && !st.valid()) return static_cast<uint64_t>(-1);
+        return static_cast<uint64_t>(vn->ops->fstat(vn, st.unsafe_ptr()));
     }
 
     case SyscallNumber::DUP: {
@@ -266,23 +300,40 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     }
 
     case SyscallNumber::CHDIR: {
-        const char* path = reinterpret_cast<const char*>(arg0);
-        vfs::Vnode* vn = vfs::resolve(path);
+        vfs::Vnode* vn;
+        const char* resolved_path;
+        char path_buf[MAX_PATH];
+        if (is_user_task()) {
+            if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), MAX_PATH))
+                return static_cast<uint64_t>(-1);
+            vn = vfs::resolve(path_buf);
+            resolved_path = path_buf;
+        } else {
+            auto* raw = reinterpret_cast<const char*>(arg0);
+            vn = vfs::resolve(raw);
+            resolved_path = raw;
+        }
         if (!vn) return static_cast<uint64_t>(-1);
         if (!(vn->mode & vfs::S_IFDIR)) return static_cast<uint64_t>(-1);
         task()->cwd_vnode = vn;
         size_t i = 0;
-        while (path[i] && i < 255) { task()->cwd[i] = path[i]; ++i; }
+        while (resolved_path[i] && i < 255) { task()->cwd[i] = resolved_path[i]; ++i; }
         task()->cwd[i] = '\0';
         return 0;
     }
 
     case SyscallNumber::EXEC: {
-        const char* path = reinterpret_cast<const char*>(arg0);
+        vfs::Vnode* vn;
+        if (is_user_task()) {
+            char path_buf[MAX_PATH];
+            if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), MAX_PATH))
+                return static_cast<uint64_t>(-1);
+            vn = vfs::resolve(path_buf);
+        } else {
+            vn = vfs::resolve(reinterpret_cast<const char*>(arg0));
+        }
         auto* argv = reinterpret_cast<const char* const*>(arg1);
         auto* envp = reinterpret_cast<const char* const*>(arg2);
-        if (!path || !*path) return static_cast<uint64_t>(-1);
-        vfs::Vnode* vn = vfs::resolve(path);
         if (!vn) return static_cast<uint64_t>(-1);
         if (vn->size == 0 || vn->size > 512_KiB) return static_cast<uint64_t>(-1);
         size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;

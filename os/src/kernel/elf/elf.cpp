@@ -1,6 +1,7 @@
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/memory/checked_ptr.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -24,6 +25,22 @@ bool validate_header(const ELF64Header* hdr) {
     if (hdr->ident[5] != 1) return false;
     if (hdr->type != ET_EXEC && hdr->type != ET_DYN) return false;
     if (hdr->machine != 0x3E) return false;
+    if (hdr->phnum > 64) return false;
+    if (hdr->phnum > 0) {
+        if (hdr->phentsize < sizeof(ELF64ProgramHeader)) return false;
+        uint64_t ph_end = hdr->phoff + static_cast<uint64_t>(hdr->phnum) * hdr->phentsize;
+        if (ph_end < hdr->phoff) return false;
+    }
+    return true;
+}
+
+static bool validate_segment(const ELF64ProgramHeader* phdr) {
+    if (phdr->type != PT_LOAD) return true;
+    if (phdr->filesz > phdr->memsz) return false;
+    if (phdr->offset + phdr->filesz < phdr->offset) return false;
+    if (phdr->vaddr + phdr->memsz < phdr->vaddr) return false;
+    if (phdr->vaddr >= USER_SPACE_LIMIT) return false;
+    if (phdr->vaddr + phdr->memsz > USER_SPACE_LIMIT) return false;
     return true;
 }
 
@@ -66,6 +83,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
         auto* phdr = reinterpret_cast<const ELF64ProgramHeader*>(
             file_data + hdr->phoff + i * hdr->phentsize);
         if (!phdr || phdr->type != PT_LOAD) continue;
+        if (!validate_segment(phdr)) return false;
 
         uint64_t vaddr_base = page_align_down(phdr->vaddr);
         uint64_t vaddr_end = page_align_up(phdr->vaddr + phdr->memsz);

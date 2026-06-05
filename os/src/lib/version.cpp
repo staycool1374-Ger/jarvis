@@ -3,7 +3,7 @@
 namespace kernel {
 
 static const char version_buf_[] =
-    "0.0.6-dev";
+    "0.2.2-dev";
 
 static const char* const build_date_ = __DATE__;
 static const char* const build_time_ = __TIME__;

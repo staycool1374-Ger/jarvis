@@ -243,4 +243,40 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     return tcb;
 }
 
+void TaskControlBlock::cleanup() noexcept {
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        if (fd_table.fds[i].used) {
+            if (fd_table.fds[i].vnode && fd_table.fds[i].vnode->ops->close) {
+                fd_table.fds[i].vnode->ops->close(fd_table.fds[i].vnode);
+            }
+            fd_table.fds[i].used = false;
+            fd_table.fds[i].vnode = nullptr;
+        }
+    }
+
+    if (user_stack_ && page_table_) {
+        size_t pages = (user_stack_size_ + 4095) / 4096;
+        for (size_t i = 0; i < pages; ++i) {
+            PMM::free_page(user_stack_ + i * 4096);
+        }
+        user_stack_ = 0;
+    }
+
+    if (stack_phys_) {
+        size_t pages = (STACK_SIZE + 4095) / 4096;
+        for (size_t i = 0; i < pages; ++i) {
+            PMM::free_page(stack_phys_ + i * 4096);
+        }
+        stack_phys_ = 0;
+        kernel_stack = nullptr;
+        kernel_stack_top = 0;
+    }
+
+    if (page_table_) {
+        VMM::free_user_pages(page_table_);
+        PMM::free_page(page_table_);
+        page_table_ = 0;
+    }
+}
+
 } // namespace kernel

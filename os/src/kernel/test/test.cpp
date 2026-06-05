@@ -350,6 +350,58 @@ void TestRegistry::init() {
         return TestResult::PASS;
     });
 
+    register_test("elf.validate_header_too_many_phdr", "ELF header rejects phnum > 64", []() -> TestResult {
+        uint8_t buf[64];
+        memset(buf, 0, sizeof(buf));
+        buf[0] = 0x7F; buf[1] = 'E'; buf[2] = 'L'; buf[3] = 'F';
+        buf[4] = 2; buf[5] = 1;
+        auto* hdr = reinterpret_cast<elf::ELF64Header*>(buf);
+        hdr->type = 2; hdr->machine = 0x3E;
+        hdr->phnum = 65;
+        if (elf::validate_header(hdr)) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("elf.validate_segment_overflow", "Segment with overflowing vaddr+memsz rejected", []() -> TestResult {
+        uint8_t buf[sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader)];
+        memset(buf, 0, sizeof(buf));
+        buf[0] = 0x7F; buf[1] = 'E'; buf[2] = 'L'; buf[3] = 'F';
+        buf[4] = 2; buf[5] = 1;
+        auto* hdr = reinterpret_cast<elf::ELF64Header*>(buf);
+        hdr->type = 2; hdr->machine = 0x3E;
+        hdr->phoff = sizeof(elf::ELF64Header);
+        hdr->phnum = 1;
+        hdr->phentsize = sizeof(elf::ELF64ProgramHeader);
+        auto* phdr = reinterpret_cast<elf::ELF64ProgramHeader*>(buf + sizeof(elf::ELF64Header));
+        phdr->type = 1; // PT_LOAD
+        phdr->vaddr = 0x70000000;
+        phdr->memsz = 0xFFFFFFFFFFFFFF00ULL;
+        phdr->filesz = 0;
+        auto* tcb = elf::load(hdr, buf);
+        if (tcb) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("elf.validate_segment_kernel_range", "Segment in kernel range rejected", []() -> TestResult {
+        uint8_t buf[sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader)];
+        memset(buf, 0, sizeof(buf));
+        buf[0] = 0x7F; buf[1] = 'E'; buf[2] = 'L'; buf[3] = 'F';
+        buf[4] = 2; buf[5] = 1;
+        auto* hdr = reinterpret_cast<elf::ELF64Header*>(buf);
+        hdr->type = 2; hdr->machine = 0x3E;
+        hdr->phoff = sizeof(elf::ELF64Header);
+        hdr->phnum = 1;
+        hdr->phentsize = sizeof(elf::ELF64ProgramHeader);
+        auto* phdr = reinterpret_cast<elf::ELF64ProgramHeader*>(buf + sizeof(elf::ELF64Header));
+        phdr->type = 1;
+        phdr->vaddr = 0xFFFF800000000000ULL;
+        phdr->memsz = 4096;
+        phdr->filesz = 4096;
+        auto* tcb = elf::load(hdr, buf);
+        if (tcb) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
     register_test("initrd.find_hello_c", "Find hello.c.elf (C userspace) in initrd", []() -> TestResult {
         initrd::InitrdFile f = initrd::find("hello.c.elf");
         if (!f.data || f.size == 0) return TestResult::FAIL;
