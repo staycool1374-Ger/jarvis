@@ -39,6 +39,9 @@ public:
     /// @brief Forces a reschedule — selects the next task and sets up context switch.
     static void reschedule() noexcept;
 
+    /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
+    static void reap_orphans() noexcept;
+
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;

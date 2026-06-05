@@ -75,8 +75,9 @@ private:
     /// @param table Pointer to the current-level page table.
     /// @param index Index into the table.
     /// @param create If true, allocates a new table if missing.
+    /// @param user_alloc If true, allocate page table page as USER-owned.
     /// @return Pointer to the next-level table, or nullptr.
-    static uint64_t* get_table(uint64_t* table, size_t index, bool create);
+    static uint64_t* get_table(uint64_t* table, size_t index, bool create, bool user_alloc = false);
 };
 
 } // namespace kernel

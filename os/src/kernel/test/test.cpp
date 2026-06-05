@@ -841,6 +841,119 @@ void TestRegistry::init() {
         return TestResult::PASS;
     });
 
+    register_test("syscall.getpid", "GETPID returns non-zero for current task", []() -> TestResult {
+        uint64_t pid = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0);
+        if (pid == 0) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("syscall.kill_nonexistent", "KILL for nonexistent PID returns -1", []() -> TestResult {
+        uint64_t ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::KILL), 999999, 9, 0, 0);
+        if (ret != static_cast<uint64_t>(-1)) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("syscall.kill_self", "KILL with own PID terminates self", []() -> TestResult {
+        auto* cur = Scheduler::current_task();
+        if (!cur) return TestResult::FAIL;
+        uint64_t my_pid = cur->id;
+        uint64_t ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::KILL), my_pid, 9, 0, 0);
+        if (ret != 0) return TestResult::FAIL;
+        if (cur->state != TaskState::TERMINATED) return TestResult::FAIL;
+        cur->state = TaskState::READY;
+        return TestResult::PASS;
+    });
+
+    register_test("exception.user_pf_kills_task", "Page fault from user mode kills task instead of panic", []() -> TestResult {
+        auto* cur = Scheduler::current_task();
+        if (!cur) return TestResult::FAIL;
+        uint64_t fake_regs[22] = {0};
+        fake_regs[18] = 0x1B;
+        handle_interrupt_c(14, 0, 0xdead, fake_regs);
+        if (cur->state != TaskState::TERMINATED) return TestResult::FAIL;
+        cur->state = TaskState::READY;
+        return TestResult::PASS;
+    });
+
+    register_test("exception.user_gp_kills_task", "General protection fault from user mode kills task", []() -> TestResult {
+        auto* cur = Scheduler::current_task();
+        if (!cur) return TestResult::FAIL;
+        uint64_t fake_regs[22] = {0};
+        fake_regs[18] = 0x1B;
+        handle_interrupt_c(13, 0, 0xbeef, fake_regs);
+        if (cur->state != TaskState::TERMINATED) return TestResult::FAIL;
+        cur->state = TaskState::READY;
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.1: Guard pages, page ownership, orphan reaper, OOM ──
+    register_test("vmm.guard_page_unmapped", "Guard page (0x70000000) is unmapped in user PML4", []() -> TestResult {
+        auto* task = TaskControlBlock::create_user([](){}, 1, 50, 16_KiB);
+        if (!task) return TestResult::FAIL;
+        if (!task->page_table_) return TestResult::FAIL;
+        auto* pml4 = reinterpret_cast<uint64_t*>(task->page_table_ & ~0xFFFULL);
+        uint64_t vaddr = 0x70000000;
+        size_t pml4_idx = (vaddr >> 39) & 0x1FF;
+        if (!(pml4[pml4_idx] & 1)) return TestResult::PASS;
+        uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+        auto* pdpt = reinterpret_cast<uint64_t*>(pdpt_phys);
+        size_t pdpt_idx = (vaddr >> 30) & 0x1FF;
+        if (!(pdpt[pdpt_idx] & 1)) return TestResult::PASS;
+        uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
+        auto* pd = reinterpret_cast<uint64_t*>(pd_phys);
+        size_t pd_idx = (vaddr >> 21) & 0x1FF;
+        if (!(pd[pd_idx] & 1)) return TestResult::PASS;
+        uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
+        auto* pt = reinterpret_cast<uint64_t*>(pt_phys);
+        size_t pt_idx = (vaddr >> 12) & 0x1FF;
+        if (pt[pt_idx] & 1) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("vmm.ownership_user_page", "Pages allocated via alloc_user_page are marked USER", []() -> TestResult {
+        uint64_t p = PMM::alloc_user_page();
+        if (!p) return TestResult::FAIL;
+        if (!PMM::is_user_page(p)) { PMM::free_page(p); return TestResult::FAIL; }
+        PMM::free_page(p);
+        return TestResult::PASS;
+    });
+
+    register_test("vmm.ownership_kernel_page", "Pages allocated via alloc_page are NOT marked USER", []() -> TestResult {
+        uint64_t p = PMM::alloc_page();
+        if (!p) return TestResult::FAIL;
+        if (PMM::is_user_page(p)) { PMM::free_page(p); return TestResult::FAIL; }
+        PMM::free_page(p);
+        return TestResult::PASS;
+    });
+
+    register_test("scheduler.orphan_reaper", "Orphan TERMINATED task gets cleaned up by reap_orphans", []() -> TestResult {
+        auto* cur = Scheduler::current_task();
+        if (!cur) return TestResult::FAIL;
+        auto* orphan = TaskControlBlock::create([](){ while(true) asm volatile("hlt"); }, 1, 50);
+        if (!orphan) return TestResult::FAIL;
+        orphan->parent_id = 999999;
+        orphan->state = TaskState::TERMINATED;
+        Scheduler::add_task(orphan);
+        uint64_t before = Scheduler::task_count();
+        Scheduler::reap_orphans();
+        uint64_t after = Scheduler::task_count();
+        if (after >= before) return TestResult::FAIL;
+        return TestResult::PASS;
+    });
+
+    register_test("vmm.ownership_user_contiguous", "Contiguous user allocation marks pages as USER", []() -> TestResult {
+        uint64_t block = PMM::alloc_user_contiguous(4);
+        if (!block) return TestResult::FAIL;
+        for (size_t i = 0; i < 4; ++i) {
+            if (!PMM::is_user_page(block + i * 4096)) { PMM::free_page(block); return TestResult::FAIL; }
+        }
+        PMM::free_page(block);
+        return TestResult::PASS;
+    });
+
     g_user_task_ran = false;
 
     // ── Shell command tests ──

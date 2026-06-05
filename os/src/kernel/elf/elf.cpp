@@ -90,7 +90,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
         uint64_t region_size = vaddr_end - vaddr_base;
         size_t num_pages = region_size / 4096;
 
-        uint64_t seg_phys = PMM::alloc_contiguous(num_pages);
+        uint64_t seg_phys = PMM::alloc_user_contiguous(num_pages);
         if (!seg_phys) return false;
 
         for (size_t p = 0; p < num_pages; ++p) {
@@ -110,11 +110,12 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
     }
 
     size_t ustack_pages = (USER_STACK_SIZE + 4095) / 4096;
-    uint64_t ustack_phys = PMM::alloc_contiguous(ustack_pages);
+    uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
     if (!ustack_phys) return false;
 
+    // Guard page: leave first page unmapped, start mapping at +4096
     for (size_t i = 0; i < ustack_pages; ++i) {
-        VMM::map_page_in_pml4(USER_STACK_VADDR + i * 4096,
+        VMM::map_page_in_pml4(USER_STACK_VADDR + 4096 + i * 4096,
                               ustack_phys + i * 4096,
                               true, pml4);
     }
@@ -122,7 +123,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
     memset(reinterpret_cast<void*>(ustack_phys), 0, USER_STACK_SIZE);
 
     size_t heap_pages = USER_HEAP_SIZE / 4096;
-    uint64_t heap_phys = PMM::alloc_contiguous(heap_pages);
+    uint64_t heap_phys = PMM::alloc_user_contiguous(heap_pages);
     if (!heap_phys) return false;
 
     for (size_t i = 0; i < heap_pages; ++i) {
@@ -187,7 +188,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     *--ptr = static_cast<uint64_t>(argc);
 
     uint64_t user_rsp = reinterpret_cast<uint64_t>(ptr);
-    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top) + USER_STACK_VADDR + USER_STACK_SIZE;
+    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top) + USER_STACK_VADDR + 4096 + USER_STACK_SIZE;
 
     return user_rsp;
 }

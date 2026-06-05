@@ -164,6 +164,30 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     debug_write("[BOOT] Scheduler init...\n");
     kernel::Scheduler::init();
+    kernel::PMM::set_oom_handler([]() -> bool {
+        kernel::TaskControlBlock* victim = nullptr;
+        uint64_t victim_priority = ~0ULL;
+        for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
+            auto* t = kernel::Scheduler::task_at(i);
+            if (!t || t == kernel::Scheduler::task_at(0)) continue;
+            if (t->state != kernel::TaskState::READY && t->state != kernel::TaskState::RUNNING) continue;
+            if (!t->page_table_) continue;
+            if (t->priority < victim_priority) {
+                victim = t;
+                victim_priority = t->priority;
+            }
+        }
+        if (!victim) return false;
+        debug_write("[OOM] Killing task ");
+        debug_write_hex(victim->id);
+        debug_write(" priority=");
+        debug_write_hex(victim->priority);
+        debug_write("\n");
+        victim->state = kernel::TaskState::TERMINATED;
+        victim->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(9));
+        kernel::Scheduler::reap_orphans();
+        return true;
+    });
     debug_write("[BOOT] Scheduler OK\n");
 
     debug_write("[BOOT] DriverRegistry init...\n");
@@ -303,6 +327,45 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
                                    uint64_t* regs)
 {
     if (vector < 32) {
+        auto* t = kernel::Scheduler::current_task();
+        uint64_t cs = regs ? regs[18] : 0;
+        bool from_user = (cs == 0x1B || cs == 0x23);
+
+        if (from_user && t) {
+            static const char* sig_name[] = {
+                "SIGFPE", "SIGSEGV", "SIGSEGV", "SIGSEGV", "SIGILL"
+            };
+            static const uint64_t sig_num[] = {8, 11, 11, 11, 4};
+            uint64_t sig_idx = 0;
+            if (vector == 0) sig_idx = 0;
+            else if (vector == 6) sig_idx = 4;
+            else if (vector == 13 || vector == 14) sig_idx = 1;
+            else sig_idx = 1;
+
+            debug_write("\n[EXCEPTION] Task ");
+            debug_write_hex(t->id);
+            debug_write(" received ");
+            debug_write(sig_name[sig_idx]);
+            debug_write(" (signal ");
+            debug_write_hex(sig_num[sig_idx]);
+            debug_write(") vector=");
+            debug_write_hex(vector);
+            debug_write(" rip=");
+            debug_write_hex(rip);
+            debug_write(" err=");
+            debug_write_hex(error_code);
+            if (vector == 14) {
+                uint64_t cr2_val;
+                asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
+                debug_write(" cr2=");
+                debug_write_hex(cr2_val);
+            }
+            debug_write(" — terminating\n");
+            t->state = kernel::TaskState::TERMINATED;
+            t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig_num[sig_idx]));
+            return;
+        }
+
         debug_write("\n!!! EXCEPTION vector=");
         debug_write_hex(vector);
         debug_write(" err=");
@@ -314,7 +377,6 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
         debug_write(" cr2=");
         debug_write_hex(cr2_val);
         debug_write(" task=");
-        auto* t = kernel::Scheduler::current_task();
         if (t) {
             debug_write_hex(t->id);
             debug_write(" prio=");

@@ -94,14 +94,16 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
 
     size_t user_stack_pages = (user_stack_size + 4095) / 4096;
-    uint64_t ustack_phys = PMM::alloc_contiguous(user_stack_pages);
+    uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
     if (!ustack_phys) { delete tcb; return nullptr; }
 
     uint64_t pml4 = VMM::clone_kernel_pml4();
     if (!pml4) { delete tcb; return nullptr; }
     tcb->page_table_ = pml4;
 
-    uint64_t user_stack_virt = 0x70000000;
+    // Guard page: leave first page unmapped, start mapping at +4096
+    static constexpr uint64_t USER_STACK_VADDR = 0x70000000;
+    uint64_t user_stack_virt = USER_STACK_VADDR + 4096;
     for (size_t i = 0; i < user_stack_pages; ++i) {
         VMM::map_page_in_pml4(user_stack_virt + i * 4096,
                               ustack_phys + i * 4096,
@@ -216,13 +218,14 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
         tcb->page_table_ = new_pml4;
 
         size_t ustack_pages = (parent->user_stack_size_ + 4095) / 4096;
-        uint64_t ustack_phys = PMM::alloc_contiguous(ustack_pages);
+        uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) { delete tcb; return nullptr; }
         tcb->user_stack_ = ustack_phys;
         tcb->user_stack_size_ = parent->user_stack_size_;
 
-        // Copy user stack content page by page
-        uint64_t user_stack_virt = 0x70000000;
+        // Guard page: leave first page unmapped, start mapping at +4096
+        static constexpr uint64_t USER_STACK_VADDR = 0x70000000;
+        uint64_t user_stack_virt = USER_STACK_VADDR + 4096;
         for (size_t i = 0; i < ustack_pages; ++i) {
             VMM::map_page_in_pml4(user_stack_virt + i * 4096,
                                   ustack_phys + i * 4096,
@@ -234,10 +237,6 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
                 reinterpret_cast<uint8_t*>(dst_virt)[j] = reinterpret_cast<const uint8_t*>(src_virt)[j];
             }
         }
-
-        // Copy kernel stack content (parent's kernel stack might have data we need)
-        // Actually the register frame we built above is sufficient since the child
-        // starts by popping regs and iretq
     }
 
     return tcb;

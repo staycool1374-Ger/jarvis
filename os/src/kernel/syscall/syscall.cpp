@@ -357,6 +357,35 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         return 0;
     }
 
+    case SyscallNumber::GETPID: {
+        auto* t = task();
+        return t ? t->id : 0;
+    }
+
+    case SyscallNumber::KILL: {
+        uint64_t target_pid = arg0;
+        uint64_t sig = arg1;
+        uint64_t count = Scheduler::task_count();
+        for (uint64_t i = 0; i < count; ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (t && t->id == target_pid) {
+                t->state = TaskState::TERMINATED;
+                t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+                if (t->parent_id) {
+                    for (uint64_t j = 0; j < count; ++j) {
+                        auto* p = Scheduler::task_at(j);
+                        if (p && p->id == t->parent_id && p->waiting_child_pid == t->id) {
+                            p->state = TaskState::READY;
+                            break;
+                        }
+                    }
+                }
+                return 0;
+            }
+        }
+        return static_cast<uint64_t>(-1);
+    }
+
     default:
         return static_cast<uint64_t>(-1);
     }

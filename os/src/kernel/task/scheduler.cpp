@@ -112,7 +112,40 @@ void Scheduler::on_tick() noexcept {
         }
     }
 
+    static uint64_t tick_counter = 0;
+    ++tick_counter;
+    if (tick_counter % 100 == 0) {
+        reap_orphans();
+    }
+
     rate_monotonic_schedule();
+}
+
+void Scheduler::reap_orphans() noexcept {
+    bool reaped_any = true;
+    while (reaped_any) {
+        reaped_any = false;
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* t = tasks_[i];
+            if (!t) continue;
+            if (t->state != TaskState::TERMINATED) continue;
+            bool parent_alive = false;
+            for (uint64_t j = 0; j < task_count_; ++j) {
+                auto* p = tasks_[j];
+                if (p && p->id == t->parent_id && p->state != TaskState::TERMINATED) {
+                    parent_alive = true;
+                    break;
+                }
+            }
+            if (!parent_alive) {
+                t->cleanup();
+                remove_task(t);
+                delete t;
+                reaped_any = true;
+                break;
+            }
+        }
+    }
 }
 
 extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3);
