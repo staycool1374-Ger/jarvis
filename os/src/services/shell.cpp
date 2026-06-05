@@ -4,8 +4,12 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/elf/elf.hpp>
+#include <kernel/vfs/vfs.hpp>
+#include <initrd/initrd.hpp>
 #include <version.hpp>
 #include <programs/demo/demo.hpp>
 #include <kernel/driver/driver.hpp>
@@ -45,6 +49,11 @@ void Shell::init() {
     register_command("modlist", "List available kernel drivers",    cmd_modlist);
     register_command("listprog","List registered programs",         cmd_listprog);
     register_command("selftest","Run kernel self-tests [name]",     cmd_selftest);
+    register_command("cd",      "Change working directory",          cmd_cd);
+    register_command("export",  "Set environment variable",          cmd_export);
+    register_command("runelf",  "Run userspace ELF from initrd",     cmd_runelf);
+    register_command("exit",    "Shut down the system",              cmd_exit);
+    register_command("shutdown","Shut down the system",              cmd_exit);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -586,6 +595,109 @@ void Shell::cmd_selftest(int argc, const char** argv) {
     Terminal::write(" skipped — ");
     print_num(elapsed);
     Terminal::write(" ms\n\n");
+}
+
+void Shell::cmd_cd(int argc, const char** argv) {
+    const char* target = (argc < 2) ? "/" : argv[1];
+    auto* vn = kernel::vfs::resolve(target);
+    if (!vn) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("cd: no such directory: ");
+        Terminal::write(target);
+        Terminal::putchar('\n');
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+    if (!(vn->mode & kernel::vfs::S_IFDIR)) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("cd: not a directory: ");
+        Terminal::write(target);
+        Terminal::putchar('\n');
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+    auto* task = kernel::Scheduler::current_task();
+    if (!task) return;
+    task->cwd_vnode = vn;
+    size_t i = 0;
+    while (target[i] && i < 255) { task->cwd[i] = target[i]; ++i; }
+    task->cwd[i] = '\0';
+}
+
+void Shell::cmd_export(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: export VAR=value\n");
+        return;
+    }
+    Terminal::write("export: ");
+    Terminal::write(argv[1]);
+    Terminal::write("\n");
+}
+
+void Shell::cmd_runelf(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: runelf <path.elf> [args...]\n");
+        return;
+    }
+
+    const char* path = argv[1];
+
+    initrd::InitrdFile f = initrd::find(path);
+    if (!f.data) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("runelf: file not found in initrd: ");
+        Terminal::write(path);
+        Terminal::putchar('\n');
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+    if (!kernel::elf::validate_header(hdr)) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("runelf: invalid ELF: ");
+        Terminal::write(path);
+        Terminal::putchar('\n');
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    auto* task = kernel::elf::load(hdr, f.data);
+    if (!task) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("runelf: failed to load: ");
+        Terminal::write(path);
+        Terminal::putchar('\n');
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    kernel::Scheduler::add_task(task);
+
+    Terminal::set_fg(0x00FF00);
+    Terminal::write("Started task #");
+    char buf[16];
+    int pos = 0;
+    uint64_t id = task->id;
+    while (id > 0) { buf[pos++] = '0' + (id % 10); id /= 10; }
+    while (pos > 0) Terminal::putchar(buf[--pos]);
+    Terminal::write(": ");
+    Terminal::write(path);
+    Terminal::putchar('\n');
+    Terminal::set_fg(0xC0C0C0);
+}
+
+void Shell::cmd_exit(int, const char**) {
+    Terminal::set_fg(0xFF4444);
+    Terminal::write("\nShutting down...\n");
+    Terminal::set_fg(0xC0C0C0);
+
+    arch::outw(0x604, 0x2000);
+    arch::outw(0xB004, 0x2000);
+
+    for (int i = 0; i < 100000000; ++i) asm volatile("pause" : : : "memory");
+    Terminal::write("Shutdown failed. Halting.\n");
+    asm volatile("cli; hlt");
 }
 
 } // namespace service

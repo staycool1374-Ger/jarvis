@@ -1,36 +1,111 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/vfs/vfs.hpp>
+#include <kernel/elf/elf.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
+#include <services/terminal/terminal.hpp>
+#include <string.hpp>
 
 namespace kernel {
 
 void Syscall::init() {
 }
 
+static TaskControlBlock* task() {
+    return Scheduler::current_task();
+}
+
+static int task_open(vfs::Vnode* vn, uint64_t flags) {
+    int fd = task()->fd_table.alloc();
+    if (fd < 0) return -1;
+    task()->fd_table.fds[fd].vnode = vn;
+    task()->fd_table.fds[fd].offset = 0;
+    task()->fd_table.fds[fd].flags = flags;
+    if (vn->ops->open) vn->ops->open(vn, flags);
+    return fd;
+}
+
+static int path_open(const char* path, uint64_t flags) {
+    vfs::Vnode* vn = vfs::resolve(path);
+    if (!vn) return -1;
+    return task_open(vn, flags);
+}
+
 uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
-                         uint64_t arg2, uint64_t arg3)
+                         uint64_t arg2, uint64_t arg3, uint64_t* regs)
 {
     switch (static_cast<SyscallNumber>(number)) {
     case SyscallNumber::YIELD:
         arch::io_wait();
+        Scheduler::reschedule();
         return 0;
 
     case SyscallNumber::SEND: {
+        uint64_t dest_id = arg0;
         Message msg{};
-        msg.sender_id = arg0;
+        auto* cur = task();
+        msg.sender_id = cur ? cur->id : 0;
         msg.type = arg2;
-        msg.data_size = arg3;
-        auto* data_ptr = reinterpret_cast<uint8_t*>(arg1);
-        for (size_t i = 0; i < arg3 && i < IPC_MAX_MSG_SIZE; ++i) {
+        msg.data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+        auto* data_ptr = reinterpret_cast<const uint8_t*>(arg1);
+        for (size_t i = 0; i < msg.data_size; ++i) {
             msg.data[i] = data_ptr[i];
         }
-        return IPC::send(arg0, msg) ? 0 : 1;
+        return IPC::send(dest_id, msg) ? 0 : static_cast<uint64_t>(-1);
     }
 
-    case SyscallNumber::RECEIVE:
-        return 0;
+    case SyscallNumber::RECEIVE: {
+        uint64_t src_id = arg0;
+        auto* buf = reinterpret_cast<uint8_t*>(arg1);
+        uint64_t max_size = arg2;
+        Message msg{};
+        if (IPC::receive(src_id, msg)) {
+            uint64_t copy_size = msg.data_size;
+            if (copy_size > max_size) copy_size = max_size;
+            for (size_t i = 0; i < copy_size; ++i) buf[i] = msg.data[i];
+            return msg.type;
+        }
+        auto* mb = IPC::find_mailbox(src_id);
+        if (!mb) return static_cast<uint64_t>(-1);
+        auto* t = task();
+        if (!t) return static_cast<uint64_t>(-1);
+        mb->waiting_receiver = t;
+        t->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+        if (IPC::receive(src_id, msg)) {
+            uint64_t copy_size = msg.data_size;
+            if (copy_size > max_size) copy_size = max_size;
+            for (size_t i = 0; i < copy_size; ++i) buf[i] = msg.data[i];
+            return msg.type;
+        }
+        return static_cast<uint64_t>(-1);
+    }
+
+    case SyscallNumber::SEND_SYNC: {
+        uint64_t dest_id = arg0;
+        auto* data_ptr = reinterpret_cast<const uint8_t*>(arg1);
+        uint64_t type = arg2;
+        uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+        Message msg{};
+        auto* cur = task();
+        if (!cur) return static_cast<uint64_t>(-1);
+        msg.sender_id = cur->id;
+        msg.type = type;
+        msg.data_size = data_size;
+        for (size_t i = 0; i < data_size; ++i) msg.data[i] = data_ptr[i];
+        Message reply{};
+        if (!IPC::send_sync(dest_id, msg, reply)) return static_cast<uint64_t>(-1);
+        uint64_t copy_size = reply.data_size;
+        if (copy_size > IPC_MAX_MSG_SIZE) copy_size = IPC_MAX_MSG_SIZE;
+        for (size_t i = 0; i < copy_size; ++i)
+            const_cast<uint8_t*>(data_ptr)[i] = reply.data[i];
+        return reply.type;
+    }
 
     case SyscallNumber::PRINT:
         return 0;
@@ -38,8 +113,64 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     case SyscallNumber::GET_TICKS:
         return arch::Timer::ticks();
 
-    case SyscallNumber::EXIT:
-        while (true) asm volatile("hlt");
+    case SyscallNumber::EXIT: {
+        auto* t = task();
+        if (t) {
+            t->state = TaskState::TERMINATED;
+            t->exit_code = arg0;
+            if (t->parent_id) {
+                uint64_t count = Scheduler::task_count();
+                for (uint64_t i = 0; i < count; ++i) {
+                    auto* p = Scheduler::task_at(i);
+                    if (p && p->id == t->parent_id && p->waiting_child_pid == t->id) {
+                        p->state = TaskState::READY;
+                        // waiting_child_pid stays set — WAITPID handler reads it after wake
+                        if (p->waiting_child_status) {
+                            *p->waiting_child_status = t->exit_code;
+                            p->waiting_child_status = nullptr;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    case SyscallNumber::FORK: {
+        if (!regs) return static_cast<uint64_t>(-1);
+        auto* child = TaskControlBlock::clone(regs);
+        if (!child) return static_cast<uint64_t>(-1);
+        Scheduler::add_task(child);
+        return child->id;
+    }
+
+    case SyscallNumber::WAITPID: {
+        uint64_t target_pid = arg0;
+        auto* status_ptr = reinterpret_cast<uint64_t*>(arg1);
+        auto* cur = task();
+        if (!cur) return static_cast<uint64_t>(-1);
+        TaskControlBlock* child = nullptr;
+        uint64_t count = Scheduler::task_count();
+        for (uint64_t i = 0; i < count; ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (t && t->parent_id == cur->id) {
+                if (target_pid == static_cast<uint64_t>(-1) || t->id == target_pid) {
+                    child = t;
+                    break;
+                }
+            }
+        }
+        if (!child) return static_cast<uint64_t>(-1);
+        if (child->state == TaskState::TERMINATED) {
+            if (status_ptr) *status_ptr = child->exit_code;
+            uint64_t cid = child->id;
+            Scheduler::remove_task(child);
+            return cid;
+        }
+        if (arg2 & 1) return 0;
+        return static_cast<uint64_t>(-1);
+    }
 
     case SyscallNumber::CREATE_MAILBOX: {
         auto* mb = IPC::create_mailbox(arg0);
@@ -49,6 +180,131 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     case SyscallNumber::DESTROY_MAILBOX:
         IPC::destroy_mailbox(arg0);
         return 0;
+
+    case SyscallNumber::OPEN: {
+        const char* path = reinterpret_cast<const char*>(arg0);
+        int fd = path_open(path, arg1);
+        return static_cast<uint64_t>(static_cast<int64_t>(fd));
+    }
+
+    case SyscallNumber::READ: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f) return static_cast<uint64_t>(-1);
+        auto* buf = reinterpret_cast<uint8_t*>(arg1);
+        uint64_t count = arg2;
+        if (!f->vnode || !f->vnode->ops->read) return static_cast<uint64_t>(-1);
+        int64_t r = f->vnode->ops->read(f->vnode, buf, count, f->offset);
+        if (r > 0) f->offset += static_cast<uint64_t>(r);
+        return static_cast<uint64_t>(r >= 0 ? r : -1);
+    }
+
+    case SyscallNumber::CLOSE: {
+        int fd = static_cast<int>(arg0);
+        task()->fd_table.free(fd);
+        return 0;
+    }
+
+    case SyscallNumber::FSTAT: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f || !f->vnode || !f->vnode->ops->fstat) return static_cast<uint64_t>(-1);
+        auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
+        return static_cast<uint64_t>(f->vnode->ops->fstat(f->vnode, st));
+    }
+
+    case SyscallNumber::WRITE: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f || !f->vnode || !f->vnode->ops->write) return static_cast<uint64_t>(-1);
+        const auto* buf = reinterpret_cast<const uint8_t*>(arg1);
+        uint64_t count = arg2;
+        int64_t r = f->vnode->ops->write(f->vnode, buf, count, f->offset);
+        if (r > 0) f->offset += static_cast<uint64_t>(r);
+        return static_cast<uint64_t>(r >= 0 ? r : 0);
+    }
+
+    case SyscallNumber::LSEEK: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f || !f->vnode || !f->vnode->ops->lseek) return static_cast<uint64_t>(-1);
+        int64_t r = f->vnode->ops->lseek(f->vnode,
+            static_cast<int64_t>(arg1), static_cast<int>(arg2), &f->offset);
+        return static_cast<uint64_t>(r >= 0 ? r : -1);
+    }
+
+    case SyscallNumber::IOCTL: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f || !f->vnode || !f->vnode->ops->ioctl) return static_cast<uint64_t>(-1);
+        return static_cast<uint64_t>(f->vnode->ops->ioctl(f->vnode, arg1, reinterpret_cast<void*>(arg2)));
+    }
+
+    case SyscallNumber::READDIR: {
+        auto* f = task()->fd_table.get(static_cast<int>(arg0));
+        if (!f || !f->vnode || !f->vnode->ops->readdir) return static_cast<uint64_t>(-1);
+        auto* pos = reinterpret_cast<uint64_t*>(arg1);
+        auto* dent = reinterpret_cast<vfs::Dirent*>(arg2);
+        if (!pos || !dent) return static_cast<uint64_t>(-1);
+        uint64_t p = *pos;
+        int r = f->vnode->ops->readdir(f->vnode, &p, dent);
+        if (r == 0) *pos = p;
+        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+    }
+
+    case SyscallNumber::STAT: {
+        const char* path = reinterpret_cast<const char*>(arg0);
+        vfs::Vnode* vn = vfs::resolve(path);
+        if (!vn || !vn->ops->fstat) return static_cast<uint64_t>(-1);
+        auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
+        return static_cast<uint64_t>(vn->ops->fstat(vn, st));
+    }
+
+    case SyscallNumber::DUP: {
+        int old_fd = static_cast<int>(arg0);
+        auto* old = task()->fd_table.get(old_fd);
+        if (!old) return static_cast<uint64_t>(-1);
+        int new_fd = task()->fd_table.alloc();
+        if (new_fd < 0) return static_cast<uint64_t>(-1);
+        task()->fd_table.fds[new_fd] = task()->fd_table.fds[old_fd];
+        return static_cast<uint64_t>(new_fd);
+    }
+
+    case SyscallNumber::CHDIR: {
+        const char* path = reinterpret_cast<const char*>(arg0);
+        vfs::Vnode* vn = vfs::resolve(path);
+        if (!vn) return static_cast<uint64_t>(-1);
+        if (!(vn->mode & vfs::S_IFDIR)) return static_cast<uint64_t>(-1);
+        task()->cwd_vnode = vn;
+        size_t i = 0;
+        while (path[i] && i < 255) { task()->cwd[i] = path[i]; ++i; }
+        task()->cwd[i] = '\0';
+        return 0;
+    }
+
+    case SyscallNumber::EXEC: {
+        const char* path = reinterpret_cast<const char*>(arg0);
+        auto* argv = reinterpret_cast<const char* const*>(arg1);
+        auto* envp = reinterpret_cast<const char* const*>(arg2);
+        if (!path || !*path) return static_cast<uint64_t>(-1);
+        vfs::Vnode* vn = vfs::resolve(path);
+        if (!vn) return static_cast<uint64_t>(-1);
+        if (vn->size == 0 || vn->size > 512_KiB) return static_cast<uint64_t>(-1);
+        size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
+        uint64_t file_phys = PMM::alloc_contiguous(file_pages);
+        if (!file_phys) return static_cast<uint64_t>(-1);
+        uint8_t* file_buf = reinterpret_cast<uint8_t*>(file_phys);
+        int64_t r = vn->ops->read(vn, file_buf, vn->size, 0);
+        if (r <= 0 || static_cast<uint64_t>(r) != vn->size) {
+            for (size_t i = 0; i < file_pages; ++i)
+                PMM::free_page(file_phys + i * 4096);
+            return static_cast<uint64_t>(-1);
+        }
+        auto* hdr = reinterpret_cast<const elf::ELF64Header*>(file_buf);
+        if (!elf::exec_into_current(hdr, file_buf, argv, envp, regs)) {
+            for (size_t i = 0; i < file_pages; ++i)
+                PMM::free_page(file_phys + i * 4096);
+            return static_cast<uint64_t>(-1);
+        }
+        for (size_t i = 0; i < file_pages; ++i)
+            PMM::free_page(file_phys + i * 4096);
+        return 0;
+    }
 
     default:
         return static_cast<uint64_t>(-1);

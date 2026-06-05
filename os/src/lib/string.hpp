@@ -62,4 +62,17 @@ inline size_t strlen(const char* s) {
     return len;
 }
 
+inline int strcmp(const char* a, const char* b) {
+    while (*a && *b && *a == *b) { ++a; ++b; }
+    return static_cast<unsigned char>(*a) - static_cast<unsigned char>(*b);
+}
+
+inline int strncmp(const char* a, const char* b, size_t n) {
+    for (size_t i = 0; i < n; ++i) {
+        if (a[i] != b[i]) return static_cast<unsigned char>(a[i]) - static_cast<unsigned char>(b[i]);
+        if (a[i] == '\0') return 0;
+    }
+    return 0;
+}
+
 } // extern "C"

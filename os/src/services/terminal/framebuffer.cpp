@@ -27,7 +27,10 @@ bool Framebuffer::init() {
     uint64_t fb_end = (info_.addr + fb_size + 0xFFF) & ~0xFFFULL;
     for (uint64_t page = fb_start; page < fb_end; page += 0x1000) {
         kernel::VMM::map_page(page, page, false);
+        kernel::VMM::map_page(0xFFFF800000000000ULL + page, page, false);
     }
+
+    info_.addr = 0xFFFF800000000000ULL + info_.addr;
 
     initialized_ = true;
     clear(0x000000);

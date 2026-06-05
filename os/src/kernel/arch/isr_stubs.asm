@@ -1,6 +1,7 @@
 extern handle_interrupt_c
 extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
+extern scheduler_load_cr3_from
 
 %macro ISR_NOERR 1
 global isr_%1
@@ -77,6 +78,7 @@ isr_common:
     mov rdi, [rsp + 15*8]
     mov rsi, [rsp + 16*8]
     mov rdx, [rsp + 17*8]
+    mov rcx, rsp
 
     call handle_interrupt_c
 
@@ -87,6 +89,12 @@ isr_common:
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
     mov qword [rel scheduler_save_rsp_to], 0
+
+    mov rax, [rel scheduler_load_cr3_from]
+    test rax, rax
+    jz .restore
+    mov cr3, rax
+    mov qword [rel scheduler_load_cr3_from], 0
 
 .restore:
     pop rax

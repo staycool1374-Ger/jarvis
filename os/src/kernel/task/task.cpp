@@ -1,11 +1,26 @@
 #include <kernel/task/task.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 
 namespace kernel {
 
 static uint64_t next_task_id = 1;
+
+static void init_task_common(TaskControlBlock* tcb) {
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        tcb->fd_table.fds[i].used = false;
+        tcb->fd_table.fds[i].vnode = nullptr;
+        tcb->fd_table.fds[i].offset = 0;
+        tcb->fd_table.fds[i].flags = 0;
+    }
+    tcb->cwd[0] = '/';
+    tcb->cwd[1] = '\0';
+    tcb->cwd_vnode = vfs::get_root_vnode();
+}
 
 TaskControlBlock* TaskControlBlock::create(
     void (*entry)(),
@@ -22,6 +37,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->deadline_ticks = period_ticks;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
+    init_task_common(tcb);
 
     size_t stack_pages = (STACK_SIZE + 4095) / 4096;
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
@@ -50,12 +66,181 @@ TaskControlBlock* TaskControlBlock::create(
     return tcb;
 }
 
+TaskControlBlock* TaskControlBlock::create_user(
+    void (*entry)(),
+    uint64_t priority,
+    uint64_t period_ticks,
+    size_t user_stack_size)
+{
+    auto* tcb = new TaskControlBlock{};
+    if (!tcb) return nullptr;
+
+    tcb->id = next_task_id++;
+    tcb->state = TaskState::READY;
+    tcb->priority = priority;
+    tcb->period_ticks = period_ticks;
+    tcb->deadline_ticks = period_ticks;
+    tcb->executed_ticks = 0;
+    tcb->remaining_ticks = period_ticks;
+    init_task_common(tcb);
+
+    size_t kernel_stack_pages = (STACK_SIZE + 4095) / 4096;
+    uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
+    if (!kstack_phys) { delete tcb; return nullptr; }
+    tcb->stack_phys_ = kstack_phys;
+
+    uint64_t kstack_virt = 0xFFFF800000000000ULL + kstack_phys;
+    tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
+    tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+
+    size_t user_stack_pages = (user_stack_size + 4095) / 4096;
+    uint64_t ustack_phys = PMM::alloc_contiguous(user_stack_pages);
+    if (!ustack_phys) { delete tcb; return nullptr; }
+
+    uint64_t pml4 = VMM::clone_kernel_pml4();
+    if (!pml4) { delete tcb; return nullptr; }
+    tcb->page_table_ = pml4;
+
+    uint64_t user_stack_virt = 0x70000000;
+    for (size_t i = 0; i < user_stack_pages; ++i) {
+        VMM::map_page_in_pml4(user_stack_virt + i * 4096,
+                              ustack_phys + i * 4096,
+                              true, pml4);
+    }
+
+    tcb->user_stack_ = ustack_phys;
+    tcb->user_stack_size_ = user_stack_size;
+    uint64_t user_rsp = user_stack_virt + user_stack_size;
+
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = 0x23;
+    *--stack = user_rsp;
+    *--stack = 0x202;
+    *--stack = 0x1B;
+    *--stack = reinterpret_cast<uint64_t>(entry);
+    *--stack = 0;
+    *--stack = 0;
+    for (int i = 0; i < 15; ++i) *--stack = 0;
+    tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+
+    return tcb;
+}
+
 void TaskControlBlock::save_context(uint64_t* rsp) noexcept {
     context.rsp = *rsp;
 }
 
 void TaskControlBlock::restore_context(uint64_t* rsp) noexcept {
     *rsp = context.rsp;
+}
+
+TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
+    auto* parent = Scheduler::current_task();
+    if (!parent) return nullptr;
+
+    auto* tcb = new TaskControlBlock{};
+    if (!tcb) return nullptr;
+
+    tcb->id = next_task_id++;
+    tcb->parent_id = parent->id;
+    tcb->state = TaskState::READY;
+    tcb->priority = parent->priority;
+    tcb->period_ticks = parent->period_ticks;
+    tcb->deadline_ticks = parent->deadline_ticks;
+    tcb->executed_ticks = 0;
+    tcb->remaining_ticks = parent->remaining_ticks;
+    tcb->exit_code = 0;
+    tcb->waiting_child_pid = 0;
+    tcb->waiting_child_status = nullptr;
+    tcb->user_data = parent->user_data;
+
+    // Copy fd_table
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        tcb->fd_table.fds[i] = parent->fd_table.fds[i];
+    }
+
+    // Copy cwd
+    size_t cwd_len = 0;
+    while (parent->cwd[cwd_len] && cwd_len < 255) ++cwd_len;
+    for (size_t i = 0; i <= cwd_len; ++i) tcb->cwd[i] = parent->cwd[i];
+    tcb->cwd_vnode = parent->cwd_vnode;
+
+    // Allocate and set up kernel stack
+    size_t stack_pages = (STACK_SIZE + 4095) / 4096;
+    uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
+    if (!kstack_phys) { delete tcb; return nullptr; }
+    tcb->stack_phys_ = kstack_phys;
+
+    bool is_user_task = (parent->page_table_ != 0);
+    if (is_user_task) {
+        uint64_t kstack_virt = 0xFFFF800000000000ULL + kstack_phys;
+        tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
+        tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+    } else {
+        tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_phys);
+        tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
+    }
+
+    // Build register frame on child's kernel stack
+    // Layout matches isr_common push order (high to low):
+    //   SS, RSP, RFLAGS, CS, RIP, error, vector, r15..r8, rbp, rdi, rsi, rdx, rcx, rbx, rax
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = regs[21]; // SS
+    *--stack = regs[20]; // RSP
+    *--stack = regs[19]; // RFLAGS
+    *--stack = regs[18]; // CS
+    *--stack = regs[17]; // RIP
+    *--stack = regs[16]; // error_code
+    *--stack = regs[15]; // vector
+    *--stack = regs[14]; // r15
+    *--stack = regs[13]; // r14
+    *--stack = regs[12]; // r13
+    *--stack = regs[11]; // r12
+    *--stack = regs[10]; // r11
+    *--stack = regs[9];  // r10
+    *--stack = regs[8];  // r9
+    *--stack = regs[7];  // r8
+    *--stack = regs[6];  // rbp
+    *--stack = regs[5];  // rdi
+    *--stack = regs[4];  // rsi
+    *--stack = regs[3];  // rdx
+    *--stack = regs[2];  // rcx
+    *--stack = regs[1];  // rbx
+    *--stack = 0;        // rax = 0 (child return value)
+    tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+
+    // For user tasks: clone page table and user stack
+    if (is_user_task) {
+        uint64_t new_pml4 = VMM::clone_kernel_pml4();
+        if (!new_pml4) { delete tcb; return nullptr; }
+        tcb->page_table_ = new_pml4;
+
+        size_t ustack_pages = (parent->user_stack_size_ + 4095) / 4096;
+        uint64_t ustack_phys = PMM::alloc_contiguous(ustack_pages);
+        if (!ustack_phys) { delete tcb; return nullptr; }
+        tcb->user_stack_ = ustack_phys;
+        tcb->user_stack_size_ = parent->user_stack_size_;
+
+        // Copy user stack content page by page
+        uint64_t user_stack_virt = 0x70000000;
+        for (size_t i = 0; i < ustack_pages; ++i) {
+            VMM::map_page_in_pml4(user_stack_virt + i * 4096,
+                                  ustack_phys + i * 4096,
+                                  true, new_pml4);
+            // Copy physical page content via kernel mapping
+            uint64_t src_virt = 0xFFFF800000000000ULL + parent->user_stack_ + i * 4096;
+            uint64_t dst_virt = 0xFFFF800000000000ULL + ustack_phys + i * 4096;
+            for (uint64_t j = 0; j < 4096; ++j) {
+                reinterpret_cast<uint8_t*>(dst_virt)[j] = reinterpret_cast<const uint8_t*>(src_virt)[j];
+            }
+        }
+
+        // Copy kernel stack content (parent's kernel stack might have data we need)
+        // Actually the register frame we built above is sufficient since the child
+        // starts by popping regs and iretq
+    }
+
+    return tcb;
 }
 
 } // namespace kernel

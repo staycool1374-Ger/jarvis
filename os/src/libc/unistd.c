@@ -1,0 +1,35 @@
+#include <syscall.h>
+#include <unistd.h>
+
+int open(const char* path, int flags) {
+    return (int)__syscall5(9, (long)path, (long)flags, 0, 0);
+}
+
+ssize_t read(int fd, void* buf, size_t count) {
+    return (ssize_t)__syscall5(10, (long)fd, (long)buf, (long)count, 0);
+}
+
+ssize_t write(int fd, const void* buf, size_t count) {
+    return (ssize_t)__syscall5(13, (long)fd, (long)buf, (long)count, 0);
+}
+
+int close(int fd) {
+    return (int)__syscall5(11, (long)fd, 0, 0, 0);
+}
+
+off_t lseek(int fd, off_t offset, int whence) {
+    return (off_t)__syscall5(14, (long)fd, (long)offset, (long)whence, 0);
+}
+
+int dup(int fd) {
+    return (int)__syscall5(18, (long)fd, 0, 0, 0);
+}
+
+int chdir(const char* path) {
+    return (int)__syscall5(19, (long)path, 0, 0, 0);
+}
+
+void _exit(int status) {
+    __syscall5(6, (long)status, 0, 0, 0);
+    while (1) asm volatile("hlt");
+}

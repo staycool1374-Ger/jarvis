@@ -98,4 +98,77 @@ uint64_t VMM::current_pml4() {
     return cr3;
 }
 
+void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
+                            bool user, uint64_t pml4_phys)
+{
+    auto* pml4 = reinterpret_cast<uint64_t*>(pml4_phys & ~0xFFFULL);
+
+    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
+    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
+    size_t pd_idx   = (virt_addr & PD_MASK) >> PD_SHIFT;
+    size_t pt_idx   = (virt_addr & PT_MASK) >> PT_SHIFT;
+
+    auto* pdpt = get_table(pml4, pml4_idx, true);
+    auto* pd   = get_table(pdpt, pdpt_idx, true);
+    auto* pt   = get_table(pd, pd_idx, true);
+
+    uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
+    if (user) flags |= PAGE_USER;
+
+    pt[pt_idx] = phys_addr | flags;
+}
+
+uint64_t VMM::clone_kernel_pml4() {
+    uint64_t phys = PMM::alloc_page();
+    if (!phys) return 0;
+
+    auto* src = reinterpret_cast<uint64_t*>(kernel_pml4_ & ~0xFFFULL);
+    auto* dst = reinterpret_cast<uint64_t*>(phys);
+    for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
+        dst[i] = 0;
+    }
+    for (size_t i = 256; i < PAGE_TABLE_ENTRIES; ++i) {
+        dst[i] = src[i];
+    }
+    return phys;
+}
+
+void VMM::free_user_pages(uint64_t pml4_phys) {
+    auto* pml4 = reinterpret_cast<uint64_t*>(pml4_phys & ~0xFFFULL);
+    // Walk user entries (0-255)
+    for (int pml4_idx = 0; pml4_idx < 256; ++pml4_idx) {
+        if (!(pml4[pml4_idx] & PAGE_PRESENT)) continue;
+        uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+        auto* pdpt = reinterpret_cast<uint64_t*>(pdpt_phys);
+        for (int pdpt_idx = 0; pdpt_idx < 512; ++pdpt_idx) {
+            if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) continue;
+            if (pdpt[pdpt_idx] & PAGE_HUGE) {
+                // 1GiB page - free the page
+                PMM::free_page(pdpt[pdpt_idx] & ~0x3FFFFFULL);
+                continue;
+            }
+            uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
+            auto* pd = reinterpret_cast<uint64_t*>(pd_phys);
+            for (int pd_idx = 0; pd_idx < 512; ++pd_idx) {
+                if (!(pd[pd_idx] & PAGE_PRESENT)) continue;
+                if (pd[pd_idx] & PAGE_HUGE) {
+                    PMM::free_page(pd[pd_idx] & ~0x1FFFFFULL);
+                    continue;
+                }
+                uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
+                auto* pt = reinterpret_cast<uint64_t*>(pt_phys);
+                for (int pt_idx = 0; pt_idx < 512; ++pt_idx) {
+                    if (!(pt[pt_idx] & PAGE_PRESENT)) continue;
+                    PMM::free_page(pt[pt_idx] & ~0xFFFULL);
+                }
+                PMM::free_page(pt_phys);
+            }
+            PMM::free_page(pd_phys);
+        }
+        PMM::free_page(pdpt_phys);
+        pml4[pml4_idx] = 0;
+    }
+    asm volatile("invlpg (%0)" : : "r"(0) : "memory");
+}
+
 } // namespace kernel

@@ -31,6 +31,26 @@ public:
     /// @return Physical address of PML4.
     static uint64_t current_pml4();
 
+    /// @brief Creates a new page table cloned from the kernel PML4.
+    /// @return Physical address of the new PML4, or 0 on failure.
+    static uint64_t clone_kernel_pml4();
+
+    /// @brief Maps a page into a specific page table (not the kernel one).
+    /// @param virt_addr Virtual address (page-aligned).
+    /// @param phys_addr Physical address (page-aligned).
+    /// @param user      If true, sets user-accessible flag.
+    /// @param pml4_phys Physical address of the target PML4.
+    static void map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
+                                 bool user, uint64_t pml4_phys);
+
+    /// @brief Returns the physical address of the kernel PML4.
+    static uint64_t get_kernel_pml4() { return kernel_pml4_; }
+
+    /// @brief Frees all user-space pages and page tables from a user PML4.
+    ///        Used during exec() to clean up the old address space.
+    /// @param pml4_phys Physical address of the user PML4.
+    static void free_user_pages(uint64_t pml4_phys);
+
 private:
     static constexpr uint64_t PAGE_SIZE = 4096;
     static constexpr uint64_t PAGE_TABLE_ENTRIES = 512;

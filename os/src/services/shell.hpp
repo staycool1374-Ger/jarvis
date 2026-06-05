@@ -77,6 +77,14 @@ private:
     static void cmd_listprog(int argc, const char** argv);
     /// @brief Built-in: runs kernel self-tests.
     static void cmd_selftest(int argc, const char** argv);
+    /// @brief Built-in: change working directory.
+    static void cmd_cd(int argc, const char** argv);
+    /// @brief Built-in: set environment variable.
+    static void cmd_export(int argc, const char** argv);
+    /// @brief Built-in: run a userspace ELF from initrd as a new task.
+    static void cmd_runelf(int argc, const char** argv);
+    /// @brief Built-in: shut down the system.
+    static void cmd_exit(int argc, const char** argv);
 };
 
 } // namespace service

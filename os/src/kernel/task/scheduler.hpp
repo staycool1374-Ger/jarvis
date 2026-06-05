@@ -36,6 +36,9 @@ public:
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
 
+    /// @brief Forces a reschedule — selects the next task and sets up context switch.
+    static void reschedule() noexcept;
+
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;
@@ -71,6 +74,8 @@ extern "C" {
     extern uint64_t volatile* scheduler_save_rsp_to;
     /// @brief RSP value to load during context switch restore.
     extern uint64_t volatile scheduler_load_rsp_from;
+    /// @brief CR3 value to load during context switch restore (0 = don't load).
+    extern uint64_t volatile scheduler_load_cr3_from;
 }
 
 } // namespace kernel

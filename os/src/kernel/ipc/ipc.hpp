@@ -4,6 +4,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/task/task.hpp>
 
 namespace kernel {
 
@@ -27,6 +28,9 @@ struct Mailbox {
     size_t   tail;
     size_t   count;
     uint64_t owner_id;
+
+    TaskControlBlock* waiting_sender;
+    TaskControlBlock* waiting_receiver;
 
     bool is_empty() const { return count == 0; }
     bool is_full() const { return count >= IPC_MAX_MAILBOX_MSG; }

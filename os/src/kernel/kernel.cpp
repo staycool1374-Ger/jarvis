@@ -14,6 +14,12 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/test/test.hpp>
 #include <kernel/multiboot2.hpp>
+#include <kernel/elf/elf.hpp>
+#include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/initrd_fs.hpp>
+#include <kernel/vfs/devfs.hpp>
+#include <kernel/vfs/procfs.hpp>
+#include <initrd/initrd.hpp>
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/terminal.hpp>
 #include <services/shell.hpp>
@@ -21,6 +27,9 @@
 #include <programs/demo/demo.hpp>
 
 static constexpr uint32_t DEFAULT_TIMER_HZ = 1000;
+
+/// @brief Wenn 1, werden alle Selbsttests beim Boot ausgeführt und via Serial ausgegeben.
+static constexpr bool RUN_SELFTEST_ON_BOOT = true;
 
 using namespace arch;
 
@@ -33,7 +42,7 @@ static void debug_putchar(char c) {
     outb(0x3F8, c);
 }
 
-static void debug_write(const char* s) {
+extern "C" void debug_write(const char* s) {
     while (*s) debug_putchar(*s++);
 }
 
@@ -52,13 +61,32 @@ static void debug_init_serial() {
 extern "C" {
 uint64_t volatile* scheduler_save_rsp_to = nullptr;
 uint64_t volatile scheduler_load_rsp_from = 0;
+uint64_t volatile scheduler_load_cr3_from = 0;
 }
+
+extern "C" void debug_write_hex(uint64_t v) {
+    char hb[17] = "0000000000000000";
+    int pos = 16;
+    do { hb[--pos] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; } while (v);
+    debug_write(hb + pos);
+}
+
+extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3) {
+    debug_write("[SWITCH] old="); debug_write_hex(old_id);
+    debug_write(" new="); debug_write_hex(new_id);
+    debug_write(" cr3="); debug_write_hex(cr3);
+    debug_write("\n");
+}
+
+volatile bool g_user_task_ran = false;
 
 extern "C" {
     uint32_t multiboot_magic = 0;
     uint32_t multiboot_info_ptr = 0;
 }
 extern char kernel_virt_end[];
+extern "C" uint8_t _binary_initrd_cpio_start[];
+extern "C" uint8_t _binary_initrd_cpio_end[];
 
 static void init_pic() {
     outb(0x20, 0x11);
@@ -117,6 +145,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::MemPool::init();
     debug_write("[BOOT] MemPool OK\n");
 
+    debug_write("[BOOT] Initrd init...\n");
+    initrd::init(_binary_initrd_cpio_start, _binary_initrd_cpio_end);
+    debug_write("[BOOT] Initrd OK\n");
+
+    debug_write("[BOOT] VFS init...\n");
+    kernel::vfs::init();
+    kernel::vfs::mount(&kernel::vfs::initrd_fs, "/");
+    debug_write("[BOOT] VFS OK (initrd mounted at /)\n");
+
     debug_write("[BOOT] IPC init...\n");
     kernel::IPC::init();
     debug_write("[BOOT] IPC OK\n");
@@ -133,9 +170,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::DriverRegistry::init();
     debug_write("[BOOT] DriverRegistry OK\n");
 
-    debug_write("[BOOT] TestRegistry init...\n");
-    kernel::test::TestRegistry::init();
-    debug_write("[BOOT] TestRegistry OK\n");
+    debug_write("[BOOT] Framebuffer init...\n");
+    service::Framebuffer::init();
+    debug_write("[BOOT] Framebuffer OK\n");
+
+    debug_write("[BOOT] Terminal init...\n");
+    service::Terminal::init();
+    debug_write("[BOOT] Terminal OK\n");
 
     debug_write("[BOOT] PIC init...\n");
     init_pic();
@@ -147,18 +188,23 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         arch::InterruptVector::KEYBOARD,
         [](uint64_t, uint64_t, uint64_t) {
             arch::Keyboard::handle_irq();
+            kernel::vfs::tty_wake_readers();
             outb(0x20, 0x20);
         }
     );
     debug_write("[BOOT] Keyboard OK\n");
 
-    debug_write("[BOOT] Framebuffer init...\n");
-    service::Framebuffer::init();
-    debug_write("[BOOT] Framebuffer OK\n");
+    debug_write("[BOOT] TestRegistry init...\n");
+    kernel::test::TestRegistry::init();
+    debug_write("[BOOT] TestRegistry OK\n");
 
-    debug_write("[BOOT] Terminal init...\n");
-    service::Terminal::init();
-    debug_write("[BOOT] Terminal OK\n");
+    debug_write("[BOOT] Mount devfs...\n");
+    kernel::vfs::mount(&kernel::vfs::dev_fs, "/dev");
+    debug_write("[BOOT] devfs mounted at /dev\n");
+
+    debug_write("[BOOT] Mount procfs...\n");
+    kernel::vfs::mount(&kernel::vfs::proc_fs, "/proc");
+    debug_write("[BOOT] procfs mounted at /proc\n");
 
     debug_write("[BOOT] Timer init...\n");
     arch::Timer::init(DEFAULT_TIMER_HZ);
@@ -176,6 +222,48 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     service::ProgramRegistry::init();
     service::ProgramRegistry::register_program(
         "demo", "Grafik-Demos (Mandelbrot, Rotation)", programs::demo_main);
+
+    if constexpr (RUN_SELFTEST_ON_BOOT) {
+        debug_write("[BOOT] Creating selftest runner...\n");
+        auto* test_task = kernel::TaskControlBlock::create([]() {
+            debug_write("[TEST DEBUG] Test runner started!\n");
+            auto report = kernel::test::TestRegistry::run_all();
+            if (service::Terminal::instance()) service::Terminal::set_fg(0xC0C0C0);
+            auto tprint = [](const char* s) {
+                if (service::Terminal::instance()) service::Terminal::write(s);
+                else debug_write(s);
+            };
+            auto tprint_n = [&tprint](uint64_t n) {
+                char buf[32];
+                int pos = 32;
+                buf[--pos] = '\0';
+                do { buf[--pos] = '0' + (n % 10); n /= 10; } while (n);
+                tprint(buf + pos);
+            };
+            tprint("[TEST] Total: "); tprint_n(report.total);
+            tprint(" Pass: "); tprint_n(report.passed);
+            tprint(" Fail: "); tprint_n(report.failed);
+            tprint(" Skip: "); tprint_n(report.skipped);
+            tprint("\n");
+
+            for (size_t i = 0; i < kernel::test::TestRegistry::count(); ++i) {
+                auto* t = kernel::test::TestRegistry::get(i);
+                if (!t) continue;
+                tprint("[TEST] ");
+                if (t->result == kernel::test::TestResult::PASS) tprint("PASS  ");
+                else if (t->result == kernel::test::TestResult::FAIL) tprint("FAIL  ");
+                else tprint("SKIP  ");
+                tprint(t->name);
+                if (t->failure_msg) { tprint(": "); tprint(t->failure_msg); }
+                tprint("\n");
+            }
+
+            kernel::Scheduler::current_task()->state = kernel::TaskState::TERMINATED;
+            while (true) asm volatile("hlt");
+        }, 2, 10);
+        if (!test_task) panic("Cannot create test task");
+        kernel::Scheduler::add_task(test_task);
+    }
 
     debug_write("[BOOT] Creating shell task...\n");
     auto* shell_task = kernel::TaskControlBlock::create(
@@ -208,23 +296,54 @@ extern "C" void panic(const char* msg) {
     }
 }
 
-extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip) {
+extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
+                                    uint64_t arg2, uint64_t arg3, uint64_t* regs);
+
+extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
+                                   uint64_t* regs)
+{
     if (vector < 32) {
         debug_write("\n!!! EXCEPTION vector=");
-        uint64_t v = vector;
-        char hb[17] = "0000000000000000";
-        for (int i = 15; v && i >= 0; --i) { hb[i] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; }
-        hb[16] = 0; debug_write(hb);
+        debug_write_hex(vector);
         debug_write(" err=");
-        v = error_code;
-        for (int i = 15; v && i >= 0; --i) { hb[i] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; }
-        hb[16] = 0; debug_write(hb);
+        debug_write_hex(error_code);
         debug_write(" rip=");
-        v = rip;
-        for (int i = 15; v && i >= 0; --i) { hb[i] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; }
-        hb[16] = 0; debug_write(hb);
+        debug_write_hex(rip);
+        uint64_t cr2_val;
+        asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
+        debug_write(" cr2=");
+        debug_write_hex(cr2_val);
+        debug_write(" task=");
+        auto* t = kernel::Scheduler::current_task();
+        if (t) {
+            debug_write_hex(t->id);
+            debug_write(" prio=");
+            debug_write_hex(t->priority);
+            debug_write(" state=");
+            debug_write_hex(static_cast<uint64_t>(t->state));
+        }
+        debug_write(" tasks=");
+        for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
+            auto* ti = kernel::Scheduler::task_at(i);
+            if (ti) {
+                debug_write_hex(ti->id);
+                debug_write(":");
+                debug_write_hex(static_cast<uint64_t>(ti->state));
+                debug_write(" ");
+            }
+        }
         debug_write(" !!!\n");
         panic("CPU EXCEPTION");
+        return;
+    }
+
+    if (vector == 0x80) {
+        regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4], regs);
+        auto* task = kernel::Scheduler::current_task();
+        if (task && (task->state == kernel::TaskState::TERMINATED ||
+                     task->state == kernel::TaskState::BLOCKED)) {
+            kernel::Scheduler::reschedule();
+        }
         return;
     }
 
@@ -236,10 +355,14 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
     }
 }
 
-extern "C" void syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
-                                uint64_t arg2, uint64_t arg3)
+extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
+                                    uint64_t arg2, uint64_t arg3, uint64_t* regs)
 {
-    kernel::Syscall::handle(number, arg0, arg1, arg2, arg3);
+    if (number == 99) {
+        g_user_task_ran = true;
+        return 0;
+    }
+    return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
 }
 
 uint8_t kernel_stack[16_KiB] __attribute__((section(".bss")));

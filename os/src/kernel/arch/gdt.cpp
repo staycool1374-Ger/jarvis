@@ -53,12 +53,12 @@ void GDT::load() {
                  "mov %0, %%fs\n"
                  "mov %0, %%gs\n"
                  "mov %0, %%ss\n" : : "r"((uint16_t)GDT_DATA));
+    uint16_t tss_sel = GDT_TSS;
+    asm volatile("ltr %0" : : "r"(tss_sel));
 }
 
 void GDT::set_tss_rsp0(uint64_t rsp) {
     tss_.rsp0 = rsp;
-    uint16_t tss_sel = GDT_TSS;
-    asm volatile("ltr %0" : : "r"(tss_sel));
 }
 
 } // namespace arch

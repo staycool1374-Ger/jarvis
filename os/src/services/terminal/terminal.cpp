@@ -2,6 +2,7 @@
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/font.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <kernel/arch/io.hpp>
 #include <string.hpp>
 
 namespace service {
@@ -23,7 +24,17 @@ void Terminal::init() {
     clear();
 }
 
+static void serial_putchar(char c) {
+    if (c == '\n') {
+        while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
+        arch::outb(0x3F8, '\r');
+    }
+    while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
+    arch::outb(0x3F8, c);
+}
+
 void Terminal::putchar(char c) {
+    serial_putchar(c);
     if (!instance_) return;
 
     switch (c) {
@@ -117,9 +128,7 @@ void Terminal::clear() {
 void Terminal::scroll() {
     if (!instance_) return;
 
-    uint32_t fb_w = Framebuffer::width();
     uint32_t fb_h = Framebuffer::height();
-    uint32_t bpp = 32;
     uint32_t pitch = Framebuffer::pitch();
 
     auto* fb = reinterpret_cast<uint8_t*>(
@@ -136,12 +145,8 @@ void Terminal::scroll() {
 
     uint32_t clear_start = fb_h - FONT_HEIGHT;
     for (uint32_t y = clear_start; y < fb_h; ++y) {
-        for (uint32_t x = 0; x < fb_w; ++x) {
-            size_t off = y * pitch + x * (bpp / 8);
-            fb[off + 0] = (instance_->bg_ >> 0) & 0xFF;
-            fb[off + 1] = (instance_->bg_ >> 8) & 0xFF;
-            fb[off + 2] = (instance_->bg_ >> 16) & 0xFF;
-        }
+        size_t off = y * pitch;
+        memset(fb + off, 0, pitch);
     }
 
     if (instance_->cursor_y_ > 0) {

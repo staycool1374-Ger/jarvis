@@ -1,4 +1,6 @@
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/gdt.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -69,20 +71,24 @@ bool Scheduler::needs_switch() noexcept {
 TaskControlBlock* Scheduler::next_task() noexcept {
     if (task_count_ <= 1) return tasks_[0];
 
-    TaskControlBlock* best = tasks_[0];
+    auto* current = tasks_[current_index_];
+    TaskControlBlock* best = nullptr;
     uint64_t best_priority = 0;
+    uint64_t best_period = ~0ULL;
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
-        if (task->state != TaskState::READY && task->state != TaskState::RUNNING) {
-            continue;
-        }
+        if (task->state != TaskState::READY && task->state != TaskState::RUNNING) continue;
         if (task->priority > best_priority ||
-            (task->priority == best_priority && task->period_ticks < best->period_ticks)) {
+            (task->priority == best_priority && task->period_ticks < best_period) ||
+            (task->priority == best_priority && task->period_ticks == best_period && task != current)) {
             best = task;
             best_priority = task->priority;
+            best_period = task->period_ticks;
         }
     }
+
+    if (!best) return tasks_[0];
     return best;
 }
 
@@ -109,6 +115,28 @@ void Scheduler::on_tick() noexcept {
     rate_monotonic_schedule();
 }
 
+extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3);
+
+static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
+    if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+        return;
+    }
+    scheduler_save_rsp_to = &current->context.rsp;
+    scheduler_load_rsp_from = next->context.rsp;
+    if (next->page_table_) {
+        scheduler_load_cr3_from = next->page_table_;
+        arch::GDT::set_tss_rsp0(next->kernel_stack_top);
+    } else {
+        scheduler_load_cr3_from = VMM::get_kernel_pml4();
+    }
+    if (current->state == TaskState::RUNNING) {
+        current->state = TaskState::READY;
+    }
+    next->state = TaskState::RUNNING;
+    debug_task_switch(current->id, next->id, scheduler_load_cr3_from);
+    Scheduler::set_current(next);
+}
+
 void Scheduler::rate_monotonic_schedule() noexcept {
     if (task_count_ <= 1) return;
 
@@ -117,11 +145,22 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
-        scheduler_save_rsp_to = &current->context.rsp;
-        scheduler_load_rsp_from = next->context.rsp;
-        current->state = TaskState::READY;
-        next->state = TaskState::RUNNING;
-        set_current(next);
+        switch_to_task(current, next);
+    }
+}
+
+void Scheduler::reschedule() noexcept {
+    if (task_count_ <= 1) return;
+
+    auto* current = tasks_[current_index_];
+    if (!current) return;
+
+    auto* next = next_task();
+    if (next && next != current) {
+        if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+            return;
+        }
+        switch_to_task(current, next);
     }
 }
 

@@ -5,6 +5,9 @@
 
 #include <types.hpp>
 
+/// @brief Wird von User-Task-Test gesetzt, wenn Syscall 99 erreicht wurde.
+extern volatile bool g_user_task_ran;
+
 extern "C" {
 /// @brief Entry point after transitioning to the higher half.
 /// @param magic   Multiboot2 magic value.
@@ -16,8 +19,9 @@ void panic(const char* msg) __attribute__((noreturn));
 /// @brief C-level interrupt handler dispatcher.
 /// @param vector     Interrupt vector number.
 /// @param error_code CPU error code (0 if none).
-/// @param rip        Instruction pointer at time of interrupt.
-void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip);
+    /// @param rip        Instruction pointer at time of interrupt.
+    /// @param regs       Pointer to saved register array (GPRs).
+    void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip, uint64_t* regs);
 }
 
 /// @brief Kernel stack base (bottom address).
