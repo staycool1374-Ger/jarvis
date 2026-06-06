@@ -2,6 +2,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <services/terminal/terminal.hpp>
 #include <kernel/arch/io.hpp>
 #include <string.hpp>
@@ -9,28 +10,18 @@
 namespace kernel {
 namespace vfs {
 
-// ── tty waiters ──
-static TaskControlBlock* tty_waiters[8];
-static size_t tty_waiter_count = 0;
+// ── tty waiters (Semaphore-based) ──
+static sync::Semaphore tty_data_sem;
+static bool tty_sem_initialized = false;
 
-void tty_wake_readers() {
-    for (size_t i = 0; i < tty_waiter_count; ++i) {
-        if (tty_waiters[i]) {
-            tty_waiters[i]->state = TaskState::READY;
-            tty_waiters[i] = nullptr;
-        }
-    }
-    tty_waiter_count = 0;
+void devfs_init() {
+    tty_data_sem.init(0, 64);
+    tty_sem_initialized = true;
 }
 
-static void tty_add_waiter(TaskControlBlock* task) {
-    for (size_t i = 0; i < 8; ++i) {
-        if (!tty_waiters[i]) {
-            tty_waiters[i] = task;
-            ++tty_waiter_count;
-            return;
-        }
-    }
+void tty_wake_readers() {
+    if (!tty_sem_initialized) return;
+    tty_data_sem.post();
 }
 
 // ── common helpers ──
@@ -54,9 +45,7 @@ static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offs
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        tty_add_waiter(Scheduler::current_task());
-        Scheduler::current_task()->state = TaskState::BLOCKED;
-        Scheduler::reschedule();
+        tty_data_sem.wait();
         got = arch::Keyboard::getchar(ch);
         if (!got) return -1;
     }
@@ -175,9 +164,7 @@ static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offs
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        tty_add_waiter(Scheduler::current_task());
-        Scheduler::current_task()->state = TaskState::BLOCKED;
-        Scheduler::reschedule();
+        tty_data_sem.wait();
         got = arch::Keyboard::getchar(ch);
         if (!got) return -1;
     }

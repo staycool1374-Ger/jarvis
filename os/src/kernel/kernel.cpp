@@ -242,6 +242,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::test::TestRegistry::init();
     debug_write("[BOOT] TestRegistry OK\n");
 
+    debug_write("[BOOT] Devfs init...\n");
+    kernel::vfs::devfs_init();
     debug_write("[BOOT] Mount devfs...\n");
     kernel::vfs::mount(&kernel::vfs::dev_fs, "/dev");
     debug_write("[BOOT] devfs mounted at /dev\n");

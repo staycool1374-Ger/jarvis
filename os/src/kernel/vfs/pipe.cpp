@@ -2,6 +2,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -17,7 +18,7 @@ struct PipeBuffer {
     int refcount = 2;
     bool read_closed = false;
     bool write_closed = false;
-    TaskControlBlock* read_waiter = nullptr;
+    sync::Semaphore data_avail;
 };
 
 static int64_t pipe_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
@@ -25,12 +26,9 @@ static int64_t pipe_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (!pb || pb->read_closed) return -1;
     if (pb->write_closed && pb->count == 0) return 0;
     while (pb->count == 0) {
-        pb->read_waiter = Scheduler::current_task();
-        Scheduler::current_task()->state = TaskState::BLOCKED;
-        Scheduler::reschedule();
-        pb->read_waiter = nullptr;
-        if (pb->write_closed && pb->count == 0) return 0;
+        if (pb->write_closed) return 0;
         if (pb->read_closed) return -1;
+        pb->data_avail.wait();
     }
     uint64_t total = 0;
     while (total < count && pb->count > 0) {
@@ -54,10 +52,7 @@ static int64_t pipe_write(Vnode* self, const uint8_t* buf, uint64_t count, uint6
         pb->write_pos = (pb->write_pos + 1) % PIPE_BUF_SIZE;
         ++pb->count;
     }
-    if (pb->read_waiter && pb->count > 0) {
-        pb->read_waiter->state = TaskState::READY;
-        pb->read_waiter = nullptr;
-    }
+    pb->data_avail.post();
     return static_cast<int64_t>(total);
 }
 
@@ -77,10 +72,7 @@ static void pipe_write_close(Vnode* self) {
     auto* pb = static_cast<PipeBuffer*>(self->private_data);
     if (!pb) return;
     pb->write_closed = true;
-    if (pb->read_waiter) {
-        pb->read_waiter->state = TaskState::READY;
-        pb->read_waiter = nullptr;
-    }
+    pb->data_avail.post();
     --pb->refcount;
     if (pb->refcount <= 0) { delete pb; }
     self->private_data = nullptr;
@@ -110,6 +102,7 @@ static const VnodeOps pipe_write_ops = {
 int create_pipe(int fds[2]) {
     auto* pb = new PipeBuffer{};
     if (!pb) return -1;
+    pb->data_avail.init(0, PIPE_BUF_SIZE);
 
     auto* rnode = new Vnode{};
     auto* wnode = new Vnode{};

@@ -148,13 +148,24 @@
 ### Version 0.2.3 — Blocking-Mechanisms
 - [x] Consider bootparameters for adjustable real time parameters and implement
 - [x] Add blocking mechanism: Semaphores, Mutexes, Queues, Task Notification, Event Groups
-- [ ] Check complete operating system for Priority Inversion and Deadlocks
-- [ ] Use blocking mechanisms in kernel where ever suitable
+- [x] Check complete operating system for Priority Inversion and Deadlocks
+      — Audit completed: 4 critical priority inversion sites (IPC send_sync, pipe_read, tty/kbd read, scheduler raw priority),
+        3 critical deadlock sites (circular send_sync, mailbox use-after-free, pipe dangling pointer),
+        7 ad-hoc blocking locations identified for replacement
+- [x] Use blocking mechanisms in kernel where ever suitable
+      — pipe_read/pipe_write: replaced TaskControlBlock* read_waiter with sync::Semaphore
+      — tty_read/kbd_read: replaced raw tty_waiters[] array with sync::Semaphore
+      — tty_wake_readers (IRQ context): posts to semaphore instead of raw task state manipulation
+      — devfs_init() added for semaphore initialization
 - [x] 133 Tests PASS
 
-### Version 0.2.4 — Stable Testenvironment
+### Version 0.2.4 — Stable Testenvironment & Debug Engine
 - [ ] Fix pre-existing `#GP` crash after 133/133 tests complete (`iretq` bug in ISR common dispatch)
 - [ ] Ensure all tests run cleanly without post-test exception
+- [ ] Implement macro-based Unified Test Framework (`JARVIS_TEST_SUITE`, `JARVIS_ASSERT_HEX_EQ`) with grep-filterable outputs (`[TEST:RUN]`, `[TEST:PASS]`, `[TEST:FAIL]`)
+- [ ] Implement static, slab-safe `KernelLogger` supporting multiple log levels (`DEBUG` to `FATAL`) with ANSI-colored serial output via COM1
+- [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
+- [ ] avoid reinterpret_cast 
 
 ### Version 0.2.5 — Exception-Safe Userspace
 - [ ] Add setjmp/longjmp recovery for copy_from_user to handle invalid pointers safely
@@ -184,8 +195,14 @@
 - [ ] Include the transition to template-based dispatching optimization
 - [ ] Syscall-Dispatcher: switch-Block durch Funktionspointer-Tabelle ersetzen
 - [ ] `Arch::Serial`-Klasse (Stream-Interface statt bare `outb`-Aufrufe)
+- [ ] Type Safety Overhaul: Eliminate naked `reinterpret_cast` from high-level kernel logic
+  - [ ] Implement explicit `PhysicalAddress` and `VirtualAddress` wrapper abstraction classes
+  - [ ] Enforce `static_cast` across `Vnode` and Driver registries using strict class hierarchies
+  - [ ] Migrate raw byte-buffer parsing (e.g., Initrd CPIO header) to safe type-punning patterns
+- [ ] `Arch::Serial` class (Stream interface instead of bare `outb` invocations)
+- [ ] Logger interface for unified logging (instead of direct `debug_write` calls)
+- [ ] Removal of all direct `outb` calls from non-arch code
 - [ ] Logger-Interface für einheitliches Logging (anstelle direkter `debug_write`-Aufrufe)
-- [ ] Entfernung aller direkten `outb`-Aufrufe aus Nicht-Arch-Code
 - [ ] 125 Tests PASS
 
 ## Version 0.3.x — Harte Echtzeit: Scheduler + Timing
