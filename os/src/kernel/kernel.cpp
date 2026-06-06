@@ -23,7 +23,6 @@
 #include <initrd/initrd.hpp>
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/terminal.hpp>
-#include <services/shell.hpp>
 #include <services/program.hpp>
 #include <logger.hpp>
 #include <test.hpp>
@@ -251,14 +250,24 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     register_selftest_tests();
     kernel::test::run_all();
 
-    debug_write("[BOOT] Starting kernel shell...\n");
-    auto* shell_task = kernel::TaskControlBlock::create(
-        service::Shell::shell_task_main, 1, 50);
-    if (shell_task) {
-        kernel::Scheduler::add_task(shell_task);
-        debug_write("[BOOT] Kernel shell started (PID=");
-        debug_write_hex(shell_task->id);
-        debug_write(")\n");
+    debug_write("[BOOT] Starting userspace shell...\n");
+    {
+        initrd::InitrdFile f = initrd::find("./sh.c.elf");
+        if (!f.data) f = initrd::find("sh.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* shell_task = kernel::elf::load(hdr, f.data);
+                if (shell_task) {
+                    shell_task->priority = 1;
+                    shell_task->period_ticks = 50;
+                    kernel::Scheduler::add_task(shell_task);
+                    debug_write("[BOOT] Userspace shell started (PID=");
+                    debug_write_hex(shell_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
     }
 
     debug_write("[BOOT] Boot complete! Enabling interrupts...\n");
