@@ -60,6 +60,12 @@ inline void io_wait() {
     outb(0x80, 0);
 }
 
+/// @brief Signals QEMU to exit with a status code (isa-debug-exit device).
+/// @param code Exit code (0x01 = success, 0x02 = failure).
+inline void qemu_debug_exit(uint8_t code) {
+    outw(0x501, code);
+}
+
 /// @brief Halts the CPU until the next interrupt.
 inline void hlt() {
     asm volatile("hlt");

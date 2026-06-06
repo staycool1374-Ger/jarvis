@@ -270,7 +270,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    debug_write("[BOOT] Boot complete! Enabling interrupts...\n");
+    debug_write("[BOOT] Boot complete!\n");
+    arch::qemu_debug_exit(0x01);
+    debug_write("[BOOT] Enabling interrupts...\n");
     sti();
 
     debug_write("[BOOT] Entering idle loop.\n");

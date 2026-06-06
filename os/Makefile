@@ -35,7 +35,7 @@ USERSPACE_ELF := $(USERSPACE_SRC:%=%.elf)
 INITRD_CPIO := initrd.cpio
 INITRD_OBJ  := build/initrd/initrd_cpio.o
 
-.PHONY: all clean run-qemu iso test symbols debug release
+.PHONY: all clean run-qemu test-qemu iso test symbols debug release
 
 -include $(DEPFILES)
 
@@ -93,20 +93,32 @@ build/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
+QEMU_FLAGS := -cdrom $(ISO) -m 256M -nographic -no-reboot -nic none -boot order=d
+
 run-qemu: $(ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    qemu-system-x86_64 -cdrom $(ISO) -m 256M -nographic -no-reboot; \
+	    qemu-system-x86_64 $(QEMU_FLAGS); \
 	else \
 	    echo "QEMU nicht gefunden. Installieren Sie qemu-system-x86."; \
 	    echo "  apt-get install qemu-system-x86"; \
 	    exit 1; \
 	fi
 
-run-qemu-headless: $(ISO)
+test-qemu: $(ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    qemu-system-x86_64 -cdrom $(ISO) -m 256M -nographic -no-reboot; \
+	    echo "Booting in QEMU (auto-exit after tests)..."; \
+	    qemu-system-x86_64 $(QEMU_FLAGS) -device isa-debug-exit; \
+	    rc=$$?; \
+	    if [ $$rc -eq 3 ]; then \
+	        echo "OK: All tests passed (QEMU debug-exit)."; \
+	    elif [ $$rc -eq 0 ]; then \
+	        echo "OK: QEMU exited cleanly."; \
+	    else \
+	        echo "FAIL: QEMU exit code $$rc"; \
+	        exit 1; \
+	    fi \
 	else \
-	    echo "QEMU nicht gefunden."; \
+	    echo "QEMU nicht gefunden. Installieren Sie qemu-system-x86."; \
 	    exit 1; \
 	fi
 
