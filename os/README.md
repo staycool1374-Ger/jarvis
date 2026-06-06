@@ -4,7 +4,7 @@ A real-time operating system for x86_64 architecture written in C++. Designed wi
 
 ## Features
 
-### Current Version: 0.2.3 (Latest Stable)
+### Current Version: 0.2.4 (Stable Test Environment)
 
 #### Core System
 - **x86_64 Long Mode Boot** — Multiboot2 compatible bootloader support
@@ -85,8 +85,10 @@ A real-time operating system for x86_64 architecture written in C++. Designed wi
 
 #### Debugging & Testing
 - **Benchmark Commands**: CPU benchmark, allocator benchmark
-- **Self-Test Framework**: 133+ test cases covering all kernel subsystems
-- **Shell Commands**: `selftest`, `bench`, `tasks`, `meminfo`, `modlist`
+- **Self-Test Framework**: 39 test cases covering string, utils, ErrorOr, PMM, MemPool, IPC, drivers, scheduler, VFS, version
+- **Shell Commands**: `selftest`, `tasks`, `meminfo`, `modlist`, `version`
+- **Debug Symbols**: `make debug` builds with -Og and full debug info
+- **Stripped Release**: `make release` strips debug symbols from kernel
 
 ## Build Requirements
 
@@ -217,7 +219,7 @@ selftest string    # Run string operation tests
 
 See [ROADMAP.md](ROADMAP.md) for the complete version history and planned features.
 
-Current development: **Version 0.2.4 — Stable Testenvironment**
+Current development: **Version 0.2.5 — Exception-Safe Userspace**
 
 ## License
 

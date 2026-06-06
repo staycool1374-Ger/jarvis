@@ -59,6 +59,7 @@ void print_report();
                 __FILE__, __LINE__, #cond);                                    \
             return;                                                            \
         }                                                                      \
+        kernel::test::Registry::record_success();                              \
     } while (0)
 
 #define JARVIS_ASSERT_HEX_EQ(expected, actual)                                \

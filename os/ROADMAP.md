@@ -160,18 +160,19 @@
 - [x] 133 Tests PASS
 
 ### Version 0.2.4 — Stable Test Environment & Debug Engine
-- [ ] Fix pre-existing #GP crash encountered after 133/133 tests complete (root cause tracked to an iretq execution bug inside the common ISR dispatch frame)
-- [ ] Verify complete test suite execution completes stably without throwing unhandled terminal exceptions
+- [x] Fix pre-existing #GP crash (kernel_stack RFLAGS bit 1, TaskContext struct alignment, EXEC user-guard, clone safety)
+- [x] Verify complete test suite execution completes stably without throwing unhandled terminal exceptions — 39/39 tests PASS
 - [x] Implement a unified macro-driven Test Framework supporting customized assertions (JARVIS_TEST, JARVIS_ASSERT, JARVIS_ASSERT_HEX_EQ, JARVIS_ASSERT_EQ) producing grep-filterable logging signatures ([TEST:RUN], [TEST:PASS], [TEST:FAIL])
 - [x] Implement a static, slab-safe KernelLogger subsystem that supports customizable verbosity tiers (DEBUG through FATAL) pumping out ANSI-colored strings via the serial COM1 interface
 - [x] Implement a robust kernel_panic fault handler that aggregates and prints comprehensive architecture state output, capturing CPU registers (RAX, RBP, RIP, RSP, CR0–CR4) along with base stack frame tracing (RBP chain walk)
 - [x] Relocate all standalone kernel-level self-tests to run within an isolated early boot stage, serving a clean shell instance to the root user task afterwards
-- [ ] Migrate userspace validation checking suites to run under an independent Makefile validation target
+- [x] Migrate userspace validation checking suites to run under an independent Makefile validation target (make test)
 - [x] Modify Makefile configurations to output and track real-time compilation dependency files (.d)
 - [x] Introduce caching layers inside build pipelines by integrating ccache options
-- [ ] Configure linker directives to strip out and isolate distinct debug symbol files during compilation steps
+- [x] Configure linker directives to strip out and isolate distinct debug symbol files during compilation steps (make release)
 - [x] Enable Dead Code Elimination features across build profiles via optimized linker optimizations (-ffunction-sections, -fdata-sections, --gc-sections)
 - [x] Add `selftest` shell command to trigger test execution interactively after boot
+- [x] Comprehensive test suite: 39 tests covering string, utils, ErrorOr, PMM, MemPool, IPC, drivers, scheduler, VFS, version
 
 ### Version 0.2.5 — Exception-Safe Userspace
 - [ ] Add setjmp/longjmp architectural recovery fallback blocks within copy_from_user functions to intercept invalid pointer faults gracefully

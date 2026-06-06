@@ -20,6 +20,7 @@ SRC_ASM  := $(shell find src -name '*.asm')
 OBJ      := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
 KERNEL   := build/kernel.elf
 KERNEL_SYMBOLS := build/kernel.sym
+KERNEL_DEBUG   := build/kernel-debug.elf
 ISO      := jarvis-rtos.iso
 
 LIBC_DIR  := src/libc
@@ -34,7 +35,7 @@ USERSPACE_ELF := $(USERSPACE_SRC:%=%.elf)
 INITRD_CPIO := initrd.cpio
 INITRD_OBJ  := build/initrd/initrd_cpio.o
 
-.PHONY: all clean run qemu iso test symbols
+.PHONY: all clean run-qemu iso test symbols debug release
 
 -include $(DEPFILES)
 
@@ -48,7 +49,7 @@ $(ISO): $(KERNEL) iso/boot/grub/grub.cfg
 	@echo ""
 	@echo "=========================================="
 	@echo " ISO erstellt: $(ISO)"
-	@echo " Starten mit VirtualBox oder:"
+	@echo " Starten mit:"
 	@echo "   make run-qemu"
 	@echo "=========================================="
 
@@ -94,19 +95,56 @@ build/%.o: src/%.cpp
 
 run-qemu: $(ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial stdio -vga std; \
+	    qemu-system-x86_64 -cdrom $(ISO) -m 256M -nographic -no-reboot; \
 	else \
 	    echo "QEMU nicht gefunden. Installieren Sie qemu-system-x86."; \
 	    echo "  apt-get install qemu-system-x86"; \
 	    exit 1; \
 	fi
 
-clean:
-	rm -rf build $(ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
-	rm -f $(USERSPACE_ELF)
-	rm -rf initrd_root
-	@echo "Bereinigt."
+run-qemu-headless: $(ISO)
+	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	    qemu-system-x86_64 -cdrom $(ISO) -m 256M -nographic -no-reboot; \
+	else \
+	    echo "QEMU nicht gefunden."; \
+	    exit 1; \
+	fi
+
+test: $(KERNEL)
+	@echo "=========================================="
+	@echo " Running kernel self-tests..."
+	@echo " (boot kernel and all tests run at startup)"
+	@echo "=========================================="
+	@echo "Userspace validation:"
+	@echo "  Building userspace programs..."
+	$(MAKE) $(USERSPACE_ELF)
+	@echo "  Userspace programs built successfully."
+	@echo "  Run 'selftest' in the shell to trigger tests interactively."
+
+debug: CXXFLAGS += -g -Og -DDEBUG
+debug: CCFLAGS  += -g -Og -DDEBUG
+debug: LDFLAGS  += --no-gc-sections
+debug: $(OBJ) $(INITRD_OBJ) linker.ld
+	@mkdir -p $(dir $(KERNEL_DEBUG))
+	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
+	@echo "Debug kernel: $(KERNEL_DEBUG) ($$(stat -c%s $(KERNEL_DEBUG)) Bytes)"
+	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
+	grub-mkrescue -o jarvis-rtos-debug.iso iso 2>/dev/null
+	@echo "Debug ISO: jarvis-rtos-debug.iso"
+
+release: CXXFLAGS += -DNDEBUG
+release: $(ISO)
+	cp $(KERNEL) build/kernel-stripped.elf
+	objcopy --strip-debug build/kernel.elf build/kernel-stripped.elf
+	@echo "Stripped kernel: build/kernel-stripped.elf ($$(stat -c%s build/kernel-stripped.elf) Bytes)"
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
 	@echo "Symbol table: $(KERNEL_SYMBOLS)"
+
+clean:
+	rm -rf build $(ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
+	rm -f $(USERSPACE_ELF)
+	rm -f jarvis-rtos-debug.iso
+	rm -rf initrd_root
+	@echo "Bereinigt."

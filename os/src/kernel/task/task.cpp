@@ -52,7 +52,7 @@ TaskControlBlock* TaskControlBlock::create(
     *--stack = 0x10;
     *--stack = tcb->kernel_stack_top;
 
-    *--stack = 0x200;
+    *--stack = 0x202;
     *--stack = 0x08;
     *--stack = reinterpret_cast<uint64_t>(entry);
 

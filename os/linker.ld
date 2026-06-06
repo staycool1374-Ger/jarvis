@@ -19,7 +19,7 @@ SECTIONS
 
     .boot : ALIGN(4K)
     {
-        *(.multiboot_header)
+        KEEP(*(.multiboot_header))
         *(.boot.text)
         *(.boot.rodata)
         *(.boot.data)

@@ -14,7 +14,6 @@ how to do:
 - for testing purpose you have qemu installed in this machine
 - start a development circle with a testsuite
 - after implementing the tests start coding
-- if you generate code use strict code as markdown-codeblock. prevent escape sequence or unmasked backslash out of a codeblock
 - actualize the doxygen documentation for the actual version
 - actualize the README.md
 - update the ROADMAP.md
@@ -23,4 +22,11 @@ how to do:
 - if the step is a finalized version regarding to the actual ROADMAP.md, then create a tag for this version
 - if its a finalized version then copy all files from /home/arnold/jarvis/* to /home/arnold/Nextcloud/arnold/jarvis
 - proceed to develop the next version after all tests pass
+
+mandatory coding rules:
+- if you generate code use strict code as markdown-codeblock. prevent escape sequence or unmasked backslash out of a codeblock
+- keep attention to your code: it must meet the criteria for ISO 26262 (up to ASIL D), IEC 61508 (SIL 3/4) 
+- keep coding standards: the source code must strictly adhere to static analysis and probits specific language features beside c++20
+- avoid reinterpret_casts if possible with wrappers
+- achive formal security evaluations (ISO/IEC 15408)
 

@@ -334,6 +334,7 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     }
 
     case SyscallNumber::EXEC: {
+        if (!is_user_task()) return static_cast<uint64_t>(-1);
         vfs::Vnode* vn;
         if (is_user_task()) {
             char path_buf[MAX_PATH];
