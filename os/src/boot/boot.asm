@@ -22,7 +22,7 @@ _start:
     call init_page_tables
 
     mov eax, cr4
-    or eax, 1 << 5
+    or eax, (1 << 5) | (1 << 9) | (1 << 10)   ; PAE | OSFXSR | OSXMMEXCPT
     mov cr4, eax
 
     mov ecx, 0xC0000080

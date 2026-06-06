@@ -18,8 +18,10 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     free_pages_ = total_pages_;
 
     bitmap_size_ = align_up<uint64_t>(total_pages_ / 8, 8_KiB);
-    bitmap_ = align_up<uint64_t>(kernel_end, 8_KiB);
-    owner_bitmap_ = bitmap_ + bitmap_size_;
+    uint64_t bitmap_phys = align_up<uint64_t>(kernel_end, 8_KiB);
+    uint64_t owner_bitmap_phys = bitmap_phys + bitmap_size_;
+    bitmap_ = 0xFFFF800000000000ULL + bitmap_phys;
+    owner_bitmap_ = 0xFFFF800000000000ULL + owner_bitmap_phys;
 
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
@@ -29,7 +31,7 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     }
 
     uint64_t kernel_start_page = kernel_start / PAGE_SIZE;
-    uint64_t reserved_end = bitmap_ + bitmap_size_ + bitmap_size_;
+    uint64_t reserved_end = bitmap_phys + bitmap_size_ + bitmap_size_;
     uint64_t reserved_end_page = (reserved_end + PAGE_SIZE - 1) / PAGE_SIZE;
 
     for (uint64_t i = 0; i < kernel_start_page; ++i) {

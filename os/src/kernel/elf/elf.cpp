@@ -100,11 +100,11 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
         }
 
         uint64_t offset_in_region = phdr->vaddr - vaddr_base;
-        memcpy(reinterpret_cast<void*>(seg_phys + offset_in_region),
+        memcpy(reinterpret_cast<void*>(0xFFFF800000000000ULL + seg_phys + offset_in_region),
                file_data + phdr->offset, phdr->filesz);
 
         if (phdr->memsz > phdr->filesz) {
-            memset(reinterpret_cast<void*>(seg_phys + offset_in_region + phdr->filesz),
+            memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + seg_phys + offset_in_region + phdr->filesz),
                    0, phdr->memsz - phdr->filesz);
         }
     }
@@ -120,7 +120,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
                               true, pml4);
     }
 
-    memset(reinterpret_cast<void*>(ustack_phys), 0, USER_STACK_SIZE);
+    memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + ustack_phys), 0, USER_STACK_SIZE);
 
     size_t heap_pages = USER_HEAP_SIZE / 4096;
     uint64_t heap_phys = PMM::alloc_user_contiguous(heap_pages);
@@ -131,7 +131,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
                               heap_phys + i * 4096,
                               true, pml4);
     }
-    memset(reinterpret_cast<void*>(heap_phys), 0, USER_HEAP_SIZE);
+    memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + heap_phys), 0, USER_HEAP_SIZE);
 
     if (out_ustack_phys) *out_ustack_phys = ustack_phys;
     return true;
@@ -144,7 +144,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     int argc = count_strings(argv);
 
     uint64_t str_total = total_string_len(argv) + total_string_len(envp);
-    uint8_t* stack_top = reinterpret_cast<uint8_t*>(ustack_phys + USER_STACK_SIZE);
+    uint8_t* stack_top = reinterpret_cast<uint8_t*>(0xFFFF800000000000ULL + ustack_phys + USER_STACK_SIZE);
 
     uint8_t* sp = stack_top;
     sp -= str_total;

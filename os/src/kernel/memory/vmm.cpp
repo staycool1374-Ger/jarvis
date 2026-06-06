@@ -14,14 +14,14 @@ void VMM::init() {
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
-        return reinterpret_cast<uint64_t*>(table[index] & ~0xFFFULL);
+        return reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (table[index] & ~0xFFFULL));
     }
     if (!create) return nullptr;
 
     uint64_t new_page = user_alloc ? PMM::alloc_user_page() : PMM::alloc_page();
     ASSERT(new_page != 0);
 
-    auto* new_table = reinterpret_cast<uint64_t*>(new_page);
+    auto* new_table = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + new_page);
     for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
         new_table[i] = 0;
     }
@@ -101,7 +101,7 @@ uint64_t VMM::current_pml4() {
 void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
                             bool user, uint64_t pml4_phys)
 {
-    auto* pml4 = reinterpret_cast<uint64_t*>(pml4_phys & ~0xFFFULL);
+    auto* pml4 = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (pml4_phys & ~0xFFFULL));
 
     size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
     size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
@@ -122,24 +122,21 @@ uint64_t VMM::clone_kernel_pml4() {
     uint64_t phys = PMM::alloc_page();
     if (!phys) return 0;
 
-    auto* src = reinterpret_cast<uint64_t*>(kernel_pml4_ & ~0xFFFULL);
-    auto* dst = reinterpret_cast<uint64_t*>(phys);
+    auto* src = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (kernel_pml4_ & ~0xFFFULL));
+    auto* dst = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + phys);
     for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
-        dst[i] = 0;
-    }
-    for (size_t i = 256; i < PAGE_TABLE_ENTRIES; ++i) {
         dst[i] = src[i];
     }
     return phys;
 }
 
 void VMM::free_user_pages(uint64_t pml4_phys) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(pml4_phys & ~0xFFFULL);
+    auto* pml4 = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (pml4_phys & ~0xFFFULL));
     for (int pml4_idx = 0; pml4_idx < 256; ++pml4_idx) {
         if (!(pml4[pml4_idx] & PAGE_PRESENT)) continue;
         uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
         ASSERT(PMM::is_user_page(pdpt_phys));
-        auto* pdpt = reinterpret_cast<uint64_t*>(pdpt_phys);
+        auto* pdpt = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pdpt_phys);
         for (int pdpt_idx = 0; pdpt_idx < 512; ++pdpt_idx) {
             if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) continue;
             if (pdpt[pdpt_idx] & PAGE_HUGE) {
@@ -150,7 +147,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
             }
             uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
             ASSERT(PMM::is_user_page(pd_phys));
-            auto* pd = reinterpret_cast<uint64_t*>(pd_phys);
+            auto* pd = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pd_phys);
             for (int pd_idx = 0; pd_idx < 512; ++pd_idx) {
                 if (!(pd[pd_idx] & PAGE_PRESENT)) continue;
                 if (pd[pd_idx] & PAGE_HUGE) {
@@ -161,7 +158,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                 }
                 uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
                 ASSERT(PMM::is_user_page(pt_phys));
-                auto* pt = reinterpret_cast<uint64_t*>(pt_phys);
+                auto* pt = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pt_phys);
                 for (int pt_idx = 0; pt_idx < 512; ++pt_idx) {
                     if (!(pt[pt_idx] & PAGE_PRESENT)) continue;
                     uint64_t leaf = pt[pt_idx] & ~0xFFFULL;

@@ -250,20 +250,20 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     register_selftest_tests();
     kernel::test::run_all();
 
-    debug_write("[BOOT] Starting userspace shell...\n");
+    debug_write("[BOOT] Starting userspace test_fork...\n");
     {
-        initrd::InitrdFile f = initrd::find("./sh.c.elf");
-        if (!f.data) f = initrd::find("sh.c.elf");
+        initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
+        if (!f.data) f = initrd::find("test_fork.c.elf");
         if (f.data) {
             auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
             if (kernel::elf::validate_header(hdr)) {
-                auto* shell_task = kernel::elf::load(hdr, f.data);
-                if (shell_task) {
-                    shell_task->priority = 1;
-                    shell_task->period_ticks = 50;
-                    kernel::Scheduler::add_task(shell_task);
-                    debug_write("[BOOT] Userspace shell started (PID=");
-                    debug_write_hex(shell_task->id);
+                auto* test_task = kernel::elf::load(hdr, f.data);
+                if (test_task) {
+                    test_task->priority = 1;
+                    test_task->period_ticks = 50;
+                    kernel::Scheduler::add_task(test_task);
+                    debug_write("[BOOT] test_fork started (PID=");
+                    debug_write_hex(test_task->id);
                     debug_write(")\n");
                 }
             }
