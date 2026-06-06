@@ -12,7 +12,6 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/driver/driver.hpp>
-#include <kernel/test/test.hpp>
 #include <kernel/bootparams.hpp>
 #include <kernel/sync/sync.hpp>
 #include <kernel/multiboot2.hpp>
@@ -26,12 +25,8 @@
 #include <services/terminal/terminal.hpp>
 #include <services/shell.hpp>
 #include <services/program.hpp>
-#include <programs/demo/demo.hpp>
 
 static constexpr uint32_t DEFAULT_TIMER_HZ = 1000;
-
-/// @brief Wenn 1, werden alle Selbsttests beim Boot ausgeführt und via Serial ausgegeben.
-static constexpr bool RUN_SELFTEST_ON_BOOT = true;
 
 using namespace arch;
 
@@ -79,8 +74,6 @@ extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3
     debug_write(" cr3="); debug_write_hex(cr3);
     debug_write("\n");
 }
-
-volatile bool g_user_task_ran = false;
 
 extern "C" {
     uint32_t multiboot_magic = 0;
@@ -232,15 +225,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         arch::InterruptVector::KEYBOARD,
         [](uint64_t, uint64_t, uint64_t) {
             arch::Keyboard::handle_irq();
-            kernel::vfs::tty_wake_readers();
             outb(0x20, 0x20);
         }
     );
     debug_write("[BOOT] Keyboard OK\n");
-
-    debug_write("[BOOT] TestRegistry init...\n");
-    kernel::test::TestRegistry::init();
-    debug_write("[BOOT] TestRegistry OK\n");
 
     debug_write("[BOOT] Devfs init...\n");
     kernel::vfs::devfs_init();
@@ -266,72 +254,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         "pcspkr", "PC Speaker Soundtreiber", nullptr, nullptr, 0);
 
     service::ProgramRegistry::init();
-    service::ProgramRegistry::register_program(
-        "demo", "Grafik-Demos (Mandelbrot, Rotation)", programs::demo_main);
-
-    if constexpr (RUN_SELFTEST_ON_BOOT) {
-        debug_write("[BOOT] Creating selftest runner...\n");
-        auto* test_task = kernel::TaskControlBlock::create([]() {
-            debug_write("[TEST DEBUG] Test runner started!\n");
-            auto report = kernel::test::TestRegistry::run_all();
-            if (service::Terminal::instance()) service::Terminal::set_fg(0xC0C0C0);
-            auto tprint = [](const char* s) {
-                if (service::Terminal::instance()) service::Terminal::write(s);
-                else debug_write(s);
-            };
-            auto tprint_n = [&tprint](uint64_t n) {
-                char buf[32];
-                int pos = 32;
-                buf[--pos] = '\0';
-                do { buf[--pos] = '0' + (n % 10); n /= 10; } while (n);
-                tprint(buf + pos);
-            };
-            tprint("[TEST] Total: "); tprint_n(report.total);
-            tprint(" Pass: "); tprint_n(report.passed);
-            tprint(" Fail: "); tprint_n(report.failed);
-            tprint(" Skip: "); tprint_n(report.skipped);
-            tprint("\n");
-
-            for (size_t i = 0; i < kernel::test::TestRegistry::count(); ++i) {
-                auto* t = kernel::test::TestRegistry::get(i);
-                if (!t) continue;
-                tprint("[TEST] ");
-                if (t->result == kernel::test::TestResult::PASS) tprint("PASS  ");
-                else if (t->result == kernel::test::TestResult::FAIL) tprint("FAIL  ");
-                else tprint("SKIP  ");
-                tprint(t->name);
-                if (t->failure_msg) { tprint(": "); tprint(t->failure_msg); }
-                tprint("\n");
-            }
-
-            kernel::Scheduler::current_task()->state = kernel::TaskState::TERMINATED;
-            while (true) asm volatile("hlt");
-        }, 2, 10);
-        if (!test_task) panic("Cannot create test task");
-        kernel::Scheduler::add_task(test_task);
-    }
-
-    debug_write("[BOOT] Loading userspace shell (sh.c.elf)...\n");
-    {
-        initrd::InitrdFile f = initrd::find("sh.c.elf");
-        if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
-            if (kernel::elf::validate_header(hdr)) {
-                auto* shell_task = kernel::elf::load(hdr, f.data);
-                if (shell_task) {
-                    kernel::Scheduler::add_task(shell_task);
-                    debug_write("[BOOT] Userspace shell loaded (PID=");
-                    debug_write_hex(shell_task->id);
-                    debug_write(")\n");
-                }
-            }
-        }
-    }
-    if (kernel::Scheduler::task_count() < 2) {
-        debug_write("[BOOT] WARNING: No userspace shell loaded, falling back to kernel shell\n");
-        auto* fallback_task = kernel::TaskControlBlock::create(
-            service::Shell::shell_task_main, 1, 50);
-        if (fallback_task) kernel::Scheduler::add_task(fallback_task);
+    debug_write("[BOOT] Starting kernel shell...\n");
+    auto* shell_task = kernel::TaskControlBlock::create(
+        service::Shell::shell_task_main, 1, 50);
+    if (shell_task) {
+        kernel::Scheduler::add_task(shell_task);
+        debug_write("[BOOT] Kernel shell started (PID=");
+        debug_write_hex(shell_task->id);
+        debug_write(")\n");
     }
 
     debug_write("[BOOT] Boot complete! Enabling interrupts...\n");
@@ -459,10 +389,6 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
                                     uint64_t arg2, uint64_t arg3, uint64_t* regs)
 {
-    if (number == 99) {
-        g_user_task_ran = true;
-        return 0;
-    }
     return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
 }
 

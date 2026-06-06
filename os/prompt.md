@@ -20,5 +20,7 @@ how to do:
 - update the ROADMAP.md
 - update the project structure file by executing the bash command tree -I "build|obj|.git|node_modules" > project_structure.txt 
 - commit all changes to git for the actual generated version
+- if the step is a finalized version regarding to the actual ROADMAP.md, then create a tag for this version
+- if its a finalized version then copy all files from /home/arnold/jarvis/* to /home/arnold/Nextcloud/arnold/jarvis
 - proceed to develop the next version after all tests pass
 

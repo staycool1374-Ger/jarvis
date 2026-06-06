@@ -1,7 +1,6 @@
 #include <services/terminal/terminal.hpp>
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/font.hpp>
-#include <kernel/arch/keyboard.hpp>
 #include <kernel/arch/io.hpp>
 #include <string.hpp>
 
@@ -36,6 +35,7 @@ static void serial_putchar(char c) {
 void Terminal::putchar(char c) {
     serial_putchar(c);
     if (!instance_) return;
+    if (!instance_->fb_enabled_) return;
 
     switch (c) {
     case '\n':
@@ -81,13 +81,13 @@ bool Terminal::readline(char* buf, size_t max_len) {
     instance_->line_pos_ = 0;
 
     while (true) {
-        char c;
-        if (!arch::Keyboard::getchar(c)) {
+        while (!(arch::inb(0x3F8 + 5) & 1)) {
             asm volatile("pause");
-            continue;
         }
+        char c = arch::inb(0x3F8);
+        if (c == '\r') c = '\n';
 
-        if (c == '\n' || c == '\r') {
+        if (c == '\n') {
             putchar('\n');
             buf[instance_->line_pos_] = '\0';
             instance_->line_pos_ = 0;
@@ -118,7 +118,8 @@ void Terminal::set_bg(uint32_t color) {
 }
 
 void Terminal::clear() {
-    Framebuffer::clear(instance_ ? instance_->bg_ : 0);
+    if (!instance_ || instance_->fb_enabled_)
+        Framebuffer::clear(instance_ ? instance_->bg_ : 0);
     if (instance_) {
         instance_->cursor_x_ = 0;
         instance_->cursor_y_ = 0;

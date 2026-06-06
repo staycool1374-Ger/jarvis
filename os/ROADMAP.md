@@ -163,8 +163,15 @@
 - [ ] Fix pre-existing `#GP` crash after 133/133 tests complete (`iretq` bug in ISR common dispatch)
 - [ ] Ensure all tests run cleanly without post-test exception
 - [ ] Implement macro-based Unified Test Framework (`JARVIS_TEST_SUITE`, `JARVIS_ASSERT_HEX_EQ`) with grep-filterable outputs (`[TEST:RUN]`, `[TEST:PASS]`, `[TEST:FAIL]`)
-- [ ] Implement static, slab-safe `KernelLogger` supporting multiple log levels (`DEBUG` to `FATAL`) with ANSI-colored serial output via COM1
+++ - [ ] Implement static, slab-safe `KernelLogger` supporting multiple log levels (`DEBUG` to `FATAL`) with ANSI-colored serial output via COM1
+++ - [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
 - [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
+- [ ] move all kernel tests into a boot stage and represent a shell in the user task
+- [ ] implement needed tests in user task under a own makefile target
+- [ ] implement dependency files in actual Makefile
+- [ ] make use of ccache
+- [ ] outsource debug symbols
+- [ ] implement dead code elemination in linker
 
 ### Version 0.2.5 — Exception-Safe Userspace
 - [ ] Add setjmp/longjmp recovery for copy_from_user to handle invalid pointers safely
@@ -194,14 +201,16 @@
 - [ ] Include the transition to template-based dispatching optimization
 - [ ] Syscall-Dispatcher: switch-Block durch Funktionspointer-Tabelle ersetzen
 - [ ] `Arch::Serial`-Klasse (Stream-Interface statt bare `outb`-Aufrufe)
-- [ ] Type Safety Overhaul: Eliminate naked `reinterpret_cast` from high-level kernel logic
-  - [ ] Implement explicit `PhysicalAddress` and `VirtualAddress` wrapper abstraction classes
-  - [ ] Enforce `static_cast` across `Vnode` and Driver registries using strict class hierarchies
-  - [ ] Migrate raw byte-buffer parsing (e.g., Initrd CPIO header) to safe type-punning patterns
+
+- [ ] Type Safety Overhaul: Eliminate naked `reinterpret_cast` logic from high-level kernel flows
+  - [ ] Implement explicit `PhysicalAddress` and `VirtualAddress` type wrapper abstractions
+  - [ ] Enforce compilation-safe `static_cast` patterns throughout `Vnode` interfaces and Driver registration routines by deploying explicit class hierarchies
+  - [ ] Migrate primitive byte-buffer parsing steps (such as parsing `initrd` CPIO header blocks) to safe, alignment-compliant type-punning wrappers
 - [ ] `Arch::Serial` class (Stream interface instead of bare `outb` invocations)
 - [ ] Logger interface for unified logging (instead of direct `debug_write` calls)
 - [ ] Removal of all direct `outb` calls from non-arch code
 - [ ] Logger-Interface für einheitliches Logging (anstelle direkter `debug_write`-Aufrufe)
+- [ ] Remove all hardcoded values and strings with appropiate enums
 - [ ] 125 Tests PASS
 
 ## Version 0.3.x — Harte Echtzeit: Scheduler + Timing

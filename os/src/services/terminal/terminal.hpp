@@ -45,6 +45,10 @@ public:
     /// @brief Scrolls the terminal content up by one line.
     static void scroll();
 
+    /// @brief Enables or disables framebuffer rendering.
+    /// @param v True to enable, false to disable framebuffer output.
+    static void set_fb_enabled(bool v) { if (instance_) instance_->fb_enabled_ = v; }
+
     /// @brief Returns the singleton terminal instance.
     /// @return Pointer to the Terminal instance.
     static Terminal* instance() { return instance_; }
@@ -57,6 +61,8 @@ private:
 
     static constexpr uint32_t DEFAULT_FG = 0xC0C0C0;
     static constexpr uint32_t DEFAULT_BG = 0x000000;
+
+    bool fb_enabled_ = true;
 
     uint32_t cursor_x_ = 0;
     uint32_t cursor_y_ = 0;

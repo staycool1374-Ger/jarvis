@@ -1,65 +1,38 @@
 #include <kernel/vfs/devfs.hpp>
-#include <kernel/task/task.hpp>
-#include <kernel/task/scheduler.hpp>
-#include <kernel/arch/keyboard.hpp>
-#include <kernel/sync/semaphore.hpp>
 #include <services/terminal/terminal.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/keyboard.hpp>
 #include <string.hpp>
 
 namespace kernel {
 namespace vfs {
 
-// ── tty waiters (Semaphore-based) ──
-static sync::Semaphore tty_data_sem;
-static bool tty_sem_initialized = false;
+// ── serial helpers (COM1) ──
+[[gnu::always_inline]] static inline bool serial_has_data() {
+    return arch::inb(0x3F8 + 5) & 1;
+}
 
 void devfs_init() {
-    tty_data_sem.init(0, 64);
-    tty_sem_initialized = true;
 }
 
-void tty_wake_readers() {
-    if (!tty_sem_initialized) return;
-    tty_data_sem.post();
-}
-
-// ── common helpers ──
-static void serial_write_char(char c) {
-    if (c == '\n') {
-        while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
-        arch::outb(0x3F8, '\r');
-    }
-    while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
-    arch::outb(0x3F8, c);
-}
-
-// ── tty vnode ──
-static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offset) {
-    (void)self;
-    (void)offset;
+// ── tty vnode (serial console) ──
+static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
-    char ch;
-    bool got = arch::Keyboard::getchar(ch);
-    if (!got) {
+    for (;;) {
+        if (serial_has_data()) {
+            char c = arch::inb(0x3F8);
+            buf[0] = (c == '\r') ? '\n' : c;
+            return 1;
+        }
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        tty_data_sem.wait();
-        got = arch::Keyboard::getchar(ch);
-        if (!got) return -1;
+        asm volatile("pause");
     }
-    buf[0] = static_cast<uint8_t>(ch);
-    return 1;
 }
 
 static int64_t tty_write(Vnode*, const uint8_t* buf, uint64_t count, uint64_t) {
-    if (service::Terminal::instance()) {
-        service::Terminal::write(reinterpret_cast<const char*>(buf), count);
-    } else {
-        for (uint64_t i = 0; i < count; ++i)
-            serial_write_char(static_cast<char>(buf[i]));
-    }
+    service::Terminal::write(reinterpret_cast<const char*>(buf), count);
     return static_cast<int64_t>(count);
 }
 
@@ -125,12 +98,7 @@ static Vnode null_vnode = {
 // ── console vnode ──
 static int64_t console_read(Vnode*, uint8_t*, uint64_t, uint64_t) { return -1; }
 static int64_t console_write(Vnode*, const uint8_t* buf, uint64_t count, uint64_t) {
-    if (service::Terminal::instance()) {
-        service::Terminal::write(reinterpret_cast<const char*>(buf), count);
-    } else {
-        for (uint64_t i = 0; i < count; ++i)
-            serial_write_char(static_cast<char>(buf[i]));
-    }
+    service::Terminal::write(reinterpret_cast<const char*>(buf), count);
     return static_cast<int64_t>(count);
 }
 static int console_open(Vnode*, uint64_t) { return 0; }
@@ -155,21 +123,19 @@ static Vnode console_vnode = {
 };
 
 // ── kbd vnode ──
-static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offset) {
-    (void)offset;
+static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
     char ch;
-    bool got = arch::Keyboard::getchar(ch);
-    if (!got) {
+    for (;;) {
+        if (arch::Keyboard::getchar(ch)) {
+            buf[0] = static_cast<uint8_t>(ch);
+            return 1;
+        }
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        tty_data_sem.wait();
-        got = arch::Keyboard::getchar(ch);
-        if (!got) return -1;
+        asm volatile("pause");
     }
-    buf[0] = static_cast<uint8_t>(ch);
-    return 1;
 }
 static int64_t kbd_write(Vnode*, const uint8_t*, uint64_t, uint64_t) { return -1; }
 static int kbd_open(Vnode* self, uint64_t flags) {

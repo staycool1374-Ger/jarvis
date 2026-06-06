@@ -65,8 +65,6 @@ private:
     static void cmd_run(int argc, const char** argv);
     /// @brief Built-in: shows kernel version.
     static void cmd_version(int argc, const char** argv);
-    /// @brief Built-in: runs the CPU benchmark.
-    static void cmd_bench(int argc, const char** argv);
     /// @brief Built-in: lists background jobs.
     static void cmd_jobs(int argc, const char** argv);
     /// @brief Built-in: loads a kernel driver.
@@ -75,8 +73,6 @@ private:
     static void cmd_modlist(int argc, const char** argv);
     /// @brief Built-in: lists installable programs.
     static void cmd_listprog(int argc, const char** argv);
-    /// @brief Built-in: runs kernel self-tests.
-    static void cmd_selftest(int argc, const char** argv);
     /// @brief Built-in: change working directory.
     static void cmd_cd(int argc, const char** argv);
     /// @brief Built-in: set environment variable.

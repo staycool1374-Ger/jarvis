@@ -5,9 +5,6 @@
 
 #include <types.hpp>
 
-/// @brief Wird von User-Task-Test gesetzt, wenn Syscall 99 erreicht wurde.
-extern volatile bool g_user_task_ran;
-
 extern "C" {
 /// @brief Entry point after transitioning to the higher half.
 /// @param magic   Multiboot2 magic value.

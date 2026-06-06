@@ -154,9 +154,6 @@ void Scheduler::reap_orphans() noexcept {
     }
 }
 
-extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3, uint64_t old_rsp, uint64_t new_rsp);
-extern "C" void debug_write_hex(uint64_t v);
-
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
         return;
@@ -173,8 +170,6 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         current->state = TaskState::READY;
     }
     next->state = TaskState::RUNNING;
-    uint64_t old_rsp_to_save = current->context.rsp;
-    debug_task_switch(current->id, next->id, scheduler_load_cr3_from, old_rsp_to_save, next->context.rsp);
     Scheduler::set_current(next);
 }
 

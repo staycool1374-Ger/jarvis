@@ -9,7 +9,5 @@ extern Filesystem dev_fs;
 
 void devfs_init();
 
-void tty_wake_readers();
-
 } // namespace vfs
 } // namespace kernel
