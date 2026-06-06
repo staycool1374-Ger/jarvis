@@ -1,21 +1,25 @@
-CXX      := g++
+CXX      := ccache g++
 CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
             -fno-threadsafe-statics -m64 -mno-red-zone \
             -mgeneral-regs-only -Wall -Wextra -Werror \
-            -I src -I src/lib -O3 -pipe
+            -I src -I src/lib -O3 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
 CC       := gcc
 CCFLAGS  := -m64 -static -nostdlib -ffreestanding \
-            -Wl,--build-id=none -O2 -pipe
+            -Wl,--build-id=none -O2 -pipe -MMD -MP
 AS       := nasm
 ASFLAGS  := -f elf64
 LD       := ld
-LDFLAGS  := -m elf_x86_64 -nostdlib -T linker.ld -z max-page-size=0x1000
+LDFLAGS  := -m elf_x86_64 -nostdlib -T linker.ld -z max-page-size=0x1000 \
+            --gc-sections -Map=build/kernel.map
+DEPFILES := $(shell find build -name '*.d' 2>/dev/null)
 
 SRC_CXX  := $(shell find src -name '*.cpp')
 SRC_ASM  := $(shell find src -name '*.asm')
 OBJ      := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
 KERNEL   := build/kernel.elf
+KERNEL_SYMBOLS := build/kernel.sym
 ISO      := jarvis-rtos.iso
 
 LIBC_DIR  := src/libc
@@ -30,7 +34,9 @@ USERSPACE_ELF := $(USERSPACE_SRC:%=%.elf)
 INITRD_CPIO := initrd.cpio
 INITRD_OBJ  := build/initrd/initrd_cpio.o
 
-.PHONY: all clean run qemu iso
+.PHONY: all clean run qemu iso test symbols
+
+-include $(DEPFILES)
 
 all: $(ISO)
 
@@ -100,3 +106,7 @@ clean:
 	rm -f $(USERSPACE_ELF)
 	rm -rf initrd_root
 	@echo "Bereinigt."
+
+symbols: $(KERNEL)
+	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
+	@echo "Symbol table: $(KERNEL_SYMBOLS)"

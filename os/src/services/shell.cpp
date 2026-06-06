@@ -13,6 +13,8 @@
 #include <version.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <kernel/test/test_selftest.hpp>
+#include <test.hpp>
 #include <string.hpp>
 
 namespace service {
@@ -51,6 +53,7 @@ void Shell::init() {
     register_command("runelf",  "Run userspace ELF from initrd",     cmd_runelf);
     register_command("exit",    "Shut down the system",              cmd_exit);
     register_command("shutdown","Shut down the system",              cmd_exit);
+    register_command("selftest","Run kernel self-tests",            cmd_selftest);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -560,6 +563,13 @@ void Shell::cmd_runelf(int argc, const char** argv) {
     Terminal::write(path);
     Terminal::putchar('\n');
     Terminal::set_fg(0xC0C0C0);
+}
+
+void Shell::cmd_selftest(int, const char**) {
+    Terminal::write("Running kernel self-tests...\n");
+    register_selftest_tests();
+    kernel::test::run_all();
+    Terminal::write("Self-tests complete.\n");
 }
 
 void Shell::cmd_exit(int, const char**) {

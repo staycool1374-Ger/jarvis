@@ -25,6 +25,9 @@
 #include <services/terminal/terminal.hpp>
 #include <services/shell.hpp>
 #include <services/program.hpp>
+#include <logger.hpp>
+#include <test.hpp>
+#include <kernel/test/test_selftest.hpp>
 
 static constexpr uint32_t DEFAULT_TIMER_HZ = 1000;
 
@@ -41,18 +44,6 @@ static void debug_putchar(char c) {
 
 extern "C" void debug_write(const char* s) {
     while (*s) debug_putchar(*s++);
-}
-
-static void debug_init_serial() {
-    outb(0x3F8 + 1, 0x00);
-    outb(0x3F8 + 3, 0x80);
-    outb(0x3F8 + 0, 0x01);
-    outb(0x3F8 + 1, 0x00);
-    outb(0x3F8 + 3, 0x03);
-    outb(0x3F8 + 2, 0xC7);
-    outb(0x3F8 + 4, 0x0B);
-    outb(0x3F8 + 4, 0x0F);
-    debug_write("[SERIAL] OK\n");
 }
 
 extern "C" {
@@ -101,7 +92,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     multiboot_info_ptr = mb_info;
     asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack + 16_KiB));
 
-    debug_init_serial();
+    kernel::Logger::init();
+    kernel::test::Registry::init();
+    kernel::Logger::info("Jarvis RTOS booting");
     debug_write("[BOOT] GDT init...\n");
     arch::GDT::init();
     arch::GDT::load();
@@ -254,6 +247,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         "pcspkr", "PC Speaker Soundtreiber", nullptr, nullptr, 0);
 
     service::ProgramRegistry::init();
+
+    register_selftest_tests();
+    kernel::test::run_all();
+
     debug_write("[BOOT] Starting kernel shell...\n");
     auto* shell_task = kernel::TaskControlBlock::create(
         service::Shell::shell_task_main, 1, 50);
@@ -275,9 +272,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
 extern "C" void panic(const char* msg) {
     cli();
-    debug_write("\n!!! KERNEL PANIC: ");
-    debug_write(msg);
-    debug_write(" !!!\n");
+    kernel::Logger::fatal("KERNEL PANIC: %s", msg);
     if (service::Terminal::instance()) {
         service::Terminal::set_fg(0xFF0000);
         service::Terminal::write("\nKERNEL PANIC: ");
@@ -286,6 +281,67 @@ extern "C" void panic(const char* msg) {
     }
     while (true) {
         asm volatile("hlt");
+    }
+}
+
+static void dump_regs(uint64_t* regs) {
+    if (!regs) return;
+
+    using L = kernel::Logger;
+
+    L::raw_write("  RAX: "); L::print_hex(regs[0]);  L::raw_write("  RBX: "); L::print_hex(regs[1]);  L::raw_write("\n");
+    L::raw_write("  RCX: "); L::print_hex(regs[2]);  L::raw_write("  RDI: "); L::print_hex(regs[5]);  L::raw_write("\n");
+    L::raw_write("  RDX: "); L::print_hex(regs[3]);  L::raw_write("  RSI: "); L::print_hex(regs[4]);  L::raw_write("\n");
+    L::raw_write("  RBP: "); L::print_hex(regs[6]);  L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs)); L::raw_write("\n");
+    L::raw_write("  R8:  "); L::print_hex(regs[7]);  L::raw_write("  R9:  "); L::print_hex(regs[8]);  L::raw_write("\n");
+    L::raw_write("  R10: "); L::print_hex(regs[9]);  L::raw_write("  R11: "); L::print_hex(regs[10]); L::raw_write("\n");
+    L::raw_write("  R12: "); L::print_hex(regs[11]); L::raw_write("  R13: "); L::print_hex(regs[12]); L::raw_write("\n");
+    L::raw_write("  R14: "); L::print_hex(regs[13]); L::raw_write("  R15: "); L::print_hex(regs[14]); L::raw_write("\n");
+    L::raw_write("  RIP: "); L::print_hex(regs[17]); L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
+    L::raw_write("  RFL: "); L::print_hex(regs[19]); L::raw_write("\n");
+
+    uint64_t cr0, cr2, cr3, cr4;
+    asm volatile("mov %%cr0, %0" : "=r"(cr0));
+    asm volatile("mov %%cr2, %0" : "=r"(cr2));
+    asm volatile("mov %%cr3, %0" : "=r"(cr3));
+    asm volatile("mov %%cr4, %0" : "=r"(cr4));
+
+    L::raw_write("  CR0: "); L::print_hex(cr0); L::raw_write("\n");
+    L::raw_write("  CR2: "); L::print_hex(cr2); L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
+    L::raw_write("  CR4: "); L::print_hex(cr4); L::raw_write("\n");
+
+    L::raw_write("  Stack trace:\n");
+    uint64_t* rbp = reinterpret_cast<uint64_t*>(regs[6]);
+    for (int i = 0; i < 8 && rbp && rbp[1]; ++i) {
+        L::raw_write("    ["); L::print_dec(i); L::raw_write("] ");
+        L::print_hex(rbp[1]);
+        L::raw_write("\n");
+        rbp = reinterpret_cast<uint64_t*>(rbp[0]);
+    }
+}
+
+static const char* exception_name(uint64_t vector) {
+    switch (vector) {
+    case 0:  return "Division by Zero";
+    case 1:  return "Debug";
+    case 2:  return "NMI";
+    case 3:  return "Breakpoint";
+    case 4:  return "Overflow";
+    case 5:  return "Bound Range";
+    case 6:  return "Invalid Opcode";
+    case 7:  return "Device Not Available";
+    case 8:  return "Double Fault";
+    case 10: return "Invalid TSS";
+    case 11: return "Segment Not Present";
+    case 12: return "Stack Segment Fault";
+    case 13: return "General Protection Fault";
+    case 14: return "Page Fault";
+    case 16: return "x87 FPU Error";
+    case 17: return "Alignment Check";
+    case 18: return "Machine Check";
+    case 19: return "SIMD FP Exception";
+    case 30: return "Security Exception";
+    default: return "Reserved";
     }
 }
 
@@ -311,59 +367,33 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
             else if (vector == 13 || vector == 14) sig_idx = 1;
             else sig_idx = 1;
 
-            debug_write("\n[EXCEPTION] Task ");
-            debug_write_hex(t->id);
-            debug_write(" received ");
-            debug_write(sig_name[sig_idx]);
-            debug_write(" (signal ");
-            debug_write_hex(sig_num[sig_idx]);
-            debug_write(") vector=");
-            debug_write_hex(vector);
-            debug_write(" rip=");
-            debug_write_hex(rip);
-            debug_write(" err=");
-            debug_write_hex(error_code);
+            kernel::Logger::error("Task %x received %s vector=%x rip=%x err=%x",
+                t->id, sig_name[sig_idx], vector, rip, error_code);
             if (vector == 14) {
                 uint64_t cr2_val;
                 asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
-                debug_write(" cr2=");
-                debug_write_hex(cr2_val);
+                kernel::Logger::error("  CR2=%x", cr2_val);
             }
-            debug_write(" — terminating\n");
+            dump_regs(regs);
             t->state = kernel::TaskState::TERMINATED;
             t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig_num[sig_idx]));
             return;
         }
 
-        debug_write("\n!!! EXCEPTION vector=");
-        debug_write_hex(vector);
-        debug_write(" err=");
-        debug_write_hex(error_code);
-        debug_write(" rip=");
-        debug_write_hex(rip);
-        uint64_t cr2_val;
-        asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
-        debug_write(" cr2=");
-        debug_write_hex(cr2_val);
-        debug_write(" task=");
+        kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x rip=%x)",
+            exception_name(vector), vector, error_code, rip);
+        dump_regs(regs);
+
         if (t) {
-            debug_write_hex(t->id);
-            debug_write(" prio=");
-            debug_write_hex(t->priority);
-            debug_write(" state=");
-            debug_write_hex(static_cast<uint64_t>(t->state));
+            kernel::Logger::raw_write("  Task: id=");
+            kernel::Logger::print_hex(t->id);
+            kernel::Logger::raw_write(" prio=");
+            kernel::Logger::print_dec(t->priority);
+            kernel::Logger::raw_write(" state=");
+            kernel::Logger::print_hex(static_cast<uint64_t>(t->state));
+            kernel::Logger::raw_write("\n");
         }
-        debug_write(" tasks=");
-        for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
-            auto* ti = kernel::Scheduler::task_at(i);
-            if (ti) {
-                debug_write_hex(ti->id);
-                debug_write(":");
-                debug_write_hex(static_cast<uint64_t>(ti->state));
-                debug_write(" ");
-            }
-        }
-        debug_write(" !!!\n");
+
         panic("CPU EXCEPTION");
         return;
     }

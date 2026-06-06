@@ -1,306 +1,314 @@
 # Jarvis RTOS Roadmap
 
-## Version 0.0.1 (Basis)
+## Version 0.0.1 (Base)
 - [x] x86_64 Long Mode Boot
 - [x] Framebuffer Terminal
-- [x] PS/2 Tastatur
-- [x] Shell mit Grundbefehlen
+- [x] PS/2 Keyboard
+- [x] Shell with basic commands
 - [x] PMM (Physical Memory Manager)
 - [x] VMM (Virtual Memory Manager)
-- [x] MemPool (Slab-Allocator)
+- [x] MemPool (Slab Allocator)
 - [x] Task/Scheduler (Rate Monotonic)
-- [x] IPC (Inter Process Communication)
-- [x] Syscall-Grundgerüst
-- [x] Demo-Programm (Mandelbrot)
+- [x] IPC (Inter-Process Communication)
+- [x] Basic syscall framework
+- [x] Demo program (Mandelbrot)
 
 ## Version 0.0.2 — Clean Code & Security
-- [x] Single-User Optimierung
-- [x] Security-Review: Null-Checks, Buffer-Overflow-Prävention
-- [x] Performance-Review: Inlining, constexpr, Overhead-Reduktion
-- [x] Clean Code: Namenskonventionen, const-correctness, noexcept
+- [x] Single-user optimization
+- [x] Security review: Null checks, buffer overflow prevention
+- [x] Performance review: Inlining, constexpr, overhead reduction
+- [x] Clean Code: Naming conventions, const correctness, noexcept
 
 ## Version 0.0.3 — Doxygen + Exception Handling + Dynamic Memory
-- [x] Doxygen-Konfiguration (Doxyfile)
-- [x] Header-Dokumentation für alle Module
-- [x] Error-Code-basiertes Exception-Handling (ErrorOr\<T\>)
-- [x] Heap-Allocator mit PMM-Fallback
-- [x] OOM-Handling
+- [x] Doxygen configuration (Doxyfile)
+- [x] Header documentation for all modules
+- [x] Error-code-based exception handling (ErrorOr\<T\>)
+- [x] Heap allocator with PMM fallback
+- [x] OOM (Out Of Memory) handling
 
 ## Version 0.0.4 — Driver Layer
-- [x] Driver-Registry (Treiber-Registrierung)
-- [x] modprobe/modlist Shell-Befehle
-- [x] Standard-Hardware-Treiber als Module
-- [x] Driver-Initialisierung beim Boot
+- [x] Driver registry (Driver registration framework)
+- [x] modprobe / modlist shell commands
+- [x] Standard hardware drivers compiled as modules
+- [x] Driver initialization during boot stage
 
 ## Version 0.0.5 — Test Methodology + Benchmark
-- [x] Benchmark-Shell-Befehl (cpu, alloc)
-- [x] Kernel-interne Self-Test-Registry
-- [x] Self-Tests für PMM, String, Utils, ErrorOr, IPC, MemPool
-- [x] selftest Shell-Befehl (alle Tests oder nach Name)
-- [x] Fix: Blank screen bug (triple fault im Task-Kontextwechsel)
+- [x] Benchmark shell command (cpu, alloc)
+- [x] Internal kernel self-test registry
+- [x] Self-tests for PMM, String, Utils, ErrorOr, IPC, MemPool
+- [x] selftest shell command (run all tests or filter by name)
+- [x] Fix: Blank screen bug (triple fault during task context switch)
 
-## Version 0.0.6 — Finale Optimierung & Stabilität
-- [x] Build auf -O3 umgestellt
-- [x] Keine Compiler-Warnungen unter -O3
-- [x] Keine Compiler-Fehler unter -O3
-- [x] Mandelbrot-CPU-Benchmark gegen Linux (RTOS: 35 ms, Linux: 29 ms = 83%)
-- [x] Vollständiger Clean-Code-Review
-- [x] Letzte Optimierungsrunde
-- [x] Ausstehende Bugfixes
+## Version 0.0.6 — Final Optimization & Stability
+- [x] Switched build configurations to -O3
+- [x] Resolved all compiler warnings under -O3
+- [x] Resolved all compiler errors under -O3
+- [x] Mandelbrot CPU benchmark against Linux (RTOS: 35 ms, Linux: 29 ms = 83% performance parity)
+- [x] Complete clean code review
+- [x] Final optimization round
+- [x] Pending bugfixes completed
 
-## Version 0.0.7 — Userspace-Infrastruktur
-- [x] `handle_interrupt_c` 4. Parameter `uint64_t* regs` für Registerzugriff
-- [x] Vector `0x80` (int $0x80) in `handle_interrupt_c` abgefangen → `syscall_handler()`
-- [x] Unit-Test: `syscall.int80_dispatch` (C-level dispatch)
-- [x] Integrationstest: `task.user_execution` (User-Task via Scheduler + Ring 3)
-- [x] GDT-Bugfix: `ltr` nur einmal in `load()`
-- [x] `create_user`-Bugfix: `kernel_stack_top` als höhere-Halb-Virtadresse
-- [x] EXIT-Syscall: `while(true) hlt` entfernt, `reschedule()` nach TERMINATED
-- [x] `Scheduler::reschedule()` für sofortigen Kontextwechsel bei EXIT
+## Version 0.0.7 — Userspace Infrastructure
+- [x] Modified handle_interrupt_c to accept a 4th parameter uint64_t* regs for register access
+- [x] Intercepted Vector 0x80 (int $0x80) in handle_interrupt_c -> routed to syscall_handler()
+- [x] Unit test: syscall.int80_dispatch (C-level dispatch mechanism)
+- [x] Integration test: task.user_execution (User task via scheduler + Ring 3 transition)
+- [x] GDT Bugfix: Restricted ltr execution to occur only once inside load()
+- [x] create_user Bugfix: Mapped kernel_stack_top as a higher-half virtual address
+- [x] EXIT Syscall: Removed infinite while(true) hlt loop, adding reschedule() after marking state as TERMINATED
+- [x] Scheduler::reschedule() added for immediate context switching upon process EXIT
 - [x] 30/30 Tests PASS
 
-## Version 0.0.8 — ELF-Loader + initrd + Dateisyscalls
-- [x] ELF64-Loader (validate_header, load) für statisch gelinkte ELF-Binaries
-- [x] initrd (cpio newc-Archiv) via objcopy in Kernel gelinkt
-- [x] Dateisyscalls: OPEN, READ, CLOSE, FSTAT, WRITE
-- [x] Userspace-Test-ELF (main.S.elf, syscall #99 + EXIT) via initrd ladbar
-- [x] Bugfix: ELF_MAGIC Byte-Reihenfolge für LE-Lesen korrigiert
+## Version 0.0.8 — ELF Loader + initrd + File Syscalls
+- [x] ELF64 loader (validate_header, load) for statically linked ELF binaries
+- [x] initrd (cpio newc archive) linked into kernel via objcopy
+- [x] File system syscalls: OPEN, READ, CLOSE, FSTAT, WRITE
+- [x] Userspace test ELF (main.S.elf, syscall #99 + EXIT) loadable from initrd
+- [x] Bugfix: Corrected byte order mapping for Little-Endian translation of ELF_MAGIC
 - [x] 36/36 Tests PASS
 
-## Version 0.0.9 — Syscall-Rückgabewert + Blocking-IPC
-- [x] Syscall-Rückgabewert-Propagation in handle_interrupt_c (regs[0] = result)
-- [x] Scheduler-Bugfix: BLOCKED-Zustand wird nicht mehr überschrieben
-- [x] SYS SEND: sender_id aus current_task->id
-- [x] SYS RECEIVE: blockiert bei leerer Mailbox
-- [x] SYS SEND_SYNC: send + block + reply
+## Version 0.0.9 — Syscall Return Value + Blocking IPC
+- [x] Return value propagation implemented in handle_interrupt_c (regs[0] = result)
+- [x] Scheduler Bugfix: Prevented BLOCKED task state from being overwritten
+- [x] SYS_SEND: Derived sender_id directly from current_task->id
+- [x] SYS_RECEIVE: Configured to block task when the mailbox is empty
+- [x] SYS_SEND_SYNC: Implemented send + block + reply sequence
 - [x] 57 Tests PASS
 
-## Version 0.0.10 — libc-Portierung (AKTUELL)
-- [x] Minimal-libc für Userspace (syscall-Wrapper, crt0, printf, string.h, etc.)
-- [x] Standard-Header (stdlib.h, stdio.h, string.h, unistd.h, sys/stat.h, ...)
-- [x] C-Userspace-Programm (hello.c) via initrd ladbar + ausführbar
-- [x] Heap-Region + argv-Stack in ELF-Loader
-- [x] stdin/stdout/stderr auf /dev/tty vorbelegt
-- [x] Framebuffer Higher-Half-Mapping (fix für #PF bei Terminal::scroll)
+## Version 0.0.10 — libc Porting
+- [x] Minimal libc for userspace operations (syscall wrappers, crt0, printf, string.h, etc.)
+- [x] Standard library headers (stdlib.h, stdio.h, string.h, unistd.h, sys/stat.h, ...)
+- [x] Userspace C program (hello.c) loadable and executable via initrd
+- [x] Allocated explicit heap region and configured argv stack parsing inside the ELF loader
+- [x] Pre-assigned standard streams (stdin, stdout, stderr) to /dev/tty
+- [x] Framebuffer higher-half mapping fix (resolved #PF crash during Terminal::scroll)
 - [x] 57 Tests PASS
 
-## Version 0.1.0 — Userspace-Shell + Programme
-- [x] SYS_EXEC syscall (20) — replace current task with ELF from VFS path
-- [x] ELF Loader: exec_into_current() — reload user-space without new TCB
-- [x] ELF Loader: proper argv/envp stack setup (SysV ABI)
-- [x] ls.c, cat.c, top.c — userspace C programs via initrd
-- [x] cd, export, runelf — kernel shell built-ins
-- [x] initrd_root_readdir — directory listing on /
-- [x] VMM::free_user_pages() — clean up old page tables on exec
+## Version 0.1.0 — Userspace Shell + Programs
+- [x] SYS_EXEC syscall (20) — replaces the current task with an ELF binary from a VFS path
+- [x] ELF Loader: exec_into_current() — reloads userspace context without allocating a new TCB
+- [x] ELF Loader: Configured compliant argv/envp stack layout adhering to System V ABI standards
+- [x] Developed userspace C utilities via initrd: ls.c, cat.c, top.c
+- [x] Embedded kernel shell built-ins: cd, export, runelf
+- [x] initrd_root_readdir — added directory listing functionality on root /
+- [x] VMM::free_user_pages() — added clean teardown of old page tables upon exec
 - [x] 63 Tests PASS
 
-## Version 0.1.1 — VFS-Grundlage (Vnode + per-Task-FDs)
-- [x] `Vnode`/`VnodeOps`-Typen mit Funktionspointer-Tabelle
-- [x] Per-Task `FdTable` in `TaskControlBlock` (statt globalem `fd_table[64]`)
-- [x] cwd + cwd_vnode in `TaskControlBlock`
-- [x] `FileDescription`-Struktur mit Vnode-Zeiger + offset + flags
-- [x] Syscall-Implementierung auf Vnode-API umgestellt
-- [x] LSEEK(14), IOCTL(15) Syscalls
-- [x] strcmp/strncmp zu string.hpp
+## Version 0.1.1 — VFS Foundation (Vnode + Per-Task FDs)
+- [x] Created Vnode and VnodeOps abstractions backed by explicit function pointer tables
+- [x] Implemented a per-task FdTable tracking arrays within the TaskControlBlock (replacing the global fd_table[64])
+- [x] Tracked current working directory variables (cwd + cwd_vnode) inside individual TaskControlBlock states
+- [x] Defined FileDescription tracking structure containing Vnode pointers, file offset indicators, and operation flags
+- [x] Migrated all file system syscall implementations to utilize the unified Vnode API
+- [x] Implemented LSEEK (14) and IOCTL (15) syscall architectures
+- [x] Relocated strcmp/strncmp routines to the centralized string.hpp module
 - [x] 40 Tests PASS
 
-## Version 0.1.2 — Devfs + Mount-System
-- [x] Mount-Table (fixed array, longest-prefix-match)
-- [x] Pfadauflösung `resolve(path)` — absolut/relativ, `/`, `..`
-- [x] Devfs: `/dev/tty`, `/dev/null`, `/dev/console`, `/dev/kbd`
-- [x] Blocking-Read auf `/dev/tty` via Scheduler `BLOCKED` + tty_wake_readers()
-- [x] initrd als VFS-Filesystem gemountet (`/`)
-- [x] open/read/write auf Devices via Vnode-API
+## Version 0.1.2 — Devfs + Mount System
+- [x] Created internal Mount Table (fixed array capacity applying longest-prefix-match evaluations)
+- [x] Developed path resolution utility resolve(path) with parsing of absolute, relative, root /, and parent .. paths
+- [x] Formed Virtual Device File System (Devfs): /dev/tty, /dev/null, /dev/console, /dev/kbd
+- [x] Enabled blocking reads on /dev/tty managed via scheduler BLOCKED flags and tty_wake_readers() triggers
+- [x] Mounted initrd storage instance directly as a VFS filesystem on root /
+- [x] Routed open, read, and write operations cleanly to hardware structures through the abstract Vnode interface
 
 ## Version 0.1.3 — Procfs + Syscalls
-- [x] Procfs: `/proc/meminfo` (dynamisch generiert)
-- [x] Procfs: `/proc/[pid]/stat` (Task-Statistiken)
-- [x] Procfs: `/proc/self`
-- [x] READDIR(16), STAT(17), DUP(18), CHDIR(19) Syscalls
+- [x] Procfs: /proc/meminfo configured to output dynamically generated allocation reports
+- [x] Procfs: /proc/[pid]/stat tracking metrics for execution times and task statistics
+- [x] Procfs: Mapped /proc/self symlink logic to active process references
+- [x] Implemented READDIR (16), STAT (17), DUP (18), and CHDIR (19) syscall routines
 - [x] 50 Tests PASS
 
-## Version 0.1.4 — Blocking-IPC + Service-Vorbereitung (AKTUELL)
-- [x] `SEND_SYNC` blockiert Task (BLOCKED) statt busy-wait
-- [x] Mailbox-waiting_sender/waiting_receiver Felder
-- [x] send()/receive() wecken Wartende
-- [x] destroy_mailbox() weckt alle Wartenden
+## Version 0.1.4 — Blocking IPC + Service Preparation
+- [x] Refactored SEND_SYNC paths to transition the calling task to a BLOCKED scheduler state instead of performing busy-wait loops
+- [x] Added tracking variables waiting_sender and waiting_receiver directly to the Mailbox structure
+- [x] Updated send() and receive() loops to wake targeted waiting tasks explicitly
+- [x] Configured destroy_mailbox() to automatically unblock and clean up all remaining queued waiting tasks
 - [x] 54 Tests PASS
 
-## Version 0.2.x — Userspace-Infrastruktur
-*Alle Topics rund um Userspace: Shell, fork, Exception-Handling, Task-Isolation*
+## Version 0.2.x — Userspace Infrastructure
+*Focussing on expanding user capabilities, process spawning mechanisms, isolation layers, and robustness.*
 
-### Version 0.2.1 — Userspace-Shell + fork
-- [x] fork-Syscall (Task-Duplizierung per clone)
-- [x] waitpid-Syscall (einschließlich Blocking)
-- [x] Userspace-Shell (sh.c) mit cd/export built-ins + exec-extern
-- [x] Shell-Pipeline-Unterstützung (|, >, <)
+### Version 0.2.1 — Userspace Shell + fork
+- [x] FORK syscall implementation (duplicating existing task context via internal cloning structures)
+- [x] WAITPID syscall tracking architecture (including custom scheduler blocking hooks)
+- [x] Developed modular userspace shell (sh.c) featuring built-in commands (cd, export) alongside external binary execution
+- [x] Added native pipeline redirection routing support inside the userspace shell (|, >, <)
 - [x] 100 Tests PASS
 
-### Version 0.2.2 — Pipes + Vnode-Refcounting (AKTUELL)
-- [x] PIPE-Syscall (zwei FDs, Ringbuffer in Vnode)
-- [x] DUP2-Syscall (fd-Umleitung mit refcount-Inkrement)
-- [x] Vnode-Refcounting (refcount-Feld, close nur bei refcount==0)
-- [x] WAITPID-Blocking (BLOCKED + EXIT-Weckmechanismus)
-- [x] initrd-Vnode-refcount initialisiert (Bugfix: MemPool nullt nicht)
-- [x] Userspace-Shell (sh.c) als ELF ladbar + getestet
+### Version 0.2.2 — Pipes + Vnode Refcounting
+- [x] PIPE syscall implementation (generating dual file descriptors bound to an internal ring-buffer managed within a unique Vnode wrapper)
+- [x] DUP2 syscall routing mechanics (enabling file descriptor redirection alongside explicit reference count increments)
+- [x] Integrated Vnode reference counting logic (refcount tracking field; defers calling close routines until active refcount == 0)
+- [x] Optimized WAITPID blocking behaviors (marrying scheduler BLOCKED transitions to automated EXIT wake mechanics)
+- [x] Bugfix: Correctly initialized initrd Vnode reference counters (resolved an issue where MemPool skipped clearing old heap remains)
+- [x] Successfully compiled, loaded, and verified the custom userspace shell (sh.c) as an independent ELF binary
 - [x] 111 Tests PASS
 
-### Version 0.2.3 — Blocking-Mechanisms
-- [x] Consider bootparameters for adjustable real time parameters and implement
-- [x] Add blocking mechanism: Semaphores, Mutexes, Queues, Task Notification, Event Groups
-- [x] Check complete operating system for Priority Inversion and Deadlocks
-      — Audit completed: 4 critical priority inversion sites (IPC send_sync, pipe_read, tty/kbd read, scheduler raw priority),
-        3 critical deadlock sites (circular send_sync, mailbox use-after-free, pipe dangling pointer),
-        7 ad-hoc blocking locations identified for replacement
-- [x] Use blocking mechanisms in kernel where ever suitable
-      — pipe_read/pipe_write: replaced TaskControlBlock* read_waiter with sync::Semaphore
-      — tty_read/kbd_read: replaced raw tty_waiters[] array with sync::Semaphore
-      — tty_wake_readers (IRQ context): posts to semaphore instead of raw task state manipulation
-      — devfs_init() added for semaphore initialization
+### Version 0.2.3 — Blocking Mechanisms
+- [x] Evaluated system configuration states to accept adjustable real-time execution bounds via custom boot parameters
+- [x] Developed centralized atomic kernel synchronization primitives: Semaphores, Mutexes, Queues, Task Notifications, and Event Groups
+- [x] Performed full architectural review of entire core OS for vulnerabilities concerning Priority Inversion paths and Deadlocks
+      — Audit completed: 4 critical priority inversion sites identified (IPC send_sync, pipe_read, tty/kbd read loops, and raw scheduler priority manipulation thresholds)
+      — 3 critical deadlock vulnerabilities pinpointed (circular send_sync paths, mailbox use-after-free events, and dangling pointer risks inside pipes)
+      — 7 distinct legacy ad-hoc blocking loops flagged for replacement across the tree
+- [x] Replaced legacy loops with new atomic synchronization primitives where appropriate throughout the kernel
+      — pipe_read/pipe_write: Replaced raw TaskControlBlock* read_waiter indicators with an internal sync::Semaphore
+      — tty_read/kbd_read: Replaced primitive naked arrays with a thread-safe sync::Semaphore implementation
+      — tty_wake_readers (IRQ context): Modified tracking hooks to interface safely via semaphore posts rather than manual, naked task state overrides
+      — Extended devfs_init() tracking routines to safely initialize underlying hardware interface semaphores
 - [x] 133 Tests PASS
 
-### Version 0.2.4 — Stable Testenvironment & Debug Engine
-- [ ] Fix pre-existing `#GP` crash after 133/133 tests complete (`iretq` bug in ISR common dispatch)
-- [ ] Ensure all tests run cleanly without post-test exception
-- [ ] Implement macro-based Unified Test Framework (`JARVIS_TEST_SUITE`, `JARVIS_ASSERT_HEX_EQ`) with grep-filterable outputs (`[TEST:RUN]`, `[TEST:PASS]`, `[TEST:FAIL]`)
-++ - [ ] Implement static, slab-safe `KernelLogger` supporting multiple log levels (`DEBUG` to `FATAL`) with ANSI-colored serial output via COM1
-++ - [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
-- [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
-- [ ] move all kernel tests into a boot stage and represent a shell in the user task
-- [ ] implement needed tests in user task under a own makefile target
-- [ ] implement dependency files in actual Makefile
-- [ ] make use of ccache
-- [ ] outsource debug symbols
-- [ ] implement dead code elemination in linker
+### Version 0.2.4 — Stable Test Environment & Debug Engine
+- [ ] Fix pre-existing #GP crash encountered after 133/133 tests complete (root cause tracked to an iretq execution bug inside the common ISR dispatch frame)
+- [ ] Verify complete test suite execution completes stably without throwing unhandled terminal exceptions
+- [x] Implement a unified macro-driven Test Framework supporting customized assertions (JARVIS_TEST, JARVIS_ASSERT, JARVIS_ASSERT_HEX_EQ, JARVIS_ASSERT_EQ) producing grep-filterable logging signatures ([TEST:RUN], [TEST:PASS], [TEST:FAIL])
+- [x] Implement a static, slab-safe KernelLogger subsystem that supports customizable verbosity tiers (DEBUG through FATAL) pumping out ANSI-colored strings via the serial COM1 interface
+- [x] Implement a robust kernel_panic fault handler that aggregates and prints comprehensive architecture state output, capturing CPU registers (RAX, RBP, RIP, RSP, CR0–CR4) along with base stack frame tracing (RBP chain walk)
+- [x] Relocate all standalone kernel-level self-tests to run within an isolated early boot stage, serving a clean shell instance to the root user task afterwards
+- [ ] Migrate userspace validation checking suites to run under an independent Makefile validation target
+- [x] Modify Makefile configurations to output and track real-time compilation dependency files (.d)
+- [x] Introduce caching layers inside build pipelines by integrating ccache options
+- [ ] Configure linker directives to strip out and isolate distinct debug symbol files during compilation steps
+- [x] Enable Dead Code Elimination features across build profiles via optimized linker optimizations (-ffunction-sections, -fdata-sections, --gc-sections)
+- [x] Add `selftest` shell command to trigger test execution interactively after boot
 
 ### Version 0.2.5 — Exception-Safe Userspace
-- [ ] Add setjmp/longjmp recovery for copy_from_user to handle invalid pointers safely
-- [ ] User-Exception-Handler: #GP, #PF, #DE, #UD in Ring 3 → User-Exception-Signal (SIGSEGV, SIGFPE, SIGILL) statt Kernel Panic
-- [ ] Signal-Dispatch vor Task-Kill: User-Programm erhält Chance auf Cleanup (FDs, Mailbox-Locks)
-- [ ] `SYS_KILL(pid)` syscall
-- `SYS_GETPID` syscall
-- [ ] Task-Tree: Eltern/Kind-Beziehung + `SYS_WAITPID`
-- [ ] Task-Exit-Code + Resource-Cleanup bei Terminate (Pages, FDs, Mailboxes)
-- [ ] Guard-Pages unter User-Stacks (Stack-Overflow-Erkennung)
-- [ ] OOM-Handler: kill low-priority task statt Panic
-- [ ] Syscall-Argument-Validation: `CheckedPointer<T>` + `copy_from_user`/`copy_to_user`
-- [ ] ELF-Loader: Boundary-Checks für `phdr->offset`, `phdr->filesz ≤ memsz`, Kernel-Bereichs-Grenze
-- [ ] VMM: `Page-Ownership`-Check in `free_user_pages` (Bitset: USER/KERNEL)
+- [ ] Add setjmp/longjmp architectural recovery fallback blocks within copy_from_user functions to intercept invalid pointer faults gracefully
+- [ ] Develop dedicated user exception handlers tracking fault conditions (#GP, #PF, #DE, #UD) triggered in Ring 3, translating failures into standard signals (SIGSEGV, SIGFPE, SIGILL) rather than forcing a full Kernel Panic
+- [ ] Implement pre-termination signal dispatch loops: Enables faulted user applications to intercept standard terminations and perform vital diagnostic cleanups (closing open FDs, clearing active Mailbox locks)
+- [ ] Implement SYS_KILL(pid) syscall architecture
+- [ ] Implement SYS_GETPID`syscall architecture
+- [ ] Establish formal process hierarchies within the system kernel, maintaining distinct parent/child relationship pointers alongside an active SYS_WAITPID tracking chain
+- [ ] Ensure automatic reclamation of detached task resources (releasing physical memory blocks, closing lingering file descriptors, tearing down stale mailboxes) alongside standard process exit code propagation routines
+- [ ] Enforce automated Stack Overflow detection checks by implementing hardware guard pages positioned below active user stack configurations
+- [ ] Integrate an intelligent OOM-handling algorithm tasked with identifying and terminating low-priority background targets instead of panicking the entire kernel execution layer
+- [ ] Restructure system call input sanitation layers by utilizing a unified CheckedPointer<T> parsing wrapper combined with robust copy_from_user and copy_to_user memory barriers
+- [ ] Secure the ELF loader against malicious image formats by enforcing boundary limits on segment arrays (phdr->offset, phdr->filesz <= memsz, kernel space boundary protection)
+- [ ] Integrate page table security controls inside free_user_pages via explicit memory ownership lookups using an internal allocation bitset (USER/KERNEL bit flags)
 - [ ] 115 Tests PASS
 
-### Version 0.2.6 — Userspace-Signale + Syscall-Erweiterung
-- [ ] Signal-Syscalls (`SYS_SIGNAL`, `SYS_KILL`)
-- [ ] Signal-Dispatch bei User-Exceptions (SIGSEGV, SIGFPE, SIGILL)
-- [ ] Alarm-Timer pro Task (`SYS_ALARM`)
-- [ ] `SYS_GETTOD` (Timer-of-Day)
-- [ ] `SYS_UNAME` (System-Info)
-- [ ] Userspace sleep() via Alarm-Timer
+### Version 0.2.6 — Userspace Signals & Syscall Extension
+- [ ] Implement standard inter-process signaling system calls (SYS_SIGNAL, SYS_KILL)
+- [ ] Configure automatic signal translation vectors whenever user space execution faults trigger standard exceptions (SIGSEGV, SIGFPE, SIGILL)
+- [ ] Introduce dedicated execution alarm tracking options per individual thread task via SYS_ALARM
+- [ ] Implement SYS_GETTOD system call tracking options (Time-of-Day clocks)
+- [ ] Implement SYS_UNAME system call tracking options (System-wide environmental profiles)
+- [ ] Add user space execution delays (sleep()) routed through the underlying task alarm timer architecture
 - [ ] 120 Tests PASS
 
-### Version 0.2.7 — Code Quality & Logging
-- [ ] Include the transition to template-based dispatching optimization
-- [ ] Syscall-Dispatcher: switch-Block durch Funktionspointer-Tabelle ersetzen
-- [ ] `Arch::Serial`-Klasse (Stream-Interface statt bare `outb`-Aufrufe)
-
-- [ ] Type Safety Overhaul: Eliminate naked `reinterpret_cast` logic from high-level kernel flows
-  - [ ] Implement explicit `PhysicalAddress` and `VirtualAddress` type wrapper abstractions
-  - [ ] Enforce compilation-safe `static_cast` patterns throughout `Vnode` interfaces and Driver registration routines by deploying explicit class hierarchies
-  - [ ] Migrate primitive byte-buffer parsing steps (such as parsing `initrd` CPIO header blocks) to safe, alignment-compliant type-punning wrappers
-- [ ] `Arch::Serial` class (Stream interface instead of bare `outb` invocations)
-- [ ] Logger interface for unified logging (instead of direct `debug_write` calls)
-- [ ] Removal of all direct `outb` calls from non-arch code
-- [ ] Logger-Interface für einheitliches Logging (anstelle direkter `debug_write`-Aufrufe)
-- [ ] Remove all hardcoded values and strings with appropiate enums
+### Version 0.2.7 — Code Quality, Performance, & Migration
+- [ ] Transition the core system call interface layer to evaluate operations via clean template-based type dispatch routines
+- [ ] Optimize system call dispatch routines by replacing linear multi-branch switch blocks with a high-performance static function pointer table
+- [ ] Migrate the legacy system call entry sequence from legacy int $0x80 software interrupts to the modern, high-speed native x86_64 syscall/sysret instruction paths using Model-Specific Registers (IA32_STAR, IA32_LSTAR, IA32_FMASK) to minimize real-time context latency
+- [ ] Enforce complete Type Safety rules across the codebase: Clean out unverified raw reinterpret_cast logic from core kernel workflows
+  - [ ] Implement distinct, strongly-typed abstraction wrappers isolating PhysicalAddress and VirtualAddress arithmetic variables
+  - [ ] Enforce compilation-safe static_cast patterns throughout all Vnode interfaces and Driver registration routines by deploying explicit class hierarchies
+  - [ ] Migrate primitive byte-buffer parsing steps (such as parsing initrd CPIO header blocks) to safe, alignment-compliant type-punning wrappers
+- [ ] Develop an abstract Arch::Serial hardware class exposing standard stream write properties (replacing raw inline assembly outb port directives)
+- [ ] Design a centralized unified Logger interface wrapper layer to homogenize logging statements (phasing out scattered raw debug_write operations)
+- [ ] Conduct a full tree purge to eliminate all remaining raw outb assembler operations located outside of designated architecture-specific paths
+- [ ] Clean up codebase consistency by replacing all hardcoded magic numbers and inline configuration strings with descriptive, type-safe enum constants
 - [ ] 125 Tests PASS
 
-## Version 0.3.x — Harte Echtzeit: Scheduler + Timing
-*Alle Topics rund um deterministisches Scheduling, Timing-Präzision und WCRT*
+---
 
-### Version 0.3.1 — Präzisions-Timer + Deadline-Monitoring
-- [ ] HPET-Timer (Timer-Frequenz bis 10 kHz statt PIT-1 kHz)
-- [ ] Deadline-Monitoring: `deadline_ticks` wird überwacht, Overrun-Callback
-- [ ] Periodische Task-Release: automatischer Reset von `remaining_ticks` bei Periodenstart
-- [ ] WCRT-Analyse: `executed_ticks_max`-Tracking pro Task
-- [ ] Scheduler-Statistics-Syscall (`SYS_SCHED_INFO`)
-- [ ] `/proc/sched` mit Task-Deadline/Budget/Overrun-Zähler
+## Version 0.3.x — Hard Real-Time: Scheduler + Timing
+*Enforcing strict scheduling determinism, fine-grained timer resolutions, and Worst-Case Response Time guarantees.*
+
+### Version 0.3.1 — High-Precision Timers + Deadline Monitoring
+- [ ] Implement High Precision Event Timer (HPET) drivers, upgrading core system clock resolutions to 10 kHz (replacing the legacy 1 kHz PIT configuration)
+- [ ] Introduce strict execution deadline monitoring routines tracking custom deadline_ticks boundaries accompanied by an asynchronous Overrun Callback facility
+- [ ] Integrate automatic periodic task release controls that reset tracking fields (remaining_ticks) at the start of every scheduling interval
+- [ ] Integrate Worst-Case Response Time (WCRT) analytical profiling tracking peak processing footprints (executed_ticks_max) across individual task nodes
+- [ ] Implement a specialized scheduling statistics system call (SYS_SCHED_INFO)
+- [ ] Expose dynamic real-time task profiles under /proc/sched (reporting deadlines, assigned execution budgets, and detected overrun frequency counters)
 - [ ] 130 Tests PASS
 
-### Version 0.3.2 — Budget-Enforcement + Synchronisation
-- [ ] Add strict lock-hierarchy rules (ID-ordering) for deadlock prevention within PIP
-- [ ] Budget-Enforcement: Task wird bei `remaining_ticks == 0` preempted
-- [ ] Priority Inheritance Protocol (PIP) für IPC
-- [ ] Priority Ceiling Protocol (PCP) für Locking
-- [ ] Nested-Lock-Detection (Deadlock-Prävention)
-- [ ] Lock-Order-Validator (Debug-Modus)
+### Version 0.3.2 — Budget Enforcement + Synchronization Protocols
+- [ ] Enforce strict lock-hierarchy ordering rules (using static resource ID ranking metrics) to structurally eliminate nested deadlock vectors inside the priority inheritance pipeline
+- [ ] Integrate hardware budget enforcement mechanisms: Trigger immediate context preemption loops whenever active tracking bounds read remaining_ticks == 0
+- [ ] Implement a full Priority Inheritance Protocol (PIP) across internal IPC transaction layers
+- [ ] Implement a full Priority Ceiling Protocol (PCP) across standard kernel-level locking objects
+- [ ] Integrate proactive nested lock analysis loops to protect system threads against runtime deadlock vectors
+- [ ] Develop an asynchronous runtime Lock Order Verification checking layer enabled during Debug operational states
 - [ ] 135 Tests PASS
 
-### Version 0.3.3 — WCET-Analyse + Determinismus
-- [ ] Automatische WCET-Messung aller Syscalls (min/max/avg)
-- [ ] Stack-Usage-Profiler (max nesting depth pro Task)
-- [ ] Determinismus-Review: Alle Allokationen in I/O-Pfaden eliminiert
-- [ ] Interrupt-Latenz-Messung (Hardware-timed)
-- [ ] Scheduling-Jitter-Messung
+### Version 0.3.3 — WCET Analysis + Determinism Tuning
+- [ ] Integrate automated Worst-Case Execution Time (WCET) tracking monitors calculating operational latencies across all exposed kernel system calls (measuring real-time min/max/avg bounds)
+- [ ] Develop a Kernel Stack Usage Profiler task that monitors and records peak nesting depths per execution thread
+- [ ] Conduct a thorough code paths review for architectural determinism, ensuring the total elimination of dynamic memory allocations inside critical I/O or interrupt processing paths
+- [ ] Implement automated hardware-timed measures to compute exact system Interrupt Latency variations
+- [ ] Integrate scheduling jitter tracking benchmarks to compute execution variance across real-time execution loops
 - [ ] 140 Tests PASS
 
-## Version 0.4.x — SMP + Multicore
-*Alle Topics rund um symmetrisches Multiprocessing und CPU-Affinität*
+---
 
-### Version 0.4.1 — APIC + SMP-Boot
-- [ ] Add Per-CPU GDT/TSS isolation and Global Interrupt Spinlocks
-- [ ] Local-APIC-Initialisierung (X2APIC mode)
-- [ ] I/O-APIC-Initialisierung (Interrupt-Routing)
-- [ ] SMP-Boot (APs via SIPI)
-- [ ] Per-CPU-Datenstrukturen (PML4, Kernel-Stack, TSS)
+## Version 0.4.x — SMP + Multicore
+*Scaling the OS architecture across symmetric multiprocessing environments while addressing core affinity rules.*
+
+### Version 0.4.1 — APIC + Symmetric Multiprocessing Boot
+- [ ] Enforce complete data isolation across multi-core systems by instantiating per-CPU GDT and TSS frames backed by absolute global interrupt spinlock barriers
+- [ ] Initialize Local APIC configurations (enabling high-performance X2APIC topology layouts)
+- [ ] Configure I/O APIC routing profiles to manage deterministic hardware interrupt vector sorting
+- [ ] Implement multi-core Symmetric Multiprocessing (SMP) startup routines (waking secondary Application Processors via standard Startup Inter-Processor Interrupt sequences - SIPI)
+- [ ] Allocate isolated architectural control structures per operational CPU core (maintaining unique PML4 page directories, dedicated kernel execution stacks, and unique TSS descriptors)
 - [ ] 145 Tests PASS
 
-### Version 0.4.2 — Per-CPU-Scheduler + Load-Balancing
-- [ ] Per-CPU-Run-Queue (kein globaler Lock)
-- [ ] Load-Balancing zwischen CPUs (idle-pull / push)
-- [ ] CPU-Affinity für Tasks (`SYS_SET_AFFINITY`, `SYS_GET_AFFINITY`)
-- [ ] Cache-Coloring (optionale Optimierung)
-- [ ] Spinlock/RWLock für SMP-Synchronisation
+### Version 0.4.2 — Per-CPU Scheduling + Load Balancing
+- [ ] Redesign scheduling mechanics to utilize isolated per-CPU Run Queues, eliminating centralized global lock bottlenecks
+- [ ] Integrate symmetric load-balancing thread distribution algorithms across available cores using idle-pull and work-push scheduling metrics
+- [ ] Expose multi-core system thread affinity controls via dedicated system calls (SYS_SET_AFFINITY, SYS_GET_AFFINITY)
+- [ ] Integrate custom cache-coloring allocator techniques to optimize data placement across shared memory lines
+- [ ] Deploy specialized multi-core architectural primitives (Spinlocks and Read-Write Locks) to safeguard concurrent kernel flows
+- [ ] **Real-Time SMP Verification Audit:** Re-profile, analyze, and re-verify all single-core WCET and WCRT mathematical bounds under active multi-core lock contention and bus-heavy load conditions to validate real-time predictability under SMP
 - [ ] 150 Tests PASS
 
-## Version 0.5.x — Integration + Zertifizierung
-*Finalisierung, Stresstests und formale Absicherung*
+---
 
-### Version 0.5.1 — System-Integration
-- [ ] Vollständige Integrationstests (Userspace + Kernel kombiniert)
-- [ ] 24h Stresstest mit periodischen Tasks (Deadline-Verletzungs-Rate < 0.01 %)
-- [ ] Performance-Benchmark-Suite (Syscall-Latenz, IPC-Durchsatz, Kontextwechsel)
+## Version 0.5.x — Integration + Certification
+*System stabilization, validation benchmarks, hardening, and preparation for safety compliance.*
+
+### Version 0.5.1 — System Integration Testing
+- [ ] Deploy comprehensive system integration suites, validating complex cross-boundary flows between user space and the kernel
+- [ ] Conduct a continuous 24-hour stability stress test executing real-time periodic profiles, validating that the systemic deadline overrun rate remains below < 0.01%
+- [ ] Execute formal system verification benchmarks assessing fine-grained call latencies, IPC message throughput capacities, and context switch overhead metrics
 - [ ] 155 Tests PASS
 
-### Version 0.5.2 — Sicherheit + Release
-- [ ] Add documentation of syscall determinism for certification readiness
-- [ ] Sicherheits-Review: Kein Kernel-Pointer-Leak in Userspace
-- [ ] Stack-Cookie-Insertion (GCC `-fstack-protector` für Kernel)
-- [ ] Release-Build (`-O3 -DNDEBUG`, stripped)
-- [ ] Dokumentation finalisiert (Doxygen, Architektur-Overview, WCRT-Report)
+### Version 0.5.2 — Safety Hardening & Release Finalization
+- [ ] Compose formal system documentation specifying system call execution determinism to satisfy safety-critical certification standards
+- [ ] Conduct a strict security audit confirming the absolute containment of internal kernel memory pointers away from user space exposures
+- [ ] Inject compiler stack cookie verification checks into kernel binaries via GCC -fstack-protector configuration flags
+- [ ] Generate production-ready Release builds applying full compiler space optimization rules (-O3 -DNDEBUG, stripped symbols)
+- [ ] Finalize full architectural documentation outputs (exporting full Doxygen configurations, high-level structural overviews, and comprehensive WCRT performance profiles)
 - [ ] 160 Tests PASS
 
-## Version 0.6.x — Watchdog + Task-Überwachung
-*Hardware-Watchdog, Software-Watchdog pro Task, Deadlock-Erkennung und Recovery*
+---
 
-### Version 0.6.1 — Hardware Watchdog
-- [ ] ICH9/HPET Watchdog-Timer-Initialisierung
-- [ ] Watchdog-IRQ-Handler (preTimeout/NMI)
-- [ ] Watchdog-Reset-Syscall (`SYS_WATCHDOG_KICK`)
-- [ ] Boot-Time-Watchdog-Aktivierung (Kernel-Panic bei Ausbleiben von Kicks)
-- [ ] Fallback: PIT-basierter Software-Watchdog (falls kein HW-WD)
+## Version 0.6.x — Watchdog + Task Monitoring
+*Hardware and software watchdog tracking loops, proactive deadlock remediation, and automated fault recovery.*
+
+### Version 0.6.1 — Hardware Watchdog Integration
+- [ ] Initialize native ICH9 / HPET hardware watchdog timer circuits
+- [ ] Implement specialized Watchdog Interrupt Service Routines to capture Pre-Timeout and Non-Maskable Interrupt (NMI) alerts
+- [ ] Expose a dedicated watchdog reset system call (SYS_WATCHDOG_KICK) to allow active clearing of timer states
+- [ ] Configure boot-time watchdog auto-activation loops to force a protective Kernel Panic if early initialization routines stall
+- [ ] Engineer a programmatic software fallback routine running on legacy PIT components if the underlying hardware lacks native watchdog options
 - [ ] 165 Tests PASS
 
-### Version 0.6.2 — Software Watchdog pro User-Task
-- [ ] Per-Task-Watchdog (deadline-basiert: Task muss vor Ablauf der Periodenzeit einen Kick setzen)
-- [ ] `SYS_WATCHDOG_CREATE(period_ms)` — Watchdog für aktuelle Task erstellen
-- [ ] `SYS_WATCHDOG_KICK` — Watchdog zurücksetzen
-- [ ] Watchdog-Überlauf: Task wird auf TERMINATED gesetzt + Recovery-Handler
-- [ ] `/proc/[pid]/watchdog` — Status (remaining, overrun_count, last_kick)
+### Version 0.6.2 — Per-Task Software Watchdog Layers
+- [ ] Develop a per-task software watchdog subsystem enforcing strict deadline timelines where monitored tasks must register a reset notification prior to interval expiration
+- [ ] Implement the SYS_WATCHDOG_CREATE(period_ms) system call allowing threads to instantiate unique local watchdog parameters
+- [ ] Implement the SYS_WATCHDOG_KICK system call enabling tasks to reset their respective software watchdog instances
+- [ ] Define automated watchdog fault recovery loops: Automatically force failed processes to a TERMINATED state and dispatch contextual recovery routines
+- [ ] Expose live watchdog performance tracking structures under /proc/[pid]/watchdog (reporting remaining time spans, cumulative overrun instances, and timestamp metrics of the last kick)
 - [ ] 170 Tests PASS
 
-### Version 0.6.3 — Deadlock-Erkennung + Recovery
-- [ ] Lock-Wait-For-Graph (WFG) für IPC + Mutexe
-- [ ] Timeout-basierte Deadlock-Erkennung (Watchdog-gesteuert)
-- [ ] Recovery: Task(s) im Deadlock werden terminiert, Ressourcen freigegeben
-- [ ] Deadlock-Statistik in `/proc/sched` (Anzahl erkannte Deadlocks, betroffene Tasks)
-- [ ] System-Health-Check-Syscall (`SYS_HEALTH_STATUS`)
+### Version 0.6.3 — Deadlock Detection & Automated Recovery
+- [ ] Construct dynamic resource allocation dependency maps (Wait-For-Graphs) evaluating system status across active IPC operations and Mutex nodes
+- [ ] Integrate non-blocking, timeout-driven deadlock tracking loops supervised by the underlying software watchdog infrastructure
+- [ ] Implement automated fault isolation protocols: Terminate offending deadlocked threads immediately while gracefully reclaiming system resources to prevent full kernel stalls
+- [ ] Log active system deadlock recovery performance figures under /proc/sched (reporting global deadlock counts and historical metrics detailing impacted process IDs)
+- [ ] Implement a system health check query system call (SYS_HEALTH_STATUS)
 - [ ] 175 Tests PASS
+
