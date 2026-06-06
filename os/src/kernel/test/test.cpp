@@ -11,6 +11,12 @@
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/vfs/procfs.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include <kernel/bootparams.hpp>
+#include <kernel/sync/semaphore.hpp>
+#include <kernel/sync/mutex.hpp>
+#include <kernel/sync/queue.hpp>
+#include <kernel/sync/notify.hpp>
+#include <kernel/sync/eventgroup.hpp>
 #include <initrd/initrd.hpp>
 #include <kernel/kernel.hpp>
 #include <services/shell.hpp>
@@ -1121,6 +1127,256 @@ void TestRegistry::init() {
             }
         }
     }
+
+    // ── v0.2.3: Boot parameters ──
+    register_test("bootparams.parse_empty", "Parse empty string keeps defaults", []() -> TestResult {
+        auto& bp = BootParams::instance();
+        uint64_t old_hz = bp.timer_hz;
+        bool old_preempt = bp.preempt_enabled;
+        BootParams::parse_cstr("");
+        TEST_ASSERT(bp.timer_hz == old_hz);
+        TEST_ASSERT(bp.preempt_enabled == old_preempt);
+        return TestResult::PASS;
+    });
+
+    register_test("bootparams.parse_timer_hz", "Parse timer_hz=250", []() -> TestResult {
+        BootParams::parse_cstr("timer_hz=250");
+        TEST_ASSERT(BootParams::instance().timer_hz == 250);
+        return TestResult::PASS;
+    });
+
+    register_test("bootparams.parse_max_tasks", "Parse max_tasks=16", []() -> TestResult {
+        BootParams::parse_cstr("max_tasks=16");
+        TEST_ASSERT(BootParams::instance().max_tasks == 16);
+        return TestResult::PASS;
+    });
+
+    register_test("bootparams.parse_preempt_disable", "Parse preempt=0 disables preemption", []() -> TestResult {
+        BootParams::parse_cstr("preempt=0");
+        TEST_ASSERT(BootParams::instance().preempt_enabled == false);
+        return TestResult::PASS;
+    });
+
+    register_test("bootparams.parse_debug_flag", "Parse debug_sched=y enables debug", []() -> TestResult {
+        BootParams::parse_cstr("debug_sched=y");
+        TEST_ASSERT(BootParams::instance().debug_scheduling == true);
+        return TestResult::PASS;
+    });
+
+    register_test("bootparams.parse_multiple", "Parse multiple space-separated params", []() -> TestResult {
+        BootParams::parse_cstr("timer_hz=100 priority=128 safe");
+        TEST_ASSERT(BootParams::instance().timer_hz == 100);
+        TEST_ASSERT(BootParams::instance().scheduler_priority_ceiling == 128);
+        TEST_ASSERT(BootParams::instance().oom_killer_enabled == true);
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.3: Semaphore ──
+    register_test("semaphore.init_value", "Semaphore init with count 5", []() -> TestResult {
+        sync::Semaphore sem;
+        sem.init(5);
+        TEST_ASSERT(sem.value() == 5);
+        return TestResult::PASS;
+    });
+
+    register_test("semaphore.try_wait_success", "try_wait succeeds when count > 0", []() -> TestResult {
+        sync::Semaphore sem;
+        sem.init(3);
+        TEST_ASSERT(sem.try_wait() == true);
+        TEST_ASSERT(sem.value() == 2);
+        return TestResult::PASS;
+    });
+
+    register_test("semaphore.try_wait_failure", "try_wait fails when count == 0", []() -> TestResult {
+        sync::Semaphore sem;
+        sem.init(0);
+        TEST_ASSERT(sem.try_wait() == false);
+        TEST_ASSERT(sem.value() == 0);
+        return TestResult::PASS;
+    });
+
+    register_test("semaphore.post_increases_count", "post increases count when no waiters", []() -> TestResult {
+        sync::Semaphore sem;
+        sem.init(0);
+        sem.post();
+        TEST_ASSERT(sem.value() == 1);
+        TEST_ASSERT(sem.try_wait() == true);
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.3: Mutex ──
+    register_test("mutex.init_unlocked", "Mutex init leaves it unlocked", []() -> TestResult {
+        sync::Mutex mtx;
+        mtx.init();
+        TEST_ASSERT(mtx.is_locked() == false);
+        TEST_ASSERT(mtx.try_lock() == true);
+        mtx.unlock();
+        return TestResult::PASS;
+    });
+
+    register_test("mutex.lock_unlock", "Mutex lock and unlock cycle", []() -> TestResult {
+        sync::Mutex mtx;
+        mtx.init();
+        mtx.lock();
+        TEST_ASSERT(mtx.is_locked() == true);
+        mtx.unlock();
+        TEST_ASSERT(mtx.is_locked() == false);
+        return TestResult::PASS;
+    });
+
+    register_test("mutex.recursive_lock", "Mutex recursive lock from same task", []() -> TestResult {
+        sync::Mutex mtx;
+        mtx.init();
+        mtx.lock();
+        mtx.lock();
+        TEST_ASSERT(mtx.is_locked() == true);
+        mtx.unlock();
+        TEST_ASSERT(mtx.is_locked() == true);
+        mtx.unlock();
+        TEST_ASSERT(mtx.is_locked() == false);
+        return TestResult::PASS;
+    });
+
+    register_test("mutex.try_lock_held", "try_lock succeeds on already-held mutex (recursive)", []() -> TestResult {
+        sync::Mutex mtx;
+        mtx.init();
+        mtx.lock();
+        TEST_ASSERT(mtx.try_lock() == true);
+        mtx.unlock();
+        mtx.unlock();
+        TEST_ASSERT(mtx.is_locked() == false);
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.3: Queue ──
+    register_test("queue.init_empty", "Queue init is empty", []() -> TestResult {
+        sync::Queue q;
+        q.init();
+        TEST_ASSERT(q.available() == 0);
+        size_t sz = 4;
+        uint8_t buf[32];
+        TEST_ASSERT(q.try_receive(buf, &sz) == false);
+        return TestResult::PASS;
+    });
+
+    register_test("queue.try_send_try_receive", "Queue try_send then try_receive", []() -> TestResult {
+        sync::Queue q;
+        q.init();
+        uint8_t data[] = {0xDE, 0xAD, 0xBE, 0xEF};
+        TEST_ASSERT(q.try_send(data, 4) == true);
+        TEST_ASSERT(q.available() == 1);
+        uint8_t buf[8];
+        size_t sz = 8;
+        TEST_ASSERT(q.try_receive(buf, &sz) == true);
+        TEST_ASSERT(sz == 4);
+        TEST_ASSERT(buf[0] == 0xDE && buf[3] == 0xEF);
+        return TestResult::PASS;
+    });
+
+    register_test("queue.try_send_full", "try_send fails when queue is full", []() -> TestResult {
+        sync::Queue q;
+        q.init();
+        uint8_t data[8] = {1};
+        for (size_t i = 0; i < sync::QUEUE_MAX_MSG_COUNT; ++i) {
+            TEST_ASSERT(q.try_send(data, 8) == true);
+        }
+        TEST_ASSERT(q.try_send(data, 8) == false);
+        return TestResult::PASS;
+    });
+
+    register_test("queue.order_preserved", "Queue preserves message order", []() -> TestResult {
+        sync::Queue q;
+        q.init();
+        for (uint8_t i = 0; i < 10; ++i) {
+            TEST_ASSERT(q.try_send(&i, 1) == true);
+        }
+        for (uint8_t i = 0; i < 10; ++i) {
+            uint8_t buf;
+            size_t sz = 1;
+            TEST_ASSERT(q.try_receive(&buf, &sz) == true);
+            TEST_ASSERT(buf == i);
+        }
+        return TestResult::PASS;
+    });
+
+    register_test("queue.size_too_large", "try_send rejects message exceeding max size", []() -> TestResult {
+        sync::Queue q;
+        q.init();
+        uint8_t data[sync::QUEUE_MAX_MSG_SIZE + 1] = {0};
+        TEST_ASSERT(q.try_send(data, sync::QUEUE_MAX_MSG_SIZE + 1) == false);
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.3: Task Notification ──
+    register_test("notify.init", "Notify init sets value to 0", []() -> TestResult {
+        sync::Notify n;
+        n.init();
+        TEST_ASSERT(n.value() == 0);
+        uint64_t val = 99;
+        TEST_ASSERT(n.try_wait(&val) == true);
+        TEST_ASSERT(val == 0);
+        return TestResult::PASS;
+    });
+
+    register_test("notify.notify_value", "Notify sets value correctly", []() -> TestResult {
+        sync::Notify n;
+        n.init();
+        n.notify(42);
+        TEST_ASSERT(n.value() == 42);
+        return TestResult::PASS;
+    });
+
+    register_test("notify.try_wait_after_notify", "try_wait returns notified value", []() -> TestResult {
+        sync::Notify n;
+        n.init();
+        n.notify(77);
+        uint64_t val = 0;
+        TEST_ASSERT(n.try_wait(&val) == true);
+        TEST_ASSERT(val == 77);
+        return TestResult::PASS;
+    });
+
+    // ── v0.2.3: Event Group ──
+    register_test("eventgroup.init", "EventGroup init has no bits set", []() -> TestResult {
+        sync::EventGroup eg;
+        eg.init();
+        TEST_ASSERT(eg.get_bits() == 0);
+        TEST_ASSERT(eg.try_wait_bits(1) == false);
+        return TestResult::PASS;
+    });
+
+    register_test("eventgroup.set_bits", "set_bits sets the requested bits", []() -> TestResult {
+        sync::EventGroup eg;
+        eg.init();
+        eg.set_bits(0xAB);
+        TEST_ASSERT(eg.get_bits() == 0xAB);
+        return TestResult::PASS;
+    });
+
+    register_test("eventgroup.clear_bits", "clear_bits clears the requested bits", []() -> TestResult {
+        sync::EventGroup eg;
+        eg.init();
+        eg.set_bits(0xFF);
+        eg.clear_bits(0x0F);
+        TEST_ASSERT(eg.get_bits() == 0xF0);
+        return TestResult::PASS;
+    });
+
+    register_test("eventgroup.try_wait_success", "try_wait_bits succeeds when bits match", []() -> TestResult {
+        sync::EventGroup eg;
+        eg.init();
+        eg.set_bits(0x7);
+        TEST_ASSERT(eg.try_wait_bits(0x5) == true);
+        return TestResult::PASS;
+    });
+
+    register_test("eventgroup.try_wait_failure", "try_wait_bits fails when bits do not match", []() -> TestResult {
+        sync::EventGroup eg;
+        eg.init();
+        eg.set_bits(0xAAAA);
+        TEST_ASSERT(eg.try_wait_bits(0x5555) == false);
+        return TestResult::PASS;
+    });
 
     initialized_ = true;
 }

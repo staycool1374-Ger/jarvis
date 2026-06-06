@@ -24,7 +24,12 @@ ssize_t write(int fd, const void* buf, size_t count);
 int close(int fd);
 off_t lseek(int fd, off_t offset, int whence);
 int dup(int fd);
+int dup2(int oldfd, int newfd);
 int chdir(const char* path);
+int pipe(int fds[2]);
+
+pid_t fork(void);
+pid_t waitpid(pid_t pid, int* status, int options);
 
 void _exit(int status);
 unsigned int sleep(unsigned int seconds);

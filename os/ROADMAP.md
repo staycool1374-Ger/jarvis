@@ -130,40 +130,63 @@
 *Alle Topics rund um Userspace: Shell, fork, Exception-Handling, Task-Isolation*
 
 ### Version 0.2.1 — Userspace-Shell + fork
-- [ ] fork-Syscall (Task-Duplizierung)
-- [ ] wait/join-Syscall
-- [ ] Userspace-Shell (sh.c) mit cd/export built-ins + exec-extern
-- [ ] Shell-Pipeline-Unterstützung (|, >, <)
+- [x] fork-Syscall (Task-Duplizierung per clone)
+- [x] waitpid-Syscall (einschließlich Blocking)
+- [x] Userspace-Shell (sh.c) mit cd/export built-ins + exec-extern
+- [x] Shell-Pipeline-Unterstützung (|, >, <)
+- [x] 100 Tests PASS
 
-### Version 0.2.2 — Exception-Safe Userspace
+### Version 0.2.2 — Pipes + Vnode-Refcounting (AKTUELL)
+- [x] PIPE-Syscall (zwei FDs, Ringbuffer in Vnode)
+- [x] DUP2-Syscall (fd-Umleitung mit refcount-Inkrement)
+- [x] Vnode-Refcounting (refcount-Feld, close nur bei refcount==0)
+- [x] WAITPID-Blocking (BLOCKED + EXIT-Weckmechanismus)
+- [x] initrd-Vnode-refcount initialisiert (Bugfix: MemPool nullt nicht)
+- [x] Userspace-Shell (sh.c) als ELF ladbar + getestet
+- [x] 111 Tests PASS
+
+### Version 0.2.3 — Blocking-Mechanisms
+- [x] Consider bootparameters for adjustable real time parameters and implement
+- [x] Add blocking mechanism: Semaphores, Mutexes, Queues, Task Notification, Event Groups
+- [ ] Check complete operating system for Priority Inversion and Deadlocks
+- [ ] Use blocking mechanisms in kernel where ever suitable
+- [x] 133 Tests PASS
+
+### Version 0.2.4 — Stable Testenvironment
+- [ ] Fix pre-existing `#GP` crash after 133/133 tests complete (`iretq` bug in ISR common dispatch)
+- [ ] Ensure all tests run cleanly without post-test exception
+
+### Version 0.2.5 — Exception-Safe Userspace
+- [ ] Add setjmp/longjmp recovery for copy_from_user to handle invalid pointers safely
 - [ ] User-Exception-Handler: #GP, #PF, #DE, #UD in Ring 3 → User-Exception-Signal (SIGSEGV, SIGFPE, SIGILL) statt Kernel Panic
 - [ ] Signal-Dispatch vor Task-Kill: User-Programm erhält Chance auf Cleanup (FDs, Mailbox-Locks)
 - [ ] `SYS_KILL(pid)` syscall
 - `SYS_GETPID` syscall
-- [ ] Task-Tree: Eltern/Kind-Beziehung + `SYS_WAITPID` (waitpid bereits in 0.2.1)
+- [ ] Task-Tree: Eltern/Kind-Beziehung + `SYS_WAITPID`
 - [ ] Task-Exit-Code + Resource-Cleanup bei Terminate (Pages, FDs, Mailboxes)
 - [ ] Guard-Pages unter User-Stacks (Stack-Overflow-Erkennung)
 - [ ] OOM-Handler: kill low-priority task statt Panic
 - [ ] Syscall-Argument-Validation: `CheckedPointer<T>` + `copy_from_user`/`copy_to_user`
 - [ ] ELF-Loader: Boundary-Checks für `phdr->offset`, `phdr->filesz ≤ memsz`, Kernel-Bereichs-Grenze
 - [ ] VMM: `Page-Ownership`-Check in `free_user_pages` (Bitset: USER/KERNEL)
-- [ ] 95 Tests PASS
+- [ ] 115 Tests PASS
 
-### Version 0.2.3 — Userspace-Signale + Syscall-Erweiterung
+### Version 0.2.6 — Userspace-Signale + Syscall-Erweiterung
 - [ ] Signal-Syscalls (`SYS_SIGNAL`, `SYS_KILL`)
 - [ ] Signal-Dispatch bei User-Exceptions (SIGSEGV, SIGFPE, SIGILL)
 - [ ] Alarm-Timer pro Task (`SYS_ALARM`)
 - [ ] `SYS_GETTOD` (Timer-of-Day)
 - [ ] `SYS_UNAME` (System-Info)
 - [ ] Userspace sleep() via Alarm-Timer
-- [ ] 100 Tests PASS
+- [ ] 120 Tests PASS
 
-### Version 0.2.4 — Code Quality & Logging
+### Version 0.2.7 — Code Quality & Logging
+- [ ] Include the transition to template-based dispatching optimization
 - [ ] Syscall-Dispatcher: switch-Block durch Funktionspointer-Tabelle ersetzen
 - [ ] `Arch::Serial`-Klasse (Stream-Interface statt bare `outb`-Aufrufe)
 - [ ] Logger-Interface für einheitliches Logging (anstelle direkter `debug_write`-Aufrufe)
 - [ ] Entfernung aller direkten `outb`-Aufrufe aus Nicht-Arch-Code
-- [ ] 97 Tests PASS
+- [ ] 125 Tests PASS
 
 ## Version 0.3.x — Harte Echtzeit: Scheduler + Timing
 *Alle Topics rund um deterministisches Scheduling, Timing-Präzision und WCRT*
@@ -175,15 +198,16 @@
 - [ ] WCRT-Analyse: `executed_ticks_max`-Tracking pro Task
 - [ ] Scheduler-Statistics-Syscall (`SYS_SCHED_INFO`)
 - [ ] `/proc/sched` mit Task-Deadline/Budget/Overrun-Zähler
-- [ ] 105 Tests PASS
+- [ ] 130 Tests PASS
 
 ### Version 0.3.2 — Budget-Enforcement + Synchronisation
+- [ ] Add strict lock-hierarchy rules (ID-ordering) for deadlock prevention within PIP
 - [ ] Budget-Enforcement: Task wird bei `remaining_ticks == 0` preempted
 - [ ] Priority Inheritance Protocol (PIP) für IPC
 - [ ] Priority Ceiling Protocol (PCP) für Locking
 - [ ] Nested-Lock-Detection (Deadlock-Prävention)
 - [ ] Lock-Order-Validator (Debug-Modus)
-- [ ] 110 Tests PASS
+- [ ] 135 Tests PASS
 
 ### Version 0.3.3 — WCET-Analyse + Determinismus
 - [ ] Automatische WCET-Messung aller Syscalls (min/max/avg)
@@ -191,17 +215,18 @@
 - [ ] Determinismus-Review: Alle Allokationen in I/O-Pfaden eliminiert
 - [ ] Interrupt-Latenz-Messung (Hardware-timed)
 - [ ] Scheduling-Jitter-Messung
-- [ ] 115 Tests PASS
+- [ ] 140 Tests PASS
 
 ## Version 0.4.x — SMP + Multicore
 *Alle Topics rund um symmetrisches Multiprocessing und CPU-Affinität*
 
 ### Version 0.4.1 — APIC + SMP-Boot
+- [ ] Add Per-CPU GDT/TSS isolation and Global Interrupt Spinlocks
 - [ ] Local-APIC-Initialisierung (X2APIC mode)
 - [ ] I/O-APIC-Initialisierung (Interrupt-Routing)
 - [ ] SMP-Boot (APs via SIPI)
 - [ ] Per-CPU-Datenstrukturen (PML4, Kernel-Stack, TSS)
-- [ ] 120 Tests PASS
+- [ ] 145 Tests PASS
 
 ### Version 0.4.2 — Per-CPU-Scheduler + Load-Balancing
 - [ ] Per-CPU-Run-Queue (kein globaler Lock)
@@ -209,7 +234,7 @@
 - [ ] CPU-Affinity für Tasks (`SYS_SET_AFFINITY`, `SYS_GET_AFFINITY`)
 - [ ] Cache-Coloring (optionale Optimierung)
 - [ ] Spinlock/RWLock für SMP-Synchronisation
-- [ ] 125 Tests PASS
+- [ ] 150 Tests PASS
 
 ## Version 0.5.x — Integration + Zertifizierung
 *Finalisierung, Stresstests und formale Absicherung*
@@ -218,14 +243,15 @@
 - [ ] Vollständige Integrationstests (Userspace + Kernel kombiniert)
 - [ ] 24h Stresstest mit periodischen Tasks (Deadline-Verletzungs-Rate < 0.01 %)
 - [ ] Performance-Benchmark-Suite (Syscall-Latenz, IPC-Durchsatz, Kontextwechsel)
-- [ ] 130 Tests PASS
+- [ ] 155 Tests PASS
 
 ### Version 0.5.2 — Sicherheit + Release
+- [ ] Add documentation of syscall determinism for certification readiness
 - [ ] Sicherheits-Review: Kein Kernel-Pointer-Leak in Userspace
 - [ ] Stack-Cookie-Insertion (GCC `-fstack-protector` für Kernel)
 - [ ] Release-Build (`-O3 -DNDEBUG`, stripped)
 - [ ] Dokumentation finalisiert (Doxygen, Architektur-Overview, WCRT-Report)
-- [ ] 135 Tests PASS
+- [ ] 160 Tests PASS
 
 ## Version 0.6.x — Watchdog + Task-Überwachung
 *Hardware-Watchdog, Software-Watchdog pro Task, Deadlock-Erkennung und Recovery*
@@ -236,7 +262,7 @@
 - [ ] Watchdog-Reset-Syscall (`SYS_WATCHDOG_KICK`)
 - [ ] Boot-Time-Watchdog-Aktivierung (Kernel-Panic bei Ausbleiben von Kicks)
 - [ ] Fallback: PIT-basierter Software-Watchdog (falls kein HW-WD)
-- [ ] 140 Tests PASS
+- [ ] 165 Tests PASS
 
 ### Version 0.6.2 — Software Watchdog pro User-Task
 - [ ] Per-Task-Watchdog (deadline-basiert: Task muss vor Ablauf der Periodenzeit einen Kick setzen)
@@ -244,7 +270,7 @@
 - [ ] `SYS_WATCHDOG_KICK` — Watchdog zurücksetzen
 - [ ] Watchdog-Überlauf: Task wird auf TERMINATED gesetzt + Recovery-Handler
 - [ ] `/proc/[pid]/watchdog` — Status (remaining, overrun_count, last_kick)
-- [ ] 145 Tests PASS
+- [ ] 170 Tests PASS
 
 ### Version 0.6.3 — Deadlock-Erkennung + Recovery
 - [ ] Lock-Wait-For-Graph (WFG) für IPC + Mutexe
@@ -252,4 +278,4 @@
 - [ ] Recovery: Task(s) im Deadlock werden terminiert, Ressourcen freigegeben
 - [ ] Deadlock-Statistik in `/proc/sched` (Anzahl erkannte Deadlocks, betroffene Tasks)
 - [ ] System-Health-Check-Syscall (`SYS_HEALTH_STATUS`)
-- [ ] 150 Tests PASS
+- [ ] 175 Tests PASS

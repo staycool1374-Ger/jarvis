@@ -245,8 +245,14 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 void TaskControlBlock::cleanup() noexcept {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         if (fd_table.fds[i].used) {
-            if (fd_table.fds[i].vnode && fd_table.fds[i].vnode->ops->close) {
-                fd_table.fds[i].vnode->ops->close(fd_table.fds[i].vnode);
+            auto* vn = fd_table.fds[i].vnode;
+            if (vn && vn->refcount > 0) {
+                --vn->refcount;
+                if (vn->refcount == 0) {
+                    if (vn->ops->close) vn->ops->close(vn);
+                }
+            } else if (vn) {
+                if (vn->ops->close) vn->ops->close(vn);
             }
             fd_table.fds[i].used = false;
             fd_table.fds[i].vnode = nullptr;

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis RTOS - Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1012px;
+            margin: 0 auto;
+            background-color: #0d1117;
+            padding: 20px;
+        }
+        h1 {
+            color: #58a6ff;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 0.3em;
+            font-size: 2em;
+        }
+        h2 {
+            color: #f0f6fc;
+            border-bottom: 1px solid #21262d;
+            padding-bottom: 0.3em;
+            margin-top: 24px;
+        }
+        h3 { color: #f0f6fc; }
+        h4 { color: #8b949e; margin-bottom: 5px; }
+        a { color: #58a6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        ul { padding-left: 2em; }
+        li { margin-bottom: 0.25em; }
+        hr {
+            height: 0.25em;
+            padding: 0;
+            margin: 24px 0;
+            background-color: #21262d;
+            border: 0;
+        }
+        code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(110,118,129,0.4);
+            border-radius: 6px;
+            font-family: ui-monospace, SFMono-Regular, SF Pro Text, Menlo, Monaco, Consolas, monospace;
+        }
+        pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: #161b22;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+        }
+        pre code {
+            padding: 0;
+            background-color: transparent;
+            font-size: 100%;
+            color: #e6edf3;
+        }
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin-top: 0;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+        table th, table td {
+            padding: 6px 13px;
+            border: 1px solid #30363d;
+        }
+        table tr {
+            background-color: #0d1117;
+            border-top: 1px solid #21262d;
+        }
+        table tr:nth-child(2n) {
+            background-color: #161b22;
+        }
+        table th {
+            font-weight: 600;
+            background-color: #161b22;
+            color: #f0f6fc;
+        }
+        .architecture {
+            font-family: ui-monospace, monospace;
+            background-color: #161b22;
+            color: #7ee787;
+            padding: 15px;
+            border-left: 4px solid #58a6ff;
+            border-radius: 4px;
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .checkbox-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .checkbox-list li::before {
+            content: "☐ ";
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Jarvis RTOS</h1>
+    <p>A real-time operating system for the x86_64 architecture, written from scratch in C++. Designed with hard real-time constraints, deterministic scheduling (Rate Monotonic), and clean userspace isolation.</p>
+
+    <h2>Features</h2>
+    <h3>Current Version: 0.2.2 (Latest Stable)</h3>
+
+    <h4>Core System & Memory Management</h4>
+    <ul>
+        <li><strong>x86_64 Long Mode Boot</strong> – Fully Multiboot2 compatible bootloader support.</li>
+        <li><strong>Physical Memory Manager (PMM)</strong> – Fast page frame allocation via a Buddy Allocator.</li>
+        <li><strong>Virtual Memory Manager (VMM)</strong> – Full 4-level page table hierarchy managing kernel and user spaces.</li>
+        <li><strong>Slab Allocator (MemPool)</strong> – Object cache layer for deterministic kernel allocations.</li>
+        <li><strong>Heap Allocator</strong> – Dynamic kernel heap with OOM (Out Of Memory) handling and fallback mechanisms.</li>
+    </ul>
+
+    <h4>Process & Task Management</h4>
+    <ul>
+        <li><strong>Rate Monotonic Scheduler (RMS)</strong> – Priority-based preemptive scheduling for deterministic real-time tasks.</li>
+        <li><strong>Robust Task State Machine</strong> – Full support for <code>READY</code>, <code>RUNNING</code>, <code>BLOCKED</code>, <code>WAITING</code>, and <code>TERMINATED</code> states.</li>
+        <li><strong>Userspace Isolation</strong> – Ring 3 execution with dedicated user stacks and page protection.</li>
+        <li><strong>Process Lifecycle Control</strong> – Native <code>fork()</code> and <code>waitpid()</code> implementation for UNIX-like process trees.</li>
+    </ul>
+
+    <h4>Interprocess Communication (IPC)</h4>
+    <ul>
+        <li>Synchronous and asynchronous mailbox-based message passing.</li>
+        <li>Implemented primitives: <code>SEND</code>, <code>RECEIVE</code>, and <code>SEND_SYNC</code>.</li>
+        <li>Strict blocking/waking semantics for precise process synchronization.</li>
+    </ul>
+
+    <h4>Virtual File System (VFS)</h4>
+    <ul>
+        <li>Unified <code>vnode</code> abstraction layer.</li>
+        <li>Per-task file descriptor tables tracking standard I/O and custom files.</li>
+        <li><strong>Implemented Filesystems:</strong>
+            <ul>
+                <li><strong>Initrd</strong> – Initial ramdisk parsed from the standard POSIX <code>cpio</code> (newc) format.</li>
+                <li><strong>Devfs</strong> – Device abstraction mapping <code>/dev/tty</code>, <code>/dev/null</code>, <code>/dev/console</code>, and <code>/dev/kbd</code>.</li>
+                <li><strong>Procfs</strong> – Kernel metrics interface exposing <code>/proc/meminfo</code>, <code>/proc/[pid]/stat</code>, and <code>/proc/self</code>.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h2>Implemented System Calls (Vector <code>0x82</code>)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%">Number</th>
+                <th style="width: 25%">System Call</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td><strong>0</strong></td><td><code>SYS_YIELD</code></td><td>Voluntary context switch</td></tr>
+            <tr><td><strong>1</strong></td><td><code>SYS_SEND</code></td><td>Asynchronous message to a mailbox</td></tr>
+            <tr><td><strong>2</strong></td><td><code>SYS_RECEIVE</code></td><td>Receive message from a mailbox (blocking)</td></tr>
+            <tr><td><strong>3</strong></td><td><code>SYS_SEND_SYNC</code></td><td>Synchronous rendezvous send/receive</td></tr>
+            <tr><td><strong>4</strong></td><td><code>SYS_PRINT</code></td><td>Print string to kernel/user terminal</td></tr>
+            <tr><td><strong>5</strong></td><td><code>SYS_GET_TICKS</code></td><td>Retrieve system uptime in timer ticks</td></tr>
+            <tr><td><strong>6</strong></td><td><code>SYS_EXIT</code></td><td>Terminate the calling process</td></tr>
+            <tr><td><strong>7-8</strong></td><td><code>MAILBOX_CTRL</code></td><td>Dynamic creation and destruction of IPC mailboxes</td></tr>
+            <tr><td><strong>9-13</strong></td><td><code>FILE_OPS</code></td><td>File operations: <code>open()</code>, <code>read()</code>, <code>write()</code>, <code>close()</code>, <code>fstat()</code></td></tr>
+            <tr><td><strong>14</strong></td><td><code>SYS_LSEEK</code></td><td>Reposition read/write file offset</td></tr>
+            <tr><td><strong>15</strong></td><td><code>SYS_IOCTL`</code></td><td>Control device-specific parameters</td></tr>
+            <tr><td><strong>16</strong></td><td><code>SYS_READDIR</code></td><td>Read directory entries from VFS</td></tr>
+            <tr><td><strong>17</strong></td><td><code>SYS_STAT</code></td><td>Get file status by path</td></tr>
+            <tr><td><strong>18-19</strong></td><td><code>FD_OPS</code></td><td>File descriptor manipulation: <code>dup()</code>, <code>chdir()</code></td></tr>
+            <tr><td><strong>20</strong></td><td><code>SYS_EXEC</code></td><td>Parse and execute a statically linked ELF binary</td></tr>
+            <tr><td><strong>21</strong></td><td><code>SYS_FORK</code></td><td>Clone the calling process state</td></tr>
+            <tr><td><strong>22</strong></td><td><code>SYS_WAITPID</code></td><td>Await termination of a specific child process</td></tr>
+            <tr><td><strong>23</strong></td><td><code>SYS_GETPID</code></td><td>Retrieve the PID of the current task</td></tr>
+            <tr><td><strong>24</strong></td><td><code>SYS_KILL</code></td><td>Send IPC signals to a task</td></tr>
+            <tr><td><strong>25-26</strong></td><td><code>SYS_PIPE / DUP2</code></td><td>Traditional pipe I/O channels and descriptor routing</td></tr>
+        </tbody>
+    </table>
+
+    <h4>Userspace Ecosystem</h4>
+    <p>All utilities are built against Jarvis' minimal custom <code>libc</code>:</p>
+    <ul>
+        <li><code>sh</code> – Interactive userspace shell with full pipe support (<code>|</code>), output redirection (<code>&gt;</code>), input redirection (<code>&lt;</code>), and builtins (<code>cd</code>, <code>export</code>).</li>
+        <li><code>hello</code> – Standard testing binary compiled as a static ELF executable.</li>
+        <li>Automatic loading from <code>initrd</code> into Ring 3 environments.</li>
+    </ul>
+
+    <h4>Debugging & Diagnostic Tools</h4>
+    <ul>
+        <li>Built-in benchmark suite (CPU operational stress tests, memory allocator bottlenecks).</li>
+        <li>Integrated self-test framework executing over 100+ structural test cases.</li>
+        <li>Kernel command: <code>selftest [category]</code> to isolate validation routines.</li>
+    </ul>
+
+    <hr>
+
+    <h2>Build Requirements</h2>
+    <h3>Emulation Environment</h3>
+    <ul>
+        <li><strong>QEMU</strong> (specifically <code>qemu-system-x86_64</code>)</li>
+        <li>Allocated testing memory: &gt;= 512 MB RAM</li>
+    </ul>
+
+    <h3>Linux Toolchain Installation</h3>
+    <pre><code>sudo apt update && sudo apt install -y \
+    build-essential git wget ninja-build xorriso dosfstools \
+    grub-pc-bin iasl gcc-x86_64-linux-gnu binutils xz-utils qemu-system-x86</code></pre>
+
+    <h3>Compiler Dependencies</h3>
+    <ul>
+        <li><strong>Cross-Compiler:</strong> <code>x86_64-linux-gnu-gcc</code> &gt;= 7.0 (configured for static, freestanding linking)</li>
+        <li><strong>Build System:</strong> GNU Make</li>
+        <li><strong>Utilities:</strong> <code>objcopy</code>, <code>ld</code> from GNU Binutils</li>
+    </ul>
+
+    <hr>
+
+    <h2>Setup & Installation</h2>
+    <h3>1. Clone the repository</h3>
+    <pre><code>git clone [repository-url]
+cd jarvis/os</code></pre>
+
+    <h3>2. Compile the System</h3>
+    <p>Build the kernel binary, compile the userspace applications, and pack the <code>initrd</code> into a bootable ISO image:</p>
+    <pre><code>make all</code></pre>
+
+    <h3>3. Execution via QEMU</h3>
+    <p>Launch the compiled ISO with isolated hardware profiling and mapped serial monitor:</p>
+    <pre><code>qemu-system-x86_64 -m 512M \
+    -drive format=raw,file=jarvis-rtos.iso \
+    -serial mon:stdio</code></pre>
+
+    <p>Alternatively, you can build and launch directly in one step:</p>
+    <pre><code>make qemu-iso</code></pre>
+
+    <hr>
+
+    <h2>Usage Examples</h2>
+    <h3>Kernel Boot Shell</h3>
+    <p>Upon boot, the kernel lands in an initial setup prompt:</p>
+    <pre><code>boot&gt; ls        # List registered kernel structures, tasks, and drivers
+boot&gt; sh        # Spawn the interactive Ring 3 Userspace Shell</code></pre>
+
+    <h3>Userspace Shell Environment</h3>
+    <p>Once inside the user terminal, standard UNIX abstractions apply:</p>
+    <pre><code>~/ ls
+~/ cd /dev
+~/ export MY_VAR=value
+~/ echo $MY_VAR
+~/ cat /proc/meminfo
+~/ hello | cat &gt; /tmp/output.txt</code></pre>
+
+    <hr>
+
+    <h2>Architecture & Development Workflow</h2>
+    <div class="architecture">  [ Userspace Apps & Shell ] &lt;--- Ring 3 Isolation
+------------- [ Syscall Interface: int 0x82 ] -------------
+  [ VFS / Procfs / Devfs ]    [ Process & RMS Scheduler ]
+  [ Virtual Memory (VMM) ]    [ Mailbox IPC Subsystem ]
+-----------------------------------------------------------
+  [ Physical Memory (PMM via Buddy) & Slab Allocators ]
+  [ Hardware Drivers: Serial, Keyboard, Framebuffer, PIT ]</div>
+
+    <h3>The 6-Step Feature Iteration Cycle</h3>
+    <ol>
+        <li><strong>Implement:</strong> Write or expand system features.</li>
+        <li><strong>Test Design:</strong> Add comprehensive units to the local test suite.</li>
+        <li><strong>Validate Locally:</strong> Execute <code>make tests</code> to ensure code safety.</li>
+        <li><strong>Regression Check:</strong> Verify all 100+ automated test metrics report green.</li>
+        <li><strong>Release Build:</strong> Compile the final image using <code>make release</code>.</li>
+        <li><strong>Document:</strong> Update the code inline (Doxygen) and track metrics in <code>ROADMAP.md</code>.</li>
+    </ol>
+
+    <hr>
+
+    <h2>Roadmap & Contributions</h2>
+    <h3>Next Milestones (Version 0.2.x & 0.3.0)</h3>
+    <ul class="checkbox-list">
+        <li><strong>Current Target:</strong> Exception-safe userspace argument validation (<code>CheckedPointer&lt;T&gt;</code>, <code>copy_from_user</code>).</li>
+        <li>Advanced Signal Handling architecture.</li>
+        <li>Hardware Watchdog Timer synchronization.</li>
+        <li>Symmetric Multiprocessing (SMP) support.</li>
+    </ul>
+    <p>For a full historical analysis of versions, inspect the <a href="ROADMAP.md">ROADMAP.md</a>.</p>
+
+    <h3>Contributing</h3>
+    <p>Please adhere to the strict design guidelines of Jarvis RTOS:</p>
+    <ul>
+        <li>Complete Doxygen documentation block required for all public kernel interfaces.</li>
+        <li>Zero regressions allowed; local self-tests must pass before filing a PR.</li>
+    </ul>
+
+    <hr>
+
+    <h2>License</h2>
+    <p>This project is licensed under the MIT License – see the <code>LICENSE</code> file for details.</p>
+
+</div>
+
+</body>
+</html>

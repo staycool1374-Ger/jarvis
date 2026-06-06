@@ -67,7 +67,7 @@ public:
     static const Test* find(const char* name);
 
 private:
-    static constexpr size_t MAX_TESTS = 128;
+    static constexpr size_t MAX_TESTS = 200;
     static Test tests_[MAX_TESTS];
     static size_t count_;
     static bool initialized_;

@@ -3,6 +3,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/pipe.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -135,13 +136,18 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
                 uint64_t count = Scheduler::task_count();
                 for (uint64_t i = 0; i < count; ++i) {
                     auto* p = Scheduler::task_at(i);
-                    if (p && p->id == t->parent_id && p->waiting_child_pid == t->id) {
-                        p->state = TaskState::READY;
-                        // waiting_child_pid stays set — WAITPID handler reads it after wake
+                    if (p && p->id == t->parent_id &&
+                        (p->waiting_child_pid == t->id ||
+                         p->waiting_child_pid == static_cast<uint64_t>(-1))) {
                         if (p->waiting_child_status) {
                             *p->waiting_child_status = t->exit_code;
                             p->waiting_child_status = nullptr;
                         }
+                        if (p->context.rsp) {
+                            *reinterpret_cast<uint64_t*>(p->context.rsp) = t->id;
+                        }
+                        p->waiting_child_pid = 0;
+                        p->state = TaskState::READY;
                         break;
                     }
                 }
@@ -185,6 +191,9 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
             return cid;
         }
         if (arg2 & 1) return 0;
+        cur->waiting_child_pid = target_pid;
+        cur->waiting_child_status = status_ptr;
+        cur->state = TaskState::BLOCKED;
         return static_cast<uint64_t>(-1);
     }
 
@@ -296,6 +305,8 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         int new_fd = task()->fd_table.alloc();
         if (new_fd < 0) return static_cast<uint64_t>(-1);
         task()->fd_table.fds[new_fd] = task()->fd_table.fds[old_fd];
+        if (old->vnode && old->vnode->refcount > 0)
+            ++old->vnode->refcount;
         return static_cast<uint64_t>(new_fd);
     }
 
@@ -374,7 +385,13 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
                 if (t->parent_id) {
                     for (uint64_t j = 0; j < count; ++j) {
                         auto* p = Scheduler::task_at(j);
-                        if (p && p->id == t->parent_id && p->waiting_child_pid == t->id) {
+                        if (p && p->id == t->parent_id &&
+                            (p->waiting_child_pid == t->id ||
+                             p->waiting_child_pid == static_cast<uint64_t>(-1))) {
+                            if (p->context.rsp) {
+                                *reinterpret_cast<uint64_t*>(p->context.rsp) = t->id;
+                            }
+                            p->waiting_child_pid = 0;
                             p->state = TaskState::READY;
                             break;
                         }
@@ -384,6 +401,34 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
             }
         }
         return static_cast<uint64_t>(-1);
+    }
+
+    case SyscallNumber::PIPE: {
+        auto fds_buf = checked(reinterpret_cast<int*>(arg0), 2 * sizeof(int));
+        if (is_user_task() && !fds_buf.valid()) return static_cast<uint64_t>(-1);
+        int fds[2];
+        int result = vfs::create_pipe(fds);
+        if (result < 0) return static_cast<uint64_t>(-1);
+        fds_buf.write(static_cast<uint64_t>(fds[0]), 0);
+        fds_buf.write(static_cast<uint64_t>(fds[1]), sizeof(int));
+        return 0;
+    }
+
+    case SyscallNumber::DUP2: {
+        int old_fd = static_cast<int>(arg0);
+        int new_fd = static_cast<int>(arg1);
+        auto* t = task();
+        if (!t) return static_cast<uint64_t>(-1);
+        auto* old_desc = t->fd_table.get(old_fd);
+        if (!old_desc) return static_cast<uint64_t>(-1);
+        if (old_fd == new_fd) return static_cast<uint64_t>(new_fd);
+        if (new_fd < 0 || static_cast<size_t>(new_fd) >= vfs::MAX_FDS) return static_cast<uint64_t>(-1);
+        t->fd_table.free(new_fd);
+        t->fd_table.fds[new_fd] = *old_desc;
+        t->fd_table.fds[new_fd].used = true;
+        if (old_desc->vnode && old_desc->vnode->refcount > 0)
+            ++old_desc->vnode->refcount;
+        return static_cast<uint64_t>(new_fd);
     }
 
     default:

@@ -13,6 +13,8 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/test/test.hpp>
+#include <kernel/bootparams.hpp>
+#include <kernel/sync/sync.hpp>
 #include <kernel/multiboot2.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -141,6 +143,20 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::VMM::init();
     debug_write("[BOOT] VMM OK\n");
 
+    debug_write("[BOOT] Boot params...\n");
+    kernel::BootParams::parse_multiboot_cmdline();
+    {
+        auto& bp = kernel::BootParams::instance();
+        debug_write("[BOOT] timer_hz=");
+        debug_write_hex(bp.timer_hz);
+        debug_write(" preempt=");
+        debug_write(bp.preempt_enabled ? "yes" : "no");
+        debug_write(" max_tasks=");
+        debug_write_hex(bp.max_tasks);
+        debug_write("\n");
+    }
+    debug_write("[BOOT] Boot params OK\n");
+
     debug_write("[BOOT] MemPool init...\n");
     kernel::MemPool::init();
     debug_write("[BOOT] MemPool OK\n");
@@ -190,6 +206,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     });
     debug_write("[BOOT] Scheduler OK\n");
 
+    debug_write("[BOOT] Sync primitives init...\n");
+    kernel::sync::init_all();
+    debug_write("[BOOT] Sync primitives OK\n");
+
     debug_write("[BOOT] DriverRegistry init...\n");
     kernel::DriverRegistry::init();
     debug_write("[BOOT] DriverRegistry OK\n");
@@ -231,7 +251,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] procfs mounted at /proc\n");
 
     debug_write("[BOOT] Timer init...\n");
-    arch::Timer::init(DEFAULT_TIMER_HZ);
+    arch::Timer::init(kernel::BootParams::instance().timer_hz);
     debug_write("[BOOT] Timer OK\n");
 
     kernel::DriverRegistry::register_driver(

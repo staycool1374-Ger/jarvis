@@ -1,0 +1,43 @@
+#include <kernel/sync/notify.hpp>
+#include <kernel/task/scheduler.hpp>
+
+namespace kernel {
+namespace sync {
+
+void Notify::init() {
+    notify_value_ = 0;
+    waiter_ = nullptr;
+    initialized_ = true;
+}
+
+void Notify::notify(uint64_t value) {
+    notify_value_ = value;
+    if (waiter_) {
+        waiter_->state = TaskState::READY;
+        waiter_ = nullptr;
+    }
+}
+
+uint64_t Notify::wait() {
+    auto* task = Scheduler::current_task();
+    if (!task) return 0;
+
+    if (waiter_ != nullptr) return 0;
+
+    waiter_ = task;
+    task->state = TaskState::BLOCKED;
+    Scheduler::reschedule();
+
+    return notify_value_;
+}
+
+bool Notify::try_wait(uint64_t* value) {
+    if (waiter_ == nullptr && value) {
+        *value = notify_value_;
+        return true;
+    }
+    return false;
+}
+
+}
+}

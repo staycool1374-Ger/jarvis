@@ -143,6 +143,7 @@ static Vnode* initrd_root_lookup(Vnode* self, const char* name) {
     vn->size = f.size;
     vn->mode = S_IFREG;
     vn->private_data = finfo;
+    vn->refcount = 1;
     return vn;
 }
 

@@ -5,6 +5,7 @@
 
 #include <types.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <signal.hpp>
 
 namespace kernel {
 
@@ -60,6 +61,28 @@ struct TaskControlBlock {
 
     uint64_t waiting_child_pid;
     uint64_t* waiting_child_status;
+
+    /// @brief Signal handler table — one handler per signal number (max 32).
+    ///        nullptr means default action (terminate on fatal signals).
+    sighandler_t signal_handlers[MAX_SIGNAL_HANDLERS];
+
+    /// @brief Pending signal bitmask (bit n set = signal n is pending).
+    uint64_t pending_signals;
+
+    /// @brief Checks if the task has a handler registered for a signal.
+    bool has_signal_handler(uint64_t sig) const {
+        return sig < MAX_SIGNAL_HANDLERS && signal_handlers[sig] != nullptr;
+    }
+
+    /// @brief Registers a signal handler for the given signal.
+    void set_signal_handler(uint64_t sig, sighandler_t handler) {
+        if (sig < MAX_SIGNAL_HANDLERS) signal_handlers[sig] = handler;
+    }
+
+    /// @brief Returns the registered handler for the signal, or nullptr.
+    sighandler_t get_signal_handler(uint64_t sig) const {
+        return (sig < MAX_SIGNAL_HANDLERS) ? signal_handlers[sig] : nullptr;
+    }
 
     /// @brief Creates a new kernel task with the given entry and scheduling parameters.
     static TaskControlBlock* create(

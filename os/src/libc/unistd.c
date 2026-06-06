@@ -25,8 +25,28 @@ int dup(int fd) {
     return (int)__syscall5(18, (long)fd, 0, 0, 0);
 }
 
+int dup2(int oldfd, int newfd) {
+    return (int)__syscall5(26, (long)oldfd, (long)newfd, 0, 0);
+}
+
 int chdir(const char* path) {
     return (int)__syscall5(19, (long)path, 0, 0, 0);
+}
+
+int pipe(int fds[2]) {
+    return (int)__syscall5(25, (long)fds, 0, 0, 0);
+}
+
+pid_t fork(void) {
+    return (pid_t)__syscall5(21, 0, 0, 0, 0);
+}
+
+pid_t waitpid(pid_t pid, int* status, int options) {
+    return (pid_t)__syscall5(22, (long)pid, (long)status, (long)options, 0);
+}
+
+pid_t getpid(void) {
+    return (pid_t)__syscall5(23, 0, 0, 0, 0);
 }
 
 void _exit(int status) {

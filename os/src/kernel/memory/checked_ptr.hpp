@@ -7,6 +7,11 @@ namespace kernel {
 
 static constexpr uint64_t USER_SPACE_LIMIT = 0x0000800000000000ULL;
 
+/// @brief Recovery address for safe user memory access.
+///        Non-zero while we are inside a user memory copy attempt.
+///        Page fault handler checks this and redirects here on fault.
+extern "C" uint64_t g_user_access_recover_ip;
+
 static inline bool is_user_range(const void* ptr, uint64_t size) {
     uint64_t addr = reinterpret_cast<uint64_t>(ptr);
     if (addr >= USER_SPACE_LIMIT) return false;
@@ -85,6 +90,38 @@ static inline bool strncpy_from_user(char* dst, const char* src, uint64_t max_le
     }
     dst[max_len - 1] = '\0';
     return true;
+}
+
+/// @brief Safely copies memory from user-space to kernel buffer.
+///        Uses fault recovery to handle invalid pointers gracefully.
+/// @return true on success, false if a fault or range check failed.
+template<typename T>
+static inline bool safe_copy_from_user(T* dst, const T* src, uint64_t count) {
+    if (!is_user_range(src, count * sizeof(T))) return false;
+    g_user_access_recover_ip = reinterpret_cast<uint64_t>(&&recover_from);
+    memcpy(dst, src, count * sizeof(T));
+    g_user_access_recover_ip = 0;
+    return true;
+
+recover_from:
+    g_user_access_recover_ip = 0;
+    return false;
+}
+
+/// @brief Safely copies memory from kernel buffer to user-space.
+///        Uses fault recovery to handle invalid pointers gracefully.
+/// @return true on success, false if a fault or range check failed.
+template<typename T>
+static inline bool safe_copy_to_user(T* dst, const T* src, uint64_t count) {
+    if (!is_user_range(dst, count * sizeof(T))) return false;
+    g_user_access_recover_ip = reinterpret_cast<uint64_t>(&&recover_to);
+    memcpy(dst, src, count * sizeof(T));
+    g_user_access_recover_ip = 0;
+    return true;
+
+recover_to:
+    g_user_access_recover_ip = 0;
+    return false;
 }
 
 } // namespace kernel

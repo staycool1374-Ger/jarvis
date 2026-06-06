@@ -58,6 +58,7 @@ struct Vnode {
     uint64_t size;
     uint16_t mode;
     void* private_data;
+    int refcount = 1;
 };
 
 struct FileDescription {

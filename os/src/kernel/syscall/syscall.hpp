@@ -34,6 +34,8 @@ enum class SyscallNumber : uint64_t {
     WAITPID     = 22,
     GETPID      = 23,
     KILL        = 24,
+    PIPE        = 25,
+    DUP2        = 26,
 };
 
 /// @brief System call handler and dispatcher.

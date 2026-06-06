@@ -34,8 +34,17 @@ int FdTable::alloc() {
 
 void FdTable::free(int fd) {
     if (fd < 0 || static_cast<size_t>(fd) >= MAX_FDS) return;
-    if (fds[fd].used && fds[fd].vnode && fds[fd].vnode->ops->close) {
-        fds[fd].vnode->ops->close(fds[fd].vnode);
+    if (fds[fd].used && fds[fd].vnode) {
+        if (fds[fd].vnode->refcount > 0) {
+            --fds[fd].vnode->refcount;
+            if (fds[fd].vnode->refcount == 0) {
+                if (fds[fd].vnode->ops->close)
+                    fds[fd].vnode->ops->close(fds[fd].vnode);
+            }
+        } else {
+            if (fds[fd].vnode->ops->close)
+                fds[fd].vnode->ops->close(fds[fd].vnode);
+        }
     }
     fds[fd].used = false;
     fds[fd].vnode = nullptr;

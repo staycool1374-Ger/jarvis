@@ -122,22 +122,28 @@ void Scheduler::on_tick() noexcept {
 }
 
 void Scheduler::reap_orphans() noexcept {
+    auto* current = current_task();
     bool reaped_any = true;
     while (reaped_any) {
         reaped_any = false;
         for (uint64_t i = 0; i < task_count_; ++i) {
             auto* t = tasks_[i];
-            if (!t) continue;
+            if (!t || t == current) continue;
             if (t->state != TaskState::TERMINATED) continue;
             bool parent_alive = false;
+            bool parent_notified = false;
             for (uint64_t j = 0; j < task_count_; ++j) {
                 auto* p = tasks_[j];
                 if (p && p->id == t->parent_id && p->state != TaskState::TERMINATED) {
                     parent_alive = true;
+                    if (p->waiting_child_pid != t->id &&
+                        p->waiting_child_pid != static_cast<uint64_t>(-1)) {
+                        parent_notified = true;
+                    }
                     break;
                 }
             }
-            if (!parent_alive) {
+            if (!parent_alive || parent_notified) {
                 t->cleanup();
                 remove_task(t);
                 delete t;
@@ -148,7 +154,8 @@ void Scheduler::reap_orphans() noexcept {
     }
 }
 
-extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3);
+extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3, uint64_t old_rsp, uint64_t new_rsp);
+extern "C" void debug_write_hex(uint64_t v);
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
@@ -166,7 +173,8 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         current->state = TaskState::READY;
     }
     next->state = TaskState::RUNNING;
-    debug_task_switch(current->id, next->id, scheduler_load_cr3_from);
+    uint64_t old_rsp_to_save = current->context.rsp;
+    debug_task_switch(current->id, next->id, scheduler_load_cr3_from, old_rsp_to_save, next->context.rsp);
     Scheduler::set_current(next);
 }
 

@@ -45,6 +45,7 @@
 │       ├── hello
 │       ├── ls.c
 │       ├── ls.c.elf
+│       ├── sh.c
 │       ├── top.c
 │       └── top.c.elf
 ├── project_structure.txt
@@ -75,4 +76,4 @@
     ├── lib64 -> lib
     └── pyvenv.cfg
 
-38 directories, 38 files
+38 directories, 39 files
