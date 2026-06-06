@@ -12,6 +12,7 @@
 #include <initrd/initrd.hpp>
 #include <version.hpp>
 #include <kernel/driver/driver.hpp>
+#include <kernel/arch/keyboard.hpp>
 #include <string.hpp>
 
 namespace service {
@@ -128,26 +129,40 @@ static void debug_putchar(char c) {
 }
 static void debug_write(const char* s) { while (*s) debug_putchar(*s++); }
 
-static bool serial_readline(char* buf, size_t max_len) {
+static bool readline(char* buf, size_t max_len) {
     size_t pos = 0;
     for (;;) {
-        while (!(arch::inb(0x3F8 + 5) & 1)) {
-            asm volatile("pause");
+        char c = 0;
+        bool got_char = false;
+
+        if (arch::inb(0x3F8 + 5) & 1) {
+            c = arch::inb(0x3F8);
+            got_char = true;
         }
-        char c = arch::inb(0x3F8);
+
+        if (!got_char) {
+            got_char = arch::Keyboard::getchar(c);
+        }
+
+        if (!got_char) {
+            asm volatile("pause");
+            continue;
+        }
+
         if (c == '\r') c = '\n';
+
         if (c == '\n') {
-            debug_putchar('\n');
+            Terminal::putchar('\n');
             buf[pos] = '\0';
             return true;
         }
         if (c == '\b' || c == 0x7F) {
-            if (pos > 0) { --pos; debug_putchar('\b'); }
+            if (pos > 0) { --pos; Terminal::putchar('\b'); }
             continue;
         }
         if (pos < max_len - 1) {
             buf[pos++] = c;
-            debug_putchar(c);
+            Terminal::putchar(c);
         }
     }
 }
@@ -171,7 +186,8 @@ void Shell::shell_task_main() {
         Terminal::write("jarvis$ ");
         Terminal::set_fg(0xC0C0C0);
 
-        if (serial_readline(line, BUF_SIZE)) {
+        arch::Keyboard::flush();
+        if (readline(line, BUF_SIZE)) {
             parse_and_exec(line);
         }
     }
