@@ -311,11 +311,28 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         kernel::Scheduler::add_task(test_task);
     }
 
-    debug_write("[BOOT] Creating shell task...\n");
-    auto* shell_task = kernel::TaskControlBlock::create(
-        service::Shell::shell_task_main, 1, 50);
-    if (!shell_task) panic("Cannot create shell task");
-    kernel::Scheduler::add_task(shell_task);
+    debug_write("[BOOT] Loading userspace shell (sh.c.elf)...\n");
+    {
+        initrd::InitrdFile f = initrd::find("sh.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* shell_task = kernel::elf::load(hdr, f.data);
+                if (shell_task) {
+                    kernel::Scheduler::add_task(shell_task);
+                    debug_write("[BOOT] Userspace shell loaded (PID=");
+                    debug_write_hex(shell_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
+    }
+    if (kernel::Scheduler::task_count() < 2) {
+        debug_write("[BOOT] WARNING: No userspace shell loaded, falling back to kernel shell\n");
+        auto* fallback_task = kernel::TaskControlBlock::create(
+            service::Shell::shell_task_main, 1, 50);
+        if (fallback_task) kernel::Scheduler::add_task(fallback_task);
+    }
 
     debug_write("[BOOT] Boot complete! Enabling interrupts...\n");
     sti();

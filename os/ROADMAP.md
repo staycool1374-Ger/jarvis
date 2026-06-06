@@ -165,7 +165,6 @@
 - [ ] Implement macro-based Unified Test Framework (`JARVIS_TEST_SUITE`, `JARVIS_ASSERT_HEX_EQ`) with grep-filterable outputs (`[TEST:RUN]`, `[TEST:PASS]`, `[TEST:FAIL]`)
 - [ ] Implement static, slab-safe `KernelLogger` supporting multiple log levels (`DEBUG` to `FATAL`) with ANSI-colored serial output via COM1
 - [ ] Implement robust `kernel_panic` handler providing architectural CPU register dumps (`RAX`, `RIP`, `RSP`, `CR2`, `CR3`) and basic stack frame tracing (`rbp`)
-- [ ] avoid reinterpret_cast 
 
 ### Version 0.2.5 — Exception-Safe Userspace
 - [ ] Add setjmp/longjmp recovery for copy_from_user to handle invalid pointers safely
