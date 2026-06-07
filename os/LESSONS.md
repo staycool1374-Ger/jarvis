@@ -65,3 +65,10 @@
 - Kernel is mapped at `0xFFFF800000000000` (PML4 entry 256).
 - Physical address `X` → virtual `0xFFFF800000000000 + X`.
 - Accessing physical memory without this offset is only safe during boot (while the identity map at PML4[0] is active).
+
+### clone_kernel_pml4 must NOT copy boot identity-map entries
+- Boot code sets PML4[0] (entry 0, user-space range) to point to an identity-map PDPT at phys 0x2000.
+- `clone_kernel_pml4()` previously memcpy'd all 512 PML4 entries, leaking this kernel-owned page-table page into every user PML4.
+- When a user task exits, `free_user_pages()` walks PML4 entries 0-255 and asserts `PMM::is_user_page()` on every page-table page it finds — the leaked PDPT page at phys 0x2000 fails because it was allocated by the bootloader, not by `PMM::alloc_user_page()`.
+- Fix: only copy kernel-space entries (256-511); zero entries 0-255.
+- If a future developer changes `clone_kernel_pml4()`, they must never copy user-range PML4 entries from the kernel PML4 — the kernel may have transient mappings there (identity map, MMIO, etc.) that are kernel-owned pages.
