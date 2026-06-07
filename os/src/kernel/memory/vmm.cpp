@@ -124,7 +124,14 @@ uint64_t VMM::clone_kernel_pml4() {
 
     auto* src = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (kernel_pml4_ & ~0xFFFULL));
     auto* dst = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + phys);
-    for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
+    // Clear user-space entries (0-255) — the kernel's boot identity-map must not
+    // leak into user page tables, otherwise free_user_pages will ASSERT on
+    // kernel-owned page-table pages.
+    for (size_t i = 0; i < 256; ++i) {
+        dst[i] = 0;
+    }
+    // Copy kernel-space entries (256-511) so user tasks can access kernel mappings.
+    for (size_t i = 256; i < PAGE_TABLE_ENTRIES; ++i) {
         dst[i] = src[i];
     }
     return phys;
