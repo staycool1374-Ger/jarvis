@@ -324,6 +324,47 @@
 - [ ] Write userspace utilities as initrd binaries: `mkdir`, `rm`, `rmdir`, `echo`, `pwd`, `clear`, `sleep`
 - [ ] 125 Tests PASS
 
+### Version 0.2.19 — FPU/SSE Context Switch
+- [ ] Save/restore xmm0–xmm15 (FXSAVE/FXRSTOR or XSAVE/XRSTOR) on every context switch
+- [ ] Add `fpu_state` buffer to TaskControlBlock (512 bytes for FXSAVE)
+- [ ] Set `CR4.OSFXSR` and `CR4.OSXMMEXCPT` at boot (already done in boot.asm)
+- [ ] Enable SSE for new tasks in `create_user()` and `exec_into_current()`
+- [ ] Verify floating-point operations work correctly across multiple tasks
+- [ ] 125 Tests PASS
+
+### Version 0.2.20 — Kernel Log Buffer (klog / dmesg)
+- [ ] Implement a fixed-size ring buffer for kernel log messages
+- [ ] Route all `debug_write` and `KernelLogger` output to the ring buffer
+- [ ] Implement `SYS_KLOG` syscall (read/clear from userspace)
+- [ ] Write `dmesg` utility as an initrd binary
+- [ ] 125 Tests PASS
+
+### Version 0.2.21 — Random Number Generator (/dev/random)
+- [ ] Implement HWRNG driver (RDSEED/RDRAND instructions) for entropy
+- [ ] Implement software PRNG (ChaCha20 or similar) as fallback
+- [ ] Expose entropy via /dev/random and /dev/urandom devfs nodes
+- [ ] Write `SYS_GETRANDOM` syscall for userspace
+- [ ] 125 Tests PASS
+
+### Version 0.2.22 — fstab / Mount by Config
+- [ ] Define fstab format (simple text file listing device, mountpoint, fstype)
+- [ ] Parse fstab from initrd at boot (or from rootfs once available)
+- [ ] Automatically mount all entries before launching init/shell
+- [ ] 125 Tests PASS
+
+### Version 0.2.23 — Resource Limits (ulimit)
+- [ ] Add per-task resource tracking fields to TCB: max_fds, max_stack, max_memory
+- [ ] Enforce limits in syscall paths (open, exec, brk, mmap)
+- [ ] Implement `SYS_GETRLIMIT` / `SYS_SETRLIMIT` syscalls
+- [ ] Add `ulimit` built-in to shell
+- [ ] 125 Tests PASS
+
+### Version 0.2.24 — Pager / Text Editor
+- [ ] Write `less`-like pager (scrollable output viewer for stdout piped input)
+- [ ] Write `ed`-like minimal line editor (open, insert, save, quit)
+- [ ] Deploy both as initrd binaries
+- [ ] 125 Tests PASS
+
 ---
 
 ## Version 0.3.x — Hard Real-Time: Scheduler + Timing
