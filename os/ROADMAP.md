@@ -311,6 +311,19 @@
 - [ ] Verify `cat` and shell handle special characters (backspace, Ctrl-C) correctly
 - [ ] 125 Tests PASS
 
+### Version 0.2.18 — Shell Utilities Expansion
+- [ ] Add `help` built-in (list all built-ins and known external commands)
+- [ ] Add `echo` built-in (print arguments separated by spaces)
+- [ ] Add `pwd` built-in (print working directory via `getcwd()` or `/proc/self/cwd`)
+- [ ] Add `clear` built-in (write ANSI escape or use framebuffer clear)
+- [ ] Add `which` built-in (search PATH for an executable via `stat()`)
+- [ ] Add `env` built-in (print environment variables)
+- [ ] Add `sleep` built-in (busy-wait or use SYS_ALARM when available)
+- [ ] Implement `SYS_MKDIR` syscall for `mkdir` external command in initrd
+- [ ] Implement `SYS_UNLINK` syscall for `rm`/`rmdir` external commands in initrd
+- [ ] Write userspace utilities as initrd binaries: `mkdir`, `rm`, `rmdir`, `echo`, `pwd`, `clear`, `sleep`
+- [ ] 125 Tests PASS
+
 ---
 
 ## Version 0.3.x — Hard Real-Time: Scheduler + Timing
