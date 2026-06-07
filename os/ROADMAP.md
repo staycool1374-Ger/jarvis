@@ -186,6 +186,8 @@
 - [ ] Add O(1) task-ID→TCB lookup table in scheduler (replace global `find_mailbox()` scan)
 - [ ] Implement simple priority inheritance: sender donates priority to receiver while message is queued
 - [ ] Add `IPC_NONBLOCK` flag for senders that must not block
+- [ ] Expose `sync::Notify` to userspace via `SYS_NOTIFY(task_id, value)` and `SYS_NOTIFY_WAIT(value*)` syscalls
+- [ ] Expose `sync::EventGroup` to userspace via `SYS_EVENT_WAIT(bits, timeout)` and `SYS_EVENT_SET(task_id, bits)` syscalls
 - [ ] Update all userspace programs and libc wrappers to match new syscall interface
 - [ ] Update test suite for new IPC semantics
 - [ ] 120 Tests PASS
