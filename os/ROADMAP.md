@@ -174,7 +174,23 @@
 - [x] Add `selftest` shell command to trigger test execution interactively after boot
 - [x] Comprehensive test suite: 39 tests covering string, utils, ErrorOr, PMM, MemPool, IPC, drivers, scheduler, VFS, version
 
-### Version 0.2.5 — Exception-Safe Userspace
+### Version 0.2.5 — Priority IPC Redesign
+- [ ] Embed `MessageQueue` directly in `TaskControlBlock` (remove global mailbox array)
+- [ ] Add priority field to `Message` (0..31) with priority bitmap for O(1) highest-prio dequeue
+- [ ] Implement priority-ordered circular buffer (`MessageQueue::push(prio)` / `MessageQueue::pop()`)
+- [ ] Replace single `waiting_sender` pointer with a doubly-linked blocked-sender list via TCB
+- [ ] Redesign syscall interface:
+  - `send(dest, type, data, size, flags)` — block on full queue (or return -1 with `IPC_NONBLOCK`)
+  - `recv(buf, max_size)` — always reads from **own** mailbox (no `src_id` parameter)
+  - `call(dest, ...)` — synchronous send + block + reply
+- [ ] Add O(1) task-ID→TCB lookup table in scheduler (replace global `find_mailbox()` scan)
+- [ ] Implement simple priority inheritance: sender donates priority to receiver while message is queued
+- [ ] Add `IPC_NONBLOCK` flag for senders that must not block
+- [ ] Update all userspace programs and libc wrappers to match new syscall interface
+- [ ] Update test suite for new IPC semantics
+- [ ] 120 Tests PASS
+
+### Version 0.2.6 — Exception-Safe Userspace
 - [ ] Add setjmp/longjmp architectural recovery fallback blocks within copy_from_user functions to intercept invalid pointer faults gracefully
 - [ ] Develop dedicated user exception handlers tracking fault conditions (#GP, #PF, #DE, #UD) triggered in Ring 3, translating failures into standard signals (SIGSEGV, SIGFPE, SIGILL) rather than forcing a full Kernel Panic
 - [ ] Implement pre-termination signal dispatch loops: Enables faulted user applications to intercept standard terminations and perform vital diagnostic cleanups (closing open FDs, clearing active Mailbox locks)
@@ -189,7 +205,7 @@
 - [ ] Integrate page table security controls inside free_user_pages via explicit memory ownership lookups using an internal allocation bitset (USER/KERNEL bit flags)
 - [ ] 115 Tests PASS
 
-### Version 0.2.6 — Userspace Signals & Syscall Extension
+### Version 0.2.7 — Userspace Signals & Syscall Extension
 - [ ] Implement standard inter-process signaling system calls (SYS_SIGNAL, SYS_KILL)
 - [ ] Configure automatic signal translation vectors whenever user space execution faults trigger standard exceptions (SIGSEGV, SIGFPE, SIGILL)
 - [ ] Introduce dedicated execution alarm tracking options per individual thread task via SYS_ALARM
@@ -198,7 +214,7 @@
 - [ ] Add user space execution delays (sleep()) routed through the underlying task alarm timer architecture
 - [ ] 120 Tests PASS
 
-### Version 0.2.7 — Code Quality, Performance, & Migration
+### Version 0.2.8 — Code Quality, Performance, & Migration
 - [ ] Transition the core system call interface layer to evaluate operations via clean template-based type dispatch routines
 - [ ] Optimize system call dispatch routines by replacing linear multi-branch switch blocks with a high-performance static function pointer table
 - [ ] Migrate the legacy system call entry sequence from legacy int $0x80 software interrupts to the modern, high-speed native x86_64 syscall/sysret instruction paths using Model-Specific Registers (IA32_STAR, IA32_LSTAR, IA32_FMASK) to minimize real-time context latency
@@ -212,7 +228,7 @@
 - [ ] Clean up codebase consistency by replacing all hardcoded magic numbers and inline configuration strings with descriptive, type-safe enum constants
 - [ ] 125 Tests PASS
 
-### Version 0.2.8 — FAT32 Block Filesystem
+### Version 0.2.9 — FAT32 Block Filesystem
 - [ ] Implement ATA PIO driver for QEMU IDE (I/O ports, read/write sectors)
 - [ ] Implement block device abstraction layer (read/write sector, ioctl)
 - [ ] Implement FAT32 driver core:
@@ -227,6 +243,16 @@
 - [ ] Userspace shell can navigate `/home`, read/write files
 - [ ] (Future) Boot kernel from FAT32 as rootfs instead of initrd
 - [ ] 120 Tests PASS
+
+### Version 0.2.10 — Shell Status Bar (UX)
+- [ ] Implement `SYS_GETTOD` syscall (CMOS RTC read) for wall-clock time with seconds
+- [ ] Expose per-task CPU time (executed ticks) via `/proc/[pid]/stat` or a dedicated syscall
+- [ ] Compute response time of last shell command (wall-clock diff)
+- [ ] Implement status-bar rendering in framebuffer terminal (inverted-colour bottom line)
+- [ ] Implement status-bar rendering in serial terminal (ANSI escape codes, bottom line)
+- [ ] Refresh status bar on every shell prompt: date/time, last command response time, CPU%, mem%
+- [ ] Wire status bar into the shell display loop (non-intrusive, doesn't interfere with output)
+- [ ] 125 Tests PASS
 
 ---
 
