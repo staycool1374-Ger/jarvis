@@ -19,3 +19,21 @@
 - **Severity:** Recommendation (New Feature)
 - **Domain:** General Functional
 - **Status:** Open
+
+### ID: #004 — SYS_yield
+- **Description:** No way for a task to cooperatively yield the CPU. Preemption already works, but a `SYS_YIELD` syscall would allow cooperative scheduling for CPU-bound tasks that want to share the core voluntarily.
+- **Severity:** Recommendation (New Feature)
+- **Domain:** General Functional
+- **Status:** Open
+
+### ID: #005 — SYS_reboot / SYS_halt
+- **Description:** No clean way to reboot or power off the system from userspace. A `SYS_REBOOT`/`SYS_HALT` syscall pair is needed for shutdown scripts and init-level power management.
+- **Severity:** Recommendation (New Feature)
+- **Domain:** General Functional
+- **Status:** Open
+
+### ID: #006 — Lock-Free Ring Buffer (ISR→Task Handoff)
+- **Description:** ISRs currently block or drop data when the target task's queue is full. A wait-free single-producer/single-consumer ring buffer for ISR-to-task handoff would eliminate priority inversion and data loss in interrupt context.
+- **Severity:** Recommendation (New Feature)
+- **Domain:** Safety-Critical (ASIL/SIL impact)
+- **Status:** Open

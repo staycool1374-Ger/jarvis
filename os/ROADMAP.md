@@ -289,6 +289,28 @@
 - [ ] Implement minimal network stack (ARP, IP, UDP) over virtio-net
 - [ ] 120 Tests PASS
 
+### Version 0.2.15 — Secure Exec (argv/envp User Copy)
+- [ ] Refactor SYS_EXEC to copy `argv` and `envp` arrays element-by-element from userspace via CheckedPtr
+- [ ] Reject null or unmapped argv/envp pointers with `-EFAULT` instead of crashing
+- [ ] Fix environment variable inheritance across exec (clone current envp)
+- [ ] Update libc exec wrappers to match new interface
+- [ ] 125 Tests PASS
+
+### Version 0.2.16 — Heap Extension (sbrk/brk)
+- [ ] Implement `SYS_BRK(addr)` syscall to grow/shrink the userspace heap
+- [ ] Track program break per-task in TCB
+- [ ] Wire libc `sbrk()`/`brk()` to the new syscall
+- [ ] Verify `malloc` can grow beyond initial fixed heap region
+- [ ] 125 Tests PASS
+
+### Version 0.2.17 — Terminal Line Discipline (termios)
+- [ ] Implement termios: raw mode vs cooked mode per-TTY
+- [ ] Wire termios into TTY read path (line buffering, echo on/off in cooked mode)
+- [ ] Implement `SYS_IOCTL(TCGETS/TCSETS)` for termios control from userspace
+- [ ] Update shell to switch TTY to raw mode for proper interactive input
+- [ ] Verify `cat` and shell handle special characters (backspace, Ctrl-C) correctly
+- [ ] 125 Tests PASS
+
 ---
 
 ## Version 0.3.x — Hard Real-Time: Scheduler + Timing
