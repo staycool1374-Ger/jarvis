@@ -13,13 +13,31 @@
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/rtc.hpp>
 #include <services/terminal/terminal.hpp>
 #include <string.hpp>
 #include <signal.hpp>
+#include <version.hpp>
 
 namespace kernel {
 
 static constexpr uint64_t MAX_PATH = 256;
+
+/// @brief Timeval structure for gettimeofday (microsecond precision).
+struct Timeval {
+    int64_t tv_sec;   // seconds since epoch
+    int64_t tv_usec;  // microseconds
+};
+
+/// @brief Utsname structure for uname syscall.
+struct Utsname {
+    char sysname[65];
+    char nodename[65];
+    char release[65];
+    char version[65];
+    char machine[65];
+    char domainname[65];
+};
 
 void Syscall::init() {
 }
@@ -400,6 +418,9 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
             if (signal_is_fatal(sig) || !t->has_signal_handler(sig)) {
                 t->state = TaskState::TERMINATED;
                 t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+            } else {
+                // Non-fatal signal with handler: add to pending
+                t->pending_signals |= (1ULL << sig);
             }
         } else {
             // Deliver signal to another task
@@ -502,6 +523,61 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         auto* cur = task();
         if (!cur || !cur->event_group) return static_cast<uint64_t>(-1);
         cur->event_group->wait_bits(wanted, clear_on_exit != 0);
+        return 0;
+    }
+
+    case SyscallNumber::ALARM: {
+        auto* cur = task();
+        if (!cur) return static_cast<uint64_t>(-1);
+
+        // arg0 = seconds, arg1 = microseconds (optional)
+        uint64_t seconds = arg0;
+        uint64_t microseconds = arg1;
+
+        if (seconds == 0 && microseconds == 0) {
+            // Cancel alarm
+            cur->alarm_armed = false;
+            return 0;
+        }
+
+        uint64_t current_tick = arch::Timer::ticks();
+        // Convert to ticks (1000 Hz = 1 tick per ms)
+        uint64_t ticks = seconds * 1000 + (microseconds + 999) / 1000;
+        cur->alarm_ticks = current_tick + ticks;
+        cur->alarm_armed = true;
+        return 0;
+    }
+
+    case SyscallNumber::GETTOD: {
+        auto tv_ptr = checked(reinterpret_cast<Timeval*>(arg0));
+        if (is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(-1);
+
+        uint64_t secs = arch::RTC::read_seconds();
+        Timeval tv;
+        tv.tv_sec = static_cast<int64_t>(secs);
+        tv.tv_usec = 0;  // RTC only provides second precision
+        *tv_ptr.unsafe_ptr() = tv;
+        return 0;
+    }
+
+    case SyscallNumber::UNAME: {
+        auto uts_ptr = checked(reinterpret_cast<Utsname*>(arg0));
+        if (is_user_task() && !uts_ptr.valid()) return static_cast<uint64_t>(-1);
+
+        Utsname uts{};
+        strncpy(uts.sysname, "Jarvis", sizeof(uts.sysname) - 1);
+        strncpy(uts.nodename, "jarvis", sizeof(uts.nodename) - 1);
+        strncpy(uts.release, Version::string(), sizeof(uts.release) - 1);
+        strncpy(uts.version, Version::build_date(), sizeof(uts.version) - 1);
+        strncpy(uts.machine, "x86_64", sizeof(uts.machine) - 1);
+        strncpy(uts.domainname, "(none)", sizeof(uts.domainname) - 1);
+        *uts_ptr.unsafe_ptr() = uts;
+        return 0;
+    }
+
+    case SyscallNumber::PAUSE: {
+        // Wait for a signal/interrupt - yield and enable interrupts
+        arch::hlt();
         return 0;
     }
 

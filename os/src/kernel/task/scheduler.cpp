@@ -1,7 +1,9 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <signal.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -158,11 +160,20 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 void Scheduler::on_tick() noexcept {
     if (!preempt_enabled_) return;
 
+    uint64_t current_tick = arch::Timer::ticks();
+
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
         if (task->state == TaskState::RUNNING || task->state == TaskState::READY) {
             ++task->executed_ticks;
             if (task->remaining_ticks > 0) --task->remaining_ticks;
+
+            // Check for alarm expiration
+            if (task->alarm_armed && current_tick >= task->alarm_ticks) {
+                task->alarm_armed = false;
+                // Deliver SIGALRM to the task
+                task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::SIGALRM));
+            }
         }
     }
 

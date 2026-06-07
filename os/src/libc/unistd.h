@@ -1,6 +1,8 @@
 #pragma once
 
 #include <sys/types.h>
+#include <time.h>
+#include <sys/utsname.h>
 
 #define STDIN_FILENO  0
 #define STDOUT_FILENO 1
@@ -33,3 +35,7 @@ pid_t waitpid(pid_t pid, int* status, int options);
 
 void _exit(int status);
 unsigned int sleep(unsigned int seconds);
+unsigned int alarm(unsigned int seconds);
+int gettimeofday(struct timeval* tv, void* tz);
+int uname(struct utsname* buf);
+int pause(void);

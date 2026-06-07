@@ -1,8 +1,9 @@
-.
+/Users/arnold/jarvis
 ├── app.py
 ├── bench_mandelbrot
 ├── bench_mandelbrot.cpp
 ├── config.py
+├── healthcheck.sh
 ├── models.py
 ├── os
 │   ├── BUGS.md
@@ -13,40 +14,40 @@
 │   │   │   └── html
 │   │   │       ├── annotated_dup.js
 │   │   │       ├── annotated.html
-│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.map
-│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.md5
-│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.png
 │   │   │       ├── assert_8hpp__dep__incl.map
 │   │   │       ├── assert_8hpp__dep__incl.md5
 │   │   │       ├── assert_8hpp__dep__incl.png
-│   │   │       ├── assert_8hpp.html
 │   │   │       ├── assert_8hpp__incl.map
 │   │   │       ├── assert_8hpp__incl.md5
 │   │   │       ├── assert_8hpp__incl.png
-│   │   │       ├── assert_8hpp.js
+│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.map
+│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.md5
+│   │   │       ├── assert_8hpp_ae22655ba6f328217f1ebd6248ed82727_cgraph.png
 │   │   │       ├── assert_8hpp_source.html
-│   │   │       ├── bootparams_8cpp.html
+│   │   │       ├── assert_8hpp.html
+│   │   │       ├── assert_8hpp.js
 │   │   │       ├── bootparams_8cpp__incl.map
 │   │   │       ├── bootparams_8cpp__incl.md5
 │   │   │       ├── bootparams_8cpp__incl.png
+│   │   │       ├── bootparams_8cpp.html
 │   │   │       ├── bootparams_8hpp__dep__incl.map
 │   │   │       ├── bootparams_8hpp__dep__incl.md5
 │   │   │       ├── bootparams_8hpp__dep__incl.png
-│   │   │       ├── bootparams_8hpp.html
 │   │   │       ├── bootparams_8hpp__incl.map
 │   │   │       ├── bootparams_8hpp__incl.md5
 │   │   │       ├── bootparams_8hpp__incl.png
-│   │   │       ├── bootparams_8hpp.js
 │   │   │       ├── bootparams_8hpp_source.html
+│   │   │       ├── bootparams_8hpp.html
+│   │   │       ├── bootparams_8hpp.js
 │   │   │       ├── checked__ptr_8hpp__dep__incl.map
 │   │   │       ├── checked__ptr_8hpp__dep__incl.md5
 │   │   │       ├── checked__ptr_8hpp__dep__incl.png
-│   │   │       ├── checked__ptr_8hpp.html
 │   │   │       ├── checked__ptr_8hpp__incl.map
 │   │   │       ├── checked__ptr_8hpp__incl.md5
 │   │   │       ├── checked__ptr_8hpp__incl.png
-│   │   │       ├── checked__ptr_8hpp.js
 │   │   │       ├── checked__ptr_8hpp_source.html
+│   │   │       ├── checked__ptr_8hpp.html
+│   │   │       ├── checked__ptr_8hpp.js
 │   │   │       ├── classarch_1_1GDT__coll__graph.map
 │   │   │       ├── classarch_1_1GDT__coll__graph.md5
 │   │   │       ├── classarch_1_1GDT__coll__graph.png
@@ -55,27 +56,30 @@
 │   │   │       ├── classarch_1_1IDT__coll__graph.md5
 │   │   │       ├── classarch_1_1IDT__coll__graph.png
 │   │   │       ├── classarch_1_1IDT.html
+│   │   │       ├── classarch_1_1Keyboard__coll__graph.map
+│   │   │       ├── classarch_1_1Keyboard__coll__graph.md5
+│   │   │       ├── classarch_1_1Keyboard__coll__graph.png
 │   │   │       ├── classarch_1_1Keyboard_a14555f392329060ff5dc5ddd1256d4d5_cgraph.map
 │   │   │       ├── classarch_1_1Keyboard_a14555f392329060ff5dc5ddd1256d4d5_cgraph.md5
 │   │   │       ├── classarch_1_1Keyboard_a14555f392329060ff5dc5ddd1256d4d5_cgraph.png
 │   │   │       ├── classarch_1_1Keyboard_a88b2726cc0d551f950c94d8497d00907_cgraph.map
 │   │   │       ├── classarch_1_1Keyboard_a88b2726cc0d551f950c94d8497d00907_cgraph.md5
 │   │   │       ├── classarch_1_1Keyboard_a88b2726cc0d551f950c94d8497d00907_cgraph.png
-│   │   │       ├── classarch_1_1Keyboard__coll__graph.map
-│   │   │       ├── classarch_1_1Keyboard__coll__graph.md5
-│   │   │       ├── classarch_1_1Keyboard__coll__graph.png
 │   │   │       ├── classarch_1_1Keyboard.html
+│   │   │       ├── classarch_1_1Timer__coll__graph.map
+│   │   │       ├── classarch_1_1Timer__coll__graph.md5
+│   │   │       ├── classarch_1_1Timer__coll__graph.png
 │   │   │       ├── classarch_1_1Timer_a529d33ca4e64a0947bd66cedff778dea_cgraph.map
 │   │   │       ├── classarch_1_1Timer_a529d33ca4e64a0947bd66cedff778dea_cgraph.md5
 │   │   │       ├── classarch_1_1Timer_a529d33ca4e64a0947bd66cedff778dea_cgraph.png
 │   │   │       ├── classarch_1_1Timer_af9c0db51ea4552aa3bbbbd7cbef44fca_cgraph.map
 │   │   │       ├── classarch_1_1Timer_af9c0db51ea4552aa3bbbbd7cbef44fca_cgraph.md5
 │   │   │       ├── classarch_1_1Timer_af9c0db51ea4552aa3bbbbd7cbef44fca_cgraph.png
-│   │   │       ├── classarch_1_1Timer__coll__graph.map
-│   │   │       ├── classarch_1_1Timer__coll__graph.md5
-│   │   │       ├── classarch_1_1Timer__coll__graph.png
 │   │   │       ├── classarch_1_1Timer.html
 │   │   │       ├── classes.html
+│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.map
+│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.md5
+│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.png
 │   │   │       ├── classkernel_1_1CheckedPtr_a45756459d2aaa3dc22b82f1da917a6bf_cgraph.map
 │   │   │       ├── classkernel_1_1CheckedPtr_a45756459d2aaa3dc22b82f1da917a6bf_cgraph.md5
 │   │   │       ├── classkernel_1_1CheckedPtr_a45756459d2aaa3dc22b82f1da917a6bf_cgraph.png
@@ -88,18 +92,18 @@
 │   │   │       ├── classkernel_1_1CheckedPtr_af1f285a1e4ef86d24e61a67c7c0dfd83_cgraph.map
 │   │   │       ├── classkernel_1_1CheckedPtr_af1f285a1e4ef86d24e61a67c7c0dfd83_cgraph.md5
 │   │   │       ├── classkernel_1_1CheckedPtr_af1f285a1e4ef86d24e61a67c7c0dfd83_cgraph.png
-│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.map
-│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.md5
-│   │   │       ├── classkernel_1_1CheckedPtr__coll__graph.png
 │   │   │       ├── classkernel_1_1CheckedPtr.html
 │   │   │       ├── classkernel_1_1CheckedPtr.js
-│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.map
-│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.md5
-│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.png
 │   │   │       ├── classkernel_1_1DriverRegistry__coll__graph.map
 │   │   │       ├── classkernel_1_1DriverRegistry__coll__graph.md5
 │   │   │       ├── classkernel_1_1DriverRegistry__coll__graph.png
+│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.map
+│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.md5
+│   │   │       ├── classkernel_1_1DriverRegistry_aa368d4656ea582e9fef9a3d41353ca79_cgraph.png
 │   │   │       ├── classkernel_1_1DriverRegistry.html
+│   │   │       ├── classkernel_1_1IPC__coll__graph.map
+│   │   │       ├── classkernel_1_1IPC__coll__graph.md5
+│   │   │       ├── classkernel_1_1IPC__coll__graph.png
 │   │   │       ├── classkernel_1_1IPC_a00e816427b1df78df3310cba80ef23f3_cgraph.map
 │   │   │       ├── classkernel_1_1IPC_a00e816427b1df78df3310cba80ef23f3_cgraph.md5
 │   │   │       ├── classkernel_1_1IPC_a00e816427b1df78df3310cba80ef23f3_cgraph.png
@@ -118,10 +122,10 @@
 │   │   │       ├── classkernel_1_1IPC_ac7226ea23e0648465176fd0e0682f107_cgraph.map
 │   │   │       ├── classkernel_1_1IPC_ac7226ea23e0648465176fd0e0682f107_cgraph.md5
 │   │   │       ├── classkernel_1_1IPC_ac7226ea23e0648465176fd0e0682f107_cgraph.png
-│   │   │       ├── classkernel_1_1IPC__coll__graph.map
-│   │   │       ├── classkernel_1_1IPC__coll__graph.md5
-│   │   │       ├── classkernel_1_1IPC__coll__graph.png
 │   │   │       ├── classkernel_1_1IPC.html
+│   │   │       ├── classkernel_1_1Logger__coll__graph.map
+│   │   │       ├── classkernel_1_1Logger__coll__graph.md5
+│   │   │       ├── classkernel_1_1Logger__coll__graph.png
 │   │   │       ├── classkernel_1_1Logger_a12794441edd7245c8a81bfe5b9a6dd14_cgraph.map
 │   │   │       ├── classkernel_1_1Logger_a12794441edd7245c8a81bfe5b9a6dd14_cgraph.md5
 │   │   │       ├── classkernel_1_1Logger_a12794441edd7245c8a81bfe5b9a6dd14_cgraph.png
@@ -143,16 +147,13 @@
 │   │   │       ├── classkernel_1_1Logger_ac55cd7a631b4e76a2293edf8b8bb0bd4_cgraph.map
 │   │   │       ├── classkernel_1_1Logger_ac55cd7a631b4e76a2293edf8b8bb0bd4_cgraph.md5
 │   │   │       ├── classkernel_1_1Logger_ac55cd7a631b4e76a2293edf8b8bb0bd4_cgraph.png
-│   │   │       ├── classkernel_1_1Logger__coll__graph.map
-│   │   │       ├── classkernel_1_1Logger__coll__graph.md5
-│   │   │       ├── classkernel_1_1Logger__coll__graph.png
 │   │   │       ├── classkernel_1_1Logger.html
-│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.map
-│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.md5
-│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.png
 │   │   │       ├── classkernel_1_1MemPool__coll__graph.map
 │   │   │       ├── classkernel_1_1MemPool__coll__graph.md5
 │   │   │       ├── classkernel_1_1MemPool__coll__graph.png
+│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.map
+│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.md5
+│   │   │       ├── classkernel_1_1MemPool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.png
 │   │   │       ├── classkernel_1_1MemPool.html
 │   │   │       ├── classkernel_1_1MemPool.js
 │   │   │       ├── classkernel_1_1PMM__coll__graph.map
@@ -160,6 +161,9 @@
 │   │   │       ├── classkernel_1_1PMM__coll__graph.png
 │   │   │       ├── classkernel_1_1PMM.html
 │   │   │       ├── classkernel_1_1PMM.js
+│   │   │       ├── classkernel_1_1Scheduler__coll__graph.map
+│   │   │       ├── classkernel_1_1Scheduler__coll__graph.md5
+│   │   │       ├── classkernel_1_1Scheduler__coll__graph.png
 │   │   │       ├── classkernel_1_1Scheduler_a0d595ec39367db2ce160fb1d72c23fab_cgraph.map
 │   │   │       ├── classkernel_1_1Scheduler_a0d595ec39367db2ce160fb1d72c23fab_cgraph.md5
 │   │   │       ├── classkernel_1_1Scheduler_a0d595ec39367db2ce160fb1d72c23fab_cgraph.png
@@ -172,18 +176,18 @@
 │   │   │       ├── classkernel_1_1Scheduler_ac92ab8abdaaf924f98d66fd5f8ab2a50_cgraph.map
 │   │   │       ├── classkernel_1_1Scheduler_ac92ab8abdaaf924f98d66fd5f8ab2a50_cgraph.md5
 │   │   │       ├── classkernel_1_1Scheduler_ac92ab8abdaaf924f98d66fd5f8ab2a50_cgraph.png
-│   │   │       ├── classkernel_1_1Scheduler__coll__graph.map
-│   │   │       ├── classkernel_1_1Scheduler__coll__graph.md5
-│   │   │       ├── classkernel_1_1Scheduler__coll__graph.png
 │   │   │       ├── classkernel_1_1Scheduler.html
-│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.map
-│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.md5
-│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.png
 │   │   │       ├── classkernel_1_1sync_1_1EventGroup__coll__graph.map
 │   │   │       ├── classkernel_1_1sync_1_1EventGroup__coll__graph.md5
 │   │   │       ├── classkernel_1_1sync_1_1EventGroup__coll__graph.png
+│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.map
+│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.md5
+│   │   │       ├── classkernel_1_1sync_1_1EventGroup_add62c2c0758d7247b4103a948bc33bc5_cgraph.png
 │   │   │       ├── classkernel_1_1sync_1_1EventGroup.html
 │   │   │       ├── classkernel_1_1sync_1_1EventGroup.js
+│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.map
+│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.md5
+│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a4249f0561e075fea3b1399dcc2bd2cb1_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a4249f0561e075fea3b1399dcc2bd2cb1_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a4249f0561e075fea3b1399dcc2bd2cb1_cgraph.png
@@ -193,11 +197,11 @@
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a48b14cca7de3ff4ca22c8a86cbff0475_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a48b14cca7de3ff4ca22c8a86cbff0475_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Mutex_a48b14cca7de3ff4ca22c8a86cbff0475_cgraph.png
-│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.map
-│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.md5
-│   │   │       ├── classkernel_1_1sync_1_1Mutex__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Mutex.html
 │   │   │       ├── classkernel_1_1sync_1_1Mutex.js
+│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.map
+│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.md5
+│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Notify_a288a4d84afc3d9c99728d7ec98683b16_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Notify_a288a4d84afc3d9c99728d7ec98683b16_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Notify_a288a4d84afc3d9c99728d7ec98683b16_cgraph.png
@@ -207,11 +211,11 @@
 │   │   │       ├── classkernel_1_1sync_1_1Notify_adba405a64fbbe9fee6583e415cafc488_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Notify_adba405a64fbbe9fee6583e415cafc488_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Notify_adba405a64fbbe9fee6583e415cafc488_cgraph.png
-│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.map
-│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.md5
-│   │   │       ├── classkernel_1_1sync_1_1Notify__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Notify.html
 │   │   │       ├── classkernel_1_1sync_1_1Notify.js
+│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.map
+│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.md5
+│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Queue_a68bf24596e5e242c54a765b5fabb9074_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Queue_a68bf24596e5e242c54a765b5fabb9074_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Queue_a68bf24596e5e242c54a765b5fabb9074_cgraph.png
@@ -224,64 +228,64 @@
 │   │   │       ├── classkernel_1_1sync_1_1Queue_ab48aea9d45391283bfdb83fae3bd8acb_cgraph.map
 │   │   │       ├── classkernel_1_1sync_1_1Queue_ab48aea9d45391283bfdb83fae3bd8acb_cgraph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Queue_ab48aea9d45391283bfdb83fae3bd8acb_cgraph.png
-│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.map
-│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.md5
-│   │   │       ├── classkernel_1_1sync_1_1Queue__coll__graph.png
 │   │   │       ├── classkernel_1_1sync_1_1Queue.html
 │   │   │       ├── classkernel_1_1sync_1_1Queue.js
-│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.map
-│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.md5
-│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.png
 │   │   │       ├── classkernel_1_1sync_1_1Semaphore__coll__graph.map
 │   │   │       ├── classkernel_1_1sync_1_1Semaphore__coll__graph.md5
 │   │   │       ├── classkernel_1_1sync_1_1Semaphore__coll__graph.png
+│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.map
+│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.md5
+│   │   │       ├── classkernel_1_1sync_1_1Semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.png
 │   │   │       ├── classkernel_1_1sync_1_1Semaphore.html
 │   │   │       ├── classkernel_1_1sync_1_1Semaphore.js
+│   │   │       ├── classkernel_1_1Syscall__coll__graph.map
+│   │   │       ├── classkernel_1_1Syscall__coll__graph.md5
+│   │   │       ├── classkernel_1_1Syscall__coll__graph.png
 │   │   │       ├── classkernel_1_1Syscall_a1c8597b9b6a12262d2162af7b5bdbb81_cgraph.map
 │   │   │       ├── classkernel_1_1Syscall_a1c8597b9b6a12262d2162af7b5bdbb81_cgraph.md5
 │   │   │       ├── classkernel_1_1Syscall_a1c8597b9b6a12262d2162af7b5bdbb81_cgraph.png
 │   │   │       ├── classkernel_1_1Syscall_a4166c97da7594caaa03a16894d8dadf7_cgraph.map
 │   │   │       ├── classkernel_1_1Syscall_a4166c97da7594caaa03a16894d8dadf7_cgraph.md5
 │   │   │       ├── classkernel_1_1Syscall_a4166c97da7594caaa03a16894d8dadf7_cgraph.png
-│   │   │       ├── classkernel_1_1Syscall__coll__graph.map
-│   │   │       ├── classkernel_1_1Syscall__coll__graph.md5
-│   │   │       ├── classkernel_1_1Syscall__coll__graph.png
 │   │   │       ├── classkernel_1_1Syscall.html
+│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.map
+│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.md5
+│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.png
 │   │   │       ├── classkernel_1_1test_1_1Registry_a595308d487285aa880d9ecd350e97c83_cgraph.map
 │   │   │       ├── classkernel_1_1test_1_1Registry_a595308d487285aa880d9ecd350e97c83_cgraph.md5
 │   │   │       ├── classkernel_1_1test_1_1Registry_a595308d487285aa880d9ecd350e97c83_cgraph.png
 │   │   │       ├── classkernel_1_1test_1_1Registry_ae67f21b87c472fb381d3146a1e413d64_cgraph.map
 │   │   │       ├── classkernel_1_1test_1_1Registry_ae67f21b87c472fb381d3146a1e413d64_cgraph.md5
 │   │   │       ├── classkernel_1_1test_1_1Registry_ae67f21b87c472fb381d3146a1e413d64_cgraph.png
-│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.map
-│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.md5
-│   │   │       ├── classkernel_1_1test_1_1Registry__coll__graph.png
 │   │   │       ├── classkernel_1_1test_1_1Registry.html
+│   │   │       ├── classkernel_1_1VMM__coll__graph.map
+│   │   │       ├── classkernel_1_1VMM__coll__graph.md5
+│   │   │       ├── classkernel_1_1VMM__coll__graph.png
 │   │   │       ├── classkernel_1_1VMM_a385de660f1f7a0aab86ad1a31cb4971b_cgraph.map
 │   │   │       ├── classkernel_1_1VMM_a385de660f1f7a0aab86ad1a31cb4971b_cgraph.md5
 │   │   │       ├── classkernel_1_1VMM_a385de660f1f7a0aab86ad1a31cb4971b_cgraph.png
 │   │   │       ├── classkernel_1_1VMM_ab204c9d0ee0ad66661be51ce72280bff_cgraph.map
 │   │   │       ├── classkernel_1_1VMM_ab204c9d0ee0ad66661be51ce72280bff_cgraph.md5
 │   │   │       ├── classkernel_1_1VMM_ab204c9d0ee0ad66661be51ce72280bff_cgraph.png
-│   │   │       ├── classkernel_1_1VMM__coll__graph.map
-│   │   │       ├── classkernel_1_1VMM__coll__graph.md5
-│   │   │       ├── classkernel_1_1VMM__coll__graph.png
 │   │   │       ├── classkernel_1_1VMM.html
+│   │   │       ├── classservice_1_1Framebuffer__coll__graph.map
+│   │   │       ├── classservice_1_1Framebuffer__coll__graph.md5
+│   │   │       ├── classservice_1_1Framebuffer__coll__graph.png
 │   │   │       ├── classservice_1_1Framebuffer_a0c48217dc149beadf1749e6a351f4d8b_cgraph.map
 │   │   │       ├── classservice_1_1Framebuffer_a0c48217dc149beadf1749e6a351f4d8b_cgraph.md5
 │   │   │       ├── classservice_1_1Framebuffer_a0c48217dc149beadf1749e6a351f4d8b_cgraph.png
 │   │   │       ├── classservice_1_1Framebuffer_a21e2237e699ed029130bec158efd8935_cgraph.map
 │   │   │       ├── classservice_1_1Framebuffer_a21e2237e699ed029130bec158efd8935_cgraph.md5
 │   │   │       ├── classservice_1_1Framebuffer_a21e2237e699ed029130bec158efd8935_cgraph.png
-│   │   │       ├── classservice_1_1Framebuffer__coll__graph.map
-│   │   │       ├── classservice_1_1Framebuffer__coll__graph.md5
-│   │   │       ├── classservice_1_1Framebuffer__coll__graph.png
 │   │   │       ├── classservice_1_1Framebuffer.html
 │   │   │       ├── classservice_1_1ProgramRegistry__coll__graph.map
 │   │   │       ├── classservice_1_1ProgramRegistry__coll__graph.md5
 │   │   │       ├── classservice_1_1ProgramRegistry__coll__graph.png
 │   │   │       ├── classservice_1_1ProgramRegistry.html
 │   │   │       ├── classservice_1_1ProgramRegistry.js
+│   │   │       ├── classservice_1_1Shell__coll__graph.map
+│   │   │       ├── classservice_1_1Shell__coll__graph.md5
+│   │   │       ├── classservice_1_1Shell__coll__graph.png
 │   │   │       ├── classservice_1_1Shell_abb9dbef3f563347dc1498f555291ede7_cgraph.map
 │   │   │       ├── classservice_1_1Shell_abb9dbef3f563347dc1498f555291ede7_cgraph.md5
 │   │   │       ├── classservice_1_1Shell_abb9dbef3f563347dc1498f555291ede7_cgraph.png
@@ -291,11 +295,11 @@
 │   │   │       ├── classservice_1_1Shell_ad4e5adf46f0f562f7b5a566fd53d37c0_cgraph.map
 │   │   │       ├── classservice_1_1Shell_ad4e5adf46f0f562f7b5a566fd53d37c0_cgraph.md5
 │   │   │       ├── classservice_1_1Shell_ad4e5adf46f0f562f7b5a566fd53d37c0_cgraph.png
-│   │   │       ├── classservice_1_1Shell__coll__graph.map
-│   │   │       ├── classservice_1_1Shell__coll__graph.md5
-│   │   │       ├── classservice_1_1Shell__coll__graph.png
 │   │   │       ├── classservice_1_1Shell.html
 │   │   │       ├── classservice_1_1Shell.js
+│   │   │       ├── classservice_1_1Terminal__coll__graph.map
+│   │   │       ├── classservice_1_1Terminal__coll__graph.md5
+│   │   │       ├── classservice_1_1Terminal__coll__graph.png
 │   │   │       ├── classservice_1_1Terminal_a2cdeef541005d6fe951835a03107ee48_cgraph.map
 │   │   │       ├── classservice_1_1Terminal_a2cdeef541005d6fe951835a03107ee48_cgraph.md5
 │   │   │       ├── classservice_1_1Terminal_a2cdeef541005d6fe951835a03107ee48_cgraph.png
@@ -320,62 +324,59 @@
 │   │   │       ├── classservice_1_1Terminal_af69ff19b8c2a30f67c02701775fdc285_cgraph.map
 │   │   │       ├── classservice_1_1Terminal_af69ff19b8c2a30f67c02701775fdc285_cgraph.md5
 │   │   │       ├── classservice_1_1Terminal_af69ff19b8c2a30f67c02701775fdc285_cgraph.png
-│   │   │       ├── classservice_1_1Terminal__coll__graph.map
-│   │   │       ├── classservice_1_1Terminal__coll__graph.md5
-│   │   │       ├── classservice_1_1Terminal__coll__graph.png
 │   │   │       ├── classservice_1_1Terminal.html
 │   │   │       ├── clipboard.js
 │   │   │       ├── constants_8hpp__dep__incl.map
 │   │   │       ├── constants_8hpp__dep__incl.md5
 │   │   │       ├── constants_8hpp__dep__incl.png
-│   │   │       ├── constants_8hpp.html
 │   │   │       ├── constants_8hpp__incl.map
 │   │   │       ├── constants_8hpp__incl.md5
 │   │   │       ├── constants_8hpp__incl.png
-│   │   │       ├── constants_8hpp.js
 │   │   │       ├── constants_8hpp_source.html
+│   │   │       ├── constants_8hpp.html
+│   │   │       ├── constants_8hpp.js
 │   │   │       ├── cookie.js
-│   │   │       ├── ctype_8c.html
 │   │   │       ├── ctype_8c__incl.map
 │   │   │       ├── ctype_8c__incl.md5
 │   │   │       ├── ctype_8c__incl.png
+│   │   │       ├── ctype_8c.html
 │   │   │       ├── ctype_8c.js
+│   │   │       ├── ctype_8h_source.html
 │   │   │       ├── ctype_8h.html
 │   │   │       ├── ctype_8h.js
-│   │   │       ├── ctype_8h_source.html
-│   │   │       ├── cxxabi_8cpp.html
 │   │   │       ├── cxxabi_8cpp__incl.map
 │   │   │       ├── cxxabi_8cpp__incl.md5
 │   │   │       ├── cxxabi_8cpp__incl.png
+│   │   │       ├── cxxabi_8cpp.html
 │   │   │       ├── cxxabi_8cpp.js
-│   │   │       ├── demo_8cpp.html
 │   │   │       ├── demo_8cpp__incl.map
 │   │   │       ├── demo_8cpp__incl.md5
 │   │   │       ├── demo_8cpp__incl.png
+│   │   │       ├── demo_8cpp.html
 │   │   │       ├── demo_8cpp.js
 │   │   │       ├── demo_8hpp__dep__incl.map
 │   │   │       ├── demo_8hpp__dep__incl.md5
 │   │   │       ├── demo_8hpp__dep__incl.png
-│   │   │       ├── demo_8hpp.html
 │   │   │       ├── demo_8hpp__incl.map
 │   │   │       ├── demo_8hpp__incl.md5
 │   │   │       ├── demo_8hpp__incl.png
-│   │   │       ├── demo_8hpp.js
 │   │   │       ├── demo_8hpp_source.html
-│   │   │       ├── devfs_8cpp.html
+│   │   │       ├── demo_8hpp.html
+│   │   │       ├── demo_8hpp.js
 │   │   │       ├── devfs_8cpp__incl.map
 │   │   │       ├── devfs_8cpp__incl.md5
 │   │   │       ├── devfs_8cpp__incl.png
+│   │   │       ├── devfs_8cpp.html
 │   │   │       ├── devfs_8cpp.js
 │   │   │       ├── devfs_8hpp__dep__incl.map
 │   │   │       ├── devfs_8hpp__dep__incl.md5
 │   │   │       ├── devfs_8hpp__dep__incl.png
-│   │   │       ├── devfs_8hpp.html
 │   │   │       ├── devfs_8hpp__incl.map
 │   │   │       ├── devfs_8hpp__incl.md5
 │   │   │       ├── devfs_8hpp__incl.png
-│   │   │       ├── devfs_8hpp.js
 │   │   │       ├── devfs_8hpp_source.html
+│   │   │       ├── devfs_8hpp.html
+│   │   │       ├── devfs_8hpp.js
 │   │   │       ├── dir_000000_000005.html
 │   │   │       ├── dir_000000_000007.html
 │   │   │       ├── dir_000000_000011.html
@@ -581,84 +582,84 @@
 │   │   │       ├── doxygen_crawl.html
 │   │   │       ├── doxygen.css
 │   │   │       ├── doxygen.svg
-│   │   │       ├── driver_8cpp.html
 │   │   │       ├── driver_8cpp__incl.map
 │   │   │       ├── driver_8cpp__incl.md5
 │   │   │       ├── driver_8cpp__incl.png
+│   │   │       ├── driver_8cpp.html
 │   │   │       ├── driver_8hpp__dep__incl.map
 │   │   │       ├── driver_8hpp__dep__incl.md5
 │   │   │       ├── driver_8hpp__dep__incl.png
-│   │   │       ├── driver_8hpp.html
 │   │   │       ├── driver_8hpp__incl.map
 │   │   │       ├── driver_8hpp__incl.md5
 │   │   │       ├── driver_8hpp__incl.png
-│   │   │       ├── driver_8hpp.js
 │   │   │       ├── driver_8hpp_source.html
+│   │   │       ├── driver_8hpp.html
+│   │   │       ├── driver_8hpp.js
 │   │   │       ├── dynsections.js
-│   │   │       ├── elf_8cpp.html
 │   │   │       ├── elf_8cpp__incl.map
 │   │   │       ├── elf_8cpp__incl.md5
 │   │   │       ├── elf_8cpp__incl.png
+│   │   │       ├── elf_8cpp.html
 │   │   │       ├── elf_8cpp.js
 │   │   │       ├── elf_8hpp__dep__incl.map
 │   │   │       ├── elf_8hpp__dep__incl.md5
 │   │   │       ├── elf_8hpp__dep__incl.png
-│   │   │       ├── elf_8hpp.html
 │   │   │       ├── elf_8hpp__incl.map
 │   │   │       ├── elf_8hpp__incl.md5
 │   │   │       ├── elf_8hpp__incl.png
-│   │   │       ├── elf_8hpp.js
 │   │   │       ├── elf_8hpp_source.html
+│   │   │       ├── elf_8hpp.html
+│   │   │       ├── elf_8hpp.js
 │   │   │       ├── errno_8c.html
 │   │   │       ├── errno_8c.js
+│   │   │       ├── errno_8h_source.html
 │   │   │       ├── errno_8h.html
 │   │   │       ├── errno_8h.js
-│   │   │       ├── errno_8h_source.html
 │   │   │       ├── error_8hpp__dep__incl.map
 │   │   │       ├── error_8hpp__dep__incl.md5
 │   │   │       ├── error_8hpp__dep__incl.png
-│   │   │       ├── error_8hpp.html
 │   │   │       ├── error_8hpp__incl.map
 │   │   │       ├── error_8hpp__incl.md5
 │   │   │       ├── error_8hpp__incl.png
-│   │   │       ├── error_8hpp.js
 │   │   │       ├── error_8hpp_source.html
-│   │   │       ├── eventgroup_8cpp.html
+│   │   │       ├── error_8hpp.html
+│   │   │       ├── error_8hpp.js
 │   │   │       ├── eventgroup_8cpp__incl.map
 │   │   │       ├── eventgroup_8cpp__incl.md5
 │   │   │       ├── eventgroup_8cpp__incl.png
+│   │   │       ├── eventgroup_8cpp.html
 │   │   │       ├── eventgroup_8hpp__dep__incl.map
 │   │   │       ├── eventgroup_8hpp__dep__incl.md5
 │   │   │       ├── eventgroup_8hpp__dep__incl.png
-│   │   │       ├── eventgroup_8hpp.html
 │   │   │       ├── eventgroup_8hpp__incl.map
 │   │   │       ├── eventgroup_8hpp__incl.md5
 │   │   │       ├── eventgroup_8hpp__incl.png
-│   │   │       ├── eventgroup_8hpp.js
 │   │   │       ├── eventgroup_8hpp_source.html
+│   │   │       ├── eventgroup_8hpp.html
+│   │   │       ├── eventgroup_8hpp.js
 │   │   │       ├── files_dup.js
 │   │   │       ├── files.html
 │   │   │       ├── font_8hpp__dep__incl.map
 │   │   │       ├── font_8hpp__dep__incl.md5
 │   │   │       ├── font_8hpp__dep__incl.png
-│   │   │       ├── font_8hpp.html
 │   │   │       ├── font_8hpp__incl.map
 │   │   │       ├── font_8hpp__incl.md5
 │   │   │       ├── font_8hpp__incl.png
 │   │   │       ├── font_8hpp_source.html
-│   │   │       ├── framebuffer_8cpp.html
+│   │   │       ├── font_8hpp.html
 │   │   │       ├── framebuffer_8cpp__incl.map
 │   │   │       ├── framebuffer_8cpp__incl.md5
 │   │   │       ├── framebuffer_8cpp__incl.png
+│   │   │       ├── framebuffer_8cpp.html
 │   │   │       ├── framebuffer_8hpp__dep__incl.map
 │   │   │       ├── framebuffer_8hpp__dep__incl.md5
 │   │   │       ├── framebuffer_8hpp__dep__incl.png
-│   │   │       ├── framebuffer_8hpp.html
 │   │   │       ├── framebuffer_8hpp__incl.map
 │   │   │       ├── framebuffer_8hpp__incl.md5
 │   │   │       ├── framebuffer_8hpp__incl.png
-│   │   │       ├── framebuffer_8hpp.js
 │   │   │       ├── framebuffer_8hpp_source.html
+│   │   │       ├── framebuffer_8hpp.html
+│   │   │       ├── framebuffer_8hpp.js
 │   │   │       ├── functions_b.html
 │   │   │       ├── functions_c.html
 │   │   │       ├── functions_d.html
@@ -672,9 +673,7 @@
 │   │   │       ├── functions_func_f.html
 │   │   │       ├── functions_func_g.html
 │   │   │       ├── functions_func_h.html
-│   │   │       ├── functions_func.html
 │   │   │       ├── functions_func_i.html
-│   │   │       ├── functions_func.js
 │   │   │       ├── functions_func_l.html
 │   │   │       ├── functions_func_m.html
 │   │   │       ├── functions_func_n.html
@@ -687,9 +686,10 @@
 │   │   │       ├── functions_func_u.html
 │   │   │       ├── functions_func_v.html
 │   │   │       ├── functions_func_w.html
+│   │   │       ├── functions_func.html
+│   │   │       ├── functions_func.js
 │   │   │       ├── functions_g.html
 │   │   │       ├── functions_h.html
-│   │   │       ├── functions.html
 │   │   │       ├── functions_i.html
 │   │   │       ├── functions_k.html
 │   │   │       ├── functions_l.html
@@ -703,6 +703,7 @@
 │   │   │       ├── functions_t.html
 │   │   │       ├── functions_type.html
 │   │   │       ├── functions_u.html
+│   │   │       ├── functions_v.html
 │   │   │       ├── functions_vars_b.html
 │   │   │       ├── functions_vars_c.html
 │   │   │       ├── functions_vars_d.html
@@ -710,9 +711,7 @@
 │   │   │       ├── functions_vars_f.html
 │   │   │       ├── functions_vars_g.html
 │   │   │       ├── functions_vars_h.html
-│   │   │       ├── functions_vars.html
 │   │   │       ├── functions_vars_i.html
-│   │   │       ├── functions_vars.js
 │   │   │       ├── functions_vars_k.html
 │   │   │       ├── functions_vars_l.html
 │   │   │       ├── functions_vars_m.html
@@ -726,27 +725,29 @@
 │   │   │       ├── functions_vars_v.html
 │   │   │       ├── functions_vars_w.html
 │   │   │       ├── functions_vars_z.html
-│   │   │       ├── functions_v.html
+│   │   │       ├── functions_vars.html
+│   │   │       ├── functions_vars.js
 │   │   │       ├── functions_w.html
 │   │   │       ├── functions_z.html
-│   │   │       ├── gdt_8cpp.html
+│   │   │       ├── functions.html
 │   │   │       ├── gdt_8cpp__incl.map
 │   │   │       ├── gdt_8cpp__incl.md5
 │   │   │       ├── gdt_8cpp__incl.png
+│   │   │       ├── gdt_8cpp.html
 │   │   │       ├── gdt_8hpp__dep__incl.map
 │   │   │       ├── gdt_8hpp__dep__incl.md5
 │   │   │       ├── gdt_8hpp__dep__incl.png
-│   │   │       ├── gdt_8hpp.html
 │   │   │       ├── gdt_8hpp__incl.map
 │   │   │       ├── gdt_8hpp__incl.md5
 │   │   │       ├── gdt_8hpp__incl.png
-│   │   │       ├── gdt_8hpp.js
 │   │   │       ├── gdt_8hpp_source.html
+│   │   │       ├── gdt_8hpp.html
+│   │   │       ├── gdt_8hpp.js
 │   │   │       ├── globals_a.html
 │   │   │       ├── globals_b.html
 │   │   │       ├── globals_c.html
-│   │   │       ├── globals_defs.html
 │   │   │       ├── globals_d.html
+│   │   │       ├── globals_defs.html
 │   │   │       ├── globals_dup.js
 │   │   │       ├── globals_e.html
 │   │   │       ├── globals_enum.html
@@ -759,10 +760,8 @@
 │   │   │       ├── globals_func_f.html
 │   │   │       ├── globals_func_g.html
 │   │   │       ├── globals_func_h.html
-│   │   │       ├── globals_func.html
 │   │   │       ├── globals_func_i.html
 │   │   │       ├── globals_func_j.html
-│   │   │       ├── globals_func.js
 │   │   │       ├── globals_func_l.html
 │   │   │       ├── globals_func_m.html
 │   │   │       ├── globals_func_o.html
@@ -772,9 +771,10 @@
 │   │   │       ├── globals_func_t.html
 │   │   │       ├── globals_func_v.html
 │   │   │       ├── globals_func_w.html
+│   │   │       ├── globals_func.html
+│   │   │       ├── globals_func.js
 │   │   │       ├── globals_g.html
 │   │   │       ├── globals_h.html
-│   │   │       ├── globals.html
 │   │   │       ├── globals_i.html
 │   │   │       ├── globals_j.html
 │   │   │       ├── globals_k.html
@@ -788,33 +788,37 @@
 │   │   │       ├── globals_t.html
 │   │   │       ├── globals_type.html
 │   │   │       ├── globals_u.html
-│   │   │       ├── globals_vars.html
 │   │   │       ├── globals_v.html
+│   │   │       ├── globals_vars.html
 │   │   │       ├── globals_w.html
 │   │   │       ├── globals_z.html
+│   │   │       ├── globals.html
 │   │   │       ├── graph_legend.html
 │   │   │       ├── graph_legend.md5
 │   │   │       ├── graph_legend.png
 │   │   │       ├── hierarchy.html
 │   │   │       ├── hierarchy.js
-│   │   │       ├── idt_8cpp.html
 │   │   │       ├── idt_8cpp__incl.map
 │   │   │       ├── idt_8cpp__incl.md5
 │   │   │       ├── idt_8cpp__incl.png
+│   │   │       ├── idt_8cpp.html
 │   │   │       ├── idt_8cpp.js
 │   │   │       ├── idt_8hpp__dep__incl.map
 │   │   │       ├── idt_8hpp__dep__incl.md5
 │   │   │       ├── idt_8hpp__dep__incl.png
-│   │   │       ├── idt_8hpp.html
 │   │   │       ├── idt_8hpp__incl.map
 │   │   │       ├── idt_8hpp__incl.md5
 │   │   │       ├── idt_8hpp__incl.png
-│   │   │       ├── idt_8hpp.js
 │   │   │       ├── idt_8hpp_source.html
+│   │   │       ├── idt_8hpp.html
+│   │   │       ├── idt_8hpp.js
 │   │   │       ├── index.html
 │   │   │       ├── inherit_graph_0.map
 │   │   │       ├── inherit_graph_0.md5
 │   │   │       ├── inherit_graph_0.png
+│   │   │       ├── inherit_graph_1.map
+│   │   │       ├── inherit_graph_1.md5
+│   │   │       ├── inherit_graph_1.png
 │   │   │       ├── inherit_graph_10.map
 │   │   │       ├── inherit_graph_10.md5
 │   │   │       ├── inherit_graph_10.png
@@ -845,9 +849,9 @@
 │   │   │       ├── inherit_graph_19.map
 │   │   │       ├── inherit_graph_19.md5
 │   │   │       ├── inherit_graph_19.png
-│   │   │       ├── inherit_graph_1.map
-│   │   │       ├── inherit_graph_1.md5
-│   │   │       ├── inherit_graph_1.png
+│   │   │       ├── inherit_graph_2.map
+│   │   │       ├── inherit_graph_2.md5
+│   │   │       ├── inherit_graph_2.png
 │   │   │       ├── inherit_graph_20.map
 │   │   │       ├── inherit_graph_20.md5
 │   │   │       ├── inherit_graph_20.png
@@ -878,9 +882,9 @@
 │   │   │       ├── inherit_graph_29.map
 │   │   │       ├── inherit_graph_29.md5
 │   │   │       ├── inherit_graph_29.png
-│   │   │       ├── inherit_graph_2.map
-│   │   │       ├── inherit_graph_2.md5
-│   │   │       ├── inherit_graph_2.png
+│   │   │       ├── inherit_graph_3.map
+│   │   │       ├── inherit_graph_3.md5
+│   │   │       ├── inherit_graph_3.png
 │   │   │       ├── inherit_graph_30.map
 │   │   │       ├── inherit_graph_30.md5
 │   │   │       ├── inherit_graph_30.png
@@ -911,9 +915,9 @@
 │   │   │       ├── inherit_graph_39.map
 │   │   │       ├── inherit_graph_39.md5
 │   │   │       ├── inherit_graph_39.png
-│   │   │       ├── inherit_graph_3.map
-│   │   │       ├── inherit_graph_3.md5
-│   │   │       ├── inherit_graph_3.png
+│   │   │       ├── inherit_graph_4.map
+│   │   │       ├── inherit_graph_4.md5
+│   │   │       ├── inherit_graph_4.png
 │   │   │       ├── inherit_graph_40.map
 │   │   │       ├── inherit_graph_40.md5
 │   │   │       ├── inherit_graph_40.png
@@ -944,9 +948,9 @@
 │   │   │       ├── inherit_graph_49.map
 │   │   │       ├── inherit_graph_49.md5
 │   │   │       ├── inherit_graph_49.png
-│   │   │       ├── inherit_graph_4.map
-│   │   │       ├── inherit_graph_4.md5
-│   │   │       ├── inherit_graph_4.png
+│   │   │       ├── inherit_graph_5.map
+│   │   │       ├── inherit_graph_5.md5
+│   │   │       ├── inherit_graph_5.png
 │   │   │       ├── inherit_graph_50.map
 │   │   │       ├── inherit_graph_50.md5
 │   │   │       ├── inherit_graph_50.png
@@ -977,9 +981,9 @@
 │   │   │       ├── inherit_graph_59.map
 │   │   │       ├── inherit_graph_59.md5
 │   │   │       ├── inherit_graph_59.png
-│   │   │       ├── inherit_graph_5.map
-│   │   │       ├── inherit_graph_5.md5
-│   │   │       ├── inherit_graph_5.png
+│   │   │       ├── inherit_graph_6.map
+│   │   │       ├── inherit_graph_6.md5
+│   │   │       ├── inherit_graph_6.png
 │   │   │       ├── inherit_graph_60.map
 │   │   │       ├── inherit_graph_60.md5
 │   │   │       ├── inherit_graph_60.png
@@ -1010,9 +1014,9 @@
 │   │   │       ├── inherit_graph_69.map
 │   │   │       ├── inherit_graph_69.md5
 │   │   │       ├── inherit_graph_69.png
-│   │   │       ├── inherit_graph_6.map
-│   │   │       ├── inherit_graph_6.md5
-│   │   │       ├── inherit_graph_6.png
+│   │   │       ├── inherit_graph_7.map
+│   │   │       ├── inherit_graph_7.md5
+│   │   │       ├── inherit_graph_7.png
 │   │   │       ├── inherit_graph_70.map
 │   │   │       ├── inherit_graph_70.md5
 │   │   │       ├── inherit_graph_70.png
@@ -1031,9 +1035,6 @@
 │   │   │       ├── inherit_graph_75.map
 │   │   │       ├── inherit_graph_75.md5
 │   │   │       ├── inherit_graph_75.png
-│   │   │       ├── inherit_graph_7.map
-│   │   │       ├── inherit_graph_7.md5
-│   │   │       ├── inherit_graph_7.png
 │   │   │       ├── inherit_graph_8.map
 │   │   │       ├── inherit_graph_8.md5
 │   │   │       ├── inherit_graph_8.png
@@ -1041,70 +1042,73 @@
 │   │   │       ├── inherit_graph_9.md5
 │   │   │       ├── inherit_graph_9.png
 │   │   │       ├── inherits.html
-│   │   │       ├── initrd_8cpp.html
-│   │   │       ├── initrd_8cpp__incl.map
-│   │   │       ├── initrd_8cpp__incl.md5
-│   │   │       ├── initrd_8cpp__incl.png
-│   │   │       ├── initrd_8cpp.js
-│   │   │       ├── initrd_8hpp__dep__incl.map
-│   │   │       ├── initrd_8hpp__dep__incl.md5
-│   │   │       ├── initrd_8hpp__dep__incl.png
-│   │   │       ├── initrd_8hpp.html
-│   │   │       ├── initrd_8hpp__incl.map
-│   │   │       ├── initrd_8hpp__incl.md5
-│   │   │       ├── initrd_8hpp__incl.png
-│   │   │       ├── initrd_8hpp.js
-│   │   │       ├── initrd_8hpp_source.html
-│   │   │       ├── initrd__fs_8cpp.html
 │   │   │       ├── initrd__fs_8cpp__incl.map
 │   │   │       ├── initrd__fs_8cpp__incl.md5
 │   │   │       ├── initrd__fs_8cpp__incl.png
+│   │   │       ├── initrd__fs_8cpp.html
 │   │   │       ├── initrd__fs_8cpp.js
 │   │   │       ├── initrd__fs_8hpp__dep__incl.map
 │   │   │       ├── initrd__fs_8hpp__dep__incl.md5
 │   │   │       ├── initrd__fs_8hpp__dep__incl.png
-│   │   │       ├── initrd__fs_8hpp.html
 │   │   │       ├── initrd__fs_8hpp__incl.map
 │   │   │       ├── initrd__fs_8hpp__incl.md5
 │   │   │       ├── initrd__fs_8hpp__incl.png
 │   │   │       ├── initrd__fs_8hpp_source.html
+│   │   │       ├── initrd__fs_8hpp.html
+│   │   │       ├── initrd_8cpp__incl.map
+│   │   │       ├── initrd_8cpp__incl.md5
+│   │   │       ├── initrd_8cpp__incl.png
+│   │   │       ├── initrd_8cpp.html
+│   │   │       ├── initrd_8cpp.js
+│   │   │       ├── initrd_8hpp__dep__incl.map
+│   │   │       ├── initrd_8hpp__dep__incl.md5
+│   │   │       ├── initrd_8hpp__dep__incl.png
+│   │   │       ├── initrd_8hpp__incl.map
+│   │   │       ├── initrd_8hpp__incl.md5
+│   │   │       ├── initrd_8hpp__incl.png
+│   │   │       ├── initrd_8hpp_source.html
+│   │   │       ├── initrd_8hpp.html
+│   │   │       ├── initrd_8hpp.js
 │   │   │       ├── io_8hpp__dep__incl.map
 │   │   │       ├── io_8hpp__dep__incl.md5
 │   │   │       ├── io_8hpp__dep__incl.png
-│   │   │       ├── io_8hpp.html
 │   │   │       ├── io_8hpp__incl.map
 │   │   │       ├── io_8hpp__incl.md5
 │   │   │       ├── io_8hpp__incl.png
-│   │   │       ├── io_8hpp.js
 │   │   │       ├── io_8hpp_source.html
-│   │   │       ├── ipc_8c.html
+│   │   │       ├── io_8hpp.html
+│   │   │       ├── io_8hpp.js
 │   │   │       ├── ipc_8c__incl.map
 │   │   │       ├── ipc_8c__incl.md5
 │   │   │       ├── ipc_8c__incl.png
+│   │   │       ├── ipc_8c.html
 │   │   │       ├── ipc_8c.js
-│   │   │       ├── ipc_8cpp.html
 │   │   │       ├── ipc_8cpp__incl.map
 │   │   │       ├── ipc_8cpp__incl.md5
 │   │   │       ├── ipc_8cpp__incl.png
+│   │   │       ├── ipc_8cpp.html
 │   │   │       ├── ipc_8h__dep__incl.map
 │   │   │       ├── ipc_8h__dep__incl.md5
 │   │   │       ├── ipc_8h__dep__incl.png
-│   │   │       ├── ipc_8h.html
 │   │   │       ├── ipc_8h__incl.map
 │   │   │       ├── ipc_8h__incl.md5
 │   │   │       ├── ipc_8h__incl.png
+│   │   │       ├── ipc_8h_source.html
+│   │   │       ├── ipc_8h.html
 │   │   │       ├── ipc_8h.js
 │   │   │       ├── ipc_8hpp__dep__incl.map
 │   │   │       ├── ipc_8hpp__dep__incl.md5
 │   │   │       ├── ipc_8hpp__dep__incl.png
-│   │   │       ├── ipc_8hpp.html
 │   │   │       ├── ipc_8hpp__incl.map
 │   │   │       ├── ipc_8hpp__incl.md5
 │   │   │       ├── ipc_8hpp__incl.png
-│   │   │       ├── ipc_8hpp.js
 │   │   │       ├── ipc_8hpp_source.html
-│   │   │       ├── ipc_8h_source.html
+│   │   │       ├── ipc_8hpp.html
+│   │   │       ├── ipc_8hpp.js
 │   │   │       ├── jquery.js
+│   │   │       ├── kernel_8cpp__incl.map
+│   │   │       ├── kernel_8cpp__incl.md5
+│   │   │       ├── kernel_8cpp__incl.png
 │   │   │       ├── kernel_8cpp_a05b6e6675cd9f2f3cb2fd0aa3bc812a3_cgraph.map
 │   │   │       ├── kernel_8cpp_a05b6e6675cd9f2f3cb2fd0aa3bc812a3_cgraph.md5
 │   │   │       ├── kernel_8cpp_a05b6e6675cd9f2f3cb2fd0aa3bc812a3_cgraph.png
@@ -1130,10 +1134,13 @@
 │   │   │       ├── kernel_8cpp_ae54e1bcf3fe5f14443fdc8ddadfbb615_cgraph.md5
 │   │   │       ├── kernel_8cpp_ae54e1bcf3fe5f14443fdc8ddadfbb615_cgraph.png
 │   │   │       ├── kernel_8cpp.html
-│   │   │       ├── kernel_8cpp__incl.map
-│   │   │       ├── kernel_8cpp__incl.md5
-│   │   │       ├── kernel_8cpp__incl.png
 │   │   │       ├── kernel_8cpp.js
+│   │   │       ├── kernel_8hpp__dep__incl.map
+│   │   │       ├── kernel_8hpp__dep__incl.md5
+│   │   │       ├── kernel_8hpp__dep__incl.png
+│   │   │       ├── kernel_8hpp__incl.map
+│   │   │       ├── kernel_8hpp__incl.md5
+│   │   │       ├── kernel_8hpp__incl.png
 │   │   │       ├── kernel_8hpp_a59c51dc200e018623c3a7468c91552b7_cgraph.map
 │   │   │       ├── kernel_8hpp_a59c51dc200e018623c3a7468c91552b7_cgraph.md5
 │   │   │       ├── kernel_8hpp_a59c51dc200e018623c3a7468c91552b7_cgraph.png
@@ -1143,78 +1150,72 @@
 │   │   │       ├── kernel_8hpp_ae54e1bcf3fe5f14443fdc8ddadfbb615_cgraph.map
 │   │   │       ├── kernel_8hpp_ae54e1bcf3fe5f14443fdc8ddadfbb615_cgraph.md5
 │   │   │       ├── kernel_8hpp_ae54e1bcf3fe5f14443fdc8ddadfbb615_cgraph.png
-│   │   │       ├── kernel_8hpp__dep__incl.map
-│   │   │       ├── kernel_8hpp__dep__incl.md5
-│   │   │       ├── kernel_8hpp__dep__incl.png
-│   │   │       ├── kernel_8hpp.html
-│   │   │       ├── kernel_8hpp__incl.map
-│   │   │       ├── kernel_8hpp__incl.md5
-│   │   │       ├── kernel_8hpp__incl.png
-│   │   │       ├── kernel_8hpp.js
 │   │   │       ├── kernel_8hpp_source.html
-│   │   │       ├── keyboard_8cpp.html
+│   │   │       ├── kernel_8hpp.html
+│   │   │       ├── kernel_8hpp.js
 │   │   │       ├── keyboard_8cpp__incl.map
 │   │   │       ├── keyboard_8cpp__incl.md5
 │   │   │       ├── keyboard_8cpp__incl.png
+│   │   │       ├── keyboard_8cpp.html
 │   │   │       ├── keyboard_8hpp__dep__incl.map
 │   │   │       ├── keyboard_8hpp__dep__incl.md5
 │   │   │       ├── keyboard_8hpp__dep__incl.png
-│   │   │       ├── keyboard_8hpp.html
 │   │   │       ├── keyboard_8hpp__incl.map
 │   │   │       ├── keyboard_8hpp__incl.md5
 │   │   │       ├── keyboard_8hpp__incl.png
-│   │   │       ├── keyboard_8hpp.js
 │   │   │       ├── keyboard_8hpp_source.html
-│   │   │       ├── logger_8cpp.html
+│   │   │       ├── keyboard_8hpp.html
+│   │   │       ├── keyboard_8hpp.js
 │   │   │       ├── logger_8cpp__incl.map
 │   │   │       ├── logger_8cpp__incl.md5
 │   │   │       ├── logger_8cpp__incl.png
+│   │   │       ├── logger_8cpp.html
 │   │   │       ├── logger_8hpp__dep__incl.map
 │   │   │       ├── logger_8hpp__dep__incl.md5
 │   │   │       ├── logger_8hpp__dep__incl.png
-│   │   │       ├── logger_8hpp.html
 │   │   │       ├── logger_8hpp__incl.map
 │   │   │       ├── logger_8hpp__incl.md5
 │   │   │       ├── logger_8hpp__incl.png
-│   │   │       ├── logger_8hpp.js
 │   │   │       ├── logger_8hpp_source.html
-│   │   │       ├── mempool_8cpp.html
+│   │   │       ├── logger_8hpp.html
+│   │   │       ├── logger_8hpp.js
 │   │   │       ├── mempool_8cpp__incl.map
 │   │   │       ├── mempool_8cpp__incl.md5
 │   │   │       ├── mempool_8cpp__incl.png
+│   │   │       ├── mempool_8cpp.html
 │   │   │       ├── mempool_8hpp__dep__incl.map
 │   │   │       ├── mempool_8hpp__dep__incl.md5
 │   │   │       ├── mempool_8hpp__dep__incl.png
-│   │   │       ├── mempool_8hpp.html
 │   │   │       ├── mempool_8hpp__incl.map
 │   │   │       ├── mempool_8hpp__incl.md5
 │   │   │       ├── mempool_8hpp__incl.png
-│   │   │       ├── mempool_8hpp.js
 │   │   │       ├── mempool_8hpp_source.html
-│   │   │       ├── menudata.js
+│   │   │       ├── mempool_8hpp.html
+│   │   │       ├── mempool_8hpp.js
 │   │   │       ├── menu.js
+│   │   │       ├── menudata.js
 │   │   │       ├── multiboot2_8hpp__dep__incl.map
 │   │   │       ├── multiboot2_8hpp__dep__incl.md5
 │   │   │       ├── multiboot2_8hpp__dep__incl.png
-│   │   │       ├── multiboot2_8hpp.html
 │   │   │       ├── multiboot2_8hpp__incl.map
 │   │   │       ├── multiboot2_8hpp__incl.md5
 │   │   │       ├── multiboot2_8hpp__incl.png
-│   │   │       ├── multiboot2_8hpp.js
 │   │   │       ├── multiboot2_8hpp_source.html
-│   │   │       ├── mutex_8cpp.html
+│   │   │       ├── multiboot2_8hpp.html
+│   │   │       ├── multiboot2_8hpp.js
 │   │   │       ├── mutex_8cpp__incl.map
 │   │   │       ├── mutex_8cpp__incl.md5
 │   │   │       ├── mutex_8cpp__incl.png
+│   │   │       ├── mutex_8cpp.html
 │   │   │       ├── mutex_8hpp__dep__incl.map
 │   │   │       ├── mutex_8hpp__dep__incl.md5
 │   │   │       ├── mutex_8hpp__dep__incl.png
-│   │   │       ├── mutex_8hpp.html
 │   │   │       ├── mutex_8hpp__incl.map
 │   │   │       ├── mutex_8hpp__incl.md5
 │   │   │       ├── mutex_8hpp__incl.png
-│   │   │       ├── mutex_8hpp.js
 │   │   │       ├── mutex_8hpp_source.html
+│   │   │       ├── mutex_8hpp.html
+│   │   │       ├── mutex_8hpp.js
 │   │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.map
 │   │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.md5
 │   │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.png
@@ -1259,13 +1260,13 @@
 │   │   │       ├── namespacekernel_1_1vfs.js
 │   │   │       ├── namespacekernel.html
 │   │   │       ├── namespacekernel.js
+│   │   │       ├── namespacemem.html
 │   │   │       ├── namespacemembers_enum.html
 │   │   │       ├── namespacemembers_eval.html
 │   │   │       ├── namespacemembers_func.html
-│   │   │       ├── namespacemembers.html
 │   │   │       ├── namespacemembers_type.html
 │   │   │       ├── namespacemembers_vars.html
-│   │   │       ├── namespacemem.html
+│   │   │       ├── namespacemembers.html
 │   │   │       ├── namespaceprograms_a14cf7e144c84b313a6b8b98666bd842b_cgraph.map
 │   │   │       ├── namespaceprograms_a14cf7e144c84b313a6b8b98666bd842b_cgraph.md5
 │   │   │       ├── namespaceprograms_a14cf7e144c84b313a6b8b98666bd842b_cgraph.png
@@ -1277,10 +1278,11 @@
 │   │   │       ├── namespaceprograms_ad545c26b18a1f65f60afb5b4ed3eb6bf_cgraph.png
 │   │   │       ├── namespaceprograms.html
 │   │   │       ├── namespaces_dup.js
+│   │   │       ├── namespaces.html
 │   │   │       ├── namespaceservice.html
 │   │   │       ├── namespaceservice.js
-│   │   │       ├── namespaces.html
 │   │   │       ├── navtree.css
+│   │   │       ├── navtree.js
 │   │   │       ├── navtreedata.js
 │   │   │       ├── navtreeindex0.js
 │   │   │       ├── navtreeindex1.js
@@ -1289,109 +1291,109 @@
 │   │   │       ├── navtreeindex4.js
 │   │   │       ├── navtreeindex5.js
 │   │   │       ├── navtreeindex6.js
-│   │   │       ├── navtree.js
+│   │   │       ├── new_8cpp__incl.map
+│   │   │       ├── new_8cpp__incl.md5
+│   │   │       ├── new_8cpp__incl.png
 │   │   │       ├── new_8cpp_a07f9ca05698b74270db2383799abe2c2_cgraph.map
 │   │   │       ├── new_8cpp_a07f9ca05698b74270db2383799abe2c2_cgraph.md5
 │   │   │       ├── new_8cpp_a07f9ca05698b74270db2383799abe2c2_cgraph.png
 │   │   │       ├── new_8cpp.html
-│   │   │       ├── new_8cpp__incl.map
-│   │   │       ├── new_8cpp__incl.md5
-│   │   │       ├── new_8cpp__incl.png
 │   │   │       ├── new_8cpp.js
-│   │   │       ├── notify_8cpp.html
 │   │   │       ├── notify_8cpp__incl.map
 │   │   │       ├── notify_8cpp__incl.md5
 │   │   │       ├── notify_8cpp__incl.png
+│   │   │       ├── notify_8cpp.html
 │   │   │       ├── notify_8hpp__dep__incl.map
 │   │   │       ├── notify_8hpp__dep__incl.md5
 │   │   │       ├── notify_8hpp__dep__incl.png
-│   │   │       ├── notify_8hpp.html
 │   │   │       ├── notify_8hpp__incl.map
 │   │   │       ├── notify_8hpp__incl.md5
 │   │   │       ├── notify_8hpp__incl.png
-│   │   │       ├── notify_8hpp.js
 │   │   │       ├── notify_8hpp_source.html
-│   │   │       ├── pipe_8cpp.html
+│   │   │       ├── notify_8hpp.html
+│   │   │       ├── notify_8hpp.js
 │   │   │       ├── pipe_8cpp__incl.map
 │   │   │       ├── pipe_8cpp__incl.md5
 │   │   │       ├── pipe_8cpp__incl.png
+│   │   │       ├── pipe_8cpp.html
 │   │   │       ├── pipe_8cpp.js
 │   │   │       ├── pipe_8hpp__dep__incl.map
 │   │   │       ├── pipe_8hpp__dep__incl.md5
 │   │   │       ├── pipe_8hpp__dep__incl.png
-│   │   │       ├── pipe_8hpp.html
 │   │   │       ├── pipe_8hpp__incl.map
 │   │   │       ├── pipe_8hpp__incl.md5
 │   │   │       ├── pipe_8hpp__incl.png
-│   │   │       ├── pipe_8hpp.js
 │   │   │       ├── pipe_8hpp_source.html
-│   │   │       ├── pmm_8cpp.html
+│   │   │       ├── pipe_8hpp.html
+│   │   │       ├── pipe_8hpp.js
 │   │   │       ├── pmm_8cpp__incl.map
 │   │   │       ├── pmm_8cpp__incl.md5
 │   │   │       ├── pmm_8cpp__incl.png
+│   │   │       ├── pmm_8cpp.html
 │   │   │       ├── pmm_8hpp__dep__incl.map
 │   │   │       ├── pmm_8hpp__dep__incl.md5
 │   │   │       ├── pmm_8hpp__dep__incl.png
-│   │   │       ├── pmm_8hpp.html
 │   │   │       ├── pmm_8hpp__incl.map
 │   │   │       ├── pmm_8hpp__incl.md5
 │   │   │       ├── pmm_8hpp__incl.png
-│   │   │       ├── pmm_8hpp.js
 │   │   │       ├── pmm_8hpp_source.html
-│   │   │       ├── procfs_8cpp.html
+│   │   │       ├── pmm_8hpp.html
+│   │   │       ├── pmm_8hpp.js
 │   │   │       ├── procfs_8cpp__incl.map
 │   │   │       ├── procfs_8cpp__incl.md5
 │   │   │       ├── procfs_8cpp__incl.png
+│   │   │       ├── procfs_8cpp.html
 │   │   │       ├── procfs_8cpp.js
 │   │   │       ├── procfs_8hpp__dep__incl.map
 │   │   │       ├── procfs_8hpp__dep__incl.md5
 │   │   │       ├── procfs_8hpp__dep__incl.png
-│   │   │       ├── procfs_8hpp.html
 │   │   │       ├── procfs_8hpp__incl.map
 │   │   │       ├── procfs_8hpp__incl.md5
 │   │   │       ├── procfs_8hpp__incl.png
 │   │   │       ├── procfs_8hpp_source.html
-│   │   │       ├── program_8cpp.html
+│   │   │       ├── procfs_8hpp.html
 │   │   │       ├── program_8cpp__incl.map
 │   │   │       ├── program_8cpp__incl.md5
 │   │   │       ├── program_8cpp__incl.png
+│   │   │       ├── program_8cpp.html
 │   │   │       ├── program_8hpp__dep__incl.map
 │   │   │       ├── program_8hpp__dep__incl.md5
 │   │   │       ├── program_8hpp__dep__incl.png
-│   │   │       ├── program_8hpp.html
 │   │   │       ├── program_8hpp__incl.map
 │   │   │       ├── program_8hpp__incl.md5
 │   │   │       ├── program_8hpp__incl.png
-│   │   │       ├── program_8hpp.js
 │   │   │       ├── program_8hpp_source.html
-│   │   │       ├── queue_8cpp.html
+│   │   │       ├── program_8hpp.html
+│   │   │       ├── program_8hpp.js
 │   │   │       ├── queue_8cpp__incl.map
 │   │   │       ├── queue_8cpp__incl.md5
 │   │   │       ├── queue_8cpp__incl.png
+│   │   │       ├── queue_8cpp.html
 │   │   │       ├── queue_8hpp__dep__incl.map
 │   │   │       ├── queue_8hpp__dep__incl.md5
 │   │   │       ├── queue_8hpp__dep__incl.png
-│   │   │       ├── queue_8hpp.html
 │   │   │       ├── queue_8hpp__incl.map
 │   │   │       ├── queue_8hpp__incl.md5
 │   │   │       ├── queue_8hpp__incl.png
-│   │   │       ├── queue_8hpp.js
 │   │   │       ├── queue_8hpp_source.html
-│   │   │       ├── scheduler_8cpp.html
+│   │   │       ├── queue_8hpp.html
+│   │   │       ├── queue_8hpp.js
 │   │   │       ├── scheduler_8cpp__incl.map
 │   │   │       ├── scheduler_8cpp__incl.md5
 │   │   │       ├── scheduler_8cpp__incl.png
+│   │   │       ├── scheduler_8cpp.html
 │   │   │       ├── scheduler_8hpp__dep__incl.map
 │   │   │       ├── scheduler_8hpp__dep__incl.md5
 │   │   │       ├── scheduler_8hpp__dep__incl.png
-│   │   │       ├── scheduler_8hpp.html
 │   │   │       ├── scheduler_8hpp__incl.map
 │   │   │       ├── scheduler_8hpp__incl.md5
 │   │   │       ├── scheduler_8hpp__incl.png
-│   │   │       ├── scheduler_8hpp.js
 │   │   │       ├── scheduler_8hpp_source.html
+│   │   │       ├── scheduler_8hpp.html
+│   │   │       ├── scheduler_8hpp.js
 │   │   │       ├── search
 │   │   │       │   ├── all_0.js
+│   │   │       │   ├── all_1.js
 │   │   │       │   ├── all_10.js
 │   │   │       │   ├── all_11.js
 │   │   │       │   ├── all_12.js
@@ -1402,7 +1404,6 @@
 │   │   │       │   ├── all_17.js
 │   │   │       │   ├── all_18.js
 │   │   │       │   ├── all_19.js
-│   │   │       │   ├── all_1.js
 │   │   │       │   ├── all_2.js
 │   │   │       │   ├── all_3.js
 │   │   │       │   ├── all_4.js
@@ -1418,8 +1419,8 @@
 │   │   │       │   ├── all_e.js
 │   │   │       │   ├── all_f.js
 │   │   │       │   ├── classes_0.js
-│   │   │       │   ├── classes_10.js
 │   │   │       │   ├── classes_1.js
+│   │   │       │   ├── classes_10.js
 │   │   │       │   ├── classes_2.js
 │   │   │       │   ├── classes_3.js
 │   │   │       │   ├── classes_4.js
@@ -1454,13 +1455,13 @@
 │   │   │       │   ├── enums_7.js
 │   │   │       │   ├── enums_8.js
 │   │   │       │   ├── enumvalues_0.js
+│   │   │       │   ├── enumvalues_1.js
 │   │   │       │   ├── enumvalues_10.js
 │   │   │       │   ├── enumvalues_11.js
 │   │   │       │   ├── enumvalues_12.js
 │   │   │       │   ├── enumvalues_13.js
 │   │   │       │   ├── enumvalues_14.js
 │   │   │       │   ├── enumvalues_15.js
-│   │   │       │   ├── enumvalues_1.js
 │   │   │       │   ├── enumvalues_2.js
 │   │   │       │   ├── enumvalues_3.js
 │   │   │       │   ├── enumvalues_4.js
@@ -1476,9 +1477,9 @@
 │   │   │       │   ├── enumvalues_e.js
 │   │   │       │   ├── enumvalues_f.js
 │   │   │       │   ├── files_0.js
+│   │   │       │   ├── files_1.js
 │   │   │       │   ├── files_10.js
 │   │   │       │   ├── files_11.js
-│   │   │       │   ├── files_1.js
 │   │   │       │   ├── files_2.js
 │   │   │       │   ├── files_3.js
 │   │   │       │   ├── files_4.js
@@ -1494,6 +1495,7 @@
 │   │   │       │   ├── files_e.js
 │   │   │       │   ├── files_f.js
 │   │   │       │   ├── functions_0.js
+│   │   │       │   ├── functions_1.js
 │   │   │       │   ├── functions_10.js
 │   │   │       │   ├── functions_11.js
 │   │   │       │   ├── functions_12.js
@@ -1501,7 +1503,6 @@
 │   │   │       │   ├── functions_14.js
 │   │   │       │   ├── functions_15.js
 │   │   │       │   ├── functions_16.js
-│   │   │       │   ├── functions_1.js
 │   │   │       │   ├── functions_2.js
 │   │   │       │   ├── functions_3.js
 │   │   │       │   ├── functions_4.js
@@ -1523,8 +1524,8 @@
 │   │   │       │   ├── namespaces_4.js
 │   │   │       │   ├── namespaces_5.js
 │   │   │       │   ├── search.css
-│   │   │       │   ├── searchdata.js
 │   │   │       │   ├── search.js
+│   │   │       │   ├── searchdata.js
 │   │   │       │   ├── typedefs_0.js
 │   │   │       │   ├── typedefs_1.js
 │   │   │       │   ├── typedefs_2.js
@@ -1538,6 +1539,7 @@
 │   │   │       │   ├── typedefs_a.js
 │   │   │       │   ├── typedefs_b.js
 │   │   │       │   ├── variables_0.js
+│   │   │       │   ├── variables_1.js
 │   │   │       │   ├── variables_10.js
 │   │   │       │   ├── variables_11.js
 │   │   │       │   ├── variables_12.js
@@ -1546,7 +1548,6 @@
 │   │   │       │   ├── variables_15.js
 │   │   │       │   ├── variables_16.js
 │   │   │       │   ├── variables_17.js
-│   │   │       │   ├── variables_1.js
 │   │   │       │   ├── variables_2.js
 │   │   │       │   ├── variables_3.js
 │   │   │       │   ├── variables_4.js
@@ -1561,61 +1562,64 @@
 │   │   │       │   ├── variables_d.js
 │   │   │       │   ├── variables_e.js
 │   │   │       │   └── variables_f.js
-│   │   │       ├── semaphore_8cpp.html
 │   │   │       ├── semaphore_8cpp__incl.map
 │   │   │       ├── semaphore_8cpp__incl.md5
 │   │   │       ├── semaphore_8cpp__incl.png
+│   │   │       ├── semaphore_8cpp.html
 │   │   │       ├── semaphore_8hpp__dep__incl.map
 │   │   │       ├── semaphore_8hpp__dep__incl.md5
 │   │   │       ├── semaphore_8hpp__dep__incl.png
-│   │   │       ├── semaphore_8hpp.html
 │   │   │       ├── semaphore_8hpp__incl.map
 │   │   │       ├── semaphore_8hpp__incl.md5
 │   │   │       ├── semaphore_8hpp__incl.png
-│   │   │       ├── semaphore_8hpp.js
 │   │   │       ├── semaphore_8hpp_source.html
-│   │   │       ├── shell_8cpp.html
+│   │   │       ├── semaphore_8hpp.html
+│   │   │       ├── semaphore_8hpp.js
 │   │   │       ├── shell_8cpp__incl.map
 │   │   │       ├── shell_8cpp__incl.md5
 │   │   │       ├── shell_8cpp__incl.png
+│   │   │       ├── shell_8cpp.html
 │   │   │       ├── shell_8hpp__dep__incl.map
 │   │   │       ├── shell_8hpp__dep__incl.md5
 │   │   │       ├── shell_8hpp__dep__incl.png
-│   │   │       ├── shell_8hpp.html
 │   │   │       ├── shell_8hpp__incl.map
 │   │   │       ├── shell_8hpp__incl.md5
 │   │   │       ├── shell_8hpp__incl.png
-│   │   │       ├── shell_8hpp.js
 │   │   │       ├── shell_8hpp_source.html
+│   │   │       ├── shell_8hpp.html
+│   │   │       ├── shell_8hpp.js
 │   │   │       ├── signal_8hpp__dep__incl.map
 │   │   │       ├── signal_8hpp__dep__incl.md5
 │   │   │       ├── signal_8hpp__dep__incl.png
-│   │   │       ├── signal_8hpp.html
 │   │   │       ├── signal_8hpp__incl.map
 │   │   │       ├── signal_8hpp__incl.md5
 │   │   │       ├── signal_8hpp__incl.png
-│   │   │       ├── signal_8hpp.js
 │   │   │       ├── signal_8hpp_source.html
-│   │   │       ├── stat_8c.html
+│   │   │       ├── signal_8hpp.html
+│   │   │       ├── signal_8hpp.js
 │   │   │       ├── stat_8c__incl.map
 │   │   │       ├── stat_8c__incl.md5
 │   │   │       ├── stat_8c__incl.png
+│   │   │       ├── stat_8c.html
 │   │   │       ├── stat_8c.js
 │   │   │       ├── stat_8h__dep__incl.map
 │   │   │       ├── stat_8h__dep__incl.md5
 │   │   │       ├── stat_8h__dep__incl.png
-│   │   │       ├── stat_8h.html
 │   │   │       ├── stat_8h__incl.map
 │   │   │       ├── stat_8h__incl.md5
 │   │   │       ├── stat_8h__incl.png
-│   │   │       ├── stat_8h.js
 │   │   │       ├── stat_8h_source.html
+│   │   │       ├── stat_8h.html
+│   │   │       ├── stat_8h.js
 │   │   │       ├── stdarg_8h__dep__incl.map
 │   │   │       ├── stdarg_8h__dep__incl.md5
 │   │   │       ├── stdarg_8h__dep__incl.png
+│   │   │       ├── stdarg_8h_source.html
 │   │   │       ├── stdarg_8h.html
 │   │   │       ├── stdarg_8h.js
-│   │   │       ├── stdarg_8h_source.html
+│   │   │       ├── stdio_8c__incl.map
+│   │   │       ├── stdio_8c__incl.md5
+│   │   │       ├── stdio_8c__incl.png
 │   │   │       ├── stdio_8c_a3e29caa20f7cffe18f410f01278905a8_cgraph.map
 │   │   │       ├── stdio_8c_a3e29caa20f7cffe18f410f01278905a8_cgraph.md5
 │   │   │       ├── stdio_8c_a3e29caa20f7cffe18f410f01278905a8_cgraph.png
@@ -1635,10 +1639,13 @@
 │   │   │       ├── stdio_8c_af4de2514b7778805db3815e8dd6cf09a_cgraph.md5
 │   │   │       ├── stdio_8c_af4de2514b7778805db3815e8dd6cf09a_cgraph.png
 │   │   │       ├── stdio_8c.html
-│   │   │       ├── stdio_8c__incl.map
-│   │   │       ├── stdio_8c__incl.md5
-│   │   │       ├── stdio_8c__incl.png
 │   │   │       ├── stdio_8c.js
+│   │   │       ├── stdio_8h__dep__incl.map
+│   │   │       ├── stdio_8h__dep__incl.md5
+│   │   │       ├── stdio_8h__dep__incl.png
+│   │   │       ├── stdio_8h__incl.map
+│   │   │       ├── stdio_8h__incl.md5
+│   │   │       ├── stdio_8h__incl.png
 │   │   │       ├── stdio_8h_a3e29caa20f7cffe18f410f01278905a8_cgraph.map
 │   │   │       ├── stdio_8h_a3e29caa20f7cffe18f410f01278905a8_cgraph.md5
 │   │   │       ├── stdio_8h_a3e29caa20f7cffe18f410f01278905a8_cgraph.png
@@ -1657,15 +1664,12 @@
 │   │   │       ├── stdio_8h_af4de2514b7778805db3815e8dd6cf09a_cgraph.map
 │   │   │       ├── stdio_8h_af4de2514b7778805db3815e8dd6cf09a_cgraph.md5
 │   │   │       ├── stdio_8h_af4de2514b7778805db3815e8dd6cf09a_cgraph.png
-│   │   │       ├── stdio_8h__dep__incl.map
-│   │   │       ├── stdio_8h__dep__incl.md5
-│   │   │       ├── stdio_8h__dep__incl.png
-│   │   │       ├── stdio_8h.html
-│   │   │       ├── stdio_8h__incl.map
-│   │   │       ├── stdio_8h__incl.md5
-│   │   │       ├── stdio_8h__incl.png
-│   │   │       ├── stdio_8h.js
 │   │   │       ├── stdio_8h_source.html
+│   │   │       ├── stdio_8h.html
+│   │   │       ├── stdio_8h.js
+│   │   │       ├── stdlib_8c__incl.map
+│   │   │       ├── stdlib_8c__incl.md5
+│   │   │       ├── stdlib_8c__incl.png
 │   │   │       ├── stdlib_8c_a2807e26a012717736641384f91ab2563_cgraph.map
 │   │   │       ├── stdlib_8c_a2807e26a012717736641384f91ab2563_cgraph.md5
 │   │   │       ├── stdlib_8c_a2807e26a012717736641384f91ab2563_cgraph.png
@@ -1676,10 +1680,10 @@
 │   │   │       ├── stdlib_8c_a825c37450147a643edbcb1a435518307_cgraph.md5
 │   │   │       ├── stdlib_8c_a825c37450147a643edbcb1a435518307_cgraph.png
 │   │   │       ├── stdlib_8c.html
-│   │   │       ├── stdlib_8c__incl.map
-│   │   │       ├── stdlib_8c__incl.md5
-│   │   │       ├── stdlib_8c__incl.png
 │   │   │       ├── stdlib_8c.js
+│   │   │       ├── stdlib_8h__incl.map
+│   │   │       ├── stdlib_8h__incl.md5
+│   │   │       ├── stdlib_8h__incl.png
 │   │   │       ├── stdlib_8h_a2807e26a012717736641384f91ab2563_cgraph.map
 │   │   │       ├── stdlib_8h_a2807e26a012717736641384f91ab2563_cgraph.md5
 │   │   │       ├── stdlib_8h_a2807e26a012717736641384f91ab2563_cgraph.png
@@ -1689,12 +1693,12 @@
 │   │   │       ├── stdlib_8h_a825c37450147a643edbcb1a435518307_cgraph.map
 │   │   │       ├── stdlib_8h_a825c37450147a643edbcb1a435518307_cgraph.md5
 │   │   │       ├── stdlib_8h_a825c37450147a643edbcb1a435518307_cgraph.png
-│   │   │       ├── stdlib_8h.html
-│   │   │       ├── stdlib_8h__incl.map
-│   │   │       ├── stdlib_8h__incl.md5
-│   │   │       ├── stdlib_8h__incl.png
-│   │   │       ├── stdlib_8h.js
 │   │   │       ├── stdlib_8h_source.html
+│   │   │       ├── stdlib_8h.html
+│   │   │       ├── stdlib_8h.js
+│   │   │       ├── string_8c__incl.map
+│   │   │       ├── string_8c__incl.md5
+│   │   │       ├── string_8c__incl.png
 │   │   │       ├── string_8c_a19546e43db31c3095991b04023b422b2_cgraph.map
 │   │   │       ├── string_8c_a19546e43db31c3095991b04023b422b2_cgraph.md5
 │   │   │       ├── string_8c_a19546e43db31c3095991b04023b422b2_cgraph.png
@@ -1702,34 +1706,31 @@
 │   │   │       ├── string_8c_a5ffaef3fc3f7ddb9856ccd4bcb79e9bc_cgraph.md5
 │   │   │       ├── string_8c_a5ffaef3fc3f7ddb9856ccd4bcb79e9bc_cgraph.png
 │   │   │       ├── string_8c.html
-│   │   │       ├── string_8c__incl.map
-│   │   │       ├── string_8c__incl.md5
-│   │   │       ├── string_8c__incl.png
 │   │   │       ├── string_8c.js
+│   │   │       ├── string_8h__dep__incl.map
+│   │   │       ├── string_8h__dep__incl.md5
+│   │   │       ├── string_8h__dep__incl.png
+│   │   │       ├── string_8h__incl.map
+│   │   │       ├── string_8h__incl.md5
+│   │   │       ├── string_8h__incl.png
 │   │   │       ├── string_8h_a19546e43db31c3095991b04023b422b2_cgraph.map
 │   │   │       ├── string_8h_a19546e43db31c3095991b04023b422b2_cgraph.md5
 │   │   │       ├── string_8h_a19546e43db31c3095991b04023b422b2_cgraph.png
 │   │   │       ├── string_8h_a5ffaef3fc3f7ddb9856ccd4bcb79e9bc_cgraph.map
 │   │   │       ├── string_8h_a5ffaef3fc3f7ddb9856ccd4bcb79e9bc_cgraph.md5
 │   │   │       ├── string_8h_a5ffaef3fc3f7ddb9856ccd4bcb79e9bc_cgraph.png
-│   │   │       ├── string_8h__dep__incl.map
-│   │   │       ├── string_8h__dep__incl.md5
-│   │   │       ├── string_8h__dep__incl.png
+│   │   │       ├── string_8h_source.html
 │   │   │       ├── string_8h.html
-│   │   │       ├── string_8h__incl.map
-│   │   │       ├── string_8h__incl.md5
-│   │   │       ├── string_8h__incl.png
 │   │   │       ├── string_8h.js
 │   │   │       ├── string_8hpp__dep__incl.map
 │   │   │       ├── string_8hpp__dep__incl.md5
 │   │   │       ├── string_8hpp__dep__incl.png
-│   │   │       ├── string_8hpp.html
 │   │   │       ├── string_8hpp__incl.map
 │   │   │       ├── string_8hpp__incl.md5
 │   │   │       ├── string_8hpp__incl.png
-│   │   │       ├── string_8hpp.js
 │   │   │       ├── string_8hpp_source.html
-│   │   │       ├── string_8h_source.html
+│   │   │       ├── string_8hpp.html
+│   │   │       ├── string_8hpp.js
 │   │   │       ├── structarch_1_1GDTDescriptor__coll__graph.map
 │   │   │       ├── structarch_1_1GDTDescriptor__coll__graph.md5
 │   │   │       ├── structarch_1_1GDTDescriptor__coll__graph.png
@@ -1783,40 +1784,40 @@
 │   │   │       ├── structis__integral__coll__graph.map
 │   │   │       ├── structis__integral__coll__graph.md5
 │   │   │       ├── structis__integral__coll__graph.png
-│   │   │       ├── structis__integral.html
 │   │   │       ├── structis__integral__inherit__graph.map
 │   │   │       ├── structis__integral__inherit__graph.md5
 │   │   │       ├── structis__integral__inherit__graph.png
+│   │   │       ├── structis__integral.html
 │   │   │       ├── structis__pod__coll__graph.map
 │   │   │       ├── structis__pod__coll__graph.md5
 │   │   │       ├── structis__pod__coll__graph.png
-│   │   │       ├── structis__pod.html
 │   │   │       ├── structis__pod__inherit__graph.map
 │   │   │       ├── structis__pod__inherit__graph.md5
 │   │   │       ├── structis__pod__inherit__graph.png
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.map
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.md5
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.png
-│   │   │       ├── structis__same_3_01T_00_01T_01_4.html
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.map
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.md5
-│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.png
+│   │   │       ├── structis__pod.html
 │   │   │       ├── structis__same__coll__graph.map
 │   │   │       ├── structis__same__coll__graph.md5
 │   │   │       ├── structis__same__coll__graph.png
-│   │   │       ├── structis__same.html
 │   │   │       ├── structis__same__inherit__graph.map
 │   │   │       ├── structis__same__inherit__graph.md5
 │   │   │       ├── structis__same__inherit__graph.png
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.map
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.md5
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__coll__graph.png
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.map
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.md5
+│   │   │       ├── structis__same_3_01T_00_01T_01_4__inherit__graph.png
+│   │   │       ├── structis__same_3_01T_00_01T_01_4.html
+│   │   │       ├── structis__same.html
+│   │   │       ├── structkernel_1_1BootParams__coll__graph.map
+│   │   │       ├── structkernel_1_1BootParams__coll__graph.md5
+│   │   │       ├── structkernel_1_1BootParams__coll__graph.png
 │   │   │       ├── structkernel_1_1BootParams_a18a875b5d2a2b8fa4b62950fe7051a10_cgraph.map
 │   │   │       ├── structkernel_1_1BootParams_a18a875b5d2a2b8fa4b62950fe7051a10_cgraph.md5
 │   │   │       ├── structkernel_1_1BootParams_a18a875b5d2a2b8fa4b62950fe7051a10_cgraph.png
 │   │   │       ├── structkernel_1_1BootParams_a99f74d74355b7119c2dae784f87f7ca0_cgraph.map
 │   │   │       ├── structkernel_1_1BootParams_a99f74d74355b7119c2dae784f87f7ca0_cgraph.md5
 │   │   │       ├── structkernel_1_1BootParams_a99f74d74355b7119c2dae784f87f7ca0_cgraph.png
-│   │   │       ├── structkernel_1_1BootParams__coll__graph.map
-│   │   │       ├── structkernel_1_1BootParams__coll__graph.md5
-│   │   │       ├── structkernel_1_1BootParams__coll__graph.png
 │   │   │       ├── structkernel_1_1BootParams.html
 │   │   │       ├── structkernel_1_1BootParams.js
 │   │   │       ├── structkernel_1_1Driver__coll__graph.map
@@ -1834,14 +1835,14 @@
 │   │   │       ├── structkernel_1_1elf_1_1ELF64ProgramHeader__coll__graph.png
 │   │   │       ├── structkernel_1_1elf_1_1ELF64ProgramHeader.html
 │   │   │       ├── structkernel_1_1elf_1_1ELF64ProgramHeader.js
+│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.map
+│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.md5
+│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.png
 │   │   │       ├── structkernel_1_1ErrorOr_3_01void_01_4__coll__graph.map
 │   │   │       ├── structkernel_1_1ErrorOr_3_01void_01_4__coll__graph.md5
 │   │   │       ├── structkernel_1_1ErrorOr_3_01void_01_4__coll__graph.png
 │   │   │       ├── structkernel_1_1ErrorOr_3_01void_01_4.html
 │   │   │       ├── structkernel_1_1ErrorOr_3_01void_01_4.js
-│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.map
-│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.md5
-│   │   │       ├── structkernel_1_1ErrorOr__coll__graph.png
 │   │   │       ├── structkernel_1_1ErrorOr.html
 │   │   │       ├── structkernel_1_1ErrorOr.js
 │   │   │       ├── structkernel_1_1ExceptionSignalMap__coll__graph.map
@@ -1864,15 +1865,15 @@
 │   │   │       ├── structkernel_1_1Message__coll__graph.png
 │   │   │       ├── structkernel_1_1Message.html
 │   │   │       ├── structkernel_1_1Message.js
+│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.map
+│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.md5
+│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.png
 │   │   │       ├── structkernel_1_1MessageQueue_a4a8b5699fccf8f2fd24701dc1c874fee_cgraph.map
 │   │   │       ├── structkernel_1_1MessageQueue_a4a8b5699fccf8f2fd24701dc1c874fee_cgraph.md5
 │   │   │       ├── structkernel_1_1MessageQueue_a4a8b5699fccf8f2fd24701dc1c874fee_cgraph.png
 │   │   │       ├── structkernel_1_1MessageQueue_ab0b722ca481a94d8a138fdd76a4c3922_cgraph.map
 │   │   │       ├── structkernel_1_1MessageQueue_ab0b722ca481a94d8a138fdd76a4c3922_cgraph.md5
 │   │   │       ├── structkernel_1_1MessageQueue_ab0b722ca481a94d8a138fdd76a4c3922_cgraph.png
-│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.map
-│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.md5
-│   │   │       ├── structkernel_1_1MessageQueue__coll__graph.png
 │   │   │       ├── structkernel_1_1MessageQueue.html
 │   │   │       ├── structkernel_1_1MessageQueue.js
 │   │   │       ├── structkernel_1_1sync_1_1QueueMessage__coll__graph.map
@@ -1885,6 +1886,9 @@
 │   │   │       ├── structkernel_1_1TaskContext__coll__graph.png
 │   │   │       ├── structkernel_1_1TaskContext.html
 │   │   │       ├── structkernel_1_1TaskContext.js
+│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.map
+│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.md5
+│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.png
 │   │   │       ├── structkernel_1_1TaskControlBlock_a1443c8caa63e4d8af39ad150f91d413d_cgraph.map
 │   │   │       ├── structkernel_1_1TaskControlBlock_a1443c8caa63e4d8af39ad150f91d413d_cgraph.md5
 │   │   │       ├── structkernel_1_1TaskControlBlock_a1443c8caa63e4d8af39ad150f91d413d_cgraph.png
@@ -1897,9 +1901,6 @@
 │   │   │       ├── structkernel_1_1TaskControlBlock_ac1a2ba759b6c98d3c734d755a5380b3f_cgraph.map
 │   │   │       ├── structkernel_1_1TaskControlBlock_ac1a2ba759b6c98d3c734d755a5380b3f_cgraph.md5
 │   │   │       ├── structkernel_1_1TaskControlBlock_ac1a2ba759b6c98d3c734d755a5380b3f_cgraph.png
-│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.map
-│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.md5
-│   │   │       ├── structkernel_1_1TaskControlBlock__coll__graph.png
 │   │   │       ├── structkernel_1_1TaskControlBlock.html
 │   │   │       ├── structkernel_1_1TaskControlBlock.js
 │   │   │       ├── structkernel_1_1test_1_1TestCase__coll__graph.map
@@ -2001,6 +2002,9 @@
 │   │   │       ├── structMultiboot2Tag__coll__graph.png
 │   │   │       ├── structMultiboot2Tag.html
 │   │   │       ├── structMultiboot2Tag.js
+│   │   │       ├── structremove__reference__coll__graph.map
+│   │   │       ├── structremove__reference__coll__graph.md5
+│   │   │       ├── structremove__reference__coll__graph.png
 │   │   │       ├── structremove__reference_3_01T_01_6_01_4__coll__graph.map
 │   │   │       ├── structremove__reference_3_01T_01_6_01_4__coll__graph.md5
 │   │   │       ├── structremove__reference_3_01T_01_6_01_4__coll__graph.png
@@ -2011,9 +2015,6 @@
 │   │   │       ├── structremove__reference_3_01T_01_6_6_01_4__coll__graph.png
 │   │   │       ├── structremove__reference_3_01T_01_6_6_01_4.html
 │   │   │       ├── structremove__reference_3_01T_01_6_6_01_4.js
-│   │   │       ├── structremove__reference__coll__graph.map
-│   │   │       ├── structremove__reference__coll__graph.md5
-│   │   │       ├── structremove__reference__coll__graph.png
 │   │   │       ├── structremove__reference.html
 │   │   │       ├── structremove__reference.js
 │   │   │       ├── structservice_1_1FramebufferInfo__coll__graph.map
@@ -2036,83 +2037,72 @@
 │   │   │       ├── structstat__coll__graph.png
 │   │   │       ├── structstat.html
 │   │   │       ├── structstat.js
-│   │   │       ├── sync_8cpp.html
 │   │   │       ├── sync_8cpp__incl.map
 │   │   │       ├── sync_8cpp__incl.md5
 │   │   │       ├── sync_8cpp__incl.png
+│   │   │       ├── sync_8cpp.html
 │   │   │       ├── sync_8cpp.js
 │   │   │       ├── sync_8hpp__dep__incl.map
 │   │   │       ├── sync_8hpp__dep__incl.md5
 │   │   │       ├── sync_8hpp__dep__incl.png
-│   │   │       ├── sync_8hpp.html
 │   │   │       ├── sync_8hpp__incl.map
 │   │   │       ├── sync_8hpp__incl.md5
 │   │   │       ├── sync_8hpp__incl.png
-│   │   │       ├── sync_8hpp.js
 │   │   │       ├── sync_8hpp_source.html
-│   │   │       ├── syscall_8cpp.html
+│   │   │       ├── sync_8hpp.html
+│   │   │       ├── sync_8hpp.js
 │   │   │       ├── syscall_8cpp__incl.map
 │   │   │       ├── syscall_8cpp__incl.md5
 │   │   │       ├── syscall_8cpp__incl.png
+│   │   │       ├── syscall_8cpp.html
 │   │   │       ├── syscall_8h__dep__incl.map
 │   │   │       ├── syscall_8h__dep__incl.md5
 │   │   │       ├── syscall_8h__dep__incl.png
-│   │   │       ├── syscall_8h.html
 │   │   │       ├── syscall_8h__incl.map
 │   │   │       ├── syscall_8h__incl.md5
 │   │   │       ├── syscall_8h__incl.png
+│   │   │       ├── syscall_8h_source.html
+│   │   │       ├── syscall_8h.html
 │   │   │       ├── syscall_8h.js
 │   │   │       ├── syscall_8hpp__dep__incl.map
 │   │   │       ├── syscall_8hpp__dep__incl.md5
 │   │   │       ├── syscall_8hpp__dep__incl.png
-│   │   │       ├── syscall_8hpp.html
 │   │   │       ├── syscall_8hpp__incl.map
 │   │   │       ├── syscall_8hpp__incl.md5
 │   │   │       ├── syscall_8hpp__incl.png
-│   │   │       ├── syscall_8hpp.js
 │   │   │       ├── syscall_8hpp_source.html
-│   │   │       ├── syscall_8h_source.html
+│   │   │       ├── syscall_8hpp.html
+│   │   │       ├── syscall_8hpp.js
 │   │   │       ├── tabs.css
-│   │   │       ├── task_8cpp.html
 │   │   │       ├── task_8cpp__incl.map
 │   │   │       ├── task_8cpp__incl.md5
 │   │   │       ├── task_8cpp__incl.png
+│   │   │       ├── task_8cpp.html
 │   │   │       ├── task_8hpp__dep__incl.map
 │   │   │       ├── task_8hpp__dep__incl.md5
 │   │   │       ├── task_8hpp__dep__incl.png
-│   │   │       ├── task_8hpp.html
 │   │   │       ├── task_8hpp__incl.map
 │   │   │       ├── task_8hpp__incl.md5
 │   │   │       ├── task_8hpp__incl.png
-│   │   │       ├── task_8hpp.js
 │   │   │       ├── task_8hpp_source.html
-│   │   │       ├── terminal_8cpp.html
+│   │   │       ├── task_8hpp.html
+│   │   │       ├── task_8hpp.js
 │   │   │       ├── terminal_8cpp__incl.map
 │   │   │       ├── terminal_8cpp__incl.md5
 │   │   │       ├── terminal_8cpp__incl.png
+│   │   │       ├── terminal_8cpp.html
 │   │   │       ├── terminal_8hpp__dep__incl.map
 │   │   │       ├── terminal_8hpp__dep__incl.md5
 │   │   │       ├── terminal_8hpp__dep__incl.png
-│   │   │       ├── terminal_8hpp.html
 │   │   │       ├── terminal_8hpp__incl.map
 │   │   │       ├── terminal_8hpp__incl.md5
 │   │   │       ├── terminal_8hpp__incl.png
-│   │   │       ├── terminal_8hpp.js
 │   │   │       ├── terminal_8hpp_source.html
-│   │   │       ├── test_8cpp.html
-│   │   │       ├── test_8cpp__incl.map
-│   │   │       ├── test_8cpp__incl.md5
-│   │   │       ├── test_8cpp__incl.png
-│   │   │       ├── test_8cpp.js
-│   │   │       ├── test_8hpp__dep__incl.map
-│   │   │       ├── test_8hpp__dep__incl.md5
-│   │   │       ├── test_8hpp__dep__incl.png
-│   │   │       ├── test_8hpp.html
-│   │   │       ├── test_8hpp__incl.map
-│   │   │       ├── test_8hpp__incl.md5
-│   │   │       ├── test_8hpp__incl.png
-│   │   │       ├── test_8hpp.js
-│   │   │       ├── test_8hpp_source.html
+│   │   │       ├── terminal_8hpp.html
+│   │   │       ├── terminal_8hpp.js
+│   │   │       ├── test__selftest_8cpp__incl.map
+│   │   │       ├── test__selftest_8cpp__incl.md5
+│   │   │       ├── test__selftest_8cpp__incl.png
 │   │   │       ├── test__selftest_8cpp_a0355f15340d4256e8848125f1cbd47a2_cgraph.map
 │   │   │       ├── test__selftest_8cpp_a0355f15340d4256e8848125f1cbd47a2_cgraph.md5
 │   │   │       ├── test__selftest_8cpp_a0355f15340d4256e8848125f1cbd47a2_cgraph.png
@@ -2276,104 +2266,115 @@
 │   │   │       ├── test__selftest_8cpp_affe1fe57650c8a18911f4354a99fb020_cgraph.md5
 │   │   │       ├── test__selftest_8cpp_affe1fe57650c8a18911f4354a99fb020_cgraph.png
 │   │   │       ├── test__selftest_8cpp.html
-│   │   │       ├── test__selftest_8cpp__incl.map
-│   │   │       ├── test__selftest_8cpp__incl.md5
-│   │   │       ├── test__selftest_8cpp__incl.png
 │   │   │       ├── test__selftest_8cpp.js
-│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.map
-│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.md5
-│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.png
 │   │   │       ├── test__selftest_8hpp__dep__incl.map
 │   │   │       ├── test__selftest_8hpp__dep__incl.md5
 │   │   │       ├── test__selftest_8hpp__dep__incl.png
+│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.map
+│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.md5
+│   │   │       ├── test__selftest_8hpp_afc774f670f6be1bb43ca232cc4e9b643_cgraph.png
+│   │   │       ├── test__selftest_8hpp_source.html
 │   │   │       ├── test__selftest_8hpp.html
 │   │   │       ├── test__selftest_8hpp.js
-│   │   │       ├── test__selftest_8hpp_source.html
-│   │   │       ├── timer_8cpp.html
+│   │   │       ├── test_8cpp__incl.map
+│   │   │       ├── test_8cpp__incl.md5
+│   │   │       ├── test_8cpp__incl.png
+│   │   │       ├── test_8cpp.html
+│   │   │       ├── test_8cpp.js
+│   │   │       ├── test_8hpp__dep__incl.map
+│   │   │       ├── test_8hpp__dep__incl.md5
+│   │   │       ├── test_8hpp__dep__incl.png
+│   │   │       ├── test_8hpp__incl.map
+│   │   │       ├── test_8hpp__incl.md5
+│   │   │       ├── test_8hpp__incl.png
+│   │   │       ├── test_8hpp_source.html
+│   │   │       ├── test_8hpp.html
+│   │   │       ├── test_8hpp.js
 │   │   │       ├── timer_8cpp__incl.map
 │   │   │       ├── timer_8cpp__incl.md5
 │   │   │       ├── timer_8cpp__incl.png
+│   │   │       ├── timer_8cpp.html
 │   │   │       ├── timer_8hpp__dep__incl.map
 │   │   │       ├── timer_8hpp__dep__incl.md5
 │   │   │       ├── timer_8hpp__dep__incl.png
-│   │   │       ├── timer_8hpp.html
 │   │   │       ├── timer_8hpp__incl.map
 │   │   │       ├── timer_8hpp__incl.md5
 │   │   │       ├── timer_8hpp__incl.png
-│   │   │       ├── timer_8hpp.js
 │   │   │       ├── timer_8hpp_source.html
+│   │   │       ├── timer_8hpp.html
+│   │   │       ├── timer_8hpp.js
 │   │   │       ├── types_8h__dep__incl.map
 │   │   │       ├── types_8h__dep__incl.md5
 │   │   │       ├── types_8h__dep__incl.png
+│   │   │       ├── types_8h_source.html
 │   │   │       ├── types_8h.html
 │   │   │       ├── types_8h.js
 │   │   │       ├── types_8hpp__dep__incl.map
 │   │   │       ├── types_8hpp__dep__incl.md5
 │   │   │       ├── types_8hpp__dep__incl.png
+│   │   │       ├── types_8hpp_source.html
 │   │   │       ├── types_8hpp.html
 │   │   │       ├── types_8hpp.js
-│   │   │       ├── types_8hpp_source.html
-│   │   │       ├── types_8h_source.html
-│   │   │       ├── unistd_8c.html
 │   │   │       ├── unistd_8c__incl.map
 │   │   │       ├── unistd_8c__incl.md5
 │   │   │       ├── unistd_8c__incl.png
+│   │   │       ├── unistd_8c.html
 │   │   │       ├── unistd_8c.js
 │   │   │       ├── unistd_8h__dep__incl.map
 │   │   │       ├── unistd_8h__dep__incl.md5
 │   │   │       ├── unistd_8h__dep__incl.png
-│   │   │       ├── unistd_8h.html
 │   │   │       ├── unistd_8h__incl.map
 │   │   │       ├── unistd_8h__incl.md5
 │   │   │       ├── unistd_8h__incl.png
-│   │   │       ├── unistd_8h.js
 │   │   │       ├── unistd_8h_source.html
+│   │   │       ├── unistd_8h.html
+│   │   │       ├── unistd_8h.js
 │   │   │       ├── utils_8hpp__dep__incl.map
 │   │   │       ├── utils_8hpp__dep__incl.md5
 │   │   │       ├── utils_8hpp__dep__incl.png
-│   │   │       ├── utils_8hpp.html
 │   │   │       ├── utils_8hpp__incl.map
 │   │   │       ├── utils_8hpp__incl.md5
 │   │   │       ├── utils_8hpp__incl.png
-│   │   │       ├── utils_8hpp.js
 │   │   │       ├── utils_8hpp_source.html
-│   │   │       ├── version_8cpp.html
+│   │   │       ├── utils_8hpp.html
+│   │   │       ├── utils_8hpp.js
 │   │   │       ├── version_8cpp__incl.map
 │   │   │       ├── version_8cpp__incl.md5
 │   │   │       ├── version_8cpp__incl.png
+│   │   │       ├── version_8cpp.html
 │   │   │       ├── version_8hpp__dep__incl.map
 │   │   │       ├── version_8hpp__dep__incl.md5
 │   │   │       ├── version_8hpp__dep__incl.png
+│   │   │       ├── version_8hpp_source.html
 │   │   │       ├── version_8hpp.html
 │   │   │       ├── version_8hpp.js
-│   │   │       ├── version_8hpp_source.html
-│   │   │       ├── vfs_8cpp.html
 │   │   │       ├── vfs_8cpp__incl.map
 │   │   │       ├── vfs_8cpp__incl.md5
 │   │   │       ├── vfs_8cpp__incl.png
+│   │   │       ├── vfs_8cpp.html
 │   │   │       ├── vfs_8cpp.js
 │   │   │       ├── vfs_8hpp__dep__incl.map
 │   │   │       ├── vfs_8hpp__dep__incl.md5
 │   │   │       ├── vfs_8hpp__dep__incl.png
-│   │   │       ├── vfs_8hpp.html
 │   │   │       ├── vfs_8hpp__incl.map
 │   │   │       ├── vfs_8hpp__incl.md5
 │   │   │       ├── vfs_8hpp__incl.png
-│   │   │       ├── vfs_8hpp.js
 │   │   │       ├── vfs_8hpp_source.html
-│   │   │       ├── vmm_8cpp.html
+│   │   │       ├── vfs_8hpp.html
+│   │   │       ├── vfs_8hpp.js
 │   │   │       ├── vmm_8cpp__incl.map
 │   │   │       ├── vmm_8cpp__incl.md5
 │   │   │       ├── vmm_8cpp__incl.png
+│   │   │       ├── vmm_8cpp.html
 │   │   │       ├── vmm_8hpp__dep__incl.map
 │   │   │       ├── vmm_8hpp__dep__incl.md5
 │   │   │       ├── vmm_8hpp__dep__incl.png
-│   │   │       ├── vmm_8hpp.html
 │   │   │       ├── vmm_8hpp__incl.map
 │   │   │       ├── vmm_8hpp__incl.md5
 │   │   │       ├── vmm_8hpp__incl.png
-│   │   │       ├── vmm_8hpp.js
-│   │   │       └── vmm_8hpp_source.html
+│   │   │       ├── vmm_8hpp_source.html
+│   │   │       ├── vmm_8hpp.html
+│   │   │       └── vmm_8hpp.js
 │   │   └── TESTLOG.md
 │   ├── Doxyfile
 │   ├── initrd.cpio
@@ -2393,10 +2394,11 @@
 │   ├── LESSONS.md
 │   ├── linker.ld
 │   ├── Makefile
-│   ├── project_structure.txt
 │   ├── PROMPT.md
 │   ├── readme.html
 │   ├── README.md
+│   ├── ROADMAP_done.md
+│   ├── ROADMAP_old.md
 │   ├── ROADMAP.md
 │   ├── src
 │   │   ├── boot
@@ -2411,10 +2413,13 @@
 │   │   │   │   ├── gdt.hpp
 │   │   │   │   ├── idt.cpp
 │   │   │   │   ├── idt.hpp
+│   │   │   │   ├── io_asm.asm
 │   │   │   │   ├── io.hpp
 │   │   │   │   ├── isr_stubs.asm
 │   │   │   │   ├── keyboard.cpp
 │   │   │   │   ├── keyboard.hpp
+│   │   │   │   ├── rtc.cpp
+│   │   │   │   ├── rtc.hpp
 │   │   │   │   ├── timer.cpp
 │   │   │   │   └── timer.hpp
 │   │   │   ├── bootparams.cpp
@@ -2453,8 +2458,8 @@
 │   │   │   │   ├── sync.cpp
 │   │   │   │   └── sync.hpp
 │   │   │   ├── syscall
-│   │   │   │   ├── syscall.cpp
 │   │   │   │   ├── syscall_entry.asm
+│   │   │   │   ├── syscall.cpp
 │   │   │   │   └── syscall.hpp
 │   │   │   ├── task
 │   │   │   │   ├── scheduler.cpp
@@ -2499,6 +2504,7 @@
 │   │   │   ├── errno.h
 │   │   │   ├── ipc.c
 │   │   │   ├── ipc.h
+│   │   │   ├── signal.h
 │   │   │   ├── stdarg.h
 │   │   │   ├── stdio.c
 │   │   │   ├── stdio.h
@@ -2509,8 +2515,11 @@
 │   │   │   ├── sys
 │   │   │   │   ├── stat.c
 │   │   │   │   ├── stat.h
-│   │   │   │   └── types.h
+│   │   │   │   ├── types.h
+│   │   │   │   └── utsname.h
 │   │   │   ├── syscall.h
+│   │   │   ├── time.c
+│   │   │   ├── time.h
 │   │   │   ├── unistd.c
 │   │   │   └── unistd.h
 │   │   ├── programs
@@ -2546,10 +2555,6 @@
 │       ├── top.c.d
 │       └── top.c.elf
 ├── project_structure.txt
-├── __pycache__
-│   ├── app.cpython-312.pyc
-│   ├── config.cpython-312.pyc
-│   └── models.cpython-312.pyc
 ├── requirements.txt
 ├── static
 │   └── css
@@ -2574,4 +2579,4 @@
     ├── lib64 -> lib
     └── pyvenv.cfg
 
-46 directories, 2529 files
+45 directories, 2535 files

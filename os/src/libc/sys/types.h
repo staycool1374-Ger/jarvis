@@ -9,3 +9,5 @@ typedef int gid_t;
 typedef unsigned int mode_t;
 typedef long intptr_t;
 typedef unsigned long uintptr_t;
+typedef long time_t;
+typedef long suseconds_t;

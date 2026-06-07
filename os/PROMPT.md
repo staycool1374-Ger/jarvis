@@ -26,7 +26,7 @@ Safely implement, validate, and evolve the architecture under strict functional 
 - Run `bash ~/jarvis/healthcheck.sh`. If exit $\neq$ 0, halt immediately, print the raw error, and stop. Do not try to guess a fix.
 
 ### 2. Context Collection (Targeted Parsing)
-- Parse `~/jarvis/ROADMAP.md` using targeted tool operations (e.g., grep for `-[ ]`) to locate ONLY the active milestone. Do not ingest completed sections ([x]) to preserve token economy.
+- Parse `~/jarvis/os/ROADMAP.md` using targeted tool operations (e.g., grep for `-[ ]`) to locate ONLY the active milestone. Do not ingest completed sections ([x]) to preserve token economy.
 - Check `~/jarvis/os/BUGS.md`. **Rule:** Critical bugs must be 100% resolved before feature work.
 - Read `~/jarvis/project_structure.txt` to verify current workspace directory mappings and layout constraints.
 - Read `~/jarvis/os/LESSONS.md` (architecture traps) and `~/jarvis/os/Makefile`.

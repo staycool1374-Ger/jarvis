@@ -100,6 +100,12 @@ struct TaskControlBlock {
     /// @brief Pending signal bitmask (bit n set = signal n is pending).
     uint64_t pending_signals;
 
+    /// @brief Alarm expiration tick (absolute tick count when alarm fires).
+    uint64_t alarm_ticks;
+
+    /// @brief True if alarm is armed.
+    bool alarm_armed;
+
     /// @brief Pointer to the task's message queue (allocated and owned by IPC layer).
     MessageQueue* msg_queue;
 

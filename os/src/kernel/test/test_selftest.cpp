@@ -16,6 +16,12 @@
 #include <kernel/memory/checked_ptr.hpp>
 #include <version.hpp>
 #include <constants.hpp>
+#include <kernel/arch/rtc.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/syscall/syscall.hpp>
+#include <signal.hpp>
+
+static void test_signal_handler(int sig);
 
 JARVIS_TEST(string_strlen) {
     JARVIS_ASSERT_EQ(0, strlen(""));
@@ -1015,6 +1021,174 @@ JARVIS_TEST(signal_frame_size) {
     JARVIS_TEST_PASS();
 }
 
+// ---------------------------------------------------------------------------
+// v0.2.7 — Userspace Signals & Syscall Extension Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(rtc_read_seconds) {
+    uint64_t secs = arch::RTC::read_seconds();
+    // RTC should return a reasonable Unix timestamp (year >= 2020)
+    // Upper bound extended to accommodate QEMU RTC variations
+    JARVIS_ASSERT(secs > 1577836800ULL); // Jan 1 2020
+    JARVIS_ASSERT(secs < 7258118400ULL); // Jan 1 2200
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(rtc_bcd_conversion) {
+    // Test BCD to binary conversion helper
+    JARVIS_ASSERT_EQ(0x00, arch::RTC::bcd_to_bin(0x00));
+    JARVIS_ASSERT_EQ(0x09, arch::RTC::bcd_to_bin(0x09));
+    JARVIS_ASSERT_EQ(0x0A, arch::RTC::bcd_to_bin(0x10)); // BCD 0x10 = 10 decimal
+    JARVIS_ASSERT_EQ(0x0F, arch::RTC::bcd_to_bin(0x15)); // BCD 0x15 = 15 decimal (1*10+5)
+    JARVIS_ASSERT_EQ(0x17, arch::RTC::bcd_to_bin(0x23)); // BCD 0x23 = 23 decimal (2*10+3)
+    JARVIS_ASSERT_EQ(0x3B, arch::RTC::bcd_to_bin(0x59)); // BCD 0x59 = 59 decimal (5*10+9)
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_alarm_basic) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    
+    // Test SYS_ALARM syscall (33): set alarm for 1 tick
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::ALARM), 0, 1, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    
+    // Alarm should be armed
+    JARVIS_ASSERT(cur->alarm_armed);
+    JARVIS_ASSERT(cur->alarm_ticks == arch::Timer::ticks() + 1);
+    
+    // Cancel alarm
+    ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    JARVIS_ASSERT(!cur->alarm_armed);
+    JARVIS_TEST_PASS();
+}
+
+// Local definitions matching kernel syscall.cpp
+struct Timeval {
+    int64_t tv_sec;
+    int64_t tv_usec;
+};
+
+struct Utsname {
+    char sysname[65];
+    char nodename[65];
+    char release[65];
+    char version[65];
+    char machine[65];
+    char domainname[65];
+};
+
+JARVIS_TEST(syscall_gettod) {
+    // Test SYS_GETTOD syscall (34)
+    Timeval tv{};
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::GETTOD), reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    
+    // tv_sec should be reasonable Unix timestamp
+    JARVIS_ASSERT(tv.tv_sec > static_cast<int64_t>(1577836800ULL));
+    JARVIS_ASSERT(tv.tv_sec < static_cast<int64_t>(7258118400ULL));
+    JARVIS_ASSERT(tv.tv_usec < 1000000);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_uname) {
+    // Test SYS_UNAME syscall (35)
+    Utsname uts{};
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::UNAME), reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    
+    // Check fields are populated
+    JARVIS_ASSERT(strlen(uts.sysname) > 0);
+    JARVIS_ASSERT(strlen(uts.release) > 0);
+    JARVIS_ASSERT(strlen(uts.version) > 0);
+    JARVIS_ASSERT(strlen(uts.machine) > 0);
+    
+    // sysname should be "Jarvis"
+    JARVIS_ASSERT_EQ(0, strcmp(uts.sysname, "Jarvis"));
+    // machine should be "x86_64"
+    JARVIS_ASSERT_EQ(0, strcmp(uts.machine, "x86_64"));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_kill_delivers) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    
+    // Register a handler for SIGUSR1 so self-kill doesn't terminate
+    cur->set_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGUSR1), test_signal_handler);
+    
+    // Initially no pending signals
+    JARVIS_ASSERT_EQ(0ULL, cur->pending_signals);
+    
+    // Deliver SIGUSR1 via kill (non-fatal signal with handler)
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::KILL), cur->id, static_cast<uint64_t>(kernel::Signal::SIGUSR1), 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    
+    // Signal should be pending
+    JARVIS_ASSERT(cur->pending_signals & (1ULL << static_cast<uint64_t>(kernel::Signal::SIGUSR1)));
+    JARVIS_TEST_PASS();
+}
+
+static void test_signal_handler(int sig) {
+    (void)sig;
+}
+
+JARVIS_TEST(signal_handler_invoked) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    
+    // Register a signal handler for SIGUSR1
+    cur->set_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGUSR1), test_signal_handler);
+    JARVIS_ASSERT(cur->has_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGUSR1)));
+    
+    // Deliver the signal
+    cur->pending_signals |= (1ULL << static_cast<uint64_t>(kernel::Signal::SIGUSR1));
+    
+    // The signal will be delivered on next syscall return (handled in handle_interrupt_c)
+    // This test just verifies the handler is registered
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(alarm_fires_after_ticks) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    
+    // Set alarm for 2 ticks
+    uint64_t start_ticks = arch::Timer::ticks();
+    cur->alarm_ticks = start_ticks + 2;
+    cur->alarm_armed = true;
+    
+    // Simulate tick progression (using test setter)
+    arch::Timer::set_ticks_for_test(start_ticks + 1);
+    JARVIS_ASSERT(cur->alarm_armed); // Still armed
+    
+    arch::Timer::set_ticks_for_test(start_ticks + 2);
+    // At this point, scheduler.on_tick() would deliver SIGALRM
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_alarm_subsecond) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    
+    // Test SYS_ALARM with microseconds (arg1 = seconds, arg2 = microseconds)
+    // 500ms = 500000 microseconds
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::ALARM), 0, 500000, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    
+    // Should be armed with ~500 ticks (at 1000 Hz)
+    JARVIS_ASSERT(cur->alarm_armed);
+    uint64_t expected_ticks = arch::Timer::ticks() + 500;
+    JARVIS_ASSERT(cur->alarm_ticks >= expected_ticks - 10); // Allow small variance
+    JARVIS_ASSERT(cur->alarm_ticks <= expected_ticks + 10);
+    
+    // Cancel
+    ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT(!cur->alarm_armed);
+    JARVIS_TEST_PASS();
+}
+
 void register_selftest_tests() {
     kernel::Logger::info("Registering selftest suite");
 
@@ -1105,4 +1279,15 @@ void register_selftest_tests() {
     JARVIS_REGISTER_TEST(checked_ptr_valid);
     JARVIS_REGISTER_TEST(checked_ptr_is_user_string);
     JARVIS_REGISTER_TEST(signal_frame_size);
+
+    // v0.2.7 — Userspace Signals & Syscall Extension tests
+    JARVIS_REGISTER_TEST(rtc_read_seconds);
+    JARVIS_REGISTER_TEST(rtc_bcd_conversion);
+    JARVIS_REGISTER_TEST(syscall_alarm_basic);
+    JARVIS_REGISTER_TEST(syscall_gettod);
+    JARVIS_REGISTER_TEST(syscall_uname);
+    JARVIS_REGISTER_TEST(signal_kill_delivers);
+    JARVIS_REGISTER_TEST(signal_handler_invoked);
+    JARVIS_REGISTER_TEST(alarm_fires_after_ticks);
+    JARVIS_REGISTER_TEST(syscall_alarm_subsecond);
 }

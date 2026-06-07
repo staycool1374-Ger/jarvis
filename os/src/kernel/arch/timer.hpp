@@ -24,6 +24,10 @@ public:
     /// @brief Handles the timer IRQ (increments tick count).
     static void handle_irq();
 
+    /// @brief Test-only: sets the tick count directly.
+    /// @param value New tick count.
+    static void set_ticks_for_test(uint64_t value);
+
 private:
     static constexpr uint32_t PIT_BASE_FREQ = 1193182;
     static volatile uint64_t ticks_;

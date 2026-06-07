@@ -32,4 +32,8 @@ void Timer::handle_irq() {
     ticks_ = ticks_ + 1;
 }
 
+void Timer::set_ticks_for_test(uint64_t value) {
+    ticks_ = value;
+}
+
 } // namespace arch
