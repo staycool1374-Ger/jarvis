@@ -4,6 +4,8 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/sync/notify.hpp>
+#include <kernel/sync/eventgroup.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 
@@ -26,12 +28,31 @@ static void init_task_common(TaskControlBlock* tcb) {
     auto* mq = new MessageQueue{};
     if (mq) {
         mq->init();
+        mq->owner = tcb;
         tcb->msg_queue = mq;
     } else {
         tcb->msg_queue = nullptr;
     }
     tcb->blocked_next = nullptr;
     tcb->blocked_prev = nullptr;
+
+    // Per-task notification object
+    auto* n = new sync::Notify{};
+    if (n) {
+        n->init();
+        tcb->notify = n;
+    } else {
+        tcb->notify = nullptr;
+    }
+
+    // Per-task event-group object
+    auto* eg = new sync::EventGroup{};
+    if (eg) {
+        eg->init();
+        tcb->event_group = eg;
+    } else {
+        tcb->event_group = nullptr;
+    }
 }
 
 TaskControlBlock* TaskControlBlock::create(
@@ -45,6 +66,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->id = next_task_id++;
     tcb->state = TaskState::READY;
     tcb->priority = priority;
+    tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
     tcb->deadline_ticks = period_ticks;
     tcb->executed_ticks = 0;
@@ -90,6 +112,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->id = next_task_id++;
     tcb->state = TaskState::READY;
     tcb->priority = priority;
+    tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
     tcb->deadline_ticks = period_ticks;
     tcb->executed_ticks = 0;
@@ -159,6 +182,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->parent_id = parent->id;
     tcb->state = TaskState::READY;
     tcb->priority = parent->priority;
+    tcb->base_priority = parent->base_priority;
     tcb->period_ticks = parent->period_ticks;
     tcb->deadline_ticks = parent->deadline_ticks;
     tcb->executed_ticks = 0;
@@ -167,6 +191,19 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->waiting_child_pid = 0;
     tcb->waiting_child_status = nullptr;
     tcb->user_data = parent->user_data;
+
+    tcb->blocked_next = nullptr;
+    tcb->blocked_prev = nullptr;
+
+    // Allocate per-task IPC objects (child gets fresh empty queues)
+    auto* mq = new MessageQueue{};
+    if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq; } else { tcb->msg_queue = nullptr; }
+
+    auto* n = new sync::Notify{};
+    if (n) { n->init(); tcb->notify = n; } else { tcb->notify = nullptr; }
+
+    auto* eg = new sync::EventGroup{};
+    if (eg) { eg->init(); tcb->event_group = eg; } else { tcb->event_group = nullptr; }
 
     // Copy fd_table
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
@@ -294,6 +331,10 @@ void TaskControlBlock::cleanup() noexcept {
         PMM::free_page(page_table_);
         page_table_ = 0;
     }
+
+    if (msg_queue) { delete msg_queue; msg_queue = nullptr; }
+    if (notify) { delete notify; notify = nullptr; }
+    if (event_group) { delete event_group; event_group = nullptr; }
 }
 
 } // namespace kernel

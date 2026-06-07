@@ -5,13 +5,21 @@
 
 namespace kernel {
 
+TaskControlBlock* const Scheduler::ID_TOMBSTONE =
+    reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));
+
 TaskControlBlock* Scheduler::tasks_[MAX_TASKS] = {};
+TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
 uint64_t Scheduler::task_count_ = 0;
 uint64_t Scheduler::current_index_ = 0;
 bool Scheduler::preempt_enabled_ = false;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
 
 void Scheduler::init() {
+    for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
+        id_table_[i] = nullptr;
+    }
+
     idle_task_ = TaskControlBlock::create([]() {
         while (true) {
             asm volatile("hlt");
@@ -20,6 +28,7 @@ void Scheduler::init() {
     idle_task_->state = TaskState::READY;
 
     tasks_[0] = idle_task_;
+    id_table_insert(idle_task_->id, idle_task_);
     task_count_ = 1;
     current_index_ = 0;
     preempt_enabled_ = true;
@@ -28,9 +37,11 @@ void Scheduler::init() {
 void Scheduler::add_task(TaskControlBlock* task) {
     ASSERT(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = task;
+    id_table_insert(task->id, task);
 }
 
 void Scheduler::remove_task(TaskControlBlock* task) {
+    id_table_remove(task->id);
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == task) {
             tasks_[i] = tasks_[--task_count_];
@@ -54,10 +65,7 @@ TaskControlBlock* Scheduler::task_at(uint64_t index) noexcept {
 }
 
 TaskControlBlock* Scheduler::find_task(uint64_t id) noexcept {
-    for (uint64_t i = 0; i < task_count_; ++i) {
-        if (tasks_[i]->id == id) return tasks_[i];
-    }
-    return nullptr;
+    return id_table_find(id);
 }
 
 bool Scheduler::needs_switch() noexcept {
@@ -106,6 +114,44 @@ void Scheduler::set_current(TaskControlBlock* task) noexcept {
             return;
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// O(1) task-ID→TCB hash table (open addressing, linear probing)
+// ---------------------------------------------------------------------------
+
+uint64_t Scheduler::id_table_probe(uint64_t id) {
+    return id & ID_TABLE_MASK;
+}
+
+void Scheduler::id_table_insert(uint64_t id, TaskControlBlock* tcb) {
+    uint64_t idx = id_table_probe(id);
+    while (id_table_[idx] != nullptr && id_table_[idx] != ID_TOMBSTONE) {
+        idx = (idx + 1) & ID_TABLE_MASK;
+    }
+    id_table_[idx] = tcb;
+}
+
+void Scheduler::id_table_remove(uint64_t id) {
+    uint64_t idx = id_table_probe(id);
+    while (id_table_[idx] != nullptr) {
+        if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx]->id == id) {
+            id_table_[idx] = const_cast<TaskControlBlock*>(ID_TOMBSTONE);
+            return;
+        }
+        idx = (idx + 1) & ID_TABLE_MASK;
+    }
+}
+
+TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
+    uint64_t idx = id_table_probe(id);
+    while (id_table_[idx] != nullptr) {
+        if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx]->id == id) {
+            return id_table_[idx];
+        }
+        idx = (idx + 1) & ID_TABLE_MASK;
+    }
+    return nullptr;
 }
 
 void Scheduler::on_tick() noexcept {

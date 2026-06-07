@@ -15,7 +15,7 @@ public:
     /// @brief Initialises the scheduler and creates the idle task.
     static void init();
 
-    /// @brief Finds a task by its ID (linear scan, O(n) with MAX_TASKS ≤ 64).
+    /// @brief Finds a task by its ID (hash table, O(1) amortized).
     /// @param id Task ID to find.
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock* find_task(uint64_t id) noexcept;
@@ -66,7 +66,14 @@ public:
 
 private:
     static constexpr uint64_t MAX_TASKS = 64;
+    static constexpr uint64_t ID_TABLE_SIZE = 128;
+    static constexpr uint64_t ID_TABLE_MASK = ID_TABLE_SIZE - 1;
+
+    /// @brief Sentinel value for a removed hash-table entry.
+    static TaskControlBlock* const ID_TOMBSTONE;
+
     static TaskControlBlock* tasks_[MAX_TASKS];
+    static TaskControlBlock* id_table_[ID_TABLE_SIZE];
     static uint64_t task_count_;
     static uint64_t current_index_;
     static bool preempt_enabled_;
@@ -75,6 +82,12 @@ private:
 
     /// @brief Performs rate-monotonic scheduling decision.
     static void rate_monotonic_schedule() noexcept;
+
+    /// @brief Hash-table helpers for O(1) task-ID→TCB lookup.
+    static uint64_t id_table_probe(uint64_t id);
+    static void     id_table_insert(uint64_t id, TaskControlBlock* tcb);
+    static void     id_table_remove(uint64_t id);
+    static TaskControlBlock* id_table_find(uint64_t id);
 };
 
 extern "C" {

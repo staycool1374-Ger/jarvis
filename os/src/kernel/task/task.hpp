@@ -25,8 +25,13 @@ struct Message {
     size_t   data_size;
 };
 
-/// @brief Forward declaration so TaskControlBlock can hold a pointer.
+/// @brief Forward declarations so TaskControlBlock can hold pointers.
 struct MessageQueue;
+
+namespace sync {
+class Notify;
+class EventGroup;
+}
 
 
 
@@ -62,6 +67,7 @@ struct TaskControlBlock {
     uint64_t parent_id;
     TaskState state;
     uint64_t priority;
+    uint64_t base_priority;
     uint64_t period_ticks;
     uint64_t deadline_ticks;
     uint64_t executed_ticks;
@@ -93,6 +99,12 @@ struct TaskControlBlock {
 
     /// @brief Pointer to the task's message queue (allocated and owned by IPC layer).
     MessageQueue* msg_queue;
+
+    /// @brief Per-task notification object (allocated in init_task_common).
+    sync::Notify* notify;
+
+    /// @brief Per-task event-group object (allocated in init_task_common).
+    sync::EventGroup* event_group;
 
     /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
     TaskControlBlock* blocked_next;

@@ -2,6 +2,8 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/sync/notify.hpp>
+#include <kernel/sync/eventgroup.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/pipe.hpp>
 #include <kernel/elf/elf.hpp>
@@ -421,6 +423,43 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         if (old_desc->vnode && old_desc->vnode->refcount > 0)
             ++old_desc->vnode->refcount;
         return static_cast<uint64_t>(new_fd);
+    }
+
+    case SyscallNumber::NOTIFY: {
+        uint64_t target_id = arg0;
+        uint64_t value = arg1;
+        auto* t = Scheduler::find_task(target_id);
+        if (!t || !t->notify) return static_cast<uint64_t>(-1);
+        t->notify->notify(value);
+        return 0;
+    }
+
+    case SyscallNumber::NOTIFY_WAIT: {
+        auto* cur = task();
+        if (!cur || !cur->notify) return static_cast<uint64_t>(-1);
+        uint64_t val = cur->notify->wait();
+        auto val_ptr = checked(reinterpret_cast<uint64_t*>(arg0));
+        if (is_user_task() && !val_ptr.valid()) return static_cast<uint64_t>(-1);
+        val_ptr.write(val);
+        return 0;
+    }
+
+    case SyscallNumber::EVENT_SET: {
+        uint64_t target_id = arg0;
+        uint64_t bits = arg1;
+        auto* t = Scheduler::find_task(target_id);
+        if (!t || !t->event_group) return static_cast<uint64_t>(-1);
+        t->event_group->set_bits(bits);
+        return 0;
+    }
+
+    case SyscallNumber::EVENT_WAIT: {
+        uint64_t wanted = arg0;
+        uint64_t clear_on_exit = arg1;
+        auto* cur = task();
+        if (!cur || !cur->event_group) return static_cast<uint64_t>(-1);
+        cur->event_group->wait_bits(wanted, clear_on_exit != 0);
+        return 0;
     }
 
     default:
