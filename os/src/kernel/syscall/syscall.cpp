@@ -56,6 +56,7 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
 
     case SyscallNumber::SEND: {
         uint64_t dest_id = arg0;
+        uint64_t flags = 0;  // arg4 would carry flags; default to blocking
         Message msg{};
         auto* cur = task();
         msg.sender_id = cur ? cur->id : 0;
@@ -66,36 +67,27 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         for (size_t i = 0; i < msg.data_size; ++i) {
             msg.data[i] = data.read(i);
         }
-        return IPC::send(dest_id, msg) ? 0 : static_cast<uint64_t>(-1);
+        return IPC::send(dest_id, msg, flags) ? 0 : static_cast<uint64_t>(-1);
     }
 
     case SyscallNumber::RECEIVE: {
-        uint64_t src_id = arg0;
         uint64_t max_size = arg2;
         auto buf = checked(reinterpret_cast<uint8_t*>(arg1), max_size);
         if (is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
         uint8_t* raw_buf = buf.unsafe_ptr();
         Message msg{};
-        if (IPC::receive(src_id, msg)) {
-            uint64_t copy_size = msg.data_size;
-            if (copy_size > max_size) copy_size = max_size;
-            for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
-            return msg.type;
+        auto* cur = task();
+        if (!cur) return static_cast<uint64_t>(-1);
+        // Block until a message arrives
+        bool ok = false;
+        while (!(ok = IPC::recv(msg))) {
+            cur->state = TaskState::BLOCKED;
+            Scheduler::reschedule();
         }
-        auto* mb = IPC::find_mailbox(src_id);
-        if (!mb) return static_cast<uint64_t>(-1);
-        auto* t = task();
-        if (!t) return static_cast<uint64_t>(-1);
-        mb->waiting_receiver = t;
-        t->state = TaskState::BLOCKED;
-        Scheduler::reschedule();
-        if (IPC::receive(src_id, msg)) {
-            uint64_t copy_size = msg.data_size;
-            if (copy_size > max_size) copy_size = max_size;
-            for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
-            return msg.type;
-        }
-        return static_cast<uint64_t>(-1);
+        uint64_t copy_size = msg.data_size;
+        if (copy_size > max_size) copy_size = max_size;
+        for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
+        return msg.type;
     }
 
     case SyscallNumber::SEND_SYNC: {
@@ -197,13 +189,12 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         return static_cast<uint64_t>(-1);
     }
 
-    case SyscallNumber::CREATE_MAILBOX: {
-        auto* mb = IPC::create_mailbox(arg0);
-        return mb ? reinterpret_cast<uint64_t>(mb) : 0;
-    }
+    case SyscallNumber::CREATE_MAILBOX:
+        // Every task now has an embedded message queue — no-op.
+        return 0;
 
     case SyscallNumber::DESTROY_MAILBOX:
-        IPC::destroy_mailbox(arg0);
+        // Every task now has an embedded message queue — no-op.
         return 0;
 
     case SyscallNumber::OPEN: {

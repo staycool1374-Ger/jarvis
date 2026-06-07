@@ -15,6 +15,11 @@ public:
     /// @brief Initialises the scheduler and creates the idle task.
     static void init();
 
+    /// @brief Finds a task by its ID (linear scan, O(n) with MAX_TASKS ≤ 64).
+    /// @param id Task ID to find.
+    /// @return Pointer to the TaskControlBlock, or nullptr.
+    static TaskControlBlock* find_task(uint64_t id) noexcept;
+
     /// @brief Adds a task to the scheduler's run queue.
     /// @param task Pointer to the task to add.
     static void add_task(TaskControlBlock* task);

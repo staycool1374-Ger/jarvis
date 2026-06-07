@@ -32,8 +32,9 @@ uint64_t Notify::wait() {
 }
 
 bool Notify::try_wait(uint64_t* value) {
-    if (waiter_ == nullptr && value) {
+    if (waiter_ == nullptr && value && notify_value_ != 0) {
         *value = notify_value_;
+        notify_value_ = 0;
         return true;
     }
     return false;

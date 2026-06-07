@@ -3,6 +3,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/ipc/ipc.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 
@@ -20,6 +21,17 @@ static void init_task_common(TaskControlBlock* tcb) {
     tcb->cwd[0] = '/';
     tcb->cwd[1] = '\0';
     tcb->cwd_vnode = vfs::get_root_vnode();
+
+    // Initialize IPC message queue
+    auto* mq = new MessageQueue{};
+    if (mq) {
+        mq->init();
+        tcb->msg_queue = mq;
+    } else {
+        tcb->msg_queue = nullptr;
+    }
+    tcb->blocked_next = nullptr;
+    tcb->blocked_prev = nullptr;
 }
 
 TaskControlBlock* TaskControlBlock::create(

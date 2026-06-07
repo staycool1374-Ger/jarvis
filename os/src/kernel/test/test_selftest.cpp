@@ -6,6 +6,8 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/sync/notify.hpp>
+#include <kernel/sync/eventgroup.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -217,73 +219,332 @@ JARVIS_TEST(mempool_reuse) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(ipc_mailbox_create_destroy) {
-    auto* mb = kernel::IPC::create_mailbox(42);
-    JARVIS_ASSERT(mb != nullptr);
-    JARVIS_ASSERT(mb->is_empty());
-    JARVIS_ASSERT(mb->owner_id == 42);
-    kernel::IPC::destroy_mailbox(42);
-    JARVIS_ASSERT(kernel::IPC::find_mailbox(42) == nullptr);
+// ---------------------------------------------------------------------------
+// Priority MessageQueue tests (standalone, no TCB dependency)
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(ipc_queue_init) {
+    kernel::MessageQueue q;
+    q.init();
+    JARVIS_ASSERT(q.is_empty());
+    JARVIS_ASSERT(!q.is_full());
+    JARVIS_ASSERT_EQ(kernel::IPC_PRIORITY_LEVELS, q.highest_priority());
+    JARVIS_ASSERT_EQ(0ULL, q.prio_bitmap);
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(ipc_mailbox_send_receive) {
-    auto* mb = kernel::IPC::create_mailbox(100);
-    JARVIS_ASSERT(mb != nullptr);
+JARVIS_TEST(ipc_queue_push_pop) {
+    kernel::MessageQueue q;
+    q.init();
     kernel::Message msg;
     msg.sender_id = 1;
-    msg.type = 7;
-    msg.data_size = 8;
-    for (size_t i = 0; i < msg.data_size; ++i)
-        msg.data[i] = static_cast<uint8_t>(i);
-    bool sent = kernel::IPC::send(100, msg);
-    JARVIS_ASSERT(sent);
-    JARVIS_ASSERT(!mb->is_empty());
-    JARVIS_ASSERT(mb->count == 1);
-    kernel::Message received;
-    bool rcvd = kernel::IPC::receive(100, received);
-    JARVIS_ASSERT(rcvd);
-    JARVIS_ASSERT_EQ(7, received.type);
-    JARVIS_ASSERT_EQ(1, received.sender_id);
-    JARVIS_ASSERT_EQ(8, received.data_size);
-    for (size_t i = 0; i < received.data_size; ++i)
-        JARVIS_ASSERT(received.data[i] == static_cast<uint8_t>(i));
-    kernel::IPC::destroy_mailbox(100);
+    msg.type = 42;
+    msg.priority = 0;
+    msg.data_size = 4;
+    msg.data[0] = 0xAA; msg.data[1] = 0xBB; msg.data[2] = 0xCC; msg.data[3] = 0xDD;
+
+    JARVIS_ASSERT(q.push(msg));
+    JARVIS_ASSERT(!q.is_empty());
+    JARVIS_ASSERT_EQ(1ULL, q.count);
+
+    kernel::Message out;
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(1ULL, out.sender_id);
+    JARVIS_ASSERT_EQ(42ULL, out.type);
+    JARVIS_ASSERT_EQ(0ULL, out.priority);
+    JARVIS_ASSERT_EQ(4ULL, out.data_size);
+    JARVIS_ASSERT_EQ(0xAA, out.data[0]);
+    JARVIS_ASSERT_EQ(0xBB, out.data[1]);
+    JARVIS_ASSERT_EQ(0xCC, out.data[2]);
+    JARVIS_ASSERT_EQ(0xDD, out.data[3]);
+    JARVIS_ASSERT(q.is_empty());
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(ipc_mailbox_multiple_messages) {
-    auto* mb = kernel::IPC::create_mailbox(200);
-    JARVIS_ASSERT(mb != nullptr);
+JARVIS_TEST(ipc_queue_priority_order) {
+    kernel::MessageQueue q;
+    q.init();
+    kernel::Message msgs[4];
+    for (int i = 0; i < 4; ++i) {
+        msgs[i].sender_id = 100 + i;
+        msgs[i].type = static_cast<uint64_t>(i);
+        msgs[i].priority = 3 - static_cast<uint64_t>(i);  // priorities: 3, 2, 1, 0
+        msgs[i].data_size = 0;
+    }
+    // push in order 0,1,2,3 (priorities 3,2,1,0 — descending)
+    for (int i = 0; i < 4; ++i) JARVIS_ASSERT(q.push(msgs[i]));
+
+    // pop should return in priority order: 0 (prio 0), then 1 (prio 1), 2 (prio 2), 3 (prio 3)
+    // actually: lower priority number = higher urgency, so priority 0 should pop first
+    JARVIS_ASSERT_EQ(0ULL, q.highest_priority());
+    kernel::Message out;
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(3ULL, out.type);  // sent as i=3, priority 0
+
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(2ULL, out.type);  // sent as i=2, priority 1
+
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(1ULL, out.type);  // sent as i=1, priority 2
+
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(0ULL, out.type);  // sent as i=0, priority 3
+
+    JARVIS_ASSERT(q.is_empty());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_queue_fifo_same_priority) {
+    kernel::MessageQueue q;
+    q.init();
     for (uint64_t i = 0; i < 5; ++i) {
         kernel::Message msg;
         msg.sender_id = i;
-        msg.type = static_cast<uint64_t>(i * 10);
+        msg.type = i * 10;
+        msg.priority = 7;  // all same priority
         msg.data_size = 0;
-        JARVIS_ASSERT(kernel::IPC::send(200, msg));
+        JARVIS_ASSERT(q.push(msg));
     }
-    JARVIS_ASSERT(mb->count == 5);
     for (uint64_t i = 0; i < 5; ++i) {
-        kernel::Message received;
-        JARVIS_ASSERT(kernel::IPC::receive(200, received));
-        JARVIS_ASSERT_EQ(i, received.sender_id);
-        JARVIS_ASSERT_EQ(i * 10, received.type);
+        kernel::Message out;
+        JARVIS_ASSERT(q.pop(out));
+        JARVIS_ASSERT_EQ(i, out.sender_id);
+        JARVIS_ASSERT_EQ(i * 10, out.type);
     }
-    JARVIS_ASSERT(mb->is_empty());
-    kernel::IPC::destroy_mailbox(200);
+    JARVIS_ASSERT(q.is_empty());
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(ipc_mailbox_nonexistent) {
+JARVIS_TEST(ipc_queue_full) {
+    kernel::MessageQueue q;
+    q.init();
+    kernel::Message msg;
+    msg.sender_id = 1;
+    msg.type = 0;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG; ++i) {
+        JARVIS_ASSERT(q.push(msg));
+    }
+    JARVIS_ASSERT(q.is_full());
+    JARVIS_ASSERT(!q.push(msg));  // should fail
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_queue_empty_pop) {
+    kernel::MessageQueue q;
+    q.init();
+    kernel::Message out;
+    JARVIS_ASSERT(!q.pop(out));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_queue_wrap_around) {
+    kernel::MessageQueue q;
+    q.init();
+    kernel::Message msg;
+    msg.sender_id = 0;
+    msg.type = 0;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    // fill queue
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG; ++i) {
+        JARVIS_ASSERT(q.push(msg));
+    }
+    // drain half
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG / 2; ++i) {
+        kernel::Message out;
+        JARVIS_ASSERT(q.pop(out));
+    }
+    // fill again — this exercises wrap-around in the circular buffer
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG / 2; ++i) {
+        JARVIS_ASSERT(q.push(msg));
+    }
+    // drain all
+    size_t count = 0;
+    kernel::Message out;
+    while (q.pop(out)) ++count;
+    JARVIS_ASSERT_EQ(kernel::IPC_MAX_QUEUE_MSG, count);
+    JARVIS_ASSERT(q.is_empty());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_queue_highest_priority) {
+    kernel::MessageQueue q;
+    q.init();
+
     kernel::Message msg;
     msg.sender_id = 0;
     msg.type = 0;
     msg.data_size = 0;
-    bool sent = kernel::IPC::send(99999, msg);
-    JARVIS_ASSERT(!sent);
-    kernel::Message received;
-    bool rcvd = kernel::IPC::receive(99999, received);
-    JARVIS_ASSERT(!rcvd);
+
+    // Push at priority 15
+    msg.priority = 15;
+    JARVIS_ASSERT(q.push(msg));
+    JARVIS_ASSERT_EQ(15ULL, q.highest_priority());
+
+    // Push at priority 5 (higher urgency)
+    msg.priority = 5;
+    JARVIS_ASSERT(q.push(msg));
+    JARVIS_ASSERT_EQ(5ULL, q.highest_priority());
+
+    // Pop the priority 5 message
+    kernel::Message out;
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(5ULL, out.priority);
+    JARVIS_ASSERT_EQ(15ULL, q.highest_priority());
+
+    // Pop the priority 15 message
+    JARVIS_ASSERT(q.pop(out));
+    JARVIS_ASSERT_EQ(15ULL, out.priority);
+    JARVIS_ASSERT_EQ(kernel::IPC_PRIORITY_LEVELS, q.highest_priority());
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC send/recv tests (needs scheduler + current task)
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(ipc_send_recv_self) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    JARVIS_ASSERT(cur->msg_queue != nullptr);
+
+    kernel::Message msg;
+    msg.sender_id = cur->id;
+    msg.type = 77;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    bool ok = kernel::IPC::send(cur->id, msg);
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(!cur->msg_queue->is_empty());
+    JARVIS_ASSERT_EQ(1ULL, cur->msg_queue->count);
+
+    kernel::Message out;
+    ok = kernel::IPC::recv(out);
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT_EQ(77ULL, out.type);
+    JARVIS_ASSERT_EQ(cur->id, out.sender_id);
+    JARVIS_ASSERT(cur->msg_queue->is_empty());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_send_nonexistent) {
+    // send to a task ID that does not exist
+    kernel::Message msg;
+    msg.sender_id = 0;
+    msg.type = 0;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    bool ok = kernel::IPC::send(999999, msg);
+    JARVIS_ASSERT(!ok);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_send_nonblock_full) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    JARVIS_ASSERT(cur->msg_queue != nullptr);
+
+    kernel::Message msg;
+    msg.sender_id = cur->id;
+    msg.type = 0;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    // fill the queue
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG; ++i) {
+        JARVIS_ASSERT(kernel::IPC::send(cur->id, msg));
+    }
+    JARVIS_ASSERT(cur->msg_queue->is_full());
+
+    // send with NONBLOCK should fail
+    bool ok = kernel::IPC::send(cur->id, msg, kernel::IPC_NONBLOCK);
+    JARVIS_ASSERT(!ok);
+
+    // drain and verify
+    for (size_t i = 0; i < kernel::IPC_MAX_QUEUE_MSG; ++i) {
+        kernel::Message out;
+        JARVIS_ASSERT(kernel::IPC::recv(out));
+    }
+    JARVIS_ASSERT(cur->msg_queue->is_empty());
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// sync::Notify tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(ipc_notify_basic) {
+    kernel::sync::Notify n;
+    n.init();
+    JARVIS_ASSERT_EQ(0ULL, n.value());
+
+    n.notify(42);
+    JARVIS_ASSERT_EQ(42ULL, n.value());
+
+    n.notify(99);
+    JARVIS_ASSERT_EQ(99ULL, n.value());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_notify_try_wait) {
+    kernel::sync::Notify n;
+    n.init();
+
+    uint64_t val = 0;
+    // no notification yet → try_wait should succeed (returns true, val may be 0)
+    // Actually try_wait returns true if no waiter is pending.
+    // With Notify::try_wait: if (waiter_ == nullptr && value) { *value = notify_value_; return true; }
+    // So if notify_value_ is 0 and no waiter, the condition fails!
+    // Let me just check behavior:
+    bool ok = n.try_wait(&val);
+    // When notify_value_ is 0, try_wait returns false because `value` check fails
+    JARVIS_ASSERT(!ok);
+
+    n.notify(55);
+    ok = n.try_wait(&val);
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT_EQ(55ULL, val);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// sync::EventGroup tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(ipc_eventgroup_set_clear) {
+    kernel::sync::EventGroup eg;
+    eg.init();
+    JARVIS_ASSERT_EQ(0ULL, eg.get_bits());
+
+    eg.set_bits(0x0F);
+    JARVIS_ASSERT_EQ(0x0FULL, eg.get_bits());
+
+    eg.clear_bits(0x05);
+    JARVIS_ASSERT_EQ(0x0AULL, eg.get_bits());
+
+    eg.set_bits(0xF0);
+    JARVIS_ASSERT_EQ(0xFAULL, eg.get_bits());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(ipc_eventgroup_try_wait) {
+    kernel::sync::EventGroup eg;
+    eg.init();
+
+    // no bits set → try_wait for any bits should fail
+    JARVIS_ASSERT(!eg.try_wait_bits(0x01));
+
+    eg.set_bits(0x03);
+    JARVIS_ASSERT(eg.try_wait_bits(0x01));
+    JARVIS_ASSERT(eg.try_wait_bits(0x02));
+    JARVIS_ASSERT(eg.try_wait_bits(0x03));
+    JARVIS_ASSERT(!eg.try_wait_bits(0x04));
     JARVIS_TEST_PASS();
 }
 
@@ -441,10 +702,21 @@ void register_selftest_tests() {
     JARVIS_REGISTER_TEST(mempool_fragmentation);
     JARVIS_REGISTER_TEST(mempool_reuse);
 
-    JARVIS_REGISTER_TEST(ipc_mailbox_create_destroy);
-    JARVIS_REGISTER_TEST(ipc_mailbox_send_receive);
-    JARVIS_REGISTER_TEST(ipc_mailbox_multiple_messages);
-    JARVIS_REGISTER_TEST(ipc_mailbox_nonexistent);
+    JARVIS_REGISTER_TEST(ipc_queue_init);
+    JARVIS_REGISTER_TEST(ipc_queue_push_pop);
+    JARVIS_REGISTER_TEST(ipc_queue_priority_order);
+    JARVIS_REGISTER_TEST(ipc_queue_fifo_same_priority);
+    JARVIS_REGISTER_TEST(ipc_queue_full);
+    JARVIS_REGISTER_TEST(ipc_queue_empty_pop);
+    JARVIS_REGISTER_TEST(ipc_queue_wrap_around);
+    JARVIS_REGISTER_TEST(ipc_queue_highest_priority);
+    JARVIS_REGISTER_TEST(ipc_send_recv_self);
+    JARVIS_REGISTER_TEST(ipc_send_nonexistent);
+    JARVIS_REGISTER_TEST(ipc_send_nonblock_full);
+    JARVIS_REGISTER_TEST(ipc_notify_basic);
+    JARVIS_REGISTER_TEST(ipc_notify_try_wait);
+    JARVIS_REGISTER_TEST(ipc_eventgroup_set_clear);
+    JARVIS_REGISTER_TEST(ipc_eventgroup_try_wait);
 
     JARVIS_REGISTER_TEST(driver_registry_find);
     JARVIS_REGISTER_TEST(driver_registry_count);

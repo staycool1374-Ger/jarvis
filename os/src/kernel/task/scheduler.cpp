@@ -53,6 +53,13 @@ TaskControlBlock* Scheduler::task_at(uint64_t index) noexcept {
     return tasks_[index];
 }
 
+TaskControlBlock* Scheduler::find_task(uint64_t id) noexcept {
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i]->id == id) return tasks_[i];
+    }
+    return nullptr;
+}
+
 bool Scheduler::needs_switch() noexcept {
     if (task_count_ <= 1) return false;
     auto* current = tasks_[current_index_];

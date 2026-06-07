@@ -9,6 +9,27 @@
 
 namespace kernel {
 
+/// @brief Maximum payload size in bytes for an IPC message.
+static constexpr size_t IPC_MAX_MSG_SIZE = 64;
+/// @brief Maximum number of messages in a single queue.
+static constexpr size_t IPC_MAX_QUEUE_MSG = 16;
+/// @brief Number of priority levels (0 = highest urgency).
+static constexpr size_t IPC_PRIORITY_LEVELS = 32;
+
+/// @brief A single IPC message with sender ID, type, priority, and payload.
+struct Message {
+    uint64_t sender_id;
+    uint64_t type;
+    uint64_t priority;
+    uint8_t  data[IPC_MAX_MSG_SIZE];
+    size_t   data_size;
+};
+
+/// @brief Forward declaration so TaskControlBlock can hold a pointer.
+struct MessageQueue;
+
+
+
 /// @brief States a task can be in during its lifecycle.
 enum class TaskState : uint8_t {
     READY,
@@ -69,6 +90,13 @@ struct TaskControlBlock {
 
     /// @brief Pending signal bitmask (bit n set = signal n is pending).
     uint64_t pending_signals;
+
+    /// @brief Pointer to the task's message queue (allocated and owned by IPC layer).
+    MessageQueue* msg_queue;
+
+    /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
+    TaskControlBlock* blocked_next;
+    TaskControlBlock* blocked_prev;
 
     /// @brief Checks if the task has a handler registered for a signal.
     bool has_signal_handler(uint64_t sig) const {
