@@ -209,7 +209,8 @@
 - [ ] Implement standard inter-process signaling system calls (SYS_SIGNAL, SYS_KILL)
 - [ ] Configure automatic signal translation vectors whenever user space execution faults trigger standard exceptions (SIGSEGV, SIGFPE, SIGILL)
 - [ ] Introduce dedicated execution alarm tracking options per individual thread task via SYS_ALARM
-- [ ] Implement SYS_GETTOD system call tracking options (Time-of-Day clocks)
+- [ ] Implement CMOS RTC driver (I/O ports 0x70/0x71) for wall-clock time with seconds
+- [ ] Implement SYS_GETTOD system call tracking options (Time-of-Day clocks) backed by CMOS RTC
 - [ ] Implement SYS_UNAME system call tracking options (System-wide environmental profiles)
 - [ ] Add user space execution delays (sleep()) routed through the underlying task alarm timer architecture
 - [ ] 120 Tests PASS
@@ -253,6 +254,38 @@
 - [ ] Refresh status bar on every shell prompt: date/time, last command response time, CPU%, mem%
 - [ ] Wire status bar into the shell display loop (non-intrusive, doesn't interfere with output)
 - [ ] 125 Tests PASS
+
+### Version 0.2.11 — PCI Enumeration
+- [ ] Implement PCI config space access (I/O ports 0xCF8/0xCFC)
+- [ ] Enumerate PCI bus 0, detect all devices (vendor ID, device ID, class code)
+- [ ] Implement PCI capability list parsing (MSI, MSI-X, PM capabilities)
+- [ ] Allocate and assign BAR (Base Address Register) resources
+- [ ] Expose PCI device tree via /sys/pci or /proc/pci
+- [ ] Integrate PCI discovery into boot-time driver initialisation sequence
+- [ ] 125 Tests PASS
+
+### Version 0.2.12 — tmpfs (Temporary Filesystem)
+- [ ] Implement tmpfs: RAM-backed filesystem with dynamic page allocation
+- [ ] Support standard VFS operations: open, read, write, close, mkdir, unlink, fstat, readdir
+- [ ] Mount tmpfs at /tmp during boot
+- [ ] Enforce per-task quota or global size limit (prevent OOM exhaustion)
+- [ ] 125 Tests PASS
+
+### Version 0.2.13 — Init System
+- [ ] Design /sbin/init as a userspace ELF started as PID 1 by the kernel
+- [ ] Implement service lifecycle: spawn, monitor, restart on crash
+- [ ] Implement rc script or config-file-based boot sequence
+- [ ] Implement auto-mount of filesystems (root, /proc, /tmp, /home)
+- [ ] Redirect kernel shell launch to be spawned by init (not directly by kernel)
+- [ ] 125 Tests PASS
+
+### Version 0.2.14 — Virtio Drivers
+- [ ] Implement virtio-mmio or virtio-pci transport layer (descriptor rings, queue sync)
+- [ ] Implement virtio-blk driver (read/write sectors via virtqueue) as alternative to ATA PIO
+- [ ] Integrate virtio-blk into FAT32 v0.2.9 as a backend option
+- [ ] Implement virtio-net driver (packet send/receive via virtqueue)
+- [ ] Implement minimal network stack (ARP, IP, UDP) over virtio-net
+- [ ] 120 Tests PASS
 
 ---
 

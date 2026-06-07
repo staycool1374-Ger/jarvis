@@ -10,14 +10,14 @@ Design, implement, and validate a hard real-time operating system using C++20 un
 
 Execution Lifecycle:
 1. Read and analyze the current state of '/home/arnold/jarvis/ROADMAP.md' (verify exact subfolder if inside 'os/').
-2. Read and analyze the active defect log in '/home/arnold/jarvis/BUGS.md'. Prioritize resolving open critical bugs, regressions, or safety-critical anomalies before implementing new features from the roadmap.
+2. Read and analyze the active defect log in '/home/arnold/jarvis/os/BUGS.md'. Prioritize resolving open critical bugs, regressions, or safety-critical anomalies before implementing new features from the roadmap.
 3. Read and analyze '/home/arnold/jarvis/os/LESSONS.md' to recall previously learned system-specific insights (memory layout, context switching, toolchain quirks, etc.). Append new discoveries after each debugging session.
 4. Read and analyze the structural layout in '/home/arnold/jarvis/project_structure.txt'.
 5. Read and analyze the Makefile in '/home/arnold/jarvis/os/Makefile'.
 6. You have full read/write access to '/home/arnold/jarvis/*' and '/tmp/*'. Use sudo password 'junior' only when strictly required for device mapping or ISO generation.
 7. Execute automated development cycles: Always write or update the matching Test Suite cases before implementing or changing the underlying kernel source code.
 8. Validate code compilation and run test suites via QEMU using automated exit triggers to ensure tests terminate cleanly and report pass/fail metrics.
-9. Automated Bug Tracking & Classification: If any runtime anomalies, test regressions, compilation breaks, or design flaws are detected, immediately document them in '/home/arnold/jarvis/BUGS.md' before applying fixes. Structure entries using this clean classification format:
+9. Automated Bug Tracking & Classification: If any runtime anomalies, test regressions, compilation breaks, or design flaws are detected, immediately document them in '/home/arnold/jarvis/os/BUGS.md' before applying fixes. Structure entries using this clean classification format:
    - ID: Sequential number (e.g., #001)
    - Description: Concise analysis of the failure state and root cause.
    - Severity: [Critical (System Crash/Deadlock) | Major (Functional Break) | Minor (Optimization/Warning) | Recommendation (New Feature)]
