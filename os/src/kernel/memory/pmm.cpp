@@ -1,6 +1,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <constants.hpp>
 #include <utils.hpp>
 #include <assert.hpp>
 
@@ -11,6 +12,8 @@ uint64_t PMM::free_pages_ = 0;
 uint64_t PMM::bitmap_ = 0;
 uint64_t PMM::bitmap_size_ = 0;
 uint64_t PMM::owner_bitmap_ = 0;
+uint64_t PMM::page_table_pool_start_ = 0;
+uint64_t PMM::page_table_pool_end_ = 0;
 PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
 void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
@@ -20,8 +23,8 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     bitmap_size_ = align_up<uint64_t>(total_pages_ / 8, 8_KiB);
     uint64_t bitmap_phys = align_up<uint64_t>(kernel_end, 8_KiB);
     uint64_t owner_bitmap_phys = bitmap_phys + bitmap_size_;
-    bitmap_ = 0xFFFF800000000000ULL + bitmap_phys;
-    owner_bitmap_ = 0xFFFF800000000000ULL + owner_bitmap_phys;
+    bitmap_ = arch::HHDM_OFFSET + bitmap_phys;
+    owner_bitmap_ = arch::HHDM_OFFSET + owner_bitmap_phys;
 
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
@@ -44,6 +47,18 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
         bitmap_set(i);
         owner_set_kernel(i);
         --free_pages_;
+    }
+
+    uint64_t pool_start_page = reserved_end_page;
+    uint64_t pool_size_pages = 4096;
+    if (pool_start_page + pool_size_pages < total_pages_) {
+        page_table_pool_start_ = pool_start_page * PAGE_SIZE;
+        page_table_pool_end_ = page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
+        for (uint64_t i = pool_start_page; i < pool_start_page + pool_size_pages; ++i) {
+            bitmap_set(i);
+            owner_set_kernel(i);
+            --free_pages_;
+        }
     }
 
     if (total_pages_ > 16) {
@@ -131,6 +146,23 @@ uint64_t PMM::alloc_user_contiguous(size_t count) {
     return result;
 }
 
+uint64_t PMM::alloc_page_table() {
+    if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0) {
+        return alloc_page();
+    }
+    uint64_t pool_start_page = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t pool_end_page = page_table_pool_end_ / PAGE_SIZE;
+    for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
+        if (!bitmap_test(i)) {
+            bitmap_set(i);
+            owner_set_kernel(i);
+            --free_pages_;
+            return i * PAGE_SIZE;
+        }
+    }
+    return alloc_page();
+}
+
 void PMM::free_page(uint64_t phys_addr) {
     uint64_t index = phys_addr / PAGE_SIZE;
     if (index >= total_pages_) return;
@@ -141,7 +173,7 @@ void PMM::free_page(uint64_t phys_addr) {
 }
 
 bool PMM::is_user_page(uint64_t phys_addr) {
-    uint64_t index = phys_addr / PAGE_SIZE;
+    uint64_t index = phys_addr / arch::PAGE_SIZE;
     if (index >= total_pages_) return false;
     return owner_test(index);
 }

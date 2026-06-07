@@ -16,6 +16,7 @@
 #include <kernel/test/test_selftest.hpp>
 #include <test.hpp>
 #include <string.hpp>
+#include <constants.hpp>
 
 namespace service {
 
@@ -24,7 +25,7 @@ static void background_task_wrapper() {
     auto* entry = task ? reinterpret_cast<void (*)()>(task->user_data) : nullptr;
     if (entry) entry();
     if (task) task->state = kernel::TaskState::TERMINATED;
-    while (true) asm volatile("hlt");
+    while (true) arch::hlt();
 }
 
 Shell::Command Shell::commands_[MAX_COMMANDS] = {};
@@ -127,8 +128,8 @@ void Shell::execute(const char* cmd) {
 }
 
 static void debug_putchar(char c) {
-    if (c == '\n') { do { } while ((arch::inb(0x3F8 + 5) & 0x20) == 0); arch::outb(0x3F8, '\r'); }
-    do { } while ((arch::inb(0x3F8 + 5) & 0x20) == 0); arch::outb(0x3F8, c);
+    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, '\r'); }
+    do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, c);
 }
 static void debug_write(const char* s) { while (*s) debug_putchar(*s++); }
 
@@ -138,8 +139,8 @@ static bool readline(char* buf, size_t max_len) {
         char c = 0;
         bool got_char = false;
 
-        if (arch::inb(0x3F8 + 5) & 1) {
-            c = arch::inb(0x3F8);
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            c = arch::inb(arch::COM1);
             got_char = true;
         }
 
@@ -148,7 +149,7 @@ static bool readline(char* buf, size_t max_len) {
         }
 
         if (!got_char) {
-            asm volatile("pause");
+            arch::pause();
             continue;
         }
 
@@ -396,7 +397,7 @@ void Shell::cmd_reboot(int, const char**) {
         good = arch::inb(0x64);
     } while (good & 0x02);
     arch::outb(0x64, 0xFE);
-    asm volatile("hlt");
+    arch::hlt();
 }
 
 void Shell::cmd_run(int argc, const char** argv) {
@@ -577,12 +578,12 @@ void Shell::cmd_exit(int, const char**) {
     Terminal::write("\nShutting down...\n");
     Terminal::set_fg(0xC0C0C0);
 
-    arch::outw(0x604, 0x2000);
-    arch::outw(0xB004, 0x2000);
+    arch::outw(arch::QEMU_ACPI_PORT, 0x2000);
+    arch::outw(arch::QEMU_SHUTDOWN_PORT, 0x2000);
 
-    for (int i = 0; i < 100000000; ++i) asm volatile("pause" : : : "memory");
+    for (int i = 0; i < 100000000; ++i) arch::pause();
     Terminal::write("Shutdown failed. Halting.\n");
-    asm volatile("cli; hlt");
+    arch::cli(); arch::hlt();
 }
 
 } // namespace service

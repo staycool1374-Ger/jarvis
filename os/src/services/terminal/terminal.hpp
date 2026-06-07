@@ -71,7 +71,6 @@ private:
     uint32_t cols_ = 0;
     uint32_t rows_ = 0;
 
-    char line_buf_[LINE_BUF_SIZE];
     size_t line_pos_ = 0;
 
     Terminal() = default;

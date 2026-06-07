@@ -80,4 +80,39 @@ static constexpr size_t MAX_SIGNAL_HANDLERS = 32;
 ///        If a fault occurs and this is set, execution is redirected here.
 extern "C" uint64_t g_user_access_recover_ip;
 
+/// @brief Signal frame placed on the user stack when delivering a signal.
+///        The handler returns via SYS_SIGRETURN which restores this frame.
+struct SignalFrame {
+    uint64_t sig;          ///< Signal number delivered
+    uint64_t saved_rip;    ///< Original RIP to restore on sigreturn
+    uint64_t saved_rsp;    ///< Original RSP to restore on sigreturn
+    uint64_t saved_rflags; ///< Original RFLAGS to restore on sigreturn
+    uint64_t saved_cs;     ///< Original CS
+    uint64_t saved_ss;     ///< Original SS
+    uint64_t reserved[2];  ///< For future expansion (16-byte alignment padding)
+};
+
+/// @brief Maximum signal frame size (pushed on user stack).
+static constexpr size_t SIGNAL_FRAME_SIZE = sizeof(SignalFrame);
+
+/// @brief Returns true if a signal code indicates immediate termination
+///        (SIGKILL cannot be caught or ignored).
+static inline bool signal_is_fatal(uint64_t sig) {
+    return sig == static_cast<uint64_t>(Signal::SIGKILL);
+}
+
+/// @brief Default signal action dispatcher.
+static inline SignalAction default_signal_action(uint64_t sig) {
+    switch (static_cast<Signal>(sig)) {
+    case Signal::SIGCHLD:
+    case Signal::SIGCONT:
+        return SignalAction::IGNORE;
+    case Signal::SIGSTOP:
+    case Signal::SIGTSTP:
+        return SignalAction::STOP;
+    default:
+        return SignalAction::TERMINATE;
+    }
+}
+
 } // namespace kernel

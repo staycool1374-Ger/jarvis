@@ -9,11 +9,13 @@
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <services/terminal/terminal.hpp>
 #include <string.hpp>
+#include <signal.hpp>
 
 namespace kernel {
 
@@ -126,6 +128,29 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
         if (t) {
             t->state = TaskState::TERMINATED;
             t->exit_code = arg0;
+
+            // Reparent any children to init (first shell task)
+            if (t->first_child) {
+                TaskControlBlock* init_task = nullptr;
+                uint64_t count = Scheduler::task_count();
+                for (uint64_t i = 0; i < count; ++i) {
+                    auto* p = Scheduler::task_at(i);
+                    if (p && p->parent_id == 0 && p->id != 0) {
+                        init_task = p;
+                        break;
+                    }
+                }
+                if (init_task) {
+                    auto* child = t->first_child;
+                    while (child) {
+                        auto* next = child->next_sibling;
+                        t->remove_child(child);
+                        init_task->add_child(child);
+                        child = next;
+                    }
+                }
+            }
+
             if (t->parent_id) {
                 uint64_t count = Scheduler::task_count();
                 for (uint64_t i = 0; i < count; ++i) {
@@ -136,9 +161,6 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
                         if (p->waiting_child_status) {
                             *p->waiting_child_status = t->exit_code;
                             p->waiting_child_status = nullptr;
-                        }
-                        if (p->context.rsp) {
-                            *reinterpret_cast<uint64_t*>(p->context.rsp) = t->id;
                         }
                         p->waiting_child_pid = 0;
                         p->state = TaskState::READY;
@@ -370,31 +392,52 @@ uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
     case SyscallNumber::KILL: {
         uint64_t target_pid = arg0;
         uint64_t sig = arg1;
-        uint64_t count = Scheduler::task_count();
-        for (uint64_t i = 0; i < count; ++i) {
-            auto* t = Scheduler::task_at(i);
-            if (t && t->id == target_pid) {
+        if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
+        auto* t = Scheduler::find_task(target_pid);
+        if (!t) return static_cast<uint64_t>(-1);
+        if (t == task()) {
+            // Self-kill: deliver immediately
+            if (signal_is_fatal(sig) || !t->has_signal_handler(sig)) {
                 t->state = TaskState::TERMINATED;
                 t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
-                if (t->parent_id) {
-                    for (uint64_t j = 0; j < count; ++j) {
-                        auto* p = Scheduler::task_at(j);
-                        if (p && p->id == t->parent_id &&
-                            (p->waiting_child_pid == t->id ||
-                             p->waiting_child_pid == static_cast<uint64_t>(-1))) {
-                            if (p->context.rsp) {
-                                *reinterpret_cast<uint64_t*>(p->context.rsp) = t->id;
-                            }
-                            p->waiting_child_pid = 0;
-                            p->state = TaskState::READY;
-                            break;
-                        }
-                    }
-                }
-                return 0;
             }
+        } else {
+            // Deliver signal to another task
+            t->pending_signals |= (1ULL << sig);
         }
-        return static_cast<uint64_t>(-1);
+        return 0;
+    }
+
+    case SyscallNumber::SIGNAL: {
+        auto* t = task();
+        if (!t) return static_cast<uint64_t>(-1);
+        uint64_t sig = arg0;
+        if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
+        // Cannot change SIGKILL handler
+        if (signal_is_fatal(sig)) return static_cast<uint64_t>(-1);
+        auto handler = reinterpret_cast<sighandler_t>(arg1);
+        t->set_signal_handler(sig, handler);
+        return 0;
+    }
+
+    case SyscallNumber::SIGRETURN: {
+        auto* t = task();
+        if (!t || !regs) return static_cast<uint64_t>(-1);
+        // Read SignalFrame from the user stack (current RSP)
+        uint64_t user_rsp = regs[20];
+        auto* frame = reinterpret_cast<const SignalFrame*>(
+            reinterpret_cast<uint64_t*>(user_rsp));
+        // Validate frame via checked_ptr
+        auto chk = checked(frame, 1);
+        if (!chk.valid()) return static_cast<uint64_t>(-1);
+        // Restore saved context
+        regs[17] = frame->saved_rip;
+        regs[20] = frame->saved_rsp;
+        regs[19] = frame->saved_rflags;
+        regs[18] = frame->saved_cs;
+        regs[21] = frame->saved_ss;
+        regs[0] = 0;
+        return 0;
     }
 
     case SyscallNumber::PIPE: {

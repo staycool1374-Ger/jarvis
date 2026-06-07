@@ -36,6 +36,8 @@ SECTIONS
     {
         *(.text*)
         *(.text.*)
+        *(.ltext*)
+        *(.ltext.*)
     } :text
     phys_lma = ALIGN(phys_lma + SIZEOF(.text), 4K);
 
@@ -43,6 +45,8 @@ SECTIONS
     {
         *(.rodata*)
         *(.rodata.*)
+        *(.lrodata*)
+        *(.lrodata.*)
     } :rodata
     phys_lma = ALIGN(phys_lma + SIZEOF(.rodata), 4K);
 
@@ -50,6 +54,8 @@ SECTIONS
     {
         *(.data*)
         *(.data.*)
+        *(.ldata*)
+        *(.ldata.*)
         *(.got)
         *(.got.plt)
     } :data
@@ -60,6 +66,8 @@ SECTIONS
         *(COMMON)
         *(.bss*)
         *(.bss.*)
+        *(.lbss*)
+        *(.lbss.*)
     } :data
 
     kernel_phys_end = ALIGN(phys_lma + SIZEOF(.bss), 4K);

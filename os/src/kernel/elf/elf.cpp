@@ -7,40 +7,63 @@
 #include <kernel/task/scheduler.hpp>
 #include <assert.hpp>
 #include <string.hpp>
+#include <constants.hpp>
 
 namespace kernel {
 namespace elf {
 
 static constexpr uint64_t ELF_MAGIC = 0x00000000464C457FULL;
-static constexpr uint64_t USER_STACK_SIZE = 64_KiB;
-static constexpr uint64_t USER_STACK_VADDR = 0x70000000;
-static constexpr uint64_t USER_HEAP_VADDR = 0x60000000;
-static constexpr uint64_t USER_HEAP_SIZE = 1_MiB;
 
 bool validate_header(const ELF64Header* hdr) {
     if (!hdr) return false;
     if (reinterpret_cast<const uint32_t*>(hdr->ident)[0] !=
         static_cast<uint32_t>(ELF_MAGIC)) return false;
-    if (hdr->ident[4] != 2) return false;
-    if (hdr->ident[5] != 1) return false;
+    if (hdr->ident[4] != 2) return false;  // 64-bit
+    if (hdr->ident[5] != 1) return false;  // little-endian
     if (hdr->type != ET_EXEC && hdr->type != ET_DYN) return false;
-    if (hdr->machine != 0x3E) return false;
+    if (hdr->machine != 0x3E) return false;  // x86_64
+    if (hdr->version == 0) return false;
     if (hdr->phnum > 64) return false;
+    if (hdr->ehsize < sizeof(ELF64Header)) return false;
+    if (hdr->phentsize < sizeof(ELF64ProgramHeader)) return false;
     if (hdr->phnum > 0) {
-        if (hdr->phentsize < sizeof(ELF64ProgramHeader)) return false;
+        // Check for arithmetic overflow in program header region end
         uint64_t ph_end = hdr->phoff + static_cast<uint64_t>(hdr->phnum) * hdr->phentsize;
-        if (ph_end < hdr->phoff) return false;
+        if (ph_end < hdr->phoff) return false;  // overflow
+        // Ensure header fits within reasonable image size
+        if (ph_end > 1_MiB) return false;
     }
+    // Verify ident padding bytes are zero
+    for (int i = 7; i < 16; ++i) {
+        if (hdr->ident[i] != 0) return false;
+    }
+    // Reject files with suspicious entry point
+    if (hdr->entry >= USER_SPACE_LIMIT && hdr->entry != 0) return false;
     return true;
 }
 
 static bool validate_segment(const ELF64ProgramHeader* phdr) {
     if (phdr->type != PT_LOAD) return true;
+    // Basic size sanity
     if (phdr->filesz > phdr->memsz) return false;
+    // Overflow checks
     if (phdr->offset + phdr->filesz < phdr->offset) return false;
     if (phdr->vaddr + phdr->memsz < phdr->vaddr) return false;
+    if (phdr->vaddr + phdr->filesz < phdr->vaddr) return false;
+    // Must be within user space
     if (phdr->vaddr >= USER_SPACE_LIMIT) return false;
     if (phdr->vaddr + phdr->memsz > USER_SPACE_LIMIT) return false;
+    // Reject zero-size segments in memory
+    if (phdr->memsz == 0) return false;
+    // Reject segments that are too large (> 64 MiB)
+    if (phdr->memsz > 64_MiB) return false;
+    // Reject segments with suspicious alignment
+    if (phdr->align > 1_MiB) return false;
+    // Validate file offset is within the image (cannot check exact size without file length,
+    // but ensure it's reasonable: less than a typical max ELF size)
+    if (phdr->offset > 4_MiB) return false;
+    // W^X enforcement: segment should not be both writable AND executable
+    if ((phdr->flags & 2) && (phdr->flags & 1)) return false;
     return true;
 }
 
@@ -88,50 +111,50 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
         uint64_t vaddr_base = page_align_down(phdr->vaddr);
         uint64_t vaddr_end = page_align_up(phdr->vaddr + phdr->memsz);
         uint64_t region_size = vaddr_end - vaddr_base;
-        size_t num_pages = region_size / 4096;
+        size_t num_pages = region_size / arch::PAGE_SIZE;
 
         uint64_t seg_phys = PMM::alloc_user_contiguous(num_pages);
         if (!seg_phys) return false;
 
         for (size_t p = 0; p < num_pages; ++p) {
-            VMM::map_page_in_pml4(vaddr_base + p * 4096,
-                                  seg_phys + p * 4096,
+            VMM::map_page_in_pml4(vaddr_base + p * arch::PAGE_SIZE,
+                                  seg_phys + p * arch::PAGE_SIZE,
                                   true, pml4);
         }
 
         uint64_t offset_in_region = phdr->vaddr - vaddr_base;
-        memcpy(reinterpret_cast<void*>(0xFFFF800000000000ULL + seg_phys + offset_in_region),
+        memcpy(reinterpret_cast<void*>(arch::HHDM_OFFSET + seg_phys + offset_in_region),
                file_data + phdr->offset, phdr->filesz);
 
         if (phdr->memsz > phdr->filesz) {
-            memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + seg_phys + offset_in_region + phdr->filesz),
+            memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz),
                    0, phdr->memsz - phdr->filesz);
         }
     }
 
-    size_t ustack_pages = (USER_STACK_SIZE + 4095) / 4096;
+    size_t ustack_pages = (mem::STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
     if (!ustack_phys) return false;
 
-    // Guard page: leave first page unmapped, start mapping at +4096
+    // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
     for (size_t i = 0; i < ustack_pages; ++i) {
-        VMM::map_page_in_pml4(USER_STACK_VADDR + 4096 + i * 4096,
-                              ustack_phys + i * 4096,
+        VMM::map_page_in_pml4(mem::STACK_VADDR + arch::PAGE_SIZE + i * arch::PAGE_SIZE,
+                              ustack_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
 
-    memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + ustack_phys), 0, USER_STACK_SIZE);
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + ustack_phys), 0, mem::STACK_SIZE);
 
-    size_t heap_pages = USER_HEAP_SIZE / 4096;
+    size_t heap_pages = mem::HEAP_SIZE / arch::PAGE_SIZE;
     uint64_t heap_phys = PMM::alloc_user_contiguous(heap_pages);
     if (!heap_phys) return false;
 
     for (size_t i = 0; i < heap_pages; ++i) {
-        VMM::map_page_in_pml4(USER_HEAP_VADDR + i * 4096,
-                              heap_phys + i * 4096,
+        VMM::map_page_in_pml4(mem::HEAP_VADDR + i * arch::PAGE_SIZE,
+                              heap_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
-    memset(reinterpret_cast<void*>(0xFFFF800000000000ULL + heap_phys), 0, USER_HEAP_SIZE);
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, mem::HEAP_SIZE);
 
     if (out_ustack_phys) *out_ustack_phys = ustack_phys;
     return true;
@@ -144,7 +167,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     int argc = count_strings(argv);
 
     uint64_t str_total = total_string_len(argv) + total_string_len(envp);
-    uint8_t* stack_top = reinterpret_cast<uint8_t*>(0xFFFF800000000000ULL + ustack_phys + USER_STACK_SIZE);
+    uint8_t* stack_top = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + ustack_phys + mem::STACK_SIZE);
 
     uint8_t* sp = stack_top;
     sp -= str_total;
@@ -188,7 +211,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     *--ptr = static_cast<uint64_t>(argc);
 
     uint64_t user_rsp = reinterpret_cast<uint64_t>(ptr);
-    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top) + USER_STACK_VADDR + 4096 + USER_STACK_SIZE;
+    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top) + mem::STACK_VADDR + arch::PAGE_SIZE + mem::STACK_SIZE;
 
     return user_rsp;
 }
@@ -219,11 +242,11 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->priority = 5;
     tcb->period_ticks = 20;
 
-    size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / 4096;
+    size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
     if (!kstack_phys) { delete tcb; return nullptr; }
     tcb->stack_phys_ = kstack_phys;
-    uint64_t kstack_virt = 0xFFFF800000000000ULL + kstack_phys;
+    uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
     tcb->kernel_stack_top = kstack_virt + TaskControlBlock::STACK_SIZE;
 
@@ -237,15 +260,15 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     open_std_fds(tcb);
 
     tcb->user_stack_ = ustack_phys;
-    tcb->user_stack_size_ = USER_STACK_SIZE;
+    tcb->user_stack_size_ = mem::STACK_SIZE;
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, nullptr, nullptr);
 
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
-    *--stack = 0x23;
+    *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;
-    *--stack = 0x202;
-    *--stack = 0x1B;
+    *--stack = arch::RFLAGS_DEFAULT;
+    *--stack = arch::SEG_USER_CODE;
     *--stack = hdr->entry;
     *--stack = 0;
     *--stack = 0;
@@ -275,8 +298,9 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
 
     uint64_t old_pml4 = tcb->page_table_;
     tcb->page_table_ = new_pml4;
+    tcb->page_table_shared_ = false;
     tcb->user_stack_ = ustack_phys;
-    tcb->user_stack_size_ = USER_STACK_SIZE;
+    tcb->user_stack_size_ = mem::STACK_SIZE;
 
     {
         vfs::Vnode* tty = vfs::resolve("/dev/tty");
@@ -304,10 +328,10 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     }
 
     regs[17] = hdr->entry;
-    regs[18] = 0x1B;
-    regs[19] = 0x202;
+    regs[18] = arch::SEG_USER_CODE;
+    regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = user_rsp;
-    regs[21] = 0x23;
+    regs[21] = arch::SEG_USER_DATA;
     regs[0] = 0;
 
     {
@@ -319,7 +343,9 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     }
 
     if (old_pml4 && old_pml4 != VMM::get_kernel_pml4()) {
-        VMM::free_user_pages(old_pml4);
+        if (!tcb->page_table_shared_) {
+            VMM::free_user_pages(old_pml4);
+        }
         PMM::free_page(old_pml4);
     }
 

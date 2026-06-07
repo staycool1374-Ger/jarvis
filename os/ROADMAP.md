@@ -193,6 +193,12 @@
 - [x] 410 Tests PASS (all 50 kernel self-tests × pass)
 
 ### Version 0.2.6 — Exception-Safe Userspace
+- [x] Fix VMM crash when GRUB video modules loaded (HHDM page table creation for framebuffer at 2 GiB)
+  - Added `PMM::alloc_page_table()` with reserved 16 MiB low-memory pool for page table pages
+  - Simplified `VMM::get_table()` to use identity mapping for zeroing page table pages
+  - Removed broken PML4[511] temporary mapping mechanism
+- [x] GRUB `insmod all_video` now works — framebuffer at 0x80000000 maps correctly via HHDM
+- [x] GRUB "error: no suitable video mode found." persists (cosmetic, GRUB gfxterm init before config); kernel boots and initializes framebuffer correctly
 - [ ] Add setjmp/longjmp architectural recovery fallback blocks within copy_from_user functions to intercept invalid pointer faults gracefully
 - [ ] Develop dedicated user exception handlers tracking fault conditions (#GP, #PF, #DE, #UD) triggered in Ring 3, translating failures into standard signals (SIGSEGV, SIGFPE, SIGILL) rather than forcing a full Kernel Panic
 - [ ] Implement pre-termination signal dispatch loops: Enables faulted user applications to intercept standard terminations and perform vital diagnostic cleanups (closing open FDs, clearing active Mailbox locks)
@@ -205,7 +211,7 @@
 - [ ] Restructure system call input sanitation layers by utilizing a unified CheckedPointer<T> parsing wrapper combined with robust copy_from_user and copy_to_user memory barriers
 - [ ] Secure the ELF loader against malicious image formats by enforcing boundary limits on segment arrays (phdr->offset, phdr->filesz <= memsz, kernel space boundary protection)
 - [ ] Integrate page table security controls inside free_user_pages via explicit memory ownership lookups using an internal allocation bitset (USER/KERNEL bit flags)
-- [ ] 115 Tests PASS
+- [x] 492 Tests PASS (all selftests pass with video modules loaded)
 
 ### Version 0.2.7 — Userspace Signals & Syscall Extension
 - [ ] Implement standard inter-process signaling system calls (SYS_SIGNAL, SYS_KILL)
@@ -377,6 +383,18 @@
 - [ ] Move architecture-dependent syscall entry (int 0x80 / syscall) into `arch/x86_64/`
 - [ ] Add `ARCH` build variable to Makefile for cross-compilation (x86_64 as default)
 - [ ] Verify kernel still boots and passes all tests after refactoring
+- [ ] 125 Tests PASS
+
+### Version 0.2.26 — Microkernel Architecture Evaluation
+- [ ] Audit: Catalogue every kernel subsystem by privilege requirement (ring-0 vs ring-3)
+- [ ] Audit: Measure current monolithic IPC latency vs theoretical microkernel message-passing budget
+- [ ] Design: Define microkernel boundary — what stays in ring-0 (IPC, scheduler, paging, interrupt dispatch) vs what moves to user-space (VFS, drivers, shell, signal dispatch, process lifecycle)
+- [ ] Prototype: Extract VFS into a privileged user-space server process (/sbin/vfsd) communicating via IPC
+- [ ] Prototype: Extract keyboard/serial drivers into a user-space driver process (/sbin/iocd)
+- [ ] Prototype: Implement capability-based access control for device memory (MMIO regions mapped only to approved driver tasks)
+- [ ] Prototype: Spawn shell as a non-privileged user-space task requiring IPC for I/O
+- [ ] Benchmark: Measure end-to-end latency for `read("/dev/tty")` → serial IRQ → shell in microkernel vs monolithic layout
+- [ ] Decision: Keep monolithic (0.2.x), adopt hybrid (0.3.x+), or commit to pure microkernel (0.4.x+) — update ROADMAP accordingly
 - [ ] 125 Tests PASS
 
 ---

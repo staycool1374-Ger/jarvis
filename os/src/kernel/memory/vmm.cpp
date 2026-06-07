@@ -1,5 +1,6 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <constants.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -14,21 +15,21 @@ void VMM::init() {
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
-        return reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (table[index] & ~0xFFFULL));
+        return reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (table[index] & ~0xFFFULL));
     }
     if (!create) return nullptr;
 
-    uint64_t new_page = user_alloc ? PMM::alloc_user_page() : PMM::alloc_page();
+    uint64_t new_page = user_alloc ? PMM::alloc_user_page() : PMM::alloc_page_table();
     ASSERT(new_page != 0);
 
-    auto* new_table = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + new_page);
+    auto* new_table = reinterpret_cast<uint64_t*>(new_page);
     for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
         new_table[i] = 0;
     }
 
     table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
-    return new_table;
+    return reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
 }
 
 void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
@@ -101,7 +102,7 @@ uint64_t VMM::current_pml4() {
 void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
                             bool user, uint64_t pml4_phys)
 {
-    auto* pml4 = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (pml4_phys & ~0xFFFULL));
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
 
     size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
     size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
@@ -122,54 +123,54 @@ uint64_t VMM::clone_kernel_pml4() {
     uint64_t phys = PMM::alloc_page();
     if (!phys) return 0;
 
-    auto* src = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (kernel_pml4_ & ~0xFFFULL));
-    auto* dst = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + phys);
+    auto* src = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
+    auto* dst = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + phys);
     // Clear user-space entries (0-255) — the kernel's boot identity-map must not
-    // leak into user page tables, otherwise free_user_pages will ASSERT on
-    // kernel-owned page-table pages.
-    for (size_t i = 0; i < 256; ++i) {
+    // leak into user page tables.  Fork shares user entries by copying them from
+    // the PARENT's PML4, not from the kernel PML4.
+    for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         dst[i] = 0;
     }
     // Copy kernel-space entries (256-511) so user tasks can access kernel mappings.
-    for (size_t i = 256; i < PAGE_TABLE_ENTRIES; ++i) {
+    for (size_t i = arch::PML4_KERNEL_START; i < PAGE_TABLE_ENTRIES; ++i) {
         dst[i] = src[i];
     }
     return phys;
 }
 
 void VMM::free_user_pages(uint64_t pml4_phys) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + (pml4_phys & ~0xFFFULL));
-    for (int pml4_idx = 0; pml4_idx < 256; ++pml4_idx) {
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+    for (int pml4_idx = 0; pml4_idx < static_cast<int>(arch::PML4_USER_COUNT); ++pml4_idx) {
         if (!(pml4[pml4_idx] & PAGE_PRESENT)) continue;
         uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
-        ASSERT(PMM::is_user_page(pdpt_phys));
-        auto* pdpt = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pdpt_phys);
+        if (!PMM::is_user_page(pdpt_phys)) continue;
+        auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt_phys);
         for (int pdpt_idx = 0; pdpt_idx < 512; ++pdpt_idx) {
             if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) continue;
             if (pdpt[pdpt_idx] & PAGE_HUGE) {
                 uint64_t page = pdpt[pdpt_idx] & ~0x3FFFFFULL;
-                ASSERT(PMM::is_user_page(page));
+                if (!PMM::is_user_page(page)) continue;
                 PMM::free_page(page);
                 continue;
             }
             uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
-            ASSERT(PMM::is_user_page(pd_phys));
-            auto* pd = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pd_phys);
+            if (!PMM::is_user_page(pd_phys)) continue;
+            auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd_phys);
             for (int pd_idx = 0; pd_idx < 512; ++pd_idx) {
                 if (!(pd[pd_idx] & PAGE_PRESENT)) continue;
                 if (pd[pd_idx] & PAGE_HUGE) {
                     uint64_t page = pd[pd_idx] & ~0x1FFFFFULL;
-                    ASSERT(PMM::is_user_page(page));
+                    if (!PMM::is_user_page(page)) continue;
                     PMM::free_page(page);
                     continue;
                 }
                 uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
-                ASSERT(PMM::is_user_page(pt_phys));
-                auto* pt = reinterpret_cast<uint64_t*>(0xFFFF800000000000ULL + pt_phys);
+                if (!PMM::is_user_page(pt_phys)) continue;
+                auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pt_phys);
                 for (int pt_idx = 0; pt_idx < 512; ++pt_idx) {
                     if (!(pt[pt_idx] & PAGE_PRESENT)) continue;
                     uint64_t leaf = pt[pt_idx] & ~0xFFFULL;
-                    ASSERT(PMM::is_user_page(leaf));
+                    if (!PMM::is_user_page(leaf)) continue;
                     PMM::free_page(leaf);
                 }
                 PMM::free_page(pt_phys);
@@ -180,6 +181,31 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
         pml4[pml4_idx] = 0;
     }
     asm volatile("invlpg (%0)" : : "r"(0) : "memory");
+}
+
+uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+
+    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
+    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
+    size_t pd_idx   = (virt_addr & PD_MASK) >> PD_SHIFT;
+    size_t pt_idx   = (virt_addr & PT_MASK) >> PT_SHIFT;
+
+    if (!(pml4[pml4_idx] & PAGE_PRESENT)) return 0;
+    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_idx] & ~0xFFFULL));
+
+    if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) return 0;
+    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx] & ~0xFFFULL));
+
+    if (pd[pd_idx] & PAGE_HUGE) {
+        return (pd[pd_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+    }
+
+    if (!(pd[pd_idx] & PAGE_PRESENT)) return 0;
+    auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pd[pd_idx] & ~0xFFFULL));
+
+    if (!(pt[pt_idx] & PAGE_PRESENT)) return 0;
+    return (pt[pt_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
 }
 
 } // namespace kernel

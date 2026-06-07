@@ -9,7 +9,7 @@ namespace kernel {
 /// @note Major/minor/patch and build timestamp are defined at compile time.
 struct Version {
     static constexpr unsigned major = 0;
-    static constexpr unsigned minor = 0;
+    static constexpr unsigned minor = 2;
     static constexpr unsigned patch = 6;
     static constexpr const char* stage = "dev";
 

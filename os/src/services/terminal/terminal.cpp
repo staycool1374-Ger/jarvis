@@ -3,6 +3,7 @@
 #include <services/terminal/font.hpp>
 #include <kernel/arch/io.hpp>
 #include <string.hpp>
+#include <constants.hpp>
 
 namespace service {
 
@@ -25,11 +26,11 @@ void Terminal::init() {
 
 static void serial_putchar(char c) {
     if (c == '\n') {
-        while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
-        arch::outb(0x3F8, '\r');
+        while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
+        arch::outb(arch::COM1, '\r');
     }
-    while ((arch::inb(0x3F8 + 5) & 0x20) == 0);
-    arch::outb(0x3F8, c);
+    while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
+    arch::outb(arch::COM1, c);
 }
 
 void Terminal::putchar(char c) {
@@ -81,10 +82,10 @@ bool Terminal::readline(char* buf, size_t max_len) {
     instance_->line_pos_ = 0;
 
     while (true) {
-        while (!(arch::inb(0x3F8 + 5) & 1)) {
-            asm volatile("pause");
+        while (!(arch::inb(arch::COM1_LSR) & 1)) {
+            arch::pause();
         }
-        char c = arch::inb(0x3F8);
+        char c = arch::inb(arch::COM1);
         if (c == '\r') c = '\n';
 
         if (c == '\n') {

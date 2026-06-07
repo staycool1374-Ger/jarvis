@@ -8,6 +8,7 @@
 #include <kernel/sync/eventgroup.hpp>
 #include <assert.hpp>
 #include <string.hpp>
+#include <constants.hpp>
 
 namespace kernel {
 
@@ -53,6 +54,12 @@ static void init_task_common(TaskControlBlock* tcb) {
     } else {
         tcb->event_group = nullptr;
     }
+
+    // Process hierarchy initialization
+    tcb->first_child = nullptr;
+    tcb->next_sibling = nullptr;
+    tcb->prev_sibling = nullptr;
+    tcb->num_children = 0;
 }
 
 TaskControlBlock* TaskControlBlock::create(
@@ -73,7 +80,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->remaining_ticks = period_ticks;
     init_task_common(tcb);
 
-    size_t stack_pages = (STACK_SIZE + 4095) / 4096;
+    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
     ASSERT(stack_phys != 0);
 
@@ -83,11 +90,11 @@ TaskControlBlock* TaskControlBlock::create(
 
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
 
-    *--stack = 0x10;
+    *--stack = arch::SEG_KERNEL_DATA;
     *--stack = tcb->kernel_stack_top;
 
-    *--stack = 0x202;
-    *--stack = 0x08;
+    *--stack = arch::RFLAGS_DEFAULT;
+    *--stack = arch::SEG_KERNEL_CODE;
     *--stack = reinterpret_cast<uint64_t>(entry);
 
     *--stack = 0;
@@ -119,16 +126,16 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->remaining_ticks = period_ticks;
     init_task_common(tcb);
 
-    size_t kernel_stack_pages = (STACK_SIZE + 4095) / 4096;
+    size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
     if (!kstack_phys) { delete tcb; return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
-    uint64_t kstack_virt = 0xFFFF800000000000ULL + kstack_phys;
+    uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
     tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
 
-    size_t user_stack_pages = (user_stack_size + 4095) / 4096;
+    size_t user_stack_pages = (user_stack_size + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
     if (!ustack_phys) { delete tcb; return nullptr; }
 
@@ -136,12 +143,11 @@ TaskControlBlock* TaskControlBlock::create_user(
     if (!pml4) { delete tcb; return nullptr; }
     tcb->page_table_ = pml4;
 
-    // Guard page: leave first page unmapped, start mapping at +4096
-    static constexpr uint64_t USER_STACK_VADDR = 0x70000000;
-    uint64_t user_stack_virt = USER_STACK_VADDR + 4096;
+    // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
+    uint64_t user_stack_virt = mem::STACK_VADDR + arch::PAGE_SIZE;
     for (size_t i = 0; i < user_stack_pages; ++i) {
-        VMM::map_page_in_pml4(user_stack_virt + i * 4096,
-                              ustack_phys + i * 4096,
+        VMM::map_page_in_pml4(user_stack_virt + i * arch::PAGE_SIZE,
+                              ustack_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
 
@@ -150,10 +156,10 @@ TaskControlBlock* TaskControlBlock::create_user(
     uint64_t user_rsp = user_stack_virt + user_stack_size;
 
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
-    *--stack = 0x23;
+    *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;
-    *--stack = 0x202;
-    *--stack = 0x1B;
+    *--stack = arch::RFLAGS_DEFAULT;
+    *--stack = arch::SEG_USER_CODE;
     *--stack = reinterpret_cast<uint64_t>(entry);
     *--stack = 0;
     *--stack = 0;
@@ -195,6 +201,15 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->blocked_next = nullptr;
     tcb->blocked_prev = nullptr;
 
+    // Process hierarchy: add child to parent
+    tcb->first_child = nullptr;
+    tcb->next_sibling = nullptr;
+    tcb->prev_sibling = nullptr;
+    tcb->num_children = 0;
+    if (parent) {
+        parent->add_child(tcb);
+    }
+
     // Allocate per-task IPC objects (child gets fresh empty queues)
     auto* mq = new MessageQueue{};
     if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq; } else { tcb->msg_queue = nullptr; }
@@ -217,14 +232,14 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->cwd_vnode = parent->cwd_vnode;
 
     // Allocate and set up kernel stack
-    size_t stack_pages = (STACK_SIZE + 4095) / 4096;
+    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
     if (!kstack_phys) { delete tcb; return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
     bool is_user_task = (parent->page_table_ != 0);
     if (is_user_task) {
-        uint64_t kstack_virt = 0xFFFF800000000000ULL + kstack_phys;
+        uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
         tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
         tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
     } else {
@@ -262,33 +277,78 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
     // For user tasks: clone page table and user stack
     if (is_user_task) {
-        uint64_t new_pml4 = VMM::clone_kernel_pml4();
+        // Allocate a new PML4 page
+        uint64_t new_pml4 = PMM::alloc_page();
         if (!new_pml4) { delete tcb; return nullptr; }
         tcb->page_table_ = new_pml4;
+        tcb->page_table_shared_ = true;
 
-        size_t ustack_pages = (parent->user_stack_size_ + 4095) / 4096;
+        // Copy user entries (0-255) from parent's PML4 — shares PDPT/PD/PT pages
+        // so the child inherits code/data/heap mappings without deep-copy.
+        auto* parent_pml4_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent->page_table_ & ~0xFFFULL));
+        auto* new_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (new_pml4 & ~0xFFFULL));
+        for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
+            new_virt[i] = parent_pml4_virt[i];
+        }
+        // Copy kernel entries (256-511) from the kernel PML4
+        auto* kernel_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (VMM::get_kernel_pml4() & ~0xFFFULL));
+        for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
+            new_virt[i] = kernel_virt[i];
+        }
+
+        size_t ustack_pages = (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) { delete tcb; return nullptr; }
         tcb->user_stack_ = ustack_phys;
         tcb->user_stack_size_ = parent->user_stack_size_;
 
-        // Guard page: leave first page unmapped, start mapping at +4096
-        static constexpr uint64_t USER_STACK_VADDR = 0x70000000;
-        uint64_t user_stack_virt = USER_STACK_VADDR + 4096;
+        // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
+        uint64_t user_stack_virt = mem::STACK_VADDR + arch::PAGE_SIZE;
         for (size_t i = 0; i < ustack_pages; ++i) {
-            VMM::map_page_in_pml4(user_stack_virt + i * 4096,
-                                  ustack_phys + i * 4096,
+            VMM::map_page_in_pml4(user_stack_virt + i * arch::PAGE_SIZE,
+                                  ustack_phys + i * arch::PAGE_SIZE,
                                   true, new_pml4);
             // Copy physical page content via kernel mapping
-            uint64_t src_virt = 0xFFFF800000000000ULL + parent->user_stack_ + i * 4096;
-            uint64_t dst_virt = 0xFFFF800000000000ULL + ustack_phys + i * 4096;
-            for (uint64_t j = 0; j < 4096; ++j) {
+            uint64_t src_virt = arch::HHDM_OFFSET + parent->user_stack_ + i * arch::PAGE_SIZE;
+            uint64_t dst_virt = arch::HHDM_OFFSET + ustack_phys + i * arch::PAGE_SIZE;
+            for (uint64_t j = 0; j < arch::PAGE_SIZE; ++j) {
                 reinterpret_cast<uint8_t*>(dst_virt)[j] = reinterpret_cast<const uint8_t*>(src_virt)[j];
             }
         }
     }
 
     return tcb;
+}
+
+void TaskControlBlock::add_child(TaskControlBlock* child) noexcept {
+    if (!child) return;
+    child->next_sibling = first_child;
+    child->prev_sibling = nullptr;
+    if (first_child) first_child->prev_sibling = child;
+    first_child = child;
+    child->parent_id = id;
+    ++num_children;
+}
+
+void TaskControlBlock::remove_child(TaskControlBlock* child) noexcept {
+    if (!child) return;
+    if (child->prev_sibling) {
+        child->prev_sibling->next_sibling = child->next_sibling;
+    } else {
+        first_child = child->next_sibling;
+    }
+    if (child->next_sibling) {
+        child->next_sibling->prev_sibling = child->prev_sibling;
+    }
+    child->parent_id = 0;
+    if (num_children > 0) --num_children;
+}
+
+TaskControlBlock* TaskControlBlock::find_child(uint64_t pid) noexcept {
+    for (auto* child = first_child; child; child = child->next_sibling) {
+        if (child->id == pid) return child;
+    }
+    return nullptr;
 }
 
 void TaskControlBlock::cleanup() noexcept {
@@ -309,17 +369,17 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (user_stack_ && page_table_) {
-        size_t pages = (user_stack_size_ + 4095) / 4096;
+        size_t pages = (user_stack_size_ + 4095) / arch::PAGE_SIZE;
         for (size_t i = 0; i < pages; ++i) {
-            PMM::free_page(user_stack_ + i * 4096);
+            PMM::free_page(user_stack_ + i * arch::PAGE_SIZE);
         }
         user_stack_ = 0;
     }
 
     if (stack_phys_) {
-        size_t pages = (STACK_SIZE + 4095) / 4096;
+        size_t pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
         for (size_t i = 0; i < pages; ++i) {
-            PMM::free_page(stack_phys_ + i * 4096);
+            PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
         }
         stack_phys_ = 0;
         kernel_stack = nullptr;
@@ -327,7 +387,9 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (page_table_) {
-        VMM::free_user_pages(page_table_);
+        if (!page_table_shared_) {
+            VMM::free_user_pages(page_table_);
+        }
         PMM::free_page(page_table_);
         page_table_ = 0;
     }

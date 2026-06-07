@@ -40,6 +40,8 @@ enum class SyscallNumber : uint64_t {
     NOTIFY_WAIT = 28,
     EVENT_SET   = 29,
     EVENT_WAIT  = 30,
+    SIGNAL      = 31,
+    SIGRETURN   = 32,
 };
 
 /// @brief System call handler and dispatcher.

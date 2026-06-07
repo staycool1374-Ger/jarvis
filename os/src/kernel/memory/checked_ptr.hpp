@@ -13,6 +13,7 @@ static constexpr uint64_t USER_SPACE_LIMIT = 0x0000800000000000ULL;
 extern "C" uint64_t g_user_access_recover_ip;
 
 static inline bool is_user_range(const void* ptr, uint64_t size) {
+    if (!ptr) return false;
     uint64_t addr = reinterpret_cast<uint64_t>(ptr);
     if (addr >= USER_SPACE_LIMIT) return false;
     if (size == 0) return true;

@@ -2,6 +2,7 @@
 #include <services/terminal/terminal.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <constants.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -9,7 +10,7 @@ namespace vfs {
 
 // ── serial helpers (COM1) ──
 [[gnu::always_inline]] static inline bool serial_has_data() {
-    return arch::inb(0x3F8 + 5) & 1;
+    return arch::inb(arch::COM1_LSR) & 1;
 }
 
 void devfs_init() {
@@ -20,14 +21,14 @@ static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
     for (;;) {
         if (serial_has_data()) {
-            char c = arch::inb(0x3F8);
+            char c = arch::inb(arch::COM1);
             buf[0] = (c == '\r') ? '\n' : c;
             return 1;
         }
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        asm volatile("pause");
+        arch::pause();
     }
 }
 
@@ -134,7 +135,7 @@ static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;
         }
-        asm volatile("pause");
+        arch::pause();
     }
 }
 static int64_t kbd_write(Vnode*, const uint8_t*, uint64_t, uint64_t) { return -1; }

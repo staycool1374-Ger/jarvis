@@ -79,6 +79,9 @@ struct TaskControlBlock {
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
     uint64_t page_table_;
+    /// @brief If true, this task shares the parent's user page tables (fork).
+    ///        free_user_pages() is skipped on cleanup/exec to avoid double-free.
+    bool page_table_shared_;
     uint64_t user_stack_;
     uint64_t user_stack_size_;
     void* user_data;
@@ -109,6 +112,14 @@ struct TaskControlBlock {
     /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
     TaskControlBlock* blocked_next;
     TaskControlBlock* blocked_prev;
+
+    /// @brief Process hierarchy: first child, next sibling, previous sibling.
+    TaskControlBlock* first_child;
+    TaskControlBlock* next_sibling;
+    TaskControlBlock* prev_sibling;
+
+    /// @brief Number of live child processes.
+    uint64_t num_children;
 
     /// @brief Checks if the task has a handler registered for a signal.
     bool has_signal_handler(uint64_t sig) const {
@@ -149,6 +160,15 @@ struct TaskControlBlock {
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).
     ///        Called by WAITPID after reaping a TERMINATED child.
     void cleanup() noexcept;
+
+    /// @brief Adds a child to this task's process hierarchy.
+    void add_child(TaskControlBlock* child) noexcept;
+
+    /// @brief Removes a child from this task's process hierarchy.
+    void remove_child(TaskControlBlock* child) noexcept;
+
+    /// @brief Finds a child by PID.
+    TaskControlBlock* find_child(uint64_t pid) noexcept;
 };
 
 } // namespace kernel

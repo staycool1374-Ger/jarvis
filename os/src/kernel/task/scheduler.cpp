@@ -1,5 +1,6 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
+#include <kernel/arch/io.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <assert.hpp>
 
@@ -22,7 +23,7 @@ void Scheduler::init() {
 
     idle_task_ = TaskControlBlock::create([]() {
         while (true) {
-            asm volatile("hlt");
+            arch::hlt();
         }
     }, 0, 0xFFFFFFFF);
     idle_task_->state = TaskState::READY;
@@ -183,20 +184,55 @@ void Scheduler::reap_orphans() noexcept {
             auto* t = tasks_[i];
             if (!t || t == current) continue;
             if (t->state != TaskState::TERMINATED) continue;
-            bool parent_alive = false;
-            bool parent_notified = false;
+
+            // Reparent orphans to init (first shell task with no parent)
+            if (t->parent_id != 0) {
+                bool parent_alive = false;
+                TaskControlBlock* init_task = nullptr;
+                for (uint64_t j = 0; j < task_count_; ++j) {
+                    auto* p = tasks_[j];
+                    if (!p) continue;
+                    if (p->id == t->parent_id && p->state != TaskState::TERMINATED) {
+                        parent_alive = true;
+                    }
+                    if (p->parent_id == 0 && p->id != 0 && !init_task) {
+                        init_task = p;
+                    }
+                }
+                if (!parent_alive && init_task) {
+                    // Reparent to init
+                    if (t->parent_id != init_task->id) {
+                        // Find old parent and remove child
+                        for (uint64_t j = 0; j < task_count_; ++j) {
+                            auto* op = tasks_[j];
+                            if (op && op->id == t->parent_id) {
+                                op->remove_child(t);
+                                break;
+                            }
+                        }
+                        init_task->add_child(t);
+                    }
+                }
+            }
+
+            bool can_reap = false;
+            // Check if parent is not waiting (or parent is dead)
             for (uint64_t j = 0; j < task_count_; ++j) {
                 auto* p = tasks_[j];
                 if (p && p->id == t->parent_id && p->state != TaskState::TERMINATED) {
-                    parent_alive = true;
                     if (p->waiting_child_pid != t->id &&
                         p->waiting_child_pid != static_cast<uint64_t>(-1)) {
-                        parent_notified = true;
+                        can_reap = true;
                     }
                     break;
                 }
+                if (!p || p->id != t->parent_id) {
+                    can_reap = true;  // parent is dead
+                }
             }
-            if (!parent_alive || parent_notified) {
+            if (task_count_ == 0) can_reap = true;
+
+            if (can_reap) {
                 t->cleanup();
                 remove_task(t);
                 delete t;

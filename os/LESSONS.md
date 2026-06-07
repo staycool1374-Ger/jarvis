@@ -14,24 +14,26 @@
 - GCC's `movaps [rsp+0x20]` (emitted at `-O2`) faults on misaligned address → `#GP(0)`.
 - Fix: `andq $-16, %rsp` before `call main` in `crt0.S`.
 
-### Physical addresses are not valid under user page tables
-- `clone_kernel_pml4()` zeroes PML4 entries 0–255 (identity map) and copies only entries 256–511 (higher half).
-- Any kernel code dereferencing a physical address directly (`reinterpret_cast<T*>(phys)`) relies on the identity map — which is **absent** in every user task's PML4.
-- All physical-to-virtual conversions must use `0xFFFF800000000000 + phys`.
+### Always use higher-half mapping for physical→virtual conversion
+- Kernel code must use `0xFFFF800000000000 + phys` for physical-to-virtual conversion, regardless of what PML4 is active.
+- The identity-map at PML4[0] exists in the kernel PML4 (boot setup) but is **absent** in all user PML4s because `clone_kernel_pml4()` zeroes entries 0-255.
+- Relying on the identity map is fragile — it is a boot artifact and should not be assumed for kernel code that runs across context switches.
 - Affected components: PMM bitmap, VMM page table walks (`get_table`, `map_page_in_pml4`, `free_user_pages`, `clone_kernel_pml4`), ELF loader segment copies.
 
-### Fork's page table isolation is incomplete
-- `clone()` creates a new PML4 via `clone_kernel_pml4()` but only maps the new **user stack** in it.
-- The program's code (.text), read-only data (.rodata), data (.data), BSS, and heap segments are **not** mapped in the child's PML4.
-- The child page-faults immediately upon executing any instruction after fork.
-- Fix options:
-  - **Share + don't free**: Copy all PML4 entries (0–511) in `clone_kernel_pml4()`, and never call `free_user_pages()` in `exec_into_current()` or `cleanup()`. Leaks but avoids corruption.
-  - **Deep-copy**: Recursively copy the user page table hierarchy in `clone()`. Proper isolation, but more code.
-  - **Currently chosen**: Share (copy all entries), with the accompanying leak risk. Acceptable because child always execs or exits quickly.
+### Fork uses shared page tables (no deep-copy)
+- `clone()` calls `clone_kernel_pml4()` which copies **all 512** PML4 entries, including user entries 0-255. The child inherits the parent's code (.text), data (.data), BSS, and heap mappings via shared page-table pages.
+- A **new user stack** is allocated for the child and mapped at `0x70000000` in the cloned PML4.
+- The child can immediately execute the same program code as the parent (same page tables, no deep-copy).
+- Consequences of sharing:
+  - **Cannot call `free_user_pages()`** for a fork child that still shares page tables — would corrupt parent's address space.
+  - `free_user_pages()` must tolerate kernel-owned pages (boot identity-map) that leak into user PML4s.
+  - Proper isolation would require **deep-copy** (recursively copy the user page table hierarchy in `clone()`), which is a future optimization.
+- **Currently chosen**: Share (copy all entries), with the leak risk. Acceptable because child always execs or exits quickly.
 
-### free_user_pages in exec/exit corrupts shared page tables
-- If parent and child share PDPT/PD/PT pages, and the child calls `exec_into_current()` or `cleanup()`, `free_user_pages()` frees the shared page table hierarchy — corrupting the parent's address space.
-- Workaround: Skip `free_user_pages()` for tasks that inherited shared page tables.
+### free_user_pages must NOT be called on shared page tables
+- Fork shares PDPT/PD/PT pages between parent and child (PML4 entries 0-255 point to the same physical page tables). Calling `free_user_pages()` on a shared PML4 would free the shared page table hierarchy, corrupting the other task's address space.
+- Fix: `TaskControlBlock` has a `page_table_shared_` flag, set to `true` by `clone()`. Both `cleanup()` and `exec_into_current()` check this flag and skip `free_user_pages()` when set. The PML4 page itself is still freed.
+- Consequence: per-fork allocations (user stack, PT entries for the new stack) under the shared hierarchy are leaked when the child exits. Acceptable because children always exec or exit quickly.
 
 ### Page fault error code layout
 | Bit | Meaning |
@@ -66,9 +68,18 @@
 - Physical address `X` → virtual `0xFFFF800000000000 + X`.
 - Accessing physical memory without this offset is only safe during boot (while the identity map at PML4[0] is active).
 
-### clone_kernel_pml4 must NOT copy boot identity-map entries
-- Boot code sets PML4[0] (entry 0, user-space range) to point to an identity-map PDPT at phys 0x2000.
-- `clone_kernel_pml4()` previously memcpy'd all 512 PML4 entries, leaking this kernel-owned page-table page into every user PML4.
-- When a user task exits, `free_user_pages()` walks PML4 entries 0-255 and asserts `PMM::is_user_page()` on every page-table page it finds — the leaked PDPT page at phys 0x2000 fails because it was allocated by the bootloader, not by `PMM::alloc_user_page()`.
-- Fix: only copy kernel-space entries (256-511); zero entries 0-255.
-- If a future developer changes `clone_kernel_pml4()`, they must never copy user-range PML4 entries from the kernel PML4 — the kernel may have transient mappings there (identity map, MMIO, etc.) that are kernel-owned pages.
+### HHDM circular dependency — page tables need HHDM to be zeroed, HHDM needs page tables
+- When mapping a framebuffer at physical 0x80000000 (2 GiB) via HHDM (0xFFFF800080000000), the VMM must create page tables for the HHDM mapping.
+- The boot HHDM only covers 0–128 MiB (PML4[256] → PDPT_HIGHER[0] with 64 × 2 MiB huge pages). Page table pages allocated above 128 MiB have no HHDM mapping yet.
+- `VMM::get_table()` returned `HHDM_OFFSET + new_page` for the new page table page, but that virtual address was unmapped! Writing the PTE via that address caused a GPF.
+- Temporary mapping via PML4[511] failed because the virtual address for PML4[511] mappings (0xFFFFFC0000000000+) was not set up — the code accessed via identity mapping instead.
+- **Fix:** Reserve a 16 MiB pool in the first 128 MiB for page table pages (`PMM::alloc_page_table()`). These pages are guaranteed covered by the boot identity map (0–128 MiB) and boot HHDM huge pages. Zero them via the identity mapping (virtual = physical), return `HHDM_OFFSET + phys` which is valid because the page is in the boot HHDM range. Removed the broken PML4[511] temporary mapping entirely.
+- **Lesson:** Page table allocation must guarantee that the page table pages themselves are mappable. Either allocate them from pre-mapped memory, or recursively create the HHDM mappings for them first.
+
+### clone_kernel_pml4 must NOT copy identity-map; fork copies user entries from parent
+- `clone_kernel_pml4()` is used by `elf::load()` and `exec_into_current()` to create a *fresh* user PML4. It zeroes entries 0-255 (user range) and copies 256-511 (kernel range). This ensures no boot identity-map pages leak into user PML4s.
+- Fork (`TaskControlBlock::clone()`) needs the OPPOSITE: it allocates a raw PML4, copies user entries 0-255 from the PARENT's PML4 (sharing page tables), and kernel entries 256-511 from the kernel PML4.
+- **First attempted fix** (broken): zero entries 0-255 in `clone_kernel_pml4()` and also call it from fork. This broke fork — the child's PML4 had no user mappings.
+- **Second attempted fix** (broken): keep copying all 512 entries in `clone_kernel_pml4()` and make `free_user_pages()` tolerant of kernel-owned pages. This broke because the identity-map pages are supervisor-only, so user code within the identity-map range (e.g., 0x4011CF) gets a protection fault (#PF err=0x5).
+- **Correct fix**: separate the two use cases. `clone_kernel_pml4()` yields a fresh PML4 (zeroed user range). Fork has its own PML4-construction logic that shares the parent's user entries.
+- Key insight: a single "clone kernel PML4" function cannot serve both exec (fresh) and fork (shared) semantics.

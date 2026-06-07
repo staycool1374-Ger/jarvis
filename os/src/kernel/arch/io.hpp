@@ -1,84 +1,59 @@
 /// @file io.hpp
-/// @brief x86 port I/O and CPU control instructions (inline asm wrappers).
+/// @brief x86 port I/O and CPU control instructions.
 
 #pragma once
 
 #include <types.hpp>
 
+extern "C" {
+    void arch_outb(uint16_t port, uint8_t val);
+    uint8_t arch_inb(uint16_t port);
+    void arch_outw(uint16_t port, uint16_t val);
+    uint16_t arch_inw(uint16_t port);
+    void arch_outl(uint16_t port, uint32_t val);
+    uint32_t arch_inl(uint16_t port);
+    void arch_hlt();
+    void arch_pause();
+    void arch_cli();
+    void arch_sti();
+}
+
 namespace arch {
 
 /// @brief Writes a byte to an I/O port.
-/// @param port The I/O port address.
-/// @param val  The byte value to write.
-inline void outb(uint16_t port, uint8_t val) {
-    asm volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
+inline void outb(uint16_t port, uint8_t val) { arch_outb(port, val); }
 
 /// @brief Reads a byte from an I/O port.
-/// @param port The I/O port address.
-/// @return The byte read from the port.
-inline uint8_t inb(uint16_t port) {
-    uint8_t ret;
-    asm volatile("inb %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+inline uint8_t inb(uint16_t port) { return arch_inb(port); }
 
 /// @brief Writes a 16-bit word to an I/O port.
-/// @param port The I/O port address.
-/// @param val  The word value to write.
-inline void outw(uint16_t port, uint16_t val) {
-    asm volatile("outw %0, %1" : : "a"(val), "Nd"(port));
-}
+inline void outw(uint16_t port, uint16_t val) { arch_outw(port, val); }
 
 /// @brief Reads a 16-bit word from an I/O port.
-/// @param port The I/O port address.
-/// @return The word read from the port.
-inline uint16_t inw(uint16_t port) {
-    uint16_t ret;
-    asm volatile("inw %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+inline uint16_t inw(uint16_t port) { return arch_inw(port); }
 
 /// @brief Writes a 32-bit dword to an I/O port.
-/// @param port The I/O port address.
-/// @param val  The dword value to write.
-inline void outl(uint16_t port, uint32_t val) {
-    asm volatile("outl %0, %1" : : "a"(val), "Nd"(port));
-}
+inline void outl(uint16_t port, uint32_t val) { arch_outl(port, val); }
 
 /// @brief Reads a 32-bit dword from an I/O port.
-/// @param port The I/O port address.
-/// @return The dword read from the port.
-inline uint32_t inl(uint16_t port) {
-    uint32_t ret;
-    asm volatile("inl %1, %0" : "=a"(ret) : "Nd"(port));
-    return ret;
-}
+inline uint32_t inl(uint16_t port) { return arch_inl(port); }
 
 /// @brief Short I/O delay (write to unused port 0x80).
-inline void io_wait() {
-    outb(0x80, 0);
-}
+inline void io_wait() { outb(0x80, 0); }
 
 /// @brief Signals QEMU to exit with a status code (isa-debug-exit device).
-/// @param code Exit code (0x01 = success, 0x02 = failure).
-inline void qemu_debug_exit(uint8_t code) {
-    outw(0x501, code);
-}
+inline void qemu_debug_exit(uint8_t code) { outw(0x501, code); }
 
 /// @brief Halts the CPU until the next interrupt.
-inline void hlt() {
-    asm volatile("hlt");
-}
+inline void hlt() { arch_hlt(); }
+
+/// @brief PAUSE instruction (yields CPU in spin-wait loops).
+inline void pause() { arch_pause(); }
 
 /// @brief Clears the interrupt flag (disables interrupts).
-inline void cli() {
-    asm volatile("cli");
-}
+inline void cli() { arch_cli(); }
 
 /// @brief Sets the interrupt flag (enables interrupts).
-inline void sti() {
-    asm volatile("sti");
-}
+inline void sti() { arch_sti(); }
 
 } // namespace arch

@@ -118,7 +118,7 @@
     <p>A real-time operating system for the x86_64 architecture, written from scratch in C++. Designed with hard real-time constraints, deterministic scheduling (Rate Monotonic), and clean userspace isolation.</p>
 
     <h2>Features</h2>
-    <h3>Current Version: 0.2.2 (Latest Stable)</h3>
+    <h3>Current Version: 0.2.6-dev</h3>
 
     <h4>Core System & Memory Management</h4>
     <ul>
@@ -139,9 +139,12 @@
 
     <h4>Interprocess Communication (IPC)</h4>
     <ul>
-        <li>Synchronous and asynchronous mailbox-based message passing.</li>
-        <li>Implemented primitives: <code>SEND</code>, <code>RECEIVE</code>, and <code>SEND_SYNC</code>.</li>
-        <li>Strict blocking/waking semantics for precise process synchronization.</li>
+        <li>Priority-aware MessageQueue with per-TCB mailbox and priority bitmap.</li>
+        <li>IPC primitives: <code>SEND</code>, <code>RECEIVE</code>, <code>SEND_SYNC</code>, <code>IPC_NONBLOCK</code>.</li>
+        <li>Priority inheritance for IPC operations prevents priority inversion.</li>
+        <li>Linked blocked-sender list for O(1) sender unblocking.</li>
+        <li><strong>Task Notification (Notify)</strong> – Lightweight notification value signaling via <code>SYS_NOTIFY</code>/<code>SYS_NOTIFY_WAIT</code>.</li>
+        <li><strong>Event Group</strong> – Multi-bit event synchronization via <code>SYS_EVENT_SET</code>/<code>SYS_EVENT_WAIT</code>.</li>
     </ul>
 
     <h4>Virtual File System (VFS)</h4>
@@ -187,6 +190,10 @@
             <tr><td><strong>23</strong></td><td><code>SYS_GETPID</code></td><td>Retrieve the PID of the current task</td></tr>
             <tr><td><strong>24</strong></td><td><code>SYS_KILL</code></td><td>Send IPC signals to a task</td></tr>
             <tr><td><strong>25-26</strong></td><td><code>SYS_PIPE / DUP2</code></td><td>Traditional pipe I/O channels and descriptor routing</td></tr>
+            <tr><td><strong>27</strong></td><td><code>SYS_NOTIFY</code></td><td>Send notification value to a task</td></tr>
+            <tr><td><strong>28</strong></td><td><code>SYS_NOTIFY_WAIT</code></td><td>Wait for a notification value</td></tr>
+            <tr><td><strong>29</strong></td><td><code>SYS_EVENT_SET</code></td><td>Set event group bits on a task</td></tr>
+            <tr><td><strong>30</strong></td><td><code>SYS_EVENT_WAIT</code></td><td>Wait for event group bits</td></tr>
         </tbody>
     </table>
 
@@ -201,7 +208,7 @@
     <h4>Debugging & Diagnostic Tools</h4>
     <ul>
         <li>Built-in benchmark suite (CPU operational stress tests, memory allocator bottlenecks).</li>
-        <li>Integrated self-test framework executing over 100+ structural test cases.</li>
+        <li>Integrated self-test framework executing over 416 structural test cases.</li>
         <li>Kernel command: <code>selftest [category]</code> to isolate validation routines.</li>
     </ul>
 
@@ -266,20 +273,22 @@ boot&gt; sh        # Spawn the interactive Ring 3 Userspace Shell</code></pre>
     <hr>
 
     <h2>Architecture & Development Workflow</h2>
-    <div class="architecture">  [ Userspace Apps & Shell ] &lt;--- Ring 3 Isolation
+    <div class="architecture">  [ Userspace Apps ] &lt;--- Ring 3 Isolation
 ------------- [ Syscall Interface: int 0x82 ] -------------
-  [ VFS / Procfs / Devfs ]    [ Process & RMS Scheduler ]
-  [ Virtual Memory (VMM) ]    [ Mailbox IPC Subsystem ]
------------------------------------------------------------
+  [ Shell (Kernel Task) ]     [ Process & RMS Scheduler ]
+  [ VFS / Procfs / Devfs ]    [ Priority Mailbox IPC   ]
+  [ Virtual Memory (VMM) ]    [ Notify & Event Groups  ]
+  [ O(1) Task-ID→TCB Hash ]  [ Priority Inheritance   ]
   [ Physical Memory (PMM via Buddy) & Slab Allocators ]
-  [ Hardware Drivers: Serial, Keyboard, Framebuffer, PIT ]</div>
+  [ Hardware Drivers: Serial, Keyboard, Framebuffer, PIT ]
+============= Monolithic Kernel (All Services in Ring-0) =============</div>
 
     <h3>The 6-Step Feature Iteration Cycle</h3>
     <ol>
         <li><strong>Implement:</strong> Write or expand system features.</li>
         <li><strong>Test Design:</strong> Add comprehensive units to the local test suite.</li>
         <li><strong>Validate Locally:</strong> Execute <code>make tests</code> to ensure code safety.</li>
-        <li><strong>Regression Check:</strong> Verify all 100+ automated test metrics report green.</li>
+        <li><strong>Regression Check:</strong> Verify all 416 automated test metrics report green.</li>
         <li><strong>Release Build:</strong> Compile the final image using <code>make release</code>.</li>
         <li><strong>Document:</strong> Update the code inline (Doxygen) and track metrics in <code>ROADMAP.md</code>.</li>
     </ol>
@@ -289,7 +298,7 @@ boot&gt; sh        # Spawn the interactive Ring 3 Userspace Shell</code></pre>
     <h2>Roadmap & Contributions</h2>
     <h3>Next Milestones (Version 0.2.x & 0.3.0)</h3>
     <ul class="checkbox-list">
-        <li><strong>Current Target:</strong> Exception-safe userspace argument validation (<code>CheckedPointer&lt;T&gt;</code>, <code>copy_from_user</code>).</li>
+        <li><strong>Current Target:</strong> Version 0.2.7 — Exception-Safe Userspace</li>
         <li>Advanced Signal Handling architecture.</li>
         <li>Hardware Watchdog Timer synchronization.</li>
         <li>Symmetric Multiprocessing (SMP) support.</li>

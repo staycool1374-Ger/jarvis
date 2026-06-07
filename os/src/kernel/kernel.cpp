@@ -24,21 +24,23 @@
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/terminal.hpp>
 #include <services/program.hpp>
+#include <services/shell.hpp>
+#include <programs/demo/demo.hpp>
 #include <logger.hpp>
 #include <test.hpp>
 #include <kernel/test/test_selftest.hpp>
-
-static constexpr uint32_t DEFAULT_TIMER_HZ = 1000;
+#include <constants.hpp>
+#include <signal.hpp>
 
 using namespace arch;
 
 static void debug_putchar(char c) {
     if (c == '\n') {
-        while ((inb(0x3F8 + 5) & 0x20) == 0);
-        outb(0x3F8, '\r');
+        while ((inb(arch::COM1_LSR) & 0x20) == 0);
+        outb(arch::COM1, '\r');
     }
-    while ((inb(0x3F8 + 5) & 0x20) == 0);
-    outb(0x3F8, c);
+    while ((inb(arch::COM1_LSR) & 0x20) == 0);
+    outb(arch::COM1, c);
 }
 
 extern "C" void debug_write(const char* s) {
@@ -74,16 +76,16 @@ extern "C" uint8_t _binary_initrd_cpio_start[];
 extern "C" uint8_t _binary_initrd_cpio_end[];
 
 static void init_pic() {
-    outb(0x20, 0x11);
-    outb(0xA0, 0x11);
-    outb(0x21, 0x20);
-    outb(0xA1, 0x28);
-    outb(0x21, 0x04);
-    outb(0xA1, 0x02);
-    outb(0x21, 0x01);
-    outb(0xA1, 0x01);
-    outb(0x21, 0x00);
-    outb(0xA1, 0x00);
+    outb(arch::PIC1_CMD, 0x11);
+    outb(arch::PIC2_CMD, 0x11);
+    outb(arch::PIC1_DATA, 0x20);
+    outb(arch::PIC2_DATA, 0x28);
+    outb(arch::PIC1_DATA, 0x04);
+    outb(arch::PIC2_DATA, 0x02);
+    outb(arch::PIC1_DATA, 0x01);
+    outb(arch::PIC2_DATA, 0x01);
+    outb(arch::PIC1_DATA, 0x00);
+    outb(arch::PIC2_DATA, 0x00);
 }
 
 extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
@@ -120,8 +122,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - 0xFFFF800000000000ULL;
-    kernel::PMM::init(mem_size, 0x200000, kend);
+    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
+    kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     debug_write("[BOOT] PMM OK\n");
 
     debug_write("[BOOT] VMM init...\n");
@@ -217,7 +219,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         arch::InterruptVector::KEYBOARD,
         [](uint64_t, uint64_t, uint64_t) {
             arch::Keyboard::handle_irq();
-            outb(0x20, 0x20);
+            outb(arch::PIC1_CMD, 0x20);
         }
     );
     debug_write("[BOOT] Keyboard OK\n");
@@ -246,6 +248,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         "pcspkr", "PC Speaker Soundtreiber", nullptr, nullptr, 0);
 
     service::ProgramRegistry::init();
+    service::ProgramRegistry::register_program(
+        "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::demo_main);
 
     register_selftest_tests();
     kernel::test::run_all();
@@ -270,14 +274,23 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
+    service::Shell::init();
+    auto* shell_task = kernel::TaskControlBlock::create(
+        service::Shell::shell_task_main, 2, 10);
+    if (shell_task) {
+        kernel::Scheduler::add_task(shell_task);
+        debug_write("[BOOT] Shell task started (PID=");
+        debug_write_hex(shell_task->id);
+        debug_write(")\n");
+    }
+
     debug_write("[BOOT] Boot complete!\n");
-    arch::qemu_debug_exit(0x01);
     debug_write("[BOOT] Enabling interrupts...\n");
     sti();
 
     debug_write("[BOOT] Entering idle loop.\n");
     while (true) {
-        asm volatile("hlt");
+        arch::hlt();
     }
 }
 
@@ -291,7 +304,7 @@ extern "C" void panic(const char* msg) {
         service::Terminal::set_fg(0xC0C0C0);
     }
     while (true) {
-        asm volatile("hlt");
+        arch::hlt();
     }
 }
 
@@ -359,35 +372,121 @@ static const char* exception_name(uint64_t vector) {
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
                                     uint64_t arg2, uint64_t arg3, uint64_t* regs);
 
+/// @brief Delivers a signal to a user task by setting up a signal frame on the user stack.
+///        Modifies regs to return to the user's registered signal handler (or terminates
+///        the task if no handler is registered and the default action is to terminate).
+/// @return true if signal was delivered (handler will run), false if task was terminated.
+static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
+                                   uint64_t vector, uint64_t error_code,
+                                   uint64_t rip, uint64_t* regs)
+{
+    if (!t || !regs) return false;
+
+    // SIGKILL is always fatal — cannot be caught or ignored
+    if (kernel::signal_is_fatal(sig)) {
+        kernel::Logger::error("Task %x: SIGKILL (fatal, no handler allowed)", t->id);
+        t->state = kernel::TaskState::TERMINATED;
+        t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+        return false;
+    }
+
+    // If the task has a registered handler, invoke it
+    if (t->has_signal_handler(sig)) {
+        kernel::Logger::info("Task %x: delivering signal %x to handler at %x",
+            t->id, sig, reinterpret_cast<uint64_t>(t->get_signal_handler(sig)));
+
+        uint64_t user_rsp = regs[20];  // current user RSP
+        // Align stack: push SignalFrame
+        user_rsp -= sizeof(kernel::SignalFrame);
+        // Align to 16 bytes: (RSP + 8) % 16 == 0 at handler entry
+        // After pushing SignalFrame, we adjust so that at handler entry:
+        // RSP is 8 mod 16 (because call pushes return addr)
+        user_rsp &= ~0xFULL;
+
+        auto* frame = reinterpret_cast<kernel::SignalFrame*>(
+            arch::HHDM_OFFSET + kernel::VMM::virt_to_phys_in_pml4(user_rsp, t->page_table_));
+        if (!frame) {
+            // If we cannot write the signal frame (bad stack), terminate
+            kernel::Logger::error("Task %x: cannot write signal frame, terminating", t->id);
+            t->state = kernel::TaskState::TERMINATED;
+            t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+            return false;
+        }
+
+        *frame = kernel::SignalFrame{
+            .sig = sig,
+            .saved_rip = regs[17],
+            .saved_rsp = regs[20],
+            .saved_rflags = regs[19],
+            .saved_cs = regs[18],
+            .saved_ss = regs[21],
+            .reserved = {0, 0}
+        };
+
+        // Modify return context to go to the signal handler
+        regs[5] = sig;                   // RDI = signal number (first argument)
+        regs[17] = reinterpret_cast<uint64_t>(t->get_signal_handler(sig));  // RIP = handler
+        regs[20] = user_rsp;             // RSP = adjusted user stack
+        // Clear direction flag and RF
+        regs[19] = arch::RFLAGS_DEFAULT; // RFLAGS with IF set
+
+        return true;
+    }
+
+    // No handler registered — check default action
+    auto action = kernel::default_signal_action(sig);
+    if (action == kernel::SignalAction::IGNORE) {
+        kernel::Logger::warn("Task %x: signal %x ignored (default)", t->id, sig);
+        return true;  // ignored, resume execution
+    }
+
+    // Default is to terminate
+    kernel::Logger::error("Task %x: unhandled signal %x vector=%x rip=%x err=%x",
+        t->id, sig, vector, rip, error_code);
+    if (vector == 14) {
+        uint64_t cr2_val;
+        asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
+        kernel::Logger::error("  CR2=%x", cr2_val);
+    }
+    dump_regs(regs);
+    t->state = kernel::TaskState::TERMINATED;
+    t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+    return false;
+}
+
 extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
                                    uint64_t* regs)
 {
     if (vector < 32) {
         auto* t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;
-        bool from_user = (cs == 0x1B || cs == 0x23);
+        bool from_user = (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA);
 
         if (from_user && t) {
-            static const char* sig_name[] = {
-                "SIGFPE", "SIGSEGV", "SIGSEGV", "SIGSEGV", "SIGILL"
-            };
-            static const uint64_t sig_num[] = {8, 11, 11, 11, 4};
-            uint64_t sig_idx = 0;
-            if (vector == 0) sig_idx = 0;
-            else if (vector == 6) sig_idx = 4;
-            else if (vector == 13 || vector == 14) sig_idx = 1;
-            else sig_idx = 1;
+            // Check fault recovery first: if we're inside a safe_copy_from_user zone,
+            // redirect to the recovery IP instead of delivering a signal.
+            if (kernel::g_user_access_recover_ip) {
+                regs[17] = kernel::g_user_access_recover_ip;
+                kernel::g_user_access_recover_ip = 0;
+                return;
+            }
 
-            kernel::Logger::error("Task %x received %s vector=%x rip=%x err=%x",
-                t->id, sig_name[sig_idx], vector, rip, error_code);
+            auto mapping = kernel::exception_to_signal(vector);
+            uint64_t sig = static_cast<uint64_t>(mapping.signal);
+            kernel::Logger::warn("Task %x: exception vector=%x (%s) → signal %x",
+                t->id, vector, mapping.name, sig);
+
             if (vector == 14) {
                 uint64_t cr2_val;
                 asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
                 kernel::Logger::error("  CR2=%x", cr2_val);
             }
-            dump_regs(regs);
-            t->state = kernel::TaskState::TERMINATED;
-            t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig_num[sig_idx]));
+
+            bool was_delivered = deliver_signal_to_user(t, sig, vector, error_code, rip, regs);
+            if (!was_delivered && t->state == kernel::TaskState::TERMINATED) {
+                // If task was terminated, reschedule on return
+                kernel::Scheduler::reschedule();
+            }
             return;
         }
 
@@ -412,6 +511,18 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
     if (vector == 0x80) {
         regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4], regs);
         auto* task = kernel::Scheduler::current_task();
+
+        // After syscall, check for pending signals on the current task
+        if (task && task->pending_signals && task->page_table_ != 0) {
+            // Find the highest-priority pending signal
+            uint64_t sig = __builtin_ctzll(task->pending_signals);
+            if (sig < 32) {
+                kernel::Logger::debug("Task %x: pending signal %x after syscall", task->id, sig);
+                deliver_signal_to_user(task, sig, 0, 0, regs[17], regs);
+                task->pending_signals &= ~(1ULL << sig);
+            }
+        }
+
         if (task && (task->state == kernel::TaskState::TERMINATED ||
                      task->state == kernel::TaskState::BLOCKED)) {
             kernel::Scheduler::reschedule();
@@ -422,8 +533,8 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
     arch::IDT::handle_interrupt(vector, error_code, rip);
 
     if (vector >= 32 && vector < 48) {
-        outb(0x20, 0x20);
-        if (vector >= 40) outb(0xA0, 0x20);
+        outb(arch::PIC1_CMD, 0x20);
+        if (vector >= 40) outb(arch::PIC2_CMD, 0x20);
     }
 }
 

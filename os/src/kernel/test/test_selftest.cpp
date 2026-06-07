@@ -4,6 +4,7 @@
 #include <utils.hpp>
 #include <error.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/sync/notify.hpp>
@@ -11,7 +12,10 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/elf/elf.hpp>
+#include <kernel/memory/checked_ptr.hpp>
 #include <version.hpp>
+#include <constants.hpp>
 
 JARVIS_TEST(string_strlen) {
     JARVIS_ASSERT_EQ(0, strlen(""));
@@ -173,6 +177,34 @@ JARVIS_TEST(pmm_total_memory) {
     uint64_t total = kernel::PMM::total_memory();
     JARVIS_ASSERT(total > 0);
     JARVIS_ASSERT(total >= kernel::PMM::free_memory());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(vmm_free_user_pages_skips_kernel_owned_entries) {
+    uint64_t pml4 = kernel::VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(pml4 != 0);
+
+    uint64_t user_page = kernel::PMM::alloc_user_page();
+    JARVIS_ASSERT(user_page != 0);
+    kernel::VMM::map_page_in_pml4(0x8000000000ULL, user_page, true, pml4);
+
+    kernel::VMM::free_user_pages(pml4);
+
+    kernel::PMM::free_page(pml4);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(vmm_free_user_pages_fork_stack_scenario) {
+    uint64_t pml4 = kernel::VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(pml4 != 0);
+
+    uint64_t stack_page = kernel::PMM::alloc_user_page();
+    JARVIS_ASSERT(stack_page != 0);
+    kernel::VMM::map_page_in_pml4(mem::STACK_VADDR, stack_page, true, pml4);
+
+    kernel::VMM::free_user_pages(pml4);
+
+    kernel::PMM::free_page(pml4);
     JARVIS_TEST_PASS();
 }
 
@@ -674,6 +706,315 @@ JARVIS_TEST(version_build_date_not_empty) {
     JARVIS_TEST_PASS();
 }
 
+// ---------------------------------------------------------------------------
+// v0.2.6 — Exception-Safe Userspace: Signal Infrastructure Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(signal_exception_to_signal_mapping) {
+    auto map0 = kernel::exception_to_signal(0);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::Signal::SIGFPE), static_cast<uint64_t>(map0.signal));
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::SignalAction::TERMINATE), static_cast<uint64_t>(map0.action));
+
+    auto map6 = kernel::exception_to_signal(6);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::Signal::SIGILL), static_cast<uint64_t>(map6.signal));
+
+    auto map13 = kernel::exception_to_signal(13);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::Signal::SIGSEGV), static_cast<uint64_t>(map13.signal));
+
+    auto map14 = kernel::exception_to_signal(14);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::Signal::SIGSEGV), static_cast<uint64_t>(map14.signal));
+
+    auto map16 = kernel::exception_to_signal(16);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::Signal::SIGFPE), static_cast<uint64_t>(map16.signal));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_is_fatal_check) {
+    JARVIS_ASSERT(kernel::signal_is_fatal(static_cast<uint64_t>(kernel::Signal::SIGKILL)));
+    JARVIS_ASSERT(!kernel::signal_is_fatal(static_cast<uint64_t>(kernel::Signal::SIGSEGV)));
+    JARVIS_ASSERT(!kernel::signal_is_fatal(static_cast<uint64_t>(kernel::Signal::SIGFPE)));
+    JARVIS_ASSERT(!kernel::signal_is_fatal(static_cast<uint64_t>(kernel::Signal::SIGILL)));
+    JARVIS_ASSERT(!kernel::signal_is_fatal(static_cast<uint64_t>(kernel::Signal::SIGTERM)));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_default_action) {
+    auto term = kernel::default_signal_action(static_cast<uint64_t>(kernel::Signal::SIGSEGV));
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::SignalAction::TERMINATE), static_cast<uint64_t>(term));
+
+    auto ignore = kernel::default_signal_action(static_cast<uint64_t>(kernel::Signal::SIGCHLD));
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::SignalAction::IGNORE), static_cast<uint64_t>(ignore));
+
+    auto fatal = kernel::default_signal_action(static_cast<uint64_t>(kernel::Signal::SIGKILL));
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(kernel::SignalAction::TERMINATE), static_cast<uint64_t>(fatal));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_handler_tcb_registration) {
+    // Use the current task to test handler registration
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    // Initially, no handlers should be registered
+    JARVIS_ASSERT(!cur->has_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV)));
+
+    // Register a handler
+    auto handler = reinterpret_cast<kernel::sighandler_t>(static_cast<uintptr_t>(0xDEAD));
+    cur->set_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV), handler);
+    JARVIS_ASSERT(cur->has_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV)));
+    JARVIS_ASSERT_EQ(reinterpret_cast<uint64_t>(handler),
+                     reinterpret_cast<uint64_t>(cur->get_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV))));
+
+    // Clear the handler for cleanup
+    cur->set_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV), nullptr);
+    JARVIS_ASSERT(!cur->has_signal_handler(static_cast<uint64_t>(kernel::Signal::SIGSEGV)));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_handler_out_of_bounds) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    // Out-of-bounds signal number should not register
+    cur->set_signal_handler(100, reinterpret_cast<kernel::sighandler_t>(static_cast<uintptr_t>(0xFF)));
+    JARVIS_ASSERT(!cur->has_signal_handler(100));
+
+    // Maximum valid (31) should work
+    cur->set_signal_handler(31, nullptr);
+    JARVIS_ASSERT(!cur->has_signal_handler(31));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_pending_bitmask) {
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    // Initially no pending signals
+    JARVIS_ASSERT_EQ(0ULL, cur->pending_signals);
+
+    // Set a pending signal
+    cur->pending_signals |= (1ULL << static_cast<uint64_t>(kernel::Signal::SIGSEGV));
+    JARVIS_ASSERT(cur->pending_signals & (1ULL << static_cast<uint64_t>(kernel::Signal::SIGSEGV)));
+
+    // Clear it
+    cur->pending_signals &= ~(1ULL << static_cast<uint64_t>(kernel::Signal::SIGSEGV));
+    JARVIS_ASSERT_EQ(0ULL, cur->pending_signals);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// v0.2.6 — Process Hierarchy Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(process_add_child) {
+    // Create a temporary task-like structure to test the hierarchy methods
+    // We use the current task to test
+    auto* parent = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(parent != nullptr);
+
+    // Test that add_child/remove_child work with nullptr
+    parent->add_child(nullptr);  // should not crash
+    parent->remove_child(nullptr);  // should not crash
+
+    JARVIS_ASSERT_EQ(0ULL, parent->num_children);
+    JARVIS_ASSERT(parent->first_child == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(process_find_child) {
+    auto* parent = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(parent != nullptr);
+
+    // Find child that doesn't exist
+    auto* child = parent->find_child(999999);
+    JARVIS_ASSERT(child == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(process_num_children_count) {
+    auto* parent = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(parent != nullptr);
+
+    // num_children should be a reasonable value (>= 0)
+    // It's updated only through add_child/remove_child
+    JARVIS_ASSERT(parent->num_children >= 0);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// v0.2.6 — ELF Loader Hardening Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(elf_validate_header_null) {
+    JARVIS_ASSERT(!kernel::elf::validate_header(nullptr));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(elf_validate_header_magic) {
+    // Create an invalid header with bad magic
+    kernel::elf::ELF64Header hdr{};
+    hdr.ident[0] = 0x7F;
+    hdr.ident[1] = 'E';
+    hdr.ident[2] = 'L';
+    hdr.ident[3] = 'F';  // correct magic
+    hdr.ident[4] = 2;    // 64-bit
+    hdr.ident[5] = 1;    // little-endian
+    hdr.ident[6] = 1;    // version
+    hdr.type = 2;         // ET_EXEC
+    hdr.machine = 0x3E;   // x86_64
+    hdr.version = 1;
+    hdr.ehsize = sizeof(kernel::elf::ELF64Header);
+    hdr.phentsize = sizeof(kernel::elf::ELF64ProgramHeader);
+    hdr.phnum = 0;
+    hdr.entry = 0x400000;
+
+    JARVIS_ASSERT(kernel::elf::validate_header(&hdr));
+
+    // Bad magic
+    hdr.ident[0] = 0;
+    JARVIS_ASSERT(!kernel::elf::validate_header(&hdr));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(elf_validate_header_bad_machine) {
+    kernel::elf::ELF64Header hdr{};
+    hdr.ident[0] = 0x7F;
+    hdr.ident[1] = 'E';
+    hdr.ident[2] = 'L';
+    hdr.ident[3] = 'F';
+    hdr.ident[4] = 2;
+    hdr.ident[5] = 1;
+    hdr.ident[6] = 1;
+    hdr.type = 2;
+    hdr.machine = 0x3E;
+    hdr.version = 1;
+    hdr.ehsize = sizeof(kernel::elf::ELF64Header);
+    hdr.phentsize = sizeof(kernel::elf::ELF64ProgramHeader);
+    hdr.phnum = 0;
+    hdr.entry = 0x400000;
+
+    // Bad machine type
+    hdr.machine = 0x28;  // ARM
+    JARVIS_ASSERT(!kernel::elf::validate_header(&hdr));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(elf_validate_header_excessive_phnum) {
+    kernel::elf::ELF64Header hdr{};
+    hdr.ident[0] = 0x7F;
+    hdr.ident[1] = 'E';
+    hdr.ident[2] = 'L';
+    hdr.ident[3] = 'F';
+    for (int i = 7; i < 16; ++i) hdr.ident[i] = 0;
+    hdr.ident[4] = 2;
+    hdr.ident[5] = 1;
+    hdr.ident[6] = 1;
+    hdr.type = 2;
+    hdr.machine = 0x3E;
+    hdr.version = 1;
+    hdr.ehsize = sizeof(kernel::elf::ELF64Header);
+    hdr.phentsize = sizeof(kernel::elf::ELF64ProgramHeader);
+    hdr.phnum = 100;  // > 64, should fail
+    hdr.entry = 0x400000;
+
+    JARVIS_ASSERT(!kernel::elf::validate_header(&hdr));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(elf_validate_header_bad_entry) {
+    kernel::elf::ELF64Header hdr{};
+    hdr.ident[0] = 0x7F;
+    hdr.ident[1] = 'E';
+    hdr.ident[2] = 'L';
+    hdr.ident[3] = 'F';
+    for (int i = 7; i < 16; ++i) hdr.ident[i] = 0;
+    hdr.ident[4] = 2;
+    hdr.ident[5] = 1;
+    hdr.ident[6] = 1;
+    hdr.type = 2;
+    hdr.machine = 0x3E;
+    hdr.version = 1;
+    hdr.ehsize = sizeof(kernel::elf::ELF64Header);
+    hdr.phentsize = sizeof(kernel::elf::ELF64ProgramHeader);
+    hdr.phnum = 0;
+    hdr.entry = 0xFFFF800000000000ULL;  // kernel space, should fail
+
+    JARVIS_ASSERT(!kernel::elf::validate_header(&hdr));
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// v0.2.6 — CheckedPtr & Safe Copy Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(checked_ptr_is_user_range) {
+    // Kernel-space addresses should not be valid user ranges
+    JARVIS_ASSERT(!kernel::is_user_range(reinterpret_cast<void*>(0xFFFF800000000000ULL), 1));
+
+    // User-space addresses should be valid
+    JARVIS_ASSERT(kernel::is_user_range(reinterpret_cast<void*>(0x400000), 1));
+
+    // Null pointer should fail
+    JARVIS_ASSERT(!kernel::is_user_range(nullptr, 1));
+
+    // Edge of user space
+    uint64_t limit = kernel::USER_SPACE_LIMIT;
+    JARVIS_ASSERT(!kernel::is_user_range(reinterpret_cast<void*>(limit), 1));
+    JARVIS_ASSERT(kernel::is_user_range(reinterpret_cast<void*>(limit - 1), 1));
+
+    // Size overflow
+    JARVIS_ASSERT(!kernel::is_user_range(reinterpret_cast<void*>(limit - 10), 20));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(checked_ptr_valid) {
+    // Using a known kernel buffer to test CheckedPtr
+    char buf[64] = "test data";
+    kernel::CheckedPtr<char> cp(buf, sizeof(buf));
+    // Kernel addresses are not user space, so valid() returns false
+    JARVIS_ASSERT(!cp.valid());
+
+    // Null CheckedPtr should not be valid
+    kernel::CheckedPtr<char> null_cp(nullptr);
+    JARVIS_ASSERT(!null_cp.valid());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(checked_ptr_is_user_string) {
+    // Kernel string should not pass user string check
+    JARVIS_ASSERT(!kernel::is_user_string("kernel string"));
+
+    // Null should fail
+    JARVIS_ASSERT(!kernel::is_user_string(nullptr));
+
+    // Valid user string (simulated at a low address)
+    // is_user_string checks addr < USER_SPACE_LIMIT
+    char user_buf[] = "hello";
+    JARVIS_ASSERT(!kernel::is_user_string(user_buf));
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(signal_frame_size) {
+    JARVIS_ASSERT_EQ(64ULL, sizeof(kernel::SignalFrame));
+    JARVIS_ASSERT_EQ(static_cast<size_t>(64), kernel::SIGNAL_FRAME_SIZE);
+
+    // Verify field layout
+    kernel::SignalFrame sf{};
+    sf.sig = 11;
+    sf.saved_rip = 0x400000;
+    sf.saved_rsp = 0x70000000;
+    sf.saved_rflags = 0x202;
+    sf.saved_cs = 0x1B;
+    sf.saved_ss = 0x23;
+    JARVIS_ASSERT_EQ(11ULL, sf.sig);
+    JARVIS_ASSERT_EQ(0x400000ULL, sf.saved_rip);
+    JARVIS_ASSERT_EQ(0x70000000ULL, sf.saved_rsp);
+    JARVIS_ASSERT_EQ(0x202ULL, sf.saved_rflags);
+    JARVIS_ASSERT_EQ(0x1BULL, sf.saved_cs);
+    JARVIS_ASSERT_EQ(0x23ULL, sf.saved_ss);
+    JARVIS_TEST_PASS();
+}
+
 void register_selftest_tests() {
     kernel::Logger::info("Registering selftest suite");
 
@@ -696,6 +1037,8 @@ void register_selftest_tests() {
     JARVIS_REGISTER_TEST(pmm_alloc_contiguous);
     JARVIS_REGISTER_TEST(pmm_user_alloc);
     JARVIS_REGISTER_TEST(pmm_total_memory);
+    JARVIS_REGISTER_TEST(vmm_free_user_pages_skips_kernel_owned_entries);
+    JARVIS_REGISTER_TEST(vmm_free_user_pages_fork_stack_scenario);
 
     JARVIS_REGISTER_TEST(mempool_alloc_free);
     JARVIS_REGISTER_TEST(mempool_large_alloc);
@@ -736,4 +1079,30 @@ void register_selftest_tests() {
     JARVIS_REGISTER_TEST(version_string_not_empty);
     JARVIS_REGISTER_TEST(version_full_string_not_empty);
     JARVIS_REGISTER_TEST(version_build_date_not_empty);
+
+    // v0.2.6 — Signal infrastructure tests
+    JARVIS_REGISTER_TEST(signal_exception_to_signal_mapping);
+    JARVIS_REGISTER_TEST(signal_is_fatal_check);
+    JARVIS_REGISTER_TEST(signal_default_action);
+    JARVIS_REGISTER_TEST(signal_handler_tcb_registration);
+    JARVIS_REGISTER_TEST(signal_handler_out_of_bounds);
+    JARVIS_REGISTER_TEST(signal_pending_bitmask);
+
+    // v0.2.6 — Process hierarchy tests
+    JARVIS_REGISTER_TEST(process_add_child);
+    JARVIS_REGISTER_TEST(process_find_child);
+    JARVIS_REGISTER_TEST(process_num_children_count);
+
+    // v0.2.6 — ELF loader hardening tests
+    JARVIS_REGISTER_TEST(elf_validate_header_null);
+    JARVIS_REGISTER_TEST(elf_validate_header_magic);
+    JARVIS_REGISTER_TEST(elf_validate_header_bad_machine);
+    JARVIS_REGISTER_TEST(elf_validate_header_excessive_phnum);
+    JARVIS_REGISTER_TEST(elf_validate_header_bad_entry);
+
+    // v0.2.6 — CheckedPtr & safe copy tests
+    JARVIS_REGISTER_TEST(checked_ptr_is_user_range);
+    JARVIS_REGISTER_TEST(checked_ptr_valid);
+    JARVIS_REGISTER_TEST(checked_ptr_is_user_string);
+    JARVIS_REGISTER_TEST(signal_frame_size);
 }

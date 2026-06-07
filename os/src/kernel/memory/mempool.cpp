@@ -1,6 +1,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <assert.hpp>
+#include <constants.hpp>
 
 namespace kernel {
 
@@ -24,7 +25,7 @@ void MemPool::init() {
         uint64_t phys = PMM::alloc_page();
         ASSERT(phys != 0);
 
-        pool.data = reinterpret_cast<uint8_t*>(phys + 0xFFFF800000000000);
+        pool.data = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
 
         pool.next_free = new size_t[pool.block_count];
 
