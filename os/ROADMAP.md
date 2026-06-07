@@ -212,6 +212,22 @@
 - [ ] Clean up codebase consistency by replacing all hardcoded magic numbers and inline configuration strings with descriptive, type-safe enum constants
 - [ ] 125 Tests PASS
 
+### Version 0.2.8 — FAT32 Block Filesystem
+- [ ] Implement ATA PIO driver for QEMU IDE (I/O ports, read/write sectors)
+- [ ] Implement block device abstraction layer (read/write sector, ioctl)
+- [ ] Implement FAT32 driver core:
+  - MBR parsing, locating the FAT32 partition
+  - FAT table read/caching, cluster chain traversal
+  - Short 8.3 directory entry read/write
+  - File allocation (find free cluster, update FAT)
+- [ ] Create 128 MiB FAT32 disk image (`make disk.img` via `mkfs.fat`)
+- [ ] Attach disk image in QEMU (`-drive file=disk.img,format=raw,if=ide`)
+- [ ] Mount FAT32 partition as `/home` via VFS mount system
+- [ ] Implement VFS operations on FAT32: open, read, write, close, mkdir, unlink, fstat, readdir
+- [ ] Userspace shell can navigate `/home`, read/write files
+- [ ] (Future) Boot kernel from FAT32 as rootfs instead of initrd
+- [ ] 120 Tests PASS
+
 ---
 
 ## Version 0.3.x — Hard Real-Time: Scheduler + Timing
