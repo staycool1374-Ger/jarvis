@@ -365,6 +365,20 @@
 - [ ] Deploy both as initrd binaries
 - [ ] 125 Tests PASS
 
+### Version 0.2.25 — Architecture Portability (HAL)
+- [ ] Define HAL interface in `arch/hal.hpp`: platform-agnostic types for IRQ, timer, context, boot info
+- [ ] Restructure `arch/` into `arch/x86_64/` subdirectory (leave HAL interface stubs at `arch/`)
+- [ ] Abstract paging: replace raw PML4 accesses with `ArchPageTable` interface (map, unmap, walk, clone)
+- [ ] Abstract context switch: replace x86-64 register save/restore with `ArchContext` struct
+- [ ] Abstract interrupt dispatch: replace IDT/IVT with `ArchInterruptController` (register handler, ack, eoi)
+- [ ] Abstract boot info: wrap multiboot info in `ArchBootInfo` (memory map, framebuffer, modules)
+- [ ] Abstract timer: replace PIT/HPET with `ArchTimer` interface (one-shot, periodic, frequency)
+- [ ] Abstract I/O: replace `inb`/`outb` with `ArchIO` (read/write, port-mapped vs memory-mapped)
+- [ ] Move architecture-dependent syscall entry (int 0x80 / syscall) into `arch/x86_64/`
+- [ ] Add `ARCH` build variable to Makefile for cross-compilation (x86_64 as default)
+- [ ] Verify kernel still boots and passes all tests after refactoring
+- [ ] 125 Tests PASS
+
 ---
 
 ## Version 0.3.x — Hard Real-Time: Scheduler + Timing
