@@ -13,18 +13,35 @@ void VMM::init() {
 
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
 
-    // Zero unused PDPT entries (indices 1-511) so the page table walker
-    // never follows uninitialized garbage pointers. The boot code only sets
-    // entry 0 in each PDPT; the rest may contain residual GRUB/BIOS data
-    // whose PAGE_PRESENT bit happens to be set.
-    auto pdpt_ident = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[0] & ~0xFFFULL));
-    for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) {
-        pdpt_ident[i] = 0;
+    // Zero unused entries in all boot-constructed page tables so the page
+    // table walker never follows uninitialised garbage pointers.  The boot
+    // code only sets entry 0 in the PDPTs and entries 0-63 in the PDs;
+    // the rest may contain residual GRUB/BIOS data with PAGE_PRESENT set.
+
+    // Zero PDPT_IDENTITY[1-511]
+    {
+        auto t = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[0] & ~0xFFFULL));
+        for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) t[i] = 0;
     }
 
-    auto pdpt_higher = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
-    for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) {
-        pdpt_higher[i] = 0;
+    // Zero PDPT_HIGHER[1-511]
+    {
+        auto t = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
+        for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) t[i] = 0;
+    }
+
+    // Zero PD_IDENTITY[64-511] (entries 0-63 are valid huge pages)
+    {
+        auto* pdpt_ident_p = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[0] & ~0xFFFULL));
+        auto* pd_ident = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt_ident_p[0] & ~0xFFFULL));
+        for (size_t i = 64; i < PAGE_TABLE_ENTRIES; ++i) pd_ident[i] = 0;
+    }
+
+    // Zero PD_HIGHER[64-511] (entries 0-63 are valid huge pages)
+    {
+        auto* pdpt_higher_p = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
+        auto* pd_higher = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt_higher_p[0] & ~0xFFFULL));
+        for (size_t i = 64; i < PAGE_TABLE_ENTRIES; ++i) pd_higher[i] = 0;
     }
 }
 

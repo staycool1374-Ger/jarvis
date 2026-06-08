@@ -46,3 +46,44 @@
 - **Second attempted fix** (broken): keep copying all 512 entries in `clone_kernel_pml4()` and make `free_user_pages()` tolerant of kernel-owned pages. This broke because the identity-map pages are supervisor-only, so user code within the identity-map range (e.g., 0x4011CF) gets a protection fault (#PF err=0x5).
 - **Correct fix**: separate the two use cases. `clone_kernel_pml4()` yields a fresh PML4 (zeroed user range). Fork has its own PML4-construction logic that shares the parent's user entries.
 - Key insight: a single "clone kernel PML4" function cannot serve both exec (fresh) and fork (shared) semantics.
+
+## 2026-06-08 — VMM Page-Table Corruption: Three Interconnected Bugs + Uninitialized Garbage Entries
+
+### Three bugs that masked each other
+This crash cascade took over two hours to fully diagnose because **each bug masked the next**:
+
+| Bug | What | Where | Masked by |
+|-----|------|-------|-----------|
+| #1 | PML4 accessed via identity mapping (`kernel_pml4_` as virtual) | `map_page`, `unmap_page`, `virt_to_phys` | All three |
+| #2 | `get_table` zeroes new page tables via identity map (virtual=phys) — corrupts PMM metadata when PMM hands out a page above 128 MiB | `get_table` lines 21, 37 | Bug #1 (GPF in map_page kills boot first) |
+| #3 | `get_table`/`map_page` don't handle 2 MiB huge pages at PD level — interprets pixel data as page-table entries | `get_table`, `map_page`, `map_page_in_pml4` | Bug #2 (page above 128 MiB hits identity-map fault first) |
+| #4 | Uninitialized PDPT entries (indices 1–511) contain residual GRUB/BIOS data with PAGE_PRESENT bit set — walker follows garbage pointers to random physical memory | PDPT_IDENTITY[2], PDPT_HIGHER[2] at phys 0x2010, 0x4010 | Bug #3 (huge-page split saved us) |
+
+**The chain of failure:**
+1. Boot `higherhalf_entry` sets `rbp = old_rsp` (boot stack at ~0x7FEF8 — within 2 MiB identity map huge page at PD_IDENTITY[0]).
+2. `Framebuffer::init()` → `map_page(HHDM_OFFSET + fb_page, …)` → PML4[256] → PDPT_HIGHER[2] has garbage with bit 0 set → `get_table` returns `HHDM_OFFSET + garbage_phys` as a PD pointer.
+3. Writing to that garbage PD corrupts random kernel memory — in our case, it zeroes PD_IDENTITY[0], which maps the boot stack.
+4. Later in `higherhalf_entry`, `[rbp-0x30]` writes to 0x7FEC8 → page fault (err=0x2) because the huge page was split/corrupted.
+
+### Why the huge-page split fix (#3) made things worse before #4 was found
+Fixing bug #3 (splitting huge pages in `get_table`) was necessary for the HHDM framebuffer mapping to work. But it exposed bug #4: once the GPF stopped (from bugs #1–#3), the code now reached the ELF-loading stage, which accessed the boot stack via RBP, which hit the now-corrupted PD_IDENTITY[0].
+
+Without the bug #4 fix (PDPT zeroing), the huge-page split code writes to the garbage PD. With bug #4 fixed, PDPT entries are zeroed → `get_table` correctly allocates new page tables → no corruption.
+
+### Fixes applied
+| Fix | File | What changed |
+|-----|------|-------------|
+| HHDM everywhere | `vmm.cpp` | All PML4 accesses use `HHDM_OFFSET + (kernel_pml4_ & ~0xFFF)` instead of raw physical address |
+| HHDM for zeroing | `vmm.cpp:37` | `new_table = HHDM_OFFSET + new_page` instead of raw phys |
+| Huge page splitting | `vmm.cpp:17-28` (get_table), `vmm.cpp:73-84` (map_page), `vmm.cpp:155-166` (map_page_in_pml4) | Split 2 MiB page into 512 × 4 KiB entries |
+| PDPT entry zeroing | `vmm.cpp:14-33` (init) | Zero PDPT_IDENTITY[1-511] and PDPT_HIGHER[1-511] once at boot |
+
+### Why the boot.asm zeroing approach was rejected
+The first attempt zeroed the entire page-table page range (0x1000–0x5FFF) in 32-bit mode in `boot.asm`. This **hung the boot** because GRUB's multiboot info structure is often placed within that physical range. Zeroing it destroyed the multiboot info before the kernel could parse it. Fixing in `VMM::init()` (running in 64-bit mode with HHDM active) avoided this because by then the multiboot info had already been read.
+
+### How to catch this kind of bug earlier
+1. **Sanity-check page table entries**: Assert that PDPT/PD entries point to allocated pages (not garbage). A `get_table` debug mode could verify `entry & ~0xFFF` is a known PMM page.
+2. **Poison uninitialized page table memory**: The boot code should zero its page table pages or the kernel should explicitly verify all entries before use.
+3. **Mark identity-map pages as non-executable**: The boot stack is in the identity-map range. If identity-map pages were NX, corruption would cause a different crash signature, but it would still crash.
+4. **Add RBP-stack validation**: Before using RBP-relative accesses after a stack switch in `higherhalf_entry`, verify the stack address is canonical and mapped. Or set `rbp = rsp` after the switch.
+5. **Teach the QEMU test runner to capture panic output**: Currently `test-qemu` only checks for "Failed: 0" / "FAILED". On panic the kernel prints registers and a fatal message — capture and display this on failure.

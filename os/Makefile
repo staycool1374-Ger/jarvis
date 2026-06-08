@@ -72,7 +72,7 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -nographic -nic none -boot order=d
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: all clean run-qemu test-qemu iso test symbols debug release
+.PHONY: all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test
 
 -include $(DEPFILES)
 
@@ -142,6 +142,17 @@ run-qemu: $(ISO)
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
 
+run-qemu-debug: CXXFLAGS += -g -Og -DDEBUG
+run-qemu-debug: $(ISO)
+	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	    echo "Starting QEMU (debug) — Ctrl+A then X to exit."; \
+	    echo "Connect GDB:  gdb build/kernel.elf -ex 'target remote :1234'"; \
+	    echo "Interrupt log: -d int,cpu_reset"; \
+	    qemu-system-x86_64 $(QEMU_FLAGS) -s -S -d int,cpu_reset; \
+	else \
+	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	fi
+
 test-qemu: $(ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Booting in QEMU Environment (Automated Self-Test Execution Pipeline)..."; \
@@ -159,11 +170,15 @@ test-qemu: $(ISO)
 	                exit 1; \
 	            } \
 	            timeout { \
-	                send_user "\nTimeout waiting for test results\n"; \
+	                send_user "\n=== TIMEOUT — captured serial output ===\n"; \
+	                send_user "$$expect_out(buffer)"; \
+	                send_user "\n=== END ===\n"; \
 	                exit 1; \
 	            } \
 	            eof { \
-	                send_user "\nQEMU exited unexpectedly\n"; \
+	                send_user "\n=== UNEXPECTED QEMU EXIT — captured serial output ===\n"; \
+	                send_user "$$expect_out(buffer)"; \
+	                send_user "\n=== END (check for PANIC/CPU EXCEPTION above) ===\n"; \
 	                exit 1; \
 	            } \
 	        } \
@@ -202,25 +217,23 @@ release: CXXFLAGS += -g -O2
 release: $(ISO)
 	@echo ""
 	@echo "=========================================="
-	@echo " Hard Real-Time Production Target Ready: $(ISO)"
-	@echo " Starting QEMU with serial output stream..."
+	@echo " Release ISO ready: $(ISO)"
+	@echo " Validate with:  make release-test"
+	@echo " Run with:       make run-qemu"
 	@echo "=========================================="
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    if [ -f /opt/homebrew/share/qemu/edk2-x86_64-code.fd ]; then \
-	        qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial stdio \
-	            -vga std -nic none -boot order=d -no-reboot \
-	            -drive if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd; \
-	    else \
-	        qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial stdio \
-	            -vga std -nic none -boot order=d -no-reboot; \
-	    fi \
-	else \
-	    echo "QEMU executable missing from active device environment paths."; echo $(PKG_HINT); exit 1; \
-	fi
+
+release-test: release
+	@echo ""
+	@echo "=== Validating release ISO via test-qemu ==="
+	$(MAKE) test-qemu
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
 	@echo "System Symbol Matrix generated safely: $(KERNEL_SYMBOLS)"
+
+objdump: $(KERNEL)
+	x86_64-elf-objdump -d -M intel --no-show-raw-insn $(KERNEL) > build/kernel.dis
+	@echo "Disassembly written to build/kernel.dis ($$($(GET_SIZE) build/kernel.dis) bytes)"
 
 clean:
 	rm -rf build $(ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
