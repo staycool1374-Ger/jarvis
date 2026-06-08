@@ -69,7 +69,9 @@ USERSPACE_ELF  := $(USERSPACE_SRC:%=%.elf)
 INITRD_CPIO    := initrd.cpio
 INITRD_OBJ     := build/initrd/initrd_cpio.o
 
-QEMU_FLAGS     := -cdrom $(ISO) -m 256M -nographic -nic none -boot order=d
+QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
+QEMU_FLAGS     := -cdrom $(ISO) -m 256M -nographic -nic none -boot order=d \
+                  -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
 
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
@@ -80,9 +82,13 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -nographic -nic none -boot order=d
 
 all: $(ISO)
 
-$(ISO): $(KERNEL) iso/boot/grub/grub.cfg
-	@mkdir -p iso/boot
-	cp $(KERNEL) iso/boot/kernel.elf
+iso/boot:
+	@mkdir -p $@
+
+iso/boot/kernel.elf: $(KERNEL) | iso/boot
+	cp $< $@
+
+$(ISO): iso/boot/kernel.elf iso/boot/grub/grub.cfg
 	@grub-mkrescue -o $@ iso 2>/dev/null || \
 	(echo "ERROR: grub-mkrescue failed. Please verify dependencies."; echo $(PKG_HINT); exit 1)
 	@echo ""
@@ -150,7 +156,8 @@ run-qemu-debug: $(DEBUG_ISO)
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
 	    echo "Interrupt log: -d int,cpu_reset"; \
 	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -nographic -nic none \
-	        -boot order=d -s -S -d int,cpu_reset; \
+	        -boot order=d -s -S -d int,cpu_reset \
+	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -160,8 +167,7 @@ test-qemu: $(ISO)
 	    echo "Booting in QEMU Environment (Automated Self-Test Execution Pipeline)..."; \
 	    expect -c ' \
 	        set timeout 60; \
-	        spawn qemu-system-x86_64 $(QEMU_FLAGS) -no-reboot -device isa-debug-exit \
-	            -drive if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd; \
+	        spawn qemu-system-x86_64 $(QEMU_FLAGS) -no-reboot -device isa-debug-exit; \
 	        expect { \
 	            "Failed: 0" { \
 	                send_user "\nAll tests passed (Failed: 0)\n"; \
@@ -207,18 +213,18 @@ test: $(KERNEL)
 
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
+
 debug: $(OBJ) $(INITRD_OBJ) linker.ld
 	@mkdir -p $(dir $(KERNEL_DEBUG)) $(dir $(DEBUG_ISO))
-	$(LD) $(LDFLAGS) --no-gc-sections -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
+	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
 	@echo "Debug target kernel constructed: $(KERNEL_DEBUG) ($$($(GET_SIZE) $(KERNEL_DEBUG)) bytes)"
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
 	@echo "Debug ISO image mapped successfully: $(DEBUG_ISO)"
 
 release: CXXFLAGS += -g -O2
-release: $(KERNEL) iso/boot/grub/grub.cfg
+release: iso/boot/kernel.elf iso/boot/grub/grub.cfg
 	@mkdir -p $(dir $(RELEASE_ISO))
-	cp $(KERNEL) iso/boot/kernel.elf
 	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
 	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
 	@echo ""
@@ -242,7 +248,7 @@ objdump: $(KERNEL)
 	@echo "Disassembly written to build/kernel.dis ($$($(GET_SIZE) build/kernel.dis) bytes)"
 
 clean:
-	rm -rf build $(ISO) $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
+	rm -rf build $(ISO) $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
 	rm -rf initrd_root debug release
 	@echo "Environment workspace clean-up routines completed."
