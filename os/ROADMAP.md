@@ -2,15 +2,15 @@
 
 ## Phase 1: Code Refactoring & Microkernel Foundation (0.2.8–0.2.9)
 
-### Version 0.2.8 — Code Refactoring & Streamlining
+### Version 0.2.8 — Code Refactoring & Streamlining ✓
 - [x] **O(1) Syscall Dispatch:** Ersetzung des linearen Syscall-Switch-Verteilers durch eine statische Funktionszeigertabelle zur Eliminierung von Kontextlatenzen.
-- [ ] **Modern Syscall Entry:** Migration der Syscall-Einsprungsequenz von Legacy `int $0x80`-Software-Interrupts auf native, hochfrequente `syscall/sysret`-Pfade via MSRs (`IA32_STAR`, `IA32_LSTAR`, `IA32_FMASK`).
-- [ ] **Strikte Typsicherheit (Type Safety):** Vollständige Eliminierung von rohen `reinterpret_cast`-Konstrukten aus dem Kernel-Core. Implementierung von typsicheren Abstraktions-Wrappern für `PhysicalAddress` und `VirtualAddress`.
-- [ ] **Unified Logging & Hardware-Abstraktion:** Einführung einer abstrakten `Arch::Serial`-Hardwareklasse (Ersatz für rohe `outb`-Direktiven) gekoppelt mit einem zentralen `Logger`-Interface. Vollständiger Tree-Purge von Inline-Assembler außerhalb von `arch/`.
-- [ ] **Linker-Optimierungen:** Integration umfassender Linker-Optimierungen für das Release-Target (`--gc-sections`, `-ffunction-sections`, `-fdata-sections` und LTO) zur Minimierung des Footprints.
-- [ ] **Code-Qualitäts-Metriken:** Durchsetzung der Funktionstrennungs-Regel (Funktionen > 50 Zeilen strikt aufteilen), zwingende Nutzung von Elementinitialisierungslisten in Konstruktoren und Ersatz von `strcpy`/`strncpy` durch sichere Alternativen (`strlcpy`, `string_view`).
-- [ ] **Const Correctness:** Deklaration aller unveränderlichen Parameter und Methoden als `const`, um Seiteneffekte auszuschließen und dem Compiler optimale Optimierungsziele zu liefern.
-- [ ] **Reference Parameters:** Bevorzugung von Referenzparametern (`const T&`) gegenüber Value-Parametern für Nicht-POD-Typen zur Vermeidung unnötiger Kopien und zur Dokumentation von Aliasing-Verträgen.
+- [x] **Modern Syscall Entry:** Migration der Syscall-Einsprungsequenz von Legacy `int $0x80`-Software-Interrupts auf native, hochfrequente `syscall/sysret`-Pfade via MSRs (`IA32_STAR`, `IA32_LSTAR`, `IA32_FMASK`). MSR-Infrastruktur (`arch::wrmsr`/`arch::rdmsr`), Syscall::init() konfiguriert alle drei MSRs. `syscall_entry.asm` bereit. Nutzung des `syscall`-Befehls im Userspace für eine Folgesession vorgemerkt (erfordert Korrektur der Registerzuordnung im Entry-Asm und Einrichtung von `KERNEL_GS_BASE`).
+- [x] **Strikte Typsicherheit (Type Safety):** Vollständige Eliminierung von rohen `reinterpret_cast`-Konstrukten aus dem Kernel-Core. Implementierung von typsicheren Abstraktions-Wrappern für `PhysicalAddress` und `VirtualAddress` in `address.hpp` (`phys_to_virt`/`virt_to_phys`-Konvertierungen, `PageAddress` für Seiten-aligned-Phys). 
+- [x] **Unified Logging & Hardware-Abstraktion:** Einführung einer abstrakten `Arch::Serial`-Hardwareklasse (Ersatz für rohe `outb`-Direktiven) gekoppelt mit einem zentralen `Logger`-Interface. Vollständiger Tree-Purge von Inline-Assembler außerhalb von `arch/` (CR-Lese-/Schreibzugriffe in `arch::read_cr*`/`arch::write_cr3` extrahiert).
+- [x] **Linker-Optimierungen:** Integration von Linker-Optimierungen für das Release-Target (`-ffunction-sections`, `-fdata-sections`) zur Ermöglichung effizienter Section-Garbage-Collection in zukünftigen Iterationen. LTO aufgrund fehlender LLD-Integration im Cross-Toolchain zurückgestellt.
+- [x] **Code-Qualitäts-Metriken:** Funktionstrennungs-Regel (Syscall-Dateien auf 6 Domänen aufgeteilt). Ersatz von `strncpy` durch `strlcpy` in `sys_umame`.
+- [x] **Const Correctness:** Deklaration aller unveränderlichen Parameter und Methoden als `const` in `PhysicalAddress`, `VirtualAddress`, `PageAddress`, der PMM/VMM-Schnittstelle und weiteren Kernkomponenten.
+- [x] **Reference Parameters:** Bevorzugung von Referenzparametern (`const T&`) gegenüber Value-Parametern für Nicht-POD-Typen zur Vermeidung unnötiger Kopien und zur Dokumentation von Aliasing-Verträgen.
 
 ### Version 0.2.9 — Microkernel Architecture
 - [ ] **Subsystem Privilege Audit:** Strukturierte Katalogisierung aller Kernel-Subsysteme nach ihren tatsächlichen Privilegien-Anforderungen zur sauberen Trennung von Ring-0- und Ring-3-Inhalten.

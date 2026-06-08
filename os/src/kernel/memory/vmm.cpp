@@ -1,5 +1,6 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/arch/io.hpp>
 #include <constants.hpp>
 #include <assert.hpp>
 
@@ -8,9 +9,7 @@ namespace kernel {
 uint64_t VMM::kernel_pml4_ = 0;
 
 void VMM::init() {
-    uint64_t cr3;
-    asm volatile("mov %%cr3, %0" : "=r"(cr3));
-    kernel_pml4_ = cr3;
+    kernel_pml4_ = arch::read_cr3();
 }
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_alloc) {
@@ -94,9 +93,7 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
 }
 
 uint64_t VMM::current_pml4() {
-    uint64_t cr3;
-    asm volatile("mov %%cr3, %0" : "=r"(cr3));
-    return cr3;
+    return arch::read_cr3();
 }
 
 void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,

@@ -109,12 +109,12 @@ uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_
     if (syscall_is_user_task() && !uts_ptr.valid()) return static_cast<uint64_t>(-1);
 
     Utsname uts{};
-    strncpy(uts.sysname, "Jarvis", sizeof(uts.sysname) - 1);
-    strncpy(uts.nodename, "jarvis", sizeof(uts.nodename) - 1);
-    strncpy(uts.release, Version::string(), sizeof(uts.release) - 1);
-    strncpy(uts.version, Version::build_date(), sizeof(uts.version) - 1);
-    strncpy(uts.machine, "x86_64", sizeof(uts.machine) - 1);
-    strncpy(uts.domainname, "(none)", sizeof(uts.domainname) - 1);
+    strlcpy(uts.sysname, "Jarvis", sizeof(uts.sysname));
+    strlcpy(uts.nodename, "jarvis", sizeof(uts.nodename));
+    strlcpy(uts.release, Version::string(), sizeof(uts.release));
+    strlcpy(uts.version, Version::build_date(), sizeof(uts.version));
+    strlcpy(uts.machine, "x86_64", sizeof(uts.machine));
+    strlcpy(uts.domainname, "(none)", sizeof(uts.domainname));
     *uts_ptr.unsafe_ptr() = uts;
     return 0;
 }

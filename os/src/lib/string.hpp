@@ -75,4 +75,13 @@ inline char* strncpy(char* dest, const char* src, size_t n) {
     return dest;
 }
 
+inline size_t strlcpy(char* dest, const char* src, size_t n) {
+    if (!dest || !src || n == 0) return 0;
+    size_t srclen = strlen(src);
+    size_t copylen = (srclen < n - 1) ? srclen : n - 1;
+    for (size_t i = 0; i < copylen; ++i) dest[i] = src[i];
+    dest[copylen] = '\0';
+    return srclen;
+}
+
 } // extern "C"

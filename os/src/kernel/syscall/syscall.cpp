@@ -3,10 +3,19 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/arch/msr.hpp>
+#include <constants.hpp>
+
+extern "C" void syscall_entry();
 
 namespace kernel {
 
 void Syscall::init() {
+    uint64_t star_val = (static_cast<uint64_t>(arch::SEG_KERNEL_CODE) << 32) |
+                        (static_cast<uint64_t>(arch::SEG_USER_CODE) << 48);
+    arch::wrmsr(arch::IA32_STAR, star_val);
+    arch::wrmsr(arch::IA32_LSTAR, reinterpret_cast<uint64_t>(syscall_entry));
+    arch::wrmsr(arch::IA32_FMASK, 0x200);
 }
 
 TaskControlBlock* syscall_task() {

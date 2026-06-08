@@ -27,10 +27,12 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -fno-threadsafe-statics -target x86_64-elf -m64 -mno-red-zone \
             -mgeneral-regs-only -mcmodel=large \
             -Wall -Wextra -Werror \
-            -I src -I src/lib -O3 -pipe -MMD -MP
+            -I src -I src/lib -O3 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
 
 CC       := x86_64-elf-gcc
-CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP
+CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
 
 AS       := nasm
 ASFLAGS  := -f elf64
@@ -188,10 +190,9 @@ test: $(KERNEL)
 
 debug: CXXFLAGS += -g -Og -DDEBUG
 debug: CCFLAGS  += -g -Og -DDEBUG
-debug: LDFLAGS  += --no-gc-sections
 debug: $(OBJ) $(INITRD_OBJ) linker.ld
 	@mkdir -p $(dir $(KERNEL_DEBUG))
-	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
+	$(LD) $(LDFLAGS) --no-gc-sections -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
 	@echo "Debug target kernel constructed: $(KERNEL_DEBUG) ($$($(GET_SIZE) $(KERNEL_DEBUG)) bytes)"
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
 	@grub-mkrescue -o jarvis-rtos-debug.iso iso 2>/dev/null

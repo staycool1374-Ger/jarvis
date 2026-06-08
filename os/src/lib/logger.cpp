@@ -1,26 +1,14 @@
-/// @file logger.cpp
-/// @brief Kernel logger implementation with colored serial output.
-
 #include <logger.hpp>
-#include <kernel/arch/io.hpp>
+#include <kernel/arch/serial.hpp>
 
 namespace kernel {
-
-static constexpr uint16_t COM1 = 0x3F8;
 
 LogLevel Logger::current_level_ = LogLevel::INFO;
 bool Logger::initialized_ = false;
 
 void Logger::init() {
     if (initialized_) return;
-    arch::outb(COM1 + 1, 0x00);
-    arch::outb(COM1 + 3, 0x80);
-    arch::outb(COM1 + 0, 0x01);
-    arch::outb(COM1 + 1, 0x00);
-    arch::outb(COM1 + 3, 0x03);
-    arch::outb(COM1 + 2, 0xC7);
-    arch::outb(COM1 + 4, 0x0B);
-    arch::outb(COM1 + 4, 0x0F);
+    arch::Serial::init();
     initialized_ = true;
     info("Logger initialized");
 }
@@ -30,16 +18,11 @@ void Logger::set_level(LogLevel level) {
 }
 
 void Logger::putchar(char c) {
-    if (c == '\n') {
-        while ((arch::inb(COM1 + 5) & 0x20) == 0);
-        arch::outb(COM1, '\r');
-    }
-    while ((arch::inb(COM1 + 5) & 0x20) == 0);
-    arch::outb(COM1, c);
+    arch::Serial::putchar(c);
 }
 
 void Logger::puts(const char* s) {
-    while (*s) putchar(*s++);
+    arch::Serial::puts(s);
 }
 
 void Logger::print_hex(uint64_t v) {

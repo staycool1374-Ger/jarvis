@@ -324,11 +324,10 @@ static void dump_regs(uint64_t* regs) {
     L::raw_write("  RIP: "); L::print_hex(regs[17]); L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
     L::raw_write("  RFL: "); L::print_hex(regs[19]); L::raw_write("\n");
 
-    uint64_t cr0, cr2, cr3, cr4;
-    asm volatile("mov %%cr0, %0" : "=r"(cr0));
-    asm volatile("mov %%cr2, %0" : "=r"(cr2));
-    asm volatile("mov %%cr3, %0" : "=r"(cr3));
-    asm volatile("mov %%cr4, %0" : "=r"(cr4));
+    uint64_t cr0 = read_cr0();
+    uint64_t cr2 = read_cr2();
+    uint64_t cr3 = read_cr3();
+    uint64_t cr4 = read_cr4();
 
     L::raw_write("  CR0: "); L::print_hex(cr0); L::raw_write("\n");
     L::raw_write("  CR2: "); L::print_hex(cr2); L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
@@ -444,8 +443,7 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
     kernel::Logger::error("Task %x: unhandled signal %x vector=%x rip=%x err=%x",
         t->id, sig, vector, rip, error_code);
     if (vector == 14) {
-        uint64_t cr2_val;
-        asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
+        uint64_t cr2_val = read_cr2();
         kernel::Logger::error("  CR2=%x", cr2_val);
     }
     dump_regs(regs);
@@ -477,9 +475,7 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
                 t->id, vector, mapping.name, sig);
 
             if (vector == 14) {
-                uint64_t cr2_val;
-                asm volatile("mov %%cr2, %0" : "=r"(cr2_val));
-                kernel::Logger::error("  CR2=%x", cr2_val);
+                kernel::Logger::error("  CR2=%x", read_cr2());
             }
 
             bool was_delivered = deliver_signal_to_user(t, sig, vector, error_code, rip, regs);

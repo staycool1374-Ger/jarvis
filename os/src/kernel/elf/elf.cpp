@@ -3,6 +3,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/arch/gdt.hpp>
+#include <kernel/arch/io.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <assert.hpp>
@@ -334,12 +335,8 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     regs[21] = arch::SEG_USER_DATA;
     regs[0] = 0;
 
-    {
-        uint64_t cr3;
-        asm volatile("mov %%cr3, %0" : "=r"(cr3));
-        if (cr3 != new_pml4) {
-            asm volatile("mov %0, %%cr3" : : "r"(new_pml4) : "memory");
-        }
+    if (arch::read_cr3() != new_pml4) {
+        arch::write_cr3(new_pml4);
     }
 
     if (old_pml4 && old_pml4 != VMM::get_kernel_pml4()) {
