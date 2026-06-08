@@ -10,10 +10,39 @@ uint64_t VMM::kernel_pml4_ = 0;
 
 void VMM::init() {
     kernel_pml4_ = arch::read_cr3();
+
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
+
+    // Zero unused PDPT entries (indices 1-511) so the page table walker
+    // never follows uninitialized garbage pointers. The boot code only sets
+    // entry 0 in each PDPT; the rest may contain residual GRUB/BIOS data
+    // whose PAGE_PRESENT bit happens to be set.
+    auto pdpt_ident = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[0] & ~0xFFFULL));
+    for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) {
+        pdpt_ident[i] = 0;
+    }
+
+    auto pdpt_higher = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
+    for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) {
+        pdpt_higher[i] = 0;
+    }
 }
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
+        if (table[index] & PAGE_HUGE) {
+            if (!create) return nullptr;
+            uint64_t new_page = PMM::alloc_page_table();
+            ASSERT(new_page != 0);
+            auto* new_table = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
+            uint64_t huge_base  = table[index] & ~0x1FFFFFULL;
+            uint64_t base_flags = table[index] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+            for (size_t i = 0; i < 512; ++i) {
+                new_table[i] = (huge_base + i * 0x1000) | base_flags;
+            }
+            table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+            return new_table;
+        }
         return reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (table[index] & ~0xFFFULL));
     }
     if (!create) return nullptr;
@@ -21,18 +50,18 @@ uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_a
     uint64_t new_page = user_alloc ? PMM::alloc_user_page() : PMM::alloc_page_table();
     ASSERT(new_page != 0);
 
-    auto* new_table = reinterpret_cast<uint64_t*>(new_page);
+    auto* new_table = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
     for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
         new_table[i] = 0;
     }
 
     table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
-    return reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
+    return new_table;
 }
 
 void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(kernel_pml4_ & ~0xFFFULL);
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
     size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
@@ -41,6 +70,21 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 
     auto* pdpt = get_table(pml4, pml4_idx, true);
     auto* pd   = get_table(pdpt, pdpt_idx, true);
+
+    // If the PD entry is a 2MB huge page, split it into 512 4KB entries
+    // so we can map an individual 4KB page within it.
+    if (pd[pd_idx] & PAGE_HUGE) {
+        uint64_t new_pt_phys = PMM::alloc_page_table();
+        ASSERT(new_pt_phys != 0);
+        auto* new_pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pt_phys);
+        uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
+        uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+        for (size_t i = 0; i < 512; ++i) {
+            new_pt[i] = (huge_base + i * 0x1000) | base_flags;
+        }
+        pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    }
+
     auto* pt   = get_table(pd, pd_idx, true);
 
     uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
@@ -51,7 +95,7 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 }
 
 void VMM::unmap_page(uint64_t virt_addr) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(kernel_pml4_ & ~0xFFFULL);
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
     size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
@@ -70,7 +114,7 @@ void VMM::unmap_page(uint64_t virt_addr) {
 }
 
 uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(kernel_pml4_ & ~0xFFFULL);
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
     size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
@@ -108,6 +152,19 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
 
     auto* pdpt = get_table(pml4, pml4_idx, true, true);
     auto* pd   = get_table(pdpt, pdpt_idx, true, true);
+
+    if (pd[pd_idx] & PAGE_HUGE) {
+        uint64_t new_pt_phys = PMM::alloc_page_table();
+        ASSERT(new_pt_phys != 0);
+        auto* new_pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pt_phys);
+        uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
+        uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+        for (size_t i = 0; i < 512; ++i) {
+            new_pt[i] = (huge_base + i * 0x1000) | base_flags;
+        }
+        pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    }
+
     auto* pt   = get_table(pd, pd_idx, true, true);
 
     uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
