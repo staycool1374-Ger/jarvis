@@ -54,6 +54,8 @@ KERNEL         := build/kernel.elf
 KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DEBUG   := build/kernel-debug.elf
 ISO            := jarvis-rtos.iso
+DEBUG_ISO      := debug/jarvis-rtos.iso
+RELEASE_ISO    := release/jarvis-rtos.iso
 
 LIBC_DIR       := src/libc
 LIBC_SRC       := $(shell find $(LIBC_DIR) -name '*.c' -o -name '*.S')
@@ -142,13 +144,13 @@ run-qemu: $(ISO)
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
 
-run-qemu-debug: CXXFLAGS += -g -Og -DDEBUG
-run-qemu-debug: $(ISO)
+run-qemu-debug: $(DEBUG_ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Starting QEMU (debug) — Ctrl+A then X to exit."; \
-	    echo "Connect GDB:  gdb build/kernel.elf -ex 'target remote :1234'"; \
+	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
 	    echo "Interrupt log: -d int,cpu_reset"; \
-	    qemu-system-x86_64 $(QEMU_FLAGS) -s -S -d int,cpu_reset; \
+	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -nographic -nic none \
+	        -boot order=d -s -S -d int,cpu_reset; \
 	else \
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -203,21 +205,25 @@ test: $(KERNEL)
 	@echo "Userspace components compiled securely."
 	@echo "Trigger interactive tests at terminal context via 'selftest'."
 
-debug: CXXFLAGS += -g -Og -DDEBUG
-debug: CCFLAGS  += -g -Og -DDEBUG
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
+debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
 debug: $(OBJ) $(INITRD_OBJ) linker.ld
-	@mkdir -p $(dir $(KERNEL_DEBUG))
+	@mkdir -p $(dir $(KERNEL_DEBUG)) $(dir $(DEBUG_ISO))
 	$(LD) $(LDFLAGS) --no-gc-sections -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
 	@echo "Debug target kernel constructed: $(KERNEL_DEBUG) ($$($(GET_SIZE) $(KERNEL_DEBUG)) bytes)"
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
-	@grub-mkrescue -o jarvis-rtos-debug.iso iso 2>/dev/null
-	@echo "Debug ISO image mapped successfully: jarvis-rtos-debug.iso"
+	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
+	@echo "Debug ISO image mapped successfully: $(DEBUG_ISO)"
 
 release: CXXFLAGS += -g -O2
-release: $(ISO)
+release: $(KERNEL) iso/boot/grub/grub.cfg
+	@mkdir -p $(dir $(RELEASE_ISO))
+	cp $(KERNEL) iso/boot/kernel.elf
+	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
+	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
 	@echo ""
 	@echo "=========================================="
-	@echo " Release ISO ready: $(ISO)"
+	@echo " Release ISO ready: $(RELEASE_ISO)"
 	@echo " Validate with:  make release-test"
 	@echo " Run with:       make run-qemu"
 	@echo "=========================================="
@@ -225,7 +231,7 @@ release: $(ISO)
 release-test: release
 	@echo ""
 	@echo "=== Validating release ISO via test-qemu ==="
-	$(MAKE) test-qemu
+	$(MAKE) test-qemu ISO=$(RELEASE_ISO)
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
@@ -236,8 +242,7 @@ objdump: $(KERNEL)
 	@echo "Disassembly written to build/kernel.dis ($$($(GET_SIZE) build/kernel.dis) bytes)"
 
 clean:
-	rm -rf build $(ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
+	rm -rf build $(ISO) $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
-	rm -f jarvis-rtos-debug.iso
-	rm -rf initrd_root
+	rm -rf initrd_root debug release
 	@echo "Environment workspace clean-up routines completed."
