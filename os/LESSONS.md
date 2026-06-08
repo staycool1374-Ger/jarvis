@@ -7,21 +7,6 @@
 - All 37 handler method declarations must precede the `syscall_table_` initializer list, or compilation fails with "no member named" errors.
 - The fix: move all `static uint64_t sys_*(...)` declarations above the `constexpr SyscallHandler syscall_table_[...]` member.
 
-### Splitting a large switch into separate translation units
-- The original `syscall.cpp` (589 lines, single `switch` with 37 `case` blocks) was split into 6 files:
-  - `syscall.cpp` — `init()`, `handle()`, shared helpers
-  - `syscall_handlers_misc.cpp` — YIELD, PRINT, GET_TICKS, GETPID, EXIT, GETTOD, UNAME, PAUSE
-  - `syscall_handlers_ipc.cpp` — SEND, RECEIVE, SEND_SYNC, CREATE_MAILBOX, DESTROY_MAILBOX
-  - `syscall_handlers_fs.cpp` — all VFS/file-descriptor syscalls
-  - `syscall_handlers_process.cpp` — FORK, WAITPID, EXEC, KILL, SIGNAL, SIGRETURN
-  - `syscall_handlers_sync.cpp` — NOTIFY, NOTIFY_WAIT, EVENT_SET, EVENT_WAIT, ALARM
-- Each handler file includes only its own dependencies, reducing transitive include chains.
-- Shared helpers (`syscall_task()`, `syscall_is_user_task()`, `syscall_task_open()`, `syscall_path_open()`) moved to `syscall_helpers.hpp` to avoid duplication.
-
-### O(1) dispatch eliminates branch prediction misses
-- The `switch` statement, even when compiled to a jump table, still requires a bounds check + indirect branch per syscall. The explicit `syscall_table_[]` array makes the dispatch transparent at the source level and guarantees O(1) code paths regardless of compiler optimization heuristics.
-- Bounds check: `if (number >= MAX_SYSCALL) return -1` before table lookup ensures no out-of-bounds access.
-
 ## 2026-06-07 — fork/exec Crash Debugging (SSE + Stack Alignment + Identity Map)
 
 ### CR4.OSFXSR must be set for SSE
@@ -30,65 +15,21 @@
 - `CR4.OSXMMEXCPT` (bit 10) should also be set for SIMD floating-point exception handling.
 - Fix: `or dword [cr4], (1<<5)|(1<<9)|(1<<10)` in `boot.asm` (PAE|OSFXSR|OSXMMEXCPT).
 
-### x86-64 Stack Alignment (16-byte)
-- ABI requires `(%rsp + 8) ≡ 0 (mod 16)` at function entry — i.e. RSP must be 16-byte aligned **before** `call`.
-- The kernel boot stack is set up correctly, but `_start` in `crt0.S` calls `main` without aligning RSP.
-- GCC's `movaps [rsp+0x20]` (emitted at `-O2`) faults on misaligned address → `#GP(0)`.
-- Fix: `andq $-16, %rsp` before `call main` in `crt0.S`.
-
 ### Always use higher-half mapping for physical→virtual conversion
 - Kernel code must use `0xFFFF800000000000 + phys` for physical-to-virtual conversion, regardless of what PML4 is active.
 - The identity-map at PML4[0] exists in the kernel PML4 (boot setup) but is **absent** in all user PML4s because `clone_kernel_pml4()` zeroes entries 0-255.
 - Relying on the identity map is fragile — it is a boot artifact and should not be assumed for kernel code that runs across context switches.
 - Affected components: PMM bitmap, VMM page table walks (`get_table`, `map_page_in_pml4`, `free_user_pages`, `clone_kernel_pml4`), ELF loader segment copies.
 
-### Fork uses shared page tables (no deep-copy)
-- `clone()` calls `clone_kernel_pml4()` which copies **all 512** PML4 entries, including user entries 0-255. The child inherits the parent's code (.text), data (.data), BSS, and heap mappings via shared page-table pages.
-- A **new user stack** is allocated for the child and mapped at `0x70000000` in the cloned PML4.
-- The child can immediately execute the same program code as the parent (same page tables, no deep-copy).
-- Consequences of sharing:
-  - **Cannot call `free_user_pages()`** for a fork child that still shares page tables — would corrupt parent's address space.
-  - `free_user_pages()` must tolerate kernel-owned pages (boot identity-map) that leak into user PML4s.
-  - Proper isolation would require **deep-copy** (recursively copy the user page table hierarchy in `clone()`), which is a future optimization.
-- **Currently chosen**: Share (copy all entries), with the leak risk. Acceptable because child always execs or exits quickly.
-
 ### free_user_pages must NOT be called on shared page tables
 - Fork shares PDPT/PD/PT pages between parent and child (PML4 entries 0-255 point to the same physical page tables). Calling `free_user_pages()` on a shared PML4 would free the shared page table hierarchy, corrupting the other task's address space.
 - Fix: `TaskControlBlock` has a `page_table_shared_` flag, set to `true` by `clone()`. Both `cleanup()` and `exec_into_current()` check this flag and skip `free_user_pages()` when set. The PML4 page itself is still freed.
 - Consequence: per-fork allocations (user stack, PT entries for the new stack) under the shared hierarchy are leaked when the child exits. Acceptable because children always exec or exit quickly.
 
-### Page fault error code layout
-| Bit | Meaning |
-|-----|---------|
-| 0   | 0 = non-present page, 1 = protection violation |
-| 1   | 0 = read, 1 = write |
-| 2   | 0 = supervisor, 1 = user mode |
-| 3   | 1 = reserved bit violation |
-| 4   | 1 = instruction fetch |
-- Error code `0x4` → user-mode read from non-present page.
-
-### TLB behaviour on CR3 change
-- Writing CR3 **flushes all TLB entries** (except global pages marked with `PAGE_GLOBAL`).
-- No manual `invlpg` needed after CR3 switch during context switch.
-
-### Fork return value convention
-- Parent gets `child->id` from the fork handler (stored in `regs[0]`).
-- Child gets `RAX = 0` from the cloned register frame (set in `clone()`).
-- Both sides must see the correct split.
-
-### User stack must be per-task in fork
-- Fork allocates a **new** user stack for the child and copies the parent's stack content page-by-page via the higher-half mapping.
-- The child's cloned PML4 maps this new stack at the same virtual address as the parent's.
-
 ### waitpid return semantics
 - If `waitpid` is called before the child terminates, the parent blocks. When the child exits, the scheduler must wake the parent.
 - The current `WAITPID` handler returns `-1` if the child is still alive on first check, then the parent blocks and gets rescheduled. On re-entry after wakeup, the handler **may not re-check** the child state — can return `-1` incorrectly.
 - Fix needed: always re-check child termination state on resume.
-
-### Higher-half kernel mapping
-- Kernel is mapped at `0xFFFF800000000000` (PML4 entry 256).
-- Physical address `X` → virtual `0xFFFF800000000000 + X`.
-- Accessing physical memory without this offset is only safe during boot (while the identity map at PML4[0] is active).
 
 ### HHDM circular dependency — page tables need HHDM to be zeroed, HHDM needs page tables
 - When mapping a framebuffer at physical 0x80000000 (2 GiB) via HHDM (0xFFFF800080000000), the VMM must create page tables for the HHDM mapping.
