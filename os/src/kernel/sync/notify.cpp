@@ -13,7 +13,8 @@ void Notify::init() {
 void Notify::notify(uint64_t value) {
     notify_value_ = value;
     if (waiter_) {
-        waiter_->state = TaskState::READY;
+        if (waiter_->state != TaskState::TERMINATED)
+            waiter_->state = TaskState::READY;
         waiter_ = nullptr;
     }
 }

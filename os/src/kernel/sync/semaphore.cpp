@@ -24,10 +24,12 @@ void Semaphore::wake_one() {
         for (size_t i = 1; i < waiter_count_; ++i) {
             if (waiters_[i]->priority > waiters_[best]->priority) best = i;
         }
-        waiters_[best]->state = TaskState::READY;
+        if (waiters_[best]->state != TaskState::TERMINATED)
+            waiters_[best]->state = TaskState::READY;
         waiters_[best] = waiters_[--waiter_count_];
     } else {
-        waiters_[0]->state = TaskState::READY;
+        if (waiters_[0]->state != TaskState::TERMINATED)
+            waiters_[0]->state = TaskState::READY;
         waiter_count_ = 0;
     }
 }

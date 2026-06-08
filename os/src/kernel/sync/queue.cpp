@@ -31,7 +31,8 @@ void Queue::wake_send_one() {
     for (size_t i = 1; i < send_waiters_count_; ++i) {
         if (send_waiters_[i]->priority > send_waiters_[best]->priority) best = i;
     }
-    send_waiters_[best]->state = TaskState::READY;
+    if (send_waiters_[best]->state != TaskState::TERMINATED)
+        send_waiters_[best]->state = TaskState::READY;
     send_waiters_[best] = send_waiters_[--send_waiters_count_];
 }
 
@@ -41,7 +42,8 @@ void Queue::wake_recv_one() {
     for (size_t i = 1; i < recv_waiters_count_; ++i) {
         if (recv_waiters_[i]->priority > recv_waiters_[best]->priority) best = i;
     }
-    recv_waiters_[best]->state = TaskState::READY;
+    if (recv_waiters_[best]->state != TaskState::TERMINATED)
+        recv_waiters_[best]->state = TaskState::READY;
     recv_waiters_[best] = recv_waiters_[--recv_waiters_count_];
 }
 

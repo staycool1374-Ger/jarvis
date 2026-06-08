@@ -6,7 +6,7 @@ void exit(int status) {
 }
 
 void abort(void) {
-    while (1) asm volatile("hlt");
+    for (;;) asm volatile("pause");
 }
 
 int atoi(const char* s) {

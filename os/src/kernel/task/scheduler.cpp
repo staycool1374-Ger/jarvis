@@ -48,6 +48,8 @@ void Scheduler::remove_task(TaskControlBlock* task) {
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == task) {
             tasks_[i] = tasks_[--task_count_];
+            if (current_index_ >= task_count_) current_index_ = 0;
+            if (i < task_count_ && current_index_ == task_count_) current_index_ = i;
             break;
         }
     }

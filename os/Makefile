@@ -70,7 +70,7 @@ INITRD_CPIO    := initrd.cpio
 INITRD_OBJ     := build/initrd/initrd_cpio.o
 
 QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
-QEMU_FLAGS     := -cdrom $(ISO) -m 256M -nographic -nic none -boot order=d \
+QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=d \
                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
 
 # ------------------------------------------------------------------------------
@@ -155,7 +155,7 @@ run-qemu-debug: $(DEBUG_ISO)
 	    echo "Starting QEMU (debug) — Ctrl+A then X to exit."; \
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
 	    echo "Interrupt log: -d int,cpu_reset"; \
-	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -nographic -nic none \
+	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
 	        -boot order=d -s -S -d int,cpu_reset \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \

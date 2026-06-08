@@ -33,7 +33,8 @@ void EventGroup::wake_matching() {
             if (waiters_[i].clear_on_exit) {
                 bits_ &= ~waiters_[i].wanted_bits;
             }
-            waiters_[i].task->state = TaskState::READY;
+            if (waiters_[i].task->state != TaskState::TERMINATED)
+                waiters_[i].task->state = TaskState::READY;
             waiters_[i] = waiters_[--wait_count_];
         } else {
             ++i;

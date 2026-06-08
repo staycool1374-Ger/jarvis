@@ -87,3 +87,56 @@ The first attempt zeroed the entire page-table page range (0x1000–0x5FFF) in 3
 3. **Mark identity-map pages as non-executable**: The boot stack is in the identity-map range. If identity-map pages were NX, corruption would cause a different crash signature, but it would still crash.
 4. **Add RBP-stack validation**: Before using RBP-relative accesses after a stack switch in `higherhalf_entry`, verify the stack address is canonical and mapped. Or set `rbp = rsp` after the switch.
 5. **Teach the QEMU test runner to capture panic output**: Currently `test-qemu` only checks for "Failed: 0" / "FAILED". On panic the kernel prints registers and a fatal message — capture and display this on failure.
+
+## 2026-06-08 — Shell Crash Cascade: Task Resurrection + remove_task Corruption
+
+### The symptom
+After boot, the shell would rapidly print garbage, followed by cascading GPF errors across all kernel tasks. The QEMU test runner got stuck — serial output stopped before `make test-qemu` could complete.
+
+### Root Cause: Two independent bugs that amplified each other
+
+| Bug | What | Where | Effect |
+|-----|------|-------|--------|
+| #1 | `remove_task` swap-and-pop does not update `current_index_` | `scheduler.cpp:46` | `current_task()` returns out-of-bounds memory; `sys_exit` skips cleanup → task spins in `pause;jmp` infinite loop |
+| #2 | All sync primitives set `state = READY` without checking TERMINATED | `ipc.cpp:177`, `notify.cpp:16`, `queue.cpp:34,44`, `eventgroup.cpp:36`, `mutex.cpp:28`, `semaphore.cpp:27,30` | A killed task gets resurrected when a sender/notifier wakes it → zombie task executing freed memory → GPF |
+
+**Bug #1** alone: task `_exit()` calls `remove_task`, which finds the task and swaps it with the last element, then `pop()`. But `current_index_` still points to the old index. If `current_index_` > `pop`ped index, it's now off-by-one. `current_task()` returns `&tasks_[current_index_]` which may point past the vector or to a different task's TCB. `sys_exit` then checks `current_task()->state != TERMINATED` → sees a different task's state → skips cleanup → returns from `int $0x80` → task loops forever in `pause;jmp` → hogs CPU but doesn't crash.
+
+**Bug #2** alone: a task exits → remove_task → freed memory. Meanwhile, another task sends IPC to the (now killed) pid. `wake_sender` iterates the queue, finds the killed task's TCB, and sets `state = READY`. The scheduler now sees a task that should not exist and schedules it → it executes freed stack → GPF.
+
+**Together**: Bug #1 keeps the exiting task from being cleaned up (it stays in the task list with TERMINATED state). Bug #2 resurrects it. The resurrected task runs on freed/corrupted stack → GPF. The GPF handler calls `task_kill`, which calls `sys_exit` again → `remove_task` corrupts `current_index_` again → more bugs. Cascade.
+
+### Fixes applied (5 files)
+
+| Fix | File | What changed |
+|-----|------|-------------|
+| remove_task current_index_ | `scheduler.cpp:46-54` | After swap-and-pop, decrement `current_index_` if it points past the end, or if the removed task was before current |
+| TERMINATED guard (sync) | `ipc.cpp:177`, `notify.cpp:16`, `queue.cpp:34,44`, `eventgroup.cpp:36`, `mutex.cpp:28`, `semaphore.cpp:27,30` | All wake/swake operations check `task->state != TERMINATED` before setting `state = READY` |
+| TERMINATED guard (parent wake) | `syscall_handlers_misc.cpp:86` | `sys_exit` parent-wake checks `state != TERMINATED` before `unpark` |
+
+### Incorrect IDT analysis
+Initial analysis blamed a "trap gate" vs "interrupt gate" issue — that `0xEE` bit 4 being set would prevent IF from being cleared during syscall handling. This was wrong:
+
+- `0xEE = 1110 1110`: P=1, DPL=11 (ring 3), bit 4=0 (reserved, must be 0), type=1110 (0xE = 32-bit interrupt gate). This **is** an interrupt gate that clears IF on entry.
+- The intended "fix" `0xCE = 1100 1110` has DPL=10 (ring 2), which causes GPF on `int $0x80` from userspace. Reverted.
+- The original `0xEE` was correct for a DPL-3 interrupt gate. The crash cascade was caused by bugs #1 and #2 alone.
+
+### Key lesson: 0xEE vs 0xCE vs 0xEF
+
+| Value | Bit 4 | Type (bits 3‑0) | DPL (bits 6‑5) | Gate type | DPL |
+|-------|-------|-----------------|----------------|-----------|-----|
+| `0xEE` | 0 | 0xE (interrupt) | 11 (ring 3) | 32-bit interrupt gate | 3 ✓ |
+| `0xCE` | 0 | 0xE (interrupt) | 10 (ring 2) | 32-bit interrupt gate | 2 ✗ |
+| `0xEF` | 0 | 0xF (trap) | 11 (ring 3) | 32-bit trap gate | 3 ✓ |
+
+The "reserved bit" (bit 4) must be 0. The interrupt-vs-trap distinction is bit 3 of the type field.
+
+### Bonus fix: userspace shell improvements
+
+| Fix | File | What |
+|-----|------|------|
+| `parse_line` use-after-return | `sh.c:44` | `argv` pointers referenced `buf[]` on `parse_line`'s stack (destroyed on return). Changed to work on global `line[]`. | 
+| `read_line` empty-input exit | `sh.c:185` | `<= 0` → `< 0` so a stray newline from stale keyboard buffer doesn't exit the shell |
+| Keyboard flush at boot | `devfs.cpp:15-19` | Calls `arch::Keyboard::flush()` to discard boot-time scancodes before shell reads /dev/tty |
+| /dev/tty polling | `devfs.cpp:20-40` | `tty_read` polls both COM1 serial and keyboard ring buffer for input |
+| `_exit`/`abort` hlt | `unistd.c:54`, `stdlib.c:9` | `hlt` → `pause` (`hlt` is privileged in ring 3 → GPF) |

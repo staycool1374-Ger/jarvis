@@ -174,7 +174,8 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock* receiver) {
         q.blocked_senders_tail = nullptr;
     }
     task->blocked_next = nullptr;
-    task->state = TaskState::READY;
+    if (task->state != TaskState::TERMINATED)
+        task->state = TaskState::READY;
 
     // Priority inheritance: restore receiver priority based on remaining blocked senders
     if (!receiver) return;

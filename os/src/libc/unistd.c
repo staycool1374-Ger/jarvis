@@ -51,5 +51,5 @@ pid_t getpid(void) {
 
 void _exit(int status) {
     __syscall5(6, (long)status, 0, 0, 0);
-    while (1) asm volatile("hlt");
+    for (;;) asm volatile("pause");
 }

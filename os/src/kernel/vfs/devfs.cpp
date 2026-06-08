@@ -14,9 +14,10 @@ namespace vfs {
 }
 
 void devfs_init() {
+    arch::Keyboard::flush();
 }
 
-// ── tty vnode (serial console) ──
+// ── tty vnode (serial + keyboard console) ──
 static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
     for (;;) {
@@ -24,6 +25,13 @@ static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
             char c = arch::inb(arch::COM1);
             buf[0] = (c == '\r') ? '\n' : c;
             return 1;
+        }
+        {
+            char ch;
+            if (arch::Keyboard::getchar(ch)) {
+                buf[0] = static_cast<uint8_t>(ch);
+                return 1;
+            }
         }
         if (self->private_data && (reinterpret_cast<uint64_t>(self->private_data) & O_NONBLOCK)) {
             return -1;

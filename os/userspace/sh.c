@@ -42,21 +42,17 @@ struct Command {
 };
 
 static int parse_line(struct Command cmds[], int* ncmds) {
-    char buf[LINE_BUF];
     int i = 0;
     while (line[i] == ' ') ++i;
-    int bi = 0;
-    while (line[i] && bi < LINE_BUF - 1) buf[bi++] = line[i++];
-    buf[bi] = '\0';
-    if (bi == 0) return -1;
+    if (line[i] == '\0') return -1;
 
     char* pipeline[MAX_CMDS];
     int np = 0;
-    pipeline[np++] = buf;
-    for (int j = 0; buf[j] && np < MAX_CMDS; ++j) {
-        if (buf[j] == '|') {
-            buf[j] = '\0';
-            pipeline[np++] = &buf[j + 1];
+    pipeline[np++] = &line[i];
+    for (int j = i; line[j] && np < MAX_CMDS; ++j) {
+        if (line[j] == '|') {
+            line[j] = '\0';
+            pipeline[np++] = &line[j + 1];
         }
     }
 
@@ -182,7 +178,7 @@ int main(int argc, char** argv) {
 
     while (1) {
         print_prompt();
-        if (read_line() <= 0) break;
+        if (read_line() < 0) break;
 
         struct Command cmds[MAX_CMDS];
         int ncmds;

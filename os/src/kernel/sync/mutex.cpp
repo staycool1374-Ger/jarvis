@@ -25,7 +25,8 @@ void Mutex::wake_one() {
         if (waiters_[i]->priority > waiters_[best]->priority) best = i;
     }
 
-    waiters_[best]->state = TaskState::READY;
+    if (waiters_[best]->state != TaskState::TERMINATED)
+        waiters_[best]->state = TaskState::READY;
     waiters_[best] = waiters_[--wait_count_];
 }
 

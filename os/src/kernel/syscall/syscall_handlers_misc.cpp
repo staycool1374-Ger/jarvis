@@ -83,7 +83,8 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
                         p->waiting_child_status = nullptr;
                     }
                     p->waiting_child_pid = 0;
-                    p->state = TaskState::READY;
+                    if (p->state != TaskState::TERMINATED)
+                        p->state = TaskState::READY;
                     break;
                 }
             }

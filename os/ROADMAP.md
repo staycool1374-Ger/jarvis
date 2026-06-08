@@ -12,13 +12,23 @@
 - [x] **Const Correctness:** Deklaration aller unveränderlichen Parameter und Methoden als `const` in `PhysicalAddress`, `VirtualAddress`, `PageAddress`, der PMM/VMM-Schnittstelle und weiteren Kernkomponenten.
 - [x] **Reference Parameters:** Bevorzugung von Referenzparametern (`const T&`) gegenüber Value-Parametern für Nicht-POD-Typen zur Vermeidung unnötiger Kopien und zur Dokumentation von Aliasing-Verträgen.
 
-### Version 0.2.9 — Microkernel Architecture
+### Version 0.2.9 — Microkernel Foundation & Task Lifecycle
 - [x] **Subsystem Privilege Audit:** Strukturierte Katalogisierung aller Kernel-Subsysteme nach ihren tatsächlichen Privilegien-Anforderungen zur sauberen Trennung von Ring-0- und Ring-3-Inhalten. (`docs/privilege_audit.md`)
 - [x] **IPC Latency Benchmark:** Entwicklung einer Mess-Suite (7 kernel-level Mikro-Benchmarks mit RDTSC). Misst IPC send/recv Kosten (avg 235 Zyklen), recv only (50), 64B-Payload (175). Baseline für Microkernel-Vergleich.
+- [x] **Unprivileged Shell:** Ausführung der Shell als unprivilegierte User-space-Task (`sh.c.elf`, PID 2B, Ring 3). Kernel-Shell als Fallback registriert. Zero additional IPC latency — standard VFS `read("/dev/tty")` und `write()`-Syscalls via MSR-fast-path. (`kernel.cpp:278-295`)
+- [ ] **Task Lifecycle Audit:** Systematische Überprüfung ob terminierte Tasks und all ihre Abhängigkeiten (IPC-Queues, Notify, EventGroup, Page-Tables, FDs) vollständig zerstört und aus dem Scheduler entfernt werden. Fix der gefundenen Bugs:
+  - `reap_orphans()` can-reap-Logik reparieren (setzt `can_reap=true` bereits beim ersten Loop-Iteration — verhindert korrektes Deferred-Cleanup)
+  - `elf::load()` ruft `init_task_common()` nicht auf → `msg_queue`/`notify`/`event_group` sind `nullptr` für ELF-geladene Tasks (IPC-Crash)
+  - Blockierte IPC-Sender (`blocked_senders`) werden beim Task-Exit aufgegeben — Tasks bleiben für immer in `BLOCKED`
+  - Fork-Kind mit `page_table_shared_=true` ruft `free_user_pages()` auf → Use-After-Free im Parent
+- [ ] **Userspace Idle Task:** Implementierung einer einfachen Idle-Task in Ring 3 (`idle.c.elf`), die als niederpriore Hintergrund-Task läuft:
+  - Unendliche `pause`-Schleife (userspace-safe, im Gegensatz zu `hlt`)
+  - Wird beim Boot in den Scheduler aufgenommen (niedrigste Priorität)
+  - Kernel `hlt`-Idle (`tasks_[0]`) bleibt als ultimatives Fallback bestehen
+  - Später erweiterbar (Power-Management, CPU-Frequenz-Scaling, Deferred-Work)
 - [ ] **User-space VFS Server:** Auslagerung des virtuellen Dateisystems (VFS) aus dem Kernel-Sitz in einen eigenständigen, privilegierten User-space-Serverprozess (`/sbin/vfsd`), der rein über IPC kommuniziert.
 - [ ] **User-space Driver Server:** Migration der Tastatur- und seriellen Treiber in einen isolierten User-space-Treiberprozess (`/sbin/iocd`) via IPC.
 - [ ] **Capability-basierter Hardware-Zugriff:** Implementierung einer fälschungssicheren Capability-Zugriffskontrolle für Gerätespeicher, sodass MMIO-Regionen exklusiv für autorisierte Treiber-Tasks gemappt werden können.
-- [x] **Unprivileged Shell:** Ausführung der Shell als unprivilegierte User-space-Task (`sh.c.elf`, PID 2B, Ring 3). Kernel-Shell als Fallback registriert. Zero additional IPC latency — standard VFS `read("/dev/tty")` und `write()`-Syscalls via MSR-fast-path. (`kernel.cpp:278-295`)
 
 ---
 
