@@ -32,6 +32,10 @@
 #include <constants.hpp>
 #include <signal.hpp>
 
+#ifdef CONFIG_PROFILING
+extern "C" void gcov_flush_to_serial();
+#endif
+
 using namespace arch;
 
 static void debug_putchar(char c) {
@@ -297,6 +301,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     // Keep kernel shell registered as a fallback (for `runelf` or debug)
     service::Shell::init();
+
+#ifdef CONFIG_PROFILING
+    gcov_flush_to_serial();
+    arch::qemu_debug_exit(0);
+#endif
 
     debug_write("[BOOT] Boot complete!\n");
     debug_write("[BOOT] Enabling interrupts...\n");

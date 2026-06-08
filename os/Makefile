@@ -42,6 +42,8 @@ AR       := x86_64-elf-ar
 LDFLAGS  := -m elf_x86_64 -nostdlib -T linker.ld -z max-page-size=0x1000 \
             -Map=build/kernel.map
 
+GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/null))
+
 # ------------------------------------------------------------------------------
 # File System Pathing & Target Discoveries
 # ------------------------------------------------------------------------------
@@ -76,7 +78,7 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test
+.PHONY: all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
 
 -include $(DEPFILES)
 
@@ -222,6 +224,24 @@ debug: $(OBJ) $(INITRD_OBJ) linker.ld
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
 	@echo "Debug ISO image mapped successfully: $(DEBUG_ISO)"
 
+profiling: CXX := x86_64-elf-g++
+profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) -Wno-type-limits -Wno-unused-but-set-variable -finstrument-functions -DCONFIG_PROFILING
+profiling: LDFLAGS  += -L $(GCOV_LIB_DIR)
+
+profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
+	@mkdir -p build/profiling
+	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ)
+	@echo "Profiling kernel built: $(KERNEL)"
+	cp $(KERNEL) iso/boot/kernel.elf
+	@grub-mkrescue -o $(ISO) iso 2>/dev/null
+	@echo "Booting in QEMU to capture coverage data..."
+	qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial file:build/profiling/gcda.raw \
+	    -nic none -boot order=d -no-reboot -device isa-debug-exit \
+	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
+	    tee build/profiling/qemu.log
+	@echo "Extracting .gcda data and generating coverage report..."
+	python3 tools/extract_gcda.py build/profiling/gcda.raw
+
 release: CXXFLAGS += -g -O2
 release: iso/boot/kernel.elf iso/boot/grub/grub.cfg
 	@mkdir -p $(dir $(RELEASE_ISO))
@@ -250,5 +270,5 @@ objdump: $(KERNEL)
 clean:
 	rm -rf build $(ISO) $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
-	rm -rf initrd_root debug release
+	rm -rf initrd_root debug release profiling
 	@echo "Environment workspace clean-up routines completed."
