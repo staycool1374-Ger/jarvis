@@ -1,0 +1,139 @@
+#include <kernel/syscall/syscall.hpp>
+#include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
+#include <kernel/vfs/vfs.hpp>
+#include <kernel/elf/elf.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/memory/checked_ptr.hpp>
+#include <signal.hpp>
+#include <constants.hpp>
+#include <string.hpp>
+
+namespace kernel {
+
+uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* regs) {
+    if (!regs) return static_cast<uint64_t>(-1);
+    auto* child = TaskControlBlock::clone(regs);
+    if (!child) return static_cast<uint64_t>(-1);
+    Scheduler::add_task(child);
+    return child->id;
+}
+
+uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+    uint64_t target_pid = arg0;
+    auto status = checked(reinterpret_cast<uint64_t*>(arg1));
+    auto* status_ptr = (!syscall_is_user_task() || status.valid()) ? status.unsafe_ptr() : nullptr;
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    TaskControlBlock* child = nullptr;
+    uint64_t count = Scheduler::task_count();
+    for (uint64_t i = 0; i < count; ++i) {
+        auto* t = Scheduler::task_at(i);
+        if (t && t->parent_id == cur->id) {
+            if (target_pid == static_cast<uint64_t>(-1) || t->id == target_pid) {
+                child = t;
+                break;
+            }
+        }
+    }
+    if (!child) return static_cast<uint64_t>(-1);
+    if (child->state == TaskState::TERMINATED) {
+        if (status_ptr) *status_ptr = child->exit_code;
+        uint64_t cid = child->id;
+        child->cleanup();
+        Scheduler::remove_task(child);
+        delete child;
+        return cid;
+    }
+    if (arg2 & 1) return 0;
+    cur->waiting_child_pid = target_pid;
+    cur->waiting_child_status = status_ptr;
+    cur->state = TaskState::BLOCKED;
+    return static_cast<uint64_t>(-1);
+}
+
+uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t* regs) {
+    if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
+    vfs::Vnode* vn;
+    if (syscall_is_user_task()) {
+        char path_buf[SYSCALL_MAX_PATH];
+        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        vn = vfs::resolve(path_buf);
+    } else {
+        vn = vfs::resolve(reinterpret_cast<const char*>(arg0));
+    }
+    auto* argv = reinterpret_cast<const char* const*>(arg1);
+    auto* envp = reinterpret_cast<const char* const*>(arg2);
+    if (!vn) return static_cast<uint64_t>(-1);
+    if (vn->size == 0 || vn->size > 512_KiB) return static_cast<uint64_t>(-1);
+    size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
+    uint64_t file_phys = PMM::alloc_contiguous(file_pages);
+    if (!file_phys) return static_cast<uint64_t>(-1);
+    uint8_t* file_buf = reinterpret_cast<uint8_t*>(file_phys);
+    int64_t r = vn->ops->read(vn, file_buf, vn->size, 0);
+    if (r <= 0 || static_cast<uint64_t>(r) != vn->size) {
+        for (size_t i = 0; i < file_pages; ++i)
+            PMM::free_page(file_phys + i * 4096);
+        return static_cast<uint64_t>(-1);
+    }
+    auto* hdr = reinterpret_cast<const elf::ELF64Header*>(file_buf);
+    if (!elf::exec_into_current(hdr, file_buf, argv, envp, regs)) {
+        for (size_t i = 0; i < file_pages; ++i)
+            PMM::free_page(file_phys + i * 4096);
+        return static_cast<uint64_t>(-1);
+    }
+    for (size_t i = 0; i < file_pages; ++i)
+        PMM::free_page(file_phys + i * 4096);
+    return 0;
+}
+
+uint64_t Syscall::sys_kill(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    uint64_t target_pid = arg0;
+    uint64_t sig = arg1;
+    if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
+    auto* t = Scheduler::find_task(target_pid);
+    if (!t) return static_cast<uint64_t>(-1);
+    if (t == syscall_task()) {
+        if (signal_is_fatal(sig) || !t->has_signal_handler(sig)) {
+            t->state = TaskState::TERMINATED;
+            t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+        } else {
+            t->pending_signals |= (1ULL << sig);
+        }
+    } else {
+        t->pending_signals |= (1ULL << sig);
+    }
+    return 0;
+}
+
+uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    auto* t = syscall_task();
+    if (!t) return static_cast<uint64_t>(-1);
+    uint64_t sig = arg0;
+    if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
+    if (signal_is_fatal(sig)) return static_cast<uint64_t>(-1);
+    auto handler = reinterpret_cast<sighandler_t>(arg1);
+    t->set_signal_handler(sig, handler);
+    return 0;
+}
+
+uint64_t Syscall::sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* regs) {
+    auto* t = syscall_task();
+    if (!t || !regs) return static_cast<uint64_t>(-1);
+    uint64_t user_rsp = regs[20];
+    auto* frame = reinterpret_cast<const SignalFrame*>(
+        reinterpret_cast<uint64_t*>(user_rsp));
+    auto chk = checked(frame, 1);
+    if (!chk.valid()) return static_cast<uint64_t>(-1);
+    regs[17] = frame->saved_rip;
+    regs[20] = frame->saved_rsp;
+    regs[19] = frame->saved_rflags;
+    regs[18] = frame->saved_cs;
+    regs[21] = frame->saved_ss;
+    regs[0] = 0;
+    return 0;
+}
+
+} // namespace kernel

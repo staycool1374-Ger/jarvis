@@ -1,4 +1,4 @@
-/Users/arnold/jarvis
+.
 ├── app.py
 ├── bench_mandelbrot
 ├── bench_mandelbrot.cpp
@@ -2436,6 +2436,7 @@
 │   │   │   ├── kernel.cpp
 │   │   │   ├── kernel.hpp
 │   │   │   ├── memory
+│   │   │   │   ├── address.hpp
 │   │   │   │   ├── checked_ptr.hpp
 │   │   │   │   ├── mempool.cpp
 │   │   │   │   ├── mempool.hpp
@@ -2459,6 +2460,12 @@
 │   │   │   │   └── sync.hpp
 │   │   │   ├── syscall
 │   │   │   │   ├── syscall_entry.asm
+│   │   │   │   ├── syscall_handlers_fs.cpp
+│   │   │   │   ├── syscall_handlers_ipc.cpp
+│   │   │   │   ├── syscall_handlers_misc.cpp
+│   │   │   │   ├── syscall_handlers_process.cpp
+│   │   │   │   ├── syscall_handlers_sync.cpp
+│   │   │   │   ├── syscall_helpers.hpp
 │   │   │   │   ├── syscall.cpp
 │   │   │   │   └── syscall.hpp
 │   │   │   ├── task
@@ -2579,4 +2586,4 @@
     ├── lib64 -> lib
     └── pyvenv.cfg
 
-45 directories, 2535 files
+45 directories, 2542 files

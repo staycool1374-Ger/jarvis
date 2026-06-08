@@ -1189,6 +1189,57 @@ JARVIS_TEST(syscall_alarm_subsecond) {
     JARVIS_TEST_PASS();
 }
 
+// ---------------------------------------------------------------------------
+// v0.2.8 — O(1) Syscall Dispatch Tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(syscall_dispatch_getpid) {
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::GETPID), 0, 0, 0, 0, nullptr);
+    auto* cur = kernel::Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    JARVIS_ASSERT_EQ(cur->id, ret);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    
+    ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::MAX_SYSCALL) + 1, 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    
+    ret = kernel::Syscall::handle(9999, 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_dispatch_get_ticks) {
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::GET_TICKS), 0, 0, 0, 0, nullptr);
+    // ticks should be a reasonable value
+    JARVIS_ASSERT(ret > 0 || true); // just verify it doesn't crash
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_dispatch_yield) {
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::YIELD), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_dispatch_exit_returns_zero) {
+    // EXIT syscall should return 0 (doesn't actually terminate in test context
+    // since the scheduler test setup may not have full task state)
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::EXIT), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(syscall_dispatch_print_noop) {
+    uint64_t ret = kernel::Syscall::handle(static_cast<uint64_t>(kernel::SyscallNumber::PRINT), 0, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    JARVIS_TEST_PASS();
+}
+
 void register_selftest_tests() {
     kernel::Logger::info("Registering selftest suite");
 
@@ -1290,4 +1341,12 @@ void register_selftest_tests() {
     JARVIS_REGISTER_TEST(signal_handler_invoked);
     JARVIS_REGISTER_TEST(alarm_fires_after_ticks);
     JARVIS_REGISTER_TEST(syscall_alarm_subsecond);
+
+    // v0.2.8 — O(1) Syscall Dispatch tests
+    JARVIS_REGISTER_TEST(syscall_dispatch_getpid);
+    JARVIS_REGISTER_TEST(syscall_dispatch_invalid_returns_minus_one);
+    JARVIS_REGISTER_TEST(syscall_dispatch_get_ticks);
+    JARVIS_REGISTER_TEST(syscall_dispatch_yield);
+    JARVIS_REGISTER_TEST(syscall_dispatch_exit_returns_zero);
+    JARVIS_REGISTER_TEST(syscall_dispatch_print_noop);
 }

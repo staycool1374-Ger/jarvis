@@ -1,0 +1,79 @@
+#include <kernel/syscall/syscall.hpp>
+#include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
+#include <kernel/ipc/ipc.hpp>
+#include <kernel/memory/checked_ptr.hpp>
+
+namespace kernel {
+
+uint64_t Syscall::sys_send(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+                           uint64_t arg3, uint64_t*) {
+    uint64_t dest_id = arg0;
+    uint64_t flags = 0;
+    Message msg{};
+    auto* cur = syscall_task();
+    msg.sender_id = cur ? cur->id : 0;
+    msg.type = arg2;
+    msg.data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+    auto data = checked(reinterpret_cast<const uint8_t*>(arg1), msg.data_size);
+    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
+    for (size_t i = 0; i < msg.data_size; ++i) {
+        msg.data[i] = data.read(i);
+    }
+    return IPC::send(dest_id, msg, flags) ? 0 : static_cast<uint64_t>(-1);
+}
+
+uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
+                              uint64_t, uint64_t*) {
+    uint64_t max_size = arg2;
+    auto buf = checked(reinterpret_cast<uint8_t*>(arg1), max_size);
+    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+    uint8_t* raw_buf = buf.unsafe_ptr();
+    Message msg{};
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    bool ok = false;
+    while (!(ok = IPC::recv(msg))) {
+        cur->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+    }
+    uint64_t copy_size = msg.data_size;
+    if (copy_size > max_size) copy_size = max_size;
+    for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
+    return msg.type;
+}
+
+uint64_t Syscall::sys_send_sync(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+                                uint64_t arg3, uint64_t*) {
+    uint64_t dest_id = arg0;
+    uint64_t type = arg2;
+    uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+    auto data = checked(reinterpret_cast<const uint8_t*>(arg1), data_size);
+    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
+    auto data_rw = checked(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(arg1)), data_size);
+    Message msg{};
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    msg.sender_id = cur->id;
+    msg.type = type;
+    msg.data_size = data_size;
+    for (size_t i = 0; i < data_size; ++i) msg.data[i] = data.read(i);
+    Message reply{};
+    if (!IPC::send_sync(dest_id, msg, reply)) return static_cast<uint64_t>(-1);
+    uint64_t copy_size = reply.data_size;
+    if (copy_size > IPC_MAX_MSG_SIZE) copy_size = IPC_MAX_MSG_SIZE;
+    for (size_t i = 0; i < copy_size; ++i)
+        data_rw.write(reply.data[i], i);
+    return reply.type;
+}
+
+uint64_t Syscall::sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    return 0;
+}
+
+uint64_t Syscall::sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    return 0;
+}
+
+} // namespace kernel

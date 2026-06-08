@@ -1,5 +1,27 @@
 # Lessons Learned
 
+## 2026-06-08 — O(1) Syscall Dispatch Refactoring
+
+### Table declarations must precede their use in constexpr inline members
+- A `static constexpr` table initialized inline within a class body can only reference member declarations that appear *before* it in the class.
+- All 37 handler method declarations must precede the `syscall_table_` initializer list, or compilation fails with "no member named" errors.
+- The fix: move all `static uint64_t sys_*(...)` declarations above the `constexpr SyscallHandler syscall_table_[...]` member.
+
+### Splitting a large switch into separate translation units
+- The original `syscall.cpp` (589 lines, single `switch` with 37 `case` blocks) was split into 6 files:
+  - `syscall.cpp` — `init()`, `handle()`, shared helpers
+  - `syscall_handlers_misc.cpp` — YIELD, PRINT, GET_TICKS, GETPID, EXIT, GETTOD, UNAME, PAUSE
+  - `syscall_handlers_ipc.cpp` — SEND, RECEIVE, SEND_SYNC, CREATE_MAILBOX, DESTROY_MAILBOX
+  - `syscall_handlers_fs.cpp` — all VFS/file-descriptor syscalls
+  - `syscall_handlers_process.cpp` — FORK, WAITPID, EXEC, KILL, SIGNAL, SIGRETURN
+  - `syscall_handlers_sync.cpp` — NOTIFY, NOTIFY_WAIT, EVENT_SET, EVENT_WAIT, ALARM
+- Each handler file includes only its own dependencies, reducing transitive include chains.
+- Shared helpers (`syscall_task()`, `syscall_is_user_task()`, `syscall_task_open()`, `syscall_path_open()`) moved to `syscall_helpers.hpp` to avoid duplication.
+
+### O(1) dispatch eliminates branch prediction misses
+- The `switch` statement, even when compiled to a jump table, still requires a bounds check + indirect branch per syscall. The explicit `syscall_table_[]` array makes the dispatch transparent at the source level and guarantees O(1) code paths regardless of compiler optimization heuristics.
+- Bounds check: `if (number >= MAX_SYSCALL) return -1` before table lookup ensures no out-of-bounds access.
+
 ## 2026-06-07 — fork/exec Crash Debugging (SSE + Stack Alignment + Identity Map)
 
 ### CR4.OSFXSR must be set for SSE
