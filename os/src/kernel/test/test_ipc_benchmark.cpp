@@ -1,0 +1,263 @@
+#include <test.hpp>
+#include <logger.hpp>
+#include <kernel/arch/io.hpp>
+#include <kernel/ipc/ipc.hpp>
+#include <kernel/task/scheduler.hpp>
+
+using namespace kernel;
+
+// ---------------------------------------------------------------------------
+// IPC Latency Benchmark Suite
+//
+// Measures kernel-level IPC operations using RDTSC.
+// These microbenchmarks capture the cost within the monolithic kernel.
+// For a microkernel, each IPC operation would additionally require:
+//   - syscall/sysret ring transition (~100–300 cycles on bare metal)
+//   - page table switch (~500–1000 cycles with PCID)
+//   - scheduler invocation on each send/recv boundary
+//
+// TSC calibration: QEMU typically runs at ~1 GHz (1 cycle ≈ 1 ns).
+// Results below are in TSC cycles; divide by ~1000 for approximate µs.
+// ---------------------------------------------------------------------------
+
+static constexpr size_t BENCH_ITERATIONS = 10000;
+
+struct BenchResult {
+    uint64_t min;
+    uint64_t avg;
+    uint64_t max;
+    uint64_t count;
+};
+
+static BenchResult measure(uint64_t (*fn)()) {
+    BenchResult r;
+    r.min = ~0ULL;
+    r.max = 0;
+    r.avg = 0;
+    r.count = 0;
+
+    for (size_t i = 0; i < 100; ++i) {
+        fn();
+    }
+
+    for (size_t i = 0; i < BENCH_ITERATIONS; ++i) {
+        uint64_t tsc = arch::rdtsc();
+        fn();
+        uint64_t elapsed = arch::rdtsc() - tsc;
+        if (elapsed < r.min) r.min = elapsed;
+        if (elapsed > r.max) r.max = elapsed;
+        r.avg += elapsed;
+        ++r.count;
+    }
+    r.avg /= r.count;
+    return r;
+}
+
+// ---------------------------------------------------------------------------
+// Baseline: RDTSC overhead measurement
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_rdtsc_overhead() {
+    (void)arch::rdtsc();
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_rdtsc_overhead) {
+    auto r = measure(bench_rdtsc_overhead);
+    Logger::info("RDTSC overhead: min=%d, avg=%d, max=%d (iters=%d)",
+                 r.min, r.avg, r.max, r.count);
+    JARVIS_ASSERT(r.avg < 100);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC send + recv to self (full round-trip within same task)
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_ipc_send_self() {
+    auto* cur = Scheduler::current_task();
+    if (!cur || !cur->msg_queue) return ~0ULL;
+    Message msg{};
+    msg.sender_id = cur->id;
+    msg.type = 0;
+    msg.priority = 0;
+    msg.data_size = 0;
+    IPC::send(cur->id, msg, IPC_NONBLOCK);
+    Message out;
+    IPC::recv(out);
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_send_self) {
+    Message drain;
+    while (IPC::recv(drain));
+
+    auto r = measure(bench_ipc_send_self);
+    Logger::info("IPC send+recv self: min=%d, avg=%d, max=%d (iters=%d)",
+                 r.min, r.avg, r.max, r.count);
+    JARVIS_ASSERT(r.avg < 10000);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC recv only (pop from pre-filled queue)
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(ipc_bench_recv_self) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    JARVIS_ASSERT(cur->msg_queue != nullptr);
+
+    Message filler{};
+    filler.sender_id = cur->id;
+    filler.type = 0;
+    filler.priority = 0;
+    filler.data_size = 0;
+
+    while (!cur->msg_queue->is_full()) {
+        cur->msg_queue->push(filler);
+    }
+    size_t prefill_count = cur->msg_queue->count;
+    JARVIS_ASSERT(prefill_count > 0);
+
+    auto r = measure([]() -> uint64_t {
+        Message out;
+        IPC::recv(out);
+        return 0;
+    });
+    Logger::info("IPC recv only: min=%d, avg=%d, max=%d (prefilled=%d)",
+                 r.min, r.avg, r.max, prefill_count);
+
+    while (IPC::recv(filler));
+    JARVIS_ASSERT(r.avg < 10000);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC send only (non-blocking, no drain per iteration)
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_ipc_send_only_task_id_;
+static Message bench_ipc_send_only_msg_;
+
+static uint64_t bench_ipc_send_only() {
+    IPC::send(bench_ipc_send_only_task_id_, bench_ipc_send_only_msg_, IPC_NONBLOCK);
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_send_only) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    bench_ipc_send_only_task_id_ = cur->id;
+    bench_ipc_send_only_msg_ = Message{};
+    bench_ipc_send_only_msg_.sender_id = cur->id;
+
+    auto r = measure(bench_ipc_send_only);
+    Logger::info("IPC send only (non-block): min=%d, avg=%d, max=%d",
+                 r.min, r.avg, r.max);
+
+    Message out;
+    while (IPC::recv(out));
+    JARVIS_ASSERT(r.avg < 10000);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC send into full queue (non-blocking failure path)
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_ipc_send_full_id_;
+
+static uint64_t bench_ipc_send_full() {
+    Message msg{};
+    msg.sender_id = bench_ipc_send_full_id_;
+    IPC::send(bench_ipc_send_full_id_, msg, IPC_NONBLOCK);
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_send_full) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    bench_ipc_send_full_id_ = cur->id;
+    Message filler{};
+    filler.sender_id = cur->id;
+    while (!cur->msg_queue->is_full()) {
+        cur->msg_queue->push(filler);
+    }
+
+    auto r = measure(bench_ipc_send_full);
+    Logger::info("IPC send (full, non-block fail): min=%d, avg=%d, max=%d",
+                 r.min, r.avg, r.max);
+    JARVIS_ASSERT(r.avg < 5000);
+
+    while (IPC::recv(filler));
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// IPC with maximal 64-byte payload
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_ipc_64byte_id_;
+static Message bench_ipc_64byte_send_;
+
+static uint64_t bench_ipc_send_64byte() {
+    IPC::send(bench_ipc_64byte_id_, bench_ipc_64byte_send_, IPC_NONBLOCK);
+    Message out;
+    IPC::recv(out);
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_send_64byte) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    bench_ipc_64byte_id_ = cur->id;
+    bench_ipc_64byte_send_ = Message{};
+    bench_ipc_64byte_send_.sender_id = cur->id;
+    bench_ipc_64byte_send_.data_size = IPC_MAX_MSG_SIZE;
+    for (size_t i = 0; i < IPC_MAX_MSG_SIZE; ++i) {
+        bench_ipc_64byte_send_.data[i] = static_cast<uint8_t>(i);
+    }
+
+    auto r = measure(bench_ipc_send_64byte);
+    Logger::info("IPC send+recv 64B payload: min=%d, avg=%d, max=%d",
+                 r.min, r.avg, r.max);
+    JARVIS_ASSERT(r.avg < 20000);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Scheduler::current_task overhead (baseline for syscall dispatch)
+// ---------------------------------------------------------------------------
+
+static uint64_t bench_current_task() {
+    Scheduler::current_task();
+    return 0;
+}
+
+JARVIS_TEST(ipc_bench_current_task) {
+    auto r = measure(bench_current_task);
+    Logger::info("Scheduler::current_task: min=%d, avg=%d, max=%d",
+                 r.min, r.avg, r.max);
+    JARVIS_ASSERT(r.avg < 500);
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Registration
+// ---------------------------------------------------------------------------
+
+void register_ipc_benchmark_tests() {
+    Logger::info("Registering IPC benchmark suite");
+
+    JARVIS_REGISTER_TEST(ipc_bench_rdtsc_overhead);
+    JARVIS_REGISTER_TEST(ipc_bench_current_task);
+    JARVIS_REGISTER_TEST(ipc_bench_send_only);
+    JARVIS_REGISTER_TEST(ipc_bench_recv_self);
+    JARVIS_REGISTER_TEST(ipc_bench_send_self);
+    JARVIS_REGISTER_TEST(ipc_bench_send_full);
+    JARVIS_REGISTER_TEST(ipc_bench_send_64byte);
+}

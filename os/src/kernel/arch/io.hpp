@@ -62,4 +62,12 @@ inline void cli() { arch_cli(); }
 /// @brief Sets the interrupt flag (enables interrupts).
 inline void sti() { arch_sti(); }
 
+/// @brief Reads the timestamp counter (RDTSC).
+/// @return 64-bit TSC value.
+inline uint64_t rdtsc() {
+    uint32_t lo, hi;
+    asm volatile("rdtsc" : "=a"(lo), "=d"(hi));
+    return (static_cast<uint64_t>(hi) << 32) | lo;
+}
+
 } // namespace arch

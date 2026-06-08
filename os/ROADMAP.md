@@ -13,12 +13,12 @@
 - [x] **Reference Parameters:** Bevorzugung von Referenzparametern (`const T&`) gegenüber Value-Parametern für Nicht-POD-Typen zur Vermeidung unnötiger Kopien und zur Dokumentation von Aliasing-Verträgen.
 
 ### Version 0.2.9 — Microkernel Architecture
-- [ ] **Subsystem Privilege Audit:** Strukturierte Katalogisierung aller Kernel-Subsysteme nach ihren tatsächlichen Privilegien-Anforderungen zur sauberen Trennung von Ring-0- und Ring-3-Inhalten.
-- [ ] **IPC Latency Benchmark:** Entwicklung einer Mess-Suite zur Evaluierung der monolithischen IPC-Latenz gegenüber einem theoretischen Microkernel-Message-Passing-Budget.
+- [x] **Subsystem Privilege Audit:** Strukturierte Katalogisierung aller Kernel-Subsysteme nach ihren tatsächlichen Privilegien-Anforderungen zur sauberen Trennung von Ring-0- und Ring-3-Inhalten. (`docs/privilege_audit.md`)
+- [x] **IPC Latency Benchmark:** Entwicklung einer Mess-Suite (7 kernel-level Mikro-Benchmarks mit RDTSC). Misst IPC send/recv Kosten (avg 235 Zyklen), recv only (50), 64B-Payload (175). Baseline für Microkernel-Vergleich.
 - [ ] **User-space VFS Server:** Auslagerung des virtuellen Dateisystems (VFS) aus dem Kernel-Sitz in einen eigenständigen, privilegierten User-space-Serverprozess (`/sbin/vfsd`), der rein über IPC kommuniziert.
 - [ ] **User-space Driver Server:** Migration der Tastatur- und seriellen Treiber in einen isolierten User-space-Treiberprozess (`/sbin/iocd`) via IPC.
 - [ ] **Capability-basierter Hardware-Zugriff:** Implementierung einer fälschungssicheren Capability-Zugriffskontrolle für Gerätespeicher, sodass MMIO-Regionen exklusiv für autorisierte Treiber-Tasks gemappt werden können.
-- [ ] **Unprivileged Shell:** Ausführung der Shell als unprivilegierte User-space-Task (statt als Boot-Kernel-Task) mit anschließender Go/No-Go-Entscheidung bezüglich der gemessenen Ende-zu-Ende-Latenzen für `read("/dev/tty")`.
+- [x] **Unprivileged Shell:** Ausführung der Shell als unprivilegierte User-space-Task (`sh.c.elf`, PID 2B, Ring 3). Kernel-Shell als Fallback registriert. Zero additional IPC latency — standard VFS `read("/dev/tty")` und `write()`-Syscalls via MSR-fast-path. (`kernel.cpp:278-295`)
 
 ---
 

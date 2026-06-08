@@ -252,6 +252,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::demo_main);
 
     register_selftest_tests();
+    register_ipc_benchmark_tests();
     kernel::test::run_all();
 
     debug_write("[BOOT] Starting userspace test_fork...\n");
@@ -274,15 +275,28 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    service::Shell::init();
-    auto* shell_task = kernel::TaskControlBlock::create(
-        service::Shell::shell_task_main, 2, 10);
-    if (shell_task) {
-        kernel::Scheduler::add_task(shell_task);
-        debug_write("[BOOT] Shell task started (PID=");
-        debug_write_hex(shell_task->id);
-        debug_write(")\n");
+    // Unprivileged userspace shell (ring 3) via initrd ELF
+    {
+        initrd::InitrdFile f = initrd::find("./sh.c.elf");
+        if (!f.data) f = initrd::find("sh.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* shell_task = kernel::elf::load(hdr, f.data);
+                if (shell_task) {
+                    shell_task->priority = 2;
+                    shell_task->period_ticks = 10;
+                    kernel::Scheduler::add_task(shell_task);
+                    debug_write("[BOOT] Userspace shell started (PID=");
+                    debug_write_hex(shell_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
     }
+
+    // Keep kernel shell registered as a fallback (for `runelf` or debug)
+    service::Shell::init();
 
     debug_write("[BOOT] Boot complete!\n");
     debug_write("[BOOT] Enabling interrupts...\n");
