@@ -48,6 +48,16 @@ size_t Registry::passed() { return passed_; }
 size_t Registry::failed() { return failed_; }
 size_t Registry::total() { return passed_ + failed_; }
 
+static void run_one(const TestCase& tc) {
+    if (tc.factory) {
+        TestBase* t = tc.factory();
+        t->execute();
+        delete t;
+    } else {
+        tc.func();
+    }
+}
+
 void run_all() {
     Registry::reset();
     size_t n = Registry::count();
@@ -68,7 +78,7 @@ void run_all() {
         Logger::raw_write(tc.name);
         Logger::raw_write(" ... ");
 
-        tc.func();
+        run_one(tc);
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
@@ -99,7 +109,7 @@ void run_suite(const char* suite_name) {
         Logger::raw_write(tc.name);
         Logger::raw_write(" ... ");
 
-        tc.func();
+        run_one(tc);
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");

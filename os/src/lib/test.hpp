@@ -1,17 +1,18 @@
-/// @file test.hpp
-/// @brief Unified macro-driven kernel test framework.
-
 #pragma once
 
 #include <types.hpp>
+#include <logger.hpp>
 
 namespace kernel {
 namespace test {
+
+class TestBase;
 
 struct TestCase {
     const char* suite;
     const char* name;
     void (*func)();
+    TestBase* (*factory)();
 };
 
 class Registry {
@@ -30,11 +31,41 @@ public:
     static void reset();
 
 private:
-    static constexpr size_t MAX_TESTS = 256;
+    static constexpr size_t MAX_TESTS = 1024;
     static TestCase tests_[MAX_TESTS];
     static size_t count_;
     static size_t passed_;
     static size_t failed_;
+};
+
+class TestBase {
+public:
+    TestBase(const char* name) : name_(name) {}
+    virtual ~TestBase() = default;
+
+    void execute() {
+        setUp();
+        run();
+        tearDown();
+    }
+
+    virtual void setUp() {}
+    virtual void run() = 0;
+    virtual void tearDown() {}
+
+    const char* name() const { return name_; }
+
+protected:
+    void fail(const char* file, int line, const char* expr) {
+        failed_ = true;
+        Registry::record_failure(file, line, expr);
+    }
+    void pass() {
+        Registry::record_success();
+    }
+
+    const char* name_;
+    bool failed_ = false;
 };
 
 void run_all();
@@ -92,7 +123,7 @@ void print_report();
 #define JARVIS_REGISTER_TEST(name)                                            \
     do {                                                                       \
         static constexpr kernel::test::TestCase tc = {                         \
-            "", #name, test_##name                                             \
+            "", #name, test_##name, nullptr                                    \
         };                                                                     \
         kernel::test::Registry::register_test(tc);                             \
     } while (0)
@@ -100,7 +131,33 @@ void print_report();
 #define JARVIS_REGISTER_TEST_SUITE(suite, name)                                \
     do {                                                                       \
         static constexpr kernel::test::TestCase tc = {                         \
-            #suite, #name, test_##suite##_##name                               \
+            #suite, #name, test_##suite##_##name, nullptr                      \
         };                                                                     \
         kernel::test::Registry::register_test(tc);                             \
+    } while (0)
+
+#define TEST_CLASS(name)                                                      \
+    class name : public kernel::test::TestBase {                              \
+    public:                                                                   \
+        name() : TestBase(#name) {}                                           \
+        void run() override;                                                  \
+    };                                                                        \
+    static kernel::test::TestBase* _factory_##name() { return new name(); }   \
+    void name::run()
+
+#define REGISTER_CLASS(name)                                                  \
+    do {                                                                      \
+        static constexpr kernel::test::TestCase tc = {                        \
+            "", #name, nullptr, _factory_##name                               \
+        };                                                                    \
+        kernel::test::Registry::register_test(tc);                            \
+    } while (0)
+
+#define CT_ASSERT(cond)                                                       \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            fail(__FILE__, __LINE__, #cond);                                  \
+            return;                                                           \
+        }                                                                     \
+        pass();                                                               \
     } while (0)
