@@ -19,6 +19,10 @@ void register_rtc_tests();
 void register_syscall_tests();
 void register_sync_tests();
 void register_capability_tests();
+void register_task_lifecycle_tests();
+void register_idle_task_tests();
+void register_vfsd_tests();
+void register_iocd_tests();
 
 void register_selftest_tests() {
     Logger::info("Registering selftest suite");
@@ -38,4 +42,8 @@ void register_selftest_tests() {
     register_syscall_tests();
     register_sync_tests();
     register_capability_tests();
+    register_task_lifecycle_tests();
+    register_idle_task_tests();
+    register_vfsd_tests();
+    register_iocd_tests();
 }
