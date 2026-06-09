@@ -196,6 +196,7 @@ Tests that should be added to existing files or as new additions for APIs alread
 - **task_fork_at_max_fds**: Fork when FD table is full → child gets empty table or fails gracefully
 - **task_exit_during_syscall**: Task exits while blocked on IPC send (cleanup)
 - **task_reparent_to_nonexistent**: Reparent to PID that doesn't exist should fall back to init
+- **fork_waitpid_child_exits_before_wait**: Fork, child calls `_exit(42)`, parent then calls `waitpid()` — verifies the child is found and its exit code returned. Regression for `reap_orphans()` prematurely reaping children of alive parents.
 
 #### RTC
 - **rtc_bcd_invalid**: BCD values above 0x99 map correctly (e.g., 0xFF → 99 or clamp)
