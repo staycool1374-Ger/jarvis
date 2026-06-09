@@ -136,13 +136,19 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_
 }
 
 uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
-    auto fds_buf = checked(reinterpret_cast<int*>(arg0), 2 * sizeof(int));
-    if (syscall_is_user_task() && !fds_buf.valid()) return static_cast<uint64_t>(-1);
     int fds[2];
     int result = vfs::create_pipe(fds);
     if (result < 0) return static_cast<uint64_t>(-1);
-    fds_buf.write(static_cast<uint64_t>(fds[0]), 0);
-    fds_buf.write(static_cast<uint64_t>(fds[1]), sizeof(int));
+    auto* out = reinterpret_cast<int*>(arg0);
+    if (syscall_is_user_task()) {
+        auto fds_buf = checked(out, 2);
+        if (!fds_buf.valid()) return static_cast<uint64_t>(-1);
+        if (!fds_buf.write(fds[0], 0)) return static_cast<uint64_t>(-1);
+        if (!fds_buf.write(fds[1], 1)) return static_cast<uint64_t>(-1);
+    } else {
+        out[0] = fds[0];
+        out[1] = fds[1];
+    }
     return 0;
 }
 

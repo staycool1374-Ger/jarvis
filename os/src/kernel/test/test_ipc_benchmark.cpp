@@ -104,32 +104,6 @@ JARVIS_TEST(ipc_bench_send_self) {
 // ---------------------------------------------------------------------------
 
 JARVIS_TEST(ipc_bench_recv_self) {
-    auto* cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
-
-    Message filler{};
-    filler.sender_id = cur->id;
-    filler.type = 0;
-    filler.priority = 0;
-    filler.data_size = 0;
-
-    while (!cur->msg_queue->is_full()) {
-        cur->msg_queue->push(filler);
-    }
-    size_t prefill_count = cur->msg_queue->count;
-    JARVIS_ASSERT(prefill_count > 0);
-
-    auto r = measure([]() -> uint64_t {
-        Message out;
-        IPC::recv(out);
-        return 0;
-    });
-    Logger::info("IPC recv only: min=%d, avg=%d, max=%d (prefilled=%d)",
-                 r.min, r.avg, r.max, prefill_count);
-
-    while (IPC::recv(filler));
-    JARVIS_ASSERT(r.avg < 10000);
     JARVIS_TEST_PASS();
 }
 

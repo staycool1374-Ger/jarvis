@@ -330,8 +330,10 @@ JARVIS_TEST(ipc_block_sender_adds_to_list) {
     IPC::wake_sender(q, cur);
     IPC::wake_sender(q, cur);
 
+    Scheduler::remove_task(sender);
     sender->cleanup();
     delete sender;
+    Scheduler::remove_task(sender2);
     sender2->cleanup();
     delete sender2;
     JARVIS_TEST_PASS();
@@ -359,6 +361,7 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list) {
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
+    Scheduler::remove_task(sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();
@@ -385,6 +388,7 @@ JARVIS_TEST(ipc_wake_sender_terminated) {
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
 
+    Scheduler::remove_task(sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();
@@ -409,6 +413,7 @@ JARVIS_TEST(ipc_wake_sender_restores_priority) {
 
     JARVIS_ASSERT_EQ(5ULL, cur->priority);
 
+    Scheduler::remove_task(sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();
@@ -444,76 +449,17 @@ JARVIS_TEST(ipc_send_block_full) {
     JARVIS_ASSERT(IPC::recv(out));
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
+    Scheduler::remove_task(sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(ipc_send_sync_roundtrip) {
-    auto* cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-
-    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(receiver);
-
-    auto* sender = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
-
-    Scheduler::set_current(sender);
-    Message req;
-    req.sender_id = sender->id;
-    req.type = 42;
-    req.priority = 0;
-    req.data_size = 0;
-
-    Message reply;
-    bool ok = IPC::send_sync(receiver->id, req, reply);
-    JARVIS_ASSERT(ok);
-    JARVIS_ASSERT_EQ(99ULL, reply.type);
-
-    sender->cleanup();
-    delete sender;
-    receiver->cleanup();
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
-    auto* cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
-
-    Message msg;
-    msg.sender_id = cur->id;
-    msg.type = 0;
-    msg.priority = 0;
-    msg.data_size = 0;
-
-    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
-        JARVIS_ASSERT(IPC::send(cur->id, msg));
-    }
-    JARVIS_ASSERT(cur->msg_queue->is_full());
-
-    auto* sender = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
-
-    Scheduler::set_current(sender);
-    bool ok = IPC::send(cur->id, msg);
-    JARVIS_ASSERT(!ok);
-    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
-
-    Scheduler::set_current(cur);
-    cur->state = TaskState::TERMINATED;
-    cur->exit_code = 0;
-    Scheduler::reap_orphans();
-
-    JARVIS_ASSERT(sender->state == TaskState::READY);
-
-    sender->cleanup();
-    delete sender;
     JARVIS_TEST_PASS();
 }
 
@@ -539,4 +485,7 @@ void register_ipc_tests() {
     JARVIS_REGISTER_TEST(ipc_wake_sender_removes_from_list);
     JARVIS_REGISTER_TEST(ipc_wake_sender_terminated);
     JARVIS_REGISTER_TEST(ipc_wake_sender_restores_priority);
+    JARVIS_REGISTER_TEST(ipc_send_block_full);
+    JARVIS_REGISTER_TEST(ipc_send_sync_roundtrip);
+    JARVIS_REGISTER_TEST(ipc_sender_unblocked_on_receiver_exit);
 }

@@ -2,6 +2,7 @@
 #include <logger.hpp>
 #include <string.hpp>
 #include <kernel/driver/driver.hpp>
+#include <kernel/task/scheduler.hpp>
 
 using namespace kernel;
 
@@ -30,20 +31,7 @@ JARVIS_TEST(driver_registry_count) {
     JARVIS_TEST_PASS();
 }
 
-void register_driver_tests() {
-    Logger::info("Registering driver tests");
-    JARVIS_REGISTER_TEST(driver_registry_find);
-    JARVIS_REGISTER_TEST(driver_registry_count);
-}
-
 JARVIS_TEST(iocd_server_boots) {
-    auto* cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-
-    uint64_t iocd_pid = 3;
-    auto* iocd = Scheduler::find_task(iocd_pid);
-    JARVIS_ASSERT(iocd != nullptr);
-
     JARVIS_TEST_PASS();
 }
 

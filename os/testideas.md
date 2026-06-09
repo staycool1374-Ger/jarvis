@@ -198,6 +198,19 @@ Tests that should be added to existing files or as new additions for APIs alread
 - **checked_ptr_wrap_overflow**: Address + size wraps around (integer overflow)
 - **checked_ptr_kernel_range_rejected**: Kernel-space addresses rejected in user mode checks
 
+### Demo/Integration Tests
+
+Tests that verify full-subsystem integration via observable output.
+
+#### Mandelbrot Framebuffer Demo (CRC Hash Verification)
+- Render the mandelbrot demo to the framebuffer
+- Compute CRC32 of the framebuffer region after rendering
+- Assert hash matches a known-good reference value
+- Fail on: corrupted rendering pipeline, broken framebuffer driver, wrong VBE mode, memory corruption
+- Workflow: run demo once, visually verify correctness, record CRC32 hash as test expectation
+- Implementation: `hash::crc32_fb(start_addr, width * height * bpp/8)` computed in-kernel, printed via serial, asserted in test runner
+- Detection: Any framebuffer regression changes the hash — caught automatically by `make test-qemu`
+
 ### Structual Test Issues (To Fix)
 - **Duplicate registration functions**: test_scheduler.cpp, test_task.cpp, test_driver.cpp, test_vfs.cpp, test_syscall.cpp each have two `register_*_tests()` definitions (linker error)
 - **Orphaned tests**: test_ipc.cpp (2), test_sync.cpp (3) define tests but never register them

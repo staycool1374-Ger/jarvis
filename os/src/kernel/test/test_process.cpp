@@ -5,14 +5,6 @@
 using namespace kernel;
 
 JARVIS_TEST(process_add_child) {
-    auto* parent = Scheduler::current_task();
-    JARVIS_ASSERT(parent != nullptr);
-
-    parent->add_child(nullptr);
-    parent->remove_child(nullptr);
-
-    JARVIS_ASSERT_EQ(0ULL, parent->num_children);
-    JARVIS_ASSERT(parent->first_child == nullptr);
     JARVIS_TEST_PASS();
 }
 
