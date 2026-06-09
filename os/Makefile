@@ -79,9 +79,27 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
+.PHONY: help all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
 
 -include $(DEPFILES)
+
+help:
+	@echo "Jarvis RTOS — Build Targets"
+	@echo ""
+	@echo "  make               Build debug ISO (all tests)"
+	@echo "  make test-qemu     Run full test suite in QEMU"
+	@echo "  make release-test  Clean-build release ISO + validate in QEMU"
+	@echo "  make debug         Build debug ISO with GDB stub (port :1234)"
+	@echo "  make clean         Remove all build artifacts"
+	@echo "  make test          Compile-check kernel + userspace"
+	@echo "  make run-qemu      Boot default ISO interactively"
+	@echo "  make symbols       Generate kernel symbol table"
+	@echo "  make objdump       Disassemble kernel to build/kernel.dis"
+	@echo "  make profiling     GCOV instrumentation + coverage capture"
+	@echo ""
+	@echo "ISOs:  $(ISO)  |  debug/jarvis-rtos.iso  |  release/jarvis-rtos.iso"
+	@echo "Debug (all tests)   — CONFIG_DEBUG defined"
+	@echo "Release (163 tests) — CONFIG_DEBUG undefined, purely computational subset"
 
 all: $(ISO)
 
