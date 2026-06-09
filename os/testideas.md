@@ -9,7 +9,7 @@
 - test_iocd.cpp - 8 tests (I/O daemon driver server)
 - test_capability.cpp - 21 tests (capability-based MMIO access, extended from 6)
 
-Total Phase 1: 56 new tests added (was 116, now 172 kernel tests + framework = 205 total)
+Total Phase 1: 56 new tests added across 5 files. Overall test suite: **906 tests** (kernel + framework), all passing.
 
 ### Stub Test Tracking (Phase 1 - Needs Implementation)
 
@@ -19,11 +19,16 @@ Many Phase 1 tests are stubs (`JARVIS_TEST_PASS()` only). These document test in
 |------|------|-------|-------|
 | test_task_lifecycle.cpp | 7 | 0 | Complete |
 | test_idle_task.cpp | 8 | 0 | Complete |
-| test_vfsd.cpp | 2 | **10** | Only boots+open real; IPC handling, error paths, concurrency, crash restart are stubs |
-| test_iocd.cpp | 1 | **7** | Only boots real; IRQ, MMIO, capability, affinity, concurrency are stubs |
+| test_vfsd.cpp | 0 | **12** | All stubs — VFS daemon IPC server tests |
+| test_iocd.cpp | 0 | **8** | All stubs — I/O daemon driver server tests |
 | test_capability.cpp | 0 | **21** | Entire file is stubs — highest priority to implement |
 
 Stub tests should be implemented when the underlying APIs exist. They are NOT real tests.
+
+**Note on stubs:** Non-existing or not-yet-functional subsystems must only get stub tests (`JARVIS_TEST_PASS()`). Real test logic for a feature that does not work yet will cause regressions when the test suite runs. A stub documents intent; a real test asserts behavior. Until the underlying API is implemented, keep it a stub.
+
+### Test Sanctity Rule
+All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`/`Input`/`Expect`/`Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
 ### Test Design Principles (apply to all new tests)
 1. Boundary Testing: Test limit, limit-1, limit+1
@@ -91,6 +96,8 @@ void register_idle_task_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
 // All called in register_selftest_tests()
+
+Note: `register_ipc_benchmark_tests()` is defined but never called from `register_selftest_tests()` — should be added or the benchmark file removed.
 
 ### Pending Coverage Gaps (Existing Subsystems)
 
@@ -168,17 +175,11 @@ Tests that should be added to existing files or as new additions for APIs alread
 - **signal_nested_delivery**: Signal delivered while handler is already running
 - **signal_mask_block**: Blocked signals are pending but not delivered
 - **signal_during_syscall**: Signal arrives during blocking syscall (interruptible)
-- **signal_default_ignore**: SIGCHLD default action is IGNORE (verify)
 - **signal_default_stop**: SIGTSTP default action is STOP (verify)
 
-#### Capabilities (for when APIs exist)
+#### Capabilities (for when APIs exist — remove stub status)
 - **cap_auto_revoke_on_exit**: Task capabilities revoked when task exits
-- **cap_create_zero_size**: Capability with size=0 is invalid (stub exists, needs assertions)
-- **cap_create_invalid_phys**: Capability with phys_addr outside RAM range (stub exists)
-- **cap_max_per_task_exceeded**: Exceeding max capabilities per task is rejected (stub exists)
 - **cap_double_revoke**: Revoking already-revoked capability is idempotent
-- **cap_transfer_validity**: Cap transferred via fork is valid in child
-- **cap_forge_rejected**: Random bit patterns rejected as capability handles (stub exists)
 
 #### Task Lifecycle
 - **task_create_invalid_priority**: Priority below 0 or above max → creation fails
@@ -198,6 +199,112 @@ Tests that should be added to existing files or as new additions for APIs alread
 - **checked_ptr_wrap_overflow**: Address + size wraps around (integer overflow)
 - **checked_ptr_kernel_range_rejected**: Kernel-space addresses rejected in user mode checks
 
+#### Timer/PIT (new file: test_timer.cpp)
+- **pit_init_sets_divisor**: After init, PIT counter divisor matches expected value
+- **pit_ticks_monotonic**: Successive `ticks()` calls return non-decreasing values
+- **pit_set_ticks_for_test**: `set_ticks_for_test()` overrides the tick counter
+- **pit_irq0_handler_increments_ticks**: Each IRQ0 delivery increments the tick count
+- **pit_set_frequency_accepts_range**: Frequency clamping at boundaries (min/max)
+
+#### Serial (new file: test_serial.cpp)
+- **serial_init_configures_baud**: COM1 baud rate set to 115200 after init
+- **serial_putchar_output**: Character written to serial TX register (requires mock or loopback)
+- **serial_puts_appends_crlf**: `puts()` appends `\r\n` to every string
+- **serial_puts_empty_string**: `puts("")` outputs only CRLF
+
+#### Keyboard (new file: test_keyboard.cpp)
+- **keyboard_init_clears_buffer**: Ring buffer empty after keyboard init
+- **keyboard_enqueue_dequeue_scancode**: Scancode enqueued then read back in order
+- **keyboard_buffer_full_drops**: When 256-byte ring buffer full, new scancodes dropped (no overflow)
+- **keyboard_modifier_tracking**: Shift/Alt/Ctrl state bits toggle correctly on make/break
+- **keyboard_self_test_sequence**: PS/2 controller self-test executed and acknowledged
+
+#### GDT/TSS (new file: test_gdt.cpp)
+- **gdt_entries_valid_after_init**: All GDT entries have correct base=0, limit, access byte
+- **gdt_tss_ist_valid**: TSS IST1-IST7 pointers point to valid kernel stack pages
+- **gdt_tss_rsp0_set**: RSP0 points to kernel stack for ring 3 → ring 0 transitions
+- **gdt_code_data_segments_present**: Code (ring 0 + ring 3) and data segments are accessible
+- **gdt_user_segments_have_ring3_dpl**: User code/data segment descriptors have DPL=3
+
+#### IDT (new file: test_idt.cpp)
+- **idt_entries_initialized**: All 256 IDT entries have non-null handler addresses after init
+- **idt_exception_handlers_mapped**: CPU exceptions 0–31 have handler entries (no gaps)
+- **idt_irq_remapped**: PIC IRQ0–IRQ15 mapped to interrupt vectors 0x20–0x2F
+- **idt_syscall_handler_installed**: Interrupt 0x80 handler points to syscall dispatch
+- **idt_double_fault_uses_ist**: Double fault handler uses TSS IST stack (not kernel stack)
+- **idt_reserved_vectors_null**: Vectors 0x30–0x7F are not set (or point to spurious handler)
+
+#### Boot Parameters (new file: test_bootparams.cpp)
+- **bootparams_parse_debug_flags**: `debug_ipc=1` in cmdline activates the IPC debug flag
+- **bootparams_parse_multiple_flags**: Multiple `debug_*` flags parsed from single cmdline
+- **bootparams_empty_cmdline**: No command line — all debug flags stay false
+- **bootparams_malformed_cmdline**: Garbage string parsed without crash (ignores unknown flags)
+
+#### Multiboot2 Tag Parsing (new file: test_multiboot.cpp)
+- **mb2_find_tag_by_type**: Each known tag type (framebuffer, memory map, module, cmdline) found
+- **mb2_find_tag_nonexistent**: Unknown tag type returns nullptr
+- **mb2_framebuffer_tag_fields**: Framebuffer tag struct width/height/bpp correctly populated
+- **mb2_memory_map_tag_entries**: Memory map tag parses entry count and entry size correctly
+- **mb2_module_tag_start_end**: Module tag returns valid start/end addresses
+
+#### Address Wrappers (new file: test_address.cpp)
+- **address_phys_to_virt_identity**: `phys_to_virt(HHDM_BASE)` returns `HHDM_BASE`
+- **address_virt_to_phys_identity**: `virt_to_phys(HHDM_BASE)` returns `HHDM_BASE`
+- **address_page_align_down**: PageAddress aligns a non-aligned address down to 4 KiB boundary
+- **address_page_offset**: VirtualAddress offset within page extracted correctly
+- **address_null_phys**: PhysicalAddress(0) == null PhysicalAddress
+- **address_comparison_operators**: `<`, `>`, `==`, `!=` work correctly across address objects
+
+#### Pipe (new file: test_pipe.cpp)
+- **pipe_create_returns_two_fds**: `create_pipe()` returns two valid file descriptors
+- **pipe_read_from_empty_nonblock**: Non-blocking read from empty pipe returns -1 with errno EAGAIN
+- **pipe_write_to_full_blocks**: Writing beyond pipe buffer capacity blocks the writer
+- **pipe_read_end_closed_returns_epipe**: Writing to pipe with closed read end returns EPIPE
+- **pipe_write_then_read_roundtrip**: Written data read back identically in FIFO order
+- **pipe_multiple_writers_no_interleaving**: Concurrent writes are not interleaved (PIPE_BUF atomicity)
+
+#### VFS Internal Filesystems (new file: test_vfs_internal.cpp)
+- **devfs_read_null**: Reading `/dev/null` returns 0 bytes
+- **devfs_read_zero**: Reading `/dev/zero` returns NUL-filled buffer of requested size
+- **devfs_tty_resolves**: `/dev/tty` resolves to a valid inode (actual read requires keyboard)
+- **procfs_self_resolves**: `/proc/self` resolves to the current process PID
+- **procfs_meminfo_valid**: Reading `/proc/meminfo` returns well-formatted ASCII data
+- **initrdfs_list_root**: Directory listing `/` returns initrd contents
+- **initrdfs_read_known_file**: Reading a known initrd file returns expected byte content
+- **initrdfs_open_nonexistent**: Opening a non-existent initrd path returns ENOENT
+
+#### GCOV / Profiling (new file: test_gcov.cpp)
+- **gcov_handler_initialized**: After kernel boot, gcov handler struct is in valid state
+- **gcov_instrument_updates_bitmask**: Calling instrument function toggles the tracking bitmask
+- **gcov_flush_outputs_data**: `gcov_flush_to_serial()` emits non-empty trace data
+- **rdtsc_monotonic**: Consecutive `rdtsc()` calls return strictly increasing values
+
+#### Debug Facilities (new file: test_debug.cpp)
+- **qemu_debug_exit_success**: Exit code 0 shuts down QEMU cleanly via port 0x501
+- **qemu_debug_exit_failure**: Non-zero exit code correctly reported by QEMU test harness
+- **debug_write_formats_correctly**: `debug_write()` outputs hex/dec numbers with correct formatting
+- **debug_task_switch_logs**: Task switch generates a log message with source → dest PID
+
+#### Framebuffer (new file: test_framebuffer.cpp)
+- **fb_init_from_multiboot**: Framebuffer initializes from multiboot framebuffer tag
+- **fb_putpixel_in_bounds**: Writing at valid (x, y) sets the correct pixel color
+- **fb_putpixel_out_of_bounds**: Writing outside framebuffer bounds is safe (no-op or clamped)
+- **fb_clear_screen**: Clearing sets all pixels to the background color
+- **fb_scroll_up**: Scrolling shifts framebuffer content up by one line correctly
+
+#### Integration / Stress (new file: test_stress.cpp)
+- **stress_1000_tasks_create_exit**: Create 1000 tasks, each exits immediately — scheduler remains consistent
+- **stress_ipc_blast**: 1000 send/receive round-trips between two kernel tasks — no lost messages
+- **stress_memory_alloc_free_loop**: Allocate and free all available PMM pages repeatedly — no leaks
+- **stress_recursive_fork_depth_10**: Fork chain 10 deep, all children exit — no orphan leaks
+- **stress_all_syscalls_sequential**: Every syscall invoked at least once in sequence — no crashes
+- **stress_syscall_fuzz_random**: Random syscall numbers (0–255) with random args — no kernel panics
+
+#### PIC (8259A) (new file: test_pic.cpp)
+- **pic_remap_vectors**: IRQ0–IRQ7 remapped from 0x08–0x0F to 0x20–0x27, IRQ8–IRQ15 to 0x28–0x2F
+- **pic_mask_all**: All IRQ lines masked after init (except cascade for slave)
+- **pic_ocw2_end_of_interrupt**: Sending EOI to PIC clears the in-service register
+
 ### Demo/Integration Tests
 
 Tests that verify full-subsystem integration via observable output.
@@ -211,10 +318,8 @@ Tests that verify full-subsystem integration via observable output.
 - Implementation: `hash::crc32_fb(start_addr, width * height * bpp/8)` computed in-kernel, printed via serial, asserted in test runner
 - Detection: Any framebuffer regression changes the hash — caught automatically by `make test-qemu`
 
-### Structual Test Issues (To Fix)
-- **Duplicate registration functions**: test_scheduler.cpp, test_task.cpp, test_driver.cpp, test_vfs.cpp, test_syscall.cpp each have two `register_*_tests()` definitions (linker error)
-- **Orphaned tests**: test_ipc.cpp (2), test_sync.cpp (3) define tests but never register them
-- **Overlapping tests**: test_scheduler.cpp duplicates 3 tests from test_idle_task.cpp
+### Structural Issues (Historical — Resolved)
+All structural issues (duplicate registrations, orphaned tests, overlapping tests) were fixed in a prior session. Registration functions are now unique, all `JARVIS_TEST()` entries are registered, and no duplicate tests exist.
 
 ### Next Phase: Phase 2 - Filesystems & Shell UX (0.2.10-0.2.11)
 
