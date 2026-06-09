@@ -1,4 +1,5 @@
 # Test Ideas & Implementation Status
+## Branch: testbed only — all test development and debugging happens here. Do not use on main.
 
 ## Current Phase: Phase 1 - Microkernel Foundation (0.2.9) - COMPLETED
 
