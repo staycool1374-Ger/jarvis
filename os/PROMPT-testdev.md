@@ -3,30 +3,25 @@
 
 ## Current Phase: Phase 1 - Microkernel Foundation (0.2.9) - COMPLETED
 
-### Completed Test Files (Phase 1)
-- test_task_lifecycle.cpp - 7 tests (task exit cleanup, blocked senders, page tables, reparenting, zombie, reap deferral, ELF init_task_common)
-- test_idle_task.cpp - 8 tests (idle creation, ring3, priority, pause syscall, yield, hlt fallback, restart, singleton)
-- test_vfsd.cpp - 12 tests (VFS daemon IPC server)
-- test_iocd.cpp - 8 tests (I/O daemon driver server)
-- test_capability.cpp - 21 tests (capability-based MMIO access, extended from 6)
-
-Total Phase 1: 56 new tests added across 5 files. Overall test suite: **906 tests** (kernel + framework), all passing.
-
 ### Stub Test Tracking (Phase 1 - Needs Implementation)
 
-Many Phase 1 tests are stubs (`JARVIS_TEST_PASS()` only). These document test intent but have no assertions:
+All 56 Phase 1 tests exist in the codebase across 5 files. Many are stubs (`JARVIS_TEST_PASS()` only) — these document intent but have no assertions:
 
 | File | Real | Stubs | Notes |
 |------|------|-------|-------|
-| test_task_lifecycle.cpp | 7 | 0 | Complete |
-| test_idle_task.cpp | 8 | 0 | Complete |
-| test_vfsd.cpp | 0 | **12** | All stubs — VFS daemon IPC server tests |
-| test_iocd.cpp | 0 | **8** | All stubs — I/O daemon driver server tests |
-| test_capability.cpp | 0 | **21** | Entire file is stubs — highest priority to implement |
+| test_task_lifecycle.cpp | 3 | 4 | Real: task_exit_cleans_all_ipc_objects, task_exit_frees_page_tables_correctly, task_zombie_state_cleanup |
+| test_idle_task.cpp | 3 | 5 | Real: idle_task_runs_in_ring3, idle_task_priority_zero, kernel_hlt_idle_still_exists |
+| test_vfsd.cpp | 0 | 12 | All stubs — VFS daemon IPC server tests |
+| test_iocd.cpp | 0 | 8 | All stubs — I/O daemon driver server tests |
+| test_capability.cpp | 0 | 21 | Entire file is stubs — highest priority to implement |
+
+**Total: 6 real, 50 stubs**
 
 Stub tests should be implemented when the underlying APIs exist. They are NOT real tests.
 
 **Note on stubs:** Non-existing or not-yet-functional subsystems must only get stub tests (`JARVIS_TEST_PASS()`). Real test logic for a feature that does not work yet will cause regressions when the test suite runs. A stub documents intent; a real test asserts behavior. Until the underlying API is implemented, keep it a stub.
+
+**Note on test-api:** Changing the test-api (registration, JARVIS_TEST macros, JARVIS_REGISTER_TEST, etc.) is not allowed. If in build mode, stop the implementation. If in plan mode, suggest the needed change.
 
 ### Test Sanctity Rule
 All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`/`Input`/`Expect`/`Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
@@ -49,56 +44,6 @@ All new tests are implemented on the `testbed` branch:
 7. **Self-cleanup:** Every test must clean up its own resources. Tasks created with `add_task()` must be paired with `remove_task()` before `cleanup()`+`delete`. Any heap/PMM allocation must be freed. The runner warns on scheduler task-count leaks.
 8. Cleanup on Failure: Partial init rollback, no leaks
 8. Mock Interfaces: For hardware (PCI, Virtio, HPET, APIC) use mock
-
-### Phase 1 Test Coverage Summary
-
-#### test_task_lifecycle.cpp (7 tests)
-- task_exit_cleans_all_ipc_objects: Verifies msg_queue, notify, event_group freed on TERMINATED
-- task_exit_wakes_blocked_senders: Blocked IPC senders woken when receiver exits
-- task_exit_frees_page_tables_correctly: User pages freed, PML4 freed, no double-free
-- task_reparent_preserves_resources: Orphan reparenting to init preserves parent resources
-- task_zombie_state_cleanup: TERMINATED tasks removed from scheduler
-- scheduler_reap_respects_parent_wait: Deferred reap when parent waiting (fixes can_reap bug)
-- elf_load_init_task_common_called: ELF-loaded tasks have IPC objects initialized
-
-#### test_idle_task.cpp (8 tests)
-- idle_task_created_at_boot: Userspace idle task exists at priority 0
-- idle_task_runs_in_ring3: User stack, user page table (CPL=3)
-- idle_task_priority_zero: Base and current priority = 0
-- idle_task_calls_pause_syscall: PAUSE syscall works in userspace idle
-- idle_task_yields_to_higher_priority: Reschedule picks higher priority task
-- kernel_hlt_idle_still_exists: tasks_[0] remains hlt fallback
-- idle_task_restartable_on_crash: Crashed idle respawned by reap_orphans
-- multiple_idle_tasks_prevented: Only one userspace idle allowed
-
-#### test_vfsd.cpp (12 tests)
-- vfsd_boots_and_registers: PID 2 exists with msg_queue
-- vfsd_handle_open/read/write/resolve/mount/unmount/stat/fstat/chdir/getcwd: IPC message handling
-- vfsd_invalid_message_type_rejected: Unknown msg types rejected
-- vfsd_malformed_message_rejected: Bad struct size/alignment rejected
-- vfsd_unauthorized_task_rejected: Non-privileged tasks cannot access
-- vfsd_concurrent_requests: Multiple simultaneous IPC handled
-- vfsd_crash_restarts: VFS daemon respawn on crash
-
-#### test_iocd.cpp (8 tests)
-- iocd_boots_and_registers: PID 3 exists with msg_queue
-- iocd_keyboard_irq_to_event: IRQ -> IPC event for keyboard
-- iocd_serial_irq_to_event: IRQ -> IPC event for serial
-- iocd_mmio_map_via_capability: MMIO mapping requires capability
-- iocd_mmio_unmap_on_exit: Capabilities revoked on task exit
-- iocd_unauthorized_mmio_rejected: Without cap, MMIO map fails
-- iocd_multiple_device_handlers: Keyboard + serial concurrent
-- iocd_irq_affinity: IRQ routed to specific core
-
-#### test_capability.cpp (21 tests)
-- Core: create/grant/map/revoke/forge/keyboard
-- Boundaries: valid bounds, size=0, invalid phys_addr
-- Authorization: nonexistent task, duplicate grant
-- Mapping: success, wrong task, duplicate virt_addr
-- Revoke: unmaps, nonexistent fails
-- Forgery: random bits, incremented value rejected
-- Lifecycle: transfer on fork, inherit on exec
-- Limits: max caps per task enforced
 
 ### Registration Pattern (in test_registry.cpp)
 void register_task_lifecycle_tests();
