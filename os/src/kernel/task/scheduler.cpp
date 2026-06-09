@@ -217,9 +217,6 @@ void Scheduler::reap_orphans() noexcept {
             }
 
             if (can_reap) {
-                // If this task owns its page tables (not shared with a parent)
-                // and has TERMINATED children that share those tables,
-                // reap the children first so they don't reference freed pages.
                 if (!t->page_table_shared_) {
                     bool has_sharing_child = false;
                     for (uint64_t j = 0; j < task_count_; ++j) {
