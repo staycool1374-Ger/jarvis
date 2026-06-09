@@ -31,13 +31,15 @@ Stub tests should be implemented when the underlying APIs exist. They are NOT re
 All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`/`Input`/`Expect`/`Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
 ### Test Design Principles (apply to all new tests)
+0. **New tests are debug-only by default.** All new tests must use `JARVIS_REGISTER_TEST(name)` which places them in the debug target only. Only purely computational, zero-side-effect tests that have proven stable across many sessions may be promoted to `JARVIS_REGISTER_RELEASE_TEST(name)`. Release is a curated subset, not a default.
 1. Boundary Testing: Test limit, limit-1, limit+1
 2. Error Path Coverage: EFAULT, EINVAL, ENOSPC, EACCES, EBUSY, ENOENT
 3. Unknown Input: Invalid message types, malformed structs, unknown syscalls
 4. State Machine: Invalid transitions (TERMINATED to READY)
 5. Resource Exhaustion: Max caps, max FDs, max tasks, full queues
 6. Race/Concurrency: Multiple senders, writers, IRQ + thread
-7. Cleanup on Failure: Partial init rollback, no leaks
+7. **Self-cleanup:** Every test must clean up its own resources. Tasks created with `add_task()` must be paired with `remove_task()` before `cleanup()`+`delete`. Any heap/PMM allocation must be freed. The runner warns on scheduler task-count leaks.
+8. Cleanup on Failure: Partial init rollback, no leaks
 8. Mock Interfaces: For hardware (PCI, Virtio, HPET, APIC) use mock
 
 ### Phase 1 Test Coverage Summary

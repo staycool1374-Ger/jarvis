@@ -28,7 +28,8 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -mgeneral-regs-only -mcmodel=large \
             -Wall -Wextra -Werror \
             -I src -I src/lib -O3 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections
+            -ffunction-sections -fdata-sections \
+            -DCONFIG_DEBUG
 
 CC       := x86_64-elf-gcc
 CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
@@ -242,9 +243,10 @@ profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
 	@echo "Extracting .gcda data and generating coverage report..."
 	python3 tools/extract_gcda.py build/profiling/gcda.raw
 
-release: CXXFLAGS += -g -O2
+release: CXXFLAGS += -g -O2 -UCONFIG_DEBUG
 release: iso/boot/kernel.elf iso/boot/grub/grub.cfg
 	@mkdir -p $(dir $(RELEASE_ISO))
+	@echo "=== Building release ISO (may need a prior 'make clean' if debug objects exist) ==="
 	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
 	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
 	@echo ""
@@ -254,7 +256,11 @@ release: iso/boot/kernel.elf iso/boot/grub/grub.cfg
 	@echo " Run with:       make run-qemu"
 	@echo "=========================================="
 
-release-test: release
+release-test:
+	@echo ""
+	@echo "=== Building release ISO (clean build) ==="
+	$(MAKE) clean
+	$(MAKE) release
 	@echo ""
 	@echo "=== Validating release ISO via test-qemu ==="
 	$(MAKE) test-qemu ISO=$(RELEASE_ISO)

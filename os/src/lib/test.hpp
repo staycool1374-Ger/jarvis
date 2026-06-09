@@ -6,6 +6,12 @@
 namespace kernel {
 namespace test {
 
+enum TestFlags : uint8_t {
+    TF_KERNEL   = 0,
+    TF_RELEASE  = 1 << 0,
+    TF_USER     = 1 << 1,
+};
+
 class TestBase;
 
 struct TestCase {
@@ -13,6 +19,7 @@ struct TestCase {
     const char* name;
     void (*func)();
     TestBase* (*factory)();
+    uint8_t flags;
 };
 
 class Registry {
@@ -69,6 +76,8 @@ protected:
 };
 
 void run_all();
+void run_debug();
+void run_release();
 void run_suite(const char* suite_name);
 void print_report();
 
@@ -120,21 +129,33 @@ void print_report();
 #define JARVIS_TEST_PASS()                                                     \
     kernel::test::Registry::record_success()
 
-#define JARVIS_REGISTER_TEST(name)                                            \
+#define JARVIS_REGISTER_TEST_FLAGS(name, flags_)                              \
     do {                                                                       \
         static constexpr kernel::test::TestCase tc = {                         \
-            "", #name, test_##name, nullptr                                    \
+            "", #name, test_##name, nullptr, flags_                            \
+        };                                                                     \
+        kernel::test::Registry::register_test(tc);                             \
+    } while (0)
+
+#define JARVIS_REGISTER_TEST(name)                                            \
+    JARVIS_REGISTER_TEST_FLAGS(name, kernel::test::TF_KERNEL)
+
+#define JARVIS_REGISTER_RELEASE_TEST(name)                                    \
+    JARVIS_REGISTER_TEST_FLAGS(name, kernel::test::TF_RELEASE)
+
+#define JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, flags_)                 \
+    do {                                                                       \
+        static constexpr kernel::test::TestCase tc = {                         \
+            #suite, #name, test_##suite##_##name, nullptr, flags_              \
         };                                                                     \
         kernel::test::Registry::register_test(tc);                             \
     } while (0)
 
 #define JARVIS_REGISTER_TEST_SUITE(suite, name)                                \
-    do {                                                                       \
-        static constexpr kernel::test::TestCase tc = {                         \
-            #suite, #name, test_##suite##_##name, nullptr                      \
-        };                                                                     \
-        kernel::test::Registry::register_test(tc);                             \
-    } while (0)
+    JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, kernel::test::TF_KERNEL)
+
+#define JARVIS_REGISTER_RELEASE_TEST_SUITE(suite, name)                       \
+    JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, kernel::test::TF_RELEASE)
 
 #define TEST_CLASS(name)                                                      \
     class name : public kernel::test::TestBase {                              \
@@ -145,13 +166,19 @@ void print_report();
     static kernel::test::TestBase* _factory_##name() { return new name(); }   \
     void name::run()
 
-#define REGISTER_CLASS(name)                                                  \
+#define REGISTER_CLASS_FLAGS(name, flags_)                                    \
     do {                                                                      \
         static constexpr kernel::test::TestCase tc = {                        \
-            "", #name, nullptr, _factory_##name                               \
+            "", #name, nullptr, _factory_##name, flags_                       \
         };                                                                    \
         kernel::test::Registry::register_test(tc);                            \
     } while (0)
+
+#define REGISTER_CLASS(name)                                                  \
+    REGISTER_CLASS_FLAGS(name, kernel::test::TF_KERNEL)
+
+#define REGISTER_RELEASE_CLASS(name)                                          \
+    REGISTER_CLASS_FLAGS(name, kernel::test::TF_RELEASE)
 
 #define CT_ASSERT(cond)                                                       \
     do {                                                                      \

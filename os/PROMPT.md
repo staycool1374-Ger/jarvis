@@ -51,6 +51,7 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 ### 3. Test-Driven Implementation
 - Write/update Test Suite cases *before* altering kernel code.
 - **Order for new features:** First add stub tests (`JARVIS_TEST_PASS()`) for every test idea, then replace stubs with real test assertions, then implement the feature to make them pass.
+- **New tests are debug-only by default.** Use `JARVIS_REGISTER_TEST(name)` (debug target only). Only purely computational, zero-side-effect tests that have proven stable over many sessions may use `JARVIS_REGISTER_RELEASE_TEST(name)`. Release is a curated subset.
 - **Test sanctity:** All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`, `Input`, `Expect`, `Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
 ### 4. Verification & QEMU Validation

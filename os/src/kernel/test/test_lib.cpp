@@ -234,22 +234,22 @@ JARVIS_TEST(version_build_date_not_empty) {
 void register_lib_tests() {
     Logger::info("Registering lib tests");
 
-    JARVIS_REGISTER_TEST(string_strlen);
-    JARVIS_REGISTER_TEST(string_strcmp);
-    JARVIS_REGISTER_TEST(string_strncmp);
-    JARVIS_REGISTER_TEST(string_strncpy);
-    JARVIS_REGISTER_TEST(string_memcpy);
-    JARVIS_REGISTER_TEST(string_memset);
-    JARVIS_REGISTER_TEST(string_memcmp);
+    JARVIS_REGISTER_RELEASE_TEST(string_strlen);
+    JARVIS_REGISTER_RELEASE_TEST(string_strcmp);
+    JARVIS_REGISTER_RELEASE_TEST(string_strncmp);
+    JARVIS_REGISTER_RELEASE_TEST(string_strncpy);
+    JARVIS_REGISTER_RELEASE_TEST(string_memcpy);
+    JARVIS_REGISTER_RELEASE_TEST(string_memset);
+    JARVIS_REGISTER_RELEASE_TEST(string_memcmp);
 
-    JARVIS_REGISTER_TEST(utils_align_up);
-    JARVIS_REGISTER_TEST(utils_align_down);
-    JARVIS_REGISTER_TEST(utils_type_traits);
+    JARVIS_REGISTER_RELEASE_TEST(utils_align_up);
+    JARVIS_REGISTER_RELEASE_TEST(utils_align_down);
+    JARVIS_REGISTER_RELEASE_TEST(utils_type_traits);
 
-    JARVIS_REGISTER_TEST(error_or_basic);
-    JARVIS_REGISTER_TEST(error_or_errors);
+    JARVIS_REGISTER_RELEASE_TEST(error_or_basic);
+    JARVIS_REGISTER_RELEASE_TEST(error_or_errors);
 
-    JARVIS_REGISTER_TEST(version_string_not_empty);
-    JARVIS_REGISTER_TEST(version_full_string_not_empty);
-    JARVIS_REGISTER_TEST(version_build_date_not_empty);
+    JARVIS_REGISTER_RELEASE_TEST(version_string_not_empty);
+    JARVIS_REGISTER_RELEASE_TEST(version_full_string_not_empty);
+    JARVIS_REGISTER_RELEASE_TEST(version_build_date_not_empty);
 }

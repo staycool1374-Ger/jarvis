@@ -257,7 +257,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     register_selftest_tests();
     register_ipc_benchmark_tests();
-    kernel::test::run_all();
+#ifdef CONFIG_DEBUG
+    kernel::test::run_debug();
+#else
+    kernel::test::run_release();
+#endif
 
     debug_write("[BOOT] Starting userspace test_fork...\n");
     {

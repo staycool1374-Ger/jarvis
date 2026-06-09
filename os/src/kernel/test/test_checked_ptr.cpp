@@ -88,8 +88,8 @@ JARVIS_TEST(signal_frame_size) {
 void register_checked_ptr_tests() {
     Logger::info("Registering CheckedPtr tests");
 
-    JARVIS_REGISTER_TEST(checked_ptr_is_user_range);
-    JARVIS_REGISTER_TEST(checked_ptr_valid);
-    JARVIS_REGISTER_TEST(checked_ptr_is_user_string);
-    JARVIS_REGISTER_TEST(signal_frame_size);
+    JARVIS_REGISTER_RELEASE_TEST(checked_ptr_is_user_range);
+    JARVIS_REGISTER_RELEASE_TEST(checked_ptr_valid);
+    JARVIS_REGISTER_RELEASE_TEST(checked_ptr_is_user_string);
+    JARVIS_REGISTER_RELEASE_TEST(signal_frame_size);
 }

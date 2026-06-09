@@ -4,6 +4,8 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/memory/pmm.hpp>
 
 namespace kernel {
 namespace test {
@@ -49,12 +51,23 @@ size_t Registry::failed() { return failed_; }
 size_t Registry::total() { return passed_ + failed_; }
 
 static void run_one(const TestCase& tc) {
+    // Snapshot scheduler/PMM state for leak detection
+    size_t before_tasks = Scheduler::task_count();
+
     if (tc.factory) {
         TestBase* t = tc.factory();
         t->execute();
         delete t;
     } else {
         tc.func();
+    }
+
+    // Leak detection: warn if scheduler task count changed
+    // (tests that intentionally create/destroy tasks must balance add+remove)
+    size_t after_tasks = Scheduler::task_count();
+    if (after_tasks != before_tasks) {
+        Logger::warn("[TEST:LEAK] %s: scheduler task count changed %d -> %d",
+                     tc.name, before_tasks, after_tasks);
     }
 }
 
@@ -88,6 +101,57 @@ void run_all() {
     }
 
     print_report();
+}
+
+static void run_filtered(uint8_t required_flags) {
+    Registry::reset();
+    size_t n = Registry::count();
+    if (n == 0) {
+        Logger::warn("No tests registered");
+        return;
+    }
+
+    size_t run_count = 0;
+    Logger::info("[TEST:RUN] Running filtered test(s) (flags=%u)", (unsigned)required_flags);
+
+    for (size_t i = 0; i < n; ++i) {
+        auto& tc = Registry::tests()[i];
+        // Match: if required_flags is 0 (debug), run all non-user tests.
+        // If required_flags has TF_RELEASE set, run only tests with TF_RELEASE.
+        if (tc.flags & TF_USER) continue;
+        if (required_flags && !(tc.flags & required_flags)) continue;
+
+        ++run_count;
+        size_t before_fail = Registry::failed();
+
+        Logger::raw_write("  ");
+        Logger::raw_write(tc.suite);
+        if (tc.suite[0]) Logger::raw_write("::");
+        Logger::raw_write(tc.name);
+        Logger::raw_write(" ... ");
+
+        run_one(tc);
+
+        if (Registry::failed() == before_fail) {
+            Logger::raw_write("\033[32m[PASS]\033[0m\n");
+        } else {
+            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+        }
+    }
+
+    if (run_count == 0) {
+        Logger::warn("No tests matched flags 0x%x", required_flags);
+    }
+
+    print_report();
+}
+
+void run_debug() {
+    run_filtered(0);
+}
+
+void run_release() {
+    run_filtered(TF_RELEASE);
 }
 
 void run_suite(const char* suite_name) {
