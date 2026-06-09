@@ -79,27 +79,25 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all clean run-qemu run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
+.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
 
 -include $(DEPFILES)
 
 help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
-	@echo "  make               Build debug ISO (all tests)"
-	@echo "  make test-qemu     Run full test suite in QEMU"
-	@echo "  make release-test  Clean-build release ISO + validate in QEMU"
+	@echo "  make               Build debug ISO + boot shell (all tests run at boot)"
+	@echo "  make test-qemu     Run full test suite in QEMU (automated, no window)"
+	@echo "  make release       Build production ISO (computational sanity subset"
+	@echo "                     at boot, then shell with framebuffer + serial)"
+	@echo "  make release-test  Validate release compiles, then run full test suite"
 	@echo "  make debug         Build debug ISO with GDB stub (port :1234)"
 	@echo "  make clean         Remove all build artifacts"
-	@echo "  make test          Compile-check kernel + userspace"
-	@echo "  make run-qemu      Boot default ISO interactively"
+	@echo "  make run-qemu      Boot default ISO interactively (serial + QEMU window)"
+	@echo "  make run-release   Build release ISO then boot interactively"
 	@echo "  make symbols       Generate kernel symbol table"
 	@echo "  make objdump       Disassemble kernel to build/kernel.dis"
 	@echo "  make profiling     GCOV instrumentation + coverage capture"
-	@echo ""
-	@echo "ISOs:  $(ISO)  |  debug/jarvis-rtos.iso  |  release/jarvis-rtos.iso"
-	@echo "Debug (all tests)   — CONFIG_DEBUG defined"
-	@echo "Release (163 tests) — CONFIG_DEBUG undefined, purely computational subset"
 
 all: $(ISO)
 
@@ -167,6 +165,16 @@ run-qemu: $(ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Starting QEMU Monitor (Ctrl+A then X to exit)..."; \
 	    qemu-system-x86_64 $(QEMU_FLAGS); \
+	else \
+	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	fi
+
+run-release: release
+	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	    echo "Starting QEMU (release) — Ctrl+A then X to exit..."; \
+	    qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none \
+	        -boot order=d \
+	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -277,11 +285,11 @@ release:
 
 release-test:
 	@echo ""
-	@echo "=== Building + validating release ISO ==="
+	@echo "=== Building release ISO (compilation validation) ==="
 	$(MAKE) release
 	@echo ""
-	@echo "=== Validating release ISO via test-qemu ==="
-	$(MAKE) test-qemu ISO=$(RELEASE_ISO)
+	@echo "=== Running full test suite (debug build) ==="
+	$(MAKE) test-qemu
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)

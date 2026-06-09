@@ -65,6 +65,7 @@ JARVIS_TEST(task_clone_shares_page_tables) {
     JARVIS_ASSERT(parent->page_table_ != 0);
     JARVIS_ASSERT(parent->user_stack_ != 0);
 
+    auto* original = Scheduler::current_task();
     Scheduler::set_current(parent);
 
     uint64_t regs[22] = {};
@@ -86,6 +87,7 @@ JARVIS_TEST(task_clone_shares_page_tables) {
     Scheduler::remove_task(parent);
     parent->cleanup();
     delete parent;
+    if (original) Scheduler::set_current(original);
     JARVIS_TEST_PASS();
 }
 
@@ -108,6 +110,7 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(parent);
 
+    auto* original = Scheduler::current_task();
     Scheduler::set_current(parent);
     uint64_t regs[22] = {};
     regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
@@ -127,6 +130,7 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     Scheduler::remove_task(parent);
     parent->cleanup();
     delete parent;
+    if (original) Scheduler::set_current(original);
     JARVIS_TEST_PASS();
 }
 
