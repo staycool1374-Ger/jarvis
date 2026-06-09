@@ -41,6 +41,7 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
     if (child->state == TaskState::TERMINATED) {
         if (status_ptr) *status_ptr = child->exit_code;
         uint64_t cid = child->id;
+        cur->remove_child(child);
         child->cleanup();
         Scheduler::remove_task(child);
         delete child;

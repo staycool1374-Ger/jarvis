@@ -229,18 +229,14 @@ void Scheduler::reap_orphans() noexcept {
             }
 
             bool can_reap = false;
-            // Check if parent is not waiting (or parent is dead)
+            // Only reap if parent is dead (TERMINATED or no longer in task list)
             for (uint64_t j = 0; j < task_count_; ++j) {
                 auto* p = tasks_[j];
-                if (p && p->id == t->parent_id && p->state != TaskState::TERMINATED) {
-                    if (p->waiting_child_pid != t->id &&
-                        p->waiting_child_pid != static_cast<uint64_t>(-1)) {
+                if (p && p->id == t->parent_id) {
+                    if (p->state == TaskState::TERMINATED) {
                         can_reap = true;
                     }
                     break;
-                }
-                if (!p || p->id != t->parent_id) {
-                    can_reap = true;  // parent is dead
                 }
             }
             if (task_count_ == 0) can_reap = true;
