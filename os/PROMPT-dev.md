@@ -77,3 +77,9 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - **Standards:** MISRA C++:2023, AUTOSAR. No volatile for sync, no non-freestanding std components.
 - **Type Safety:** No primitive `reinterpret_cast`. Use strongly typed, alignment-compliant punning.
 - **Security:** Common Criteria isolation (Ring 0 vs User), complete mediation on VFS pathways.
+
+# Debugging Notes
+- **Always use the correct make target:** `make run-release` (not `make release`) when debugging runtime issues, as the build flags differ.
+- **Reproduce crash sequences reliably:** simulate user input with `expect` scripts — send useful commands (e.g., `test\r`) and non-useful commands (e.g., `t\r`) then close stdin to trigger EOF-based crashes.
+- **Isolate by stripping components:** remove test_fork, shell, or release tests one at a time to find which component triggers a crash.
+- **For page-table bugs in fork:** `clone()` copies parent PML4 entries, sharing PDPT/PD/PT pages. Any `map_page_in_pml4` call on the child's PML4 modifies these shared pages, corrupting the parent's mappings. Fix: create a private PDPT copy for the stack region before mapping child stack pages.
