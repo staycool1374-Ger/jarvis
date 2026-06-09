@@ -3,23 +3,21 @@
 
 ## Current Phase: Phase 1 - Microkernel Foundation (0.2.9) - COMPLETED
 
-### Stub Test Tracking (Phase 1 - Needs Implementation)
+### Stub Test Tracking (Phase 1 - Status)
 
-All 56 Phase 1 tests exist in the codebase across 5 files. Many are stubs (`JARVIS_TEST_PASS()` only) — these document intent but have no assertions:
+All 56 Phase 1 tests exist in the codebase across 5 files. 15 are real tests with assertions; 41 are stubs (`JARVIS_TEST_PASS()` only) documenting intent for future subsystems:
 
 | File | Real | Stubs | Notes |
 |------|------|-------|-------|
-| test_task_lifecycle.cpp | 3 | 4 | Real: task_exit_cleans_all_ipc_objects, task_exit_frees_page_tables_correctly, task_zombie_state_cleanup |
-| test_idle_task.cpp | 3 | 5 | Real: idle_task_runs_in_ring3, idle_task_priority_zero, kernel_hlt_idle_still_exists |
-| test_vfsd.cpp | 0 | 12 | All stubs — VFS daemon IPC server tests |
-| test_iocd.cpp | 0 | 8 | All stubs — I/O daemon driver server tests |
-| test_capability.cpp | 0 | 21 | Entire file is stubs — highest priority to implement |
+| test_task_lifecycle.cpp | 7 | 0 | Complete — all 7 tests implemented |
+| test_idle_task.cpp | 8 | 0 | Complete — all 8 tests implemented |
+| test_vfsd.cpp | 0 | 12 | All stubs — VFS daemon IPC server (subsystem not implemented) |
+| test_iocd.cpp | 0 | 8 | All stubs — I/O daemon driver server (subsystem not implemented) |
+| test_capability.cpp | 0 | 21 | All stubs — capability-based MMIO (subsystem not implemented) |
 
-**Total: 6 real, 50 stubs**
+**Total: 15 real, 41 stubs**
 
-Stub tests should be implemented when the underlying APIs exist. They are NOT real tests.
-
-**Note on stubs:** Non-existing or not-yet-functional subsystems must only get stub tests (`JARVIS_TEST_PASS()`). Real test logic for a feature that does not work yet will cause regressions when the test suite runs. A stub documents intent; a real test asserts behavior. Until the underlying API is implemented, keep it a stub.
+**Stub status rationale:** Per test sanctity rules, stubs remain for non-existing subsystems (VFS daemon, I/O daemon, capability system). Real tests for these would cause regressions. They document intent for future implementation.
 
 **Note on test-api:** Changing the test-api (registration, JARVIS_TEST macros, JARVIS_REGISTER_TEST, etc.) is not allowed. If in build mode, stop the implementation. If in plan mode, suggest the needed change.
 
