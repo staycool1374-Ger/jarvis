@@ -8,6 +8,11 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Verifies that semaphore.wait() blocks a task and semaphore.post() wakes it.
+// Input: Semaphore initialized to 0/1, worker task calls wait(), then original task calls post()
+// Expect: Worker state is BLOCKED after wait, READY after post
+// Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(semaphore_wait_post) {
     sync::Semaphore sem;
     sem.init(0, 1);
@@ -39,6 +44,11 @@ JARVIS_TEST(semaphore_wait_post) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies mutex lock/unlock with owner tracking and waiter handoff.
+// Input: Owner task locks mutex, unlocks, locks again; waiter task locks after owner unlocks
+// Expect: Mutex correctly tracks owner and locked state across multiple lock/unlock cycles and task switches
+// Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(mutex_lock_unlock) {
     sync::Mutex mutex;
     mutex.init();
@@ -81,6 +91,11 @@ JARVIS_TEST(mutex_lock_unlock) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies Queue try_send/try_receive operations including full and empty edge cases.
+// Input: Send/receive one item, fill queue to QUEUE_MAX_MSG_COUNT, attempt overfill, then drain one
+// Expect: Single send/receive succeeds, queue fills to max, overfill returns false, drain reduces available count
+// Depends: kernel::sync::Queue, sync::QUEUE_MAX_MSG_COUNT
 JARVIS_TEST(queue_send_receive_block) {
     sync::Queue queue;
     queue.init();
@@ -110,18 +125,38 @@ JARVIS_TEST(queue_send_receive_block) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that Queue::send blocks when the queue is full.
+// Input: None (stub)
+// Expect: JARVIS_TEST_PASS only
+// Depends: kernel::sync::Queue
 JARVIS_TEST(sync_queue_send_blocks_when_full) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that Queue::receive blocks when the queue is empty.
+// Input: None (stub)
+// Expect: JARVIS_TEST_PASS only
+// Depends: kernel::sync::Queue
 JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that a blocked sender is woken when a receiver consumes from the queue.
+// Input: None (stub)
+// Expect: JARVIS_TEST_PASS only
+// Depends: kernel::sync::Queue, kernel::Scheduler
 JARVIS_TEST(sync_queue_wake_sender_on_receive) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all sync primitive unit tests with the test framework.
+// Input: None
+// Expect: All semaphore, mutex, and queue tests are registered via JARVIS_REGISTER_TEST
+// Depends: kernel test framework
 void register_sync_tests() {
     Logger::info("Registering sync tests");
     JARVIS_REGISTER_TEST(semaphore_wait_post);

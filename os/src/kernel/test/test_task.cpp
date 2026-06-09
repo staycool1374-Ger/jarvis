@@ -11,6 +11,11 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Verifies that TaskControlBlock::cleanup() nullifies all allocated resources (kernel stack, msg queue, notify, event group).
+// Input: Create a TCB and call cleanup()
+// Expect: kernel_stack, msg_queue, notify, event_group become nullptr; stack_phys_ becomes 0
+// Depends: kernel::TaskControlBlock
 JARVIS_TEST(task_cleanup_frees_resources) {
     auto* tcb = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(tcb != nullptr);
@@ -31,6 +36,11 @@ JARVIS_TEST(task_cleanup_frees_resources) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that create_user allocates a page table and user stack of the requested size.
+// Input: create_user with stack_size=32_KiB
+// Expect: page_table_ != 0, user_stack_ != 0, user_stack_size_ == 32_KiB
+// Depends: kernel::TaskControlBlock
 JARVIS_TEST(task_create_user_page_table) {
     auto* tcb = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(tcb != nullptr);
@@ -43,6 +53,11 @@ JARVIS_TEST(task_create_user_page_table) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that TaskControlBlock::clone() creates a child task whose page table is shared with the parent.
+// Input: Create a user parent task, set current, push registers, clone
+// Expect: child != nullptr, child->page_table_ != 0, child->page_table_shared_ == true, child->user_stack_ != 0
+// Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_clone_shares_page_tables) {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
@@ -74,10 +89,20 @@ JARVIS_TEST(task_clone_shares_page_tables) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that ELF loading initializes IPC notification/event objects for a task.
+// Input: None (stub)
+// Expect: JARVIS_TEST_PASS only
+// Depends: kernel::TaskControlBlock, kernel::elf::ElfLoader
 JARVIS_TEST(task_elf_load_inits_ipc_objects) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that cleaning up a cloned child task does not free the parent's shared page table.
+// Input: Create user parent, clone child, capture parent page_table_ address, cleanup/delete child
+// Expect: parent->page_table_ unchanged and non-null after child cleanup
+// Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
@@ -105,6 +130,11 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all task management unit tests with the test framework.
+// Input: None
+// Expect: All task_* tests are registered via JARVIS_REGISTER_TEST
+// Depends: kernel test framework
 void register_task_tests() {
     Logger::info("Registering task tests");
     JARVIS_REGISTER_TEST(task_cleanup_frees_resources);

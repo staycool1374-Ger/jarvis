@@ -6,11 +6,21 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Validates that elf::validate_header returns false when given a null pointer.
+// Input: nullptr
+// Expect: JARVIS_ASSERT checks that !elf::validate_header(nullptr)
+// Depends: test, elf
 JARVIS_TEST(elf_validate_header_null) {
     JARVIS_ASSERT(!elf::validate_header(nullptr));
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that a properly constructed ELF64Header passes validation, and corrupting the magic number causes rejection.
+// Input: A manually populated valid ELF64Header, then with ident[0] set to 0
+// Expect: JARVIS_ASSERT first on true, then on false for corrupted header
+// Depends: test, elf
 JARVIS_TEST(elf_validate_header_magic) {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
@@ -35,6 +45,11 @@ JARVIS_TEST(elf_validate_header_magic) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that an ELF header with an unsupported machine type (0x28 instead of 0x3E) is rejected.
+// Input: A valid ELF64Header with machine set to 0x28
+// Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
+// Depends: test, elf
 JARVIS_TEST(elf_validate_header_bad_machine) {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
@@ -57,6 +72,11 @@ JARVIS_TEST(elf_validate_header_bad_machine) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that an ELF header with an excessive number of program headers (100) is rejected.
+// Input: A valid ELF64Header with phnum set to 100
+// Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
+// Depends: test, elf
 JARVIS_TEST(elf_validate_header_excessive_phnum) {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
@@ -79,6 +99,11 @@ JARVIS_TEST(elf_validate_header_excessive_phnum) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that an ELF header with an entry point in kernel-reserved memory range is rejected.
+// Input: A valid ELF64Header with entry set to 0xFFFF800000000000
+// Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
+// Depends: test, elf
 JARVIS_TEST(elf_validate_header_bad_entry) {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
@@ -138,10 +163,20 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     }
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that loading an ELF with an invalid program segment is rejected.
+// Input: (none)
+// Expect: JARVIS_TEST_PASS()
+// Depends: test, elf
 JARVIS_TEST(elf_load_invalid_segment) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that elf::load sets up stdin/stdout/stderr file descriptors pointing to /dev/tty for the new task.
+// Input: A minimal ELF64 binary constructed via build_minimal_elf
+// Expect: JARVIS_ASSERT checks tcb non-null, /dev/tty resolves, and fd_table entries 0-2 exist, are used, and point to the tty vnode
+// Depends: test, elf, vfs
 JARVIS_TEST(elf_load_sets_std_fds) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -166,6 +201,11 @@ JARVIS_TEST(elf_load_sets_std_fds) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that elf::load allocates a user stack for the loaded task.
+// Input: A minimal ELF64 binary constructed via build_minimal_elf
+// Expect: JARVIS_ASSERT checks tcb->user_stack_ non-zero and tcb->user_stack_size_ equals mem::STACK_SIZE
+// Depends: test, elf
 JARVIS_TEST(elf_load_creates_user_stack) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -182,6 +222,11 @@ JARVIS_TEST(elf_load_creates_user_stack) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all ELF-related unit tests with the test framework.
+// Input: (none)
+// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
+// Depends: test, logger, elf
 void register_elf_tests() {
     Logger::info("Registering ELF tests");
 

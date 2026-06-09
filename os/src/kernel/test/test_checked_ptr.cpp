@@ -5,6 +5,11 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Validates user/kernel address range detection via is_user_range
+// Input: Kernel address 0xFFFF800000000000, user address 0x400000, nullptr, boundary values at USER_SPACE_LIMIT
+// Expect: is_user_range returns true for user addresses, false for kernel addresses, nullptr, and overflowing ranges
+// Depends: kernel/memory
 JARVIS_TEST(checked_ptr_is_user_range) {
     JARVIS_ASSERT(!is_user_range(reinterpret_cast<void*>(0xFFFF800000000000ULL), 1));
 
@@ -20,6 +25,11 @@ JARVIS_TEST(checked_ptr_is_user_range) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates CheckedPtr::valid() for valid vs null pointers
+// Input: CheckedPtr wrapping a 64-byte stack buffer, CheckedPtr with nullptr
+// Expect: valid() returns true for valid buffer, false for nullptr
+// Depends: kernel/memory
 JARVIS_TEST(checked_ptr_valid) {
     char buf[64] = "test data";
     CheckedPtr<char> cp(buf, sizeof(buf));
@@ -30,6 +40,11 @@ JARVIS_TEST(checked_ptr_valid) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates is_user_string rejects kernel pointers, null, and stack buffers
+// Input: Kernel string literal, nullptr, stack-allocated buffer
+// Expect: All three inputs return false (not user strings)
+// Depends: kernel/memory
 JARVIS_TEST(checked_ptr_is_user_string) {
     JARVIS_ASSERT(!is_user_string("kernel string"));
 
@@ -40,6 +55,11 @@ JARVIS_TEST(checked_ptr_is_user_string) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates SignalFrame struct layout, size, and field values
+// Input: SignalFrame with sig=11, saved_rip=0x400000, saved_rsp=0x70000000, saved_rflags=0x202, saved_cs=0x1B, saved_ss=0x23
+// Expect: sizeof(SignalFrame) == 64, SIGNAL_FRAME_SIZE == 64, all field values match set values
+// Depends: signal
 JARVIS_TEST(signal_frame_size) {
     JARVIS_ASSERT_EQ(64ULL, sizeof(SignalFrame));
     JARVIS_ASSERT_EQ(static_cast<size_t>(64), SIGNAL_FRAME_SIZE);
@@ -60,6 +80,11 @@ JARVIS_TEST(signal_frame_size) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all CheckedPtr tests with the test framework
+// Input: None
+// Expect: All CheckedPtr tests registered
+// Depends: test framework
 void register_checked_ptr_tests() {
     Logger::info("Registering CheckedPtr tests");
 

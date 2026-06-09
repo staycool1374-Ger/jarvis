@@ -4,6 +4,11 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Verify RTC read_seconds returns a Unix timestamp within a reasonable range.
+// Input: read_seconds() reads hardware RTC registers.
+// Expect: Returned value is between year 2020 (~1577836800) and year 2200 (~7258118400) epoch timestamps.
+// Depends: arch::RTC
 JARVIS_TEST(rtc_read_seconds) {
     uint64_t secs = arch::RTC::read_seconds();
     JARVIS_ASSERT(secs > 1577836800ULL);
@@ -11,6 +16,11 @@ JARVIS_TEST(rtc_read_seconds) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verify BCD-to-binary conversion for various BCD values including edge and max byte values.
+// Input: bcd_to_bin on 0x00, 0x09, 0x10, 0x15, 0x23, 0x59.
+// Expect: Correct binary values (0x00->0, 0x10->10, 0x59->0x3B, etc.).
+// Depends: arch::RTC
 JARVIS_TEST(rtc_bcd_conversion) {
     JARVIS_ASSERT_EQ(0x00, arch::RTC::bcd_to_bin(0x00));
     JARVIS_ASSERT_EQ(0x09, arch::RTC::bcd_to_bin(0x09));
@@ -21,6 +31,9 @@ JARVIS_TEST(rtc_bcd_conversion) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Register all RTC tests with the test framework.
+// Depends: arch::RTC
 void register_rtc_tests() {
     Logger::info("Registering RTC tests");
     JARVIS_REGISTER_TEST(rtc_read_seconds);

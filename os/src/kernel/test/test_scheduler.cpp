@@ -7,12 +7,22 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Validates that the scheduler reports at least one task running.
+// Input: No parameters; reads global scheduler state
+// Expect: JARVIS_ASSERT checks that task_count >= 1
+// Depends: test, scheduler
 JARVIS_TEST(scheduler_task_count) {
     uint64_t cnt = Scheduler::task_count();
     JARVIS_ASSERT(cnt >= 1);
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that the current task is non-null and has a positive task ID.
+// Input: No parameters; reads current task from Scheduler::current_task()
+// Expect: JARVIS_ASSERT checks non-null and id > 0
+// Depends: test, scheduler
 JARVIS_TEST(scheduler_current_task) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -20,6 +30,11 @@ JARVIS_TEST(scheduler_current_task) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that calling Scheduler::reschedule returns a valid current task (no-op reschedule).
+// Input: No parameters; captures before/after task pointers
+// Expect: JARVIS_ASSERT checks that before and after are both non-null
+// Depends: test, scheduler
 JARVIS_TEST(scheduler_reschedule_noop) {
     auto* before = Scheduler::current_task();
     JARVIS_ASSERT(before != nullptr);
@@ -29,6 +44,11 @@ JARVIS_TEST(scheduler_reschedule_noop) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that adding a new task increments the task count and removing it restores the original count.
+// Input: A new TaskControlBlock with empty lambda, priority 1, quanta 10
+// Expect: JARVIS_ASSERT_EQ checks count increases by 1 after add, returns to original after remove; current_task non-null
+// Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_remove_task) {
     auto* before = Scheduler::current_task();
     JARVIS_ASSERT(before != nullptr);
@@ -50,6 +70,11 @@ JARVIS_TEST(scheduler_remove_task) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates that reaping orphans removes a terminated task whose parent has exited (parent_id 999999).
+// Input: A new TaskControlBlock with parent_id=999999, state=TERMINATED, exit_code=42
+// Expect: JARVIS_ASSERT checks count increased by 1 after add, then <= original+1 after reap_orphans; current_task non-null
+// Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_reap_orphans) {
     uint64_t cnt_before = Scheduler::task_count();
 
@@ -72,10 +97,20 @@ JARVIS_TEST(scheduler_reap_orphans) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Placeholder for testing that deferred reaping of orphan tasks works correctly.
+// Input: (none)
+// Expect: JARVIS_TEST_PASS()
+// Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all scheduler-related unit tests with the test framework.
+// Input: (none)
+// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
+// Depends: test, logger, scheduler, task, pmm, vmm
 void register_scheduler_tests() {
     Logger::info("Registering scheduler tests");
     JARVIS_REGISTER_TEST(scheduler_task_count);

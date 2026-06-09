@@ -11,6 +11,11 @@
 
 using namespace kernel;
 
+// Runmode: kernel
+// Testidea: Verifies that task cleanup nullifies msg_queue, notify, event_group, and kernel_stack after termination.
+// Input: Create a kernel task via TaskControlBlock::create, set state to TERMINATED, call cleanup().
+// Expect: All four pointers are null after cleanup; no double-free or use-after-free.
+// Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue, kernel::sync::Notify, kernel::sync::EventGroup
 JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
@@ -32,10 +37,20 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Verifies that a terminating task wakes any tasks blocked on sending IPC to it.
+// Input: None (not implemented).
+// Expect: No assertion; test passes immediately.
+// Depends: (none)
 JARVIS_TEST(task_exit_wakes_blocked_senders) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that cleanup of a user-created task frees its page table, user stack, and stack physical address.
+// Input: Create a user task via TaskControlBlock::create_user (32 KiB stack), call cleanup().
+// Expect: page_table_, user_stack_, and stack_phys_ are all zeroed after cleanup.
+// Depends: kernel::task::TaskControlBlock, kernel::memory::PMM, kernel::memory::VMM
 JARVIS_TEST(task_exit_frees_page_tables_correctly) {
     auto* tcb = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     JARVIS_ASSERT(tcb != nullptr);
@@ -53,10 +68,20 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Verifies that reparenting a terminating task does not leak or corrupt its resources.
+// Input: None (not implemented).
+// Expect: No assertion; test passes immediately.
+// Depends: (none)
 JARVIS_TEST(task_reparent_preserves_resources) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that a terminated zombie task is findable via scheduler until cleanup+remove, then unreachable.
+// Input: Create a kernel task, add to scheduler, set TERMINATED, find_task, cleanup, remove_task, delete, find_task again.
+// Expect: find_task returns tcb before removal; returns nullptr after removal+delete.
+// Depends: kernel::task::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_zombie_state_cleanup) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
@@ -75,14 +100,29 @@ JARVIS_TEST(task_zombie_state_cleanup) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Verifies the scheduler reaper respects parent wait status when collecting zombie children.
+// Input: None (not implemented).
+// Expect: No assertion; test passes immediately.
+// Depends: (none)
 JARVIS_TEST(scheduler_reap_respects_parent_wait) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: STUB - Verifies that ELF loading calls init_task_common for the init task.
+// Input: None (not implemented).
+// Expect: No assertion; test passes immediately.
+// Depends: (none)
 JARVIS_TEST(elf_load_init_task_common_called) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Registers all task lifecycle test cases with the test framework.
+// Input: None.
+// Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for execution.
+// Depends: kernel::Logger, kernel::test framework
 void register_task_lifecycle_tests() {
     Logger::info("Registering task lifecycle tests");
     JARVIS_REGISTER_TEST(task_exit_cleans_all_ipc_objects);

@@ -62,6 +62,11 @@ static uint64_t bench_rdtsc_overhead() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures RDTSC instruction overhead as baseline for other benchmarks
+// Input: Back-to-back RDTSC calls
+// Expect: Average overhead < 100 cycles
+// Depends: kernel/arch, kernel/task
 JARVIS_TEST(ipc_bench_rdtsc_overhead) {
     auto r = measure(bench_rdtsc_overhead);
     Logger::info("RDTSC overhead: min=%d, avg=%d, max=%d (iters=%d)",
@@ -88,6 +93,11 @@ static uint64_t bench_ipc_send_self() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures IPC send+recv round-trip latency within the same task
+// Input: Message sent to self via IPC::send, then drained via IPC::recv
+// Expect: Average round-trip < 10000 cycles
+// Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_self) {
     Message drain;
     while (IPC::recv(drain));
@@ -103,6 +113,11 @@ JARVIS_TEST(ipc_bench_send_self) {
 // IPC recv only (pop from pre-filled queue)
 // ---------------------------------------------------------------------------
 
+// Runmode: kernel
+// Testidea: STUB - Measures IPC recv-only latency from a pre-filled queue
+// Input: None (stub test)
+// Expect: Passes (stub)
+// Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_recv_self) {
     JARVIS_TEST_PASS();
 }
@@ -119,6 +134,11 @@ static uint64_t bench_ipc_send_only() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures non-blocking IPC send-only latency
+// Input: IPC_NONBLOCK send to own task without draining per iteration
+// Expect: Average send latency < 10000 cycles
+// Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_only) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -150,6 +170,11 @@ static uint64_t bench_ipc_send_full() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures non-blocking IPC send failure path when queue is full
+// Input: Queue filled to capacity, then IPC_NONBLOCK send attempted
+// Expect: Average failure-path latency < 5000 cycles
+// Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_full) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -184,6 +209,11 @@ static uint64_t bench_ipc_send_64byte() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures IPC send+recv round-trip with maximal 64-byte payload
+// Input: IPC_MAX_MSG_SIZE payload filled with sequential bytes, sent then received
+// Expect: Average round-trip < 20000 cycles
+// Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_64byte) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -212,6 +242,11 @@ static uint64_t bench_current_task() {
     return 0;
 }
 
+// Runmode: kernel
+// Testidea: Measures Scheduler::current_task lookup overhead as baseline for syscall dispatch
+// Input: Calls Scheduler::current_task() repeatedly
+// Expect: Average lookup < 500 cycles
+// Depends: kernel/task
 JARVIS_TEST(ipc_bench_current_task) {
     auto r = measure(bench_current_task);
     Logger::info("Scheduler::current_task: min=%d, avg=%d, max=%d",
@@ -224,6 +259,11 @@ JARVIS_TEST(ipc_bench_current_task) {
 // Registration
 // ---------------------------------------------------------------------------
 
+// Runmode: kernel
+// Testidea: Registers all IPC benchmark tests with the test framework
+// Input: None
+// Expect: All IPC benchmark tests registered
+// Depends: test framework
 void register_ipc_benchmark_tests() {
     Logger::info("Registering IPC benchmark suite");
 
