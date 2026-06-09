@@ -30,6 +30,13 @@ Stub tests should be implemented when the underlying APIs exist. They are NOT re
 ### Test Sanctity Rule
 All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`/`Input`/`Expect`/`Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
+### testbed Branch
+All new tests are implemented on the `testbed` branch:
+- **No production kernel code** — test files only. Everything goes into `src/kernel/test/`.
+- **Order:** stub tests first, then replace stubs with real assertions, then verify with `make test-qemu`.
+- **Stubs merge as-is:** Tests that need APIs not yet on `main` remain `JARVIS_TEST_PASS()` stubs after merging. The doc block documents what they should eventually assert.
+- **Merge to main:** When all tests on `testbed` pass (0 failures), merge into `main`. `testbed` persists and accumulates tests for the next cycle — it is not deleted after merge.
+
 ### Test Design Principles (apply to all new tests)
 0. **New tests are debug-only by default.** All new tests must use `JARVIS_REGISTER_TEST(name)` which places them in the debug target only. Only purely computational, zero-side-effect tests that have proven stable across many sessions may be promoted to `JARVIS_REGISTER_RELEASE_TEST(name)`. Release is a curated subset, not a default.
 1. Boundary Testing: Test limit, limit-1, limit+1
