@@ -242,6 +242,19 @@ void Scheduler::reap_orphans() noexcept {
             if (task_count_ == 0) can_reap = true;
 
             if (can_reap) {
+                if (!t->page_table_shared_) {
+                    bool has_sharing_child = false;
+                    for (uint64_t j = 0; j < task_count_; ++j) {
+                        auto* c = tasks_[j];
+                        if (!c || c == t || c == current) continue;
+                        if (c->parent_id == t->id && c->page_table_shared_) {
+                            has_sharing_child = true;
+                            break;
+                        }
+                    }
+                    if (has_sharing_child) continue;
+                }
+
                 t->cleanup();
                 remove_task(t);
                 delete t;

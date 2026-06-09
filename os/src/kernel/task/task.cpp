@@ -296,6 +296,26 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
             new_virt[i] = kernel_virt[i];
         }
 
+        // Create private page tables for the user stack region so that
+        // mapping the child's stack below doesn't corrupt the parent's
+        // mappings through shared PDPT/PD/PT pages.
+        {
+            constexpr uint64_t PML4_SHIFT = 39;
+            constexpr uint64_t PDPT_SHIFT = 30;
+            constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+            size_t st_pml4_idx = (mem::STACK_VADDR >> PML4_SHIFT) & 0x1FF;
+            size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
+            if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
+                uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
+                uint64_t new_pdpt_phys = PMM::alloc_page_table();
+                auto* old_pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + old_pdpt_phys);
+                auto* new_pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pdpt_phys);
+                memcpy(new_pdpt, old_pdpt, arch::PAGE_SIZE);
+                new_pdpt[st_pdpt_idx] = 0;
+                new_virt[st_pml4_idx] = new_pdpt_phys | (new_virt[st_pml4_idx] & 0xFFFULL);
+            }
+        }
+
         size_t ustack_pages = (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) { delete tcb; return nullptr; }
