@@ -5,3 +5,4 @@
 
 void register_selftest_tests();
 void register_ipc_benchmark_tests();
+void register_task_tests();
