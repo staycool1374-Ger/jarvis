@@ -262,22 +262,22 @@ profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
 	python3 tools/extract_gcda.py build/profiling/gcda.raw
 
 release: CXXFLAGS += -g -O2 -UCONFIG_DEBUG
-release: iso/boot/kernel.elf iso/boot/grub/grub.cfg
+release:
+	@echo "=== Building release ISO (clean build) ==="
+	$(MAKE) clean
+	$(MAKE) iso/boot/kernel.elf iso/boot/grub/grub.cfg CXXFLAGS="$(CXXFLAGS)"
 	@mkdir -p $(dir $(RELEASE_ISO))
-	@echo "=== Building release ISO (may need a prior 'make clean' if debug objects exist) ==="
 	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
 	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
 	@echo ""
 	@echo "=========================================="
 	@echo " Release ISO ready: $(RELEASE_ISO)"
 	@echo " Validate with:  make release-test"
-	@echo " Run with:       make run-qemu"
 	@echo "=========================================="
 
 release-test:
 	@echo ""
-	@echo "=== Building release ISO (clean build) ==="
-	$(MAKE) clean
+	@echo "=== Building + validating release ISO ==="
 	$(MAKE) release
 	@echo ""
 	@echo "=== Validating release ISO via test-qemu ==="
