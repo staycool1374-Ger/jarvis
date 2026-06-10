@@ -126,29 +126,120 @@ JARVIS_TEST(queue_send_receive_block) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that Queue::send blocks when the queue is full.
-// Input: None (stub)
-// Expect: JARVIS_TEST_PASS only
-// Depends: kernel::sync::Queue
+// Testidea: Verifies that Queue::send blocks the sender when the queue is full.
+// Input: Fill queue to capacity, create sender task that blocks on send, verify blocking behavior.
+// Expect: Sender becomes BLOCKED when queue is full; becomes READY after receiver drains.
 JARVIS_TEST(sync_queue_send_blocks_when_full) {
+    sync::Queue queue;
+    queue.init();
+
+    // Fill the queue
+    for (size_t i = 0; i < sync::QUEUE_MAX_MSG_COUNT; ++i) {
+        uint8_t d[32] = {static_cast<uint8_t>(i)};
+        JARVIS_ASSERT(queue.try_send(d, 1));
+    }
+    JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT);
+
+    auto* sender = TaskControlBlock::create([]() {
+        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
+        q->send((uint8_t*)"test", 4);
+    }, 5, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &queue;
+    Scheduler::add_task(sender);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(sender);
+    queue.send((uint8_t*)"test", 4);
+    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+
+    // Drain one message
+    Scheduler::set_current(original);
+    uint8_t buf[32];
+    size_t size = 32;
+    JARVIS_ASSERT(queue.try_receive(buf, &size));
+    JARVIS_ASSERT(sender->state == TaskState::READY);
+
+    Scheduler::remove_task(sender);
+    sender->cleanup();
+    delete sender;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that Queue::receive blocks when the queue is empty.
-// Input: None (stub)
-// Expect: JARVIS_TEST_PASS only
-// Depends: kernel::sync::Queue
+// Testidea: Verifies that Queue::receive blocks the receiver when the queue is empty.
+// Input: Create receiver task that blocks on receive from empty queue, verify blocking behavior.
+// Expect: Receiver becomes BLOCKED when queue is empty; becomes READY after sender adds message.
 JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
+    sync::Queue queue;
+    queue.init();
+    JARVIS_ASSERT(queue.available() == 0);
+
+    auto* receiver = TaskControlBlock::create([]() {
+        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
+        uint8_t buf[32];
+        size_t size = 32;
+        q->receive(buf, &size);
+    }, 5, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    receiver->user_data = &queue;
+    Scheduler::add_task(receiver);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(receiver);
+    uint8_t buf[32];
+    size_t size = 32;
+    queue.receive(buf, &size);
+    JARVIS_ASSERT(receiver->state == TaskState::BLOCKED);
+
+    // Add a message to unblock
+    Scheduler::set_current(original);
+    JARVIS_ASSERT(queue.try_send((uint8_t*)"data", 4));
+    JARVIS_ASSERT(receiver->state == TaskState::READY);
+
+    Scheduler::remove_task(receiver);
+    receiver->cleanup();
+    delete receiver;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that a blocked sender is woken when a receiver consumes from the queue.
-// Input: None (stub)
-// Expect: JARVIS_TEST_PASS only
-// Depends: kernel::sync::Queue, kernel::Scheduler
+// Testidea: Verifies that a blocked sender is woken when a receiver consumes from the queue.
+// Input: Fill queue, block sender on send, drain via receiver, verify sender becomes READY.
+// Expect: Sender is BLOCKED after failed send, becomes READY after receiver calls receive.
 JARVIS_TEST(sync_queue_wake_sender_on_receive) {
+    sync::Queue queue;
+    queue.init();
+
+    // Fill the queue
+    for (size_t i = 0; i < sync::QUEUE_MAX_MSG_COUNT; ++i) {
+        uint8_t d[32] = {static_cast<uint8_t>(i)};
+        JARVIS_ASSERT(queue.try_send(d, 1));
+    }
+
+    auto* sender = TaskControlBlock::create([]() {
+        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
+        q->send((uint8_t*)"wake", 4);
+    }, 5, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &queue;
+    Scheduler::add_task(sender);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(sender);
+    queue.send((uint8_t*)"wake", 4);
+    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+
+    // Receiver drains one
+    Scheduler::set_current(original);
+    uint8_t buf[32];
+    size_t size = 32;
+    JARVIS_ASSERT(queue.receive(buf, &size));
+    JARVIS_ASSERT(sender->state == TaskState::READY);
+
+    Scheduler::remove_task(sender);
+    sender->cleanup();
+    delete sender;
     JARVIS_TEST_PASS();
 }
 

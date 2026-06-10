@@ -98,11 +98,46 @@ JARVIS_TEST(scheduler_reap_orphans) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that deferred reaping of orphan tasks works correctly.
-// Input: (none)
-// Expect: JARVIS_TEST_PASS()
-// Depends: test, scheduler, task, pmm, vmm
+// Testidea: Verifies that deferred reaping respects parent wait status - child not reaped while parent waits.
+// Input: Create parent and child. Parent sets waiting_child_pid. Child exits. Reap orphans.
+// Expect: Child is NOT reaped while parent waits; reaped after parent clears wait.
 JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
+    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(parent != nullptr);
+    Scheduler::add_task(parent);
+
+    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(child != nullptr);
+    Scheduler::add_task(child);
+    child->parent_id = parent->id;
+    parent->add_child(child);
+
+    uint64_t child_id = child->id;
+    uint64_t status = 0;
+    parent->waiting_child_pid = child_id;
+    parent->waiting_child_status = &status;
+
+    // Terminate child
+    child->state = TaskState::TERMINATED;
+    child->exit_code = 42;
+
+    // Reap orphans - should NOT reap child because parent is waiting
+    Scheduler::reap_orphans();
+
+    // Child should still exist (not reaped yet)
+    JARVIS_ASSERT(Scheduler::find_task(child_id) == child);
+
+    // Now simulate parent collecting (clear wait)
+    parent->waiting_child_pid = 0;
+    parent->waiting_child_status = nullptr;
+
+    // Reap again - now child should be reaped
+    Scheduler::reap_orphans();
+
+    JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
+
+    Scheduler::remove_task(parent);
+    delete parent;
     JARVIS_TEST_PASS();
 }
 

@@ -556,20 +556,112 @@ JARVIS_TEST(ipc_send_block_full) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for a round-trip synchronous IPC send/receive test.
-// Input: None (stub)
-// Expect: JARVIS_TEST_PASS only
-// Depends: kernel::IPC
+// Testidea: Verifies synchronous IPC send/receive round-trip between two tasks.
+// Input: Create sender and receiver tasks. Sender calls send_sync with a message, receiver recvs and replies.
+// Expect: send_sync returns true, received message matches, reply received correctly.
 JARVIS_TEST(ipc_send_sync_roundtrip) {
+    static uint64_t g_receiver_id = 0;
+
+    auto* receiver = TaskControlBlock::create([]() {
+        Message msg;
+        // Receiver waits for message
+        JARVIS_ASSERT(IPC::recv(msg));
+        JARVIS_ASSERT_EQ(42ULL, msg.type);
+        // Send reply
+        Message reply;
+        reply.sender_id = Scheduler::current_task()->id;
+        reply.type = 99;
+        reply.priority = 0;
+        reply.data_size = 0;
+        JARVIS_ASSERT(IPC::send(msg.sender_id, reply));
+    }, 5, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    g_receiver_id = receiver->id;
+    Scheduler::add_task(receiver);
+
+    auto* sender = TaskControlBlock::create([]() {
+        Message msg;
+        msg.sender_id = Scheduler::current_task()->id;
+        msg.type = 42;
+        msg.priority = 0;
+        msg.data_size = 0;
+
+        Message reply;
+        bool ok = IPC::send_sync(g_receiver_id, msg, reply);
+        JARVIS_ASSERT(ok);
+        JARVIS_ASSERT_EQ(99ULL, reply.type);
+    }, 5, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    Scheduler::add_task(sender);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(sender);
+
+    // Let sender run (it will block on send_sync)
+    // Then receiver runs, recvs, replies
+    Scheduler::reschedule();
+    Scheduler::reschedule();
+
+    Scheduler::set_current(original);
+
+    Scheduler::remove_task(sender);
+    sender->cleanup();
+    delete sender;
+    Scheduler::remove_task(receiver);
+    receiver->cleanup();
+    delete receiver;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for a test verifying blocked senders are unblocked when the receiver task exits.
-// Input: None (stub)
-// Expect: JARVIS_TEST_PASS only
-// Depends: kernel::IPC, kernel::Scheduler
+// Testidea: Verifies that blocked IPC senders are unblocked when the receiver task exits.
+// Input: Create receiver and sender. Fill receiver's queue, sender blocks on send. Terminate receiver and cleanup.
+// Expect: Sender is woken up (state becomes READY) and removed from blocked list.
 JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
+    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(receiver);
+
+    auto* sender = TaskControlBlock::create([]() {}, 6, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    Scheduler::add_task(sender);
+
+    kernel::Message msg{};
+    msg.sender_id = sender->id;
+    msg.type = 1;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    // Fill receiver's queue to force sender to block
+    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
+        kernel::Message fill_msg{};
+        fill_msg.sender_id = 0;
+        fill_msg.type = 99;
+        fill_msg.priority = 0;
+        fill_msg.data_size = 0;
+        receiver->msg_queue->push(fill_msg);
+    }
+
+    // Now send from sender - should block
+    (void)kernel::IPC::send(receiver->id, msg, 0);
+    // The sender should be in blocked list
+    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+
+    // Now terminate receiver and cleanup
+    receiver->state = TaskState::TERMINATED;
+    receiver->exit_code = 0;
+    receiver->cleanup();
+
+    // Sender should be woken up
+    JARVIS_ASSERT(sender->state == TaskState::READY);
+    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == nullptr);
+    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_tail == nullptr);
+
+    Scheduler::remove_task(sender);
+    Scheduler::remove_task(receiver);
+    delete sender;
+    delete receiver;
     JARVIS_TEST_PASS();
 }
 
