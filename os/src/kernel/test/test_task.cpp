@@ -8,6 +8,7 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/elf/elf.hpp>
+#include <initrd/initrd.hpp>
 
 using namespace kernel;
 

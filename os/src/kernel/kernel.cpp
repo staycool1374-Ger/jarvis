@@ -303,6 +303,26 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
+    // Userspace idle task (Ring 3, pause loop, lowest priority)
+    {
+        initrd::InitrdFile f = initrd::find("./idle.c.elf");
+        if (!f.data) f = initrd::find("idle.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* idle_task = kernel::elf::load(hdr, f.data);
+                if (idle_task) {
+                    idle_task->priority = 0;
+                    idle_task->period_ticks = 0xFFFFFFFF;
+                    kernel::Scheduler::add_task(idle_task);
+                    debug_write("[BOOT] Userspace idle task started (PID=");
+                    debug_write_hex(idle_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
+    }
+
     // Keep kernel shell registered as a fallback (for `runelf` or debug)
     service::Shell::init();
 

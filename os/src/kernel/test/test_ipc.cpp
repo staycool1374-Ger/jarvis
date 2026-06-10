@@ -643,6 +643,7 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
     }
 
     // Now send from sender - should block
+    Scheduler::set_current(sender);
     (void)kernel::IPC::send(receiver->id, msg, 0);
     // The sender should be in blocked list
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);

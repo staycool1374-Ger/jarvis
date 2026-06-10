@@ -243,6 +243,8 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->priority = 5;
     tcb->period_ticks = 20;
 
+    init_task_common(tcb);
+
     size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
     if (!kstack_phys) { delete tcb; return nullptr; }

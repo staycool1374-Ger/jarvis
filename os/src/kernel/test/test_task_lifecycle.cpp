@@ -69,6 +69,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     }
 
     // Now send from sender - should block
+    Scheduler::set_current(sender);
     (void)kernel::IPC::send(receiver->id, msg, 0);
     // IPC::send with blocking should not return if queue is full
     // The sender should be in blocked list
@@ -136,23 +137,14 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     parent->state = TaskState::TERMINATED;
     parent->exit_code = 0;
 
-    // Find init task (first task with parent_id == 0)
-    TaskControlBlock* init_task = nullptr;
-    for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->parent_id == 0 && t->id != 0) {
-            init_task = t;
-            break;
-        }
-    }
-    JARVIS_ASSERT(init_task != nullptr);
-
     // Reap orphans - should reparent child to init
     Scheduler::reap_orphans();
 
-    // Child should be reparented to init
-    JARVIS_ASSERT(child->parent_id == init_task->id);
-    JARVIS_ASSERT(init_task->num_children >= 1);
+    // Child should be reparented to init (the idle/root task)
+    auto* actual_init = Scheduler::get_idle_task();
+    JARVIS_ASSERT(actual_init != nullptr);
+    JARVIS_ASSERT(child->parent_id == actual_init->id);
+    JARVIS_ASSERT(actual_init->num_children >= 1);
 
     // Cleanup
     Scheduler::remove_task(child);

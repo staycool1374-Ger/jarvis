@@ -9,6 +9,10 @@
 
 namespace kernel {
 
+// Forward declaration for init_task_common
+struct TaskControlBlock;
+void init_task_common(TaskControlBlock* tcb);
+
 /// @brief Maximum payload size in bytes for an IPC message.
 static constexpr size_t IPC_MAX_MSG_SIZE = 64;
 /// @brief Maximum number of messages in a single queue.

@@ -51,15 +51,7 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
         t->exit_code = arg0;
 
         if (t->first_child) {
-            TaskControlBlock* init_task = nullptr;
-            uint64_t count = Scheduler::task_count();
-            for (uint64_t i = 0; i < count; ++i) {
-                auto* p = Scheduler::task_at(i);
-                if (p && p->parent_id == 0 && p->id != 0) {
-                    init_task = p;
-                    break;
-                }
-            }
+            TaskControlBlock* init_task = Scheduler::task_at(0);
             if (init_task) {
                 auto* child = t->first_child;
                 while (child) {

@@ -14,7 +14,7 @@ namespace kernel {
 
 static uint64_t next_task_id = 1;
 
-static void init_task_common(TaskControlBlock* tcb) {
+void init_task_common(TaskControlBlock* tcb) {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         tcb->fd_table.fds[i].used = false;
         tcb->fd_table.fds[i].vnode = nullptr;
@@ -414,7 +414,27 @@ void TaskControlBlock::cleanup() noexcept {
         page_table_ = 0;
     }
 
-    if (msg_queue) { delete msg_queue; msg_queue = nullptr; }
+    if (msg_queue) {
+        // Wake any blocked senders before destroying the queue
+        auto* task = msg_queue->blocked_senders_head;
+        if (task) {
+            while (task) {
+                auto* next = task->blocked_next;
+                task->blocked_next = nullptr;
+                if (task->state != TaskState::TERMINATED)
+                    task->state = TaskState::READY;
+                task = next;
+            }
+            msg_queue->blocked_senders_head = nullptr;
+            msg_queue->blocked_senders_tail = nullptr;
+            // Keep msg_queue alive so that blocked senders can observe
+            // the empty blocked-sender list. It will be freed when the
+            // task object itself is deleted.
+        } else {
+            delete msg_queue;
+            msg_queue = nullptr;
+        }
+    }
     if (notify) { delete notify; notify = nullptr; }
     if (event_group) { delete event_group; event_group = nullptr; }
 }
