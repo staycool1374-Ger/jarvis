@@ -198,23 +198,48 @@ void Scheduler::reap_orphans() noexcept {
             if (!t || t == current) continue;
             if (t->state != TaskState::TERMINATED) continue;
 
-            bool can_reap = false;
-            if (t->parent_id == 0) {
-                can_reap = true;
-            } else {
+            // Reparent orphans to init (first shell task with no parent)
+            if (t->parent_id != 0) {
                 bool parent_alive = false;
+                TaskControlBlock* init_task = nullptr;
                 for (uint64_t j = 0; j < task_count_; ++j) {
                     auto* p = tasks_[j];
                     if (!p) continue;
-                    if (p->id == t->parent_id) {
-                        if (p->state != TaskState::TERMINATED) {
-                            parent_alive = true;
-                        }
-                        break;
+                    if (p->id == t->parent_id && p->state != TaskState::TERMINATED) {
+                        parent_alive = true;
+                    }
+                    if (p->parent_id == 0 && p->id != 0 && !init_task) {
+                        init_task = p;
                     }
                 }
-                if (!parent_alive) can_reap = true;
+                if (!parent_alive && init_task) {
+                    // Reparent to init
+                    if (t->parent_id != init_task->id) {
+                        // Find old parent and remove child
+                        for (uint64_t j = 0; j < task_count_; ++j) {
+                            auto* op = tasks_[j];
+                            if (op && op->id == t->parent_id) {
+                                op->remove_child(t);
+                                break;
+                            }
+                        }
+                        init_task->add_child(t);
+                    }
+                }
             }
+
+            bool can_reap = false;
+            // Only reap if parent is dead (TERMINATED or no longer in task list)
+            for (uint64_t j = 0; j < task_count_; ++j) {
+                auto* p = tasks_[j];
+                if (p && p->id == t->parent_id) {
+                    if (p->state == TaskState::TERMINATED) {
+                        can_reap = true;
+                    }
+                    break;
+                }
+            }
+            if (task_count_ == 0) can_reap = true;
 
             if (can_reap) {
                 if (!t->page_table_shared_) {
