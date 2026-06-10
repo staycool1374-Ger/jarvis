@@ -15,6 +15,11 @@
 ### Version 0.2.9 — Microkernel Foundation & Task Lifecycle
 - [x] **Subsystem Privilege Audit:** Strukturierte Katalogisierung aller Kernel-Subsysteme nach ihren tatsächlichen Privilegien-Anforderungen zur sauberen Trennung von Ring-0- und Ring-3-Inhalten. (`docs/privilege_audit.md`)
 - [x] **IPC Latency Benchmark:** Entwicklung einer Mess-Suite (7 kernel-level Mikro-Benchmarks mit RDTSC). Misst IPC send/recv Kosten (avg 235 Zyklen), recv only (50), 64B-Payload (175). Baseline für Microkernel-Vergleich.
+- [ ] **Zero-Copy Buffer Pool:** Einführung eines fixen Pools voralozierter 4-KiB-Puffer im Kernelspeicher (~256 KiB, 64 Puffer), die per Handle-Transfer via IPC zwischen Tasks verschoben werden — kein Kopieren der Nutzdaten. Ermöglicht effiziente Pipeline-Kommunikation für VFS- und IOCD-Server und späteres Networking.
+  - `BufferPool`-Klasse mit Bitmap-Allocator: `alloc(pid)`, `free(handle)`, `free_all(pid)`-Cleanup bei Task-Tod
+  - IPC-Erweiterung: `send_buffer(dest, handle)` und `recv_buffer(handle)` — Handle wird in existierender `Message.data[]` codiert, keine Struct-Vergrößerung
+  - Buffer über HHDM direkt adressierbar, keine Page-Table-Manipulation im ersten Schritt
+  - 6 Dateien, ~160 Zeilen Implementierung
 - [x] **Unprivileged Shell:** Ausführung der Shell als unprivilegierte User-space-Task (`sh.c.elf`, PID 2B, Ring 3). Kernel-Shell als Fallback registriert. Zero additional IPC latency — standard VFS `read("/dev/tty")` und `write()`-Syscalls via MSR-fast-path. (`kernel.cpp:278-295`)
 - [ ] **Task Lifecycle Audit:** Systematische Überprüfung ob terminierte Tasks und all ihre Abhängigkeiten (IPC-Queues, Notify, EventGroup, Page-Tables, FDs) vollständig zerstört und aus dem Scheduler entfernt werden. Fix der gefundenen Bugs:
   - `reap_orphans()` can-reap-Logik reparieren (setzt `can_reap=true` bereits beim ersten Loop-Iteration — verhindert korrektes Deferred-Cleanup)
