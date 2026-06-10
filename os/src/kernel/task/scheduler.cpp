@@ -48,7 +48,7 @@ void Scheduler::remove_task(TaskControlBlock* task) {
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == task) {
             tasks_[i] = tasks_[--task_count_];
-            if (current_index_ >= task_count_) current_index_ = 0;
+            if (current_index_ > task_count_) current_index_ = 0;
             if (i < task_count_ && current_index_ == task_count_) current_index_ = i;
             break;
         }
@@ -246,7 +246,9 @@ void Scheduler::reap_orphans() noexcept {
                             can_reap = true;
                         }
                         // Can reap if parent is alive but no longer waiting for this child
-                        else if (p->waiting_child_pid != t->id &&
+                        // (parent must have explicitly called waitpid for a different child)
+                        else if (p->waiting_child_pid != 0 &&
+                                 p->waiting_child_pid != t->id &&
                                  p->waiting_child_pid != static_cast<uint64_t>(-1)) {
                             can_reap = true;
                         }

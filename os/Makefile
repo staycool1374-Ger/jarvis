@@ -79,7 +79,7 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test profiling
+.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling
 
 -include $(DEPFILES)
 
@@ -95,6 +95,7 @@ help:
 	@echo "  make clean         Remove all build artifacts"
 	@echo "  make run-qemu      Boot default ISO interactively (serial + QEMU window)"
 	@echo "  make run-release   Build release ISO then boot interactively"
+	@echo "  make run-release-test Automated release integration test (6 commands + exit)"
 	@echo "  make symbols       Generate kernel symbol table"
 	@echo "  make objdump       Disassemble kernel to build/kernel.dis"
 	@echo "  make profiling     GCOV instrumentation + coverage capture"
@@ -290,6 +291,73 @@ release-test:
 	@echo ""
 	@echo "=== Running full test suite (debug build) ==="
 	$(MAKE) test-qemu
+
+run-release-test: release
+	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	    echo "=== Running automated release integration test ==="; \
+	    echo "Commands: garbing xyzzy plugh help test nonexistent exit"; \
+	    echo "=== (this test takes ~60s) ==="; \
+	    expect -c ' \
+	        set timeout 120; \
+	        spawn qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
+	        puts "waiting for shell prompt..."; \
+	        expect { \
+	            -ex {sh$ } { } \
+	            "PANIC" { puts "PANIC at boot"; exit 1 } \
+	            "EXCEPTION" { puts "EXCEPTION at boot"; exit 1 } \
+	            timeout { puts "TIMEOUT at boot"; exit 1 } \
+	        } \
+	        puts "boot OK"; \
+	        \
+	        proc test_cmd {cmd} { \
+	            puts "testing: $$cmd"; \
+	            send "$$cmd\r"; \
+	            expect { \
+	                -ex "$$cmd\r\nsh: $$cmd: not found\r\nsh\$ " { } \
+	                "PANIC" { puts "PANIC after $$cmd"; exit 1 } \
+	                "EXCEPTION" { puts "EXCEPTION after $$cmd"; exit 1 } \
+	                timeout { puts "TIMEOUT after $$cmd"; exit 1 } \
+	            } \
+	        } \
+	        \
+	        test_cmd "garbing"; \
+	        test_cmd "xyzzy"; \
+	        test_cmd "plugh"; \
+	        test_cmd "help"; \
+	        test_cmd "test"; \
+	        test_cmd "nonexistent"; \
+	        \
+	        puts "exiting shell..."; \
+	        send "exit\r"; \
+	        expect { \
+	            -ex "exit\r\nsh: exiting\r\n" { puts "exit message seen" } \
+	            "PANIC" { puts "PANIC on exit"; exit 1 } \
+	            "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 } \
+	            timeout { puts "TIMEOUT on exit"; exit 1 } \
+	        } \
+	        \
+	        puts "waiting for system idle..."; \
+	        expect { \
+	            -ex "Entering idle loop\r\n" { puts "idle loop reached - system stable" } \
+	            "PANIC" { puts "PANIC after exit"; exit 1 } \
+	            "EXCEPTION" { puts "EXCEPTION after exit"; exit 1 } \
+	            eof { puts "QEMU exited cleanly" } \
+	            timeout { puts "timeout (no crash)" } \
+	        } \
+	        \
+	        puts "ALL TESTS PASSED"; \
+	        exit 0; \
+	    '; \
+	    rc=$$?; \
+	    if [ $$rc -eq 0 ]; then \
+	        echo "OK: Release integration test passed."; \
+	    else \
+	        echo "FAIL: Release integration test failed with code $$rc"; \
+	        exit 1; \
+	    fi \
+	else \
+	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	fi
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
