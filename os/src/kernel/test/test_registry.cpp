@@ -23,6 +23,10 @@ void register_task_lifecycle_tests();
 void register_idle_task_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
+void register_wfg_tests();
+void register_deadlock_detect_tests();
+void register_deadlock_recovery_tests();
+void register_health_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
@@ -51,4 +55,8 @@ void register_selftest_tests() {
     register_idle_task_tests();
     register_vfsd_tests();
     register_iocd_tests();
+    register_wfg_tests();
+    register_deadlock_detect_tests();
+    register_deadlock_recovery_tests();
+    register_health_tests();
 }
