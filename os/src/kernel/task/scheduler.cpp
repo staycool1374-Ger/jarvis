@@ -307,6 +307,22 @@ void Scheduler::reap_orphans() noexcept {
     inside_reap = false;
 }
 
+void Scheduler::cleanup_test_tasks() noexcept {
+    for (uint64_t i = 1; i < task_count_; ++i) {
+        auto* t = tasks_[i];
+        if (t && t->state != TaskState::TERMINATED) {
+            t->state = TaskState::TERMINATED;
+            t->exit_code = 0;
+        }
+    }
+    reap_orphans();
+    for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) id_table_[i] = nullptr;
+    id_table_insert(idle_task_->id, idle_task_);
+    task_count_ = 1;
+    tasks_[0] = idle_task_;
+    current_index_ = 0;
+}
+
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
         return;

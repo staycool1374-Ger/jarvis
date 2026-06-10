@@ -259,6 +259,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     register_ipc_benchmark_tests();
 #ifdef CONFIG_DEBUG
     kernel::test::run_debug();
+    kernel::Scheduler::cleanup_test_tasks();
 #else
     kernel::test::run_release();
 #endif

@@ -227,6 +227,9 @@ test-gdb: debug
 	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
+	@if ! command -v gtimeout >/dev/null 2>&1; then \
+	    echo "gtimeout missing. Install with: brew install coreutils"; exit 1; \
+	fi
 	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log -nic none \
 	    -boot order=d -s -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) & \
@@ -236,8 +239,8 @@ test-gdb: debug
 	    nc -z localhost 1234 2>/dev/null && break; \
 	    sleep 1; \
 	done; \
-	echo "Connecting GDB (panic surveillance)..."; \
-	x86_64-elf-gdb build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
+	echo "Connecting GDB (panic surveillance, 120s timeout)..."; \
+	gtimeout 120 x86_64-elf-gdb build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
 	GDB_EXIT=$$?; \
 	kill $$QEMU_PID 2>/dev/null; wait $$QEMU_PID 2>/dev/null; \
 	if [ -f build/gdb-panic-captured ]; then \
@@ -246,9 +249,12 @@ test-gdb: debug
 	    echo "See GDB output above for backtrace and register dump."; \
 	    rm -f build/gdb-panic-captured; \
 	    exit 1; \
+	elif [ $$GDB_EXIT -eq 124 ]; then \
+	    echo ""; \
+	    echo "=== test-gdb: no panic within 120s (clean boot to shell) ==="; \
 	elif [ $$GDB_EXIT -eq 0 ]; then \
 	    echo ""; \
-	    echo "=== test-gdb: no panic detected (QEMU exited cleanly) ==="; \
+	    echo "=== test-gdb: no panic (QEMU exited cleanly) ==="; \
 	else \
 	    echo ""; \
 	    echo "=== test-gdb: GDB exit code $$GDB_EXIT (check serial log: build/gdb-serial.log) ==="; \

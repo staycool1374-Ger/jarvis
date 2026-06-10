@@ -47,6 +47,11 @@ public:
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
     static void reap_orphans() noexcept;
 
+    /// @brief Terminates and removes all non-idle tasks from the scheduler.
+    ///        Called after the boot-time test suite to clean up test leftovers
+    ///        before production tasks (shell, idle) are created.
+    static void cleanup_test_tasks() noexcept;
+
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;
