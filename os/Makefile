@@ -79,7 +79,7 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling
+.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
 
 -include $(DEPFILES)
 
@@ -99,6 +99,9 @@ help:
 	@echo "  make symbols       Generate kernel symbol table"
 	@echo "  make objdump       Disassemble kernel to build/kernel.dis"
 	@echo "  make profiling     GCOV instrumentation + coverage capture"
+	@echo "  make gdb           Build debug ISO + launch QEMU with GDB stub (:1234)"
+	@echo "  make test-gdb      Run test suite under GDB surveillance (captures panic)"
+	@echo "                     GDB scripts: tools/gdb/{init.gdb,kernel.py}"
 
 all: $(ISO)
 
@@ -190,6 +193,66 @@ run-qemu-debug: $(DEBUG_ISO)
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	fi
+
+gdb: debug
+	@echo ""
+	@echo "=========================================="
+	@echo " Jarvis GDB Debug Session"
+	@echo "=========================================="
+	@echo " QEMU started with GDB stub on :1234"
+	@echo " Connect GDB in another terminal:"
+	@echo "   x86_64-elf-gdb build/kernel-debug.elf -x tools/gdb/init.gdb"
+	@echo ""
+	@echo " Available GDB custom commands:"
+	@echo "   tasks       - list all tasks"
+	@echo "   task <n>    - show task details"
+	@echo "   regs        - register dump"
+	@echo "   pml4        - page table walk"
+	@echo "   panicinfo   - full state dump"
+	@echo "   step-into   - single-step (into)"
+	@echo "   step-over   - step over call"
+	@echo "   step-out    - finish function"
+	@echo "   trace-syscall - toggle syscall tracing"
+	@echo "=========================================="
+	@echo ""
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
+	    -boot order=d -s -S -d cpu_reset \
+	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+
+test-gdb: debug
+	@rm -f build/gdb-panic-captured build/gdb-serial.log
+	@mkdir -p build
+	@echo "=== test-gdb: Launching QEMU with GDB stub ==="
+	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	fi
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log -nic none \
+	    -boot order=d -s -no-reboot -device isa-debug-exit \
+	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) & \
+	QEMU_PID=$$!; \
+	echo "Waiting for QEMU GDB stub (:1234)..."; \
+	for i in 1 2 3 4 5 6 7 8; do \
+	    nc -z localhost 1234 2>/dev/null && break; \
+	    sleep 1; \
+	done; \
+	echo "Connecting GDB (panic surveillance)..."; \
+	x86_64-elf-gdb build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
+	GDB_EXIT=$$?; \
+	kill $$QEMU_PID 2>/dev/null; wait $$QEMU_PID 2>/dev/null; \
+	if [ -f build/gdb-panic-captured ]; then \
+	    echo ""; \
+	    echo "!!! KERNEL PANIC CAPTURED !!!"; \
+	    echo "See GDB output above for backtrace and register dump."; \
+	    rm -f build/gdb-panic-captured; \
+	    exit 1; \
+	elif [ $$GDB_EXIT -eq 0 ]; then \
+	    echo ""; \
+	    echo "=== test-gdb: no panic detected (QEMU exited cleanly) ==="; \
+	else \
+	    echo ""; \
+	    echo "=== test-gdb: GDB exit code $$GDB_EXIT (check serial log: build/gdb-serial.log) ==="; \
+	    exit $$GDB_EXIT; \
 	fi
 
 test-qemu: $(ISO)
@@ -293,71 +356,54 @@ release-test:
 	$(MAKE) test-qemu
 
 run-release-test: release
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    echo "=== Running automated release integration test ==="; \
-	    echo "Commands: garbing xyzzy plugh help test nonexistent exit"; \
-	    echo "=== (this test takes ~60s) ==="; \
-	    expect -c ' \
-	        set timeout 120; \
-	        spawn qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
-	        puts "waiting for shell prompt..."; \
-	        expect { \
-	            -ex {sh$ } { } \
-	            "PANIC" { puts "PANIC at boot"; exit 1 } \
-	            "EXCEPTION" { puts "EXCEPTION at boot"; exit 1 } \
-	            timeout { puts "TIMEOUT at boot"; exit 1 } \
-	        } \
-	        puts "boot OK"; \
-	        \
-	        proc test_cmd {cmd} { \
-	            puts "testing: $$cmd"; \
-	            send "$$cmd\r"; \
-	            expect { \
-	                -ex "$$cmd\r\nsh: $$cmd: not found\r\nsh\$ " { } \
-	                "PANIC" { puts "PANIC after $$cmd"; exit 1 } \
-	                "EXCEPTION" { puts "EXCEPTION after $$cmd"; exit 1 } \
-	                timeout { puts "TIMEOUT after $$cmd"; exit 1 } \
-	            } \
-	        } \
-	        \
-	        test_cmd "garbing"; \
-	        test_cmd "xyzzy"; \
-	        test_cmd "plugh"; \
-	        test_cmd "help"; \
-	        test_cmd "test"; \
-	        test_cmd "nonexistent"; \
-	        \
-	        puts "exiting shell..."; \
-	        send "exit\r"; \
-	        expect { \
-	            -ex "exit\r\nsh: exiting\r\n" { puts "exit message seen" } \
-	            "PANIC" { puts "PANIC on exit"; exit 1 } \
-	            "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 } \
-	            timeout { puts "TIMEOUT on exit"; exit 1 } \
-	        } \
-	        \
-	        puts "waiting for system idle..."; \
-	        expect { \
-	            -ex "Entering idle loop\r\n" { puts "idle loop reached - system stable" } \
-	            "PANIC" { puts "PANIC after exit"; exit 1 } \
-	            "EXCEPTION" { puts "EXCEPTION after exit"; exit 1 } \
-	            eof { puts "QEMU exited cleanly" } \
-	            timeout { puts "timeout (no crash)" } \
-	        } \
-	        \
-	        puts "ALL TESTS PASSED"; \
-	        exit 0; \
-	    '; \
-	    rc=$$?; \
-	    if [ $$rc -eq 0 ]; then \
-	        echo "OK: Release integration test passed."; \
-	    else \
-	        echo "FAIL: Release integration test failed with code $$rc"; \
-	        exit 1; \
-	    fi \
-	else \
-	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
-	fi
+	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	echo "=== Automated release integration test ==="; \
+	echo "Commands: garbing xyzzy plugh help test nonexistent exit"; \
+	printf '%s\n' \
+	    'set timeout 15' \
+	    'set stty_init "raw -echo"' \
+	    'spawn qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
+	    'puts "waiting for shell prompt..."' \
+	    'expect {' \
+	    '    -re {sh\$$ } { }' \
+	    '    "PANIC" { puts "PANIC at boot"; exit 1 }' \
+	    '    "EXCEPTION" { puts "EXCEPTION at boot"; exit 1 }' \
+	    '    timeout { puts "TIMEOUT at boot"; exit 1 }' \
+	    '}' \
+	    'puts "boot OK"' \
+	    '' \
+	    'proc test_cmd {cmd} {' \
+	    '    set pat [subst -nobackslashes {$$cmd\r+\nsh: $$cmd: not found\r+\n}]' \
+	    '    puts "testing: $$cmd"' \
+	    '    send "$$cmd\r"' \
+	    '    expect {' \
+	    '        -re $$pat { }' \
+	    '        "PANIC" { puts "PANIC after $$cmd"; exit 1 }' \
+	    '        "EXCEPTION" { puts "EXCEPTION after $$cmd"; exit 1 }' \
+	    '        timeout { puts "TIMEOUT after $$cmd"; exit 1 }' \
+	    '    }' \
+	    '}' \
+	    '' \
+	    'test_cmd "garbing"' \
+	    'test_cmd "xyzzy"' \
+	    'test_cmd "plugh"' \
+	    'test_cmd "help"' \
+	    'test_cmd "test"' \
+	    'test_cmd "nonexistent"' \
+	    '' \
+	    'puts "exiting shell..."' \
+	    'send "exit\r"' \
+	    'expect {' \
+	    '    -re "exit\r\nsh: exiting\r\n" { puts "exit message seen" }' \
+	    '    "PANIC" { puts "PANIC on exit"; exit 1 }' \
+	    '    "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 }' \
+	    '    timeout { puts "TIMEOUT on exit"; exit 1 }' \
+	    '}' \
+	    '' \
+	    'puts "ALL TESTS PASSED"' \
+	    'close' \
+	    'exit 0' \
+	| expect
 
 symbols: $(KERNEL)
 	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
