@@ -80,6 +80,11 @@
 ## Phase 4: Hard Real-Time (0.3.x)
 
 ### Version 0.3.1 — High-Precision Timers & Deterministic Memory
+- [ ] **O(1) Bitmap Scheduler:** Ablösung des linearen `tasks_[64]`-Array-Scans durch eine Bitmap-indizierte, strikt prioritätsgeordnete per-priority Queue-Struktur. `next_task()` von O(n) auf O(1) reduziert mittels `__builtin_clzll(occupied_)`. `needs_switch()` von O(n) auf O(1) durch Bitmasken-Vergleich. Round-Robin innerhalb gleicher Priorität. Voraussetzung für WCRT-Analyse, Deadline-Monitoring und Priority Inheritance.
+  - Einführung `sched_next`-Zeiger im `TaskControlBlock`
+  - Neue Scheduler-Zustände: `queue_heads_[64]`, `queue_tails_[64]`, `occupied_`-Bitmap, `current_task_`-Pointer
+  - Rewrite von `add_task`, `remove_task`, `next_task`, `needs_switch`, `reap_orphans`
+  - Ersatz von `task_at(i)`-Iterationen in externen Callern durch `for_each_task(callback)`
 - [ ] **HPET-Treiber:** Implementierung eines Treibers für den High Precision Event Timer zur Anhebung der Kernel-Taktfrequenz auf hochpräzise 10 kHz (Ablösung des unpräzisen 1 kHz PIT).
 - [ ] **Deadline-Überwachung:** Einführung strikter Echtzeit-Fristenprüfungen anhand von `deadline_ticks`-Grenzen, gepaart mit einer asynchronen Overrun-Callback-Infrastruktur.
 - [ ] **Periodische Release-Kontrollen:** Integration automatisierter Scheduler-Schleifen zur präzisen Freigabe periodischer Tasks und zum Zurücksetzen des verbleibenden Budgets (`remaining_ticks`).
