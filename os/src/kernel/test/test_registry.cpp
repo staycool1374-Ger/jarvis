@@ -27,6 +27,22 @@ void register_wfg_tests();
 void register_deadlock_detect_tests();
 void register_deadlock_recovery_tests();
 void register_health_tests();
+void register_timer_tests();
+void register_serial_tests();
+void register_keyboard_tests();
+void register_gdt_tests();
+void register_idt_tests();
+void register_bootparams_tests();
+void register_multiboot_tests();
+void register_address_tests();
+void register_pipe_tests();
+void register_vfs_internal_tests();
+void register_gcov_tests();
+void register_debug_tests();
+void register_framebuffer_tests();
+void register_stress_tests();
+void register_pic_tests();
+void register_integration_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
@@ -59,4 +75,20 @@ void register_selftest_tests() {
     register_deadlock_detect_tests();
     register_deadlock_recovery_tests();
     register_health_tests();
+    register_timer_tests();
+    register_serial_tests();
+    register_keyboard_tests();
+    register_gdt_tests();
+    register_idt_tests();
+    register_bootparams_tests();
+    register_multiboot_tests();
+    register_address_tests();
+    register_pipe_tests();
+    register_vfs_internal_tests();
+    register_gcov_tests();
+    register_debug_tests();
+    register_framebuffer_tests();
+    register_stress_tests();
+    register_pic_tests();
+    register_integration_tests();
 }
