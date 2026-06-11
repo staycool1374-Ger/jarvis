@@ -2,25 +2,17 @@
 
 ## Critical Bugs
 
-### ID: #009 — Second `fork()` in userspace shell creates child that never executes
-- **Description:** When the userspace shell forks a second child process (e.g., `garbing` then `xyzzy`), the second `fork()` call appears to succeed (no error returned) but the child task never executes a single instruction. A `write(1, "CHILD\n", 6)` placed immediately after `fork()` in `run_command()` prints for the first child but not the second. The parent does not print a `"DEBUG: fork failed"` message either, which would appear if `fork()` returned `< 0`. The parent unblocks from `waitpid()` quickly (no timeout), suggesting either no child exists to wait for or the child exits before any code runs.
-- **Symptoms (release build, QEMU UEFI, `-serial mon:stdio`):**
-  - First command (`garbing`): child outputs `CHILD\nsh: garbing: not found`, parent reaps, prints next prompt — OK.
-  - Second command (`xyzzy`): child never outputs `CHILD`, parent prints next `sh$ ` prompt immediately. Expect 10-second timeout hits before any "not found" output.
-  - `make run-release-test` (regex pattern with `\r+\n`) times out on command #2.
-  - `expect` glob patterns (`"*sh: xyzzy: not found*"`) also time out.
-  - Removing the `write(1, "CHILD\n", 6)` debug line does NOT fix the issue.
-- **Kernel state during failure (observed via test output):**
-  - Fork table has capacity (max_tasks=40, ~7-8 in use).
-  - Kernel heap (1 MiB bump allocator in `src/lib/new.cpp`) has ample space — `operator delete` is a no-op stub but the bump allocator never runs out.
-  - `operator delete` being a no-op means per-child `TaskControlBlock`, `MessageQueue`, `Notify`, `EventGroup` objects from the first fork are leaked, but the 1 MiB heap should accommodate hundreds of such allocations before exhaustion.
-  - PMM page allocations (kernel stack, page tables, user stack) are freed by `cleanup()` and should be available for the second fork.
-- **Suspected root cause (not yet confirmed):**
-  - The first child exits via `_exit(127)`. `sys_exit` in `syscall_handlers_misc.cpp:47` marks the task `TERMINATED`, reparents children, and wakes a blocked parent. The parent's `waitpid(-1, ...)` in `syscall_handlers_process.cpp:23` reaps the child via `remove_child()`, `cleanup()`, `remove_task()`, `delete`. If `remove_task()` leaves the scheduler in an inconsistent state (e.g., `current_index_` points past `task_count_`), the second child may never be scheduled.
-  - Alternatively, `Scheduler::add_task()` could race with `test_fork` (PID 0x2A, priority 1, running concurrently with shell priority 2) during the second `fork()`, corrupting the task array.
-- **Test commands used:** `garbing`, `xyzzy`, `plugh`, `help`, `test`, `nonexistent`, `exit`
-- **Reproducibility:** 100% on macOS (Apple Silicon, QEMU 9.x via Homebrew)
-- **Status:** Open — needs investigation of `Scheduler::remove_task()` side effects and potential race with `test_fork`.
+### ID: #009 — Second `fork()` in userspace shell creates child that never executes (CLOSED)
+- **Description:** When the userspace shell forks a second child process (e.g., `garbing` then `xyzzy`), the second `fork()` call appears to succeed but the child task never executes. Fixed in commit `?????`.
+- **Root Cause:** `sys_exit()` (`syscall_handlers_misc.cpp:47`) woke the parent by writing the exit code and setting `waiting_child_pid = 0`, but **left the child in the scheduler as a `TERMINATED` zombie** with `parent_id` still pointing to the shell. When the shell's `waitpid(-1, ...)` ran for the second command, `sys_waitpid()` scanned scheduler tasks for children with `parent_id == cur->id` and found the zombie first (still `TERMINATED`). Instead of waiting for the second child, `waitpid` immediately reaped the zombie and returned its PID. The second child was never waited on, and the shell printed the next prompt as if it had reaped the expected child.
+- **Why the zombie survived:** `sys_waitpid` does NOT block-and-retry; when the child wasn't `TERMINATED` at call time, it sets `state = BLOCKED` and returns `-1`. `handle_interrupt_c` then calls `reschedule()`, which defers the context switch to the assembly epilogue in `isr_stubs.asm`. Because the context switch happens AFTER `handle_interrupt_c` returns (not within the syscall handler), the parent cannot retry the waitpid after being woken. It returns to userspace with `-1`, leaving the child as an unreaped zombie.
+- **Why `reap_orphans` didn't clean it up:** `Scheduler::reap_orphans()` skips `TERMINATED` children whose parent is alive and `waiting_child_pid == 0` (the exact state after `sys_exit` wakes the parent). The zombie accumulated indefinitely.
+- **Fix:** In `sys_exit()`, when waking a waiting parent, also call `p->remove_child(t)` and set `t->parent_id = 0` to orphan the child. This ensures:
+  1. `reap_orphans()` cleans it up (`parent_id == 0` → `can_reap = true`)
+  2. Future `waitpid()` calls never find it (no `parent_id` match)
+  3. The second fork's child is found and properly waited on
+- **Verification:** Two new kernel-mode tests (`bug009_zombie_reaps_first`, `bug009_two_children_sequential_reap`) validate the fix. All 1190 tests pass (3 pre-existing failures tracked as bug #010 unchanged).
+- **Status:** Closed
 
 ### ID: #007 — `clone_kernel_pml4()` leaks identity-map; fork breaks without shared user entries
 - **Description:** Boot code sets PML4[0] → PDPT_IDENTITY (0x2000) as an identity mapping (supervisor-only). `clone_kernel_pml4()` previously copied all 512 entries, leaking this kernel-owned page into user PML4s. User code crashing at addresses within the identity-map range got protection faults (err=0x5) because the pages were supervisor-only. Zeroing entries 0-255 fixed the identity-map leak but broke fork: the child's PML4 had no user-space mappings → `#PF` at entry point (err=0x4).

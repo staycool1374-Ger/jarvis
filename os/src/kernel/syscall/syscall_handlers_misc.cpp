@@ -75,6 +75,11 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
                         p->waiting_child_status = nullptr;
                     }
                     p->waiting_child_pid = 0;
+                    // Orphan the child: remove from parent's child list and
+                    // clear parent_id so that reap_orphans can clean it up
+                    // and future waitpid calls don't find this zombie.
+                    p->remove_child(t);
+                    t->parent_id = 0;
                     if (p->state != TaskState::TERMINATED)
                         p->state = TaskState::READY;
                     break;
