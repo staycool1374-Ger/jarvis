@@ -27,6 +27,7 @@ struct Message {
     uint64_t priority;
     uint8_t  data[IPC_MAX_MSG_SIZE];
     size_t   data_size;
+    uint64_t buf_handle = 0;
 };
 
 /// @brief Forward declarations so TaskControlBlock can hold pointers.

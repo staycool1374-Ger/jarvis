@@ -1,4 +1,5 @@
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <assert.hpp>
 
@@ -112,7 +113,18 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     }
 
     bool ok = q.push(msg);
-    if (ok && tcb->state == TaskState::BLOCKED) {
+    if (!ok) return false;
+
+    // Zero-copy buffer transfer: if the message carries a buffer handle,
+    // transfer ownership from current task to the destination.
+    if (msg.buf_handle != 0) {
+        auto* cur = Scheduler::current_task();
+        if (cur) {
+            BufferPool::transfer(msg.buf_handle, cur, tcb);
+        }
+    }
+
+    if (tcb->state == TaskState::BLOCKED) {
         tcb->state = TaskState::READY;
     }
     return ok;

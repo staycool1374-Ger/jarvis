@@ -5,6 +5,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/ipc/ipc.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/syscall/syscall.hpp>
@@ -244,6 +245,54 @@ JARVIS_TEST(buffer_pool_syscall_dispatch) {
     JARVIS_TEST_PASS();
 }
 
+JARVIS_TEST(buffer_pool_ipc_transfer) {
+    auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+    Scheduler::add_task(sender);
+    Scheduler::add_task(receiver);
+
+    auto* original = Scheduler::current_task();
+
+    // Sender allocs a buffer
+    Scheduler::set_current(sender);
+    uint64_t va = 0xC0000000;
+    uint64_t handle = BufferPool::alloc(sender, va);
+    JARVIS_ASSERT(handle != 0);
+
+    // Send the buffer via IPC
+    Message msg{};
+    msg.buf_handle = handle;
+    msg.type = 42;
+    JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
+
+    // Receiver gets the message
+    Scheduler::set_current(receiver);
+    Message recv_msg{};
+    JARVIS_ASSERT(IPC::recv(recv_msg));
+    JARVIS_ASSERT_EQ(42ULL, recv_msg.type);
+    JARVIS_ASSERT_EQ(handle, recv_msg.buf_handle);
+
+    // Sender can no longer free the buffer
+    Scheduler::set_current(sender);
+    JARVIS_ASSERT(!BufferPool::free(sender, handle));
+
+    // Receiver can map and free it
+    Scheduler::set_current(receiver);
+    uint64_t recv_va = 0xD0000000;
+    JARVIS_ASSERT(BufferPool::map(receiver, handle, recv_va));
+    JARVIS_ASSERT(BufferPool::free(receiver, handle));
+
+    Scheduler::set_current(original);
+    Scheduler::remove_task(sender);
+    Scheduler::remove_task(receiver);
+    sender->cleanup();
+    delete sender;
+    receiver->cleanup();
+    delete receiver;
+    JARVIS_TEST_PASS();
+}
+
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
@@ -256,4 +305,5 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_transfer);
     JARVIS_REGISTER_TEST(buffer_pool_unmap_all);
     JARVIS_REGISTER_TEST(buffer_pool_syscall_dispatch);
+    JARVIS_REGISTER_TEST(buffer_pool_ipc_transfer);
 }
