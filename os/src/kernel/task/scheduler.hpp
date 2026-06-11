@@ -62,6 +62,7 @@ public:
     /// @param task Pointer to the task to set as current.
     static void set_current(TaskControlBlock* task) noexcept;
 
+    static uint64_t current_index() noexcept { return current_index_; }
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
 
     /// @brief Returns whether the scheduler can be preempted.

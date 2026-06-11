@@ -24,15 +24,19 @@
 - **Verification:** 6 dedicated tests (`pml4_clone_*`) validate all aspects — `clone_kernel_pml4()` clears user entries, kernel entries match, fork PML4 user entries match parent, child mapping doesn't corrupt parent, `free_user_pages` skips shared pages, and `dbg_dump_pml4` confirms no user-accessible entries in cloned PML4.
 - **Status:** Closed (verified by `bug007_*` test suite)
 
-### ID: #010 — `Scheduler::reap_orphans()` doesn't reparent children to init or correctly reap deferred
-- **Description:** Three tests consistently fail, all related to task lifecycle and reaping:
-  1. `scheduler_reap_orphans_can_reap_deferred` (`test_scheduler.cpp:137`): After parent clears wait status and calls `reap_orphans()`, the terminated child is not removed from the scheduler (`find_task(child_id)` still returns non-null).
-  2. `task_reparent_preserves_resources` (`test_task_lifecycle.cpp:146`): After parent terminates and `reap_orphans()` runs, the orphaned child's `parent_id` does not equal the init task's ID — reparenting to init fails.
-  3. `scheduler_reap_respects_parent_wait` (`test_task_lifecycle.cpp:217`): Same as #1 — deferred reap never executes after wait status is cleared.
-- **Suspected root cause:** `Scheduler::reap_orphans()` in `src/kernel/task/scheduler.cpp` checks `can_reap()` which requires the parent to be `TERMINATED`. For the deferred reap case (parent alive but waiting cleared), the parent is still `READY`, so the child is never reaped. Reparenting logic may only fire for certain state combinations or skip non-kernel tasks.
-- **Test commands:** `make test-qemu` (fails consistently)
-- **Reproducibility:** 100%
-- **Status:** Open
+### ID: #010 — `Scheduler::reap_orphans()` doesn't reparent children to init or correctly reap deferred (CLOSED)
+- **Description:** Three kernel-mode tests consistently failed:
+  1. `scheduler_reap_orphans_can_reap_deferred`: After parent clears `waiting_child_pid = 0`, the terminated child was not reaped (`find_task` returned non-null).
+  2. `task_reparent_preserves_resources`: After parent terminates and `reap_orphans()` runs, the orphaned child's `parent_id` did not equal the init task's ID.
+  3. `scheduler_reap_respects_parent_wait`: Same as #1 — deferred reap never executed after wait was cleared.
+- **Root Cause:** Two independent bugs:
+  1. **Missing `waiting_child_pid == 0` reap condition** (`scheduler.cpp:250`): `reap_orphans()` only reaped a child when `p->waiting_child_pid` was non-zero and didn't match the child. When the parent cleared the wait to 0 (simulating collected status), no condition matched, so the child was never reaped. Fixed by adding `else if (p->waiting_child_pid == 0) can_reap = true`.
+  2. **Out-of-bounds `current_index_` in `remove_task`** (`scheduler.cpp:52`): `remove_task()` used `current_index_ > task_count_` to detect an out-of-bounds index, but `current_index_ == task_count_` is also out of bounds. When a test called `set_current(task)` followed by `remove_task(task)`, `current_index_` could equal `task_count_` (one past the last valid index). This caused subsequent tests to have `current_index_` pointing to an unexpected task (the parent). `reap_orphans()` then skipped the parent due to the `t == current` guard. Fixed by changing `>` to `>=`.
+- **Fix:**
+  1. `scheduler.cpp:256-258`: Added `else if (p->waiting_child_pid == 0)` condition so clearing the wait allows immediate child reaping.
+  2. `scheduler.cpp:52`: Changed `current_index_ > task_count_` to `current_index_ >= task_count_` so the exact out-of-bounds case is corrected.
+- **Verification:** All 1194 tests pass (previously 3 failures, now 0).
+- **Status:** Closed
 
 ## Recommendations (Future Features)
 

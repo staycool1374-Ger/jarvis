@@ -48,7 +48,7 @@ void Scheduler::remove_task(TaskControlBlock* task) {
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == task) {
             tasks_[i] = tasks_[--task_count_];
-            if (current_index_ > task_count_) current_index_ = 0;
+            if (current_index_ >= task_count_) current_index_ = 0;
             if (i < task_count_ && current_index_ == task_count_) current_index_ = i;
             break;
         }
@@ -199,8 +199,8 @@ void Scheduler::reap_orphans() noexcept {
         for (uint64_t i = 0; i < task_count_; ++i) {
             auto* t = tasks_[i];
             if (!t) continue;
-            if (t != idle_task_ && t == current) continue;
             if (t->state != TaskState::TERMINATED) continue;
+            if (t != idle_task_ && t == current) continue;
 
             TaskControlBlock* init_task = (task_count_ > 0) ? tasks_[0] : nullptr;
 
@@ -250,6 +250,10 @@ void Scheduler::reap_orphans() noexcept {
                         else if (p->waiting_child_pid != 0 &&
                                  p->waiting_child_pid != t->id &&
                                  p->waiting_child_pid != static_cast<uint64_t>(-1)) {
+                            can_reap = true;
+                        }
+                        // Can reap if parent cleared its wait (collected status or was never waiting)
+                        else if (p->waiting_child_pid == 0) {
                             can_reap = true;
                         }
                         break;
