@@ -14,7 +14,7 @@ using namespace kernel;
 //   child2 would never be waited on in the original bug.
 // Input: Create parent, child1 (TERMINATED), then child2 (READY).
 // Expect: Simulated second waitpid finds and reaps child1. child2 remains in scheduler.
-JARVIS_TEST(bug009_zombie_reaps_first) {
+JARVIS_TEST(waitpid_zombie_over_new_child) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(parent);
@@ -85,7 +85,7 @@ JARVIS_TEST(bug009_zombie_reaps_first) {
 //   reaped by sequential waitpid calls.
 // Input: Create parent and two children, both TERMINATED.
 // Expect: First waitpid reaps child1, second waitpid reaps child2. No zombies remain.
-JARVIS_TEST(bug009_two_children_sequential_reap) {
+JARVIS_TEST(waitpid_two_children_sequential_reap) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(parent);
@@ -145,8 +145,8 @@ JARVIS_TEST(bug009_two_children_sequential_reap) {
     JARVIS_TEST_PASS();
 }
 
-void register_bug009_tests() {
-    Logger::info("Registering bug #009 waitpid/scheduler tests");
-    JARVIS_REGISTER_TEST(bug009_zombie_reaps_first);
-    JARVIS_REGISTER_TEST(bug009_two_children_sequential_reap);
+void register_waitpid_tests() {
+    Logger::info("Registering waitpid tests");
+    JARVIS_REGISTER_TEST(waitpid_zombie_over_new_child);
+    JARVIS_REGISTER_TEST(waitpid_two_children_sequential_reap);
 }

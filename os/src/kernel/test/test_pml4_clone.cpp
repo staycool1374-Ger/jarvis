@@ -98,7 +98,7 @@ static void dbg_dump_pml4(uint64_t pml4_phys) {
 // Input: Call clone_kernel_pml4(), inspect entries 0-255
 // Expect: All user entries are zero (no identity-map leak)
 // Depends: kernel::memory::VMM
-JARVIS_TEST(bug007_clone_clears_user_entries) {
+JARVIS_TEST(pml4_clone_clears_user_entries) {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
@@ -125,7 +125,7 @@ JARVIS_TEST(bug007_clone_clears_user_entries) {
 // Input: Call clone_kernel_pml4(), compare entries with kernel PML4
 // Expect: Kernel entries match exactly
 // Depends: kernel::memory::VMM
-JARVIS_TEST(bug007_clone_kernel_entries_match) {
+JARVIS_TEST(pml4_clone_kernel_entries_match) {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
@@ -157,7 +157,7 @@ JARVIS_TEST(bug007_clone_kernel_entries_match) {
 // Input: Create parent PML4 with user mapping, create child PML4 copying user entries
 // Expect: Child's user entries match parent's, kernel entries match kernel PML4
 // Depends: kernel::memory::VMM, PMM
-JARVIS_TEST(bug007_fork_pml4_user_entries_match) {
+JARVIS_TEST(pml4_fork_user_entries_match) {
     uint64_t parent_pml4 = PMM::alloc_page();
     JARVIS_ASSERT(parent_pml4 != 0);
     auto* parent_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent_pml4 & ~0xFFFULL));
@@ -244,7 +244,7 @@ JARVIS_TEST(bug007_fork_pml4_user_entries_match) {
 // Input: Create parent PML4, fork child, map a new page in child's PML4
 // Expect: Parent's PML4 unchanged, child's PML4 has the new mapping
 // Depends: kernel::memory::VMM, PMM
-JARVIS_TEST(bug007_fork_map_child_no_corrupt_parent) {
+JARVIS_TEST(pml4_fork_no_child_corrupt_parent) {
     uint64_t parent_pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent_pml4 != 0);
 
@@ -305,7 +305,7 @@ JARVIS_TEST(bug007_fork_map_child_no_corrupt_parent) {
 // Input: Create shared PML4 hierarchy, call free_user_pages on child
 // Expect: Only user data pages freed, shared page table pages remain
 // Depends: kernel::memory::VMM, PMM
-JARVIS_TEST(bug007_free_user_pages_shared_safe) {
+JARVIS_TEST(pml4_free_user_pages_shared_safe) {
     uint64_t parent_pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent_pml4 != 0);
     auto* parent_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent_pml4 & ~0xFFFULL));
@@ -370,7 +370,7 @@ JARVIS_TEST(bug007_free_user_pages_shared_safe) {
 // Input: Call clone_kernel_pml4(), use dbg_dump_pml4 to inspect, then verify no user-accessible entries exist
 // Expect: No user-accessible entries in user range 0-255
 // Depends: kernel::memory::VMM
-JARVIS_TEST(bug007_full_dump_no_user_entries) {
+JARVIS_TEST(pml4_dump_no_user_entries) {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
@@ -396,16 +396,16 @@ JARVIS_TEST(bug007_full_dump_no_user_entries) {
 }
 
 // Runmode: kernel
-// Testidea: Registers all bug #007 page table tests.
+// Testidea: Registers all PML4 clone / fork page table tests.
 // Input: None
 // Expect: All tests registered
 // Depends: test framework
-void register_bug007_tests() {
+void register_pml4_clone_tests() {
     Logger::info("Registering bug #007 page table tests");
-    JARVIS_REGISTER_TEST(bug007_clone_clears_user_entries);
-    JARVIS_REGISTER_TEST(bug007_clone_kernel_entries_match);
-    JARVIS_REGISTER_TEST(bug007_fork_pml4_user_entries_match);
-    JARVIS_REGISTER_TEST(bug007_fork_map_child_no_corrupt_parent);
-    JARVIS_REGISTER_TEST(bug007_free_user_pages_shared_safe);
-    JARVIS_REGISTER_TEST(bug007_full_dump_no_user_entries);
+    JARVIS_REGISTER_TEST(pml4_clone_clears_user_entries);
+    JARVIS_REGISTER_TEST(pml4_clone_kernel_entries_match);
+    JARVIS_REGISTER_TEST(pml4_fork_user_entries_match);
+    JARVIS_REGISTER_TEST(pml4_fork_no_child_corrupt_parent);
+    JARVIS_REGISTER_TEST(pml4_free_user_pages_shared_safe);
+    JARVIS_REGISTER_TEST(pml4_dump_no_user_entries);
 }
