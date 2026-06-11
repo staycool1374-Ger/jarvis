@@ -285,19 +285,21 @@ void Scheduler::reap_orphans() noexcept {
                     new_idle->state = TaskState::READY;
                     t->cleanup();
                     id_table_remove(t->id);
+                    // Compact by shifting left past the removed old idle
                     for (uint64_t k = i; k + 1 < task_count_; ++k) {
                         tasks_[k] = tasks_[k + 1];
                     }
                     --task_count_;
                     delete t;
-                    current_index_ = 0;
-                    idle_task_ = new_idle;
+                    // Shift right to make room for new idle at index 0
                     for (uint64_t k = task_count_; k > 0; --k) {
                         tasks_[k] = tasks_[k - 1];
                     }
-                    tasks_[0] = idle_task_;
-                    id_table_insert(idle_task_->id, idle_task_);
+                    tasks_[0] = new_idle;
                     ++task_count_;
+                    current_index_ = 0;
+                    idle_task_ = new_idle;
+                    id_table_insert(idle_task_->id, idle_task_);
                 } else { 
                     t->cleanup();
                     remove_task(t);

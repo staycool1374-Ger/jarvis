@@ -279,6 +279,55 @@ JARVIS_TEST(lifecycle_zombie_no_waker) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies that cleanup() frees the msg_queue even when blocked senders were present (bug #016).
+// Create a receiver, fill its queue so a sender blocks. Terminate receiver and cleanup.
+// Expect: receiver->msg_queue is nullptr after cleanup (no leak).
+JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
+    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(receiver);
+
+    auto* sender = TaskControlBlock::create([]() {}, 6, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    Scheduler::add_task(sender);
+
+    Message msg{};
+    msg.sender_id = sender->id;
+    msg.type = 1;
+    msg.priority = 0;
+    msg.data_size = 0;
+
+    // Fill receiver's queue to force sender to block
+    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
+        Message fill_msg{};
+        fill_msg.sender_id = 0;
+        fill_msg.type = 99;
+        fill_msg.priority = 0;
+        fill_msg.data_size = 0;
+        receiver->msg_queue->push(fill_msg);
+    }
+
+    // Send from sender — should block (receiver queue full)
+    Scheduler::set_current(sender);
+    (void)IPC::send(receiver->id, msg, 0);
+    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+
+    // Terminate + cleanup — must free msg_queue
+    receiver->state = TaskState::TERMINATED;
+    receiver->exit_code = 0;
+    receiver->cleanup();
+
+    JARVIS_ASSERT(receiver->msg_queue == nullptr);
+
+    Scheduler::remove_task(sender);
+    sender->cleanup();
+    delete sender;
+    Scheduler::remove_task(receiver);
+    delete receiver;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all task lifecycle test cases with the test framework.
 // Input: None.
 // Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for execution.
@@ -293,4 +342,5 @@ void register_task_lifecycle_tests() {
     JARVIS_REGISTER_TEST(scheduler_reap_respects_parent_wait);
     JARVIS_REGISTER_TEST(elf_load_init_task_common_called);
     JARVIS_REGISTER_TEST(lifecycle_zombie_no_waker);
+    JARVIS_REGISTER_TEST(task_cleanup_frees_msg_queue_with_blocked_senders);
 }

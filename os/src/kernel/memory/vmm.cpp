@@ -252,7 +252,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
         PMM::free_page(pdpt_phys);
         pml4[pml4_idx] = 0;
     }
-    asm volatile("invlpg (%0)" : : "r"(0) : "memory");
+    // TLB flush is the caller's responsibility (via CR3 reload)
 }
 
 uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {

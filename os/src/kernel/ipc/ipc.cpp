@@ -112,6 +112,9 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     }
 
     bool ok = q.push(msg);
+    if (ok && tcb->state == TaskState::BLOCKED) {
+        tcb->state = TaskState::READY;
+    }
     return ok;
 }
 

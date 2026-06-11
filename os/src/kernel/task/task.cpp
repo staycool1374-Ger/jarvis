@@ -301,6 +301,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
         // Create private page tables for the user stack region so that
         // mapping the child's stack below doesn't corrupt the parent's
         // mappings through shared PDPT/PD/PT pages.
+        uint64_t stack_pdpt_phys = 0;
         {
             constexpr uint64_t PML4_SHIFT = 39;
             constexpr uint64_t PDPT_SHIFT = 30;
@@ -309,18 +310,22 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
             size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
             if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
                 uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
-                uint64_t new_pdpt_phys = PMM::alloc_page_table();
+                stack_pdpt_phys = PMM::alloc_page_table();
                 auto* old_pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + old_pdpt_phys);
-                auto* new_pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pdpt_phys);
+                auto* new_pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + stack_pdpt_phys);
                 memcpy(new_pdpt, old_pdpt, arch::PAGE_SIZE);
                 new_pdpt[st_pdpt_idx] = 0;
-                new_virt[st_pml4_idx] = new_pdpt_phys | (new_virt[st_pml4_idx] & 0xFFFULL);
+                new_virt[st_pml4_idx] = stack_pdpt_phys | (new_virt[st_pml4_idx] & 0xFFFULL);
             }
         }
+        tcb->stack_pdpt_phys_ = stack_pdpt_phys;
 
         size_t ustack_pages = (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
-        if (!ustack_phys) { ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr; }
+        if (!ustack_phys) {
+            if (stack_pdpt_phys) PMM::free_page(stack_pdpt_phys);
+            ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr;
+        }
         tcb->user_stack_ = ustack_phys;
         tcb->user_stack_size_ = parent->user_stack_size_;
 
@@ -354,6 +359,11 @@ void TaskControlBlock::add_child(TaskControlBlock* child) noexcept {
 
 void TaskControlBlock::remove_child(TaskControlBlock* child) noexcept {
     if (!child) return;
+    bool found = false;
+    for (auto* c = first_child; c; c = c->next_sibling) {
+        if (c == child) { found = true; break; }
+    }
+    if (!found) return;
     if (child->prev_sibling) {
         child->prev_sibling->next_sibling = child->next_sibling;
     } else {
@@ -363,7 +373,9 @@ void TaskControlBlock::remove_child(TaskControlBlock* child) noexcept {
         child->next_sibling->prev_sibling = child->prev_sibling;
     }
     child->parent_id = 0;
-    if (num_children > 0) --num_children;
+    child->prev_sibling = nullptr;
+    child->next_sibling = nullptr;
+    --num_children;
 }
 
 TaskControlBlock* TaskControlBlock::find_child(uint64_t pid) noexcept {
@@ -371,6 +383,35 @@ TaskControlBlock* TaskControlBlock::find_child(uint64_t pid) noexcept {
         if (child->id == pid) return child;
     }
     return nullptr;
+}
+
+/// @brief Frees the private stack PDPT and its PD/PT pages allocated during clone().
+///        Only frees intermediate page-table pages (PD, PT), not leaf pages
+///        (those are freed separately by the user_stack_ loop in cleanup()).
+static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
+    constexpr uint64_t PDPT_SHIFT = 30;
+    constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+    constexpr uint64_t PAGE_HUGE = 1ULL << 7;
+    size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
+
+    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt_phys);
+    if (!(pdpt[st_pdpt_idx] & PAGE_PRESENT))
+        return;
+
+    uint64_t pd_phys = pdpt[st_pdpt_idx] & ~0xFFFULL;
+    if (!PMM::is_user_page(pd_phys))
+        return;
+
+    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd_phys);
+    for (int i = 0; i < 512; ++i) {
+        if (!(pd[i] & PAGE_PRESENT)) continue;
+        if (pd[i] & PAGE_HUGE) continue; // leaf — already freed by user_stack_ loop
+        uint64_t pt_phys = pd[i] & ~0xFFFULL;
+        if (!PMM::is_user_page(pt_phys)) continue;
+        PMM::free_page(pt_phys);
+    }
+    PMM::free_page(pd_phys);
+    PMM::free_page(pdpt_phys);
 }
 
 void TaskControlBlock::cleanup() noexcept {
@@ -412,6 +453,10 @@ void TaskControlBlock::cleanup() noexcept {
         if (!page_table_shared_) {
             VMM::free_user_pages(page_table_);
         }
+        if (stack_pdpt_phys_) {
+            free_stack_pdpt(stack_pdpt_phys_);
+            stack_pdpt_phys_ = 0;
+        }
         PMM::free_page(page_table_);
         page_table_ = 0;
     }
@@ -429,9 +474,8 @@ void TaskControlBlock::cleanup() noexcept {
             }
             msg_queue->blocked_senders_head = nullptr;
             msg_queue->blocked_senders_tail = nullptr;
-            // Keep msg_queue alive so that blocked senders can observe
-            // the empty blocked-sender list. It will be freed when the
-            // task object itself is deleted.
+            delete msg_queue;
+            msg_queue = nullptr;
         } else {
             delete msg_queue;
             msg_queue = nullptr;

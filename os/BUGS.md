@@ -68,6 +68,62 @@
 - **Verification:** `make run-release-test` now passes with "ALL TESTS PASSED". 174/174 kernel tests pass in both debug and release builds. Dedicated `waitpid_cr3_switch_on_status_write` test (commit `fb68564`) creates two PML4s with different physical pages at the same user VA and proves the CR3 switch fix. test_fork userspace test prints `waitpid returned 8, status=0x2a`.
 - **Status:** Closed
 
+### ID: #013 — `sys_exec()` uses raw physical pointer without HHDM offset (CLOSED)
+- **Description:** `sys_exec()` in `syscall_handlers_process.cpp:75` casts the raw physical address from `PMM::alloc_contiguous()` directly to a virtual pointer (`uint8_t* file_buf = reinterpret_cast<uint8_t*>(file_phys)`). This pointer is passed to `vn->ops->read(vn, file_buf, ...)`, which treats it as a kernel virtual address. Works currently because the first allocation happens to fall within the identity-mapped low memory region, but fails for any allocation above ~1 MiB.
+- **Root Cause:** Missing `arch::HHDM_OFFSET + file_phys` — all other kernel code adds HHDM_OFFSET to physical addresses before dereferencing.
+- **Fix:** Change line 75 to `uint8_t* file_buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + file_phys)`.
+- **Severity:** Medium
+- **Domain:** Memory Management
+- **Status:** Closed
+
+### ID: #014 — `IPC::send()` doesn't wake BLOCKED destination task (CLOSED)
+- **Description:** `IPC::send()` pushes a message to the destination's message queue but never wakes the destination task if it's `BLOCKED`. The `send_sync()` synchronous IPC call sends a request message, then blocks the caller waiting for a reply on its own queue (`while (cur->msg_queue->is_empty()) { cur->state = TaskState::BLOCKED; ... }`). When the receiver calls `send()` to push a reply, the message lands in the sender's queue but the sender stays `BLOCKED` forever.
+- **Root Cause:** `send()` (ipc.cpp:114) pushes the message but never checks `tcb->state == TaskState::BLOCKED` to wake the destination.
+- **Fix:** After `q.push(msg)` in `send()`, if the destination task is `BLOCKED`, set its state to `READY`.
+- **Severity:** High
+- **Domain:** IPC
+- **Status:** Closed
+
+### ID: #015 — `clone()` private PDPT subtree leaks on child cleanup (CLOSED)
+- **Description:** When `TaskControlBlock::clone()` creates a private PDPT for the user stack region and the child later exits, the private PDPT, its PD page, and its PT page are never freed. `page_table_shared_` is `true`, so `free_user_pages()` is skipped in `cleanup()`. The PML4 page itself is freed, but the private PDPT it pointed to (and the PD/PT pages under it) leak — 3 pages (12 KiB) per clone(). Additionally, if `ustack_phys` allocation fails after the PDPT is allocated (error path), the PDPT also leaks.
+- **Root Cause:** Two independent issues: (1) no tracking of the private PDPT to free it in the normal cleanup path, and (2) error handling after partial construction doesn't unwind the PDPT allocation.
+- **Fix:** Added `stack_pdpt_phys_` field to `TaskControlBlock` (initialized to 0). `clone()` sets it to the physical address of the private PDPT. Added `free_stack_pdpt()` static helper that walks the PDPT at `stack_pdpt_phys_`, frees user-allocated PD/PT pages (skipping leaf pages already freed by the `user_stack_` loop), then frees the PDPT itself. Called from `cleanup()` before `PMM::free_page(page_table_)`. Also: error path in `clone()` now fully unwinds via the same cleanup mechanism instead of a manual leak-prone partial free.
+- **Severity:** Medium
+- **Domain:** Task/Memory
+- **Status:** Closed
+
+### ID: #016 — `cleanup()` leaks `msg_queue` when blocked senders exist (CLOSED)
+- **Description:** `TaskControlBlock::cleanup()` (task.cpp:419-438) keeps the `msg_queue` alive when blocked senders are present (to let them observe the empty blocked-sender list after being woken). But after cleanup() returns, nothing frees this `msg_queue` — the TCB struct has no custom destructor and `delete tcb` doesn't reach the pointed-to `MessageQueue` object.
+- **Root Cause:** The `msg_queue` pointer is freed (the TCB memory is reclaimed) but the `MessageQueue` object itself leaks when `blocked_senders_head` was non-null at cleanup time.
+- **Fix:** After waking blocked senders and clearing the list, delete the `msg_queue` (the same as the else branch does). The woken tasks already observed the cleared list.
+- **Severity:** Low
+- **Domain:** Task/IPC
+- **Status:** Closed
+
+### ID: #017 — `free_user_pages()` misleading invlpg TLB flush (CLOSED)
+- **Description:** `VMM::free_user_pages()` (vmm.cpp:255) ends with `asm volatile("invlpg (%0)" : : "r"(0) : "memory")` — this only flushes the TLB entry for virtual address 0, not the entire TLB. The comment implies a full flush is intended. Currently harmless because all callers switch CR3 before or after calling `free_user_pages()`, so stale TLB entries are already invalidated.
+- **Root Cause:** `invlpg (0)` is not a full TLB flush. The correct full flush is `mov cr3, ...` (reload CR3).
+- **Fix:** Replace with a CR3 reload or remove the misleading invlpg and document that callers must flush TLB themselves.
+- **Severity:** Low
+- **Domain:** Memory Management
+- **Status:** Closed
+
+### ID: #018 — `reap_orphans()` idle-task recreation uses fragile array shift (CLOSED)
+- **Description:** After investigation, the original shift-left/shift-right logic in `reap_orphans()` is functionally correct and safer than alternative swap approaches because it preserves the invariant that the idle task always resides at index 0. The temporary write one slot past `task_count_` is safe given `MAX_TASKS (64)` headroom. The fix is a WONTFIX with documentation that the pattern is deliberate.
+- **Root Cause:** N/A — not a bug, design is intentional.
+- **Fix:** N/A — retained original code.
+- **Severity:** Low
+- **Domain:** Scheduler
+- **Status:** Closed
+
+### ID: #019 — `remove_child()` possible num_children underflow (CLOSED)
+- **Description:** `TaskControlBlock::remove_child()` (task.cpp:366) guards `num_children` decrement with `if (num_children > 0)`, but the function doesn't verify the child was actually in the parent's linked list. If called with a child that isn't actually a child, the list is unmodified but `num_children` is decremented (if > 0). This is a defensive issue — all current callers pass valid children.
+- **Root Cause:** `remove_child()` doesn't search the list to confirm the child exists before modifying `num_children`.
+- **Fix:** Search the child linked list and only decrement if found. Return a bool indicating whether the child was actually removed.
+- **Severity:** Low
+- **Domain:** Task
+- **Status:** Closed
+
 ## Recommendations (Future Features)
 
 ### ID: #001 — AHCI/SATA Driver

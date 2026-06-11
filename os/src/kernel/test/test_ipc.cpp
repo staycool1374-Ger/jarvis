@@ -671,6 +671,46 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
 // Input: None
 // Expect: All ipc_* tests are registered via JARVIS_REGISTER_TEST
 // Depends: kernel test framework
+// Runmode: kernel
+// Testidea: Verifies that IPC::send() wakes a BLOCKED destination task (bug #014).
+// When a task is blocked on its own queue (e.g. waiting for a reply in send_sync)
+// and another task sends it a message, the blocked task must be set to READY.
+// Input: Create receiver, block it on its own queue. Send it a message.
+// Expect: Receiver transitions from BLOCKED to READY after the send.
+JARVIS_TEST(ipc_send_wakes_blocked_destination) {
+    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    JARVIS_ASSERT(receiver->msg_queue != nullptr);
+    Scheduler::add_task(receiver);
+
+    // Manually block the receiver task on its own queue
+    Scheduler::set_current(receiver);
+    receiver->state = TaskState::BLOCKED;
+
+    // Send a message to the blocked receiver
+    Message msg{};
+    msg.sender_id = 1;
+    msg.type = 42;
+    msg.priority = 0;
+    msg.data_size = 0;
+    bool sent = IPC::send(receiver->id, msg, 0);
+    JARVIS_ASSERT(sent);
+
+    // Receiver should now be READY
+    JARVIS_ASSERT(receiver->state == TaskState::READY);
+
+    // Cleanup
+    Scheduler::remove_task(receiver);
+    receiver->cleanup();
+    delete receiver;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Registers all IPC unit tests with the test framework.
+// Input: None
+// Expect: All ipc_* tests are registered via JARVIS_REGISTER_TEST
+// Depends: kernel test framework
 void register_ipc_tests() {
     Logger::info("Registering IPC tests");
 
@@ -696,4 +736,5 @@ void register_ipc_tests() {
     JARVIS_REGISTER_TEST(ipc_send_block_full);
     JARVIS_REGISTER_TEST(ipc_send_sync_roundtrip);
     JARVIS_REGISTER_TEST(ipc_sender_unblocked_on_receiver_exit);
+    JARVIS_REGISTER_TEST(ipc_send_wakes_blocked_destination);
 }

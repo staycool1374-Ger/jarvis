@@ -72,7 +72,7 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
     size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
     uint64_t file_phys = PMM::alloc_contiguous(file_pages);
     if (!file_phys) return static_cast<uint64_t>(-1);
-    uint8_t* file_buf = reinterpret_cast<uint8_t*>(file_phys);
+    uint8_t* file_buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + file_phys);
     int64_t r = vn->ops->read(vn, file_buf, vn->size, 0);
     if (r <= 0 || static_cast<uint64_t>(r) != vn->size) {
         for (size_t i = 0; i < file_pages; ++i)

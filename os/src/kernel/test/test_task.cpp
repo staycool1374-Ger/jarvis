@@ -161,6 +161,42 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies that clone + cleanup does not leak page-table-level pages (bug #015).
+// Creates a user parent, clones it (which allocates a private PDPT for the stack region),
+// then cleans up both.  Uses free_memory() as a proxy to detect leaks — a leak would
+// reduce available memory after the round-trip.
+// Input: Create user parent, clone child, cleanup+delete both.
+// Expect: Free memory count is the same after the round-trip as before.
+JARVIS_TEST(task_clone_no_page_table_leak) {
+    uint64_t free_before = PMM::free_memory();
+
+    auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    JARVIS_ASSERT(parent != nullptr);
+    Scheduler::add_task(parent);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(parent);
+    uint64_t regs[22] = {};
+    regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
+    regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
+
+    auto* child = TaskControlBlock::clone(regs);
+    JARVIS_ASSERT(child != nullptr);
+
+    child->cleanup();
+    delete child;
+
+    Scheduler::remove_task(parent);
+    parent->cleanup();
+    delete parent;
+    if (original) Scheduler::set_current(original);
+
+    uint64_t free_after = PMM::free_memory();
+    JARVIS_ASSERT(free_after >= free_before);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all task management unit tests with the test framework.
 // Input: None
 // Expect: All task_* tests are registered via JARVIS_REGISTER_TEST
@@ -172,4 +208,5 @@ void register_task_tests() {
     JARVIS_REGISTER_TEST(task_clone_shares_page_tables);
     JARVIS_REGISTER_TEST(task_elf_load_inits_ipc_objects);
     JARVIS_REGISTER_TEST(task_fork_child_cleanup_preserves_parent_pages);
+    JARVIS_REGISTER_TEST(task_clone_no_page_table_leak);
 }

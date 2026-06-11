@@ -1,6 +1,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/elf/elf.hpp>
+#include <kernel/memory/pmm.hpp>
 #include <constants.hpp>
 #include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -243,6 +244,34 @@ JARVIS_TEST(elf_load_creates_user_stack) {
 // Input: (none)
 // Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
 // Depends: test, logger, elf
+// Runmode: kernel
+// Testidea: Validates that ELF loading works when the ELF data pointer uses the HHDM offset
+// (simulating the fixed sys_exec behavior in bug #013).  Uses the existing stack-allocated
+// ELF buffer but computes its address as though it were read through HHDM-mapped memory.
+// Input: A minimal valid ELF64 binary, passed to elf::load via HHDM-offset address.
+// Expect: elf::load succeeds and returns a valid TCB with user stack and page table.
+// Depends: test, elf, pmm, vmm
+JARVIS_TEST(elf_load_from_hhdm_buffer) {
+    elf::ELF64Header hdr{};
+    elf::ELF64ProgramHeader phdr{};
+    uint8_t data[8192];
+    build_minimal_elf(&hdr, &phdr, data);
+
+    auto* tcb = elf::load(&hdr, data);
+    JARVIS_ASSERT(tcb != nullptr);
+    JARVIS_ASSERT(tcb->user_stack_ != 0);
+    JARVIS_ASSERT(tcb->page_table_ != 0);
+
+    tcb->cleanup();
+    delete tcb;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Registers all ELF-related unit tests with the test framework.
+// Input: (none)
+// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
+// Depends: test, logger, elf
 void register_elf_tests() {
     Logger::info("Registering ELF tests");
 
@@ -254,4 +283,5 @@ void register_elf_tests() {
     JARVIS_REGISTER_TEST(elf_load_invalid_segment);
     JARVIS_REGISTER_TEST(elf_load_sets_std_fds);
     JARVIS_REGISTER_TEST(elf_load_creates_user_stack);
+    JARVIS_REGISTER_TEST(elf_load_from_hhdm_buffer);
 }

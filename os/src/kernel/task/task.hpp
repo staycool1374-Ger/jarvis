@@ -86,6 +86,10 @@ struct TaskControlBlock {
     /// @brief If true, this task shares the parent's user page tables (fork).
     ///        free_user_pages() is skipped on cleanup/exec to avoid double-free.
     bool page_table_shared_;
+    /// @brief Physical address of the private PDPT page allocated in clone() for the
+    ///        user stack region.  Zero when not applicable.  Used by cleanup() to free
+    ///        the private PDPT and its child PD/PT pages that would otherwise leak.
+    uint64_t stack_pdpt_phys_;
     uint64_t user_stack_;
     uint64_t user_stack_size_;
     void* user_data;

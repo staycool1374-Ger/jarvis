@@ -41,6 +41,39 @@ JARVIS_TEST(process_num_children_count) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies that remove_child() does not modify num_children when the target
+// is not actually a child of the parent (bug #019).
+// Input: Create a parent and two tasks; add one as child; try to remove the non-child.
+// Expect: num_children remains unchanged.
+// Depends: test, scheduler
+JARVIS_TEST(process_remove_child_non_child_no_underflow) {
+    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(parent != nullptr);
+
+    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(child != nullptr);
+
+    auto* stranger = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(stranger != nullptr);
+
+    parent->add_child(child);
+    JARVIS_ASSERT_EQ(1ULL, parent->num_children);
+
+    // Try to remove the stranger (not a child)
+    parent->remove_child(stranger);
+    JARVIS_ASSERT_EQ(1ULL, parent->num_children);
+
+    // Removing the actual child should work
+    parent->remove_child(child);
+    JARVIS_ASSERT_EQ(0ULL, parent->num_children);
+
+    delete child;
+    delete stranger;
+    delete parent;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all process-related unit tests with the test framework.
 // Input: (none)
 // Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
@@ -50,4 +83,5 @@ void register_process_tests() {
     JARVIS_REGISTER_TEST(process_add_child);
     JARVIS_REGISTER_TEST(process_find_child);
     JARVIS_REGISTER_TEST(process_num_children_count);
+    JARVIS_REGISTER_TEST(process_remove_child_non_child_no_underflow);
 }
