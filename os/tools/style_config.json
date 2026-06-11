@@ -1,0 +1,74 @@
+{
+  "checks": {
+    "naming": {
+      "severity": "warning"
+    },
+    "headers": {
+      "severity": "warning"
+    },
+    "assertions": {
+      "severity": "error"
+    },
+    "memory": {
+      "severity": "error"
+    },
+    "loop_bounds": {
+      "severity": "error"
+    },
+    "forbidden": {
+      "severity": "error"
+    },
+    "test_structure": {
+      "severity": "warning"
+    },
+    "formatting": {
+      "severity": "warning"
+    },
+    "const_correctness": {
+      "severity": "error"
+    },
+    "ref_over_ptr": {
+      "severity": "warning"
+    },
+    "init_required": {
+      "severity": "error"
+    },
+    "ctor_init_list": {
+      "severity": "error"
+    },
+    "sentinel_enum": {
+      "severity": "warning"
+    },
+    "descriptive_names": {
+      "severity": "warning"
+    },
+    "no_const_cast": {
+      "severity": "error"
+    }
+  },
+  "kernel_only_rules": {
+    "enabled": true,
+    "paths": ["src/kernel/"],
+    "excludes": ["src/kernel/test/", "src/kernel/tools/"]
+  },
+  "descriptive_names": {
+    "min_length": 3,
+    "blocklist": ["t", "v", "val", "tmp", "temp", "ptr", "p"],
+    "allow_loop_indices": ["i", "j", "k", "idx"],
+    "max_loop_body_lines": 5
+  },
+  "sentinel_enums": {
+    "require_named_constant_for": ["empty", "invalid", "none", "null"]
+  },
+  "formatting": {
+    "max_line_length": 100,
+    "indent_size": 4,
+    "no_tabs": true,
+    "brace_style": "same_line"
+  },
+  "output": {
+    "format": "text",
+    "show_violations": true,
+    "summary_only": false
+  }
+}
