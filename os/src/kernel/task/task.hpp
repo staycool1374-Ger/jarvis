@@ -123,6 +123,10 @@ struct TaskControlBlock {
     /// @brief Per-task event-group object (allocated in init_task_common).
     sync::EventGroup* event_group;
 
+    /// @brief Head of doubly-linked list of buffer handles owned by this task.
+    ///        -1 means the list is empty. Used by the BufferPool for zero-copy IPC.
+    int32_t buf_list_head;
+
     /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
     TaskControlBlock* blocked_next;
     TaskControlBlock* blocked_prev;

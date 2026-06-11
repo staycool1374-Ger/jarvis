@@ -61,6 +61,9 @@ void init_task_common(TaskControlBlock* tcb) {
     tcb->next_sibling = nullptr;
     tcb->prev_sibling = nullptr;
     tcb->num_children = 0;
+
+    // Buffer pool list starts empty
+    tcb->buf_list_head = -1;
 }
 
 TaskControlBlock* TaskControlBlock::create(

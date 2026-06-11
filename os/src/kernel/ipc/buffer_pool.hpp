@@ -1,0 +1,60 @@
+#pragma once
+
+#include <types.hpp>
+#include <constants.hpp>
+#include <kernel/memory/checked_ptr.hpp>
+#include <kernel/task/task.hpp>
+#include <kernel/ipc/buffer_pool_errors.hpp>
+
+namespace kernel {
+
+class BufferPool {
+public:
+    static constexpr size_t MAX_BUFFERS = 1024;
+    static constexpr size_t BUFFER_SIZE = arch::PAGE_SIZE;
+
+    struct Entry {
+        uint64_t phys_addr;
+        uint32_t generation;
+        uint32_t refcount;
+        uint32_t owner_task;
+        uint64_t mapped_va;
+        int32_t  list_prev;
+        int32_t  list_next;
+    };
+
+    static void init();
+
+    /// @brief Allocate a buffer, map it at @p va in the given task's address space.
+    /// @return handle, or 0 on failure.
+    static uint64_t alloc(TaskControlBlock* task, uint64_t va);
+
+    /// @brief Free a buffer: unmap, deref, return to pool.
+    static bool free(TaskControlBlock* task, uint64_t handle);
+
+    /// @brief Map an existing (transferred) buffer at @p va in the caller's space.
+    static bool map(TaskControlBlock* task, uint64_t handle, uint64_t va);
+
+    /// @brief Unmap a buffer without freeing it.
+    static bool unmap(TaskControlBlock* task, uint64_t handle);
+
+    /// @brief Transfer ownership to another task (used by IPC send).
+    static bool transfer(uint64_t handle, TaskControlBlock* from, TaskControlBlock* to);
+
+    /// @brief Unmap all buffers owned by a task (called from cleanup/exec).
+    static void unmap_all(TaskControlBlock* task);
+
+    /// @brief Validate a handle and return its index, or -1.
+    static int32_t validate(uint64_t handle);
+
+    static Entry entries[MAX_BUFFERS];
+
+private:
+    static int32_t free_head_;
+    static uint32_t next_cookie_;
+
+    static int32_t alloc_entry();
+    static void free_entry(int32_t idx);
+};
+
+} // namespace kernel

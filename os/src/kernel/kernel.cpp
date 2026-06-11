@@ -10,6 +10,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/bootparams.hpp>
@@ -254,6 +255,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     service::ProgramRegistry::init();
     service::ProgramRegistry::register_program(
         "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::demo_main);
+
+    kernel::BufferPool::init();
 
     register_selftest_tests();
     register_ipc_benchmark_tests();
