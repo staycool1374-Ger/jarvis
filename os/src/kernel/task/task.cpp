@@ -7,6 +7,7 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <assert.hpp>
+#include <kernel/task/task_errors.hpp>
 #include <string.hpp>
 #include <constants.hpp>
 
@@ -68,7 +69,7 @@ TaskControlBlock* TaskControlBlock::create(
     uint64_t period_ticks)
 {
     auto* tcb = new TaskControlBlock{};
-    ASSERT(tcb != nullptr);
+    ENSURE(tcb != nullptr);
 
     tcb->id = next_task_id++;
     tcb->state = TaskState::READY;
@@ -82,7 +83,7 @@ TaskControlBlock* TaskControlBlock::create(
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
-    ASSERT(stack_phys != 0);
+    ENSURE(stack_phys != 0);
 
     tcb->stack_phys_ = stack_phys;
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_phys);
@@ -128,7 +129,7 @@ TaskControlBlock* TaskControlBlock::create_user(
 
     size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
-    if (!kstack_phys) { delete tcb; return nullptr; }
+    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); delete tcb; return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
@@ -137,10 +138,10 @@ TaskControlBlock* TaskControlBlock::create_user(
 
     size_t user_stack_pages = (user_stack_size + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
-    if (!ustack_phys) { delete tcb; return nullptr; }
+    if (!ustack_phys) { ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr; }
 
     uint64_t pml4 = VMM::clone_kernel_pml4();
-    if (!pml4) { delete tcb; return nullptr; }
+    if (!pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); delete tcb; return nullptr; }
     tcb->page_table_ = pml4;
 
     // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
@@ -234,7 +235,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     // Allocate and set up kernel stack
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
-    if (!kstack_phys) { delete tcb; return nullptr; }
+    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); delete tcb; return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
     bool is_user_task = (parent->page_table_ != 0);
@@ -279,7 +280,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     if (is_user_task) {
         // Allocate a new PML4 page
         uint64_t new_pml4 = PMM::alloc_page();
-        if (!new_pml4) { delete tcb; return nullptr; }
+        if (!new_pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); delete tcb; return nullptr; }
         tcb->page_table_ = new_pml4;
         tcb->page_table_shared_ = true;
 
@@ -318,7 +319,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
         size_t ustack_pages = (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
-        if (!ustack_phys) { delete tcb; return nullptr; }
+        if (!ustack_phys) { ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr; }
         tcb->user_stack_ = ustack_phys;
         tcb->user_stack_size_ = parent->user_stack_size_;
 

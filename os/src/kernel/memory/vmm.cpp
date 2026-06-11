@@ -3,6 +3,7 @@
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
 #include <assert.hpp>
+#include <kernel/memory/vmm_errors.hpp>
 
 namespace kernel {
 
@@ -50,7 +51,7 @@ uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_a
         if (table[index] & PAGE_HUGE) {
             if (!create) return nullptr;
             uint64_t new_page = PMM::alloc_page_table();
-            ASSERT(new_page != 0);
+            ENSURE(new_page != 0);
             auto* new_table = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
             uint64_t huge_base  = table[index] & ~0x1FFFFFULL;
             uint64_t base_flags = table[index] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -65,7 +66,7 @@ uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create, bool user_a
     if (!create) return nullptr;
 
     uint64_t new_page = user_alloc ? PMM::alloc_user_page() : PMM::alloc_page_table();
-    ASSERT(new_page != 0);
+    ENSURE(new_page != 0);
 
     auto* new_table = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_page);
     for (size_t i = 0; i < PAGE_TABLE_ENTRIES; ++i) {
@@ -92,7 +93,7 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     // so we can map an individual 4KB page within it.
     if (pd[pd_idx] & PAGE_HUGE) {
         uint64_t new_pt_phys = PMM::alloc_page_table();
-        ASSERT(new_pt_phys != 0);
+        ENSURE(new_pt_phys != 0);
         auto* new_pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pt_phys);
         uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
         uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -172,7 +173,7 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
 
     if (pd[pd_idx] & PAGE_HUGE) {
         uint64_t new_pt_phys = PMM::alloc_page_table();
-        ASSERT(new_pt_phys != 0);
+        ENSURE(new_pt_phys != 0);
         auto* new_pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_pt_phys);
         uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
         uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
@@ -192,7 +193,7 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
 
 uint64_t VMM::clone_kernel_pml4() {
     uint64_t phys = PMM::alloc_page();
-    if (!phys) return 0;
+    if (!phys) { ASSERT(errors::VmmError::VMM_ERR_PML4_ALLOC); return 0; }
 
     auto* src = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4_ & ~0xFFFULL));
     auto* dst = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + phys);

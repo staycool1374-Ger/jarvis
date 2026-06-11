@@ -144,7 +144,7 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
 
 MessageQueue& IPC::queue(uint64_t task_id) {
     auto* tcb = Scheduler::find_task(task_id);
-    ASSERT(tcb != nullptr && tcb->msg_queue != nullptr);
+    ENSURE(tcb != nullptr && tcb->msg_queue != nullptr);
     return *tcb->msg_queue;
 }
 

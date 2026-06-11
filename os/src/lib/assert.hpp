@@ -4,16 +4,42 @@
 #pragma once
 
 #include <types.hpp>
+#include <logger.hpp>
 
 /// @brief Triggers a kernel panic with a message (noreturn).
 extern "C" void panic(const char* msg);
 
-#define ASSERT(cond) \
+/// @brief Primary template for per-module error-string lookup.
+///        Each module that defines error codes specialises this template
+///        (e.g. <kernel/task/task_errors.hpp>).
+namespace kernel::errors {
+    template<typename E>
+    inline const char* error_string(E) { return "Unknown error"; }
+}
+
+/// @brief Fatal invariant check — panics if the condition is false.
+///        Use this for conditions that should *never* fail.
+#define ENSURE(cond) \
     do { \
         if (!(cond)) { \
-            panic("ASSERT failed: " #cond " at " __FILE__ ":" \
+            panic("ENSURE failed: " #cond " at " __FILE__ ":" \
                   __STRINGIFY(__LINE__)); \
         } \
     } while (0)
+
+/// @brief Non-fatal error assertion — logs the error with file/line in debug
+///        builds and compiles to a no-op in release builds.
+/// @param err  An enum value from a module error header; the associated
+///             error message is looked up via kernel::errors::error_string().
+#ifdef CONFIG_DEBUG
+#define ASSERT(err) \
+    do { \
+        kernel::Logger::error("[%s:%u] %s", \
+            __FILE__, __LINE__, \
+            kernel::errors::error_string(err)); \
+    } while (0)
+#else
+#define ASSERT(err) ((void)0)
+#endif
 
 #define __STRINGIFY(x) #x

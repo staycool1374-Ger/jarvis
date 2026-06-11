@@ -38,7 +38,7 @@ void Scheduler::init() {
 }
 
 void Scheduler::add_task(TaskControlBlock* task) {
-    ASSERT(task_count_ < MAX_TASKS);
+    ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = task;
     id_table_insert(task->id, task);
 }

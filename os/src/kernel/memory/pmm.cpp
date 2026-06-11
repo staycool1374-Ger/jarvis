@@ -4,6 +4,7 @@
 #include <constants.hpp>
 #include <utils.hpp>
 #include <assert.hpp>
+#include <kernel/memory/pmm_errors.hpp>
 
 namespace kernel {
 
@@ -114,6 +115,7 @@ uint64_t PMM::alloc_page() {
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_kernel(1);
     }
+    if (!result) { ASSERT(errors::PmmError::PMM_ERR_OOM); }
     return result;
 }
 
@@ -124,6 +126,7 @@ uint64_t PMM::alloc_contiguous(size_t count) {
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_kernel(count);
     }
+    if (!result) { ASSERT(errors::PmmError::PMM_ERR_OOM); }
     return result;
 }
 
@@ -133,6 +136,7 @@ uint64_t PMM::alloc_user_page() {
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_user(1);
     }
+    if (!result) { ASSERT(errors::PmmError::PMM_ERR_USER_OOM); }
     return result;
 }
 
@@ -143,6 +147,7 @@ uint64_t PMM::alloc_user_contiguous(size_t count) {
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_user(count);
     }
+    if (!result) { ASSERT(errors::PmmError::PMM_ERR_USER_OOM); }
     return result;
 }
 
@@ -160,7 +165,9 @@ uint64_t PMM::alloc_page_table() {
             return i * PAGE_SIZE;
         }
     }
-    return alloc_page();
+    uint64_t result = alloc_page();
+    if (!result) { ASSERT(errors::PmmError::PMM_ERR_TABLE_OOM); }
+    return result;
 }
 
 void PMM::free_page(uint64_t phys_addr) {
@@ -179,37 +186,37 @@ bool PMM::is_user_page(uint64_t phys_addr) {
 }
 
 void PMM::bitmap_set(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     bitmap[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
 void PMM::bitmap_clear(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     bitmap[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
 bool PMM::bitmap_test(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     return (bitmap[index / 8] >> (index % 8)) & 1;
 }
 
 void PMM::owner_set_user(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     owner[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
 void PMM::owner_set_kernel(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     owner[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
 bool PMM::owner_test(size_t index) {
-    ASSERT(index < total_pages_);
+    ENSURE(index < total_pages_);
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     return (owner[index / 8] >> (index % 8)) & 1;
 }

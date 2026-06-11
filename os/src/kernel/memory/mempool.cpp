@@ -23,7 +23,7 @@ void MemPool::init() {
         pool.first_free = 0;
 
         uint64_t phys = PMM::alloc_page();
-        ASSERT(phys != 0);
+        ENSURE(phys != 0);
 
         pool.data = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
 
