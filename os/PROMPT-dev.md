@@ -79,6 +79,12 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - **Type Safety:** No primitive `reinterpret_cast`. Use strongly typed, alignment-compliant punning.
 - **Security:** Common Criteria isolation (Ring 0 vs User), complete mediation on VFS pathways.
 
+## Error Assertion Rules
+- **`ENSURE(cond)`** — Fatal invariant check. Use for conditions that must *never* fail (internal logic errors, bounds on fixed-size tables, null checks after placement new). Panics the kernel with file/line on failure. Always active regardless of build target.
+- **`ASSERT(err)`** — Debug-only non-fatal error logging. Use at expected failure paths (allocation OOM, resource exhaustion, I/O errors). Expands to `((void)0)` in release builds (`-UCONFIG_DEBUG`). Logs `[file:line] error_message` at ERROR level via `Logger::error()`.
+- **Module error headers:** Each module's error codes live in a `*_errors.hpp` header (e.g. `task/task_errors.hpp`, `memory/pmm_errors.hpp`). Define codes via X-macro and specialise `kernel::errors::error_string<E>()` for the module's enum. See existing headers for the exact pattern.
+- **Do NOT** use `ASSERT(err)` for invariants — use `ENSURE(cond)` instead. `ASSERT(err)` is for *expected, recoverable* errors that the caller handles (returns nullptr, ErrorOr, etc.).
+
 # Debugging Notes
 - **Always use the correct make target:** `make run-release` (not `make release`) when debugging runtime issues, as the build flags differ.
 - **Reproduce crash sequences reliably:** simulate user input with `expect` scripts — send useful commands (e.g., `test\r`) and non-useful commands (e.g., `t\r`) then close stdin to trigger EOF-based crashes.
