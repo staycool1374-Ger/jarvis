@@ -3,6 +3,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 
 namespace kernel {
@@ -73,6 +74,36 @@ uint64_t Syscall::sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uin
 }
 
 uint64_t Syscall::sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    return 0;
+}
+
+uint64_t Syscall::sys_buf_alloc(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return 0;
+    uint64_t va = arg0;
+    return BufferPool::alloc(cur, va);
+}
+
+uint64_t Syscall::sys_buf_free(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!BufferPool::free(cur, arg0)) return static_cast<uint64_t>(-1);
+    return 0;
+}
+
+uint64_t Syscall::sys_buf_map(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    uint64_t handle = arg0;
+    uint64_t va = arg1;
+    if (!BufferPool::map(cur, handle, va)) return static_cast<uint64_t>(-1);
+    return 0;
+}
+
+uint64_t Syscall::sys_buf_unmap(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!BufferPool::unmap(cur, arg0)) return static_cast<uint64_t>(-1);
     return 0;
 }
 

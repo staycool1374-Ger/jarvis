@@ -7,6 +7,7 @@
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/syscall/syscall.hpp>
 #include <constants.hpp>
 
 using namespace kernel;
@@ -220,6 +221,29 @@ JARVIS_TEST(buffer_pool_unmap_all) {
     JARVIS_TEST_PASS();
 }
 
+JARVIS_TEST(buffer_pool_syscall_dispatch) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+    Scheduler::add_task(task);
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(task);
+
+    uint64_t va = 0xB0000000;
+    uint64_t handle = Syscall::handle(
+        static_cast<uint64_t>(SyscallNumber::BUF_ALLOC), va, 0, 0, 0, nullptr);
+    JARVIS_ASSERT(handle != 0);
+
+    uint64_t result = Syscall::handle(
+        static_cast<uint64_t>(SyscallNumber::BUF_FREE), handle, 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, result);
+
+    Scheduler::set_current(original);
+    Scheduler::remove_task(task);
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
@@ -231,4 +255,5 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_map_unmap);
     JARVIS_REGISTER_TEST(buffer_pool_transfer);
     JARVIS_REGISTER_TEST(buffer_pool_unmap_all);
+    JARVIS_REGISTER_TEST(buffer_pool_syscall_dispatch);
 }

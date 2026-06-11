@@ -46,7 +46,11 @@ enum class SyscallNumber : uint64_t {
     GETTOD      = 34,
     UNAME       = 35,
     PAUSE       = 36,
-    MAX_SYSCALL = 37,
+    BUF_ALLOC   = 37,
+    BUF_FREE    = 38,
+    BUF_MAP     = 39,
+    BUF_UNMAP   = 40,
+    MAX_SYSCALL = 41,
 };
 
 /// @brief System call handler function signature.
@@ -97,6 +101,10 @@ private:
     static uint64_t sys_gettod(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_uname(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_buf_alloc(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_buf_free(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_buf_map(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_buf_unmap(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
 
     static constexpr SyscallHandler syscall_table_[static_cast<size_t>(SyscallNumber::MAX_SYSCALL)] = {
         &Syscall::sys_yield,
@@ -136,6 +144,10 @@ private:
         &Syscall::sys_gettod,
         &Syscall::sys_uname,
         &Syscall::sys_pause,
+        &Syscall::sys_buf_alloc,
+        &Syscall::sys_buf_free,
+        &Syscall::sys_buf_map,
+        &Syscall::sys_buf_unmap,
     };
 
 };
