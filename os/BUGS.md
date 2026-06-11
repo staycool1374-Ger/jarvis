@@ -65,7 +65,7 @@
   1. `task.cpp:84-90`: Changed `stack_phys` to `arch::HHDM_OFFSET + stack_phys` in `TaskControlBlock::create()`.
   2. `syscall_handlers_misc.cpp`: In `sys_exit()`, before writing to the parent's user-space `status` pointer, switch to the parent's page table via `arch::write_cr3(parent->page_table_)`. Restore the child's CR3 afterward.
   3. `syscall_handlers_misc.cpp`: After writing the child's PID to the parent's `context.rsp[0]` (RAX slot on kernel stack), ensure the parent receives the correct return value.
-- **Verification:** `make run-release-test` now passes with "ALL TESTS PASSED". 163/163 kernel tests pass in both debug and release builds. test_fork userspace test prints `waitpid returned 8, status=0x2a`.
+- **Verification:** `make run-release-test` now passes with "ALL TESTS PASSED". 174/174 kernel tests pass in both debug and release builds. Dedicated `waitpid_cr3_switch_on_status_write` test (commit `fb68564`) creates two PML4s with different physical pages at the same user VA and proves the CR3 switch fix. test_fork userspace test prints `waitpid returned 8, status=0x2a`.
 - **Status:** Closed
 
 ## Recommendations (Future Features)
