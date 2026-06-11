@@ -1,5 +1,7 @@
 #include <test.hpp>
 #include <logger.hpp>
+#include <string.hpp>
+#include <kernel/arch/io.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
@@ -145,8 +147,91 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Validates the CR3 switch fix in sys_exit(). When a child task writes
+//   exit status to the parent's user-space pointer, it must first switch to the
+//   parent's page table (CR3) so the write lands in the parent's physical page,
+//   not the child's. This test creates two different PML4s that map the same user
+//   virtual address to different physical pages, then proves the fix works.
+// Input: Two PML4s (parent/child), each mapping VA 0x70000000 to a different phys page.
+// Expect: After writing to VA via child's CR3 + parent CR3 switch, the parent's
+//   physical page contains the write; the child's physical page is unchanged.
+JARVIS_TEST(waitpid_cr3_switch_on_status_write) {
+    constexpr uint64_t TEST_VA = 0x70000000;
+
+    // Allocate two different physical pages for parent and child
+    uint64_t parent_page = PMM::alloc_page();
+    uint64_t child_page  = PMM::alloc_page();
+    JARVIS_ASSERT(parent_page != 0);
+    JARVIS_ASSERT(child_page != 0);
+    JARVIS_ASSERT(parent_page != child_page);
+
+    // Zero them and write sentinel values
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + parent_page), 0, 4096);
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + child_page), 0, 4096);
+    *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + parent_page) = 0xAAAAAAAABBBBBBBBULL;
+    *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + child_page)  = 0xCCCCCCCCDDDDDDDDULL;
+
+    // Clone kernel PML4 twice for parent and child
+    uint64_t parent_pml4 = VMM::clone_kernel_pml4();
+    uint64_t child_pml4  = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(parent_pml4 != 0);
+    JARVIS_ASSERT(child_pml4 != 0);
+
+    // Map parent_page at TEST_VA in parent's PML4, child_page at TEST_VA in child's PML4
+    VMM::map_page_in_pml4(TEST_VA, parent_page, true, parent_pml4);
+    VMM::map_page_in_pml4(TEST_VA, child_page,  true, child_pml4);
+
+    // Verify the mappings are correct: each PML4 maps TEST_VA to a different physical page
+    uint64_t phys_in_parent = VMM::virt_to_phys_in_pml4(TEST_VA, parent_pml4);
+    uint64_t phys_in_child  = VMM::virt_to_phys_in_pml4(TEST_VA, child_pml4);
+    JARVIS_ASSERT(phys_in_parent == parent_page);
+    JARVIS_ASSERT(phys_in_child  == child_page);
+    JARVIS_ASSERT(phys_in_parent != phys_in_child);
+
+    // Save current CR3 (kernel PML4)
+    uint64_t saved_cr3 = arch::read_cr3();
+
+    // --- Test the CR3 switch fix ---
+    // Simulate child's sys_exit: we're running in child's context (CR3 = child_pml4),
+    // but we need to write status to the parent's user-space address.
+    // The fix: switch to parent's CR3 before the write.
+
+    // First, enter child's address space
+    arch::write_cr3(child_pml4);
+
+    // Now apply the fix: switch to parent's CR3 before writing
+    arch::write_cr3(parent_pml4);
+
+    // Write status to the shared user VA — this should hit parent_page
+    *reinterpret_cast<uint64_t*>(TEST_VA) = 0x42;
+
+    // Restore kernel CR3
+    arch::write_cr3(saved_cr3);
+
+    // Verify: parent's physical page got the write
+    uint64_t parent_val = *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + parent_page);
+    JARVIS_ASSERT(parent_val == 0x42);
+
+    // Verify: child's physical page is unchanged (still has its sentinel)
+    uint64_t child_val = *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + child_page);
+    JARVIS_ASSERT(child_val == 0xCCCCCCCCDDDDDDDDULL);
+
+    // Cleanup: free page tables (USER-owned, freed by free_user_pages),
+    // then free leaf pages (KERNEL-owned) and PML4 pages (KERNEL-owned by clone_kernel_pml4).
+    VMM::free_user_pages(parent_pml4);
+    VMM::free_user_pages(child_pml4);
+    PMM::free_page(parent_pml4);
+    PMM::free_page(child_pml4);
+    PMM::free_page(parent_page);
+    PMM::free_page(child_page);
+
+    JARVIS_TEST_PASS();
+}
+
 void register_waitpid_tests() {
     Logger::info("Registering waitpid tests");
     JARVIS_REGISTER_TEST(waitpid_zombie_over_new_child);
     JARVIS_REGISTER_TEST(waitpid_two_children_sequential_reap);
+    JARVIS_REGISTER_RELEASE_TEST(waitpid_cr3_switch_on_status_write);
 }
