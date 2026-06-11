@@ -152,7 +152,9 @@ bool BufferPool::map(TaskControlBlock* task, uint64_t handle, uint64_t va) {
     entries[idx].owner_task = static_cast<uint32_t>(task->id);
     entries[idx].mapped_va = va;
 
-    list_insert(task, idx);
+    // NOTE: list is managed by transfer() / alloc(). map() only sets up the
+    // page-table mapping.  The entry is already in the task's list from
+    // transfer() or alloc().
     return true;
 }
 
@@ -184,6 +186,8 @@ bool BufferPool::transfer(uint64_t handle, TaskControlBlock* from, TaskControlBl
     list_remove(from, idx);
 
     entries[idx].owner_task = static_cast<uint32_t>(to->id);
+
+    list_insert(to, idx);
 
     return true;
 }

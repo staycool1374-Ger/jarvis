@@ -300,6 +300,9 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, argv, envp);
 
+    // Free zero-copy buffers mapped into the OLD page table before swapping it out
+    BufferPool::unmap_all(tcb);
+
     uint64_t old_pml4 = tcb->page_table_;
     bool old_shared = tcb->page_table_shared_;
     tcb->page_table_ = new_pml4;
@@ -344,9 +347,6 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     }
 
     if (old_pml4 && old_pml4 != VMM::get_kernel_pml4()) {
-        // Free zero-copy buffers mapped into the old page table
-        BufferPool::unmap_all(tcb);
-
         if (!old_shared) {
             VMM::free_user_pages(old_pml4);
         }
