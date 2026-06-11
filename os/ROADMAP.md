@@ -1,6 +1,17 @@
 # Jarvis RTOS — Sequential Development Roadmap
 
-## Phase 1: Code Refactoring & Microkernel Foundation (0.2.8–0.2.10)
+## Phase 1: Code Refactoring & Microkernel Foundation (0.2.7–0.2.10)
+
+### Version 0.2.7 — Error Assertion Retrofit
+- [x] **Infrastructure:** New `ASSERT(err)` (debug-only non-fatal error logging) + `ENSURE(cond)` (fatal invariant) macros in `assert.hpp`. Template-based `error_string<E>` specialisation per module. (`84b9d64`)
+- [x] **Module error headers:** `task/task_errors.hpp`, `memory/pmm_errors.hpp`, `memory/vmm_errors.hpp` (X-macro pattern). (`84b9d64`)
+- [x] **Already completed:** task, scheduler, PMM, VMM, MemPool, IPC — all ASSERT/ENSURE call sites done. (`84b9d64`)
+- [ ] **Sync primitives audit:** Add `assert.hpp` + `ASSERT(err)` at allocation/state failure paths in `sync/mutex.cpp`, `sync/semaphore.cpp`, `sync/queue.cpp`, `sync/eventgroup.cpp`, `sync/notify.cpp`.
+- [ ] **Syscall handlers audit:** Retrofit `syscall/syscall_handlers_process.cpp`, `syscall/syscall_handlers_fs.cpp`, `syscall/syscall_handlers_ipc.cpp`, `syscall/syscall_handlers_sync.cpp`, `syscall/syscall_handlers_misc.cpp` with error assertions at each failure return.
+- [ ] **VFS audit:** Retrofit `vfs/vfs.cpp` (resolve, mount, FdTable), `vfs/initrd_fs.cpp` (MemPool allocs), `vfs/devfs.cpp` (vnode ops), `vfs/procfs.cpp` (PID allocs), `vfs/pipe.cpp` (new allocations, semaphore ops).
+- [ ] **ELF loader audit:** Add `ASSERT(err)` at PMM/VMM allocation failures in `elf/elf.cpp`.
+- [ ] **Driver registry audit:** Retrofit `driver/driver.cpp` for `new Driver` OOM paths.
+- [ ] **Boot & entry audit:** Retrofit `kernel/kernel.cpp` (boot sequence, exception handler, OOM killer) and `kernel/bootparams.cpp`.
 
 ### Version 0.2.8 — Code Refactoring & Streamlining ✓
 - [x] **O(1) Syscall Dispatch:** Ersetzung des linearen Syscall-Switch-Verteilers durch eine statische Funktionszeigertabelle zur Eliminierung von Kontextlatenzen.
