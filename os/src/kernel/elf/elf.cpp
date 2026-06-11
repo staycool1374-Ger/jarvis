@@ -6,6 +6,7 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -343,6 +344,9 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     }
 
     if (old_pml4 && old_pml4 != VMM::get_kernel_pml4()) {
+        // Free zero-copy buffers mapped into the old page table
+        BufferPool::unmap_all(tcb);
+
         if (!old_shared) {
             VMM::free_user_pages(old_pml4);
         }

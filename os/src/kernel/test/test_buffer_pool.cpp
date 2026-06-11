@@ -293,6 +293,26 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     JARVIS_TEST_PASS();
 }
 
+JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t va = 0xE0000000;
+    uint64_t h1 = BufferPool::alloc(task, va);
+    uint64_t h2 = BufferPool::alloc(task, va + arch::PAGE_SIZE);
+    JARVIS_ASSERT(h1 != 0 && h2 != 0);
+
+    // cleanup() should call BufferPool::unmap_all() which frees everything
+    task->cleanup();
+
+    // Entries should be recycled
+    JARVIS_ASSERT(BufferPool::entries[h1 & 0xFFFFFFFF].phys_addr == 0);
+    JARVIS_ASSERT(BufferPool::entries[h2 & 0xFFFFFFFF].phys_addr == 0);
+
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
@@ -306,4 +326,5 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_unmap_all);
     JARVIS_REGISTER_TEST(buffer_pool_syscall_dispatch);
     JARVIS_REGISTER_TEST(buffer_pool_ipc_transfer);
+    JARVIS_REGISTER_TEST(buffer_pool_cleanup_frees_buffers);
 }

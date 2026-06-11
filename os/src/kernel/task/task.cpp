@@ -4,6 +4,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <assert.hpp>
@@ -236,6 +237,9 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     for (size_t i = 0; i <= cwd_len; ++i) tcb->cwd[i] = parent->cwd[i];
     tcb->cwd_vnode = parent->cwd_vnode;
 
+    // Buffer pool starts empty — buffers are NOT inherited on fork
+    tcb->buf_list_head = -1;
+
     // Allocate and set up kernel stack
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
@@ -453,6 +457,9 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (page_table_) {
+        // Free any zero-copy buffers owned by this task before tearing down page tables
+        BufferPool::unmap_all(this);
+
         if (!page_table_shared_) {
             VMM::free_user_pages(page_table_);
         }
