@@ -164,12 +164,21 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that loading an ELF with an invalid program segment is rejected.
-// Input: (none)
-// Expect: JARVIS_TEST_PASS()
+// Testidea: Validates that loading an ELF with an invalid program segment is rejected.
+// Input: ELF with W^X violating segment (both writable and executable)
+// Expect: elf::load returns nullptr
 // Depends: test, elf
 JARVIS_TEST(elf_load_invalid_segment) {
-    JARVIS_TEST_PASS();
+    elf::ELF64Header hdr{};
+    elf::ELF64ProgramHeader phdr{};
+    uint8_t data[4096];
+    build_minimal_elf(&hdr, &phdr, data);
+    
+    // Make segment W^X violating (both writable=2 and executable=1)
+    phdr.flags = 3; // PF_W | PF_X
+    
+    auto* tcb = elf::load(&hdr, data);
+    JARVIS_ASSERT(tcb == nullptr);
 }
 
 // Runmode: kernel
@@ -198,7 +207,6 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 
     tcb->cleanup();
     delete tcb;
-    JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel

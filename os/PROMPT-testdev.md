@@ -9,8 +9,12 @@ Before implementing, load `testcases-v<target-version>.md` for the current versi
 ### Test Sanctity Rule
 All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`/`Input`/`Expect`/`Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
-### Avoid write tool
-Whenever writing into the filesystem, don't use the write tool, use the batch tool instead and pipe all data via small chunks (<50 lines).
+### Large File Protocol
+Strictly follow these rules:
+1. **Split the output or code** into smaller, logical blocks (max 50 lines per message).
+2. **Output only ONE block** at a time.
+3. **Stop and wait.** End every message with: *"Block [X] of [Y] done. Reply 'continue' for next block."*
+4. **No conversational text**—just the raw code blocks.
 
 ### testbed Branch
 All new tests are implemented on the `testbed` branch:

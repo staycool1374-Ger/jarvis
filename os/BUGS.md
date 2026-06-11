@@ -2,14 +2,25 @@
 
 ## Critical Bugs
 
-### ID: #008 — GRUB video modules (`insmod all_video`/`efi_gop`) trigger VMM crash during framebuffer HHDM mapping
-- **Description:** When GRUB loads video modules (`insmod all_video` or `insmod efi_gop`), the UEFI GOP framebuffer is placed at physical address 0x80000000 (2 GiB). The kernel's framebuffer init attempts to map this region both as identity (0x80000000) and via HHDM (0xFFFF800080000000). The HHDM mapping requires page tables for the 2 GiB virtual address, but the boot HHDM only covers the first 128 MiB (via PML4[256] → PDPT_HIGHER[0] with 64 2 MiB huge pages). Page table pages allocated above 128 MiB had no HHDM mapping, causing a GPF in `VMM::map_page` when trying to write the PTE via the unmapped HHDM virtual address.
-- **Root Cause:** `VMM::get_table()` returned `HHDM_OFFSET + new_page` for newly allocated page table pages, assuming the HHDM mapping existed. For pages allocated above 128 MiB (the framebuffer and subsequent page table pages), the HHDM mapping was absent. The temporary page mapping (`map_temp`/`unmap_temp`) used PML4[511] but accessed via the wrong virtual address (identity vs PML4[511] range), so page table pages were never zeroed.
-- **Resolution — three changes:**
-  1. Added `PMM::alloc_page_table()` that allocates page table pages from a reserved 16 MiB pool within the first 128 MiB of physical memory (guaranteed covered by boot identity map and HHDM huge pages).
-  2. Simplified `VMM::get_table()` to use the identity mapping (virtual = physical) for zeroing newly allocated page table pages, since they now always reside in the boot-mapped low memory.
-  3. Removed the broken `map_temp`/`unmap_temp` PML4[511] temporary mapping mechanism entirely.
-- **Status:** Resolved (v0.2.6)
+### ID: #009 — Second `fork()` in userspace shell creates child that never executes
+- **Description:** When the userspace shell forks a second child process (e.g., `garbing` then `xyzzy`), the second `fork()` call appears to succeed (no error returned) but the child task never executes a single instruction. A `write(1, "CHILD\n", 6)` placed immediately after `fork()` in `run_command()` prints for the first child but not the second. The parent does not print a `"DEBUG: fork failed"` message either, which would appear if `fork()` returned `< 0`. The parent unblocks from `waitpid()` quickly (no timeout), suggesting either no child exists to wait for or the child exits before any code runs.
+- **Symptoms (release build, QEMU UEFI, `-serial mon:stdio`):**
+  - First command (`garbing`): child outputs `CHILD\nsh: garbing: not found`, parent reaps, prints next prompt — OK.
+  - Second command (`xyzzy`): child never outputs `CHILD`, parent prints next `sh$ ` prompt immediately. Expect 10-second timeout hits before any "not found" output.
+  - `make run-release-test` (regex pattern with `\r+\n`) times out on command #2.
+  - `expect` glob patterns (`"*sh: xyzzy: not found*"`) also time out.
+  - Removing the `write(1, "CHILD\n", 6)` debug line does NOT fix the issue.
+- **Kernel state during failure (observed via test output):**
+  - Fork table has capacity (max_tasks=40, ~7-8 in use).
+  - Kernel heap (1 MiB bump allocator in `src/lib/new.cpp`) has ample space — `operator delete` is a no-op stub but the bump allocator never runs out.
+  - `operator delete` being a no-op means per-child `TaskControlBlock`, `MessageQueue`, `Notify`, `EventGroup` objects from the first fork are leaked, but the 1 MiB heap should accommodate hundreds of such allocations before exhaustion.
+  - PMM page allocations (kernel stack, page tables, user stack) are freed by `cleanup()` and should be available for the second fork.
+- **Suspected root cause (not yet confirmed):**
+  - The first child exits via `_exit(127)`. `sys_exit` in `syscall_handlers_misc.cpp:47` marks the task `TERMINATED`, reparents children, and wakes a blocked parent. The parent's `waitpid(-1, ...)` in `syscall_handlers_process.cpp:23` reaps the child via `remove_child()`, `cleanup()`, `remove_task()`, `delete`. If `remove_task()` leaves the scheduler in an inconsistent state (e.g., `current_index_` points past `task_count_`), the second child may never be scheduled.
+  - Alternatively, `Scheduler::add_task()` could race with `test_fork` (PID 0x2A, priority 1, running concurrently with shell priority 2) during the second `fork()`, corrupting the task array.
+- **Test commands used:** `garbing`, `xyzzy`, `plugh`, `help`, `test`, `nonexistent`, `exit`
+- **Reproducibility:** 100% on macOS (Apple Silicon, QEMU 9.x via Homebrew)
+- **Status:** Open — needs investigation of `Scheduler::remove_task()` side effects and potential race with `test_fork`.
 
 ### ID: #007 — `clone_kernel_pml4()` leaks identity-map; fork breaks without shared user entries
 - **Description:** Boot code sets PML4[0] → PDPT_IDENTITY (0x2000) as an identity mapping (supervisor-only). `clone_kernel_pml4()` previously copied all 512 entries, leaking this kernel-owned page into user PML4s. User code crashing at addresses within the identity-map range got protection faults (err=0x5) because the pages were supervisor-only. Zeroing entries 0-255 fixed the identity-map leak but broke fork: the child's PML4 had no user-space mappings → `#PF` at entry point (err=0x4).
@@ -18,7 +29,7 @@
   1. `clone_kernel_pml4()` zeroes entries 0-255, copies 256-511 (fresh user PML4 for exec/load).
   2. `TaskControlBlock::clone()` (fork) allocates a raw PML4, copies user entries 0-255 from the PARENT's PML4 (sharing PDPT/PD/PT pages) and kernel entries 256-511 from the kernel PML4. Sets `page_table_shared_ = true`.
   3. `cleanup()` and `exec_into_current()` skip `free_user_pages()` when `page_table_shared_` is true (shared page tables must not be partially freed). The PML4 page itself is still freed.
-- **Status:** Resolved (v0.2.5)
+- **Status:** Open
 
 ## Recommendations (Future Features)
 
