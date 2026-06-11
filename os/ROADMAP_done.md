@@ -191,3 +191,34 @@
 - [x] Add userspace libc wrappers for new IPC, Notify, and EventGroup syscalls (`src/libc/ipc.h`)
 - [x] Update test suite for new IPC semantics (15 new tests, 50 total)
 - [x] 410 Tests PASS (all 50 kernel self-tests × pass)
+
+### Version 0.2.6 — VMM HHDM Fix, Stable Boot with Video
+- [x] Fix VMM crash when GRUB video modules loaded (framebuffer at 2 GiB now maps via HHDM)
+- [x] All 492 self-tests pass with GRUB `insmod all_video` loaded
+
+### Version 0.2.7 — Error Assertion Retrofit
+- [x] ASSERT(err) / ENSURE(cond) macros + per-module error_string<E> specialisation
+- [x] Module error headers: task, PMM, VMM (X-macro pattern)
+- [x] Retrofitted: task, scheduler, PMM, VMM, MemPool, IPC — all ASSERT/ENSURE call sites
+- [x] Retrofit sync (mutex, semaphore, queue, eventgroup, notify)
+- [x] Retrofit syscall handlers (process, fs, ipc, sync, misc)
+- [x] Retrofit VFS (resolve, mount, FdTable, initrd_fs, devfs, procfs, pipe)
+- [x] Retrofit ELF loader, driver registry, kernel.cpp, bootparams.cpp
+
+### Version 0.2.8 — Code Refactoring & Streamlining
+- [x] O(1) syscall dispatch table, MSR-based syscall/sysret entry
+- [x] Type-safe PhysicalAddress/VirtualAddress wrappers, no raw reinterpret_cast
+- [x] Unified Arch::Serial + Logger, inline-asm purged from non-arch/ code
+- [x] Linker GC, function/data sections, const correctness, reference params
+
+### Version 0.2.9 — Microkernel Foundation & Full Lifecycle Audit
+- [x] Privilege audit, IPC latency benchmark, unprivileged userspace shell
+- [x] Task lifecycle audit: reap_orphans fix, elf::load init_task_common, blocked-sender cleanup, page_table_shared_ use-after-free
+- [x] Userspace idle task (Ring 3 pause loop)
+- [x] Userspace server infrastructure: VFS daemon (vfsd), I/O daemon (iocd)
+- [x] Capability-based MMIO access control
+- [x] Wait-for-graph deadlock detection engine (WFG)
+- [x] Deadlock recovery: terminate task, release locks, unblock waiters
+- [x] Health status syscall and /proc/health metrics
+- [x] Comprehensive full audit: bugs #009-#019 closed (7 fixed, 1 WONTFIX)
+- [x] 1233 kernel self-tests PASS, all release tests PASS

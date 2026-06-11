@@ -4,9 +4,9 @@ A real-time operating system for x86_64 architecture written in C++. Designed wi
 
 ## Features
 
-### Current Version: 0.2.6 "Exception-Safe Userspace"
+### Current Version: 0.2.9 "Microkernel Foundation"
 
-**New in 0.2.6:** Fixed VMM crash when GRUB video modules loaded — framebuffer at 2 GiB now maps correctly via HHDM. All 492 self-tests pass with GRUB `insmod all_video` loaded.
+**New in 0.2.9:** Comprehensive task/scheduler code audit closing 7 bugs (#013-#019). Userspace server infrastructure completed: VFS daemon (vfsd), I/O daemon (iocd), capability-based MMIO access control, and zero-copy buffer pool. Wait-for-graph deadlock detection and recovery engine. Error assertion retrofit across all major subsystems. O(1) syscall dispatch with MSR-based syscall/sysret. Type-safe PhysicalAddress/VirtualAddress wrappers. Userspace idle task (Ring 3 pause loop). All 1233 kernel self-tests pass.
 
 #### Core System
 - **x86_64 Long Mode Boot** — Multiboot2 compatible bootloader support
@@ -97,7 +97,7 @@ A real-time operating system for x86_64 architecture written in C++. Designed wi
 
 #### Debugging & Testing
 - **Benchmark Commands**: CPU benchmark, allocator benchmark
-- **Self-Test Framework**: 492 test cases covering all kernel subsystems
+- **Self-Test Framework**: 1233 test cases covering all kernel subsystems
 - **Shell Commands**: `selftest`, `tasks`, `meminfo`, `modlist`, `version`
 - **Debug Symbols**: `make debug` builds with -Og and full debug info
 - **Release Build**: `make release` builds with -g -O2 and boots in QEMU with serial+framebuffer output
@@ -224,14 +224,14 @@ Each version iteration follows this cycle:
 2. Add unit tests to `src/kernel/test/test.cpp`
 3. Build: `make all`
 4. Run tests: `make test` or use `selftest` in the kernel shell
-5. Verify all tests PASS (currently 416)
-6. Build release: `make release` (builds with -g -O2, QEMU with serial+framebuffer)
-7. Update documentation (Doxygen, ROADMAP.md)
+4. Verify all tests PASS (currently 1233)
+5. Build release: `make release` (builds with -g -O2, QEMU with serial+framebuffer)
+6. Update documentation (Doxygen, ROADMAP.md)
 
 ### Testing
 ```bash
 # In the kernel shell:
-selftest           # Run all 492 registered self-tests
+selftest           # Run all 1233 registered self-tests
 selftest pmm       # Run only PMM-related tests
 selftest string    # Run string operation tests
 ```
@@ -240,7 +240,7 @@ selftest string    # Run string operation tests
 
 See [ROADMAP.md](ROADMAP.md) for the complete version history and planned features.
 
-Current development: **Version 0.2.6 "Exception-Safe Userspace" — VMM HHDM Fix, GRUB Video Support, 492 Tests PASS**
+Current development: **Version 0.2.9 "Microkernel Foundation" — Full Task Lifecycle Audit, Userspace Servers, Deadlock Detection, 1233 Tests PASS**
 
 ## License
 
