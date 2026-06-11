@@ -2,6 +2,7 @@
 #include <logger.hpp>
 #include <kernel/elf/elf.hpp>
 #include <constants.hpp>
+#include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
 
 using namespace kernel;
@@ -158,8 +159,12 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     phdr->memsz = 0x1000;
     phdr->align = 0x1000;
 
+    // Embed the program header into data at phoff so load_segments_and_stack can find it
+    memcpy(data + hdr->phoff, phdr, sizeof(elf::ELF64ProgramHeader));
+    // Code segment after program header
+    uint64_t code_offset = sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader);
     for (size_t i = 0; i < 0x1000; ++i) {
-        data[i] = 0x90;
+        data[code_offset + i] = 0x90;
     }
 }
 
@@ -171,11 +176,12 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
 JARVIS_TEST(elf_load_invalid_segment) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
-    uint8_t data[4096];
+    uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
     
-    // Make segment W^X violating (both writable and executable)
-    phdr.flags = elf::PF_W | elf::PF_X;
+    // Make segment W^X violating — modify the embedded copy in data
+    auto* embedded_phdr = reinterpret_cast<elf::ELF64ProgramHeader*>(data + hdr.phoff);
+    embedded_phdr->flags = elf::PF_W | elf::PF_X;
 
     auto* tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb == nullptr);
@@ -190,7 +196,7 @@ JARVIS_TEST(elf_load_invalid_segment) {
 JARVIS_TEST(elf_load_sets_std_fds) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
-    uint8_t data[4096];
+    uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
 
     auto* tcb = elf::load(&hdr, data);
@@ -219,7 +225,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 JARVIS_TEST(elf_load_creates_user_stack) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
-    uint8_t data[4096];
+    uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
 
     auto* tcb = elf::load(&hdr, data);

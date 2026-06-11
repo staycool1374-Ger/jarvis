@@ -43,6 +43,7 @@ void register_framebuffer_tests();
 void register_stress_tests();
 void register_pic_tests();
 void register_integration_tests();
+void register_bug007_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
@@ -91,4 +92,5 @@ void register_selftest_tests() {
     register_stress_tests();
     register_pic_tests();
     register_integration_tests();
+    register_bug007_tests();
 }
