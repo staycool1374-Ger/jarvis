@@ -4,7 +4,7 @@ A real-time operating system for x86_64 architecture written in C++. Designed wi
 
 ## Features
 
-### Current Version: 0.2.9 "Microkernel Foundation"
+### Current Version: 0.2.10-dev "Zero-Copy Buffer Pool"
 
 **New in 0.2.9:** Comprehensive task/scheduler code audit closing 7 bugs (#013-#019). Userspace server infrastructure completed: VFS daemon (vfsd), I/O daemon (iocd), capability-based MMIO access control, and zero-copy buffer pool. Wait-for-graph deadlock detection and recovery engine. Error assertion retrofit across all major subsystems. O(1) syscall dispatch with MSR-based syscall/sysret. Type-safe PhysicalAddress/VirtualAddress wrappers. Userspace idle task (Ring 3 pause loop). All 1233 kernel self-tests pass.
 
@@ -240,7 +240,7 @@ selftest string    # Run string operation tests
 
 See [ROADMAP.md](ROADMAP.md) for the complete version history and planned features.
 
-Current development: **Version 0.2.9 "Microkernel Foundation" — Full Task Lifecycle Audit, Userspace Servers, Deadlock Detection, 1233 Tests PASS**
+Current development: **Version 0.2.10-dev "Zero-Copy Buffer Pool" — Reference-counted shared memory with O(1) handle transfer via IPC**
 
 ## License
 

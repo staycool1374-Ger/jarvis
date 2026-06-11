@@ -29,7 +29,7 @@
 - [x] Full audit: bugs #009-#019 closed
 - [x] 1233 kernel self-tests PASS
 
-### 0.2.10 — User-space Server Hardening (current)
+### 0.2.10 — Zero-Copy Buffer Pool (current)
 - [ ] Zero-copy buffer pool (~256 KiB, 64 buffers, handle-transfer via IPC)
 - [ ] Userspace VFS server (vfsd) hardening + crash recovery
 - [ ] I/O daemon (iocd) hardening + crash recovery
