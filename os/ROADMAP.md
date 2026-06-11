@@ -29,8 +29,12 @@
 - [x] Full audit: bugs #009-#019 closed
 - [x] 1233 kernel self-tests PASS
 
-### 0.2.10 — Zero-Copy Buffer Pool (current)
-- [ ] Zero-copy buffer pool (~256 KiB, 64 buffers, handle-transfer via IPC)
+### 0.2.10 — Zero-Copy Buffer Pool ✓
+- [x] Zero-copy buffer pool (1024 buffers, 4 KiB each, generation-counter handles, O(1) IPC transfer)
+- [x] SYS_BUF_ALLOC/FREE/MAP/UNMAP syscalls (37-40)
+- [x] IPC::send integration (buf_handle field in Message)
+- [x] cleanup() + exec() buffer teardown, fork buffer isolation
+- [x] 11 buffer-pool kernel tests, 2329/2331 PASS
 - [ ] Userspace VFS server (vfsd) hardening + crash recovery
 - [ ] I/O daemon (iocd) hardening + crash recovery
 
