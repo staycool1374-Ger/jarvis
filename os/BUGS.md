@@ -32,6 +32,16 @@
 - **Verification:** 6 dedicated tests validate all aspects — `clone_kernel_pml4()` clears user entries, kernel entries match, fork PML4 user entries match parent, child mapping doesn't corrupt parent, `free_user_pages` skips shared pages, and `dbg_dump_pml4` confirms no user-accessible entries in cloned PML4.
 - **Status:** Closed (verified by `bug007_*` test suite)
 
+### ID: #010 — `Scheduler::reap_orphans()` doesn't reparent children to init or correctly reap deferred
+- **Description:** Three tests consistently fail, all related to task lifecycle and reaping:
+  1. `scheduler_reap_orphans_can_reap_deferred` (`test_scheduler.cpp:137`): After parent clears wait status and calls `reap_orphans()`, the terminated child is not removed from the scheduler (`find_task(child_id)` still returns non-null).
+  2. `task_reparent_preserves_resources` (`test_task_lifecycle.cpp:146`): After parent terminates and `reap_orphans()` runs, the orphaned child's `parent_id` does not equal the init task's ID — reparenting to init fails.
+  3. `scheduler_reap_respects_parent_wait` (`test_task_lifecycle.cpp:217`): Same as #1 — deferred reap never executes after wait status is cleared.
+- **Suspected root cause:** `Scheduler::reap_orphans()` in `src/kernel/task/scheduler.cpp` checks `can_reap()` which requires the parent to be `TERMINATED`. For the deferred reap case (parent alive but waiting cleared), the parent is still `READY`, so the child is never reaped. Reparenting logic may only fire for certain state combinations or skip non-kernel tasks.
+- **Test commands:** `make test-qemu` (fails consistently)
+- **Reproducibility:** 100%
+- **Status:** Open
+
 ## Recommendations (Future Features)
 
 ### ID: #001 — AHCI/SATA Driver
