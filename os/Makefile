@@ -79,9 +79,20 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all clean run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
+.PHONY: help all clean check-style run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
 
 -include $(DEPFILES)
+
+check-style:
+	@echo "Running style validation..."
+	@python3 tools/validate_style.py --root src; \
+	rc=$$?; \
+	if [ $$rc -eq 0 ]; then \
+	    echo "Style validation passed."; \
+	elif [ $$rc -eq 1 ]; then \
+	    echo "Style validation found errors (exit 1)."; \
+	    exit 1; \
+	fi
 
 help:
 	@echo "Jarvis RTOS — Build Targets"

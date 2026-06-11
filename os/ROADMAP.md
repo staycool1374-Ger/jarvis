@@ -1,7 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
-## Phase 1: Code Refactoring & Microkernel Foundation (0.2.7–0.2.10)
+## Phase 1: Code Refactoring & Microkernel Foundation (0.2.10–0.2.11)
 
+<<<<<<< HEAD
 ### 0.2.7 — Error Assertion Retrofit ✓
 - [x] ASSERT(err) / ENSURE(cond) macros + per-module error_string<E> specialisation
 - [x] Module error headers: task, PMM, VMM (X-macro pattern)
@@ -38,16 +39,29 @@
 - [ ] Userspace VFS server (vfsd) hardening + crash recovery
 - [ ] I/O daemon (iocd) hardening + crash recovery
 
+### 0.2.11 — Coding Style Refactoring (current)
+- [ ] Const correctness retrofit — `const` on all kernel variables, params, member functions
+- [ ] References over pointers — migrate non-nullable `T*` params to `T&`
+- [ ] All variables initialized — fix every uninitialized local declaration
+- [ ] Constructor init-list migration — member assignments in body → member initializer list
+- [ ] Meaningful sentinel enums — replace raw `-1` checks with named constants
+- [ ] Descriptive names — rename blocklisted single-char vars (`t`, `v`, `val`, `tmp`, `ptr`, `p`)
+- [ ] Remove `const_cast` — use `mutable` or redesign to avoid const modification
+- [ ] Bounded loops — replace unbounded `while (true)`/`for (;;)` with max-iteration guards
+- [ ] Dynamic allocation audit — replace `new`/`delete` on kernel paths with fixed pools
+- [ ] Documentation Doxygen compliance — `@brief`, `@param`, `@return` on all public APIs
+- [ ] Validation — zero errors from `make check-style` (exit 0)
+
 ---
 
-## Phase 2: Filesystems & Shell UX (0.2.11–0.2.12)
+## Phase 2: Filesystems & Shell UX (0.2.12–0.2.13)
 
-### 0.2.11 — FAT32 Block Filesystem
+### 0.2.12 — FAT32 Block Filesystem
 - [ ] ATA PIO driver, block device abstraction layer
 - [ ] FAT32 core: MBR parsing, cluster chain, 8.3 filenames
 - [ ] 128 MiB disk image, VFS FAT32 ops, rootfs boot hooks
 
-### 0.2.12 — Shell UX & Utilities
+### 0.2.13 — Shell UX & Utilities
 - [ ] Persistent status bar (framebuffer + serial), Zsh-like dynamic prompt
 - [ ] Built-in commands: help, echo, pwd, clear, which, env, sleep
 - [ ] SYS_MKDIR/SYS_UNLINK, standalone initrd utilities (mkdir, rm, rmdir, etc.)
@@ -55,21 +69,21 @@
 
 ---
 
-## Phase 3: System Services & Hardware (0.2.13–0.2.16)
+## Phase 3: System Services & Hardware (0.2.14–0.2.17)
 
-### 0.2.13 — System Services
+### 0.2.14 — System Services
 - [ ] tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
 - [ ] SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
 
-### 0.2.14 — Hardware Enablement
+### 0.2.15 — Hardware Enablement
 - [ ] PCI enumeration (CF8/CFC, BAR, MSI/MSI-X), Virtio transport + blk driver
 - [ ] Minimal network stack (ARP, IPv4, UDP over virtio-net)
 
-### 0.2.15 — CPU Features & RNG
+### 0.2.16 — CPU Features & RNG
 - [ ] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
 - [ ] Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
 
-### 0.2.16 — Observability & Portability
+### 0.2.17 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
 - [ ] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
 
