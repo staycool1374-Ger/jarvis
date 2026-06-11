@@ -43,6 +43,12 @@ enum : uint32_t {
     PT_PHDR    = 6,
 };
 
+enum : uint32_t {
+    PF_X = 1,
+    PF_W = 2,
+    PF_R = 4,
+};
+
 enum : uint16_t {
     ET_NONE = 0,
     ET_EXEC = 2,

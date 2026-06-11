@@ -150,7 +150,7 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     hdr->shstrndx = 0;
 
     phdr->type = elf::PT_LOAD;
-    phdr->flags = 5;
+    phdr->flags = elf::PF_R | elf::PF_X;
     phdr->offset = sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader);
     phdr->vaddr = 0x400000;
     phdr->paddr = 0x400000;
@@ -174,11 +174,12 @@ JARVIS_TEST(elf_load_invalid_segment) {
     uint8_t data[4096];
     build_minimal_elf(&hdr, &phdr, data);
     
-    // Make segment W^X violating (both writable=2 and executable=1)
-    phdr.flags = 3; // PF_W | PF_X
-    
+    // Make segment W^X violating (both writable and executable)
+    phdr.flags = elf::PF_W | elf::PF_X;
+
     auto* tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb == nullptr);
+    JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
@@ -207,6 +208,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 
     tcb->cleanup();
     delete tcb;
+    JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
