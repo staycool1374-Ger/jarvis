@@ -86,8 +86,9 @@ TaskControlBlock* TaskControlBlock::create(
     ENSURE(stack_phys != 0);
 
     tcb->stack_phys_ = stack_phys;
-    tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_phys);
-    tcb->kernel_stack_top = stack_phys + STACK_SIZE;
+    uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+    tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_virt);
+    tcb->kernel_stack_top = stack_virt + STACK_SIZE;
 
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
 

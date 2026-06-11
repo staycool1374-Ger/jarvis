@@ -19,8 +19,8 @@
 
 ### 0.2.9 — Microkernel Foundation & Task Lifecycle
 - [x] Privilege audit, IPC latency benchmark, unprivileged userspace shell
-- [ ] Task lifecycle audit: reap_orphans fix, elf::load init_task_common, blocked-sender cleanup, page_table_shared_ use-after-free
-- [ ] Userspace idle task (Ring 3 pause loop)
+- [x] Task lifecycle audit: reap_orphans fix, elf::load init_task_common, blocked-sender cleanup, page_table_shared_ use-after-free
+- [x] Userspace idle task (Ring 3 pause loop)
 
 ### 0.2.10 — User-space Server Infrastructure
 - [ ] Zero-copy buffer pool (~256 KiB, 64 buffers, handle-transfer via IPC)

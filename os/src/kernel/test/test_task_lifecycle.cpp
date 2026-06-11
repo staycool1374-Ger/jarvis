@@ -256,6 +256,29 @@ JARVIS_TEST(elf_load_init_task_common_called) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies that a terminated task with parent_id==0 (no parent, no waker) is reaped by reap_orphans.
+// Input: Create a kernel task, orphan it (parent_id=0), terminate, call reap_orphans().
+// Expect: find_task returns nullptr after reap_orphans cleans it up.
+JARVIS_TEST(lifecycle_zombie_no_waker) {
+    auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(tcb != nullptr);
+    Scheduler::add_task(tcb);
+
+    uint64_t tid = tcb->id;
+
+    // Orphan the task (no parent, no waker)
+    tcb->parent_id = 0;
+    tcb->state = TaskState::TERMINATED;
+    tcb->exit_code = 0;
+
+    // reap_orphans should find and reap this zombie
+    Scheduler::reap_orphans();
+
+    JARVIS_ASSERT(Scheduler::find_task(tid) == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all task lifecycle test cases with the test framework.
 // Input: None.
 // Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for execution.
@@ -269,4 +292,5 @@ void register_task_lifecycle_tests() {
     JARVIS_REGISTER_TEST(task_zombie_state_cleanup);
     JARVIS_REGISTER_TEST(scheduler_reap_respects_parent_wait);
     JARVIS_REGISTER_TEST(elf_load_init_task_common_called);
+    JARVIS_REGISTER_TEST(lifecycle_zombie_no_waker);
 }

@@ -88,3 +88,30 @@
 - **vfs_fat32_fstat**: fstat returns correct file size, attributes, and cluster count
 - **vfs_fat32_nonexistent_path**: Opening a non-existent path returns ENOENT
 - **vfs_fat32_unmount**: Unmounting flushes FAT and marks volume clean
+
+## Roadmap-Specific Test Ideas
+
+### User-space VFS Server
+- **vfsd_boots_and_registers**: VFS daemon boots and registers with kernel (replace stub)
+- **vfsd_handle_open**: VFS daemon handles open message (replace stub)
+- **vfsd_handle_read_write**: VFS daemon handles read/write messages (replace stub)
+- **vfsd_handle_resolve**: VFS daemon handles path resolve message (replace stub)
+- **vfsd_handle_mount_unmount**: VFS daemon handles mount/unmount messages (replace stub)
+- **vfsd_handle_stat_fstat**: VFS daemon handles stat/fstat messages (replace stub)
+- **vfsd_invalid_message_type_rejected**: Invalid message type rejected (replace stub)
+
+### User-space Driver Server
+- **iocd_boots_and_registers**: IOCD boots and registers with kernel (replace stub)
+- **iocd_keyboard_irq_to_event**: Keyboard IRQ converted to IPC event (replace stub)
+- **iocd_serial_irq_to_event**: Serial IRQ converted to IPC event (replace stub)
+- **iocd_mmio_map_via_capability**: MMIO region mapped via capability (replace stub)
+
+### Capability-based Hardware Access
+- **cap_create_for_mmio**: Capability created for MMIO region with valid phys + size
+- **cap_grant_to_task**: Capability granted to target task
+- **cap_map_mmio_via_cap**: MMIO mapped via capability (replace stub)
+- **cap_revoke_removes_access**: Revoked capability cannot be used (replace stub)
+- **cap_forgery_rejected**: Random/incremented cap values rejected (replace stub)
+- **cap_bounds_validated**: Zero size, invalid phys addr rejected (replace stub)
+- **cap_nonexistent_task_grant**: Granting to nonexistent task fails (replace stub)
+- **cap_duplicate_grant_rejected**: Duplicate grant to same task rejected (replace stub)

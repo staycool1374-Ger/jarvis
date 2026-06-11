@@ -70,18 +70,36 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
                 if (p && p->id == t->parent_id &&
                     (p->waiting_child_pid == t->id ||
                      p->waiting_child_pid == static_cast<uint64_t>(-1))) {
+                    // Write exit code to parent's user-space status pointer.
+                    // We must switch to the parent's page table because
+                    // the status address belongs to the parent's address space.
                     if (p->waiting_child_status) {
+                        uint64_t old_cr3 = 0;
+                        bool switched = false;
+                        if (p->page_table_ &&
+                            arch::read_cr3() != p->page_table_) {
+                            old_cr3 = arch::read_cr3();
+                            arch::write_cr3(p->page_table_);
+                            switched = true;
+                        }
                         *p->waiting_child_status = t->exit_code;
+                        if (switched) arch::write_cr3(old_cr3);
                         p->waiting_child_status = nullptr;
                     }
                     p->waiting_child_pid = 0;
-                    // Orphan the child: remove from parent's child list and
-                    // clear parent_id so that reap_orphans can clean it up
-                    // and future waitpid calls don't find this zombie.
+                    // Orphan the child so reap_orphans can clean it up
                     p->remove_child(t);
                     t->parent_id = 0;
-                    if (p->state != TaskState::TERMINATED)
+                    // Wake the parent and override its saved RAX to return
+                    // the child's PID instead of -1 (the value set when
+                    // waitpid blocked).
+                    if (p->state != TaskState::TERMINATED) {
                         p->state = TaskState::READY;
+                        if (p->context.rsp) {
+                            auto* stack = reinterpret_cast<uint64_t*>(p->context.rsp);
+                            stack[0] = t->id;
+                        }
+                    }
                     break;
                 }
             }

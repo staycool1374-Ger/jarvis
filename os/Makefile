@@ -400,7 +400,7 @@ run-release-test: release
 	    'puts "exiting shell..."' \
 	    'send "exit\r"' \
 	    'expect {' \
-	    '    -re "exit\r\nsh: exiting\r\n" { puts "exit message seen" }' \
+	    '    -re "exit\r+\nsh: exiting\r+\n" { puts "exit message seen" }' \
 	    '    "PANIC" { puts "PANIC on exit"; exit 1 }' \
 	    '    "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 }' \
 	    '    timeout { puts "TIMEOUT on exit"; exit 1 }' \
