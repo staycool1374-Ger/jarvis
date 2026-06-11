@@ -115,3 +115,55 @@
 - **cap_bounds_validated**: Zero size, invalid phys addr rejected (replace stub)
 - **cap_nonexistent_task_grant**: Granting to nonexistent task fails (replace stub)
 - **cap_duplicate_grant_rejected**: Duplicate grant to same task rejected (replace stub)
+
+## Buffer Pool — Zero-Copy IPC Shared Memory
+
+### Implementation Bugs (fix first)
+- **exec_into_current_clears_buffers**: alloc buffer in a task, call exec_into_current(),
+  verify buffer entry is recycled (CRITICAL — current code unmaps from wrong page table
+  after the old/new PML4 swap)
+- **transfer_adds_to_receiver_list**: alloc buffer, transfer to receiver, verify it appears
+  in receiver's buf_list_head (HIGH — currently omitted, causes leak on receiver exit
+  without mapping)
+
+### Boundary & Error Path Tests
+- **va_conflict_rejected**: alloc at VA X, alloc again at same VA X, verify second alloc
+  returns 0 (BUF_ERR_VA_IN_USE)
+- **va_out_of_range_rejected**: alloc with VA >= USER_SPACE_LIMIT, verify returns 0
+  (BUF_ERR_VA_OUT_OF_RANGE)
+- **zero_va_rejected**: alloc with VA=0, verify returns 0 (guard page, below user space)
+- **kernel_task_alloc_fails**: create kernel task (no page_table_), verify alloc returns 0
+- **forged_handle_after_free**: alloc → free → use same handle (old gen), verify
+  validate() returns -1
+- **realloc_recycles_entry**: alloc → free → alloc again, verify same entry index recycled
+  with incremented generation
+- **alloc_after_exhaustion_and_free**: exhaust all 1024 entries, free one, verify new alloc
+  recycles the freed entry
+- **list_integrity_after_unlink**: alloc 10 buffers, free the middle entry (idx 5), then
+  verify list_prev/list_next of neighbours are correct
+
+### IPC Integration Tests
+- **fork_buffer_not_inherited**: parent allocs buffer, forks (clone), verify child's
+  buf_list_head == -1, parent still owns the buffer
+- **ipc_nonblock_no_transfer_on_full**: fill receiver's message queue to capacity,
+  send IPC_NONBLOCK with buf_handle, verify send fails and buffer still owned by sender
+- **send_sync_with_buffer_handle**: send_sync with buf_handle set, verify transfer
+  happens correctly (sender loses ownership, receiver can map)
+- **ipc_transfer_multiple_messages**: send multiple messages each with distinct buf_handle,
+  verify all transfers succeed and handles are independent
+
+### Multi-Owner & Lifecycle Tests
+- **transfer_chain**: alloc by A → transfer to B → transfer to C, C maps and frees,
+  verify A and B cannot free/map/unmap the handle
+- **transfer_receiver_exit_without_map**: alloc by A, transfer to B, B exits without
+  ever calling map() (triggers cleanup()), verify buffer page freed and entry recycled
+- **multi_map_same_task**: alloc buffer, map at 2nd VA in same task, unmap one VA,
+  verify buffer still alive via the other VA, then free
+- **unmap_idempotent**: unmap an already-unmapped buffer, verify returns false (NOT_MAPPED)
+
+### Page Table & Resource Cleanup
+- **intermediate_tables_do_not_leak**: alloc buffers at distinct VAs spanning multiple
+  page-table levels (different PML4/PDPT/PD entries), then free them, verify no
+  intermediate page-table pages leaked (requires VMM allocation counters)
+- **cleanup_idempotent_with_empty_list**: create task (no buffers), call cleanup(),
+  verify no crash or resource leak
