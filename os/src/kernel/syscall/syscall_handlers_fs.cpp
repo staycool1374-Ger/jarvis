@@ -49,7 +49,7 @@ static bool vfsd_authorize(uint64_t op_type, uint64_t pid, const char* path) {
 }
 
 static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
-    char fd_str[16];
+    char fd_str[16] = {0};
     int len = 0;
     int n = fd;
     if (n == 0) { fd_str[len++] = '0'; }

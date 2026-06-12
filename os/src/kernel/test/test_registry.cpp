@@ -47,6 +47,11 @@ void register_pml4_clone_tests();
 void register_waitpid_tests();
 void register_buffer_pool_tests();
 void register_block_device_tests();
+void register_fat32_tests();
+void register_vfs_fat32_tests();
+void register_ipc_blocking_tests();
+void register_vfsd_authorization_tests();
+void register_syscall_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
@@ -99,4 +104,9 @@ void register_selftest_tests() {
     register_waitpid_tests();
     register_buffer_pool_tests();
     register_block_device_tests();
+    register_fat32_tests();
+    register_vfs_fat32_tests();
+    register_ipc_blocking_tests();
+    register_vfsd_authorization_tests();
+    register_syscall_tests();
 }

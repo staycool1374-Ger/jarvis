@@ -426,7 +426,7 @@ JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Alloc at VA X, alloc again at same VA X, second alloc fails (BUF_ERR_VA_IN_USE)
+// Testidea: Alloc at VA X, alloc again at same VA X, second alloc fails (BUF_ERR_VA_IN_USE)
 // Input: task, alloc at va, alloc again at same va
 // Expect: First alloc succeeds, second returns 0
 // Depends: kernel::BufferPool
@@ -455,7 +455,7 @@ JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Alloc with VA=0 fails (guard page, below user space)
+// Testidea: Alloc with VA=0 fails (guard page, below user space)
 // Input: task, alloc at va=0
 // Expect: Returns 0
 // Depends: kernel::BufferPool
