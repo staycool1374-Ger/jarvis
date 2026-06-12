@@ -2,6 +2,7 @@ extern handle_interrupt_c
 extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
 extern scheduler_load_cr3_from
+extern scheduler_on_context_switch
 
 %macro ISR_NOERR 1
 global isr_%1
@@ -89,6 +90,27 @@ isr_common:
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
     mov qword [rel scheduler_save_rsp_to], 0
+
+    ; Context switch complete — update current_index_ to the new task
+    push rax
+    push rcx
+    push rdx
+    push rdi
+    push rsi
+    push r8
+    push r9
+    push r10
+    push r11
+    call scheduler_on_context_switch
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rsi
+    pop rdi
+    pop rdx
+    pop rcx
+    pop rax
 
     mov rax, [rel scheduler_load_cr3_from]
     test rax, rax

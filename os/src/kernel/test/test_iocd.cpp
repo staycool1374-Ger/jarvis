@@ -4,30 +4,25 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/driver/driver.hpp>
+#include <kernel/driver/iocd.hpp>
+#include <kernel/vfs/vfsd.hpp>
 
 using namespace kernel;
 
-enum IocdMsgType {
-    IOCD_REGISTER_DEVICE = 200,
-    IOCD_IRQ_EVENT,
-    IOCD_MMIO_MAP,
-    IOCD_MMIO_UNMAP,
-    IOCD_KEYBOARD_READ,
-    IOCD_SERIAL_READ,
-    IOCD_SERIAL_WRITE,
-};
-
-struct IocdMsg {
-    uint64_t type;
-    uint64_t args[5];
-};
-
 // Runmode: kernel
-// Testidea: STUB - IOCD boots and registers with the kernel
+// Testidea: IOCD boots and registers with the kernel
 // Input: None (boot sequence)
-// Expect: Passes (stub)
-// Depends: kernel/task, kernel/ipc, kernel/driver
+// Expect: iocd::get_iocd_pid() returns a non-zero PID and the task exists
+// Depends: kernel/driver/iocd
 JARVIS_TEST(iocd_boots_and_registers) {
+    uint64_t pid = iocd::get_iocd_pid();
+    JARVIS_ASSERT(pid != 0);
+    uint64_t vfsd_pid = vfsd::get_vfsd_pid();
+    JARVIS_ASSERT(vfsd_pid != 0);
+    auto* vfsd_task = Scheduler::find_task(vfsd_pid);
+    JARVIS_ASSERT(vfsd_task != nullptr);
+    auto* task = Scheduler::find_task(pid);
+    JARVIS_ASSERT(task != nullptr);
     JARVIS_TEST_PASS();
 }
 

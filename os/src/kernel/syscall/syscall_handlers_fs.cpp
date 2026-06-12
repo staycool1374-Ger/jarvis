@@ -1,12 +1,99 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/task/scheduler.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/vfsd.hpp>
 #include <kernel/vfs/pipe.hpp>
+#include <kernel/ipc/ipc.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <string.hpp>
 
 namespace kernel {
+
+static bool vfsd_authorize(uint64_t op_type, uint64_t pid, const char* path) {
+    uint64_t vfsd_pid = vfsd::get_vfsd_pid();
+    if (vfsd_pid == 0) return false;
+    if (vfsd::is_vfsd_task()) return true;
+
+    // Kernel tasks (no page table) are trusted — bypass IPC authorization
+    auto* cur = kernel::Scheduler::current_task();
+    if (cur && !cur->page_table_) return true;
+
+    vfsd::Msg msg{};
+    msg.sender_id = pid;
+    msg.type = op_type;
+    msg.arg0 = 0;
+    size_t i = 0;
+    if (path) {
+        while (path[i] && i < sizeof(msg.path) - 1) {
+            msg.path[i] = path[i];
+            ++i;
+        }
+    }
+    msg.path[i] = '\0';
+
+    Message send_msg{};
+    send_msg.sender_id = pid;
+    send_msg.type = op_type;
+    send_msg.data_size = sizeof(vfsd::Msg);
+    __builtin_memcpy(send_msg.data, &msg, sizeof(vfsd::Msg));
+
+    Message reply_msg{};
+    if (!IPC::send_sync(vfsd_pid, send_msg, reply_msg)) return false;
+    if (reply_msg.data_size < sizeof(vfsd::Reply)) return false;
+
+    vfsd::Reply reply{};
+    __builtin_memcpy(&reply, reply_msg.data, sizeof(vfsd::Reply));
+    return reply.result >= 0;
+}
+
+static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
+    char fd_str[16];
+    int len = 0;
+    int n = fd;
+    if (n == 0) { fd_str[len++] = '0'; }
+    else {
+        char tmp[16];
+        int tmp_len = 0;
+        while (n > 0) { tmp[tmp_len++] = '0' + (n % 10); n /= 10; }
+        for (int j = tmp_len - 1; j >= 0; --j) fd_str[len++] = tmp[j];
+    }
+    fd_str[len] = '\0';
+
+    uint64_t vfsd_pid = vfsd::get_vfsd_pid();
+    if (vfsd_pid == 0) return false;
+    if (vfsd::is_vfsd_task()) return true;
+
+    // Kernel tasks (no page table) are trusted — bypass IPC authorization
+    auto* cur = kernel::Scheduler::current_task();
+    if (cur && !cur->page_table_) return true;
+
+    vfsd::Msg msg{};
+    msg.sender_id = pid;
+    msg.type = op_type;
+    msg.arg0 = static_cast<uint64_t>(fd);
+    size_t i = 0;
+    while (fd_str[i] && i < sizeof(msg.path) - 1) {
+        msg.path[i] = fd_str[i];
+        ++i;
+    }
+    msg.path[i] = '\0';
+
+    Message send_msg{};
+    send_msg.sender_id = pid;
+    send_msg.type = op_type;
+    send_msg.data_size = sizeof(vfsd::Msg);
+    __builtin_memcpy(send_msg.data, &msg, sizeof(vfsd::Msg));
+
+    Message reply_msg{};
+    if (!IPC::send_sync(vfsd_pid, send_msg, reply_msg)) return false;
+    if (reply_msg.data_size < sizeof(vfsd::Reply)) return false;
+
+    vfsd::Reply reply{};
+    __builtin_memcpy(&reply, reply_msg.data, sizeof(vfsd::Reply));
+    return reply.result >= 0;
+}
 
 uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
@@ -15,15 +102,23 @@ uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uin
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task()->id : 0, path_buf))
+            return static_cast<uint64_t>(-1);
         fd = syscall_path_open(path_buf, arg1);
     } else {
+        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task()->id : 0, user_path))
+            return static_cast<uint64_t>(-1);
         fd = syscall_path_open(user_path, arg1);
     }
     return static_cast<uint64_t>(static_cast<int64_t>(fd));
 }
 
 uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!vfsd_authorize_fd_op(vfsd::VFS_READ, cur->id, static_cast<int>(arg0)))
+        return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f) return static_cast<uint64_t>(-1);
     uint64_t count = arg2;
     auto buf = checked(reinterpret_cast<uint8_t*>(arg1), count);
@@ -35,20 +130,32 @@ uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
 }
 
 uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!vfsd_authorize_fd_op(vfsd::VFS_CLOSE, cur->id, static_cast<int>(arg0)))
+        return static_cast<uint64_t>(-1);
     int fd = static_cast<int>(arg0);
-    syscall_task()->fd_table.free(fd);
+    cur->fd_table.free(fd);
     return 0;
 }
 
 uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!vfsd_authorize_fd_op(vfsd::VFS_FSTAT, cur->id, static_cast<int>(arg0)))
+        return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->fstat) return static_cast<uint64_t>(-1);
     auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
     return static_cast<uint64_t>(f->vnode->ops->fstat(f->vnode, st));
 }
 
 uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    if (!vfsd_authorize_fd_op(vfsd::VFS_WRITE, cur->id, static_cast<int>(arg0)))
+        return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->write) return static_cast<uint64_t>(-1);
     uint64_t count = arg2;
     auto buf = checked(reinterpret_cast<const uint8_t*>(arg1), count);
@@ -59,7 +166,9 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_
 }
 
 uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->lseek) return static_cast<uint64_t>(-1);
     int64_t r = f->vnode->ops->lseek(f->vnode,
         static_cast<int64_t>(arg1), static_cast<int>(arg2), &f->offset);
@@ -67,13 +176,17 @@ uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_
 }
 
 uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->ioctl) return static_cast<uint64_t>(-1);
     return static_cast<uint64_t>(f->vnode->ops->ioctl(f->vnode, arg1, reinterpret_cast<void*>(arg2)));
 }
 
 uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
-    auto* f = syscall_task()->fd_table.get(static_cast<int>(arg0));
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
+    auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->readdir) return static_cast<uint64_t>(-1);
     auto pos_chk = checked(reinterpret_cast<uint64_t*>(arg1));
     auto dent_chk = checked(reinterpret_cast<vfs::Dirent*>(arg2));
@@ -85,14 +198,19 @@ uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
 }
 
 uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    const char* user_path = reinterpret_cast<const char*>(arg0);
     vfs::Vnode* vn;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
-        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), SYSCALL_MAX_PATH))
+        if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task()->id : 0, path_buf))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(path_buf);
     } else {
-        vn = vfs::resolve(reinterpret_cast<const char*>(arg0));
+        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task()->id : 0, user_path))
+            return static_cast<uint64_t>(-1);
+        vn = vfs::resolve(user_path);
     }
     if (!vn || !vn->ops->fstat) return static_cast<uint64_t>(-1);
     auto st = checked(reinterpret_cast<vfs::VfsStat*>(arg1));
@@ -101,37 +219,44 @@ uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uin
 }
 
 uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* cur = syscall_task();
+    if (!cur) return static_cast<uint64_t>(-1);
     int old_fd = static_cast<int>(arg0);
-    auto* old = syscall_task()->fd_table.get(old_fd);
+    auto* old = cur->fd_table.get(old_fd);
     if (!old) return static_cast<uint64_t>(-1);
-    int new_fd = syscall_task()->fd_table.alloc();
+    int new_fd = cur->fd_table.alloc();
     if (new_fd < 0) return static_cast<uint64_t>(-1);
-    syscall_task()->fd_table.fds[new_fd] = syscall_task()->fd_table.fds[old_fd];
+    cur->fd_table.fds[new_fd] = cur->fd_table.fds[old_fd];
     if (old->vnode && old->vnode->refcount > 0)
         ++old->vnode->refcount;
     return static_cast<uint64_t>(new_fd);
 }
 
 uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    const char* user_path = reinterpret_cast<const char*>(arg0);
     vfs::Vnode* vn;
     const char* resolved_path;
     char path_buf[SYSCALL_MAX_PATH];
     if (syscall_is_user_task()) {
-        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), SYSCALL_MAX_PATH))
+        if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task()->id : 0, path_buf))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(path_buf);
         resolved_path = path_buf;
     } else {
-        auto* raw = reinterpret_cast<const char*>(arg0);
-        vn = vfs::resolve(raw);
-        resolved_path = raw;
+        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task()->id : 0, user_path))
+            return static_cast<uint64_t>(-1);
+        vn = vfs::resolve(user_path);
+        resolved_path = user_path;
     }
-    if (!vn) return static_cast<uint64_t>(-1);
+    auto* cur = syscall_task();
+    if (!cur || !vn) return static_cast<uint64_t>(-1);
     if (!(vn->mode & vfs::S_IFDIR)) return static_cast<uint64_t>(-1);
-    syscall_task()->cwd_vnode = vn;
+    cur->cwd_vnode = vn;
     size_t i = 0;
-    while (resolved_path[i] && i < 255) { syscall_task()->cwd[i] = resolved_path[i]; ++i; }
-    syscall_task()->cwd[i] = '\0';
+    while (resolved_path[i] && i < 255) { cur->cwd[i] = resolved_path[i]; ++i; }
+    cur->cwd[i] = '\0';
     return 0;
 }
 

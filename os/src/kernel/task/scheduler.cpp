@@ -15,6 +15,7 @@ TaskControlBlock* Scheduler::tasks_[MAX_TASKS] = {};
 TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
 uint64_t Scheduler::task_count_ = 0;
 uint64_t Scheduler::current_index_ = 0;
+uint64_t Scheduler::next_task_id_ = 1;
 bool Scheduler::preempt_enabled_ = false;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
 
@@ -44,7 +45,7 @@ void Scheduler::add_task(TaskControlBlock* task) {
 }
 
 void Scheduler::remove_task(TaskControlBlock* task) {
-    id_table_remove(task->id);
+    id_table_remove(task);
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == task) {
             tasks_[i] = tasks_[--task_count_];
@@ -121,6 +122,15 @@ void Scheduler::set_current(TaskControlBlock* task) noexcept {
     }
 }
 
+void Scheduler::set_current_by_id(uint64_t id) noexcept {
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i]->id == id) {
+            current_index_ = i;
+            return;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // O(1) task-ID→TCB hash table (open addressing, linear probing)
 // ---------------------------------------------------------------------------
@@ -137,10 +147,14 @@ void Scheduler::id_table_insert(uint64_t id, TaskControlBlock* tcb) {
     id_table_[idx] = tcb;
 }
 
-void Scheduler::id_table_remove(uint64_t id) {
-    uint64_t idx = id_table_probe(id);
+uint64_t Scheduler::alloc_id() noexcept {
+    return next_task_id_++;
+}
+
+void Scheduler::id_table_remove(TaskControlBlock* task) {
+    uint64_t idx = id_table_probe(task->id);
     while (id_table_[idx] != nullptr) {
-        if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx]->id == id) {
+        if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx] == task) {
             id_table_[idx] = const_cast<TaskControlBlock*>(ID_TOMBSTONE);
             return;
         }
@@ -284,7 +298,7 @@ void Scheduler::reap_orphans() noexcept {
                     }, 0, 0xFFFFFFFF);
                     new_idle->state = TaskState::READY;
                     t->cleanup();
-                    id_table_remove(t->id);
+                    id_table_remove(t);
                     // Compact by shifting left past the removed old idle
                     for (uint64_t k = i; k + 1 < task_count_; ++k) {
                         tasks_[k] = tasks_[k + 1];
@@ -345,7 +359,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         current->state = TaskState::READY;
     }
     next->state = TaskState::RUNNING;
-    Scheduler::set_current(next);
+    scheduler_next_task_id = next->id;
 }
 
 void Scheduler::rate_monotonic_schedule() noexcept {
@@ -376,3 +390,10 @@ void Scheduler::reschedule() noexcept {
 }
 
 } // namespace kernel
+
+extern "C" void scheduler_on_context_switch() {
+    uint64_t id = kernel::scheduler_next_task_id;
+    if (id == 0) return;
+    kernel::scheduler_next_task_id = 0;
+    kernel::Scheduler::set_current_by_id(id);
+}

@@ -149,10 +149,16 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
     auto* cur = Scheduler::current_task();
     if (!cur || !cur->msg_queue) return false;
 
+    bool was_blocked = false;
     while (cur->msg_queue->is_empty()) {
         cur->state = TaskState::BLOCKED;
+        was_blocked = true;
         Scheduler::reschedule();
+        if (cur->page_table_) {
+            asm volatile("sti; hlt; cli" ::: "memory");
+        }
     }
+    if (was_blocked) cur->state = TaskState::READY;
 
     return cur->msg_queue->pop(reply);
 }

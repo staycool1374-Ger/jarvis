@@ -238,8 +238,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     auto* tcb = new TaskControlBlock{};
     if (!tcb) return nullptr;
 
-    static uint64_t next_task_id = 42;
-    tcb->id = next_task_id++;
+    tcb->id = kernel::Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = 5;
     tcb->period_ticks = 20;

@@ -18,6 +18,8 @@
 #include <kernel/multiboot2.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/vfsd.hpp>
+#include <kernel/driver/iocd.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/vfs/devfs.hpp>
 #include <kernel/vfs/procfs.hpp>
@@ -56,6 +58,7 @@ extern "C" {
 uint64_t volatile* scheduler_save_rsp_to = nullptr;
 uint64_t volatile scheduler_load_rsp_from = 0;
 uint64_t volatile scheduler_load_cr3_from = 0;
+uint64_t volatile scheduler_next_task_id = 0;
 }
 
 extern "C" void debug_write_hex(uint64_t v) {
@@ -258,14 +261,58 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     kernel::BufferPool::init();
 
+    // Load vfsd userspace daemon before test suite so tests can interact with it
+    {
+        initrd::InitrdFile f = initrd::find("./vfsd.c.elf");
+        if (!f.data) f = initrd::find("vfsd.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* vfsd_task = kernel::elf::load(hdr, f.data);
+                if (vfsd_task) {
+                    vfsd_task->priority = 1;
+                    vfsd_task->period_ticks = 10;
+                    kernel::Scheduler::add_task(vfsd_task);
+                    kernel::vfsd::set_vfsd_pid(vfsd_task->id);
+                    debug_write("[BOOT] VFS daemon started (PID=");
+                    debug_write_hex(vfsd_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
+    }
+
+    // Load iocd userspace daemon before test suite
+    {
+        initrd::InitrdFile f = initrd::find("./iocd.c.elf");
+        if (!f.data) f = initrd::find("iocd.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            if (kernel::elf::validate_header(hdr)) {
+                auto* iocd_task = kernel::elf::load(hdr, f.data);
+                if (iocd_task) {
+                    iocd_task->priority = 1;
+                    iocd_task->period_ticks = 10;
+                    kernel::Scheduler::add_task(iocd_task);
+                    kernel::iocd::set_iocd_pid(iocd_task->id);
+                    debug_write("[BOOT] IOCD started (PID=");
+                    debug_write_hex(iocd_task->id);
+                    debug_write(")\n");
+                }
+            }
+        }
+    }
+
     register_selftest_tests();
     register_ipc_benchmark_tests();
+
 #ifdef CONFIG_DEBUG
     kernel::test::run_debug();
     kernel::Scheduler::cleanup_test_tasks();
 #else
     kernel::test::run_release();
 #endif
+    debug_write("[BOOT] Tests done.\n");
 
     debug_write("[BOOT] Starting userspace test_fork...\n");
     {

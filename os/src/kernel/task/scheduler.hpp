@@ -61,6 +61,11 @@ public:
     /// @brief Sets the current running task.
     /// @param task Pointer to the task to set as current.
     static void set_current(TaskControlBlock* task) noexcept;
+    /// @brief Sets the current running task by ID (used after context switch).
+    /// @param id Task ID to set as current.
+    static void set_current_by_id(uint64_t id) noexcept;
+
+    [[nodiscard]] static uint64_t alloc_id() noexcept;
 
     static uint64_t current_index() noexcept { return current_index_; }
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
@@ -84,6 +89,7 @@ private:
     static TaskControlBlock* id_table_[ID_TABLE_SIZE];
     static uint64_t task_count_;
     static uint64_t current_index_;
+    static uint64_t next_task_id_;
     static bool preempt_enabled_;
 
     static TaskControlBlock* idle_task_;
@@ -94,7 +100,7 @@ private:
     /// @brief Hash-table helpers for O(1) task-ID→TCB lookup.
     static uint64_t id_table_probe(uint64_t id);
     static void     id_table_insert(uint64_t id, TaskControlBlock* tcb);
-    static void     id_table_remove(uint64_t id);
+    static void     id_table_remove(TaskControlBlock* task);
     static TaskControlBlock* id_table_find(uint64_t id);
 };
 
@@ -105,6 +111,8 @@ extern "C" {
     extern uint64_t volatile scheduler_load_rsp_from;
     /// @brief CR3 value to load during context switch restore (0 = don't load).
     extern uint64_t volatile scheduler_load_cr3_from;
+    /// @brief Task ID to set as current after the context switch completes.
+    extern uint64_t volatile scheduler_next_task_id;
 }
 
 } // namespace kernel

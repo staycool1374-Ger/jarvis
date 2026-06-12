@@ -35,10 +35,16 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     bool ok = false;
+    bool was_blocked = false;
     while (!(ok = IPC::recv(msg))) {
         cur->state = TaskState::BLOCKED;
+        was_blocked = true;
         Scheduler::reschedule();
+        if (cur->page_table_) {
+            asm volatile("sti; hlt; cli" ::: "memory");
+        }
     }
+    if (was_blocked) cur->state = TaskState::READY;
     uint64_t copy_size = msg.data_size;
     if (copy_size > max_size) copy_size = max_size;
     for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];

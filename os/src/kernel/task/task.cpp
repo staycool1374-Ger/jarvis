@@ -14,8 +14,6 @@
 
 namespace kernel {
 
-static uint64_t next_task_id = 1;
-
 void init_task_common(TaskControlBlock* tcb) {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         tcb->fd_table.fds[i].used = false;
@@ -75,7 +73,7 @@ TaskControlBlock* TaskControlBlock::create(
     auto* tcb = new TaskControlBlock{};
     ENSURE(tcb != nullptr);
 
-    tcb->id = next_task_id++;
+    tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = priority;
     tcb->base_priority = priority;
@@ -122,7 +120,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     auto* tcb = new TaskControlBlock{};
     if (!tcb) return nullptr;
 
-    tcb->id = next_task_id++;
+    tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = priority;
     tcb->base_priority = priority;
@@ -190,7 +188,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     auto* tcb = new TaskControlBlock{};
     if (!tcb) return nullptr;
 
-    tcb->id = next_task_id++;
+    tcb->id = Scheduler::alloc_id();
     tcb->parent_id = parent->id;
     tcb->state = TaskState::READY;
     tcb->priority = parent->priority;

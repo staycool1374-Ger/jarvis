@@ -46,6 +46,7 @@ void register_integration_tests();
 void register_pml4_clone_tests();
 void register_waitpid_tests();
 void register_buffer_pool_tests();
+void register_block_device_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
@@ -97,4 +98,5 @@ void register_selftest_tests() {
     register_pml4_clone_tests();
     register_waitpid_tests();
     register_buffer_pool_tests();
+    register_block_device_tests();
 }

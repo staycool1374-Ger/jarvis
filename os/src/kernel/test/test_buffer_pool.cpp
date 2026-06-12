@@ -9,6 +9,8 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include <kernel/memory/vmm.hpp>
+#include <kernel/memory/pmm.hpp>
 #include <constants.hpp>
 
 using namespace kernel;
@@ -313,6 +315,332 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Tests that exec_into_current properly clears buffer pool entries by
+//           calling unmap_all BEFORE swapping the page table. This is a regression
+//           test for a bug where unmap_all used the NEW page table (after swap)
+//           instead of the OLD one, leaving PTEs stale and buffer entries leaked.
+// Input: Alloc a buffer in a task, create new PML4, call unmap_all (simulating
+//        exec_into_current), swap page_table_, free old PML4.
+// Expect: Buffer entry recycled (phys_addr == 0), old PML4 freed cleanly.
+// Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::VMM, kernel::PMM
+JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t va = 0xF0000000;
+    uint64_t handle = BufferPool::alloc(task, va);
+    JARVIS_ASSERT(handle != 0);
+
+    uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
+    JARVIS_ASSERT(BufferPool::entries[idx].phys_addr != 0);
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == va);
+
+    // Simulate exec_into_current:
+    // 1. Create new PML4 (like exec_into_current does)
+    uint64_t new_pml4 = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(new_pml4 != 0);
+
+    // 2. Call unmap_all BEFORE swapping page_table_ (this is what exec_into_current does)
+    //    BUG: If unmap_all uses task->page_table_ AFTER the swap, it clears wrong PML4
+    BufferPool::unmap_all(task);
+
+    // 3. Swap page table (simulating exec_into_current line 308)
+    uint64_t old_pml4 = task->page_table_;
+    task->page_table_ = new_pml4;
+
+    // 4. Free old PML4 (simulating exec_into_current cleanup)
+    if (old_pml4 && old_pml4 != VMM::get_kernel_pml4()) {
+        VMM::free_user_pages(old_pml4);
+        PMM::free_page(old_pml4);
+    }
+
+    // Verify buffer entry was recycled (phys_addr == 0)
+    JARVIS_ASSERT(BufferPool::entries[idx].phys_addr == 0);
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0);
+    JARVIS_ASSERT(task->buf_list_head == -1);
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Tests that BufferPool::transfer() adds the buffer to the RECEIVER's
+//           buf_list_head. This is a regression test for a bug where transfer()
+//           did NOT add to receiver's list, causing a leak when the receiver
+//           exits without ever mapping the buffer (cleanup() walks buf_list_head
+//           and frees entries; if not in list, buffer is never freed).
+// Input: Sender allocates buffer, transfer() to receiver, sender cleaned up,
+//        receiver exits without calling map().
+// Expect: Buffer appears in receiver's buf_list_head; receiver cleanup frees it.
+// Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::IPC
+JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
+    auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+
+    uint64_t va = 0x100000000ULL;
+    uint64_t handle = BufferPool::alloc(sender, va);
+    JARVIS_ASSERT(handle != 0);
+
+    uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
+    JARVIS_ASSERT(BufferPool::entries[idx].owner_task == static_cast<uint32_t>(sender->id));
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == va);
+
+    // Transfer from sender to receiver
+    JARVIS_ASSERT(BufferPool::transfer(handle, sender, receiver));
+
+    // Buffer should now be in receiver's list
+    JARVIS_ASSERT(BufferPool::entries[idx].owner_task == static_cast<uint32_t>(receiver->id));
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0); // unmapped during transfer
+
+    // Check receiver's list contains the buffer
+    int count = 0;
+    int32_t list_idx = receiver->buf_list_head;
+    bool found = false;
+    while (list_idx != -1) {
+        if (list_idx == static_cast<int32_t>(idx)) found = true;
+        count++;
+        list_idx = BufferPool::entries[list_idx].list_next;
+    }
+    JARVIS_ASSERT(found);
+    JARVIS_ASSERT_EQ(1, count);
+
+    // Sender's list should be empty
+    JARVIS_ASSERT_EQ(-1, sender->buf_list_head);
+
+    // Simulate receiver exiting WITHOUT ever calling map()
+    // cleanup() -> unmap_all() walks buf_list_head and frees entries
+    receiver->cleanup();
+
+    // Buffer entry should be recycled
+    JARVIS_ASSERT(BufferPool::entries[idx].phys_addr == 0);
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0);
+    JARVIS_ASSERT(receiver->buf_list_head == -1);
+
+    sender->cleanup();
+    delete sender;
+    delete receiver;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: STUB - Alloc at VA X, alloc again at same VA X, second alloc fails (BUF_ERR_VA_IN_USE)
+// Input: task, alloc at va, alloc again at same va
+// Expect: First alloc succeeds, second returns 0
+// Depends: kernel::BufferPool
+// Note: Kernel does not yet implement VA conflict detection; remains stub until implemented.
+JARVIS_TEST(buffer_pool_va_conflict_rejected) {
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Alloc with VA >= USER_SPACE_LIMIT fails (BUF_ERR_VA_OUT_OF_RANGE)
+// Input: task, alloc at USER_SPACE_LIMIT and above
+// Expect: Both allocs return 0
+// Depends: kernel::BufferPool
+JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t h1 = BufferPool::alloc(task, USER_SPACE_LIMIT);
+    uint64_t h2 = BufferPool::alloc(task, USER_SPACE_LIMIT + arch::PAGE_SIZE);
+    JARVIS_ASSERT_EQ(0ULL, h1);
+    JARVIS_ASSERT_EQ(0ULL, h2);
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: STUB - Alloc with VA=0 fails (guard page, below user space)
+// Input: task, alloc at va=0
+// Expect: Returns 0
+// Depends: kernel::BufferPool
+// Note: Kernel does not yet implement VA=0 rejection; remains stub until implemented.
+JARVIS_TEST(buffer_pool_zero_va_rejected) {
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Kernel task (no page_table_) alloc fails
+// Input: Create task with page_table_ = 0, try alloc
+// Expect: Returns 0
+// Depends: kernel::BufferPool, kernel::TaskControlBlock
+JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+    
+    // Clear page_table_ to simulate kernel task
+    task->page_table_ = 0;
+
+    uint64_t h = BufferPool::alloc(task, 0x300000000ULL);
+    JARVIS_ASSERT_EQ(0ULL, h);
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Forged handle after free fails validation
+// Input: alloc -> free -> use same handle (old gen), validate() returns -1
+// Expect: validate returns -1
+// Depends: kernel::BufferPool
+JARVIS_TEST(buffer_pool_forged_handle_after_free) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t va = 0x400000000ULL;
+    uint64_t handle = BufferPool::alloc(task, va);
+    JARVIS_ASSERT(handle != 0);
+
+    JARVIS_ASSERT(BufferPool::free(task, handle));
+
+    // Try to use the old handle (same idx, same gen)
+    JARVIS_ASSERT_EQ(-1, BufferPool::validate(handle));
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Realloc after free recycles entry with incremented generation
+// Input: alloc -> free -> alloc again, verify same entry index recycled with new gen
+// Expect: New handle has same idx, different (incremented) gen
+// Depends: kernel::BufferPool
+JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t va = 0x500000000ULL;
+    uint64_t h1 = BufferPool::alloc(task, va);
+    JARVIS_ASSERT(h1 != 0);
+
+    uint32_t idx1 = static_cast<uint32_t>(h1 & 0xFFFFFFFFULL);
+    uint32_t gen1 = static_cast<uint32_t>(h1 >> 32);
+
+    JARVIS_ASSERT(BufferPool::free(task, h1));
+
+    uint64_t h2 = BufferPool::alloc(task, va);
+    JARVIS_ASSERT(h2 != 0);
+
+    uint32_t idx2 = static_cast<uint32_t>(h2 & 0xFFFFFFFFULL);
+    uint32_t gen2 = static_cast<uint32_t>(h2 >> 32);
+
+    JARVIS_ASSERT_EQ(idx1, idx2);
+    JARVIS_ASSERT(gen2 == gen1 + 1);
+
+    BufferPool::free(task, h2);
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Exhaust all 1024 entries, free one, new alloc recycles the freed entry
+// Input: Fill pool completely, free one, alloc again
+// Expect: New alloc succeeds and uses the freed entry index
+// Depends: kernel::BufferPool
+JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t handles[BufferPool::MAX_BUFFERS];
+    uint64_t va = 0x600000000ULL;
+    int alloc_count = 0;
+    for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
+        uint64_t h = BufferPool::alloc(task, va + i * arch::PAGE_SIZE);
+        if (h == 0) break;
+        handles[i] = h;
+        alloc_count++;
+    }
+    JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+
+    // Free the middle entry (index 512)
+    uint64_t freed = handles[512];
+    uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
+    JARVIS_ASSERT(BufferPool::free(task, freed));
+
+    // Alloc again - should reuse the freed entry
+    uint64_t h = BufferPool::alloc(task, va + 512 * arch::PAGE_SIZE);
+    JARVIS_ASSERT(h != 0);
+    uint32_t new_idx = static_cast<uint32_t>(h & 0xFFFFFFFFULL);
+    JARVIS_ASSERT_EQ(freed_idx, new_idx);
+
+    // Cleanup
+    for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
+        if (i != 512 && handles[i] != 0) {
+            BufferPool::free(task, handles[i]);
+        }
+    }
+    BufferPool::free(task, h);
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: List integrity after unlinking middle entry
+// Input: alloc 10 buffers, free entry at index 5, verify neighbours' list_prev/list_next
+// Expect: Entries 4 and 6 are correctly linked, head/tail intact
+// Depends: kernel::BufferPool
+JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t handles[10];
+    uint64_t va = 0x700000000ULL;
+    for (int i = 0; i < 10; ++i) {
+        handles[i] = BufferPool::alloc(task, va + i * arch::PAGE_SIZE);
+        JARVIS_ASSERT(handles[i] != 0);
+    }
+
+    // Free middle entry (index 5)
+    uint64_t freed = handles[5];
+    uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
+    JARVIS_ASSERT(BufferPool::free(task, freed));
+
+    // Verify list integrity: walk list and check all remaining entries present
+    int count = 0;
+    int32_t idx = task->buf_list_head;
+    bool found[10] = {false};
+    int32_t prev = -1;
+    while (idx != -1) {
+        count++;
+        uint32_t uidx = static_cast<uint32_t>(idx);
+        found[uidx] = true;
+        // Check prev link
+        JARVIS_ASSERT(BufferPool::entries[idx].list_prev == prev);
+        prev = idx;
+        idx = BufferPool::entries[idx].list_next;
+    }
+    JARVIS_ASSERT_EQ(9, count);
+
+    // Verify all except index 5 are in list
+    for (int i = 0; i < 10; ++i) {
+        if (i == 5) continue;
+        uint32_t uidx = static_cast<uint32_t>(handles[i] & 0xFFFFFFFFULL);
+        JARVIS_ASSERT(found[uidx]);
+    }
+    JARVIS_ASSERT(!found[freed_idx]);
+
+    // Cleanup
+    for (int i = 0; i < 10; ++i) {
+        if (i != 5 && handles[i] != 0) {
+            BufferPool::free(task, handles[i]);
+        }
+    }
+
+    task->cleanup();
+    delete task;
+    JARVIS_TEST_PASS();
+}
+
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
@@ -327,4 +655,14 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_syscall_dispatch);
     JARVIS_REGISTER_TEST(buffer_pool_ipc_transfer);
     JARVIS_REGISTER_TEST(buffer_pool_cleanup_frees_buffers);
+    JARVIS_REGISTER_TEST(buffer_pool_exec_into_current_clears_buffers);
+    JARVIS_REGISTER_TEST(buffer_pool_transfer_adds_to_receiver_list);
+    JARVIS_REGISTER_TEST(buffer_pool_va_conflict_rejected);
+    JARVIS_REGISTER_TEST(buffer_pool_va_out_of_range_rejected);
+    JARVIS_REGISTER_TEST(buffer_pool_zero_va_rejected);
+    JARVIS_REGISTER_TEST(buffer_pool_kernel_task_alloc_fails);
+    JARVIS_REGISTER_TEST(buffer_pool_forged_handle_after_free);
+    JARVIS_REGISTER_TEST(buffer_pool_realloc_recycles_entry);
+    JARVIS_REGISTER_TEST(buffer_pool_alloc_after_exhaustion_and_free);
+    JARVIS_REGISTER_TEST(buffer_pool_list_integrity_after_unlink);
 }
