@@ -45,7 +45,7 @@ static void meminfo_close(Vnode*) {}
 static int64_t meminfo_lseek(Vnode* self, int64_t offset, int whence, uint64_t* out_pos) {
     auto* mi = static_cast<MemInfoVnode*>(self->private_data);
     if (!mi) return -1;
-    uint64_t new_pos;
+    uint64_t new_pos = 0;
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
@@ -74,7 +74,7 @@ static const VnodeOps meminfo_ops = {
     meminfo_lseek, meminfo_fstat, meminfo_ioctl, meminfo_readdir, meminfo_lookup,
 };
 
-static MemInfoVnode meminfo_vnode;
+static MemInfoVnode meminfo_vnode = {};
 
 // ── /proc/self vnode ── (redirects to current pid's dir)
 static int64_t self_read(Vnode*, uint8_t*, uint64_t, uint64_t) { return -1; }
@@ -129,16 +129,15 @@ static int64_t pid_stat_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t
     }
 
     const char* fmt = "pid=%s state=%s priority=%s ticks=%lu\n";
-    char* f = const_cast<char*>(fmt);
+    const char* f = fmt;
     while (*f) tmp[len++] = *f++;
     const char* src = id_str; while (*src) tmp[len++] = *src++;
-    f = const_cast<char*>(fmt + 4); while (*f != '%') tmp[len++] = *f++; // skip pid=, copy state=
+    f = fmt + 4; while (*f != '%') tmp[len++] = *f++;
     src = state_str; while (*src) tmp[len++] = *src++;
-    while (*f != '%') tmp[len++] = *f++; // skip state=, copy priority=
+    while (*f != '%') tmp[len++] = *f++;
     src = prio_str; while (*src) tmp[len++] = *src++;
     while (*f) { if (*f == '\\' && *(f+1) == 'n') { tmp[len++] = '\n'; f += 2; break; } tmp[len++] = *f++; }
-    // add executed_ticks
-    src = const_cast<const char*>(fmt);
+    src = fmt;
     while (*src != '%') src++;
     src++; // skip %
     uint64_to_str(id_str, ps->task->executed_ticks);
@@ -157,7 +156,7 @@ static int pid_stat_open(Vnode*, uint64_t) { return 0; }
 static void pid_stat_close(Vnode*) {}
 static int64_t pid_stat_lseek(Vnode* self, int64_t offset, int whence, uint64_t* out_pos) {
     (void)self;
-    uint64_t new_pos;
+    uint64_t new_pos = 0;
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
@@ -216,7 +215,7 @@ static Vnode* self_lookup(Vnode* self, const char* name) {
     // Look for an existing pid dir or create one dynamically
     // For simplicity, return stat of current task
     if (strcmp(name, "stat") == 0) {
-        static PidStatVnode cur_stat;
+        static PidStatVnode cur_stat = {};
         cur_stat.pid = task->id;
         cur_stat.task = task;
         cur_stat.base.ops = &pid_stat_ops;

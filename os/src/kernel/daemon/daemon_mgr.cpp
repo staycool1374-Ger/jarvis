@@ -130,7 +130,7 @@ void restart_stale_daemons() {
 
         debug_write("[DAEMON] '");
         debug_write(entries_[i].name);
-        debug_write("' restarted (new PID=");
+        debug_write("' restarted (PID=");
         debug_write_hex(task->id);
         debug_write(", restart #");
         debug_write_hex(entries_[i].restart_count);

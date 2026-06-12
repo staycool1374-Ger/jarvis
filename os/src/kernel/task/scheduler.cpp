@@ -3,6 +3,7 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <signal.hpp>
 #include <assert.hpp>
@@ -26,7 +27,7 @@ void Scheduler::init() {
     }
 
     idle_task_ = TaskControlBlock::create([]() {
-        while (true) {
+        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
             arch::hlt();
         }
     }, 0, 0xFFFFFFFF);
@@ -156,7 +157,7 @@ void Scheduler::id_table_remove(TaskControlBlock* task) {
     uint64_t idx = id_table_probe(task->id);
     while (id_table_[idx] != nullptr) {
         if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx] == task) {
-            id_table_[idx] = const_cast<TaskControlBlock*>(ID_TOMBSTONE);
+            id_table_[idx] = ID_TOMBSTONE;
             return;
         }
         idx = (idx + 1) & ID_TABLE_MASK;
@@ -296,7 +297,7 @@ void Scheduler::reap_orphans() noexcept {
                 // If reaping the idle task, recreate it
                 if (t == idle_task_) {
                     auto* new_idle = TaskControlBlock::create([]() {
-                        while (true) { arch::hlt(); }
+                        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) { arch::hlt(); }
                     }, 0, 0xFFFFFFFF);
                     new_idle->state = TaskState::READY;
                     t->cleanup();
@@ -306,7 +307,7 @@ void Scheduler::reap_orphans() noexcept {
                         tasks_[k] = tasks_[k + 1];
                     }
                     --task_count_;
-                    delete t;
+                    MemPool::free(t);
                     // Shift right to make room for new idle at index 0
                     for (uint64_t k = task_count_; k > 0; --k) {
                         tasks_[k] = tasks_[k - 1];
@@ -316,10 +317,10 @@ void Scheduler::reap_orphans() noexcept {
                     current_index_ = 0;
                     idle_task_ = new_idle;
                     id_table_insert(idle_task_->id, idle_task_);
-                } else { 
+                } else {
                     t->cleanup();
                     remove_task(t);
-                    delete t;
+                    MemPool::free(t);
                 }
                 reaped_any = true;
                 break;

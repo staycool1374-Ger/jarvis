@@ -58,7 +58,7 @@ uint64_t Syscall::sys_send_sync(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
     auto data = checked(reinterpret_cast<const uint8_t*>(arg1), data_size);
     if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
-    auto data_rw = checked(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(arg1)), data_size);
+    auto data_rw = checked(reinterpret_cast<uint8_t*>(arg1), data_size);
     Message msg{};
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);

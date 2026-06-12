@@ -1,12 +1,15 @@
 #include <kernel/elf/elf.hpp>
+#include <kernel/task/task.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/memory/mempool.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
-#include <kernel/memory/checked_ptr.hpp>
-#include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/vfs/vfs.hpp>
-#include <kernel/task/scheduler.hpp>
-#include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/vfs/initrd_fs.hpp>
+#include <constants.hpp>
+#include <string.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -235,7 +238,7 @@ static void open_std_fds(TaskControlBlock* tcb) {
 TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     if (!validate_header(hdr)) return nullptr;
 
-    auto* tcb = new TaskControlBlock{};
+    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(TaskControlBlock)));
     if (!tcb) return nullptr;
 
     tcb->id = kernel::Scheduler::alloc_id();
@@ -247,18 +250,18 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
 
     size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
-    if (!kstack_phys) { delete tcb; return nullptr; }
+    if (!kstack_phys) { MemPool::free(tcb); return nullptr; }
     tcb->stack_phys_ = kstack_phys;
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
     tcb->kernel_stack_top = kstack_virt + TaskControlBlock::STACK_SIZE;
 
     uint64_t pml4 = VMM::clone_kernel_pml4();
-    if (!pml4) { delete tcb; return nullptr; }
+    if (!pml4) { MemPool::free(tcb); return nullptr; }
     tcb->page_table_ = pml4;
 
     uint64_t ustack_phys = 0;
-    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) { delete tcb; return nullptr; }
+    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) { MemPool::free(tcb); return nullptr; }
 
     open_std_fds(tcb);
 

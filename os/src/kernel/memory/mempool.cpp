@@ -27,12 +27,15 @@ void MemPool::init() {
 
         pool.data = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
 
-        pool.next_free = new size_t[pool.block_count];
-
+        pool.first_free = 0;
         for (size_t j = 0; j < pool.block_count; ++j) {
-            pool.next_free[j] = j + 1;
+            size_t* next = reinterpret_cast<size_t*>(pool.data + j * pool.block_size);
+            *next = j + 1;
         }
-        pool.next_free[pool.block_count - 1] = static_cast<size_t>(-1);
+        {
+            size_t* next = reinterpret_cast<size_t*>(pool.data + (pool.block_count - 1) * pool.block_size);
+            *next = static_cast<size_t>(-1);
+        }
 
         pool.initialized = true;
     }
@@ -46,8 +49,8 @@ void* MemPool::alloc(size_t size) {
     if (pool.free_count == 0) return nullptr;
 
     size_t block = pool.first_free;
-    pool.first_free = pool.next_free[block];
-    pool.next_free[block] = static_cast<size_t>(-1);
+    size_t* next = reinterpret_cast<size_t*>(pool.data + block * pool.block_size);
+    pool.first_free = *next;
     --pool.free_count;
 
     return pool.data + block * pool.block_size;
@@ -66,7 +69,8 @@ void MemPool::free(void* ptr) {
 
         if (p >= start && p < end) {
             size_t block = (p - start) / pool.block_size;
-            pool.next_free[block] = pool.first_free;
+            size_t* next = reinterpret_cast<size_t*>(p);
+            *next = pool.first_free;
             pool.first_free = block;
             ++pool.free_count;
             return;

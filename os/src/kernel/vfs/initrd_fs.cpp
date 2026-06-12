@@ -13,7 +13,7 @@ struct InitrdFileNode {
     Vnode parent;
 };
 
-static Vnode initrd_root;
+static Vnode initrd_root = {};
 static bool root_initialized = false;
 
 static int64_t initrd_file_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offset) {
@@ -45,7 +45,7 @@ static void initrd_file_close(Vnode* self) {
 static int64_t initrd_file_lseek(Vnode* self, int64_t offset, int whence, uint64_t* out_pos) {
     auto* finfo = static_cast<InitrdFileNode*>(self->private_data);
     if (!finfo) return -1;
-    uint64_t new_pos;
+    uint64_t new_pos = 0;
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
@@ -111,7 +111,7 @@ static int initrd_root_ioctl(Vnode*, uint64_t, void*) { return -1; }
 
 static int initrd_root_readdir(Vnode*, uint64_t* pos, Dirent* dent) {
     if (!pos || !dent) return -1;
-    initrd::InitrdEntry ie;
+    initrd::InitrdEntry ie = {};
     if (!initrd::readdir(pos, &ie)) return -1;
     size_t i = 0;
     while (ie.name[i] && i < 63) { dent->d_name[i] = ie.name[i]; ++i; }

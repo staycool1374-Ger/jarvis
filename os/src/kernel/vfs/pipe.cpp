@@ -2,6 +2,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/sync/semaphore.hpp>
 #include <string.hpp>
 
@@ -63,9 +64,9 @@ static void pipe_read_close(Vnode* self) {
     if (!pb) return;
     pb->read_closed = true;
     --pb->refcount;
-    if (pb->refcount <= 0) { delete pb; }
+    if (pb->refcount <= 0) { MemPool::free(pb); }
     self->private_data = nullptr;
-    delete self;
+    MemPool::free(self);
 }
 
 static void pipe_write_close(Vnode* self) {
@@ -74,9 +75,9 @@ static void pipe_write_close(Vnode* self) {
     pb->write_closed = true;
     pb->data_avail.post();
     --pb->refcount;
-    if (pb->refcount <= 0) { delete pb; }
+    if (pb->refcount <= 0) { MemPool::free(pb); }
     self->private_data = nullptr;
-    delete self;
+    MemPool::free(self);
 }
 
 static int64_t pipe_lseek(Vnode*, int64_t, int, uint64_t*) { return -1; }
@@ -100,14 +101,14 @@ static const VnodeOps pipe_write_ops = {
 };
 
 int create_pipe(int fds[2]) {
-    auto* pb = new PipeBuffer{};
+    auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
     if (!pb) return -1;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
 
-    auto* rnode = new Vnode{};
-    auto* wnode = new Vnode{};
+    auto* rnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
+    auto* wnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     if (!rnode || !wnode) {
-        delete pb; delete rnode; delete wnode;
+        MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
         return -1;
     }
 
@@ -126,14 +127,14 @@ int create_pipe(int fds[2]) {
     wnode->refcount = 1;
 
     auto* task = Scheduler::current_task();
-    if (!task) { delete pb; delete rnode; delete wnode; return -1; }
+    if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode); return -1; }
 
     int rfd = task->fd_table.alloc();
     int wfd = task->fd_table.alloc();
     if (rfd < 0 || wfd < 0) {
         if (rfd >= 0) task->fd_table.free(rfd);
         if (wfd >= 0) task->fd_table.free(wfd);
-        delete pb; delete rnode; delete wnode;
+        MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
         return -1;
     }
 

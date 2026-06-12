@@ -5,6 +5,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <signal.hpp>
 #include <constants.hpp>
@@ -44,7 +45,7 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
         cur->remove_child(child);
         child->cleanup();
         Scheduler::remove_task(child);
-        delete child;
+        MemPool::free(child);
         return cid;
     }
     if (arg2 & 1) return 0;
@@ -56,7 +57,7 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
 
 uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t* regs) {
     if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
-    vfs::Vnode* vn;
+    vfs::Vnode* vn = nullptr;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), SYSCALL_MAX_PATH))

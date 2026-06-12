@@ -158,7 +158,7 @@ uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
 
 uint64_t RTC::read_seconds() {
     uint8_t sec, min, hour, day, month;
-    uint16_t year;
+    uint16_t year = 0;
 
     if (!read_time_raw(sec, min, hour, day, month, year)) {
         return 0;
@@ -171,7 +171,7 @@ void RTC::read_time(struct tm* out) {
     if (!out) return;
 
     uint8_t sec, min, hour, day, month;
-    uint16_t year;
+    uint16_t year = 0;
 
     if (!read_time_raw(sec, min, hour, day, month, year)) {
         // Zero out on failure

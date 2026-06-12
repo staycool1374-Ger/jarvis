@@ -97,7 +97,7 @@ static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
 
 uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    int fd;
+    int fd = -1;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
@@ -199,7 +199,7 @@ uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
 
 uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    vfs::Vnode* vn;
+    vfs::Vnode* vn = nullptr;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
@@ -234,8 +234,8 @@ uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
 
 uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    vfs::Vnode* vn;
-    const char* resolved_path;
+    vfs::Vnode* vn = nullptr;
+    const char* resolved_path = nullptr;
     char path_buf[SYSCALL_MAX_PATH];
     if (syscall_is_user_task()) {
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))

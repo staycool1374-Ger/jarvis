@@ -8,7 +8,7 @@ TSS GDT::tss_ = {};
 GDTDescriptor GDT::desc_ = {};
 
 static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
-    GDTEntry e;
+    GDTEntry e = {};
     e.limit_low    = limit & 0xFFFF;
     e.base_low     = base & 0xFFFF;
     e.base_mid     = (base >> 16) & 0xFF;

@@ -3,6 +3,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
@@ -27,7 +28,7 @@ void init_task_common(TaskControlBlock* tcb) {
     tcb->cwd_vnode = vfs::get_root_vnode();
 
     // Initialize IPC message queue
-    auto* mq = new MessageQueue{};
+    auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
     if (mq) {
         mq->init();
         mq->owner = tcb;
@@ -38,8 +39,7 @@ void init_task_common(TaskControlBlock* tcb) {
     tcb->blocked_next = nullptr;
     tcb->blocked_prev = nullptr;
 
-    // Per-task notification object
-    auto* n = new sync::Notify{};
+    auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
     if (n) {
         n->init();
         tcb->notify = n;
@@ -47,8 +47,7 @@ void init_task_common(TaskControlBlock* tcb) {
         tcb->notify = nullptr;
     }
 
-    // Per-task event-group object
-    auto* eg = new sync::EventGroup{};
+    auto* eg = static_cast<sync::EventGroup*>(MemPool::alloc(sizeof(sync::EventGroup)));
     if (eg) {
         eg->init();
         tcb->event_group = eg;
@@ -71,7 +70,7 @@ TaskControlBlock* TaskControlBlock::create(
     uint64_t priority,
     uint64_t period_ticks)
 {
-    auto* tcb = new TaskControlBlock{};
+    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(TaskControlBlock)));
     ENSURE(tcb != nullptr);
 
     tcb->id = Scheduler::alloc_id();
@@ -118,7 +117,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     uint64_t period_ticks,
     size_t user_stack_size)
 {
-    auto* tcb = new TaskControlBlock{};
+    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(TaskControlBlock)));
     if (!tcb) return nullptr;
 
     tcb->id = Scheduler::alloc_id();
@@ -133,7 +132,7 @@ TaskControlBlock* TaskControlBlock::create_user(
 
     size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
-    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); delete tcb; return nullptr; }
+    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); MemPool::free(tcb); return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
@@ -142,10 +141,10 @@ TaskControlBlock* TaskControlBlock::create_user(
 
     size_t user_stack_pages = (user_stack_size + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
-    if (!ustack_phys) { ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr; }
+    if (!ustack_phys) { ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); MemPool::free(tcb); return nullptr; }
 
     uint64_t pml4 = VMM::clone_kernel_pml4();
-    if (!pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); delete tcb; return nullptr; }
+    if (!pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); MemPool::free(tcb); return nullptr; }
     tcb->page_table_ = pml4;
 
     // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
@@ -186,7 +185,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     auto* parent = Scheduler::current_task();
     if (!parent) return nullptr;
 
-    auto* tcb = new TaskControlBlock{};
+    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(TaskControlBlock)));
     if (!tcb) return nullptr;
 
     tcb->id = Scheduler::alloc_id();
@@ -216,13 +215,13 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     }
 
     // Allocate per-task IPC objects (child gets fresh empty queues)
-    auto* mq = new MessageQueue{};
+    auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
     if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq; } else { tcb->msg_queue = nullptr; }
 
-    auto* n = new sync::Notify{};
+    auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
     if (n) { n->init(); tcb->notify = n; } else { tcb->notify = nullptr; }
 
-    auto* eg = new sync::EventGroup{};
+    auto* eg = static_cast<sync::EventGroup*>(MemPool::alloc(sizeof(sync::EventGroup)));
     if (eg) { eg->init(); tcb->event_group = eg; } else { tcb->event_group = nullptr; }
 
     // Copy fd_table
@@ -242,7 +241,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     // Allocate and set up kernel stack
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
-    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); delete tcb; return nullptr; }
+    if (!kstack_phys) { ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC); MemPool::free(tcb); return nullptr; }
     tcb->stack_phys_ = kstack_phys;
 
     bool is_user_task = (parent->page_table_ != 0);
@@ -287,7 +286,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     if (is_user_task) {
         // Allocate a new PML4 page
         uint64_t new_pml4 = PMM::alloc_page();
-        if (!new_pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); delete tcb; return nullptr; }
+        if (!new_pml4) { ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE); MemPool::free(tcb); return nullptr; }
         tcb->page_table_ = new_pml4;
         tcb->page_table_shared_ = true;
 
@@ -330,7 +329,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) {
             if (stack_pdpt_phys) PMM::free_page(stack_pdpt_phys);
-            ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); delete tcb; return nullptr;
+            ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC); MemPool::free(tcb); return nullptr;
         }
         tcb->user_stack_ = ustack_phys;
         tcb->user_stack_size_ = parent->user_stack_size_;
@@ -488,15 +487,15 @@ void TaskControlBlock::cleanup() noexcept {
             }
             msg_queue->blocked_senders_head = nullptr;
             msg_queue->blocked_senders_tail = nullptr;
-            delete msg_queue;
+            MemPool::free(msg_queue);
             msg_queue = nullptr;
         } else {
-            delete msg_queue;
+            MemPool::free(msg_queue);
             msg_queue = nullptr;
         }
     }
-    if (notify) { delete notify; notify = nullptr; }
-    if (event_group) { delete event_group; event_group = nullptr; }
+    if (notify) { MemPool::free(notify); notify = nullptr; }
+    if (event_group) { MemPool::free(event_group); event_group = nullptr; }
 }
 
 } // namespace kernel

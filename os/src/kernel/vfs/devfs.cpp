@@ -20,14 +20,14 @@ void devfs_init() {
 // ── tty vnode (serial + keyboard console) ──
 static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
-    for (;;) {
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         if (serial_has_data()) {
             char c = arch::inb(arch::COM1);
             buf[0] = (c == '\r') ? '\n' : c;
             return 1;
         }
         {
-            char ch;
+            char ch = 0;
             if (arch::Keyboard::getchar(ch)) {
                 buf[0] = static_cast<uint8_t>(ch);
                 return 1;
@@ -38,6 +38,7 @@ static int64_t tty_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
         }
         arch::pause();
     }
+    return -1;
 }
 
 static int64_t tty_write(Vnode*, const uint8_t* buf, uint64_t count, uint64_t) {
@@ -134,8 +135,8 @@ static Vnode console_vnode = {
 // ── kbd vnode ──
 static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
     if (count == 0) return 0;
-    char ch;
-    for (;;) {
+    char ch = 0;
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         if (arch::Keyboard::getchar(ch)) {
             buf[0] = static_cast<uint8_t>(ch);
             return 1;
@@ -145,6 +146,7 @@ static int64_t kbd_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
         }
         arch::pause();
     }
+    return -1;
 }
 static int64_t kbd_write(Vnode*, const uint8_t*, uint64_t, uint64_t) { return -1; }
 static int kbd_open(Vnode* self, uint64_t flags) {

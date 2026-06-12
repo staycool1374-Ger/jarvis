@@ -113,7 +113,7 @@ uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64
     if (syscall_is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(-1);
 
     uint64_t secs = arch::RTC::read_seconds();
-    Timeval tv;
+    Timeval tv = {};
     tv.tv_sec = static_cast<int64_t>(secs);
     tv.tv_usec = 0;
     *tv_ptr.unsafe_ptr() = tv;

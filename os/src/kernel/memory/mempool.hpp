@@ -14,12 +14,12 @@ public:
     static constexpr size_t POOL_COUNT = 8;
 
     /// @brief Describes a single pool of fixed-size blocks.
+    /// @note Free-list is embedded in the data pages (each free block's first 8 bytes store the next index).
     struct Pool {
         size_t  block_size;
         size_t  block_count;
         size_t  free_count;
         uint8_t* data;
-        size_t* next_free;
         size_t  first_free;
         bool    initialized;
     };

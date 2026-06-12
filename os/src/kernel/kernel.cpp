@@ -398,9 +398,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     sti();
 
     debug_write("[BOOT] Entering idle loop.\n");
-    while (true) {
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();
     }
+    __builtin_unreachable();
 }
 
 extern "C" void panic(const char* msg) {
@@ -412,9 +413,10 @@ extern "C" void panic(const char* msg) {
         service::Terminal::write(msg);
         service::Terminal::set_fg(0xC0C0C0);
     }
-    while (true) {
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();
     }
+    __builtin_unreachable();
 }
 
 static void dump_regs(uint64_t* regs) {
