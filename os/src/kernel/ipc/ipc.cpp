@@ -92,7 +92,7 @@ void IPC::init() {
 
 bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     auto* tcb = Scheduler::find_task(dest_id);
-    if (!tcb || !tcb->msg_queue) return false;
+    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED) return false;
 
     MessageQueue& q = *tcb->msg_queue;
 
@@ -151,6 +151,10 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
 
     bool was_blocked = false;
     while (cur->msg_queue->is_empty()) {
+        // If destination died while we were waiting for a reply, bail out
+        auto* dest = Scheduler::find_task(dest_id);
+        if (!dest || dest->state == TaskState::TERMINATED) return false;
+
         cur->state = TaskState::BLOCKED;
         was_blocked = true;
         Scheduler::reschedule();

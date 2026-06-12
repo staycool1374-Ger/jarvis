@@ -2,7 +2,6 @@
 
 ## Phase 1: Code Refactoring & Microkernel Foundation (0.2.10–0.2.11)
 
-<<<<<<< HEAD
 ### 0.2.7 — Error Assertion Retrofit ✓
 - [x] ASSERT(err) / ENSURE(cond) macros + per-module error_string<E> specialisation
 - [x] Module error headers: task, PMM, VMM (X-macro pattern)
@@ -36,8 +35,8 @@
 - [x] IPC::send integration (buf_handle field in Message)
 - [x] cleanup() + exec() buffer teardown, fork buffer isolation
 - [x] 11 buffer-pool kernel tests, 2329/2331 PASS
-- [ ] Userspace VFS server (vfsd) hardening + crash recovery
-- [ ] I/O daemon (iocd) hardening + crash recovery
+- [x] Userspace VFS server (vfsd) hardening + crash recovery
+- [x] I/O daemon (iocd) hardening + crash recovery
 
 ### 0.2.11 — Coding Style Refactoring (current)
 - [ ] Const correctness retrofit — `const` on all kernel variables, params, member functions

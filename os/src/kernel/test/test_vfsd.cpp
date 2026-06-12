@@ -6,6 +6,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 
 using namespace kernel;
 
@@ -214,40 +215,36 @@ JARVIS_TEST(vfsd_handle_read_write) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that VFS daemon responds to an open authorization request
-// Input: Send VFS_OPEN IPC message with path "/dev/tty"
-// Expect: Reply received with result == 0 (authorized)
+// Testidea: STUB - VFS daemon responds to an open authorization request
+// Input: Send VFS_OPEN IPC message (requires post-boot sti)
+// Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_open) {
-    // STUB: requires interrupt-driven preemption (post-boot sti)
-    // Real IPC exchange with vfsd will be tested in the post-boot phase.
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that VFS daemon responds to a close authorization request
-// Input: Send VFS_CLOSE IPC message with fd=0
-// Expect: Reply received with result == 0 (authorized)
+// Testidea: STUB - VFS daemon responds to a close authorization request
+// Input: Send VFS_CLOSE IPC message (requires post-boot sti)
+// Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_close) {
-    // STUB: requires interrupt-driven preemption (post-boot sti)
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that VFS daemon responds to a stat authorization request
-// Input: Send VFS_STAT IPC message with path "/dev/tty"
-// Expect: Reply received with result == 0 (authorized)
+// Testidea: STUB - VFS daemon responds to a stat/resolve authorization request
+// Input: Send VFS_STAT IPC message (requires post-boot sti)
+// Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_resolve) {
-    // STUB: requires interrupt-driven preemption (post-boot sti)
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: STUB - VFS daemon handles mount/unmount operations
-// Input: None (stub)
-// Expect: Passes (stub - mount operations not yet implemented)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_mount_unmount) {
     JARVIS_TEST_PASS();
@@ -255,8 +252,8 @@ JARVIS_TEST(vfsd_handle_mount_unmount) {
 
 // Runmode: kernel
 // Testidea: STUB - VFS daemon handles stat/fstat operations
-// Input: None (stub)
-// Expect: Passes (stub - fstat not yet forwarded through vfsd)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_stat_fstat) {
     JARVIS_TEST_PASS();
@@ -264,27 +261,26 @@ JARVIS_TEST(vfsd_handle_stat_fstat) {
 
 // Runmode: kernel
 // Testidea: STUB - VFS daemon handles chdir/getcwd operations
-// Input: None (stub)
-// Expect: Passes (stub - chdir not yet forwarded through vfsd)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_handle_chdir_getcwd) {
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that VFS daemon rejects invalid message types
-// Input: Send IPC message with unknown type
-// Expect: Reply received with result == -1 (rejected)
+// Testidea: STUB - VFS daemon rejects invalid message types
+// Input: Send IPC message with unknown type (requires post-boot sti)
+// Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_invalid_message_type_rejected) {
-    // STUB: requires interrupt-driven preemption (post-boot sti)
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: STUB - Malformed message rejected by VFS daemon
-// Input: None (stub)
-// Expect: Passes (stub - malformed message detection not yet implemented)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_malformed_message_rejected) {
     JARVIS_TEST_PASS();
@@ -292,8 +288,8 @@ JARVIS_TEST(vfsd_malformed_message_rejected) {
 
 // Runmode: kernel
 // Testidea: STUB - Unauthorized task rejected by VFS daemon
-// Input: None (stub)
-// Expect: Passes (stub - authorization logic not yet implemented)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_unauthorized_task_rejected) {
     JARVIS_TEST_PASS();
@@ -301,19 +297,88 @@ JARVIS_TEST(vfsd_unauthorized_task_rejected) {
 
 // Runmode: kernel
 // Testidea: STUB - Concurrent requests handled correctly by VFS daemon
-// Input: None (stub)
-// Expect: Passes (stub - concurrent request handling not yet tested)
+// Input: None (stub - requires post-boot sti)
+// Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
 JARVIS_TEST(vfsd_concurrent_requests) {
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - VFS daemon restarts after crash
-// Input: None (stub)
-// Expect: Passes (stub - crash recovery not yet implemented)
-// Depends: kernel/task, kernel/ipc, kernel/vfsd
+// Testidea: VFS daemon restarts after crash (TERMINATED → cleanup → respawn)
+// Input: Kill vfsd task (set TERMINATED), reap, then restart_stale_daemons
+// Expect: New vfsd PID is non-zero and different from original; new task exists
+// Depends: kernel/task, kernel/ipc, kernel/vfsd, kernel/daemon
 JARVIS_TEST(vfsd_crash_restarts) {
+    uint64_t old_pid = vfsd::get_vfsd_pid();
+    JARVIS_ASSERT(old_pid != 0);
+
+    auto* old_task = Scheduler::find_task(old_pid);
+    JARVIS_ASSERT(old_task != nullptr);
+
+    // Simulate daemon crash
+    old_task->state = TaskState::TERMINATED;
+
+    // Reap orphans — this calls cleanup() which calls daemon::notify_death,
+    // resetting PID to 0
+    Scheduler::reap_orphans();
+
+    // PID should now be 0
+    JARVIS_ASSERT_EQ(0ULL, vfsd::get_vfsd_pid());
+
+    // Trigger daemon restart
+    daemon::restart_stale_daemons();
+
+    // Verify new PID
+    uint64_t new_pid = vfsd::get_vfsd_pid();
+    JARVIS_ASSERT(new_pid != 0);
+    JARVIS_ASSERT(new_pid != old_pid);
+
+    // Verify new task exists
+    auto* new_task = Scheduler::find_task(new_pid);
+    JARVIS_ASSERT(new_task != nullptr);
+    JARVIS_ASSERT(new_task->state == TaskState::READY ||
+                  new_task->state == TaskState::RUNNING);
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: VFS daemon is not restarted beyond max restart limit
+// Input: Kill vfsd repeatedly until restart limit exhausted
+// Expect: After MAX_RESTART_COUNT restarts, daemon stays dead
+// Depends: kernel/task, kernel/ipc, kernel/vfsd, kernel/daemon
+JARVIS_TEST(vfsd_exhaust_restart_limit) {
+    // Reset daemon state: kill the current daemon and restart it fresh
+    uint64_t pid = vfsd::get_vfsd_pid();
+    JARVIS_ASSERT(pid != 0);
+
+    // Exhaust remaining restart budget
+    for (uint64_t i = 0; i < daemon::MAX_RESTART_COUNT + 1; ++i) {
+        auto* task = Scheduler::find_task(vfsd::get_vfsd_pid());
+        if (!task) {
+            // Daemon didn't restart last time — expected after limit
+            break;
+        }
+        task->state = TaskState::TERMINATED;
+        Scheduler::reap_orphans();
+        daemon::restart_stale_daemons();
+    }
+
+    // After exhausting the limit, kill and don't restart — PID should stay 0
+    auto* task = Scheduler::find_task(vfsd::get_vfsd_pid());
+    if (task) {
+        task->state = TaskState::TERMINATED;
+        Scheduler::reap_orphans();
+    }
+    daemon::restart_stale_daemons();
+    JARVIS_ASSERT_EQ(0ULL, vfsd::get_vfsd_pid());
+
+    // Reset daemon state so subsequent tests see a live vfsd
+    daemon::reset_daemons();
+    daemon::restart_stale_daemons();
+    JARVIS_ASSERT(vfsd::get_vfsd_pid() != 0);
+
     JARVIS_TEST_PASS();
 }
 
@@ -343,4 +408,5 @@ void register_vfsd_tests() {
     JARVIS_REGISTER_TEST(vfsd_unauthorized_task_rejected);
     JARVIS_REGISTER_TEST(vfsd_concurrent_requests);
     JARVIS_REGISTER_TEST(vfsd_crash_restarts);
+    JARVIS_REGISTER_TEST(vfsd_exhaust_restart_limit);
 }

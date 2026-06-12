@@ -3,6 +3,7 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <signal.hpp>
 #include <assert.hpp>
 
@@ -197,6 +198,7 @@ void Scheduler::on_tick() noexcept {
     ++tick_counter;
     if (tick_counter % 100 == 0) {
         reap_orphans();
+        daemon::restart_stale_daemons();
     }
 
     rate_monotonic_schedule();

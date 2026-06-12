@@ -5,6 +5,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <assert.hpp>
@@ -420,6 +421,11 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 }
 
 void TaskControlBlock::cleanup() noexcept {
+    // Notify the daemon manager so registered daemon PIDs are reset to 0.
+    // Must run before msg_queue is destroyed so blocked senders get fast-fail
+    // instead of blocking on a zombie destination.
+    kernel::daemon::notify_death(this->id);
+
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         if (fd_table.fds[i].used) {
             auto* vn = fd_table.fds[i].vnode;

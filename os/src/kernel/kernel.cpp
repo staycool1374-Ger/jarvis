@@ -20,6 +20,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/vfs/devfs.hpp>
 #include <kernel/vfs/procfs.hpp>
@@ -260,6 +261,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::demo_main);
 
     kernel::BufferPool::init();
+    kernel::daemon::init();
 
     // Load vfsd userspace daemon before test suite so tests can interact with it
     {
@@ -274,6 +276,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                     vfsd_task->period_ticks = 10;
                     kernel::Scheduler::add_task(vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
+                    kernel::daemon::register_daemon(
+                        "vfsd", "vfsd.c.elf",
+                        kernel::vfsd::set_vfsd_pid,
+                        kernel::vfsd::get_vfsd_pid);
                     debug_write("[BOOT] VFS daemon started (PID=");
                     debug_write_hex(vfsd_task->id);
                     debug_write(")\n");
@@ -295,6 +301,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                     iocd_task->period_ticks = 10;
                     kernel::Scheduler::add_task(iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);
+                    kernel::daemon::register_daemon(
+                        "iocd", "iocd.c.elf",
+                        kernel::iocd::set_iocd_pid,
+                        kernel::iocd::get_iocd_pid);
                     debug_write("[BOOT] IOCD started (PID=");
                     debug_write_hex(iocd_task->id);
                     debug_write(")\n");
@@ -309,6 +319,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #ifdef CONFIG_DEBUG
     kernel::test::run_debug();
     kernel::Scheduler::cleanup_test_tasks();
+    kernel::daemon::reset_daemons();
 #else
     kernel::test::run_release();
 #endif

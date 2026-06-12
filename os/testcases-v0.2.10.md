@@ -105,6 +105,7 @@
 - **vfsd_unauthorized_task_rejected**: Unauthorized task rejected — ✅ passing
 - **vfsd_concurrent_requests**: Concurrent requests handled correctly — ✅ passing
 - **vfsd_crash_restarts**: VFS daemon restarts after crash — ✅ passing
+- **vfsd_exhaust_restart_limit**: VFS daemon not restarted beyond MAX_RESTART_COUNT (10) — ✅ passing
 
 ### VFS Authorization Layer (NEW — based on actual syscall_handlers_fs.cpp implementation)
 
@@ -156,6 +157,7 @@ When the destination message queue is full, `IPC::send` calls `block_sender()`, 
 - **iocd_unauthorized_mmio_rejected**: Unauthorized task MMIO request rejected — ✅ passing
 - **iocd_multiple_device_handlers**: IOCD handles multiple device types — ✅ passing
 - **iocd_irq_affinity**: IRQ affinity delivered to correct device handler — ✅ passing
+- **iocd_crash_restarts**: IOCD restarts after crash (TERMINATED → cleanup → respawn) — ✅ passing
 
 ### Capability-based Hardware Access
 - **cap_create_for_mmio**: Capability created for MMIO region with valid phys + size — ✅ passing

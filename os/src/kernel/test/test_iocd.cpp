@@ -6,6 +6,7 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/vfs/vfsd.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 
 using namespace kernel;
 
@@ -90,6 +91,36 @@ JARVIS_TEST(iocd_irq_affinity) {
 }
 
 // Runmode: kernel
+// Testidea: IOCD restarts after crash (TERMINATED → cleanup → respawn)
+// Input: Kill iocd task (set TERMINATED), reap, then restart_stale_daemons
+// Expect: New iocd PID is non-zero and different from original; new task exists
+// Depends: kernel/task, kernel/ipc, kernel/iocd, kernel/daemon
+JARVIS_TEST(iocd_crash_restarts) {
+    uint64_t old_pid = iocd::get_iocd_pid();
+    JARVIS_ASSERT(old_pid != 0);
+
+    auto* old_task = Scheduler::find_task(old_pid);
+    JARVIS_ASSERT(old_task != nullptr);
+
+    old_task->state = TaskState::TERMINATED;
+    Scheduler::reap_orphans();
+    JARVIS_ASSERT_EQ(0ULL, iocd::get_iocd_pid());
+
+    daemon::restart_stale_daemons();
+
+    uint64_t new_pid = iocd::get_iocd_pid();
+    JARVIS_ASSERT(new_pid != 0);
+    JARVIS_ASSERT(new_pid != old_pid);
+
+    auto* new_task = Scheduler::find_task(new_pid);
+    JARVIS_ASSERT(new_task != nullptr);
+    JARVIS_ASSERT(new_task->state == TaskState::READY ||
+                  new_task->state == TaskState::RUNNING);
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all IOCD tests with the test framework
 // Input: None
 // Expect: All IOCD tests registered
@@ -104,4 +135,5 @@ void register_iocd_tests() {
     JARVIS_REGISTER_TEST(iocd_unauthorized_mmio_rejected);
     JARVIS_REGISTER_TEST(iocd_multiple_device_handlers);
     JARVIS_REGISTER_TEST(iocd_irq_affinity);
+    JARVIS_REGISTER_TEST(iocd_crash_restarts);
 }
