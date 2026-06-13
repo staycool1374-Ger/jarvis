@@ -37,8 +37,13 @@ struct MessageQueue {
         , owner(nullptr)
         {}
 
+    /// @brief Initialize the message queue to empty.
     void init();
+    /// @brief Push a message into the queue (priority-ordered insertion).
+    /// @return true on success, false if the queue is full.
     bool push(const Message& msg);
+    /// @brief Pop the highest-priority message from the queue.
+    /// @return true if a message was dequeued.
     bool pop(Message& msg);
 
     bool is_empty() const { return count == 0; }
@@ -52,6 +57,7 @@ struct MessageQueue {
 /// @brief Inter-process communication manager.
 class IPC {
 public:
+    /// @brief Initialize the IPC subsystem (per-task message queues).
     static void init();
 
     /// @brief Sends a message to a destination task.

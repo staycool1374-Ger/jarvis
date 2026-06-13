@@ -11,6 +11,7 @@ namespace kernel {
 
 // Forward declaration for init_task_common
 struct TaskControlBlock;
+/// @brief Initialize common task fields after allocation.
 void init_task_common(TaskControlBlock& tcb);
 
 /// @brief Maximum payload size in bytes for an IPC message.
@@ -225,7 +226,11 @@ struct TaskControlBlock {
     /// on failure.
     static TaskControlBlock* clone(uint64_t* regs);
 
+    /// @brief Save the current register context into this TCB.
+    /// @param rsp Reference to current stack pointer (updated on save).
     void save_context(uint64_t& rsp) noexcept;
+    /// @brief Restore the saved register context into CPU registers.
+    /// @param rsp Reference to restore the stack pointer into.
     void restore_context(uint64_t& rsp) noexcept;
 
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).

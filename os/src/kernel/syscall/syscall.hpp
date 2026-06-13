@@ -60,7 +60,13 @@ using SyscallHandler = uint64_t (*)(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 /// @brief System call handler and dispatcher.
 class Syscall {
 public:
+    /// @brief Initialize syscall table and MSRs (STAR, LSTAR, FMASK).
     static void init();
+    /// @brief Dispatch a system call to the appropriate handler.
+    /// @param number Syscall number (see SyscallNumber).
+    /// @param arg0-3 Arguments passed from user space.
+    /// @param regs Pointer to register save area (for context-modifying calls).
+    /// @return The syscall return value.
     static uint64_t handle(uint64_t number, uint64_t arg0, uint64_t arg1,
                            uint64_t arg2, uint64_t arg3,
                                uint64_t* regs = nullptr);

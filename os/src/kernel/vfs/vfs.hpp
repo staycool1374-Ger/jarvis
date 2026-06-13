@@ -23,6 +23,11 @@ enum SeekWhence : int64_t {
     SEEK_END = 2,
 };
 
+enum class VfsSentinel : int64_t {
+    INVALID_FD = -4,
+};
+constexpr int64_t VFS_INVALID = static_cast<int64_t>(VfsSentinel::INVALID_FD);
+
 enum FileMode : uint16_t {
     S_IFREG  = 0x8000,
     S_IFDIR  = 0x4000,
@@ -93,8 +98,13 @@ struct FileDescription {
 struct FdTable {
     FileDescription fds[MAX_FDS];
 
+    /// @brief Allocate a file descriptor entry.
+    /// @return The fd index, or VFS_INVALID if full.
     int alloc();
+    /// @brief Release a file descriptor entry.
     void free(int file_descriptor);
+    /// @brief Look up a file descriptor by index.
+    /// @return Pointer to the entry, or nullptr if invalid.
     FileDescription* get(int file_descriptor);
 };
 
@@ -110,11 +120,20 @@ struct Mount {
     bool used;
 };
 
+/// @brief Resolve an absolute path to a vnode.
+/// @return The vnode, or nullptr if not found.
 Vnode* resolve(const char* path);
+/// @brief Mount a filesystem at a given mount point.
+/// @return 0 on success, or VFS_INVALID on failure.
 int mount(Filesystem& filesystem, const char* mount_point);
+/// @brief Initialize the VFS subsystem (root vnode, mounts, etc.).
 void init();
+/// @brief Find a registered filesystem driver by name.
+/// @return The filesystem, or nullptr if not found.
 Filesystem* find_fs(const char* name);
+/// @brief Get the root vnode of the VFS tree.
 Vnode* get_root_vnode();
+/// @brief Set the root vnode of the VFS tree.
 void set_root_vnode(Vnode& vnode);
 
 } // namespace vfs

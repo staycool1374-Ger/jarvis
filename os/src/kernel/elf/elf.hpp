@@ -57,9 +57,18 @@ enum : uint16_t {
     ET_DYN  = 3,
 };
 
+/// @brief Validate an ELF64 header (magic, class, endianness, version).
+/// @return true if the header is valid.
 bool validate_header(const ELF64Header* hdr);
+/// @brief Load an ELF binary into a new task.
+/// @param hdr Pointer to the ELF header.
+/// @param data Raw ELF file data.
+/// @return New TaskControlBlock, or nullptr on failure.
 TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* data);
 
+/// @brief Replace the current task's address space with an ELF binary (exec).
+/// @param regs Register state to update with new entry point and stack.
+/// @return true on success.
 bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
                        const char* const* argv, const char* const* envp,
                        uint64_t* regs);

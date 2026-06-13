@@ -23,8 +23,13 @@ struct Reply {
     uint64_t data[4];
 };
 
+/// @brief Record the PID of the IOCD (I/O Controller Daemon) task.
 void set_iocd_pid(uint64_t pid);
+/// @brief Get the recorded IOCD PID.
+/// @return The PID, or 0 if not yet set.
 uint64_t get_iocd_pid();
+/// @brief Check if the current task is the IOCD.
+/// @return true if the current task's PID matches the IOCD PID.
 bool is_iocd_task();
 
 } // namespace iocd

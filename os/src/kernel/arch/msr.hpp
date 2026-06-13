@@ -4,12 +4,15 @@
 
 namespace arch {
 
+/// @brief Write a value to a model-specific register (MSR).
 inline void wrmsr(uint32_t msr, uint64_t value) {
     uint32_t msr_low = static_cast<uint32_t>(value);
     uint32_t msr_high = static_cast<uint32_t>(value >> 32);
     asm volatile("wrmsr" : : "c"(msr), "a"(msr_low), "d"(msr_high));
 }
 
+/// @brief Read a value from a model-specific register (MSR).
+/// @return The 64-bit MSR value.
 inline uint64_t rdmsr(uint32_t msr) {
     uint32_t msr_low, msr_high;
     asm volatile("rdmsr" : "=a"(msr_low), "=d"(msr_high) : "c"(msr));

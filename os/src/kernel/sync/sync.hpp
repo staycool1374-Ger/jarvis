@@ -9,6 +9,7 @@
 namespace kernel {
 namespace sync {
 
+/// @brief Initialize all kernel synchronization primitives.
 void init_all();
 
 }

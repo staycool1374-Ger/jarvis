@@ -21,6 +21,7 @@ enum VmmError : uint64_t {
 #undef X
 };
 
+/// @brief Return a human-readable string for a VMM error code.
 template<>
 inline const char* error_string(VmmError e) {
     switch (e) {

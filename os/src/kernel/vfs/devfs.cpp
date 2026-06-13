@@ -34,11 +34,11 @@ static int64_t tty_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
         }
         if (self.private_data && (reinterpret_cast<uint64_t>(self.private_data
             ) & O_NONBLOCK)) {
-            return -1;
+            return VFS_INVALID;
         }
         arch::pause();
     }
-    return -1;
+    return VFS_INVALID;
 }
 
 static int64_t tty_write(Vnode&, const uint8_t* buf, uint64_t count, uint64_t) {
@@ -53,14 +53,18 @@ static int tty_open(Vnode& self, uint64_t flags) {
 
 static void tty_close(Vnode&) {}
 
-static int64_t tty_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
+static int64_t tty_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
 static int tty_fstat(Vnode&, VfsStat& stat) {
     stat.st_size = 0;
     stat.st_mode = S_IFCHR;
     return 0;
 }
-static int tty_ioctl(Vnode&, uint64_t, void*) { return -1; }
-static int tty_readdir(Vnode&, uint64_t&, Dirent&) { return -1; }
+static int tty_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int tty_readdir(Vnode&, uint64_t&, Dirent&) {
+    return VFS_INVALID;
+}
 static Vnode* tty_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps tty_ops = {
@@ -93,8 +97,8 @@ static int null_fstat(Vnode&, VfsStat& stat) {
     stat.st_mode = S_IFCHR;
     return 0;
 }
-static int null_ioctl(Vnode&, uint64_t, void*) { return -1; }
-static int null_readdir(Vnode&, uint64_t&, Dirent&) { return -1; }
+static int null_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int null_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
 static Vnode* null_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps null_ops = {
@@ -107,22 +111,28 @@ static Vnode null_vnode = {
 };
 
 // ── console vnode ──
-static int64_t console_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t console_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
+    return VFS_INVALID;
+}
 static int64_t console_write(Vnode&, const uint8_t* buf, uint64_t count,
-    uint64_t) {
+                            uint64_t) {
     service::Terminal::write(reinterpret_cast<const char*>(buf), count);
     return static_cast<int64_t>(count);
 }
 static int console_open(Vnode&, uint64_t) { return 0; }
 static void console_close(Vnode&) {}
-static int64_t console_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
+static int64_t console_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
 static int console_fstat(Vnode&, VfsStat& stat) {
     stat.st_size = 0;
     stat.st_mode = S_IFCHR;
     return 0;
 }
-static int console_ioctl(Vnode&, uint64_t, void*) { return -1; }
-static int console_readdir(Vnode&, uint64_t&, Dirent&) { return -1; }
+static int console_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int console_readdir(Vnode&, uint64_t&, Dirent&) {
+    return VFS_INVALID;
+}
 static Vnode* console_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps console_ops = {
@@ -147,27 +157,32 @@ static int64_t kbd_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
         }
         if (self.private_data && (reinterpret_cast<uint64_t>(self.private_data
             ) & O_NONBLOCK)) {
-            return -1;
+            return VFS_INVALID;
         }
         arch::pause();
     }
-    return -1;
+    return VFS_INVALID;
 }
 static int64_t kbd_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
-    return -1; }
+    return VFS_INVALID;
+}
 static int kbd_open(Vnode& self, uint64_t flags) {
     self.private_data = reinterpret_cast<void*>(flags);
     return 0;
 }
 static void kbd_close(Vnode&) {}
-static int64_t kbd_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
+static int64_t kbd_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
 static int kbd_fstat(Vnode&, VfsStat& stat) {
     stat.st_size = 0;
     stat.st_mode = S_IFCHR;
     return 0;
 }
-static int kbd_ioctl(Vnode&, uint64_t, void*) { return -1; }
-static int kbd_readdir(Vnode&, uint64_t&, Dirent&) { return -1; }
+static int kbd_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int kbd_readdir(Vnode&, uint64_t&, Dirent&) {
+    return VFS_INVALID;
+}
 static Vnode* kbd_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps kbd_ops = {
@@ -194,22 +209,26 @@ static DevEntry dev_entries[] = {
 static const size_t dev_entry_count = sizeof(dev_entries) / sizeof(dev_entries[0
     ]);
 
-static int64_t dev_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1;
-    }
+static int64_t dev_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
+    return VFS_INVALID;
+}
 static int64_t dev_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
-    return -1; }
+    return VFS_INVALID;
+}
 static int dev_root_open(Vnode&, uint64_t) { return 0; }
 static void dev_root_close(Vnode&) {}
-static int64_t dev_root_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
+static int64_t dev_root_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
 static int dev_root_fstat(Vnode&, VfsStat& stat) {
     stat.st_size = 0;
     stat.st_mode = S_IFDIR;
     return 0;
 }
-static int dev_root_ioctl(Vnode&, uint64_t, void*) { return -1; }
+static int dev_root_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
 
 static int dev_root_readdir(Vnode&, uint64_t& pos, Dirent& dent) {
-    if (pos >= dev_entry_count) return -1;
+    if (pos >= dev_entry_count) return VFS_INVALID;
     DevEntry& entry = dev_entries[pos];
     size_t idx = 0;
     while (entry.name[idx] && idx < 63) { dent.d_name[idx] = entry.name[idx

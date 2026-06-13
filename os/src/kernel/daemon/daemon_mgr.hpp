@@ -17,11 +17,21 @@ struct DaemonEntry {
     uint64_t (*get_pid_fn)();
 };
 
+/// @brief Initialize the daemon manager and spawn registered daemons.
 void init();
+/// @brief Kill and re-register all daemons (used during recovery).
 void reset_daemons();
+/// @brief Register a daemon for lifecycle management.
+/// @param name Human-readable name for the daemon.
+/// @param initrd_path Path to the daemon ELF in the initrd.
+/// @param set_pid Callback to store the PID when the daemon is spawned.
+/// @param get_pid Callback to retrieve the daemon's current PID.
+/// @return true if registered successfully.
 bool register_daemon(const char* name, const char* initrd_path,
                      void (*set_pid)(uint64_t), uint64_t (*get_pid)());
+/// @brief Notify the daemon manager that a daemon has exited.
 void notify_death(uint64_t pid);
+/// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 
 } // namespace daemon

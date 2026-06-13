@@ -35,8 +35,13 @@ struct Reply {
     uint64_t data3;
 };
 
+/// @brief Record the PID of the VFS daemon task.
 void set_vfsd_pid(uint64_t pid);
+/// @brief Get the recorded VFS daemon PID.
+/// @return The PID, or 0 if not yet set.
 uint64_t get_vfsd_pid();
+/// @brief Check if the current task is the VFS daemon.
+/// @return true if the current task's PID matches the daemon PID.
 bool is_vfsd_task();
 
 } // namespace vfsd

@@ -29,7 +29,7 @@ int FdTable::alloc() {
             return static_cast<int>(i);
         }
     }
-    return -1;
+    return VFS_INVALID;
 }
 
 void FdTable::free(int file_descriptor) {
@@ -129,10 +129,10 @@ Vnode* resolve(const char* path) {
 }
 
 int mount(Filesystem& filesystem, const char* mount_point) {
-    if (!filesystem.get_root || mount_count >= MAX_MOUNTS) return -1;
+    if (!filesystem.get_root || mount_count >= MAX_MOUNTS) return VFS_INVALID;
 
     Vnode* root = filesystem.get_root();
-    if (!root) return -1;
+    if (!root) return VFS_INVALID;
 
     mount_table[mount_count].mount_point = mount_point;
     mount_table[mount_count].fs = &filesystem;

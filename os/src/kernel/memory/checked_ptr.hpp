@@ -12,6 +12,8 @@ static constexpr uint64_t USER_SPACE_LIMIT = 0x0000800000000000ULL;
 ///        Page fault handler checks this and redirects here on fault.
 extern "C" uint64_t g_user_access_recover_ip;
 
+/// @brief Check if a memory range lies entirely within user space.
+/// @return true if the range is valid user-space memory.
 static inline bool is_user_range(const void* user_ptr, uint64_t size) {
     if (!user_ptr) return false;
     uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
@@ -33,6 +35,7 @@ public:
     CheckedPtr(T* user_ptr, uint64_t count = 1)
         : addr_(reinterpret_cast<uint64_t>(user_ptr)), count_(count) {}
 
+    /// @brief Check if the pointer is valid (non-null, within user space).
     bool valid() const {
         if (addr_ == 0) return false;
         return is_user_range(reinterpret_cast<const void*>(addr_),
@@ -43,23 +46,31 @@ public:
         return reinterpret_cast<T*>(addr_);
     }
 
+    /// @brief Copy count elements from user space to kernel buffer.
+    /// @return true on success.
     bool copy_from(T* kernel_dst) const {
         if (!valid()) return false;
         memcpy(kernel_dst, unsafe_ptr(), count_ * sizeof(T));
         return true;
     }
 
+    /// @brief Copy count elements from kernel buffer to user space.
+    /// @return true on success.
     bool copy_to(const T* kernel_src) const {
         if (!valid()) return false;
         memcpy(unsafe_ptr(), kernel_src, count_ * sizeof(T));
         return true;
     }
 
+    /// @brief Read one element from user space at the given index.
+    /// @return The element, or default if invalid.
     T read(size_t index = 0) const {
         if (!valid()) return T{};
         return unsafe_ptr()[index];
     }
 
+    /// @brief Write one element to user space at the given index.
+    /// @return true on success.
     bool write(const T& value, size_t index = 0) {
         if (!valid()) return false;
         unsafe_ptr()[index] = value;
@@ -67,11 +78,14 @@ public:
     }
 };
 
+/// @brief Convenience factory for creating a CheckedPtr from a raw pointer.
 template <typename T>
 static inline CheckedPtr<T> checked(T* user_ptr, uint64_t count = 1) {
     return CheckedPtr<T>(user_ptr, count);
 }
 
+/// @brief Check if a user pointer points to a valid null-terminated string.
+/// @return true if the string is within user space and has a null terminator.
 static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096
     ) {
     uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
@@ -85,6 +99,8 @@ static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096
     return false;
 }
 
+/// @brief Copy a null-terminated string from user space to kernel buffer.
+/// @return true on success, false if the source is not a valid user string.
 static inline bool strncpy_from_user(char* dst, const char* src,
     uint64_t max_len) {
     if (!is_user_string(src, max_len)) return false;

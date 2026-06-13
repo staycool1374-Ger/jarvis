@@ -8,6 +8,7 @@ namespace arch {
 
 class Serial {
 public:
+    /// @brief Initialize COM1 serial port (115200 baud, 8N1).
     static void init() {
         outb(arch::COM1 + 1, 0x00);
         outb(arch::COM1 + 3, 0x80);
@@ -19,6 +20,7 @@ public:
         outb(arch::COM1 + 4, 0x0F);
     }
 
+    /// @brief Write a single character to the serial port.
     static void putchar(char c) {
         if (c == '\n') {
             while ((inb(arch::COM1 + 5) & 0x20) == 0);
@@ -28,6 +30,7 @@ public:
         outb(arch::COM1, c);
     }
 
+    /// @brief Write a null-terminated string to the serial port.
     static void puts(const char* s) {
         while (*s) putchar(*s++);
     }

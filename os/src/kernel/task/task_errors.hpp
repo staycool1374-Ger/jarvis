@@ -25,6 +25,7 @@ enum TaskError : uint64_t {
 #undef X
 };
 
+/// @brief Return a human-readable string for a task error code.
 template<>
 inline const char* error_string(TaskError error) {
     switch (error) {

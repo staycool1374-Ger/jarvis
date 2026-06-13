@@ -19,7 +19,7 @@ static bool root_initialized = false;
 static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
     uint64_t offset) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
-    if (!finfo || !finfo->data) return -1;
+    if (!finfo || !finfo->data) return VFS_INVALID;
     if (offset >= finfo->size) return 0;
     uint64_t avail = finfo->size - offset;
     if (count > avail) count = avail;
@@ -28,7 +28,7 @@ static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
 }
 
 static int64_t initrd_file_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
-    return -1;
+    return VFS_INVALID;
 }
 
 static int initrd_file_open(Vnode&, uint64_t) {
@@ -46,13 +46,13 @@ static void initrd_file_close(Vnode& self) {
 static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
-    if (!finfo) return -1;
+    if (!finfo) return VFS_INVALID;
     uint64_t new_pos = 0;
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
     case SEEK_END: new_pos = finfo->size + static_cast<uint64_t>(offset); break;
-    default: return -1;
+    default: return VFS_INVALID;
     }
     if (new_pos > finfo->size) new_pos = finfo->size;
     *out_pos = new_pos;
@@ -61,18 +61,18 @@ static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
 
 static int initrd_file_fstat(Vnode& self, VfsStat& st) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
-    if (!finfo) return -1;
+    if (!finfo) return VFS_INVALID;
     st.st_size = finfo->size;
     st.st_mode = S_IFREG;
     return 0;
 }
 
 static int initrd_file_ioctl(Vnode&, uint64_t, void*) {
-    return -1;
+    return VFS_INVALID;
 }
 
 static int initrd_file_readdir(Vnode&, uint64_t&, Dirent&) {
-    return -1;
+    return VFS_INVALID;
 }
 
 static Vnode* initrd_file_lookup(Vnode&, const char*) {
@@ -94,9 +94,9 @@ static const VnodeOps initrd_file_ops = {
 // ── root directory ──
 
 static int64_t initrd_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
-    return -1; }
+    return VFS_INVALID; }
 static int64_t initrd_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
-    return -1; }
+    return VFS_INVALID; }
 static int initrd_root_open(Vnode&, uint64_t) { return 0; }
 static void initrd_root_close(Vnode&) {}
 
@@ -111,11 +111,11 @@ static int initrd_root_fstat(Vnode&, VfsStat& vfs_stat) {
     return 0;
 }
 
-static int initrd_root_ioctl(Vnode&, uint64_t, void*) { return -1; }
+static int initrd_root_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
 
 static int initrd_root_readdir(Vnode&, uint64_t& pos, Dirent& dent) {
     initrd::InitrdEntry entry = {};
-    if (!initrd::readdir(&pos, &entry)) return -1;
+    if (!initrd::readdir(&pos, &entry)) return VFS_INVALID;
     size_t idx = 0;
     while (entry.name[idx] && idx < 63) { dent.d_name[idx] = entry.name[idx
         ]; ++idx; }

@@ -66,6 +66,8 @@ public:
     /// @param id Task ID to set as current.
     static void set_current_by_id(uint64_t id) noexcept;
 
+    /// @brief Allocate a unique task ID from the ID table.
+    /// @return A new task ID, or TASK_INVALID if the table is full.
     [[nodiscard]] static uint64_t alloc_id() noexcept;
 
     static uint64_t current_index() noexcept { return current_index_; }

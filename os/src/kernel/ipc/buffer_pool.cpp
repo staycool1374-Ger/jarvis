@@ -8,7 +8,7 @@
 namespace kernel {
 
 BufferPool::Entry BufferPool::entries[MAX_BUFFERS];
-int32_t BufferPool::free_head_ = -1;
+int32_t BufferPool::free_head_ = LIST_EMPTY;
 uint32_t BufferPool::next_cookie_ = 1;
 
 static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
@@ -41,9 +41,9 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 
 static void list_insert(TaskControlBlock& task, int32_t idx) {
     int32_t old_head = task.buf_list_head;
-    BufferPool::entries[idx].list_prev = -1;
+    BufferPool::entries[idx].list_prev = LIST_EMPTY;
     BufferPool::entries[idx].list_next = old_head;
-    if (old_head != -1)
+    if (old_head != LIST_EMPTY)
         BufferPool::entries[old_head].list_prev = idx;
     task.buf_list_head = idx;
 }
@@ -67,18 +67,18 @@ void BufferPool::init() {
         entries[i].refcount = 0;
         entries[i].owner_task = 0;
         entries[i].mapped_va = 0;
-        entries[i].list_prev = -1;
-        entries[i].list_next = -1;
+        entries[i].list_prev = LIST_EMPTY;
+        entries[i].list_next = LIST_EMPTY;
         free_entry(static_cast<int32_t>(i));
     }
 }
 
 int32_t BufferPool::alloc_entry() {
-    if (free_head_ == -1) return -1;
+    if (free_head_ == LIST_EMPTY) return BUF_INVALID_INDEX;
     int32_t idx = free_head_;
     free_head_ = static_cast<int32_t>(entries[idx].list_next);
     ENSURE(entries[idx].phys_addr == 0);
-    entries[idx].list_next = -1;
+    entries[idx].list_next = LIST_EMPTY;
     return idx;
 }
 
@@ -88,18 +88,18 @@ void BufferPool::free_entry(int32_t idx) {
     entries[idx].refcount = 0;
     entries[idx].owner_task = 0;
     entries[idx].mapped_va = 0;
-    entries[idx].list_prev = -1;
+    entries[idx].list_prev = LIST_EMPTY;
     entries[idx].list_next = free_head_;
     free_head_ = idx;
 }
 
 int32_t BufferPool::validate(uint64_t handle) {
-    if (handle == 0) return -1;
+    if (handle == 0) return BUF_INVALID_HANDLE;
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     uint32_t gen = static_cast<uint32_t>(handle >> 32);
-    if (idx >= MAX_BUFFERS) return -1;
-    if (entries[idx].phys_addr == 0) return -1;
-    if (entries[idx].generation != gen) return -1;
+    if (idx >= MAX_BUFFERS) return BUF_INVALID_INDEX;
+    if (entries[idx].phys_addr == 0) return BUF_INVALID_HANDLE;
+    if (entries[idx].generation != gen) return BUF_INVALID_HANDLE;
     return static_cast<int32_t>(idx);
 }
 

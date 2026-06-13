@@ -8,6 +8,19 @@
 
 namespace kernel {
 
+enum class ListSentinel : int64_t {
+    EMPTY = -1,
+};
+enum class BufferSentinel : int64_t {
+    INVALID_HANDLE = -2,
+    INVALID_INDEX  = -3,
+};
+constexpr int64_t LIST_EMPTY = static_cast<int64_t>(ListSentinel::EMPTY);
+constexpr int64_t BUF_INVALID_HANDLE = static_cast<int64_t>(
+    BufferSentinel::INVALID_HANDLE);
+constexpr int64_t BUF_INVALID_INDEX = static_cast<int64_t>(
+    BufferSentinel::INVALID_INDEX);
+
 class BufferPool {
 public:
     static constexpr size_t MAX_BUFFERS = 1024;
@@ -33,6 +46,7 @@ public:
             {}
     };
 
+    /// @brief Initialize the buffer pool (free list, slab allocator).
     static void init();
 
     /// @brief Allocate a buffer, map it at @p virt_addr in the given

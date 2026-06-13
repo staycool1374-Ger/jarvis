@@ -25,11 +25,11 @@ struct PipeBuffer {
 static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
     ) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
-    if (!pb || pb->read_closed) return -1;
+    if (!pb || pb->read_closed) return VFS_INVALID;
     if (pb->write_closed && pb->count == 0) return 0;
     while (pb->count == 0) {
         if (pb->write_closed) return 0;
-        if (pb->read_closed) return -1;
+        if (pb->read_closed) return VFS_INVALID;
         pb->data_avail.wait();
     }
     uint64_t total = 0;
@@ -44,8 +44,8 @@ static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
 static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count,
     uint64_t) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
-    if (!pb || pb->read_closed) return -1;
-    if (pb->write_closed) return -1;
+    if (!pb || pb->read_closed) return VFS_INVALID;
+    if (pb->write_closed) return VFS_INVALID;
     uint64_t total = 0;
     while (total < count) {
         if (pb->count >= PIPE_BUF_SIZE) {
@@ -82,14 +82,18 @@ static void pipe_write_close(Vnode& self) {
     MemPool::free(&self);
 }
 
-static int64_t pipe_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
+static int64_t pipe_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
 static int pipe_fstat(Vnode&, VfsStat& vfs_stat) {
     vfs_stat.st_size = 0;
     vfs_stat.st_mode = S_IFCHR;
     return 0;
 }
-static int pipe_ioctl(Vnode&, uint64_t, void*) { return -1; }
-static int pipe_readdir(Vnode&, uint64_t&, Dirent&) { return -1; }
+static int pipe_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int pipe_readdir(Vnode&, uint64_t&, Dirent&) {
+    return VFS_INVALID;
+}
 static Vnode* pipe_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pipe_read_ops = {
@@ -104,14 +108,14 @@ static const VnodeOps pipe_write_ops = {
 
 int create_pipe(int fds[2]) {
     auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
-    if (!pb) return -1;
+    if (!pb) return VFS_INVALID;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
 
     auto* rnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     auto* wnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     if (!rnode || !wnode) {
         MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
-        return -1;
+        return VFS_INVALID;
     }
 
     rnode->ops = &pipe_read_ops;
@@ -130,7 +134,7 @@ int create_pipe(int fds[2]) {
 
     auto* task = Scheduler::current_task();
     if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode
-        ); return -1; }
+        ); return VFS_INVALID; }
 
     int rfd = task->fd_table.alloc();
     int wfd = task->fd_table.alloc();
@@ -138,7 +142,7 @@ int create_pipe(int fds[2]) {
         if (rfd >= 0) task->fd_table.free(rfd);
         if (wfd >= 0) task->fd_table.free(wfd);
         MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
-        return -1;
+        return VFS_INVALID;
     }
 
     task->fd_table.fds[rfd].vnode = rnode;

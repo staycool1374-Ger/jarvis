@@ -13,6 +13,10 @@ namespace kernel {
 ///       Tracks USER vs KERNEL page ownership for safety in free_user_pages.
 class PMM {
 public:
+    /// @brief Initialize the physical memory manager with a bitmap.
+    /// @param mem_size Total physical memory size in bytes.
+    /// @param kernel_start Start of kernel image in physical memory.
+    /// @param kernel_end End of kernel image in physical memory.
     static void init(uint64_t mem_size, uint64_t kernel_start,
         uint64_t kernel_end);
 

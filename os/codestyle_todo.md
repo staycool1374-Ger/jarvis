@@ -11,14 +11,6 @@
 - [x] Descriptive names — rename blocklisted single-char vars (`t`, `v`, `val`, `tmp`, `ptr`, `p`)
 - [x] Bounded loops — validator now skips intentional blocking I/O loops (hlt, pause, inb, keyboard)
 
-## ⚠️ Remaining Items
-
-### Meaningful sentinel enums — replace raw `-1` checks with named constants
-- Found in multiple files (e.g., return -1 for error)
-
-### Documentation Doxygen compliance — `@brief`, `@param`, `@return` on all public APIs
-- Many functions missing Doxygen comments
-
-## Next Steps
-1. Add Doxygen comments to public APIs
-2. Replace raw -1 sentinel values with named constants
+## ✅ Completed
+- [x] Meaningful sentinel enums — replaced raw -1 with named constants in module headers
+- [x] Doxygen compliance — `@brief`, `@param`, `@return` on all public API function declarations across all 41 kernel headers

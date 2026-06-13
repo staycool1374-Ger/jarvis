@@ -22,6 +22,7 @@ enum BufPoolError : uint64_t {
 #undef X
 };
 
+/// @brief Return a human-readable string for a buffer pool error code.
 template<>
 inline const char* error_string(BufPoolError e) {
     switch (e) {
