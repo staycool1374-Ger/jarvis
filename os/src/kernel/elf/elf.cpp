@@ -132,8 +132,8 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
                file_data + phdr->offset, phdr->filesz);
 
         if (phdr->memsz > phdr->filesz) {
-            memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz),
-                   0, phdr->memsz - phdr->filesz);
+            uint64_t zero_offset = arch::HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz;
+            memset(reinterpret_cast<void*>(zero_offset), 0, phdr->memsz - phdr->filesz);
         }
     }
 
@@ -172,7 +172,8 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     int argc = count_strings(argv);
 
     uint64_t str_total = total_string_len(argv) + total_string_len(envp);
-    uint8_t* stack_top = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + ustack_phys + mem::STACK_SIZE);
+    uint64_t stack_base = arch::HHDM_OFFSET + ustack_phys + mem::STACK_SIZE;
+    uint8_t* stack_top = reinterpret_cast<uint8_t*>(stack_base);
 
     uint8_t* sp = stack_top;
     sp -= str_total;
@@ -216,7 +217,8 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     *--ptr = static_cast<uint64_t>(argc);
 
     uint64_t user_rsp = reinterpret_cast<uint64_t>(ptr);
-    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top) + mem::STACK_VADDR + arch::PAGE_SIZE + mem::STACK_SIZE;
+    user_rsp = user_rsp - reinterpret_cast<uint64_t>(stack_top)
+             + mem::STACK_VADDR + arch::PAGE_SIZE + mem::STACK_SIZE;
 
     return user_rsp;
 }
@@ -230,7 +232,7 @@ static void open_std_fds(TaskControlBlock* tcb) {
             tcb->fd_table.fds[fd].vnode = tty;
             tcb->fd_table.fds[fd].offset = 0;
             tcb->fd_table.fds[fd].flags = 0;
-            if (tty->ops && tty->ops->open) tty->ops->open(tty, 0);
+            if (tty->ops && tty->ops->open) tty->ops->open(*tty, 0);
         }
     }
 }
@@ -246,7 +248,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->priority = 5;
     tcb->period_ticks = 20;
 
-    init_task_common(tcb);
+    init_task_common(*tcb);
 
     size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
@@ -261,7 +263,10 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->page_table_ = pml4;
 
     uint64_t ustack_phys = 0;
-    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) { MemPool::free(tcb); return nullptr; }
+    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) {
+        MemPool::free(tcb);
+        return nullptr;
+    }
 
     open_std_fds(tcb);
 
@@ -330,7 +335,7 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
                         tcb->fd_table.fds[fd].vnode = tty2;
                         tcb->fd_table.fds[fd].offset = 0;
                         tcb->fd_table.fds[fd].flags = 0;
-                        if (tty2->ops && tty2->ops->open) tty2->ops->open(tty2, 0);
+                        if (tty2->ops && tty2->ops->open) tty2->ops->open(*tty2, 0);
                     }
                 }
             }

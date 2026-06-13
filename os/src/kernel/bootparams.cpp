@@ -60,7 +60,8 @@ void BootParams::parse_cstr(const char* cmdline) {
             } else if (klen == 11 && strncmp(key, "debug_sched", 11) == 0) {
                 bp.debug_scheduling = (*val_start == '1' || *val_start == 'y' || *val_start == 'Y');
             } else if (klen == 10 && strncmp(key, "oom_killer", 10) == 0) {
-                bp.oom_killer_enabled = (*val_start == '1' || *val_start == 'y' || *val_start == 'Y');
+                bp.oom_killer_enabled = (*val_start == '1' || *val_start == 'y' ||
+                                         *val_start == 'Y');
             }
         } else {
             if (klen == 4 && strncmp(key, "safe", 4) == 0) {

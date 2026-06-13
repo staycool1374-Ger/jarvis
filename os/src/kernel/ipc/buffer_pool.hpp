@@ -21,6 +21,16 @@ public:
         uint64_t mapped_va;
         int32_t  list_prev;
         int32_t  list_next;
+
+        Entry()
+            : phys_addr(0)
+            , generation(0)
+            , refcount(0)
+            , owner_task(0)
+            , mapped_va(0)
+            , list_prev(-1)
+            , list_next(-1)
+            {}
     };
 
     static void init();

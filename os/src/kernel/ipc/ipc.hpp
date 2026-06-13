@@ -27,6 +27,16 @@ struct MessageQueue {
     /// @brief TCB that owns this queue (set during task creation).
     TaskControlBlock* owner;
 
+    MessageQueue()
+        : prio_bitmap(0)
+        , head(0)
+        , tail(0)
+        , count(0)
+        , blocked_senders_head(nullptr)
+        , blocked_senders_tail(nullptr)
+        , owner(nullptr)
+        {}
+
     void init();
     bool push(const Message& msg);
     bool pop(Message& msg);

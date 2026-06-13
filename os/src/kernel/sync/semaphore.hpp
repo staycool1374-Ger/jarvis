@@ -10,7 +10,11 @@ class Semaphore {
 public:
     static constexpr size_t MAX_WAITERS = 32;
 
-    Semaphore() : count_(0), max_count_(1) {}
+    Semaphore()
+        : count_(0)
+        , max_count_(1)
+        , waiter_count_(0)
+        {}
     void init(uint64_t initial, uint64_t max = 0xFFFFFFFF);
 
     void wait();

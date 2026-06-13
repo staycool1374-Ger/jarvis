@@ -128,7 +128,8 @@ void Shell::execute(const char* cmd) {
 }
 
 static void debug_putchar(char c) {
-    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, '\r'); }
+    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1,
+    '\r'); }
     do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, c);
 }
 static void debug_write(const char* s) { while (*s) debug_putchar(*s++); }

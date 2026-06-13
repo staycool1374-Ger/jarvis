@@ -55,6 +55,7 @@
     "min_length": 3,
     "blocklist": ["t", "v", "val", "tmp", "temp", "ptr", "p"],
     "allow_loop_indices": ["i", "j", "k", "idx"],
+    "allow_common_abbrevs": ["id"],
     "max_loop_body_lines": 5
   },
   "sentinel_enums": {

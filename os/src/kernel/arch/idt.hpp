@@ -16,6 +16,8 @@ struct IDTEntry {
     uint16_t offset_mid;
     uint32_t offset_high;
     uint32_t zero;
+
+    IDTEntry() = default;
 } __attribute__((packed));
 
 /// @brief The IDT descriptor structure for the LIDT instruction.

@@ -16,53 +16,53 @@
 
 namespace kernel {
 
-void init_task_common(TaskControlBlock* tcb) {
+void init_task_common(TaskControlBlock& tcb) {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
-        tcb->fd_table.fds[i].used = false;
-        tcb->fd_table.fds[i].vnode = nullptr;
-        tcb->fd_table.fds[i].offset = 0;
-        tcb->fd_table.fds[i].flags = 0;
+        tcb.fd_table.fds[i].used = false;
+        tcb.fd_table.fds[i].vnode = nullptr;
+        tcb.fd_table.fds[i].offset = 0;
+        tcb.fd_table.fds[i].flags = 0;
     }
-    tcb->cwd[0] = '/';
-    tcb->cwd[1] = '\0';
-    tcb->cwd_vnode = vfs::get_root_vnode();
+    tcb.cwd[0] = '/';
+    tcb.cwd[1] = '\0';
+    tcb.cwd_vnode = vfs::get_root_vnode();
 
     // Initialize IPC message queue
     auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
     if (mq) {
         mq->init();
-        mq->owner = tcb;
-        tcb->msg_queue = mq;
+        mq->owner = &tcb;
+        tcb.msg_queue = mq;
     } else {
-        tcb->msg_queue = nullptr;
+        tcb.msg_queue = nullptr;
     }
-    tcb->blocked_next = nullptr;
-    tcb->blocked_prev = nullptr;
+    tcb.blocked_next = nullptr;
+    tcb.blocked_prev = nullptr;
 
     auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
     if (n) {
         n->init();
-        tcb->notify = n;
+        tcb.notify = n;
     } else {
-        tcb->notify = nullptr;
+        tcb.notify = nullptr;
     }
 
     auto* eg = static_cast<sync::EventGroup*>(MemPool::alloc(sizeof(sync::EventGroup)));
     if (eg) {
         eg->init();
-        tcb->event_group = eg;
+        tcb.event_group = eg;
     } else {
-        tcb->event_group = nullptr;
+        tcb.event_group = nullptr;
     }
 
     // Process hierarchy initialization
-    tcb->first_child = nullptr;
-    tcb->next_sibling = nullptr;
-    tcb->prev_sibling = nullptr;
-    tcb->num_children = 0;
+    tcb.first_child = nullptr;
+    tcb.next_sibling = nullptr;
+    tcb.prev_sibling = nullptr;
+    tcb.num_children = 0;
 
     // Buffer pool list starts empty
-    tcb->buf_list_head = -1;
+    tcb.buf_list_head = -1;
 }
 
 TaskControlBlock* TaskControlBlock::create(
@@ -81,7 +81,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->deadline_ticks = period_ticks;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
-    init_task_common(tcb);
+    init_task_common(*tcb);
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
@@ -128,7 +128,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->deadline_ticks = period_ticks;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
-    init_task_common(tcb);
+    init_task_common(*tcb);
 
     size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
@@ -365,8 +365,8 @@ void TaskControlBlock::add_child(TaskControlBlock* child) noexcept {
 void TaskControlBlock::remove_child(TaskControlBlock* child) noexcept {
     if (!child) return;
     bool found = false;
-    for (auto* c = first_child; c; c = c->next_sibling) {
-        if (c == child) { found = true; break; }
+    for (auto* current = first_child; current; current = current->next_sibling) {
+        if (current == child) { found = true; break; }
     }
     if (!found) return;
     if (child->prev_sibling) {
@@ -431,10 +431,10 @@ void TaskControlBlock::cleanup() noexcept {
             if (vn && vn->refcount > 0) {
                 --vn->refcount;
                 if (vn->refcount == 0) {
-                    if (vn->ops->close) vn->ops->close(vn);
+                    if (vn->ops->close) vn->ops->close(*vn);
                 }
             } else if (vn) {
-                if (vn->ops->close) vn->ops->close(vn);
+                if (vn->ops->close) vn->ops->close(*vn);
             }
             fd_table.fds[i].used = false;
             fd_table.fds[i].vnode = nullptr;

@@ -21,6 +21,8 @@ struct ELF64Header {
     uint16_t shentsize;
     uint16_t shnum;
     uint16_t shstrndx;
+
+    ELF64Header() = default;
 } __attribute__((packed));
 
 struct ELF64ProgramHeader {

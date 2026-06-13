@@ -11,6 +11,8 @@ namespace arch {
 /// @note Tracks Shift, Ctrl, Alt, and Caps Lock modifier states.
 class Keyboard {
 public:
+    Keyboard() = default;
+
     /// @brief Initialises the PS/2 keyboard controller.
     static void init();
     /// @brief Handles the keyboard IRQ (reads scancode from port).

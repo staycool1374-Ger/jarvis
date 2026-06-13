@@ -11,7 +11,7 @@ namespace kernel {
 
 // Forward declaration for init_task_common
 struct TaskControlBlock;
-void init_task_common(TaskControlBlock* tcb);
+void init_task_common(TaskControlBlock& tcb);
 
 /// @brief Maximum payload size in bytes for an IPC message.
 static constexpr size_t IPC_MAX_MSG_SIZE = 64;
@@ -67,6 +67,46 @@ struct TaskControlBlock {
     static constexpr uint64_t USER_CS  = 0x1B;
     static constexpr uint64_t USER_SS  = 0x23;
     static constexpr uint64_t FLAGS_IF  = 0x200;
+
+    TaskControlBlock()
+        : id(0)
+        , parent_id(0)
+        , state(TaskState::READY)
+        , priority(0)
+        , base_priority(0)
+        , period_ticks(0)
+        , deadline_ticks(0)
+        , executed_ticks(0)
+        , remaining_ticks(0)
+        , exit_code(0)
+        , context({})
+        , kernel_stack(nullptr)
+        , kernel_stack_top(0)
+        , stack_phys_(0)
+        , page_table_(0)
+        , page_table_shared_(false)
+        , stack_pdpt_phys_(0)
+        , user_stack_(0)
+        , user_stack_size_(0)
+        , user_data(nullptr)
+        , fd_table({})
+        , cwd_vnode(nullptr)
+        , waiting_child_pid(0)
+        , waiting_child_status(nullptr)
+        , pending_signals(0)
+        , alarm_ticks(0)
+        , alarm_armed(false)
+        , msg_queue(nullptr)
+        , notify(nullptr)
+        , event_group(nullptr)
+        , buf_list_head(0)
+        , blocked_next(nullptr)
+        , blocked_prev(nullptr)
+        , first_child(nullptr)
+        , next_sibling(nullptr)
+        , prev_sibling(nullptr)
+        , num_children(0)
+        {}
 
     uint64_t id;
     uint64_t parent_id;

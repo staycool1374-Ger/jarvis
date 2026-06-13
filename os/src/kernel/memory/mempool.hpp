@@ -22,6 +22,15 @@ public:
         uint8_t* data;
         size_t  first_free;
         bool    initialized;
+
+        Pool()
+            : block_size(0)
+            , block_count(0)
+            , free_count(0)
+            , data(nullptr)
+            , first_free(0)
+            , initialized(false)
+            {}
     };
 
     /// @brief Initialises all pool classes from pre-allocated memory.

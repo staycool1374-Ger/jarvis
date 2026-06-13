@@ -33,7 +33,7 @@ int syscall_task_open(vfs::Vnode* vn, uint64_t flags) {
     syscall_task()->fd_table.fds[fd].vnode = vn;
     syscall_task()->fd_table.fds[fd].offset = 0;
     syscall_task()->fd_table.fds[fd].flags = flags;
-    if (vn->ops->open) vn->ops->open(vn, flags);
+    if (vn->ops->open) vn->ops->open(*vn, flags);
     return fd;
 }
 

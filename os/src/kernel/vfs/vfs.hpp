@@ -41,15 +41,15 @@ struct Dirent {
 
 struct Vnode;
 struct VnodeOps {
-    int64_t (*read)(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offset);
-    int64_t (*write)(Vnode* self, const uint8_t* buf, uint64_t count, uint64_t offset);
-    int     (*open)(Vnode* self, uint64_t flags);
-    void    (*close)(Vnode* self);
-    int64_t (*lseek)(Vnode* self, int64_t offset, int whence, uint64_t* out_pos);
-    int     (*fstat)(Vnode* self, VfsStat* st);
-    int     (*ioctl)(Vnode* self, uint64_t request, void* arg);
-    int     (*readdir)(Vnode* self, uint64_t* pos, Dirent* dent);
-    Vnode*  (*lookup)(Vnode* self, const char* name);
+    int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset);
+    int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count, uint64_t offset);
+    int     (*open)(Vnode& self, uint64_t flags);
+    void    (*close)(Vnode& self);
+    int64_t (*lseek)(Vnode& self, int64_t offset, int whence, uint64_t* out_pos);
+    int     (*fstat)(Vnode& self, VfsStat& st);
+    int     (*ioctl)(Vnode& self, uint64_t request, void* arg);
+    int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);
+    Vnode*  (*lookup)(Vnode& self, const char* name);
 };
 
 struct Vnode {
@@ -58,7 +58,25 @@ struct Vnode {
     uint64_t size;
     uint16_t mode;
     void* private_data;
-    int refcount = 1;
+    uint64_t refcount;
+
+    Vnode()
+        : ops(nullptr)
+        , ino(0)
+        , size(0)
+        , mode(0)
+        , private_data(nullptr)
+        , refcount(0)
+        {}
+
+    Vnode(const VnodeOps* ops_, uint64_t ino_, uint64_t size_, uint16_t mode_, void* private_data_)
+        : ops(ops_)
+        , ino(ino_)
+        , size(size_)
+        , mode(mode_)
+        , private_data(private_data_)
+        , refcount(0)
+        {}
 };
 
 struct FileDescription {
@@ -72,8 +90,8 @@ struct FdTable {
     FileDescription fds[MAX_FDS];
 
     int alloc();
-    void free(int fd);
-    FileDescription* get(int fd);
+    void free(int file_descriptor);
+    FileDescription* get(int file_descriptor);
 };
 
 struct Filesystem {
@@ -89,11 +107,11 @@ struct Mount {
 };
 
 Vnode* resolve(const char* path);
-int mount(Filesystem* fs, const char* mount_point);
+int mount(Filesystem& filesystem, const char* mount_point);
 void init();
 Filesystem* find_fs(const char* name);
 Vnode* get_root_vnode();
-void set_root_vnode(Vnode* vn);
+void set_root_vnode(Vnode& vnode);
 
 } // namespace vfs
 } // namespace kernel

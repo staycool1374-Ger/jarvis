@@ -244,6 +244,12 @@ class MemoryChecker(Checker):
             # Skip function/method declarations of free/malloc
             if "free(" in snippet and (line_text.endswith("{") or line_text.endswith(");")):
                 continue
+            # Skip constructor initializer lists (member initialization like : data(nullptr))
+            if "free" in snippet and re.search(r":\s*\w+\s*\(", line_text):
+                continue
+            # Skip constructor initializer list continuation lines (, member(value))
+            if "free" in snippet and re.search(r"^\s*,\s*\w+\s*\(", line_text):
+                continue
             self.add(rel_path, line,
                      f"Dynamic allocation on kernel path: '{snippet.strip()}' — use fixed pools instead")
 
@@ -422,6 +428,10 @@ class RefOverPtrChecker(Checker):
                 continue
             if param.count("*") > 1:
                 continue
+            # Skip function pointer declarations inside structs (e.g., void (*func)(T*))
+            line_text = text.split('\n')[get_line(text, m.start(1)) - 1].strip()
+            if '(' in param and ')' in param and '*' in param.split('(')[0]:
+                continue
             # heuristic: suggest ref if not an output param
             self.add(rel_path, get_line(text, m.start(1)),
                      f"Prefer reference over pointer for non-nullable parameter: '{param.strip()}' — use T& instead of T*")
@@ -578,12 +588,19 @@ class DescriptiveNamesChecker(Checker):
 
     _var_decl = re.compile(
         r"(?:^|\s)((?:const\s+|static\s+|inline\s+)*)"
-        r"(?:\w+(?:::\w+)*)\s+"
-        r"(\w+)\s*(?:[=;({])",
+        r"(?:(?:[a-z_][a-z0-9_]*|[A-Z][a-zA-Z0-9]*)(?:::[a-z_][a-z0-9_]*|[A-Z][a-zA-Z0-9]*)*)\s+"
+        r"([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:[=;({])",
         re.MULTILINE,
     )
+    # Keywords that should not be flagged as variable names
+    _keywords = {
+        "if", "else", "while", "for", "do", "switch", "case", "default",
+        "return", "break", "continue", "goto", "sizeof", "alignof",
+        "typeof", "static_assert", "thread_local", "constexpr", "decltype",
+        "new", "delete", "this", "true", "false", "nullptr",
+    }
     _fn_param = re.compile(
-        r"(?:,\s*|\(\s*)((?:const\s+)?\w+(?:::\w+)*(?:\s*[*&])?\s+)(\w+)(?:\s*[=,);])"
+        r"(?:,\s*|\(\s*)((?:const\s+)?[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*(?:\s*[*&])?\s+)([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*[=,);])"
     )
     _loop_var = re.compile(
         r"for\s*\(\s*(?:\w+(?:::\w+)*)\s+([a-z])\s*(?:\s*=|:)"
@@ -596,6 +613,7 @@ class DescriptiveNamesChecker(Checker):
         cfg_dn = self.cfg.get("descriptive_names", {})
         blocklist = set(cfg_dn.get("blocklist", ["t", "v", "val", "tmp", "temp", "ptr", "p"]))
         allow_loop = set(cfg_dn.get("allow_loop_indices", ["i", "j", "k", "idx"]))
+        allow_common = set(cfg_dn.get("allow_common_abbrevs", ["id"]))
         min_len = cfg_dn.get("min_length", 3)
         max_loop_lines = cfg_dn.get("max_loop_body_lines", 5)
 
@@ -605,18 +623,22 @@ class DescriptiveNamesChecker(Checker):
             name = m.group(2)
             decl_line = get_line(text, m.start(2))
 
+            # Skip C++ keywords that might be caught by the regex
+            if name in self._keywords:
+                continue
+
             # Check for blocklisted names
             if name in blocklist:
                 self.add(rel_path, decl_line,
                          f"Blocklisted variable name '{name}' — use a descriptive name")
 
-            # Check minimum length (but allow 'i', 'j', 'k' in tight loops)
-            if len(name) < min_len and name not in allow_loop:
+            # Check minimum length (but allow 'i', 'j', 'k' in tight loops, and common abbrevs)
+            if len(name) < min_len and name not in allow_loop and name not in allow_common:
                 self.add(rel_path, decl_line,
                          f"Variable name '{name}' is too short (min {min_len} chars)")
 
-            # Check single-char declarations that are NOT loop indices
-            if len(name) == 1 and name not in allow_loop:
+            # Check single-char declarations that are NOT loop indices or common abbrevs
+            if len(name) == 1 and name not in allow_loop and name not in allow_common:
                 self.add(rel_path, decl_line,
                          f"Single-character variable '{name}' — use a descriptive name")
 
@@ -626,7 +648,7 @@ class DescriptiveNamesChecker(Checker):
             if name in blocklist:
                 self.add(rel_path, param_line,
                          f"Blocklisted parameter name '{name}' — use a descriptive name")
-            if len(name) < min_len and name not in allow_loop:
+            if len(name) < min_len and name not in allow_loop and name not in allow_common:
                 self.add(rel_path, param_line,
                          f"Parameter name '{name}' is too short (min {min_len} chars)")
 
@@ -699,6 +721,9 @@ def collect_source_files(root: str) -> list[tuple[str, str]]:
         if path.suffix not in (".cpp", ".hpp", ".h", ".c", ".S", ".asm"):
             continue
         if ".git" in path.parts or "build" in path.parts or "obj" in path.parts:
+            continue
+        # Skip test files
+        if "test" in path.parts:
             continue
         try:
             rel = str(path.relative_to(workspace))

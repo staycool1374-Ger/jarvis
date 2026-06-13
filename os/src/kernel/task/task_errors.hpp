@@ -26,8 +26,8 @@ enum TaskError : uint64_t {
 };
 
 template<>
-inline const char* error_string(TaskError e) {
-    switch (e) {
+inline const char* error_string(TaskError error) {
+    switch (error) {
 #define X(name, num, msg) case TASK_ERR_##name: return msg;
     TASK_ERROR_CODES
 #undef X

@@ -124,7 +124,7 @@ uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
     auto buf = checked(reinterpret_cast<uint8_t*>(arg1), count);
     if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
     if (!f->vnode || !f->vnode->ops->read) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->read(f->vnode, buf.unsafe_ptr(), count, f->offset);
+    int64_t r = f->vnode->ops->read(*f->vnode, buf.unsafe_ptr(), count, f->offset);
     if (r > 0) f->offset += static_cast<uint64_t>(r);
     return static_cast<uint64_t>(r >= 0 ? r : -1);
 }
@@ -147,7 +147,7 @@ uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, ui
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->fstat) return static_cast<uint64_t>(-1);
     auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
-    return static_cast<uint64_t>(f->vnode->ops->fstat(f->vnode, st));
+    return static_cast<uint64_t>(f->vnode->ops->fstat(*f->vnode, *st));
 }
 
 uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
@@ -160,7 +160,7 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_
     uint64_t count = arg2;
     auto buf = checked(reinterpret_cast<const uint8_t*>(arg1), count);
     if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->write(f->vnode, buf.unsafe_ptr(), count, f->offset);
+    int64_t r = f->vnode->ops->write(*f->vnode, buf.unsafe_ptr(), count, f->offset);
     if (r > 0) f->offset += static_cast<uint64_t>(r);
     return static_cast<uint64_t>(r >= 0 ? r : 0);
 }
@@ -170,7 +170,7 @@ uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->lseek) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->lseek(f->vnode,
+    int64_t r = f->vnode->ops->lseek(*f->vnode,
         static_cast<int64_t>(arg1), static_cast<int>(arg2), &f->offset);
     return static_cast<uint64_t>(r >= 0 ? r : -1);
 }
@@ -180,7 +180,7 @@ uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->ioctl) return static_cast<uint64_t>(-1);
-    return static_cast<uint64_t>(f->vnode->ops->ioctl(f->vnode, arg1, reinterpret_cast<void*>(arg2)));
+    return static_cast<uint64_t>(f->vnode->ops->ioctl(*f->vnode, arg1, reinterpret_cast<void*>(arg2)));
 }
 
 uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
@@ -192,7 +192,7 @@ uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
     auto dent_chk = checked(reinterpret_cast<vfs::Dirent*>(arg2));
     if (syscall_is_user_task() && (!pos_chk.valid() || !dent_chk.valid())) return static_cast<uint64_t>(-1);
     uint64_t p = pos_chk.read();
-    int r = f->vnode->ops->readdir(f->vnode, &p, dent_chk.unsafe_ptr());
+    int r = f->vnode->ops->readdir(*f->vnode, p, *dent_chk.unsafe_ptr());
     if (r == 0) pos_chk.write(p);
     return static_cast<uint64_t>(r == 0 ? 0 : -1);
 }
@@ -215,7 +215,7 @@ uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uin
     if (!vn || !vn->ops->fstat) return static_cast<uint64_t>(-1);
     auto st = checked(reinterpret_cast<vfs::VfsStat*>(arg1));
     if (syscall_is_user_task() && !st.valid()) return static_cast<uint64_t>(-1);
-    return static_cast<uint64_t>(vn->ops->fstat(vn, st.unsafe_ptr()));
+    return static_cast<uint64_t>(vn->ops->fstat(*vn, *st.unsafe_ptr()));
 }
 
 uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {

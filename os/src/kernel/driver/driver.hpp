@@ -22,6 +22,24 @@ struct Driver {
     void (*exit)();
     DriverState state;
     uint32_t irq_line;
+
+    Driver()
+        : name(nullptr)
+        , description(nullptr)
+        , init(nullptr)
+        , exit(nullptr)
+        , state(DriverState::UNLOADED)
+        , irq_line(0)
+        {}
+
+    Driver(const char* name_, const char* description_, bool (*init_)(), void (*exit_)(), DriverState state_, uint32_t irq_line_)
+        : name(name_)
+        , description(description_)
+        , init(init_)
+        , exit(exit_)
+        , state(state_)
+        , irq_line(irq_line_)
+        {}
 };
 
 /// @brief Central registry for kernel driver modules.

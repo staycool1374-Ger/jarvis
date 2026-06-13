@@ -163,7 +163,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     debug_write("[BOOT] VFS init...\n");
     kernel::vfs::init();
-    kernel::vfs::mount(&kernel::vfs::initrd_fs, "/");
+    kernel::vfs::mount(kernel::vfs::initrd_fs, "/");
     debug_write("[BOOT] VFS OK (initrd mounted at /)\n");
 
     debug_write("[BOOT] IPC init...\n");
@@ -182,7 +182,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
             auto* t = kernel::Scheduler::task_at(i);
             if (!t || t == kernel::Scheduler::task_at(0)) continue;
-            if (t->state != kernel::TaskState::READY && t->state != kernel::TaskState::RUNNING) continue;
+            if (t->state != kernel::TaskState::READY
+             && t->state != kernel::TaskState::RUNNING) continue;
             if (!t->page_table_) continue;
             if (t->priority < victim_priority) {
                 victim = t;
@@ -236,11 +237,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] Devfs init...\n");
     kernel::vfs::devfs_init();
     debug_write("[BOOT] Mount devfs...\n");
-    kernel::vfs::mount(&kernel::vfs::dev_fs, "/dev");
+    kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
     debug_write("[BOOT] devfs mounted at /dev\n");
 
     debug_write("[BOOT] Mount procfs...\n");
-    kernel::vfs::mount(&kernel::vfs::proc_fs, "/proc");
+    kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
     debug_write("[BOOT] procfs mounted at /proc\n");
 
     debug_write("[BOOT] Timer init...\n");
@@ -424,15 +425,24 @@ static void dump_regs(uint64_t* regs) {
 
     using L = kernel::Logger;
 
-    L::raw_write("  RAX: "); L::print_hex(regs[0]);  L::raw_write("  RBX: "); L::print_hex(regs[1]);  L::raw_write("\n");
-    L::raw_write("  RCX: "); L::print_hex(regs[2]);  L::raw_write("  RDI: "); L::print_hex(regs[5]);  L::raw_write("\n");
-    L::raw_write("  RDX: "); L::print_hex(regs[3]);  L::raw_write("  RSI: "); L::print_hex(regs[4]);  L::raw_write("\n");
-    L::raw_write("  RBP: "); L::print_hex(regs[6]);  L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs)); L::raw_write("\n");
-    L::raw_write("  R8:  "); L::print_hex(regs[7]);  L::raw_write("  R9:  "); L::print_hex(regs[8]);  L::raw_write("\n");
-    L::raw_write("  R10: "); L::print_hex(regs[9]);  L::raw_write("  R11: "); L::print_hex(regs[10]); L::raw_write("\n");
-    L::raw_write("  R12: "); L::print_hex(regs[11]); L::raw_write("  R13: "); L::print_hex(regs[12]); L::raw_write("\n");
-    L::raw_write("  R14: "); L::print_hex(regs[13]); L::raw_write("  R15: "); L::print_hex(regs[14]); L::raw_write("\n");
-    L::raw_write("  RIP: "); L::print_hex(regs[17]); L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
+    L::raw_write("  RAX: "); L::print_hex(regs[0]);
+    L::raw_write("  RBX: "); L::print_hex(regs[1]); L::raw_write("\n");
+    L::raw_write("  RCX: "); L::print_hex(regs[2]);
+    L::raw_write("  RDI: "); L::print_hex(regs[5]); L::raw_write("\n");
+    L::raw_write("  RDX: "); L::print_hex(regs[3]);
+    L::raw_write("  RSI: "); L::print_hex(regs[4]); L::raw_write("\n");
+    L::raw_write("  RBP: "); L::print_hex(regs[6]);
+    L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs)); L::raw_write("\n");
+    L::raw_write("  R8:  "); L::print_hex(regs[7]);
+    L::raw_write("  R9:  "); L::print_hex(regs[8]); L::raw_write("\n");
+    L::raw_write("  R10: "); L::print_hex(regs[9]);
+    L::raw_write("  R11: "); L::print_hex(regs[10]); L::raw_write("\n");
+    L::raw_write("  R12: "); L::print_hex(regs[11]);
+    L::raw_write("  R13: "); L::print_hex(regs[12]); L::raw_write("\n");
+    L::raw_write("  R14: "); L::print_hex(regs[13]);
+    L::raw_write("  R15: "); L::print_hex(regs[14]); L::raw_write("\n");
+    L::raw_write("  RIP: "); L::print_hex(regs[17]);
+    L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
     L::raw_write("  RFL: "); L::print_hex(regs[19]); L::raw_write("\n");
 
     uint64_t cr0 = read_cr0();
@@ -441,7 +451,8 @@ static void dump_regs(uint64_t* regs) {
     uint64_t cr4 = read_cr4();
 
     L::raw_write("  CR0: "); L::print_hex(cr0); L::raw_write("\n");
-    L::raw_write("  CR2: "); L::print_hex(cr2); L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
+    L::raw_write("  CR2: "); L::print_hex(cr2);
+    L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
     L::raw_write("  CR4: "); L::print_hex(cr4); L::raw_write("\n");
 
     L::raw_write("  Stack trace:\n");

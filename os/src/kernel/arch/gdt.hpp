@@ -45,6 +45,8 @@ struct TSS {
 /// @brief Manages the Global Descriptor Table and TSS.
 class GDT {
 public:
+    GDT() = default;
+
     /// @brief Initialises the GDT entries (code, data, user, TSS).
     static void init();
     /// @brief Loads the GDT using the LGDT instruction.

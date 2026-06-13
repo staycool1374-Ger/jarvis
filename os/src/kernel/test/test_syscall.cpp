@@ -37,7 +37,8 @@ JARVIS_TEST(syscall_alarm_basic) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 1, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 1, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(cur->alarm_armed);
@@ -56,7 +57,8 @@ JARVIS_TEST(syscall_alarm_basic) {
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_gettod) {
     Timeval tv{};
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETTOD), reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETTOD),
+    reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(tv.tv_sec > static_cast<int64_t>(1577836800ULL));
@@ -72,7 +74,8 @@ JARVIS_TEST(syscall_gettod) {
 // Depends: kernel::Syscall, string
 JARVIS_TEST(syscall_uname) {
     Utsname uts{};
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::UNAME), reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::UNAME),
+    reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(strlen(uts.sysname) > 0);
@@ -114,7 +117,8 @@ JARVIS_TEST(syscall_alarm_subsecond) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 500000, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 500000, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(cur->alarm_armed);
@@ -133,7 +137,8 @@ JARVIS_TEST(syscall_alarm_subsecond) {
 // Expect: Return value equals Scheduler::current_task()->id.
 // Depends: kernel::Syscall, kernel::Scheduler
 JARVIS_TEST(syscall_dispatch_getpid) {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0,
+    nullptr);
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT_EQ(cur->id, ret);
@@ -146,10 +151,12 @@ JARVIS_TEST(syscall_dispatch_getpid) {
 // Expect: All three return static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
 
-    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL) + 1, 0, 0, 0, 0, nullptr);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL) + 1, 0, 0, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
 
     ret = Syscall::handle(9999, 0, 0, 0, 0, nullptr);
@@ -163,7 +170,8 @@ JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
 // Expect: Return value is non-zero or any value (assert only checks it doesn't crash).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_get_ticks) {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0,
+    nullptr);
     JARVIS_ASSERT(ret > 0 || true);
     JARVIS_TEST_PASS();
 }
@@ -174,7 +182,8 @@ JARVIS_TEST(syscall_dispatch_get_ticks) {
 // Expect: Returns 0.
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_yield) {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::YIELD), 0, 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::YIELD), 0, 0, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
     JARVIS_TEST_PASS();
 }
@@ -196,7 +205,8 @@ JARVIS_TEST(syscall_dispatch_exit_returns_zero) {
 // Expect: Returns 0.
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_print_noop) {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PRINT), 0, 0, 0, 0, nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PRINT), 0, 0, 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
     JARVIS_TEST_PASS();
 }
@@ -363,7 +373,8 @@ JARVIS_TEST(syscall_signal_sigreturn) {
     Scheduler::set_current(test_task);
 
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::SIGNAL),
-                                   1, reinterpret_cast<uint64_t>(test_signal_handler), 0, 0, nullptr);
+                                   1, reinterpret_cast<uint64_t>(test_signal_handler), 0, 0,
+    nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
     JARVIS_ASSERT(test_task->get_signal_handler(1) == test_signal_handler);
 
