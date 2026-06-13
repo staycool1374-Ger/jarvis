@@ -22,15 +22,17 @@ void VMM::init() {
 
     // Zero PDPT_IDENTITY[1-511]
     {
-        auto* pdpt_ident = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[0
-            ] & ~0xFFFULL));
+        uint64_t pdpt_phys = pml4[0] & ~0xFFFULL;
+        auto* pdpt_ident = reinterpret_cast<uint64_t*>(
+            arch::HHDM_OFFSET + pdpt_phys);
         for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) pdpt_ident[i] = 0;
     }
 
     // Zero PDPT_HIGHER[1-511]
     {
-        auto* pdpt_higher = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[256
-            ] & ~0xFFFULL));
+        uint64_t pdpt_phys = pml4[256] & ~0xFFFULL;
+        auto* pdpt_higher = reinterpret_cast<uint64_t*>(
+            arch::HHDM_OFFSET + pdpt_phys);
         for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) pdpt_higher[i] = 0;
     }
 

@@ -124,12 +124,14 @@ struct TaskControlBlock {
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
     uint64_t page_table_;
-    /// @brief If true, this task shares the parent's user page tables (fork).
-    ///        free_user_pages() is skipped on cleanup/exec to avoid double-free.
+    /// @brief If true, this task shares the parent's user page tables
+    /// (fork). free_user_pages() is skipped on cleanup/exec to avoid
+    /// double-free.
     bool page_table_shared_;
-    /// @brief Physical address of the private PDPT page allocated in clone() for the
-    ///        user stack region.  Zero when not applicable.  Used by cleanup() to free
-    ///        the private PDPT and its child PD/PT pages that would otherwise leak.
+    /// @brief Physical address of the private PDPT page allocated in
+    /// clone() for the user stack region. Zero when not applicable.
+    /// Used by cleanup() to free the private PDPT and its child PD/PT
+    /// pages that would otherwise leak.
     uint64_t stack_pdpt_phys_;
     uint64_t user_stack_;
     uint64_t user_stack_size_;
@@ -155,20 +157,25 @@ struct TaskControlBlock {
     /// @brief True if alarm is armed.
     bool alarm_armed;
 
-    /// @brief Pointer to the task's message queue (allocated and owned by IPC layer).
+    /// @brief Pointer to the task's message queue (allocated and
+    /// owned by IPC layer).
     MessageQueue* msg_queue;
 
-    /// @brief Per-task notification object (allocated in init_task_common).
+    /// @brief Per-task notification object (allocated in
+    /// init_task_common).
     sync::Notify* notify;
 
-    /// @brief Per-task event-group object (allocated in init_task_common).
+    /// @brief Per-task event-group object (allocated in
+    /// init_task_common).
     sync::EventGroup* event_group;
 
-    /// @brief Head of doubly-linked list of buffer handles owned by this task.
-    ///        -1 means the list is empty. Used by the BufferPool for zero-copy IPC.
+    /// @brief Head of doubly-linked list of buffer handles owned by
+    /// this task. -1 means the list is empty. Used by the BufferPool
+    /// for zero-copy IPC.
     int32_t buf_list_head;
 
-    /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
+    /// @brief Linked-list pointers for the blocked-sender chain
+    /// (singly linked via next).
     TaskControlBlock* blocked_next;
     TaskControlBlock* blocked_prev;
 
@@ -195,22 +202,27 @@ struct TaskControlBlock {
         return (sig < MAX_SIGNAL_HANDLERS) ? signal_handlers[sig] : nullptr;
     }
 
-    /// @brief Creates a new kernel task with the given entry and scheduling parameters.
+    /// @brief Creates a new kernel task with the given entry and
+    /// scheduling parameters.
     static TaskControlBlock* create(
         void (*entry)(),
         uint64_t priority,
         uint64_t period_ticks);
 
-    /// @brief Creates a new user task running in ring 3 with its own page table.
+    /// @brief Creates a new user task running in ring 3 with its own
+    /// page table.
     static TaskControlBlock* create_user(
         void (*entry)(),
         uint64_t priority,
         uint64_t period_ticks,
         size_t user_stack_size = 32_KiB);
 
-    /// @brief Clones the current task — creates a child with copied context.
-    /// @param regs Register save area from the interrupt (to copy RIP/RSP/regs).
-    /// @return Pointer to the new child TaskControlBlock, or nullptr on failure.
+    /// @brief Clones the current task — creates a child with copied
+    /// context.
+    /// @param regs Register save area from the interrupt (to copy
+    /// RIP/RSP/regs).
+    /// @return Pointer to the new child TaskControlBlock, or nullptr
+    /// on failure.
     static TaskControlBlock* clone(uint64_t* regs);
 
     void save_context(uint64_t& rsp) noexcept;

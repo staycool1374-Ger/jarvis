@@ -20,15 +20,20 @@ extern "C" {
 
 namespace arch {
 
-inline uint64_t read_cr0() { uint64_t value; asm volatile("mov %%cr0, %0" : "=r"(value)
+inline uint64_t read_cr0(
+    ) { uint64_t value; asm volatile("mov %%cr0, %0" : "=r"(value)
     ); return value; }
-inline uint64_t read_cr2() { uint64_t value; asm volatile("mov %%cr2, %0" : "=r"(value)
+inline uint64_t read_cr2(
+    ) { uint64_t value; asm volatile("mov %%cr2, %0" : "=r"(value)
     ); return value; }
-inline uint64_t read_cr3() { uint64_t value; asm volatile("mov %%cr3, %0" : "=r"(value)
+inline uint64_t read_cr3(
+    ) { uint64_t value; asm volatile("mov %%cr3, %0" : "=r"(value)
     ); return value; }
-inline uint64_t read_cr4() { uint64_t value; asm volatile("mov %%cr4, %0" : "=r"(value)
+inline uint64_t read_cr4(
+    ) { uint64_t value; asm volatile("mov %%cr4, %0" : "=r"(value)
     ); return value; }
-inline void write_cr3(uint64_t value) { asm volatile("mov %0, %%cr3" : : "r"(value)
+inline void write_cr3(uint64_t value
+    ) { asm volatile("mov %0, %%cr3" : : "r"(value)
     : "memory"); }
 
 /// @brief Writes a byte to an I/O port.

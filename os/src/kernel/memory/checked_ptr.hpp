@@ -72,7 +72,8 @@ static inline CheckedPtr<T> checked(T* user_ptr, uint64_t count = 1) {
     return CheckedPtr<T>(user_ptr, count);
 }
 
-static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096) {
+static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096
+    ) {
     uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
     if (addr >= USER_SPACE_LIMIT || addr == 0) return false;
     uint64_t end = addr + max_len - 1;

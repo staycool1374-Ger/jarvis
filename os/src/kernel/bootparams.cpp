@@ -19,7 +19,8 @@ BootParams& BootParams::instance() { return g_boot_params; }
 
 static uint64_t parse_uint(const char*& s) {
     uint64_t value = 0;
-    while (*s >= '0' && *s <= '9') { value = value * 10 + static_cast<uint64_t>(*s - '0'
+    while (*s >= '0' && *s <= '9'
+        ) { value = value * 10 + static_cast<uint64_t>(*s - '0'
         ); ++s; }
     return value;
 }

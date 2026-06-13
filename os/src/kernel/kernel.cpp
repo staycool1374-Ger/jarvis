@@ -65,7 +65,10 @@ uint64_t volatile scheduler_next_task_id = 0;
 extern "C" void debug_write_hex(uint64_t value) {
     char hb[17] = "0000000000000000";
     int pos = 16;
-    do { hb[--pos] = "0123456789ABCDEF"[value & 0xF]; value >>= 4; } while (value);
+    do {
+        hb[--pos] = "0123456789ABCDEF"[value & 0xF];
+        value >>= 4;
+    } while (value);
     debug_write(hb + pos);
 }
 
@@ -435,24 +438,34 @@ static void dump_regs(uint64_t* regs) {
     using L = kernel::Logger;
 
     L::raw_write("  RAX: "); L::print_hex(regs[0]);
-    L::raw_write("  RBX: "); L::print_hex(regs[1]); L::raw_write("\n");
+    L::raw_write("  RBX: "); L::print_hex(regs[1]);
+    L::raw_write("\n");
     L::raw_write("  RCX: "); L::print_hex(regs[2]);
-    L::raw_write("  RDI: "); L::print_hex(regs[5]); L::raw_write("\n");
+    L::raw_write("  RDI: "); L::print_hex(regs[5]);
+    L::raw_write("\n");
     L::raw_write("  RDX: "); L::print_hex(regs[3]);
-    L::raw_write("  RSI: "); L::print_hex(regs[4]); L::raw_write("\n");
+    L::raw_write("  RSI: "); L::print_hex(regs[4]);
+    L::raw_write("\n");
     L::raw_write("  RBP: "); L::print_hex(regs[6]);
-    L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs)); L::raw_write("\n");
+    L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs));
+    L::raw_write("\n");
     L::raw_write("  R8:  "); L::print_hex(regs[7]);
-    L::raw_write("  R9:  "); L::print_hex(regs[8]); L::raw_write("\n");
+    L::raw_write("  R9:  "); L::print_hex(regs[8]);
+    L::raw_write("\n");
     L::raw_write("  R10: "); L::print_hex(regs[9]);
-    L::raw_write("  R11: "); L::print_hex(regs[10]); L::raw_write("\n");
+    L::raw_write("  R11: "); L::print_hex(regs[10]);
+    L::raw_write("\n");
     L::raw_write("  R12: "); L::print_hex(regs[11]);
-    L::raw_write("  R13: "); L::print_hex(regs[12]); L::raw_write("\n");
+    L::raw_write("  R13: "); L::print_hex(regs[12]);
+    L::raw_write("\n");
     L::raw_write("  R14: "); L::print_hex(regs[13]);
-    L::raw_write("  R15: "); L::print_hex(regs[14]); L::raw_write("\n");
+    L::raw_write("  R15: "); L::print_hex(regs[14]);
+    L::raw_write("\n");
     L::raw_write("  RIP: "); L::print_hex(regs[17]);
-    L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
-    L::raw_write("  RFL: "); L::print_hex(regs[19]); L::raw_write("\n");
+    L::raw_write("  CS:  "); L::print_hex(regs[18]);
+    L::raw_write("\n");
+    L::raw_write("  RFL: "); L::print_hex(regs[19]);
+    L::raw_write("\n");
 
     uint64_t cr0 = read_cr0();
     uint64_t cr2 = read_cr2();
@@ -500,23 +513,24 @@ static const char* exception_name(uint64_t vector) {
 }
 
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
-    uint64_t arg1,
-                                    uint64_t arg2, uint64_t arg3, uint64_t* regs
-                                        );
+                                    uint64_t arg1, uint64_t arg2,
+                                    uint64_t arg3, uint64_t* regs);
 
 /// @brief Delivers a signal to a user task by setting up a signal frame on the user stack.
 ///        Modifies regs to return to the user's registered signal handler (or terminates
 ///        the task if no handler is registered and the default action is to terminate).
 /// @return true if signal was delivered (handler will run), false if task was terminated.
-static bool deliver_signal_to_user(kernel::TaskControlBlock* task, uint64_t sig,
-                                   uint64_t vector, uint64_t error_code,
-                                   uint64_t rip, uint64_t* regs)
+static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
+                                   uint64_t sig, uint64_t vector,
+                                   uint64_t error_code, uint64_t rip,
+                                   uint64_t* regs)
 {
     if (!task || !regs) return false;
 
     // SIGKILL is always fatal — cannot be caught or ignored
     if (kernel::signal_is_fatal(sig)) {
-        kernel::Logger::error("Task %x: SIGKILL (fatal, no handler allowed)", task->id);
+        kernel::Logger::error("Task %x: SIGKILL (fatal, no handler "
+                              "allowed)", task->id);
         task->state = kernel::TaskState::TERMINATED;
         task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
         return false;
@@ -525,7 +539,8 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task, uint64_t sig,
     // If the task has a registered handler, invoke it
     if (task->has_signal_handler(sig)) {
         kernel::Logger::info("Task %x: delivering signal %x to handler at %x",
-            task->id, sig, reinterpret_cast<uint64_t>(task->get_signal_handler(sig)));
+            task->id, sig,
+                reinterpret_cast<uint64_t>(task->get_signal_handler(sig)));
 
         uint64_t user_rsp = regs[20];  // current user RSP
         // Align stack: push SignalFrame
@@ -535,11 +550,16 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task, uint64_t sig,
         // RSP is 8 mod 16 (because call pushes return addr)
         user_rsp &= ~0xFULL;
 
+        uint64_t frame_phys = kernel::VMM::virt_to_phys_in_pml4(
+            user_rsp, task->page_table_);
         auto* frame = reinterpret_cast<kernel::SignalFrame*>(
-            arch::HHDM_OFFSET + kernel::VMM::virt_to_phys_in_pml4(user_rsp, task->page_table_));
+            arch::HHDM_OFFSET + frame_phys);
         if (!frame) {
-            // If we cannot write the signal frame (bad stack), terminate
-            kernel::Logger::error("Task %x: cannot write signal frame, terminating", task->id);
+            // If we cannot write the signal frame (bad stack),
+            // terminate
+            kernel::Logger::error("Task %x: cannot write signal frame, "
+                                  "terminating",
+                                  task->id);
             task->state = kernel::TaskState::TERMINATED;
             task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
             return false;
@@ -556,9 +576,9 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task, uint64_t sig,
         };
 
         // Modify return context to go to the signal handler
-        regs[5] = sig;                   // RDI = signal number (first argument)
-        regs[17] = reinterpret_cast<uint64_t>(task->get_signal_handler(sig)
-            );  // RIP = handler
+        regs[5] = sig;                   // RDI = signal number
+        regs[17] = reinterpret_cast<uint64_t>(
+            task->get_signal_handler(sig));  // RIP = handler
         regs[20] = user_rsp;             // RSP = adjusted user stack
         // Clear direction flag and RF
         regs[19] = arch::RFLAGS_DEFAULT; // RFLAGS with IF set
@@ -569,13 +589,15 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task, uint64_t sig,
     // No handler registered — check default action
     auto action = kernel::default_signal_action(sig);
     if (action == kernel::SignalAction::IGNORE) {
-        kernel::Logger::warn("Task %x: signal %x ignored (default)", task->id, sig);
+        kernel::Logger::warn("Task %x: signal %x ignored (default)",
+                             task->id, sig);
         return true;  // ignored, resume execution
     }
 
     // Default is to terminate
-    kernel::Logger::error("Task %x: unhandled signal %x vector=%x rip=%x err=%x",
-        task->id, sig, vector, rip, error_code);
+    kernel::Logger::error("Task %x: unhandled signal %x "
+                          "vector=%x rip=%x err=%x",
+                          task->id, sig, vector, rip, error_code);
     if (vector == 14) {
         uint64_t cr2_val = read_cr2();
         kernel::Logger::error("  CR2=%x", cr2_val);
@@ -607,8 +629,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 
             auto mapping = kernel::exception_to_signal(vector);
             uint64_t sig = static_cast<uint64_t>(mapping.signal);
-            kernel::Logger::warn("Task %x: exception vector=%x (%s) → signal %x",
-                t->id, vector, mapping.name, sig);
+            kernel::Logger::warn("Task %x: exception vector=%x (%s) "
+                                 "→ signal %x",
+                                 t->id, vector, mapping.name, sig);
 
             if (vector == 14) {
                 kernel::Logger::error("  CR2=%x", read_cr2());
@@ -650,8 +673,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         if (task && task->pending_signals && task->page_table_ != 0) {
             // Find the highest-priority pending signal
             uint64_t sig = __builtin_ctzll(task->pending_signals);
-            if (sig < 32) {
-                kernel::Logger::debug("Task %x: pending signal %x after syscall", task->id, sig);
+             if (sig < 32) {
+                 kernel::Logger::debug("Task %x: pending signal %x "
+                                       "after syscall", task->id, sig);
                 deliver_signal_to_user(task, sig, 0, 0, regs[17], regs);
                 task->pending_signals &= ~(1ULL << sig);
             }

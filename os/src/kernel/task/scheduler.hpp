@@ -41,7 +41,8 @@ public:
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
 
-    /// @brief Forces a reschedule — selects the next task and sets up context switch.
+    /// @brief Forces a reschedule — selects the next task and sets
+    /// up context switch.
     static void reschedule() noexcept;
 
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).

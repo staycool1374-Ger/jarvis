@@ -109,7 +109,7 @@ class NamingChecker(Checker):
 
     # Types: PascalCase
     _struct_class_enum = re.compile(
-        r"^\s*(struct|class|enum)\s+(\w+)", re.MULTILINE
+        r"^\s*(struct|class|enum(?:\s+class)?)\s+(\w+)", re.MULTILINE
     )
     _pascal = re.compile(r"^[A-Z][a-zA-Z0-9]*$")
 
@@ -143,20 +143,32 @@ class NamingChecker(Checker):
             kw, name = m.group(1), m.group(2)
             if kw == "enum" and name.endswith("Error"):
                 continue  # error enums use SCREAMING_SNAKE values
+            if name in ("tm",):
+                continue  # standard C library type
             if not self._pascal.match(name):
                 self.add(rel_path, get_line(text, m.start(2)),
                          f"Type '{name}' should be PascalCase")
+
+        type_names = set()
+        for m in self._struct_class_enum.finditer(text):
+            type_names.add(m.group(2))
 
         for m in self._func_def.finditer(text):
             line_num = get_line(text, m.start(1))
             line_text = lines[line_num - 1] if line_num <= len(lines) else ""
             if self._comment_line.match(line_text):
                 continue
+            # Skip matches inside string literals
+            before = text[:m.start(1)]
+            if before.count('"') % 2 == 1:
+                continue
             name = m.group(1)
             if name.startswith("operator") or name.startswith("~"):
                 continue
             if self._macro_func.match(name) or name == "main":
                 continue
+            if name in type_names:
+                continue  # constructors have class name
             if not self._snake.match(name):
                 self.add(rel_path, line_num,
                          f"Function '{name}' should be snake_case")
@@ -242,7 +254,7 @@ class MemoryChecker(Checker):
             if "free" in snippet and ("::free" in line_text or "FdTable" in line_text):
                 continue
             # Skip function/method declarations of free/malloc
-            if "free(" in snippet and (line_text.endswith("{") or line_text.endswith(");")):
+            if "free(" in snippet and (line_text.endswith("{") or line_text.endswith(");") or line_text.endswith(",")):
                 continue
             # Skip constructor initializer lists (member initialization like : data(nullptr))
             if "free" in snippet and re.search(r":\s*\w+\s*\(", line_text):

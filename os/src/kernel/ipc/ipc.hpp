@@ -44,7 +44,8 @@ struct MessageQueue {
     bool is_empty() const { return count == 0; }
     bool is_full() const  { return count >= IPC_MAX_QUEUE_MSG; }
 
-    /// @brief Returns the highest priority with messages, or IPC_PRIORITY_LEVELS if empty.
+    /// @brief Returns the highest priority with messages, or
+    /// IPC_PRIORITY_LEVELS if empty.
     size_t highest_priority() const;
 };
 
@@ -65,10 +66,12 @@ public:
     /// @brief Returns the message queue for a given task ID.
     static MessageQueue& queue(uint64_t task_id);
 
-    /// @brief Blocks the current task on a full queue (may boost owner priority).
+    /// @brief Blocks the current task on a full queue
+    /// (may boost owner priority).
     static bool block_sender(MessageQueue& q, TaskControlBlock& task);
 
-    /// @brief Wakes the oldest blocked sender and restores owner priority.
+    /// @brief Wakes the oldest blocked sender and
+    /// restores owner priority.
     static void wake_sender(MessageQueue& q, TaskControlBlock& receiver);
 };
 
