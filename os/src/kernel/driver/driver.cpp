@@ -2,6 +2,7 @@
 /// @brief Implementation of the driver registry.
 
 #include <kernel/driver/driver.hpp>
+#include <kernel/memory/mempool.hpp>
 
 namespace kernel {
 
@@ -20,7 +21,9 @@ void DriverRegistry::register_driver(
     uint32_t irq_line)
 {
     if (count_ >= MAX_DRIVERS) return;
-    auto* drv = new Driver{name, description, init, exit, DriverState::UNLOADED, irq_line};
+    auto* drv = static_cast<Driver*>(MemPool::alloc(sizeof(Driver)));
+    if (drv) { *drv = {name, description, init, exit, DriverState::UNLOADED,
+        irq_line}; }
     drivers_[count_++] = drv;
 }
 

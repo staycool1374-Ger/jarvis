@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies all 256 IDT entries have non-null handler addresses after init.
+// Testidea: Verifies all 256 IDT entries have non-null handler addresses
+// after init.
 // Input: Initialize IDT
 // Expect: All 256 entries point to valid handlers (no null pointers)
 // Depends: kernel::arch::IDT
@@ -40,7 +41,8 @@ JARVIS_TEST(idt_syscall_handler_installed) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies double fault handler uses TSS IST stack (not kernel stack).
+// Testidea: Verifies double fault handler uses TSS IST stack (not kernel
+// stack).
 // Input: Initialize IDT, inspect double fault entry (vector 8)
 // Expect: IST index set to valid IST stack
 // Depends: kernel::arch::IDT, TSS
@@ -49,7 +51,8 @@ JARVIS_TEST(idt_double_fault_uses_ist) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies vectors 0x30-0x7F are not set (or point to spurious handler).
+// Testidea: Verifies vectors 0x30-0x7F are not set (or point to spurious
+// handler).
 // Input: Initialize IDT, inspect reserved vectors
 // Expect: Vectors 0x30-0x7F are null or spurious handler
 // Depends: kernel::arch::IDT

@@ -15,8 +15,8 @@ Vnode* get_root_vnode() {
     return root_vnode_global;
 }
 
-void set_root_vnode(Vnode* vn) {
-    root_vnode_global = vn;
+void set_root_vnode(Vnode& vnode) {
+    root_vnode_global = &vnode;
 }
 
 int FdTable::alloc() {
@@ -29,33 +29,37 @@ int FdTable::alloc() {
             return static_cast<int>(i);
         }
     }
-    return -1;
+    return VFS_INVALID;
 }
 
-void FdTable::free(int fd) {
-    if (fd < 0 || static_cast<size_t>(fd) >= MAX_FDS) return;
-    if (fds[fd].used && fds[fd].vnode) {
-        if (fds[fd].vnode->refcount > 0) {
-            --fds[fd].vnode->refcount;
-            if (fds[fd].vnode->refcount == 0) {
-                if (fds[fd].vnode->ops->close)
-                    fds[fd].vnode->ops->close(fds[fd].vnode);
+void FdTable::free(int file_descriptor) {
+    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
+        ) return;
+    if (fds[file_descriptor].used && fds[file_descriptor].vnode) {
+        if (fds[file_descriptor].vnode->refcount > 0) {
+            --fds[file_descriptor].vnode->refcount;
+            if (fds[file_descriptor].vnode->refcount == 0) {
+                if (fds[file_descriptor].vnode->ops->close)
+                    fds[file_descriptor].vnode->ops->close(*fds[file_descriptor
+                        ].vnode);
             }
         } else {
-            if (fds[fd].vnode->ops->close)
-                fds[fd].vnode->ops->close(fds[fd].vnode);
+            if (fds[file_descriptor].vnode->ops->close)
+                fds[file_descriptor].vnode->ops->close(*fds[file_descriptor
+                    ].vnode);
         }
     }
-    fds[fd].used = false;
-    fds[fd].vnode = nullptr;
-    fds[fd].offset = 0;
-    fds[fd].flags = 0;
+    fds[file_descriptor].used = false;
+    fds[file_descriptor].vnode = nullptr;
+    fds[file_descriptor].offset = 0;
+    fds[file_descriptor].flags = 0;
 }
 
-FileDescription* FdTable::get(int fd) {
-    if (fd < 0 || static_cast<size_t>(fd) >= MAX_FDS) return nullptr;
-    if (!fds[fd].used) return nullptr;
-    return &fds[fd];
+FileDescription* FdTable::get(int file_descriptor) {
+    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
+        ) return nullptr;
+    if (!fds[file_descriptor].used) return nullptr;
+    return &fds[file_descriptor];
 }
 
 Vnode* resolve(const char* path) {
@@ -88,7 +92,8 @@ Vnode* resolve(const char* path) {
         search = path + best_len;
         while (*search == '/') ++search;
     } else {
-        current = (task && task->cwd_vnode) ? task->cwd_vnode : root_vnode_global;
+        current = (task && task->cwd_vnode) ? task->cwd_vnode :
+            root_vnode_global;
     }
 
     if (!current) return nullptr;
@@ -114,7 +119,8 @@ Vnode* resolve(const char* path) {
             continue;
         }
 
-        Vnode* child = current->ops ? current->ops->lookup(current, comp) : nullptr;
+        Vnode* child = current->ops ? current->ops->lookup(*current, comp) :
+            nullptr;
         if (!child) return nullptr;
         current = child;
     }
@@ -122,14 +128,14 @@ Vnode* resolve(const char* path) {
     return current;
 }
 
-int mount(Filesystem* fs, const char* mount_point) {
-    if (!fs || !fs->get_root || mount_count >= MAX_MOUNTS) return -1;
+int mount(Filesystem& filesystem, const char* mount_point) {
+    if (!filesystem.get_root || mount_count >= MAX_MOUNTS) return VFS_INVALID;
 
-    Vnode* root = fs->get_root();
-    if (!root) return -1;
+    Vnode* root = filesystem.get_root();
+    if (!root) return VFS_INVALID;
 
     mount_table[mount_count].mount_point = mount_point;
-    mount_table[mount_count].fs = fs;
+    mount_table[mount_count].fs = &filesystem;
     mount_table[mount_count].root_vnode = root;
     mount_table[mount_count].used = true;
     ++mount_count;

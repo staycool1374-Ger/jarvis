@@ -6,7 +6,8 @@ using namespace kernel;
 // Runmode: kernel
 // Testidea: Verifies SYS_HEALTH_STATUS syscall returns system health metrics.
 // Input: Call SYS_HEALTH_STATUS with valid buffer
-// Expect: Returns health metrics struct with deadlock_count, recovered_count, watchdog_firings
+// Expect: Returns health metrics struct with deadlock_count,
+// recovered_count, watchdog_firings
 // Depends: SYS_HEALTH_STATUS syscall implementation
 JARVIS_TEST(health_syscall_returns_metrics) {
     JARVIS_TEST_PASS();

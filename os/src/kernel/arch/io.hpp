@@ -6,25 +6,54 @@
 #include <types.hpp>
 
 extern "C" {
+    /// @brief Write a byte to an I/O port (assembly stub).
     void arch_outb(uint16_t port, uint8_t val);
+    /// @brief Read a byte from an I/O port (assembly stub).
     uint8_t arch_inb(uint16_t port);
+    /// @brief Write a 16-bit word to an I/O port (assembly stub).
     void arch_outw(uint16_t port, uint16_t val);
+    /// @brief Read a 16-bit word from an I/O port (assembly stub).
     uint16_t arch_inw(uint16_t port);
+    /// @brief Write a 32-bit dword to an I/O port (assembly stub).
     void arch_outl(uint16_t port, uint32_t val);
+    /// @brief Read a 32-bit dword from an I/O port (assembly stub).
     uint32_t arch_inl(uint16_t port);
+    /// @brief HLT instruction (assembly stub).
     void arch_hlt();
+    /// @brief PAUSE instruction (assembly stub).
     void arch_pause();
+    /// @brief Clear interrupt flag, disable interrupts (assembly stub).
     void arch_cli();
+    /// @brief Set interrupt flag, enable interrupts (assembly stub).
     void arch_sti();
 }
 
 namespace arch {
 
-inline uint64_t read_cr0() { uint64_t v; asm volatile("mov %%cr0, %0" : "=r"(v)); return v; }
-inline uint64_t read_cr2() { uint64_t v; asm volatile("mov %%cr2, %0" : "=r"(v)); return v; }
-inline uint64_t read_cr3() { uint64_t v; asm volatile("mov %%cr3, %0" : "=r"(v)); return v; }
-inline uint64_t read_cr4() { uint64_t v; asm volatile("mov %%cr4, %0" : "=r"(v)); return v; }
-inline void write_cr3(uint64_t v) { asm volatile("mov %0, %%cr3" : : "r"(v) : "memory"); }
+/// @brief Read Control Register 0.
+/// @return Current value of CR0.
+inline uint64_t read_cr0(
+    ) { uint64_t value; asm volatile("mov %%cr0, %0" : "=r"(value)
+    ); return value; }
+/// @brief Read Control Register 2 (page fault linear address).
+/// @return Current value of CR2.
+inline uint64_t read_cr2(
+    ) { uint64_t value; asm volatile("mov %%cr2, %0" : "=r"(value)
+    ); return value; }
+/// @brief Read Control Register 3 (page table base).
+/// @return Current value of CR3.
+inline uint64_t read_cr3(
+    ) { uint64_t value; asm volatile("mov %%cr3, %0" : "=r"(value)
+    ); return value; }
+/// @brief Read Control Register 4.
+/// @return Current value of CR4.
+inline uint64_t read_cr4(
+    ) { uint64_t value; asm volatile("mov %%cr4, %0" : "=r"(value)
+    ); return value; }
+/// @brief Write Control Register 3 (switch page table).
+inline void write_cr3(uint64_t value
+    ) { asm volatile("mov %0, %%cr3" : : "r"(value)
+    : "memory"); }
 
 /// @brief Writes a byte to an I/O port.
 inline void outb(uint16_t port, uint8_t val) { arch_outb(port, val); }
@@ -65,9 +94,9 @@ inline void sti() { arch_sti(); }
 /// @brief Reads the timestamp counter (RDTSC).
 /// @return 64-bit TSC value.
 inline uint64_t rdtsc() {
-    uint32_t lo, hi;
-    asm volatile("rdtsc" : "=a"(lo), "=d"(hi));
-    return (static_cast<uint64_t>(hi) << 32) | lo;
+    uint32_t tsc_low, tsc_high;
+    asm volatile("rdtsc" : "=a"(tsc_low), "=d"(tsc_high));
+    return (static_cast<uint64_t>(tsc_high) << 32) | tsc_low;
 }
 
 } // namespace arch

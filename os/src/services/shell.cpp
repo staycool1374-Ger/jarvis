@@ -128,7 +128,8 @@ void Shell::execute(const char* cmd) {
 }
 
 static void debug_putchar(char c) {
-    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, '\r'); }
+    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1,
+    '\r'); }
     do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, c);
 }
 static void debug_write(const char* s) { while (*s) debug_putchar(*s++); }
@@ -436,7 +437,7 @@ void Shell::cmd_run(int argc, const char** argv) {
             background_task_wrapper, 1, 100);
         if (task) task->user_data = reinterpret_cast<void*>(prog->entry);
         if (task) {
-            kernel::Scheduler::add_task(task);
+            kernel::Scheduler::add_task(*task);
             Terminal::write("Task #");
             char buf[16];
             int pos = 0;
@@ -551,7 +552,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
         return;
     }
 
-    kernel::Scheduler::add_task(task);
+    kernel::Scheduler::add_task(*task);
 
     Terminal::set_fg(0x00FF00);
     Terminal::write("Started task #");

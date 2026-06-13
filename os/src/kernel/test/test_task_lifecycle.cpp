@@ -13,10 +13,14 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies that task cleanup nullifies msg_queue, notify, event_group, and kernel_stack after termination.
-// Input: Create a kernel task via TaskControlBlock::create, set state to TERMINATED, call cleanup().
-// Expect: All four pointers are null after cleanup; no double-free or use-after-free.
-// Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue, kernel::sync::Notify, kernel::sync::EventGroup
+// Testidea: Verifies that task cleanup nullifies msg_queue, notify,
+// event_group, and kernel_stack after termination.
+// Input: Create a kernel task via TaskControlBlock::create, set state to
+// TERMINATED, call cleanup().
+// Expect: All four pointers are null after cleanup; no double-free or
+// use-after-free.
+// Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue,
+// kernel::sync::Notify, kernel::sync::EventGroup
 JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
@@ -39,18 +43,21 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a terminating task wakes any tasks blocked on sending IPC to it.
-// Input: Create a receiver task, add to scheduler. Create a sender task that blocks on send to receiver.
+// Testidea: Verifies that a terminating task wakes any tasks blocked on
+// sending IPC to it.
+// Input: Create a receiver task, add to scheduler. Create a sender task that
+// blocks on send to receiver.
 //        Set receiver to TERMINATED and call cleanup.
-// Expect: Sender is woken up (state becomes READY) and removed from blocked list.
+// Expect: Sender is woken up (state becomes READY) and removed from blocked
+// list.
 JARVIS_TEST(task_exit_wakes_blocked_senders) {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     kernel::Message msg{};
     msg.sender_id = sender->id;
@@ -69,7 +76,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     }
 
     // Now send from sender - should block
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     (void)kernel::IPC::send(receiver->id, msg, 0);
     // IPC::send with blocking should not return if queue is full
     // The sender should be in blocked list
@@ -86,18 +93,22 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == nullptr);
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_tail == nullptr);
 
-    Scheduler::remove_task(sender);
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*sender);
+    Scheduler::remove_task(*receiver);
     delete sender;
     delete receiver;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that cleanup of a user-created task frees its page table, user stack, and stack physical address.
-// Input: Create a user task via TaskControlBlock::create_user (32 KiB stack), call cleanup().
-// Expect: page_table_, user_stack_, and stack_phys_ are all zeroed after cleanup.
-// Depends: kernel::task::TaskControlBlock, kernel::memory::PMM, kernel::memory::VMM
+// Testidea: Verifies that cleanup of a user-created task frees its page
+// table, user stack, and stack physical address.
+// Input: Create a user task via TaskControlBlock::create_user (32 KiB
+// stack), call cleanup().
+// Expect: page_table_, user_stack_, and stack_phys_ are all zeroed after
+// cleanup.
+// Depends: kernel::task::TaskControlBlock, kernel::memory::PMM,
+// kernel::memory::VMM
 JARVIS_TEST(task_exit_frees_page_tables_correctly) {
     auto* tcb = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     JARVIS_ASSERT(tcb != nullptr);
@@ -116,18 +127,21 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that reparenting a terminating task does not leak or corrupt its resources.
-// Input: Create parent, child (via clone). Set child to TERMINATED. Call reap_orphans.
-// Expect: Child is reparented to init task, child's resources are cleaned up, no leaks.
+// Testidea: Verifies that reparenting a terminating task does not leak or
+// corrupt its resources.
+// Input: Create parent, child (via clone). Set child to TERMINATED. Call
+// reap_orphans.
+// Expect: Child is reparented to init task, child's resources are cleaned
+// up, no leaks.
 JARVIS_TEST(task_reparent_preserves_resources) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     // Create a fake child by manually setting up hierarchy
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -147,22 +161,25 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     JARVIS_ASSERT(actual_init->num_children >= 1);
 
     // Cleanup
-    Scheduler::remove_task(child);
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*child);
+    Scheduler::remove_task(*parent);
     delete child;
     delete parent;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a terminated zombie task is findable via scheduler until cleanup+remove, then unreachable.
-// Input: Create a kernel task, add to scheduler, set TERMINATED, find_task, cleanup, remove_task, delete, find_task again.
-// Expect: find_task returns tcb before removal; returns nullptr after removal+delete.
+// Testidea: Verifies that a terminated zombie task is findable via scheduler
+// until cleanup+remove, then unreachable.
+// Input: Create a kernel task, add to scheduler, set TERMINATED, find_task,
+// cleanup, remove_task, delete, find_task again.
+// Expect: find_task returns tcb before removal; returns nullptr after
+// removal+delete.
 // Depends: kernel::task::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_zombie_state_cleanup) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
-    Scheduler::add_task(tcb);
+    Scheduler::add_task(*tcb);
 
     tcb->state = TaskState::TERMINATED;
     tcb->exit_code = 0;
@@ -170,7 +187,7 @@ JARVIS_TEST(task_zombie_state_cleanup) {
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb);
 
     tcb->cleanup();
-    Scheduler::remove_task(tcb);
+    Scheduler::remove_task(*tcb);
     delete tcb;
 
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == nullptr);
@@ -178,17 +195,20 @@ JARVIS_TEST(task_zombie_state_cleanup) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies the scheduler reaper respects parent wait status when collecting zombie children.
-// Input: Create parent and child. Parent calls waitpid (sets waiting_child_pid). Child exits.
-// Expect: Child is NOT reaped while parent is waiting; reaped after parent collects status.
+// Testidea: Verifies the scheduler reaper respects parent wait status when
+// collecting zombie children.
+// Input: Create parent and child. Parent calls waitpid (sets
+// waiting_child_pid). Child exits.
+// Expect: Child is NOT reaped while parent is waiting; reaped after parent
+// collects status.
 JARVIS_TEST(scheduler_reap_respects_parent_wait) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -216,15 +236,18 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
 
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     delete parent;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that ELF loading calls init_task_common for the loaded task.
-// Input: Load an ELF binary via elf::load, check that msg_queue, notify, event_group are initialized.
-// Expect: All three IPC objects are non-null after ELF load (init_task_common was called).
+// Testidea: Verifies that ELF loading calls init_task_common for the loaded
+// task.
+// Input: Load an ELF binary via elf::load, check that msg_queue, notify,
+// event_group are initialized.
+// Expect: All three IPC objects are non-null after ELF load
+// (init_task_common was called).
 JARVIS_TEST(elf_load_init_task_common_called) {
     // Find a test ELF in initrd
     initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
@@ -244,7 +267,8 @@ JARVIS_TEST(elf_load_init_task_common_called) {
     auto* tcb = kernel::elf::load(hdr, f.data);
     JARVIS_ASSERT(tcb != nullptr);
 
-    // init_task_common should have been called, so IPC objects should be initialized
+    // init_task_common should have been called, so IPC objects should be
+    // initialized
     JARVIS_ASSERT(tcb->msg_queue != nullptr);
     JARVIS_ASSERT(tcb->notify != nullptr);
     JARVIS_ASSERT(tcb->event_group != nullptr);
@@ -256,13 +280,15 @@ JARVIS_TEST(elf_load_init_task_common_called) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a terminated task with parent_id==0 (no parent, no waker) is reaped by reap_orphans.
-// Input: Create a kernel task, orphan it (parent_id=0), terminate, call reap_orphans().
+// Testidea: Verifies that a terminated task with parent_id==0 (no parent, no
+// waker) is reaped by reap_orphans.
+// Input: Create a kernel task, orphan it (parent_id=0), terminate, call
+// reap_orphans().
 // Expect: find_task returns nullptr after reap_orphans cleans it up.
 JARVIS_TEST(lifecycle_zombie_no_waker) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
-    Scheduler::add_task(tcb);
+    Scheduler::add_task(*tcb);
 
     uint64_t tid = tcb->id;
 
@@ -279,17 +305,19 @@ JARVIS_TEST(lifecycle_zombie_no_waker) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that cleanup() frees the msg_queue even when blocked senders were present (bug #016).
-// Create a receiver, fill its queue so a sender blocks. Terminate receiver and cleanup.
+// Testidea: Verifies that cleanup() frees the msg_queue even when blocked
+// senders were present (bug #016).
+// Create a receiver, fill its queue so a sender blocks. Terminate receiver
+// and cleanup.
 // Expect: receiver->msg_queue is nullptr after cleanup (no leak).
 JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     Message msg{};
     msg.sender_id = sender->id;
@@ -308,7 +336,7 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
     }
 
     // Send from sender — should block (receiver queue full)
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     (void)IPC::send(receiver->id, msg, 0);
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
 
@@ -319,10 +347,10 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
 
     JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
-    Scheduler::remove_task(sender);
+    Scheduler::remove_task(*sender);
     sender->cleanup();
     delete sender;
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*receiver);
     delete receiver;
     JARVIS_TEST_PASS();
 }
@@ -330,7 +358,8 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
 // Runmode: kernel
 // Testidea: Registers all task lifecycle test cases with the test framework.
 // Input: None.
-// Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for execution.
+// Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for
+// execution.
 // Depends: kernel::Logger, kernel::test framework
 void register_task_lifecycle_tests() {
     Logger::info("Registering task lifecycle tests");

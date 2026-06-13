@@ -9,7 +9,8 @@
 
 namespace kernel {
 
-uint64_t Syscall::sys_notify(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_notify(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     uint64_t target_id = arg0;
     uint64_t value = arg1;
     auto* t = Scheduler::find_task(target_id);
@@ -18,17 +19,20 @@ uint64_t Syscall::sys_notify(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, u
     return 0;
 }
 
-uint64_t Syscall::sys_notify_wait(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_notify_wait(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur || !cur->notify) return static_cast<uint64_t>(-1);
-    uint64_t val = cur->notify->wait();
+    uint64_t value = cur->notify->wait();
     auto val_ptr = checked(reinterpret_cast<uint64_t*>(arg0));
-    if (syscall_is_user_task() && !val_ptr.valid()) return static_cast<uint64_t>(-1);
-    val_ptr.write(val);
+    if (syscall_is_user_task() && !val_ptr.valid()
+        ) return static_cast<uint64_t>(-1);
+    val_ptr.write(value);
     return 0;
 }
 
-uint64_t Syscall::sys_event_set(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_event_set(uint64_t arg0, uint64_t arg1, uint64_t,
+    uint64_t, uint64_t*) {
     uint64_t target_id = arg0;
     uint64_t bits = arg1;
     auto* t = Scheduler::find_task(target_id);
@@ -37,7 +41,8 @@ uint64_t Syscall::sys_event_set(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
     return 0;
 }
 
-uint64_t Syscall::sys_event_wait(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_event_wait(uint64_t arg0, uint64_t arg1, uint64_t,
+    uint64_t, uint64_t*) {
     uint64_t wanted = arg0;
     uint64_t clear_on_exit = arg1;
     auto* cur = syscall_task();
@@ -46,7 +51,8 @@ uint64_t Syscall::sys_event_wait(uint64_t arg0, uint64_t arg1, uint64_t, uint64_
     return 0;
 }
 
-uint64_t Syscall::sys_alarm(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_alarm(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
 

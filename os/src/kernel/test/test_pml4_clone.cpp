@@ -121,7 +121,8 @@ JARVIS_TEST(pml4_clone_clears_user_entries) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies clone_kernel_pml4() copies kernel entries 256-511 matching the kernel PML4.
+// Testidea: Verifies clone_kernel_pml4() copies kernel entries 256-511
+// matching the kernel PML4.
 // Input: Call clone_kernel_pml4(), compare entries with kernel PML4
 // Expect: Kernel entries match exactly
 // Depends: kernel::memory::VMM
@@ -153,8 +154,10 @@ JARVIS_TEST(pml4_clone_kernel_entries_match) {
 }
 
 // Runmode: kernel
-// Testidea: Simulates fork PML4 setup: parent has user entries, child PML4 copies them.
-// Input: Create parent PML4 with user mapping, create child PML4 copying user entries
+// Testidea: Simulates fork PML4 setup: parent has user entries, child PML4
+// copies them.
+// Input: Create parent PML4 with user mapping, create child PML4 copying
+// user entries
 // Expect: Child's user entries match parent's, kernel entries match kernel PML4
 // Depends: kernel::memory::VMM, PMM
 JARVIS_TEST(pml4_fork_user_entries_match) {
@@ -188,7 +191,8 @@ JARVIS_TEST(pml4_fork_user_entries_match) {
     auto* pt_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pt);
     pt_v[pt_idx] = user_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
-    // Create child PML4 (fork-style: copy user entries from parent, kernel entries from kernel)
+    // Create child PML4 (fork-style: copy user entries from parent, kernel
+    // entries from kernel)
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
     auto* kern_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
 
@@ -229,7 +233,8 @@ JARVIS_TEST(pml4_fork_user_entries_match) {
 
     // Clean up: free the user data page, page table pages, PML4 pages
     // Note: parent and child share page table pages (pdpt, pd, pt).
-    // free_user_pages on either would skip them (kernel-owned), so we must free manually.
+    // free_user_pages on either would skip them (kernel-owned), so we must
+    // free manually.
     PMM::free_page(user_page);
     PMM::free_page(pt);
     PMM::free_page(pd);
@@ -301,7 +306,8 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies free_user_pages skips shared (kernel-owned) page table pages.
+// Testidea: Verifies free_user_pages skips shared (kernel-owned) page table
+// pages.
 // Input: Create shared PML4 hierarchy, call free_user_pages on child
 // Expect: Only user data pages freed, shared page table pages remain
 // Depends: kernel::memory::VMM, PMM
@@ -341,7 +347,8 @@ JARVIS_TEST(pml4_free_user_pages_shared_safe) {
     // corrupt the parent's mappings).
     VMM::free_user_pages(child_pml4);
 
-    // Page table pages remain allocated (kernel-owned, never freed by free_user_pages)
+    // Page table pages remain allocated (kernel-owned, never freed by
+    // free_user_pages)
     // The data page also remains because free_user_pages cannot reach it
     // through kernel-owned page tables.
     JARVIS_ASSERT(PMM::is_user_page(pdpt) == false);
@@ -366,8 +373,10 @@ JARVIS_TEST(pml4_free_user_pages_shared_safe) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies the full identity-map is absent from cloned PML4 (all 512 entries zero at PDPT level).
-// Input: Call clone_kernel_pml4(), use dbg_dump_pml4 to inspect, then verify no user-accessible entries exist
+// Testidea: Verifies the full identity-map is absent from cloned PML4 (all
+// 512 entries zero at PDPT level).
+// Input: Call clone_kernel_pml4(), use dbg_dump_pml4 to inspect, then verify
+// no user-accessible entries exist
 // Expect: No user-accessible entries in user range 0-255
 // Depends: kernel::memory::VMM
 JARVIS_TEST(pml4_dump_no_user_entries) {

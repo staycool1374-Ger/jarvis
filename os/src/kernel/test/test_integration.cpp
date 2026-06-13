@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Renders Mandelbrot to framebuffer, computes CRC32, asserts known-good hash.
+// Testidea: Renders Mandelbrot to framebuffer, computes CRC32, asserts
+// known-good hash.
 // Input: Run mandelbrot rendering, compute CRC32 of framebuffer
 // Expect: CRC32 matches expected hash
 // Depends: Framebuffer, mandelbrot demo

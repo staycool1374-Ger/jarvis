@@ -23,6 +23,11 @@ enum SeekWhence : int64_t {
     SEEK_END = 2,
 };
 
+enum class VfsSentinel : int64_t {
+    INVALID_FD = -4,
+};
+constexpr int64_t VFS_INVALID = static_cast<int64_t>(VfsSentinel::INVALID_FD);
+
 enum FileMode : uint16_t {
     S_IFREG  = 0x8000,
     S_IFDIR  = 0x4000,
@@ -41,15 +46,18 @@ struct Dirent {
 
 struct Vnode;
 struct VnodeOps {
-    int64_t (*read)(Vnode* self, uint8_t* buf, uint64_t count, uint64_t offset);
-    int64_t (*write)(Vnode* self, const uint8_t* buf, uint64_t count, uint64_t offset);
-    int     (*open)(Vnode* self, uint64_t flags);
-    void    (*close)(Vnode* self);
-    int64_t (*lseek)(Vnode* self, int64_t offset, int whence, uint64_t* out_pos);
-    int     (*fstat)(Vnode* self, VfsStat* st);
-    int     (*ioctl)(Vnode* self, uint64_t request, void* arg);
-    int     (*readdir)(Vnode* self, uint64_t* pos, Dirent* dent);
-    Vnode*  (*lookup)(Vnode* self, const char* name);
+    int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count,
+        uint64_t offset);
+    int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count,
+        uint64_t offset);
+    int     (*open)(Vnode& self, uint64_t flags);
+    void    (*close)(Vnode& self);
+    int64_t (*lseek)(Vnode& self, int64_t offset, int whence, uint64_t* out_pos
+        );
+    int     (*fstat)(Vnode& self, VfsStat& st);
+    int     (*ioctl)(Vnode& self, uint64_t request, void* arg);
+    int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);
+    Vnode*  (*lookup)(Vnode& self, const char* name);
 };
 
 struct Vnode {
@@ -58,7 +66,26 @@ struct Vnode {
     uint64_t size;
     uint16_t mode;
     void* private_data;
-    int refcount = 1;
+    uint64_t refcount;
+
+    Vnode()
+        : ops(nullptr)
+        , ino(0)
+        , size(0)
+        , mode(0)
+        , private_data(nullptr)
+        , refcount(0)
+        {}
+
+    Vnode(const VnodeOps* ops_, uint64_t ino_, uint64_t size_, uint16_t mode_,
+        void* private_data_)
+        : ops(ops_)
+        , ino(ino_)
+        , size(size_)
+        , mode(mode_)
+        , private_data(private_data_)
+        , refcount(0)
+        {}
 };
 
 struct FileDescription {
@@ -71,9 +98,14 @@ struct FileDescription {
 struct FdTable {
     FileDescription fds[MAX_FDS];
 
+    /// @brief Allocate a file descriptor entry.
+    /// @return The fd index, or VFS_INVALID if full.
     int alloc();
-    void free(int fd);
-    FileDescription* get(int fd);
+    /// @brief Release a file descriptor entry.
+    void free(int file_descriptor);
+    /// @brief Look up a file descriptor by index.
+    /// @return Pointer to the entry, or nullptr if invalid.
+    FileDescription* get(int file_descriptor);
 };
 
 struct Filesystem {
@@ -88,12 +120,21 @@ struct Mount {
     bool used;
 };
 
+/// @brief Resolve an absolute path to a vnode.
+/// @return The vnode, or nullptr if not found.
 Vnode* resolve(const char* path);
-int mount(Filesystem* fs, const char* mount_point);
+/// @brief Mount a filesystem at a given mount point.
+/// @return 0 on success, or VFS_INVALID on failure.
+int mount(Filesystem& filesystem, const char* mount_point);
+/// @brief Initialize the VFS subsystem (root vnode, mounts, etc.).
 void init();
+/// @brief Find a registered filesystem driver by name.
+/// @return The filesystem, or nullptr if not found.
 Filesystem* find_fs(const char* name);
+/// @brief Get the root vnode of the VFS tree.
 Vnode* get_root_vnode();
-void set_root_vnode(Vnode* vn);
+/// @brief Set the root vnode of the VFS tree.
+void set_root_vnode(Vnode& vnode);
 
 } // namespace vfs
 } // namespace kernel

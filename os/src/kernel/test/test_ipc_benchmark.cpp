@@ -63,7 +63,8 @@ static uint64_t bench_rdtsc_overhead() {
 }
 
 // Runmode: kernel
-// Testidea: Measures RDTSC instruction overhead as baseline for other benchmarks
+// Testidea: Measures RDTSC instruction overhead as baseline for other
+// benchmarks
 // Input: Back-to-back RDTSC calls
 // Expect: Average overhead < 100 cycles
 // Depends: kernel/arch, kernel/task
@@ -211,7 +212,8 @@ static uint64_t bench_ipc_send_64byte() {
 
 // Runmode: kernel
 // Testidea: Measures IPC send+recv round-trip with maximal 64-byte payload
-// Input: IPC_MAX_MSG_SIZE payload filled with sequential bytes, sent then received
+// Input: IPC_MAX_MSG_SIZE payload filled with sequential bytes, sent then
+// received
 // Expect: Average round-trip < 20000 cycles
 // Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_64byte) {
@@ -243,7 +245,8 @@ static uint64_t bench_current_task() {
 }
 
 // Runmode: kernel
-// Testidea: Measures Scheduler::current_task lookup overhead as baseline for syscall dispatch
+// Testidea: Measures Scheduler::current_task lookup overhead as baseline for
+// syscall dispatch
 // Input: Calls Scheduler::current_task() repeatedly
 // Expect: Average lookup < 500 cycles
 // Depends: kernel/task

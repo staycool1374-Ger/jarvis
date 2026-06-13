@@ -13,7 +13,8 @@ JARVIS_TEST(devfs_read_null) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies reading /dev/zero returns NUL-filled buffer of requested size.
+// Testidea: Verifies reading /dev/zero returns NUL-filled buffer of
+// requested size.
 // Input: Open /dev/zero, read N bytes
 // Expect: Buffer filled with N zero bytes
 // Depends: kernel::vfs::DevFS
@@ -22,7 +23,8 @@ JARVIS_TEST(devfs_read_zero) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies /dev/tty resolves to a valid inode (actual read requires keyboard).
+// Testidea: Verifies /dev/tty resolves to a valid inode (actual read
+// requires keyboard).
 // Input: Resolve /dev/tty
 // Expect: Returns valid inode
 // Depends: kernel::vfs::DevFS
@@ -76,7 +78,8 @@ JARVIS_TEST(initrdfs_open_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: Registers all VFS Internal Filesystem unit tests with the test framework.
+// Testidea: Registers all VFS Internal Filesystem unit tests with the test
+// framework.
 // Input: None
 // Expect: All VFS internal tests registered via JARVIS_REGISTER_TEST
 // Depends: kernel test framework

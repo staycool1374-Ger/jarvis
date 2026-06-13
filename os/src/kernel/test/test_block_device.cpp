@@ -12,7 +12,8 @@ using namespace kernel;
 // -------------------------------------------------------------------
 
 // Runmode: kernel
-// Testidea: STUB - ATA IDENTIFY command returns valid disk signature (0x0040 or 0xC33C)
+// Testidea: STUB - ATA IDENTIFY command returns valid disk signature (0x0040
+// or 0xC33C)
 // Input: Mock ATA device
 // Expect: Passes (stub)
 // Depends: kernel::ATA driver
@@ -39,7 +40,8 @@ JARVIS_TEST(ata_pio_write_single_sector) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Consecutive sector reads return sequential data (LBA ordering)
+// Testidea: STUB - Consecutive sector reads return sequential data (LBA
+// ordering)
 // Input: Mock ATA device, sectors 0..N
 // Expect: Passes (stub)
 // Depends: kernel::ATA driver

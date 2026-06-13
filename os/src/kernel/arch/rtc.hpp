@@ -23,7 +23,8 @@ struct tm {
 /// @brief CMOS RTC driver providing wall-clock time via I/O ports 0x70/0x71.
 class RTC {
 public:
-    /// @brief Initialises the RTC (disables periodic updates, selects 24-hour mode).
+    /// @brief Initialises the RTC (disables periodic updates,
+    /// selects 24-hour mode).
     static void init();
 
     /// @brief Reads the current Unix timestamp (seconds since 1970-01-01 UTC).

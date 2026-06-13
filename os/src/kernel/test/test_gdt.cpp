@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies all GDT entries have correct base=0, limit, access byte after init.
+// Testidea: Verifies all GDT entries have correct base=0, limit, access byte
+// after init.
 // Input: Initialize GDT
 // Expect: All entries match expected descriptor layout
 // Depends: kernel::arch::GDT
@@ -22,7 +23,8 @@ JARVIS_TEST(gdt_tss_ist_valid) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies RSP0 points to kernel stack for ring 3 -> ring 0 transitions.
+// Testidea: Verifies RSP0 points to kernel stack for ring 3 -> ring 0
+// transitions.
 // Input: Initialize TSS
 // Expect: RSP0 is non-zero, points to valid kernel stack
 // Depends: kernel::arch::TSS

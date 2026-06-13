@@ -53,15 +53,16 @@
   },
   "descriptive_names": {
     "min_length": 3,
-    "blocklist": ["t", "v", "val", "tmp", "temp", "ptr", "p"],
+    "blocklist": ["tmp", "temp", "ptr", "p", "t", "v", "val"],
     "allow_loop_indices": ["i", "j", "k", "idx"],
+    "allow_common_abbrevs": ["id", "fd", "va", "cs", "tv", "vn", "st", "en", "it", "ok", "to", "q", "n", "m", "y", "c", "s", "r", "fd", "ID", "e", "lo", "hi", "tm", "OK", "h", "L", "T", "O", "C", "_i"],
     "max_loop_body_lines": 5
   },
   "sentinel_enums": {
     "require_named_constant_for": ["empty", "invalid", "none", "null"]
   },
   "formatting": {
-    "max_line_length": 100,
+    "max_line_length": 80,
     "indent_size": 4,
     "no_tabs": true,
     "brace_style": "same_line"

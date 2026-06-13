@@ -6,9 +6,11 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Tests allocating a single fd from FdTable, verifying the slot is marked used, then freeing it and confirming the slot is released.
+// Testidea: Tests allocating a single fd from FdTable, verifying the slot is
+// marked used, then freeing it and confirming the slot is released.
 // Input: Alloc one fd from a fresh FdTable, then free that fd.
-// Expect: JARVIS_ASSERT checks fd >= 0, the returned entry is non-null and used; after free, entry is null or not used.
+// Expect: JARVIS_ASSERT checks fd >= 0, the returned entry is non-null and
+// used; after free, entry is null or not used.
 // Depends: kernel::vfs::FdTable
 JARVIS_TEST(vfs_fdtable_alloc_free) {
     vfs::FdTable ft;
@@ -22,9 +24,11 @@ JARVIS_TEST(vfs_fdtable_alloc_free) {
 }
 
 // Runmode: kernel
-// Testidea: Tests allocating and freeing multiple fds from FdTable, then verifying that a recycled fd can be re-allocated.
+// Testidea: Tests allocating and freeing multiple fds from FdTable, then
+// verifying that a recycled fd can be re-allocated.
 // Input: Alloc 5 fds, free all 5, then alloc one more fd.
-// Expect: JARVIS_ASSERT checks all allocations return non-negative fd; final alloc also succeeds.
+// Expect: JARVIS_ASSERT checks all allocations return non-negative fd; final
+// alloc also succeeds.
 // Depends: kernel::vfs::FdTable
 JARVIS_TEST(vfs_fdtable_multiple) {
     vfs::FdTable ft;
@@ -42,7 +46,8 @@ JARVIS_TEST(vfs_fdtable_multiple) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that resolving the root path "/" returns a valid vnode with directory mode.
+// Testidea: Tests that resolving the root path "/" returns a valid vnode
+// with directory mode.
 // Input: vfs::resolve("/")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
@@ -66,7 +71,8 @@ JARVIS_TEST(vfs_resolve_dev) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that resolving "/dev/tty" returns a valid character-device vnode.
+// Testidea: Tests that resolving "/dev/tty" returns a valid character-device
+// vnode.
 // Input: vfs::resolve("/dev/tty")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
@@ -78,7 +84,8 @@ JARVIS_TEST(vfs_resolve_tty) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that resolving "/dev/null" returns a valid character-device vnode.
+// Testidea: Tests that resolving "/dev/null" returns a valid
+// character-device vnode.
 // Input: vfs::resolve("/dev/null")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
@@ -113,7 +120,8 @@ JARVIS_TEST(vfs_resolve_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing resolution of relative paths (e.g. "..", ".").
+// Testidea: STUB - Placeholder for testing resolution of relative paths
+// (e.g. "..", ".").
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfs::resolve
@@ -131,7 +139,8 @@ JARVIS_TEST(vfs_resolve_dotdot) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing kernel-level mount and unmount of filesystems.
+// Testidea: STUB - Placeholder for testing kernel-level mount and unmount of
+// filesystems.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfs::mount, kernel::vfs::unmount
@@ -140,7 +149,8 @@ JARVIS_TEST(vfs_mount_unmount) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that the VFS daemon process boots and responds to IPC.
+// Testidea: STUB - Placeholder for testing that the VFS daemon process boots
+// and responds to IPC.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfsd, kernel::ipc
@@ -149,7 +159,8 @@ JARVIS_TEST(vfsd_server_boots_and_responds) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that the open syscall forwards requests to the VFS daemon.
+// Testidea: STUB - Placeholder for testing that the open syscall forwards
+// requests to the VFS daemon.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::syscall, kernel::vfsd
@@ -158,7 +169,8 @@ JARVIS_TEST(syscall_open_forwards_to_vfsd) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that read/write syscalls route through the VFS daemon.
+// Testidea: STUB - Placeholder for testing that read/write syscalls route
+// through the VFS daemon.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::syscall, kernel::vfsd
@@ -167,7 +179,8 @@ JARVIS_TEST(syscall_read_write_via_vfsd) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing mount/unmount IPC commands to the VFS daemon.
+// Testidea: STUB - Placeholder for testing mount/unmount IPC commands to the
+// VFS daemon.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfsd, kernel::ipc
@@ -176,7 +189,8 @@ JARVIS_TEST(vfsd_mount_unmount_ipc) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing VFS daemon current-working-directory operations (getcwd, chdir).
+// Testidea: STUB - Placeholder for testing VFS daemon
+// current-working-directory operations (getcwd, chdir).
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfsd, kernel::ipc
@@ -185,7 +199,8 @@ JARVIS_TEST(vfsd_cwd_operations) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing VFS daemon stat/fstat IPC operations.
+// Testidea: STUB - Placeholder for testing VFS daemon stat/fstat IPC
+// operations.
 // Input: (stub)
 // Expect: (stub)
 // Depends: kernel::vfsd, kernel::ipc

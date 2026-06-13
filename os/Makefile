@@ -79,13 +79,19 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all clean check-style run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
+.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
+
+# Default target: show help
+all: help
+
+# Build target: check-style + debug ISO + boot shell
+build: check-style iso
 
 -include $(DEPFILES)
 
 check-style:
-	@echo "Running style validation..."
-	@python3 tools/validate_style.py --root src; \
+	@echo "Running style validation (kernel sources only)..."
+	@python3 tools/validate_style.py --root src/kernel; \
 	rc=$$?; \
 	if [ $$rc -eq 0 ]; then \
 	    echo "Style validation passed."; \
@@ -97,13 +103,15 @@ check-style:
 help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
-	@echo "  make               Build debug ISO + boot shell (all tests run at boot)"
-	@echo "  make test-qemu     Run full test suite in QEMU (automated, no window)"
-	@echo "  make release       Build production ISO (computational sanity subset"
-	@echo "                     at boot, then shell with framebuffer + serial)"
-	@echo "  make release-test  Validate release compiles, then run full test suite"
-	@echo "  make debug         Build debug ISO with GDB stub (port :1234)"
-	@echo "  make clean         Remove all build artifacts"
+	@echo "  make (or make all)   Show this help"
+	@echo "  make build           Run check-style + build debug ISO + boot shell (all tests run at boot)"
+	@echo "  make check-style     Validate kernel coding style (src/kernel/)"
+	@echo "  make test-qemu       Run full test suite in QEMU (automated, no window)"
+	@echo "  make release         Build production ISO (computational sanity subset"
+	@echo "                       at boot, then shell with framebuffer + serial)"
+	@echo "  make release-test    Validate release compiles, then run full test suite"
+	@echo "  make debug           Build debug ISO with GDB stub (port :1234)"
+	@echo "  make clean           Remove all build artifacts"
 	@echo "  make run-qemu      Boot default ISO interactively (serial + QEMU window)"
 	@echo "  make run-release   Build release ISO then boot interactively"
 	@echo "  make run-release-test Automated release integration test (6 commands + exit)"

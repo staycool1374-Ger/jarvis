@@ -5,7 +5,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing that a child process can be added to a parent's child list.
+// Testidea: STUB - Placeholder for testing that a child process can be added
+// to a parent's child list.
 // Input: (none)
 // Expect: JARVIS_TEST_PASS()
 // Depends: test, scheduler
@@ -14,7 +15,8 @@ JARVIS_TEST(process_add_child) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that find_child returns nullptr when searching for a non-existent child PID.
+// Testidea: Validates that find_child returns nullptr when searching for a
+// non-existent child PID.
 // Input: PID 999999 (non-existent)
 // Expect: JARVIS_ASSERT checks that find_child returns nullptr
 // Depends: test, scheduler
@@ -28,7 +30,8 @@ JARVIS_TEST(process_find_child) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that the current task's num_children count is non-negative.
+// Testidea: Validates that the current task's num_children count is
+// non-negative.
 // Input: Current task from Scheduler::current_task()
 // Expect: JARVIS_ASSERT checks parent non-null and num_children >= 0
 // Depends: test, scheduler
@@ -41,9 +44,11 @@ JARVIS_TEST(process_num_children_count) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that remove_child() does not modify num_children when the target
+// Testidea: Verifies that remove_child() does not modify num_children when
+// the target
 // is not actually a child of the parent (bug #019).
-// Input: Create a parent and two tasks; add one as child; try to remove the non-child.
+// Input: Create a parent and two tasks; add one as child; try to remove the
+// non-child.
 // Expect: num_children remains unchanged.
 // Depends: test, scheduler
 JARVIS_TEST(process_remove_child_non_child_no_underflow) {
@@ -76,7 +81,8 @@ JARVIS_TEST(process_remove_child_non_child_no_underflow) {
 // Runmode: kernel
 // Testidea: Registers all process-related unit tests with the test framework.
 // Input: (none)
-// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
+// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later
+// execution
 // Depends: test, logger, scheduler
 void register_process_tests() {
     Logger::info("Registering process tests");

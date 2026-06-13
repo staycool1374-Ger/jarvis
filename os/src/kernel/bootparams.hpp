@@ -14,10 +14,14 @@ struct BootParams {
     bool     debug_memory;
     bool     oom_killer_enabled;
 
+    /// @brief Get the singleton BootParams instance.
     static BootParams& instance();
 
+    /// @brief Parse the multiboot command line string into BootParams fields.
     static void parse_multiboot_cmdline();
 
+    /// @brief Parse a raw command-line string, setting BootParams fields.
+    /// @param cmdline Null-terminated command-line string.
     static void parse_cstr(const char* cmdline);
 };
 

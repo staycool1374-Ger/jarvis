@@ -92,7 +92,8 @@ void IPC::init() {
 
 bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     auto* tcb = Scheduler::find_task(dest_id);
-    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED) return false;
+    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED
+        ) return false;
 
     MessageQueue& q = *tcb->msg_queue;
 
@@ -104,7 +105,7 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
         auto* cur = Scheduler::current_task();
         if (!cur) return false;
 
-        block_sender(q, cur);
+        block_sender(q, *cur);
         cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
@@ -120,7 +121,7 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     if (msg.buf_handle != 0) {
         auto* cur = Scheduler::current_task();
         if (cur) {
-            BufferPool::transfer(msg.buf_handle, cur, tcb);
+            BufferPool::transfer(msg.buf_handle, *cur, *tcb);
         }
     }
 
@@ -136,7 +137,7 @@ bool IPC::recv(Message& msg) {
 
     bool ok = cur->msg_queue->pop(msg);
     if (ok && cur->msg_queue->blocked_senders_head) {
-        wake_sender(*cur->msg_queue, cur);
+        wake_sender(*cur->msg_queue, *cur);
     }
     return ok;
 }
@@ -173,24 +174,24 @@ MessageQueue& IPC::queue(uint64_t task_id) {
     return *tcb->msg_queue;
 }
 
-bool IPC::block_sender(MessageQueue& q, TaskControlBlock* task) {
-    task->blocked_next = nullptr;
+bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
+    task.blocked_next = nullptr;
     if (q.blocked_senders_tail) {
-        q.blocked_senders_tail->blocked_next = task;
-        q.blocked_senders_tail = task;
+        q.blocked_senders_tail->blocked_next = &task;
+        q.blocked_senders_tail = &task;
     } else {
-        q.blocked_senders_head = task;
-        q.blocked_senders_tail = task;
+        q.blocked_senders_head = &task;
+        q.blocked_senders_tail = &task;
     }
 
     // Priority inheritance: boost queue owner if sender is more urgent
-    if (q.owner && task->priority > q.owner->priority) {
-        q.owner->priority = task->priority;
+    if (q.owner && task.priority > q.owner->priority) {
+        q.owner->priority = task.priority;
     }
     return true;
 }
 
-void IPC::wake_sender(MessageQueue& q, TaskControlBlock* receiver) {
+void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
     if (!q.blocked_senders_head) return;
 
     auto* task = q.blocked_senders_head;
@@ -202,15 +203,15 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock* receiver) {
     if (task->state != TaskState::TERMINATED)
         task->state = TaskState::READY;
 
-    // Priority inheritance: restore receiver priority based on remaining blocked senders
-    if (!receiver) return;
-    uint64_t max_prio = receiver->base_priority;
+    // Priority inheritance: restore receiver priority based on remaining
+    // blocked senders
+    uint64_t max_prio = receiver.base_priority;
     auto* cur = q.blocked_senders_head;
     while (cur) {
         if (cur->priority > max_prio) max_prio = cur->priority;
         cur = cur->blocked_next;
     }
-    receiver->priority = max_prio;
+    receiver.priority = max_prio;
 }
 
 } // namespace kernel

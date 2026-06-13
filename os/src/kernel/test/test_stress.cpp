@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies creating 1000 tasks, each exits immediately — scheduler remains consistent.
+// Testidea: Verifies creating 1000 tasks, each exits immediately — scheduler
+// remains consistent.
 // Input: Loop 1000 times: create task, add to scheduler, task exits
 // Expect: Scheduler task count returns to baseline, no leaks
 // Depends: Scheduler, TaskControlBlock
@@ -13,7 +14,8 @@ JARVIS_TEST(stress_1000_tasks_create_exit) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies 1000 send/receive round-trips between two kernel tasks — no lost messages.
+// Testidea: Verifies 1000 send/receive round-trips between two kernel tasks
+// — no lost messages.
 // Input: Two tasks, 1000 IPC round-trips
 // Expect: All messages received in order, none lost
 // Depends: IPC, Scheduler
@@ -22,7 +24,8 @@ JARVIS_TEST(stress_ipc_blast) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies allocate and free all available PMM pages repeatedly — no leaks.
+// Testidea: Verifies allocate and free all available PMM pages repeatedly —
+// no leaks.
 // Input: Loop: alloc all pages, free all pages
 // Expect: PMM state consistent after each iteration
 // Depends: PMM
@@ -40,7 +43,8 @@ JARVIS_TEST(stress_recursive_fork_depth_10) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies every syscall invoked at least once in sequence — no crashes.
+// Testidea: Verifies every syscall invoked at least once in sequence — no
+// crashes.
 // Input: Loop through all syscall numbers, invoke with valid args
 // Expect: All syscalls return without kernel panic
 // Depends: Syscall dispatch
@@ -49,7 +53,8 @@ JARVIS_TEST(stress_all_syscalls_sequential) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies random syscall numbers (0-255) with random args — no kernel panics.
+// Testidea: Verifies random syscall numbers (0-255) with random args — no
+// kernel panics.
 // Input: Loop: random syscall number, random args
 // Expect: Kernel handles gracefully (returns error or succeeds)
 // Depends: Syscall dispatch

@@ -13,7 +13,8 @@ JARVIS_TEST(pipe_create_returns_two_fds) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies non-blocking read from empty pipe returns -1 with errno EAGAIN.
+// Testidea: Verifies non-blocking read from empty pipe returns -1 with errno
+// EAGAIN.
 // Input: Create pipe, read from read_fd with O_NONBLOCK
 // Expect: Returns -1, errno == EAGAIN
 // Depends: kernel::vfs::Pipe
@@ -49,7 +50,8 @@ JARVIS_TEST(pipe_write_then_read_roundtrip) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies concurrent writes are not interleaved (PIPE_BUF atomicity).
+// Testidea: Verifies concurrent writes are not interleaved (PIPE_BUF
+// atomicity).
 // Input: Multiple writers write simultaneously
 // Expect: Each write appears atomically, no interleaving
 // Depends: kernel::vfs::Pipe

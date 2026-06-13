@@ -62,14 +62,18 @@ uint64_t volatile scheduler_load_cr3_from = 0;
 uint64_t volatile scheduler_next_task_id = 0;
 }
 
-extern "C" void debug_write_hex(uint64_t v) {
+extern "C" void debug_write_hex(uint64_t value) {
     char hb[17] = "0000000000000000";
     int pos = 16;
-    do { hb[--pos] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; } while (v);
+    do {
+        hb[--pos] = "0123456789ABCDEF"[value & 0xF];
+        value >>= 4;
+    } while (value);
     debug_write(hb + pos);
 }
 
-extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3) {
+extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3
+    ) {
     debug_write("[SWITCH] old="); debug_write_hex(old_id);
     debug_write(" new="); debug_write_hex(new_id);
     debug_write(" cr3="); debug_write_hex(cr3);
@@ -121,7 +125,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     uint64_t tag_addr = mb2_find_tag(6);
     if (tag_addr) {
         auto* mem_tag = reinterpret_cast<MemoryMapTag*>(tag_addr);
-        uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)) / mem_tag->entry_size;
+        uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)
+            ) / mem_tag->entry_size;
         for (uint64_t i = 0; i < entries; ++i) {
             auto& entry = mem_tag->entries[i];
             if (entry.type == 1) {
@@ -131,7 +136,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
+    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::
+        HHDM_OFFSET;
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     debug_write("[BOOT] PMM OK\n");
 
@@ -163,7 +169,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     debug_write("[BOOT] VFS init...\n");
     kernel::vfs::init();
-    kernel::vfs::mount(&kernel::vfs::initrd_fs, "/");
+    kernel::vfs::mount(kernel::vfs::initrd_fs, "/");
     debug_write("[BOOT] VFS OK (initrd mounted at /)\n");
 
     debug_write("[BOOT] IPC init...\n");
@@ -182,7 +188,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
             auto* t = kernel::Scheduler::task_at(i);
             if (!t || t == kernel::Scheduler::task_at(0)) continue;
-            if (t->state != kernel::TaskState::READY && t->state != kernel::TaskState::RUNNING) continue;
+            if (t->state != kernel::TaskState::READY
+             && t->state != kernel::TaskState::RUNNING) continue;
             if (!t->page_table_) continue;
             if (t->priority < victim_priority) {
                 victim = t;
@@ -236,11 +243,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] Devfs init...\n");
     kernel::vfs::devfs_init();
     debug_write("[BOOT] Mount devfs...\n");
-    kernel::vfs::mount(&kernel::vfs::dev_fs, "/dev");
+    kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
     debug_write("[BOOT] devfs mounted at /dev\n");
 
     debug_write("[BOOT] Mount procfs...\n");
-    kernel::vfs::mount(&kernel::vfs::proc_fs, "/proc");
+    kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
     debug_write("[BOOT] procfs mounted at /proc\n");
 
     debug_write("[BOOT] Timer init...\n");
@@ -258,23 +265,25 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     service::ProgramRegistry::init();
     service::ProgramRegistry::register_program(
-        "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::demo_main);
+        "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::
+            demo_main);
 
     kernel::BufferPool::init();
     kernel::daemon::init();
 
-    // Load vfsd userspace daemon before test suite so tests can interact with it
+// Load vfsd userspace daemon before test suite so tests can interact with it
     {
         initrd::InitrdFile f = initrd::find("./vfsd.c.elf");
         if (!f.data) f = initrd::find("vfsd.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
             if (kernel::elf::validate_header(hdr)) {
                 auto* vfsd_task = kernel::elf::load(hdr, f.data);
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(vfsd_task);
+                    kernel::Scheduler::add_task(*vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
                     kernel::daemon::register_daemon(
                         "vfsd", "vfsd.c.elf",
@@ -293,13 +302,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         initrd::InitrdFile f = initrd::find("./iocd.c.elf");
         if (!f.data) f = initrd::find("iocd.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
             if (kernel::elf::validate_header(hdr)) {
                 auto* iocd_task = kernel::elf::load(hdr, f.data);
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(iocd_task);
+                    kernel::Scheduler::add_task(*iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);
                     kernel::daemon::register_daemon(
                         "iocd", "iocd.c.elf",
@@ -330,13 +340,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
         if (!f.data) f = initrd::find("test_fork.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
             if (kernel::elf::validate_header(hdr)) {
                 auto* test_task = kernel::elf::load(hdr, f.data);
                 if (test_task) {
                     test_task->priority = 1;
                     test_task->period_ticks = 50;
-                    kernel::Scheduler::add_task(test_task);
+                    kernel::Scheduler::add_task(*test_task);
                     debug_write("[BOOT] test_fork started (PID=");
                     debug_write_hex(test_task->id);
                     debug_write(")\n");
@@ -350,13 +361,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         initrd::InitrdFile f = initrd::find("./sh.c.elf");
         if (!f.data) f = initrd::find("sh.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
             if (kernel::elf::validate_header(hdr)) {
                 auto* shell_task = kernel::elf::load(hdr, f.data);
                 if (shell_task) {
                     shell_task->priority = 2;
                     shell_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(shell_task);
+                    kernel::Scheduler::add_task(*shell_task);
                     debug_write("[BOOT] Userspace shell started (PID=");
                     debug_write_hex(shell_task->id);
                     debug_write(")\n");
@@ -370,13 +382,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         initrd::InitrdFile f = initrd::find("./idle.c.elf");
         if (!f.data) f = initrd::find("idle.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
             if (kernel::elf::validate_header(hdr)) {
                 auto* idle_task = kernel::elf::load(hdr, f.data);
                 if (idle_task) {
                     idle_task->priority = 0;
                     idle_task->period_ticks = 0xFFFFFFFF;
-                    kernel::Scheduler::add_task(idle_task);
+                    kernel::Scheduler::add_task(*idle_task);
                     debug_write("[BOOT] Userspace idle task started (PID=");
                     debug_write_hex(idle_task->id);
                     debug_write(")\n");
@@ -398,9 +411,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     sti();
 
     debug_write("[BOOT] Entering idle loop.\n");
-    while (true) {
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();
     }
+    __builtin_unreachable();
 }
 
 extern "C" void panic(const char* msg) {
@@ -412,9 +426,10 @@ extern "C" void panic(const char* msg) {
         service::Terminal::write(msg);
         service::Terminal::set_fg(0xC0C0C0);
     }
-    while (true) {
+    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();
     }
+    __builtin_unreachable();
 }
 
 static void dump_regs(uint64_t* regs) {
@@ -422,16 +437,35 @@ static void dump_regs(uint64_t* regs) {
 
     using L = kernel::Logger;
 
-    L::raw_write("  RAX: "); L::print_hex(regs[0]);  L::raw_write("  RBX: "); L::print_hex(regs[1]);  L::raw_write("\n");
-    L::raw_write("  RCX: "); L::print_hex(regs[2]);  L::raw_write("  RDI: "); L::print_hex(regs[5]);  L::raw_write("\n");
-    L::raw_write("  RDX: "); L::print_hex(regs[3]);  L::raw_write("  RSI: "); L::print_hex(regs[4]);  L::raw_write("\n");
-    L::raw_write("  RBP: "); L::print_hex(regs[6]);  L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs)); L::raw_write("\n");
-    L::raw_write("  R8:  "); L::print_hex(regs[7]);  L::raw_write("  R9:  "); L::print_hex(regs[8]);  L::raw_write("\n");
-    L::raw_write("  R10: "); L::print_hex(regs[9]);  L::raw_write("  R11: "); L::print_hex(regs[10]); L::raw_write("\n");
-    L::raw_write("  R12: "); L::print_hex(regs[11]); L::raw_write("  R13: "); L::print_hex(regs[12]); L::raw_write("\n");
-    L::raw_write("  R14: "); L::print_hex(regs[13]); L::raw_write("  R15: "); L::print_hex(regs[14]); L::raw_write("\n");
-    L::raw_write("  RIP: "); L::print_hex(regs[17]); L::raw_write("  CS:  "); L::print_hex(regs[18]); L::raw_write("\n");
-    L::raw_write("  RFL: "); L::print_hex(regs[19]); L::raw_write("\n");
+    L::raw_write("  RAX: "); L::print_hex(regs[0]);
+    L::raw_write("  RBX: "); L::print_hex(regs[1]);
+    L::raw_write("\n");
+    L::raw_write("  RCX: "); L::print_hex(regs[2]);
+    L::raw_write("  RDI: "); L::print_hex(regs[5]);
+    L::raw_write("\n");
+    L::raw_write("  RDX: "); L::print_hex(regs[3]);
+    L::raw_write("  RSI: "); L::print_hex(regs[4]);
+    L::raw_write("\n");
+    L::raw_write("  RBP: "); L::print_hex(regs[6]);
+    L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs));
+    L::raw_write("\n");
+    L::raw_write("  R8:  "); L::print_hex(regs[7]);
+    L::raw_write("  R9:  "); L::print_hex(regs[8]);
+    L::raw_write("\n");
+    L::raw_write("  R10: "); L::print_hex(regs[9]);
+    L::raw_write("  R11: "); L::print_hex(regs[10]);
+    L::raw_write("\n");
+    L::raw_write("  R12: "); L::print_hex(regs[11]);
+    L::raw_write("  R13: "); L::print_hex(regs[12]);
+    L::raw_write("\n");
+    L::raw_write("  R14: "); L::print_hex(regs[13]);
+    L::raw_write("  R15: "); L::print_hex(regs[14]);
+    L::raw_write("\n");
+    L::raw_write("  RIP: "); L::print_hex(regs[17]);
+    L::raw_write("  CS:  "); L::print_hex(regs[18]);
+    L::raw_write("\n");
+    L::raw_write("  RFL: "); L::print_hex(regs[19]);
+    L::raw_write("\n");
 
     uint64_t cr0 = read_cr0();
     uint64_t cr2 = read_cr2();
@@ -439,7 +473,8 @@ static void dump_regs(uint64_t* regs) {
     uint64_t cr4 = read_cr4();
 
     L::raw_write("  CR0: "); L::print_hex(cr0); L::raw_write("\n");
-    L::raw_write("  CR2: "); L::print_hex(cr2); L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
+    L::raw_write("  CR2: "); L::print_hex(cr2);
+    L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
     L::raw_write("  CR4: "); L::print_hex(cr4); L::raw_write("\n");
 
     L::raw_write("  Stack trace:\n");
@@ -477,31 +512,35 @@ static const char* exception_name(uint64_t vector) {
     }
 }
 
-extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
-                                    uint64_t arg2, uint64_t arg3, uint64_t* regs);
+extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
+                                    uint64_t arg1, uint64_t arg2,
+                                    uint64_t arg3, uint64_t* regs);
 
 /// @brief Delivers a signal to a user task by setting up a signal frame on the user stack.
 ///        Modifies regs to return to the user's registered signal handler (or terminates
 ///        the task if no handler is registered and the default action is to terminate).
 /// @return true if signal was delivered (handler will run), false if task was terminated.
-static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
-                                   uint64_t vector, uint64_t error_code,
-                                   uint64_t rip, uint64_t* regs)
+static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
+                                   uint64_t sig, uint64_t vector,
+                                   uint64_t error_code, uint64_t rip,
+                                   uint64_t* regs)
 {
-    if (!t || !regs) return false;
+    if (!task || !regs) return false;
 
     // SIGKILL is always fatal — cannot be caught or ignored
     if (kernel::signal_is_fatal(sig)) {
-        kernel::Logger::error("Task %x: SIGKILL (fatal, no handler allowed)", t->id);
-        t->state = kernel::TaskState::TERMINATED;
-        t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+        kernel::Logger::error("Task %x: SIGKILL (fatal, no handler "
+                              "allowed)", task->id);
+        task->state = kernel::TaskState::TERMINATED;
+        task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
         return false;
     }
 
     // If the task has a registered handler, invoke it
-    if (t->has_signal_handler(sig)) {
+    if (task->has_signal_handler(sig)) {
         kernel::Logger::info("Task %x: delivering signal %x to handler at %x",
-            t->id, sig, reinterpret_cast<uint64_t>(t->get_signal_handler(sig)));
+            task->id, sig,
+                reinterpret_cast<uint64_t>(task->get_signal_handler(sig)));
 
         uint64_t user_rsp = regs[20];  // current user RSP
         // Align stack: push SignalFrame
@@ -511,13 +550,18 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
         // RSP is 8 mod 16 (because call pushes return addr)
         user_rsp &= ~0xFULL;
 
+        uint64_t frame_phys = kernel::VMM::virt_to_phys_in_pml4(
+            user_rsp, task->page_table_);
         auto* frame = reinterpret_cast<kernel::SignalFrame*>(
-            arch::HHDM_OFFSET + kernel::VMM::virt_to_phys_in_pml4(user_rsp, t->page_table_));
+            arch::HHDM_OFFSET + frame_phys);
         if (!frame) {
-            // If we cannot write the signal frame (bad stack), terminate
-            kernel::Logger::error("Task %x: cannot write signal frame, terminating", t->id);
-            t->state = kernel::TaskState::TERMINATED;
-            t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+            // If we cannot write the signal frame (bad stack),
+            // terminate
+            kernel::Logger::error("Task %x: cannot write signal frame, "
+                                  "terminating",
+                                  task->id);
+            task->state = kernel::TaskState::TERMINATED;
+            task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
             return false;
         }
 
@@ -532,8 +576,9 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
         };
 
         // Modify return context to go to the signal handler
-        regs[5] = sig;                   // RDI = signal number (first argument)
-        regs[17] = reinterpret_cast<uint64_t>(t->get_signal_handler(sig));  // RIP = handler
+        regs[5] = sig;                   // RDI = signal number
+        regs[17] = reinterpret_cast<uint64_t>(
+            task->get_signal_handler(sig));  // RIP = handler
         regs[20] = user_rsp;             // RSP = adjusted user stack
         // Clear direction flag and RF
         regs[19] = arch::RFLAGS_DEFAULT; // RFLAGS with IF set
@@ -544,33 +589,37 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* t, uint64_t sig,
     // No handler registered — check default action
     auto action = kernel::default_signal_action(sig);
     if (action == kernel::SignalAction::IGNORE) {
-        kernel::Logger::warn("Task %x: signal %x ignored (default)", t->id, sig);
+        kernel::Logger::warn("Task %x: signal %x ignored (default)",
+                             task->id, sig);
         return true;  // ignored, resume execution
     }
 
     // Default is to terminate
-    kernel::Logger::error("Task %x: unhandled signal %x vector=%x rip=%x err=%x",
-        t->id, sig, vector, rip, error_code);
+    kernel::Logger::error("Task %x: unhandled signal %x "
+                          "vector=%x rip=%x err=%x",
+                          task->id, sig, vector, rip, error_code);
     if (vector == 14) {
         uint64_t cr2_val = read_cr2();
         kernel::Logger::error("  CR2=%x", cr2_val);
     }
     dump_regs(regs);
-    t->state = kernel::TaskState::TERMINATED;
-    t->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+    task->state = kernel::TaskState::TERMINATED;
+    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
     return false;
 }
 
-extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
+extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
+    uint64_t rip,
                                    uint64_t* regs)
 {
     if (vector < 32) {
         auto* t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;
-        bool from_user = (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA);
+        bool from_user = (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA
+            );
 
         if (from_user && t) {
-            // Check fault recovery first: if we're inside a safe_copy_from_user zone,
+// Check fault recovery first: if we're inside a safe_copy_from_user zone,
             // redirect to the recovery IP instead of delivering a signal.
             if (kernel::g_user_access_recover_ip) {
                 regs[17] = kernel::g_user_access_recover_ip;
@@ -580,14 +629,16 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
 
             auto mapping = kernel::exception_to_signal(vector);
             uint64_t sig = static_cast<uint64_t>(mapping.signal);
-            kernel::Logger::warn("Task %x: exception vector=%x (%s) → signal %x",
-                t->id, vector, mapping.name, sig);
+            kernel::Logger::warn("Task %x: exception vector=%x (%s) "
+                                 "→ signal %x",
+                                 t->id, vector, mapping.name, sig);
 
             if (vector == 14) {
                 kernel::Logger::error("  CR2=%x", read_cr2());
             }
 
-            bool was_delivered = deliver_signal_to_user(t, sig, vector, error_code, rip, regs);
+            bool was_delivered = deliver_signal_to_user(t, sig, vector,
+                error_code, rip, regs);
             if (!was_delivered && t->state == kernel::TaskState::TERMINATED) {
                 // If task was terminated, reschedule on return
                 kernel::Scheduler::reschedule();
@@ -614,15 +665,17 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
     }
 
     if (vector == 0x80) {
-        regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4], regs);
+        regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4],
+            regs);
         auto* task = kernel::Scheduler::current_task();
 
         // After syscall, check for pending signals on the current task
         if (task && task->pending_signals && task->page_table_ != 0) {
             // Find the highest-priority pending signal
             uint64_t sig = __builtin_ctzll(task->pending_signals);
-            if (sig < 32) {
-                kernel::Logger::debug("Task %x: pending signal %x after syscall", task->id, sig);
+             if (sig < 32) {
+                 kernel::Logger::debug("Task %x: pending signal %x "
+                                       "after syscall", task->id, sig);
                 deliver_signal_to_user(task, sig, 0, 0, regs[17], regs);
                 task->pending_signals &= ~(1ULL << sig);
             }
@@ -643,8 +696,10 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_
     }
 }
 
-extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0, uint64_t arg1,
-                                    uint64_t arg2, uint64_t arg3, uint64_t* regs)
+extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
+    uint64_t arg1,
+                                    uint64_t arg2, uint64_t arg3, uint64_t* regs
+                                        )
 {
     return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
 }

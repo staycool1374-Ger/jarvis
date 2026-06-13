@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies Wait-For-Graph is constructed from locked resources and blocked tasks.
+// Testidea: Verifies Wait-For-Graph is constructed from locked resources and
+// blocked tasks.
 // Input: Two tasks, one holding a lock, another waiting for it
 // Expect: WFG contains directed edge from waiter to holder
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, WFG implementation

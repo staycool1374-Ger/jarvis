@@ -32,7 +32,14 @@ void* operator new(unsigned long size) {
     if (size > ~0ULL - 15) size = 1;
     size = (size + 15) & ~15ULL;
     void* p = heap_alloc(size);
-    if (!p) while (1) { arch::hlt(); }
+    constexpr size_t MAX_RETRIES = 1000000;
+    size_t retries = 0;
+    while (!p && retries < MAX_RETRIES) {
+        arch::hlt();
+        p = heap_alloc(size);
+        ++retries;
+    }
+    if (!p) { while (true) { arch::hlt(); } }
     return p;
 }
 

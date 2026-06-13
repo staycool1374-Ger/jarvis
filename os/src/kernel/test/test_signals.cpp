@@ -9,9 +9,11 @@ using namespace kernel;
 static void test_signal_handler(int sig);
 
 // Runmode: kernel
-// Testidea: Tests that exception numbers map to the correct signals and default actions via exception_to_signal().
+// Testidea: Tests that exception numbers map to the correct signals and
+// default actions via exception_to_signal().
 // Input: Calls exception_to_signal for exceptions 0, 6, 13, 14, 16.
-// Expect: JARVIS_ASSERT_EQ checks exception 0 -> SIGFPE/TERMINATE, 6 -> SIGILL, 13/14 -> SIGSEGV, 16 -> SIGFPE.
+// Expect: JARVIS_ASSERT_EQ checks exception 0 -> SIGFPE/TERMINATE, 6 ->
+// SIGILL, 13/14 -> SIGSEGV, 16 -> SIGFPE.
 // Depends: kernel::signal, kernel::exception_to_signal
 JARVIS_TEST(signal_exception_to_signal_mapping) {
     auto map0 = exception_to_signal(0);
@@ -33,7 +35,8 @@ JARVIS_TEST(signal_exception_to_signal_mapping) {
 }
 
 // Runmode: kernel
-// Testidea: Tests signal_is_fatal() returns true only for SIGKILL and false for other signals (SIGSEGV, SIGFPE, SIGILL, SIGTERM).
+// Testidea: Tests signal_is_fatal() returns true only for SIGKILL and false
+// for other signals (SIGSEGV, SIGFPE, SIGILL, SIGTERM).
 // Input: Calls signal_is_fatal on SIGKILL, SIGSEGV, SIGFPE, SIGILL, SIGTERM.
 // Expect: JARVIS_ASSERT checks SIGKILL is fatal; others are not.
 // Depends: kernel::signal, kernel::signal_is_fatal
@@ -47,9 +50,11 @@ JARVIS_TEST(signal_is_fatal_check) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that default_signal_action() returns the correct action for different signals.
+// Testidea: Tests that default_signal_action() returns the correct action
+// for different signals.
 // Input: Calls default_signal_action on SIGSEGV, SIGCHLD, SIGKILL.
-// Expect: JARVIS_ASSERT_EQ checks SIGSEGV -> TERMINATE, SIGCHLD -> IGNORE, SIGKILL -> TERMINATE.
+// Expect: JARVIS_ASSERT_EQ checks SIGSEGV -> TERMINATE, SIGCHLD -> IGNORE,
+// SIGKILL -> TERMINATE.
 // Depends: kernel::signal, kernel::default_signal_action
 JARVIS_TEST(signal_default_action) {
     auto term = default_signal_action(static_cast<uint64_t>(Signal::SIGSEGV));
@@ -64,9 +69,12 @@ JARVIS_TEST(signal_default_action) {
 }
 
 // Runmode: kernel
-// Testidea: Tests registering, querying, and unregistering a signal handler on the current task's TCB.
-// Input: Sets SIGSEGV handler to 0xDEAD, checks has/get, then clears it to nullptr.
-// Expect: JARVIS_ASSERT and JARVIS_ASSERT_EQ verify handler registration state transitions correctly.
+// Testidea: Tests registering, querying, and unregistering a signal handler
+// on the current task's TCB.
+// Input: Sets SIGSEGV handler to 0xDEAD, checks has/get, then clears it to
+// nullptr.
+// Expect: JARVIS_ASSERT and JARVIS_ASSERT_EQ verify handler registration
+// state transitions correctly.
 // Depends: kernel::task::Scheduler, kernel::signal
 JARVIS_TEST(signal_handler_tcb_registration) {
     auto* cur = Scheduler::current_task();
@@ -86,9 +94,11 @@ JARVIS_TEST(signal_handler_tcb_registration) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that out-of-bounds signal numbers (100, 31) are silently rejected by the TCB handler functions.
+// Testidea: Tests that out-of-bounds signal numbers (100, 31) are silently
+// rejected by the TCB handler functions.
 // Input: Sets handler for signal 100 and 31, then checks has_signal_handler.
-// Expect: JARVIS_ASSERT checks has_signal_handler returns false for both out-of-bounds indices.
+// Expect: JARVIS_ASSERT checks has_signal_handler returns false for both
+// out-of-bounds indices.
 // Depends: kernel::task::Scheduler, kernel::signal
 JARVIS_TEST(signal_handler_out_of_bounds) {
     auto* cur = Scheduler::current_task();
@@ -103,9 +113,11 @@ JARVIS_TEST(signal_handler_out_of_bounds) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that the pending_signals bitmask on the current task can be set and cleared correctly.
+// Testidea: Tests that the pending_signals bitmask on the current task can
+// be set and cleared correctly.
 // Input: Sets SIGSEGV bit in pending_signals, checks it, then clears it.
-// Expect: JARVIS_ASSERT_EQ checks pending_signals starts at 0, has the bit after set, and returns to 0 after clear.
+// Expect: JARVIS_ASSERT_EQ checks pending_signals starts at 0, has the bit
+// after set, and returns to 0 after clear.
 // Depends: kernel::task::Scheduler, kernel::signal
 JARVIS_TEST(signal_pending_bitmask) {
     auto* cur = Scheduler::current_task();
@@ -122,10 +134,14 @@ JARVIS_TEST(signal_pending_bitmask) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that the KILL syscall sets the pending signal bit for SIGUSR1 on the current task.
-// Input: Registers SIGUSR1 handler, then calls Syscall::handle(KILL, cur->id, SIGUSR1, ...).
-// Expect: JARVIS_ASSERT_EQ checks syscall returns 0; JARVIS_ASSERT checks pending_signals has SIGUSR1 bit set.
-// Depends: kernel::syscall::Syscall (KILL), kernel::task::Scheduler, kernel::signal
+// Testidea: Tests that the KILL syscall sets the pending signal bit for
+// SIGUSR1 on the current task.
+// Input: Registers SIGUSR1 handler, then calls Syscall::handle(KILL,
+// cur->id, SIGUSR1, ...).
+// Expect: JARVIS_ASSERT_EQ checks syscall returns 0; JARVIS_ASSERT checks
+// pending_signals has SIGUSR1 bit set.
+// Depends: kernel::syscall::Syscall (KILL), kernel::task::Scheduler,
+// kernel::signal
 JARVIS_TEST(signal_kill_delivers) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -142,9 +158,11 @@ JARVIS_TEST(signal_kill_delivers) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that a registered signal handler can be set and the pending bit can be manually raised.
+// Testidea: Tests that a registered signal handler can be set and the
+// pending bit can be manually raised.
 // Input: Registers SIGUSR1 handler, then sets pending_signals bit for SIGUSR1.
-// Expect: JARVIS_ASSERT checks has_signal_handler returns true; pending bit is set.
+// Expect: JARVIS_ASSERT checks has_signal_handler returns true; pending bit
+// is set.
 // Depends: kernel::task::Scheduler, kernel::signal
 JARVIS_TEST(signal_handler_invoked) {
     auto* cur = Scheduler::current_task();

@@ -2,6 +2,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/sync/semaphore.hpp>
 #include <string.hpp>
 
@@ -21,28 +22,30 @@ struct PipeBuffer {
     sync::Semaphore data_avail;
 };
 
-static int64_t pipe_read(Vnode* self, uint8_t* buf, uint64_t count, uint64_t) {
-    auto* pb = static_cast<PipeBuffer*>(self->private_data);
-    if (!pb || pb->read_closed) return -1;
+static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
+    ) {
+    auto* pb = static_cast<PipeBuffer*>(self.private_data);
+    if (!pb || pb->read_closed) return VFS_INVALID;
     if (pb->write_closed && pb->count == 0) return 0;
     while (pb->count == 0) {
         if (pb->write_closed) return 0;
-        if (pb->read_closed) return -1;
+        if (pb->read_closed) return VFS_INVALID;
         pb->data_avail.wait();
     }
     uint64_t total = 0;
     while (total < count && pb->count > 0) {
-        buf[total++] = pb->data[pb->read_pos];
+        buffer[total++] = pb->data[pb->read_pos];
         pb->read_pos = (pb->read_pos + 1) % PIPE_BUF_SIZE;
         --pb->count;
     }
     return static_cast<int64_t>(total);
 }
 
-static int64_t pipe_write(Vnode* self, const uint8_t* buf, uint64_t count, uint64_t) {
-    auto* pb = static_cast<PipeBuffer*>(self->private_data);
-    if (!pb || pb->read_closed) return -1;
-    if (pb->write_closed) return -1;
+static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count,
+    uint64_t) {
+    auto* pb = static_cast<PipeBuffer*>(self.private_data);
+    if (!pb || pb->read_closed) return VFS_INVALID;
+    if (pb->write_closed) return VFS_INVALID;
     uint64_t total = 0;
     while (total < count) {
         if (pb->count >= PIPE_BUF_SIZE) {
@@ -56,38 +59,42 @@ static int64_t pipe_write(Vnode* self, const uint8_t* buf, uint64_t count, uint6
     return static_cast<int64_t>(total);
 }
 
-static int pipe_open(Vnode*, uint64_t) { return 0; }
+static int pipe_open(Vnode&, uint64_t) { return 0; }
 
-static void pipe_read_close(Vnode* self) {
-    auto* pb = static_cast<PipeBuffer*>(self->private_data);
+static void pipe_read_close(Vnode& self) {
+    auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb) return;
     pb->read_closed = true;
     --pb->refcount;
-    if (pb->refcount <= 0) { delete pb; }
-    self->private_data = nullptr;
-    delete self;
+    if (pb->refcount <= 0) { MemPool::free(pb); }
+    self.private_data = nullptr;
+    MemPool::free(&self);
 }
 
-static void pipe_write_close(Vnode* self) {
-    auto* pb = static_cast<PipeBuffer*>(self->private_data);
+static void pipe_write_close(Vnode& self) {
+    auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb) return;
     pb->write_closed = true;
     pb->data_avail.post();
     --pb->refcount;
-    if (pb->refcount <= 0) { delete pb; }
-    self->private_data = nullptr;
-    delete self;
+    if (pb->refcount <= 0) { MemPool::free(pb); }
+    self.private_data = nullptr;
+    MemPool::free(&self);
 }
 
-static int64_t pipe_lseek(Vnode*, int64_t, int, uint64_t*) { return -1; }
-static int pipe_fstat(Vnode*, VfsStat* st) {
-    st->st_size = 0;
-    st->st_mode = S_IFCHR;
+static int64_t pipe_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
+static int pipe_fstat(Vnode&, VfsStat& vfs_stat) {
+    vfs_stat.st_size = 0;
+    vfs_stat.st_mode = S_IFCHR;
     return 0;
 }
-static int pipe_ioctl(Vnode*, uint64_t, void*) { return -1; }
-static int pipe_readdir(Vnode*, uint64_t*, Dirent*) { return -1; }
-static Vnode* pipe_lookup(Vnode*, const char*) { return nullptr; }
+static int pipe_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int pipe_readdir(Vnode&, uint64_t&, Dirent&) {
+    return VFS_INVALID;
+}
+static Vnode* pipe_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pipe_read_ops = {
     pipe_read, nullptr, pipe_open, pipe_read_close,
@@ -100,15 +107,15 @@ static const VnodeOps pipe_write_ops = {
 };
 
 int create_pipe(int fds[2]) {
-    auto* pb = new PipeBuffer{};
-    if (!pb) return -1;
+    auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
+    if (!pb) return VFS_INVALID;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
 
-    auto* rnode = new Vnode{};
-    auto* wnode = new Vnode{};
+    auto* rnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
+    auto* wnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     if (!rnode || !wnode) {
-        delete pb; delete rnode; delete wnode;
-        return -1;
+        MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
+        return VFS_INVALID;
     }
 
     rnode->ops = &pipe_read_ops;
@@ -126,15 +133,16 @@ int create_pipe(int fds[2]) {
     wnode->refcount = 1;
 
     auto* task = Scheduler::current_task();
-    if (!task) { delete pb; delete rnode; delete wnode; return -1; }
+    if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode
+        ); return VFS_INVALID; }
 
     int rfd = task->fd_table.alloc();
     int wfd = task->fd_table.alloc();
     if (rfd < 0 || wfd < 0) {
         if (rfd >= 0) task->fd_table.free(rfd);
         if (wfd >= 0) task->fd_table.free(wfd);
-        delete pb; delete rnode; delete wnode;
-        return -1;
+        MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
+        return VFS_INVALID;
     }
 
     task->fd_table.fds[rfd].vnode = rnode;

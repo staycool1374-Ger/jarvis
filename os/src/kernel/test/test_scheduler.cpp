@@ -19,7 +19,8 @@ JARVIS_TEST(scheduler_task_count) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that the current task is non-null and has a positive task ID.
+// Testidea: Validates that the current task is non-null and has a positive
+// task ID.
 // Input: No parameters; reads current task from Scheduler::current_task()
 // Expect: JARVIS_ASSERT checks non-null and id > 0
 // Depends: test, scheduler
@@ -31,7 +32,8 @@ JARVIS_TEST(scheduler_current_task) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that calling Scheduler::reschedule returns a valid current task (no-op reschedule).
+// Testidea: Validates that calling Scheduler::reschedule returns a valid
+// current task (no-op reschedule).
 // Input: No parameters; captures before/after task pointers
 // Expect: JARVIS_ASSERT checks that before and after are both non-null
 // Depends: test, scheduler
@@ -45,9 +47,11 @@ JARVIS_TEST(scheduler_reschedule_noop) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that adding a new task increments the task count and removing it restores the original count.
+// Testidea: Validates that adding a new task increments the task count and
+// removing it restores the original count.
 // Input: A new TaskControlBlock with empty lambda, priority 1, quanta 10
-// Expect: JARVIS_ASSERT_EQ checks count increases by 1 after add, returns to original after remove; current_task non-null
+// Expect: JARVIS_ASSERT_EQ checks count increases by 1 after add, returns to
+// original after remove; current_task non-null
 // Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_remove_task) {
     auto* before = Scheduler::current_task();
@@ -56,10 +60,10 @@ JARVIS_TEST(scheduler_remove_task) {
 
     auto* new_task = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(new_task != nullptr);
-    Scheduler::add_task(new_task);
+    Scheduler::add_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
-    Scheduler::remove_task(new_task);
+    Scheduler::remove_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before, Scheduler::task_count());
 
     auto* after = Scheduler::current_task();
@@ -71,9 +75,12 @@ JARVIS_TEST(scheduler_remove_task) {
 }
 
 // Runmode: kernel
-// Testidea: Validates that reaping orphans removes a terminated task whose parent has exited (parent_id 999999).
-// Input: A new TaskControlBlock with parent_id=999999, state=TERMINATED, exit_code=42
-// Expect: JARVIS_ASSERT checks count increased by 1 after add, then <= original+1 after reap_orphans; current_task non-null
+// Testidea: Validates that reaping orphans removes a terminated task whose
+// parent has exited (parent_id 999999).
+// Input: A new TaskControlBlock with parent_id=999999, state=TERMINATED,
+// exit_code=42
+// Expect: JARVIS_ASSERT checks count increased by 1 after add, then <=
+// original+1 after reap_orphans; current_task non-null
 // Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_reap_orphans) {
     uint64_t cnt_before = Scheduler::task_count();
@@ -83,7 +90,7 @@ JARVIS_TEST(scheduler_reap_orphans) {
     child->parent_id = 999999;
     child->state = TaskState::TERMINATED;
     child->exit_code = 42;
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
 
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
@@ -98,17 +105,20 @@ JARVIS_TEST(scheduler_reap_orphans) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that deferred reaping respects parent wait status - child not reaped while parent waits.
-// Input: Create parent and child. Parent sets waiting_child_pid. Child exits. Reap orphans.
-// Expect: Child is NOT reaped while parent waits; reaped after parent clears wait.
+// Testidea: Verifies that deferred reaping respects parent wait status -
+// child not reaped while parent waits.
+// Input: Create parent and child. Parent sets waiting_child_pid. Child
+// exits. Reap orphans.
+// Expect: Child is NOT reaped while parent waits; reaped after parent clears
+// wait.
 JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -136,15 +146,16 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
 
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    Scheduler::remove_task(parent);
-    delete parent;
+    Scheduler::remove_task(*parent);
+
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Registers all scheduler-related unit tests with the test framework.
 // Input: (none)
-// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later execution
+// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later
+// execution
 // Depends: test, logger, scheduler, task, pmm, vmm
 void register_scheduler_tests() {
     Logger::info("Registering scheduler tests");

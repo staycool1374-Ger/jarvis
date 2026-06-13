@@ -7,9 +7,12 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Tests that an existing driver ("keyboard") can be found by name and that a nonexistent driver returns nullptr
-// Input: "keyboard" (existing driver name), "nonexistent_driver_xyz" (non-existing driver name)
-// Expect: DriverRegistry::find("keyboard") returns a non-null pointer with name matching "keyboard"; find("nonexistent_driver_xyz") returns nullptr
+// Testidea: Tests that an existing driver ("keyboard") can be found by name
+// and that a nonexistent driver returns nullptr
+// Input: "keyboard" (existing driver name), "nonexistent_driver_xyz"
+// (non-existing driver name)
+// Expect: DriverRegistry::find("keyboard") returns a non-null pointer with
+// name matching "keyboard"; find("nonexistent_driver_xyz") returns nullptr
 // Depends: DriverRegistry
 JARVIS_TEST(driver_registry_find) {
     auto* drv = DriverRegistry::find("keyboard");
@@ -21,8 +24,10 @@ JARVIS_TEST(driver_registry_find) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies the driver registry contains at least 4 drivers and that both "keyboard" and "timer" are present
-// Input: DriverRegistry::count() and DriverRegistry::get(i) for each index 0..cnt-1
+// Testidea: Verifies the driver registry contains at least 4 drivers and
+// that both "keyboard" and "timer" are present
+// Input: DriverRegistry::count() and DriverRegistry::get(i) for each index
+// 0..cnt-1
 // Expect: count >= 4, has_kbd == true, has_timer == true
 // Depends: DriverRegistry
 JARVIS_TEST(driver_registry_count) {
@@ -69,7 +74,8 @@ JARVIS_TEST(serial_driver_in_iocd) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Verifies the driver server can access MMIO regions via capability-based permissions
+// Testidea: STUB - Verifies the driver server can access MMIO regions via
+// capability-based permissions
 // Input: None (stub)
 // Expect: JARVIS_TEST_PASS() (stub, no actual assertion yet)
 // Depends: Driver server, capability system, MMIO
@@ -80,7 +86,8 @@ JARVIS_TEST(driver_server_mmio_via_caps) {
 // Runmode: kernel
 // Testidea: Registers all driver tests with the test framework
 // Input: None
-// Expect: All six driver tests are registered (no direct assertion, only logging)
+// Expect: All six driver tests are registered (no direct assertion, only
+// logging)
 // Depends: Test framework, Logger, Scheduler, DriverRegistry
 void register_driver_tests() {
     Logger::info("Registering driver tests");

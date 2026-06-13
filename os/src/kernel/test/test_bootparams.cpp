@@ -31,7 +31,8 @@ JARVIS_TEST(bootparams_empty_cmdline) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies garbage string parsed without crash (ignores unknown flags).
+// Testidea: Verifies garbage string parsed without crash (ignores unknown
+// flags).
 // Input: Boot with "garbage unknown_flag=1 debug_ipc=1"
 // Expect: No crash, debug_ipc=1 recognized, unknown ignored
 // Depends: kernel::BootParams

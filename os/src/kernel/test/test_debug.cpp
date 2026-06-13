@@ -13,7 +13,8 @@ JARVIS_TEST(qemu_debug_exit_success) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies non-zero exit code correctly reported by QEMU test harness.
+// Testidea: Verifies non-zero exit code correctly reported by QEMU test
+// harness.
 // Input: Call qemu_debug_exit(42)
 // Expect: QEMU exits with code 42
 // Depends: kernel::debug::qemu_exit()
@@ -22,7 +23,8 @@ JARVIS_TEST(qemu_debug_exit_failure) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies debug_write() outputs hex/dec numbers with correct formatting.
+// Testidea: Verifies debug_write() outputs hex/dec numbers with correct
+// formatting.
 // Input: Call debug_write with various formats
 // Expect: Output matches expected format strings
 // Depends: kernel::debug::debug_write()
@@ -31,7 +33,8 @@ JARVIS_TEST(debug_write_formats_correctly) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies task switch generates a log message with source -> dest PID.
+// Testidea: Verifies task switch generates a log message with source -> dest
+// PID.
 // Input: Trigger task switch, capture debug log
 // Expect: Log contains "Task switch: <src> -> <dst>"
 // Depends: kernel::debug, Scheduler

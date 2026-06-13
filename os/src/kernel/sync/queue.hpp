@@ -18,12 +18,24 @@ class Queue {
 public:
     static constexpr size_t MAX_WAITERS = 32;
 
-    Queue() : head_(0), tail_(0), count_(0), send_waiters_(0), recv_waiters_(0) {}
+    Queue() : head_(0), tail_(0), count_(0), send_waiters_(0), recv_waiters_(0
+        ) {}
+    /// @brief Initialize the message queue to empty.
     void init();
 
+    /// @brief Send a message, blocking if the queue is full.
+    /// @return true on success.
     bool send(const uint8_t* data, size_t size);
+    /// @brief Send a message without blocking.
+    /// @return true if the message was enqueued.
     bool try_send(const uint8_t* data, size_t size);
+    /// @brief Receive a message, blocking if the queue is empty.
+    /// @param[out] buf Destination buffer.
+    /// @param[out] size Receives the message size.
+    /// @return true on success.
     bool receive(uint8_t* buf, size_t* size);
+    /// @brief Receive a message without blocking.
+    /// @return true if a message was dequeued.
     bool try_receive(uint8_t* buf, size_t* size);
     size_t available() const { return count_; }
 
@@ -42,8 +54,8 @@ private:
     bool is_full() const { return count_ >= QUEUE_MAX_MSG_COUNT; }
     bool is_empty() const { return count_ == 0; }
 
-    bool add_send_waiter(TaskControlBlock* t);
-    bool add_recv_waiter(TaskControlBlock* t);
+    bool add_send_waiter(TaskControlBlock* task);
+    bool add_recv_waiter(TaskControlBlock* task);
     void wake_send_one();
     void wake_recv_one();
 };

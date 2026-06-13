@@ -18,7 +18,8 @@ uint64_t Syscall::sys_send(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     msg.type = arg2;
     msg.data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
     auto data = checked(reinterpret_cast<const uint8_t*>(arg1), msg.data_size);
-    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
+    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1
+        );
     for (size_t i = 0; i < msg.data_size; ++i) {
         msg.data[i] = data.read(i);
     }
@@ -29,7 +30,8 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
                               uint64_t, uint64_t*) {
     uint64_t max_size = arg2;
     auto buf = checked(reinterpret_cast<uint8_t*>(arg1), max_size);
-    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1
+        );
     uint8_t* raw_buf = buf.unsafe_ptr();
     Message msg{};
     auto* cur = syscall_task();
@@ -57,8 +59,9 @@ uint64_t Syscall::sys_send_sync(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t type = arg2;
     uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
     auto data = checked(reinterpret_cast<const uint8_t*>(arg1), data_size);
-    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1);
-    auto data_rw = checked(const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(arg1)), data_size);
+    if (syscall_is_user_task() && !data.valid()) return static_cast<uint64_t>(-1
+        );
+    auto data_rw = checked(reinterpret_cast<uint8_t*>(arg1), data_size);
     Message msg{};
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
@@ -75,41 +78,47 @@ uint64_t Syscall::sys_send_sync(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     return reply.type;
 }
 
-uint64_t Syscall::sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     return 0;
 }
 
-uint64_t Syscall::sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     return 0;
 }
 
-uint64_t Syscall::sys_buf_alloc(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_buf_alloc(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return 0;
     uint64_t va = arg0;
-    return BufferPool::alloc(cur, va);
+    return BufferPool::alloc(*cur, va);
 }
 
-uint64_t Syscall::sys_buf_free(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_buf_free(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
-    if (!BufferPool::free(cur, arg0)) return static_cast<uint64_t>(-1);
+    if (!BufferPool::free(*cur, arg0)) return static_cast<uint64_t>(-1);
     return 0;
 }
 
-uint64_t Syscall::sys_buf_map(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_buf_map(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     uint64_t handle = arg0;
     uint64_t va = arg1;
-    if (!BufferPool::map(cur, handle, va)) return static_cast<uint64_t>(-1);
+    if (!BufferPool::map(*cur, handle, va)) return static_cast<uint64_t>(-1);
     return 0;
 }
 
-uint64_t Syscall::sys_buf_unmap(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_buf_unmap(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
-    if (!BufferPool::unmap(cur, arg0)) return static_cast<uint64_t>(-1);
+    if (!BufferPool::unmap(*cur, arg0)) return static_cast<uint64_t>(-1);
     return 0;
 }
 

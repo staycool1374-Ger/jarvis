@@ -11,7 +11,8 @@ namespace kernel {
 
 // Forward declaration for init_task_common
 struct TaskControlBlock;
-void init_task_common(TaskControlBlock* tcb);
+/// @brief Initialize common task fields after allocation.
+void init_task_common(TaskControlBlock& tcb);
 
 /// @brief Maximum payload size in bytes for an IPC message.
 static constexpr size_t IPC_MAX_MSG_SIZE = 64;
@@ -68,6 +69,46 @@ struct TaskControlBlock {
     static constexpr uint64_t USER_SS  = 0x23;
     static constexpr uint64_t FLAGS_IF  = 0x200;
 
+    TaskControlBlock()
+        : id(0)
+        , parent_id(0)
+        , state(TaskState::READY)
+        , priority(0)
+        , base_priority(0)
+        , period_ticks(0)
+        , deadline_ticks(0)
+        , executed_ticks(0)
+        , remaining_ticks(0)
+        , exit_code(0)
+        , context({})
+        , kernel_stack(nullptr)
+        , kernel_stack_top(0)
+        , stack_phys_(0)
+        , page_table_(0)
+        , page_table_shared_(false)
+        , stack_pdpt_phys_(0)
+        , user_stack_(0)
+        , user_stack_size_(0)
+        , user_data(nullptr)
+        , fd_table({})
+        , cwd_vnode(nullptr)
+        , waiting_child_pid(0)
+        , waiting_child_status(nullptr)
+        , pending_signals(0)
+        , alarm_ticks(0)
+        , alarm_armed(false)
+        , msg_queue(nullptr)
+        , notify(nullptr)
+        , event_group(nullptr)
+        , buf_list_head(0)
+        , blocked_next(nullptr)
+        , blocked_prev(nullptr)
+        , first_child(nullptr)
+        , next_sibling(nullptr)
+        , prev_sibling(nullptr)
+        , num_children(0)
+        {}
+
     uint64_t id;
     uint64_t parent_id;
     TaskState state;
@@ -84,12 +125,14 @@ struct TaskControlBlock {
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
     uint64_t page_table_;
-    /// @brief If true, this task shares the parent's user page tables (fork).
-    ///        free_user_pages() is skipped on cleanup/exec to avoid double-free.
+    /// @brief If true, this task shares the parent's user page tables
+    /// (fork). free_user_pages() is skipped on cleanup/exec to avoid
+    /// double-free.
     bool page_table_shared_;
-    /// @brief Physical address of the private PDPT page allocated in clone() for the
-    ///        user stack region.  Zero when not applicable.  Used by cleanup() to free
-    ///        the private PDPT and its child PD/PT pages that would otherwise leak.
+    /// @brief Physical address of the private PDPT page allocated in
+    /// clone() for the user stack region. Zero when not applicable.
+    /// Used by cleanup() to free the private PDPT and its child PD/PT
+    /// pages that would otherwise leak.
     uint64_t stack_pdpt_phys_;
     uint64_t user_stack_;
     uint64_t user_stack_size_;
@@ -115,20 +158,25 @@ struct TaskControlBlock {
     /// @brief True if alarm is armed.
     bool alarm_armed;
 
-    /// @brief Pointer to the task's message queue (allocated and owned by IPC layer).
+    /// @brief Pointer to the task's message queue (allocated and
+    /// owned by IPC layer).
     MessageQueue* msg_queue;
 
-    /// @brief Per-task notification object (allocated in init_task_common).
+    /// @brief Per-task notification object (allocated in
+    /// init_task_common).
     sync::Notify* notify;
 
-    /// @brief Per-task event-group object (allocated in init_task_common).
+    /// @brief Per-task event-group object (allocated in
+    /// init_task_common).
     sync::EventGroup* event_group;
 
-    /// @brief Head of doubly-linked list of buffer handles owned by this task.
-    ///        -1 means the list is empty. Used by the BufferPool for zero-copy IPC.
+    /// @brief Head of doubly-linked list of buffer handles owned by
+    /// this task. -1 means the list is empty. Used by the BufferPool
+    /// for zero-copy IPC.
     int32_t buf_list_head;
 
-    /// @brief Linked-list pointers for the blocked-sender chain (singly linked via next).
+    /// @brief Linked-list pointers for the blocked-sender chain
+    /// (singly linked via next).
     TaskControlBlock* blocked_next;
     TaskControlBlock* blocked_prev;
 
@@ -155,26 +203,35 @@ struct TaskControlBlock {
         return (sig < MAX_SIGNAL_HANDLERS) ? signal_handlers[sig] : nullptr;
     }
 
-    /// @brief Creates a new kernel task with the given entry and scheduling parameters.
+    /// @brief Creates a new kernel task with the given entry and
+    /// scheduling parameters.
     static TaskControlBlock* create(
         void (*entry)(),
         uint64_t priority,
         uint64_t period_ticks);
 
-    /// @brief Creates a new user task running in ring 3 with its own page table.
+    /// @brief Creates a new user task running in ring 3 with its own
+    /// page table.
     static TaskControlBlock* create_user(
         void (*entry)(),
         uint64_t priority,
         uint64_t period_ticks,
         size_t user_stack_size = 32_KiB);
 
-    /// @brief Clones the current task — creates a child with copied context.
-    /// @param regs Register save area from the interrupt (to copy RIP/RSP/regs).
-    /// @return Pointer to the new child TaskControlBlock, or nullptr on failure.
+    /// @brief Clones the current task — creates a child with copied
+    /// context.
+    /// @param regs Register save area from the interrupt (to copy
+    /// RIP/RSP/regs).
+    /// @return Pointer to the new child TaskControlBlock, or nullptr
+    /// on failure.
     static TaskControlBlock* clone(uint64_t* regs);
 
-    void save_context(uint64_t* rsp) noexcept;
-    void restore_context(uint64_t* rsp) noexcept;
+    /// @brief Save the current register context into this TCB.
+    /// @param rsp Reference to current stack pointer (updated on save).
+    void save_context(uint64_t& rsp) noexcept;
+    /// @brief Restore the saved register context into CPU registers.
+    /// @param rsp Reference to restore the stack pointer into.
+    void restore_context(uint64_t& rsp) noexcept;
 
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).
     ///        Called by WAITPID after reaping a TERMINATED child.

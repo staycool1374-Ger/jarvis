@@ -19,7 +19,8 @@ public:
     /// @param virt_addr Virtual address (page-aligned).
     /// @param phys_addr Physical address (page-aligned).
     /// @param user      If true, sets the user-accessible flag.
-    static void map_page(uint64_t virt_addr, uint64_t phys_addr, bool user = false);
+    static void map_page(uint64_t virt_addr, uint64_t phys_addr,
+        bool user = false);
     /// @brief Unmaps a virtual page.
     /// @param virt_addr Virtual address to unmap.
     static void unmap_page(uint64_t virt_addr);
@@ -32,8 +33,9 @@ public:
     /// @return Physical address of PML4.
     static uint64_t current_pml4();
 
-    /// @brief Creates a fresh PML4: zeroes user entries (0-255), copies kernel entries (256-511).
-    ///        Used during exec/load — NOT for fork (which needs parent user entries).
+    /// @brief Creates a fresh PML4: zeroes user entries (0-255),
+    /// copies kernel entries (256-511). Used during exec/load —
+    /// NOT for fork (which needs parent user entries).
     /// @return Physical address of the new PML4, or 0 on failure.
     static uint64_t clone_kernel_pml4();
 
@@ -48,17 +50,20 @@ public:
     /// @brief Returns the physical address of the kernel PML4.
     static uint64_t get_kernel_pml4() { return kernel_pml4_; }
 
-    /// @brief Frees all user-space pages and page tables from a user PML4.
-    ///        Used during exec() to clean up the old address space.
-    ///        Skips kernel-owned pages (HHDM-mapped) and honours page_table_shared_ flag.
+    /// @brief Frees all user-space pages and page tables from a
+    /// user PML4. Used during exec() to clean up the old address
+    /// space. Skips kernel-owned pages (HHDM-mapped) and honours
+    /// page_table_shared_ flag.
     /// @param pml4_phys Physical address of the user PML4.
     static void free_user_pages(uint64_t pml4_phys);
 
-    /// @brief Translates a virtual address to a physical address using a specific PML4.
+    /// @brief Translates a virtual address to a physical address
+    /// using a specific PML4.
     /// @param virt_addr Virtual address to translate.
     /// @param pml4_phys Physical address of the target PML4.
     /// @return Physical address, or 0 if not mapped.
-    static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys);
+    static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr,
+                                         uint64_t pml4_phys);
 
 private:
     static constexpr uint64_t PAGE_SIZE = 4096;
@@ -86,7 +91,8 @@ private:
     /// @param create If true, allocates a new table if missing.
     /// @param user_alloc If true, allocate page table page as USER-owned.
     /// @return Pointer to the next-level table, or nullptr.
-    static uint64_t* get_table(uint64_t* table, size_t index, bool create, bool user_alloc = false);
+    static uint64_t* get_table(uint64_t* table, size_t index, bool create,
+        bool user_alloc = false);
 };
 
 } // namespace kernel

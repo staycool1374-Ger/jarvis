@@ -27,20 +27,37 @@ struct MessageQueue {
     /// @brief TCB that owns this queue (set during task creation).
     TaskControlBlock* owner;
 
+    MessageQueue()
+        : prio_bitmap(0)
+        , head(0)
+        , tail(0)
+        , count(0)
+        , blocked_senders_head(nullptr)
+        , blocked_senders_tail(nullptr)
+        , owner(nullptr)
+        {}
+
+    /// @brief Initialize the message queue to empty.
     void init();
+    /// @brief Push a message into the queue (priority-ordered insertion).
+    /// @return true on success, false if the queue is full.
     bool push(const Message& msg);
+    /// @brief Pop the highest-priority message from the queue.
+    /// @return true if a message was dequeued.
     bool pop(Message& msg);
 
     bool is_empty() const { return count == 0; }
     bool is_full() const  { return count >= IPC_MAX_QUEUE_MSG; }
 
-    /// @brief Returns the highest priority with messages, or IPC_PRIORITY_LEVELS if empty.
+    /// @brief Returns the highest priority with messages, or
+    /// IPC_PRIORITY_LEVELS if empty.
     size_t highest_priority() const;
 };
 
 /// @brief Inter-process communication manager.
 class IPC {
 public:
+    /// @brief Initialize the IPC subsystem (per-task message queues).
     static void init();
 
     /// @brief Sends a message to a destination task.
@@ -55,11 +72,13 @@ public:
     /// @brief Returns the message queue for a given task ID.
     static MessageQueue& queue(uint64_t task_id);
 
-    /// @brief Blocks the current task on a full queue (may boost owner priority).
-    static bool block_sender(MessageQueue& q, TaskControlBlock* task);
+    /// @brief Blocks the current task on a full queue
+    /// (may boost owner priority).
+    static bool block_sender(MessageQueue& q, TaskControlBlock& task);
 
-    /// @brief Wakes the oldest blocked sender and restores owner priority.
-    static void wake_sender(MessageQueue& q, TaskControlBlock* receiver);
+    /// @brief Wakes the oldest blocked sender and
+    /// restores owner priority.
+    static void wake_sender(MessageQueue& q, TaskControlBlock& receiver);
 };
 
 } // namespace kernel

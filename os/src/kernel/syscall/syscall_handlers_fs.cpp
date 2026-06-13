@@ -95,25 +95,29 @@ static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
     return reply.result >= 0;
 }
 
-uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    int fd;
+    int fd = -1;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task()->id : 0, path_buf))
+        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
             return static_cast<uint64_t>(-1);
         fd = syscall_path_open(path_buf, arg1);
     } else {
-        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task()->id : 0, user_path))
+        if (!vfsd_authorize(vfsd::VFS_OPEN, syscall_task() ? syscall_task(
+            )->id : 0, user_path))
             return static_cast<uint64_t>(-1);
         fd = syscall_path_open(user_path, arg1);
     }
     return static_cast<uint64_t>(static_cast<int64_t>(fd));
 }
 
-uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_READ, cur->id, static_cast<int>(arg0)))
@@ -122,14 +126,17 @@ uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
     if (!f) return static_cast<uint64_t>(-1);
     uint64_t count = arg2;
     auto buf = checked(reinterpret_cast<uint8_t*>(arg1), count);
-    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1
+        );
     if (!f->vnode || !f->vnode->ops->read) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->read(f->vnode, buf.unsafe_ptr(), count, f->offset);
+    int64_t r = f->vnode->ops->read(*f->vnode, buf.unsafe_ptr(), count,
+        f->offset);
     if (r > 0) f->offset += static_cast<uint64_t>(r);
     return static_cast<uint64_t>(r >= 0 ? r : -1);
 }
 
-uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_CLOSE, cur->id, static_cast<int>(arg0)))
@@ -139,86 +146,104 @@ uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_
     return 0;
 }
 
-uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_FSTAT, cur->id, static_cast<int>(arg0)))
         return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
-    if (!f || !f->vnode || !f->vnode->ops->fstat) return static_cast<uint64_t>(-1);
+    if (!f || !f->vnode || !f->vnode->ops->fstat) return static_cast<uint64_t>(
+        -1);
     auto* st = reinterpret_cast<vfs::VfsStat*>(arg1);
-    return static_cast<uint64_t>(f->vnode->ops->fstat(f->vnode, st));
+    return static_cast<uint64_t>(f->vnode->ops->fstat(*f->vnode, *st));
 }
 
-uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_WRITE, cur->id, static_cast<int>(arg0)))
         return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
-    if (!f || !f->vnode || !f->vnode->ops->write) return static_cast<uint64_t>(-1);
+    if (!f || !f->vnode || !f->vnode->ops->write) return static_cast<uint64_t>(
+        -1);
     uint64_t count = arg2;
     auto buf = checked(reinterpret_cast<const uint8_t*>(arg1), count);
-    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->write(f->vnode, buf.unsafe_ptr(), count, f->offset);
+    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1
+        );
+    int64_t r = f->vnode->ops->write(*f->vnode, buf.unsafe_ptr(), count,
+        f->offset);
     if (r > 0) f->offset += static_cast<uint64_t>(r);
     return static_cast<uint64_t>(r >= 0 ? r : 0);
 }
 
-uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
-    if (!f || !f->vnode || !f->vnode->ops->lseek) return static_cast<uint64_t>(-1);
-    int64_t r = f->vnode->ops->lseek(f->vnode,
+    if (!f || !f->vnode || !f->vnode->ops->lseek) return static_cast<uint64_t>(
+        -1);
+    int64_t r = f->vnode->ops->lseek(*f->vnode,
         static_cast<int64_t>(arg1), static_cast<int>(arg2), &f->offset);
     return static_cast<uint64_t>(r >= 0 ? r : -1);
 }
 
-uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
-    if (!f || !f->vnode || !f->vnode->ops->ioctl) return static_cast<uint64_t>(-1);
-    return static_cast<uint64_t>(f->vnode->ops->ioctl(f->vnode, arg1, reinterpret_cast<void*>(arg2)));
+    if (!f || !f->vnode || !f->vnode->ops->ioctl) return static_cast<uint64_t>(
+        -1);
+    return static_cast<uint64_t>(f->vnode->ops->ioctl(*f->vnode, arg1,
+        reinterpret_cast<void*>(arg2)));
 }
 
-uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
-    if (!f || !f->vnode || !f->vnode->ops->readdir) return static_cast<uint64_t>(-1);
+    if (!f || !f->vnode || !f->vnode->ops->readdir
+        ) return static_cast<uint64_t>(-1);
     auto pos_chk = checked(reinterpret_cast<uint64_t*>(arg1));
     auto dent_chk = checked(reinterpret_cast<vfs::Dirent*>(arg2));
-    if (syscall_is_user_task() && (!pos_chk.valid() || !dent_chk.valid())) return static_cast<uint64_t>(-1);
-    uint64_t p = pos_chk.read();
-    int r = f->vnode->ops->readdir(f->vnode, &p, dent_chk.unsafe_ptr());
-    if (r == 0) pos_chk.write(p);
+    if (syscall_is_user_task() && (!pos_chk.valid() || !dent_chk.valid())
+        ) return static_cast<uint64_t>(-1);
+    uint64_t position = pos_chk.read();
+    int r = f->vnode->ops->readdir(*f->vnode, position, *dent_chk.unsafe_ptr());
+    if (r == 0) pos_chk.write(position);
     return static_cast<uint64_t>(r == 0 ? 0 : -1);
 }
 
-uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    vfs::Vnode* vn;
+    vfs::Vnode* vn = nullptr;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task()->id : 0, path_buf))
+        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(path_buf);
     } else {
-        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task()->id : 0, user_path))
+        if (!vfsd_authorize(vfsd::VFS_STAT, syscall_task() ? syscall_task(
+            )->id : 0, user_path))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(user_path);
     }
     if (!vn || !vn->ops->fstat) return static_cast<uint64_t>(-1);
     auto st = checked(reinterpret_cast<vfs::VfsStat*>(arg1));
     if (syscall_is_user_task() && !st.valid()) return static_cast<uint64_t>(-1);
-    return static_cast<uint64_t>(vn->ops->fstat(vn, st.unsafe_ptr()));
+    return static_cast<uint64_t>(vn->ops->fstat(*vn, *st.unsafe_ptr()));
 }
 
-uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
+    ) {
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     int old_fd = static_cast<int>(arg0);
@@ -232,20 +257,23 @@ uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
     return static_cast<uint64_t>(new_fd);
 }
 
-uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     const char* user_path = reinterpret_cast<const char*>(arg0);
-    vfs::Vnode* vn;
-    const char* resolved_path;
+    vfs::Vnode* vn = nullptr;
+    const char* resolved_path = nullptr;
     char path_buf[SYSCALL_MAX_PATH];
     if (syscall_is_user_task()) {
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task()->id : 0, path_buf))
+        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(path_buf);
         resolved_path = path_buf;
     } else {
-        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task()->id : 0, user_path))
+        if (!vfsd_authorize(vfsd::VFS_CHDIR, syscall_task() ? syscall_task(
+            )->id : 0, user_path))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(user_path);
         resolved_path = user_path;
@@ -260,7 +288,8 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_
     return 0;
 }
 
-uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     int fds[2];
     int result = vfs::create_pipe(fds);
     if (result < 0) return static_cast<uint64_t>(-1);
@@ -277,7 +306,8 @@ uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
     return 0;
 }
 
-uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     int old_fd = static_cast<int>(arg0);
     int new_fd = static_cast<int>(arg1);
     auto* t = syscall_task();
@@ -285,7 +315,8 @@ uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uin
     auto* old_desc = t->fd_table.get(old_fd);
     if (!old_desc) return static_cast<uint64_t>(-1);
     if (old_fd == new_fd) return static_cast<uint64_t>(new_fd);
-    if (new_fd < 0 || static_cast<size_t>(new_fd) >= vfs::MAX_FDS) return static_cast<uint64_t>(-1);
+    if (new_fd < 0 || static_cast<size_t>(new_fd) >= vfs::MAX_FDS
+        ) return static_cast<uint64_t>(-1);
     t->fd_table.free(new_fd);
     t->fd_table.fds[new_fd] = *old_desc;
     t->fd_table.fds[new_fd].used = true;
