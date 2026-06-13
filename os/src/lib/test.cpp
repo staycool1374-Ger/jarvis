@@ -6,6 +6,7 @@
 #include <string.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/test/test_isolate.hpp>
 
 namespace kernel {
 namespace test {
@@ -114,6 +115,16 @@ static void run_filtered(uint8_t required_flags) {
     size_t run_count = 0;
     Logger::info("[TEST:RUN] Running filtered test(s) (flags=%u)", (unsigned)required_flags);
 
+    // Take a snapshot of the entire kernel state before the first test so
+    // we can restore it between individual tests (full isolation).
+    bool snapshot_ok = true;
+    if (n > 0) {
+        snapshot_ok = kernel::test::snapshot_create();
+        if (!snapshot_ok) {
+            Logger::warn("Test snapshot creation failed — isolation disabled");
+        }
+    }
+
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         // Match: if required_flags is 0 (debug), run all non-user tests.
@@ -137,6 +148,16 @@ static void run_filtered(uint8_t required_flags) {
         } else {
             Logger::raw_write("\033[31m[FAIL]\033[0m\n");
         }
+
+        // Restore the snapshot after each test so the next test starts
+        // from a clean slate (tasks, memory, daemons, page tables).
+        if (snapshot_ok) {
+            kernel::test::snapshot_restore();
+        }
+    }
+
+    if (snapshot_ok) {
+        kernel::test::snapshot_destroy();
     }
 
     if (run_count == 0) {

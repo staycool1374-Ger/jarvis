@@ -80,6 +80,24 @@ public:
     /// @param en True to enable preemption.
     static void set_preemptible(bool en) noexcept { preempt_enabled_ = en; }
 
+    /// @name Test-isolation helpers
+    static uint64_t snapshot_max_tasks() { return MAX_TASKS; }
+    static uint64_t snapshot_id_size()  { return ID_TABLE_SIZE; }
+    static void capture_state(TaskControlBlock** tasks_out,
+                              TaskControlBlock** id_table_out,
+                              uint64_t& task_count_out,
+                              uint64_t& current_idx_out,
+                              uint64_t& next_id_out,
+                              TaskControlBlock*& idle_out,
+                              bool& preempt_out);
+    static void restore_state(TaskControlBlock* const* tasks_in,
+                              TaskControlBlock* const* id_table_in,
+                              uint64_t task_count_in,
+                              uint64_t current_idx_in,
+                              uint64_t next_id_in,
+                              TaskControlBlock* idle_in,
+                              bool preempt_in);
+
 private:
     static constexpr uint64_t MAX_TASKS = 64;
     static constexpr uint64_t ID_TABLE_SIZE = 128;

@@ -13,6 +13,7 @@
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/driver/driver.hpp>
+#include <version.hpp>
 #include <kernel/bootparams.hpp>
 #include <kernel/sync/sync.hpp>
 #include <kernel/multiboot2.hpp>
@@ -108,7 +109,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     kernel::Logger::init();
     kernel::test::Registry::init();
-    kernel::Logger::info("Jarvis RTOS booting");
+    debug_write("[BOOT] Jarvis RTOS ");
+
+    debug_write(kernel::Version::full_string());
+
+#ifdef CONFIG_DEBUG
+    debug_write(" [DEBUG]");
+#else
+    debug_write(" [RELEASE]");
+#endif
+    debug_write("\n");
+
     debug_write("[BOOT] GDT init...\n");
     arch::GDT::init();
     arch::GDT::load();
@@ -328,8 +339,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
 #ifdef CONFIG_DEBUG
     kernel::test::run_debug();
-    kernel::Scheduler::cleanup_test_tasks();
-    kernel::daemon::reset_daemons();
 #else
     kernel::test::run_release();
 #endif

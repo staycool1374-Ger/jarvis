@@ -85,7 +85,7 @@ QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=
 all: help
 
 # Build target: check-style + debug ISO + boot shell
-build: check-style iso
+build: check-style $(ISO)
 
 -include $(DEPFILES)
 
@@ -358,7 +358,8 @@ profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
 	@echo "Extracting .gcda data and generating coverage report..."
 	python3 tools/extract_gcda.py build/profiling/gcda.raw
 
-release: CXXFLAGS += -g -O2 -UCONFIG_DEBUG
+release: CXXFLAGS := $(filter-out -DCONFIG_DEBUG,$(CXXFLAGS)) -g -O2
+release: CCFLAGS := $(filter-out -DCONFIG_DEBUG,$(CCFLAGS))
 release:
 	@echo "=== Building release ISO (clean build) ==="
 	$(MAKE) clean

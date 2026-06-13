@@ -109,6 +109,8 @@ static const VnodeOps pipe_write_ops = {
 int create_pipe(int fds[2]) {
     auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
     if (!pb) return VFS_INVALID;
+    __builtin_memset(pb, 0, sizeof(PipeBuffer));
+    pb->refcount = 2;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
 
     auto* rnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));

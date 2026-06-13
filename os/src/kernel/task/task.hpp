@@ -103,6 +103,7 @@ struct TaskControlBlock {
         , buf_list_head(0)
         , blocked_next(nullptr)
         , blocked_prev(nullptr)
+        , blocked_on_queue(nullptr)
         , first_child(nullptr)
         , next_sibling(nullptr)
         , prev_sibling(nullptr)
@@ -179,6 +180,13 @@ struct TaskControlBlock {
     /// (singly linked via next).
     TaskControlBlock* blocked_next;
     TaskControlBlock* blocked_prev;
+
+    /// @brief Pointer to the message queue this task is blocked on
+    /// (as a sender).  Non-null only while the task is in another
+    /// task's blocked_senders list.  Used by cleanup() to detach
+    /// before the TCB is freed, preventing dangling pointers in the
+    /// queue's list.
+    MessageQueue* blocked_on_queue;
 
     /// @brief Process hierarchy: first child, next sibling, previous sibling.
     TaskControlBlock* first_child;

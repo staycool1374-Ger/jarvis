@@ -1,5 +1,6 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
@@ -38,6 +39,11 @@ void init_task_common(TaskControlBlock& tcb) {
     }
     tcb.blocked_next = nullptr;
     tcb.blocked_prev = nullptr;
+    tcb.blocked_on_queue = nullptr;
+    tcb.stack_pdpt_phys_ = 0;
+    tcb.page_table_shared_ = false;
+    tcb.user_stack_ = 0;
+    tcb.user_stack_size_ = 0;
 
     auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
     if (n) {
@@ -74,6 +80,7 @@ TaskControlBlock* TaskControlBlock::create(
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
     ENSURE(tcb != nullptr);
+    memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
@@ -122,6 +129,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
     if (!tcb) return nullptr;
+    memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
@@ -194,6 +202,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
     if (!tcb) return nullptr;
+    memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->id = Scheduler::alloc_id();
     tcb->parent_id = parent->id;
@@ -446,6 +455,31 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 }
 
 void TaskControlBlock::cleanup() noexcept {
+    // Remove self from any message queue's blocked-senders list *before*
+    // freeing any resources.  If we are blocked on another task's queue
+    // (blocked_on_queue != nullptr) we must detach now — otherwise the
+    // queue owner's cleanup() will walk a dangling pointer after we are
+    // freed and poisoned.
+    if (blocked_on_queue) {
+        auto& q = *blocked_on_queue;
+        if (q.blocked_senders_head == this) {
+            q.blocked_senders_head = blocked_next;
+            if (q.blocked_senders_tail == this)
+                q.blocked_senders_tail = nullptr;
+        } else {
+            auto* prev = q.blocked_senders_head;
+            while (prev && prev->blocked_next != this)
+                prev = prev->blocked_next;
+            if (prev) {
+                prev->blocked_next = blocked_next;
+                if (q.blocked_senders_tail == this)
+                    q.blocked_senders_tail = prev;
+            }
+        }
+        blocked_next = nullptr;
+        blocked_on_queue = nullptr;
+    }
+
     // Notify the daemon manager so registered daemon PIDs are reset to 0.
     // Must run before msg_queue is destroyed so blocked senders get fast-fail
     // instead of blocking on a zombie destination.
@@ -507,6 +541,7 @@ void TaskControlBlock::cleanup() noexcept {
             while (task) {
                 auto* next = task->blocked_next;
                 task->blocked_next = nullptr;
+                task->blocked_on_queue = nullptr;
                 if (task->state != TaskState::TERMINATED)
                     task->state = TaskState::READY;
                 task = next;

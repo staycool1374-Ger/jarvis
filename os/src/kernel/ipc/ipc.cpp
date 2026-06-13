@@ -95,25 +95,29 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED
         ) return false;
 
-    MessageQueue& q = *tcb->msg_queue;
-
     // If the queue is already full, either return immediately (NONBLOCK)
     // or block the sender until space becomes available.
-    if (q.is_full()) {
+    if (tcb->msg_queue->is_full()) {
         if (flags & IPC_NONBLOCK) return false;
 
         auto* cur = Scheduler::current_task();
         if (!cur) return false;
 
-        block_sender(q, *cur);
+        block_sender(*tcb->msg_queue, *cur);
         cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
-        // Woken up — queue should have space now
-        if (q.is_full()) return false;
+        // Woken up — destination may have been cleaned up while we were
+        // blocked.  Re-lookup to avoid accessing a dangling reference.
+        tcb = Scheduler::find_task(dest_id);
+        if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED)
+            return false;
+
+        // Queue should have space now
+        if (tcb->msg_queue->is_full()) return false;
     }
 
-    bool ok = q.push(msg);
+    bool ok = tcb->msg_queue->push(msg);
     if (!ok) return false;
 
     // Zero-copy buffer transfer: if the message carries a buffer handle,
@@ -176,6 +180,7 @@ MessageQueue& IPC::queue(uint64_t task_id) {
 
 bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
     task.blocked_next = nullptr;
+    task.blocked_on_queue = &q;
     if (q.blocked_senders_tail) {
         q.blocked_senders_tail->blocked_next = &task;
         q.blocked_senders_tail = &task;
@@ -200,6 +205,7 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
         q.blocked_senders_tail = nullptr;
     }
     task->blocked_next = nullptr;
+    task->blocked_on_queue = nullptr;
     if (task->state != TaskState::TERMINATED)
         task->state = TaskState::READY;
 

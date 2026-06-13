@@ -50,6 +50,13 @@ public:
     using OOMHandler = bool (*)();
     static void set_oom_handler(OOMHandler h) { oom_handler_ = h; }
 
+    /// @name Test-isolation helpers
+    /// @brief Expose internal bitmaps for snapshot/restore.
+    static uint8_t* bitmap_ptr()            { return reinterpret_cast<uint8_t*>(bitmap_); }
+    static uint8_t* owner_bitmap_ptr()      { return reinterpret_cast<uint8_t*>(owner_bitmap_); }
+    static uint64_t bitmap_bytes()          { return bitmap_size_; }
+    static uint64_t& free_pages_ref()       { return free_pages_; }
+
 private:
     static constexpr uint64_t PAGE_SIZE = 4096;
 

@@ -72,6 +72,20 @@ void notify_death(uint64_t pid) {
     }
 }
 
+void capture_state(DaemonEntry* entries_out, uint64_t& num_out) {
+    for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
+        entries_out[i] = entries_[i];
+    }
+    num_out = num_daemons_;
+}
+
+void restore_state(const DaemonEntry* entries_in, uint64_t num_in) {
+    for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
+        entries_[i] = entries_in[i];
+    }
+    num_daemons_ = num_in;
+}
+
 void restart_stale_daemons() {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].pid != 0) continue;

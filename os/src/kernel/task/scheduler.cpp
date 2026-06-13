@@ -349,6 +349,17 @@ void Scheduler::cleanup_test_tasks() noexcept {
         }
     }
     reap_orphans();
+    uint64_t i = 1;
+    while (i < task_count_) {
+        auto* t = tasks_[i];
+        if (t && t != idle_task_) {
+            t->cleanup();
+            remove_task(*t);
+            MemPool::free(t);
+        } else {
+            ++i;
+        }
+    }
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) id_table_[i] = nullptr;
     id_table_insert(idle_task_->id, idle_task_);
     task_count_ = 1;
@@ -401,6 +412,42 @@ void Scheduler::reschedule() noexcept {
         }
         switch_to_task(current, next);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Test-isolation helpers
+// ---------------------------------------------------------------------------
+
+void Scheduler::capture_state(TaskControlBlock** tasks_out,
+                              TaskControlBlock** id_table_out,
+                              uint64_t& task_count_out,
+                              uint64_t& current_idx_out,
+                              uint64_t& next_id_out,
+                              TaskControlBlock*& idle_out,
+                              bool& preempt_out) {
+    __builtin_memcpy(tasks_out,      tasks_,      sizeof(TaskControlBlock*) * MAX_TASKS);
+    __builtin_memcpy(id_table_out,   id_table_,   sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
+    task_count_out   = task_count_;
+    current_idx_out  = current_index_;
+    next_id_out      = next_task_id_;
+    idle_out         = idle_task_;
+    preempt_out      = preempt_enabled_;
+}
+
+void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
+                              TaskControlBlock* const* id_table_in,
+                              uint64_t task_count_in,
+                              uint64_t current_idx_in,
+                              uint64_t next_id_in,
+                              TaskControlBlock* idle_in,
+                              bool preempt_in) {
+    __builtin_memcpy(tasks_,       tasks_in,    sizeof(TaskControlBlock*) * MAX_TASKS);
+    __builtin_memcpy(id_table_,    id_table_in, sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
+    task_count_     = task_count_in;
+    current_index_  = current_idx_in;
+    next_task_id_   = next_id_in;
+    idle_task_      = idle_in;
+    preempt_enabled_ = preempt_in;
 }
 
 } // namespace kernel

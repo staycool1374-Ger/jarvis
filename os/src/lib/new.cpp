@@ -1,6 +1,7 @@
 #include <types.hpp>
 #include <string.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
 
@@ -57,7 +58,7 @@ void* operator new[](unsigned long size, void* ptr) {
     return ptr;
 }
 
-void operator delete(void* p) { (void)p; }
-void operator delete[](void* p) { (void)p; }
-void operator delete(void* p, unsigned long) { (void)p; }
-void operator delete[](void* p, unsigned long) { (void)p; }
+void operator delete(void* p) { kernel::MemPool::free(p); }
+void operator delete[](void* p) { kernel::MemPool::free(p); }
+void operator delete(void* p, unsigned long) { kernel::MemPool::free(p); }
+void operator delete[](void* p, unsigned long) { kernel::MemPool::free(p); }
