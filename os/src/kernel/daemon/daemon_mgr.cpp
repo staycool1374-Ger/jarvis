@@ -120,7 +120,7 @@ void restart_stale_daemons() {
 
         task->priority = 1;
         task->period_ticks = 10;
-        kernel::Scheduler::add_task(task);
+        kernel::Scheduler::add_task(*task);
 
         ++entries_[i].restart_count;
         entries_[i].pid = task->id;

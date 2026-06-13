@@ -17,7 +17,7 @@ uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* reg
     if (!regs) return static_cast<uint64_t>(-1);
     auto* child = TaskControlBlock::clone(regs);
     if (!child) return static_cast<uint64_t>(-1);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     return child->id;
 }
 
@@ -39,12 +39,12 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
         }
     }
     if (!child) return static_cast<uint64_t>(-1);
-    if (child->state == TaskState::TERMINATED) {
+        if (child->state == TaskState::TERMINATED) {
         if (status_ptr) *status_ptr = child->exit_code;
         uint64_t cid = child->id;
         cur->remove_child(child);
         child->cleanup();
-        Scheduler::remove_task(child);
+        Scheduler::remove_task(*child);
         MemPool::free(child);
         return cid;
     }

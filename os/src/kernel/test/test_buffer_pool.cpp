@@ -227,9 +227,9 @@ JARVIS_TEST(buffer_pool_unmap_all) {
 JARVIS_TEST(buffer_pool_syscall_dispatch) {
     auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task != nullptr);
-    Scheduler::add_task(task);
+    Scheduler::add_task(*task);
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(task);
+    Scheduler::set_current(*task);
 
     uint64_t va = 0xB0000000;
     uint64_t handle = Syscall::handle(
@@ -240,8 +240,8 @@ JARVIS_TEST(buffer_pool_syscall_dispatch) {
         static_cast<uint64_t>(SyscallNumber::BUF_FREE), handle, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, result);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*task);
     task->cleanup();
     delete task;
     JARVIS_TEST_PASS();
@@ -251,13 +251,13 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
-    Scheduler::add_task(sender);
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*sender);
+    Scheduler::add_task(*receiver);
 
     auto* original = Scheduler::current_task();
 
     // Sender allocs a buffer
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     uint64_t va = 0xC0000000;
     uint64_t handle = BufferPool::alloc(sender, va);
     JARVIS_ASSERT(handle != 0);
@@ -269,25 +269,25 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
 
     // Receiver gets the message
-    Scheduler::set_current(receiver);
+    Scheduler::set_current(*receiver);
     Message recv_msg{};
     JARVIS_ASSERT(IPC::recv(recv_msg));
     JARVIS_ASSERT_EQ(42ULL, recv_msg.type);
     JARVIS_ASSERT_EQ(handle, recv_msg.buf_handle);
 
     // Sender can no longer free the buffer
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     JARVIS_ASSERT(!BufferPool::free(sender, handle));
 
     // Receiver can map and free it
-    Scheduler::set_current(receiver);
+    Scheduler::set_current(*receiver);
     uint64_t recv_va = 0xD0000000;
     JARVIS_ASSERT(BufferPool::map(receiver, handle, recv_va));
     JARVIS_ASSERT(BufferPool::free(receiver, handle));
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(sender);
-    Scheduler::remove_task(receiver);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*sender);
+    Scheduler::remove_task(*receiver);
     sender->cleanup();
     delete sender;
     receiver->cleanup();

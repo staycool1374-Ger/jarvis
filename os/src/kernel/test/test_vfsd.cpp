@@ -32,18 +32,18 @@ JARVIS_TEST(vfsd_kernel_bypass_open) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
                                    reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
     JARVIS_ASSERT(static_cast<int64_t>(ret) >= 0);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -58,10 +58,10 @@ JARVIS_TEST(vfsd_kernel_bypass_read) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     uint64_t fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -77,8 +77,8 @@ JARVIS_TEST(vfsd_kernel_bypass_read) {
                                          fd, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, close_ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -93,10 +93,10 @@ JARVIS_TEST(vfsd_kernel_bypass_write) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     uint64_t fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -112,8 +112,8 @@ JARVIS_TEST(vfsd_kernel_bypass_write) {
                                          fd, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, close_ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -127,10 +127,10 @@ JARVIS_TEST(vfsd_kernel_bypass_write) {
 JARVIS_TEST(vfsd_kernel_bypass_stat) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     vfs::VfsStat st{};
@@ -139,8 +139,8 @@ JARVIS_TEST(vfsd_kernel_bypass_stat) {
                                    reinterpret_cast<uint64_t>(&st), 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -154,10 +154,10 @@ JARVIS_TEST(vfsd_kernel_bypass_stat) {
 JARVIS_TEST(vfsd_kernel_bypass_fstat) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     uint64_t fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -173,8 +173,8 @@ JARVIS_TEST(vfsd_kernel_bypass_fstat) {
                                          fd, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, close_ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -188,18 +188,18 @@ JARVIS_TEST(vfsd_kernel_bypass_fstat) {
 JARVIS_TEST(vfsd_kernel_bypass_chdir) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/";
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::CHDIR),
                                    reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();

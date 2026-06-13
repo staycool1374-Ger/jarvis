@@ -46,11 +46,11 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
 JARVIS_TEST(task_exit_wakes_blocked_senders) {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     kernel::Message msg{};
     msg.sender_id = sender->id;
@@ -69,7 +69,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     }
 
     // Now send from sender - should block
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     (void)kernel::IPC::send(receiver->id, msg, 0);
     // IPC::send with blocking should not return if queue is full
     // The sender should be in blocked list
@@ -86,8 +86,8 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == nullptr);
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_tail == nullptr);
 
-    Scheduler::remove_task(sender);
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*sender);
+    Scheduler::remove_task(*receiver);
     delete sender;
     delete receiver;
     JARVIS_TEST_PASS();
@@ -122,12 +122,12 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly) {
 JARVIS_TEST(task_reparent_preserves_resources) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     // Create a fake child by manually setting up hierarchy
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -147,8 +147,8 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     JARVIS_ASSERT(actual_init->num_children >= 1);
 
     // Cleanup
-    Scheduler::remove_task(child);
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*child);
+    Scheduler::remove_task(*parent);
     delete child;
     delete parent;
     JARVIS_TEST_PASS();
@@ -162,7 +162,7 @@ JARVIS_TEST(task_reparent_preserves_resources) {
 JARVIS_TEST(task_zombie_state_cleanup) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
-    Scheduler::add_task(tcb);
+    Scheduler::add_task(*tcb);
 
     tcb->state = TaskState::TERMINATED;
     tcb->exit_code = 0;
@@ -170,7 +170,7 @@ JARVIS_TEST(task_zombie_state_cleanup) {
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb);
 
     tcb->cleanup();
-    Scheduler::remove_task(tcb);
+    Scheduler::remove_task(*tcb);
     delete tcb;
 
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == nullptr);
@@ -184,11 +184,11 @@ JARVIS_TEST(task_zombie_state_cleanup) {
 JARVIS_TEST(scheduler_reap_respects_parent_wait) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -216,7 +216,7 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
 
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     delete parent;
     JARVIS_TEST_PASS();
 }
@@ -262,7 +262,7 @@ JARVIS_TEST(elf_load_init_task_common_called) {
 JARVIS_TEST(lifecycle_zombie_no_waker) {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
-    Scheduler::add_task(tcb);
+    Scheduler::add_task(*tcb);
 
     uint64_t tid = tcb->id;
 
@@ -285,11 +285,11 @@ JARVIS_TEST(lifecycle_zombie_no_waker) {
 JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     Message msg{};
     msg.sender_id = sender->id;
@@ -308,7 +308,7 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
     }
 
     // Send from sender — should block (receiver queue full)
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     (void)IPC::send(receiver->id, msg, 0);
     JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
 
@@ -319,10 +319,10 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
 
     JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
-    Scheduler::remove_task(sender);
+    Scheduler::remove_task(*sender);
     sender->cleanup();
     delete sender;
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*receiver);
     delete receiver;
     JARVIS_TEST_PASS();
 }

@@ -40,16 +40,16 @@ void Scheduler::init() {
     preempt_enabled_ = true;
 }
 
-void Scheduler::add_task(TaskControlBlock* task) {
+void Scheduler::add_task(TaskControlBlock& task) {
     ENSURE(task_count_ < MAX_TASKS);
-    tasks_[task_count_++] = task;
-    id_table_insert(task->id, task);
+    tasks_[task_count_++] = &task;
+    id_table_insert(task.id, &task);
 }
 
-void Scheduler::remove_task(TaskControlBlock* task) {
-    id_table_remove(task);
+void Scheduler::remove_task(TaskControlBlock& task) {
+    id_table_remove(&task);
     for (uint64_t i = 0; i < task_count_; ++i) {
-        if (tasks_[i] == task) {
+        if (tasks_[i] == &task) {
             tasks_[i] = tasks_[--task_count_];
             if (current_index_ >= task_count_) current_index_ = 0;
             if (i < task_count_ && current_index_ == task_count_) current_index_ = i;
@@ -115,9 +115,9 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     return best;
 }
 
-void Scheduler::set_current(TaskControlBlock* task) noexcept {
+void Scheduler::set_current(TaskControlBlock& task) noexcept {
     for (uint64_t i = 0; i < task_count_; ++i) {
-        if (tasks_[i] == task) {
+        if (tasks_[i] == &task) {
             current_index_ = i;
             return;
         }
@@ -319,7 +319,7 @@ void Scheduler::reap_orphans() noexcept {
                     id_table_insert(idle_task_->id, idle_task_);
                 } else {
                     t->cleanup();
-                    remove_task(t);
+                    remove_task(*t);
                     MemPool::free(t);
                 }
                 reaped_any = true;

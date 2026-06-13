@@ -23,22 +23,22 @@ JARVIS_TEST(semaphore_wait_post) {
     }, 5, 10);
     JARVIS_ASSERT(worker != nullptr);
     worker->user_data = &sem;
-    Scheduler::add_task(worker);
+    Scheduler::add_task(*worker);
 
     auto* original = Scheduler::current_task();
     (void)original;
-    Scheduler::set_current(worker);
+    Scheduler::set_current(*worker);
 
     sem.wait();
 
     JARVIS_ASSERT(worker->state == TaskState::BLOCKED);
 
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
     sem.post();
 
     JARVIS_ASSERT(worker->state == TaskState::READY);
 
-    Scheduler::remove_task(worker);
+    Scheduler::remove_task(*worker);
     worker->cleanup();
     delete worker;
     JARVIS_TEST_PASS();
@@ -55,10 +55,10 @@ JARVIS_TEST(mutex_lock_unlock) {
 
     auto* owner = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(owner != nullptr);
-    Scheduler::add_task(owner);
+    Scheduler::add_task(*owner);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(owner);
+    Scheduler::set_current(*owner);
     mutex.lock();
 
     JARVIS_ASSERT(mutex.owner() == owner);
@@ -75,17 +75,17 @@ JARVIS_TEST(mutex_lock_unlock) {
 
     auto* waiter = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(waiter != nullptr);
-    Scheduler::add_task(waiter);
+    Scheduler::add_task(*waiter);
 
-    Scheduler::set_current(waiter);
+    Scheduler::set_current(*waiter);
     mutex.lock();
     JARVIS_ASSERT(mutex.owner() == waiter);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(waiter);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*waiter);
     waiter->cleanup();
     delete waiter;
-    Scheduler::remove_task(owner);
+    Scheduler::remove_task(*owner);
     owner->cleanup();
     delete owner;
     JARVIS_TEST_PASS();
@@ -146,21 +146,21 @@ JARVIS_TEST(sync_queue_send_blocks_when_full) {
     }, 5, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     queue.send((uint8_t*)"test", 4);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Drain one message
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
     uint8_t buf[32];
     size_t size = 32;
     JARVIS_ASSERT(queue.try_receive(buf, &size));
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
-    Scheduler::remove_task(sender);
+    Scheduler::remove_task(*sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();
@@ -183,21 +183,21 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
     }, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     receiver->user_data = &queue;
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(receiver);
+    Scheduler::set_current(*receiver);
     uint8_t buf[32];
     size_t size = 32;
     queue.receive(buf, &size);
     JARVIS_ASSERT(receiver->state == TaskState::BLOCKED);
 
     // Add a message to unblock
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
     JARVIS_ASSERT(queue.try_send((uint8_t*)"data", 4));
     JARVIS_ASSERT(receiver->state == TaskState::READY);
 
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*receiver);
     receiver->cleanup();
     delete receiver;
     JARVIS_TEST_PASS();
@@ -223,21 +223,21 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive) {
     }, 5, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
     queue.send((uint8_t*)"wake", 4);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Receiver drains one
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
     uint8_t buf[32];
     size_t size = 32;
     JARVIS_ASSERT(queue.receive(buf, &size));
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
-    Scheduler::remove_task(sender);
+    Scheduler::remove_task(*sender);
     sender->cleanup();
     delete sender;
     JARVIS_TEST_PASS();

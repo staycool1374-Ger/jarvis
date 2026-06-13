@@ -80,14 +80,14 @@ JARVIS_TEST(idle_task_calls_pause_syscall) {
 JARVIS_TEST(idle_task_yields_to_higher_priority) {
     auto* high_prio = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(high_prio != nullptr);
-    Scheduler::add_task(high_prio);
+    Scheduler::add_task(*high_prio);
 
     // Idle is at priority 0, high_prio at 10 - scheduler should pick high_prio
     auto* next = Scheduler::next_task();
     JARVIS_ASSERT(next != nullptr);
     JARVIS_ASSERT(next->priority >= high_prio->priority);
 
-    Scheduler::remove_task(high_prio);
+    Scheduler::remove_task(*high_prio);
     delete high_prio;
     JARVIS_TEST_PASS();
 }
@@ -144,13 +144,13 @@ JARVIS_TEST(multiple_idle_tasks_prevented) {
     // Create another task with priority 0 (same as idle)
     auto* another = TaskControlBlock::create([]() {}, 0, 10);
     JARVIS_ASSERT(another != nullptr);
-    Scheduler::add_task(another);
+    Scheduler::add_task(*another);
 
     // Idle should still be at index 0
     JARVIS_ASSERT_EQ(Scheduler::task_at(0), Scheduler::get_idle_task());
 
     // Cleanup
-    Scheduler::remove_task(another);
+    Scheduler::remove_task(*another);
     delete another;
 
     JARVIS_TEST_PASS();

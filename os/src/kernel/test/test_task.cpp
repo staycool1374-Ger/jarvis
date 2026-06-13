@@ -62,12 +62,12 @@ JARVIS_TEST(task_create_user_page_table) {
 JARVIS_TEST(task_clone_shares_page_tables) {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
     JARVIS_ASSERT(parent->page_table_ != 0);
     JARVIS_ASSERT(parent->user_stack_ != 0);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(parent);
+    Scheduler::set_current(*parent);
 
     uint64_t regs[22] = {};
     regs[17] = 0x1000;
@@ -85,10 +85,10 @@ JARVIS_TEST(task_clone_shares_page_tables) {
     child->cleanup();
     delete child;
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(original);
+    if (original) Scheduler::set_current(*original);
     JARVIS_TEST_PASS();
 }
 
@@ -134,10 +134,10 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects) {
 JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(parent);
+    Scheduler::set_current(*parent);
     uint64_t regs[22] = {};
     regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
@@ -153,10 +153,10 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
     JARVIS_ASSERT(parent->page_table_ == parent_pml4);
     JARVIS_ASSERT(parent->page_table_ != 0);
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(original);
+    if (original) Scheduler::set_current(*original);
     JARVIS_TEST_PASS();
 }
 
@@ -172,10 +172,10 @@ JARVIS_TEST(task_clone_no_page_table_leak) {
 
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(parent);
+    Scheduler::set_current(*parent);
     uint64_t regs[22] = {};
     regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
@@ -186,10 +186,10 @@ JARVIS_TEST(task_clone_no_page_table_leak) {
     child->cleanup();
     delete child;
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(original);
+    if (original) Scheduler::set_current(*original);
 
     uint64_t free_after = PMM::free_memory();
     JARVIS_ASSERT(free_after >= free_before);

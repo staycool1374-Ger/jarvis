@@ -219,10 +219,10 @@ JARVIS_TEST(syscall_dispatch_print_noop) {
 JARVIS_TEST(syscall_open_read_close) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/null";
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -239,8 +239,8 @@ JARVIS_TEST(syscall_open_read_close) {
     ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), fd, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -254,10 +254,10 @@ JARVIS_TEST(syscall_open_read_close) {
 JARVIS_TEST(syscall_write_fstat) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     const char* path = "/dev/tty";
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -278,8 +278,8 @@ JARVIS_TEST(syscall_write_fstat) {
     ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), fd, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -322,10 +322,10 @@ JARVIS_TEST(syscall_exec_nonexistent) {
 JARVIS_TEST(syscall_pipe_read_write) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     int pipefd[2];
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PIPE),
@@ -352,8 +352,8 @@ JARVIS_TEST(syscall_pipe_read_write) {
     Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), pipefd[0], 0, 0, 0, nullptr);
     Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), pipefd[1], 0, 0, 0, nullptr);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -367,10 +367,10 @@ JARVIS_TEST(syscall_pipe_read_write) {
 JARVIS_TEST(syscall_signal_sigreturn) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::SIGNAL),
                                    1, reinterpret_cast<uint64_t>(test_signal_handler), 0, 0,
@@ -380,8 +380,8 @@ JARVIS_TEST(syscall_signal_sigreturn) {
 
     // SIGRETURN requires a valid regs array with a SignalFrame on the user stack;
     // stubbed because no signal delivery path exists to populate one.
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -396,10 +396,10 @@ JARVIS_TEST(syscall_send_recv) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->msg_queue != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::SEND),
                                    test_task->id, 0, 42, 0, nullptr);
@@ -411,8 +411,8 @@ JARVIS_TEST(syscall_send_recv) {
     JARVIS_ASSERT_EQ(42ULL, ret);
     JARVIS_ASSERT(test_task->msg_queue->is_empty());
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();

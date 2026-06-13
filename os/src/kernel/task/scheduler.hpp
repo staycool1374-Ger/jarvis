@@ -21,11 +21,11 @@ public:
     static TaskControlBlock* find_task(uint64_t id) noexcept;
 
     /// @brief Adds a task to the scheduler's run queue.
-    /// @param task Pointer to the task to add.
-    static void add_task(TaskControlBlock* task);
+    /// @param task Reference to the task to add.
+    static void add_task(TaskControlBlock& task);
     /// @brief Removes a task from the scheduler's run queue.
-    /// @param task Pointer to the task to remove.
-    static void remove_task(TaskControlBlock* task);
+    /// @param task Reference to the task to remove.
+    static void remove_task(TaskControlBlock& task);
 
     /// @brief Returns the currently running task.
     /// @return Pointer to the current TaskControlBlock.
@@ -59,8 +59,8 @@ public:
     /// @return Pointer to the next TaskControlBlock.
     static TaskControlBlock* next_task() noexcept;
     /// @brief Sets the current running task.
-    /// @param task Pointer to the task to set as current.
-    static void set_current(TaskControlBlock* task) noexcept;
+    /// @param task Reference to the task to set as current.
+    static void set_current(TaskControlBlock& task) noexcept;
     /// @brief Sets the current running task by ID (used after context switch).
     /// @param id Task ID to set as current.
     static void set_current_by_id(uint64_t id) noexcept;

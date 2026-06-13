@@ -56,10 +56,10 @@ JARVIS_TEST(scheduler_remove_task) {
 
     auto* new_task = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(new_task != nullptr);
-    Scheduler::add_task(new_task);
+    Scheduler::add_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
-    Scheduler::remove_task(new_task);
+    Scheduler::remove_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before, Scheduler::task_count());
 
     auto* after = Scheduler::current_task();
@@ -83,7 +83,7 @@ JARVIS_TEST(scheduler_reap_orphans) {
     child->parent_id = 999999;
     child->state = TaskState::TERMINATED;
     child->exit_code = 42;
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
 
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
@@ -104,11 +104,11 @@ JARVIS_TEST(scheduler_reap_orphans) {
 JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(child);
+    Scheduler::add_task(*child);
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -136,8 +136,8 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
 
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    Scheduler::remove_task(parent);
-    delete parent;
+    Scheduler::remove_task(*parent);
+
     JARVIS_TEST_PASS();
 }
 

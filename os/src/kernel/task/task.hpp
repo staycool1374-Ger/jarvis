@@ -213,8 +213,8 @@ struct TaskControlBlock {
     /// @return Pointer to the new child TaskControlBlock, or nullptr on failure.
     static TaskControlBlock* clone(uint64_t* regs);
 
-    void save_context(uint64_t* rsp) noexcept;
-    void restore_context(uint64_t* rsp) noexcept;
+    void save_context(uint64_t& rsp) noexcept;
+    void restore_context(uint64_t& rsp) noexcept;
 
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).
     ///        Called by WAITPID after reaping a TERMINATED child.

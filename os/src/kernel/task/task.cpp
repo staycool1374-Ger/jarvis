@@ -173,12 +173,12 @@ TaskControlBlock* TaskControlBlock::create_user(
     return tcb;
 }
 
-void TaskControlBlock::save_context(uint64_t* rsp) noexcept {
-    context.rsp = *rsp;
+void TaskControlBlock::save_context(uint64_t& rsp) noexcept {
+    context.rsp = rsp;
 }
 
-void TaskControlBlock::restore_context(uint64_t* rsp) noexcept {
-    *rsp = context.rsp;
+void TaskControlBlock::restore_context(uint64_t& rsp) noexcept {
+    rsp = context.rsp;
 }
 
 TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {

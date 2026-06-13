@@ -19,7 +19,7 @@ using namespace kernel;
 JARVIS_TEST(waitpid_zombie_over_new_child) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     // Child 1 — simulate that it ran and exited (TERMINATED)
     auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
@@ -28,7 +28,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
     child1->state = TaskState::TERMINATED;
     child1->exit_code = 42;
     parent->add_child(child1);
-    Scheduler::add_task(child1);
+    Scheduler::add_task(*child1);
 
     // Simulate first waitpid: parent blocked, child1 was not reaped.
     // (This is what happened before the fix — waitpid returned -1.)
@@ -39,7 +39,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
     child2->parent_id = parent->id;
     child2->state = TaskState::READY;
     parent->add_child(child2);
-    Scheduler::add_task(child2);
+    Scheduler::add_task(*child2);
 
     // Simulate second waitpid(-1, ...): iterate scheduler tasks looking for
     // a terminated child of this parent — exactly what sys_waitpid does.
@@ -63,7 +63,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
     // Now actually reap child1
     parent->remove_child(child1);
     child1->cleanup();
-    Scheduler::remove_task(child1);
+    Scheduler::remove_task(*child1);
     delete child1;
 
     // Child1 should be gone from scheduler
@@ -74,9 +74,9 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
     JARVIS_ASSERT(child2->state == TaskState::READY);
 
     // Cleanup
-    Scheduler::remove_task(child2);
+    Scheduler::remove_task(*child2);
     delete child2;
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     delete parent;
 
     JARVIS_TEST_PASS();
@@ -90,7 +90,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
 JARVIS_TEST(waitpid_two_children_sequential_reap) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(parent);
+    Scheduler::add_task(*parent);
 
     auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
@@ -98,7 +98,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     child1->state = TaskState::TERMINATED;
     child1->exit_code = 10;
     parent->add_child(child1);
-    Scheduler::add_task(child1);
+    Scheduler::add_task(*child1);
 
     auto* child2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child2 != nullptr);
@@ -106,7 +106,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     child2->state = TaskState::TERMINATED;
     child2->exit_code = 20;
     parent->add_child(child2);
-    Scheduler::add_task(child2);
+    Scheduler::add_task(*child2);
 
     // First waitpid: find and reap child1
     TaskControlBlock* found = nullptr;
@@ -121,7 +121,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     JARVIS_ASSERT(found == child1);
     parent->remove_child(child1);
     child1->cleanup();
-    Scheduler::remove_task(child1);
+    Scheduler::remove_task(*child1);
     delete child1;
     JARVIS_ASSERT(Scheduler::find_task(child1->id) == nullptr);
 
@@ -138,11 +138,11 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     JARVIS_ASSERT(found == child2);
     parent->remove_child(child2);
     child2->cleanup();
-    Scheduler::remove_task(child2);
+    Scheduler::remove_task(*child2);
     delete child2;
     JARVIS_ASSERT(Scheduler::find_task(child2->id) == nullptr);
 
-    Scheduler::remove_task(parent);
+    Scheduler::remove_task(*parent);
     delete parent;
     JARVIS_TEST_PASS();
 }

@@ -275,7 +275,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(vfsd_task);
+                    kernel::Scheduler::add_task(*vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
                     kernel::daemon::register_daemon(
                         "vfsd", "vfsd.c.elf",
@@ -300,7 +300,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(iocd_task);
+                    kernel::Scheduler::add_task(*iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);
                     kernel::daemon::register_daemon(
                         "iocd", "iocd.c.elf",
@@ -337,7 +337,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (test_task) {
                     test_task->priority = 1;
                     test_task->period_ticks = 50;
-                    kernel::Scheduler::add_task(test_task);
+                    kernel::Scheduler::add_task(*test_task);
                     debug_write("[BOOT] test_fork started (PID=");
                     debug_write_hex(test_task->id);
                     debug_write(")\n");
@@ -357,7 +357,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (shell_task) {
                     shell_task->priority = 2;
                     shell_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(shell_task);
+                    kernel::Scheduler::add_task(*shell_task);
                     debug_write("[BOOT] Userspace shell started (PID=");
                     debug_write_hex(shell_task->id);
                     debug_write(")\n");
@@ -377,7 +377,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (idle_task) {
                     idle_task->priority = 0;
                     idle_task->period_ticks = 0xFFFFFFFF;
-                    kernel::Scheduler::add_task(idle_task);
+                    kernel::Scheduler::add_task(*idle_task);
                     debug_write("[BOOT] Userspace idle task started (PID=");
                     debug_write_hex(idle_task->id);
                     debug_write(")\n");
