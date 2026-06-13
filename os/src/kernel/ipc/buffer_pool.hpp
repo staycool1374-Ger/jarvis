@@ -77,6 +77,16 @@ public:
 
     static Entry entries[MAX_BUFFERS];
 
+    /// @name Test-isolation helpers (snapshot / restore)
+    /// @brief Copy all entries + free_head + next_cookie into flat buffer.
+    static void capture_state(uint8_t* dst, size_t max_bytes);
+    /// @brief Restore entries + free_head + next_cookie from flat buffer.
+    static void restore_state(const uint8_t* src, size_t max_bytes);
+    /// @brief Bytes needed for BufferPool state capture.
+    static constexpr size_t state_bytes() {
+        return sizeof(entries) + sizeof(free_head_) + sizeof(next_cookie_);
+    }
+
 private:
     static int32_t free_head_;
     static uint32_t next_cookie_;

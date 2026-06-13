@@ -198,6 +198,24 @@ bool BufferPool::transfer(uint64_t handle, TaskControlBlock& from,
     return true;
 }
 
+void BufferPool::capture_state(uint8_t* dst, size_t max_bytes) {
+    (void)max_bytes;
+    __builtin_memcpy(dst, entries, sizeof(entries));
+    dst += sizeof(entries);
+    __builtin_memcpy(dst, &free_head_, sizeof(free_head_));
+    dst += sizeof(free_head_);
+    __builtin_memcpy(dst, &next_cookie_, sizeof(next_cookie_));
+}
+
+void BufferPool::restore_state(const uint8_t* src, size_t max_bytes) {
+    (void)max_bytes;
+    __builtin_memcpy(entries, src, sizeof(entries));
+    src += sizeof(entries);
+    __builtin_memcpy(&free_head_, src, sizeof(free_head_));
+    src += sizeof(free_head_);
+    __builtin_memcpy(&next_cookie_, src, sizeof(next_cookie_));
+}
+
 void BufferPool::unmap_all(TaskControlBlock& task) {
     int32_t idx = task.buf_list_head;
     while (idx != -1) {

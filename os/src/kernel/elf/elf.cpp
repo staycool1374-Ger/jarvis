@@ -252,6 +252,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
     if (!tcb) return nullptr;
+    __builtin_memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->id = kernel::Scheduler::alloc_id();
     tcb->state = TaskState::READY;

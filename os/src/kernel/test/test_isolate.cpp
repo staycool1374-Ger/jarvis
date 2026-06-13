@@ -3,6 +3,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 
 namespace kernel::test {
 
@@ -30,8 +31,10 @@ static size_t off_daemon_entries(){ return off_sched_misc()
 static size_t off_daemon_num()    { return off_daemon_entries()
                                        + daemon::MAX_DAEMONS * sizeof(daemon::DaemonEntry); }
 
+static size_t off_bufpool()       { return off_daemon_num() + sizeof(uint64_t); }
+
 static size_t total_size() {
-    return off_daemon_num() + sizeof(uint64_t);
+    return off_bufpool() + BufferPool::state_bytes();
 }
 
 bool snapshot_create() {
@@ -92,6 +95,10 @@ bool snapshot_create() {
         daemon::capture_state(entries, num);
     }
 
+    // ---- BufferPool ----
+    BufferPool::capture_state(g_snapshot + off_bufpool(),
+                              BufferPool::state_bytes());
+
     return true;
 }
 
@@ -142,6 +149,10 @@ void snapshot_restore() {
                             g_snapshot + off_daemon_num());
         daemon::restore_state(entries, num);
     }
+
+    // ---- BufferPool ----
+    BufferPool::restore_state(g_snapshot + off_bufpool(),
+                              BufferPool::state_bytes());
 }
 
 void snapshot_destroy() {

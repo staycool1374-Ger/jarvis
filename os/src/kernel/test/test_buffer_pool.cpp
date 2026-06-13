@@ -99,7 +99,7 @@ JARVIS_TEST(buffer_pool_invalid_handle) {
 
     // Index out of range
     uint64_t oob = (static_cast<uint64_t>(real_gen) << 32) | BufferPool::MAX_BUFFERS;
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(oob));
+    JARVIS_ASSERT_EQ(BUF_INVALID_INDEX, BufferPool::validate(oob));
 
     BufferPool::free(*task, good);
 
