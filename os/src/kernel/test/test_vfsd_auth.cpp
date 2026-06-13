@@ -21,17 +21,17 @@ JARVIS_TEST(vfsd_self_authorization) {
         JARVIS_ASSERT(static_cast<int64_t>(ret) >= 0);
     }, 5, 10);
     JARVIS_ASSERT(vfsd_task != nullptr);
-    Scheduler::add_task(vfsd_task);
+    Scheduler::add_task(*vfsd_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(vfsd_task);
+    Scheduler::set_current(*vfsd_task);
 
     // vfsd::is_vfsd_task() should return true for this task
     // vfsd_authorize() should return true without IPC
     // The test passes if the task can complete without crashing
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(vfsd_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*vfsd_task);
     vfsd_task->cleanup();
     delete vfsd_task;
     JARVIS_TEST_PASS();
@@ -54,13 +54,13 @@ JARVIS_TEST(vfsd_self_authorization_fd_op) {
         JARVIS_ASSERT_EQ(0ULL, close_ret);
     }, 5, 10);
     JARVIS_ASSERT(vfsd_task != nullptr);
-    Scheduler::add_task(vfsd_task);
+    Scheduler::add_task(*vfsd_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(vfsd_task);
+    Scheduler::set_current(*vfsd_task);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(vfsd_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*vfsd_task);
     vfsd_task->cleanup();
     delete vfsd_task;
     JARVIS_TEST_PASS();
@@ -85,13 +85,13 @@ JARVIS_TEST(vfsd_absent_authorize_fails) {
         // The exact behavior depends on the implementation, but it should not crash
     }, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -111,13 +111,13 @@ JARVIS_TEST(vfsd_absent_syscall_fails) {
         JARVIS_ASSERT(static_cast<int64_t>(ret) == -1);
     }, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();
@@ -139,13 +139,13 @@ JARVIS_TEST(vfsd_authorize_null_path) {
         // The test passes if it doesn't crash
     }, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(test_task);
+    Scheduler::add_task(*test_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(test_task);
+    Scheduler::set_current(*test_task);
 
-    Scheduler::set_current(original);
-    Scheduler::remove_task(test_task);
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
     test_task->cleanup();
     delete test_task;
     JARVIS_TEST_PASS();

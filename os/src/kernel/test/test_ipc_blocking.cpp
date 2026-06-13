@@ -67,7 +67,7 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state) {
     }, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
-    Scheduler::add_task(receiver);
+    Scheduler::add_task(*receiver);
 
     auto* sender = TaskControlBlock::create([]() {
         Message msg;
@@ -82,25 +82,25 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state) {
         JARVIS_ASSERT_EQ(99ULL, reply.type);
     }, 5, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(sender);
+    Scheduler::add_task(*sender);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(sender);
+    Scheduler::set_current(*sender);
 
     // Let sender run (it will block on send_sync)
     Scheduler::reschedule();
     Scheduler::reschedule();
 
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
 
     // Both tasks should be in READY state after completion
     JARVIS_ASSERT(sender->state == TaskState::READY);
     JARVIS_ASSERT(receiver->state == TaskState::READY);
 
-    Scheduler::remove_task(sender);
+    Scheduler::remove_task(*sender);
     sender->cleanup();
     delete sender;
-    Scheduler::remove_task(receiver);
+    Scheduler::remove_task(*receiver);
     receiver->cleanup();
     delete receiver;
     JARVIS_TEST_PASS();
@@ -134,20 +134,20 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli) {
     }, 5, 10);
     JARVIS_ASSERT(user_task != nullptr);
     JARVIS_ASSERT(user_task->page_table_ != 0);  // userspace task
-    Scheduler::add_task(user_task);
+    Scheduler::add_task(*user_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(user_task);
+    Scheduler::set_current(*user_task);
 
     // Let user task run (it will block in recv)
     Scheduler::reschedule();
 
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
 
     // User task should be in READY state after completion
     JARVIS_ASSERT(user_task->state == TaskState::READY);
 
-    Scheduler::remove_task(user_task);
+    Scheduler::remove_task(*user_task);
     user_task->cleanup();
     delete user_task;
     JARVIS_TEST_PASS();
@@ -181,20 +181,20 @@ JARVIS_TEST(ipc_kernel_block_skips_sti) {
     }, 5, 10);
     JARVIS_ASSERT(kernel_task != nullptr);
     JARVIS_ASSERT(kernel_task->page_table_ == 0);  // kernel task
-    Scheduler::add_task(kernel_task);
+    Scheduler::add_task(*kernel_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(kernel_task);
+    Scheduler::set_current(*kernel_task);
 
     // Let kernel task run (it will block in recv)
     Scheduler::reschedule();
 
-    Scheduler::set_current(original);
+    Scheduler::set_current(*original);
 
     // Kernel task should be in READY state after completion
     JARVIS_ASSERT(kernel_task->state == TaskState::READY);
 
-    Scheduler::remove_task(kernel_task);
+    Scheduler::remove_task(*kernel_task);
     kernel_task->cleanup();
     delete kernel_task;
     JARVIS_TEST_PASS();
