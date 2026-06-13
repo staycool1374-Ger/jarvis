@@ -98,14 +98,32 @@ bool snapshot_create() {
 void snapshot_restore() {
     if (!g_snapshot) return;
 
-    // ---- PMM ----
+    // ---- PMM (restore bitmap, then re-mark snapshot buffer pages) ----
     {
+        uint64_t buf_phys = reinterpret_cast<uint64_t>(g_snapshot)
+                            - arch::HHDM_OFFSET;
+        size_t   buf_pages = (g_snapshot_size + arch::PAGE_SIZE - 1)
+                             / arch::PAGE_SIZE;
         __builtin_memcpy(PMM::bitmap_ptr(),
                          g_snapshot + off_pmm_bitmap(), PMM::bitmap_bytes());
         __builtin_memcpy(PMM::owner_bitmap_ptr(),
                          g_snapshot + off_pmm_owner(),  PMM::bitmap_bytes());
-        PMM::free_pages_ref() =
-            *reinterpret_cast<uint64_t*>(g_snapshot + off_pmm_free());
+        // Re-mark snapshot buffer pages so the next test cannot allocate
+        // them and overwrite the saved state.  bitmap_set / owner_set
+        // are private; write directly since we know the layout.
+        {
+            uint8_t* bmp = PMM::bitmap_ptr();
+            uint8_t* own = PMM::owner_bitmap_ptr();
+            for (size_t i = 0; i < buf_pages; ++i) {
+                size_t idx = (buf_phys / arch::PAGE_SIZE) + i;
+                bmp[idx / 8] |= static_cast<uint8_t>(1 << (idx % 8));
+                own[idx / 8] &= static_cast<uint8_t>(~(1 << (idx % 8)));
+            }
+        }
+        uint64_t saved_free = *reinterpret_cast<uint64_t*>(
+            g_snapshot + off_pmm_free());
+        PMM::free_pages_ref() = (saved_free > buf_pages)
+                                ? saved_free - buf_pages : 0;
     }
 
     // ---- MemPool (restore data first, then meta rebuilds free list) ----
