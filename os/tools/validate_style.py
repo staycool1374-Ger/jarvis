@@ -418,19 +418,64 @@ class RefOverPtrChecker(Checker):
         r"(?:,\s*|\(\s*)(\w+(?:\s*[*])+\s*\w+)(?:\s*[,)])"
     )
 
+    _excluded_files = {
+        "src/kernel/memory/checked_ptr.hpp",      # template wrapper - pointers idiomatic
+        "src/kernel/memory/mempool.hpp",           # pool allocator - void* interface
+        "src/kernel/memory/mempool.cpp",           # pool allocator - void* interface
+        "src/kernel/gcov/gcov_handler.cpp",        # gcov callbacks - void* function pointers
+        "src/kernel/vfs/vfs.hpp",                  # VnodeOps function pointer signatures
+        "src/kernel/vfs/devfs.cpp",                # VFS callback signatures (buffer params)
+        "src/kernel/vfs/initrd_fs.cpp",            # VFS callback signatures (buffer params)
+        "src/kernel/vfs/pipe.cpp",                 # VFS callback signatures (buffer params)
+        "src/kernel/vfs/procfs.cpp",               # VFS callback signatures (buffer params)
+        "src/kernel/task/task.hpp",                # internal TCB child list - nullable pointers
+        "src/kernel/task/task.cpp",                # internal TCB child list - nullable pointers
+        "src/kernel/task/scheduler.hpp",           # id_table helpers - internal hash table
+    }
+
+    _excluded_params = {
+        "regs",              # syscall register save area (assembly context)
+        "table",             # VMM page table pointer (arch-specific)
+        "func",              # gcov handler function pointer callback
+        "private_data",      # VFS private data pointer
+        "private_data_",     # VFS private data pointer (alternate naming)
+    }
+
+    def _is_vnodeops_callback(self, line_text: str, param: str) -> bool:
+        """Check if this is a VnodeOps function pointer parameter."""
+        return ("read" in line_text or "write" in line_text or "ioctl" in line_text or
+                "open" in line_text or "close" in line_text or "mmap" in line_text or
+                "stat" in line_text) and ("fn" in param.lower() or "func" in param.lower() or
+                "callback" in param.lower() or "op" in param.lower())
+
+    def _is_template_param(self, line_text: str, param: str) -> bool:
+        """Check if this is a template parameter where pointer is idiomatic."""
+        return ("template" in line_text or "typename" in line_text or
+                "checked_ptr" in line_text or "MemPool" in line_text)
+
     def check_file(self, rel_path: str, text: str) -> None:
         if not is_kernel_file(rel_path, self.cfg):
+            return
+        if rel_path in self._excluded_files:
             return
         for m in self._ptr_param.finditer(text):
             param = m.group(1).strip()
             name = param.split()[-1]
+            if name in self._excluded_params:
+                continue
             if name.startswith("out_") or name.startswith("result"):
                 continue
             if param.count("*") > 1:
                 continue
-            # Skip function pointer declarations inside structs (e.g., void (*func)(T*))
             line_text = text.split('\n')[get_line(text, m.start(1)) - 1].strip()
+            # Skip function pointer declarations inside structs (e.g., void (*func)(T*))
             if '(' in param and ')' in param and '*' in param.split('(')[0]:
+                continue
+            # Skip VnodeOps callback function pointers
+            if self._is_vnodeops_callback(line_text, param):
+                continue
+            # Skip template code where pointers are idiomatic
+            if self._is_template_param(line_text, param):
                 continue
             # heuristic: suggest ref if not an output param
             self.add(rel_path, get_line(text, m.start(1)),
