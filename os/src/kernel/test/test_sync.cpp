@@ -9,8 +9,10 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies that semaphore.wait() blocks a task and semaphore.post() wakes it.
-// Input: Semaphore initialized to 0/1, worker task calls wait(), then original task calls post()
+// Testidea: Verifies that semaphore.wait() blocks a task and
+// semaphore.post() wakes it.
+// Input: Semaphore initialized to 0/1, worker task calls wait(), then
+// original task calls post()
 // Expect: Worker state is BLOCKED after wait, READY after post
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(semaphore_wait_post) {
@@ -46,8 +48,10 @@ JARVIS_TEST(semaphore_wait_post) {
 
 // Runmode: kernel
 // Testidea: Verifies mutex lock/unlock with owner tracking and waiter handoff.
-// Input: Owner task locks mutex, unlocks, locks again; waiter task locks after owner unlocks
-// Expect: Mutex correctly tracks owner and locked state across multiple lock/unlock cycles and task switches
+// Input: Owner task locks mutex, unlocks, locks again; waiter task locks
+// after owner unlocks
+// Expect: Mutex correctly tracks owner and locked state across multiple
+// lock/unlock cycles and task switches
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(mutex_lock_unlock) {
     sync::Mutex mutex;
@@ -92,9 +96,12 @@ JARVIS_TEST(mutex_lock_unlock) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies Queue try_send/try_receive operations including full and empty edge cases.
-// Input: Send/receive one item, fill queue to QUEUE_MAX_MSG_COUNT, attempt overfill, then drain one
-// Expect: Single send/receive succeeds, queue fills to max, overfill returns false, drain reduces available count
+// Testidea: Verifies Queue try_send/try_receive operations including full
+// and empty edge cases.
+// Input: Send/receive one item, fill queue to QUEUE_MAX_MSG_COUNT, attempt
+// overfill, then drain one
+// Expect: Single send/receive succeeds, queue fills to max, overfill returns
+// false, drain reduces available count
 // Depends: kernel::sync::Queue, sync::QUEUE_MAX_MSG_COUNT
 JARVIS_TEST(queue_send_receive_block) {
     sync::Queue queue;
@@ -127,8 +134,10 @@ JARVIS_TEST(queue_send_receive_block) {
 
 // Runmode: kernel
 // Testidea: Verifies that Queue::send blocks the sender when the queue is full.
-// Input: Fill queue to capacity, create sender task that blocks on send, verify blocking behavior.
-// Expect: Sender becomes BLOCKED when queue is full; becomes READY after receiver drains.
+// Input: Fill queue to capacity, create sender task that blocks on send,
+// verify blocking behavior.
+// Expect: Sender becomes BLOCKED when queue is full; becomes READY after
+// receiver drains.
 JARVIS_TEST(sync_queue_send_blocks_when_full) {
     sync::Queue queue;
     queue.init();
@@ -167,9 +176,12 @@ JARVIS_TEST(sync_queue_send_blocks_when_full) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that Queue::receive blocks the receiver when the queue is empty.
-// Input: Create receiver task that blocks on receive from empty queue, verify blocking behavior.
-// Expect: Receiver becomes BLOCKED when queue is empty; becomes READY after sender adds message.
+// Testidea: Verifies that Queue::receive blocks the receiver when the queue
+// is empty.
+// Input: Create receiver task that blocks on receive from empty queue,
+// verify blocking behavior.
+// Expect: Receiver becomes BLOCKED when queue is empty; becomes READY after
+// sender adds message.
 JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
     sync::Queue queue;
     queue.init();
@@ -204,9 +216,12 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a blocked sender is woken when a receiver consumes from the queue.
-// Input: Fill queue, block sender on send, drain via receiver, verify sender becomes READY.
-// Expect: Sender is BLOCKED after failed send, becomes READY after receiver calls receive.
+// Testidea: Verifies that a blocked sender is woken when a receiver consumes
+// from the queue.
+// Input: Fill queue, block sender on send, drain via receiver, verify sender
+// becomes READY.
+// Expect: Sender is BLOCKED after failed send, becomes READY after receiver
+// calls receive.
 JARVIS_TEST(sync_queue_wake_sender_on_receive) {
     sync::Queue queue;
     queue.init();
@@ -246,7 +261,8 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive) {
 // Runmode: kernel
 // Testidea: Registers all sync primitive unit tests with the test framework.
 // Input: None
-// Expect: All semaphore, mutex, and queue tests are registered via JARVIS_REGISTER_TEST
+// Expect: All semaphore, mutex, and queue tests are registered via
+// JARVIS_REGISTER_TEST
 // Depends: kernel test framework
 void register_sync_tests() {
     Logger::info("Registering sync tests");

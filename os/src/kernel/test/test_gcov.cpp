@@ -31,7 +31,8 @@ JARVIS_TEST(gcov_flush_outputs_data) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies consecutive rdtsc() calls return strictly increasing values.
+// Testidea: Verifies consecutive rdtsc() calls return strictly increasing
+// values.
 // Input: Call rdtsc() twice with small delay
 // Expect: Second value > first value
 // Depends: kernel::arch::rdtsc()

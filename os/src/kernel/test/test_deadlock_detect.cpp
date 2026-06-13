@@ -23,7 +23,8 @@ JARVIS_TEST(deadlock_three_task_cycle) {
 
 // Runmode: kernel
 // Testidea: Verifies nested mutex deadlock is detected.
-// Input: Task holds outer mutex, tries to acquire inner mutex held by another task that waits for outer
+// Input: Task holds outer mutex, tries to acquire inner mutex held by
+// another task that waits for outer
 // Expect: Deadlock detected
 // Depends: WFG, deadlock detector, kernel::sync::Mutex
 JARVIS_TEST(deadlock_nested_mutex) {
@@ -58,7 +59,8 @@ JARVIS_TEST(deadlock_detection_overhead) {
 }
 
 // Runmode: kernel
-// Testidea: Registers all deadlock detection unit tests with the test framework.
+// Testidea: Registers all deadlock detection unit tests with the test
+// framework.
 // Input: None
 // Expect: All deadlock detection tests registered via JARVIS_REGISTER_TEST
 // Depends: kernel test framework

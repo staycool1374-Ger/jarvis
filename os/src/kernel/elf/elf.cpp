@@ -33,7 +33,8 @@ bool validate_header(const ELF64Header* hdr) {
     if (hdr->phentsize < sizeof(ELF64ProgramHeader)) return false;
     if (hdr->phnum > 0) {
         // Check for arithmetic overflow in program header region end
-        uint64_t ph_end = hdr->phoff + static_cast<uint64_t>(hdr->phnum) * hdr->phentsize;
+        uint64_t ph_end = hdr->phoff + static_cast<uint64_t>(hdr->phnum
+            ) * hdr->phentsize;
         if (ph_end < hdr->phoff) return false;  // overflow
         // Ensure header fits within reasonable image size
         if (ph_end > 1_MiB) return false;
@@ -64,7 +65,8 @@ static bool validate_segment(const ELF64ProgramHeader* phdr) {
     if (phdr->memsz > 64_MiB) return false;
     // Reject segments with suspicious alignment
     if (phdr->align > 1_MiB) return false;
-    // Validate file offset is within the image (cannot check exact size without file length,
+    // Validate file offset is within the image (cannot check exact size
+    // without file length,
     // but ensure it's reasonable: less than a typical max ELF size)
     if (phdr->offset > 4_MiB) return false;
     // W^X enforcement: segment should not be both writable AND executable
@@ -104,7 +106,8 @@ static void copy_strings(uint8_t* dest, const char* const* arr) {
     }
 }
 
-static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_data,
+static bool load_segments_and_stack(const ELF64Header* hdr,
+    const uint8_t* file_data,
                                      uint64_t pml4, uint64_t* out_ustack_phys)
 {
     for (uint16_t i = 0; i < hdr->phnum; ++i) {
@@ -121,19 +124,22 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
         uint64_t seg_phys = PMM::alloc_user_contiguous(num_pages);
         if (!seg_phys) return false;
 
-        for (size_t p = 0; p < num_pages; ++p) {
-            VMM::map_page_in_pml4(vaddr_base + p * arch::PAGE_SIZE,
-                                  seg_phys + p * arch::PAGE_SIZE,
+        for (size_t page_idx = 0; page_idx < num_pages; ++page_idx) {
+            VMM::map_page_in_pml4(vaddr_base + page_idx * arch::PAGE_SIZE,
+                                  seg_phys + page_idx * arch::PAGE_SIZE,
                                   true, pml4);
         }
 
         uint64_t offset_in_region = phdr->vaddr - vaddr_base;
-        memcpy(reinterpret_cast<void*>(arch::HHDM_OFFSET + seg_phys + offset_in_region),
+        memcpy(reinterpret_cast<void*>(arch::
+            HHDM_OFFSET + seg_phys + offset_in_region),
                file_data + phdr->offset, phdr->filesz);
 
         if (phdr->memsz > phdr->filesz) {
-            uint64_t zero_offset = arch::HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz;
-            memset(reinterpret_cast<void*>(zero_offset), 0, phdr->memsz - phdr->filesz);
+            uint64_t zero_offset = arch::
+                HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz;
+            memset(reinterpret_cast<void*>(zero_offset), 0,
+                phdr->memsz - phdr->filesz);
         }
     }
 
@@ -143,12 +149,14 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
 
     // Guard page: leave first page unmapped, start mapping at +arch::PAGE_SIZE
     for (size_t i = 0; i < ustack_pages; ++i) {
-        VMM::map_page_in_pml4(mem::STACK_VADDR + arch::PAGE_SIZE + i * arch::PAGE_SIZE,
+        VMM::map_page_in_pml4(mem::STACK_VADDR + arch::PAGE_SIZE + i * arch::
+            PAGE_SIZE,
                               ustack_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
 
-    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + ustack_phys), 0, mem::STACK_SIZE);
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + ustack_phys), 0, mem::
+        STACK_SIZE);
 
     size_t heap_pages = mem::HEAP_SIZE / arch::PAGE_SIZE;
     uint64_t heap_phys = PMM::alloc_user_contiguous(heap_pages);
@@ -159,7 +167,8 @@ static bool load_segments_and_stack(const ELF64Header* hdr, const uint8_t* file_
                               heap_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
-    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, mem::HEAP_SIZE);
+    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, mem::
+        HEAP_SIZE);
 
     if (out_ustack_phys) *out_ustack_phys = ustack_phys;
     return true;
@@ -223,15 +232,15 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     return user_rsp;
 }
 
-static void open_std_fds(TaskControlBlock* tcb) {
+static void open_std_fds(TaskControlBlock& tcb) {
     vfs::Vnode* tty = vfs::resolve("/dev/tty");
     if (!tty) return;
     for (int std_fd = 0; std_fd < 3; ++std_fd) {
-        int fd = tcb->fd_table.alloc();
+        int fd = tcb.fd_table.alloc();
         if (fd == std_fd) {
-            tcb->fd_table.fds[fd].vnode = tty;
-            tcb->fd_table.fds[fd].offset = 0;
-            tcb->fd_table.fds[fd].flags = 0;
+            tcb.fd_table.fds[fd].vnode = tty;
+            tcb.fd_table.fds[fd].offset = 0;
+            tcb.fd_table.fds[fd].flags = 0;
             if (tty->ops && tty->ops->open) tty->ops->open(*tty, 0);
         }
     }
@@ -240,7 +249,8 @@ static void open_std_fds(TaskControlBlock* tcb) {
 TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     if (!validate_header(hdr)) return nullptr;
 
-    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(TaskControlBlock)));
+    auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
+        TaskControlBlock)));
     if (!tcb) return nullptr;
 
     tcb->id = kernel::Scheduler::alloc_id();
@@ -250,7 +260,8 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
 
     init_task_common(*tcb);
 
-    size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::PAGE_SIZE;
+    size_t kstack_pages = (TaskControlBlock::STACK_SIZE + 4095) / arch::
+        PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
     if (!kstack_phys) { MemPool::free(tcb); return nullptr; }
     tcb->stack_phys_ = kstack_phys;
@@ -268,7 +279,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
         return nullptr;
     }
 
-    open_std_fds(tcb);
+    open_std_fds(*tcb);
 
     tcb->user_stack_ = ustack_phys;
     tcb->user_stack_size_ = mem::STACK_SIZE;
@@ -307,8 +318,8 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, argv, envp);
 
-    // Free zero-copy buffers mapped into the OLD page table before swapping it out
-    BufferPool::unmap_all(tcb);
+// Free zero-copy buffers mapped into the OLD page table before swapping it out
+    BufferPool::unmap_all(*tcb);
 
     uint64_t old_pml4 = tcb->page_table_;
     bool old_shared = tcb->page_table_shared_;
@@ -335,7 +346,8 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
                         tcb->fd_table.fds[fd].vnode = tty2;
                         tcb->fd_table.fds[fd].offset = 0;
                         tcb->fd_table.fds[fd].flags = 0;
-                        if (tty2->ops && tty2->ops->open) tty2->ops->open(*tty2, 0);
+                        if (tty2->ops && tty2->ops->open) tty2->ops->open(*tty2,
+                            0);
                     }
                 }
             }

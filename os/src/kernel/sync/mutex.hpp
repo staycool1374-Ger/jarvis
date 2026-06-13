@@ -10,7 +10,8 @@ class Mutex {
 public:
     static constexpr size_t MAX_WAITERS = 32;
 
-    Mutex() : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(0) {}
+    Mutex() : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(
+        0) {}
     void init();
 
     void lock();
@@ -27,9 +28,9 @@ private:
     TaskControlBlock* waiters_[MAX_WAITERS];
     size_t wait_count_;
 
-    bool add_waiter(TaskControlBlock* task);
+    bool add_waiter(TaskControlBlock& task);
     void wake_one();
-    void inherit_priority(TaskControlBlock* waiter);
+    void inherit_priority(TaskControlBlock& waiter);
     void restore_priority();
 };
 

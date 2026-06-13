@@ -8,9 +8,11 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies that a freshly initialized MessageQueue reports empty, not full, with correct priority level and zero bitmap.
+// Testidea: Verifies that a freshly initialized MessageQueue reports empty,
+// not full, with correct priority level and zero bitmap.
 // Input: None (basic init)
-// Expect: is_empty() == true, is_full() == false, highest_priority() == IPC_PRIORITY_LEVELS, prio_bitmap == 0
+// Expect: is_empty() == true, is_full() == false, highest_priority() ==
+// IPC_PRIORITY_LEVELS, prio_bitmap == 0
 // Depends: kernel::MessageQueue
 JARVIS_TEST(ipc_queue_init) {
     MessageQueue q;
@@ -23,9 +25,12 @@ JARVIS_TEST(ipc_queue_init) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a message can be pushed and popped correctly, preserving all fields.
-// Input: msg.sender_id=1, msg.type=42, msg.priority=0, msg.data_size=4, msg.data = 0xAA,0xBB,0xCC,0xDD
-// Expect: push returns true, pop returns matching sender_id/type/priority/data_size/data, queue empty after pop
+// Testidea: Verifies that a message can be pushed and popped correctly,
+// preserving all fields.
+// Input: msg.sender_id=1, msg.type=42, msg.priority=0, msg.data_size=4,
+// msg.data = 0xAA,0xBB,0xCC,0xDD
+// Expect: push returns true, pop returns matching
+// sender_id/type/priority/data_size/data, queue empty after pop
 // Depends: kernel::MessageQueue
 JARVIS_TEST(ipc_queue_push_pop) {
     MessageQueue q;
@@ -56,9 +61,11 @@ JARVIS_TEST(ipc_queue_push_pop) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that messages are dequeued in priority order (lowest priority value = highest priority).
+// Testidea: Verifies that messages are dequeued in priority order (lowest
+// priority value = highest priority).
 // Input: Four messages with priorities 3, 2, 1, 0 pushed in that order
-// Expect: Popped types are 3, 2, 1, 0 (priority 0 dequeued first, priority 3 last)
+// Expect: Popped types are 3, 2, 1, 0 (priority 0 dequeued first, priority 3
+// last)
 // Depends: kernel::MessageQueue
 JARVIS_TEST(ipc_queue_priority_order) {
     MessageQueue q;
@@ -92,7 +99,8 @@ JARVIS_TEST(ipc_queue_priority_order) {
 
 // Runmode: kernel
 // Testidea: Verifies FIFO ordering for messages with the same priority level.
-// Input: Five messages with priority=7, sender_id=0..4, type=i*10, pushed sequentially
+// Input: Five messages with priority=7, sender_id=0..4, type=i*10, pushed
+// sequentially
 // Expect: Popped in same order (sender_id 0..4, type 0,10,20,30,40)
 // Depends: kernel::MessageQueue
 JARVIS_TEST(ipc_queue_fifo_same_priority) {
@@ -117,9 +125,11 @@ JARVIS_TEST(ipc_queue_fifo_same_priority) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that the queue correctly reports full after IPC_MAX_QUEUE_MSG pushes and rejects subsequent pushes.
+// Testidea: Verifies that the queue correctly reports full after
+// IPC_MAX_QUEUE_MSG pushes and rejects subsequent pushes.
 // Input: IPC_MAX_QUEUE_MSG pushes of a trivial message, then one extra push
-// Expect: First IPC_MAX_QUEUE_MSG pushes succeed, is_full() true, extra push returns false
+// Expect: First IPC_MAX_QUEUE_MSG pushes succeed, is_full() true, extra push
+// returns false
 // Depends: kernel::MessageQueue, IPC_MAX_QUEUE_MSG
 JARVIS_TEST(ipc_queue_full) {
     MessageQueue q;
@@ -152,8 +162,10 @@ JARVIS_TEST(ipc_queue_empty_pop) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that the ring-buffer MessageQueue handles wrap-around correctly by filling, partially draining, then refilling.
-// Input: Fill queue to IPC_MAX_QUEUE_MSG, pop half, push half again, then drain all
+// Testidea: Verifies that the ring-buffer MessageQueue handles wrap-around
+// correctly by filling, partially draining, then refilling.
+// Input: Fill queue to IPC_MAX_QUEUE_MSG, pop half, push half again, then
+// drain all
 // Expect: Total drained count == IPC_MAX_QUEUE_MSG, queue empty at end
 // Depends: kernel::MessageQueue, IPC_MAX_QUEUE_MSG
 JARVIS_TEST(ipc_queue_wrap_around) {
@@ -184,9 +196,11 @@ JARVIS_TEST(ipc_queue_wrap_around) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that highest_priority() correctly tracks the minimum priority value in the queue as messages are pushed and popped.
+// Testidea: Verifies that highest_priority() correctly tracks the minimum
+// priority value in the queue as messages are pushed and popped.
 // Input: Push priority 15, then priority 5; pop priority 5, then priority 15
-// Expect: After push(15) -> highest=15, after push(5) -> highest=5, after pop(5) -> highest=15, after pop(15) -> highest=IPC_PRIORITY_LEVELS
+// Expect: After push(15) -> highest=15, after push(5) -> highest=5, after
+// pop(5) -> highest=15, after pop(15) -> highest=IPC_PRIORITY_LEVELS
 // Depends: kernel::MessageQueue, IPC_PRIORITY_LEVELS
 JARVIS_TEST(ipc_queue_highest_priority) {
     MessageQueue q;
@@ -217,9 +231,11 @@ JARVIS_TEST(ipc_queue_highest_priority) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send and IPC::recv work for self-messaging (sender == receiver).
+// Testidea: Verifies that IPC::send and IPC::recv work for self-messaging
+// (sender == receiver).
 // Input: msg type=77, priority=0, sent to own task ID
-// Expect: send returns true, recv returns true, received type=77, sender_id matches current task, queue empty after recv
+// Expect: send returns true, recv returns true, received type=77, sender_id
+// matches current task, queue empty after recv
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::Scheduler
 JARVIS_TEST(ipc_send_recv_self) {
     auto* cur = Scheduler::current_task();
@@ -264,10 +280,13 @@ JARVIS_TEST(ipc_send_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send with IPC_NONBLOCK flag returns false when the target queue is full.
+// Testidea: Verifies that IPC::send with IPC_NONBLOCK flag returns false
+// when the target queue is full.
 // Input: Fill own queue to IPC_MAX_QUEUE_MSG, then send with IPC_NONBLOCK
-// Expect: Non-blocking send returns false while queue is full; after draining, all recvs succeed and queue is empty
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::Scheduler, IPC_MAX_QUEUE_MSG, IPC_NONBLOCK
+// Expect: Non-blocking send returns false while queue is full; after
+// draining, all recvs succeed and queue is empty
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::Scheduler,
+// IPC_MAX_QUEUE_MSG, IPC_NONBLOCK
 JARVIS_TEST(ipc_send_nonblock_full) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -314,7 +333,8 @@ JARVIS_TEST(ipc_notify_basic) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that Notify::try_wait consumes a pending notification value.
+// Testidea: Verifies that Notify::try_wait consumes a pending notification
+// value.
 // Input: try_wait on empty notify, then notify(55) and try_wait again
 // Expect: First try_wait returns false; second returns true with val==55
 // Depends: kernel::sync::Notify
@@ -334,7 +354,8 @@ JARVIS_TEST(ipc_notify_try_wait) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that EventGroup::set_bits and clear_bits manipulate the bitmask correctly.
+// Testidea: Verifies that EventGroup::set_bits and clear_bits manipulate the
+// bitmask correctly.
 // Input: set_bits(0x0F), clear_bits(0x05), set_bits(0xF0)
 // Expect: get_bits() == 0x00 -> 0x0F -> 0x0A -> 0xFA
 // Depends: kernel::sync::EventGroup
@@ -355,9 +376,11 @@ JARVIS_TEST(ipc_eventgroup_set_clear) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that EventGroup::try_wait_bits checks whether specific bits are set without consuming them.
+// Testidea: Verifies that EventGroup::try_wait_bits checks whether specific
+// bits are set without consuming them.
 // Input: set_bits(0x03), then try_wait for 0x01, 0x02, 0x03, 0x04
-// Expect: try_wait(0x01) true, try_wait(0x02) true, try_wait(0x03) true, try_wait(0x04) false
+// Expect: try_wait(0x01) true, try_wait(0x02) true, try_wait(0x03) true,
+// try_wait(0x04) false
 // Depends: kernel::sync::EventGroup
 JARVIS_TEST(ipc_eventgroup_try_wait) {
     sync::EventGroup eg;
@@ -374,10 +397,13 @@ JARVIS_TEST(ipc_eventgroup_try_wait) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::block_sender adds a sender TCB to the MessageQueue's blocked-senders linked list.
+// Testidea: Verifies that IPC::block_sender adds a sender TCB to the
+// MessageQueue's blocked-senders linked list.
 // Input: Two sender tasks created and blocked via IPC::block_sender
-// Expect: blocked_senders_head/tail point to correct senders, blocked_next links are set
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock, kernel::Scheduler
+// Expect: blocked_senders_head/tail point to correct senders, blocked_next
+// links are set
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
+// kernel::Scheduler
 JARVIS_TEST(ipc_block_sender_adds_to_list) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -391,7 +417,7 @@ JARVIS_TEST(ipc_block_sender_adds_to_list) {
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
 
-    IPC::block_sender(q, sender);
+    IPC::block_sender(q, *sender);
 
     JARVIS_ASSERT(q.blocked_senders_head == sender);
     JARVIS_ASSERT(q.blocked_senders_tail == sender);
@@ -400,15 +426,15 @@ JARVIS_TEST(ipc_block_sender_adds_to_list) {
     auto* sender2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(sender2 != nullptr);
     Scheduler::add_task(*sender2);
-    IPC::block_sender(q, sender2);
+    IPC::block_sender(q, *sender2);
 
     JARVIS_ASSERT(q.blocked_senders_head == sender);
     JARVIS_ASSERT(q.blocked_senders_tail == sender2);
     JARVIS_ASSERT(sender->blocked_next == sender2);
     JARVIS_ASSERT(sender2->blocked_next == nullptr);
 
-    IPC::wake_sender(q, cur);
-    IPC::wake_sender(q, cur);
+    IPC::wake_sender(q, *cur);
+    IPC::wake_sender(q, *cur);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();
@@ -420,10 +446,13 @@ JARVIS_TEST(ipc_block_sender_adds_to_list) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender removes a blocked sender from the list and sets its state to READY.
+// Testidea: Verifies that IPC::wake_sender removes a blocked sender from the
+// list and sets its state to READY.
 // Input: Block one sender, then wake it
-// Expect: blocked_senders_head/tail become nullptr, sender state is TaskState::READY
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock, kernel::Scheduler
+// Expect: blocked_senders_head/tail become nullptr, sender state is
+// TaskState::READY
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
+// kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_removes_from_list) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -436,11 +465,11 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list) {
     MessageQueue& q = *cur->msg_queue;
     q.blocked_senders_head = nullptr;
     q.blocked_senders_tail = nullptr;
-    IPC::block_sender(q, sender);
+    IPC::block_sender(q, *sender);
 
     JARVIS_ASSERT(q.blocked_senders_head == sender);
 
-    IPC::wake_sender(q, cur);
+    IPC::wake_sender(q, *cur);
 
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
@@ -453,10 +482,13 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender handles a terminated sender gracefully by removing it from the list.
+// Testidea: Verifies that IPC::wake_sender handles a terminated sender
+// gracefully by removing it from the list.
 // Input: Block a sender, mark it TERMINATED, then wake it
-// Expect: blocked_senders_head/tail become nullptr (sender removed from list despite terminated state)
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock, kernel::Scheduler
+// Expect: blocked_senders_head/tail become nullptr (sender removed from list
+// despite terminated state)
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
+// kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_terminated) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -469,11 +501,11 @@ JARVIS_TEST(ipc_wake_sender_terminated) {
     MessageQueue& q = *cur->msg_queue;
     q.blocked_senders_head = nullptr;
     q.blocked_senders_tail = nullptr;
-    IPC::block_sender(q, sender);
+    IPC::block_sender(q, *sender);
 
     sender->state = TaskState::TERMINATED;
 
-    IPC::wake_sender(q, cur);
+    IPC::wake_sender(q, *cur);
 
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
@@ -485,10 +517,12 @@ JARVIS_TEST(ipc_wake_sender_terminated) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender restores the receiver's priority to its base_priority.
+// Testidea: Verifies that IPC::wake_sender restores the receiver's priority
+// to its base_priority.
 // Input: Set cur->base_priority=5, cur->priority=10, block/wake a sender
 // Expect: After wake_sender, cur->priority == 5 (base_priority)
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock, kernel::Scheduler
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
+// kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_restores_priority) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -502,9 +536,9 @@ JARVIS_TEST(ipc_wake_sender_restores_priority) {
     Scheduler::add_task(*sender);
 
     MessageQueue& q = *cur->msg_queue;
-    IPC::block_sender(q, sender);
+    IPC::block_sender(q, *sender);
 
-    IPC::wake_sender(q, cur);
+    IPC::wake_sender(q, *cur);
 
     JARVIS_ASSERT_EQ(5ULL, cur->priority);
 
@@ -515,10 +549,14 @@ JARVIS_TEST(ipc_wake_sender_restores_priority) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send blocks the sender when the target queue is full, and unblocks the sender when the receiver pops a message.
-// Input: Fill own queue, create sender task, switch to sender and attempt send (blocks), switch back to receiver and recv
-// Expect: Sender is BLOCKED after failed send, becomes READY after receiver pops, send returns false
-// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock, kernel::Scheduler, IPC_MAX_QUEUE_MSG
+// Testidea: Verifies that IPC::send blocks the sender when the target queue
+// is full, and unblocks the sender when the receiver pops a message.
+// Input: Fill own queue, create sender task, switch to sender and attempt
+// send (blocks), switch back to receiver and recv
+// Expect: Sender is BLOCKED after failed send, becomes READY after receiver
+// pops, send returns false
+// Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
+// kernel::Scheduler, IPC_MAX_QUEUE_MSG
 JARVIS_TEST(ipc_send_block_full) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -557,8 +595,10 @@ JARVIS_TEST(ipc_send_block_full) {
 
 // Runmode: kernel
 // Testidea: Verifies synchronous IPC send/receive round-trip between two tasks.
-// Input: Create sender and receiver tasks. Sender calls send_sync with a message, receiver recvs and replies.
-// Expect: send_sync returns true, received message matches, reply received correctly.
+// Input: Create sender and receiver tasks. Sender calls send_sync with a
+// message, receiver recvs and replies.
+// Expect: send_sync returns true, received message matches, reply received
+// correctly.
 JARVIS_TEST(ipc_send_sync_roundtrip) {
     static uint64_t g_receiver_id = 0;
 
@@ -614,9 +654,12 @@ JARVIS_TEST(ipc_send_sync_roundtrip) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that blocked IPC senders are unblocked when the receiver task exits.
-// Input: Create receiver and sender. Fill receiver's queue, sender blocks on send. Terminate receiver and cleanup.
-// Expect: Sender is woken up (state becomes READY) and removed from blocked list.
+// Testidea: Verifies that blocked IPC senders are unblocked when the
+// receiver task exits.
+// Input: Create receiver and sender. Fill receiver's queue, sender blocks on
+// send. Terminate receiver and cleanup.
+// Expect: Sender is woken up (state becomes READY) and removed from blocked
+// list.
 JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
@@ -672,8 +715,10 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
 // Expect: All ipc_* tests are registered via JARVIS_REGISTER_TEST
 // Depends: kernel test framework
 // Runmode: kernel
-// Testidea: Verifies that IPC::send() wakes a BLOCKED destination task (bug #014).
-// When a task is blocked on its own queue (e.g. waiting for a reply in send_sync)
+// Testidea: Verifies that IPC::send() wakes a BLOCKED destination task (bug
+// #014).
+// When a task is blocked on its own queue (e.g. waiting for a reply in
+// send_sync)
 // and another task sends it a message, the blocked task must be set to READY.
 // Input: Create receiver, block it on its own queue. Send it a message.
 // Expect: Receiver transitions from BLOCKED to READY after the send.

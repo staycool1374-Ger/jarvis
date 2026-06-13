@@ -7,7 +7,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Test strlen with empty string, typical strings, and a single character.
+// Testidea: Test strlen with empty string, typical strings, and a single
+// character.
 // Input: strlen(""), strlen("hello"), strlen("Hello, World!"), strlen("x").
 // Expect: Correct lengths returned; ternary expression returns expected value.
 // Depends: string
@@ -21,9 +22,11 @@ JARVIS_TEST(string_strlen) {
 }
 
 // Runmode: kernel
-// Testidea: Test strcmp with identical, different-length, and lexicographically ordered strings.
+// Testidea: Test strcmp with identical, different-length, and
+// lexicographically ordered strings.
 // Input: strcmp on pairs of "", "abc", "abd", "ab", "identical".
-// Expect: 0 for exact matches, negative for less-than, positive for greater-than, non-zero for different lengths.
+// Expect: 0 for exact matches, negative for less-than, positive for
+// greater-than, non-zero for different lengths.
 // Depends: string
 JARVIS_TEST(string_strcmp) {
     JARVIS_ASSERT_EQ(0, strcmp("", ""));
@@ -36,9 +39,12 @@ JARVIS_TEST(string_strcmp) {
 }
 
 // Runmode: kernel
-// Testidea: Test strncmp with limited-length comparisons including prefix matches and boundary cases.
-// Input: strncmp with lengths 0–6 on various string pairs including prefix-only matches.
-// Expect: 0 when limited prefix matches, correct ordering for mismatches, 0 for zero-length compare.
+// Testidea: Test strncmp with limited-length comparisons including prefix
+// matches and boundary cases.
+// Input: strncmp with lengths 0–6 on various string pairs including
+// prefix-only matches.
+// Expect: 0 when limited prefix matches, correct ordering for mismatches, 0
+// for zero-length compare.
 // Depends: string
 JARVIS_TEST(string_strncmp) {
     JARVIS_ASSERT_EQ(0, strncmp("abcde", "abcde", 5));
@@ -51,8 +57,10 @@ JARVIS_TEST(string_strncmp) {
 }
 
 // Runmode: kernel
-// Testidea: Test strncpy copies strings correctly into a buffer, including empty and short strings.
-// Input: strncpy with "hello", "", "short" into a 32-byte buffer pre-filled with 0xAA.
+// Testidea: Test strncpy copies strings correctly into a buffer, including
+// empty and short strings.
+// Input: strncpy with "hello", "", "short" into a 32-byte buffer pre-filled
+// with 0xAA.
 // Expect: Buffer matches source string after each copy.
 // Depends: string
 JARVIS_TEST(string_strncpy) {
@@ -68,7 +76,8 @@ JARVIS_TEST(string_strncpy) {
 }
 
 // Runmode: kernel
-// Testidea: Test memcpy copies memory correctly between non-overlapping buffers.
+// Testidea: Test memcpy copies memory correctly between non-overlapping
+// buffers.
 // Input: memcpy from a string literal to a 64-byte zeroed destination buffer.
 // Expect: Destination matches source string.
 // Depends: string
@@ -82,9 +91,11 @@ JARVIS_TEST(string_memcpy) {
 }
 
 // Runmode: kernel
-// Testidea: Test memset fills memory with a byte value and then zeroes it correctly.
+// Testidea: Test memset fills memory with a byte value and then zeroes it
+// correctly.
 // Input: memset(buf, 0xFF, 32) then memset(buf, 0, 32).
-// Expect: All 32 bytes equal 0xFF after first fill, all bytes equal 0 after zero fill.
+// Expect: All 32 bytes equal 0xFF after first fill, all bytes equal 0 after
+// zero fill.
 // Depends: string
 JARVIS_TEST(string_memset) {
     char buf[32];
@@ -100,7 +111,8 @@ JARVIS_TEST(string_memset) {
 // Runmode: kernel
 // Testidea: Test memcmp with identical and differing buffers.
 // Input: memcmp on "abc" vs "abc", "abc" vs "abd", "abd" vs "abc", "" vs "".
-// Expect: 0 for matching buffers, negative/positive for lexicographic ordering, 0 for empty buffers.
+// Expect: 0 for matching buffers, negative/positive for lexicographic
+// ordering, 0 for empty buffers.
 // Depends: string
 JARVIS_TEST(string_memcmp) {
     JARVIS_ASSERT_EQ(0, memcmp("abc", "abc", 3));
@@ -111,8 +123,10 @@ JARVIS_TEST(string_memcmp) {
 }
 
 // Runmode: kernel
-// Testidea: Test align_up rounds values up to the next alignment boundary, including edge cases at boundaries and zero.
-// Input: Values 0x1, 0x1000, 0x1001, 0xFFF, 0x3, 0x0 with alignments 0x1000 or 0x4.
+// Testidea: Test align_up rounds values up to the next alignment boundary,
+// including edge cases at boundaries and zero.
+// Input: Values 0x1, 0x1000, 0x1001, 0xFFF, 0x3, 0x0 with alignments 0x1000
+// or 0x4.
 // Expect: Correctly rounded-up addresses.
 // Depends: utils
 JARVIS_TEST(utils_align_up) {
@@ -127,8 +141,10 @@ JARVIS_TEST(utils_align_up) {
 }
 
 // Runmode: kernel
-// Testidea: Test align_down rounds values down to the previous alignment boundary, including edge cases.
-// Input: Values 0x1, 0x1000, 0x1001, 0xFFF, 0x0, 0xFFF with alignments 0x1000 or 0x4.
+// Testidea: Test align_down rounds values down to the previous alignment
+// boundary, including edge cases.
+// Input: Values 0x1, 0x1000, 0x1001, 0xFFF, 0x0, 0xFFF with alignments
+// 0x1000 or 0x4.
 // Expect: Correctly rounded-down addresses.
 // Depends: utils
 JARVIS_TEST(utils_align_down) {
@@ -142,7 +158,8 @@ JARVIS_TEST(utils_align_down) {
 }
 
 // Runmode: kernel
-// Testidea: Test compile-time type traits is_same, is_integral, and is_pod for various types.
+// Testidea: Test compile-time type traits is_same, is_integral, and is_pod
+// for various types.
 // Input: Type checks on int, unsigned int, uint64_t, double.
 // Expect: Boolean trait values match expected type properties.
 // Depends: utils
@@ -158,9 +175,12 @@ JARVIS_TEST(utils_type_traits) {
 }
 
 // Runmode: kernel
-// Testidea: Test ErrorOr basic construction with values and errors, including the void specialization.
-// Input: ErrorOr<int> constructed with value 42 or Error::OOM; ErrorOr<void> with success or Error::INVALID_ARG.
-// Expect: ok() returns correct state, dereference returns stored value, error field matches ErrorOr<void> state.
+// Testidea: Test ErrorOr basic construction with values and errors,
+// including the void specialization.
+// Input: ErrorOr<int> constructed with value 42 or Error::OOM; ErrorOr<void>
+// with success or Error::INVALID_ARG.
+// Expect: ok() returns correct state, dereference returns stored value,
+// error field matches ErrorOr<void> state.
 // Depends: error
 JARVIS_TEST(error_or_basic) {
     ErrorOr<int> e0(42);
@@ -177,7 +197,8 @@ JARVIS_TEST(error_or_basic) {
 
 // Runmode: kernel
 // Testidea: Test ErrorOr stores and reports different error codes correctly.
-// Input: ErrorOr<int> constructed with Error::OOM, Error::INVALID_ARG, Error::NOT_FOUND.
+// Input: ErrorOr<int> constructed with Error::OOM, Error::INVALID_ARG,
+// Error::NOT_FOUND.
 // Expect: ok() returns false, error field matches the original error code.
 // Depends: error
 JARVIS_TEST(error_or_errors) {
@@ -193,7 +214,8 @@ JARVIS_TEST(error_or_errors) {
 }
 
 // Runmode: kernel
-// Testidea: Test Version::string() returns a non-null, non-empty version identifier string.
+// Testidea: Test Version::string() returns a non-null, non-empty version
+// identifier string.
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
@@ -205,7 +227,8 @@ JARVIS_TEST(version_string_not_empty) {
 }
 
 // Runmode: kernel
-// Testidea: Test Version::full_string() returns a non-null, non-empty full version string.
+// Testidea: Test Version::full_string() returns a non-null, non-empty full
+// version string.
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
@@ -217,7 +240,8 @@ JARVIS_TEST(version_full_string_not_empty) {
 }
 
 // Runmode: kernel
-// Testidea: Test Version::build_date() returns a non-null, non-empty build date string.
+// Testidea: Test Version::build_date() returns a non-null, non-empty build
+// date string.
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
@@ -229,7 +253,8 @@ JARVIS_TEST(version_build_date_not_empty) {
 }
 
 // Runmode: kernel
-// Testidea: Register all lib subsystem tests (string, utils, ErrorOr, version) with the test framework.
+// Testidea: Register all lib subsystem tests (string, utils, ErrorOr,
+// version) with the test framework.
 // Depends: string, utils, error, version
 void register_lib_tests() {
     Logger::info("Registering lib tests");

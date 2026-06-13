@@ -22,7 +22,8 @@ void DriverRegistry::register_driver(
 {
     if (count_ >= MAX_DRIVERS) return;
     auto* drv = static_cast<Driver*>(MemPool::alloc(sizeof(Driver)));
-    if (drv) { *drv = {name, description, init, exit, DriverState::UNLOADED, irq_line}; }
+    if (drv) { *drv = {name, description, init, exit, DriverState::UNLOADED,
+        irq_line}; }
     drivers_[count_++] = drv;
 }
 

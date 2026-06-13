@@ -11,7 +11,8 @@ IDTEntry IDT::entries_[NUM_ENTRIES] = {};
 IDTDescriptor IDT::desc_ = {};
 ISRHandler IDT::handlers_[NUM_ENTRIES] = {};
 
-static IDTEntry make_entry(uint64_t handler, uint16_t selector, uint8_t type_attr, uint8_t ist) {
+static IDTEntry make_entry(uint64_t handler, uint16_t selector,
+    uint8_t type_attr, uint8_t ist) {
     IDTEntry e = {};
     e.offset_low  = handler & 0xFFFF;
     e.selector    = selector;

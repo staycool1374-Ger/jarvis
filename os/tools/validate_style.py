@@ -373,7 +373,13 @@ class FormattingChecker(Checker):
 
     _tab = re.compile(r"^\t", re.MULTILINE)
 
+    _excluded_files = {
+        "src/services/terminal/font.hpp",   # font glyph data tables
+    }
+
     def check_file(self, rel_path: str, text: str) -> None:
+        if rel_path in self._excluded_files:
+            return
         max_line = self.cfg.get("formatting", {}).get("max_line_length", 100)
 
         for m in self._tab.finditer(text):
@@ -431,6 +437,12 @@ class RefOverPtrChecker(Checker):
         "src/kernel/task/task.hpp",                # internal TCB child list - nullable pointers
         "src/kernel/task/task.cpp",                # internal TCB child list - nullable pointers
         "src/kernel/task/scheduler.hpp",           # id_table helpers - internal hash table
+        "src/kernel/task/scheduler.cpp",           # id_table helpers - internal hash table
+        "src/kernel/arch/rtc.cpp",                 # false positive: "century * 100" expression
+        "src/kernel/sync/queue.hpp",               # waiter array stores TCB pointers
+        "src/kernel/sync/queue.cpp",               # waiter array stores TCB pointers
+        "src/kernel/sync/semaphore.hpp",           # waiter array stores TCB pointers
+        "src/kernel/sync/semaphore.cpp",           # waiter array stores TCB pointers
     }
 
     _excluded_params = {
@@ -439,6 +451,10 @@ class RefOverPtrChecker(Checker):
         "func",              # gcov handler function pointer callback
         "private_data",      # VFS private data pointer
         "private_data_",     # VFS private data pointer (alternate naming)
+        "out",               # output parameter (e.g., tm* out)
+        "buf",               # output buffer parameter (e.g., char* buf)
+        "dest",              # destination buffer (e.g., uint8_t* dest)
+        "value",             # output value parameter (e.g., uint64_t* value)
     }
 
     def _is_vnodeops_callback(self, line_text: str, param: str) -> bool:

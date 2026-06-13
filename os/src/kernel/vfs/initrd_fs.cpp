@@ -16,7 +16,8 @@ struct InitrdFileNode {
 static Vnode initrd_root = {};
 static bool root_initialized = false;
 
-static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset) {
+static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
+    uint64_t offset) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
     if (!finfo || !finfo->data) return -1;
     if (offset >= finfo->size) return 0;
@@ -42,7 +43,8 @@ static void initrd_file_close(Vnode& self) {
     }
 }
 
-static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence, uint64_t* out_pos) {
+static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
+    uint64_t* out_pos) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
     if (!finfo) return -1;
     uint64_t new_pos = 0;
@@ -91,12 +93,15 @@ static const VnodeOps initrd_file_ops = {
 
 // ── root directory ──
 
-static int64_t initrd_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1; }
-static int64_t initrd_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t initrd_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
+    return -1; }
+static int64_t initrd_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int initrd_root_open(Vnode&, uint64_t) { return 0; }
 static void initrd_root_close(Vnode&) {}
 
-static int64_t initrd_root_lseek(Vnode& self, int64_t offset, int whence, uint64_t* out_pos) {
+static int64_t initrd_root_lseek(Vnode& self, int64_t offset, int whence,
+    uint64_t* out_pos) {
     return initrd_file_lseek(self, offset, whence, out_pos);
 }
 
@@ -112,7 +117,8 @@ static int initrd_root_readdir(Vnode&, uint64_t& pos, Dirent& dent) {
     initrd::InitrdEntry entry = {};
     if (!initrd::readdir(&pos, &entry)) return -1;
     size_t idx = 0;
-    while (entry.name[idx] && idx < 63) { dent.d_name[idx] = entry.name[idx]; ++idx; }
+    while (entry.name[idx] && idx < 63) { dent.d_name[idx] = entry.name[idx
+        ]; ++idx; }
     dent.d_name[idx] = '\0';
     dent.d_ino = 2;
     return 0;

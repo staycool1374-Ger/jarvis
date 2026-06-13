@@ -40,8 +40,8 @@ public:
     /// @return Pointer to the allocated block, or nullptr.
     static void* alloc(size_t size);
     /// @brief Frees a block previously returned by alloc().
-    /// @param ptr Pointer to the block to free.
-    static void free(void* ptr);
+    /// @param block Pointer to the block to free.
+    static void free(void* block);
 
 private:
     static Pool pools_[POOL_COUNT];

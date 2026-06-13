@@ -9,9 +9,11 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies the kernel idle task (HLT-based) is created during boot initialization.
+// Testidea: Verifies the kernel idle task (HLT-based) is created during boot
+// initialization.
 // Input: Scheduler is initialized.
-// Expect: get_idle_task() returns non-null task at tasks_[0] with kernel stack, no user stack.
+// Expect: get_idle_task() returns non-null task at tasks_[0] with kernel
+// stack, no user stack.
 JARVIS_TEST(idle_task_created_at_boot) {
     JARVIS_ASSERT(Scheduler::get_idle_task() != nullptr);
     JARVIS_ASSERT(Scheduler::get_idle_task()->kernel_stack != nullptr);
@@ -21,9 +23,13 @@ JARVIS_TEST(idle_task_created_at_boot) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that user tasks (non-idle, priority-0 tasks with a user stack) have a separate page table and a kernel stack, confirming they run in user mode (ring 3).
-// Input: Iterates all scheduler tasks, finds one matching user-task criteria (priority 0, user_stack_ set, not the idle task).
-// Expect: JARVIS_ASSERT checks page_table_ != kernel PML4 and kernel_stack != nullptr.
+// Testidea: Tests that user tasks (non-idle, priority-0 tasks with a user
+// stack) have a separate page table and a kernel stack, confirming they run
+// in user mode (ring 3).
+// Input: Iterates all scheduler tasks, finds one matching user-task criteria
+// (priority 0, user_stack_ set, not the idle task).
+// Expect: JARVIS_ASSERT checks page_table_ != kernel PML4 and kernel_stack
+// != nullptr.
 // Depends: kernel::task::Scheduler, kernel::memory::VMM
 JARVIS_TEST(idle_task_runs_in_ring3) {
     uint64_t count = Scheduler::task_count();
@@ -40,7 +46,8 @@ JARVIS_TEST(idle_task_runs_in_ring3) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that non-idle user tasks have priority and base_priority set to 0.
+// Testidea: Tests that non-idle user tasks have priority and base_priority
+// set to 0.
 // Input: Iterates all scheduler tasks, finds one matching user-task criteria.
 // Expect: JARVIS_ASSERT_EQ checks priority == 0 and base_priority == 0.
 // Depends: kernel::task::Scheduler
@@ -59,22 +66,27 @@ JARVIS_TEST(idle_task_priority_zero) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies the idle task entry point calls arch::hlt (HLT with interrupts enabled).
-// Input: Inspect the idle task's entry function context to verify it contains HLT.
-// Expect: The idle task's kernel stack contains a return address pointing to HLT instruction.
-// Note: Cannot directly test HLT from kernel context as it would halt; test validates idle task exists.
+// Testidea: Verifies the idle task entry point calls arch::hlt (HLT with
+// interrupts enabled).
+// Input: Inspect the idle task's entry function context to verify it
+// contains HLT.
+// Expect: The idle task's kernel stack contains a return address pointing to
+// HLT instruction.
+// Note: Cannot directly test HLT from kernel context as it would halt; test
+// validates idle task exists.
 JARVIS_TEST(idle_task_calls_pause_syscall) {
     auto* idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(idle != nullptr);
     JARVIS_ASSERT(idle->kernel_stack != nullptr);
-    // Idle task runs an infinite loop with arch::hlt() - verify it's a kernel task
+// Idle task runs an infinite loop with arch::hlt() - verify it's a kernel task
     JARVIS_ASSERT(idle->page_table_ == 0);
     JARVIS_ASSERT(idle->user_stack_ == 0);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that the idle task yields CPU to higher-priority ready tasks.
+// Testidea: Verifies that the idle task yields CPU to higher-priority ready
+// tasks.
 // Input: Create a higher-priority task, verify scheduler picks it over idle.
 // Expect: Scheduler::next_task() returns the higher-priority task, not idle.
 JARVIS_TEST(idle_task_yields_to_higher_priority) {
@@ -93,9 +105,12 @@ JARVIS_TEST(idle_task_yields_to_higher_priority) {
 }
 
 // Runmode: kernel
-// Testidea: Tests that the kernel idle task (the HLT-based one) always exists at boot, has a kernel stack, no user stack, and is the first task in the scheduler list.
+// Testidea: Tests that the kernel idle task (the HLT-based one) always
+// exists at boot, has a kernel stack, no user stack, and is the first task
+// in the scheduler list.
 // Input: Scheduler::get_idle_task() and Scheduler::task_at(0).
-// Expect: JARVIS_ASSERT checks idle task is non-null, has kernel_stack, user_stack_ == 0, and matches task_at(0).
+// Expect: JARVIS_ASSERT checks idle task is non-null, has kernel_stack,
+// user_stack_ == 0, and matches task_at(0).
 // Depends: kernel::task::Scheduler
 JARVIS_TEST(kernel_hlt_idle_still_exists) {
     JARVIS_ASSERT(Scheduler::get_idle_task() != nullptr);
@@ -134,7 +149,8 @@ JARVIS_TEST(idle_task_restartable_on_crash) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that creating multiple idle tasks is prevented (only one at tasks_[0]).
+// Testidea: Verifies that creating multiple idle tasks is prevented (only
+// one at tasks_[0]).
 // Input: Attempt to add a second task at index 0 or with idle characteristics.
 // Expect: Scheduler only has one task at index 0 (the original idle).
 JARVIS_TEST(multiple_idle_tasks_prevented) {

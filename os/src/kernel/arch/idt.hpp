@@ -72,7 +72,8 @@ public:
     /// @param vector     The vector number.
     /// @param error_code CPU error code.
     /// @param rip        Instruction pointer at interrupt.
-    static void handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip);
+    static void handle_interrupt(uint64_t vector, uint64_t error_code,
+        uint64_t rip);
 
 private:
     static constexpr size_t NUM_ENTRIES = 256;

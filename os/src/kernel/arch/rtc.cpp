@@ -20,7 +20,8 @@ void RTC::init() {
     // Read Status Register B
     uint8_t status_b = rtc_read_register(REG_STATUS_B);
 
-    // Set 24-hour mode (bit 1 = 1), binary mode (bit 2 = 1), disable periodic interrupt (bit 6 = 0)
+    // Set 24-hour mode (bit 1 = 1), binary mode (bit 2 = 1), disable
+    // periodic interrupt (bit 6 = 0)
     status_b |= 0x06;   // 24-hour + binary
     status_b &= ~0x40;  // disable periodic interrupt
     rtc_write_register(REG_STATUS_B, status_b);
@@ -28,7 +29,8 @@ void RTC::init() {
     // Read Status Register A
     uint8_t status_a = rtc_read_register(REG_STATUS_A);
 
-    // Disable update-ended interrupt (bit 4 = 0), set frequency to default (bits 0-3)
+    // Disable update-ended interrupt (bit 4 = 0),
+    // set frequency to default (bits 0-3)
     status_a &= ~0x10;
     rtc_write_register(REG_STATUS_A, status_a);
 
@@ -73,7 +75,8 @@ bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
     uint8_t month2 = rtc_read_register(REG_MONTH);
     uint8_t year2 = rtc_read_register(REG_YEAR);
 
-    // If values changed during read, retry (simple approach: just use second read)
+    // If values changed during read, retry (simple approach:
+    // just use second read)
     if (sec1 != sec2 || min1 != min2 || hour1 != hour2 ||
         day1 != day2 || month1 != month2 || year1 != year2) {
         sec = sec2;
@@ -139,9 +142,9 @@ uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
     }
 
     // Months
-    for (uint8_t m = 1; m < month; ++m) {
-        days += days_in_month[m - 1];
-        if (m == 2) {
+    for (uint8_t month_idx = 1; month_idx < month; ++month_idx) {
+        days += days_in_month[month_idx - 1];
+        if (month_idx == 2) {
             bool leap = (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
             if (leap) days += 1;
         }

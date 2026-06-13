@@ -12,9 +12,9 @@ static constexpr uint64_t USER_SPACE_LIMIT = 0x0000800000000000ULL;
 ///        Page fault handler checks this and redirects here on fault.
 extern "C" uint64_t g_user_access_recover_ip;
 
-static inline bool is_user_range(const void* ptr, uint64_t size) {
-    if (!ptr) return false;
-    uint64_t addr = reinterpret_cast<uint64_t>(ptr);
+static inline bool is_user_range(const void* user_ptr, uint64_t size) {
+    if (!user_ptr) return false;
+    uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
     if (addr >= USER_SPACE_LIMIT) return false;
     if (size == 0) return true;
     uint64_t end = addr + size - 1;
@@ -30,12 +30,13 @@ class CheckedPtr {
 public:
     CheckedPtr() : addr_(0), count_(0) {}
 
-    CheckedPtr(T* ptr, uint64_t count = 1)
-        : addr_(reinterpret_cast<uint64_t>(ptr)), count_(count) {}
+    CheckedPtr(T* user_ptr, uint64_t count = 1)
+        : addr_(reinterpret_cast<uint64_t>(user_ptr)), count_(count) {}
 
     bool valid() const {
         if (addr_ == 0) return false;
-        return is_user_range(reinterpret_cast<const void*>(addr_), count_ * sizeof(T));
+        return is_user_range(reinterpret_cast<const void*>(addr_),
+            count_ * sizeof(T));
     }
 
     T* unsafe_ptr() const {
@@ -67,23 +68,24 @@ public:
 };
 
 template <typename T>
-static inline CheckedPtr<T> checked(T* ptr, uint64_t count = 1) {
-    return CheckedPtr<T>(ptr, count);
+static inline CheckedPtr<T> checked(T* user_ptr, uint64_t count = 1) {
+    return CheckedPtr<T>(user_ptr, count);
 }
 
-static inline bool is_user_string(const void* ptr, uint64_t max_len = 4096) {
-    uint64_t addr = reinterpret_cast<uint64_t>(ptr);
+static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096) {
+    uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
     if (addr >= USER_SPACE_LIMIT || addr == 0) return false;
     uint64_t end = addr + max_len - 1;
     if (end < addr || end >= USER_SPACE_LIMIT) return false;
-    auto* p = static_cast<const volatile char*>(ptr);
+    auto* p = static_cast<const volatile char*>(user_ptr);
     for (uint64_t i = 0; i < max_len; ++i) {
         if (p[i] == '\0') return true;
     }
     return false;
 }
 
-static inline bool strncpy_from_user(char* dst, const char* src, uint64_t max_len) {
+static inline bool strncpy_from_user(char* dst, const char* src,
+    uint64_t max_len) {
     if (!is_user_string(src, max_len)) return false;
     for (uint64_t i = 0; i < max_len; ++i) {
         dst[i] = src[i];

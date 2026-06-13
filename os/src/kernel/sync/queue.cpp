@@ -13,15 +13,15 @@ void Queue::init() {
     recv_waiters_count_ = 0;
 }
 
-bool Queue::add_send_waiter(TaskControlBlock* t) {
+bool Queue::add_send_waiter(TaskControlBlock* task) {
     if (send_waiters_count_ >= MAX_WAITERS) return false;
-    send_waiters_[send_waiters_count_++] = t;
+    send_waiters_[send_waiters_count_++] = task;
     return true;
 }
 
-bool Queue::add_recv_waiter(TaskControlBlock* t) {
+bool Queue::add_recv_waiter(TaskControlBlock* task) {
     if (recv_waiters_count_ >= MAX_WAITERS) return false;
-    recv_waiters_[recv_waiters_count_++] = t;
+    recv_waiters_[recv_waiters_count_++] = task;
     return true;
 }
 
@@ -29,7 +29,8 @@ void Queue::wake_send_one() {
     if (send_waiters_count_ == 0) return;
     size_t best = 0;
     for (size_t i = 1; i < send_waiters_count_; ++i) {
-        if (send_waiters_[i]->priority > send_waiters_[best]->priority) best = i;
+        if (send_waiters_[i]->priority > send_waiters_[best]->priority
+            ) best = i;
     }
     if (send_waiters_[best]->state != TaskState::TERMINATED)
         send_waiters_[best]->state = TaskState::READY;
@@ -40,7 +41,8 @@ void Queue::wake_recv_one() {
     if (recv_waiters_count_ == 0) return;
     size_t best = 0;
     for (size_t i = 1; i < recv_waiters_count_; ++i) {
-        if (recv_waiters_[i]->priority > recv_waiters_[best]->priority) best = i;
+        if (recv_waiters_[i]->priority > recv_waiters_[best]->priority
+            ) best = i;
     }
     if (recv_waiters_[best]->state != TaskState::TERMINATED)
         recv_waiters_[best]->state = TaskState::READY;

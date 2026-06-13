@@ -22,7 +22,8 @@ JARVIS_TEST(fb_putpixel_in_bounds) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies writing outside framebuffer bounds is safe (no-op or clamped).
+// Testidea: Verifies writing outside framebuffer bounds is safe (no-op or
+// clamped).
 // Input: putpixel(-1, 0), putpixel(width, height)
 // Expect: No crash, no memory corruption
 // Depends: kernel::Framebuffer
@@ -40,7 +41,8 @@ JARVIS_TEST(fb_clear_screen) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies scrolling shifts framebuffer content up by one line correctly.
+// Testidea: Verifies scrolling shifts framebuffer content up by one line
+// correctly.
 // Input: fill screen, scroll_up(), check content
 // Expect: Line 1 becomes line 0, last line cleared
 // Depends: kernel::Framebuffer

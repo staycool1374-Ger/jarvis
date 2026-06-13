@@ -13,9 +13,11 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies that TaskControlBlock::cleanup() nullifies all allocated resources (kernel stack, msg queue, notify, event group).
+// Testidea: Verifies that TaskControlBlock::cleanup() nullifies all
+// allocated resources (kernel stack, msg queue, notify, event group).
 // Input: Create a TCB and call cleanup()
-// Expect: kernel_stack, msg_queue, notify, event_group become nullptr; stack_phys_ becomes 0
+// Expect: kernel_stack, msg_queue, notify, event_group become nullptr;
+// stack_phys_ becomes 0
 // Depends: kernel::TaskControlBlock
 JARVIS_TEST(task_cleanup_frees_resources) {
     auto* tcb = TaskControlBlock::create([]() {}, 1, 10);
@@ -38,7 +40,8 @@ JARVIS_TEST(task_cleanup_frees_resources) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that create_user allocates a page table and user stack of the requested size.
+// Testidea: Verifies that create_user allocates a page table and user stack
+// of the requested size.
 // Input: create_user with stack_size=32_KiB
 // Expect: page_table_ != 0, user_stack_ != 0, user_stack_size_ == 32_KiB
 // Depends: kernel::TaskControlBlock
@@ -55,9 +58,11 @@ JARVIS_TEST(task_create_user_page_table) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that TaskControlBlock::clone() creates a child task whose page table is shared with the parent.
+// Testidea: Verifies that TaskControlBlock::clone() creates a child task
+// whose page table is shared with the parent.
 // Input: Create a user parent task, set current, push registers, clone
-// Expect: child != nullptr, child->page_table_ != 0, child->page_table_shared_ == true, child->user_stack_ != 0
+// Expect: child != nullptr, child->page_table_ != 0,
+// child->page_table_shared_ == true, child->user_stack_ != 0
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_clone_shares_page_tables) {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
@@ -93,8 +98,10 @@ JARVIS_TEST(task_clone_shares_page_tables) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that ELF loading initializes IPC notification/event objects for a task.
-// Input: Load an ELF binary via elf::load, check that msg_queue, notify, event_group are initialized.
+// Testidea: Verifies that ELF loading initializes IPC notification/event
+// objects for a task.
+// Input: Load an ELF binary via elf::load, check that msg_queue, notify,
+// event_group are initialized.
 // Expect: All three IPC objects are non-null after ELF load.
 JARVIS_TEST(task_elf_load_inits_ipc_objects) {
     // Find a test ELF in initrd
@@ -115,7 +122,8 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects) {
     auto* tcb = kernel::elf::load(hdr, f.data);
     JARVIS_ASSERT(tcb != nullptr);
 
-    // ELF load should have called init_task_common, so IPC objects should be initialized
+    // ELF load should have called init_task_common, so IPC objects should be
+    // initialized
     JARVIS_ASSERT(tcb->msg_queue != nullptr);
     JARVIS_ASSERT(tcb->notify != nullptr);
     JARVIS_ASSERT(tcb->event_group != nullptr);
@@ -127,8 +135,10 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that cleaning up a cloned child task does not free the parent's shared page table.
-// Input: Create user parent, clone child, capture parent page_table_ address, cleanup/delete child
+// Testidea: Verifies that cleaning up a cloned child task does not free the
+// parent's shared page table.
+// Input: Create user parent, clone child, capture parent page_table_
+// address, cleanup/delete child
 // Expect: parent->page_table_ unchanged and non-null after child cleanup
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
@@ -161,9 +171,12 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that clone + cleanup does not leak page-table-level pages (bug #015).
-// Creates a user parent, clones it (which allocates a private PDPT for the stack region),
-// then cleans up both.  Uses free_memory() as a proxy to detect leaks — a leak would
+// Testidea: Verifies that clone + cleanup does not leak page-table-level
+// pages (bug #015).
+// Creates a user parent, clones it (which allocates a private PDPT for the
+// stack region),
+// then cleans up both. Uses free_memory() as a proxy to detect leaks — a
+// leak would
 // reduce available memory after the round-trip.
 // Input: Create user parent, clone child, cleanup+delete both.
 // Expect: Free memory count is the same after the round-trip as before.

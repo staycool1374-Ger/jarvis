@@ -53,7 +53,8 @@ JARVIS_TEST(ipc_send_data_size_zero) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies blocked sender removed from middle of list (not just head/tail).
+// Testidea: Verifies blocked sender removed from middle of list (not just
+// head/tail).
 // Input: Block multiple senders, unblock middle one
 // Expect: Correct sender unblocked, list intact
 // Depends: kernel::ipc
@@ -114,7 +115,8 @@ JARVIS_TEST(ipc_send_sync_timeout) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies low-priority task holds resource, high-priority blocks — priority inheritance verified.
+// Testidea: Verifies low-priority task holds resource, high-priority blocks
+// — priority inheritance verified.
 // Input: Low priority holds mutex, high priority waits
 // Expect: Low priority boosted to high priority
 // Depends: kernel::ipc, Scheduler
@@ -130,12 +132,13 @@ JARVIS_TEST(ipc_priority_inversion) {
     cur->msg_queue->owner = cur;
 
     // Create a "blocked sender" with higher priority
-    // (In real scenario this would be another task, but we test the logic directly)
+// (In real scenario this would be another task, but we test the logic directly)
     MessageQueue& q = *cur->msg_queue;
     
     // Simulate blocked sender with priority 20 (higher urgency = higher number)
     // The block_sender function boosts owner priority
-    // We can't easily create another task in test, so we test the priority inheritance logic directly
+    // We can't easily create another task in test, so we test the priority
+    // inheritance logic directly
     q.owner->priority = 10;
     JARVIS_ASSERT(q.owner->priority == 10);
     
@@ -144,7 +147,7 @@ JARVIS_TEST(ipc_priority_inversion) {
     // No blocked senders, so should restore to base
     JARVIS_ASSERT(max_prio == 10);
     
-    // The actual block_sender/wake_sender functions would be tested in integration
+// The actual block_sender/wake_sender functions would be tested in integration
     // This test verifies the logic is present and correct
     JARVIS_TEST_PASS();
 }

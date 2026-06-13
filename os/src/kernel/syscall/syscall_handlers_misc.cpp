@@ -35,16 +35,19 @@ uint64_t Syscall::sys_print(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
     return 0;
 }
 
-uint64_t Syscall::sys_get_ticks(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_get_ticks(uint64_t, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     return arch::Timer::ticks();
 }
 
-uint64_t Syscall::sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+    ) {
     auto* t = syscall_task();
     return t ? t->id : 0;
 }
 
-uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto* t = syscall_task();
     if (t) {
         t->state = TaskState::TERMINATED;
@@ -96,7 +99,8 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
                     if (p->state != TaskState::TERMINATED) {
                         p->state = TaskState::READY;
                         if (p->context.rsp) {
-                            auto* stack = reinterpret_cast<uint64_t*>(p->context.rsp);
+                            auto* stack = reinterpret_cast<uint64_t*>(
+                                p->context.rsp);
                             stack[0] = t->id;
                         }
                     }
@@ -108,9 +112,11 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t
     return 0;
 }
 
-uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto tv_ptr = checked(reinterpret_cast<Timeval*>(arg0));
-    if (syscall_is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(-1);
+    if (syscall_is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(
+        -1);
 
     uint64_t secs = arch::RTC::read_seconds();
     Timeval tv = {};
@@ -120,9 +126,11 @@ uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64
     return 0;
 }
 
-uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
     auto uts_ptr = checked(reinterpret_cast<Utsname*>(arg0));
-    if (syscall_is_user_task() && !uts_ptr.valid()) return static_cast<uint64_t>(-1);
+    if (syscall_is_user_task() && !uts_ptr.valid()
+        ) return static_cast<uint64_t>(-1);
 
     Utsname uts{};
     strlcpy(uts.sysname, "Jarvis", sizeof(uts.sysname));

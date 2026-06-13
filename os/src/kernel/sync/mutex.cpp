@@ -11,9 +11,9 @@ void Mutex::init() {
     wait_count_ = 0;
 }
 
-bool Mutex::add_waiter(TaskControlBlock* task) {
+bool Mutex::add_waiter(TaskControlBlock& task) {
     if (wait_count_ >= MAX_WAITERS) return false;
-    waiters_[wait_count_++] = task;
+    waiters_[wait_count_++] = &task;
     return true;
 }
 
@@ -30,11 +30,11 @@ void Mutex::wake_one() {
     waiters_[best] = waiters_[--wait_count_];
 }
 
-void Mutex::inherit_priority(TaskControlBlock* waiter) {
+void Mutex::inherit_priority(TaskControlBlock& waiter) {
     if (!owner_) return;
-    if (waiter->priority > owner_->priority) {
+    if (waiter.priority > owner_->priority) {
         holder_priority_ = owner_->priority;
-        owner_->priority = waiter->priority;
+        owner_->priority = waiter.priority;
     }
 }
 
@@ -59,9 +59,9 @@ void Mutex::lock() {
         return;
     }
 
-    inherit_priority(task);
+    inherit_priority(*task);
 
-    if (!add_waiter(task)) return;
+    if (!add_waiter(*task)) return;
 
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();

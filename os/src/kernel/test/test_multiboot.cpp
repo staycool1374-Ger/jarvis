@@ -4,7 +4,8 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies each known tag type (framebuffer, memory map, module, cmdline) found.
+// Testidea: Verifies each known tag type (framebuffer, memory map, module,
+// cmdline) found.
 // Input: Parse multiboot info with known tags
 // Expect: find_tag_by_type returns valid pointer for each known type
 // Depends: kernel::boot::Multiboot2
@@ -22,7 +23,8 @@ JARVIS_TEST(mb2_find_tag_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies framebuffer tag struct width/height/bpp correctly populated.
+// Testidea: Verifies framebuffer tag struct width/height/bpp correctly
+// populated.
 // Input: Parse multiboot with framebuffer tag
 // Expect: width, height, bpp match bootloader values
 // Depends: kernel::boot::Multiboot2
@@ -31,7 +33,8 @@ JARVIS_TEST(mb2_framebuffer_tag_fields) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies memory map tag parses entry count and entry size correctly.
+// Testidea: Verifies memory map tag parses entry count and entry size
+// correctly.
 // Input: Parse multiboot with memory map tag
 // Expect: entry_count and entry_size match tag data
 // Depends: kernel::boot::Multiboot2

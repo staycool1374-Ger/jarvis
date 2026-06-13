@@ -24,7 +24,8 @@ JARVIS_TEST(vfsd_boots_and_registers) {
 }
 
 // Runmode: kernel
-// Testidea: Kernel task (no page_table_) calls sys_open; authorization bypasses IPC.
+// Testidea: Kernel task (no page_table_) calls sys_open; authorization
+// bypasses IPC.
 // Input: Create kernel task, call sys_open("/dev/null")
 // Expect: Returns valid fd (bypass returns true without IPC)
 // Depends: kernel::Syscall, kernel::Scheduler

@@ -10,7 +10,8 @@ volatile uint64_t Timer::ticks_ = 0;
 
 void Timer::init(uint32_t frequency_hz) {
     set_frequency(frequency_hz);
-    IDT::register_handler(InterruptVector::TIMER, [](uint64_t, uint64_t, uint64_t) {
+    IDT::register_handler(InterruptVector::TIMER, [](uint64_t, uint64_t,
+        uint64_t) {
         handle_irq();
         kernel::Scheduler::on_tick();
     });

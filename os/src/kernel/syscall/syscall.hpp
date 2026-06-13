@@ -54,59 +54,92 @@ enum class SyscallNumber : uint64_t {
 };
 
 /// @brief System call handler function signature.
-using SyscallHandler = uint64_t (*)(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t* regs);
+using SyscallHandler = uint64_t (*)(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t arg3, uint64_t* regs);
 
 /// @brief System call handler and dispatcher.
 class Syscall {
 public:
     static void init();
     static uint64_t handle(uint64_t number, uint64_t arg0, uint64_t arg1,
-                           uint64_t arg2, uint64_t arg3, uint64_t* regs = nullptr);
+                           uint64_t arg2, uint64_t arg3,
+                               uint64_t* regs = nullptr);
 
 private:
-    static uint64_t sys_yield(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_yield(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
     static uint64_t sys_send(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_receive(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_send_sync(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_print(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_get_ticks(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_receive(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_send_sync(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_print(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_get_ticks(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
     static uint64_t sys_exit(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_create_mailbox(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_destroy_mailbox(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
     static uint64_t sys_open(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_read(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_close(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_fstat(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_write(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_lseek(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_ioctl(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_readdir(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_close(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_fstat(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_write(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_lseek(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_ioctl(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_readdir(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
     static uint64_t sys_stat(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_dup(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_chdir(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_chdir(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
     static uint64_t sys_exec(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_fork(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_waitpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_waitpid(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
     static uint64_t sys_kill(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_pipe(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_dup2(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_notify(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_notify_wait(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_event_set(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_event_wait(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_signal(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_alarm(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_gettod(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_uname(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_buf_alloc(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_buf_free(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_buf_map(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
-    static uint64_t sys_buf_unmap(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_notify(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_notify_wait(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_event_set(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_event_wait(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_signal(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_alarm(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_gettod(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_uname(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
+        );
+    static uint64_t sys_buf_alloc(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_buf_free(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_buf_map(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
+    static uint64_t sys_buf_unmap(uint64_t, uint64_t, uint64_t, uint64_t,
+        uint64_t*);
 
-    static constexpr SyscallHandler syscall_table_[static_cast<size_t>(SyscallNumber::MAX_SYSCALL)] = {
+    static constexpr SyscallHandler syscall_table_[static_cast<size_t>(
+        SyscallNumber::MAX_SYSCALL)] = {
         &Syscall::sys_yield,
         &Syscall::sys_send,
         &Syscall::sys_receive,

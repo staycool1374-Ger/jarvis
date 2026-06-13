@@ -22,7 +22,8 @@ JARVIS_TEST(address_virt_to_phys_identity) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies PageAddress aligns a non-aligned address down to 4 KiB boundary.
+// Testidea: Verifies PageAddress aligns a non-aligned address down to 4 KiB
+// boundary.
 // Input: Create PageAddress from unaligned address
 // Expect: Address is 4 KiB aligned (lower 12 bits zero)
 // Depends: kernel::address::PageAddress

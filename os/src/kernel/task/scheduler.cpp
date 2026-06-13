@@ -52,7 +52,8 @@ void Scheduler::remove_task(TaskControlBlock& task) {
         if (tasks_[i] == &task) {
             tasks_[i] = tasks_[--task_count_];
             if (current_index_ >= task_count_) current_index_ = 0;
-            if (i < task_count_ && current_index_ == task_count_) current_index_ = i;
+            if (i < task_count_ && current_index_ == task_count_
+                ) current_index_ = i;
             break;
         }
     }
@@ -84,7 +85,8 @@ bool Scheduler::needs_switch() noexcept {
     for (uint64_t i = 1; i < task_count_; ++i) {
         auto* task = tasks_[i];
         if (task == current) continue;
-        if (task->state == TaskState::READY || task->state == TaskState::RUNNING) {
+        if (task->state == TaskState::READY || task->state == TaskState::RUNNING
+            ) {
             if (task->priority > current->priority) return true;
         }
     }
@@ -101,10 +103,13 @@ TaskControlBlock* Scheduler::next_task() noexcept {
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
-        if (task->state != TaskState::READY && task->state != TaskState::RUNNING) continue;
+        if (task->state != TaskState::READY && task->state != TaskState::RUNNING
+            ) continue;
         if (task->priority > best_priority ||
-            (task->priority == best_priority && task->period_ticks < best_period) ||
-            (task->priority == best_priority && task->period_ticks == best_period && task != current)) {
+            (task->priority == best_priority && task->period_ticks < best_period
+                ) ||
+            (task->priority == best_priority &&
+                task->period_ticks == best_period && task != current)) {
             best = task;
             best_priority = task->priority;
             best_period = task->period_ticks;
@@ -182,7 +187,8 @@ void Scheduler::on_tick() noexcept {
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
-        if (task->state == TaskState::RUNNING || task->state == TaskState::READY) {
+        if (task->state == TaskState::RUNNING || task->state == TaskState::READY
+            ) {
             ++task->executed_ticks;
             if (task->remaining_ticks > 0) --task->remaining_ticks;
 
@@ -190,7 +196,8 @@ void Scheduler::on_tick() noexcept {
             if (task->alarm_armed && current_tick >= task->alarm_ticks) {
                 task->alarm_armed = false;
                 // Deliver SIGALRM to the task
-                task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::SIGALRM));
+                task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::
+                    SIGALRM));
             }
         }
     }
@@ -219,7 +226,8 @@ void Scheduler::reap_orphans() noexcept {
             if (t->state != TaskState::TERMINATED) continue;
             if (t != idle_task_ && t == current) continue;
 
-            TaskControlBlock* init_task = (task_count_ > 0) ? tasks_[0] : nullptr;
+            TaskControlBlock* init_task = (task_count_ > 0) ? tasks_[0] :
+                nullptr;
 
             if (init_task && init_task != t) {
                 if (t->first_child) {
@@ -262,21 +270,22 @@ void Scheduler::reap_orphans() noexcept {
                         if (p->state == TaskState::TERMINATED) {
                             can_reap = true;
                         }
-                        // Can reap if parent is alive but no longer waiting for this child
-                        // (parent must have explicitly called waitpid for a different child)
+// Can reap if parent is alive but no longer waiting for this child
+// (parent must have explicitly called waitpid for a different child)
                         else if (p->waiting_child_pid != 0 &&
                                  p->waiting_child_pid != t->id &&
-                                 p->waiting_child_pid != static_cast<uint64_t>(-1)) {
+                                 p->waiting_child_pid != static_cast<uint64_t>(
+                                     -1)) {
                             can_reap = true;
                         }
-                        // Can reap if parent cleared its wait (collected status or was never waiting)
+// Can reap if parent cleared its wait (collected status or was never waiting)
                         else if (p->waiting_child_pid == 0) {
                             can_reap = true;
                         }
                         break;
                     }
                 }
-                // If parent was not found in the scheduler, task is an orphan -> reapable
+// If parent was not found in the scheduler, task is an orphan -> reapable
                 if (!parent_found) can_reap = true;
             }
 
@@ -297,7 +306,8 @@ void Scheduler::reap_orphans() noexcept {
                 // If reaping the idle task, recreate it
                 if (t == idle_task_) {
                     auto* new_idle = TaskControlBlock::create([]() {
-                        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) { arch::hlt(); }
+                        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) { arch::
+                            hlt(); }
                     }, 0, 0xFFFFFFFF);
                     new_idle->state = TaskState::READY;
                     t->cleanup();
@@ -385,7 +395,8 @@ void Scheduler::reschedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
-        if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+        if (next->state != TaskState::READY && next->state != TaskState::RUNNING
+            ) {
             return;
         }
         switch_to_task(current, next);

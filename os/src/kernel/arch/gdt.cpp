@@ -7,7 +7,8 @@ GDTEntry GDT::entries_[NUM_ENTRIES] = {};
 TSS GDT::tss_ = {};
 GDTDescriptor GDT::desc_ = {};
 
-static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access, uint8_t gran) {
+static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access,
+    uint8_t gran) {
     GDTEntry e = {};
     e.limit_low    = limit & 0xFFFF;
     e.base_low     = base & 0xFFFF;
@@ -39,7 +40,8 @@ void GDT::init() {
     tss_low.base_high = (tss_base >> 24) & 0xFF;
     entries_[GDT_TSS / 8] = tss_low;
 
-    uint64_t* tss_high = reinterpret_cast<uint64_t*>(&entries_[GDT_TSS / 8 + 1]);
+    uint64_t* tss_high = reinterpret_cast<uint64_t*>(&entries_[GDT_TSS / 8 + 1]
+        );
     *tss_high = tss_base >> 32;
 
     desc_.limit = sizeof(entries_) - 1;

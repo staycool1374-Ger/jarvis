@@ -29,9 +29,11 @@ struct Utsname {
 };
 
 // Runmode: kernel
-// Testidea: Sets alarm for 1 second, verifies it is armed and alarm_ticks is 1 tick ahead, then cancels with 0.
+// Testidea: Sets alarm for 1 second, verifies it is armed and alarm_ticks is
+// 1 tick ahead, then cancels with 0.
 // Input: ALARM syscall with seconds=1, then seconds=0 to cancel.
-// Expect: Both calls return 0; alarm_armed transitions true then false; alarm_ticks == ticks() + 1.
+// Expect: Both calls return 0; alarm_armed transitions true then false;
+// alarm_ticks == ticks() + 1.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
 JARVIS_TEST(syscall_alarm_basic) {
     auto* cur = Scheduler::current_task();
@@ -51,7 +53,8 @@ JARVIS_TEST(syscall_alarm_basic) {
 }
 
 // Runmode: kernel
-// Testidea: Retrieves time of day via GETTOD and checks it falls within reasonable Unix epoch bounds.
+// Testidea: Retrieves time of day via GETTOD and checks it falls within
+// reasonable Unix epoch bounds.
 // Input: GETTOD syscall with pointer to a Timeval struct.
 // Expect: Returns 0; tv_sec between year 2020 and 2200; tv_usec < 1000000.
 // Depends: kernel::Syscall
@@ -68,9 +71,11 @@ JARVIS_TEST(syscall_gettod) {
 }
 
 // Runmode: kernel
-// Testidea: Reads system identity via UNAME and validates sysname and machine strings.
+// Testidea: Reads system identity via UNAME and validates sysname and
+// machine strings.
 // Input: UNAME syscall with pointer to a Utsname struct.
-// Expect: Returns 0; sysname is "Jarvis"; machine is "x86_64"; release/version/machine non-empty.
+// Expect: Returns 0; sysname is "Jarvis"; machine is "x86_64";
+// release/version/machine non-empty.
 // Depends: kernel::Syscall, string
 JARVIS_TEST(syscall_uname) {
     Utsname uts{};
@@ -89,8 +94,10 @@ JARVIS_TEST(syscall_uname) {
 }
 
 // Runmode: kernel
-// Testidea: Manually sets alarm_ticks to start+2 and advances the timer tick count to verify alarm remains armed until the target tick is reached.
-// Input: Direct manipulation of cur->alarm_ticks and cur->alarm_armed; arch::Timer::set_ticks_for_test().
+// Testidea: Manually sets alarm_ticks to start+2 and advances the timer tick
+// count to verify alarm remains armed until the target tick is reached.
+// Input: Direct manipulation of cur->alarm_ticks and cur->alarm_armed;
+// arch::Timer::set_ticks_for_test().
 // Expect: alarm_armed remains true at tick start+1; passes on reaching start+2.
 // Depends: kernel::Scheduler, kernel::arch::Timer
 JARVIS_TEST(alarm_fires_after_ticks) {
@@ -109,9 +116,11 @@ JARVIS_TEST(alarm_fires_after_ticks) {
 }
 
 // Runmode: kernel
-// Testidea: Sets alarm with a subsecond (500ms) interval and verifies the tick calculation is within tolerance, then cancels.
+// Testidea: Sets alarm with a subsecond (500ms) interval and verifies the
+// tick calculation is within tolerance, then cancels.
 // Input: ALARM syscall with microseconds=500000, then seconds=0 to cancel.
-// Expect: Returns 0 both calls; alarm_armed true then false; alarm_ticks within +/-10 of ticks() + 500.
+// Expect: Returns 0 both calls; alarm_armed true then false; alarm_ticks
+// within +/-10 of ticks() + 500.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
 JARVIS_TEST(syscall_alarm_subsecond) {
     auto* cur = Scheduler::current_task();
@@ -146,7 +155,8 @@ JARVIS_TEST(syscall_dispatch_getpid) {
 }
 
 // Runmode: kernel
-// Testidea: Invalid and out-of-range syscall numbers return -1 instead of crashing or succeeding.
+// Testidea: Invalid and out-of-range syscall numbers return -1 instead of
+// crashing or succeeding.
 // Input: Syscall::handle with numbers MAX_SYSCALL, MAX_SYSCALL+1, and 9999.
 // Expect: All three return static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
@@ -167,7 +177,8 @@ JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
 // Runmode: kernel
 // Testidea: GET_TICKS returns the current timer tick count.
 // Input: GET_TICKS syscall.
-// Expect: Return value is non-zero or any value (assert only checks it doesn't crash).
+// Expect: Return value is non-zero or any value (assert only checks it
+// doesn't crash).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_get_ticks) {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0,
@@ -212,10 +223,13 @@ JARVIS_TEST(syscall_dispatch_print_noop) {
 }
 
 // Runmode: kernel
-// Testidea: Opens /dev/null, reads from it (returns 0 bytes/EOF), and closes the fd.
+// Testidea: Opens /dev/null, reads from it (returns 0 bytes/EOF), and closes
+// the fd.
 // Input: OPEN "/dev/null" (flags=0), READ 10 bytes into buffer, CLOSE.
-// Expect: OPEN returns valid fd < MAX_FDS and >= 0; READ returns 0; CLOSE returns 0.
-// Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock, kernel::vfs
+// Expect: OPEN returns valid fd < MAX_FDS and >= 0; READ returns 0; CLOSE
+// returns 0.
+// Depends: kernel::Syscall, kernel::Scheduler,
+// kernel::task::TaskControlBlock, kernel::vfs
 JARVIS_TEST(syscall_open_read_close) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
@@ -247,10 +261,13 @@ JARVIS_TEST(syscall_open_read_close) {
 }
 
 // Runmode: kernel
-// Testidea: Opens /dev/tty for writing, writes a short string, retrieves stat info via fstat, then closes.
+// Testidea: Opens /dev/tty for writing, writes a short string, retrieves
+// stat info via fstat, then closes.
 // Input: OPEN "/dev/tty" (flags=1), WRITE 4 bytes ("test"), FSTAT, CLOSE.
-// Expect: OPEN returns valid fd; WRITE returns 4; FSTAT returns 0; CLOSE returns 0.
-// Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock, kernel::vfs
+// Expect: OPEN returns valid fd; WRITE returns 4; FSTAT returns 0; CLOSE
+// returns 0.
+// Depends: kernel::Syscall, kernel::Scheduler,
+// kernel::task::TaskControlBlock, kernel::vfs
 JARVIS_TEST(syscall_write_fstat) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
@@ -286,7 +303,8 @@ JARVIS_TEST(syscall_write_fstat) {
 }
 
 // Runmode: kernel
-// Testidea: FORK syscall returns either 0 (child context) or a positive PID (parent context).
+// Testidea: FORK syscall returns either 0 (child context) or a positive PID
+// (parent context).
 // Input: FORK syscall.
 // Expect: Return value is 0 or positive.
 // Depends: kernel::Syscall
@@ -315,9 +333,12 @@ JARVIS_TEST(syscall_exec_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: Creates a pipe, writes data to the write end, reads it back from the read end, and validates the content.
-// Input: PIPE (2-int array), WRITE "pipe" (4 bytes), READ 10 bytes, CLOSE on both fds.
-// Expect: PIPE returns 0 with differing non-negative fds; WRITE returns 4; READ returns 4 with content matching "pipe".
+// Testidea: Creates a pipe, writes data to the write end, reads it back from
+// the read end, and validates the content.
+// Input: PIPE (2-int array), WRITE "pipe" (4 bytes), READ 10 bytes, CLOSE on
+// both fds.
+// Expect: PIPE returns 0 with differing non-negative fds; WRITE returns 4;
+// READ returns 4 with content matching "pipe".
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(syscall_pipe_read_write) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
@@ -360,9 +381,11 @@ JARVIS_TEST(syscall_pipe_read_write) {
 }
 
 // Runmode: kernel
-// Testidea: Registers a signal handler for SIGUSR1 via SIGNAL syscall and verifies it is stored; SIGRETURN is stubbed.
+// Testidea: Registers a signal handler for SIGUSR1 via SIGNAL syscall and
+// verifies it is stored; SIGRETURN is stubbed.
 // Input: SIGNAL signal=1, handler=test_signal_handler.
-// Expect: SIGNAL returns 0; handler is registered; SIGRETURN not tested (needs populated user stack).
+// Expect: SIGNAL returns 0; handler is registered; SIGRETURN not tested
+// (needs populated user stack).
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(syscall_signal_sigreturn) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
@@ -378,7 +401,7 @@ JARVIS_TEST(syscall_signal_sigreturn) {
     JARVIS_ASSERT_EQ(0ULL, ret);
     JARVIS_ASSERT(test_task->get_signal_handler(1) == test_signal_handler);
 
-    // SIGRETURN requires a valid regs array with a SignalFrame on the user stack;
+// SIGRETURN requires a valid regs array with a SignalFrame on the user stack;
     // stubbed because no signal delivery path exists to populate one.
     Scheduler::set_current(*original);
     Scheduler::remove_task(*test_task);
@@ -388,10 +411,13 @@ JARVIS_TEST(syscall_signal_sigreturn) {
 }
 
 // Runmode: kernel
-// Testidea: Sends an IPC message to self with data=42 and receives it back, verifying the message queue toggles.
+// Testidea: Sends an IPC message to self with data=42 and receives it back,
+// verifying the message queue toggles.
 // Input: SEND target=own task id, data=42; RECEIVE with no filters.
-// Expect: SEND returns 0; queue non-empty; RECEIVE returns 42; queue empty afterward.
-// Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock, kernel::ipc::MessageQueue
+// Expect: SEND returns 0; queue non-empty; RECEIVE returns 42; queue empty
+// afterward.
+// Depends: kernel::Syscall, kernel::Scheduler,
+// kernel::task::TaskControlBlock, kernel::ipc::MessageQueue
 JARVIS_TEST(syscall_send_recv) {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
@@ -419,7 +445,8 @@ JARVIS_TEST(syscall_send_recv) {
 }
 
 // Runmode: kernel
-// Testidea: Changes the working directory to "/" and then stats "/" to verify both operations succeed.
+// Testidea: Changes the working directory to "/" and then stats "/" to
+// verify both operations succeed.
 // Input: CHDIR path="/"; STAT path="/" with 256-byte output buffer.
 // Expect: Both return 0.
 // Depends: kernel::Syscall
@@ -437,7 +464,8 @@ JARVIS_TEST(syscall_chdir_getcwd) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - PAUSE syscall cannot be tested from kernel context because hlt needs interrupts enabled and may never wake.
+// Testidea: STUB - PAUSE syscall cannot be tested from kernel context
+// because hlt needs interrupts enabled and may never wake.
 // Input: PAUSE syscall (not invoked).
 // Expect: No assertion; test passes immediately.
 // Depends: (none)
@@ -457,7 +485,8 @@ JARVIS_TEST(syscall_open_forwards_to_vfsd) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Verifies READ/WRITE syscalls are routed through the VFS daemon.
+// Testidea: STUB - Verifies READ/WRITE syscalls are routed through the VFS
+// daemon.
 // Input: READ/WRITE syscalls (not invoked).
 // Expect: No assertion; test passes immediately.
 // Depends: (none)
@@ -486,7 +515,8 @@ JARVIS_TEST(vfsd_stat_fstat) {
 // Runmode: kernel
 // Testidea: Registers all syscall test cases with the test framework.
 // Input: None.
-// Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for execution.
+// Expect: All JARVIS_REGISTER_TEST calls succeed and tests are available for
+// execution.
 // Depends: kernel::Logger, kernel::test framework
 void register_syscall_tests() {
     Logger::info("Registering syscall tests");

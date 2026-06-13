@@ -5,7 +5,7 @@
 #include <logger.hpp>
 
 extern "C" void debug_write(const char* s);
-extern "C" void debug_write_hex(uint64_t v);
+extern "C" void debug_write_hex(uint64_t value);
 
 namespace kernel {
 namespace daemon {
@@ -61,7 +61,8 @@ void notify_death(uint64_t pid) {
             debug_write_hex(entries_[i].restart_count);
             debug_write("\n");
 
-            // Reset PID via the module's setter so all IPC callers immediately fail
+            // Reset PID via the module's setter so all IPC
+            // callers immediately fail
             if (entries_[i].set_pid_fn) {
                 entries_[i].set_pid_fn(0);
             }
@@ -77,7 +78,8 @@ void restart_stale_daemons() {
 
         // Check restart limit
         if (entries_[i].restart_count >= MAX_RESTART_COUNT) {
-            Logger::warn("daemon_mgr: '%s' restart limit reached (%d), giving up",
+            Logger::warn(
+                "daemon_mgr: '%s' restart limit reached (%d), giving up",
                          entries_[i].name,
                          entries_[i].restart_count);
             continue;
@@ -99,7 +101,8 @@ void restart_stale_daemons() {
             f = initrd::find(with_dot);
         }
         if (!f.data) {
-            Logger::warn("daemon_mgr: '%s' initrd file not found, cannot restart",
+            Logger::warn(
+                "daemon_mgr: '%s' initrd file not found, cannot restart",
                          entries_[i].name);
             continue;
         }

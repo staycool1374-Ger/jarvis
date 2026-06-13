@@ -66,10 +66,10 @@ public:
     static MessageQueue& queue(uint64_t task_id);
 
     /// @brief Blocks the current task on a full queue (may boost owner priority).
-    static bool block_sender(MessageQueue& q, TaskControlBlock* task);
+    static bool block_sender(MessageQueue& q, TaskControlBlock& task);
 
     /// @brief Wakes the oldest blocked sender and restores owner priority.
-    static void wake_sender(MessageQueue& q, TaskControlBlock* receiver);
+    static void wake_sender(MessageQueue& q, TaskControlBlock& receiver);
 };
 
 } // namespace kernel

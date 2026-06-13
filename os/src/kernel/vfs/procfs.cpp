@@ -28,7 +28,8 @@ struct MemInfoVnode {
     uint64_t content_len;
 };
 
-static int64_t meminfo_read(Vnode& self, uint8_t* buf, uint64_t count, uint64_t offset) {
+static int64_t meminfo_read(Vnode& self, uint8_t* buf, uint64_t count,
+    uint64_t offset) {
     auto* mi = static_cast<MemInfoVnode*>(self.private_data);
     if (!mi) return -1;
     if (offset >= mi->content_len) return 0;
@@ -38,18 +39,21 @@ static int64_t meminfo_read(Vnode& self, uint8_t* buf, uint64_t count, uint64_t 
     return static_cast<int64_t>(count);
 }
 
-static int64_t meminfo_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t meminfo_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int meminfo_open(Vnode&, uint64_t) { return 0; }
 static void meminfo_close(Vnode&) {}
 
-static int64_t meminfo_lseek(Vnode& self, int64_t offset, int whence, uint64_t* out_pos) {
+static int64_t meminfo_lseek(Vnode& self, int64_t offset, int whence,
+    uint64_t* out_pos) {
     auto* mi = static_cast<MemInfoVnode*>(self.private_data);
     if (!mi) return -1;
     uint64_t new_pos = 0;
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
-    case SEEK_END: new_pos = mi->content_len + static_cast<uint64_t>(offset); break;
+    case SEEK_END: new_pos = mi->content_len + static_cast<uint64_t>(offset
+        ); break;
     default: return -1;
     }
     if (new_pos > mi->content_len) new_pos = mi->content_len;
@@ -71,14 +75,16 @@ static Vnode* meminfo_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps meminfo_ops = {
     meminfo_read, meminfo_write, meminfo_open, meminfo_close,
-    meminfo_lseek, meminfo_fstat, meminfo_ioctl, meminfo_readdir, meminfo_lookup,
+    meminfo_lseek, meminfo_fstat, meminfo_ioctl, meminfo_readdir,
+        meminfo_lookup,
 };
 
 static MemInfoVnode meminfo_vnode = {};
 
 // ── /proc/self vnode ── (redirects to current pid's dir)
 static int64_t self_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1; }
-static int64_t self_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t self_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int self_open(Vnode&, uint64_t) { return 0; }
 static void self_close(Vnode&) {}
 static int64_t self_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
@@ -108,7 +114,8 @@ struct PidStatVnode {
     TaskControlBlock* task;
 };
 
-static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count, uint64_t offset) {
+static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count,
+    uint64_t offset) {
     auto* ps = static_cast<PidStatVnode*>(self.private_data);
     if (!ps || !ps->task) return -1;
 
@@ -136,7 +143,8 @@ static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count, uint64_t
     src = state_str; while (*src) tmp[len++] = *src++;
     while (*f != '%') tmp[len++] = *f++;
     src = prio_str; while (*src) tmp[len++] = *src++;
-    while (*f) { if (*f == '\\' && *(f+1) == 'n') { tmp[len++] = '\n'; f += 2; break; } tmp[len++] = *f++; }
+    while (*f) { if (*f == '\\' && *(f+1) == 'n') { tmp[len++
+        ] = '\n'; f += 2; break; } tmp[len++] = *f++; }
     src = fmt;
     while (*src != '%') src++;
     src++; // skip %
@@ -151,10 +159,12 @@ static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count, uint64_t
     return static_cast<int64_t>(count);
 }
 
-static int64_t pid_stat_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t pid_stat_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int pid_stat_open(Vnode&, uint64_t) { return 0; }
 static void pid_stat_close(Vnode&) {}
-static int64_t pid_stat_lseek(Vnode& self, int64_t offset, int whence, uint64_t* out_pos) {
+static int64_t pid_stat_lseek(Vnode& self, int64_t offset, int whence,
+    uint64_t* out_pos) {
     (void)self;
     uint64_t new_pos = 0;
     switch (whence) {
@@ -173,7 +183,8 @@ static Vnode* pid_stat_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pid_stat_ops = {
     pid_stat_read, pid_stat_write, pid_stat_open, pid_stat_close,
-    pid_stat_lseek, pid_stat_fstat, pid_stat_ioctl, pid_stat_readdir, pid_stat_lookup,
+    pid_stat_lseek, pid_stat_fstat, pid_stat_ioctl, pid_stat_readdir,
+        pid_stat_lookup,
 };
 
 // ── pid directory vnode ──
@@ -186,7 +197,8 @@ struct PidDirVnode {
 };
 
 static int64_t pid_dir_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1; }
-static int64_t pid_dir_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t pid_dir_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int pid_dir_open(Vnode&, uint64_t) { return 0; }
 static void pid_dir_close(Vnode&) {}
 static int64_t pid_dir_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
@@ -203,7 +215,8 @@ static Vnode* pid_dir_lookup(Vnode& self, const char* name) {
 
 static const VnodeOps pid_dir_ops = {
     pid_dir_read, pid_dir_write, pid_dir_open, pid_dir_close,
-    pid_dir_lseek, pid_dir_fstat, pid_dir_ioctl, pid_dir_readdir, pid_dir_lookup,
+    pid_dir_lseek, pid_dir_fstat, pid_dir_ioctl, pid_dir_readdir,
+        pid_dir_lookup,
 };
 
 // ── self resolution ──
@@ -229,8 +242,10 @@ static Vnode* self_lookup(Vnode& self, const char* name) {
 }
 
 // ── procfs root ──
-static int64_t proc_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) { return -1; }
-static int64_t proc_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) { return -1; }
+static int64_t proc_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
+    return -1; }
+static int64_t proc_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return -1; }
 static int proc_root_open(Vnode&, uint64_t) { return 0; }
 static void proc_root_close(Vnode&) {}
 static int64_t proc_root_lseek(Vnode&, int64_t, int, uint64_t*) { return -1; }
@@ -266,13 +281,15 @@ static int proc_root_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
     uint64_t task_count = Scheduler::task_count();
     uint64_t pid_idx = position - 2;
     uint64_t found = 0;
-    for (uint64_t task_idx = 0; task_idx < task_count && found <= pid_idx; ++task_idx) {
+    for (uint64_t task_idx = 0; task_idx < task_count &&
+        found <= pid_idx; ++task_idx) {
         TaskControlBlock* t = Scheduler::task_at(task_idx);
         if (t) {
             if (found == pid_idx) {
                 char pid_str[16];
                 uint64_to_str(pid_str, t->id);
-                size_t i = 0; while (pid_str[i] && i < 63) { dent.d_name[i] = pid_str[i]; ++i; }
+                size_t i = 0; while (pid_str[i] && i < 63) { dent.d_name[i
+                    ] = pid_str[i]; ++i; }
                 dent.d_name[i] = '\0';
                 dent.d_ino = t->id;
                 ++pos;
@@ -328,7 +345,8 @@ static Vnode* proc_root_lookup(Vnode& self, const char* name) {
 
 static const VnodeOps proc_root_ops = {
     proc_root_read, proc_root_write, proc_root_open, proc_root_close,
-    proc_root_lseek, proc_root_fstat, proc_root_ioctl, proc_root_readdir, proc_root_lookup,
+    proc_root_lseek, proc_root_fstat, proc_root_ioctl, proc_root_readdir,
+        proc_root_lookup,
 };
 
 static Vnode proc_root_vnode = {

@@ -18,9 +18,10 @@ void EventGroup::clear_bits(uint64_t bits) {
     bits_ &= ~bits;
 }
 
-bool EventGroup::add_waiter(TaskControlBlock* task, uint64_t wanted, bool clear) {
+bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
+    ) {
     if (wait_count_ >= MAX_WAITERS) return false;
-    waiters_[wait_count_].task = task;
+    waiters_[wait_count_].task = &task;
     waiters_[wait_count_].wanted_bits = wanted;
     waiters_[wait_count_].clear_on_exit = clear;
     ++wait_count_;
@@ -51,7 +52,7 @@ uint64_t EventGroup::wait_bits(uint64_t bits, bool clear_on_exit) {
         return bits_;
     }
 
-    if (!add_waiter(task, bits, clear_on_exit)) return bits_;
+    if (!add_waiter(*task, bits, clear_on_exit)) return bits_;
 
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();

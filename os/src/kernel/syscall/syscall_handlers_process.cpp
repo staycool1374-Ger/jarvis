@@ -13,7 +13,8 @@
 
 namespace kernel {
 
-uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* regs) {
+uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t,
+    uint64_t* regs) {
     if (!regs) return static_cast<uint64_t>(-1);
     auto* child = TaskControlBlock::clone(regs);
     if (!child) return static_cast<uint64_t>(-1);
@@ -21,10 +22,12 @@ uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* reg
     return child->id;
 }
 
-uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
     uint64_t target_pid = arg0;
     auto status = checked(reinterpret_cast<uint64_t*>(arg1));
-    auto* status_ptr = (!syscall_is_user_task() || status.valid()) ? status.unsafe_ptr() : nullptr;
+    auto* status_ptr = (!syscall_is_user_task() || status.valid()) ?
+        status.unsafe_ptr() : nullptr;
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     TaskControlBlock* child = nullptr;
@@ -32,7 +35,8 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
     for (uint64_t i = 0; i < count; ++i) {
         auto* t = Scheduler::task_at(i);
         if (t && t->parent_id == cur->id) {
-            if (target_pid == static_cast<uint64_t>(-1) || t->id == target_pid) {
+            if (target_pid == static_cast<uint64_t>(-1) || t->id == target_pid
+                ) {
                 child = t;
                 break;
             }
@@ -55,12 +59,14 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint6
     return static_cast<uint64_t>(-1);
 }
 
-uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t, uint64_t* regs) {
+uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t* regs) {
     if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
     vfs::Vnode* vn = nullptr;
     if (syscall_is_user_task()) {
         char path_buf[SYSCALL_MAX_PATH];
-        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0), SYSCALL_MAX_PATH))
+        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0),
+            SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
         vn = vfs::resolve(path_buf);
     } else {
@@ -73,7 +79,8 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
     size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
     uint64_t file_phys = PMM::alloc_contiguous(file_pages);
     if (!file_phys) return static_cast<uint64_t>(-1);
-    uint8_t* file_buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + file_phys);
+    uint8_t* file_buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + file_phys
+        );
     int64_t r = vn->ops->read(*vn, file_buf, vn->size, 0);
     if (r <= 0 || static_cast<uint64_t>(r) != vn->size) {
         for (size_t i = 0; i < file_pages; ++i)
@@ -91,7 +98,8 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t
     return 0;
 }
 
-uint64_t Syscall::sys_kill(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_kill(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     uint64_t target_pid = arg0;
     uint64_t sig = arg1;
     if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
@@ -110,7 +118,8 @@ uint64_t Syscall::sys_kill(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uin
     return 0;
 }
 
-uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
     auto* t = syscall_task();
     if (!t) return static_cast<uint64_t>(-1);
     uint64_t sig = arg0;
@@ -121,7 +130,8 @@ uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, u
     return 0;
 }
 
-uint64_t Syscall::sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t* regs) {
+uint64_t Syscall::sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t,
+    uint64_t* regs) {
     auto* t = syscall_task();
     if (!t || !regs) return static_cast<uint64_t>(-1);
     uint64_t user_rsp = regs[20];

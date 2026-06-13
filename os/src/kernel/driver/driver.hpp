@@ -32,7 +32,8 @@ struct Driver {
         , irq_line(0)
         {}
 
-    Driver(const char* name_, const char* description_, bool (*init_)(), void (*exit_)(), DriverState state_, uint32_t irq_line_)
+    Driver(const char* name_, const char* description_, bool (*init_)(), void (
+        *exit_)(), DriverState state_, uint32_t irq_line_)
         : name(name_)
         , description(description_)
         , init(init_)

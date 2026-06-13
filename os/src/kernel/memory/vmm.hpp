@@ -19,7 +19,8 @@ public:
     /// @param virt_addr Virtual address (page-aligned).
     /// @param phys_addr Physical address (page-aligned).
     /// @param user      If true, sets the user-accessible flag.
-    static void map_page(uint64_t virt_addr, uint64_t phys_addr, bool user = false);
+    static void map_page(uint64_t virt_addr, uint64_t phys_addr,
+        bool user = false);
     /// @brief Unmaps a virtual page.
     /// @param virt_addr Virtual address to unmap.
     static void unmap_page(uint64_t virt_addr);
@@ -58,7 +59,8 @@ public:
     /// @param virt_addr Virtual address to translate.
     /// @param pml4_phys Physical address of the target PML4.
     /// @return Physical address, or 0 if not mapped.
-    static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys);
+    static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys
+        );
 
 private:
     static constexpr uint64_t PAGE_SIZE = 4096;
@@ -86,7 +88,8 @@ private:
     /// @param create If true, allocates a new table if missing.
     /// @param user_alloc If true, allocate page table page as USER-owned.
     /// @return Pointer to the next-level table, or nullptr.
-    static uint64_t* get_table(uint64_t* table, size_t index, bool create, bool user_alloc = false);
+    static uint64_t* get_table(uint64_t* table, size_t index, bool create,
+        bool user_alloc = false);
 };
 
 } // namespace kernel

@@ -30,7 +30,7 @@ private:
     EventWaiter waiters_[MAX_WAITERS];
     size_t wait_count_;
 
-    bool add_waiter(TaskControlBlock* task, uint64_t wanted, bool clear);
+    bool add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear);
     void wake_matching();
 };
 

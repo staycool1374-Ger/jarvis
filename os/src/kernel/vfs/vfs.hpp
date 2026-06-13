@@ -41,11 +41,14 @@ struct Dirent {
 
 struct Vnode;
 struct VnodeOps {
-    int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset);
-    int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count, uint64_t offset);
+    int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count,
+        uint64_t offset);
+    int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count,
+        uint64_t offset);
     int     (*open)(Vnode& self, uint64_t flags);
     void    (*close)(Vnode& self);
-    int64_t (*lseek)(Vnode& self, int64_t offset, int whence, uint64_t* out_pos);
+    int64_t (*lseek)(Vnode& self, int64_t offset, int whence, uint64_t* out_pos
+        );
     int     (*fstat)(Vnode& self, VfsStat& st);
     int     (*ioctl)(Vnode& self, uint64_t request, void* arg);
     int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);
@@ -69,7 +72,8 @@ struct Vnode {
         , refcount(0)
         {}
 
-    Vnode(const VnodeOps* ops_, uint64_t ino_, uint64_t size_, uint16_t mode_, void* private_data_)
+    Vnode(const VnodeOps* ops_, uint64_t ino_, uint64_t size_, uint16_t mode_,
+        void* private_data_)
         : ops(ops_)
         , ino(ino_)
         , size(size_)

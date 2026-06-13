@@ -49,7 +49,8 @@ JARVIS_TEST(vmm_map_page_null_phys) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies when clone_kernel_pml4 runs out of memory, partial allocations are freed.
+// Testidea: Verifies when clone_kernel_pml4 runs out of memory, partial
+// allocations are freed.
 // Input: Exhaust memory, call clone_kernel_pml4
 // Expect: No leaked page tables
 // Depends: kernel::memory::VMM
@@ -60,7 +61,8 @@ JARVIS_TEST(vmm_clone_failure_rollback) {
 }
 
 // Runmode: kernel
-// Testidea: Verifies freeing user pages on a shared (forked) PML4 does not free pages still in use by parent.
+// Testidea: Verifies freeing user pages on a shared (forked) PML4 does not
+// free pages still in use by parent.
 // Input: Fork, free child's user pages, check parent
 // Expect: Parent pages still valid
 // Depends: kernel::memory::VMM
@@ -118,7 +120,7 @@ JARVIS_TEST(vmm_free_user_pages_shared) {
     // Call free_user_pages on child's PML4
     VMM::free_user_pages(child_pml4);
     
-    // Verify: shared PDPT/PD/PT pages should NOT be freed (they're kernel pages)
+// Verify: shared PDPT/PD/PT pages should NOT be freed (they're kernel pages)
     // User data page SHOULD be freed
     JARVIS_ASSERT(PMM::is_user_page(user_page) == false); // Was freed
     

@@ -13,7 +13,8 @@ namespace kernel {
 ///       Tracks USER vs KERNEL page ownership for safety in free_user_pages.
 class PMM {
 public:
-    static void init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end);
+    static void init(uint64_t mem_size, uint64_t kernel_start,
+        uint64_t kernel_end);
 
     /// @brief Allocates a single 4 KiB page (KERNEL ownership).
     static uint64_t alloc_page();
@@ -31,8 +32,10 @@ public:
     /// @brief Returns true if the page was allocated as USER ownership.
     static bool is_user_page(uint64_t phys_addr);
 
-    static uint64_t free_memory() noexcept { return free_pages_ * arch::PAGE_SIZE; }
-    static uint64_t total_memory() noexcept { return total_pages_ * arch::PAGE_SIZE; }
+    static uint64_t free_memory() noexcept { return free_pages_ * arch::
+        PAGE_SIZE; }
+    static uint64_t total_memory() noexcept { return total_pages_ * arch::
+        PAGE_SIZE; }
 
     /// @brief OOM handler type — called when allocation fails. Should try to free memory.
     /// @return true if memory may have been freed (caller should retry).

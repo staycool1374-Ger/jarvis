@@ -22,7 +22,8 @@ struct PipeBuffer {
     sync::Semaphore data_avail;
 };
 
-static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t) {
+static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
+    ) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb || pb->read_closed) return -1;
     if (pb->write_closed && pb->count == 0) return 0;
@@ -40,7 +41,8 @@ static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t)
     return static_cast<int64_t>(total);
 }
 
-static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count, uint64_t) {
+static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count,
+    uint64_t) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb || pb->read_closed) return -1;
     if (pb->write_closed) return -1;
@@ -127,7 +129,8 @@ int create_pipe(int fds[2]) {
     wnode->refcount = 1;
 
     auto* task = Scheduler::current_task();
-    if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode); return -1; }
+    if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode
+        ); return -1; }
 
     int rfd = task->fd_table.alloc();
     int wfd = task->fd_table.alloc();

@@ -33,17 +33,20 @@ int FdTable::alloc() {
 }
 
 void FdTable::free(int file_descriptor) {
-    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS) return;
+    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
+        ) return;
     if (fds[file_descriptor].used && fds[file_descriptor].vnode) {
         if (fds[file_descriptor].vnode->refcount > 0) {
             --fds[file_descriptor].vnode->refcount;
             if (fds[file_descriptor].vnode->refcount == 0) {
                 if (fds[file_descriptor].vnode->ops->close)
-                    fds[file_descriptor].vnode->ops->close(*fds[file_descriptor].vnode);
+                    fds[file_descriptor].vnode->ops->close(*fds[file_descriptor
+                        ].vnode);
             }
         } else {
             if (fds[file_descriptor].vnode->ops->close)
-                fds[file_descriptor].vnode->ops->close(*fds[file_descriptor].vnode);
+                fds[file_descriptor].vnode->ops->close(*fds[file_descriptor
+                    ].vnode);
         }
     }
     fds[file_descriptor].used = false;
@@ -53,7 +56,8 @@ void FdTable::free(int file_descriptor) {
 }
 
 FileDescription* FdTable::get(int file_descriptor) {
-    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS) return nullptr;
+    if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
+        ) return nullptr;
     if (!fds[file_descriptor].used) return nullptr;
     return &fds[file_descriptor];
 }
@@ -88,7 +92,8 @@ Vnode* resolve(const char* path) {
         search = path + best_len;
         while (*search == '/') ++search;
     } else {
-        current = (task && task->cwd_vnode) ? task->cwd_vnode : root_vnode_global;
+        current = (task && task->cwd_vnode) ? task->cwd_vnode :
+            root_vnode_global;
     }
 
     if (!current) return nullptr;
@@ -114,7 +119,8 @@ Vnode* resolve(const char* path) {
             continue;
         }
 
-        Vnode* child = current->ops ? current->ops->lookup(*current, comp) : nullptr;
+        Vnode* child = current->ops ? current->ops->lookup(*current, comp) :
+            nullptr;
         if (!child) return nullptr;
         current = child;
     }

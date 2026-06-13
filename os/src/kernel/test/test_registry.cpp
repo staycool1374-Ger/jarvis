@@ -49,9 +49,12 @@ void register_buffer_pool_tests();
 void register_block_device_tests();
 
 // Runmode: kernel
-// Testidea: Registers all selftest subsystem test suites by delegating to each subsystem's register function
+// Testidea: Registers all selftest subsystem test suites by delegating to
+// each subsystem's register function
 // Input: None
-// Expect: All subsystem tests registered (lib, memory, ipc, scheduler, task, driver, vfs, signals, process, elf, checked_ptr, rtc, syscall, sync, capability, task_lifecycle, idle_task, vfsd, iocd)
+// Expect: All subsystem tests registered (lib, memory, ipc, scheduler, task,
+// driver, vfs, signals, process, elf, checked_ptr, rtc, syscall, sync,
+// capability, task_lifecycle, idle_task, vfsd, iocd)
 // Depends: test framework, all kernel subsystems
 void register_selftest_tests() {
     Logger::info("Registering selftest suite");
