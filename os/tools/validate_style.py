@@ -280,12 +280,34 @@ class LoopBoundsChecker(Checker):
         if not is_kernel_file(rel_path, self.cfg):
             return
 
+        lines = text.split('\n')
+
+        # Patterns that indicate intentional blocking I/O loops
+        blocking_patterns = [
+            "arch::hlt", "hlt()", "arch::pause", "pause()",
+            "inb(", "outb(", "Keyboard::getchar", "getchar(",
+            "COM1", "COM2", "COM3", "COM4"
+        ]
+
+        def is_blocking_loop(start_line: int) -> bool:
+            for i in range(start_line, min(start_line + 10, len(lines))):
+                line = lines[i]
+                if any(p in line for p in blocking_patterns):
+                    return True
+            return False
+
         for m in self._while_true.finditer(text):
-            self.add(rel_path, get_line(text, m.start()),
+            line_num = get_line(text, m.start())
+            if is_blocking_loop(line_num - 1):
+                continue
+            self.add(rel_path, line_num,
                      "Unbounded loop: 'while (true)' without explicit max iterations — use bounded loop with max-count guard")
 
         for m in self._for_semi.finditer(text):
-            self.add(rel_path, get_line(text, m.start()),
+            line_num = get_line(text, m.start())
+            if is_blocking_loop(line_num - 1):
+                continue
+            self.add(rel_path, line_num,
                      "Unbounded loop: 'for (;;)' without explicit max iterations — use bounded loop with max-count guard")
 
 

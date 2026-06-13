@@ -39,7 +39,7 @@ void* operator new(unsigned long size) {
         p = heap_alloc(size);
         ++retries;
     }
-    if (!p) { while (1) { arch::hlt(); } }
+    if (!p) { while (true) { arch::hlt(); } }
     return p;
 }
 
