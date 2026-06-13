@@ -160,11 +160,10 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     JARVIS_ASSERT(child->parent_id == actual_init->id);
     JARVIS_ASSERT(actual_init->num_children >= 1);
 
-    // Cleanup
+    // Cleanup: reap_orphans already freed+removed the terminated parent.
+    // Only the child needs manual removal and freeing.
     Scheduler::remove_task(*child);
-    Scheduler::remove_task(*parent);
     delete child;
-    delete parent;
     JARVIS_TEST_PASS();
 }
 
