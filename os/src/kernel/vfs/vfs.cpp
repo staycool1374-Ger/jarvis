@@ -1,6 +1,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 
@@ -26,6 +27,7 @@ int FdTable::alloc() {
             fds[i].vnode = nullptr;
             fds[i].offset = 0;
             fds[i].flags = 0;
+            kernel::test::ResourceTracker::instance().track_fd_add();
             return static_cast<int>(i);
         }
     }
@@ -48,6 +50,9 @@ void FdTable::free(int file_descriptor) {
                 fds[file_descriptor].vnode->ops->close(*fds[file_descriptor
                     ].vnode);
         }
+    }
+    if (fds[file_descriptor].used) {
+        kernel::test::ResourceTracker::instance().track_fd_remove();
     }
     fds[file_descriptor].used = false;
     fds[file_descriptor].vnode = nullptr;

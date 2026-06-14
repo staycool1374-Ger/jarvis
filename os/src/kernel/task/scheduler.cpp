@@ -5,6 +5,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <signal.hpp>
 #include <assert.hpp>
 
@@ -44,10 +45,12 @@ void Scheduler::add_task(TaskControlBlock& task) {
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
+    kernel::test::ResourceTracker::instance().track_task_add();
 }
 
 void Scheduler::remove_task(TaskControlBlock& task) {
     id_table_remove(&task);
+    kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
             tasks_[i] = tasks_[--task_count_];

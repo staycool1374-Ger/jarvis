@@ -33,8 +33,10 @@ static size_t off_daemon_num()    { return off_daemon_entries()
 
 static size_t off_bufpool()       { return off_daemon_num() + sizeof(uint64_t); }
 
+static size_t off_rsrc_counts()   { return off_bufpool() + BufferPool::state_bytes(); }
+
 static size_t total_size() {
-    return off_bufpool() + BufferPool::state_bytes();
+    return off_rsrc_counts() + sizeof(ResourceCounters);
 }
 
 bool snapshot_create() {
@@ -99,11 +101,23 @@ bool snapshot_create() {
     BufferPool::capture_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
 
+    // ---- Resource Counters ----
+    ResourceTracker::instance().capture(
+        *reinterpret_cast<ResourceCounters*>(g_snapshot + off_rsrc_counts()));
+
     return true;
 }
 
 void snapshot_restore() {
     if (!g_snapshot) return;
+
+    // Check resource counters before restoring — warn on any leaks / double-frees
+    {
+        ResourceCounters baseline;
+        __builtin_memcpy(&baseline, g_snapshot + off_rsrc_counts(),
+                         sizeof(baseline));
+        ResourceTracker::instance().check(baseline, "snapshot");
+    }
 
     // ---- PMM ----
     {
@@ -153,6 +167,11 @@ void snapshot_restore() {
     // ---- BufferPool ----
     BufferPool::restore_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
+
+    // ---- Resource Counters: restore tracker to snapshot-time baseline ----
+    ResourceCounters saved;
+    __builtin_memcpy(&saved, g_snapshot + off_rsrc_counts(), sizeof(saved));
+    ResourceTracker::instance().restore(saved);
 }
 
 void snapshot_destroy() {

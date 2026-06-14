@@ -56,7 +56,6 @@ OBJ            := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
 KERNEL         := build/kernel.elf
 KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DEBUG   := build/kernel-debug.elf
-ISO            := jarvis-rtos.iso
 DEBUG_ISO      := debug/jarvis-rtos.iso
 RELEASE_ISO    := release/jarvis-rtos.iso
 
@@ -73,13 +72,13 @@ INITRD_CPIO    := initrd.cpio
 INITRD_OBJ     := build/initrd/initrd_cpio.o
 
 QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
-QEMU_FLAGS     := -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=d \
+QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none -boot order=d \
                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
 
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu iso test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
+.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
 
 # Default target: show help
 all: help
@@ -130,17 +129,6 @@ iso/boot:
 iso/boot/kernel.elf: $(KERNEL) | iso/boot
 	cp $< $@
 
-$(ISO): iso/boot/kernel.elf iso/boot/grub/grub.cfg
-	@grub-mkrescue -o $@ iso 2>/dev/null || \
-	(echo "ERROR: grub-mkrescue failed. Please verify dependencies."; echo $(PKG_HINT); exit 1)
-	@echo ""
-	@echo "=========================================="
-	@echo " ISO Generation Successful: $(ISO)"
-	@echo " Execute Deployment Options via:"
-	@echo "   make run-qemu"
-	@echo "   make release"
-	@echo "=========================================="
-
 $(KERNEL): $(OBJ) $(INITRD_OBJ) linker.ld
 	@mkdir -p $(dir $@)
 	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ)
@@ -184,7 +172,7 @@ build/%.o: src/%.cpp
 # ------------------------------------------------------------------------------
 # Testing & Emulation Pipelines (QEMU)
 # ------------------------------------------------------------------------------
-run-qemu: $(ISO)
+run-qemu: $(DEBUG_ISO)
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Starting QEMU Monitor (Ctrl+A then X to exit)..."; \
 	    qemu-system-x86_64 $(QEMU_FLAGS); \

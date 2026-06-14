@@ -1,5 +1,6 @@
 #pragma once
 #include <types.hpp>
+#include <kernel/test/resource_tracker.hpp>
 
 namespace kernel::test {
 

@@ -3,6 +3,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 
@@ -210,7 +211,13 @@ static int64_t pid_dir_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 static int pid_dir_open(Vnode&, uint64_t) { return 0; }
-static void pid_dir_close(Vnode&) {}
+static void pid_dir_close(Vnode& self) {
+    if (self.private_data) {
+        auto* pd = static_cast<PidDirVnode*>(self.private_data);
+        kernel::test::ResourceTracker::instance().track_vnode_remove();
+        kernel::MemPool::free(pd);
+    }
+}
 static int64_t pid_dir_lseek(Vnode&, int64_t, int, uint64_t*) {
     return VFS_INVALID;
 }
@@ -340,6 +347,7 @@ static Vnode* proc_root_lookup(Vnode& self, const char* name) {
                 auto* pd = static_cast<PidDirVnode*>(
                     MemPool::alloc(sizeof(PidDirVnode)));
                 if (!pd) return nullptr;
+                kernel::test::ResourceTracker::instance().track_vnode_add();
                 pd->pid = pid;
                 pd->task = t;
                 pd->base.ops = &pid_dir_ops;

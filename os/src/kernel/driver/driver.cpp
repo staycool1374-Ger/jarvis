@@ -3,6 +3,7 @@
 
 #include <kernel/driver/driver.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/test/resource_tracker.hpp>
 
 namespace kernel {
 
@@ -23,7 +24,8 @@ void DriverRegistry::register_driver(
     if (count_ >= MAX_DRIVERS) return;
     auto* drv = static_cast<Driver*>(MemPool::alloc(sizeof(Driver)));
     if (drv) { *drv = {name, description, init, exit, DriverState::UNLOADED,
-        irq_line}; }
+        irq_line};
+        kernel::test::ResourceTracker::instance().track_driver_add(); }
     drivers_[count_++] = drv;
 }
 
@@ -58,6 +60,9 @@ void DriverRegistry::unload(const char* name) {
             drv->exit();
         }
         drv->state = DriverState::UNLOADED;
+        kernel::test::ResourceTracker::instance().track_driver_remove();
+        MemPool::free(drv);
+        drivers_[i] = nullptr;
         return;
     }
 }

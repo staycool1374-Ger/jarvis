@@ -1,6 +1,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <constants.hpp>
 #include <utils.hpp>
 #include <assert.hpp>
@@ -113,43 +114,59 @@ uint64_t PMM::try_alloc_user(size_t count) {
 
 uint64_t PMM::alloc_page() {
     uint64_t result = try_alloc_kernel(1);
-    if (result) return result;
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+        return result;
+    }
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_kernel(1);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_OOM); }
+    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
     return result;
 }
 
 uint64_t PMM::alloc_contiguous(size_t count) {
     if (count == 0 || count > total_pages_) return 0;
     uint64_t result = try_alloc_kernel(count);
-    if (result) return result;
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+        return result;
+    }
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_kernel(count);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_OOM); }
+    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
     return result;
 }
 
 uint64_t PMM::alloc_user_page() {
     uint64_t result = try_alloc_user(1);
-    if (result) return result;
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+        return result;
+    }
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_user(1);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_USER_OOM); }
+    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
     return result;
 }
 
 uint64_t PMM::alloc_user_contiguous(size_t count) {
     if (count == 0 || count > total_pages_) return 0;
     uint64_t result = try_alloc_user(count);
-    if (result) return result;
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+        return result;
+    }
     if (oom_handler_ && oom_handler_()) {
         result = try_alloc_user(count);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_USER_OOM); }
+    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
     return result;
 }
 
@@ -164,6 +181,7 @@ uint64_t PMM::alloc_page_table() {
             bitmap_set(i);
             owner_set_kernel(i);
             --free_pages_;
+            kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
             return i * PAGE_SIZE;
         }
     }
@@ -178,6 +196,7 @@ void PMM::free_page(uint64_t phys_addr) {
     if (bitmap_test(index)) {
         bitmap_clear(index);
         ++free_pages_;
+        kernel::test::ResourceTracker::instance().track_pmm_free(1);
     }
 }
 

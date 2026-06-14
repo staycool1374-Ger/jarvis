@@ -1,5 +1,6 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <assert.hpp>
 #include <constants.hpp>
 
@@ -63,6 +64,7 @@ void* MemPool::alloc(size_t size) {
     --pool.free_count;
     pool.clear_block_freed(block);
 
+    kernel::test::ResourceTracker::instance().track_mempool_alloc(idx);
     return pool.data + block * pool.block_size;
 }
 
@@ -92,6 +94,7 @@ void MemPool::free(void* block) {
             *next = pool.first_free;
             pool.first_free = block_idx;
             ++pool.free_count;
+            kernel::test::ResourceTracker::instance().track_mempool_free(i);
             return;
         }
     }

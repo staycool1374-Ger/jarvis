@@ -2,6 +2,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <assert.hpp>
 #include <string.hpp>
 
@@ -79,6 +80,7 @@ int32_t BufferPool::alloc_entry() {
     free_head_ = static_cast<int32_t>(entries[idx].list_next);
     ENSURE(entries[idx].phys_addr == 0);
     entries[idx].list_next = LIST_EMPTY;
+    kernel::test::ResourceTracker::instance().track_bufpool_alloc();
     return idx;
 }
 
@@ -91,6 +93,7 @@ void BufferPool::free_entry(int32_t idx) {
     entries[idx].list_prev = LIST_EMPTY;
     entries[idx].list_next = free_head_;
     free_head_ = idx;
+    kernel::test::ResourceTracker::instance().track_bufpool_free();
 }
 
 int32_t BufferPool::validate(uint64_t handle) {

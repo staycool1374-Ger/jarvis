@@ -4,6 +4,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/sync/semaphore.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -66,8 +67,12 @@ static void pipe_read_close(Vnode& self) {
     if (!pb) return;
     pb->read_closed = true;
     --pb->refcount;
-    if (pb->refcount <= 0) { MemPool::free(pb); }
+    if (pb->refcount <= 0) {
+        kernel::test::ResourceTracker::instance().track_pipe_buffer_remove();
+        MemPool::free(pb);
+    }
     self.private_data = nullptr;
+    kernel::test::ResourceTracker::instance().track_vnode_remove();
     MemPool::free(&self);
 }
 
@@ -77,8 +82,12 @@ static void pipe_write_close(Vnode& self) {
     pb->write_closed = true;
     pb->data_avail.post();
     --pb->refcount;
-    if (pb->refcount <= 0) { MemPool::free(pb); }
+    if (pb->refcount <= 0) {
+        kernel::test::ResourceTracker::instance().track_pipe_buffer_remove();
+        MemPool::free(pb);
+    }
     self.private_data = nullptr;
+    kernel::test::ResourceTracker::instance().track_vnode_remove();
     MemPool::free(&self);
 }
 
@@ -112,13 +121,17 @@ int create_pipe(int fds[2]) {
     __builtin_memset(pb, 0, sizeof(PipeBuffer));
     pb->refcount = 2;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
+    kernel::test::ResourceTracker::instance().track_pipe_buffer_add();
 
     auto* rnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     auto* wnode = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
     if (!rnode || !wnode) {
+        kernel::test::ResourceTracker::instance().track_pipe_buffer_remove();
         MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
         return VFS_INVALID;
     }
+    kernel::test::ResourceTracker::instance().track_vnode_add();
+    kernel::test::ResourceTracker::instance().track_vnode_add();
 
     rnode->ops = &pipe_read_ops;
     rnode->ino = 0;
@@ -135,7 +148,11 @@ int create_pipe(int fds[2]) {
     wnode->refcount = 1;
 
     auto* task = Scheduler::current_task();
-    if (!task) { MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode
+    if (!task) {
+        kernel::test::ResourceTracker::instance().track_pipe_buffer_remove();
+        kernel::test::ResourceTracker::instance().track_vnode_remove();
+        kernel::test::ResourceTracker::instance().track_vnode_remove();
+        MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode
         ); return VFS_INVALID; }
 
     int rfd = task->fd_table.alloc();
@@ -143,6 +160,9 @@ int create_pipe(int fds[2]) {
     if (rfd < 0 || wfd < 0) {
         if (rfd >= 0) task->fd_table.free(rfd);
         if (wfd >= 0) task->fd_table.free(wfd);
+        kernel::test::ResourceTracker::instance().track_pipe_buffer_remove();
+        kernel::test::ResourceTracker::instance().track_vnode_remove();
+        kernel::test::ResourceTracker::instance().track_vnode_remove();
         MemPool::free(pb); MemPool::free(rnode); MemPool::free(wnode);
         return VFS_INVALID;
     }

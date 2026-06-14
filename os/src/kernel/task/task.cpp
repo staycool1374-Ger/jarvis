@@ -10,6 +10,7 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <assert.hpp>
 #include <kernel/task/task_errors.hpp>
 #include <string.hpp>
@@ -34,6 +35,7 @@ void init_task_common(TaskControlBlock& tcb) {
         mq->init();
         mq->owner = &tcb;
         tcb.msg_queue = mq;
+        kernel::test::ResourceTracker::instance().track_msg_queue_add();
     } else {
         tcb.msg_queue = nullptr;
     }
@@ -49,6 +51,7 @@ void init_task_common(TaskControlBlock& tcb) {
     if (n) {
         n->init();
         tcb.notify = n;
+        kernel::test::ResourceTracker::instance().track_notify_add();
     } else {
         tcb.notify = nullptr;
     }
@@ -58,6 +61,7 @@ void init_task_common(TaskControlBlock& tcb) {
     if (eg) {
         eg->init();
         tcb.event_group = eg;
+        kernel::test::ResourceTracker::instance().track_event_group_add();
     } else {
         tcb.event_group = nullptr;
     }
@@ -232,15 +236,19 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
     // Allocate per-task IPC objects (child gets fresh empty queues)
     auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
-    if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq; } else {
+    if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq;
+        kernel::test::ResourceTracker::instance().track_msg_queue_add(); } else {
         tcb->msg_queue = nullptr; }
 
     auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
-    if (n) { n->init(); tcb->notify = n; } else { tcb->notify = nullptr; }
+    if (n) { n->init(); tcb->notify = n;
+        kernel::test::ResourceTracker::instance().track_notify_add(); } else {
+        tcb->notify = nullptr; }
 
     auto* eg = static_cast<sync::EventGroup*>(MemPool::alloc(sizeof(sync::
         EventGroup)));
-    if (eg) { eg->init(); tcb->event_group = eg; } else {
+    if (eg) { eg->init(); tcb->event_group = eg;
+        kernel::test::ResourceTracker::instance().track_event_group_add(); } else {
         tcb->event_group = nullptr; }
 
     // Copy fd_table
@@ -548,15 +556,23 @@ void TaskControlBlock::cleanup() noexcept {
             }
             msg_queue->blocked_senders_head = nullptr;
             msg_queue->blocked_senders_tail = nullptr;
+            kernel::test::ResourceTracker::instance().track_msg_queue_remove();
             MemPool::free(msg_queue);
             msg_queue = nullptr;
         } else {
+            kernel::test::ResourceTracker::instance().track_msg_queue_remove();
             MemPool::free(msg_queue);
             msg_queue = nullptr;
         }
     }
-    if (notify) { MemPool::free(notify); notify = nullptr; }
-    if (event_group) { MemPool::free(event_group); event_group = nullptr; }
+    if (notify) {
+        kernel::test::ResourceTracker::instance().track_notify_remove();
+        MemPool::free(notify); notify = nullptr;
+    }
+    if (event_group) {
+        kernel::test::ResourceTracker::instance().track_event_group_remove();
+        MemPool::free(event_group); event_group = nullptr;
+    }
 }
 
 } // namespace kernel

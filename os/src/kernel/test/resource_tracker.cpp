@@ -1,0 +1,95 @@
+#include <kernel/test/resource_tracker.hpp>
+#include <logger.hpp>
+#include <string.hpp>
+
+namespace kernel::test {
+
+#ifdef CONFIG_DEBUG
+
+struct ResField {
+    const char* name;
+    size_t ResourceCounters::*field;
+};
+
+bool ResourceTracker::check(const ResourceCounters& baseline,
+                            const char* test_name) {
+    bool ok = true;
+
+    auto print_row = [&](const char* label, size_t base, size_t cur) {
+        if (base == cur) return;
+        // Pad label to 20 chars
+        char buf[64];
+        int p = 0;
+        const char* s = label;
+        while (*s && p < 19) buf[p++] = *s++;
+        while (p < 20) buf[p++] = ' ';
+        buf[p] = '\0';
+        // Format numbers
+        auto fmt = [](char* dst, size_t v) {
+            char rev[20];
+            int r = 0;
+            if (v == 0) { rev[r++] = '0'; }
+            else { while (v > 0) { rev[r++] = '0' + (v % 10); v /= 10; } }
+            int d = 0;
+            while (r > 0) dst[d++] = rev[--r];
+            dst[d] = '\0';
+        };
+        char base_s[20], cur_s[20];
+        fmt(base_s, base);
+        fmt(cur_s, cur);
+        // Determine width for alignment
+        int base_w = 0; while (base_s[base_w]) ++base_w;
+        int cur_w = 0; while (cur_s[cur_w]) ++cur_w;
+        while (base_w < 6) base_s[base_w++] = ' '; base_s[base_w] = '\0';
+        while (cur_w < 6) cur_s[cur_w++] = ' '; cur_s[cur_w] = '\0';
+        Logger::warn("[RESOURCE] %s | %s | %s | %s <---",
+                     test_name, buf, base_s, cur_s);
+        ok = false;
+    };
+
+    Logger::warn("[RESOURCE] %s resource leak detected:", test_name);
+    Logger::warn("[RESOURCE] %-20s | %-6s | %-6s", "Resource", "Before", "After");
+    Logger::warn("[RESOURCE] ------------------------+--------+--------");
+
+    for (size_t i = 0; i < MemPool::POOL_COUNT; ++i) {
+        char label[32];
+        int pos = 0;
+        auto append = [&](const char* s) {
+            while (*s && pos < 30) label[pos++] = *s++;
+        };
+        append("MemPool[");
+        size_t n = i;
+        if (n == 0) { label[pos++] = '0'; }
+        else {
+            char digits[8];
+            int di = 0;
+            while (n > 0) { digits[di++] = '0' + (n % 10); n /= 10; }
+            while (di > 0) label[pos++] = digits[--di];
+        }
+        label[pos++] = ']';
+        label[pos] = '\0';
+        print_row(label, baseline.mempool_used[i], counters_.mempool_used[i]);
+    }
+
+    print_row("PMM pages",       baseline.pmm_pages_used,   counters_.pmm_pages_used);
+    print_row("Tasks",           baseline.tasks,            counters_.tasks);
+    print_row("BufPool entries", baseline.bufpool_entries,  counters_.bufpool_entries);
+    print_row("MessageQueues",   baseline.msg_queues,       counters_.msg_queues);
+    print_row("Notify objects",  baseline.notifies,         counters_.notifies);
+    print_row("EventGroups",     baseline.event_groups,     counters_.event_groups);
+    print_row("Drivers",         baseline.drivers,          counters_.drivers);
+    print_row("PipeBuffers",     baseline.pipe_buffers,     counters_.pipe_buffers);
+    print_row("Vnodes",          baseline.vnodes,           counters_.vnodes);
+    print_row("Open FDs",        baseline.open_fds,         counters_.open_fds);
+
+    if (!ok) {
+        Logger::warn("[RESOURCE] %s: test leaked resources (see rows marked <---)",
+                     test_name);
+    }
+
+    return ok;
+}
+
+#endif
+
+} // namespace kernel::test

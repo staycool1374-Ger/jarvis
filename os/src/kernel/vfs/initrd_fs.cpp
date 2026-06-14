@@ -1,5 +1,6 @@
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <initrd/initrd.hpp>
 #include <string.hpp>
 #include <utils.hpp>
@@ -38,9 +39,11 @@ static int initrd_file_open(Vnode&, uint64_t) {
 static void initrd_file_close(Vnode& self) {
     if (self.private_data) {
         auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
-        finfo->data = nullptr;
-        finfo->size = 0;
+        kernel::MemPool::free(finfo);
+        self.private_data = nullptr;
     }
+    kernel::test::ResourceTracker::instance().track_vnode_remove();
+    kernel::MemPool::free(&self);
 }
 
 static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
@@ -141,6 +144,7 @@ static Vnode* initrd_root_lookup(Vnode&, const char* name) {
         kernel::MemPool::free(finfo);
         return nullptr;
     }
+    kernel::test::ResourceTracker::instance().track_vnode_add();
     vnode->ops = &initrd_file_ops;
     vnode->ino = 1;
     vnode->size = file.size;
