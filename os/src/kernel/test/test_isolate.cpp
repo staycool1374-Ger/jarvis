@@ -121,7 +121,7 @@ bool snapshot_create() {
     return true;
 }
 
-void snapshot_restore() {
+void snapshot_restore(const char* test_name) {
     if (!g_snapshot) return;
     bool irq_enabled = arch::interrupts_enabled();
     arch::cli();
@@ -139,7 +139,9 @@ void snapshot_restore() {
         ResourceCounters baseline;
         __builtin_memcpy(&baseline, g_snapshot + off_rsrc_counts(),
                          sizeof(baseline));
-        ResourceTracker::instance().check(baseline, "snapshot");
+        ResourceTracker::instance().check(
+            baseline,
+            test_name ? test_name : "snapshot");
     }
 
     // ---- PMM ----

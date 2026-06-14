@@ -152,7 +152,15 @@ static void run_filtered(uint8_t required_flags) {
         // Restore the snapshot after each test so the next test starts
         // from a clean slate (tasks, memory, daemons, page tables).
         if (snapshot_ok) {
-            kernel::test::snapshot_restore();
+            char test_buf[128];
+            int pos = 0;
+            const char* s = tc.suite;
+            while (*s && pos < 120) test_buf[pos++] = *s++;
+            if (pos > 0 && tc.suite[0]) { test_buf[pos++] = ':'; test_buf[pos++] = ':'; }
+            s = tc.name;
+            while (*s && pos < 126) test_buf[pos++] = *s++;
+            test_buf[pos] = '\0';
+            kernel::test::snapshot_restore(test_buf);
         }
     }
 
