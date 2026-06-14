@@ -4,6 +4,9 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/vfs/vfsd.hpp>
+#include <kernel/driver/iocd.hpp>
+#include <kernel/arch/io.hpp>
 
 namespace kernel::test {
 
@@ -31,7 +34,10 @@ static size_t off_daemon_entries(){ return off_sched_misc()
 static size_t off_daemon_num()    { return off_daemon_entries()
                                        + daemon::MAX_DAEMONS * sizeof(daemon::DaemonEntry); }
 
-static size_t off_bufpool()       { return off_daemon_num() + sizeof(uint64_t); }
+static size_t off_vfsd_pid()       { return off_daemon_num() + sizeof(uint64_t); }
+static size_t off_iocd_pid()       { return off_vfsd_pid() + sizeof(uint64_t); }
+
+static size_t off_bufpool()        { return off_iocd_pid() + sizeof(uint64_t); }
 
 static size_t off_rsrc_counts()   { return off_bufpool() + BufferPool::state_bytes(); }
 
@@ -40,10 +46,12 @@ static size_t total_size() {
 }
 
 bool snapshot_create() {
+    bool irq_enabled = arch::interrupts_enabled();
+    arch::cli();
     size_t total = total_size();
     size_t pages = (total + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
     uint64_t phys = PMM::alloc_contiguous(pages);
-    if (!phys) return false;
+    if (!phys) { arch::sti(); return false; }
     g_snapshot = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
     g_snapshot_size = total;
 
@@ -97,6 +105,10 @@ bool snapshot_create() {
         daemon::capture_state(entries, num);
     }
 
+    // ---- VFSD / IOCD PIDs (static globals not part of any snapshotted subsystem) ----
+    *reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()) = vfsd::get_vfsd_pid();
+    *reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()) = iocd::get_iocd_pid();
+
     // ---- BufferPool ----
     BufferPool::capture_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
@@ -105,11 +117,22 @@ bool snapshot_create() {
     ResourceTracker::instance().capture(
         *reinterpret_cast<ResourceCounters*>(g_snapshot + off_rsrc_counts()));
 
+    if (irq_enabled) arch::sti();
     return true;
 }
 
 void snapshot_restore() {
     if (!g_snapshot) return;
+    bool irq_enabled = arch::interrupts_enabled();
+    arch::cli();
+
+    // Clear any pending context-switch state that a test may have left
+    // via reschedule().  Without this, the next timer IRQ would use stale
+    // RSP/CR3 values and corrupt memory.
+    scheduler_save_rsp_to   = nullptr;
+    scheduler_load_rsp_from  = 0;
+    scheduler_load_cr3_from  = 0;
+    scheduler_next_task_id   = 0;
 
     // Check resource counters before restoring — warn on any leaks / double-frees
     {
@@ -164,6 +187,10 @@ void snapshot_restore() {
         daemon::restore_state(entries, num);
     }
 
+    // ---- VFSD / IOCD PIDs (static globals not part of any snapshotted subsystem) ----
+    vfsd::set_vfsd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()));
+    iocd::set_iocd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()));
+
     // ---- BufferPool ----
     BufferPool::restore_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
@@ -172,6 +199,8 @@ void snapshot_restore() {
     ResourceCounters saved;
     __builtin_memcpy(&saved, g_snapshot + off_rsrc_counts(), sizeof(saved));
     ResourceTracker::instance().restore(saved);
+
+    if (irq_enabled) arch::sti();
 }
 
 void snapshot_destroy() {

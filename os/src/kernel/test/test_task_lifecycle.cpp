@@ -88,10 +88,11 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     receiver->exit_code = 0;
     receiver->cleanup();
 
-    // Sender should be woken up
+    // Sender should be woken up and removed from the blocked list
     JARVIS_ASSERT(sender->state == TaskState::READY);
-    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == nullptr);
-    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_tail == nullptr);
+    JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
+    // cleanup() frees the receiver's msg_queue after clearing blocked senders
+    JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);

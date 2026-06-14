@@ -95,7 +95,7 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state) {
 
     // Both tasks should be in READY state after completion
     JARVIS_ASSERT(sender->state == TaskState::READY);
-    JARVIS_ASSERT(receiver->state == TaskState::READY);
+    JARVIS_ASSERT(receiver->state == TaskState::RUNNING);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();

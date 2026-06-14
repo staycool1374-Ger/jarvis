@@ -91,6 +91,13 @@ inline void cli() { arch_cli(); }
 /// @brief Sets the interrupt flag (enables interrupts).
 inline void sti() { arch_sti(); }
 
+/// @brief Returns whether interrupts are currently enabled (RFLAGS.IF).
+inline bool interrupts_enabled() {
+    uint64_t rflags = 0;
+    asm volatile("pushfq; pop %0" : "=r"(rflags));
+    return (rflags >> 9) & 1;
+}
+
 /// @brief Reads the timestamp counter (RDTSC).
 /// @return 64-bit TSC value.
 inline uint64_t rdtsc() {
