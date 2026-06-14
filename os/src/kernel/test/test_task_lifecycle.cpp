@@ -96,6 +96,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);
+    sender->cleanup();
     delete sender;
     delete receiver;
     JARVIS_TEST_PASS();
@@ -164,6 +165,7 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     // Cleanup: reap_orphans already freed+removed the terminated parent.
     // Only the child needs manual removal and freeing.
     Scheduler::remove_task(*child);
+    child->cleanup();
     delete child;
     JARVIS_TEST_PASS();
 }
@@ -237,6 +239,7 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
     Scheduler::remove_task(*parent);
+    parent->cleanup();
     delete parent;
     JARVIS_TEST_PASS();
 }

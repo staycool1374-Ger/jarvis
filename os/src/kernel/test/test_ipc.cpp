@@ -705,6 +705,7 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit) {
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);
+    sender->cleanup();
     delete sender;
     delete receiver;
     JARVIS_TEST_PASS();

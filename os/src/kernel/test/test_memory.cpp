@@ -203,6 +203,22 @@ JARVIS_TEST(vmm_huge_page_split_regression) {
 
     constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000; // PD_HIGHER[4], PT idx 2
     constexpr uint64_t huge_page_base = arch::HHDM_OFFSET + 0x800000;
+    uint64_t const PAGE_PRESENT = 1ULL << 0;
+    uint64_t const PAGE_HUGE    = 1ULL << 7;
+
+    // Walk the kernel page table to save the PD entry before the huge-page split.
+    uint64_t kernel_pml4 = []() { uint64_t v; asm volatile("mov %%cr3, %0" : "=r"(v)); return v; }();
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
+    size_t pml4_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 39)) >> 39);
+    JARVIS_ASSERT(pml4[pml4_idx] & PAGE_PRESENT);
+    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_idx] & ~0xFFFULL));
+    size_t pdpt_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 30)) >> 30);
+    JARVIS_ASSERT(pdpt[pdpt_idx] & PAGE_PRESENT);
+    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx] & ~0xFFFULL));
+    size_t pd_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 21)) >> 21);
+    JARVIS_ASSERT(pd[pd_idx] & PAGE_PRESENT);
+    JARVIS_ASSERT(pd[pd_idx] & PAGE_HUGE);
+    uint64_t const saved_pd_entry = pd[pd_idx];
 
     // Before the split the huge page gives us identity-like translation.
     uint64_t before = VMM::virt_to_phys(test_vaddr);
@@ -234,11 +250,16 @@ JARVIS_TEST(vmm_huge_page_split_regression) {
     uint64_t after_neighbour = VMM::virt_to_phys(huge_page_base + 0x1000);
     JARVIS_ASSERT(after_neighbour == 0x801000);
 
-    // Restore the original mapping so we don't leave the page tables in a
-    // modified state.
+    // Restore the original mapping.
     VMM::unmap_page(test_vaddr);
     VMM::map_page(test_vaddr, 0x802000, false);
     JARVIS_ASSERT(VMM::virt_to_phys(test_vaddr) == 0x802000);
+
+    // Undo the huge-page split: free the page-table page and restore the PD entry.
+    uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
+    JARVIS_ASSERT(!(pd[pd_idx] & PAGE_HUGE)); // must point to a PT now (no huge flag)
+    PMM::free_page(pt_phys);
+    pd[pd_idx] = saved_pd_entry;
 
     PMM::free_page(test_phys);
     JARVIS_TEST_PASS();
@@ -265,16 +286,33 @@ JARVIS_TEST(vmm_hhdm_access_consistency) {
     uint64_t kpml4_virt = VMM::virt_to_phys(reinterpret_cast<uint64_t>(&VMM::init));
     JARVIS_ASSERT(kpml4_virt != 0);
 
+    uint64_t v = arch::HHDM_OFFSET + 0x900000; // safe: PD_HIGHER[4], PT idx 0x100
+
+    // Save the PD entry (huge page) before splitting
+    uint64_t cr3 = []() { uint64_t v; asm volatile("mov %%cr3, %0" : "=r"(v)); return v; }();
+    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
+    size_t pml4_i = static_cast<size_t>((v & (0x1FFULL << 39)) >> 39);
+    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_i] & ~0xFFFULL));
+    size_t pdpt_i = static_cast<size_t>((v & (0x1FFULL << 30)) >> 30);
+    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_i] & ~0xFFFULL));
+    size_t pd_i = static_cast<size_t>((v & (0x1FFULL << 21)) >> 21);
+    JARVIS_ASSERT(pd[pd_i] & (1ULL << 7)); // must be huge before split
+    uint64_t const saved_pd_entry = pd[pd_i];
+
     // Map a page through map_page (kernel PML4, HHDM code path) and verify.
     uint64_t p = PMM::alloc_page();
     JARVIS_ASSERT(p != 0);
-    uint64_t v = arch::HHDM_OFFSET + 0x900000; // safe: PD_HIGHER[4], PT idx 0x100
     VMM::map_page(v, p, false);
     JARVIS_ASSERT(VMM::virt_to_phys(v) == (p & ~0xFFFULL));
     VMM::unmap_page(v);
     JARVIS_ASSERT(VMM::virt_to_phys(v) == 0);
     // Restore original mapping
     VMM::map_page(v, 0x900000, false);
+
+    // Undo the huge-page split
+    uint64_t pt_phys = pd[pd_i] & ~0xFFFULL;
+    PMM::free_page(pt_phys);
+    pd[pd_i] = saved_pd_entry;
 
     PMM::free_page(p);
     JARVIS_TEST_PASS();

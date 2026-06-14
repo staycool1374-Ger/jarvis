@@ -480,12 +480,14 @@ JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
     auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task != nullptr);
     
+    uint64_t saved_pt = task->page_table_;
     // Clear page_table_ to simulate kernel task
     task->page_table_ = 0;
 
     uint64_t h = BufferPool::alloc(*task, 0x300000000ULL);
     JARVIS_ASSERT_EQ(0ULL, h);
 
+    task->page_table_ = saved_pt;
     task->cleanup();
     delete task;
     JARVIS_TEST_PASS();

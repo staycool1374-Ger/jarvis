@@ -100,6 +100,7 @@ JARVIS_TEST(idle_task_yields_to_higher_priority) {
     JARVIS_ASSERT(next->priority >= high_prio->priority);
 
     Scheduler::remove_task(*high_prio);
+    high_prio->cleanup();
     delete high_prio;
     JARVIS_TEST_PASS();
 }
@@ -167,6 +168,7 @@ JARVIS_TEST(multiple_idle_tasks_prevented) {
 
     // Cleanup
     Scheduler::remove_task(*another);
+    another->cleanup();
     delete another;
 
     JARVIS_TEST_PASS();

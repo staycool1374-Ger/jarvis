@@ -79,8 +79,10 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
 
     // Cleanup
     Scheduler::remove_task(*child2);
+    child2->cleanup();
     delete child2;
     Scheduler::remove_task(*parent);
+    parent->cleanup();
     delete parent;
 
     JARVIS_TEST_PASS();
@@ -148,6 +150,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
     JARVIS_ASSERT(Scheduler::find_task(child2->id) == nullptr);
 
     Scheduler::remove_task(*parent);
+    parent->cleanup();
     delete parent;
     JARVIS_TEST_PASS();
 }

@@ -130,6 +130,9 @@ JARVIS_TEST(vmm_free_user_pages_shared) {
     JARVIS_ASSERT(PMM::is_user_page(pt_phys) == false);
     
     // Clean up
+    PMM::free_page(pdpt_phys);
+    PMM::free_page(pd_phys);
+    PMM::free_page(pt_phys);
     PMM::free_page(parent_pml4);
     PMM::free_page(child_pml4);
 }

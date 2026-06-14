@@ -11,20 +11,35 @@ struct ResField {
     size_t ResourceCounters::*field;
 };
 
+static bool any_leak(const ResourceCounters& baseline,
+                     const ResourceCounters& current) {
+    for (size_t i = 0; i < MemPool::POOL_COUNT; ++i)
+        if (current.mempool_used[i] > baseline.mempool_used[i]) return true;
+    if (current.pmm_pages_used  > baseline.pmm_pages_used)  return true;
+    if (current.tasks           > baseline.tasks)            return true;
+    if (current.bufpool_entries > baseline.bufpool_entries)  return true;
+    if (current.msg_queues      > baseline.msg_queues)       return true;
+    if (current.notifies        > baseline.notifies)         return true;
+    if (current.event_groups    > baseline.event_groups)     return true;
+    if (current.drivers         > baseline.drivers)          return true;
+    if (current.pipe_buffers    > baseline.pipe_buffers)     return true;
+    if (current.vnodes          > baseline.vnodes)           return true;
+    if (current.open_fds        > baseline.open_fds)         return true;
+    return false;
+}
+
 bool ResourceTracker::check(const ResourceCounters& baseline,
                             const char* test_name) {
-    bool ok = true;
+    if (!any_leak(baseline, counters_)) return true;
 
     auto print_row = [&](const char* label, size_t base, size_t cur) {
-        if (base == cur) return;
-        // Pad label to 20 chars
+        if (cur <= base) return;
         char buf[64];
         int p = 0;
         const char* s = label;
         while (*s && p < 19) buf[p++] = *s++;
         while (p < 20) buf[p++] = ' ';
         buf[p] = '\0';
-        // Format numbers
         auto fmt = [](char* dst, size_t v) {
             char rev[20];
             int r = 0;
@@ -37,19 +52,15 @@ bool ResourceTracker::check(const ResourceCounters& baseline,
         char base_s[20], cur_s[20];
         fmt(base_s, base);
         fmt(cur_s, cur);
-        // Determine width for alignment
         int base_w = 0; while (base_s[base_w]) ++base_w;
         int cur_w = 0; while (cur_s[cur_w]) ++cur_w;
         while (base_w < 6) base_s[base_w++] = ' '; base_s[base_w] = '\0';
         while (cur_w < 6) cur_s[cur_w++] = ' '; cur_s[cur_w] = '\0';
-        Logger::warn("[RESOURCE] %s | %s | %s | %s <---",
+        Logger::warn("[RESOURCE] test=%s | %s | before=%s | after=%s <---",
                      test_name, buf, base_s, cur_s);
-        ok = false;
     };
 
-    Logger::warn("[RESOURCE] %s resource leak detected:", test_name);
-    Logger::warn("[RESOURCE] %-20s | %-6s | %-6s", "Resource", "Before", "After");
-    Logger::warn("[RESOURCE] ------------------------+--------+--------");
+    Logger::warn("[RESOURCE] %s leaked resources:", test_name);
 
     for (size_t i = 0; i < MemPool::POOL_COUNT; ++i) {
         char label[32];
@@ -82,12 +93,7 @@ bool ResourceTracker::check(const ResourceCounters& baseline,
     print_row("Vnodes",          baseline.vnodes,           counters_.vnodes);
     print_row("Open FDs",        baseline.open_fds,         counters_.open_fds);
 
-    if (!ok) {
-        Logger::warn("[RESOURCE] %s: test leaked resources (see rows marked <---)",
-                     test_name);
-    }
-
-    return ok;
+    return false;
 }
 
 #endif

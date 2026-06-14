@@ -147,6 +147,8 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
     Scheduler::remove_task(*parent);
+    parent->cleanup();
+    delete parent;
 
     JARVIS_TEST_PASS();
 }

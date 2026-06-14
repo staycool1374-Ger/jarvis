@@ -299,6 +299,8 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent) {
     uint64_t parent_t = VMM::virt_to_phys_in_pml4(child_va, parent_pml4);
     JARVIS_ASSERT(parent_t == 0);
 
+    // Free page-table pages allocated by map_page_in_pml4 before freeing the PML4
+    VMM::free_user_pages(child_pml4);
     PMM::free_page(child_phys);
     PMM::free_page(child_pml4);
     PMM::free_page(parent_pml4);

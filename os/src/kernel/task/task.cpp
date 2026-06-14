@@ -504,6 +504,7 @@ void TaskControlBlock::cleanup() noexcept {
             } else if (vn) {
                 if (vn->ops->close) vn->ops->close(*vn);
             }
+            kernel::test::ResourceTracker::instance().track_fd_remove();
             fd_table.fds[i].used = false;
             fd_table.fds[i].vnode = nullptr;
         }

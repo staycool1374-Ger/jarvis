@@ -72,8 +72,11 @@ JARVIS_TEST(process_remove_child_non_child_no_underflow) {
     parent->remove_child(child);
     JARVIS_ASSERT_EQ(0ULL, parent->num_children);
 
+    child->cleanup();
     delete child;
+    stranger->cleanup();
     delete stranger;
+    parent->cleanup();
     delete parent;
     JARVIS_TEST_PASS();
 }
