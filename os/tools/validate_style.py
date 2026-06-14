@@ -488,6 +488,7 @@ class RefOverPtrChecker(Checker):
         "out",               # output parameter (e.g., tm* out)
         "buf",               # output buffer parameter (e.g., char* buf)
         "dest",              # destination buffer (e.g., uint8_t* dest)
+        "dst",               # destination buffer (e.g., uint8_t* dst)
         "value",             # output value parameter (e.g., uint64_t* value)
     }
 

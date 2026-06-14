@@ -36,7 +36,7 @@ void restart_stale_daemons();
 
 /// @name Test-isolation helpers
 /// @brief Copy all daemon entries and count into @p entries_out / @p num_out.
-void capture_state(DaemonEntry* entries_out, uint64_t& num_out);
+void capture_state(DaemonEntry* out_entries, uint64_t& num_out);
 /// @brief Restore daemon entries and count from @p entries_in / @p num_in.
 void restore_state(const DaemonEntry* entries_in, uint64_t num_in);
 

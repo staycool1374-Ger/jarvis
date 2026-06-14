@@ -428,8 +428,10 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
                               uint64_t& next_id_out,
                               TaskControlBlock*& idle_out,
                               bool& preempt_out) {
-    __builtin_memcpy(tasks_out,      tasks_,      sizeof(TaskControlBlock*) * MAX_TASKS);
-    __builtin_memcpy(id_table_out,   id_table_,   sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
+    __builtin_memcpy(tasks_out, tasks_,
+                     sizeof(TaskControlBlock*) * MAX_TASKS);
+    __builtin_memcpy(id_table_out, id_table_,
+                     sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
     task_count_out   = task_count_;
     current_idx_out  = current_index_;
     next_id_out      = next_task_id_;
@@ -444,8 +446,10 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               uint64_t next_id_in,
                               TaskControlBlock* idle_in,
                               bool preempt_in) {
-    __builtin_memcpy(tasks_,       tasks_in,    sizeof(TaskControlBlock*) * MAX_TASKS);
-    __builtin_memcpy(id_table_,    id_table_in, sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
+    __builtin_memcpy(tasks_, tasks_in,
+                     sizeof(TaskControlBlock*) * MAX_TASKS);
+    __builtin_memcpy(id_table_, id_table_in,
+                     sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
     task_count_     = task_count_in;
     current_index_  = current_idx_in;
     next_task_id_   = next_id_in;

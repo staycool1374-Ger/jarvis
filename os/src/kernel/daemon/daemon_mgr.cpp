@@ -72,9 +72,9 @@ void notify_death(uint64_t pid) {
     }
 }
 
-void capture_state(DaemonEntry* entries_out, uint64_t& num_out) {
+void capture_state(DaemonEntry* out_entries, uint64_t& num_out) {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
-        entries_out[i] = entries_[i];
+        out_entries[i] = entries_[i];
     }
     num_out = num_daemons_;
 }

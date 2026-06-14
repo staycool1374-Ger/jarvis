@@ -237,19 +237,19 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     // Allocate per-task IPC objects (child gets fresh empty queues)
     auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
     if (mq) { mq->init(); mq->owner = tcb; tcb->msg_queue = mq;
-        kernel::test::ResourceTracker::instance().track_msg_queue_add(); } else {
-        tcb->msg_queue = nullptr; }
+        kernel::test::ResourceTracker::instance().track_msg_queue_add(); }
+    else { tcb->msg_queue = nullptr; }
 
     auto* n = static_cast<sync::Notify*>(MemPool::alloc(sizeof(sync::Notify)));
     if (n) { n->init(); tcb->notify = n;
-        kernel::test::ResourceTracker::instance().track_notify_add(); } else {
-        tcb->notify = nullptr; }
+        kernel::test::ResourceTracker::instance().track_notify_add(); }
+    else { tcb->notify = nullptr; }
 
-    auto* eg = static_cast<sync::EventGroup*>(MemPool::alloc(sizeof(sync::
-        EventGroup)));
+    auto* eg = static_cast<sync::EventGroup*>(
+        MemPool::alloc(sizeof(sync::EventGroup)));
     if (eg) { eg->init(); tcb->event_group = eg;
-        kernel::test::ResourceTracker::instance().track_event_group_add(); } else {
-        tcb->event_group = nullptr; }
+        kernel::test::ResourceTracker::instance().track_event_group_add(); }
+    else { tcb->event_group = nullptr; }
 
     // Copy fd_table
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {

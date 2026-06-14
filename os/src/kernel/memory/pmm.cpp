@@ -137,7 +137,8 @@ uint64_t PMM::alloc_contiguous(size_t count) {
         result = try_alloc_kernel(count);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_OOM); }
-    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+    if (result)
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
     return result;
 }
 
@@ -166,7 +167,8 @@ uint64_t PMM::alloc_user_contiguous(size_t count) {
         result = try_alloc_user(count);
     }
     if (!result) { ASSERT(errors::PmmError::PMM_ERR_USER_OOM); }
-    if (result) kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+    if (result)
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
     return result;
 }
 
