@@ -6,6 +6,31 @@ namespace kernel::test {
 
 #ifdef CONFIG_DEBUG
 
+static inline uint64_t read_rbp() {
+    uint64_t v;
+    asm volatile("mov %%rbp, %0" : "=r"(v));
+    return v;
+}
+
+static void print_backtrace() {
+    uint64_t rbp = read_rbp();
+    Logger::warn("[RESOURCE]   Call stack:");
+    for (int i = 0; i < 5 && rbp; ++i) {
+        uint64_t ret = *reinterpret_cast<uint64_t*>(rbp + 8);
+        // Format ret as 16-digit hex
+        char buf[20];
+        int p = 18;
+        buf[18] = '\0';
+        for (int j = 0; j < 16; ++j) {
+            int nibble = static_cast<int>((ret >> (4 * j)) & 0xF);
+            buf[--p] = nibble < 10 ? ('0' + nibble) : ('a' + nibble - 10);
+        }
+        buf[0] = '0'; buf[1] = 'x';
+        Logger::warn("[RESOURCE]     #%d  %s", i, buf);
+        rbp = *reinterpret_cast<uint64_t*>(rbp); // walk to caller's frame
+    }
+}
+
 struct ResField {
     const char* name;
     size_t ResourceCounters::*field;
@@ -93,6 +118,7 @@ bool ResourceTracker::check(const ResourceCounters& baseline,
     print_row("Vnodes",          baseline.vnodes,           counters_.vnodes);
     print_row("Open FDs",        baseline.open_fds,         counters_.open_fds);
 
+    print_backtrace();
     return false;
 }
 
