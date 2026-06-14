@@ -54,7 +54,7 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - **Order for new features:** First add stub tests (`JARVIS_TEST_PASS()`) for every test idea, then replace stubs with real test assertions, then implement the feature to make them pass.
 - **New tests are debug-only by default.** Use `JARVIS_REGISTER_TEST(name)` (debug target only). `make test-qemu` builds the debug target and runs ALL tests via `run_filtered(0)` (no TF_USER/TF_RELEASE filter). Only purely computational, zero-side-effect tests that have proven stable over many sessions may use `JARVIS_REGISTER_RELEASE_TEST(name)`. Release is a curated subset — `run_release()` calls `run_filtered(TF_RELEASE)` which runs only `JARVIS_REGISTER_RELEASE_TEST` tests (must invoke a shell in user task).
 - **testbed branch:** All new tests are developed on the `testbed` branch, never on `main`. `testbed` contains test code only — no production kernel changes. After all tests pass (`make test-qemu`), merge `testbed` into `main`. Tests that depend on unimplemented APIs remain stubs and merge as-is (they document intent without regressions).
-- **Test sanctity:** All non-stub tests are read-only in the first instance. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires first reading its `Testidea`, `Input`, `Expect`, `Depends` doc-block and its implementation; the doc-block and implementation must be changed together. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
+- **Test sanctity:** All non-stub tests are **read-only**. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires: (1) reading its `Testidea`, `Input`, `Expect`, `Depends` doc-block and implementation; (2) reviewing the corresponding kernel function under test; (3) changing both doc-block and implementation together. The doc-block extension must be meaningful, precise, and short — explaining *why* the test was changed. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
 ### 4. Verification & QEMU Validation
 - Run automated test suites via `make test-qemu`.
@@ -65,6 +65,11 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - Update `LESSONS.md` with compressed hardware/architectural insights if not trivial.
 - Sync docs (`README.md`, `ROADMAP.md`, `BUGS.md`).
 - Regenerate file manifest: `tree -I "build|obj|.git|node_modules" > ~/jarvis/project_structure.txt`.
+
+### ResourceTracker (Strict Awareness)
+- **Kernel-internal leak detector:** `kernel::test::ResourceTracker` tracks all kernel resource allocations (PMM pages, MemPool, tasks, IPC objects, drivers, VFS vnodes/FDs, buffer pool) via `track_*_add()` / `track_*_remove()` calls embedded in production code paths (task.cpp, scheduler.cpp, pmm.cpp, mempool.cpp, vfs.cpp, pipe.cpp, buffer_pool.cpp, driver.cpp).
+- **Test isolation:** Every test **must** use `test_isolate.cpp` snapshot/restore. `snapshot_create()` captures baseline counters; `snapshot_restore()` calls `ResourceTracker::check(baseline, test_name)` which **fails the test** on any delta (leaks or double-frees). Do not bypass — ResourceTracker is the source of truth for resource correctness.
+- **Adding new resources:** If you introduce a new kernel resource type, add counters + track_* calls in ResourceTracker AND update `test_isolate.cpp` buffer layout (`off_rsrc_counts`, `total_size`). No exceptions.
 
 ### 6. Minimal Version Control & Deployment
 - Commit verified changes to git. 

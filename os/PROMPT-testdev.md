@@ -9,11 +9,16 @@ Develop and write flawless, production-ready test suites to verify the existing 
 * **No Debugging:** Code must be syntactically perfect and compile out-of-the-box on the first attempt. No placeholders or assumptions.
 * **Test-API Lockdown:** Modifying test-api macros/registration is forbidden. If in build mode: STOP. If in plan mode: suggest the change.
 
+# ResourceTracker (Mandatory Awareness for Test Authors)
+- **Kernel-internal leak detector:** `kernel::test::ResourceTracker` tracks all kernel resource allocations (PMM pages, MemPool, tasks, IPC objects, drivers, VFS vnodes/FDs, buffer pool) via `track_*_add()` / `track_*_remove()` calls embedded in production code paths.
+- **Test isolation is non-negotiable:** Every test **must** use `test_isolate.cpp` snapshot/restore mechanism. `snapshot_create()` captures baseline counters; `snapshot_restore()` calls `ResourceTracker::check(baseline, test_name)` which **fails the test** on any delta (leaks or double-frees). Do not bypass or disable — ResourceTracker is the source of truth for resource correctness.
+- **Self-cleanup rule:** Every test must free its own resources. Pair `add_task()` with `remove_task()` before `cleanup()`+`delete` to prevent scheduler task-count leaks. Implement partial init rollback on failure. ResourceTracker will catch violations automatically.
+
 # Execution Protocols
 
 ### 1. Pre-Implementation & Test Sanctity
 * **Load Testcases:** Prior to implementation, load `testcases-v<target-version>.md` (e.g., `testcases-v0.2.10.md` for Phase 2 FAT32).
-* **Sanctity Rule:** Non-stub tests are read-only. Modify only if systemically wrong. To change, you must update both the implementation and its `Testidea`/`Input`/`Expect`/`Depends` doc-block simultaneously. Stubs (`JARVIS_TEST_PASS()`) can be freely replaced.
+* **Sanctity Rule:** Non-stub tests are read-only. Modify only if systemically wrong. To change, you must update both the implementation and its `Testidea`/`Input`/`Expect`/`Depends` doc-block simultaneously. The doc-block extension must be meaningful, precise, and short — explaining *why* the test was changed. Stubs (`JARVIS_TEST_PASS()`) can be freely replaced.
 
 ### 2. Large File Protocol (Strictly Enforced)
 1. Split output/code into logical blocks of **max 50 lines** per message.
