@@ -2,10 +2,11 @@ ENTRY(_start)
 
 PHDRS
 {
-    boot   PT_LOAD FLAGS(7);
-    text   PT_LOAD FLAGS(5);
-    rodata PT_LOAD FLAGS(4);
-    data   PT_LOAD FLAGS(6);
+    boot_text PT_LOAD FLAGS(5);   /* R+X, .boot.text */
+    boot_data PT_LOAD FLAGS(6);   /* R+W, .boot.data/.boot.bss */
+    text      PT_LOAD FLAGS(5);   /* R+X, kernel .text */
+    rodata    PT_LOAD FLAGS(4);   /* R,   kernel .rodata */
+    data      PT_LOAD FLAGS(6);   /* R+W, kernel .data/.bss */
 }
 
 SECTIONS
@@ -17,14 +18,18 @@ SECTIONS
         *(.eh_frame_hdr)
     }
 
-    .boot : ALIGN(4K)
+    .boot_text : ALIGN(4K)
     {
         KEEP(*(.multiboot_header))
         *(.boot.text)
         *(.boot.rodata)
+    } :boot_text
+
+    .boot_data : ALIGN(4K)
+    {
         *(.boot.data)
         *(.boot.bss)
-    } :boot
+    } :boot_data
 
     . = ALIGN(., 4K);
     boot_vma_end = .;
