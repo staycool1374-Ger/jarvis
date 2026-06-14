@@ -84,7 +84,7 @@ QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none -boot 
 all: help
 
 # Build target: check-style + debug ISO + boot shell
-build: check-style $(ISO)
+build: check-style debug
 
 -include $(DEPFILES)
 
@@ -121,7 +121,7 @@ help:
 	@echo "  make test-gdb      Run test suite under GDB surveillance (captures panic)"
 	@echo "                     GDB scripts: tools/gdb/{init.gdb,kernel.py}"
 
-all: $(ISO)
+all: help
 
 iso/boot:
 	@mkdir -p $@
@@ -172,7 +172,7 @@ build/%.o: src/%.cpp
 # ------------------------------------------------------------------------------
 # Testing & Emulation Pipelines (QEMU)
 # ------------------------------------------------------------------------------
-run-qemu: $(DEBUG_ISO)
+run-qemu: debug
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Starting QEMU Monitor (Ctrl+A then X to exit)..."; \
 	    qemu-system-x86_64 $(QEMU_FLAGS); \
@@ -190,13 +190,13 @@ run-release: release
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
 	fi
 
-run-qemu-debug: $(DEBUG_ISO)
+run-qemu-debug: debug
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Starting QEMU (debug) — Ctrl+A then X to exit."; \
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
-	    echo "Interrupt log: -d int,cpu_reset"; \
+	    echo "Debug logs: -d int,cpu_reset"; \
 	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
-	        -boot order=d -s -S -d int,cpu_reset \
+	        -boot order=d -s -d int,cpu_reset \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
 	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
@@ -268,7 +268,7 @@ test-gdb: debug
 	    exit $$GDB_EXIT; \
 	fi
 
-test-qemu: $(ISO)
+test-qemu: debug
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    echo "Booting in QEMU Environment (Automated Self-Test Execution Pipeline)..."; \
 	    expect -c ' \
@@ -337,9 +337,9 @@ profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ)
 	@echo "Profiling kernel built: $(KERNEL)"
 	cp $(KERNEL) iso/boot/kernel.elf
-	@grub-mkrescue -o $(ISO) iso 2>/dev/null
+	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
 	@echo "Booting in QEMU to capture coverage data..."
-	qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial file:build/profiling/gcda.raw \
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
 	    -nic none -boot order=d -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
 	    tee build/profiling/qemu.log
@@ -428,7 +428,7 @@ objdump: $(KERNEL)
 	@echo "Disassembly written to build/kernel.dis ($$($(GET_SIZE) build/kernel.dis) bytes)"
 
 clean:
-	rm -rf build $(ISO) $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
+	rm -rf build $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
 	rm -rf initrd_root debug release profiling
 	@echo "Environment workspace clean-up routines completed."
