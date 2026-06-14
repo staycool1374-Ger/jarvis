@@ -1,6 +1,6 @@
 # Jarvis RTOS — Completed Milestones
 
-## Phase 1: Code Refactoring & Microkernel Foundation (0.2.7–0.2.10)
+## Phase 1: Code Refactoring & Microkernel Foundation (0.2.7–0.2.11)
 
 ### 0.2.7 — Error Assertion Retrofit ✓
 - [x] ASSERT(err) / ENSURE(cond) macros + per-module error_string<E> specialisation
@@ -37,3 +37,22 @@
 - [x] 11 buffer-pool kernel tests, 2329/2331 PASS
 - [x] Userspace VFS server (vfsd) hardening + crash recovery
 - [x] I/O daemon (iocd) hardening + crash recovery
+
+### 0.2.11 — Coding Style Refactoring ✓
+- [x] Const correctness retrofit — `const` on all kernel variables, params, member functions
+- [x] References over pointers — migrate non-nullable `T*` params to `T&`
+- [x] All variables initialized — fix every uninitialized local declaration
+- [x] Constructor init-list migration — member assignments in body → member initializer list
+- [x] Meaningful sentinel enums — replace raw `-1` checks with named constants
+- [x] Descriptive names — rename blocklisted single-char vars (`t`, `v`, `val`, `tmp`, `ptr`, `p`)
+- [x] Remove `const_cast` — use `mutable` or redesign to avoid const modification
+- [x] Bounded loops — replace unbounded `while (true)`/`for (;;)` with max-iteration guards
+- [x] Dynamic allocation audit — replace `new`/`delete` on kernel paths with fixed pools
+- [x] Documentation Doxygen compliance — `@brief`, `@param`, `@return` on all public APIs
+- [x] Validation — zero errors from `make check-style` (exit 0)
+- [x] Test isolation: full snapshot/restore (PMM, MemPool, Scheduler, DaemonManager, BufferPool, ResourceTracker)
+- [x] ResourceTracker: leak detection with backtrace, test name in output
+- [x] PMM/MemPool leak fixes (PML4 clone, huge-page split, VMM page tables, ELF failure paths)
+- [x] IRQ-safe snapshot with RFLAGS save/restore
+- [x] Linker script: split boot segment into separate R+X and R+W segments
+- [x] 2661 kernel self-tests PASS, 0 failures

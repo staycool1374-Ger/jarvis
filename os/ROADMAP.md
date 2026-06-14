@@ -1,23 +1,6 @@
 # Jarvis RTOS — Development Roadmap
 
-## Phase 1: Code Refactoring & Microkernel Foundation (0.2.11)
-
-### 0.2.11 — Coding Style Refactoring (current)
-- [ ] Const correctness retrofit — `const` on all kernel variables, params, member functions
-- [ ] References over pointers — migrate non-nullable `T*` params to `T&`
-- [ ] All variables initialized — fix every uninitialized local declaration
-- [ ] Constructor init-list migration — member assignments in body → member initializer list
-- [ ] Meaningful sentinel enums — replace raw `-1` checks with named constants
-- [ ] Descriptive names — rename blocklisted single-char vars (`t`, `v`, `val`, `tmp`, `ptr`, `p`)
-- [ ] Remove `const_cast` — use `mutable` or redesign to avoid const modification
-- [ ] Bounded loops — replace unbounded `while (true)`/`for (;;)` with max-iteration guards
-- [ ] Dynamic allocation audit — replace `new`/`delete` on kernel paths with fixed pools
-- [ ] Documentation Doxygen compliance — `@brief`, `@param`, `@return` on all public APIs
-- [ ] Validation — zero errors from `make check-style` (exit 0)
-
----
-
-## Phase 2: Filesystems & Shell UX (0.2.12–0.2.13)
+## Phase 1: Filesystems & Shell UX (0.2.12–0.2.13)
 
 ### 0.2.12 — FAT32 Block Filesystem
 - [ ] ATA PIO driver, block device abstraction layer
