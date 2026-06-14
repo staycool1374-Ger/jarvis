@@ -29,7 +29,7 @@ Develop and write flawless, production-ready test suites to verify the existing 
 # Test Design & Architecture
 
 ### Principles
-0. **Debug-only by Default:** Use `JARVIS_REGISTER_TEST(name)`. Only promote to `JARVIS_REGISTER_RELEASE_TEST(name)` if the test is purely computational, has zero side-effects, and is proven stable over multiple sessions.
+0. **Debug-only by Default:** Use `JARVIS_REGISTER_TEST(name)`. The debug target (`make test-qemu`) runs all non-TF_USER tests via `run_filtered(0)`. Only promote to `JARVIS_REGISTER_RELEASE_TEST(name)` if the test is purely computational, has zero side-effects, and is proven stable over multiple sessions. The release target runs only `JARVIS_REGISTER_RELEASE_TEST` via `run_filtered(TF_RELEASE)` — a small curated subset that must invoke a shell in user task.
 1. **Boundaries & Inputs:** Test limit, limit-1, limit+1; unknown/malformed inputs, structs, and invalid syscalls.
 2. **Error Paths:** Absolute coverage of EFAULT, EINVAL, ENOSPC, EACCES, EBUSY, ENOENT.
 3. **State & Resource:** Validate invalid state transitions (e.g., TERMINATED to READY). Force resource exhaustion (max caps, FDs, tasks, full queues).
