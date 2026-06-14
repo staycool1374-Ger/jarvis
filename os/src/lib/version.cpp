@@ -2,16 +2,13 @@
 
 namespace kernel {
 
-static const char version_buf_[] =
-    "0.2.12-dev";
-
 static const char* const build_date_ = __DATE__;
 static const char* const build_time_ = __TIME__;
 
 static char full_buf_[64];
 
 const char* Version::string() {
-    return version_buf_;
+    return KERNEL_VERSION_STRING;
 }
 
 const char* Version::build_date() {
@@ -29,7 +26,7 @@ const char* Version::full_string() {
     };
 
     append("Jarvis RTOS ");
-    append(version_buf_);
+    append(KERNEL_VERSION_STRING);
     append(" (");
     append(build_date_);
     append(" ");

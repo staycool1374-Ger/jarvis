@@ -3,6 +3,12 @@
 
 #pragma once
 
+#include <types.hpp>
+
+/// @brief Kernel version — single source of truth.
+/// Format: "major.minor.patch-stage"
+#define KERNEL_VERSION_STRING "0.2.12-dev"
+
 namespace kernel {
 
 /// @brief Kernel version constants and string formatting.
