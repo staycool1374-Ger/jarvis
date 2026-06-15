@@ -65,7 +65,7 @@ int vsnprintf(char* buf, size_t n, const char* fmt, va_list ap) {
         long lval = 0;
         unsigned long ulval = 0;
         int is_long = 0;
-        if (*fmt == 'l') { is_long = 1; ++fmt; }
+        while (*fmt == 'l') { is_long = 1; ++fmt; }
 
         switch (*fmt) {
         case 'd':

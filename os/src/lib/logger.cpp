@@ -94,7 +94,8 @@ void Logger::vprint(LogLevel level, const char* fmt, __va_list args) {
                 print_hex(v);
                 break;
             }
-            case 'd': {
+            case 'd':
+            case 'u': {
                 uint64_t v = __builtin_va_arg(args, uint64_t);
                 print_dec(v);
                 break;

@@ -1,0 +1,12 @@
+-std=c++20
+-ffreestanding
+-fno-exceptions
+-fno-rtti
+-target
+x86_64-elf
+-m64
+-mno-red-zone
+-mgeneral-regs-only
+-Isrc
+-Isrc/lib
+-DCONFIG_DEBUG

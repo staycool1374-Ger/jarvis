@@ -119,12 +119,14 @@ void Terminal::set_bg(uint32_t color) {
 }
 
 void Terminal::clear() {
-    if (!instance_ || instance_->fb_enabled_)
-        Framebuffer::clear(instance_ ? instance_->bg_ : 0);
-    if (instance_) {
-        instance_->cursor_x_ = 0;
-        instance_->cursor_y_ = 0;
+    if (!instance_) {
+        Framebuffer::clear(0);
+        return;
     }
+    if (instance_->fb_enabled_)
+        Framebuffer::clear(instance_->bg_);
+    instance_->cursor_x_ = 0;
+    instance_->cursor_y_ = 0;
 }
 
 void Terminal::scroll() {

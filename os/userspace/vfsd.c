@@ -135,7 +135,7 @@ int main(void) {
     printf("[vfsd] VFS Daemon started (PID=%llu)\n", g_my_id);
 
     while (1) {
-        struct VfsdMsg msg;
+        struct VfsdMsg msg = {0};
         int r = ipc_recv(&msg, sizeof(msg));
         if (r < 0) continue;
         if ((unsigned long)r != msg.type) continue;

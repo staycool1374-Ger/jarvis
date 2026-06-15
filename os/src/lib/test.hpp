@@ -31,10 +31,14 @@ public:
 
     static void record_failure(const char* file, int line, const char* expr);
     static void record_success();
+    static void record_test(bool passed);
 
     static size_t passed();
     static size_t failed();
     static size_t total();
+    static size_t test_count();
+    static size_t test_passed();
+    static size_t test_failed();
     static void reset();
 
 private:
@@ -43,6 +47,8 @@ private:
     static size_t count_;
     static size_t passed_;
     static size_t failed_;
+    static size_t test_count_;
+    static size_t test_failed_;
 };
 
 class TestBase {

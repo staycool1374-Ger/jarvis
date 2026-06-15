@@ -82,8 +82,8 @@ extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3
 }
 
 extern "C" {
-    uint32_t multiboot_magic = 0;
-    uint32_t multiboot_info_ptr = 0;
+    uint64_t multiboot_magic = 0;
+    uint64_t multiboot_info_ptr = 0;
 }
 extern char kernel_virt_end[];
 extern "C" uint8_t _binary_initrd_cpio_start[];
@@ -229,12 +229,25 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] DriverRegistry OK\n");
 
     debug_write("[BOOT] Framebuffer init...\n");
-    service::Framebuffer::init();
-    debug_write("[BOOT] Framebuffer OK\n");
+    if (service::Framebuffer::init()) {
+        debug_write("[BOOT] Framebuffer: ");
+        debug_write_hex(service::Framebuffer::width());
+        debug_write("x");
+        debug_write_hex(service::Framebuffer::height());
+        debug_write(" @ ");
+        debug_write_hex(service::Framebuffer::info().bpp);
+        debug_write("bpp OK\n");
+    } else {
+        debug_write("[BOOT] Framebuffer: not available\n");
+    }
 
     debug_write("[BOOT] Terminal init...\n");
     service::Terminal::init();
-    debug_write("[BOOT] Terminal OK\n");
+    if (service::Terminal::instance()) {
+        debug_write("[BOOT] Terminal: OK\n");
+    } else {
+        debug_write("[BOOT] Terminal: no framebuffer, serial-only mode\n");
+    }
 
     debug_write("[BOOT] PIC init...\n");
     init_pic();
@@ -365,50 +378,16 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    // Unprivileged userspace shell (ring 3) via initrd ELF
-    {
-        initrd::InitrdFile f = initrd::find("./sh.c.elf");
-        if (!f.data) f = initrd::find("sh.c.elf");
-        if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
-            if (kernel::elf::validate_header(hdr)) {
-                auto* shell_task = kernel::elf::load(hdr, f.data);
-                if (shell_task) {
-                    shell_task->priority = 2;
-                    shell_task->period_ticks = 10;
-                    kernel::Scheduler::add_task(*shell_task);
-                    debug_write("[BOOT] Userspace shell started (PID=");
-                    debug_write_hex(shell_task->id);
-                    debug_write(")\n");
-                }
-            }
-        }
-    }
-
-    // Userspace idle task (Ring 3, pause loop, lowest priority)
-    {
-        initrd::InitrdFile f = initrd::find("./idle.c.elf");
-        if (!f.data) f = initrd::find("idle.c.elf");
-        if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
-            if (kernel::elf::validate_header(hdr)) {
-                auto* idle_task = kernel::elf::load(hdr, f.data);
-                if (idle_task) {
-                    idle_task->priority = 0;
-                    idle_task->period_ticks = 0xFFFFFFFF;
-                    kernel::Scheduler::add_task(*idle_task);
-                    debug_write("[BOOT] Userspace idle task started (PID=");
-                    debug_write_hex(idle_task->id);
-                    debug_write(")\n");
-                }
-            }
-        }
-    }
-
-    // Keep kernel shell registered as a fallback (for `runelf` or debug)
+    // Kernel shell (main interactive shell — bypasses VFS daemon)
     service::Shell::init();
+    {
+        auto* ksh = kernel::TaskControlBlock::create(
+            &service::Shell::shell_task_main, 1, 20);
+        if (ksh) {
+            kernel::Scheduler::add_task(*ksh);
+            debug_write("[BOOT] Kernel shell started\n");
+        }
+    }
 
 #ifdef CONFIG_PROFILING
     gcov_flush_to_serial();

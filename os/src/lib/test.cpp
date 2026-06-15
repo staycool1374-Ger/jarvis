@@ -15,11 +15,15 @@ TestCase Registry::tests_[MAX_TESTS];
 size_t Registry::count_ = 0;
 size_t Registry::passed_ = 0;
 size_t Registry::failed_ = 0;
+size_t Registry::test_count_ = 0;
+size_t Registry::test_failed_ = 0;
 
 void Registry::init() {
     count_ = 0;
     passed_ = 0;
     failed_ = 0;
+    test_count_ = 0;
+    test_failed_ = 0;
 }
 
 void Registry::register_test(const TestCase& tc) {
@@ -42,14 +46,24 @@ void Registry::record_success() {
     ++passed_;
 }
 
+void Registry::record_test(bool passed) {
+    ++test_count_;
+    if (!passed) ++test_failed_;
+}
+
 void Registry::reset() {
     passed_ = 0;
     failed_ = 0;
+    test_count_ = 0;
+    test_failed_ = 0;
 }
 
 size_t Registry::passed() { return passed_; }
 size_t Registry::failed() { return failed_; }
 size_t Registry::total() { return passed_ + failed_; }
+size_t Registry::test_count() { return test_count_; }
+size_t Registry::test_passed() { return test_count_ - test_failed_; }
+size_t Registry::test_failed() { return test_failed_; }
 
 static void run_one(const TestCase& tc) {
     // Snapshot scheduler/PMM state for leak detection
@@ -96,8 +110,10 @@ void run_all() {
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
+            Registry::record_test(true);
         } else {
             Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Registry::record_test(false);
         }
     }
 
@@ -145,8 +161,10 @@ static void run_filtered(uint8_t required_flags) {
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
+            Registry::record_test(true);
         } else {
             Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Registry::record_test(false);
         }
 
         // Restore the snapshot after each test so the next test starts
@@ -206,8 +224,10 @@ void run_suite(const char* suite_name) {
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
+            Registry::record_test(true);
         } else {
             Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Registry::record_test(false);
         }
     }
 
@@ -219,9 +239,9 @@ void run_suite(const char* suite_name) {
 }
 
 void print_report() {
-    size_t p = Registry::passed();
-    size_t f = Registry::failed();
-    size_t t = p + f;
+    size_t tp = Registry::test_passed();
+    size_t tf = Registry::test_failed();
+    size_t tt = tp + tf;
 
     Logger::raw_write("\n");
     Logger::raw_write("==============================\n");
@@ -238,9 +258,9 @@ void print_report() {
         Logger::raw_write(buf + pos);
     };
 
-    Logger::raw_write("  Total:  "); write_num(t); Logger::raw_write("\n");
-    Logger::raw_write("  Passed: \033[32m"); write_num(p); Logger::raw_write("\033[0m\n");
-    Logger::raw_write("  Failed: \033[31m"); write_num(f); Logger::raw_write("\033[0m\n");
+    Logger::raw_write("  Total:  "); write_num(tt); Logger::raw_write("\n");
+    Logger::raw_write("  Passed: \033[32m"); write_num(tp); Logger::raw_write("\033[0m\n");
+    Logger::raw_write("  Failed: \033[31m"); write_num(tf); Logger::raw_write("\033[0m\n");
     Logger::raw_write("==============================\n\n");
 }
 

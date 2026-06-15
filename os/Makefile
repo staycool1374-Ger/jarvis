@@ -76,9 +76,15 @@ QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none -boot 
                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
 
 # ------------------------------------------------------------------------------
+# Build type stamp: prevents stale object files when switching between
+# debug and release builds (they share the same build/ directory).
+# ------------------------------------------------------------------------------
+BUILD_STAMP := build/.build-type
+
+# ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu test symbols objdump debug release release-test run-release-test profiling gdb test-gdb
+.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu test symbols objdump debug release release-test run-release-test profiling gdb test-gdb check-build-stamp
 
 # Default target: show help
 all: help
@@ -317,9 +323,17 @@ test: $(KERNEL)
 	@echo "Userspace components compiled securely."
 	@echo "Trigger interactive tests at terminal context via 'selftest'."
 
+check-build-stamp:
+	@if [ -f $(BUILD_STAMP) ] && [ "$$(cat $(BUILD_STAMP))" != "debug" ]; then \
+	    echo "Build type changed (last: $$(cat $(BUILD_STAMP))), cleaning stale objects..."; \
+	    $(MAKE) clean >/dev/null 2>&1; \
+	fi
+	@mkdir -p $(dir $(BUILD_STAMP)); echo debug > $(BUILD_STAMP)
+
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
 
+debug: check-build-stamp
 debug: $(OBJ) $(INITRD_OBJ) linker.ld
 	@mkdir -p $(dir $(KERNEL_DEBUG)) $(dir $(DEBUG_ISO))
 	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
@@ -352,7 +366,8 @@ release:
 	@echo "=== Building release ISO (clean build) ==="
 	$(MAKE) clean
 	$(MAKE) iso/boot/kernel.elf iso/boot/grub/grub.cfg CXXFLAGS="$(CXXFLAGS)"
-	@mkdir -p $(dir $(RELEASE_ISO))
+	@mkdir -p $(dir $(RELEASE_ISO)) $(dir $(BUILD_STAMP))
+	@echo release > $(BUILD_STAMP)
 	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
 	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
 	@echo ""
@@ -379,15 +394,15 @@ run-release-test: release
 	    'spawn qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
 	    'puts "waiting for shell prompt..."' \
 	    'expect {' \
-	    '    -re {sh\$$ } { }' \
+	    '    -re {jarvis\$$ } { }' \
 	    '    "PANIC" { puts "PANIC at boot"; exit 1 }' \
 	    '    "EXCEPTION" { puts "EXCEPTION at boot"; exit 1 }' \
 	    '    timeout { puts "TIMEOUT at boot"; exit 1 }' \
 	    '}' \
 	    'puts "boot OK"' \
 	    '' \
-	    'proc test_cmd {cmd} {' \
-	    '    set pat [subst -nobackslashes {$$cmd\r+\nsh: $$cmd: not found\r+\n}]' \
+	    'proc test_err {cmd} {' \
+	    '    set pat [subst -nobackslashes {$$cmd\r+\nUnbekannter Befehl: $$cmd\r+\n}]' \
 	    '    puts "testing: $$cmd"' \
 	    '    send "$$cmd\r"' \
 	    '    expect {' \
@@ -398,17 +413,25 @@ run-release-test: release
 	    '    }' \
 	    '}' \
 	    '' \
-	    'test_cmd "garbing"' \
-	    'test_cmd "xyzzy"' \
-	    'test_cmd "plugh"' \
-	    'test_cmd "help"' \
-	    'test_cmd "test"' \
-	    'test_cmd "nonexistent"' \
+	    'puts "testing: help"' \
+	    'send "help\r"' \
+	    'expect {' \
+	    '    -re {Verfuegbare Befehle:} { puts "help OK" }' \
+	    '    "PANIC" { puts "PANIC after help"; exit 1 }' \
+	    '    "EXCEPTION" { puts "EXCEPTION after help"; exit 1 }' \
+	    '    timeout { puts "TIMEOUT after help"; exit 1 }' \
+	    '}' \
+	    '' \
+	    'test_err "xyzzy"' \
+	    'test_err "plugh"' \
+	    'test_err "test"' \
+	    'test_err "nonexistent"' \
+	    'test_err "garbing"' \
 	    '' \
 	    'puts "exiting shell..."' \
 	    'send "exit\r"' \
 	    'expect {' \
-	    '    -re "exit\r+\nsh: exiting\r+\n" { puts "exit message seen" }' \
+	    '    -re {Shutting down} { puts "exit message seen" }' \
 	    '    "PANIC" { puts "PANIC on exit"; exit 1 }' \
 	    '    "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 }' \
 	    '    timeout { puts "TIMEOUT on exit"; exit 1 }' \
@@ -430,5 +453,6 @@ objdump: $(KERNEL)
 clean:
 	rm -rf build $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
+	rm -f $(BUILD_STAMP)
 	rm -rf initrd_root debug release profiling
 	@echo "Environment workspace clean-up routines completed."

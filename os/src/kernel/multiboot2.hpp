@@ -48,9 +48,9 @@ struct MemoryMapTag {
 };
 extern "C" {
     /// @brief Multiboot2 magic value (0x36D76289 if booted by Multiboot2).
-    extern uint32_t multiboot_magic;
+    extern uint64_t multiboot_magic;
     /// @brief Physical pointer to the Multiboot2 info structure.
-    extern uint32_t multiboot_info_ptr;
+    extern uint64_t multiboot_info_ptr;
 }
 
 /// @brief Finds a Multiboot2 tag by type.
