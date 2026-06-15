@@ -188,13 +188,15 @@ release:
 profiling: CXX := x86_64-elf-g++
 profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) \
                        -Wno-type-limits -Wno-unused-but-set-variable \
+                       -Wno-class-memaccess \
                        -finstrument-functions -DCONFIG_PROFILING
 profiling: LDFLAGS += -L $(GCOV_LIB_DIR)
-profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld iso/boot
+profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld iso/boot
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf (profiling)'
-	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ)
+	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
 	cp $(KERNEL) iso/boot/kernel.elf
 	@printf '  %-7s %s\n' 'ISO' '$(DEBUG_ISO)'
+	@mkdir -p $(dir $(DEBUG_ISO))
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
 	@printf '  %-7s %s\n' 'PROFILE' 'Booting in QEMU…'
 	mkdir -p build/profiling
