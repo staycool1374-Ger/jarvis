@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+set timeout 300
+
+spawn qemu-system-x86_64 -serial stdio -cdrom /Users/arnold/jarvis/os/debug/jarvis-rtos.iso -m 512M -no-reboot -no-shutdown -accel tcg
+
+expect {
+    -re {jarvis\$} {}
+    -re {EXCEPTION|PANIC|FATAL} { puts "CRASH_DURING_BOOT"; exit 1 }
+    timeout { puts "TIMEOUT_BOOT"; exit 2 }
+}
+
+send "selftest\n"
+
+expect {
+    -re {EXCEPTION|PANIC|FATAL} { puts "CRASH"; exit 1 }
+    -re {Total:.*Passed:.*Failed:} { puts "OK"; exit 0 }
+    timeout { puts "TIMEOUT"; exit 2 }
+}

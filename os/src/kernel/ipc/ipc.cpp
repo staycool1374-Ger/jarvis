@@ -179,6 +179,7 @@ MessageQueue& IPC::queue(uint64_t task_id) {
 }
 
 bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
+    task.state = TaskState::BLOCKED;
     task.blocked_next = nullptr;
     task.blocked_on_queue = &q;
     if (q.blocked_senders_tail) {
