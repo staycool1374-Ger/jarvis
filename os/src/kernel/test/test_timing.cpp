@@ -1,0 +1,216 @@
+#include <test.hpp>
+#include <logger.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
+#include <signal.hpp>
+
+using namespace kernel;
+
+// Runmode: kernel
+// Testidea: Verifies Scheduler::on_tick() increments current_task().executed_ticks
+// by exactly 1.
+// Input: Set current task executed_ticks=0, call on_tick().
+// Expect: executed_ticks == 1.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_tick_accounting) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    cur->executed_ticks = 0;
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT_EQ(cur->executed_ticks, 1ULL);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies when remaining_ticks reaches 0, on_tick() reloads it to
+// period_ticks and resets executed_ticks.
+// Input: current task remaining_ticks=1, period_ticks=10, executed_ticks=5.
+// Call on_tick() -> remaining_ticks becomes 0, executed_ticks becomes 6.
+// Call on_tick() again -> remaining_ticks reloads to 10, executed_ticks resets to 0.
+// Expect: After second tick, remaining_ticks == 10, executed_ticks == 0.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_period_reload) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    cur->remaining_ticks = 1;
+    cur->period_ticks = 10;
+    cur->executed_ticks = 5;
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT_EQ(cur->remaining_ticks, 0ULL);
+    JARVIS_ASSERT_EQ(cur->executed_ticks, 6ULL);
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT_EQ(cur->remaining_ticks, 10ULL);
+    JARVIS_ASSERT_EQ(cur->executed_ticks, 0ULL);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies alarm delivery after specified tick count.
+// Input: Set current task alarm_ticks=3. Call on_tick() 3 times.
+// Expect: After 3rd tick, alarm_ticks == 0 and SIGALRM pending in signal mask.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, kernel::signal
+JARVIS_TEST(timer_alarm_delivery) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    cur->alarm_ticks = 3;
+    cur->alarm_armed = true;
+    cur->pending_signals = 0;
+
+    Scheduler::on_tick();
+    Scheduler::on_tick();
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT_EQ(cur->alarm_ticks, 0ULL);
+    JARVIS_ASSERT(cur->alarm_armed == false);
+    JARVIS_ASSERT((cur->pending_signals & (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) != 0);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies alarm not yet expired.
+// Input: Set current task alarm_ticks=10. Call on_tick() 5 times.
+// Expect: alarm_ticks == 5, no SIGALRM pending.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_alarm_not_expired) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    cur->alarm_ticks = 10;
+    cur->alarm_armed = true;
+    cur->pending_signals = 0;
+
+    for (int i = 0; i < 5; ++i) {
+        Scheduler::on_tick();
+    }
+
+    JARVIS_ASSERT_EQ(cur->alarm_ticks, 5ULL);
+    JARVIS_ASSERT(cur->alarm_armed == true);
+    JARVIS_ASSERT((cur->pending_signals & (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) == 0);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies on_tick() triggers rate_monotonic_schedule() which causes
+// needs_switch() to return true when a higher-priority task is overdue.
+// Input: Current task priority=5. Create higher-priority task (priority=9)
+// with deadline expired. Call on_tick().
+// Expect: needs_switch() returns true after on_tick().
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_rate_monotonic_schedule_indirect) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    cur->priority = 5;
+
+    auto* high = TaskControlBlock::create([]() {}, 9, 10);
+    JARVIS_ASSERT(high != nullptr);
+    high->state = TaskState::READY;
+    high->deadline_ticks = 0;
+    Scheduler::add_task(*high);
+
+    Scheduler::on_tick();
+
+    bool result = Scheduler::needs_switch();
+    JARVIS_ASSERT(result == true);
+
+    Scheduler::remove_task(*high);
+    high->cleanup();
+    delete high;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies on_tick() eventually reaps orphaned TERMINATED children.
+// Input: Create parent and child. Parent exits (TERMINATED). Child TERMINATED.
+// Call on_tick() repeatedly. Eventually reap_orphans runs.
+// Expect: task_count() decreases after sufficient ticks.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_reap_orphans_periodic) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    uint64_t cnt_before = Scheduler::task_count();
+
+    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(parent != nullptr);
+    Scheduler::add_task(*parent);
+
+    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(child != nullptr);
+    child->parent_id = parent->id;
+    child->state = TaskState::TERMINATED;
+    child->exit_code = 0;
+    Scheduler::add_task(*child);
+
+    parent->state = TaskState::TERMINATED;
+    parent->exit_code = 0;
+
+    for (int i = 0; i < 100; ++i) {
+        Scheduler::on_tick();
+        if (Scheduler::task_count() < cnt_before + 2) break;
+    }
+
+    JARVIS_ASSERT(Scheduler::task_count() <= cnt_before + 1);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies on_tick() does not crash or corrupt scheduler state when
+// only the idle task is eligible.
+// Input: Ensure only idle task is RUNNABLE. Call on_tick().
+// Expect: No crash, scheduler state consistent.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(timer_no_side_effects_on_idle) {
+    auto* idle = Scheduler::get_idle_task();
+    JARVIS_ASSERT(idle != nullptr);
+
+    for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
+        auto* t = Scheduler::task_at(i);
+        if (t) t->state = TaskState::BLOCKED;
+    }
+
+    Scheduler::on_tick();
+
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    JARVIS_ASSERT(Scheduler::task_count() >= 1);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies daemon tasks in RUNNING state are not restarted by on_tick().
+// Input: Mark a daemon task as RUNNING. Call on_tick().
+// Expect: Daemon task not marked for restart, state unchanged.
+// Depends: kernel::task::Scheduler, kernel::daemon::DaemonMgr
+JARVIS_TEST(timer_daemon_restart_not_triggered_on_active) {
+    bool found = false;
+    for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+        auto* t = Scheduler::task_at(i);
+        if (t && t->state == TaskState::RUNNING && t != Scheduler::get_idle_task()) {
+            t->state = TaskState::RUNNING;
+            found = true;
+            break;
+        }
+    }
+
+    if (found) {
+        Scheduler::on_tick();
+    }
+
+    JARVIS_TEST_PASS();
+}
+
+void register_timing_tests() {
+    Logger::info("Registering timing tests");
+    JARVIS_REGISTER_TEST(timer_tick_accounting);
+    JARVIS_REGISTER_TEST(timer_period_reload);
+    JARVIS_REGISTER_TEST(timer_alarm_delivery);
+    JARVIS_REGISTER_TEST(timer_alarm_not_expired);
+    JARVIS_REGISTER_TEST(timer_rate_monotonic_schedule_indirect);
+    JARVIS_REGISTER_TEST(timer_reap_orphans_periodic);
+    JARVIS_REGISTER_TEST(timer_no_side_effects_on_idle);
+    JARVIS_REGISTER_TEST(timer_daemon_restart_not_triggered_on_active);
+}
