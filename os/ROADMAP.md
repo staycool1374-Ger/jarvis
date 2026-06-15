@@ -12,7 +12,9 @@
 - [ ] Built-in commands: help, echo, pwd, clear, which, env, sleep
 - [ ] SYS_MKDIR/SYS_UNLINK, standalone initrd utilities (mkdir, rm, rmdir, etc.)
 - [ ] IPC pipeline hardening (pipes, I/O redirection)
-
+- [ ] use check codebase and analyze where requirement <concepts> and <requires> keywords
+      make sense. especially check for templates.
+  
 ---
 
 ## Phase 3: System Services & Hardware (0.2.14–0.2.17)

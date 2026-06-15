@@ -56,6 +56,10 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - **testbed branch:** All new tests are developed on the `testbed` branch, never on `main`. `testbed` contains test code only — no production kernel changes. After all tests pass (`make test-qemu`), merge `testbed` into `main`. Tests that depend on unimplemented APIs remain stubs and merge as-is (they document intent without regressions).
 - **Test sanctity:** All non-stub tests are **read-only**. Only modify a non-stub test if it is systemically *wrong*. Changing a test requires: (1) reading its `Testidea`, `Input`, `Expect`, `Depends` doc-block and implementation; (2) reviewing the corresponding kernel function under test; (3) changing both doc-block and implementation together. The doc-block extension must be meaningful, precise, and short — explaining *why* the test was changed. Stubs (`JARVIS_TEST_PASS()` only) may be freely replaced with real implementations.
 
+### Pseudocode in Stub Tests
+* Some stub tests contain `/* Pseudocode: ... */` comments describing intended behavior — use these for insight when implementing.
+* When writing new stub tests, a pseudocode block is required inside the test function to document the intended test flow.
+
 ### 4. Verification & QEMU Validation
 - Run automated test suites via `make test-qemu`.
 - **Circuit Breaker:** Max **3 consecutive fix attempts** if a test fails. If still failing on the 3rd attempt, halt execution and await human input.

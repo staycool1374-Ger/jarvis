@@ -11,11 +11,19 @@ void register_scheduler_tests();
 void register_task_tests();
 void register_driver_tests();
 void register_vfs_tests();
+void register_tmpfs_tests();
+void register_tmpfs_invalid_mount_tests();
+void register_tmpfs_io_timeout_tests();
+void register_tmpfs_corrupted_metadata_tests();
+void register_tmpfs_mount_unmount_failure_tests();
 void register_signals_tests();
 void register_process_tests();
 void register_elf_tests();
 void register_checked_ptr_tests();
+void register_fstab_tests();
 void register_rtc_tests();
+void register_rlimit_tests();
+void register_init_tests();
 void register_syscall_tests();
 void register_sync_tests();
 void register_capability_tests();
@@ -52,6 +60,7 @@ void register_vfs_fat32_tests();
 void register_ipc_blocking_tests();
 void register_vfsd_authorization_tests();
 void register_syscall_tests();
+void register_textutils_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to
@@ -71,11 +80,18 @@ void register_selftest_tests() {
     register_task_tests();
     register_driver_tests();
     register_vfs_tests();
+    register_tmpfs_invalid_mount_tests();
+    register_tmpfs_io_timeout_tests();
+    register_tmpfs_corrupted_metadata_tests();
+    register_tmpfs_mount_unmount_failure_tests();
     register_signals_tests();
     register_process_tests();
     register_elf_tests();
     register_checked_ptr_tests();
+    register_fstab_tests();
     register_rtc_tests();
+    register_rlimit_tests();
+    register_init_tests();
     register_syscall_tests();
     register_sync_tests();
     register_capability_tests();
@@ -111,5 +127,5 @@ void register_selftest_tests() {
     register_vfs_fat32_tests();
     register_ipc_blocking_tests();
     register_vfsd_authorization_tests();
-    register_syscall_tests();
+    register_tmpfs_tests();
 }

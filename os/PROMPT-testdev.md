@@ -31,6 +31,10 @@ Develop and write flawless, production-ready test suites to verify the existing 
 * **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make test-qemu`.
 * **Gated Merging:** Tests lacking main-branch APIs remain as `JARVIS_TEST_PASS()` stubs (documented via doc-block). Merge `testbed` into `main` only when there are 0 failures. `testbed` is never deleted.
 
+### Pseudocode in Stub Tests
+* Some stub tests contain `/* Pseudocode: ... */` comments describing intended behavior — use these for insight when implementing.
+* When writing new stub tests, a pseudocode block is required inside the test function to document the intended test flow.
+
 # Test Design & Architecture
 
 ### Principles

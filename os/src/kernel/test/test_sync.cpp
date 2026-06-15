@@ -53,6 +53,49 @@ JARVIS_TEST(semaphore_wait_post) {
 // Expect: Mutex correctly tracks owner and locked state across multiple
 // lock/unlock cycles and task switches
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
+JARVIS_TEST(mutex_double_unlock) {
+    sync::Mutex m;
+    m.init();
+    m.lock();
+    m.unlock();
+    JARVIS_ASSERT(!m.is_locked());
+    JARVIS_ASSERT(m.owner() == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(mutex_recursive_lock) {
+    sync::Mutex m;
+    m.init();
+    m.lock();
+    JARVIS_ASSERT(m.is_locked());
+    m.lock();
+    JARVIS_ASSERT(m.is_locked());
+    m.unlock();
+    JARVIS_ASSERT(m.is_locked());
+    m.unlock();
+    JARVIS_ASSERT(!m.is_locked());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(semaphore_timeout) {
+    sync::Semaphore sem;
+    sem.init(0, 1);
+    bool ok = sem.try_wait();
+    JARVIS_ASSERT(!ok);
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(semaphore_multi_post) {
+    sync::Semaphore sem;
+    sem.init(0, 3);
+    sem.post();
+    sem.post();
+    sem.post();
+    sem.post();
+    JARVIS_ASSERT(sem.value() == 3);
+    JARVIS_TEST_PASS();
+}
+
 JARVIS_TEST(mutex_lock_unlock) {
     sync::Mutex mutex;
     mutex.init();
@@ -267,6 +310,10 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive) {
 void register_sync_tests() {
     Logger::info("Registering sync tests");
     JARVIS_REGISTER_TEST(semaphore_wait_post);
+    JARVIS_REGISTER_TEST(mutex_double_unlock);
+    JARVIS_REGISTER_TEST(mutex_recursive_lock);
+    JARVIS_REGISTER_TEST(semaphore_timeout);
+    JARVIS_REGISTER_TEST(semaphore_multi_post);
     JARVIS_REGISTER_TEST(mutex_lock_unlock);
     JARVIS_REGISTER_TEST(queue_send_receive_block);
     JARVIS_REGISTER_TEST(sync_queue_send_blocks_when_full);

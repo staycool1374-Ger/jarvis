@@ -105,12 +105,59 @@ JARVIS_TEST(scheduler_reap_orphans) {
 }
 
 // Runmode: kernel
+// Testidea: Verify that the scheduler selects a higher‑priority task over a
+// lower‑priority one via next_task().
+// Input: Two tasks, low (priority 5), high (priority 9).
+// Expect: next_task returns the high-priority task.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(scheduler_preemptive_priority) {
+    auto* low = TaskControlBlock::create([](){}, 5, 5);
+    JARVIS_ASSERT(low != nullptr);
+    Scheduler::add_task(*low);
+
+    auto* high = TaskControlBlock::create([](){}, 9, 5);
+    JARVIS_ASSERT(high != nullptr);
+    Scheduler::add_task(*high);
+
+    auto* next = Scheduler::next_task();
+    JARVIS_ASSERT(next == high);
+
+    Scheduler::remove_task(*low);
+    low->cleanup(); delete low;
+    Scheduler::remove_task(*high);
+    high->cleanup(); delete high;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verify that two equal‑priority tasks are both eligible for
+// scheduling via next_task().
+// Input: Two tasks, both priority 5.
+// Expect: next_task returns one of the two tasks.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(scheduler_quantum_exhaustion) {
+    auto* t1 = TaskControlBlock::create([](){}, 5, 5);
+    auto* t2 = TaskControlBlock::create([](){}, 5, 5);
+    JARVIS_ASSERT(t1 && t2);
+    Scheduler::add_task(*t1);
+    Scheduler::add_task(*t2);
+
+    auto* next = Scheduler::next_task();
+    JARVIS_ASSERT(next == t1 || next == t2);
+
+    Scheduler::remove_task(*t1); t1->cleanup(); delete t1;
+    Scheduler::remove_task(*t2); t2->cleanup(); delete t2;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Verifies that deferred reaping respects parent wait status -
 // child not reaped while parent waits.
 // Input: Create parent and child. Parent sets waiting_child_pid. Child
 // exits. Reap orphans.
 // Expect: Child is NOT reaped while parent waits; reaped after parent clears
 // wait.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
@@ -166,5 +213,7 @@ void register_scheduler_tests() {
     JARVIS_REGISTER_TEST(scheduler_reschedule_noop);
     JARVIS_REGISTER_TEST(scheduler_remove_task);
     JARVIS_REGISTER_TEST(scheduler_reap_orphans);
+    JARVIS_REGISTER_TEST(scheduler_preemptive_priority);
+    JARVIS_REGISTER_TEST(scheduler_quantum_exhaustion);
     JARVIS_REGISTER_TEST(scheduler_reap_orphans_can_reap_deferred);
 }
