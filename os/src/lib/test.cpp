@@ -184,6 +184,10 @@ void run_filtered(uint8_t required_flags) {
 
     if (snapshot_ok) {
         kernel::test::snapshot_destroy();
+        // Reload daemon ELFs from initrd to replace corrupted page tables
+        // (kernel-owned page table pages are not snapshot-saved, so they
+        // contain test garbage after the last restore).
+        kernel::test::reload_daemon_tasks();
     }
 
     if (run_count == 0) {

@@ -34,6 +34,9 @@ void notify_death(uint64_t pid);
 /// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 
+/// @brief Return a const reference to the i-th daemon entry.
+const DaemonEntry& get_entry(uint64_t index);
+
 /// @name Test-isolation helpers
 /// @brief Copy all daemon entries and count into @p entries_out / @p num_out.
 void capture_state(DaemonEntry* out_entries, uint64_t& num_out);

@@ -40,15 +40,30 @@ static size_t off_iocd_pid()       { return off_vfsd_pid() + sizeof(uint64_t); }
 static size_t off_bufpool()        { return off_iocd_pid() + sizeof(uint64_t); }
 
 static size_t off_rsrc_counts()   { return off_bufpool() + BufferPool::state_bytes(); }
+static size_t off_user_page_count(){ return off_rsrc_counts() + sizeof(ResourceCounters); }
+static size_t off_user_page_data() { return off_user_page_count() + sizeof(uint64_t); }
 
-static size_t total_size() {
-    return off_rsrc_counts() + sizeof(ResourceCounters);
+static size_t total_size(size_t user_page_count) {
+    return off_user_page_data()
+         + user_page_count * (sizeof(uint64_t) + arch::PAGE_SIZE);
 }
 
 bool snapshot_create() {
     bool irq_enabled = arch::interrupts_enabled();
     arch::cli();
-    size_t total = total_size();
+
+    // Count user-owned pages from the owner bitmap
+    size_t user_page_count = 0;
+    {
+        size_t total_pages_sys = PMM::total_memory() / arch::PAGE_SIZE;
+        uint8_t* owner_bmp = PMM::owner_bitmap_ptr();
+        for (size_t i = 0; i < total_pages_sys; ++i) {
+            if ((owner_bmp[i / 8] >> (i % 8)) & 1)
+                ++user_page_count;
+        }
+    }
+
+    size_t total = total_size(user_page_count);
     size_t pages = (total + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
     uint64_t phys = PMM::alloc_contiguous(pages);
     if (!phys) { arch::sti(); return false; }
@@ -117,6 +132,24 @@ bool snapshot_create() {
     ResourceTracker::instance().capture(
         *reinterpret_cast<ResourceCounters*>(g_snapshot + off_rsrc_counts()));
 
+    // ---- User page content ----
+    {
+        *reinterpret_cast<uint64_t*>(g_snapshot + off_user_page_count()) = user_page_count;
+        uint8_t* out = g_snapshot + off_user_page_data();
+        size_t total_pages_sys = PMM::total_memory() / arch::PAGE_SIZE;
+        uint8_t* owner_bmp = PMM::owner_bitmap_ptr();
+        for (size_t i = 0; i < total_pages_sys; ++i) {
+            if ((owner_bmp[i / 8] >> (i % 8)) & 1) {
+                *reinterpret_cast<uint64_t*>(out) = i;
+                __builtin_memcpy(out + sizeof(uint64_t),
+                                 reinterpret_cast<void*>(i * arch::PAGE_SIZE
+                                                         + arch::HHDM_OFFSET),
+                                 arch::PAGE_SIZE);
+                out += sizeof(uint64_t) + arch::PAGE_SIZE;
+            }
+        }
+    }
+
     if (irq_enabled) arch::sti();
     return true;
 }
@@ -152,6 +185,22 @@ void snapshot_restore(const char* test_name) {
                          g_snapshot + off_pmm_owner(),  PMM::bitmap_bytes());
         PMM::free_pages_ref() =
             *reinterpret_cast<uint64_t*>(g_snapshot + off_pmm_free());
+    }
+
+    // ---- User page content (restore after PMM bitmap so pages are marked allocated) ----
+    {
+        uint64_t saved_count = *reinterpret_cast<uint64_t*>(
+                                   g_snapshot + off_user_page_count());
+        uint8_t* in = g_snapshot + off_user_page_data();
+        for (uint64_t p = 0; p < saved_count; ++p) {
+            uint64_t page_index = *reinterpret_cast<uint64_t*>(in);
+            __builtin_memcpy(
+                reinterpret_cast<void*>(page_index * arch::PAGE_SIZE
+                                        + arch::HHDM_OFFSET),
+                in + sizeof(uint64_t),
+                arch::PAGE_SIZE);
+            in += sizeof(uint64_t) + arch::PAGE_SIZE;
+        }
     }
 
     // ---- MemPool (restore data first, then meta rebuilds free list) ----
@@ -213,6 +262,33 @@ void snapshot_destroy() {
         PMM::free_page(phys + i * arch::PAGE_SIZE);
     g_snapshot = nullptr;
     g_snapshot_size = 0;
+}
+
+void reload_daemon_tasks() {
+    // Terminate old daemon tasks so reap_orphans will clean them up
+    for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
+        const auto& entry = daemon::get_entry(i);
+        if (entry.pid != 0) {
+            auto* task = Scheduler::find_task(entry.pid);
+            if (task) {
+                task->state = TaskState::TERMINATED;
+                task->exit_code = 0;
+            }
+            // Resets both the daemon entry's pid and the external PID var
+            daemon::notify_death(entry.pid);
+        }
+    }
+    // Terminate any remaining user tasks (test_fork, etc.) whose page
+    // tables/code pages were corrupted by test activity
+    for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
+        auto* t = Scheduler::task_at(i);
+        if (t && t->page_table_) {
+            t->state = TaskState::TERMINATED;
+            t->exit_code = 0;
+        }
+    }
+    Scheduler::reap_orphans();
+    daemon::restart_stale_daemons();
 }
 
 } // namespace kernel::test

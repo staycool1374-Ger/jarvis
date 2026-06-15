@@ -155,5 +155,13 @@ void restart_stale_daemons() {
     }
 }
 
+const DaemonEntry& get_entry(uint64_t index) {
+    if (index >= MAX_DAEMONS) {
+        static DaemonEntry sentinel = {};
+        return sentinel;
+    }
+    return entries_[index];
+}
+
 } // namespace daemon
 } // namespace kernel
