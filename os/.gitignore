@@ -10,3 +10,4 @@ docs/doxygen/
 jarvis/
 userspace/*.elf
 
+pico.save
