@@ -57,9 +57,11 @@ KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DIS     := build/kernel.dis
 
 QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
+FAT32_DISK     := build/fat32.img
 QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
                   -boot order=d \
-                  -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+                  -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
+                  -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
 
 # ------------------------------------------------------------------------------
 # Build type stamp
@@ -433,3 +435,4 @@ clean:
 	rm -f $(USERSPACE_ELF)
 	rm -f $(BUILD_STAMP)
 	rm -rf initrd_root debug release profiling
+	rm -f $(FAT32_DISK)

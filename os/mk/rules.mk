@@ -30,6 +30,9 @@ USERSPACE_ELF  := $(USERSPACE_SRC:%=%.elf)
 INITRD_CPIO    := initrd.cpio
 INITRD_OBJ     := build/initrd/initrd_cpio.o
 
+FAT32_IMG      := build/fat32.img
+FAT32_OBJ      := build/fat32/fat32_img.o
+
 # ------------------------------------------------------------------------------
 # Pattern rules
 # ------------------------------------------------------------------------------
@@ -85,21 +88,34 @@ $(INITRD_OBJ): $(INITRD_CPIO)
 	x86_64-elf-objcopy -I binary -O elf64-x86-64 -B i386 $< $@
 
 # ------------------------------------------------------------------------------
+# FAT32 disk image
+# ------------------------------------------------------------------------------
+$(FAT32_IMG): tools/mkfat32img.py
+	@printf '  %-7s %s\n' 'FATIMG' '$@'
+	@mkdir -p $(dir $@)
+	python3 tools/mkfat32img.py $@
+
+$(FAT32_OBJ): $(FAT32_IMG)
+	@printf '  %-7s %s\n' 'OBJCOPY' '$@'
+	@mkdir -p $(dir $@)
+	x86_64-elf-objcopy -I binary -O elf64-x86-64 -B i386 $< $@
+
+# ------------------------------------------------------------------------------
 # Kernel link rules
 #
 # Both debug and release use the same LDFLAGS and same .o files.  The
 # difference in build type is driven entirely by CXXFLAGS on the .o files.
 # ------------------------------------------------------------------------------
-$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) linker.ld
+$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel-debug.elf'
-	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ)
+	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
 	@printf '  %-7s %s\n' 'SIZE' "$$($(GET_SIZE) $@) bytes"
 
-$(KERNEL): $(OBJ) $(INITRD_OBJ) linker.ld
+$(KERNEL): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf'
-	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ)
+	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
 	@printf '  %-7s %s\n' 'SIZE' "$$($(GET_SIZE) $@) bytes"
 
 # ------------------------------------------------------------------------------

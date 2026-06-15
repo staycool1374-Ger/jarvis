@@ -1,147 +1,85 @@
-// Runmode: kernel
-// Testidea: Block device tests for ATA PIO driver and block layer
-// Depends: kernel::BlockDevice, kernel::ATA driver (mock)
-
 #include <test.hpp>
 #include <logger.hpp>
+#include <kernel/driver/block_device.hpp>
+#include <string.hpp>
 
 using namespace kernel;
+using namespace kernel::block;
 
-// -------------------------------------------------------------------
-// ATA PIO Driver Tests (using mock block device)
-// -------------------------------------------------------------------
+static constexpr uint64_t TEST_SECTORS = 64;
+static constexpr uint64_t TEST_PATTERN = 0xAB;
 
-// Runmode: kernel
-// Testidea: STUB - ATA IDENTIFY command returns valid disk signature (0x0040
-// or 0xC33C)
-// Input: Mock ATA device
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_identify) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_create) {
+    MockBlockDevice dev(TEST_SECTORS);
+    JARVIS_ASSERT(dev.sector_count() == TEST_SECTORS);
+    JARVIS_ASSERT(dev.sector_size() == BLOCK_SIZE);
+    JARVIS_ASSERT(!dev.is_read_only());
 }
 
-// Runmode: kernel
-// Testidea: STUB - Read one sector (512 bytes) returns valid data without error
-// Input: Mock ATA device, sector 0
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_read_single_sector) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_read_write) {
+    MockBlockDevice dev(TEST_SECTORS);
+
+    uint8_t wbuf[BLOCK_SIZE];
+    uint8_t rbuf[BLOCK_SIZE];
+    memset(wbuf, TEST_PATTERN, BLOCK_SIZE);
+
+    JARVIS_ASSERT(dev.write_sector(5, wbuf));
+    JARVIS_ASSERT(dev.read_sector(5, rbuf));
+    JARVIS_ASSERT(memcmp(wbuf, rbuf, BLOCK_SIZE) == 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Write then read back a sector produces identical data
-// Input: Mock ATA device, sector 1, test pattern
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_write_single_sector) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_oob_read) {
+    MockBlockDevice dev(TEST_SECTORS);
+    uint8_t buf[BLOCK_SIZE];
+    JARVIS_ASSERT(!dev.read_sector(TEST_SECTORS, buf));
+    JARVIS_ASSERT(!dev.read_sector(TEST_SECTORS + 100, buf));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Consecutive sector reads return sequential data (LBA
-// ordering)
-// Input: Mock ATA device, sectors 0..N
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_read_multiple_sectors) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_oob_write) {
+    MockBlockDevice dev(TEST_SECTORS);
+    uint8_t buf[BLOCK_SIZE] = {};
+    JARVIS_ASSERT(!dev.write_sector(TEST_SECTORS, buf));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Multiple sectors written then read back match exactly
-// Input: Mock ATA device, sectors 0..N, test pattern
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_write_read_roundtrip) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_multiple_sectors) {
+    MockBlockDevice dev(TEST_SECTORS);
+
+    uint8_t wbuf[BLOCK_SIZE];
+    uint8_t rbuf[BLOCK_SIZE];
+    memset(wbuf, 0x42, BLOCK_SIZE);
+
+    for (uint64_t i = 0; i < TEST_SECTORS; ++i) {
+        wbuf[0] = static_cast<uint8_t>(i);
+        JARVIS_ASSERT(dev.write_sector(i, wbuf));
+    }
+
+    for (uint64_t i = 0; i < TEST_SECTORS; ++i) {
+        JARVIS_ASSERT(dev.read_sector(i, rbuf));
+        JARVIS_ASSERT(rbuf[0] == static_cast<uint8_t>(i));
+        JARVIS_ASSERT(rbuf[1] == 0x42);
+    }
 }
 
-// Runmode: kernel
-// Testidea: STUB - LBA beyond disk capacity returns error
-// Input: Mock ATA device, LBA > max sectors
-// Expect: Passes (stub)
-// Depends: kernel::ATA driver
-JARVIS_TEST(ata_pio_invalid_lba_rejected) {
-    JARVIS_TEST_PASS();
+JARVIS_TEST(block_device_raw_buffer_access) {
+    MockBlockDevice dev(TEST_SECTORS);
+    uint8_t* raw = dev.raw_buffer();
+    JARVIS_ASSERT(raw != nullptr);
+
+    uint8_t wbuf[BLOCK_SIZE];
+    memset(wbuf, 0xFF, BLOCK_SIZE);
+    dev.write_sector(0, wbuf);
+
+    JARVIS_ASSERT(raw[0] == 0xFF);
+    JARVIS_ASSERT(raw[BLOCK_SIZE - 1] == 0xFF);
 }
 
-// -------------------------------------------------------------------
-// Block Layer Tests
-// -------------------------------------------------------------------
-
-// Runmode: kernel
-// Testidea: STUB - Block device opens with correct sector count
-// Input: Mock block device
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_open) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Block read returns sector-aligned data
-// Input: Mock block device, sector 0
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_read_sector) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Block write followed by read returns same data
-// Input: Mock block device, sector 1, test pattern
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_write_sector) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - IOCTL returns block size (512) and sector count
-// Input: Mock block device, IOCTL_GET_INFO
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_ioctl_info) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Read/write beyond device capacity returns error
-// Input: Mock block device, LBA >= sector_count
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_oob_rejected) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Read with non-sector-aligned buffer is handled safely
-// Input: Mock block device, misaligned buffer
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(block_device_unaligned_buffer) {
-    JARVIS_TEST_PASS();
-}
-
-// -------------------------------------------------------------------
-// Registration
-// -------------------------------------------------------------------
 void register_block_device_tests() {
     Logger::info("Registering Block Device tests");
 
-    JARVIS_REGISTER_TEST(ata_pio_identify);
-    JARVIS_REGISTER_TEST(ata_pio_read_single_sector);
-    JARVIS_REGISTER_TEST(ata_pio_write_single_sector);
-    JARVIS_REGISTER_TEST(ata_pio_read_multiple_sectors);
-    JARVIS_REGISTER_TEST(ata_pio_write_read_roundtrip);
-    JARVIS_REGISTER_TEST(ata_pio_invalid_lba_rejected);
-
-    JARVIS_REGISTER_TEST(block_device_open);
-    JARVIS_REGISTER_TEST(block_device_read_sector);
-    JARVIS_REGISTER_TEST(block_device_write_sector);
-    JARVIS_REGISTER_TEST(block_device_ioctl_info);
-    JARVIS_REGISTER_TEST(block_device_oob_rejected);
-    JARVIS_REGISTER_TEST(block_device_unaligned_buffer);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_create);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_read_write);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_oob_read);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_oob_write);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_multiple_sectors);
+    JARVIS_REGISTER_RELEASE_TEST(block_device_raw_buffer_access);
 }

@@ -1,0 +1,155 @@
+#pragma once
+
+#include <types.hpp>
+#include <kernel/driver/block_device.hpp>
+
+namespace kernel {
+namespace fat32 {
+
+static constexpr uint64_t SECTOR_SIZE = 512;
+
+/// @brief Parsed MBR partition entry.
+struct MbrPartition {
+    uint8_t  status;
+    uint8_t  partition_type;
+    uint32_t lba_start;
+    uint32_t sector_count;
+    bool     valid;
+};
+
+/// @brief Parsed FAT32 BPB fields.
+struct Fat32Bpb {
+    uint16_t bytes_per_sector;     // BPB_BytsPerSec
+    uint8_t  sectors_per_cluster;  // BPB_SecPerClus
+    uint16_t reserved_sectors;     // BPB_RsvdSecCnt
+    uint8_t  fat_count;            // BPB_NumFATs
+    uint32_t fat_size;             // BPB_FATSz32
+    uint32_t root_cluster;         // BPB_RootClus
+    uint32_t total_sectors;        // BPB_TotSec32
+    uint16_t fs_info_sector;       // BPB_FSInfo
+    bool     valid;
+};
+
+/// @brief A mounted FAT32 partition, backed by a BlockDevice.
+class Fat32Partition {
+public:
+    explicit Fat32Partition(block::BlockDevice& device);
+
+    /// @brief Attempt to mount the device by scanning for a FAT32 partition.
+    /// @return true if a valid FAT32 partition was found and BPB parsed.
+    bool mount();
+
+    /// @brief Mount at a specific partition LBA (for mock/test use).
+    bool mount_at(uint64_t partition_lba);
+
+    /// @brief Convert a cluster number to the first sector's LBA.
+    uint64_t cluster_to_lba(uint32_t cluster) const;
+
+    /// @brief Read the FAT entry for a given cluster.
+    bool read_fat_entry(uint32_t cluster, uint32_t& next_cluster) const;
+
+    /// @brief Read a full cluster's data.
+    bool read_cluster(uint32_t cluster, uint8_t* buffer) const;
+
+    /// @brief Check if a FAT entry is end-of-chain.
+    static bool is_eof(uint32_t entry) {
+        return entry >= 0x0FFFFFF8;
+    }
+
+    /// @brief Check if a cluster is free.
+    static bool is_free(uint32_t entry) {
+        return entry == 0;
+    }
+
+    /// @brief Check if a cluster is bad.
+    static bool is_bad(uint32_t entry) {
+        return entry == 0x0FFFFFF7;
+    }
+
+    const Fat32Bpb& bpb() const { return bpb_; }
+    uint64_t partition_lba() const { return partition_start_; }
+    block::BlockDevice& device() const { return device_; }
+
+private:
+    bool parse_mbr();
+    bool parse_bpb(uint64_t lba);
+    bool find_fat32_partition();
+
+    block::BlockDevice& device_;
+    uint64_t partition_start_ = 0;
+    Fat32Bpb bpb_ = {};
+};
+
+static constexpr uint8_t ATTR_READ_ONLY  = 0x01;
+static constexpr uint8_t ATTR_HIDDEN     = 0x02;
+static constexpr uint8_t ATTR_SYSTEM     = 0x04;
+static constexpr uint8_t ATTR_VOLUME_ID  = 0x08;
+static constexpr uint8_t ATTR_DIRECTORY  = 0x10;
+static constexpr uint8_t ATTR_ARCHIVE    = 0x20;
+static constexpr uint8_t ATTR_LFN        = 0x0F;
+
+/// @brief Raw 32-byte FAT32 directory entry.
+struct DirEntryRaw {
+    uint8_t  name[11];
+    uint8_t  attrs;
+    uint8_t  nt_reserved;
+    uint8_t  creation_tenths;
+    uint16_t creation_time;
+    uint16_t creation_date;
+    uint16_t access_date;
+    uint16_t cluster_high;
+    uint16_t modify_time;
+    uint16_t modify_date;
+    uint16_t cluster_low;
+    uint32_t file_size;
+} __attribute__((packed));
+
+/// @brief Parsed directory entry.
+struct DirEntry {
+    char     name[13];      // 8.3 null-terminated (8+1+3+1)
+    uint8_t  attrs;
+    uint32_t cluster;
+    uint32_t size;
+    bool     is_directory;
+    bool     valid;
+};
+
+/// @brief Read directory entries from a cluster chain.
+/// @param fs       Mounted partition.
+/// @param cluster  Starting cluster of the directory.
+/// @param pos      Entry index (0-based), updated after read.
+/// @param entry    Output parsed entry.
+/// @return true if an entry was read, false at end of directory.
+bool read_dir_entry(Fat32Partition& fs, uint32_t cluster, uint64_t& pos,
+                    DirEntry& entry);
+
+/// @brief Look up a name in a directory cluster chain.
+/// @param fs      Mounted partition.
+/// @param dir_cluster  Starting cluster of the directory.
+/// @param name    8.3 short name to find.
+/// @param entry   Output parsed entry.
+/// @return true if found, false if not found or error.
+bool lookup_in_dir(Fat32Partition& fs, uint32_t dir_cluster,
+                   const char* name, DirEntry& entry);
+
+/// @brief Read data from a file (cluster chain).
+/// @param fs        Mounted partition.
+/// @param cluster   First cluster of the file.
+/// @param file_size Total file size.
+/// @param offset    Byte offset to start reading.
+/// @param count     Number of bytes to read.
+/// @param buffer    Output buffer.
+/// @return Number of bytes read, or -1 on error.
+int64_t read_file(Fat32Partition& fs, uint32_t cluster, uint32_t file_size,
+                  uint64_t offset, uint64_t count, uint8_t* buffer);
+
+/// @brief Format the short name from a raw directory entry into "NAME.EXT".
+void format_short_name(const uint8_t raw_name[11], char* out, size_t out_size);
+
+/// @brief Find the first FAT32 partition in the MBR.
+/// @return true if partition_lba_out has been set.
+bool find_fat32_in_mbr(block::BlockDevice& device,
+                       uint64_t& partition_lba_out);
+
+} // namespace fat32
+} // namespace kernel

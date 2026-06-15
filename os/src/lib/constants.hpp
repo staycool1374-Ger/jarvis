@@ -55,6 +55,32 @@ inline constexpr uint16_t PIC2_DATA  = 0xA1;
 inline constexpr uint16_t QEMU_ACPI_PORT      = 0x604;
 inline constexpr uint16_t QEMU_SHUTDOWN_PORT  = 0xB004;
 
+/// @brief ATA PIO registers — primary bus.
+inline constexpr uint16_t ATA_DATA       = 0x1F0;
+inline constexpr uint16_t ATA_ERR        = 0x1F1;
+inline constexpr uint16_t ATA_SECTOR_CNT = 0x1F2;
+inline constexpr uint16_t ATA_LBA_LO     = 0x1F3;
+inline constexpr uint16_t ATA_LBA_MID    = 0x1F4;
+inline constexpr uint16_t ATA_LBA_HI     = 0x1F5;
+inline constexpr uint16_t ATA_DRIVE      = 0x1F6;
+inline constexpr uint16_t ATA_CMD        = 0x1F7;
+inline constexpr uint16_t ATA_ALT_STAT   = 0x3F6;
+
+/// @brief ATA status register bits.
+inline constexpr uint8_t ATA_SR_BSY  = 0x80;
+inline constexpr uint8_t ATA_SR_DRDY = 0x40;
+inline constexpr uint8_t ATA_SR_DRQ  = 0x08;
+inline constexpr uint8_t ATA_SR_ERR  = 0x01;
+
+/// @brief ATA commands.
+inline constexpr uint8_t ATA_CMD_READ_SECTORS  = 0x20;
+inline constexpr uint8_t ATA_CMD_WRITE_SECTORS = 0x30;
+inline constexpr uint8_t ATA_CMD_IDENTIFY      = 0xEC;
+
+/// @brief ATA master/slave drive select bits.
+inline constexpr uint8_t ATA_DRIVE_MASTER = 0xE0;
+inline constexpr uint8_t ATA_DRIVE_SLAVE  = 0xF0;
+
 } // namespace arch
 
 // ---------------------------------------------------------------------------

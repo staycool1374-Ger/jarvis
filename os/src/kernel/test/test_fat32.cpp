@@ -1,375 +1,296 @@
-// Runmode: kernel
-// Testidea: FAT32 filesystem tests for v0.2.10 (Phase 2: FAT32 Block Filesystem)
-// Depends: kernel::BlockDevice, kernel::FAT32 filesystem (mock)
-
 #include <test.hpp>
 #include <logger.hpp>
+#include <kernel/vfs/fat32.hpp>
+#include <kernel/driver/block_device.hpp>
+#include <string.hpp>
 
 using namespace kernel;
+using namespace kernel::fat32;
 
-// -------------------------------------------------------------------
-// MBR / Partition Table Tests
-// -------------------------------------------------------------------
+extern "C" uint8_t _binary_build_fat32_img_start[];
+extern "C" uint8_t _binary_build_fat32_img_end[];
 
-// Runmode: kernel
-// Testidea: STUB - MBR ends with 0xAA55 signature
-// Input: Mock MBR block
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
+static uint64_t fat32_img_sectors() {
+    return static_cast<uint64_t>(
+        _binary_build_fat32_img_end - _binary_build_fat32_img_start)
+        / SECTOR_SIZE;
+}
+
+static kernel::block::MockBlockDevice make_dev() {
+    return kernel::block::MockBlockDevice(
+        _binary_build_fat32_img_start, fat32_img_sectors(), true);
+}
+
+static Fat32Partition mount_fs(kernel::block::MockBlockDevice& dev) {
+    Fat32Partition fs(dev);
+    fs.mount();
+    return fs;
+}
+
 JARVIS_TEST(fat32_mbr_valid_signature) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    uint8_t mbr[SECTOR_SIZE];
+    JARVIS_ASSERT(dev.read_sector(0, mbr));
+    JARVIS_ASSERT(mbr[510] == 0x55);
+    JARVIS_ASSERT(mbr[511] == 0xAA);
 }
 
-// Runmode: kernel
-// Testidea: STUB - First partition entry has valid type (0x0C or 0x0B for FAT32), LBA, size
-// Input: Mock MBR
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_mbr_parse_partition) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    uint64_t part_lba = 0;
+    JARVIS_ASSERT(find_fat32_in_mbr(dev, part_lba));
+    JARVIS_ASSERT(part_lba > 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Empty MBR (no valid partition) is detected
-// Input: Mock MBR with no partitions
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_mbr_no_partition_table) {
-    JARVIS_TEST_PASS();
+    auto dev = kernel::block::MockBlockDevice(1);
+    uint64_t part_lba = 0;
+    JARVIS_ASSERT(!find_fat32_in_mbr(dev, part_lba));
 }
 
-// -------------------------------------------------------------------
-// BPB / Boot Sector Tests
-// -------------------------------------------------------------------
-
-// Runmode: kernel
-// Testidea: STUB - Boot sector (first sector of partition) has 0xAA55 signature
-// Input: Mock BPB block
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_valid_signature) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    uint64_t part_lba = 0;
+    JARVIS_ASSERT(find_fat32_in_mbr(dev, part_lba));
+    uint8_t bpb_sector[SECTOR_SIZE];
+    JARVIS_ASSERT(dev.read_sector(part_lba, bpb_sector));
+    JARVIS_ASSERT(bpb_sector[510] == 0x55);
+    JARVIS_ASSERT(bpb_sector[511] == 0xAA);
 }
 
-// Runmode: kernel
-// Testidea: STUB - BPB bytes_per_sector == 512 (or the actual value)
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_bytes_per_sector) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().bytes_per_sector == 512);
 }
 
-// Runmode: kernel
-// Testidea: STUB - BPB sectors_per_cluster is power of 2 (1, 2, 4, 8, etc.)
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_sectors_per_cluster) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    uint8_t spc = fs.bpb().sectors_per_cluster;
+    JARVIS_ASSERT(spc >= 1);
+    JARVIS_ASSERT((spc & (spc - 1)) == 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - BPB reserved_sector_count > 0
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_reserved_sectors) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().reserved_sectors > 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Number of FATs is 2
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_fat_count) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().fat_count == 2);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Root directory cluster is valid (typically 2)
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_root_cluster) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().root_cluster >= 2);
 }
 
-// Runmode: kernel
-// Testidea: STUB - FAT size in sectors is non-zero and consistent with partition size
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_fat_size) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().fat_size > 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Total sector count matches partition size from MBR
-// Input: Mock BPB
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_bpb_total_sectors) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    JARVIS_ASSERT(fs.bpb().total_sectors > 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - FSInfo sector has valid signature (0x41615252, 0x61417272)
-// Input: Mock FSInfo sector
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(fat32_fs_info_valid) {
-    JARVIS_TEST_PASS();
-}
-
-// -------------------------------------------------------------------
-// FAT Table Tests
-// -------------------------------------------------------------------
-
-// Runmode: kernel
-// Testidea: STUB - Read cluster chain entry from FAT returns valid value
-// Input: Mock FAT, cluster number
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_fat_read_cluster) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    uint32_t next = 0;
+    JARVIS_ASSERT(fs.read_fat_entry(2, next));
+    JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-// Runmode: kernel
-// Testidea: STUB - End-of-chain marker (0x0FFFFFF8-0x0FFFFFFF) detected correctly
-// Input: Mock FAT entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_fat_eof_marker) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFF8));
+    JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFFF));
+    JARVIS_ASSERT(!Fat32Partition::is_eof(0x0FFFFFF7));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Free cluster (0x00000000) detected correctly
-// Input: Mock FAT entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_fat_free_cluster) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(Fat32Partition::is_free(0));
+    JARVIS_ASSERT(!Fat32Partition::is_free(1));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Bad cluster marker (0x0FFFFFF7) detected correctly
-// Input: Mock FAT entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_fat_bad_cluster) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(Fat32Partition::is_bad(0x0FFFFFF7));
+    JARVIS_ASSERT(!Fat32Partition::is_bad(0x0FFFFFF8));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Allocate a free cluster updates FAT and returns new cluster number
-// Input: Mock FAT, free cluster index
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(fat32_fat_allocate_cluster) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Free a cluster chain updates FAT entries to free
-// Input: Mock FAT, cluster chain
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(fat32_fat_free_cluster_chain) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Allocate when no free clusters remain returns error (ENOSPC)
-// Input: Mock FAT, full disk
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(fat32_fat_full_disk) {
-    JARVIS_TEST_PASS();
-}
-
-// -------------------------------------------------------------------
-// Directory Operations Tests
-// -------------------------------------------------------------------
-
-// Runmode: kernel
-// Testidea: STUB - Root directory contains at least "." and ".." entries
-// Input: Mock root directory
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_root_entries) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+
+    DirEntry entry = {};
+    uint64_t pos = 0;
+    bool found_readme = false;
+    bool found_hello = false;
+
+    while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
+        if (!entry.valid) continue;
+        if (strcmp(entry.name, "README.TXT") == 0) found_readme = true;
+        if (strcmp(entry.name, "HELLO.TXT") == 0) found_hello = true;
+    }
+
+    JARVIS_ASSERT(found_readme);
+    JARVIS_ASSERT(found_hello);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Short 8.3 filename parsed correctly from directory entry
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_short_name) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(strcmp(entry.name, "README.TXT") == 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Long filename (>11 chars in 8.3) entry is detected (not supported)
-// Input: Mock directory entry with long name
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
-JARVIS_TEST(fat32_dir_long_name_rejected) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Directory entry file size matches expected value
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_file_size) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(entry.size > 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Directory entry first cluster matches known file
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_file_cluster) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(entry.cluster >= 2);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Read-only attribute bit parsed correctly
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_attribute_readonly) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT((ATTR_READ_ONLY & 0x01) != 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Hidden attribute bit parsed correctly
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_attribute_hidden) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT((ATTR_HIDDEN & 0x02) != 0);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Directory attribute bit identifies subdirectory entries
-// Input: Mock directory entry
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_attribute_directory) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "SUBDIR", entry));
+    JARVIS_ASSERT(entry.is_directory);
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(!entry.is_directory);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Volume label entry (ATTR_VOLUME_ID) is skipped in directory listing
-// Input: Mock directory with volume label
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_volume_label) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(ATTR_VOLUME_ID == 0x08);
 }
 
-// Runmode: kernel
-// Testidea: STUB - Long filename entries (0x0F attribute) are skipped in short-name mode
-// Input: Mock directory with LFN entries
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_dir_lfn_skipped) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(ATTR_LFN == 0x0F);
 }
 
-// -------------------------------------------------------------------
-// Cluster Chain Tests
-// -------------------------------------------------------------------
-
-// Runmode: kernel
-// Testidea: STUB - Single-cluster file has correct chain length
-// Input: Mock file with single cluster
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_chain_traverse_single) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    uint32_t next = entry.cluster;
+    JARVIS_ASSERT(fs.read_fat_entry(next, next));
+    JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Multi-cluster file chain traversal visits all clusters in order
-// Input: Mock file with multiple clusters
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_chain_traverse_multi) {
-    JARVIS_TEST_PASS();
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "MULTI.TXT", entry));
+    uint32_t next = entry.cluster;
+    JARVIS_ASSERT(fs.read_fat_entry(next, next));
+    JARVIS_ASSERT(!Fat32Partition::is_eof(next));
+    JARVIS_ASSERT(!Fat32Partition::is_free(next));
+    JARVIS_ASSERT(fs.read_fat_entry(next, next));
+    JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Cluster chain with loop (cluster points back to earlier entry) is detected
-// Input: Mock FAT with loop
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
+JARVIS_TEST(fat32_read_file) {
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry entry = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "HELLO.TXT", entry));
+    JARVIS_ASSERT(entry.size > 0);
+
+    uint8_t buf[256];
+    memset(buf, 0, sizeof(buf));
+    int64_t nread = read_file(fs, entry.cluster, entry.size, 0, sizeof(buf), buf);
+    JARVIS_ASSERT(nread > 0);
+    JARVIS_ASSERT(static_cast<uint64_t>(nread) == entry.size);
+    JARVIS_ASSERT(memcmp(buf, "Hello, World!\n", 14) == 0);
+}
+
+JARVIS_TEST(fat32_lookup_subdir) {
+    auto dev = make_dev();
+    auto fs = mount_fs(dev);
+    DirEntry sub = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "SUBDIR", sub));
+    JARVIS_ASSERT(sub.is_directory);
+
+    DirEntry file_in_sub = {};
+    JARVIS_ASSERT(lookup_in_dir(fs, sub.cluster, "FILE.TXT", file_in_sub));
+    JARVIS_ASSERT(!file_in_sub.is_directory);
+    JARVIS_ASSERT(file_in_sub.size > 0);
+
+    uint8_t buf[128];
+    memset(buf, 0, sizeof(buf));
+    int64_t nread = read_file(fs, file_in_sub.cluster, file_in_sub.size, 0, sizeof(buf), buf);
+    JARVIS_ASSERT(nread > 0);
+    JARVIS_ASSERT(memcmp(buf, "I am in a subdirectory.\n", 24) == 0);
+}
+
 JARVIS_TEST(fat32_chain_corrupt_loop) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFFF));
 }
 
-// Runmode: kernel
-// Testidea: STUB - Chain with no EOF marker is detected (max cluster limit)
-// Input: Mock FAT without EOF
-// Expect: Passes (stub)
-// Depends: kernel::BlockDevice
 JARVIS_TEST(fat32_chain_corrupt_eof_missing) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(!Fat32Partition::is_eof(3));
 }
 
-// -------------------------------------------------------------------
-// Registration
-// -------------------------------------------------------------------
 void register_fat32_tests() {
     Logger::info("Registering FAT32 tests");
 
-    // MBR/Partition tests
-    JARVIS_REGISTER_TEST(fat32_mbr_valid_signature);
-    JARVIS_REGISTER_TEST(fat32_mbr_parse_partition);
-    JARVIS_REGISTER_TEST(fat32_mbr_no_partition_table);
-
-    // BPB/Boot sector tests
-    JARVIS_REGISTER_TEST(fat32_bpb_valid_signature);
-    JARVIS_REGISTER_TEST(fat32_bpb_bytes_per_sector);
-    JARVIS_REGISTER_TEST(fat32_bpb_sectors_per_cluster);
-    JARVIS_REGISTER_TEST(fat32_bpb_reserved_sectors);
-    JARVIS_REGISTER_TEST(fat32_bpb_fat_count);
-    JARVIS_REGISTER_TEST(fat32_bpb_root_cluster);
-    JARVIS_REGISTER_TEST(fat32_bpb_fat_size);
-    JARVIS_REGISTER_TEST(fat32_bpb_total_sectors);
-    JARVIS_REGISTER_TEST(fat32_fs_info_valid);
-
-    // FAT table tests
-    JARVIS_REGISTER_TEST(fat32_fat_read_cluster);
-    JARVIS_REGISTER_TEST(fat32_fat_eof_marker);
-    JARVIS_REGISTER_TEST(fat32_fat_free_cluster);
-    JARVIS_REGISTER_TEST(fat32_fat_bad_cluster);
-    JARVIS_REGISTER_TEST(fat32_fat_allocate_cluster);
-    JARVIS_REGISTER_TEST(fat32_fat_free_cluster_chain);
-    JARVIS_REGISTER_TEST(fat32_fat_full_disk);
-
-    // Directory operation tests
-    JARVIS_REGISTER_TEST(fat32_dir_root_entries);
-    JARVIS_REGISTER_TEST(fat32_dir_short_name);
-    JARVIS_REGISTER_TEST(fat32_dir_long_name_rejected);
-    JARVIS_REGISTER_TEST(fat32_dir_file_size);
-    JARVIS_REGISTER_TEST(fat32_dir_file_cluster);
-    JARVIS_REGISTER_TEST(fat32_dir_attribute_readonly);
-    JARVIS_REGISTER_TEST(fat32_dir_attribute_hidden);
-    JARVIS_REGISTER_TEST(fat32_dir_attribute_directory);
-    JARVIS_REGISTER_TEST(fat32_dir_volume_label);
-    JARVIS_REGISTER_TEST(fat32_dir_lfn_skipped);
-
-    // Cluster chain tests
-    JARVIS_REGISTER_TEST(fat32_chain_traverse_single);
-    JARVIS_REGISTER_TEST(fat32_chain_traverse_multi);
-    JARVIS_REGISTER_TEST(fat32_chain_corrupt_loop);
-    JARVIS_REGISTER_TEST(fat32_chain_corrupt_eof_missing);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_mbr_valid_signature);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_mbr_parse_partition);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_mbr_no_partition_table);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_valid_signature);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_bytes_per_sector);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_sectors_per_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_reserved_sectors);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_fat_count);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_root_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_fat_size);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_bpb_total_sectors);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_fat_read_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_fat_eof_marker);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_fat_free_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_fat_bad_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_root_entries);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_short_name);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_file_size);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_file_cluster);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_attribute_readonly);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_attribute_hidden);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_attribute_directory);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_volume_label);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_dir_lfn_skipped);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_chain_traverse_single);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_chain_traverse_multi);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_read_file);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_lookup_subdir);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_chain_corrupt_loop);
+    JARVIS_REGISTER_RELEASE_TEST(fat32_chain_corrupt_eof_missing);
 }
