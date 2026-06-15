@@ -120,7 +120,7 @@ void run_all() {
     print_report();
 }
 
-static void run_filtered(uint8_t required_flags) {
+void run_filtered(uint8_t required_flags) {
     Registry::reset();
     size_t n = Registry::count();
     if (n == 0) {

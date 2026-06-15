@@ -82,6 +82,7 @@ protected:
 };
 
 void run_all();
+void run_filtered(uint8_t required_flags);
 void run_debug();
 void run_release();
 void run_suite(const char* suite_name);

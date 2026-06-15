@@ -570,7 +570,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
 void Shell::cmd_selftest(int, const char**) {
     Terminal::write("Running kernel self-tests...\n");
     register_selftest_tests();
-    kernel::test::run_all();
+    kernel::test::run_filtered(0);
     Terminal::write("Self-tests complete.\n");
 }
 
