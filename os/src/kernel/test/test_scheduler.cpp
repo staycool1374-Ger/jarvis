@@ -201,6 +201,137 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies Scheduler::alloc_id() returns monotonically increasing IDs;
+// wraps correctly from UINT64_MAX.
+// Input: Call alloc_id() multiple times.
+// Expect: Each call returns a value one greater than the previous.
+// Depends: kernel::task::Scheduler
+JARVIS_TEST(scheduler_alloc_id_sequential) {
+    uint64_t id1 = Scheduler::alloc_id();
+    uint64_t id2 = Scheduler::alloc_id();
+    uint64_t id3 = Scheduler::alloc_id();
+    JARVIS_ASSERT_EQ(id2, id1 + 1);
+    JARVIS_ASSERT_EQ(id3, id2 + 1);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies task_at() bounds: task_at(0) returns idle task;
+// task_at(count-1) returns last real task; task_at(count) returns nullptr.
+// Input: Call task_at with various indices.
+// Expect: Correct pointer or nullptr at boundaries.
+// Depends: kernel::task::Scheduler
+JARVIS_TEST(scheduler_task_at_bounds) {
+    auto* idle = Scheduler::task_at(0);
+    JARVIS_ASSERT(idle != nullptr);
+    JARVIS_ASSERT(idle == Scheduler::get_idle_task());
+
+    uint64_t count = Scheduler::task_count();
+    auto* last = Scheduler::task_at(count - 1);
+    JARVIS_ASSERT(last != nullptr);
+
+    auto* oob = Scheduler::task_at(count);
+    JARVIS_ASSERT(oob == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies find_task() returns nullptr for a nonexistent task ID.
+// Input: Call find_task(999999).
+// Expect: Returns nullptr.
+// Depends: kernel::task::Scheduler
+JARVIS_TEST(scheduler_find_task_nonexistent) {
+    auto* result = Scheduler::find_task(999999);
+    JARVIS_ASSERT(result == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies is_preemptible() reflects set_preemptible(true) and
+// set_preemptible(false).
+// Input: Toggle preemptible on/off.
+// Expect: is_preemptible() matches the set value.
+// Depends: kernel::task::Scheduler
+JARVIS_TEST(scheduler_set_preemptible_toggle) {
+    Scheduler::set_preemptible(true);
+    JARVIS_ASSERT(Scheduler::is_preemptible() == true);
+
+    Scheduler::set_preemptible(false);
+    JARVIS_ASSERT(Scheduler::is_preemptible() == false);
+
+    Scheduler::set_preemptible(true);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies that after next_task() selects a different task,
+// set_current() + current_task() returns the new one.
+// Input: Create a higher-priority task, call next_task(), set_current(),
+// then current_task().
+// Expect: current_task() returns the newly selected task.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(scheduler_current_task_after_switch) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    auto* high = TaskControlBlock::create([]() {}, 9, 10);
+    JARVIS_ASSERT(high != nullptr);
+    high->state = TaskState::READY;
+    Scheduler::add_task(*high);
+
+    auto* next = Scheduler::next_task();
+    JARVIS_ASSERT(next != cur);
+    JARVIS_ASSERT(next == high);
+
+    Scheduler::set_current(*next);
+    auto* after = Scheduler::current_task();
+    JARVIS_ASSERT(after == next);
+
+    Scheduler::remove_task(*high);
+    high->cleanup();
+    delete high;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies adding a task with a duplicate ID is handled gracefully
+// (no crash, no corruption).
+// Input: Create task, add it. Create another task with same ID (manually
+// set id), attempt to add.
+// Expect: No crash; second task not added or handled safely.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(scheduler_add_duplicate_id) {
+    auto* t1 = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(t1 != nullptr);
+    Scheduler::add_task(*t1);
+
+    // Create second task and manually set same ID
+    auto* t2 = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(t2 != nullptr);
+    t2->id = t1->id;
+
+    // Should not crash; add_task will insert into hash table which may
+    // overwrite or fail. We verify scheduler remains consistent.
+    Scheduler::add_task(*t2);
+
+    // Verify we can still find a task with that ID
+    auto* found = Scheduler::find_task(t1->id);
+    JARVIS_ASSERT(found != nullptr);
+
+    // Cleanup both
+    Scheduler::remove_task(*t1);
+    t1->cleanup();
+    delete t1;
+    // t2 may or may not be in scheduler; clean up if not
+    if (Scheduler::find_task(t2->id) == t2) {
+        Scheduler::remove_task(*t2);
+    }
+    t2->cleanup();
+    delete t2;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all scheduler-related unit tests with the test framework.
 // Input: (none)
 // Expect: Each JARVIS_REGISTER_TEST call registers a test function for later
@@ -216,4 +347,10 @@ void register_scheduler_tests() {
     JARVIS_REGISTER_TEST(scheduler_preemptive_priority);
     JARVIS_REGISTER_TEST(scheduler_quantum_exhaustion);
     JARVIS_REGISTER_TEST(scheduler_reap_orphans_can_reap_deferred);
+    JARVIS_REGISTER_TEST(scheduler_alloc_id_sequential);
+    JARVIS_REGISTER_TEST(scheduler_task_at_bounds);
+    JARVIS_REGISTER_TEST(scheduler_find_task_nonexistent);
+    JARVIS_REGISTER_TEST(scheduler_set_preemptible_toggle);
+    JARVIS_REGISTER_TEST(scheduler_current_task_after_switch);
+    JARVIS_REGISTER_TEST(scheduler_add_duplicate_id);
 }

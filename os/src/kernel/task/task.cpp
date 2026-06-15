@@ -463,6 +463,15 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 }
 
 void TaskControlBlock::cleanup() noexcept {
+    // Remove self from parent's child list if we have a parent
+    if (parent_id != 0) {
+        auto* parent = Scheduler::find_task(parent_id);
+        if (parent) {
+            parent->remove_child(this);
+        }
+        parent_id = 0;
+    }
+
     // Remove self from any message queue's blocked-senders list *before*
     // freeing any resources.  If we are blocked on another task's queue
     // (blocked_on_queue != nullptr) we must detach now — otherwise the
