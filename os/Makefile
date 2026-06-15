@@ -9,11 +9,9 @@
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin)
-    # macOS Specific Configurations
     GET_SIZE := stat -f%z
     PKG_HINT := "Install with: brew install qemu xorriso"
 else
-    # Linux / Default Configurations
     GET_SIZE := stat -c%s
     PKG_HINT := "Install with: apt-get install qemu-system-x86 xorriso grub-common"
 endif
@@ -27,9 +25,8 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -fno-threadsafe-statics -target x86_64-elf -m64 -mno-red-zone \
             -mgeneral-regs-only -mcmodel=large \
             -Wall -Wextra -Werror \
-            -I src -I src/lib -O3 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections \
-            -DCONFIG_DEBUG
+            -I src -I src/lib -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
 
 CC       := x86_64-elf-gcc
 CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
@@ -54,7 +51,6 @@ SRC_ASM        := $(shell find src -name '*.asm')
 OBJ            := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
 
 KERNEL         := build/kernel.elf
-KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DEBUG   := build/kernel-debug.elf
 DEBUG_ISO      := debug/jarvis-rtos.iso
 RELEASE_ISO    := release/jarvis-rtos.iso
@@ -76,20 +72,27 @@ QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none -boot 
                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
 
 # ------------------------------------------------------------------------------
-# Build type stamp: prevents stale object files when switching between
-# debug and release builds (they share the same build/ directory).
+# Build type stamp
+#
+# Debug and release share build/.  The stamp ensures make clean is triggered
+# when switching build types so stale object files don't leak between builds.
+#
+#   release   → writes stamp FIRST (before any compilation)
+#   debug     → check-build-stamp writes stamp after verifying no mismatch
 # ------------------------------------------------------------------------------
 BUILD_STAMP := build/.build-type
 
 # ------------------------------------------------------------------------------
 # Build Rules & Targets
 # ------------------------------------------------------------------------------
-.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu test symbols objdump debug release release-test run-release-test profiling gdb test-gdb check-build-stamp
+.PHONY: help all build check-style run-qemu run-release run-qemu-debug test-qemu \
+        test symbols objdump debug release release-test run-release-test profiling \
+        gdb test-gdb check-build-stamp
 
 # Default target: show help
 all: help
 
-# Build target: check-style + debug ISO + boot shell
+# Build target: check-style + debug ISO
 build: check-style debug
 
 -include $(DEPFILES)
@@ -109,25 +112,51 @@ help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
 	@echo "  make (or make all)   Show this help"
-	@echo "  make build           Run check-style + build debug ISO + boot shell (all tests run at boot)"
+	@echo "  make build           Run check-style + build debug ISO"
 	@echo "  make check-style     Validate kernel coding style (src/kernel/)"
 	@echo "  make test-qemu       Run full test suite in QEMU (automated, no window)"
 	@echo "  make release         Build production ISO (computational sanity subset"
 	@echo "                       at boot, then shell with framebuffer + serial)"
 	@echo "  make release-test    Validate release compiles, then run full test suite"
-	@echo "  make debug           Build debug ISO with GDB stub (port :1234)"
+	@echo "  make debug           Build debug ISO"
 	@echo "  make clean           Remove all build artifacts"
-	@echo "  make run-qemu      Boot default ISO interactively (serial + QEMU window)"
-	@echo "  make run-release   Build release ISO then boot interactively"
+	@echo "  make run-qemu        Boot debug ISO interactively (serial + QEMU window)"
+	@echo "  make run-release     Build release ISO then boot interactively"
 	@echo "  make run-release-test Automated release integration test (6 commands + exit)"
-	@echo "  make symbols       Generate kernel symbol table"
-	@echo "  make objdump       Disassemble kernel to build/kernel.dis"
-	@echo "  make profiling     GCOV instrumentation + coverage capture"
-	@echo "  make gdb           Build debug ISO + launch QEMU with GDB stub (:1234)"
-	@echo "  make test-gdb      Run test suite under GDB surveillance (captures panic)"
-	@echo "                     GDB scripts: tools/gdb/{init.gdb,kernel.py}"
+	@echo "  make symbols         Generate kernel symbol table"
+	@echo "  make objdump         Disassemble kernel to build/kernel.dis"
+	@echo "  make profiling       GCOV instrumentation + coverage capture"
+	@echo "  make gdb             Build debug ISO + launch QEMU with GDB stub (:1234)"
+	@echo "  make test-gdb        Run test suite under GDB surveillance (captures panic)"
+	@echo "                       GDB scripts: tools/gdb/{init.gdb,kernel.py}"
 
-all: help
+# ------------------------------------------------------------------------------
+# Pattern rules
+# ------------------------------------------------------------------------------
+build/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+build/%.o: src/%.asm
+	@mkdir -p $(dir $@)
+	$(AS) $(ASFLAGS) -o $@ $<
+
+build/libc/%.o: src/libc/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CCFLAGS) -I src/libc -c -o $@ $<
+
+build/libc/%.o: src/libc/%.S
+	@mkdir -p $(dir $@)
+	$(CC) $(CCFLAGS) -c -o $@ $<
+
+$(LIBC_A): $(LIBC_OBJ)
+	$(AR) rcs $@ $^
+
+userspace/%.S.elf: userspace/%.S
+	$(CC) $(CCFLAGS) -o $@ $<
+
+userspace/%.c.elf: userspace/%.c $(LIBC_A) build/libc/crt0.o
+	$(CC) $(CCFLAGS) -I src/libc -o $@ build/libc/crt0.o $< -L build/libc -lc
 
 iso/boot:
 	@mkdir -p $@
@@ -150,30 +179,91 @@ $(INITRD_CPIO): $(USERSPACE_ELF)
 	cd initrd_root && find . -print0 | cpio -o -H newc -0 --quiet > ../$@
 	@rm -rf initrd_root
 
-build/libc/%.o: src/libc/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CCFLAGS) -I src/libc -c -o $@ $<
+# ------------------------------------------------------------------------------
+# Build-type stamp check
+#
+# Triggers clean if:
+#   (a) the stamp exists and does NOT match the target build type, or
+#   (b) no stamp exists but .o files are present (interrupted build).
+# ------------------------------------------------------------------------------
+check-build-stamp:
+	@stamp=; target=debug; \
+	if [ -f $(BUILD_STAMP) ]; then \
+	    stamp=$$(cat $(BUILD_STAMP)); \
+	fi; \
+	if [ "$$stamp" != "$$target" ]; then \
+	    if [ -n "$$stamp" ]; then \
+	        echo "Build type changed (last: $$stamp), cleaning stale objects..."; \
+	    elif ls build/ 2>/dev/null | grep -qv '\.gitkeep\|libc\|initrd\|profiling'; then \
+	        echo "No build stamp but objects found — cleaning stale artifacts..."; \
+	    else \
+	        target=; \
+	    fi; \
+	    if [ -n "$$target" ]; then \
+	        $(MAKE) clean >/dev/null 2>&1; \
+	    fi; \
+	fi; \
+	mkdir -p build; echo debug > $(BUILD_STAMP)
 
-build/libc/%.o: src/libc/%.S
-	@mkdir -p $(dir $@)
-	$(CC) $(CCFLAGS) -c -o $@ $<
+# ------------------------------------------------------------------------------
+# Debug build
+# ------------------------------------------------------------------------------
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
+debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
 
-$(LIBC_A): $(LIBC_OBJ)
-	$(AR) rcs $@ $^
+debug: check-build-stamp
+debug: $(OBJ) $(INITRD_OBJ) linker.ld
+	@mkdir -p $(dir $(KERNEL_DEBUG)) $(dir $(DEBUG_ISO))
+	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
+	@echo "Debug target kernel constructed: $(KERNEL_DEBUG) ($$($(GET_SIZE) $(KERNEL_DEBUG)) bytes)"
+	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
+	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
+	@echo "Debug ISO image mapped successfully: $(DEBUG_ISO)"
 
-userspace/%.S.elf: userspace/%.S
-	$(CC) $(CCFLAGS) -o $@ $<
+# ------------------------------------------------------------------------------
+# Profiling
+# ------------------------------------------------------------------------------
+profiling: CXX := x86_64-elf-g++
+profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) \
+                       -Wno-type-limits -Wno-unused-but-set-variable \
+                       -finstrument-functions -DCONFIG_PROFILING
+profiling: LDFLAGS += -L $(GCOV_LIB_DIR)
 
-userspace/%.c.elf: userspace/%.c $(LIBC_A) build/libc/crt0.o
-	$(CC) $(CCFLAGS) -I src/libc -o $@ build/libc/crt0.o $< -L build/libc -lc
+profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
+	@mkdir -p build/profiling
+	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ)
+	@echo "Profiling kernel built: $(KERNEL)"
+	cp $(KERNEL) iso/boot/kernel.elf
+	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
+	@echo "Booting in QEMU to capture coverage data..."
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
+	    -nic none -boot order=d -no-reboot -device isa-debug-exit \
+	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
+	    tee build/profiling/qemu.log
+	@echo "Extracting .gcda data and generating coverage report..."
+	python3 tools/extract_gcda.py build/profiling/gcda.raw
 
-build/%.o: src/%.asm
-	@mkdir -p $(dir $@)
-	$(AS) $(ASFLAGS) -o $@ $<
-
-build/%.o: src/%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+# ------------------------------------------------------------------------------
+# Release build
+#
+# The sub-make receives CXXFLAGS without -DCONFIG_DEBUG and with -g -O2.
+# The stamp is written FIRST so that an interrupted build doesn't leave
+# stale objects for a subsequent debug build.
+# ------------------------------------------------------------------------------
+release: CXXFLAGS += -g -O2
+release:
+	@echo "=== Building release ISO (clean build) ==="
+	$(MAKE) clean
+	$(MAKE) iso/boot/kernel.elf CXXFLAGS="$(CXXFLAGS)"
+	@mkdir -p $(dir $(RELEASE_ISO)) $(dir $(BUILD_STAMP))
+	@echo release > $(BUILD_STAMP)
+	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
+	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
+	@echo ""
+	@echo "=========================================="
+	@echo " Release ISO ready: $(RELEASE_ISO)"
+	@echo " Validate with:  make release-test"
+	@echo "=========================================="
 
 # ------------------------------------------------------------------------------
 # Testing & Emulation Pipelines (QEMU)
@@ -183,7 +273,7 @@ run-qemu: debug
 	    echo "Starting QEMU Monitor (Ctrl+A then X to exit)..."; \
 	    qemu-system-x86_64 $(QEMU_FLAGS); \
 	else \
-	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	    echo "QEMU binary not accessible in current user environment paths."; echo $(PKG_HINT); exit 1; \
 	fi
 
 run-release: release
@@ -193,7 +283,7 @@ run-release: release
 	        -boot order=d \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
-	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	    echo "QEMU binary not accessible in current user environment paths."; echo $(PKG_HINT); exit 1; \
 	fi
 
 run-qemu-debug: debug
@@ -205,7 +295,7 @@ run-qemu-debug: debug
 	        -boot order=d -s -d int,cpu_reset \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
 	else \
-	    echo "QEMU execution architecture missing."; echo $(PKG_HINT); exit 1; \
+	    echo "QEMU binary not accessible in current user environment paths."; echo $(PKG_HINT); exit 1; \
 	fi
 
 gdb: debug
@@ -238,7 +328,7 @@ test-gdb: debug
 	@mkdir -p build
 	@echo "=== test-gdb: Launching QEMU with GDB stub ==="
 	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    echo "QEMU binary not accessible in current user environment paths."; echo $(PKG_HINT); exit 1; \
 	fi
 	@if ! command -v gtimeout >/dev/null 2>&1; then \
 	    echo "gtimeout missing. Install with: brew install coreutils"; exit 1; \
@@ -323,59 +413,9 @@ test: $(KERNEL)
 	@echo "Userspace components compiled securely."
 	@echo "Trigger interactive tests at terminal context via 'selftest'."
 
-check-build-stamp:
-	@if [ -f $(BUILD_STAMP) ] && [ "$$(cat $(BUILD_STAMP))" != "debug" ]; then \
-	    echo "Build type changed (last: $$(cat $(BUILD_STAMP))), cleaning stale objects..."; \
-	    $(MAKE) clean >/dev/null 2>&1; \
-	fi
-	@mkdir -p $(dir $(BUILD_STAMP)); echo debug > $(BUILD_STAMP)
-
-debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
-debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
-
-debug: check-build-stamp
-debug: $(OBJ) $(INITRD_OBJ) linker.ld
-	@mkdir -p $(dir $(KERNEL_DEBUG)) $(dir $(DEBUG_ISO))
-	$(LD) $(LDFLAGS) -o $(KERNEL_DEBUG) $(OBJ) $(INITRD_OBJ)
-	@echo "Debug target kernel constructed: $(KERNEL_DEBUG) ($$($(GET_SIZE) $(KERNEL_DEBUG)) bytes)"
-	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
-	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
-	@echo "Debug ISO image mapped successfully: $(DEBUG_ISO)"
-
-profiling: CXX := x86_64-elf-g++
-profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) -Wno-type-limits -Wno-unused-but-set-variable -finstrument-functions -DCONFIG_PROFILING
-profiling: LDFLAGS  += -L $(GCOV_LIB_DIR)
-
-profiling: clean $(OBJ) $(INITRD_OBJ) linker.ld
-	@mkdir -p build/profiling
-	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ)
-	@echo "Profiling kernel built: $(KERNEL)"
-	cp $(KERNEL) iso/boot/kernel.elf
-	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
-	@echo "Booting in QEMU to capture coverage data..."
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
-	    -nic none -boot order=d -no-reboot -device isa-debug-exit \
-	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
-	    tee build/profiling/qemu.log
-	@echo "Extracting .gcda data and generating coverage report..."
-	python3 tools/extract_gcda.py build/profiling/gcda.raw
-
-release: CXXFLAGS := $(filter-out -DCONFIG_DEBUG,$(CXXFLAGS)) -g -O2
-release: CCFLAGS := $(filter-out -DCONFIG_DEBUG,$(CCFLAGS))
-release:
-	@echo "=== Building release ISO (clean build) ==="
-	$(MAKE) clean
-	$(MAKE) iso/boot/kernel.elf iso/boot/grub/grub.cfg CXXFLAGS="$(CXXFLAGS)"
-	@mkdir -p $(dir $(RELEASE_ISO)) $(dir $(BUILD_STAMP))
-	@echo release > $(BUILD_STAMP)
-	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
-	(echo "ERROR: grub-mkrescue failed."; echo $(PKG_HINT); exit 1)
-	@echo ""
-	@echo "=========================================="
-	@echo " Release ISO ready: $(RELEASE_ISO)"
-	@echo " Validate with:  make release-test"
-	@echo "=========================================="
-
+# ------------------------------------------------------------------------------
+# Release test / integration test targets
+# ------------------------------------------------------------------------------
 release-test:
 	@echo ""
 	@echo "=== Building release ISO (compilation validation) ==="
@@ -385,7 +425,7 @@ release-test:
 	$(MAKE) test-qemu
 
 run-release-test: release
-	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then echo "QEMU binary not accessible in current user environment paths."; echo $(PKG_HINT); exit 1; fi; \
 	echo "=== Automated release integration test ==="; \
 	echo "Commands: garbing xyzzy plugh help test nonexistent exit"; \
 	printf '%s\n' \
@@ -442,16 +482,19 @@ run-release-test: release
 	    'exit 0' \
 	| expect
 
+# ------------------------------------------------------------------------------
+# Utility targets
+# ------------------------------------------------------------------------------
 symbols: $(KERNEL)
-	nm -n $(KERNEL) > $(KERNEL_SYMBOLS)
-	@echo "System Symbol Matrix generated safely: $(KERNEL_SYMBOLS)"
+	nm -n $(KERNEL) > build/kernel.sym
+	@echo "System Symbol Matrix generated safely: build/kernel.sym"
 
 objdump: $(KERNEL)
 	x86_64-elf-objdump -d -M intel --no-show-raw-insn $(KERNEL) > build/kernel.dis
 	@echo "Disassembly written to build/kernel.dis ($$($(GET_SIZE) build/kernel.dis) bytes)"
 
 clean:
-	rm -rf build $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf iso/boot/kernel-debug.elf $(INITRD_CPIO) $(LIBC_A)
+	rm -rf build $(DEBUG_ISO) $(RELEASE_ISO) iso/boot/kernel.elf $(INITRD_CPIO) $(LIBC_A)
 	rm -f $(USERSPACE_ELF)
 	rm -f $(BUILD_STAMP)
 	rm -rf initrd_root debug release profiling
