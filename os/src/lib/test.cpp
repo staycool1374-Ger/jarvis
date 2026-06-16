@@ -120,6 +120,42 @@ void run_all() {
     print_report();
 }
 
+void run_safe() {
+    Registry::reset();
+    size_t n = Registry::count();
+    if (n == 0) {
+        Logger::warn("No tests registered");
+        return;
+    }
+
+    Logger::info("[TEST:RUN] Running %d test(s) (safe mode)", n);
+
+    for (size_t i = 0; i < n; ++i) {
+        auto& tc = Registry::tests()[i];
+        if (tc.flags & TF_USER) continue;
+
+        size_t before_fail = Registry::failed();
+
+        Logger::raw_write("  ");
+        Logger::raw_write(tc.suite);
+        if (tc.suite[0]) Logger::raw_write("::");
+        Logger::raw_write(tc.name);
+        Logger::raw_write(" ... ");
+
+        run_one(tc);
+
+        if (Registry::failed() == before_fail) {
+            Logger::raw_write("\033[32m[PASS]\033[0m\n");
+            Registry::record_test(true);
+        } else {
+            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Registry::record_test(false);
+        }
+    }
+
+    print_report();
+}
+
 void run_filtered(uint8_t required_flags) {
     Registry::reset();
     size_t n = Registry::count();

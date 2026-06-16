@@ -82,6 +82,7 @@ protected:
 };
 
 void run_all();
+void run_safe();
 void run_filtered(uint8_t required_flags);
 void run_debug();
 void run_release();

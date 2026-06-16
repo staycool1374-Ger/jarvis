@@ -569,8 +569,32 @@ void Shell::cmd_runelf(int argc, const char** argv) {
 
 void Shell::cmd_selftest(int, const char**) {
     Terminal::write("Running kernel self-tests...\n");
+    // Disable framebuffer: test activity may corrupt kernel page-table entries
+    // (tests allocate/free pages, map/unmap memory).  Any subsequent
+    // framebuffer access could fault.  Serial (COM1) is safe.
+    Terminal::set_fb_enabled(false);
+    // Disable interrupts so the timer IRQ cannot dispatch test-created kernel
+    // tasks (they would run, return, get reaped, and then the test would
+    // access freed TCB memory in cleanup/delete — a use-after-free crash).
+    bool irq_was = arch::interrupts_enabled();
+    arch::cli();
+    kernel::test::Registry::init();
     register_selftest_tests();
-    kernel::test::run_filtered(0);
+    kernel::test::run_safe();
+    if (irq_was) {
+        // Clear stale scheduler context-switch globals.  Test code may have
+        // called reschedule()/switch_to_task() while interrupts were disabled
+        // (setting scheduler_save_rsp_to / scheduler_load_rsp_from), but the
+        // ISR assembly never consumed them.  If left dangling, the next timer
+        // IRQ would attempt to context-switch via stale pointers to freed
+        // task memory → GPF at iretq.
+        kernel::scheduler_save_rsp_to = nullptr;
+        kernel::scheduler_load_rsp_from = 0;
+        kernel::scheduler_load_cr3_from = 0;
+        kernel::scheduler_next_task_id = 0;
+        arch::sti();
+    }
+    Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");
 }
 

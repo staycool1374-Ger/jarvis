@@ -279,10 +279,12 @@ void reload_daemon_tasks() {
         }
     }
     // Terminate any remaining user tasks (test_fork, etc.) whose page
-    // tables/code pages were corrupted by test activity
+    // tables/code pages were corrupted by test activity.
+    // Skip the current task (e.g. shell running cmd_selftest) to avoid suicide.
+    auto* current = Scheduler::current_task();
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t->page_table_) {
+        if (t && t != current && t->page_table_) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
         }

@@ -375,6 +375,11 @@ JARVIS_TEST(vfsd_exhaust_restart_limit) {
     daemon::restart_stale_daemons();
     JARVIS_ASSERT_EQ(0ULL, vfsd::get_vfsd_pid());
 
+    // Restore daemon state so subsequent tests still have a live vfsd
+    daemon::reset_restart_count("vfsd");
+    daemon::restart_stale_daemons();
+    JARVIS_ASSERT(vfsd::get_vfsd_pid() != 0);
+
     JARVIS_TEST_PASS();
 }
 

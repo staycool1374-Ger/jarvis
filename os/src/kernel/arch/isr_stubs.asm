@@ -119,6 +119,7 @@ isr_common:
     mov qword [rel scheduler_load_cr3_from], 0
 
 .restore:
+    mov qword [rel scheduler_save_rsp_to], 0
     pop rax
     pop rbx
     pop rcx

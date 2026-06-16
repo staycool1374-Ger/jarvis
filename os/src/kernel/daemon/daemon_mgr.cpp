@@ -3,6 +3,7 @@
 #include <kernel/elf/elf.hpp>
 #include <initrd/initrd.hpp>
 #include <logger.hpp>
+#include <string.hpp>
 
 extern "C" void debug_write(const char* s);
 extern "C" void debug_write_hex(uint64_t value);
@@ -153,6 +154,21 @@ void restart_stale_daemons() {
         debug_write_hex(entries_[i].restart_count);
         debug_write(")\n");
     }
+}
+
+void reset_restart_count(const char* name) {
+    for (uint64_t i = 0; i < num_daemons_; ++i) {
+        if (entries_[i].name && strcmp(entries_[i].name, name) == 0) {
+            entries_[i].restart_count = 0;
+            entries_[i].pid = 0;
+            if (entries_[i].set_pid_fn) {
+                entries_[i].set_pid_fn(0);
+            }
+            Logger::info("daemon_mgr: reset restart count for '%s'", name);
+            return;
+        }
+    }
+    Logger::warn("daemon_mgr: no daemon named '%s' found", name);
 }
 
 const DaemonEntry& get_entry(uint64_t index) {

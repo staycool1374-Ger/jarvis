@@ -34,6 +34,10 @@ void notify_death(uint64_t pid);
 /// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 
+/// @brief Reset a daemon's restart count so it can be restarted again.
+///        Sets restart_count=0, pid=0, and calls set_pid_fn(0).
+void reset_restart_count(const char* name);
+
 /// @brief Return a const reference to the i-th daemon entry.
 const DaemonEntry& get_entry(uint64_t index);
 
