@@ -68,6 +68,7 @@ struct TaskControlBlock {
     static constexpr uint64_t USER_CS  = 0x1B;
     static constexpr uint64_t USER_SS  = 0x23;
     static constexpr uint64_t FLAGS_IF  = 0x200;
+    static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
 
     TaskControlBlock()
         : id(0)
@@ -110,6 +111,7 @@ struct TaskControlBlock {
         , num_children(0)
         {}
 
+    uint64_t magic;
     uint64_t id;
     uint64_t parent_id;
     TaskState state;

@@ -322,9 +322,14 @@ JARVIS_TEST(scheduler_add_duplicate_id) {
     Scheduler::remove_task(*t1);
     t1->cleanup();
     delete t1;
-    // t2 may or may not be in scheduler; clean up if not
-    if (Scheduler::find_task(t2->id) == t2) {
-        Scheduler::remove_task(*t2);
+    // Remove t2 from scheduler if present — a direct iteration is needed
+    // because the hash-table probe chain may be broken by the tombstone
+    // left by remove_task(t1) when both tasks share the same ID.
+    for (uint64_t _i = 0; _i < Scheduler::task_count(); ++_i) {
+        if (Scheduler::task_at(_i) == t2) {
+            Scheduler::remove_task(*t2);
+            break;
+        }
     }
     t2->cleanup();
     delete t2;

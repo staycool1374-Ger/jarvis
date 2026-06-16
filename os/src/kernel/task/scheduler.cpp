@@ -5,6 +5,8 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
+#include <kernel/vfs/vfsd.hpp>
+#include <kernel/driver/iocd.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <signal.hpp>
 #include <assert.hpp>
@@ -88,6 +90,7 @@ bool Scheduler::needs_switch() noexcept {
     for (uint64_t i = 1; i < task_count_; ++i) {
         auto* task = tasks_[i];
         if (task == current) continue;
+        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state == TaskState::READY || task->state == TaskState::RUNNING
             ) {
             if (task->priority > current->priority) return true;
@@ -106,6 +109,7 @@ TaskControlBlock* Scheduler::next_task() noexcept {
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
+        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state != TaskState::READY && task->state != TaskState::RUNNING
             ) continue;
         if (task->priority > best_priority ||
@@ -190,6 +194,7 @@ void Scheduler::on_tick() noexcept {
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
+        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state == TaskState::RUNNING || task->state == TaskState::READY
             ) {
             ++task->executed_ticks;
@@ -368,6 +373,36 @@ void Scheduler::cleanup_test_tasks() noexcept {
     task_count_ = 1;
     tasks_[0] = idle_task_;
     current_index_ = 0;
+}
+
+void Scheduler::cleanup_zombies() noexcept {
+    auto* shell = current_task();
+    uint64_t vfsd_pid = vfsd::get_vfsd_pid();
+    uint64_t iocd_pid = iocd::get_iocd_pid();
+
+    uint64_t wr = 0;
+    for (uint64_t rd = 0; rd < task_count_; ++rd) {
+        auto* t = tasks_[rd];
+        bool keep = true;
+
+        if (!t) {
+            keep = false;
+        } else if (t->magic != TaskControlBlock::TCB_MAGIC) {
+            keep = false;
+        } else if (t == idle_task_ || t == shell ||
+                   t->id == vfsd_pid || t->id == iocd_pid) {
+            keep = true;
+        } else {
+            t->cleanup();
+            id_table_remove(t);
+            MemPool::free(t);
+            keep = false;
+        }
+
+        if (keep) tasks_[wr++] = t;
+    }
+    task_count_ = wr;
+    if (current_index_ >= task_count_) current_index_ = 0;
 }
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {

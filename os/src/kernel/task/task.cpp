@@ -86,6 +86,7 @@ TaskControlBlock* TaskControlBlock::create(
     ENSURE(tcb != nullptr);
     memset(tcb, 0, sizeof(TaskControlBlock));
 
+    tcb->magic = TCB_MAGIC;
     tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = priority;
@@ -135,6 +136,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     if (!tcb) return nullptr;
     memset(tcb, 0, sizeof(TaskControlBlock));
 
+    tcb->magic = TCB_MAGIC;
     tcb->id = Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = priority;
@@ -463,6 +465,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 }
 
 void TaskControlBlock::cleanup() noexcept {
+    magic = 0;
     // Remove self from parent's child list if we have a parent
     if (parent_id != 0) {
         auto* parent = Scheduler::find_task(parent_id);

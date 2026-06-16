@@ -53,6 +53,12 @@ public:
     ///        before production tasks (shell, idle) are created.
     static void cleanup_test_tasks() noexcept;
 
+    /// @brief Removes all tasks from the scheduler that have invalid magic
+    ///        (freed-and-reused TCBs) without touching the TCB memory.
+    ///        Also removes tasks with valid magic that are not the idle task,
+    ///        the current task, or known daemons.
+    static void cleanup_zombies() noexcept;
+
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;

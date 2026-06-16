@@ -582,6 +582,16 @@ void Shell::cmd_selftest(int, const char**) {
     register_selftest_tests();
     kernel::test::run_safe();
     if (irq_was) {
+        // Reap any terminated test tasks that accumulated while interrupts
+        // were disabled (on_tick → reap_orphans never ran).
+        kernel::Scheduler::reap_orphans();
+        // Remove any zombie tasks whose TCBs have been freed but whose
+        // entries remain in the scheduler table (e.g. tests that deleted
+        // tasks without calling remove_task, or where find_task failed
+        // due to hash-table tombstones).  The TCB magic field distinguishes
+        // valid tasks from freed-and-reused memory.
+        kernel::Scheduler::cleanup_zombies();
+
         // Clear stale scheduler context-switch globals.  Test code may have
         // called reschedule()/switch_to_task() while interrupts were disabled
         // (setting scheduler_save_rsp_to / scheduler_load_rsp_from), but the
