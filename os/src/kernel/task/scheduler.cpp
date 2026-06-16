@@ -23,6 +23,7 @@ uint64_t Scheduler::current_index_ = 0;
 uint64_t Scheduler::next_task_id_ = 1;
 bool Scheduler::preempt_enabled_ = false;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
+TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
 
 void Scheduler::init() {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
@@ -376,7 +377,7 @@ void Scheduler::cleanup_test_tasks() noexcept {
 }
 
 void Scheduler::cleanup_zombies() noexcept {
-    auto* shell = current_task();
+    auto* shell = shell_task_ptr_;
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
     uint64_t iocd_pid = iocd::get_iocd_pid();
 
@@ -402,7 +403,18 @@ void Scheduler::cleanup_zombies() noexcept {
         if (keep) tasks_[wr++] = t;
     }
     task_count_ = wr;
-    if (current_index_ >= task_count_) current_index_ = 0;
+    // After compaction the running task (shell) may have shifted to a
+    // different index.  Find it so that rate_monotonic_schedule recognises
+    // the shell as current and avoids a bogus switch_to_task that would
+    // load a stale context.rsp whose stack data was overwritten during the
+    // cli()-protected test run, causing a GPF at iretq.
+    current_index_ = 0;
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i] == shell) {
+            current_index_ = i;
+            break;
+        }
+    }
 }
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {

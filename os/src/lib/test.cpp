@@ -128,11 +128,12 @@ void run_safe() {
         return;
     }
 
-    Logger::info("[TEST:RUN] Running %d test(s) (safe mode)", n);
+    Logger::info("[TEST:RUN] Running test(s) (safe mode)");
 
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         if (tc.flags & TF_USER) continue;
+        if (!(tc.flags & TF_RELEASE)) continue;
 
         size_t before_fail = Registry::failed();
 

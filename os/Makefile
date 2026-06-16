@@ -81,7 +81,8 @@ include mk/rules.mk
 # ------------------------------------------------------------------------------
 .PHONY: help all build check-style run-qemu run-release run-qemu-debug \
         test-qemu test symbols objdump debug release release-test \
-        run-release-test profiling gdb test-gdb
+        run-release-test profiling gdb test-gdb \
+        _run-shell-test
 
 # Default target
 all: help
@@ -105,22 +106,25 @@ check-style:
 help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
-	@echo "  make (or make all)   Show this help"
-	@echo "  make build           Style check + debug ISO"
-	@echo "  make check-style     Validate kernel coding style (src/kernel/)"
-	@echo "  make debug           Build debug ISO"
-	@echo "  make release         Build production ISO"
-	@echo "  make clean           Remove all build artifacts"
-	@echo "  make test-qemu       Run full test suite in QEMU (automated)"
-	@echo "  make release-test    Release compilation + full test suite"
-	@echo "  make run-qemu        Boot debug ISO interactively"
-	@echo "  make run-release     Build + boot release ISO"
-	@echo "  make run-release-test Automated release integration test"
-	@echo "  make symbols         Kernel symbol table"
-	@echo "  make objdump         Kernel disassembly"
-	@echo "  make profiling       GCOV coverage capture"
-	@echo "  make gdb             Debug ISO + QEMU with GDB stub (:1234)"
-	@echo "  make test-gdb        Run tests under GDB surveillance"
+	@echo "  [A] make (or make all)   Show this help"
+	@echo "  [A] make build           Style check + debug ISO"
+	@echo "  [A] make check-style     Validate kernel coding style (src/kernel/)"
+	@echo "  [A] make debug           Build debug ISO"
+	@echo "  [A] make release         Build production ISO"
+	@echo "  [A] make clean           Remove all build artifacts"
+	@echo "  [A] make test-qemu       Run full test suite in QEMU (automated)"
+	@echo "  [A] make release-test    Release compilation + full test suite"
+	@echo "  [A] make run-release-test All shell commands + 2x selftest + exit (release ISO)"
+	@echo "  [A] make symbols         Kernel symbol table"
+	@echo "  [A] make objdump         Kernel disassembly"
+	@echo "  [A] make profiling       GCOV coverage capture"
+	@echo "  [I] make run-qemu        Boot debug ISO (interactive shell)"
+	@echo "  [I] make run-release     Build + boot release ISO (interactive shell)"
+	@echo "  [I] make gdb             Debug ISO + QEMU with GDB stub (:1234)"
+	@echo "  [I] make test-gdb        Run tests under GDB surveillance"
+	@echo ""
+	@echo "  [A] = autonomous (run and done, no interaction needed)"
+	@echo "  [I] = interactive (user sits at the QEMU/GDB console)"
 
 # ------------------------------------------------------------------------------
 # Build-type stamp check
@@ -364,61 +368,169 @@ release-test:
 	$(MAKE) test-qemu
 
 run-release-test: release
+	$(MAKE) _run-shell-test ISO=$(RELEASE_ISO)
+
+_run-shell-test:
 	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
-	printf '  %-7s %s\n' 'TEST' 'Automated release integration test…'; \
+	printf '  %-7s %s\n' 'TEST' 'Comprehensive shell command test…'; \
 	printf '%s\n' \
 	    'set timeout 15' \
 	    'set stty_init "raw -echo"' \
-	    'spawn qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
-	    'puts "waiting for shell prompt..."' \
-	    'expect {' \
-	    '    -re {jarvis\$$ } { }' \
-	    '    "PANIC" { puts "PANIC at boot"; exit 1 }' \
-	    '    "EXCEPTION" { puts "EXCEPTION at boot"; exit 1 }' \
-	    '    timeout { puts "TIMEOUT at boot"; exit 1 }' \
-	    '}' \
-	    'puts "boot OK"' \
+	    'spawn qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
 	    '' \
-	    'proc test_err {cmd} {' \
-	    '    set pat [subst -nobackslashes {$$cmd\r+\nUnbekannter Befehl: $$cmd\r+\n}]' \
-	    '    puts "testing: $$cmd"' \
-	    '    send "$$cmd\r"' \
+	    'proc fail {msg} { puts "FAIL: $$msg"; exit 1 }' \
+	    '' \
+	    'proc wait_prompt {} {' \
 	    '    expect {' \
-	    '        -re $$pat { }' \
-	    '        "PANIC" { puts "PANIC after $$cmd"; exit 1 }' \
-	    '        "EXCEPTION" { puts "EXCEPTION after $$cmd"; exit 1 }' \
-	    '        timeout { puts "TIMEOUT after $$cmd"; exit 1 }' \
+	    '        -re {jarvis\$$ } { }' \
+	    '        "PANIC" { fail "PANIC at prompt" }' \
+	    '        "EXCEPTION" { fail "EXCEPTION at prompt" }' \
+	    '        timeout { fail "TIMEOUT waiting for prompt" }' \
 	    '    }' \
 	    '}' \
 	    '' \
-	    'puts "testing: help"' \
-	    'send "help\r"' \
-	    'expect {' \
-	    '    -re {Verfuegbare Befehle:} { puts "help OK" }' \
-	    '    "PANIC" { puts "PANIC after help"; exit 1 }' \
-	    '    "EXCEPTION" { puts "EXCEPTION after help"; exit 1 }' \
-	    '    timeout { puts "TIMEOUT after help"; exit 1 }' \
+	    'proc send_cmd {cmd} {' \
+	    '    puts ">>> $$cmd"' \
+	    '    send "$$cmd\r"' \
 	    '}' \
 	    '' \
-	    'test_err "xyzzy"' \
-	    'test_err "plugh"' \
-	    'test_err "test"' \
-	    'test_err "nonexistent"' \
-	    'test_err "garbing"' \
-	    '' \
-	    'puts "exiting shell..."' \
-	    'send "exit\r"' \
-	    'expect {' \
-	    '    -re {Shutting down} { puts "exit message seen" }' \
-	    '    "PANIC" { puts "PANIC on exit"; exit 1 }' \
-	    '    "EXCEPTION" { puts "EXCEPTION on exit"; exit 1 }' \
-	    '    timeout { puts "TIMEOUT on exit"; exit 1 }' \
+	    'proc expect_ok {pat} {' \
+	    '    expect {' \
+	    '        -re $$pat { }' \
+	    '        "PANIC" { fail "PANIC during: $$pat" }' \
+	    '        "EXCEPTION" { fail "EXCEPTION during: $$pat" }' \
+	    '        timeout { fail "TIMEOUT waiting for: $$pat" }' \
+	    '    }' \
 	    '}' \
 	    '' \
-	    'puts "ALL TESTS PASSED"' \
+	    'proc expect_err {cmd} {' \
+	    '    puts ">>> $$cmd (expect error)"' \
+	    '    send "$$cmd\r"' \
+	    '    set pat [subst -nobackslashes {Unbekannter Befehl: $$cmd}]' \
+	    '    expect_ok $$pat' \
+	    '}' \
+	    '' \
+	    'puts "=== Waiting for boot + shell prompt ==="' \
+	    'wait_prompt' \
+	    'puts "Boot OK"' \
+	    '' \
+	    'puts ""' \
+	    'puts "=== Section 1: Valid commands ==="' \
+	    '' \
+	    'send_cmd "help"' \
+	    'expect_ok {Verfuegbare Befehle:}' \
+	    'puts "  \[OK\] help"' \
+	    '' \
+	    'send_cmd "clear"' \
+	    'wait_prompt' \
+	    'puts "  \[OK\] clear"' \
+	    '' \
+	    'send_cmd "echo"' \
+	    'wait_prompt' \
+	    'puts "  \[OK\] echo (empty)"' \
+	    '' \
+	    'send_cmd "echo hello"' \
+	    'expect_ok {hello}' \
+	    'puts "  \[OK\] echo hello"' \
+	    '' \
+	    'send_cmd "echo hello world"' \
+	    'expect_ok {hello world}' \
+	    'puts "  \[OK\] echo hello world"' \
+	    '' \
+	    'send_cmd "uptime"' \
+	    'expect_ok {Uptime:}' \
+	    'puts "  \[OK\] uptime"' \
+	    '' \
+	    'send_cmd "tasks"' \
+	    'expect_ok {Tasks:}' \
+	    'puts "  \[OK\] tasks"' \
+	    '' \
+	    'send_cmd "meminfo"' \
+	    'expect_ok {Gesamt:}' \
+	    'puts "  \[OK\] meminfo"' \
+	    '' \
+	    'send_cmd "version"' \
+	    'expect_ok {Kernel:}' \
+	    'puts "  \[OK\] version"' \
+	    '' \
+	    'send_cmd "jobs"' \
+	    'expect_ok {Background tasks:}' \
+	    'puts "  \[OK\] jobs"' \
+	    '' \
+	    'send_cmd "modlist"' \
+	    'expect_ok {Verfuegbare Treiber:}' \
+	    'puts "  \[OK\] modlist"' \
+	    '' \
+	    'send_cmd "listprog"' \
+	    'expect_ok {Registrierte Programme:}' \
+	    'puts "  \[OK\] listprog"' \
+	    '' \
+	    'send_cmd "cd"' \
+	    'wait_prompt' \
+	    'puts "  \[OK\] cd"' \
+	    '' \
+	    'send_cmd "export FOO=bar"' \
+	    'expect_ok {export: FOO=bar}' \
+	    'puts "  \[OK\] export"' \
+	    '' \
+	    'send_cmd "run"' \
+	    'expect_ok {Usage: run}' \
+	    'puts "  \[OK\] run"' \
+	    '' \
+	    'send_cmd "runelf"' \
+	    'expect_ok {Usage: runelf}' \
+	    'puts "  \[OK\] runelf"' \
+	    '' \
+	    'send_cmd "modprobe"' \
+	    'expect_ok {Usage: modprobe}' \
+	    'puts "  \[OK\] modprobe"' \
+	    '' \
+	    'puts ""' \
+	    'puts "=== Section 2: Invalid commands ==="' \
+	    '' \
+	    'expect_err "xyzzy"' \
+	    'puts "  \[OK\] xyzzy rejected"' \
+	    '' \
+	    'expect_err "plugh"' \
+	    'puts "  \[OK\] plugh rejected"' \
+	    '' \
+	    'puts ""' \
+	    'puts "=== Section 3: selftest (first run) ==="' \
+	    'set timeout 120' \
+	    'send_cmd "selftest"' \
+	'expect_ok {Failed:.*0}' \
+	    'expect_ok {Self-tests complete.}' \
+	    'set timeout 15' \
+	    'puts "  \[OK\] selftest #1 (all passed)"' \
+	    '' \
+	    'puts "=== Section 4: selftest (second run) ==="' \
+	    'set timeout 120' \
+	    'send_cmd "selftest"' \
+	    'expect_ok {Failed:.*0}' \
+	    'expect_ok {Self-tests complete.}' \
+	    'set timeout 15' \
+	    'puts "  \[OK\] selftest #2 (all passed)"' \
+	    '' \
+	    'puts ""' \
+	    'puts "=== Section 5: Shutdown ==="' \
+	    'send_cmd "exit"' \
+	    'expect_ok {Shutting down\.\.\.}' \
+	    'puts "  \[OK\] exit"' \
+	    '' \
+	    'puts ""' \
+	    'puts "=============================================="' \
+	    'puts " ALL SHELL COMMANDS TEST PASSED"' \
+	    'puts "=============================================="' \
 	    'close' \
 	    'exit 0' \
-	| expect
+	| expect; \
+	rc=$$?; \
+	if [ $$rc -eq 0 ]; then \
+	    printf '  %-7s %s\n' 'TEST' 'All shell commands passed.'; \
+	else \
+	    echo "FAIL: Shell command test failed with code $$rc"; \
+	    exit 1; \
+	fi
 
 # ------------------------------------------------------------------------------
 # Utility targets

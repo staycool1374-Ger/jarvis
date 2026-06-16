@@ -57,7 +57,11 @@ public:
     ///        (freed-and-reused TCBs) without touching the TCB memory.
     ///        Also removes tasks with valid magic that are not the idle task,
     ///        the current task, or known daemons.
+    /// @param shell_task Pointer to the shell task (use set_shell_task() beforehand).
     static void cleanup_zombies() noexcept;
+
+    /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
+    static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
 
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
@@ -78,6 +82,7 @@ public:
 
     static uint64_t current_index() noexcept { return current_index_; }
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
+    static TaskControlBlock* get_shell_task() noexcept { return shell_task_ptr_; }
 
     /// @brief Returns whether the scheduler can be preempted.
     /// @return True if preemption is enabled.
@@ -120,6 +125,7 @@ private:
     static bool preempt_enabled_;
 
     static TaskControlBlock* idle_task_;
+    static TaskControlBlock* shell_task_ptr_;
 
     /// @brief Performs rate-monotonic scheduling decision.
     static void rate_monotonic_schedule() noexcept;

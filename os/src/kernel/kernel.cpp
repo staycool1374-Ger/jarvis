@@ -385,6 +385,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             &service::Shell::shell_task_main, 1, 20);
         if (ksh) {
             kernel::Scheduler::add_task(*ksh);
+            kernel::Scheduler::set_shell_task(ksh);
             debug_write("[BOOT] Kernel shell started\n");
         }
     }
