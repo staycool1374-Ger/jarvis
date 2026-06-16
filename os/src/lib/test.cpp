@@ -83,6 +83,16 @@ static void run_one(const TestCase& tc) {
     if (after_tasks != before_tasks) {
         Logger::warn("[TEST:LEAK] %s: scheduler task count changed %d -> %d",
                      tc.name, before_tasks, after_tasks);
+        Logger::raw_write("  Tasks after: ");
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            Logger::raw_write("[");
+            Logger::print_dec(i);
+            Logger::raw_write("]id=");
+            Logger::print_dec(t ? t->id : 0);
+            Logger::raw_write(" ");
+        }
+        Logger::raw_write("\n");
     }
 }
 

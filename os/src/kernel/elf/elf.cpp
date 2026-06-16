@@ -254,6 +254,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     if (!tcb) return nullptr;
     __builtin_memset(tcb, 0, sizeof(TaskControlBlock));
 
+    tcb->magic = TaskControlBlock::TCB_MAGIC;
     tcb->id = kernel::Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = 5;

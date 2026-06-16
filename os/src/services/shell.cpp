@@ -578,6 +578,7 @@ void Shell::cmd_selftest(int, const char**) {
     // access freed TCB memory in cleanup/delete — a use-after-free crash).
     bool irq_was = arch::interrupts_enabled();
     arch::cli();
+
     kernel::test::Registry::init();
     register_selftest_tests();
     kernel::test::run_safe();

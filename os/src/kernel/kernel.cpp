@@ -355,6 +355,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #else
     kernel::test::run_release();
 #endif
+
     debug_write("[BOOT] Tests done.\n");
 
     debug_write("[BOOT] Starting userspace test_fork...\n");
