@@ -56,3 +56,10 @@
 - [x] IRQ-safe snapshot with RFLAGS save/restore
 - [x] Linker script: split boot segment into separate R+X and R+W segments
 - [x] 2661 kernel self-tests PASS, 0 failures
+
+## Phase 1: Filesystems & Shell UX (0.2.12–0.2.13)
+
+### 0.2.12 — FAT32 Block Filesystem ✓
+- [x] ATA PIO driver, block device abstraction layer
+- [x] FAT32 core: MBR parsing, cluster chain, 8.3 filenames
+- [x] 128 MiB disk image, VFS FAT32 ops, rootfs boot hooks

@@ -1,12 +1,5 @@
 # Jarvis RTOS — Development Roadmap
 
-## Phase 1: Filesystems & Shell UX (0.2.12–0.2.13)
-
-### 0.2.12 — FAT32 Block Filesystem
-- [ ] ATA PIO driver, block device abstraction layer
-- [ ] FAT32 core: MBR parsing, cluster chain, 8.3 filenames
-- [ ] 128 MiB disk image, VFS FAT32 ops, rootfs boot hooks
-
 ### 0.2.13 — Shell UX & Utilities
 - [ ] Persistent status bar (framebuffer + serial), Zsh-like dynamic prompt
 - [ ] Built-in commands: help, echo, pwd, clear, which, env, sleep
