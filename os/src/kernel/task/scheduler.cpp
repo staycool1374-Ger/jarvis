@@ -421,6 +421,19 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
         return;
     }
+#ifdef CONFIG_DEBUG
+    {
+        auto& ring = current->debug_switch_ring;
+        auto& idx  = current->debug_switch_idx;
+        auto& rec  = ring[idx % TaskControlBlock::DEBUG_SWITCH_RING_SIZE];
+        rec.entry_addr     = reinterpret_cast<uint64_t>(__builtin_return_address(0));
+        rec.exit_rip       = current->context.rip;
+        rec.regs           = current->context;
+        rec.thread_id      = current->id;
+        rec.consumed_ticks = current->executed_ticks;
+        ++idx;
+    }
+#endif
     scheduler_save_rsp_to = &current->context.rsp;
     scheduler_load_rsp_from = next->context.rsp;
     if (next->page_table_) {

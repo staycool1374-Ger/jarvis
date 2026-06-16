@@ -70,8 +70,26 @@ struct TaskControlBlock {
     static constexpr uint64_t FLAGS_IF  = 0x200;
     static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
 
+#ifdef CONFIG_DEBUG
+    /// @brief One entry in the per-TCB context-switch trace ring buffer.
+    struct DebugSwitchRecord {
+        uint64_t    entry_addr;       ///< return address at switch_to_task() call site
+        uint64_t    exit_rip;         ///< saved RIP from context (where task was last interrupted)
+        TaskContext regs;             ///< saved register set from context
+        uint64_t    thread_id;        ///< this task's ID
+        uint64_t    consumed_ticks;   ///< executed_ticks at switch-out
+    };
+    static constexpr size_t DEBUG_SWITCH_RING_SIZE = 4;
+    DebugSwitchRecord debug_switch_ring[DEBUG_SWITCH_RING_SIZE];
+    uint64_t debug_switch_idx;
+#endif
+
     TaskControlBlock()
-        : id(0)
+        : 
+#ifdef CONFIG_DEBUG
+        debug_switch_idx(0),
+#endif
+        id(0)
         , parent_id(0)
         , state(TaskState::READY)
         , priority(0)
