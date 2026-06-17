@@ -5,6 +5,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/memory/integrity.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
@@ -31,11 +32,7 @@ void Scheduler::init() {
         id_table_[i] = nullptr;
     }
 
-    idle_task_ = TaskControlBlock::create([]() {
-        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
-            arch::hlt();
-        }
-    }, 0, 0xFFFFFFFF);
+    idle_task_ = TaskControlBlock::create(kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
     idle_task_->state = TaskState::READY;
 
     tasks_[0] = idle_task_;
@@ -317,10 +314,7 @@ void Scheduler::reap_orphans() noexcept {
 
                 // If reaping the idle task, recreate it
                 if (t == idle_task_) {
-                    auto* new_idle = TaskControlBlock::create([]() {
-                        for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) { arch::
-                            hlt(); }
-                    }, 0, 0xFFFFFFFF);
+                    auto* new_idle = TaskControlBlock::create(kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
                     new_idle->state = TaskState::READY;
                     t->cleanup();
                     id_table_remove(t);

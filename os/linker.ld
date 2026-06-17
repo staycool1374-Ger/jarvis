@@ -2,11 +2,11 @@ ENTRY(_start)
 
 PHDRS
 {
-    boot_text PT_LOAD FLAGS(5);   /* R+X, .boot.text */
-    boot_data PT_LOAD FLAGS(6);   /* R+W, .boot.data/.boot.bss */
-    text      PT_LOAD FLAGS(5);   /* R+X, kernel .text */
-    rodata    PT_LOAD FLAGS(4);   /* R,   kernel .rodata */
-    data      PT_LOAD FLAGS(6);   /* R+W, kernel .data/.bss */
+    boot_text PT_LOAD FLAGS(5);
+    boot_data PT_LOAD FLAGS(6);
+    text      PT_LOAD FLAGS(5);
+    rodata    PT_LOAD FLAGS(4);
+    data      PT_LOAD FLAGS(6);
 }
 
 SECTIONS
@@ -39,42 +39,71 @@ SECTIONS
 
     .text : AT(phys_lma) ALIGN(4K)
     {
+        _text_start = .;
+        KEEP(*(.marker.text.start))
         *(.text*)
         *(.text.*)
         *(.ltext*)
         *(.ltext.*)
+        KEEP(*(.marker.text.end))
+        _text_end = .;
     } :text
     phys_lma = ALIGN(phys_lma + SIZEOF(.text), 4K);
 
     .rodata : AT(phys_lma) ALIGN(4K)
     {
+        _rodata_start = .;
+        KEEP(*(.marker.rodata.start))
         *(.rodata*)
         *(.rodata.*)
         *(.lrodata*)
         *(.lrodata.*)
+        . = ALIGN(8);
+        _expected_code_crc = .;
+        QUAD(0x0000000000000000)
+        KEEP(*(.marker.rodata.end))
+        _rodata_end = .;
     } :rodata
     phys_lma = ALIGN(phys_lma + SIZEOF(.rodata), 4K);
 
     .data : AT(phys_lma) ALIGN(4K)
     {
+        _data_start = .;
+        KEEP(*(.marker.data.start))
         *(.data*)
         *(.data.*)
         *(.ldata*)
         *(.ldata.*)
         *(.got)
         *(.got.plt)
+        KEEP(*(.marker.data.end))
+        _data_end = .;
     } :data
     phys_lma = ALIGN(phys_lma + SIZEOF(.data), 4K);
 
     .bss : AT(phys_lma) ALIGN(4K)
     {
+        _bss_start = .;
+        KEEP(*(.marker.bss.start))
         *(COMMON)
         *(.bss*)
         *(.bss.*)
         *(.lbss*)
         *(.lbss.*)
+        KEEP(*(.marker.bss.end))
+        _bss_end = .;
+    } :data
+    phys_lma = ALIGN(phys_lma + SIZEOF(.bss), 4K);
+
+    .stack_guard : AT(phys_lma) ALIGN(4K)
+    {
+        _stack_start = .;
+        KEEP(*(.marker.stack.before))
+        *(.boot_stack)
+        KEEP(*(.marker.stack.after))
+        _stack_end = .;
     } :data
 
-    kernel_phys_end = ALIGN(phys_lma + SIZEOF(.bss), 4K);
+    kernel_phys_end = ALIGN(phys_lma + SIZEOF(.stack_guard), 4K);
     kernel_virt_end = ALIGN(., 4K);
 }

@@ -650,4 +650,4 @@ extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
     return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
 }
 
-uint8_t kernel_stack[16_KiB] __attribute__((section(".bss")));
+uint8_t kernel_stack[16_KiB] __attribute__((section(".boot_stack")));

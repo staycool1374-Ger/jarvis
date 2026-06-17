@@ -2,6 +2,7 @@
 #include <logger.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/memory/integrity.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/syscall/syscall.hpp>
@@ -175,6 +176,37 @@ JARVIS_TEST(multiple_idle_tasks_prevented) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies integrity section markers are intact after boot.
+// Input: None
+// Expect: All section markers (text, rodata, data, bss, stack) read back
+// their expected values, indicating no memory corruption across boundaries.
+JARVIS_TEST(idle_task_integrity_markers) {
+    JARVIS_ASSERT(kernel::integrity::check_section_markers());
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Tests that incremental CRC processing over the code segment
+// makes progress and eventually completes.
+// Input: Multiple calls to crc_process_chunk().
+// Expect: After enough iterations, crc_process_chunk() returns true
+// (indicating CRC is complete). The CRC verification is skipped during
+// tests (expected CRC is patched at link time).
+JARVIS_TEST(idle_task_integrity_crc_incremental) {
+    kernel::integrity::reset_crc_state();
+    bool done = false;
+    uint64_t iterations = 0;
+    uint64_t const MAX_ITER = 200;
+    while (!done && iterations < MAX_ITER) {
+        done = kernel::integrity::crc_process_chunk();
+        ++iterations;
+    }
+    JARVIS_ASSERT(done);
+    JARVIS_ASSERT(iterations < MAX_ITER);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all idle-task test cases into the test framework.
 // Input: None
 // Expect: Each JARVIS_REGISTER_TEST call adds the test to the suite.
@@ -189,4 +221,6 @@ void register_idle_task_tests() {
     JARVIS_REGISTER_TEST(kernel_hlt_idle_still_exists);
     JARVIS_REGISTER_TEST(idle_task_restartable_on_crash);
     JARVIS_REGISTER_TEST(multiple_idle_tasks_prevented);
+    JARVIS_REGISTER_TEST(idle_task_integrity_markers);
+    JARVIS_REGISTER_TEST(idle_task_integrity_crc_incremental);
 }
