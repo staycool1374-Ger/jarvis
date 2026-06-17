@@ -108,11 +108,13 @@ static Vnode* pipe_lookup(Vnode&, const char*) { return nullptr; }
 static const VnodeOps pipe_read_ops = {
     pipe_read, nullptr, pipe_open, pipe_read_close,
     pipe_lseek, pipe_fstat, pipe_ioctl, pipe_readdir, pipe_lookup,
+    nullptr, nullptr,
 };
 
 static const VnodeOps pipe_write_ops = {
     nullptr, pipe_write, pipe_open, pipe_write_close,
     pipe_lseek, pipe_fstat, pipe_ioctl, pipe_readdir, pipe_lookup,
+    nullptr, nullptr,
 };
 
 int create_pipe(int fds[2]) {

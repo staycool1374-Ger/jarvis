@@ -173,5 +173,62 @@ Filesystem* find_fs(const char* name) {
     return nullptr;
 }
 
+int mkdir(const char* path, uint16_t mode) {
+    // Resolve the parent directory
+    const char* slash = nullptr;
+    for (const char* p = path; *p; ++p) {
+        if (*p == '/') slash = p;
+    }
+
+    const char* parent_path = "/";
+    const char* name = path;
+    char parent_buf[MAX_PATH];
+
+    if (slash) {
+        size_t parent_len = static_cast<size_t>(slash - path);
+        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
+            parent_buf[i] = path[i];
+        parent_buf[parent_len] = '\0';
+        parent_path = parent_buf;
+        name = slash + 1;
+    }
+
+    if (!*name) return VFS_INVALID;
+
+    Vnode* parent = resolve(parent_path);
+    if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
+    if (!parent->ops || !parent->ops->mkdir) return VFS_INVALID;
+
+    return parent->ops->mkdir(*parent, name, mode);
+}
+
+int unlink(const char* path) {
+    const char* slash = nullptr;
+    for (const char* p = path; *p; ++p) {
+        if (*p == '/') slash = p;
+    }
+
+    const char* parent_path = "/";
+    const char* name = path;
+    char parent_buf[MAX_PATH];
+
+    if (slash) {
+        size_t parent_len = static_cast<size_t>(slash - path);
+        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
+            parent_buf[i] = path[i];
+        parent_buf[parent_len] = '\0';
+        parent_path = parent_buf;
+        name = slash + 1;
+    }
+
+    if (!*name) return VFS_INVALID;
+
+    Vnode* parent = resolve(parent_path);
+    if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
+    if (!parent->ops || !parent->ops->unlink) return VFS_INVALID;
+
+    return parent->ops->unlink(*parent, name);
+}
+
 } // namespace vfs
 } // namespace kernel

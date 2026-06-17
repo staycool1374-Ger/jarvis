@@ -58,6 +58,8 @@ struct VnodeOps {
     int     (*ioctl)(Vnode& self, uint64_t request, void* arg);
     int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);
     Vnode*  (*lookup)(Vnode& self, const char* name);
+    int     (*mkdir)(Vnode& self, const char* name, uint16_t mode);
+    int     (*unlink)(Vnode& self, const char* name);
 };
 
 struct Vnode {
@@ -135,6 +137,14 @@ Filesystem* find_fs(const char* name);
 Vnode* get_root_vnode();
 /// @brief Set the root vnode of the VFS tree.
 void set_root_vnode(Vnode& vnode);
+
+/// @brief Create a subdirectory at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
+int mkdir(const char* path, uint16_t mode);
+
+/// @brief Remove a file or empty directory at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
+int unlink(const char* path);
 
 } // namespace vfs
 } // namespace kernel

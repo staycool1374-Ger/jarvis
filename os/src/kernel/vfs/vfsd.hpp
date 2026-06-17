@@ -18,6 +18,9 @@ static constexpr uint64_t VFS_MOUNT    = 106;
 static constexpr uint64_t VFS_CHDIR    = 107;
 static constexpr uint64_t VFS_GETCWD   = 108;
 static constexpr uint64_t VFS_READDIR  = 109;
+static constexpr uint64_t VFS_MKDIR    = 110;
+static constexpr uint64_t VFS_UNLINK   = 111;
+static constexpr uint64_t VFS_RMDIR    = 112;
 
 struct Msg {
     uint64_t sender_id;

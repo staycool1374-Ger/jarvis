@@ -96,6 +96,12 @@ private:
     static void cmd_env(int argc, const char** argv);
     /// @brief Built-in: sleep for N seconds.
     static void cmd_sleep(int argc, const char** argv);
+    /// @brief Built-in: create a directory.
+    static void cmd_mkdir(int argc, const char** argv);
+    /// @brief Built-in: remove a file.
+    static void cmd_rm(int argc, const char** argv);
+    /// @brief Built-in: remove an empty directory.
+    static void cmd_rmdir(int argc, const char** argv);
 };
 
 } // namespace service

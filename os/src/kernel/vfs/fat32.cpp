@@ -333,5 +333,236 @@ int64_t read_file(Fat32Partition& fs, uint32_t first_cluster,
     return total_read;
 }
 
+// -------------------------------------------------------------------
+// Write primitives
+// -------------------------------------------------------------------
+
+bool Fat32Partition::write_fat_entry(uint32_t cluster, uint32_t value) {
+    value &= 0x0FFFFFFF;
+    uint64_t fat_offset = static_cast<uint64_t>(cluster) * 4;
+    uint64_t fat_sector = fat_offset / bpb_.bytes_per_sector;
+    uint64_t sector_lba = partition_start_ + bpb_.reserved_sectors +
+                          fat_sector;
+
+    uint8_t sector[SECTOR_SIZE];
+    if (!device_.read_sector(sector_lba, sector)) return false;
+
+    uint64_t byte_offset = fat_offset % bpb_.bytes_per_sector;
+    sector[byte_offset]     = static_cast<uint8_t>(value);
+    sector[byte_offset + 1] = static_cast<uint8_t>(value >> 8);
+    sector[byte_offset + 2] = static_cast<uint8_t>(value >> 16);
+    sector[byte_offset + 3] = static_cast<uint8_t>(value >> 24);
+
+    // Write back to this FAT
+    if (!device_.write_sector(sector_lba, sector)) return false;
+
+    // Mirror to secondary FAT(s)
+    for (uint8_t fat_idx = 1; fat_idx < bpb_.fat_count; ++fat_idx) {
+        uint64_t mirror_lba = partition_start_ + bpb_.reserved_sectors +
+                              static_cast<uint64_t>(fat_idx) * bpb_.fat_size +
+                              fat_sector;
+        if (!device_.write_sector(mirror_lba, sector)) return false;
+    }
+    return true;
+}
+
+bool Fat32Partition::write_cluster(uint32_t cluster, const uint8_t* buffer) {
+    uint64_t lba = cluster_to_lba(cluster);
+    uint64_t sectors = bpb_.sectors_per_cluster;
+    for (uint64_t i = 0; i < sectors; ++i) {
+        if (!device_.write_sector(lba + i,
+                                  buffer + i * bpb_.bytes_per_sector))
+            return false;
+    }
+    return true;
+}
+
+bool Fat32Partition::clear_cluster(uint32_t cluster) {
+    uint64_t lba = cluster_to_lba(cluster);
+    uint64_t sectors = bpb_.sectors_per_cluster;
+    uint8_t zero[SECTOR_SIZE];
+    __builtin_memset(zero, 0, sizeof(zero));
+    for (uint64_t i = 0; i < sectors; ++i) {
+        if (!device_.write_sector(lba + i, zero)) return false;
+    }
+    return true;
+}
+
+bool Fat32Partition::find_free_cluster(uint32_t start_hint,
+                                        uint32_t& out_cluster) {
+    uint32_t total_clusters =
+        (bpb_.total_sectors - (bpb_.reserved_sectors +
+         static_cast<uint64_t>(bpb_.fat_count) * bpb_.fat_size))
+        / bpb_.sectors_per_cluster;
+
+    uint32_t search = (start_hint >= 2) ? start_hint : 2;
+    uint32_t max_search = search + total_clusters;
+
+    for (uint32_t c = search; c < max_search; ++c) {
+        uint32_t idx = c;
+        if (idx >= 2 + total_clusters) idx = 2 + (idx - 2 - total_clusters);
+        uint32_t entry = 0;
+        if (!read_fat_entry(idx, entry)) return false;
+        if (is_free(entry)) {
+            out_cluster = idx;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Fat32Partition::alloc_cluster(uint32_t prev_cluster,
+                                    uint32_t& out_cluster) {
+    if (!find_free_cluster(prev_cluster ? prev_cluster + 1 : 2, out_cluster))
+        return false;
+
+    // Mark new cluster as EOF
+    if (!write_fat_entry(out_cluster, 0x0FFFFFFF)) return false;
+
+    // Clear the new cluster
+    if (!clear_cluster(out_cluster)) return false;
+
+    // Link from previous cluster if present
+    if (prev_cluster != 0) {
+        if (!write_fat_entry(prev_cluster, out_cluster)) return false;
+    }
+
+    return true;
+}
+
+void free_cluster_chain(Fat32Partition& fs, uint32_t first_cluster) {
+    uint32_t current = first_cluster;
+    while (!Fat32Partition::is_eof(current) &&
+           !Fat32Partition::is_free(current)) {
+        uint32_t next = 0;
+        if (!fs.read_fat_entry(current, next)) break;
+        fs.write_fat_entry(current, 0);
+        current = next;
+    }
+}
+
+// -------------------------------------------------------------------
+// Short name conversion
+// -------------------------------------------------------------------
+
+void name_to_short_name(const char* name, uint8_t out[11]) {
+    // Initialize with spaces
+    for (int i = 0; i < 11; ++i) out[i] = ' ';
+
+    size_t name_len = 0;
+    while (name[name_len]) ++name_len;
+
+    // Find the dot for extension
+    size_t dot_pos = name_len;
+    for (size_t i = 0; i < name_len; ++i) {
+        if (name[i] == '.') { dot_pos = i; break; }
+    }
+
+    // Name part (up to 8 chars)
+    size_t j = 0;
+    for (size_t i = 0; i < dot_pos && j < 8; ++i) {
+        char c = name[i];
+        if (c >= 'a' && c <= 'z') c -= 32; // uppercase
+        out[j++] = static_cast<uint8_t>(c);
+    }
+
+    // Extension part (up to 3 chars)
+    if (dot_pos < name_len) {
+        j = 8;
+        for (size_t i = dot_pos + 1; i < name_len && j < 11; ++i) {
+            char c = name[i];
+            if (c >= 'a' && c <= 'z') c -= 32;
+            out[j++] = static_cast<uint8_t>(c);
+        }
+    }
+}
+
+// -------------------------------------------------------------------
+// Directory entry manipulation
+// -------------------------------------------------------------------
+
+static constexpr uint32_t CLUSTER_BUF_SIZE = 32 * 1024;
+
+bool add_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
+                    const DirEntryRaw& raw) {
+    uint32_t cluster_chain[256];
+    uint32_t chain_len = 0;
+    uint32_t current = dir_cluster;
+    while (!Fat32Partition::is_eof(current) && chain_len < 256) {
+        if (Fat32Partition::is_bad(current) || Fat32Partition::is_free(current))
+            return false;
+        cluster_chain[chain_len++] = current;
+        if (!fs.read_fat_entry(current, current)) return false;
+    }
+
+    uint32_t entries_per_cluster = fs.bpb().sectors_per_cluster *
+                                   fs.bpb().bytes_per_sector / 32;
+
+    uint8_t cluster_data[CLUSTER_BUF_SIZE];
+
+    for (uint32_t ci = 0; ci < chain_len; ++ci) {
+        if (!fs.read_cluster(cluster_chain[ci], cluster_data)) return false;
+
+        for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
+            auto& entry = reinterpret_cast<DirEntryRaw&>(
+                cluster_data[ei * 32]);
+            if (entry.name[0] == 0xE5 || entry.name[0] == 0x00) {
+                __builtin_memcpy(cluster_data + ei * 32, &raw, sizeof(raw));
+                return fs.write_cluster(cluster_chain[ci], cluster_data);
+            }
+        }
+    }
+
+    uint32_t new_cluster = 0;
+    uint32_t last_cluster = cluster_chain[chain_len - 1];
+    if (!fs.alloc_cluster(last_cluster, new_cluster)) return false;
+
+    __builtin_memset(cluster_data, 0, sizeof(cluster_data));
+    __builtin_memcpy(cluster_data, &raw, sizeof(raw));
+    return fs.write_cluster(new_cluster, cluster_data);
+}
+
+bool remove_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
+                       const char* name) {
+    uint32_t cluster_chain[256];
+    uint32_t chain_len = 0;
+    uint32_t current = dir_cluster;
+    while (!Fat32Partition::is_eof(current) && chain_len < 256) {
+        if (Fat32Partition::is_bad(current) || Fat32Partition::is_free(current))
+            return false;
+        cluster_chain[chain_len++] = current;
+        if (!fs.read_fat_entry(current, current)) return false;
+    }
+
+    uint32_t entries_per_cluster = fs.bpb().sectors_per_cluster *
+                                   fs.bpb().bytes_per_sector / 32;
+
+    uint8_t short_name[11];
+    name_to_short_name(name, short_name);
+
+    uint8_t cluster_data[CLUSTER_BUF_SIZE];
+
+    for (uint32_t ci = 0; ci < chain_len; ++ci) {
+        if (!fs.read_cluster(cluster_chain[ci], cluster_data)) return false;
+
+        for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
+            auto& entry = reinterpret_cast<DirEntryRaw&>(
+                cluster_data[ei * 32]);
+            if (entry.name[0] == 0xE5 || entry.name[0] == 0x00) continue;
+            if (entry.attrs == ATTR_LFN) continue;
+
+            bool match = true;
+            for (int i = 0; i < 11; ++i) {
+                if (entry.name[i] != short_name[i]) { match = false; break; }
+            }
+            if (!match) continue;
+
+            entry.name[0] = 0xE5;
+            return fs.write_cluster(cluster_chain[ci], cluster_data);
+        }
+    }
+    return false;
+}
+
 } // namespace fat32
 } // namespace kernel

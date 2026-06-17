@@ -325,4 +325,65 @@ uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     return static_cast<uint64_t>(new_fd);
 }
 
+uint64_t Syscall::sys_mkdir(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
+    uint64_t*) {
+    const char* user_path = reinterpret_cast<const char*>(arg0);
+    if (syscall_is_user_task()) {
+        char path_buf[SYSCALL_MAX_PATH];
+        if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_MKDIR, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
+            return static_cast<uint64_t>(-1);
+        int r = vfs::mkdir(path_buf, static_cast<uint16_t>(arg1));
+        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+    }
+    if (!vfsd_authorize(vfsd::VFS_MKDIR, syscall_task() ? syscall_task(
+        )->id : 0, user_path))
+        return static_cast<uint64_t>(-1);
+    int r = vfs::mkdir(user_path, static_cast<uint16_t>(arg1));
+    return static_cast<uint64_t>(r == 0 ? 0 : -1);
+}
+
+uint64_t Syscall::sys_unlink(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
+    const char* user_path = reinterpret_cast<const char*>(arg0);
+    if (syscall_is_user_task()) {
+        char path_buf[SYSCALL_MAX_PATH];
+        if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_UNLINK, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
+            return static_cast<uint64_t>(-1);
+        int r = vfs::unlink(path_buf);
+        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+    }
+    if (!vfsd_authorize(vfsd::VFS_UNLINK, syscall_task() ? syscall_task(
+        )->id : 0, user_path))
+        return static_cast<uint64_t>(-1);
+    int r = vfs::unlink(user_path);
+    return static_cast<uint64_t>(r == 0 ? 0 : -1);
+}
+
+uint64_t Syscall::sys_rmdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+    uint64_t*) {
+    // rmdir is just unlink with directory semantics (enforced by FS)
+    const char* user_path = reinterpret_cast<const char*>(arg0);
+    if (syscall_is_user_task()) {
+        char path_buf[SYSCALL_MAX_PATH];
+        if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
+            return static_cast<uint64_t>(-1);
+        if (!vfsd_authorize(vfsd::VFS_RMDIR, syscall_task() ? syscall_task(
+            )->id : 0, path_buf))
+            return static_cast<uint64_t>(-1);
+        int r = vfs::unlink(path_buf);
+        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+    }
+    if (!vfsd_authorize(vfsd::VFS_RMDIR, syscall_task() ? syscall_task(
+        )->id : 0, user_path))
+        return static_cast<uint64_t>(-1);
+    int r = vfs::unlink(user_path);
+    return static_cast<uint64_t>(r == 0 ? 0 : -1);
+}
+
 } // namespace kernel

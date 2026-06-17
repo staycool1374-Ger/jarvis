@@ -64,6 +64,9 @@ void Shell::init() {
     register_command("pwd",     "Print working directory",           cmd_pwd);
     register_command("env",     "Print environment variables",       cmd_env);
     register_command("sleep",   "Sleep for N seconds",               cmd_sleep);
+    register_command("mkdir",   "Create a directory",                cmd_mkdir);
+    register_command("rm",      "Remove a file",                     cmd_rm);
+    register_command("rmdir",   "Remove an empty directory",         cmd_rmdir);
     register_command("which",   "Locate a command",                  cmd_which);
     register_command("locate",  "Locate a command",                  cmd_which);
 
@@ -850,6 +853,45 @@ void Shell::cmd_sleep(int argc, const char** argv) {
     uint64_t target = arch::Timer::ticks() + secs * 1000;
     while (arch::Timer::ticks() < target) {
         arch::pause();
+    }
+}
+
+void Shell::cmd_mkdir(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: mkdir <path>\n");
+        return;
+    }
+    int r = kernel::vfs::mkdir(argv[1], 0);
+    if (r != 0) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("mkdir: failed to create directory\n");
+        Terminal::set_fg(0xC0C0C0);
+    }
+}
+
+void Shell::cmd_rm(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: rm <path>\n");
+        return;
+    }
+    int r = kernel::vfs::unlink(argv[1]);
+    if (r != 0) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("rm: failed to remove file\n");
+        Terminal::set_fg(0xC0C0C0);
+    }
+}
+
+void Shell::cmd_rmdir(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: rmdir <path>\n");
+        return;
+    }
+    int r = kernel::vfs::unlink(argv[1]);
+    if (r != 0) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("rmdir: failed to remove directory (not empty?)\n");
+        Terminal::set_fg(0xC0C0C0);
     }
 }
 

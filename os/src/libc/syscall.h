@@ -44,6 +44,9 @@
 #define SYS_GETTOD      34
 #define SYS_UNAME       35
 #define SYS_PAUSE       36
+#define SYS_MKDIR       41
+#define SYS_UNLINK      42
+#define SYS_RMDIR       43
 
 static inline long __syscall5(long num, long a0, long a1, long a2, long a3) {
     long ret;

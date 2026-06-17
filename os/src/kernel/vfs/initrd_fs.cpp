@@ -92,6 +92,8 @@ static const VnodeOps initrd_file_ops = {
     initrd_file_ioctl,
     initrd_file_readdir,
     initrd_file_lookup,
+    nullptr,
+    nullptr,
 };
 
 // ── root directory ──
@@ -164,6 +166,8 @@ static const VnodeOps initrd_root_ops = {
     initrd_root_ioctl,
     initrd_root_readdir,
     initrd_root_lookup,
+    nullptr,
+    nullptr,
 };
 
 static Vnode* initrd_get_root() {

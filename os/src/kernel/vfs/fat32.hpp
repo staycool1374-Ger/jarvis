@@ -51,6 +51,27 @@ public:
     /// @brief Read a full cluster's data.
     bool read_cluster(uint32_t cluster, uint8_t* buffer) const;
 
+    /// @brief Write a FAT entry for a given cluster.
+    bool write_fat_entry(uint32_t cluster, uint32_t value);
+
+    /// @brief Write a full cluster's data.
+    bool write_cluster(uint32_t cluster, const uint8_t* buffer);
+
+    /// @brief Zero-fill a cluster.
+    bool clear_cluster(uint32_t cluster);
+
+    /// @brief Find a free cluster in the FAT.
+    /// @param start_cluster Hint where to start searching (0 = from beginning).
+    /// @param out_cluster Output: the free cluster number.
+    /// @return true if found.
+    bool find_free_cluster(uint32_t start_cluster, uint32_t& out_cluster);
+
+    /// @brief Allocate a cluster and append it to a chain.
+    /// @param prev_cluster The last cluster in the chain (0 = no chain).
+    /// @param out_cluster Output: the newly allocated cluster number.
+    /// @return true on success. The new cluster is zero-filled and marked EOF.
+    bool alloc_cluster(uint32_t prev_cluster, uint32_t& out_cluster);
+
     /// @brief Check if a FAT entry is end-of-chain.
     static bool is_eof(uint32_t entry) {
         return entry >= 0x0FFFFFF8;
@@ -150,6 +171,29 @@ void format_short_name(const uint8_t raw_name[11], char* out, size_t out_size);
 /// @return true if partition_lba_out has been set.
 bool find_fat32_in_mbr(block::BlockDevice& device,
                        uint64_t& partition_lba_out);
+
+/// @brief Convert a filename (e.g. "MyFile.txt") to 8.3 short name bytes.
+///        Pads with spaces, uppercases, strips dots.
+void name_to_short_name(const char* name, uint8_t out[11]);
+
+/// @brief Add a new directory entry to a directory cluster chain.
+/// @param fs         Mounted partition.
+/// @param dir_cluster Starting cluster of the target directory.
+/// @param raw        The raw 32-byte entry to write.
+/// @return true on success, false if directory is full (no free entry).
+bool add_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
+                   const DirEntryRaw& raw);
+
+/// @brief Remove (mark as free) a directory entry by name.
+/// @param fs         Mounted partition.
+/// @param dir_cluster Starting cluster of the target directory.
+/// @param name       8.3 short name to remove.
+/// @return true if found and removed, false if not found.
+bool remove_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
+                      const char* name);
+
+/// @brief Free an entire cluster chain starting from a given cluster.
+void free_cluster_chain(Fat32Partition& fs, uint32_t first_cluster);
 
 } // namespace fat32
 } // namespace kernel

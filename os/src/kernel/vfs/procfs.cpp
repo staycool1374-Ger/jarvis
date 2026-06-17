@@ -78,6 +78,7 @@ static const VnodeOps meminfo_ops = {
     meminfo_read, meminfo_write, meminfo_open, meminfo_close,
     meminfo_lseek, meminfo_fstat, meminfo_ioctl, meminfo_readdir,
         meminfo_lookup,
+    nullptr, nullptr,
 };
 
 static MemInfoVnode meminfo_vnode = {};
@@ -109,6 +110,7 @@ static Vnode* self_lookup(Vnode& self, const char* name);
 static const VnodeOps self_ops = {
     self_read, self_write, self_open, self_close,
     self_lseek, self_fstat, self_ioctl, self_readdir, self_lookup,
+    nullptr, nullptr,
 };
 
 static Vnode self_vnode = {
@@ -193,6 +195,7 @@ static const VnodeOps pid_stat_ops = {
     pid_stat_read, pid_stat_write, pid_stat_open, pid_stat_close,
     pid_stat_lseek, pid_stat_fstat, pid_stat_ioctl, pid_stat_readdir,
         pid_stat_lookup,
+    nullptr, nullptr,
 };
 
 // ── pid directory vnode ──
@@ -238,6 +241,7 @@ static const VnodeOps pid_dir_ops = {
     pid_dir_read, pid_dir_write, pid_dir_open, pid_dir_close,
     pid_dir_lseek, pid_dir_fstat, pid_dir_ioctl, pid_dir_readdir,
         pid_dir_lookup,
+    nullptr, nullptr,
 };
 
 // ── self resolution ──
@@ -373,6 +377,7 @@ static const VnodeOps proc_root_ops = {
     proc_root_read, proc_root_write, proc_root_open, proc_root_close,
     proc_root_lseek, proc_root_fstat, proc_root_ioctl, proc_root_readdir,
         proc_root_lookup,
+    nullptr, nullptr,
 };
 
 static Vnode proc_root_vnode = {

@@ -39,3 +39,5 @@ unsigned int alarm(unsigned int seconds);
 int gettimeofday(struct timeval* tv, void* tz);
 int uname(struct utsname* buf);
 int pause(void);
+int mkdir(const char* path, unsigned int mode);
+int unlink(const char* path);

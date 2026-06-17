@@ -53,3 +53,11 @@ void _exit(int status) {
     __syscall5(6, (long)status, 0, 0, 0);
     for (;;) asm volatile("pause");
 }
+
+int mkdir(const char* path, unsigned int mode) {
+    return (int)__syscall5(SYS_MKDIR, (long)path, (long)mode, 0, 0);
+}
+
+int unlink(const char* path) {
+    return (int)__syscall5(SYS_UNLINK, (long)path, 0, 0, 0);
+}
