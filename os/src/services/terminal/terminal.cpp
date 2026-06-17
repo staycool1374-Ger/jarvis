@@ -220,6 +220,16 @@ void Terminal::draw_status_bar(const char* left, const char* right) {
     }
 }
 
+void Terminal::set_cursor_visible(bool visible) {
+    if (!instance_ || !instance_->fb_enabled_) return;
+    if (!Framebuffer::available()) return;
+    uint32_t color = visible ? 0xC0C0C0 : 0x000000;
+    Framebuffer::fill_rect(
+        instance_->cursor_x_ * FONT_WIDTH,
+        instance_->cursor_y_ * FONT_HEIGHT,
+        FONT_WIDTH, FONT_HEIGHT, color);
+}
+
 void Terminal::show_splash() {
     if (!instance_ || !instance_->fb_enabled_) return;
     if (!Framebuffer::available()) return;

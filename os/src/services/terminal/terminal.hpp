@@ -61,6 +61,9 @@ public:
     static void draw_status_bar(const char* left, const char* right);
     /// @brief Shows the boot splash screen (version, build type) centered on the framebuffer.
     static void show_splash();
+    /// @brief Shows or hides a block cursor at the current text cursor position (framebuffer only).
+    /// @param visible True to draw cursor, false to erase it.
+    static void set_cursor_visible(bool visible);
 
     /// @brief Maximum length of the line-input buffer.
     static constexpr size_t LINE_BUF_SIZE = 256;

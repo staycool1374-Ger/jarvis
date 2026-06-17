@@ -133,9 +133,26 @@ void Shell::execute(const char* cmd) {
     parse_and_exec(cmd);
 }
 
+static void update_status_bar();
+
 static bool readline(char* buf, size_t max_len) {
     size_t pos = 0;
+    static uint64_t last_blink = 0;
+    static bool cursor_on = false;
+
+    auto redraw_cursor = [&](bool on) {
+        cursor_on = on;
+        Terminal::set_cursor_visible(on);
+    };
+
     for (;;) {
+        uint64_t now = arch::Timer::ticks();
+        if (now - last_blink >= 500) {
+            last_blink = now;
+            redraw_cursor(!cursor_on);
+            update_status_bar();
+        }
+
         char c = 0;
         bool got_char = false;
 
@@ -153,15 +170,21 @@ static bool readline(char* buf, size_t max_len) {
             continue;
         }
 
+        redraw_cursor(true);
+
         if (c == '\r') c = '\n';
 
         if (c == '\n') {
+            redraw_cursor(false);
             Terminal::putchar('\n');
             buf[pos] = '\0';
             return true;
         }
         if (c == '\b' || c == 0x7F) {
-            if (pos > 0) { --pos; Terminal::putchar('\b'); }
+            if (pos > 0) {
+                --pos;
+                Terminal::putchar('\b');
+            }
             continue;
         }
         if (pos < max_len - 1) {
@@ -291,6 +314,7 @@ void Shell::shell_task_main() {
         arch::Keyboard::flush();
         if (readline(line, BUF_SIZE)) {
             parse_and_exec(line);
+            update_status_bar();
         }
     }
 }
