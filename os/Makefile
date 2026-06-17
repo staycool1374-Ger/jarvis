@@ -512,6 +512,9 @@ _run-shell-test:
 	    'puts "  \[OK\] selftest #2 (all passed)"' \
 	    '' \
 	    'puts ""' \
+	    '# NOTE: Section 5 (exit) MUST remain the last test in the sequence' \
+	    '# because it shuts down the system and terminates QEMU.' \
+	    '# Any tests added after this section will never execute.' \
 	    'puts "=== Section 5: Shutdown ==="' \
 	    'send_cmd "exit"' \
 	    'expect_ok {Shutting down\.\.\.}' \
