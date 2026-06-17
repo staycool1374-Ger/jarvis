@@ -4,6 +4,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <concepts.hpp>
 
 /// @brief Removes reference qualifiers from a type.
 /// @tparam T The type to strip references from.
@@ -100,7 +101,7 @@ struct is_integral : integral_constant<bool,
 /// @param val   The value to align.
 /// @param align Alignment boundary (must be power of two).
 /// @return The aligned-up value.
-template<typename T>
+template<kernel::Integral T>
 static constexpr T align_up(T val, T align) {
     return (val + align - 1) & ~(align - 1);
 }
@@ -110,7 +111,7 @@ static constexpr T align_up(T val, T align) {
 /// @param val   The value to align.
 /// @param align Alignment boundary (must be power of two).
 /// @return The aligned-down value.
-template<typename T>
+template<kernel::Integral T>
 static constexpr T align_down(T val, T align) {
     return val & ~(align - 1);
 }

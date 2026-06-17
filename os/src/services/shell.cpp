@@ -9,6 +9,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <initrd/initrd.hpp>
@@ -681,16 +682,17 @@ void Shell::cmd_selftest(int, const char**) {
     // (tests allocate/free pages, map/unmap memory).  Any subsequent
     // framebuffer access could fault.  Serial (COM1) is safe.
     Terminal::set_fb_enabled(false);
-    // Disable interrupts so the timer IRQ cannot dispatch test-created kernel
-    // tasks (they would run, return, get reaped, and then the test would
-    // access freed TCB memory in cleanup/delete — a use-after-free crash).
-    bool irq_was = arch::interrupts_enabled();
-    arch::cli();
 
-    kernel::test::Registry::init();
-    register_selftest_tests();
-    kernel::test::run_safe();
-    if (irq_was) {
+    {
+        // Disable interrupts so the timer IRQ cannot dispatch test-created kernel
+        // tasks (they would run, return, get reaped, and then the test would
+        // access freed TCB memory in cleanup/delete — a use-after-free crash).
+        arch::IrqGuard guard;
+
+        kernel::test::Registry::init();
+        register_selftest_tests();
+        kernel::test::run_safe();
+
         // Reap any terminated test tasks that accumulated while interrupts
         // were disabled (on_tick → reap_orphans never ran).
         kernel::Scheduler::reap_orphans();
@@ -711,7 +713,6 @@ void Shell::cmd_selftest(int, const char**) {
         kernel::scheduler_load_rsp_from = 0;
         kernel::scheduler_load_cr3_from = 0;
         kernel::scheduler_next_task_id = 0;
-        arch::sti();
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");

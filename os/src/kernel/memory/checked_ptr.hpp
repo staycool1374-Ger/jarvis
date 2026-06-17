@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <string.hpp>
+#include <concepts.hpp>
 
 namespace kernel {
 
@@ -25,7 +26,7 @@ static inline bool is_user_range(const void* user_ptr, uint64_t size) {
     return true;
 }
 
-template <typename T>
+template <kernel::TriviallyCopiable T>
 class CheckedPtr {
     uint64_t addr_;
     uint64_t count_;
@@ -80,6 +81,7 @@ public:
 
 /// @brief Convenience factory for creating a CheckedPtr from a raw pointer.
 template <typename T>
+    requires kernel::TriviallyCopiable<T>
 static inline CheckedPtr<T> checked(T* user_ptr, uint64_t count = 1) {
     return CheckedPtr<T>(user_ptr, count);
 }
@@ -115,7 +117,7 @@ static inline bool strncpy_from_user(char* dst, const char* src,
 /// @brief Safely copies memory from user-space to kernel buffer.
 ///        Uses fault recovery to handle invalid pointers gracefully.
 /// @return true on success, false if a fault or range check failed.
-template<typename T>
+template<kernel::TriviallyCopiable T>
 static inline bool safe_copy_from_user(T* dst, const T* src, uint64_t count) {
     if (!is_user_range(src, count * sizeof(T))) return false;
     g_user_access_recover_ip = reinterpret_cast<uint64_t>(&&recover_from);
@@ -131,7 +133,7 @@ recover_from:
 /// @brief Safely copies memory from kernel buffer to user-space.
 ///        Uses fault recovery to handle invalid pointers gracefully.
 /// @return true on success, false if a fault or range check failed.
-template<typename T>
+template<kernel::TriviallyCopiable T>
 static inline bool safe_copy_to_user(T* dst, const T* src, uint64_t count) {
     if (!is_user_range(dst, count * sizeof(T))) return false;
     g_user_access_recover_ip = reinterpret_cast<uint64_t>(&&recover_to);

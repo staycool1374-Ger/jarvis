@@ -5,6 +5,7 @@
 
 #include <types.hpp>
 #include <logger.hpp>
+#include <concepts.hpp>
 
 /// @brief Triggers a kernel panic with a message (noreturn).
 extern "C" void panic(const char* msg);
@@ -13,7 +14,7 @@ extern "C" void panic(const char* msg);
 ///        Each module that defines error codes specialises this template
 ///        (e.g. <kernel/task/task_errors.hpp>).
 namespace kernel::errors {
-    template<typename E>
+    template<kernel::ErrorEnum E>
     inline const char* error_string(E) { return "Unknown error"; }
 }
 

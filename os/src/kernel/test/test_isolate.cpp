@@ -7,6 +7,7 @@
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 
 namespace kernel::test {
 
@@ -49,8 +50,7 @@ static size_t total_size(size_t user_page_count) {
 }
 
 bool snapshot_create() {
-    bool irq_enabled = arch::interrupts_enabled();
-    arch::cli();
+    arch::IrqGuard guard;
 
     // Count user-owned pages from the owner bitmap
     size_t user_page_count = 0;
@@ -66,7 +66,7 @@ bool snapshot_create() {
     size_t total = total_size(user_page_count);
     size_t pages = (total + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
     uint64_t phys = PMM::alloc_contiguous(pages);
-    if (!phys) { arch::sti(); return false; }
+    if (!phys) { return false; }
     g_snapshot = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
     g_snapshot_size = total;
 
@@ -150,14 +150,12 @@ bool snapshot_create() {
         }
     }
 
-    if (irq_enabled) arch::sti();
     return true;
 }
 
 void snapshot_restore(const char* test_name) {
     if (!g_snapshot) return;
-    bool irq_enabled = arch::interrupts_enabled();
-    arch::cli();
+    arch::IrqGuard guard;
 
     // Clear any pending context-switch state that a test may have left
     // via reschedule().  Without this, the next timer IRQ would use stale
@@ -251,7 +249,6 @@ void snapshot_restore(const char* test_name) {
     __builtin_memcpy(&saved, g_snapshot + off_rsrc_counts(), sizeof(saved));
     ResourceTracker::instance().restore(saved);
 
-    if (irq_enabled) arch::sti();
 }
 
 void snapshot_destroy() {

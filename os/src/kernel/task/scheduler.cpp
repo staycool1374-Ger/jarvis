@@ -1,6 +1,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -45,6 +46,7 @@ void Scheduler::init() {
 }
 
 void Scheduler::add_task(TaskControlBlock& task) {
+    arch::IrqGuard guard;
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
@@ -52,6 +54,7 @@ void Scheduler::add_task(TaskControlBlock& task) {
 }
 
 void Scheduler::remove_task(TaskControlBlock& task) {
+    arch::IrqGuard guard;
     id_table_remove(&task);
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
@@ -462,6 +465,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 }
 
 void Scheduler::reschedule() noexcept {
+    arch::IrqGuard guard;
     if (task_count_ <= 1) return;
 
     auto* current = tasks_[current_index_];

@@ -1,5 +1,6 @@
 #include <kernel/sync/queue.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -14,18 +15,21 @@ void Queue::init() {
 }
 
 bool Queue::add_send_waiter(TaskControlBlock* task) {
+    arch::IrqGuard guard;
     if (send_waiters_count_ >= MAX_WAITERS) return false;
     send_waiters_[send_waiters_count_++] = task;
     return true;
 }
 
 bool Queue::add_recv_waiter(TaskControlBlock* task) {
+    arch::IrqGuard guard;
     if (recv_waiters_count_ >= MAX_WAITERS) return false;
     recv_waiters_[recv_waiters_count_++] = task;
     return true;
 }
 
 void Queue::wake_send_one() {
+    arch::IrqGuard guard;
     if (send_waiters_count_ == 0) return;
     size_t best = 0;
     for (size_t i = 1; i < send_waiters_count_; ++i) {
@@ -38,6 +42,7 @@ void Queue::wake_send_one() {
 }
 
 void Queue::wake_recv_one() {
+    arch::IrqGuard guard;
     if (recv_waiters_count_ == 0) return;
     size_t best = 0;
     for (size_t i = 1; i < recv_waiters_count_; ++i) {
@@ -50,6 +55,7 @@ void Queue::wake_recv_one() {
 }
 
 bool Queue::send(const uint8_t* data, size_t size) {
+    arch::IrqGuard guard;
     if (size > QUEUE_MAX_MSG_SIZE) return false;
 
     auto* task = Scheduler::current_task();
@@ -71,6 +77,7 @@ bool Queue::send(const uint8_t* data, size_t size) {
 }
 
 bool Queue::try_send(const uint8_t* data, size_t size) {
+    arch::IrqGuard guard;
     if (size > QUEUE_MAX_MSG_SIZE || is_full()) return false;
 
     memcpy(msgs_[tail_].data, data, size);
@@ -83,6 +90,7 @@ bool Queue::try_send(const uint8_t* data, size_t size) {
 }
 
 bool Queue::receive(uint8_t* buf, size_t* size) {
+    arch::IrqGuard guard;
     auto* task = Scheduler::current_task();
 
     while (is_empty()) {
@@ -106,6 +114,7 @@ bool Queue::receive(uint8_t* buf, size_t* size) {
 }
 
 bool Queue::try_receive(uint8_t* buf, size_t* size) {
+    arch::IrqGuard guard;
     if (is_empty()) return false;
 
     size_t copy_size = msgs_[head_].size;
