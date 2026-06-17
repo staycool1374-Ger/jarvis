@@ -119,13 +119,48 @@ Vnode* resolve(const char* path) {
         if (comp[0] == '.' && comp[1] == '.' && comp[2] == '\0') {
             if (current->private_data) {
                 Vnode* pv = reinterpret_cast<Vnode*>(current->private_data);
-                if (pv) current = pv;
+                if (pv) { current = pv; continue; }
+            }
+            for (size_t i = 0; i < mount_count; ++i) {
+                if (!mount_table[i].used) continue;
+                if (mount_table[i].root_vnode != current) continue;
+                const char* mp = mount_table[i].mount_point;
+                const char* last_slash = nullptr;
+                for (const char* p = mp; *p; ++p) {
+                    if (*p == '/') last_slash = p;
+                }
+                if (last_slash && last_slash > mp) {
+                    size_t len = static_cast<size_t>(last_slash - mp);
+                    if (len >= MAX_PATH) len = MAX_PATH - 1;
+                    char parent_path[MAX_PATH];
+                    __builtin_memcpy(parent_path, mp, len);
+                    parent_path[len] = '\0';
+                    current = resolve(parent_path);
+                } else if (last_slash == mp) {
+                    current = resolve("/");
+                }
+                break;
             }
             continue;
         }
 
-        Vnode* child = current->ops ? current->ops->lookup(*current, comp) :
-            nullptr;
+        Vnode* child = nullptr;
+        for (size_t i = 0; i < mount_count; ++i) {
+            if (!mount_table[i].used) continue;
+            const char* mp = mount_table[i].mount_point;
+            const char* name_start = mp;
+            for (const char* p = mp; *p; ++p) {
+                if (*p == '/') name_start = p + 1;
+            }
+            if (strcmp(name_start, comp) == 0) {
+                child = mount_table[i].root_vnode;
+                break;
+            }
+        }
+        if (!child) {
+            child = current->ops ? current->ops->lookup(*current, comp) :
+                nullptr;
+        }
         if (!child) return nullptr;
         current = child;
     }

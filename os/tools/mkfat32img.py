@@ -26,7 +26,8 @@ def build_mbr(part_lba, part_sectors):
 
 
 def build_bpb(sectors_per_cluster=1, reserved_sectors=32, fat_count=2,
-              fat_size=64, root_cluster=2, volume_label=b'JARVIS_TEST'):
+              fat_size=64, root_cluster=2, volume_label=b'JARVIS_TEST',
+              total_sectors=288):
     """Build a FAT32 BPB boot sector."""
     bpb = bytearray(BLOCK_SIZE)
     # Jump code (3 bytes)
@@ -58,16 +59,6 @@ def build_bpb(sectors_per_cluster=1, reserved_sectors=32, fat_count=2,
     # Hidden sectors (partition LBA)
     struct.pack_into('<I', bpb, 28, PART_LBA)
     # Total sectors 32-bit
-    total_sectors = (sectors_per_cluster * (
-        2  # root + data clusters
-        + fat_size * fat_count // (sectors_per_cluster * fat_size)
-        + 1  # minimum for the FAT
-        + 2  # minimum reserved
-    ) + reserved_sectors + fat_count * fat_size
-    )
-    # Compute a reasonable total
-    data_sectors = sectors_per_cluster * (5 + 2)  # clusters 2..8 for files
-    total_sectors = reserved_sectors + fat_count * fat_size + data_sectors
     struct.pack_into('<I', bpb, 32, total_sectors)
     # Sectors per FAT 32-bit
     struct.pack_into('<I', bpb, 36, fat_size)
@@ -153,8 +144,9 @@ def build_disk_image():
     root_cluster = 2       # always 2 for FAT32
     data_start_lba = PART_LBA + reserved_sectors + fat_count * fat_size
     data_sectors = 64 * sectors_per_cluster  # 64 data clusters
+    total_sectors = reserved_sectors + fat_count * fat_size + data_sectors
 
-    total_part_sectors = reserved_sectors + fat_count * fat_size + data_sectors
+    total_part_sectors = total_sectors
     image_size = (PART_LBA + total_part_sectors) * BLOCK_SIZE
     img = bytearray(image_size)
 
@@ -164,7 +156,7 @@ def build_disk_image():
 
     # Write BPB at partition start
     bpb = build_bpb(sectors_per_cluster, reserved_sectors, fat_count,
-                    fat_size, root_cluster, b'JARVIS_TEST')
+                    fat_size, root_cluster, b'JARVIS_TEST', total_sectors)
     img[PART_LBA * BLOCK_SIZE:(PART_LBA + 1) * BLOCK_SIZE] = bpb
 
     # Write FSInfo at sector 1

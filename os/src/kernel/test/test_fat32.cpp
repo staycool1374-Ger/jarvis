@@ -295,13 +295,16 @@ JARVIS_TEST(fat32_write_fat_entry) {
 JARVIS_TEST(fat32_write_cluster) {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
-    uint8_t wbuf[SECTOR_SIZE];
-    memset(wbuf, 0x42, sizeof(wbuf));
+    uint64_t cluster_bytes = static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
+    uint8_t* wbuf = new uint8_t[cluster_bytes];
+    memset(wbuf, 0x42, cluster_bytes);
     JARVIS_ASSERT(fs.write_cluster(3, wbuf));
-    uint8_t rbuf[SECTOR_SIZE];
-    memset(rbuf, 0, sizeof(rbuf));
+    uint8_t* rbuf = new uint8_t[cluster_bytes];
+    memset(rbuf, 0, cluster_bytes);
     JARVIS_ASSERT(fs.read_cluster(3, rbuf));
-    JARVIS_ASSERT(memcmp(wbuf, rbuf, SECTOR_SIZE) == 0);
+    JARVIS_ASSERT(memcmp(wbuf, rbuf, cluster_bytes) == 0);
+    delete[] wbuf;
+    delete[] rbuf;
 }
 
 // Runmode: kernel
@@ -313,11 +316,13 @@ JARVIS_TEST(fat32_clear_cluster) {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.clear_cluster(4));
-    uint8_t buf[SECTOR_SIZE];
-    memset(buf, 0xFF, sizeof(buf));
+    uint64_t cluster_bytes = static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
+    uint8_t* buf = new uint8_t[cluster_bytes];
+    memset(buf, 0xFF, cluster_bytes);
     JARVIS_ASSERT(fs.read_cluster(4, buf));
-    for (size_t i = 0; i < SECTOR_SIZE; ++i)
+    for (uint64_t i = 0; i < cluster_bytes; ++i)
         JARVIS_ASSERT(buf[i] == 0);
+    delete[] buf;
 }
 
 // Runmode: kernel
@@ -385,7 +390,7 @@ JARVIS_TEST(fat32_free_cluster_chain) {
 JARVIS_TEST(fat32_name_to_short_name) {
     uint8_t sn[11];
     name_to_short_name("README.TXT", sn);
-    JARVIS_ASSERT(memcmp(sn, "README   TXT", 11) == 0);
+    JARVIS_ASSERT(memcmp(sn, "README  TXT", 11) == 0);
     name_to_short_name("File", sn);
     JARVIS_ASSERT(memcmp(sn, "FILE        ", 11) == 0);
 }

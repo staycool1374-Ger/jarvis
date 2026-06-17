@@ -325,7 +325,8 @@ static Vnode* fat32_get_root() {
     if (!fat32_partition_instance || !fat32_partition_instance->bpb().valid)
         return nullptr;
 
-    if (!root_initialized) {
+    if (!root_initialized ||
+         fat32_root_vdata.fs != fat32_partition_instance) {
         fat32_root_vdata.fs = fat32_partition_instance;
         fat32_root_vdata.cluster = fat32_partition_instance->bpb().root_cluster;
         fat32_root_vdata.size = 0;

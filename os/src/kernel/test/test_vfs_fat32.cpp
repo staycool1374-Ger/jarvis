@@ -142,8 +142,15 @@ static fat32::Fat32Partition* create_writable_partition() {
     extern uint8_t _binary_build_fat32_img_end[];
     uint64_t bytes = static_cast<uint64_t>(
         _binary_build_fat32_img_end - _binary_build_fat32_img_start);
-    auto* dev = new kernel::block::MockBlockDevice(
-        _binary_build_fat32_img_start, bytes / fat32::SECTOR_SIZE, true);
+    uint64_t sectors = bytes / fat32::SECTOR_SIZE;
+    auto* dev = new kernel::block::MockBlockDevice(sectors);
+    for (uint64_t i = 0; i < sectors; ++i) {
+        uint8_t sector[fat32::SECTOR_SIZE];
+        __builtin_memcpy(sector,
+            _binary_build_fat32_img_start + i * fat32::SECTOR_SIZE,
+            fat32::SECTOR_SIZE);
+        dev->write_sector(i, sector);
+    }
     return new fat32::Fat32Partition(*dev);
 }
 
