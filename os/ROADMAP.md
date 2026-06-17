@@ -7,6 +7,12 @@
 - [ ] IPC pipeline hardening (pipes, I/O redirection)
 - [ ] use check codebase and analyze where requirement <concepts> and <requires> keywords
       make sense. especially check for templates.
+  Preemptive Scheduler Stabilization & Advanced Synchronization Hardening
+      - [ ] Implement RAII `IrqGuard` for deterministic stack-bound nested `RFLAGS` interrupt state preservation
+      - [ ] Retrofit core synchronization with GNU/Clang Thread-Safety Attributes (`[[gnu::capability("mutex")]]`, `[[gnu::scoped_lockable]]`, `[[gnu::guarded_by]]`)
+      - [ ] Define C++20 `Lockable` structural constraints to validate IRQ-safe lock ordering at compile-time
+      - [ ] Audit preemption loops and task state transitions (Ready ↔ Blocked) using `debug_switch_ring` tracing to eradicate race conditions
+
   
 ---
 

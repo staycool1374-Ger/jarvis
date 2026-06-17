@@ -257,6 +257,220 @@ JARVIS_TEST(shell_uptime_command) {
     JARVIS_ASSERT(serial_contains(buf1, "Uptime"));
 }
 
+JARVIS_TEST(shell_pwd_command) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("pwd");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+    JARVIS_ASSERT(serial_contains(buf1, "/"));
+}
+
+JARVIS_TEST(shell_which_command) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("locate help");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, "help"));
+}
+
+JARVIS_TEST(shell_help_shows_which) {
+    // Verify "locate" is registered and would appear in help output.
+    // Can't capture full help via serial loopback (16-byte RX FIFO limit),
+    // so instead: run "locate locate" — dispatch proves registration,
+    // and cmd_which finding itself proves it's in the command list.
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("locate locate");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, "locate"));
+}
+
+JARVIS_TEST(shell_which_notfound) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("locate xyzzy");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, "xyzzy"));
+}
+
+JARVIS_TEST(shell_env_command) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("env");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+}
+
+JARVIS_TEST(shell_export_command) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("export FOO=bar");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+}
+
+JARVIS_TEST(shell_sleep_zero) {
+    uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
+    arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
+    serial_flush_rx();
+
+    service::Terminal::write("BEFORE");
+    service::Shell::execute("sleep 0");
+
+    char buf1[128];
+    size_t pos = 0;
+    for (int i = 0; i < 200000 && pos < sizeof(buf1) - 1; ++i) {
+        if (arch::inb(arch::COM1_LSR) & 1) {
+            buf1[pos++] = arch::inb(arch::COM1);
+        }
+        arch::pause();
+    }
+    buf1[pos] = '\0';
+
+    service::Terminal::write("AFTER");
+
+    char buf2[128];
+    bool ok = serial_read_all(buf2, sizeof(buf2), 500000);
+    arch::outb(arch::COM1 + 4, orig_mcr);
+
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
+    JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
+}
+
 void register_shell_interaction_tests() {
     Logger::info("Registering shell interaction tests");
     JARVIS_REGISTER_RELEASE_TEST(shell_loopback_manual_string);
@@ -269,4 +483,11 @@ void register_shell_interaction_tests() {
     JARVIS_REGISTER_RELEASE_TEST(shell_help_command);
     JARVIS_REGISTER_RELEASE_TEST(shell_echo_command);
     JARVIS_REGISTER_RELEASE_TEST(shell_uptime_command);
+    JARVIS_REGISTER_RELEASE_TEST(shell_pwd_command);
+    JARVIS_REGISTER_RELEASE_TEST(shell_help_shows_which);
+    JARVIS_REGISTER_RELEASE_TEST(shell_which_command);
+    JARVIS_REGISTER_RELEASE_TEST(shell_which_notfound);
+    JARVIS_REGISTER_RELEASE_TEST(shell_env_command);
+    JARVIS_REGISTER_RELEASE_TEST(shell_export_command);
+    JARVIS_REGISTER_RELEASE_TEST(shell_sleep_zero);
 }

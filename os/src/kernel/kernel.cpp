@@ -2,6 +2,7 @@
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/memory/pmm.hpp>
@@ -109,9 +110,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     kernel::Logger::init();
     kernel::test::Registry::init();
-    debug_write("[BOOT] Jarvis RTOS ");
-
-    debug_write(kernel::Version::full_string());
+    debug_write("[BOOT] ");
+    debug_write(kernel::Version::string());
 
 #ifdef CONFIG_DEBUG
     debug_write(" [DEBUG]");
@@ -120,18 +120,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
     debug_write("\n");
 
-    debug_write("[BOOT] GDT init...\n");
+    debug_write("[BOOT] Arch init...\n");
     arch::GDT::init();
     arch::GDT::load();
     arch::GDT::set_tss_rsp0(reinterpret_cast<uint64_t>(kernel_stack + 16_KiB));
-    debug_write("[BOOT] GDT OK\n");
-
-    debug_write("[BOOT] IDT init...\n");
     arch::IDT::init();
     arch::IDT::load();
-    debug_write("[BOOT] IDT OK\n");
 
-    debug_write("[BOOT] Memory detection...\n");
     uint64_t mem_size = 64_MiB;
     uint64_t tag_addr = mb2_find_tag(6);
     if (tag_addr) {
@@ -150,13 +145,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::
         HHDM_OFFSET;
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
-    debug_write("[BOOT] PMM OK\n");
-
-    debug_write("[BOOT] VMM init...\n");
     kernel::VMM::init();
-    debug_write("[BOOT] VMM OK\n");
-
-    debug_write("[BOOT] Boot params...\n");
     kernel::BootParams::parse_multiboot_cmdline();
     {
         auto& bp = kernel::BootParams::instance();
@@ -168,30 +157,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         debug_write_hex(bp.max_tasks);
         debug_write("\n");
     }
-    debug_write("[BOOT] Boot params OK\n");
+    debug_write("[BOOT] Memory init done\n");
 
-    debug_write("[BOOT] MemPool init...\n");
+    debug_write("[BOOT] Kernel init...\n");
     kernel::MemPool::init();
-    debug_write("[BOOT] MemPool OK\n");
-
-    debug_write("[BOOT] Initrd init...\n");
     initrd::init(_binary_initrd_cpio_start, _binary_initrd_cpio_end);
-    debug_write("[BOOT] Initrd OK\n");
-
-    debug_write("[BOOT] VFS init...\n");
     kernel::vfs::init();
     kernel::vfs::mount(kernel::vfs::initrd_fs, "/");
-    debug_write("[BOOT] VFS OK (initrd mounted at /)\n");
-
-    debug_write("[BOOT] IPC init...\n");
     kernel::IPC::init();
-    debug_write("[BOOT] IPC OK\n");
-
-    debug_write("[BOOT] Syscall init...\n");
     kernel::Syscall::init();
-    debug_write("[BOOT] Syscall OK\n");
-
-    debug_write("[BOOT] Scheduler init...\n");
     kernel::Scheduler::init();
     kernel::PMM::set_oom_handler([]() -> bool {
         kernel::TaskControlBlock* victim = nullptr;
@@ -218,42 +192,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         kernel::Scheduler::reap_orphans();
         return true;
     });
-    debug_write("[BOOT] Scheduler OK\n");
-
-    debug_write("[BOOT] Sync primitives init...\n");
     kernel::sync::init_all();
-    debug_write("[BOOT] Sync primitives OK\n");
-
-    debug_write("[BOOT] DriverRegistry init...\n");
     kernel::DriverRegistry::init();
-    debug_write("[BOOT] DriverRegistry OK\n");
+    debug_write("[BOOT] Kernel init done\n");
 
-    debug_write("[BOOT] Framebuffer init...\n");
-    if (service::Framebuffer::init()) {
-        debug_write("[BOOT] Framebuffer: ");
-        debug_write_hex(service::Framebuffer::width());
-        debug_write("x");
-        debug_write_hex(service::Framebuffer::height());
-        debug_write(" @ ");
-        debug_write_hex(service::Framebuffer::info().bpp);
-        debug_write("bpp OK\n");
-    } else {
-        debug_write("[BOOT] Framebuffer: not available\n");
-    }
-
-    debug_write("[BOOT] Terminal init...\n");
+    service::Framebuffer::init();
     service::Terminal::init();
     if (service::Terminal::instance()) {
-        debug_write("[BOOT] Terminal: OK\n");
-    } else {
-        debug_write("[BOOT] Terminal: no framebuffer, serial-only mode\n");
+        service::Terminal::show_splash();
     }
 
-    debug_write("[BOOT] PIC init...\n");
     init_pic();
-    debug_write("[BOOT] PIC OK\n");
-
-    debug_write("[BOOT] Keyboard init...\n");
     arch::Keyboard::init();
     arch::IDT::register_handler(
         arch::InterruptVector::KEYBOARD,
@@ -262,21 +211,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             outb(arch::PIC1_CMD, 0x20);
         }
     );
-    debug_write("[BOOT] Keyboard OK\n");
 
-    debug_write("[BOOT] Devfs init...\n");
     kernel::vfs::devfs_init();
-    debug_write("[BOOT] Mount devfs...\n");
     kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
-    debug_write("[BOOT] devfs mounted at /dev\n");
-
-    debug_write("[BOOT] Mount procfs...\n");
     kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
-    debug_write("[BOOT] procfs mounted at /proc\n");
 
-    debug_write("[BOOT] Timer init...\n");
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
-    debug_write("[BOOT] Timer OK\n");
+    arch::RTC::init();
+    debug_write("[BOOT] Hardware init done\n");
 
     kernel::DriverRegistry::register_driver(
         "keyboard", "PS/2 Tastaturtreiber", nullptr, nullptr, 1);
@@ -313,9 +255,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                         "vfsd", "vfsd.c.elf",
                         kernel::vfsd::set_vfsd_pid,
                         kernel::vfsd::get_vfsd_pid);
-                    debug_write("[BOOT] VFS daemon started (PID=");
-                    debug_write_hex(vfsd_task->id);
-                    debug_write(")\n");
                 }
             }
         }
@@ -339,9 +278,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                         "iocd", "iocd.c.elf",
                         kernel::iocd::set_iocd_pid,
                         kernel::iocd::get_iocd_pid);
-                    debug_write("[BOOT] IOCD started (PID=");
-                    debug_write_hex(iocd_task->id);
-                    debug_write(")\n");
                 }
             }
         }
@@ -350,15 +286,18 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     register_selftest_tests();
     register_ipc_benchmark_tests();
 
+    if (service::Terminal::instance()) {
+        service::Terminal::set_fb_enabled(false);
+    }
 #ifdef CONFIG_DEBUG
     kernel::test::run_debug();
 #else
     kernel::test::run_release();
 #endif
+    if (service::Terminal::instance()) {
+        service::Terminal::set_fb_enabled(true);
+    }
 
-    debug_write("[BOOT] Tests done.\n");
-
-    debug_write("[BOOT] Starting userspace test_fork...\n");
     {
         initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
         if (!f.data) f = initrd::find("test_fork.c.elf");
@@ -371,9 +310,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                     test_task->priority = 1;
                     test_task->period_ticks = 50;
                     kernel::Scheduler::add_task(*test_task);
-                    debug_write("[BOOT] test_fork started (PID=");
-                    debug_write_hex(test_task->id);
-                    debug_write(")\n");
                 }
             }
         }
@@ -387,7 +323,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         if (ksh) {
             kernel::Scheduler::add_task(*ksh);
             kernel::Scheduler::set_shell_task(ksh);
-            debug_write("[BOOT] Kernel shell started\n");
         }
     }
 
@@ -396,11 +331,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     arch::qemu_debug_exit(0);
 #endif
 
-    debug_write("[BOOT] Boot complete!\n");
-    debug_write("[BOOT] Enabling interrupts...\n");
+    debug_write("[BOOT] Boot complete, enabling interrupts\n");
     sti();
-
-    debug_write("[BOOT] Entering idle loop.\n");
     for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();
     }

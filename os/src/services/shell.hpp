@@ -83,6 +83,14 @@ private:
     static void cmd_exit(int argc, const char** argv);
     /// @brief Built-in: run kernel self-tests.
     static void cmd_selftest(int argc, const char** argv);
+    /// @brief Built-in: print working directory.
+    static void cmd_pwd(int argc, const char** argv);
+    /// @brief Built-in: locate a command.
+    static void cmd_which(int argc, const char** argv);
+    /// @brief Built-in: print environment variables.
+    static void cmd_env(int argc, const char** argv);
+    /// @brief Built-in: sleep for N seconds.
+    static void cmd_sleep(int argc, const char** argv);
 };
 
 } // namespace service

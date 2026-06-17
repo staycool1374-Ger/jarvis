@@ -53,6 +53,15 @@ public:
     /// @return Pointer to the Terminal instance.
     static Terminal* instance() { return instance_; }
 
+    /// @brief Number of pixel rows reserved for the persistent status bar at the bottom.
+    static constexpr uint32_t STATUS_BAR_ROWS = 2;
+    /// @brief Draws or updates the persistent status bar at the bottom of the screen.
+    /// @param left  Left-aligned text (e.g. version + build type).
+    /// @param right Right-aligned text (e.g. date, time, uptime).
+    static void draw_status_bar(const char* left, const char* right);
+    /// @brief Shows the boot splash screen (version, build type) centered on the framebuffer.
+    static void show_splash();
+
     /// @brief Maximum length of the line-input buffer.
     static constexpr size_t LINE_BUF_SIZE = 256;
 

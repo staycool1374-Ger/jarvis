@@ -1,11 +1,13 @@
 #include <services/shell.hpp>
 #include <services/terminal/terminal.hpp>
+#include <services/terminal/framebuffer.hpp>
 #include <services/program.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -54,7 +56,11 @@ void Shell::init() {
     register_command("runelf",  "Run userspace ELF from initrd",     cmd_runelf);
     register_command("exit",    "Shut down the system",              cmd_exit);
     register_command("shutdown","Shut down the system",              cmd_exit);
-    register_command("selftest","Run kernel self-tests",            cmd_selftest);
+    register_command("selftest","Run kernel self-tests",             cmd_selftest);
+    register_command("pwd",     "Print working directory",           cmd_pwd);
+    register_command("env",     "Print environment variables",       cmd_env);
+    register_command("sleep",   "Sleep for N seconds",               cmd_sleep);
+    register_command("locate",  "Locate a command",                  cmd_which);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -127,13 +133,6 @@ void Shell::execute(const char* cmd) {
     parse_and_exec(cmd);
 }
 
-static void debug_putchar(char c) {
-    if (c == '\n') { do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1,
-    '\r'); }
-    do { } while ((arch::inb(arch::COM1_LSR) & 0x20) == 0); arch::outb(arch::COM1, c);
-}
-static void debug_write(const char* s) { while (*s) debug_putchar(*s++); }
-
 static bool readline(char* buf, size_t max_len) {
     size_t pos = 0;
     for (;;) {
@@ -172,21 +171,119 @@ static bool readline(char* buf, size_t max_len) {
     }
 }
 
+static void append_two_digit(char*& p, uint32_t n) {
+    *p++ = '0' + (n / 10) % 10;
+    *p++ = '0' + n % 10;
+}
+
+static void append_four_digit(char*& p, uint32_t n) {
+    *p++ = '0' + (n / 1000) % 10;
+    *p++ = '0' + (n / 100) % 10;
+    append_two_digit(p, n % 100);
+}
+
+static void serial_write(const char* s) {
+    while (*s) {
+        while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
+        arch::outb(arch::COM1, *s++);
+    }
+}
+
+static void append_size(char*& p, uint64_t bytes) {
+    uint64_t mb = bytes / (1024 * 1024);
+    if (mb >= 100) *p++ = '0' + (mb / 100) % 10;
+    if (mb >= 10) *p++ = '0' + (mb / 10) % 10;
+    *p++ = '0' + mb % 10;
+}
+
+static void update_status_bar() {
+    if (!Terminal::instance()) return;
+    if (!Framebuffer::available()) return;
+
+    char left[64];
+    char* lp = left;
+    for (const char* s = "Jarvis RTOS "; *s; ++s) *lp++ = *s;
+    for (const char* s = kernel::Version::string(); *s; ++s) *lp++ = *s;
+#ifdef CONFIG_DEBUG
+    for (const char* s = " [D]"; *s; ++s) *lp++ = *s;
+#else
+    for (const char* s = " [R]"; *s; ++s) *lp++ = *s;
+#endif
+    *lp = '\0';
+
+    char right[96];
+    char* rp = right;
+
+    arch::tm tm;
+    arch::RTC::read_time(&tm);
+
+    uint16_t year = static_cast<uint16_t>(tm.tm_year + 1900);
+    append_four_digit(rp, year);
+    *rp++ = '-';
+    append_two_digit(rp, static_cast<uint32_t>(tm.tm_mon + 1));
+    *rp++ = '-';
+    append_two_digit(rp, static_cast<uint32_t>(tm.tm_mday));
+    *rp++ = ' ';
+    append_two_digit(rp, static_cast<uint32_t>(tm.tm_hour));
+    *rp++ = ':';
+    append_two_digit(rp, static_cast<uint32_t>(tm.tm_min));
+    *rp++ = ':';
+    append_two_digit(rp, static_cast<uint32_t>(tm.tm_sec));
+
+    for (const char* s = " | Up "; *s; ++s) *rp++ = *s;
+
+    uint64_t total_sec = arch::Timer::ticks() / 1000;
+    uint32_t uh = static_cast<uint32_t>(total_sec / 3600);
+    uint32_t um = static_cast<uint32_t>((total_sec % 3600) / 60);
+    uint32_t us = static_cast<uint32_t>(total_sec % 60);
+    append_two_digit(rp, uh);
+    *rp++ = ':';
+    append_two_digit(rp, um);
+    *rp++ = ':';
+    append_two_digit(rp, us);
+
+    uint64_t total_mem = kernel::PMM::total_memory();
+    uint64_t used_mem = total_mem - kernel::PMM::free_memory();
+    for (const char* s = " | Mem: "; *s; ++s) *rp++ = *s;
+    append_size(rp, used_mem);
+    *rp++ = '/';
+    append_size(rp, total_mem);
+    for (const char* s = "M"; *s; ++s) *rp++ = *s;
+
+    for (const char* s = " | T:"; *s; ++s) *rp++ = *s;
+
+    uint64_t tc = kernel::Scheduler::task_count();
+    if (tc >= 100) *rp++ = '0' + (tc / 100) % 10;
+    if (tc >= 10) *rp++ = '0' + (tc / 10) % 10;
+    *rp++ = '0' + tc % 10;
+    *rp = '\0';
+
+    Terminal::draw_status_bar(left, right);
+
+    serial_write("\r\n");
+    serial_write(left);
+    serial_write("  ");
+    serial_write(right);
+    serial_write("\r\n");
+}
+
 void Shell::shell_task_main() {
-    debug_write("[SHELL] Task started!\n");
     if (!initialized_) init();
 
+    Terminal::clear();
+    Terminal::write("\n");
     Terminal::set_fg(0x00FF00);
-    Terminal::write("\n  ===== ");
-    Terminal::write(kernel::Version::full_string());
-    Terminal::write(" =====\n");
+    Terminal::write("Jarvis RTOS ");
+    Terminal::write(kernel::Version::string());
+    Terminal::write("\n");
     Terminal::set_fg(0xC0C0C0);
-    Terminal::write("  Mikrokernel + Rate Monotonic Scheduler\n");
-    Terminal::write("  Geben Sie 'help' ein fuer Befehle\n\n");
+    Terminal::write("Geben Sie 'help' ein fuer Befehle\n\n");
 
     char line[BUF_SIZE];
 
     while (true) {
+        update_status_bar();
+
         Terminal::set_fg(0x00AAFF);
         Terminal::write("jarvis$ ");
         Terminal::set_fg(0xC0C0C0);
@@ -620,6 +717,56 @@ void Shell::cmd_exit(int, const char**) {
     for (int i = 0; i < 100000000; ++i) arch::pause();
     Terminal::write("Shutdown failed. Halting.\n");
     arch::cli(); arch::hlt();
+}
+
+void Shell::cmd_pwd(int, const char**) {
+    auto* task = kernel::Scheduler::current_task();
+    if (!task) return;
+    Terminal::write(task->cwd);
+    Terminal::putchar('\n');
+}
+
+void Shell::cmd_which(int argc, const char** argv) {
+    Terminal::write("W ");
+    if (argc < 2) {
+        Terminal::write("Usage: which <command...>\n");
+        return;
+    }
+    for (int i = 1; i < argc; ++i) {
+        bool found = false;
+        for (size_t j = 0; j < num_commands_; ++j) {
+            if (strcmp(argv[i], commands_[j].name) == 0) {
+                Terminal::write(commands_[j].name);
+                Terminal::write(" (shell built-in)\n");
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            Terminal::write(argv[i]);
+            Terminal::write(": not found\n");
+        }
+    }
+}
+
+void Shell::cmd_env(int, const char**) {
+    // env storage not available in this build
+}
+
+void Shell::cmd_sleep(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: sleep <seconds>\n");
+        return;
+    }
+    uint64_t secs = 0;
+    const char* p = argv[1];
+    while (*p) {
+        secs = secs * 10 + static_cast<uint64_t>(*p++ - '0');
+    }
+    uint64_t target = arch::Timer::ticks() + secs * 1000;
+    while (arch::Timer::ticks() < target) {
+        arch::pause();
+    }
 }
 
 } // namespace service
