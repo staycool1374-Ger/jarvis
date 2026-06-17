@@ -222,11 +222,21 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     {
         auto* ata = kernel::block::AtaPioDriver::probe_first_drive();
         if (ata) {
+            debug_write("[BOOT] ATA drive found\n");
             auto* part = new kernel::fat32::Fat32Partition(*ata);
             if (part->mount()) {
+                debug_write("[BOOT] FAT32 partition mounted\n");
                 kernel::vfs::fat32_partition_instance = part;
-                kernel::vfs::mount_fat32("/mnt");
+                if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                    debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                } else {
+                    debug_write("[BOOT] mount_fat32 failed\n");
+                }
+            } else {
+                debug_write("[BOOT] FAT32 partition mount failed\n");
             }
+        } else {
+            debug_write("[BOOT] No ATA drive found\n");
         }
     }
 

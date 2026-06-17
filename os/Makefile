@@ -227,7 +227,8 @@ run-release: release
 	    printf '  %-7s %s\n' 'QEMU' 'Starting release image…'; \
 	    qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none \
 	        -boot order=d \
-	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
+	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
+	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
 	else \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -238,7 +239,8 @@ run-qemu-debug: debug
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
 	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
 	        -boot order=d -s -d int,cpu_reset \
-	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI); \
+	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
+	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
 	else \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -266,7 +268,8 @@ gdb: debug
 	@echo ""
 	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
 	    -boot order=d -s -S -d cpu_reset \
-	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
+	    -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
 
 test-gdb: debug
 	@rm -f build/gdb-panic-captured build/gdb-serial.log

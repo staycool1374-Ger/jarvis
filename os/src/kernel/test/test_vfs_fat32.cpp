@@ -179,6 +179,7 @@ JARVIS_TEST(vfs_fat32_mkdir) {
     child->ops->close(*child);
     root->ops->close(*root);
     fat32_partition_instance = old;
+    fat32_fs.get_root();
     delete part;
     JARVIS_TEST_PASS();
 }
@@ -206,6 +207,7 @@ JARVIS_TEST(vfs_fat32_unlink) {
 
     root->ops->close(*root);
     fat32_partition_instance = old;
+    fat32_fs.get_root();
     delete part;
     JARVIS_TEST_PASS();
 }
@@ -239,6 +241,7 @@ JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
 
     root->ops->close(*root);
     fat32_partition_instance = old;
+    fat32_fs.get_root();
     delete part;
     JARVIS_TEST_PASS();
 }

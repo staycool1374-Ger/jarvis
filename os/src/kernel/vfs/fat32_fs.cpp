@@ -16,6 +16,7 @@ struct Fat32VnodeData {
 fat32::Fat32Partition* fat32_partition_instance = nullptr;
 
 // Forward declarations
+extern Vnode fat32_root_vnode;
 static Vnode* fat32_dir_lookup(Vnode& self, const char* name);
 static Vnode* fat32_file_lookup(Vnode&, const char*);
 static int fat32_dir_mkdir(Vnode& self, const char* name, uint16_t mode);
@@ -118,6 +119,10 @@ static int fat32_dir_open(Vnode&, uint64_t) {
 }
 
 static void fat32_dir_close(Vnode& self) {
+    if (&self == &fat32_root_vnode) {
+        self.refcount = 1;
+        return;
+    }
     if (self.private_data) {
         auto* data = static_cast<Fat32VnodeData*>(self.private_data);
         MemPool::free(data);
@@ -317,7 +322,7 @@ static Vnode* fat32_dir_lookup(Vnode& self, const char* name) {
 // Filesystem root
 // -------------------------------------------------------------------
 
-static Vnode fat32_root_vnode = {};
+Vnode fat32_root_vnode = {};
 static Fat32VnodeData fat32_root_vdata;
 static bool root_initialized = false;
 
