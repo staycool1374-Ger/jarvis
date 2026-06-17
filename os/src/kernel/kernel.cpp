@@ -22,6 +22,8 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
+#include <kernel/driver/ata_pio.hpp>
+#include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/vfs/devfs.hpp>
@@ -215,6 +217,18 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::vfs::devfs_init();
     kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
     kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
+
+    // Probe ATA drives and mount FAT32 if found
+    {
+        auto* ata = kernel::block::AtaPioDriver::probe_first_drive();
+        if (ata) {
+            auto* part = new kernel::fat32::Fat32Partition(*ata);
+            if (part->mount()) {
+                kernel::vfs::fat32_partition_instance = part;
+                kernel::vfs::mount_fat32("/mnt");
+            }
+        }
+    }
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
     arch::RTC::init();

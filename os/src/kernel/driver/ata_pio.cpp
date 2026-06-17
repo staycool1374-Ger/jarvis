@@ -8,34 +8,43 @@ namespace block {
 
 static constexpr uint64_t ATA_POLL_TIMEOUT = 100000;
 
-AtaPioDriver::AtaPioDriver() = default;
-
 using namespace arch;
 
+AtaPioDriver::AtaPioDriver(uint16_t port_base, uint8_t drive_head)
+    : port_base_(port_base), drive_head_(drive_head) {}
+
 bool AtaPioDriver::identify() {
-    outb(ATA_DRIVE, ATA_DRIVE_MASTER);
+    outb(static_cast<uint16_t>(port_base_ + 6), drive_head_);
 
-    outb(ATA_SECTOR_CNT, 0);
-    outb(ATA_LBA_LO, 0);
-    outb(ATA_LBA_MID, 0);
-    outb(ATA_LBA_HI, 0);
+    outb(static_cast<uint16_t>(port_base_ + 2), 0);
+    outb(static_cast<uint16_t>(port_base_ + 3), 0);
+    outb(static_cast<uint16_t>(port_base_ + 4), 0);
+    outb(static_cast<uint16_t>(port_base_ + 5), 0);
 
-    outb(ATA_CMD, ATA_CMD_IDENTIFY);
+    outb(static_cast<uint16_t>(port_base_ + 7), ATA_CMD_IDENTIFY);
 
-    uint8_t status = inb(ATA_CMD);
-    if (status == 0) return false;
+    uint8_t status = inb(static_cast<uint16_t>(port_base_ + 7));
+    if (status == 0 || status == 0xFF) return false;
 
     if (!poll_status(true)) return false;
+
+    status = inb(static_cast<uint16_t>(port_base_ + 7));
     if (status & ATA_SR_ERR) return false;
+
+    if (!wait_for_drq()) return false;
 
     if (!wait_for_drq()) return false;
 
     uint16_t buf[256];
     for (int i = 0; i < 256; ++i) {
-        buf[i] = inw(ATA_DATA);
+        buf[i] = inw(port_base_);
     }
 
+    if (buf[0] & (1 << 15)) return false;
+
     sector_count_ = (static_cast<uint64_t>(buf[61]) << 16) | buf[60];
+    if (sector_count_ == 0) return false;
+
     drive_present_ = true;
     return true;
 }
@@ -46,7 +55,7 @@ bool AtaPioDriver::init() {
 
 bool AtaPioDriver::poll_status(bool wait_for_bsy) {
     for (uint64_t i = 0; i < ATA_POLL_TIMEOUT; ++i) {
-        uint8_t status = inb(ATA_CMD);
+        uint8_t status = inb(static_cast<uint16_t>(port_base_ + 7));
         if (wait_for_bsy) {
             if (!(status & ATA_SR_BSY)) return true;
         } else {
@@ -68,17 +77,21 @@ bool AtaPioDriver::read_sector(uint64_t lba, uint8_t* buffer) {
 
     if (!poll_status(true)) return false;
 
-    outb(ATA_DRIVE, ATA_DRIVE_MASTER | static_cast<uint8_t>((lba >> 24) & 0x0F));
-    outb(ATA_SECTOR_CNT, 1);
-    outb(ATA_LBA_LO, static_cast<uint8_t>(lba & 0xFF));
-    outb(ATA_LBA_MID, static_cast<uint8_t>((lba >> 8) & 0xFF));
-    outb(ATA_LBA_HI, static_cast<uint8_t>((lba >> 16) & 0xFF));
-    outb(ATA_CMD, ATA_CMD_READ_SECTORS);
+    outb(static_cast<uint16_t>(port_base_ + 6),
+         drive_head_ | static_cast<uint8_t>((lba >> 24) & 0x0F));
+    outb(static_cast<uint16_t>(port_base_ + 2), 1);
+    outb(static_cast<uint16_t>(port_base_ + 3),
+         static_cast<uint8_t>(lba & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 4),
+         static_cast<uint8_t>((lba >> 8) & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 5),
+         static_cast<uint8_t>((lba >> 16) & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 7), ATA_CMD_READ_SECTORS);
 
     if (!wait_for_drq()) return false;
 
     for (int i = 0; i < 256; ++i) {
-        uint16_t word = inw(ATA_DATA);
+        uint16_t word = inw(port_base_);
         buffer[i * 2] = static_cast<uint8_t>(word & 0xFF);
         buffer[i * 2 + 1] = static_cast<uint8_t>((word >> 8) & 0xFF);
     }
@@ -91,24 +104,48 @@ bool AtaPioDriver::write_sector(uint64_t lba, const uint8_t* buffer) {
 
     if (!poll_status(true)) return false;
 
-    outb(ATA_DRIVE, ATA_DRIVE_MASTER | static_cast<uint8_t>((lba >> 24) & 0x0F));
-    outb(ATA_SECTOR_CNT, 1);
-    outb(ATA_LBA_LO, static_cast<uint8_t>(lba & 0xFF));
-    outb(ATA_LBA_MID, static_cast<uint8_t>((lba >> 8) & 0xFF));
-    outb(ATA_LBA_HI, static_cast<uint8_t>((lba >> 16) & 0xFF));
-    outb(ATA_CMD, ATA_CMD_WRITE_SECTORS);
+    outb(static_cast<uint16_t>(port_base_ + 6),
+         drive_head_ | static_cast<uint8_t>((lba >> 24) & 0x0F));
+    outb(static_cast<uint16_t>(port_base_ + 2), 1);
+    outb(static_cast<uint16_t>(port_base_ + 3),
+         static_cast<uint8_t>(lba & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 4),
+         static_cast<uint8_t>((lba >> 8) & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 5),
+         static_cast<uint8_t>((lba >> 16) & 0xFF));
+    outb(static_cast<uint16_t>(port_base_ + 7), ATA_CMD_WRITE_SECTORS);
 
     if (!wait_for_drq()) return false;
 
     for (int i = 0; i < 256; ++i) {
         uint16_t word = static_cast<uint16_t>(buffer[i * 2]) |
                        (static_cast<uint16_t>(buffer[i * 2 + 1]) << 8);
-        outw(ATA_DATA, word);
+        outw(port_base_, word);
     }
 
     if (!poll_status(true)) return false;
 
     return true;
+}
+
+AtaPioDriver* AtaPioDriver::probe_first_drive() {
+    struct Channel {
+        uint16_t port_base;
+        uint8_t  drive_head;
+    };
+    static constexpr Channel channels[] = {
+        {0x1F0, ATA_DRIVE_MASTER},
+        {0x1F0, ATA_DRIVE_SLAVE},
+        {0x170, ATA_DRIVE_MASTER},
+        {0x170, ATA_DRIVE_SLAVE},
+    };
+
+    for (auto& ch : channels) {
+        auto* drv = new AtaPioDriver(ch.port_base, ch.drive_head);
+        if (drv->init()) return drv;
+        delete drv;
+    }
+    return nullptr;
 }
 
 } // namespace block
