@@ -205,13 +205,6 @@ static void append_four_digit(char*& p, uint32_t n) {
     append_two_digit(p, n % 100);
 }
 
-static void serial_write(const char* s) {
-    while (*s) {
-        while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
-        arch::outb(arch::COM1, *s++);
-    }
-}
-
 static void append_size(char*& p, uint64_t bytes) {
     uint64_t mb = bytes / (1024 * 1024);
     if (mb >= 100) *p++ = '0' + (mb / 100) % 10;
@@ -282,12 +275,6 @@ static void update_status_bar() {
     *rp = '\0';
 
     Terminal::draw_status_bar(left, right);
-
-    serial_write("\r\n");
-    serial_write(left);
-    serial_write("  ");
-    serial_write(right);
-    serial_write("\r\n");
 }
 
 void Shell::shell_task_main() {
