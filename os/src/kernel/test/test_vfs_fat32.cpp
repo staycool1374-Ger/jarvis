@@ -135,6 +135,107 @@ JARVIS_TEST(vfs_fat32_subdir) {
     sub->ops->close(*sub);
 }
 
+// ---- Write tests (separate writable partition, not shared global) ----
+
+static fat32::Fat32Partition* create_writable_partition() {
+    extern uint8_t _binary_build_fat32_img_start[];
+    extern uint8_t _binary_build_fat32_img_end[];
+    uint64_t bytes = static_cast<uint64_t>(
+        _binary_build_fat32_img_end - _binary_build_fat32_img_start);
+    auto* dev = new kernel::block::MockBlockDevice(
+        _binary_build_fat32_img_start, bytes / fat32::SECTOR_SIZE, true);
+    return new fat32::Fat32Partition(*dev);
+}
+
+// Runmode: kernel
+// Testidea: Verifies FAT32 mkdir via VnodeOps creates a directory entry.
+// Input: ops->mkdir on root vnode with name "NEWDIR"
+// Expect: Returns 0, lookup finds new directory
+// Depends: kernel::vfs::VnodeOps::mkdir
+JARVIS_TEST(vfs_fat32_mkdir) {
+    auto* part = create_writable_partition();
+    JARVIS_ASSERT(part->mount());
+    auto* old = fat32_partition_instance;
+    fat32_partition_instance = part;
+
+    Vnode* root = fat32_fs.get_root();
+    JARVIS_ASSERT(root != nullptr);
+    JARVIS_ASSERT(root->ops->mkdir != nullptr);
+
+    int ret = root->ops->mkdir(*root, "NEWDIR", 0);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    Vnode* child = root->ops->lookup(*root, "NEWDIR");
+    JARVIS_ASSERT(child != nullptr);
+    JARVIS_ASSERT(child->mode & vfs::S_IFDIR);
+
+    child->ops->close(*child);
+    root->ops->close(*root);
+    fat32_partition_instance = old;
+    delete part;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies FAT32 unlink via VnodeOps removes a file entry.
+// Input: ops->unlink on root vnode for "README.TXT"
+// Expect: Returns 0, lookup no longer finds the file
+// Depends: kernel::vfs::VnodeOps::unlink
+JARVIS_TEST(vfs_fat32_unlink) {
+    auto* part = create_writable_partition();
+    JARVIS_ASSERT(part->mount());
+    auto* old = fat32_partition_instance;
+    fat32_partition_instance = part;
+
+    Vnode* root = fat32_fs.get_root();
+    JARVIS_ASSERT(root != nullptr);
+    JARVIS_ASSERT(root->ops->unlink != nullptr);
+
+    int ret = root->ops->unlink(*root, "README.TXT");
+    JARVIS_ASSERT_EQ(0, ret);
+
+    Vnode* child = root->ops->lookup(*root, "README.TXT");
+    JARVIS_ASSERT(child == nullptr);
+
+    root->ops->close(*root);
+    fat32_partition_instance = old;
+    delete part;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies mkdir then readdir shows the new directory.
+// Input: mkdir "DIR2", then readdir
+// Expect: readdir includes "DIR2"
+// Depends: kernel::vfs::VnodeOps
+JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
+    auto* part = create_writable_partition();
+    JARVIS_ASSERT(part->mount());
+    auto* old = fat32_partition_instance;
+    fat32_partition_instance = part;
+
+    Vnode* root = fat32_fs.get_root();
+    JARVIS_ASSERT(root != nullptr);
+
+    JARVIS_ASSERT_EQ(0, root->ops->mkdir(*root, "DIR2", 0));
+
+    uint64_t pos = 0;
+    Dirent dent = {};
+    bool found = false;
+    while (root->ops->readdir(*root, pos, dent) == 0) {
+        if (strcmp(dent.d_name, "DIR2") == 0) {
+            found = true;
+            break;
+        }
+    }
+    JARVIS_ASSERT(found);
+
+    root->ops->close(*root);
+    fat32_partition_instance = old;
+    delete part;
+    JARVIS_TEST_PASS();
+}
+
 void register_vfs_fat32_tests() {
     Logger::info("Registering VFS FAT32 tests");
 
@@ -146,4 +247,8 @@ void register_vfs_fat32_tests() {
     JARVIS_REGISTER_RELEASE_TEST(vfs_fat32_readdir);
     JARVIS_REGISTER_RELEASE_TEST(vfs_fat32_nonexistent_path);
     JARVIS_REGISTER_RELEASE_TEST(vfs_fat32_subdir);
+
+    JARVIS_REGISTER_TEST(vfs_fat32_mkdir);
+    JARVIS_REGISTER_TEST(vfs_fat32_unlink);
+    JARVIS_REGISTER_TEST(vfs_fat32_mkdir_then_readdir);
 }

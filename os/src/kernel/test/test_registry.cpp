@@ -62,6 +62,8 @@ void register_vfsd_authorization_tests();
 void register_syscall_tests();
 void register_textutils_tests();
 void register_shell_interaction_tests();
+void register_irq_guard_tests();
+void register_shell_redirect_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to
@@ -130,4 +132,6 @@ void register_selftest_tests() {
     register_vfsd_authorization_tests();
     register_tmpfs_tests();
     register_shell_interaction_tests();
+    register_irq_guard_tests();
+    register_shell_redirect_tests();
 }

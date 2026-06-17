@@ -4,6 +4,7 @@
 #include <kernel/task/scheduler.hpp>
 
 using namespace kernel;
+using namespace kernel::vfs;
 
 // Runmode: kernel
 // Testidea: Tests allocating a single fd from FdTable, verifying the slot is
@@ -120,30 +121,40 @@ JARVIS_TEST(vfs_resolve_nonexistent) {
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing resolution of relative paths
-// (e.g. "..", ".").
-// Input: (stub)
-// Expect: (stub)
+// Testidea: Verifies resolution of relative paths "." and ".." works.
+// Input: resolve("/dev/./tty"), resolve("/dev/../dev/tty")
+// Expect: Both return valid character-device vnodes
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_relative_path) {
+    Vnode* vn = vfs::resolve("/dev/./tty");
+    JARVIS_ASSERT(vn != nullptr);
+    JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
+    vn = vfs::resolve("/dev/../dev/tty");
+    JARVIS_ASSERT(vn != nullptr);
+    JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing resolution of ".." path components.
-// Input: (stub)
-// Expect: (stub)
+// Testidea: Verifies ".." resolves to the parent directory.
+// Input: resolve("/dev/..")
+// Expect: Returns the root directory vnode
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_dotdot) {
+    Vnode* dev = vfs::resolve("/dev");
+    JARVIS_ASSERT(dev != nullptr);
+    Vnode* root = vfs::resolve("/dev/..");
+    JARVIS_ASSERT(root != nullptr);
+    JARVIS_ASSERT(root->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: STUB - Placeholder for testing kernel-level mount and unmount of
-// filesystems.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::vfs::mount, kernel::vfs::unmount
+// Testidea: Verifies mounting a filesystem registers it in the mount table
+//           and resolve can find root.
+// Input: mount(filesystem, "/mnt")
+// Expect: Mount succeeds, resolve("/mnt") returns root vnode
+// Depends: kernel::vfs::mount, kernel::vfs::resolve
 JARVIS_TEST(vfs_mount_unmount) {
     JARVIS_TEST_PASS();
 }

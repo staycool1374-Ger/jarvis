@@ -471,6 +471,16 @@ JARVIS_TEST(shell_sleep_zero) {
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
 }
 
+// Runmode: kernel
+// Testidea: Verifies the "clear" built-in command executes without crash.
+// Input: Shell::execute("clear")
+// Expect: No crash, terminal cleared
+// Depends: service::Shell, service::Terminal
+JARVIS_TEST(shell_clear_command) {
+    service::Shell::execute("clear");
+    JARVIS_TEST_PASS();
+}
+
 void register_shell_interaction_tests() {
     Logger::info("Registering shell interaction tests");
     JARVIS_REGISTER_RELEASE_TEST(shell_loopback_manual_string);
@@ -490,4 +500,5 @@ void register_shell_interaction_tests() {
     JARVIS_REGISTER_RELEASE_TEST(shell_env_command);
     JARVIS_REGISTER_RELEASE_TEST(shell_export_command);
     JARVIS_REGISTER_RELEASE_TEST(shell_sleep_zero);
+    JARVIS_REGISTER_RELEASE_TEST(shell_clear_command);
 }
