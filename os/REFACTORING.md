@@ -1,5 +1,5 @@
 # EXECUTIVE OVERRIDE: SCHEDULER REGRESSION & STABILIZATION MODE
-**Status:** ACTIVE — Prioritized over Phase 2 feature work.
+**Status:** PARTIALLY COMPLETE — Phases A (IrqGuard), B (sync race fixes), and D (C++20 concepts) implemented. Phase C (thread-safety attributes) deferred.
 **Target System:** Preemptive Scheduler & Context-Switch Subsystem.
 **Core Directive:** Systematically isolate, expose, and eliminate race conditions, jitter, or state regressions in the preemption engine. Stabilize the current preemptive foundations to ensure a rock-solid baseline before any Phase 4 $O(1)$ architectural overhauls.
 
