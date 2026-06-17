@@ -64,6 +64,11 @@ void register_textutils_tests();
 void register_shell_interaction_tests();
 void register_irq_guard_tests();
 void register_shell_redirect_tests();
+void register_klog_tests();
+void register_hal_tests();
+void register_arch_structure_tests();
+void register_buildsystem_tests();
+void register_secure_exec_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to
@@ -134,4 +139,9 @@ void register_selftest_tests() {
     register_shell_interaction_tests();
     register_irq_guard_tests();
     register_shell_redirect_tests();
+    register_klog_tests();
+    register_hal_tests();
+    register_arch_structure_tests();
+    register_buildsystem_tests();
+    register_secure_exec_tests();
 }
