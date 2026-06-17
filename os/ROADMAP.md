@@ -1,19 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 ### 0.2.13 — Shell UX & Utilities
-- [ ] Persistent status bar (framebuffer + serial), Zsh-like dynamic prompt
-- [ ] Built-in commands: help, echo, pwd, clear, which, env, sleep
-- [ ] SYS_MKDIR/SYS_UNLINK, standalone initrd utilities (mkdir, rm, rmdir, etc.)
-- [ ] IPC pipeline hardening (pipes, I/O redirection)
-- [ ] use check codebase and analyze where requirement <concepts> and <requires> keywords
-      make sense. especially check for templates.
-  Preemptive Scheduler Stabilization & Advanced Synchronization Hardening
-      - [ ] Implement RAII `IrqGuard` for deterministic stack-bound nested `RFLAGS` interrupt state preservation
-      - [ ] Retrofit core synchronization with GNU/Clang Thread-Safety Attributes (`[[gnu::capability("mutex")]]`, `[[gnu::scoped_lockable]]`, `[[gnu::guarded_by]]`)
-      - [ ] Define C++20 `Lockable` structural constraints to validate IRQ-safe lock ordering at compile-time
-      - [ ] Audit preemption loops and task state transitions (Ready ↔ Blocked) using `debug_switch_ring` tracing to eradicate race conditions
+- [ ] IPC pipeline hardening (kernel shell: pipe `|`, redirect `<`/`>`, stdin/stdout)
 
-  
 ---
 
 ## Phase 3: System Services & Hardware (0.2.14–0.2.17)
