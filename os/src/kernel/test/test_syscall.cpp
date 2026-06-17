@@ -464,6 +464,135 @@ JARVIS_TEST(syscall_chdir_getcwd) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies MKDIR syscall creates a directory and it appears in readdir.
+// Input: MKDIR "/mnt/testdir" mode 0755, then OPENDIR/READDIR to verify.
+// Expect: MKDIR returns 0; READDIR finds "testdir"; RMDIR cleans up.
+// Depends: kernel::Syscall, kernel::vfs::Fat32Partition
+JARVIS_TEST(syscall_mkdir_rmdir) {
+    auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(test_task != nullptr);
+    Scheduler::add_task(*test_task);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(*test_task);
+
+    const char* path = "/mnt/testdir";
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MKDIR),
+                                   reinterpret_cast<uint64_t>(path), 0755, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    int fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
+                             reinterpret_cast<uint64_t>("/mnt"), 0, 0, 0, nullptr);
+    JARVIS_ASSERT(static_cast<int64_t>(fd) >= 0);
+
+    vfs::Dirent dent = {};
+    uint64_t pos = 0;
+    bool found = false;
+    while (true) {
+        ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::READDIR),
+                              fd, reinterpret_cast<uint64_t>(&pos),
+                              reinterpret_cast<uint64_t>(&dent), 0, nullptr);
+        if (ret != 0) break;
+        if (strcmp(dent.d_name, "testdir") == 0) {
+            found = true;
+            break;
+        }
+    }
+    JARVIS_ASSERT(found);
+
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), fd, 0, 0, 0, nullptr);
+
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
+    test_task->cleanup();
+    delete test_task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies UNLINK syscall removes a file.
+// Input: CREATE file via OPEN O_WRONLY|O_CREAT, then UNLINK it.
+// Expect: UNLINK returns 0; subsequent OPEN fails with ENOENT.
+// Depends: kernel::Syscall, kernel::vfs::Fat32Partition
+JARVIS_TEST(syscall_unlink) {
+    auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(test_task != nullptr);
+    Scheduler::add_task(*test_task);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(*test_task);
+
+    const char* path = "/mnt/testfile.txt";
+
+    int fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
+                             reinterpret_cast<uint64_t>(path), 1 | 0x200, 0644, 0, nullptr);
+    JARVIS_ASSERT(static_cast<int64_t>(fd) >= 0);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), fd, 0, 0, 0, nullptr);
+
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::UNLINK),
+                                   reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    int64_t r = static_cast<int64_t>(Syscall::handle(
+        static_cast<uint64_t>(SyscallNumber::OPEN),
+        reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr));
+    JARVIS_ASSERT(r < 0);
+
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
+    test_task->cleanup();
+    delete test_task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies RMDIR on non-empty directory fails with ENOTEMPTY.
+// Input: MKDIR parent, MKDIR child, then RMDIR parent (should fail).
+// Expect: RMDIR on parent fails (non-empty); RMDIR on child succeeds.
+// Depends: kernel::Syscall, kernel::vfs::Fat32Partition
+JARVIS_TEST(syscall_rmdir_nonempty_fails) {
+    auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
+    JARVIS_ASSERT(test_task != nullptr);
+    Scheduler::add_task(*test_task);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(*test_task);
+
+    const char* parent = "/mnt/parent";
+    const char* child = "/mnt/parent/child";
+
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MKDIR),
+                                   reinterpret_cast<uint64_t>(parent), 0755, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MKDIR),
+                          reinterpret_cast<uint64_t>(child), 0755, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(parent), 0, 0, 0, nullptr);
+    JARVIS_ASSERT(static_cast<int64_t>(ret) < 0);
+
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(child), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(parent), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*test_task);
+    test_task->cleanup();
+    delete test_task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: STUB - PAUSE syscall cannot be tested from kernel context
 // because hlt needs interrupts enabled and may never wake.
 // Input: PAUSE syscall (not invoked).
@@ -542,6 +671,9 @@ void register_syscall_tests() {
     JARVIS_REGISTER_TEST(syscall_signal_sigreturn);
     JARVIS_REGISTER_TEST(syscall_send_recv);
     JARVIS_REGISTER_TEST(syscall_chdir_getcwd);
+    JARVIS_REGISTER_TEST(syscall_mkdir_rmdir);
+    JARVIS_REGISTER_TEST(syscall_unlink);
+    JARVIS_REGISTER_TEST(syscall_rmdir_nonempty_fails);
 
     JARVIS_REGISTER_TEST(syscall_pause_in_idle_works);
     JARVIS_REGISTER_TEST(syscall_open_forwards_to_vfsd);

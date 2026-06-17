@@ -170,6 +170,95 @@ JARVIS_TEST(vfsd_server_boots_and_responds) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies vfs::mkdir creates a directory at a valid path.
+// Input: vfs::mkdir("/mnt/NEWDIR", 0)
+// Expect: Returns 0, vfs::resolve finds the new directory with S_IFDIR
+// Depends: kernel::vfs::mkdir, kernel::vfs::resolve
+JARVIS_TEST(vfs_mkdir_valid) {
+    int ret = vfs::mkdir("/mnt/NEWDIR", 0);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    Vnode* vn = vfs::resolve("/mnt/NEWDIR");
+    JARVIS_ASSERT(vn != nullptr);
+    JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies vfs::mkdir fails for nonexistent parent.
+// Input: vfs::mkdir("/nonexistent/DIR", 0)
+// Expect: Returns VFS_INVALID
+// Depends: kernel::vfs::mkdir
+JARVIS_TEST(vfs_mkdir_nonexistent_parent) {
+    int ret = vfs::mkdir("/nonexistent/DIR", 0);
+    JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies vfs::mkdir fails when parent is not a directory.
+// Input: vfs::mkdir("/mnt/README.TXT/DIR", 0) where README.TXT is a file
+// Expect: Returns VFS_INVALID
+// Depends: kernel::vfs::mkdir
+JARVIS_TEST(vfs_mkdir_parent_not_dir) {
+    int ret = vfs::mkdir("/mnt/README.TXT/DIR", 0);
+    JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies vfs::unlink removes a file.
+// Input: vfs::mkdir to create file, then vfs::unlink
+// Expect: Returns 0, vfs::resolve no longer finds the file
+// Depends: kernel::vfs::unlink, kernel::vfs::mkdir, kernel::vfs::resolve
+JARVIS_TEST(vfs_unlink_file) {
+    int ret = vfs::mkdir("/mnt/TODELETE", 0);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    Vnode* vn = vfs::resolve("/mnt/TODELETE");
+    JARVIS_ASSERT(vn != nullptr);
+
+    ret = vfs::unlink("/mnt/TODELETE");
+    JARVIS_ASSERT_EQ(0, ret);
+
+    vn = vfs::resolve("/mnt/TODELETE");
+    JARVIS_ASSERT(vn == nullptr);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies vfs::unlink fails for nonexistent path.
+// Input: vfs::unlink("/mnt/NONEXISTENT")
+// Expect: Returns VFS_INVALID
+// Depends: kernel::vfs::unlink
+JARVIS_TEST(vfs_unlink_nonexistent) {
+    int ret = vfs::unlink("/mnt/NONEXISTENT");
+    JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies vfs::unlink fails for non-empty directory.
+// Input: vfs::mkdir("/mnt/DIR"), create file inside, vfs::unlink("/mnt/DIR")
+// Expect: Returns VFS_INVALID (FAT32 enforces empty dir check)
+// Depends: kernel::vfs::unlink, kernel::vfs::mkdir
+JARVIS_TEST(vfs_unlink_nonempty_dir_fails) {
+    int ret = vfs::mkdir("/mnt/PARENTDIR", 0);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    ret = vfs::mkdir("/mnt/PARENTDIR/CHILD", 0);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    ret = vfs::unlink("/mnt/PARENTDIR");
+    JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
+
+    // Cleanup
+    vfs::unlink("/mnt/PARENTDIR/CHILD");
+    vfs::unlink("/mnt/PARENTDIR");
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: STUB - Placeholder for testing that the open syscall forwards
 // requests to the VFS daemon.
 // Input: (stub)
@@ -240,6 +329,12 @@ void register_vfs_tests() {
     JARVIS_REGISTER_TEST(vfs_resolve_relative_path);
     JARVIS_REGISTER_TEST(vfs_resolve_dotdot);
     JARVIS_REGISTER_TEST(vfs_mount_unmount);
+    JARVIS_REGISTER_TEST(vfs_mkdir_valid);
+    JARVIS_REGISTER_TEST(vfs_mkdir_nonexistent_parent);
+    JARVIS_REGISTER_TEST(vfs_mkdir_parent_not_dir);
+    JARVIS_REGISTER_TEST(vfs_unlink_file);
+    JARVIS_REGISTER_TEST(vfs_unlink_nonexistent);
+    JARVIS_REGISTER_TEST(vfs_unlink_nonempty_dir_fails);
     JARVIS_REGISTER_TEST(vfsd_server_boots_and_responds);
     JARVIS_REGISTER_TEST(syscall_open_forwards_to_vfsd);
     JARVIS_REGISTER_TEST(syscall_read_write_via_vfsd);
