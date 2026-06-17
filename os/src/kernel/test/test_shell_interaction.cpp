@@ -314,7 +314,7 @@ JARVIS_TEST(shell_which_command) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
-    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, " ("));
     JARVIS_ASSERT(serial_contains(buf1, "help"));
 }
 
@@ -349,7 +349,7 @@ JARVIS_TEST(shell_help_shows_which) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
-    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, " ("));
     JARVIS_ASSERT(serial_contains(buf1, "locate"));
 }
 
@@ -380,7 +380,7 @@ JARVIS_TEST(shell_which_notfound) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(serial_contains(buf1, "BEFORE"));
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
-    JARVIS_ASSERT(serial_contains(buf1, "W "));
+    JARVIS_ASSERT(serial_contains(buf1, ": not"));
     JARVIS_ASSERT(serial_contains(buf1, "xyzzy"));
 }
 

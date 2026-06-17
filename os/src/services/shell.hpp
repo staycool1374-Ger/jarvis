@@ -37,15 +37,20 @@ private:
     static constexpr size_t MAX_COMMANDS = 64;
     static constexpr size_t MAX_ARGS = 16;
     static constexpr size_t BUF_SIZE = 256;
+    static constexpr size_t MAX_ENV = 32;
 
     static Command commands_[MAX_COMMANDS];
     static size_t num_commands_;
     static bool initialized_;
     static char work_dir_[BUF_SIZE];
+    static char env_[MAX_ENV][BUF_SIZE];
+    static size_t env_count_;
+    static int last_exit_code_;
 
     /// @brief Parses a command line and dispatches to the matching command.
     /// @param line Raw input line to parse.
-    static void parse_and_exec(const char* line);
+    /// @return 0 on success (command found), 1 on failure (unknown command).
+    static int parse_and_exec(const char* line);
 
     /// @brief Built-in: lists available commands.
     static void cmd_help(int argc, const char** argv);

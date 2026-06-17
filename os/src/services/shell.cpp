@@ -35,6 +35,9 @@ Shell::Command Shell::commands_[MAX_COMMANDS] = {};
 size_t Shell::num_commands_ = 0;
 bool Shell::initialized_ = false;
 char Shell::work_dir_[BUF_SIZE] = {};
+char Shell::env_[Shell::MAX_ENV][Shell::BUF_SIZE] = {};
+size_t Shell::env_count_ = 0;
+int Shell::last_exit_code_ = 0;
 
 void Shell::init() {
     if (initialized_) return;
@@ -61,10 +64,13 @@ void Shell::init() {
     register_command("pwd",     "Print working directory",           cmd_pwd);
     register_command("env",     "Print environment variables",       cmd_env);
     register_command("sleep",   "Sleep for N seconds",               cmd_sleep);
+    register_command("which",   "Locate a command",                  cmd_which);
     register_command("locate",  "Locate a command",                  cmd_which);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
+    env_count_ = 0;
+    last_exit_code_ = 0;
 
     initialized_ = true;
 }
@@ -82,16 +88,16 @@ static int str_cmp(const char* a, const char* b) {
     return static_cast<unsigned char>(*a) - static_cast<unsigned char>(*b);
 }
 
-void Shell::parse_and_exec(const char* line) {
+int Shell::parse_and_exec(const char* line) {
     while (*line == ' ') ++line;
-    if (!*line) return;
+    if (!*line) return 0;
 
     size_t len = 0;
     const char* p = line;
     while (*p) { ++len; ++p; }
 
     char* buf = new char[len + 1];
-    if (!buf) return;
+    if (!buf) return 1;
     memcpy(buf, line, len + 1);
 
     const char* argv[MAX_ARGS];
@@ -108,14 +114,14 @@ void Shell::parse_and_exec(const char* line) {
 
     if (argc == 0) {
         delete[] buf;
-        return;
+        return 0;
     }
 
     for (size_t i = 0; i < num_commands_; ++i) {
         if (str_cmp(argv[0], commands_[i].name) == 0) {
             commands_[i].func(argc, argv);
             delete[] buf;
-            return;
+            return 0;
         }
     }
 
@@ -127,6 +133,7 @@ void Shell::parse_and_exec(const char* line) {
     Terminal::write("Verfuegbar: help\n");
 
     delete[] buf;
+    return 1;
 }
 
 void Shell::execute(const char* cmd) {
@@ -288,20 +295,35 @@ void Shell::shell_task_main() {
     Terminal::write(kernel::Version::string());
     Terminal::write("\n");
     Terminal::set_fg(0xC0C0C0);
-    Terminal::write("Geben Sie 'help' ein fuer Befehle\n\n");
+    Terminal::write("Type 'help' for available commands\n\n");
 
     char line[BUF_SIZE];
 
     while (true) {
         update_status_bar();
 
+        auto* task = kernel::Scheduler::current_task();
+        const char* cwd = task ? task->cwd : "/";
+
+        // Exit status indicator: green checkmark for 0, red X for non-zero
+        if (last_exit_code_ == 0) {
+            Terminal::set_fg(0x00AA00);
+            Terminal::write("✓ ");
+        } else {
+            Terminal::set_fg(0xCC3333);
+            Terminal::write("✗ ");
+        }
+
+        // Current directory in blue
         Terminal::set_fg(0x00AAFF);
-        Terminal::write("jarvis$ ");
+        Terminal::write(cwd);
+        Terminal::write(" ");
         Terminal::set_fg(0xC0C0C0);
+        Terminal::write("$ ");
 
         arch::Keyboard::flush();
         if (readline(line, BUF_SIZE)) {
-            parse_and_exec(line);
+            last_exit_code_ = parse_and_exec(line);
             update_status_bar();
         }
     }
@@ -618,9 +640,53 @@ void Shell::cmd_export(int argc, const char** argv) {
         Terminal::write("Usage: export VAR=value\n");
         return;
     }
-    Terminal::write("export: ");
-    Terminal::write(argv[1]);
-    Terminal::write("\n");
+
+    const char* arg = argv[1];
+    const char* eq = nullptr;
+    for (const char* p = arg; *p; ++p) {
+        if (*p == '=') { eq = p; break; }
+    }
+    if (!eq || eq == arg) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("export: malformed, use VAR=value\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    size_t name_len = static_cast<size_t>(eq - arg);
+    const char* val = eq + 1;
+
+    // Check if variable already exists, update it
+    for (size_t i = 0; i < env_count_; ++i) {
+        bool match = true;
+        for (size_t j = 0; j < name_len; ++j) {
+            if (env_[i][j] != arg[j]) { match = false; break; }
+        }
+        if (match && env_[i][name_len] == '=') {
+            // Update existing entry
+            size_t pos = 0;
+            for (size_t j = 0; j < name_len; ++j) env_[i][pos++] = arg[j];
+            env_[i][pos++] = '=';
+            for (const char* v = val; *v && pos < BUF_SIZE - 1; ++v) env_[i][pos++] = *v;
+            env_[i][pos] = '\0';
+            return;
+        }
+    }
+
+    // Add new entry
+    if (env_count_ >= MAX_ENV) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("export: environment full\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    size_t pos = 0;
+    for (size_t j = 0; j < name_len; ++j) env_[env_count_][pos++] = arg[j];
+    env_[env_count_][pos++] = '=';
+    for (const char* v = val; *v && pos < BUF_SIZE - 1; ++v) env_[env_count_][pos++] = *v;
+    env_[env_count_][pos] = '\0';
+    ++env_count_;
 }
 
 void Shell::cmd_runelf(int argc, const char** argv) {
@@ -739,7 +805,6 @@ void Shell::cmd_pwd(int, const char**) {
 }
 
 void Shell::cmd_which(int argc, const char** argv) {
-    Terminal::write("W ");
     if (argc < 2) {
         Terminal::write("Usage: which <command...>\n");
         return;
@@ -762,7 +827,14 @@ void Shell::cmd_which(int argc, const char** argv) {
 }
 
 void Shell::cmd_env(int, const char**) {
-    // env storage not available in this build
+    if (env_count_ == 0) {
+        Terminal::write("(no environment variables set)\n");
+        return;
+    }
+    for (size_t i = 0; i < env_count_; ++i) {
+        Terminal::write(env_[i]);
+        Terminal::putchar('\n');
+    }
 }
 
 void Shell::cmd_sleep(int argc, const char** argv) {
