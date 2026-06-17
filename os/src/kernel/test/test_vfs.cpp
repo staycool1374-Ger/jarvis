@@ -171,16 +171,19 @@ JARVIS_TEST(vfsd_server_boots_and_responds) {
 
 // Runmode: kernel
 // Testidea: Verifies vfs::mkdir creates a directory at a valid path.
-// Input: vfs::mkdir("/mnt/NEWDIR", 0)
+// Input: vfs::mkdir("/mnt/NEWDIR_TEST", 0)
 // Expect: Returns 0, vfs::resolve finds the new directory with S_IFDIR
 // Depends: kernel::vfs::mkdir, kernel::vfs::resolve
 JARVIS_TEST(vfs_mkdir_valid) {
-    int ret = vfs::mkdir("/mnt/NEWDIR", 0);
+    int ret = vfs::mkdir("/mnt/NEWDIR_TEST", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* vn = vfs::resolve("/mnt/NEWDIR");
+    Vnode* vn = vfs::resolve("/mnt/NEWDIR_TEST");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
+
+    // Cleanup
+    vfs::unlink("/mnt/NEWDIR_TEST");
     JARVIS_TEST_PASS();
 }
 
@@ -208,20 +211,17 @@ JARVIS_TEST(vfs_mkdir_parent_not_dir) {
 
 // Runmode: kernel
 // Testidea: Verifies vfs::unlink removes a file.
-// Input: vfs::mkdir to create file, then vfs::unlink
+// Input: Use existing file from FAT32 image (README.TXT), then vfs::unlink
 // Expect: Returns 0, vfs::resolve no longer finds the file
-// Depends: kernel::vfs::unlink, kernel::vfs::mkdir, kernel::vfs::resolve
+// Depends: kernel::vfs::unlink, kernel::vfs::resolve
 JARVIS_TEST(vfs_unlink_file) {
-    int ret = vfs::mkdir("/mnt/TODELETE", 0);
-    JARVIS_ASSERT_EQ(0, ret);
-
-    Vnode* vn = vfs::resolve("/mnt/TODELETE");
+    Vnode* vn = vfs::resolve("/mnt/README.TXT");
     JARVIS_ASSERT(vn != nullptr);
 
-    ret = vfs::unlink("/mnt/TODELETE");
+    int ret = vfs::unlink("/mnt/README.TXT");
     JARVIS_ASSERT_EQ(0, ret);
 
-    vn = vfs::resolve("/mnt/TODELETE");
+    vn = vfs::resolve("/mnt/README.TXT");
     JARVIS_ASSERT(vn == nullptr);
     JARVIS_TEST_PASS();
 }

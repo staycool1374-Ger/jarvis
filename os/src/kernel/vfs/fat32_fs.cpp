@@ -267,7 +267,11 @@ static int fat32_dir_unlink(Vnode& self, const char* name) {
         uint64_t real_entries = 0;
         while (fat32::read_dir_entry(*data->fs, entry.cluster,
                                       count_pos, child_entry)) {
-            if (child_entry.valid) ++real_entries;
+            if (child_entry.valid &&
+                strcmp(child_entry.name, ".") != 0 &&
+                strcmp(child_entry.name, "..") != 0) {
+                ++real_entries;
+            }
         }
         // A new directory has only . and .. — so real_entries should be 0
         if (real_entries > 0) return VFS_INVALID; // not empty

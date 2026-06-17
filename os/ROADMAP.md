@@ -1,9 +1,24 @@
 # Jarvis RTOS — Development Roadmap
 
-### 0.2.13 — Shell UX & Utilities
-- All items complete. See `ROADMAP_done.md`.
+# EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
+**Status:** ACTIVE — Transitioning from Core Scheduler Stabilization to System Services.
+**Target Focus:** 0.2.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
 
----
+## 1. Safety & Concurrency Guardrails (Strict)
+- **Preserve IrqGuard Invariants:** Any new service layer code, VFS operations for `tmpfs`, or memory-mapping extensions must strictly utilize the `src/kernel/arch/irq_guard.hpp` abstraction for critical sections. Do not use open-coded `cli()`/`sti()` or unmanaged interrupt modifications.
+- **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
+- **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
+
+## 2. Refactoring Phase Strategy: 0.2.14 Execution
+When implementing or refactoring code paths for this phase, execute the following steps in sequence:
+
+### Step A: Memory Space Integrity (`SYS_BRK`)
+1. Before modifying the Virtual Memory Manager (VMM) to accommodate heap expansion via `SYS_BRK`, verify that page-table cloning invariants are fully preserved.
+2. Ensure that any expansion maps correctly into the caller's page tables and is strictly accounted for in `kernel::test::ResourceTracker`.
+
+### Step B: PID 1 & Service Initialization Lifecycle
+1. When constructing the init daemon system (`/etc/rc` parser and user quotas), isolate its lifecycle tracking from standard transient userspace applications.
+2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
 ## Phase 3: System Services & Hardware (0.2.14–0.2.17)
 
