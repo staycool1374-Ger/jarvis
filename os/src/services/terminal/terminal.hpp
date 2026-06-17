@@ -65,6 +65,13 @@ public:
     /// @param visible True to draw cursor, false to erase it.
     static void set_cursor_visible(bool visible);
 
+    /// @brief Begin capturing serial output into a buffer (for shell redirection).
+    /// @param buf Buffer to write captured output into.
+    /// @param size Maximum bytes to capture (capture stops when full).
+    static void capture_begin(char* buf, size_t size);
+    /// @brief Stop capturing serial output.
+    static void capture_end();
+
     /// @brief Maximum length of the line-input buffer.
     static constexpr size_t LINE_BUF_SIZE = 256;
 
@@ -93,6 +100,10 @@ private:
     void advance_cursor();
     /// @brief Moves the cursor back one position (for backspace handling).
     void backspace();
+
+    char* capture_buf_ = nullptr;
+    size_t capture_size_ = 0;
+    size_t capture_pos_ = 0;
 };
 
 } // namespace service

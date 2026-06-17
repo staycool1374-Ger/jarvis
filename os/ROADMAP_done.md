@@ -23,6 +23,13 @@
 - Kernel shell: `mkdir`, `rm`, `rmdir` built-in commands
 - Userspace: `mkdir.c` / `rm.c` utilities (auto-built into initrd)
 
+### IPC pipeline hardening (kernel shell)
+- Terminal output capture mechanism (`capture_begin`/`capture_end`) for `>` redirect
+- `>` redirect parsing in `parse_and_exec`: captures command output and writes to file via VFS
+- Works with any shell command (output visible on screen AND saved to file)
+- Userspace shell (`sh.c`) already had `|`, `<`, `>` via fork/pipe/dup2
+- Kernel pipe infrastructure, `sys_pipe`, `sys_dup2`, and 6 pipe tests pre-existing
+
 ### Scheduler Stabilization & Synchronization Hardening
 
 #### RAII IrqGuard

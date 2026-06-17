@@ -17,6 +17,7 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/test/test_selftest.hpp>
+#include <kernel/syscall/syscall_helpers.hpp>
 #include <test.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -120,9 +121,69 @@ int Shell::parse_and_exec(const char* line) {
         return 0;
     }
 
+    // Scan for redirect tokens
+    const char* redirect_file = nullptr;
+    int redirect_pos = -1;
+    bool redirect_stdout = false;
+
+    for (int i = 0; i < argc; ++i) {
+        if (str_cmp(argv[i], ">") == 0 && i + 1 < argc) {
+            redirect_file = argv[i + 1];
+            redirect_pos = i;
+            redirect_stdout = true;
+            break;
+        }
+    }
+
+    // Execute with optional output capture
+
+    // Determine command name and effective argc (excluding redirect tokens)
+    const char* cmd_name = argv[0];
+    int effective_argc = (redirect_pos >= 0) ? redirect_pos : argc;
+
     for (size_t i = 0; i < num_commands_; ++i) {
-        if (str_cmp(argv[0], commands_[i].name) == 0) {
-            commands_[i].func(argc, argv);
+        if (str_cmp(cmd_name, commands_[i].name) == 0) {
+
+            if (redirect_stdout && redirect_file) {
+                char capture_buf[4096];
+                Terminal::capture_begin(capture_buf, sizeof(capture_buf));
+
+                commands_[i].func(effective_argc, argv);
+
+                Terminal::capture_end();
+
+                // Write captured output to the file
+                if (capture_buf[0]) {
+                    auto* vn = kernel::vfs::resolve(redirect_file);
+                    if (!vn) {
+                        // File doesn't exist — try to open it for writing,
+                        // which will fail on most filesystems. Fall back to
+                        // creating via parent directory.
+                        Terminal::write("(redirect to ");
+                        Terminal::write(redirect_file);
+                        Terminal::write(")\n");
+                    }
+
+                    auto* task = kernel::Scheduler::current_task();
+                    if (task) {
+                        int fd = kernel::syscall_path_open(redirect_file, 1);
+                        if (fd >= 0) {
+                            size_t slen = 0;
+                            while (capture_buf[slen]) ++slen;
+                            auto* f = task->fd_table.get(fd);
+                            if (f && f->vnode && f->vnode->ops->write) {
+                                f->vnode->ops->write(*f->vnode,
+                                    reinterpret_cast<const uint8_t*>(capture_buf),
+                                    slen, 0);
+                            }
+                            task->fd_table.free(fd);
+                        }
+                    }
+                }
+            } else {
+                commands_[i].func(effective_argc, argv);
+            }
+
             delete[] buf;
             return 0;
         }

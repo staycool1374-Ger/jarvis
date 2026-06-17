@@ -41,6 +41,14 @@ static void serial_putchar(char c) {
 
 void Terminal::putchar(char c) {
     serial_putchar(c);
+
+    // Capture output for shell redirection
+    if (instance_ && instance_->capture_buf_ &&
+        instance_->capture_pos_ < instance_->capture_size_ - 1) {
+        instance_->capture_buf_[instance_->capture_pos_++] = c;
+        instance_->capture_buf_[instance_->capture_pos_] = '\0';
+    }
+
     if (!instance_) return;
     if (!instance_->fb_enabled_) return;
 
@@ -228,6 +236,20 @@ void Terminal::set_cursor_visible(bool visible) {
         instance_->cursor_x_ * FONT_WIDTH,
         instance_->cursor_y_ * FONT_HEIGHT,
         FONT_WIDTH, FONT_HEIGHT, color);
+}
+
+void Terminal::capture_begin(char* buf, size_t size) {
+    if (!instance_) return;
+    instance_->capture_buf_ = buf;
+    instance_->capture_size_ = size;
+    instance_->capture_pos_ = 0;
+}
+
+void Terminal::capture_end() {
+    if (!instance_) return;
+    instance_->capture_buf_ = nullptr;
+    instance_->capture_size_ = 0;
+    instance_->capture_pos_ = 0;
 }
 
 void Terminal::show_splash() {

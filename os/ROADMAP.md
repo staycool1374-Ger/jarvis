@@ -1,7 +1,7 @@
 # Jarvis RTOS — Development Roadmap
 
 ### 0.2.13 — Shell UX & Utilities
-- [ ] IPC pipeline hardening (kernel shell: pipe `|`, redirect `<`/`>`, stdin/stdout)
+- All items complete. See `ROADMAP_done.md`.
 
 ---
 
