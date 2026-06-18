@@ -255,10 +255,19 @@ void run_release() {
 void run_suite(const char* suite_name) {
     Registry::reset();
     size_t n = Registry::count();
-    size_t run = 0;
 
     Logger::info("[TEST:RUN] Suite: %s", suite_name);
 
+    // Take snapshot once before the suite for isolation
+    bool snapshot_ok = true;
+    if (n > 0) {
+        snapshot_ok = kernel::test::snapshot_create();
+        if (!snapshot_ok) {
+            Logger::warn("Test snapshot creation failed — isolation disabled");
+        }
+    }
+
+    size_t run = 0;
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         if (tc.suite[0] == '\0') continue;
@@ -280,6 +289,24 @@ void run_suite(const char* suite_name) {
             Logger::raw_write("\033[31m[FAIL]\033[0m\n");
             Registry::record_test(false);
         }
+
+        // Restore kernel state between tests (tasks, MemPool, page tables)
+        if (snapshot_ok) {
+            char test_buf[128];
+            int pos = 0;
+            const char* s = tc.suite;
+            while (*s && pos < 120) test_buf[pos++] = *s++;
+            if (pos > 0 && tc.suite[0]) { test_buf[pos++] = ':'; test_buf[pos++] = ':'; }
+            s = tc.name;
+            while (*s && pos < 126) test_buf[pos++] = *s++;
+            test_buf[pos] = '\0';
+            kernel::test::snapshot_restore(test_buf);
+        }
+    }
+
+    if (snapshot_ok) {
+        kernel::test::snapshot_destroy();
+        kernel::test::reload_daemon_tasks();
     }
 
     if (run == 0) {

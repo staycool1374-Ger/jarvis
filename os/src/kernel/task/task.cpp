@@ -1,5 +1,6 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <logger.hpp>
 #include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
@@ -81,9 +82,21 @@ TaskControlBlock* TaskControlBlock::create(
     uint64_t priority,
     uint64_t period_ticks)
 {
+    Logger::raw_write("[TCB] create pool8=");
+    Logger::print_dec(MemPool::pool_free_count(8));
+    Logger::raw_write(" tcnt=");
+    Logger::print_dec(Scheduler::task_count());
+    Logger::raw_write("\n");
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
-    ENSURE(tcb != nullptr);
+    if (!tcb) {
+        Logger::raw_write("TCB::create OOM pool8=");
+        Logger::print_dec(MemPool::pool_free_count(8));
+        Logger::raw_write("/8 tcnt=");
+        Logger::print_dec(Scheduler::task_count());
+        Logger::raw_write("\n");
+        return nullptr;
+    }
     memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->magic = TCB_MAGIC;
@@ -99,7 +112,11 @@ TaskControlBlock* TaskControlBlock::create(
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
-    ENSURE(stack_phys != 0);
+    if (!stack_phys) {
+        Logger::warn("TCB::create: PMM OOM for %zu-page stack", stack_pages);
+        MemPool::free(tcb);
+        return nullptr;
+    }
 
     tcb->stack_phys_ = stack_phys;
     uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;

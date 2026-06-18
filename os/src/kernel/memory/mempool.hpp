@@ -75,6 +75,8 @@ public:
     };
     /// @brief Return the number of pool classes.
     static size_t pool_count() { return POOL_COUNT; }
+    /// @brief Return free count for pool at index @p idx.
+    static size_t pool_free_count(size_t idx) { return pools_[idx].free_count; }
     /// @brief Fill @p out with the meta of pool @p idx.
     static void capture_pool_meta(size_t idx, PoolMeta& out);
     /// @brief Restore pool @p idx from @p meta and rebuild its free list.

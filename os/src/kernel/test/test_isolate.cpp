@@ -203,11 +203,21 @@ void snapshot_restore(const char* test_name) {
 
     // ---- MemPool (restore data first, then meta rebuilds free list) ----
     {
+        Logger::raw_write("[SNAP] pre-restore pool8 fc=");
+        Logger::print_dec(MemPool::pool_free_count(8));
+        Logger::raw_write(" tcnt=");
+        Logger::print_dec(Scheduler::task_count());
+        Logger::raw_write("\n");
         MemPool::restore_pool_data(g_snapshot + off_mempool_data());
         auto* meta = reinterpret_cast<const MemPool::PoolMeta*>(
                          g_snapshot + off_mempool_meta());
         for (size_t i = 0; i < MemPool::pool_count(); ++i)
             MemPool::restore_pool_meta(i, meta[i]);
+        Logger::raw_write("[SNAP] post-restore pool8 fc=");
+        Logger::print_dec(MemPool::pool_free_count(8));
+        Logger::raw_write(" tcnt=");
+        Logger::print_dec(Scheduler::task_count());
+        Logger::raw_write("\n");
     }
 
     // ---- Scheduler ----
