@@ -1,8 +1,17 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
-**Status:** ACTIVE — Transitioning from Core Scheduler Stabilization to System Services.
+**Status:** ACTIVE — System Services.
 **Target Focus:** 0.2.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
+
+## 0.2.13 — Shell Built-ins & Stabilisation
+- [x] FAT32 unlink empty-dir fix (skip `.` and `..`)
+- [x] `vfs_unlink_file`, `vfs_mkdir_valid` test isolation
+- [x] Shell `mkdir` bypasses VFS daemon for absolute paths
+- [x] BUGS.md #007 (idle task test output) — Fixed
+- [x] 28 new shell built-in commands: `alias`, `unalias`, `history`, `type`, `source` (`.`), `set`, `read`, `printf`, `test` (`[`), `shift`, `trap`, `wait`, `fg`, `bg`, `disown`, `ulimit`, `umask`, `times`, `logout`, `dirs`, `pushd`, `popd`, `ls`
+- [x] Alias expansion + command history recording in `parse_and_exec`
+- [x] Release tag: v0.2.13
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Preserve IrqGuard Invariants:** Any new service layer code, VFS operations for `tmpfs`, or memory-mapping extensions must strictly utilize the `src/kernel/arch/irq_guard.hpp` abstraction for critical sections. Do not use open-coded `cli()`/`sti()` or unmanaged interrupt modifications.
