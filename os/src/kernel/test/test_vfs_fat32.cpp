@@ -47,7 +47,7 @@ JARVIS_TEST(vfs_fat32_open_file) {
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
 
-    Vnode* file = root->ops->lookup(*root, "README.TXT");
+    Vnode* file = root->ops->lookup(*root, "HELLO.TXT");
     JARVIS_ASSERT(file != nullptr);
     JARVIS_ASSERT(file->mode == S_IFREG);
     file->ops->close(*file);
@@ -74,7 +74,7 @@ JARVIS_TEST(vfs_fat32_fstat) {
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
 
-    Vnode* file = root->ops->lookup(*root, "README.TXT");
+    Vnode* file = root->ops->lookup(*root, "HELLO.TXT");
     JARVIS_ASSERT(file != nullptr);
 
     VfsStat st = {};
@@ -95,7 +95,7 @@ JARVIS_TEST(vfs_fat32_readdir) {
     bool found_hello = false;
 
     while (root->ops->readdir(*root, pos, dent) == 0) {
-        if (strcmp(dent.d_name, "README.TXT") == 0) found_readme = true;
+        if (strcmp(dent.d_name, "MULTI.TXT") == 0) found_readme = true;
         if (strcmp(dent.d_name, "HELLO.TXT") == 0) found_hello = true;
     }
 
@@ -186,7 +186,7 @@ JARVIS_TEST(vfs_fat32_mkdir) {
 
 // Runmode: kernel
 // Testidea: Verifies FAT32 unlink via VnodeOps removes a file entry.
-// Input: ops->unlink on root vnode for "README.TXT"
+// Input: ops->unlink on root vnode for "HELLO.TXT"
 // Expect: Returns 0, lookup no longer finds the file
 // Depends: kernel::vfs::VnodeOps::unlink
 JARVIS_TEST(vfs_fat32_unlink) {
@@ -199,10 +199,10 @@ JARVIS_TEST(vfs_fat32_unlink) {
     JARVIS_ASSERT(root != nullptr);
     JARVIS_ASSERT(root->ops->unlink != nullptr);
 
-    int ret = root->ops->unlink(*root, "README.TXT");
+    int ret = root->ops->unlink(*root, "HELLO.TXT");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* child = root->ops->lookup(*root, "README.TXT");
+    Vnode* child = root->ops->lookup(*root, "HELLO.TXT");
     JARVIS_ASSERT(child == nullptr);
 
     root->ops->close(*root);
@@ -358,11 +358,11 @@ JARVIS_TEST(vfs_fat32_unlink_frees_clusters) {
 
     // Create a file entry by writing to it (use FAT32 primitives)
     // We'll just test unlink on existing file in the image
-    Vnode* file = root->ops->lookup(*root, "README.TXT");
+    Vnode* file = root->ops->lookup(*root, "HELLO.TXT");
     if (file) {
-        ret = root->ops->unlink(*root, "README.TXT");
+        ret = root->ops->unlink(*root, "HELLO.TXT");
         JARVIS_ASSERT_EQ(0, ret);
-        file = root->ops->lookup(*root, "README.TXT");
+        file = root->ops->lookup(*root, "HELLO.TXT");
         JARVIS_ASSERT(file == nullptr);
     }
 

@@ -62,7 +62,7 @@ struct TaskContext {
 /// @brief Task control block — represents a single thread of execution.
 /// @note Includes scheduling parameters, register context, and stack info.
 struct TaskControlBlock {
-    static constexpr size_t STACK_SIZE = 16_KiB;
+    static constexpr size_t STACK_SIZE = 64_KiB;
     static constexpr uint64_t KERNEL_CS = 0x08;
     static constexpr uint64_t KERNEL_SS = 0x10;
     static constexpr uint64_t USER_CS  = 0x1B;

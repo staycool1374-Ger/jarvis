@@ -1,4 +1,4 @@
-# Test Cases — v0.3.2 (Phase 4: Budget Enforcement & Synchronization Protocols)
+# Test Cases — v0.3.2 (Phase 4: Scheduling Analytics & Idle-Task Resource Stewardship)
 
 ## Branch: testbed only
 
@@ -42,3 +42,19 @@
 - `SYS_MUNLOCK` releases pin
 - Unlocking non-pinned page returns EINVAL
 - Locking invalid address range returns ENOMEM
+
+### CPU Utilisation Tracking — test_cpu_load.cpp
+- Idle-task execution counter increments on each idle loop iteration
+- `/proc/sched` exposes `cpu_util_pct` field derived from idle-counter vs total ticks
+- 100% busy workload shows ~0% idle tick count
+- Pure idle system shows ~100% idle tick count
+- Counter wraps correctly after 2^64 ticks (no division-by-zero)
+- Utilisation reported from non-idle task returns 0 ≤ pct ≤ 100
+
+### Slab Allocator Page Return — test_slab_reclaim.cpp
+- Idle task identifies entirely free slabs/caches
+- Empty slab pages are returned to PMM buddy allocator
+- Free page count increases after slab reclamation
+- Partially used slabs are not touched
+- Reclaimed pages can be re-allocated by PMM on demand
+- Repeated reclaim is idempotent (no double-free)

@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** 0.2.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
+**Target Focus:** v0.12.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
 
 ## 0.2.13 — Shell Built-ins & Stabilisation
 - [x] FAT32 unlink empty-dir fix (skip `.` and `..`)
@@ -18,7 +18,7 @@
 - **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
 - **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
 
-## 2. Refactoring Phase Strategy: 0.2.14 Execution
+## 2. Refactoring Phase Strategy: v0.12.14 Execution
 When implementing or refactoring code paths for this phase, execute the following steps in sequence:
 
 ### Step A: Memory Space Integrity (`SYS_BRK`)
@@ -29,15 +29,16 @@ When implementing or refactoring code paths for this phase, execute the followin
 1. When constructing the init daemon system (`/etc/rc` parser and user quotas), isolate its lifecycle tracking from standard transient userspace applications.
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
-## Phase 3: System Services & Hardware (0.2.14–0.2.17)
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
 
-### 0.2.14 — System Services
+### v0.12.14 — System Services
 - [x] tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
 - [x] SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
 - [x] IrqGuard enforcement in all tmpfs operations and sys_brk
 
 ### 0.2.15 — Hardware Enablement
 - [ ] PCI enumeration (CF8/CFC, BAR, MSI/MSI-X), Virtio transport + blk driver
+- [ ] DMA driver — scatter-gather, ring-buffer management, PRD table construction
 - [ ] Minimal network stack (ARP, IPv4, UDP over virtio-net)
 
 ### 0.2.16 — CPU Features & RNG
@@ -56,8 +57,10 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [ ] O(1) bitmap scheduler (per-priority queues, __builtin_clzll), HPET driver (10 kHz)
 - [ ] Deadline monitoring with overrun callbacks
 
-### 0.3.2 — Scheduling Analytics
+### 0.3.2 — Scheduling Analytics & Idle-Task Resource Stewardship
 - [ ] WCRT analysis, SYS_SCHED_INFO, /proc/sched metrics
+- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched)
+- [ ] Idle task: slab allocator page return — scan entirely empty slabs/caches during idle cycles, return hoarded page frames to the PMM buddy allocator
 - [ ] Deterministic userspace memory pools (slab/buddy, O(1) allocation)
 
 ### 0.3.3–0.3.4 — Inheritance & Ceiling
@@ -93,6 +96,9 @@ When implementing or refactoring code paths for this phase, execute the followin
 ### 0.5.2 — Safety Hardening
 - [ ] Syscall determinism docs, pointer isolation, -fstack-protector, release builds, Doxygen
 
+### 0.5.3 — Userspace Library & Toolchain
+- [ ] Port or write a deterministic C/C++ standard library (musl adaptation or bespoke freestanding libc) so userspace programs can use `printf`, `malloc`, etc. natively without raw system calls
+
 ---
 
 ## Phase 7: Safety Systems (0.6.x)
@@ -103,6 +109,10 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ### 0.6.3 — Deadlock Detection
 - [ ] Wait-for-graph runtime, watchdog-driven detection, forced recovery, SYS_HEALTH_STATUS
+
+### 0.6.4 — Idle-Task Safety Monitors (ASIL D)
+- [ ] Idle task: non-destructive RAM March C- algorithm over unused memory regions (back up, write 0x55/0xAA patterns, verify transistor integrity, restore) to detect single-event upsets
+- [ ] Idle task: CPU ALU and register verification (mathematical test patterns, MSR integrity validation) to detect latent CPU faults over years of deployment
 
 ---
 

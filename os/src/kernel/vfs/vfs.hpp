@@ -6,7 +6,7 @@ namespace kernel {
 namespace vfs {
 
 static constexpr size_t MAX_FDS = 32;
-static constexpr size_t MAX_MOUNTS = 8;
+static constexpr size_t MAX_MOUNTS = 32;
 static constexpr size_t MAX_PATH = 256;
 static constexpr size_t MAX_PATH_DEPTH = 16;
 

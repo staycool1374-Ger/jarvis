@@ -22,6 +22,26 @@ static Vnode* fat32_file_lookup(Vnode&, const char*);
 static int fat32_dir_mkdir(Vnode& self, const char* name, uint16_t mode);
 static int fat32_dir_unlink(Vnode& self, const char* name);
 
+// Convert a path name to the 8.3 short name format string produced by
+// format_short_name (strip trailing spaces, add '.' before extension).
+// This ensures lookups match the name actually stored on disk.
+static void to_short_name_str(const char* name, char* out, size_t out_size) {
+    if (!name || !out || out_size < 13) return;
+    uint8_t raw[11];
+    fat32::name_to_short_name(name, raw);
+    size_t j = 0;
+    for (size_t i = 0; i < 8 && raw[i] && raw[i] != ' '; ++i) {
+        if (j < out_size - 1) out[j++] = static_cast<char>(raw[i]);
+    }
+    if (raw[8] && raw[8] != ' ') {
+        if (j < out_size - 1) out[j++] = '.';
+        for (size_t i = 8; i < 11 && raw[i] && raw[i] != ' '; ++i) {
+            if (j < out_size - 1) out[j++] = static_cast<char>(raw[i]);
+        }
+    }
+    out[j] = '\0';
+}
+
 // -------------------------------------------------------------------
 // File operations
 // -------------------------------------------------------------------
@@ -199,9 +219,11 @@ static int fat32_dir_mkdir(Vnode& self, const char* name, uint16_t) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return VFS_INVALID;
 
-    // Check if entry already exists
+    // Check if entry already exists (using short name format)
+    char short_name[13];
+    to_short_name_str(name, short_name, sizeof(short_name));
     fat32::DirEntry existing;
-    if (fat32::lookup_in_dir(*data->fs, data->cluster, name, existing))
+    if (fat32::lookup_in_dir(*data->fs, data->cluster, short_name, existing))
         return VFS_INVALID; // already exists
 
     // Allocate a cluster for the new directory
@@ -257,8 +279,11 @@ static int fat32_dir_unlink(Vnode& self, const char* name) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return VFS_INVALID;
 
+    char short_name[13];
+    to_short_name_str(name, short_name, sizeof(short_name));
+
     fat32::DirEntry entry;
-    if (!fat32::lookup_in_dir(*data->fs, data->cluster, name, entry))
+    if (!fat32::lookup_in_dir(*data->fs, data->cluster, short_name, entry))
         return VFS_INVALID;
 
     // If it's a directory, check that it is empty
@@ -286,7 +311,7 @@ static int fat32_dir_unlink(Vnode& self, const char* name) {
     }
 
     // Remove the entry from the parent
-    if (!fat32::remove_dir_entry(*data->fs, data->cluster, name))
+    if (!fat32::remove_dir_entry(*data->fs, data->cluster, short_name))
         return VFS_INVALID;
 
     return 0;
@@ -296,8 +321,11 @@ static Vnode* fat32_dir_lookup(Vnode& self, const char* name) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return nullptr;
 
+    char short_name[13];
+    to_short_name_str(name, short_name, sizeof(short_name));
+
     fat32::DirEntry entry = {};
-    if (!fat32::lookup_in_dir(*data->fs, data->cluster, name, entry))
+    if (!fat32::lookup_in_dir(*data->fs, data->cluster, short_name, entry))
         return nullptr;
 
     auto* vdata = static_cast<Fat32VnodeData*>(
