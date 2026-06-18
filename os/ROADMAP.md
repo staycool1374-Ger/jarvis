@@ -32,8 +32,9 @@ When implementing or refactoring code paths for this phase, execute the followin
 ## Phase 3: System Services & Hardware (0.2.14–0.2.17)
 
 ### 0.2.14 — System Services
-- [ ] tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
-- [ ] SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
+- [x] tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
+- [x] SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
+- [x] IrqGuard enforcement in all tmpfs operations and sys_brk
 
 ### 0.2.15 — Hardware Enablement
 - [ ] PCI enumeration (CF8/CFC, BAR, MSI/MSI-X), Virtio transport + blk driver
@@ -102,3 +103,28 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ### 0.6.3 — Deadlock Detection
 - [ ] Wait-for-graph runtime, watchdog-driven detection, forced recovery, SYS_HEALTH_STATUS
+
+---
+
+## Phase 8: Microkernel Transition (0.7.x–0.8.x)
+
+### 0.7.1 — Externalise VFS & Block I/O
+- [ ] `vfsd` becomes the exclusive owner of the mount table; remove in-kernel `syscall_path_open` shortcut
+- [ ] All filesystem drivers (FAT32, tmpfs) run as separate ring‑3 servers, routed through `vfsd` via IPC
+- [ ] Block layer: `atad` user-space driver, block IO exposed via IPC channels (iopl + shared pages)
+
+### 0.7.2 — Externalise Device Drivers
+- [ ] Keyboard → `kbd_drv` user-space server; kernel forwards interrupt to driver IPC port
+- [ ] Framebuffer → `fb_drv` user-space server
+- [ ] Timer/RTC → `timer_drv` user-space server
+- [ ] Driver manager daemon: enumerates PCI, spawns driver servers, manages MMIO/capability delegation
+
+### 0.8.1 — Kernel Reduction (µ-kernel core)
+- [ ] Kernel retains only: scheduler, IPC primitive (ports/capabilities), page-table management, interrupt routing to user-space
+- [ ] Shell, init (PID 1), VFS, all drivers move to ring‑3 server processes
+- [ ] Userspace init spawns: driver manager → device servers → VFS server → shell
+
+### 0.8.2 — Capability-Based Security
+- [ ] Each server holds capabilities for owned resources (IO ports, memory regions, IRQ lines)
+- [ ] Kernel enforces capabilities on every IPC call; no server can access another server's MMIO region or memory
+- [ ] `SYS_CAP_GRANT`/`SYS_CAP_REVOKE` syscalls for capability delegation and revocation
