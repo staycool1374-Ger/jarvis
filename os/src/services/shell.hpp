@@ -47,6 +47,38 @@ private:
     static size_t env_count_;
     static int last_exit_code_;
 
+    static constexpr size_t MAX_ALIASES = 32;
+    static constexpr size_t MAX_HISTORY = 100;
+    static constexpr size_t MAX_DIR_STACK = 16;
+
+    struct AliasEntry {
+        char name[64];
+        char value[256];
+        bool used = false;
+    };
+    struct HistoryEntry {
+        char cmd[BUF_SIZE];
+        bool used = false;
+    };
+    struct TrapEntry {
+        int signo;
+        char handler[256];
+        bool used = false;
+    };
+
+    static AliasEntry aliases_[MAX_ALIASES];
+    static size_t alias_count_;
+    static HistoryEntry history_[MAX_HISTORY];
+    static size_t history_count_;
+    static size_t history_head_;
+    static char dir_stack_[MAX_DIR_STACK][BUF_SIZE];
+    static size_t dir_stack_count_;
+    static int shell_options_;
+    static int positional_argc_;
+    static char* positional_argv_[32];
+    static int umask_;
+    static TrapEntry traps_[32];
+
     /// @brief Parses a command line and dispatches to the matching command.
     /// @param line Raw input line to parse.
     /// @return 0 on success (command found), 1 on failure (unknown command).
@@ -102,6 +134,50 @@ private:
     static void cmd_rm(int argc, const char** argv);
     /// @brief Built-in: remove an empty directory.
     static void cmd_rmdir(int argc, const char** argv);
+    /// @brief Built-in: define or list aliases.
+    static void cmd_alias(int argc, const char** argv);
+    /// @brief Built-in: remove an alias.
+    static void cmd_unalias(int argc, const char** argv);
+    /// @brief Built-in: show command history.
+    static void cmd_history(int argc, const char** argv);
+    /// @brief Built-in: show command type.
+    static void cmd_type(int argc, const char** argv);
+    /// @brief Built-in: execute a script file.
+    static void cmd_source(int argc, const char** argv);
+    /// @brief Built-in: set/unset shell options.
+    static void cmd_set(int argc, const char** argv);
+    /// @brief Built-in: read a line into variable(s).
+    static void cmd_read(int argc, const char** argv);
+    /// @brief Built-in: formatted output.
+    static void cmd_printf(int argc, const char** argv);
+    /// @brief Built-in: evaluate conditional expression.
+    static void cmd_test(int argc, const char** argv);
+    /// @brief Built-in: shift positional parameters.
+    static void cmd_shift(int argc, const char** argv);
+    /// @brief Built-in: trap signals.
+    static void cmd_trap(int argc, const char** argv);
+    /// @brief Built-in: wait for background jobs.
+    static void cmd_wait(int argc, const char** argv);
+    /// @brief Built-in: bring job to foreground.
+    static void cmd_fg(int argc, const char** argv);
+    /// @brief Built-in: send job to background.
+    static void cmd_bg(int argc, const char** argv);
+    /// @brief Built-in: remove job from table.
+    static void cmd_disown(int argc, const char** argv);
+    /// @brief Built-in: resource limits.
+    static void cmd_ulimit(int argc, const char** argv);
+    /// @brief Built-in: file creation mask.
+    static void cmd_umask(int argc, const char** argv);
+    /// @brief Built-in: process times.
+    static void cmd_times(int argc, const char** argv);
+    /// @brief Built-in: exit login shell.
+    static void cmd_logout(int argc, const char** argv);
+    /// @brief Built-in: directory stack.
+    static void cmd_dirs(int argc, const char** argv);
+    /// @brief Built-in: push directory to stack.
+    static void cmd_pushd(int argc, const char** argv);
+    /// @brief Built-in: pop directory from stack.
+    static void cmd_popd(int argc, const char** argv);
 };
 
 } // namespace service
