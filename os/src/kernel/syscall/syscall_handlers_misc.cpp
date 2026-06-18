@@ -5,6 +5,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
@@ -152,6 +153,7 @@ uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
 }
 
 uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    arch::IrqGuard guard;
     auto* t = syscall_task();
     if (!t) return static_cast<uint64_t>(-1);
 

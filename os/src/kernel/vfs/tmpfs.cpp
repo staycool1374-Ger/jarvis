@@ -2,6 +2,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 #include <constants.hpp>
@@ -29,6 +30,7 @@ static TmpfsEntry* find_entry(Vnode& dir, const char* name) {
 }
 
 static int64_t tmpfs_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset) {
+    arch::IrqGuard guard;
     if (offset >= self.size) return 0;
     uint64_t avail = self.size - offset;
     if (count > avail) count = avail;
@@ -40,6 +42,7 @@ static int64_t tmpfs_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uin
 }
 
 static int64_t tmpfs_file_write(Vnode& self, const uint8_t* buffer, uint64_t count, uint64_t offset) {
+    arch::IrqGuard guard;
     uint64_t needed = offset + count;
     if (needed > 64_KiB) return VFS_INVALID; // per-file limit
 
@@ -76,6 +79,7 @@ static int64_t tmpfs_file_lseek(Vnode& self, int64_t offset, int whence, uint64_
 }
 
 static int tmpfs_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
+    arch::IrqGuard guard;
     uint64_t idx = 0;
     auto* e = static_cast<TmpfsEntry*>(self.private_data);
     while (e) {
@@ -101,11 +105,13 @@ static int tmpfs_unlink(Vnode& self, const char* name);
 static int tmpfs_create(Vnode& self, const char* name, uint16_t mode);
 
 static Vnode* tmpfs_lookup(Vnode& self, const char* name) {
+    arch::IrqGuard guard;
     auto* e = find_entry(self, name);
     return e ? e->vnode : nullptr;
 }
 
 static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
+    arch::IrqGuard guard;
     if (find_entry(self, name)) return VFS_INVALID;
     auto* entry = static_cast<TmpfsEntry*>(MemPool::alloc(sizeof(TmpfsEntry)));
     if (!entry) return VFS_INVALID;
@@ -145,6 +151,7 @@ static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
 }
 
 static int tmpfs_unlink(Vnode& self, const char* name) {
+    arch::IrqGuard guard;
     auto* prev = static_cast<TmpfsEntry*>(nullptr);
     auto* e = static_cast<TmpfsEntry*>(self.private_data);
     while (e) {
@@ -184,6 +191,7 @@ static const VnodeOps tmpfs_file_ops = {
 };
 
 static int tmpfs_create(Vnode& self, const char* name, uint16_t) {
+    arch::IrqGuard guard;
     if (find_entry(self, name)) return VFS_INVALID;
     auto* entry = static_cast<TmpfsEntry*>(MemPool::alloc(sizeof(TmpfsEntry)));
     if (!entry) return VFS_INVALID;
