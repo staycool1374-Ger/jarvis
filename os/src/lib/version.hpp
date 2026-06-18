@@ -7,7 +7,7 @@
 
 /// @brief Kernel version — single source of truth.
 /// Format: "vmajor.minor.patch"
-#define KERNEL_VERSION_STRING "v0.2.14-dev"
+#define KERNEL_VERSION_STRING "v0.12.14"
 
 namespace kernel {
 

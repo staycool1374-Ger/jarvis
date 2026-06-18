@@ -5,7 +5,7 @@ freestanding C++20. Designed for ISO 26262 ASIL D safety standards, deterministi
 scheduling, and clean kernel/userspace separation. All services run in a monolithic
 kernel at Ring 0 with userspace processes in Ring 3.
 
-**Current Version:** v0.2.13 — Shell Built-ins & Stabilisation
+**Current Version:** v0.12.14 — Phase 3: System Services & Test Isolation
 
 ---
 
@@ -149,7 +149,7 @@ framebuffer terminal output, status bar, and color-coded prompt.
 
 ### Debugging & Diagnostics
 
-- **Self-Test Framework** — 509 test cases in debug build, 84 in release.
+- **Self-Test Framework** — 550+ test cases in debug build, 84 in release.
 - **Test Categories:** task lifecycle, IPC, memory (PMM/VMM), VFS, FAT32, scheduler, signals, pipes, ELF, drivers, serial, keyboard, RTC, integrity, security, stress, benchmarks.
 - **QEMU Integration** — Full test suite runs in QEMU with serial output capture.
 - **Gcov** — Code coverage instrumentation for debug builds.

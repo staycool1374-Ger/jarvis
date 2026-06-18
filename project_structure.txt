@@ -294,6 +294,7 @@ os/
 |-- test_vfs_fat32.o
 |-- test_vfsd_auth.o
 |-- testcases-v0.2.14.md
+|-- testcases-v0.2.15.md
 |-- testcases-v0.3.1.md
 |-- testcases-v0.3.2.md
 |-- testcases-v0.3.3.md
@@ -302,9 +303,11 @@ os/
 |-- testcases-v0.4.3.md
 |-- testcases-v0.5.1.md
 |-- testcases-v0.5.2.md
+|-- testcases-v0.5.3.md
 |-- testcases-v0.6.1.md
 |-- testcases-v0.6.2.md
 |-- testcases-v0.6.3.md
+|-- testcases-v0.6.4.md
 |-- tools
 |   |-- extract_gcda.py
 |   |-- fix_comments.py
