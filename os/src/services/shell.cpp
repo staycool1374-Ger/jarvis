@@ -112,6 +112,7 @@ void Shell::init() {
     register_command("dirs",    "Directory stack",                   cmd_dirs);
     register_command("pushd",   "Push directory to stack",           cmd_pushd);
     register_command("popd",    "Pop directory from stack",          cmd_popd);
+    register_command("ls",      "List directory contents",           cmd_ls);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -1686,6 +1687,47 @@ void Shell::cmd_popd(int, const char**) {
     // Change to popped directory
     const char* cd_argv[] = {"cd", dir_stack_[dir_stack_count_]};
     cmd_cd(2, cd_argv);
+}
+
+void Shell::cmd_ls(int argc, const char** argv) {
+    const char* path = (argc < 2) ? "." : argv[1];
+    auto* vn = kernel::vfs::resolve(path);
+    if (!vn) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("ls: cannot access '");
+        Terminal::write(path);
+        Terminal::write("': No such file or directory\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+    if (!(vn->mode & kernel::vfs::S_IFDIR)) {
+        Terminal::write(path);
+        Terminal::putchar('\n');
+        return;
+    }
+
+    uint64_t pos = 0;
+    kernel::vfs::Dirent dent;
+    while (vn->ops->readdir(*vn, pos, dent) == 0) {
+        if (dent.d_name[0] == '\0') continue;
+        if (str_cmp(dent.d_name, ".") == 0 || str_cmp(dent.d_name, "..") == 0) continue;
+
+        // Stat entry for type
+        auto* child = vn->ops->lookup(*vn, dent.d_name);
+        if (child) {
+            if (child->mode & kernel::vfs::S_IFDIR) {
+                Terminal::set_fg(0x00AAFF);
+            } else {
+                Terminal::set_fg(0xC0C0C0);
+            }
+        } else {
+            Terminal::set_fg(0xC0C0C0);
+        }
+        Terminal::write(dent.d_name);
+        Terminal::set_fg(0xC0C0C0);
+        Terminal::putchar(' ');
+    }
+    Terminal::putchar('\n');
 }
 
 } // namespace service

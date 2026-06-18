@@ -178,6 +178,8 @@ private:
     static void cmd_pushd(int argc, const char** argv);
     /// @brief Built-in: pop directory from stack.
     static void cmd_popd(int argc, const char** argv);
+    /// @brief Built-in: list directory contents.
+    static void cmd_ls(int argc, const char** argv);
 };
 
 } // namespace service
