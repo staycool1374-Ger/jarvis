@@ -71,6 +71,7 @@ static const VnodeOps tty_ops = {
     tty_read, tty_write, tty_open, tty_close,
     tty_lseek, tty_fstat, tty_ioctl, tty_readdir, tty_lookup,
     nullptr, nullptr,
+    nullptr,         // create
 };
 
 static Vnode tty_vnode = {
@@ -106,6 +107,7 @@ static const VnodeOps null_ops = {
     null_read, null_write, null_open, null_close,
     null_lseek, null_fstat, null_ioctl, null_readdir, null_lookup,
     nullptr, nullptr,
+    nullptr,         // create
 };
 
 static Vnode null_vnode = {
@@ -142,6 +144,7 @@ static const VnodeOps console_ops = {
     console_lseek, console_fstat, console_ioctl, console_readdir,
         console_lookup,
     nullptr, nullptr,
+    nullptr,         // create
 };
 
 static Vnode console_vnode = {
@@ -192,6 +195,7 @@ static const VnodeOps kbd_ops = {
     kbd_read, kbd_write, kbd_open, kbd_close,
     kbd_lseek, kbd_fstat, kbd_ioctl, kbd_readdir, kbd_lookup,
     nullptr, nullptr,
+    nullptr,         // create
 };
 
 static Vnode kbd_vnode = {
@@ -257,6 +261,7 @@ static const VnodeOps dev_root_ops = {
     dev_root_lseek, dev_root_fstat, dev_root_ioctl, dev_root_readdir,
         dev_root_lookup,
     nullptr, nullptr,
+    nullptr,         // create
 };
 
 static Vnode dev_root_vnode = {

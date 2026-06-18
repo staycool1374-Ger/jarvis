@@ -34,26 +34,23 @@ long labs(long n) {
     return n < 0 ? -n : n;
 }
 
-#define HEAP_PHYS 0x60000000
-#define HEAP_SIZE (1024 * 1024)
+int brk(void* addr) {
+    void* ret = sys_brk(addr);
+    return (ret == addr || addr == 0) ? 0 : -1;
+}
 
-static unsigned long heap_next = HEAP_PHYS;
-static int heap_inited = 0;
-
-static void heap_init(void) {
-    if (heap_inited) return;
-    heap_next = HEAP_PHYS;
-    heap_inited = 1;
+void* sbrk(long increment) {
+    void* old = sys_brk(0);
+    if (old == (void*)-1) return (void*)-1;
+    if (increment == 0) return old;
+    void* new_brk = (void*)((unsigned long)old + increment);
+    void* ret = sys_brk(new_brk);
+    return (ret == new_brk) ? old : (void*)-1;
 }
 
 void* malloc(size_t size) {
     if (!size) size = 1;
-    heap_init();
-    unsigned long old = heap_next;
-    unsigned long new_next = old + size;
-    if (new_next > HEAP_PHYS + HEAP_SIZE) return 0;
-    heap_next = new_next;
-    return (void*)old;
+    return sbrk(size);
 }
 
 void free(void* ptr) {

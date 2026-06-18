@@ -16,6 +16,7 @@
 #define O_WRONLY   1
 #define O_RDWR     2
 #define O_NONBLOCK 0x800
+#define O_CREAT    0x200
 
 extern char** environ;
 
@@ -41,3 +42,6 @@ int uname(struct utsname* buf);
 int pause(void);
 int mkdir(const char* path, unsigned int mode);
 int unlink(const char* path);
+
+void* sbrk(long increment);
+int brk(void* addr);

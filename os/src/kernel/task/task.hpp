@@ -109,6 +109,8 @@ struct TaskControlBlock {
         , user_stack_(0)
         , user_stack_size_(0)
         , user_data(nullptr)
+        , program_break(0)
+        , program_break_start(0)
         , fd_table({})
         , cwd_vnode(nullptr)
         , waiting_child_pid(0)
@@ -158,6 +160,9 @@ struct TaskControlBlock {
     uint64_t user_stack_;
     uint64_t user_stack_size_;
     void* user_data;
+
+    uint64_t program_break;
+    uint64_t program_break_start;
 
     vfs::FdTable fd_table;
     char cwd[256];

@@ -28,6 +28,7 @@
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/vfs/devfs.hpp>
 #include <kernel/vfs/procfs.hpp>
+#include <kernel/vfs/tmpfs.hpp>
 #include <initrd/initrd.hpp>
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/terminal.hpp>
@@ -169,6 +170,120 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::IPC::init();
     kernel::Syscall::init();
     kernel::Scheduler::init();
+
+    // Launch init (PID 1) — mounts fstab, runs /etc/rc, then reaps
+    {
+        auto* init_task = kernel::TaskControlBlock::create(
+            []() {
+                // Read /etc/fstab and mount entries
+                {
+                    auto fstab = initrd::find("./etc/fstab");
+                    if (fstab.data) {
+                        const char* p = reinterpret_cast<const char*>(fstab.data);
+                        const char* end = p + fstab.size;
+                        while (p < end) {
+                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                            if (p >= end || *p == '#' || *p == '\n') {
+                                while (p < end && *p != '\n') ++p;
+                                if (p < end) ++p;
+                                continue;
+                            }
+                            char fs_name[32];
+                            char mp[64];
+                            int n = 0;
+                            while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
+                                   && n < 31) fs_name[n++] = *p++;
+                            fs_name[n] = '\0';
+                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                            n = 0;
+                            while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
+                                   && n < 63) mp[n++] = *p++;
+                            mp[n] = '\0';
+                            while (p < end && *p != '\n') ++p;
+                            if (p < end) ++p;
+                            if (fs_name[0] && mp[0]) {
+                                auto* fs = kernel::vfs::find_fs(fs_name);
+                                if (fs && kernel::vfs::mount(*fs, mp) == 0) {
+                                    kernel::Logger::info("init: mounted %s at %s",
+                                                 fs_name, mp);
+                                }
+                            }
+                        }
+                    }
+                }
+                // Read /etc/rc and execute each command
+                {
+                    auto rc = initrd::find("./etc/rc");
+                    if (rc.data) {
+                        const char* p = reinterpret_cast<const char*>(rc.data);
+                        const char* end = p + rc.size;
+                        while (p < end) {
+                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                            if (p >= end || *p == '#' || *p == '\n') {
+                                while (p < end && *p != '\n') ++p;
+                                if (p < end) ++p;
+                                continue;
+                            }
+                            char line[128];
+                            int n = 0;
+                            while (p < end && *p != '\n' && n < 127) line[n++] = *p++;
+                            line[n] = '\0';
+                            if (p < end) ++p;
+                            if (line[0] == '\0') continue;
+                            // Try to run "line.elf" from initrd
+                            char elf_path[160];
+                            n = 0;
+                            const char* src = line;
+                            while (*src && *src != ' ' && *src != '\t' && n < 127)
+                                elf_path[n++] = *src++;
+                            elf_path[n] = '\0';
+                            // Also try adding .elf and .c.elf
+                            char elf_path1[160], elf_path2[160];
+                            int m = 0;
+                            for (int i = 0; elf_path[i]; ++i)
+                                elf_path1[m++] = elf_path[i];
+                            elf_path1[m++] = '.'; elf_path1[m++] = 'e';
+                            elf_path1[m++] = 'l'; elf_path1[m++] = 'f';
+                            elf_path1[m] = '\0';
+                            m = 0;
+                            for (int i = 0; elf_path[i]; ++i)
+                                elf_path2[m++] = elf_path[i];
+                            elf_path2[m++] = '.'; elf_path2[m++] = 'c';
+                            elf_path2[m++] = '.'; elf_path2[m++] = 'e';
+                            elf_path2[m++] = 'l'; elf_path2[m++] = 'f';
+                            elf_path2[m] = '\0';
+                            auto f = initrd::find(elf_path);
+                            if (!f.data) f = initrd::find(elf_path1);
+                            if (!f.data) f = initrd::find(elf_path2);
+                            if (f.data) {
+                                auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+                                if (kernel::elf::validate_header(hdr)) {
+                                    auto* task = kernel::elf::load(hdr, f.data);
+                                    if (task) {
+                                        task->priority = 1;
+                                        task->period_ticks = 20;
+                                        kernel::Scheduler::add_task(*task);
+                                        kernel::Logger::info("init: started %s", elf_path);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Reap loop (PID 1)
+                for (;;) {
+                    kernel::Scheduler::reap_orphans();
+                    arch::hlt();
+                }
+            },
+            0,    // highest priority
+            10);  // period_ticks
+        if (init_task) {
+            kernel::Scheduler::add_task(*init_task);
+            kernel::Logger::info("init: PID 1 started");
+        }
+    }
+
     kernel::PMM::set_oom_handler([]() -> bool {
         kernel::TaskControlBlock* victim = nullptr;
         uint64_t victim_priority = ~0ULL;
@@ -217,6 +332,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::vfs::devfs_init();
     kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
     kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
+    kernel::vfs::mount(kernel::vfs::tmpfs_fs, "/tmp");
 
     // Probe ATA drives and mount FAT32 if found
     {

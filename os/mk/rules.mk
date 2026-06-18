@@ -77,7 +77,10 @@ userspace/%.c.elf: userspace/%.c $(LIBC_A) build/libc/crt0.o
 # ------------------------------------------------------------------------------
 $(INITRD_CPIO): $(USERSPACE_ELF)
 	@printf '  %-7s %s\n' 'CPIO' 'initrd.cpio'
-	@mkdir -p initrd_root
+	@mkdir -p initrd_root/etc initrd_root/tmp
+	@printf 'tmpfs /tmp\n' > initrd_root/etc/fstab
+	@printf '#!/bin/sh\n' > initrd_root/etc/rc
+	@printf '# Init script\n' >> initrd_root/etc/rc
 	@if [ ! -z "$(USERSPACE_ELF)" ]; then cp $(USERSPACE_ELF) initrd_root/; fi
 	cd initrd_root && find . -print0 | cpio -o -H newc -0 --quiet > ../$@
 	@rm -rf initrd_root

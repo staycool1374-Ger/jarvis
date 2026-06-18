@@ -100,6 +100,7 @@ static const VnodeOps fat32_file_ops = {
     fat32_file_lookup,
     nullptr,
     nullptr,
+    nullptr,         // create
 };
 
 // -------------------------------------------------------------------
@@ -187,6 +188,7 @@ static const VnodeOps fat32_dir_ops = {
     fat32_dir_lookup,
     fat32_dir_mkdir,
     fat32_dir_unlink,
+    nullptr,         // create
 };
 
 // -------------------------------------------------------------------

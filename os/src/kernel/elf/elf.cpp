@@ -82,6 +82,9 @@ static uint64_t page_align_down(uint64_t addr) {
     return addr & ~0xFFFULL;
 }
 
+static constexpr size_t INITIAL_HEAP_PAGES = 4;
+static constexpr size_t INITIAL_HEAP_SIZE = INITIAL_HEAP_PAGES * arch::PAGE_SIZE;
+
 static int count_strings(const char* const* arr) {
     if (!arr) return 0;
     int n = 0;
@@ -158,7 +161,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
     memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + ustack_phys), 0, mem::
         STACK_SIZE);
 
-    size_t heap_pages = mem::HEAP_SIZE / arch::PAGE_SIZE;
+    size_t heap_pages = INITIAL_HEAP_PAGES;
     uint64_t heap_phys = PMM::alloc_user_contiguous(heap_pages);
     if (!heap_phys) return false;
 
@@ -167,8 +170,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
                               heap_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
-    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, mem::
-        HEAP_SIZE);
+    __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, INITIAL_HEAP_SIZE);
 
     if (out_ustack_phys) *out_ustack_phys = ustack_phys;
     return true;
@@ -286,6 +288,8 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
 
     tcb->user_stack_ = ustack_phys;
     tcb->user_stack_size_ = mem::STACK_SIZE;
+    tcb->program_break_start = mem::HEAP_VADDR;
+    tcb->program_break = mem::HEAP_VADDR + INITIAL_HEAP_SIZE;
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, nullptr, nullptr);
 
@@ -330,6 +334,8 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     tcb->page_table_shared_ = false;
     tcb->user_stack_ = ustack_phys;
     tcb->user_stack_size_ = mem::STACK_SIZE;
+    tcb->program_break_start = mem::HEAP_VADDR;
+    tcb->program_break = mem::HEAP_VADDR + INITIAL_HEAP_SIZE;
 
     {
         vfs::Vnode* tty = vfs::resolve("/dev/tty");

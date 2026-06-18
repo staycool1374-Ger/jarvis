@@ -53,7 +53,10 @@ enum class SyscallNumber : uint64_t {
     MKDIR       = 41,
     UNLINK      = 42,
     RMDIR       = 43,
-    MAX_SYSCALL = 44,
+    BRK         = 44,
+    GETRLIMIT   = 45,
+    SETRLIMIT   = 46,
+    MAX_SYSCALL = 47,
 };
 
 /// @brief System call handler function signature.
@@ -150,6 +153,9 @@ private:
     static uint64_t sys_unlink(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
         );
     static uint64_t sys_rmdir(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_brk(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_getrlimit(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_setrlimit(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
 
     static constexpr SyscallHandler syscall_table_[static_cast<size_t>(
         SyscallNumber::MAX_SYSCALL)] = {
@@ -197,6 +203,9 @@ private:
         &Syscall::sys_mkdir,
         &Syscall::sys_unlink,
         &Syscall::sys_rmdir,
+        &Syscall::sys_brk,
+        &Syscall::sys_getrlimit,
+        &Syscall::sys_setrlimit,
     };
 
 };

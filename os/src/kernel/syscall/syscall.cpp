@@ -39,7 +39,13 @@ int syscall_task_open(vfs::Vnode* vn, uint64_t flags) {
 
 int syscall_path_open(const char* path, uint64_t flags) {
     vfs::Vnode* vn = vfs::resolve(path);
-    if (!vn) return -1;
+    if (!vn) {
+        if (flags & vfs::O_CREAT) {
+            if (vfs::create(path, vfs::S_IFREG) != 0) return -1;
+            vn = vfs::resolve(path);
+        }
+        if (!vn) return -1;
+    }
     return syscall_task_open(vn, flags);
 }
 

@@ -223,6 +223,8 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->waiting_child_pid = 0;
     tcb->waiting_child_status = nullptr;
     tcb->user_data = parent->user_data;
+    tcb->program_break = parent->program_break;
+    tcb->program_break_start = parent->program_break_start;
 
     tcb->blocked_next = nullptr;
     tcb->blocked_prev = nullptr;

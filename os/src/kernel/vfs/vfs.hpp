@@ -15,6 +15,7 @@ enum OpenFlags : uint64_t {
     O_WRONLY   = 1,
     O_RDWR     = 2,
     O_NONBLOCK = 0x800,
+    O_CREAT    = 0x200,
 };
 
 enum SeekWhence : int64_t {
@@ -60,6 +61,7 @@ struct VnodeOps {
     Vnode*  (*lookup)(Vnode& self, const char* name);
     int     (*mkdir)(Vnode& self, const char* name, uint16_t mode);
     int     (*unlink)(Vnode& self, const char* name);
+    int     (*create)(Vnode& self, const char* name, uint16_t mode);
 };
 
 struct Vnode {
@@ -141,6 +143,10 @@ void set_root_vnode(Vnode& vnode);
 /// @brief Create a subdirectory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int mkdir(const char* path, uint16_t mode);
+
+/// @brief Create a regular file at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
+int create(const char* path, uint16_t mode);
 
 /// @brief Remove a file or empty directory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.

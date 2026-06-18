@@ -7,6 +7,11 @@
 #include <sys/utsname.h>
 #include <time.h>
 
+struct rlimit {
+    unsigned long rlim_cur;
+    unsigned long rlim_max;
+};
+
 #define SYS_YIELD       0
 #define SYS_SEND        1
 #define SYS_RECEIVE     2
@@ -47,6 +52,9 @@
 #define SYS_MKDIR       41
 #define SYS_UNLINK      42
 #define SYS_RMDIR       43
+#define SYS_BRK         44
+#define SYS_GETRLIMIT   45
+#define SYS_SETRLIMIT   46
 
 static inline long __syscall5(long num, long a0, long a1, long a2, long a3) {
     long ret;
@@ -89,6 +97,19 @@ static inline long sys_sigreturn(void) {
 
 static inline long sys_pause(void) {
     return __syscall5(SYS_PAUSE, 0, 0, 0, 0);
+}
+
+static inline void* sys_brk(void* addr) {
+    long ret = __syscall5(SYS_BRK, (long)addr, 0, 0, 0);
+    return (void*)ret;
+}
+
+static inline long sys_getrlimit(int resource, struct rlimit* rlp) {
+    return __syscall5(SYS_GETRLIMIT, resource, (long)rlp, 0, 0);
+}
+
+static inline long sys_setrlimit(int resource, const struct rlimit* rlp) {
+    return __syscall5(SYS_SETRLIMIT, resource, (long)rlp, 0, 0);
 }
 
 #endif

@@ -6,8 +6,11 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/memory/checked_ptr.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <string.hpp>
 #include <version.hpp>
+#include <constants.hpp>
 
 namespace kernel {
 
@@ -145,6 +148,94 @@ uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
     arch::hlt();
+    return 0;
+}
+
+uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    auto* t = syscall_task();
+    if (!t) return static_cast<uint64_t>(-1);
+
+    // Query mode
+    if (arg0 == 0) return t->program_break;
+
+    // Cannot shrink below start
+    if (arg0 < t->program_break_start)
+        return t->program_break;
+
+    // Cannot expand beyond stack area
+    if (arg0 > mem::STACK_VADDR)
+        return static_cast<uint64_t>(-1);
+
+    uint64_t old_break = t->program_break;
+
+    // Expand: map new pages
+    if (arg0 > old_break) {
+        uint64_t start_page = (old_break + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
+        uint64_t end_page = (arg0 + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
+        for (uint64_t vaddr = start_page; vaddr < end_page; vaddr += arch::PAGE_SIZE) {
+            // Check if already mapped
+            if (VMM::virt_to_phys_in_pml4(vaddr, t->page_table_) != 0)
+                continue;
+            uint64_t phys = PMM::alloc_user_page();
+            if (!phys) return static_cast<uint64_t>(-1);
+            VMM::map_page_in_pml4(vaddr, phys, true, t->page_table_);
+            __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + phys), 0, arch::PAGE_SIZE);
+        }
+    }
+
+    // Contract: could unmap pages but it's optional — leave them mapped
+    t->program_break = arg0;
+    return t->program_break;
+}
+
+struct Rlimit {
+    uint64_t rlim_cur;
+    uint64_t rlim_max;
+};
+
+enum RlimitResource {
+    RLIMIT_DATA = 0,
+    RLIMIT_STACK = 1,
+    RLIMIT_NOFILE = 2,
+};
+
+uint64_t Syscall::sys_getrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    auto* t = syscall_task();
+    if (!t) return static_cast<uint64_t>(-1);
+
+    Rlimit rl = {};
+    switch (arg0) {
+    case RLIMIT_DATA:
+        rl.rlim_cur = mem::STACK_VADDR - t->program_break_start;
+        rl.rlim_max = mem::STACK_VADDR - t->program_break_start;
+        break;
+    case RLIMIT_STACK:
+        rl.rlim_cur = mem::STACK_SIZE;
+        rl.rlim_max = mem::STACK_SIZE;
+        break;
+    case RLIMIT_NOFILE:
+        rl.rlim_cur = vfs::MAX_FDS;
+        rl.rlim_max = vfs::MAX_FDS;
+        break;
+    default:
+        return static_cast<uint64_t>(-1);
+    }
+
+    auto rl_ptr = checked(reinterpret_cast<Rlimit*>(arg1));
+    if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
+    *rl_ptr.unsafe_ptr() = rl;
+    return 0;
+}
+
+uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
+    auto* t = syscall_task();
+    if (!t) return static_cast<uint64_t>(-1);
+
+    auto rl_ptr = checked(reinterpret_cast<const Rlimit*>(arg1));
+    if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
+    Rlimit rl = *rl_ptr.unsafe_ptr();
+    (void)rl;
+    (void)arg0;
     return 0;
 }
 
