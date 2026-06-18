@@ -132,32 +132,32 @@ JARVIS_TEST(fat32_dir_root_entries) {
 
     DirEntry entry = {};
     uint64_t pos = 0;
-    bool found_readme = false;
-    bool found_hello = false;
+    bool found_multi = false;
+    bool found_subdir = false;
 
     while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
         if (!entry.valid) continue;
-        if (strcmp(entry.name, "README.TXT") == 0) found_readme = true;
-        if (strcmp(entry.name, "HELLO.TXT") == 0) found_hello = true;
+        if (strcmp(entry.name, "MULTI.TXT") == 0) found_multi = true;
+        if (strcmp(entry.name, "SUBDIR") == 0) found_subdir = true;
     }
 
-    JARVIS_ASSERT(found_readme);
-    JARVIS_ASSERT(found_hello);
+    JARVIS_ASSERT(found_multi);
+    JARVIS_ASSERT(found_subdir);
 }
 
 JARVIS_TEST(fat32_dir_short_name) {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
-    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
-    JARVIS_ASSERT(strcmp(entry.name, "README.TXT") == 0);
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "MULTI.TXT", entry));
+    JARVIS_ASSERT(strcmp(entry.name, "MULTI.TXT") == 0);
 }
 
 JARVIS_TEST(fat32_dir_file_size) {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
-    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "MULTI.TXT", entry));
     JARVIS_ASSERT(entry.size > 0);
 }
 
@@ -165,7 +165,7 @@ JARVIS_TEST(fat32_dir_file_cluster) {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
-    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "MULTI.TXT", entry));
     JARVIS_ASSERT(entry.cluster >= 2);
 }
 
@@ -183,7 +183,7 @@ JARVIS_TEST(fat32_dir_attribute_directory) {
     DirEntry entry = {};
     JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "SUBDIR", entry));
     JARVIS_ASSERT(entry.is_directory);
-    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "MULTI.TXT", entry));
     JARVIS_ASSERT(!entry.is_directory);
 }
 
@@ -199,7 +199,7 @@ JARVIS_TEST(fat32_chain_traverse_single) {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
-    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "README.TXT", entry));
+    JARVIS_ASSERT(lookup_in_dir(fs, fs.bpb().root_cluster, "HELLO.TXT", entry));
     uint32_t next = entry.cluster;
     JARVIS_ASSERT(fs.read_fat_entry(next, next));
     JARVIS_ASSERT(Fat32Partition::is_eof(next));
@@ -389,8 +389,8 @@ JARVIS_TEST(fat32_free_cluster_chain) {
 // Depends: kernel::fat32::name_to_short_name
 JARVIS_TEST(fat32_name_to_short_name) {
     uint8_t sn[11];
-    name_to_short_name("README.TXT", sn);
-    JARVIS_ASSERT(memcmp(sn, "README  TXT", 11) == 0);
+    name_to_short_name("HELLO.TXT", sn);
+    JARVIS_ASSERT(memcmp(sn, "HELLO   TXT", 11) == 0);
     name_to_short_name("File", sn);
     JARVIS_ASSERT(memcmp(sn, "FILE        ", 11) == 0);
 }
@@ -423,19 +423,19 @@ JARVIS_TEST(fat32_add_dir_entry) {
 
 // Runmode: kernel
 // Testidea: Remove a directory entry, verify it no longer appears.
-// Input: remove_dir_entry for "README.TXT", read_dir_entry
+// Input: remove_dir_entry for "HELLO.TXT", read_dir_entry
 // Expect: Entry no longer found in directory listing
 // Depends: kernel::fat32::remove_dir_entry
 JARVIS_TEST(fat32_remove_dir_entry) {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
-    JARVIS_ASSERT(remove_dir_entry(fs, fs.bpb().root_cluster, "README.TXT"));
+    JARVIS_ASSERT(remove_dir_entry(fs, fs.bpb().root_cluster, "HELLO.TXT"));
     DirEntry entry = {};
     uint64_t pos = 0;
     bool found = false;
     while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
         if (!entry.valid) continue;
-        if (strcmp(entry.name, "README.TXT") == 0) {
+        if (strcmp(entry.name, "HELLO.TXT") == 0) {
             found = true;
             break;
         }

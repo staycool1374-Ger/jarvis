@@ -71,6 +71,7 @@ public:
     struct PoolMeta {
         size_t  first_free;
         size_t  free_count;
+        size_t  block_count;
         uint64_t freed_bitmap[4];
     };
     /// @brief Return the number of pool classes.

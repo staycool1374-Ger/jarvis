@@ -117,14 +117,22 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta& out) {
     auto& p = pools_[idx];
     out.first_free  = p.first_free;
     out.free_count  = p.free_count;
+    out.block_count = p.block_count;
     p.copy_freed_bitmap(out.freed_bitmap);
 }
 
 void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
     auto& p = pools_[idx];
-    p.first_free  = meta.first_free;
-    p.free_count  = meta.free_count;
     p.write_freed_bitmap(meta.freed_bitmap);
+
+    // If the pool was resized after the snapshot was taken (block_count grew),
+    // the added blocks have zero bits in the bitmap and would be treated as
+    // "allocated".  Mark them genuinely free now.
+    if (p.block_count > meta.block_count) {
+        for (size_t j = meta.block_count; j < p.block_count; ++j) {
+            p.set_block_freed(j);
+        }
+    }
 
     // Rebuild the free-list *next* pointers from the bitmap so the
     // pool is internally consistent even if test code wrote into
@@ -132,12 +140,14 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
     // Build the list by prepending each freed block to the head so that
     // every freed block is reachable from first_free.
     p.first_free  = static_cast<size_t>(-1);
+    p.free_count  = 0;
     for (size_t j = 0; j < p.block_count; ++j) {
         if (!p.is_block_freed(j)) continue;          // still allocated — skip
         auto* next = reinterpret_cast<uint64_t*>(
             p.data + j * p.block_size);
         *next = p.first_free;
         p.first_free = j;
+        ++p.free_count;
     }
     // If the pool was completely full before snapshot the rebuild
     // leaves first_free == -1 (no free blocks) — correct.

@@ -5,6 +5,7 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/vfs/vfsd.hpp>
+#include <kernel/vfs/tmpfs.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
@@ -189,9 +190,32 @@ void snapshot_restore(const char* test_name) {
     {
         uint64_t saved_count = *reinterpret_cast<uint64_t*>(
                                    g_snapshot + off_user_page_count());
+        size_t total_pages = PMM::total_memory() / arch::PAGE_SIZE;
+        if (saved_count > total_pages) {
+            Logger::raw_write("[SNAP] user_page_count corruption detected: saved_count=");
+            Logger::print_dec(saved_count);
+            Logger::raw_write(" total_pages=");
+            Logger::print_dec(total_pages);
+            Logger::raw_write(" off_upc=");
+            Logger::print_dec(off_user_page_count());
+            Logger::raw_write(" off_upd=");
+            Logger::print_dec(off_user_page_data());
+            Logger::raw_write("\n");
+            saved_count = 0;
+        } else {
+            Logger::raw_write("[SNAP] user_page_count=");
+            Logger::print_dec(saved_count);
+            Logger::raw_write(" total_pages=");
+            Logger::print_dec(total_pages);
+            Logger::raw_write("\n");
+        }
         uint8_t* in = g_snapshot + off_user_page_data();
         for (uint64_t p = 0; p < saved_count; ++p) {
             uint64_t page_index = *reinterpret_cast<uint64_t*>(in);
+            if (page_index >= total_pages) {
+                in += sizeof(uint64_t) + arch::PAGE_SIZE;
+                continue;
+            }
             __builtin_memcpy(
                 reinterpret_cast<void*>(page_index * arch::PAGE_SIZE
                                         + arch::HHDM_OFFSET),
@@ -259,6 +283,8 @@ void snapshot_restore(const char* test_name) {
     __builtin_memcpy(&saved, g_snapshot + off_rsrc_counts(), sizeof(saved));
     ResourceTracker::instance().restore(saved);
 
+    // ---- Reset filesystem roots with state that isn't snapshot-saved ----
+    kernel::vfs::tmpfs_reset_root();
 }
 
 void snapshot_destroy() {

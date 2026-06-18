@@ -243,6 +243,10 @@ static Vnode* tmpfs_get_root() {
     return &tmpfs_root;
 }
 
+void tmpfs_reset_root() {
+    tmpfs_root.private_data = nullptr;
+}
+
 Filesystem tmpfs_fs = {
     "tmpfs",
     tmpfs_get_root,
