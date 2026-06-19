@@ -119,6 +119,80 @@ JARVIS_TEST(pci_find_nonexistent_device) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies the host bridge (00:00.0) does not have an MSI capability
+// (most QEMU host bridges don't). Confirms pci_find_capability works.
+// Input: arch::pci_find_capability(bdf, PCI_CAP_ID_MSI)
+// Expect: Returns 0 (no MSI capability)
+// Depends: arch::pci_find_capability
+JARVIS_TEST(pci_host_bridge_no_msi) {
+    arch::PciBdf bdf = {0, 0, 0};
+    uint8_t cap = arch::pci_find_capability(bdf, arch::PCI_CAP_ID_MSI);
+    JARVIS_ASSERT_EQ(0, cap);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies pci_alloc_vector returns a valid non-zero vector and
+// that pci_free_vector can release it. Also verifies vector is in range 48-255
+// and not 0x80.
+// Input: arch::pci_alloc_vector() then arch::pci_free_vector(v)
+// Expect: vector != 0, vector >= 48, vector != 0x80
+// Depends: arch::pci_alloc_vector, arch::pci_free_vector
+JARVIS_TEST(pci_alloc_free_vector) {
+    uint8_t v1 = arch::pci_alloc_vector();
+    JARVIS_ASSERT(v1 != 0);
+    JARVIS_ASSERT(v1 >= 48);
+    JARVIS_ASSERT(v1 != 0x80);
+    uint8_t v2 = arch::pci_alloc_vector();
+    JARVIS_ASSERT(v2 != 0);
+    JARVIS_ASSERT(v2 != v1);
+    arch::pci_free_vector(v1);
+    arch::pci_free_vector(v2);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies pci_enable_msi returns 0 for a device without MSI
+// capability (host bridge at 00:00.0).
+// Input: arch::pci_enable_msi(bdf, 0)
+// Expect: Returns 0 (no MSI capability)
+// Depends: arch::pci_enable_msi
+JARVIS_TEST(pci_enable_msi_no_cap) {
+    arch::PciBdf bdf = {0, 0, 0};
+    uint8_t vec = arch::pci_enable_msi(bdf, 0);
+    JARVIS_ASSERT_EQ(0, vec);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies pci_enable_msix returns 0 for a device without MSI-X
+// capability (host bridge at 00:00.0).
+// Input: arch::pci_enable_msix(bdf, 0, 0)
+// Expect: Returns 0 (no MSI-X capability)
+// Depends: arch::pci_enable_msix
+JARVIS_TEST(pci_enable_msix_no_cap) {
+    arch::PciBdf bdf = {0, 0, 0};
+    uint8_t vec = arch::pci_enable_msix(bdf, 0, 0);
+    JARVIS_ASSERT_EQ(0, vec);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies that the ISA bridge's status register indicates whether
+// it has a capability list, and that pci_find_capability returns 0 for MSI.
+// Input: arch::pci_find_capability(bdf, PCI_CAP_ID_MSI)
+// Expect: Returns 0 on devices without MSI
+// Depends: arch::pci_find_capability
+JARVIS_TEST(pci_isa_bridge_caps) {
+    arch::PciBdf bdf = {0, 1, 0};
+    uint8_t cap = arch::pci_find_capability(bdf, arch::PCI_CAP_ID_MSI);
+    JARVIS_ASSERT_EQ(0, cap);
+    cap = arch::pci_find_capability(bdf, arch::PCI_CAP_ID_MSIX);
+    JARVIS_ASSERT_EQ(0, cap);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all PCI tests with the test framework.
 // Input: None
 // Expect: All PCI tests are registered (no direct assertion, only logging)
@@ -133,4 +207,9 @@ void register_pci_tests() {
     JARVIS_REGISTER_TEST(pci_read_command_register);
     JARVIS_REGISTER_TEST(pci_make_addr_format);
     JARVIS_REGISTER_TEST(pci_find_nonexistent_device);
+    JARVIS_REGISTER_TEST(pci_host_bridge_no_msi);
+    JARVIS_REGISTER_TEST(pci_alloc_free_vector);
+    JARVIS_REGISTER_TEST(pci_enable_msi_no_cap);
+    JARVIS_REGISTER_TEST(pci_enable_msix_no_cap);
+    JARVIS_REGISTER_TEST(pci_isa_bridge_caps);
 }

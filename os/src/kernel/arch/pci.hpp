@@ -39,6 +39,11 @@ enum PciRegister : uint8_t {
     PCI_SECONDARY_BUS   = 0x19,
 };
 
+/// PCI status register bits
+enum PciStatus : uint16_t {
+    PCI_STATUS_CAP_LIST = 1 << 4,
+};
+
 /// PCI command register bits
 enum PciCommand : uint16_t {
     PCI_CMD_IO_SPACE    = 1 << 0,
@@ -50,6 +55,31 @@ enum PciCommand : uint16_t {
 constexpr uint8_t PCI_HEADER_TYPE_DEVICE  = 0x00;
 constexpr uint8_t PCI_HEADER_TYPE_BRIDGE  = 0x01;
 constexpr uint8_t PCI_HEADER_TYPE_MULTI   = 0x80;
+
+/// Capability pointer offset (for header type 0)
+constexpr uint8_t PCI_CAP_PTR         = 0x34;
+
+/// Capability IDs
+constexpr uint8_t PCI_CAP_ID_MSI      = 0x05;
+constexpr uint8_t PCI_CAP_ID_MSIX     = 0x11;
+
+/// MSI Message Control register bits
+constexpr uint16_t PCI_MSI_CTRL_ENABLE     = 1 << 0;
+constexpr uint16_t PCI_MSI_CTRL_MMC_MASK   = 0x0E;  // bits 3:1
+constexpr uint16_t PCI_MSI_CTRL_MME_MASK   = 0x70;  // bits 6:4
+constexpr uint16_t PCI_MSI_CTRL_64BIT      = 1 << 7;
+constexpr uint16_t PCI_MSI_CTRL_PVM        = 1 << 8;
+
+/// MSI-X Message Control register bits
+constexpr uint16_t PCI_MSIX_CTRL_ENABLE    = 1 << 15;
+constexpr uint16_t PCI_MSIX_CTRL_FUNCMASK  = 1 << 14;
+constexpr uint16_t PCI_MSIX_CTRL_TSIZE_MASK = 0x7FF;
+
+/// MSI address: xAPIC base (must be written to device's Message Address reg)
+constexpr uint32_t PCI_MSI_ADDR_BASE = 0xFEE00000U;
+
+/// MSI data: fixed delivery, edge-triggered, physical destination
+constexpr uint16_t PCI_MSI_DATA_FIXED = 0x0000;
 
 /// BAR type
 enum class PciBarType : uint8_t {
@@ -152,5 +182,33 @@ size_t pci_device_count();
 const PciDeviceInfo* pci_find_device(uint8_t class_code, uint8_t subclass);
 void pci_parse_bars(PciDeviceInfo& info);
 PciDeviceInfo pci_read_device_info(PciBdf bdf);
+
+// --- Capabilities & MSI/MSI-X ---
+
+/// Walk the capability list and return the config space offset of the
+/// first capability matching @p cap_id, or 0 if not found.
+uint8_t pci_find_capability(PciBdf bdf, uint8_t cap_id);
+
+/// Program MSI for a device. Allocates a free interrupt vector and
+/// sets up the Message Address + Data registers.
+/// @param bdf        Device BDF
+/// @param apic_id    Destination APIC ID (0 for BSP)
+/// @return           The allocated vector number, or 0 on failure.
+uint8_t pci_enable_msi(PciBdf bdf, uint8_t apic_id);
+
+/// Program MSI-X for a device entry. Allocates a free interrupt vector
+/// and writes the MSI-X table entry in MMIO.
+/// @param bdf        Device BDF
+/// @param entry      MSI-X table entry index
+/// @param apic_id    Destination APIC ID (0 for BSP)
+/// @return           The allocated vector number, or 0 on failure.
+uint8_t pci_enable_msix(PciBdf bdf, uint16_t entry, uint8_t apic_id);
+
+/// Allocate a free interrupt vector for MSI/MSI-X use.
+/// @return Vector number (48-0xFF, excluding 0x80), or 0 if none free.
+uint8_t pci_alloc_vector();
+
+/// Free a previously allocated interrupt vector.
+void pci_free_vector(uint8_t vec);
 
 } // namespace arch

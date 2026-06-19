@@ -47,6 +47,11 @@ void IDT::register_handler(InterruptVector vec, ISRHandler handler) {
     handlers_[idx] = handler;
 }
 
+void IDT::register_handler_raw(uint8_t vec, ISRHandler handler) {
+    if (static_cast<size_t>(vec) >= NUM_ENTRIES) return;
+    handlers_[vec] = handler;
+}
+
 void IDT::handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip) {
     if (vector >= NUM_ENTRIES) return;
     auto handler = handlers_[vector];

@@ -68,6 +68,8 @@ public:
     /// @param vec     The interrupt vector.
     /// @param handler The handler function to register.
     static void register_handler(InterruptVector vec, ISRHandler handler);
+    /// @brief Registers a handler for a raw vector number (e.g. MSI/MSI-X).
+    static void register_handler_raw(uint8_t vec, ISRHandler handler);
     /// @brief Dispatches an interrupt to the registered handler.
     /// @param vector     The vector number.
     /// @param error_code CPU error code.
