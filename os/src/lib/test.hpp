@@ -22,12 +22,20 @@ struct TestCase {
     uint8_t flags;
 };
 
+struct ClassSection {
+    const char* name;
+    size_t start;
+    size_t count;
+};
+
 class Registry {
 public:
     static void init();
     static void register_test(const TestCase& tc);
     static const TestCase* tests();
     static size_t count();
+    static size_t class_count();
+    static const ClassSection* class_section(size_t i);
 
     static void record_failure(const char* file, int line, const char* expr);
     static void record_success();
@@ -41,14 +49,19 @@ public:
     static size_t test_failed();
     static void reset();
 
+    static void record_class_section(const char* name, size_t start, size_t count);
+
 private:
     static constexpr size_t MAX_TESTS = 1024;
+    static constexpr size_t MAX_CLASSES = 64;
     static TestCase tests_[MAX_TESTS];
     static size_t count_;
     static size_t passed_;
     static size_t failed_;
     static size_t test_count_;
     static size_t test_failed_;
+    static ClassSection sections_[MAX_CLASSES];
+    static size_t class_count_;
 };
 
 class TestBase {
@@ -86,8 +99,19 @@ void run_safe();
 void run_filtered(uint8_t required_flags);
 void run_debug();
 void run_release();
+void run_registered(uint8_t required_flags);
 void run_suite(const char* suite_name);
 void print_report();
+
+void set_class_auto_shutdown(bool enabled);
+extern bool g_class_auto_shutdown;
+
+struct TestClass {
+    const char* name;
+    void (*register_all)();
+};
+
+bool register_class(const char* name);
 
 } // namespace test
 } // namespace kernel

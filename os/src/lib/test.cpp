@@ -7,6 +7,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/test_isolate.hpp>
+#include <kernel/arch/io.hpp>
 
 namespace kernel {
 namespace test {
@@ -17,6 +18,9 @@ size_t Registry::passed_ = 0;
 size_t Registry::failed_ = 0;
 size_t Registry::test_count_ = 0;
 size_t Registry::test_failed_ = 0;
+ClassSection Registry::sections_[MAX_CLASSES] = {};
+size_t Registry::class_count_ = 0;
+bool g_class_auto_shutdown = false;
 
 void Registry::init() {
     count_ = 0;
@@ -36,6 +40,10 @@ void Registry::register_test(const TestCase& tc) {
 
 const TestCase* Registry::tests() { return tests_; }
 size_t Registry::count() { return count_; }
+size_t Registry::class_count() { return class_count_; }
+const ClassSection* Registry::class_section(size_t i) {
+    return (i < class_count_) ? &sections_[i] : nullptr;
+}
 
 void Registry::record_failure(const char* file, int line, const char* expr) {
     ++failed_;
@@ -49,6 +57,14 @@ void Registry::record_success() {
 void Registry::record_test(bool passed) {
     ++test_count_;
     if (!passed) ++test_failed_;
+}
+
+void Registry::record_class_section(const char* name, size_t start, size_t count) {
+    if (class_count_ >= MAX_CLASSES) return;
+    sections_[class_count_].name  = name;
+    sections_[class_count_].start = start;
+    sections_[class_count_].count = count;
+    ++class_count_;
 }
 
 void Registry::reset() {
@@ -195,6 +211,15 @@ void run_filtered(uint8_t required_flags) {
         if (tc.flags & TF_USER) continue;
         if (required_flags && !(tc.flags & required_flags)) continue;
 
+        for (size_t ci = 0; ci < Registry::class_count(); ++ci) {
+            auto* cs = Registry::class_section(ci);
+            if (cs && i == cs->start) {
+                Logger::raw_write("\n--- ");
+                Logger::raw_write(cs->name);
+                Logger::raw_write(" ---\n");
+            }
+        }
+
         ++run_count;
         size_t before_fail = Registry::failed();
 
@@ -250,6 +275,18 @@ void run_debug() {
 
 void run_release() {
     run_filtered(TF_RELEASE);
+}
+
+void run_registered(uint8_t required_flags) {
+    run_filtered(required_flags);
+    if (g_class_auto_shutdown) {
+        uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
+        arch::qemu_debug_exit(result);
+    }
+}
+
+void set_class_auto_shutdown(bool enabled) {
+    g_class_auto_shutdown = enabled;
 }
 
 void run_suite(const char* suite_name) {

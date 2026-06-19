@@ -16,7 +16,6 @@
 #include <version.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/arch/keyboard.hpp>
-#include <kernel/test/test_selftest.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <test.hpp>
 #include <string.hpp>
@@ -886,7 +885,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
     Terminal::set_fg(0xC0C0C0);
 }
 
-void Shell::cmd_selftest(int, const char**) {
+void Shell::cmd_selftest(int argc, const char** argv) {
     Terminal::write("Running kernel self-tests...\n");
     // Disable framebuffer: test activity may corrupt kernel page-table entries
     // (tests allocate/free pages, map/unmap memory).  Any subsequent
@@ -900,8 +899,22 @@ void Shell::cmd_selftest(int, const char**) {
         arch::IrqGuard guard;
 
         kernel::test::Registry::init();
-        register_selftest_tests();
-        kernel::test::run_safe();
+
+        if (argc <= 1) {
+            // No class arguments → run the "safe" class with TF_RELEASE filter
+            kernel::test::register_class("safe");
+            kernel::test::run_registered(kernel::test::TF_RELEASE);
+        } else {
+            // Register each named class, then run all registered tests
+            for (int i = 1; i < argc; ++i) {
+                if (!kernel::test::register_class(argv[i])) {
+                    Terminal::write("Unknown test class: ");
+                    Terminal::write(argv[i]);
+                    Terminal::write("\n");
+                }
+            }
+            kernel::test::run_registered(0);
+        }
 
         // Reap any terminated test tasks that accumulated while interrupts
         // were disabled (on_tick → reap_orphans never ran).
@@ -917,7 +930,7 @@ void Shell::cmd_selftest(int, const char**) {
         // called reschedule()/switch_to_task() while interrupts were disabled
         // (setting scheduler_save_rsp_to / scheduler_load_rsp_from), but the
         // ISR assembly never consumed them.  If left dangling, the next timer
-        // IRQ would attempt to context-switch via stale pointers to freed
+        // IRQ would attempt to context-switch via stalled pointers to freed
         // task memory → GPF at iretq.
         kernel::scheduler_save_rsp_to = nullptr;
         kernel::scheduler_load_rsp_from = 0;

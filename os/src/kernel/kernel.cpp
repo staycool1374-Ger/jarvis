@@ -37,7 +37,6 @@
 #include <programs/demo/demo.hpp>
 #include <logger.hpp>
 #include <test.hpp>
-#include <kernel/test/test_selftest.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
 
@@ -423,17 +422,21 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
-    register_selftest_tests();
-    register_ipc_benchmark_tests();
-
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(false);
     }
+
+    kernel::test::Registry::init();
 #ifdef CONFIG_DEBUG
-    kernel::test::run_debug();
+    kernel::test::register_class("all");
+    kernel::test::set_class_auto_shutdown(true);
+    kernel::test::run_registered(0);
 #else
-    kernel::test::run_release();
+    kernel::test::register_class("safe");
+    kernel::test::set_class_auto_shutdown(true);
+    kernel::test::run_registered(kernel::test::TF_RELEASE);
 #endif
+
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(true);
     }

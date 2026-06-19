@@ -1,8 +1,10 @@
 #include <test.hpp>
 #include <logger.hpp>
-#include <kernel/test/test_selftest.hpp>
+#include <string.hpp>
 
 using namespace kernel;
+
+// ---- forward declarations for per-file registration functions ----
 
 void register_lib_tests();
 void register_memory_tests();
@@ -59,7 +61,6 @@ void register_fat32_tests();
 void register_vfs_fat32_tests();
 void register_ipc_blocking_tests();
 void register_vfsd_authorization_tests();
-void register_syscall_tests();
 void register_textutils_tests();
 void register_shell_interaction_tests();
 void register_irq_guard_tests();
@@ -73,83 +74,238 @@ void register_pci_tests();
 void register_virtio_tests();
 void register_dma_tests();
 void register_net_tests();
+void register_ipc_benchmark_tests();
 
-// Runmode: kernel
-// Testidea: Registers all selftest subsystem test suites by delegating to
-// each subsystem's register function
-// Input: None
-// Expect: All subsystem tests registered (lib, memory, ipc, scheduler, task,
-// driver, vfs, signals, process, elf, checked_ptr, rtc, syscall, sync,
-// capability, task_lifecycle, idle_task, vfsd, iocd)
-// Depends: test framework, all kernel subsystems
-void register_selftest_tests() {
-    Logger::info("Registering selftest suite");
+// ---- Test class table ----
+// Each class maps to a lambda that calls the relevant register_*_tests()
+// functions.  The "safe" class is the curated TF_RELEASE subset for release
+// builds and `selftest` with no args.  The "all" class is everything incl.
+// benchmarks.
 
-    register_lib_tests();
-    register_memory_tests();
-    register_ipc_tests();
-    register_scheduler_tests();
-    register_task_tests();
-    register_driver_tests();
-    register_vfs_tests();
-    register_tmpfs_invalid_mount_tests();
-    register_tmpfs_io_timeout_tests();
-    register_tmpfs_corrupted_metadata_tests();
-    register_tmpfs_mount_unmount_failure_tests();
-    register_signals_tests();
-    register_process_tests();
-    register_elf_tests();
-    register_checked_ptr_tests();
-    register_fstab_tests();
-    register_rtc_tests();
-    register_rlimit_tests();
-    register_init_tests();
-    register_syscall_tests();
-    register_sync_tests();
-    register_capability_tests();
-    register_task_lifecycle_tests();
-    register_idle_task_tests();
-    register_vfsd_tests();
-    register_iocd_tests();
-    register_wfg_tests();
-    register_deadlock_detect_tests();
-    register_deadlock_recovery_tests();
-    register_health_tests();
-    register_timer_tests();
-    register_serial_tests();
-    register_keyboard_tests();
-    register_gdt_tests();
-    register_idt_tests();
-    register_bootparams_tests();
-    register_multiboot_tests();
-    register_address_tests();
-    register_pipe_tests();
-    register_vfs_internal_tests();
-    register_gcov_tests();
-    register_debug_tests();
-    register_framebuffer_tests();
-    register_stress_tests();
-    register_pic_tests();
-    register_integration_tests();
-    register_pml4_clone_tests();
-    register_waitpid_tests();
-    register_buffer_pool_tests();
-    register_block_device_tests();
-    register_fat32_tests();
-    register_vfs_fat32_tests();
-    register_ipc_blocking_tests();
-    register_vfsd_authorization_tests();
-    register_tmpfs_tests();
-    register_shell_interaction_tests();
-    register_irq_guard_tests();
-    register_shell_redirect_tests();
-    register_klog_tests();
-    register_hal_tests();
-    register_arch_structure_tests();
-    register_buildsystem_tests();
-    register_secure_exec_tests();
-    register_pci_tests();
-    register_virtio_tests();
-    register_dma_tests();
-    register_net_tests();
+static constexpr kernel::test::TestClass g_test_classes[] = {
+    // -- safe: curated subset with TF_RELEASE tests --
+    {"safe", []() {
+        register_lib_tests();
+        register_checked_ptr_tests();
+        register_block_device_tests();
+        register_fat32_tests();
+        register_vfs_fat32_tests();
+        register_waitpid_tests();
+        register_shell_interaction_tests();
+    }},
+
+    // -- all: everything (debug mode) --
+    {"all", []() {
+        register_lib_tests();
+        register_memory_tests();
+        register_ipc_tests();
+        register_scheduler_tests();
+        register_task_tests();
+        register_driver_tests();
+        register_vfs_tests();
+        register_tmpfs_tests();
+        register_tmpfs_invalid_mount_tests();
+        register_tmpfs_io_timeout_tests();
+        register_tmpfs_corrupted_metadata_tests();
+        register_tmpfs_mount_unmount_failure_tests();
+        register_signals_tests();
+        register_process_tests();
+        register_elf_tests();
+        register_checked_ptr_tests();
+        register_fstab_tests();
+        register_rtc_tests();
+        register_rlimit_tests();
+        register_init_tests();
+        register_syscall_tests();
+        register_sync_tests();
+        register_capability_tests();
+        register_task_lifecycle_tests();
+        register_idle_task_tests();
+        register_vfsd_tests();
+        register_iocd_tests();
+        register_wfg_tests();
+        register_deadlock_detect_tests();
+        register_deadlock_recovery_tests();
+        register_health_tests();
+        register_timer_tests();
+        register_serial_tests();
+        register_keyboard_tests();
+        register_gdt_tests();
+        register_idt_tests();
+        register_bootparams_tests();
+        register_multiboot_tests();
+        register_address_tests();
+        register_pipe_tests();
+        register_vfs_internal_tests();
+        register_gcov_tests();
+        register_debug_tests();
+        register_framebuffer_tests();
+        register_stress_tests();
+        register_pic_tests();
+        register_integration_tests();
+        register_pml4_clone_tests();
+        register_waitpid_tests();
+        register_buffer_pool_tests();
+        register_block_device_tests();
+        register_fat32_tests();
+        register_vfs_fat32_tests();
+        register_ipc_blocking_tests();
+        register_vfsd_authorization_tests();
+        register_textutils_tests();
+        register_shell_interaction_tests();
+        register_irq_guard_tests();
+        register_shell_redirect_tests();
+        register_klog_tests();
+        register_hal_tests();
+        register_arch_structure_tests();
+        register_buildsystem_tests();
+        register_secure_exec_tests();
+        register_pci_tests();
+        register_virtio_tests();
+        register_dma_tests();
+        register_net_tests();
+        register_ipc_benchmark_tests();
+    }},
+
+    // -- individual classes --
+    {"scheduler", []() {
+        register_scheduler_tests();
+        register_task_tests();
+        register_task_lifecycle_tests();
+        register_idle_task_tests();
+        register_deadlock_detect_tests();
+        register_deadlock_recovery_tests();
+        register_health_tests();
+        register_timer_tests();
+        register_wfg_tests();
+    }},
+
+    {"memory", []() {
+        register_memory_tests();
+        register_checked_ptr_tests();
+        register_buffer_pool_tests();
+    }},
+
+    {"ipc", []() {
+        register_ipc_tests();
+        register_ipc_blocking_tests();
+        register_pipe_tests();
+    }},
+
+    {"vfs", []() {
+        register_vfs_tests();
+        register_vfs_internal_tests();
+        register_fstab_tests();
+        register_sync_tests();
+        register_tmpfs_tests();
+        register_tmpfs_invalid_mount_tests();
+        register_tmpfs_io_timeout_tests();
+        register_tmpfs_corrupted_metadata_tests();
+        register_tmpfs_mount_unmount_failure_tests();
+        register_vfsd_tests();
+        register_iocd_tests();
+        register_fat32_tests();
+        register_vfs_fat32_tests();
+        register_block_device_tests();
+    }},
+
+    {"process", []() {
+        register_process_tests();
+        register_elf_tests();
+        register_signals_tests();
+        register_rlimit_tests();
+        register_waitpid_tests();
+        register_pml4_clone_tests();
+    }},
+
+    {"syscall", []() {
+        register_syscall_tests();
+    }},
+
+    {"arch", []() {
+        register_gdt_tests();
+        register_idt_tests();
+        register_bootparams_tests();
+        register_multiboot_tests();
+        register_address_tests();
+        register_pic_tests();
+        register_hal_tests();
+        register_arch_structure_tests();
+    }},
+
+    {"device", []() {
+        register_serial_tests();
+        register_keyboard_tests();
+        register_irq_guard_tests();
+        register_framebuffer_tests();
+        register_rtc_tests();
+        register_driver_tests();
+    }},
+
+    {"shell", []() {
+        register_shell_interaction_tests();
+        register_shell_redirect_tests();
+        register_textutils_tests();
+    }},
+
+    {"net", []() {
+        register_net_tests();
+        register_pci_tests();
+        register_virtio_tests();
+        register_dma_tests();
+    }},
+
+    {"security", []() {
+        register_capability_tests();
+        register_secure_exec_tests();
+        register_vfsd_authorization_tests();
+    }},
+
+    {"debug", []() {
+        register_debug_tests();
+        register_gcov_tests();
+        register_klog_tests();
+    }},
+
+    {"integration", []() {
+        register_integration_tests();
+    }},
+
+    {"stress", []() {
+        register_stress_tests();
+    }},
+
+    {"init", []() {
+        register_init_tests();
+    }},
+
+    {"build", []() {
+        register_buildsystem_tests();
+    }},
+
+    {"bench", []() {
+        register_ipc_benchmark_tests();
+    }},
+};
+
+static constexpr size_t g_test_class_count =
+    sizeof(g_test_classes) / sizeof(g_test_classes[0]);
+
+// ---- register_class ----
+// Looks up `name` in g_test_classes[], calls its register_fn, and records
+// a class section boundary for output grouping.  Returns true on success.
+bool kernel::test::register_class(const char* name) {
+    for (size_t i = 0; i < g_test_class_count; ++i) {
+        if (strcmp(name, g_test_classes[i].name) == 0) {
+            size_t before = Registry::count();
+            g_test_classes[i].register_all();
+            size_t after = Registry::count();
+            if (after > before) {
+                Registry::record_class_section(name, before, after - before);
+            }
+            return true;
+        }
+    }
+    Logger::warn("Unknown test class: %s", name);
+    return false;
 }
