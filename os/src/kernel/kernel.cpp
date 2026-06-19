@@ -23,6 +23,8 @@
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/driver/ata_pio.hpp>
+#include <kernel/driver/virtio_net.hpp>
+#include <kernel/net/net.hpp>
 #include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
@@ -353,6 +355,20 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             }
         } else {
             debug_write("[BOOT] No ATA drive found\n");
+        }
+    }
+
+    // Probe virtio-net NIC and initialize network stack
+    {
+        static net::Nic g_boot_nic;
+        if (kernel::net::virtio_net_probe(g_boot_nic)) {
+            net::net_init(g_boot_nic, g_boot_nic.mac,
+                          net::Ipv4Addr{{10, 0, 2, 15}},
+                          net::Ipv4Addr{{255, 255, 255, 0}},
+                          net::Ipv4Addr{{10, 0, 2, 2}});
+            debug_write("[BOOT] Virtio-net NIC probed, IP=10.0.2.15\n");
+        } else {
+            debug_write("[BOOT] No virtio-net NIC found\n");
         }
     }
 
