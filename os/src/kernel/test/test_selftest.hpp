@@ -1,8 +1,4 @@
 /// @file test_selftest.hpp
-/// @brief Declares selftest and benchmark registration functions.
+/// @brief Declares test registration functions no longer in test_registry.cpp.
 
 #pragma once
-
-void register_selftest_tests();
-void register_ipc_benchmark_tests();
-void register_task_tests();
