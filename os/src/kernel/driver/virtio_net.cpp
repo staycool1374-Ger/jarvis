@@ -64,12 +64,21 @@ static void add_rx_buf(VirtioNetDevice& dev, int idx) {
 
 bool virtio_net_probe(Nic& nic) {
     arch::VirtioTransport transport;
-    if (!arch::virtio_find_device(VIRTIO_DEVICE_NET, transport)) {
-        // Try legacy
-        if (!arch::virtio_find_device(VIRTIO_DEVICE_NET_LEGACY, transport)) {
-            Logger::info("virtio-net: no device found");
-            return false;
+    static const uint16_t net_ids[] = {
+        VIRTIO_DEVICE_NET,       // 0x1041 — modern-only
+        0x1043,                  // alternate modern ID
+        VIRTIO_DEVICE_NET_LEGACY // 0x1000 — transitional
+    };
+    bool found = false;
+    for (auto id : net_ids) {
+        if (arch::virtio_find_device(id, transport)) {
+            found = true;
+            break;
         }
+    }
+    if (!found) {
+        Logger::info("virtio-net: no device found");
+        return false;
     }
 
     if (!arch::virtio_init_transport(transport)) {
@@ -136,9 +145,14 @@ bool virtio_net_probe(Nic& nic) {
     arch::virtio_write_status(transport, status | VIRTIO_STATUS_DRIVER_OK);
 
     // Read MAC from device config (offset 0 for virtio-net)
-    auto* cfg = reinterpret_cast<volatile uint8_t*>(transport.device_cfg.virt_addr);
     MacAddr mac;
-    for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
+    if (transport.device_cfg.virt_addr == 0) {
+        Logger::error("virtio-net: device cfg not mapped, using fallback MAC");
+        mac = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x56}};
+    } else {
+        auto* cfg = reinterpret_cast<volatile uint8_t*>(transport.device_cfg.virt_addr);
+        for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
+    }
 
     // Initialize NIC abstraction
     nic.name   = "eth0";
@@ -153,7 +167,7 @@ bool virtio_net_probe(Nic& nic) {
     dev->nic = &nic;
     g_virtio_net_dev = dev;
 
-    Logger::info("virtio-net: MAC %02x:%02x:%02x:%02x:%02x:%02x",
+    Logger::info("virtio-net: MAC %x:%x:%x:%x:%x:%x",
         mac.addr[0], mac.addr[1], mac.addr[2],
         mac.addr[3], mac.addr[4], mac.addr[5]);
     return true;

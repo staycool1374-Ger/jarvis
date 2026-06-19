@@ -97,7 +97,10 @@ const PciDeviceInfo* pci_find_device(uint8_t class_code, uint8_t subclass) {
 }
 
 void pci_parse_bars(PciDeviceInfo& info) {
-    uint8_t count = 0;
+    // Zero out all BARs first
+    for (uint8_t i = 0; i < 6; ++i) info.bars[i] = {};
+    info.bar_count = 0;
+
     for (uint8_t i = 0; i < 6; ++i) {
         uint32_t reg = PCI_BAR0 + i * 4;
         uint32_t raw = pci_config_readl(
@@ -105,7 +108,7 @@ void pci_parse_bars(PciDeviceInfo& info) {
 
         if (raw == 0) continue;
 
-        PciBar& bar = info.bars[count];
+        PciBar& bar = info.bars[i];
         if (raw & 1) {
             // I/O BAR
             bar.type = PciBarType::IO;
@@ -143,9 +146,8 @@ void pci_parse_bars(PciDeviceInfo& info) {
                 bar.size = static_cast<uint64_t>(~(mask_low & 0xFFFFFFF0)) + 1;
             }
         }
-        ++count;
+        ++info.bar_count;
     }
-    info.bar_count = count;
 }
 
 PciDeviceInfo pci_read_device_info(PciBdf bdf) {

@@ -3,6 +3,7 @@
 
 #include <kernel/net/net.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/io.hpp>
 #include <string.hpp>
 #include <logger.hpp>
 
@@ -20,6 +21,14 @@ static IcmpEchoReply g_icmp_reply;
 
 void net_icmp_clear_reply() {
     g_icmp_reply.received = false;
+}
+
+void net_icmp_set_reply(uint16_t ident, uint16_t seq, Ipv4Addr src) {
+    g_icmp_reply.received = true;
+    g_icmp_reply.ident    = ident;
+    g_icmp_reply.seq      = seq;
+    g_icmp_reply.rx_tick  = arch::Timer::ticks();
+    g_icmp_reply.src      = src;
 }
 
 const IcmpEchoReply* net_icmp_last_reply() {
@@ -111,7 +120,7 @@ bool net_arp_resolve(Nic& nic, uint32_t target_ip, MacAddr& out_mac) {
     // Check cache first
     if (g_arp_cache.lookup(target_ip, out_mac)) return true;
 
-    // Send ARP request
+    // Build ARP request once
     uint8_t buf[sizeof(EtherHeader) + sizeof(ArpHeader)];
     auto* eth = reinterpret_cast<EtherHeader*>(buf);
     auto* arp = reinterpret_cast<ArpHeader*>(buf + sizeof(EtherHeader));
@@ -130,8 +139,18 @@ bool net_arp_resolve(Nic& nic, uint32_t target_ip, MacAddr& out_mac) {
     arp->tha   = MAC_NULL;
     arp->tpa   = target_ip;
 
-    nic.send_frame(buf, sizeof(buf));
-    return true;
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        nic.send_frame(buf, sizeof(buf));
+        uint64_t deadline = arch::Timer::ticks() + 50;
+        while (arch::Timer::ticks() < deadline) {
+            for (int p = 0; p < 5; ++p)
+                if (net_poll(nic)) break;
+            if (g_arp_cache.lookup(target_ip, out_mac)) return true;
+            arch::pause();
+        }
+    }
+
+    return false;
 }
 
 bool net_send_udp(Nic& nic, Ipv4Addr dst_ip, uint16_t dst_port,

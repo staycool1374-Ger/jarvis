@@ -78,7 +78,7 @@ bool sg_from_virt(SgList& sg, uint64_t virt_addr, size_t length) {
 
         uint64_t phys = VMM::virt_to_phys(page_start);
         if (!phys) {
-            Logger::error("dma: sg_from_virt: unmapped virt 0x%lx", page_start);
+            Logger::error("dma: sg_from_virt: unmapped virt %x", page_start);
             return false;
         }
         size_t offset_in_page = static_cast<size_t>(current - page_start);

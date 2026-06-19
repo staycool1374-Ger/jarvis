@@ -71,6 +71,7 @@ struct IcmpEchoReply {
 
 /// Reset the ICMP echo reply record.
 void net_icmp_clear_reply();
+void net_icmp_set_reply(uint16_t ident, uint16_t seq, Ipv4Addr src);
 /// Get the last ICMP echo reply received.
 const IcmpEchoReply* net_icmp_last_reply();
 

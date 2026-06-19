@@ -1900,14 +1900,7 @@ void Shell::cmd_ping(int argc, const char** argv) {
 
         bool sent;
         if (is_loopback) {
-            // Synthesize reply directly
-            net::IcmpEchoReply r;
-            r.received = true;
-            r.ident = id;
-            r.seq = seq;
-            r.rx_tick = arch::Timer::ticks();
-            r.src = dst;
-            *const_cast<net::IcmpEchoReply*>(net::net_icmp_last_reply()) = r;
+            net::net_icmp_set_reply(id, seq, dst);
             sent = true;
         } else {
             sent = net::net_send_icmp_echo(*net::g_nic, dst, id, seq, payload, sizeof(payload));
@@ -1932,6 +1925,7 @@ void Shell::cmd_ping(int argc, const char** argv) {
             char nbuf[16];
             int np = 0;
             uint16_t ns = seq;
+            if (ns == 0) { nbuf[np++] = '0'; }
             while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
             while (np > 0) Terminal::putchar(nbuf[--np]);
             Terminal::write(" ttl=64 time=");
@@ -1945,6 +1939,7 @@ void Shell::cmd_ping(int argc, const char** argv) {
             char nbuf[16];
             int np = 0;
             uint16_t ns = static_cast<uint16_t>(i);
+            if (ns == 0) { nbuf[np++] = '0'; }
             while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
             while (np > 0) Terminal::putchar(nbuf[--np]);
             Terminal::write("\n");

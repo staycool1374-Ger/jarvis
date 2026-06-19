@@ -14,7 +14,7 @@ constexpr uint16_t VIRTIO_PCI_VENDOR = 0x1AF4;
 
 /// Virtio PCI device IDs (modern = 0x1040 + type)
 constexpr uint16_t VIRTIO_DEVICE_BLOCK  = 0x1042; // modern virtio-blk
-constexpr uint16_t VIRTIO_DEVICE_NET    = 0x1043; // modern virtio-net
+constexpr uint16_t VIRTIO_DEVICE_NET    = 0x1041; // modern virtio-net
 
 /// Legacy device IDs
 constexpr uint16_t VIRTIO_DEVICE_BLOCK_LEGACY = 0x1001;
@@ -103,13 +103,13 @@ enum VirtioCommonReg : uint16_t {
     VIRTIO_COMMON_NUM_QUEUES         = 0x12,
     VIRTIO_COMMON_DEVICE_STATUS      = 0x14,
     VIRTIO_COMMON_CONFIG_GENERATION  = 0x15,
-    VIRTIO_COMMON_QUEUE_SEL          = 0x18,
-    VIRTIO_COMMON_QUEUE_SIZE         = 0x1A,
-    VIRTIO_COMMON_QUEUE_MSIX_VECTOR  = 0x1C,
-    VIRTIO_COMMON_QUEUE_ENABLE       = 0x1E,
-    VIRTIO_COMMON_QUEUE_NOTIFY_OFF   = 0x20,
-    VIRTIO_COMMON_QUEUE_DESC_LO      = 0x22,
-    VIRTIO_COMMON_QUEUE_DESC_HI      = 0x26,
+    VIRTIO_COMMON_QUEUE_SEL          = 0x16,
+    VIRTIO_COMMON_QUEUE_SIZE         = 0x18,
+    VIRTIO_COMMON_QUEUE_MSIX_VECTOR  = 0x1A,
+    VIRTIO_COMMON_QUEUE_ENABLE       = 0x1C,
+    VIRTIO_COMMON_QUEUE_NOTIFY_OFF   = 0x1E,
+    VIRTIO_COMMON_QUEUE_DESC_LO      = 0x20,
+    VIRTIO_COMMON_QUEUE_DESC_HI      = 0x24,
     VIRTIO_COMMON_QUEUE_DRIVER_LO    = 0x28,
     VIRTIO_COMMON_QUEUE_DRIVER_HI    = 0x2C,
     VIRTIO_COMMON_QUEUE_DEVICE_LO    = 0x30,
@@ -133,16 +133,16 @@ struct VirtioPciCap {
 
 /// Parsed Virtio device transport information
 struct VirtioTransport {
-    PciBdf    bdf;
-    uint16_t  device_id;
-    bool      modern;             // modern (1.0) or legacy
+    PciBdf    bdf = {};
+    uint16_t  device_id = 0;
+    bool      modern = false;
 
-    VirtioMmio common_cfg;        // VIRTIO_CFG_COMMON
-    VirtioMmio notify_cfg;        // VIRTIO_CFG_NOTIFY
-    VirtioMmio isr_cfg;           // VIRTIO_CFG_ISR
-    VirtioMmio device_cfg;        // VIRTIO_CFG_DEVICE
+    VirtioMmio common_cfg = {};
+    VirtioMmio notify_cfg = {};
+    VirtioMmio isr_cfg = {};
+    VirtioMmio device_cfg = {};
 
-    uint32_t notify_off_multiplier;
+    uint32_t notify_off_multiplier = 0;
 };
 
 // --- Transport API ---
@@ -177,14 +177,38 @@ inline void virtio_write_common(const VirtioTransport& t, uint16_t reg, uint32_t
     *ptr = val;
 }
 
-/// Read device status.
-inline uint8_t virtio_read_status(const VirtioTransport& t) {
-    return static_cast<uint8_t>(virtio_read_common(t, VIRTIO_COMMON_DEVICE_STATUS));
+/// Read a 16-bit register from the Virtio common config.
+inline uint16_t virtio_read_common16(const VirtioTransport& t, uint16_t reg) {
+    auto* ptr = reinterpret_cast<volatile uint16_t*>(t.common_cfg.virt_addr + reg);
+    return *ptr;
 }
 
-/// Write device status.
+/// Write a 16-bit register to the Virtio common config.
+inline void virtio_write_common16(const VirtioTransport& t, uint16_t reg, uint16_t val) {
+    auto* ptr = reinterpret_cast<volatile uint16_t*>(t.common_cfg.virt_addr + reg);
+    *ptr = val;
+}
+
+/// Read an 8-bit register from the Virtio common config.
+inline uint8_t virtio_read_common8(const VirtioTransport& t, uint16_t reg) {
+    auto* ptr = reinterpret_cast<volatile uint8_t*>(t.common_cfg.virt_addr + reg);
+    return *ptr;
+}
+
+/// Write an 8-bit register to the Virtio common config.
+inline void virtio_write_common8(const VirtioTransport& t, uint16_t reg, uint8_t val) {
+    auto* ptr = reinterpret_cast<volatile uint8_t*>(t.common_cfg.virt_addr + reg);
+    *ptr = val;
+}
+
+/// Read device status (8-bit register at 0x14).
+inline uint8_t virtio_read_status(const VirtioTransport& t) {
+    return virtio_read_common8(t, VIRTIO_COMMON_DEVICE_STATUS);
+}
+
+/// Write device status (8-bit register at 0x14).
 inline void virtio_write_status(const VirtioTransport& t, uint8_t status) {
-    virtio_write_common(t, VIRTIO_COMMON_DEVICE_STATUS, status);
+    virtio_write_common8(t, VIRTIO_COMMON_DEVICE_STATUS, status);
 }
 
 /// Negotiate features: offer device features, accept driver features.
