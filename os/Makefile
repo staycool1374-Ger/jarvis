@@ -58,7 +58,8 @@ KERNEL_DIS     := build/kernel.dis
 
 QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
 FAT32_DISK     := build/fat32.img
-QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
+QEMU_NET       := -netdev user,id=net0 -device virtio-net-pci,netdev=net0,disable-legacy=on
+QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
                   -boot order=d \
                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
                   -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
@@ -205,7 +206,7 @@ profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld iso/boot
 	@printf '  %-7s %s\n' 'PROFILE' 'Booting in QEMU…'
 	mkdir -p build/profiling
 	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
-	    -nic none -boot order=d -no-reboot -device isa-debug-exit \
+	    $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
 	    tee build/profiling/qemu.log
 	@printf '  %-7s %s\n' 'PROFILE' 'Extracting coverage data…'
@@ -225,7 +226,7 @@ run-qemu: debug
 run-release: release
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting release image…'; \
-	    qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio -nic none \
+	    qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	        -boot order=d \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
@@ -237,7 +238,7 @@ run-qemu-debug: debug
 	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting debug (GDB :1234, -d int,cpu_reset)…'; \
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
-	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
+	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	        -boot order=d -s -d int,cpu_reset \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
@@ -266,7 +267,7 @@ gdb: debug
 	@echo "   trace-syscall - toggle syscall tracing"
 	@echo "=========================================="
 	@echo ""
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio -nic none \
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	    -boot order=d -s -S -d cpu_reset \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	    -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
@@ -281,7 +282,7 @@ test-gdb: debug
 	@if ! command -v gtimeout >/dev/null 2>&1; then \
 	    echo "gtimeout missing. Install with: brew install coreutils"; exit 1; \
 	fi
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log -nic none \
+	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log $(QEMU_NET) \
 	    -boot order=d -s -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) & \
 	QEMU_PID=$$!; \
@@ -379,7 +380,7 @@ _run-shell-test:
 	printf '%s\n' \
 	    'set timeout 15' \
 	    'set stty_init "raw -echo"' \
-	    'spawn qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial mon:stdio -nic none -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
+	    'spawn qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial mon:stdio $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
 	    '' \
 	    'proc fail {msg} { puts "FAIL: $$msg"; exit 1 }' \
 	    '' \

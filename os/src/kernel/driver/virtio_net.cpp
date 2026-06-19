@@ -64,12 +64,21 @@ static void add_rx_buf(VirtioNetDevice& dev, int idx) {
 
 bool virtio_net_probe(Nic& nic) {
     arch::VirtioTransport transport;
-    if (!arch::virtio_find_device(VIRTIO_DEVICE_NET, transport)) {
-        // Try legacy
-        if (!arch::virtio_find_device(VIRTIO_DEVICE_NET_LEGACY, transport)) {
-            Logger::info("virtio-net: no device found");
-            return false;
+    static const uint16_t net_ids[] = {
+        VIRTIO_DEVICE_NET,       // 0x1041 — modern-only
+        0x1043,                  // alternate modern ID
+        VIRTIO_DEVICE_NET_LEGACY // 0x1000 — transitional
+    };
+    bool found = false;
+    for (auto id : net_ids) {
+        if (arch::virtio_find_device(id, transport)) {
+            found = true;
+            break;
         }
+    }
+    if (!found) {
+        Logger::info("virtio-net: no device found");
+        return false;
     }
 
     if (!arch::virtio_init_transport(transport)) {
@@ -87,6 +96,7 @@ bool virtio_net_probe(Nic& nic) {
     dev->queue_size = 16;
     dev->rx_avail_idx = 0;
     dev->tx_avail_idx = 0;
+    dev->rx_last_seen_used = 0;
 
     // Allocate queue memory
     if (!alloc_queue_pages(dev->rx_desc_phys, dev->rx_avail_phys, dev->rx_used_phys,
@@ -135,22 +145,29 @@ bool virtio_net_probe(Nic& nic) {
     arch::virtio_write_status(transport, status | VIRTIO_STATUS_DRIVER_OK);
 
     // Read MAC from device config (offset 0 for virtio-net)
-    auto* cfg = reinterpret_cast<volatile uint8_t*>(transport.device_cfg.virt_addr);
     MacAddr mac;
-    for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
+    if (transport.device_cfg.virt_addr == 0) {
+        Logger::error("virtio-net: device cfg not mapped, using fallback MAC");
+        mac = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x56}};
+    } else {
+        auto* cfg = reinterpret_cast<volatile uint8_t*>(transport.device_cfg.virt_addr);
+        for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
+    }
 
     // Initialize NIC abstraction
-    nic.mac  = mac;
-    nic.ip   = Ipv4Addr::from_u32(0); // assigned later
+    nic.name   = "eth0";
+    nic.mac    = mac;
+    nic.ip     = Ipv4Addr::from_u32(0); // assigned later
     nic.subnet = Ipv4Addr::from_u32(0);
     nic.gateway = Ipv4Addr::from_u32(0);
-    nic.send_frame = virtio_net_send_frame;
+    nic.send_frame  = virtio_net_send_frame;
+    nic.poll_frame  = virtio_net_poll;
     nic.driver_data = dev;
 
     dev->nic = &nic;
     g_virtio_net_dev = dev;
 
-    Logger::info("virtio-net: MAC %02x:%02x:%02x:%02x:%02x:%02x",
+    Logger::info("virtio-net: MAC %x:%x:%x:%x:%x:%x",
         mac.addr[0], mac.addr[1], mac.addr[2],
         mac.addr[3], mac.addr[4], mac.addr[5]);
     return true;
@@ -189,6 +206,32 @@ static bool virtio_net_send_frame(const uint8_t* data, size_t len) {
 
     dev.tx_avail_idx = static_cast<uint16_t>(dev.tx_avail_idx + 1);
     return timeout > 0;
+}
+
+bool virtio_net_poll(uint8_t* buf, size_t& len) {
+    if (!g_virtio_net_dev) return false;
+    auto& dev = *g_virtio_net_dev;
+
+    __sync_synchronize();
+    uint16_t used_idx = dev.rx_used->idx;
+    if (used_idx == dev.rx_last_seen_used) return false;
+
+    uint16_t slot = dev.rx_last_seen_used % dev.queue_size;
+    uint32_t desc_idx = dev.rx_used->ring[slot].id;
+    uint32_t pkt_len = dev.rx_used->ring[slot].len;
+
+    if (pkt_len > VIRTIO_NET_HDR_SIZE) {
+        size_t frame_len = pkt_len - VIRTIO_NET_HDR_SIZE;
+        if (frame_len > MAX_PACKET_SIZE) frame_len = MAX_PACKET_SIZE;
+        memcpy(buf, dev.rx_bufs[desc_idx] + VIRTIO_NET_HDR_SIZE, frame_len);
+        len = frame_len;
+    } else {
+        len = 0;
+    }
+
+    add_rx_buf(dev, desc_idx);
+    dev.rx_last_seen_used = static_cast<uint16_t>(dev.rx_last_seen_used + 1);
+    return len > 0;
 }
 
 } // namespace kernel::net

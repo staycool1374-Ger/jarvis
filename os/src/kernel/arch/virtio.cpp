@@ -27,7 +27,7 @@ bool virtio_map_mmio(uint8_t bar, uint32_t offset, uint32_t length,
     uint64_t map_end   = page_align_up(region_end);
 
     for (uint64_t page = map_start; page < map_end; page += PAGE_SIZE) {
-        VMM::map_page(page, page, false);
+        VMM::map_page(HHDM_OFFSET + page, page, false);
     }
 
     mmio_out.phys_addr = region_start;
@@ -88,8 +88,9 @@ bool virtio_find_device(uint16_t device_id, VirtioTransport& transport) {
 
         if (cap.cfg_type >= VIRTIO_CFG_COMMON && cap.cfg_type <= VIRTIO_CFG_DEVICE) {
             VirtioMmio* target = virtio_cfg_target(transport, cap.cfg_type);
-            if (target) {
-                virtio_map_mmio(cap.bar, cap.offset, cap.length, *target, bdf);
+            if (target && !virtio_map_mmio(cap.bar, cap.offset, cap.length, *target, bdf)) {
+                Logger::error("virtio: failed to map cfg type %d at bar %d + 0x%x",
+                    cap.cfg_type, cap.bar, cap.offset);
             }
         }
 
@@ -143,17 +144,16 @@ bool virtio_negotiate_features(VirtioTransport& t, uint64_t driver_features) {
         return false;
     }
 
-    Logger::info("virtio: features negotiated: 0x%lx", accepted);
+    Logger::info("virtio: features negotiated: %x", accepted);
     return true;
 }
 
 bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
                         uint16_t queue_size, uint64_t desc_phys,
                         uint64_t avail_phys, uint64_t used_phys) {
-    virtio_write_common(t, VIRTIO_COMMON_QUEUE_SEL, queue_idx);
-
-    uint16_t size = static_cast<uint16_t>(
-        virtio_read_common(t, VIRTIO_COMMON_QUEUE_SIZE));
+    virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SEL, queue_idx);
+    __sync_synchronize();
+    uint16_t size = virtio_read_common16(t, VIRTIO_COMMON_QUEUE_SIZE);
     if (size == 0) {
         Logger::error("virtio: queue %d not available", queue_idx);
         return false;
@@ -173,8 +173,10 @@ bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
     virtio_write_common(t, VIRTIO_COMMON_QUEUE_DEVICE_HI,
                         static_cast<uint32_t>((used_phys >> 32) & 0xFFFFFFFF));
 
-    virtio_write_common(t, VIRTIO_COMMON_QUEUE_SIZE, queue_size);
-    virtio_write_common(t, VIRTIO_COMMON_QUEUE_ENABLE, 1);
+    virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SIZE, queue_size);
+    __sync_synchronize();
+    virtio_write_common16(t, VIRTIO_COMMON_QUEUE_ENABLE, 1);
+    __sync_synchronize();
 
     Logger::info("virtio: queue %d setup (size=%d)", queue_idx, queue_size);
     return true;

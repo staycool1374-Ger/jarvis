@@ -154,7 +154,7 @@ inline uint32_t pci_make_addr(PciBdf bdf, uint8_t reg) {
          | (static_cast<uint32_t>(bdf.bus)      << 16)
          | (static_cast<uint32_t>(bdf.device)    << 11)
          | (static_cast<uint32_t>(bdf.function)  << 8)
-         | (reg & 0xFC);
+         | reg;
 }
 
 /// Read vendor ID (return 0xFFFF if no device)

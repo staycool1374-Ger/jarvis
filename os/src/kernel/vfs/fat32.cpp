@@ -449,6 +449,17 @@ void name_to_short_name(const char* name, uint8_t out[11]) {
     // Initialize with spaces
     for (int i = 0; i < 11; ++i) out[i] = ' ';
 
+    // Handle special "." and ".." entries
+    if (name[0] == '.' && name[1] == '\0') {
+        out[0] = '.';
+        return;
+    }
+    if (name[0] == '.' && name[1] == '.' && name[2] == '\0') {
+        out[0] = '.';
+        out[1] = '.';
+        return;
+    }
+
     size_t name_len = 0;
     while (name[name_len]) ++name_len;
 

@@ -180,6 +180,10 @@ private:
     static void cmd_popd(int argc, const char** argv);
     /// @brief Built-in: list directory contents.
     static void cmd_ls(int argc, const char** argv);
+    /// @brief Built-in: show/configure network interface.
+    static void cmd_ifconfig(int argc, const char** argv);
+    /// @brief Built-in: ping a host.
+    static void cmd_ping(int argc, const char** argv);
 };
 
 } // namespace service
