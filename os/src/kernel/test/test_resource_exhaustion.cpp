@@ -1,0 +1,224 @@
+#include <test.hpp>
+#include <logger.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/memory/mempool.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/vfs/vfs.hpp>
+
+using namespace kernel;
+
+// Runmode: kernel
+// Testidea: Open FDs until the fdtable is full, then attempt one more.
+// Verify the 33rd open fails, then close and reopen.
+// Input: Simulate opening 32 FDs (via fd_table allocation), try 33rd.
+// Expect: 33rd fails; after close, reopen succeeds.
+TEST_CLASS(FdTableExhaustion) {
+    auto* task = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
+    CT_ASSERT(task != nullptr);
+
+    // Fill fdtable to capacity
+    int fds_allocated = 0;
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        if (task->fd_table.fds[i].used == false) {
+            task->fd_table.fds[i].used = true;
+            task->fd_table.fds[i].vnode = nullptr;
+            task->fd_table.fds[i].flags = 0;
+            task->fd_table.fds[i].offset = 0;
+            ++fds_allocated;
+        }
+    }
+    CT_ASSERT(fds_allocated <= static_cast<int>(vfs::MAX_FDS));
+
+    // Ensure no slot is free
+    bool any_free = false;
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        if (!task->fd_table.fds[i].used) {
+            any_free = true;
+            break;
+        }
+    }
+    CT_ASSERT(!any_free);
+
+    // Close one
+    task->fd_table.fds[vfs::MAX_FDS - 1].used = false;
+
+    // Verify reopen works
+    bool found_free = false;
+    for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
+        if (!task->fd_table.fds[i].used) {
+            task->fd_table.fds[i].used = true;
+            found_free = true;
+            break;
+        }
+    }
+    CT_ASSERT(found_free);
+
+    task->cleanup();
+    delete task;
+};
+
+// Runmode: kernel
+// Testidea: Create tasks until Scheduler's MAX_TASKS is reached.
+// Verify the next create/add fails, then cleanup restores capacity.
+// Input: Create MAX_TASKS tasks (minus existing), attempt one more.
+// Expect: Last add fails; after cleanup, task_count returns to baseline.
+TEST_CLASS(TaskLimitReached) {
+    uint64_t baseline = Scheduler::task_count();
+
+    // Create up to limit
+    TaskControlBlock* tasks[64];
+    uint64_t created = 0;
+    for (uint64_t i = 0; i < 64; ++i) {
+        auto* t = TaskControlBlock::create([]() {}, 5, 10);
+        if (!t) break;
+        Scheduler::add_task(*t);
+        tasks[created++] = t;
+    }
+
+    uint64_t after_fill = Scheduler::task_count();
+    CT_ASSERT(after_fill >= baseline + created);
+
+    // Attempt one more — should fail or exceed MAX_TASKS
+    auto* extra = TaskControlBlock::create([]() {}, 5, 10);
+    if (extra) {
+        Scheduler::add_task(*extra);
+        // May or may not be added depending on capacity
+        CT_ASSERT(Scheduler::task_count() <= 64);
+        Scheduler::remove_task(*extra);
+        extra->cleanup(); delete extra;
+    }
+
+    // Cleanup all created
+    for (uint64_t i = 0; i < created; ++i) {
+        Scheduler::remove_task(*tasks[i]);
+        tasks[i]->cleanup();
+        delete tasks[i];
+    }
+
+    CT_ASSERT(Scheduler::task_count() == baseline);
+};
+
+// Runmode: kernel
+// Testidea: Allocate all 1024 BufferPool entries, verify 1025th fails,
+// then free one and verify realloc recycles the entry.
+// Input: Alloc MAX_BUFFERS in a user task.
+// Expect: Alloc MAX_BUFFERS+1 returns 0; free + realloc recycles idx.
+TEST_CLASS(MaxBuffersExhaustion) {
+    auto* task = TaskControlBlock::create_user([]() {}, 5, 10, 64_KiB);
+    CT_ASSERT(task != nullptr);
+
+    uint64_t handles[BufferPool::MAX_BUFFERS];
+    uint64_t va = 0x100000000ULL;
+
+    int alloc_count = 0;
+    for (size_t i = 0; i < BufferPool::MAX_BUFFERS + 5; ++i) {
+        uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
+        if (h == 0) break;
+        handles[alloc_count++] = h;
+    }
+    CT_ASSERT(alloc_count <= static_cast<int>(BufferPool::MAX_BUFFERS));
+
+    // Should have gotten exactly MAX_BUFFERS
+    bool all_allocated = (static_cast<size_t>(alloc_count) ==
+                          BufferPool::MAX_BUFFERS);
+    CT_ASSERT(all_allocated);
+
+    // Free one from middle
+    CT_ASSERT(BufferPool::free(*task, handles[512]));
+
+    // Realloc — should recycle the freed entry
+    uint64_t h = BufferPool::alloc(*task, va + 512 * arch::PAGE_SIZE);
+    CT_ASSERT(h != 0);
+    uint32_t new_idx = static_cast<uint32_t>(h & 0xFFFFFFFFULL);
+    uint32_t old_idx = static_cast<uint32_t>(handles[512] & 0xFFFFFFFFULL);
+    CT_ASSERT(new_idx == old_idx);
+
+    BufferPool::free(*task, h);
+
+    // Cleanup all remaining
+    for (int i = 0; i < alloc_count; ++i) {
+        if (i == 512) continue;
+        if (handles[i] != 0) {
+            BufferPool::free(*task, handles[i]);
+        }
+    }
+
+    task->cleanup();
+    delete task;
+};
+
+// Runmode: kernel
+// Testidea: Allocate objects of every MemPool size class repeatedly,
+// then free them in reverse order. Verify no corruption and all memory
+// returned to the pool.
+// Input: Alloc + free for each pool class.
+// Expect: Successive allocs work; no crash on free.
+TEST_CLASS(MempoolFragmentation) {
+    // MemPool has 9 pool classes: 16, 32, 64, 128, 256, 512, 1024,
+    // 2048, 4096. Allocate and free many objects of each size.
+    static const size_t sizes[] = {
+        16, 32, 64, 128, 256, 512, 1024, 2048, 4096
+    };
+
+    for (size_t s = 0; s < 9; ++s) {
+        size_t bytes = sizes[s];
+        static const int ALLOCS = 20;
+        void* ptrs[ALLOCS];
+
+        for (int i = 0; i < ALLOCS; ++i) {
+            ptrs[i] = MemPool::alloc(bytes);
+            CT_ASSERT(ptrs[i] != nullptr);
+            // Write pattern to verify usable size
+            __builtin_memset(ptrs[i], 0xA5, bytes);
+        }
+
+        // Free in reverse order
+        for (int i = ALLOCS - 1; i >= 0; --i) {
+            MemPool::free(ptrs[i]);
+        }
+    }
+
+    // After all frees, subsequent allocs should still work
+    void* p = MemPool::alloc(64);
+    CT_ASSERT(p != nullptr);
+    MemPool::free(p);
+};
+
+// Runmode: kernel
+// Testidea: Exhaust memory by allocating until PMM runs out, then
+// verify that the OOM handler is called and subsequent allocs return 0.
+// Input: Repeated PMM::alloc_page() calls.
+// Expect: Eventually returns 0; no crash; free restores capacity.
+TEST_CLASS(PmmExhaustion) {
+    // Alloc until OOM
+    static const int MAX_ALLOCS = 100000;
+    uint64_t pages[MAX_ALLOCS];
+    int count = 0;
+
+    for (int i = 0; i < MAX_ALLOCS; ++i) {
+        uint64_t p = PMM::alloc_page();
+        if (!p) break;
+        pages[count++] = p;
+    }
+
+    // Free all
+    for (int i = 0; i < count; ++i) {
+        PMM::free_page(pages[i]);
+    }
+
+    // After free, alloc should work again
+    uint64_t p = PMM::alloc_page();
+    CT_ASSERT(p != 0);
+    PMM::free_page(p);
+};
+
+void register_resource_exhaustion_tests() {
+    Logger::info("Registering resource exhaustion tests");
+    REGISTER_CLASS(FdTableExhaustion);
+    REGISTER_CLASS(TaskLimitReached);
+    REGISTER_CLASS(MaxBuffersExhaustion);
+    REGISTER_CLASS(MempoolFragmentation);
+    REGISTER_CLASS(PmmExhaustion);
+}

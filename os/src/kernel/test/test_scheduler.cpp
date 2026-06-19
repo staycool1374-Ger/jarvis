@@ -337,6 +337,53 @@ JARVIS_TEST(scheduler_add_duplicate_id) {
 }
 
 // Runmode: kernel
+// Testidea: Verify that a task with period_ticks set is scheduled before
+// it misses its deadline.  Creates a task with a very short period and
+// verifies next_task() prefers it over a task with a longer period at
+// the same priority.
+// Input: Two tasks with same priority (5) but different periods (5, 20).
+// Expect: next_task() returns the task with the shorter period.
+JARVIS_TEST(scheduler_shorter_period_preferred) {
+    auto* t1 = TaskControlBlock::create([](){}, 5, 5);   // priority=5, period=5
+    auto* t2 = TaskControlBlock::create([](){}, 5, 20);  // priority=5, period=20
+    JARVIS_ASSERT(t1 && t2);
+    Scheduler::add_task(*t1);
+    Scheduler::add_task(*t2);
+
+    // RM scheduling: same priority, shorter period should be preferred
+    auto* next = Scheduler::next_task();
+    JARVIS_ASSERT(next == t1);
+
+    Scheduler::remove_task(*t1); t1->cleanup(); delete t1;
+    Scheduler::remove_task(*t2); t2->cleanup(); delete t2;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verify that reschedule() does NOT swap to a different task
+// when the current task is the only non-idle task (no context switch).
+// Input: Create one task, set it as current, call reschedule.
+// Expect: current_task() returns the same task.
+JARVIS_TEST(scheduler_no_spurious_switch) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    auto* single = TaskControlBlock::create([](){}, 5, 10);
+    JARVIS_ASSERT(single != nullptr);
+    Scheduler::add_task(*single);
+
+    Scheduler::set_current(*single);
+    auto* before = Scheduler::current_task();
+    Scheduler::reschedule();
+    auto* after = Scheduler::current_task();
+    JARVIS_ASSERT(after == before);
+
+    Scheduler::remove_task(*single);
+    single->cleanup(); delete single;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all scheduler-related unit tests with the test framework.
 // Input: (none)
 // Expect: Each JARVIS_REGISTER_TEST call registers a test function for later
@@ -358,4 +405,6 @@ void register_scheduler_tests() {
     JARVIS_REGISTER_TEST(scheduler_set_preemptible_toggle);
     JARVIS_REGISTER_TEST(scheduler_current_task_after_switch);
     JARVIS_REGISTER_TEST(scheduler_add_duplicate_id);
+    JARVIS_REGISTER_TEST(scheduler_shorter_period_preferred);
+    JARVIS_REGISTER_TEST(scheduler_no_spurious_switch);
 }

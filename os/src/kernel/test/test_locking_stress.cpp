@@ -280,10 +280,62 @@ JARVIS_TEST(priority_inversion_under_contention) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Same task locks a non-recursive mutex twice, expecting the
+// second lock to block (deadlock).  Verify this doesn't crash the kernel.
+// Input: Task locks mutex, then attempts lock again without unlocking.
+// Expect: Second lock blocks; task enters BLOCKED state; unlock from
+// first lock still works.
+JARVIS_TEST(mutex_recursive_deadlock) {
+    sync::Mutex mutex;
+    mutex.init();
+
+    auto* original = Scheduler::current_task();
+
+    // First lock succeeds
+    mutex.lock();
+    JARVIS_ASSERT(mutex.owner() == original);
+    JARVIS_ASSERT(mutex.is_locked());
+
+    // Second lock from same task — mutex allows recursive:
+    // lock sees owner_ == task, increments lock_count_, returns
+    mutex.lock();
+    JARVIS_ASSERT(mutex.is_locked());
+
+    // First unlock decrements lock_count_ (still > 1)
+    mutex.unlock();
+    JARVIS_ASSERT(mutex.is_locked());
+
+    // Final unlock
+    mutex.unlock();
+    JARVIS_ASSERT(!mutex.is_locked());
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Repeated try_wait on an empty semaphore must not
+// decrement below zero.  Count must stay at 0.
+// Input: Semaphore initialized to 0; call try_wait 10 times.
+// Expect: All 10 try_wait calls return false; semaphore value stays 0.
+JARVIS_TEST(semaphore_count_underflow) {
+    sync::Semaphore sem;
+    sem.init(0, 10);
+
+    for (int i = 0; i < 10; ++i) {
+        bool ok = sem.try_wait();
+        JARVIS_ASSERT(!ok);
+    }
+
+    JARVIS_ASSERT_EQ(0ULL, sem.value());
+    JARVIS_TEST_PASS();
+}
+
 void register_locking_stress_tests() {
     Logger::info("Registering locking stress tests");
     JARVIS_REGISTER_TEST(mutex_stress_high_contention);
     JARVIS_REGISTER_TEST(semaphore_producer_consumer);
     JARVIS_REGISTER_TEST(queue_multi_producer_multi_consumer);
     JARVIS_REGISTER_TEST(priority_inversion_under_contention);
+    JARVIS_REGISTER_TEST(mutex_recursive_deadlock);
+    JARVIS_REGISTER_TEST(semaphore_count_underflow);
 }

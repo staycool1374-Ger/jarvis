@@ -653,6 +653,99 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Transfer same handle between two tasks back and forth
+// multiple times, verifying ownership transfers correctly each time.
+// Input: Sender allocs, transfers to receiver, receiver transfers back,
+// sender transfers again. 5 cycles.
+// Expect: After each transfer, only the new owner can free.
+JARVIS_TEST(buffer_pool_transfer_race) {
+    auto* task_a = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto* task_b = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task_a != nullptr && task_b != nullptr);
+
+    uint64_t va = 0x100000000ULL;
+    uint64_t handle = BufferPool::alloc(*task_a, va);
+    JARVIS_ASSERT(handle != 0);
+
+    static const int CYCLES = 5;
+    for (int i = 0; i < CYCLES; ++i) {
+        // A -> B
+        JARVIS_ASSERT(BufferPool::transfer(handle, *task_a, *task_b));
+        JARVIS_ASSERT(!BufferPool::free(*task_a, handle));
+        JARVIS_ASSERT(BufferPool::entries[handle & 0xFFFFFFFF].owner_task ==
+                      static_cast<uint32_t>(task_b->id));
+
+        // B -> A
+        JARVIS_ASSERT(BufferPool::transfer(handle, *task_b, *task_a));
+        JARVIS_ASSERT(!BufferPool::free(*task_b, handle));
+        JARVIS_ASSERT(BufferPool::entries[handle & 0xFFFFFFFF].owner_task ==
+                      static_cast<uint32_t>(task_a->id));
+    }
+
+    // Final cleanup by A
+    JARVIS_ASSERT(BufferPool::free(*task_a, handle));
+
+    task_a->cleanup(); delete task_a;
+    task_b->cleanup(); delete task_b;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Alloc, free, then verify the old handle (with original
+// generation) is rejected.  Then alloc again, verify the new handle
+// has an incremented generation and the old handle still rejected.
+// Input: Alloc -> free -> try old handle -> alloc -> try old handle
+// Expect: Old handle always rejected; new handle valid.
+JARVIS_TEST(buffer_pool_handle_reuse_security) {
+    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(task != nullptr);
+
+    uint64_t va = 0x200000000ULL;
+    uint64_t h1 = BufferPool::alloc(*task, va);
+    JARVIS_ASSERT(h1 != 0);
+
+    uint64_t old_handle = h1;
+    JARVIS_ASSERT(BufferPool::free(*task, h1));
+    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
+
+    uint64_t h2 = BufferPool::alloc(*task, va);
+    JARVIS_ASSERT(h2 != 0);
+    uint32_t old_gen = static_cast<uint32_t>(old_handle >> 32);
+    uint32_t new_gen = static_cast<uint32_t>(h2 >> 32);
+    JARVIS_ASSERT(new_gen > old_gen);
+    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
+
+    BufferPool::free(*task, h2);
+    task->cleanup(); delete task;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Transfer a buffer to a task that has no page table
+// (kernel-only), verify transfer fails gracefully.
+// Input: alloc in user task, transfer to kernel task.
+// Expect: transfer returns false.
+JARVIS_TEST(buffer_pool_transfer_to_kernel_task) {
+    auto* user = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto* kernel_task = TaskControlBlock::create([](){}, 5, 10);
+    JARVIS_ASSERT(user != nullptr && kernel_task != nullptr);
+    JARVIS_ASSERT(kernel_task->page_table_ == 0);
+
+    uint64_t va = 0x300000000ULL;
+    uint64_t handle = BufferPool::alloc(*user, va);
+    JARVIS_ASSERT(handle != 0);
+
+    // Transfer to kernel task — should fail (no page table to clear PTE in)
+    bool ok = BufferPool::transfer(handle, *user, *kernel_task);
+    JARVIS_ASSERT(!ok);
+
+    BufferPool::free(*user, handle);
+    user->cleanup(); delete user;
+    kernel_task->cleanup(); delete kernel_task;
+    JARVIS_TEST_PASS();
+}
+
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
@@ -677,4 +770,7 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_realloc_recycles_entry);
     JARVIS_REGISTER_TEST(buffer_pool_alloc_after_exhaustion_and_free);
     JARVIS_REGISTER_TEST(buffer_pool_list_integrity_after_unlink);
+    JARVIS_REGISTER_TEST(buffer_pool_transfer_race);
+    JARVIS_REGISTER_TEST(buffer_pool_handle_reuse_security);
+    JARVIS_REGISTER_TEST(buffer_pool_transfer_to_kernel_task);
 }

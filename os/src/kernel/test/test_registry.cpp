@@ -75,6 +75,11 @@ void register_virtio_tests();
 void register_dma_tests();
 void register_net_tests();
 void register_ipc_benchmark_tests();
+void register_ipc_robustness_tests();
+void register_syscall_fuzz_tests();
+void register_starvation_deadlock_tests();
+void register_resource_exhaustion_tests();
+void register_microkernel_transition_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -99,6 +104,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_lib_tests();
         register_memory_tests();
         register_ipc_tests();
+        register_ipc_robustness_tests();
         register_scheduler_tests();
         register_task_tests();
         register_driver_tests();
@@ -117,6 +123,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_rlimit_tests();
         register_init_tests();
         register_syscall_tests();
+        register_syscall_fuzz_tests();
         register_sync_tests();
         register_capability_tests();
         register_task_lifecycle_tests();
@@ -141,11 +148,13 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_debug_tests();
         register_framebuffer_tests();
         register_stress_tests();
+        register_starvation_deadlock_tests();
         register_pic_tests();
         register_integration_tests();
         register_pml4_clone_tests();
         register_waitpid_tests();
         register_buffer_pool_tests();
+        register_resource_exhaustion_tests();
         register_block_device_tests();
         register_fat32_tests();
         register_vfs_fat32_tests();
@@ -165,6 +174,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_dma_tests();
         register_net_tests();
         register_ipc_benchmark_tests();
+        register_microkernel_transition_tests();
     }},
 
     // -- individual classes --
@@ -178,17 +188,20 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_health_tests();
         register_timer_tests();
         register_wfg_tests();
+        register_starvation_deadlock_tests();
     }},
 
     {"memory", []() {
         register_memory_tests();
         register_checked_ptr_tests();
         register_buffer_pool_tests();
+        register_resource_exhaustion_tests();
     }},
 
     {"ipc", []() {
         register_ipc_tests();
         register_ipc_blocking_tests();
+        register_ipc_robustness_tests();
         register_pipe_tests();
     }},
 
@@ -220,6 +233,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"syscall", []() {
         register_syscall_tests();
+        register_syscall_fuzz_tests();
     }},
 
     {"arch", []() {
@@ -273,6 +287,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"stress", []() {
         register_stress_tests();
+        register_starvation_deadlock_tests();
     }},
 
     {"init", []() {
@@ -285,6 +300,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"bench", []() {
         register_ipc_benchmark_tests();
+        register_microkernel_transition_tests();
     }},
 };
 

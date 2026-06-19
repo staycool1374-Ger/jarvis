@@ -1,8 +1,10 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -191,6 +193,113 @@ JARVIS_TEST(ipc_send_self_max_message_size) {
 }
 
 // Runmode: kernel
+// Testidea: Alloc a BufferPool buffer of maximum data payload size,
+// fill with pattern, send via IPC, verify receiver gets the full data,
+// map and read back to confirm zero-copy path integrity.
+// Input: Sender allocs buffer, writes IPC_MAX_MSG_SIZE bytes of pattern,
+// embeds handle in Message, sends. Receiver maps at new VA, reads back.
+// Expect: All 64 bytes match. Receiver owns buffer after transfer.
+JARVIS_TEST(ipc_buf_handle_max_size) {
+    auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+    Scheduler::add_task(*sender);
+    Scheduler::add_task(*receiver);
+
+    auto* original = Scheduler::current_task();
+
+    Scheduler::set_current(*sender);
+    uint64_t va = 0xC0000000;
+    uint64_t handle = BufferPool::alloc(*sender, va);
+    JARVIS_ASSERT(handle != 0);
+
+    uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
+    uint64_t phys = BufferPool::entries[idx].phys_addr;
+    auto* buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + phys);
+    for (size_t i = 0; i < IPC_MAX_MSG_SIZE; ++i) {
+        buf[i] = static_cast<uint8_t>(i ^ 0xAA);
+    }
+
+    Message msg{};
+    msg.buf_handle = handle;
+    msg.type = 200;
+    msg.priority = 0;
+    msg.data_size = IPC_MAX_MSG_SIZE;
+    JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
+
+    Scheduler::set_current(*receiver);
+    Message recv{};
+    JARVIS_ASSERT(IPC::recv(recv));
+    JARVIS_ASSERT(recv.type == 200ULL);
+    JARVIS_ASSERT(recv.buf_handle == handle);
+
+    uint64_t rva = 0xD0000000;
+    JARVIS_ASSERT(BufferPool::map(*receiver, handle, rva));
+
+    // Verify data through HHDM
+    auto* rbuf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + phys);
+    for (size_t i = 0; i < IPC_MAX_MSG_SIZE; ++i) {
+        JARVIS_ASSERT(rbuf[i] == static_cast<uint8_t>(i ^ 0xAA));
+    }
+
+    JARVIS_ASSERT(BufferPool::free(*receiver, handle));
+
+    Scheduler::set_current(*original);
+    Scheduler::remove_task(*sender);
+    sender->cleanup(); delete sender;
+    Scheduler::remove_task(*receiver);
+    receiver->cleanup(); delete receiver;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verify priority inheritance works when a high-priority task
+// waits for a message from a low-priority task.  The low-priority task's
+// priority should be boosted to the high-priority's level.
+// Input: Create high-priority sender (prio 20) waiting for response from
+// low-priority (prio 5) receiver. Fill low's queue so high blocks on send.
+// Expect: Low's priority is boosted to at least high's priority.
+JARVIS_TEST(ipc_priority_inheritance_send) {
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    auto* low = TaskControlBlock::create([](){}, 5, 10);
+    JARVIS_ASSERT(low != nullptr);
+    Scheduler::add_task(*low);
+
+    auto* high = TaskControlBlock::create([](){}, 20, 10);
+    JARVIS_ASSERT(high != nullptr);
+    Scheduler::add_task(*high);
+
+    // Fill low's queue (low is the receiver in this scenario)
+    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
+        Message fill{};
+        fill.sender_id = cur->id;
+        fill.type = 99; fill.priority = 0; fill.data_size = 0;
+        low->msg_queue->push(fill);
+    }
+
+    // High tries to send to low — blocks because low's queue is full
+    Scheduler::set_current(*high);
+    Message msg{};
+    msg.sender_id = high->id;
+    msg.type = 42; msg.priority = 0; msg.data_size = 0;
+    bool ok = IPC::send(low->id, msg, 0);
+    JARVIS_ASSERT(!ok);
+    JARVIS_ASSERT(high->state == TaskState::BLOCKED);
+
+    // Low should have been priority-boosted by block_sender
+    JARVIS_ASSERT(low->priority >= high->priority);
+
+    // Cleanup
+    Scheduler::remove_task(*high);
+    high->cleanup(); delete high;
+    Scheduler::remove_task(*low);
+    low->cleanup(); delete low;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all extended IPC unit tests with the test framework.
 // Input: None
 // Expect: All IPC extended tests registered via JARVIS_REGISTER_TEST
@@ -204,4 +313,6 @@ void register_ipc_extended_tests() {
     JARVIS_REGISTER_TEST(ipc_send_sync_timeout);
     JARVIS_REGISTER_TEST(ipc_priority_inversion);
     JARVIS_REGISTER_TEST(ipc_send_self_max_message_size);
+    JARVIS_REGISTER_TEST(ipc_buf_handle_max_size);
+    JARVIS_REGISTER_TEST(ipc_priority_inheritance_send);
 }
