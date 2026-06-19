@@ -1817,7 +1817,8 @@ void Shell::cmd_ifconfig(int argc, const char** argv) {
     }
 
     // Show status
-    Terminal::write("eth0: ");
+    Terminal::write(nic.name ? nic.name : "eth0");
+    Terminal::write(": ");
     print_mac(nic.mac);
     Terminal::write("\n  inet ");
     print_ip(nic.ip);

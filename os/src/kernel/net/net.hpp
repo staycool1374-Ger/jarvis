@@ -16,6 +16,7 @@ constexpr size_t MAX_PACKET_SIZE = 2048;
 
 /// NIC (Network Interface Card) abstraction
 struct Nic {
+    const char* name;    // interface name (e.g. "eth0")
     MacAddr mac;         // this NIC's MAC address
     Ipv4Addr ip;         // assigned IPv4 address
     Ipv4Addr subnet;     // subnet mask

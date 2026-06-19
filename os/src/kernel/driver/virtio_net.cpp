@@ -141,8 +141,9 @@ bool virtio_net_probe(Nic& nic) {
     for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
 
     // Initialize NIC abstraction
-    nic.mac  = mac;
-    nic.ip   = Ipv4Addr::from_u32(0); // assigned later
+    nic.name   = "eth0";
+    nic.mac    = mac;
+    nic.ip     = Ipv4Addr::from_u32(0); // assigned later
     nic.subnet = Ipv4Addr::from_u32(0);
     nic.gateway = Ipv4Addr::from_u32(0);
     nic.send_frame  = virtio_net_send_frame;
