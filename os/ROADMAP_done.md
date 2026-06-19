@@ -50,3 +50,26 @@
 #### Thread-safety attributes (Phase C)
 - **Deferred.** Risk of false positives on ISR paths (IF=0 by hardware), unknown warning count, `[[gnu::capability]]` annotations don't map cleanly to task-parameterized `lock(TaskControlBlock*)` pattern
 - Implementation guide documented in `REFACTORING-implementation.md`
+
+### Additional 0.2.13 items
+- FAT32 unlink empty-dir fix (skip `.` and `..`)
+- `vfs_unlink_file`, `vfs_mkdir_valid` test isolation
+- Shell `mkdir` bypasses VFS daemon for absolute paths
+- BUGS.md #007 (idle task test output) — Fixed
+- 28 new shell built-in commands: `alias`, `unalias`, `history`, `type`, `source` (`.`), `set`, `read`, `printf`, `test` (`[`), `shift`, `trap`, `wait`, `fg`, `bg`, `disown`, `ulimit`, `umask`, `times`, `logout`, `dirs`, `pushd`, `popd`, `ls`
+- Alias expansion + command history recording in `parse_and_exec`
+- Release tag: v0.2.13
+
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
+
+### v0.12.14 — System Services
+- tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
+- SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
+- IrqGuard enforcement in all tmpfs operations and sys_brk
+
+### 0.2.15 — Hardware Enablement
+- PCI enumeration — CF8/CFC config space access, bus scan, BAR parsing, PCI bridge support
+- MSI/MSI-X interrupt support — capability detection, vector allocator, MSI/MSI-X enable
+- Virtio transport (modern 1.0 PCI) + block driver — capability parsing, MMIO mapping, feature negotiation, queue setup, block I/O
+- DMA driver — physically contiguous buffer alloc, scatter-gather list, PRD table (ATA bus-master format), PCI bus master control
+- Minimal network stack — Ethernet/ARP/IPv4/UDP protocol types, ARP cache with resolution, IPv4 header checksum, UDP send/receive, virtio-net NIC driver (modern 1.0 PCI)

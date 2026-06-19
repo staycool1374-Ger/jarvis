@@ -234,8 +234,6 @@ bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
 
     MacAddr dst_mac;
     if (!net_arp_resolve(nic, dst_ip.as_u32(), dst_mac)) {
-        Logger::warn("net: ARP resolution failed for ping %d.%d.%d.%d",
-            dst_ip.addr[0], dst_ip.addr[1], dst_ip.addr[2], dst_ip.addr[3]);
         return false;
     }
 

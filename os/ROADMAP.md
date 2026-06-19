@@ -4,15 +4,6 @@
 **Status:** ACTIVE — System Services.
 **Target Focus:** v0.12.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
 
-## 0.2.13 — Shell Built-ins & Stabilisation
-- [x] FAT32 unlink empty-dir fix (skip `.` and `..`)
-- [x] `vfs_unlink_file`, `vfs_mkdir_valid` test isolation
-- [x] Shell `mkdir` bypasses VFS daemon for absolute paths
-- [x] BUGS.md #007 (idle task test output) — Fixed
-- [x] 28 new shell built-in commands: `alias`, `unalias`, `history`, `type`, `source` (`.`), `set`, `read`, `printf`, `test` (`[`), `shift`, `trap`, `wait`, `fg`, `bg`, `disown`, `ulimit`, `umask`, `times`, `logout`, `dirs`, `pushd`, `popd`, `ls`
-- [x] Alias expansion + command history recording in `parse_and_exec`
-- [x] Release tag: v0.2.13
-
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Preserve IrqGuard Invariants:** Any new service layer code, VFS operations for `tmpfs`, or memory-mapping extensions must strictly utilize the `src/kernel/arch/irq_guard.hpp` abstraction for critical sections. Do not use open-coded `cli()`/`sti()` or unmanaged interrupt modifications.
 - **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
@@ -31,18 +22,6 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
 
-### v0.12.14 — System Services
-- [x] tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
-- [x] SYS_GETRLIMIT/SYS_SETRLIMIT, SYS_BRK, text pager/editor utilities
-- [x] IrqGuard enforcement in all tmpfs operations and sys_brk
-
-### 0.2.15 — Hardware Enablement
-- [x] PCI enumeration — CF8/CFC config space access, bus scan, BAR parsing, PCI bridge support
-- [x] MSI/MSI-X interrupt support — capability detection, vector allocator, MSI/MSI-X enable
-- [x] Virtio transport (modern 1.0 PCI) + block driver — capability parsing, MMIO mapping, feature negotiation, queue setup, block I/O
-- [x] DMA driver — physically contiguous buffer alloc, scatter-gather list, PRD table (ATA bus-master format), PCI bus master control
-- [x] Minimal network stack — Ethernet/ARP/IPv4/UDP protocol types, ARP cache with resolution, IPv4 header checksum, UDP send/receive, virtio-net NIC driver (modern 1.0 PCI)
-
 ### 0.2.16 — CPU Features & RNG
 - [ ] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
 - [ ] Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
@@ -50,6 +29,11 @@ When implementing or refactoring code paths for this phase, execute the followin
 ### 0.2.17 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
 - [ ] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
+
+### 0.2.18 — Kernel Memory Safety
+- [ ] `UniquePtr<T>` / `make_unique` — type-safe RAII wrapper for kernel heap allocations (placement-new construction, move-only ownership, automatic `kfree` + destructor on scope exit)
+- [ ] Audit existing `kmalloc`/`kfree` sites for leak-prone manual management and migrate to `UniquePtr` where appropriate
+- [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
 
 ---
 

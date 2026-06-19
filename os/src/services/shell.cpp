@@ -1882,7 +1882,6 @@ void Shell::cmd_ping(int argc, const char** argv) {
         return;
     }
 
-    // Loopback works without a NIC
     bool is_loopback = (dst.as_u32() == 0x7F000001);
 
     if (!net::g_nic && !is_loopback) {
@@ -1900,7 +1899,12 @@ void Shell::cmd_ping(int argc, const char** argv) {
 
     Terminal::write("PING ");
     print_ip(dst);
-    Terminal::write(": 56 data bytes\n");
+    Terminal::write(" (");
+    print_ip(dst);
+    Terminal::write(") 56(84) bytes of data.\n");
+
+    uint64_t pkt_tx = 0, pkt_rx = 0;
+    uint64_t start_tick = arch::Timer::ticks();
 
     for (int i = 0; i < count; ++i) {
         net::net_icmp_clear_reply();
@@ -1917,20 +1921,23 @@ void Shell::cmd_ping(int argc, const char** argv) {
             sent = true;
         } else {
             sent = net::net_send_icmp_echo(*net::g_nic, dst, id, seq, payload, sizeof(payload));
-            if (sent) {
-                uint64_t deadline = sent_tick + 1000;
-                while (arch::Timer::ticks() < deadline) {
-                    for (int p = 0; p < 10; ++p)
-                        if (net::net_poll(*net::g_nic)) break;
-                    auto* r = net::net_icmp_last_reply();
-                    if (r && r->ident == id && r->seq == seq) break;
-                    arch::pause();
-                }
+        }
+
+        ++pkt_tx;
+        if (sent) {
+            uint64_t deadline = sent_tick + 1000;
+            while (arch::Timer::ticks() < deadline) {
+                for (int p = 0; p < 10; ++p)
+                    if (net::net_poll(*net::g_nic)) break;
+                auto* r = net::net_icmp_last_reply();
+                if (r && r->ident == id && r->seq == seq) break;
+                arch::pause();
             }
         }
 
         auto* reply = net::net_icmp_last_reply();
         if (reply && reply->ident == id && reply->seq == seq) {
+            ++pkt_rx;
             uint64_t rtt = reply->rx_tick - sent_tick;
             Terminal::write("64 bytes from ");
             print_ip(reply->src);
@@ -1947,20 +1954,32 @@ void Shell::cmd_ping(int argc, const char** argv) {
             while (r > 0) { nbuf[np++] = '0' + (r % 10); r /= 10; }
             while (np > 0) Terminal::putchar(nbuf[--np]);
             Terminal::write(" ms\n");
-        } else {
-            Terminal::write("Request timeout for icmp_seq=");
-            char nbuf[16];
-            int np = 0;
-            uint16_t ns = static_cast<uint16_t>(i);
-            if (ns == 0) { nbuf[np++] = '0'; }
-            while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
-            while (np > 0) Terminal::putchar(nbuf[--np]);
-            Terminal::write("\n");
         }
 
         uint64_t wait_end = arch::Timer::ticks() + 100;
         while (arch::Timer::ticks() < wait_end) arch::pause();
     }
+
+    uint64_t elapsed = arch::Timer::ticks() - start_tick;
+    Terminal::write("--- ");
+    print_ip(dst);
+    Terminal::write(" ping statistics ---\n");
+    char nbuf[16];
+    auto write_dec = [&](uint64_t v) {
+        int np = 0;
+        if (v == 0) { Terminal::putchar('0'); return; }
+        while (v > 0) { nbuf[np++] = '0' + (v % 10); v /= 10; }
+        while (np > 0) Terminal::putchar(nbuf[--np]);
+    };
+    write_dec(pkt_tx);
+    Terminal::write(" packets transmitted, ");
+    write_dec(pkt_rx);
+    Terminal::write(" received, ");
+    uint64_t loss = (pkt_tx > 0) ? ((pkt_tx - pkt_rx) * 100 / pkt_tx) : 0;
+    write_dec(loss);
+    Terminal::write("% packet loss, time ");
+    write_dec(elapsed);
+    Terminal::write(" ms\n");
 }
 
 } // namespace service
