@@ -58,6 +58,7 @@ struct VirtioNetDevice {
     uint16_t queue_size;
     uint16_t rx_avail_idx;
     uint16_t tx_avail_idx;
+    uint16_t rx_last_seen_used;
 
     Nic* nic;          // back-pointer to the NIC abstraction
 };
@@ -66,5 +67,11 @@ struct VirtioNetDevice {
 /// @param nic  The NIC abstraction to populate.
 /// @return true if a Virtio-net device was found and initialized.
 bool virtio_net_probe(Nic& nic);
+
+/// Poll for a received frame.  Non-blocking — returns false if nothing available.
+/// @param buf  Buffer to copy the frame into.
+/// @param len  On success, set to the number of bytes written.
+/// @return true if a frame was received.
+bool virtio_net_poll(uint8_t* buf, size_t& len);
 
 } // namespace kernel::net

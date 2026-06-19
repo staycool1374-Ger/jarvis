@@ -87,6 +87,7 @@ bool virtio_net_probe(Nic& nic) {
     dev->queue_size = 16;
     dev->rx_avail_idx = 0;
     dev->tx_avail_idx = 0;
+    dev->rx_last_seen_used = 0;
 
     // Allocate queue memory
     if (!alloc_queue_pages(dev->rx_desc_phys, dev->rx_avail_phys, dev->rx_used_phys,
@@ -144,7 +145,8 @@ bool virtio_net_probe(Nic& nic) {
     nic.ip   = Ipv4Addr::from_u32(0); // assigned later
     nic.subnet = Ipv4Addr::from_u32(0);
     nic.gateway = Ipv4Addr::from_u32(0);
-    nic.send_frame = virtio_net_send_frame;
+    nic.send_frame  = virtio_net_send_frame;
+    nic.poll_frame  = virtio_net_poll;
     nic.driver_data = dev;
 
     dev->nic = &nic;
@@ -189,6 +191,32 @@ static bool virtio_net_send_frame(const uint8_t* data, size_t len) {
 
     dev.tx_avail_idx = static_cast<uint16_t>(dev.tx_avail_idx + 1);
     return timeout > 0;
+}
+
+bool virtio_net_poll(uint8_t* buf, size_t& len) {
+    if (!g_virtio_net_dev) return false;
+    auto& dev = *g_virtio_net_dev;
+
+    __sync_synchronize();
+    uint16_t used_idx = dev.rx_used->idx;
+    if (used_idx == dev.rx_last_seen_used) return false;
+
+    uint16_t slot = dev.rx_last_seen_used % dev.queue_size;
+    uint32_t desc_idx = dev.rx_used->ring[slot].id;
+    uint32_t pkt_len = dev.rx_used->ring[slot].len;
+
+    if (pkt_len > VIRTIO_NET_HDR_SIZE) {
+        size_t frame_len = pkt_len - VIRTIO_NET_HDR_SIZE;
+        if (frame_len > MAX_PACKET_SIZE) frame_len = MAX_PACKET_SIZE;
+        memcpy(buf, dev.rx_bufs[desc_idx] + VIRTIO_NET_HDR_SIZE, frame_len);
+        len = frame_len;
+    } else {
+        len = 0;
+    }
+
+    add_rx_buf(dev, desc_idx);
+    dev.rx_last_seen_used = static_cast<uint16_t>(dev.rx_last_seen_used + 1);
+    return len > 0;
 }
 
 } // namespace kernel::net

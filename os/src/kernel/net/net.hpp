@@ -8,6 +8,7 @@
 #include <kernel/net/arp.hpp>
 #include <kernel/net/ipv4.hpp>
 #include <kernel/net/udp.hpp>
+#include <kernel/net/icmp.hpp>
 
 namespace net {
 
@@ -22,6 +23,9 @@ struct Nic {
 
     /// Send a raw Ethernet frame. Implemented by the NIC driver.
     bool (*send_frame)(const uint8_t* data, size_t len);
+
+    /// Poll for a received frame. Non-blocking.
+    bool (*poll_frame)(uint8_t* buf, size_t& len);
 
     /// Called when a frame arrives — set by the stack.
     void (*on_frame)(const uint8_t* data, size_t len);
@@ -46,5 +50,31 @@ bool net_send_udp(Nic& nic, Ipv4Addr dst_ip, uint16_t dst_port,
 
 /// Get the ARP cache (for inspection/debugging).
 ArpCache& net_arp_cache();
+
+/// Send an ICMP Echo Request.
+/// @return true if the request was sent.
+bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
+                        const uint8_t* data, size_t data_len);
+
+/// Globally registered NIC (set by the first call to net_init).
+extern Nic* g_nic;
+
+/// ICMP echo reply record for ping.
+struct IcmpEchoReply {
+    bool     received;
+    uint16_t ident;
+    uint16_t seq;
+    uint64_t rx_tick;
+    Ipv4Addr src;
+};
+
+/// Reset the ICMP echo reply record.
+void net_icmp_clear_reply();
+/// Get the last ICMP echo reply received.
+const IcmpEchoReply* net_icmp_last_reply();
+
+/// Poll the NIC for an incoming frame and dispatch it.
+/// Non-blocking — returns false if nothing available.
+bool net_poll(Nic& nic);
 
 } // namespace net

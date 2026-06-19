@@ -18,6 +18,8 @@
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/test/test_selftest.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/net/net.hpp>
+#include <kernel/driver/virtio_net.hpp>
 #include <test.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -113,6 +115,8 @@ void Shell::init() {
     register_command("pushd",   "Push directory to stack",           cmd_pushd);
     register_command("popd",    "Pop directory from stack",          cmd_popd);
     register_command("ls",      "List directory contents",           cmd_ls);
+    register_command("ifconfig","Show/configure network interface",  cmd_ifconfig);
+    register_command("ping",    "Send ICMP echo requests",           cmd_ping);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -1712,7 +1716,6 @@ void Shell::cmd_ls(int argc, const char** argv) {
         if (dent.d_name[0] == '\0') continue;
         if (str_cmp(dent.d_name, ".") == 0 || str_cmp(dent.d_name, "..") == 0) continue;
 
-        // Stat entry for type
         auto* child = vn->ops->lookup(*vn, dent.d_name);
         if (child) {
             if (child->mode & kernel::vfs::S_IFDIR) {
@@ -1728,6 +1731,225 @@ void Shell::cmd_ls(int argc, const char** argv) {
         Terminal::putchar(' ');
     }
     Terminal::putchar('\n');
+}
+
+static void print_ip(net::Ipv4Addr ip) {
+    char buf[16];
+    int pos = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (i > 0) buf[pos++] = '.';
+        uint8_t n = ip.addr[i];
+        if (n >= 100) buf[pos++] = '0' + (n / 100);
+        if (n >= 10) buf[pos++] = '0' + ((n / 10) % 10);
+        buf[pos++] = '0' + (n % 10);
+    }
+    buf[pos] = '\0';
+    Terminal::write(buf);
+}
+
+static void print_mac(net::MacAddr mac) {
+    char buf[18];
+    int pos = 0;
+    for (int i = 0; i < 6; ++i) {
+        if (i > 0) buf[pos++] = ':';
+        const char* hex = "0123456789abcdef";
+        buf[pos++] = hex[(mac.addr[i] >> 4) & 0xF];
+        buf[pos++] = hex[mac.addr[i] & 0xF];
+    }
+    buf[pos] = '\0';
+    Terminal::write(buf);
+}
+
+void Shell::cmd_ifconfig(int argc, const char** argv) {
+    if (!net::g_nic) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("ifconfig: no network interface\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    auto& nic = *net::g_nic;
+
+    if (argc >= 2) {
+        // Parse IP
+        uint8_t a[4] = {0, 0, 0, 0};
+        int octet = 0;
+        int val = 0;
+        const char* p = argv[1];
+        while (*p && octet < 4) {
+            if (*p == '.') {
+                a[octet++] = static_cast<uint8_t>(val);
+                val = 0;
+            } else if (*p >= '0' && *p <= '9') {
+                val = val * 10 + (*p - '0');
+            }
+            ++p;
+        }
+        if (octet < 4) a[octet] = static_cast<uint8_t>(val);
+        nic.ip = net::Ipv4Addr{{a[0], a[1], a[2], a[3]}};
+
+        if (argc >= 3) {
+            octet = 0; val = 0; p = argv[2];
+            while (*p && octet < 4) {
+                if (*p == '.') { a[octet++] = static_cast<uint8_t>(val); val = 0; }
+                else if (*p >= '0' && *p <= '9') val = val * 10 + (*p - '0');
+                ++p;
+            }
+            if (octet < 4) a[octet] = static_cast<uint8_t>(val);
+            nic.subnet = net::Ipv4Addr{{a[0], a[1], a[2], a[3]}};
+        }
+
+        if (argc >= 4) {
+            octet = 0; val = 0; p = argv[3];
+            while (*p && octet < 4) {
+                if (*p == '.') { a[octet++] = static_cast<uint8_t>(val); val = 0; }
+                else if (*p >= '0' && *p <= '9') val = val * 10 + (*p - '0');
+                ++p;
+            }
+            if (octet < 4) a[octet] = static_cast<uint8_t>(val);
+            nic.gateway = net::Ipv4Addr{{a[0], a[1], a[2], a[3]}};
+        }
+
+        Terminal::set_fg(0x00FF00);
+        Terminal::write("ifconfig: interface configured\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    // Show status
+    Terminal::write("eth0: ");
+    print_mac(nic.mac);
+    Terminal::write("\n  inet ");
+    print_ip(nic.ip);
+    Terminal::write("  netmask ");
+    print_ip(nic.subnet);
+    Terminal::write("  gateway ");
+    print_ip(nic.gateway);
+    Terminal::write("\n");
+}
+
+static int parse_ip(const char* str, net::Ipv4Addr& out) {
+    uint8_t a[4] = {0, 0, 0, 0};
+    int octet = 0;
+    int val = 0;
+    while (*str && octet < 4) {
+        if (*str == '.') {
+            if (val > 255) return -1;
+            a[octet++] = static_cast<uint8_t>(val);
+            val = 0;
+        } else if (*str >= '0' && *str <= '9') {
+            val = val * 10 + (*str - '0');
+        } else {
+            return -1;
+        }
+        ++str;
+    }
+    if (octet < 4) {
+        if (val > 255) return -1;
+        a[octet] = static_cast<uint8_t>(val);
+    }
+    out = net::Ipv4Addr{{a[0], a[1], a[2], a[3]}};
+    return 0;
+}
+
+void Shell::cmd_ping(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: ping <ip> [count]\n");
+        return;
+    }
+
+    if (!net::g_nic) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("ping: no network interface\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    net::Ipv4Addr dst;
+    if (parse_ip(argv[1], dst) != 0) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("ping: invalid IP address: ");
+        Terminal::write(argv[1]);
+        Terminal::write("\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+
+    int count = 4;
+    if (argc >= 3) {
+        count = 0;
+        for (const char* p = argv[2]; *p; ++p) count = count * 10 + (*p - '0');
+    }
+
+    auto& nic = *net::g_nic;
+
+    Terminal::write("PING ");
+    print_ip(dst);
+    Terminal::write(": 56 data bytes\n");
+
+    for (int i = 0; i < count; ++i) {
+        net::net_icmp_clear_reply();
+        uint16_t seq = static_cast<uint16_t>(i);
+        uint16_t id = 0x1337;
+
+        // Payload with timestamp
+        uint8_t payload[56];
+        uint64_t sent_tick = arch::Timer::ticks();
+        for (size_t p = 0; p < sizeof(payload); ++p) payload[p] = static_cast<uint8_t>(p + i);
+
+        if (!net::net_send_icmp_echo(nic, dst, id, seq, payload, sizeof(payload))) {
+            Terminal::set_fg(0xFF4444);
+            Terminal::write("ping: send failed\n");
+            Terminal::set_fg(0xC0C0C0);
+            return;
+        }
+
+        // Wait for reply with poll
+        bool got = false;
+        uint64_t deadline = sent_tick + 1000; // 1 second timeout
+        while (arch::Timer::ticks() < deadline) {
+            // Poll the NIC for incoming frames
+            for (int p = 0; p < 10; ++p) {
+                if (net::net_poll(nic)) {
+                    auto* reply = net::net_icmp_last_reply();
+                    if (reply && reply->ident == id && reply->seq == seq) {
+                        uint64_t rtt = arch::Timer::ticks() - sent_tick;
+                        Terminal::write("64 bytes from ");
+                        print_ip(reply->src);
+                        Terminal::write(": icmp_seq=");
+                        char nbuf[16];
+                        int np = 0;
+                        uint16_t ns = seq;
+                        while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
+                        while (np > 0) Terminal::putchar(nbuf[--np]);
+                        Terminal::write(" ttl=64 time=");
+                        np = 0; uint64_t r = rtt;
+                        while (r > 0) { nbuf[np++] = '0' + (r % 10); r /= 10; }
+                        while (np > 0) Terminal::putchar(nbuf[--np]);
+                        Terminal::write(" ms\n");
+                        got = true;
+                        break;
+                    }
+                }
+            }
+            if (got) break;
+            arch::pause();
+        }
+
+        if (!got) {
+            Terminal::write("Request timeout for icmp_seq=");
+            char nbuf[16];
+            int np = 0;
+            uint16_t ns = static_cast<uint16_t>(i);
+            while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
+            while (np > 0) Terminal::putchar(nbuf[--np]);
+            Terminal::write("\n");
+        }
+
+        // Wait a bit between pings
+        uint64_t wait_end = arch::Timer::ticks() + 100;
+        while (arch::Timer::ticks() < wait_end) arch::pause();
+    }
 }
 
 } // namespace service

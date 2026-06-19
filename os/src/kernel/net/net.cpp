@@ -2,6 +2,7 @@
 /// @brief Network stack core implementation.
 
 #include <kernel/net/net.hpp>
+#include <kernel/arch/timer.hpp>
 #include <string.hpp>
 #include <logger.hpp>
 
@@ -12,6 +13,19 @@ namespace net {
 static ArpCache g_arp_cache;
 static uint16_t g_ip_ident = 0;
 
+Nic* g_nic = nullptr;
+
+// Last ICMP echo reply (for ping)
+static IcmpEchoReply g_icmp_reply;
+
+void net_icmp_clear_reply() {
+    g_icmp_reply.received = false;
+}
+
+const IcmpEchoReply* net_icmp_last_reply() {
+    return g_icmp_reply.received ? &g_icmp_reply : nullptr;
+}
+
 ArpCache& net_arp_cache() { return g_arp_cache; }
 
 void net_init(Nic& nic, MacAddr mac, Ipv4Addr ip, Ipv4Addr subnet, Ipv4Addr gateway) {
@@ -20,6 +34,7 @@ void net_init(Nic& nic, MacAddr mac, Ipv4Addr ip, Ipv4Addr subnet, Ipv4Addr gate
     nic.subnet  = subnet;
     nic.gateway = gateway;
     g_arp_cache.clear();
+    g_nic = &nic;
     Logger::info("net: initialized %d.%d.%d.%d",
         ip.addr[0], ip.addr[1], ip.addr[2], ip.addr[3]);
 }
@@ -68,11 +83,27 @@ void net_handle_frame(const uint8_t* data, size_t len, Nic& nic) {
         }
     } else if (type == ETH_TYPE_IPV4) {
         if (len < sizeof(EtherHeader) + sizeof(Ipv4Header)) return;
-        // IPv4 packet received — could dispatch to UDP/TCP/ICMP handlers
-        // For now, we just log and ignore
-        Logger::info("net: IPv4 packet from %d.%d.%d.%d proto=%d",
-            eth->src.addr[0], eth->src.addr[1], eth->src.addr[2], eth->src.addr[3],
-            reinterpret_cast<const Ipv4Header*>(data + sizeof(EtherHeader))->protocol);
+        auto* ip = reinterpret_cast<const Ipv4Header*>(data + sizeof(EtherHeader));
+        size_t ip_hdr_len = (ip->ver_ihl & 0x0F) * 4;
+        if (ip_hdr_len < IPV4_MIN_HEADER_LEN) return;
+
+        if (ip->protocol == IP_PROTO_ICMP) {
+            size_t ip_total_len = __builtin_bswap16(ip->total_length);
+            if (len < sizeof(EtherHeader) + ip_total_len) return;
+            size_t icmp_offset = sizeof(EtherHeader) + ip_hdr_len;
+            size_t icmp_len = ip_total_len - ip_hdr_len;
+            if (icmp_len < ICMP_HEADER_LEN) return;
+
+            auto* icmp = reinterpret_cast<const IcmpHeader*>(data + icmp_offset);
+
+            if (icmp->type == ICMP_TYPE_ECHO_REPLY) {
+                g_icmp_reply.received = true;
+                g_icmp_reply.ident    = icmp->ident;
+                g_icmp_reply.seq      = icmp->seq;
+                g_icmp_reply.rx_tick  = arch::Timer::ticks();
+                g_icmp_reply.src      = ip->src;
+            }
+        }
     }
 }
 
@@ -157,6 +188,76 @@ bool net_send_udp(Nic& nic, Ipv4Addr dst_ip, uint16_t dst_port,
         memcpy(buf + sizeof(EtherHeader) + IPV4_MIN_HEADER_LEN + sizeof(UdpHeader),
                payload, payload_len);
     }
+
+    return nic.send_frame(buf, frame_len);
+}
+
+bool net_poll(Nic& nic) {
+    if (!nic.poll_frame) return false;
+    uint8_t buf[MAX_PACKET_SIZE];
+    size_t len = 0;
+    if (!nic.poll_frame(buf, len)) return false;
+    net_handle_frame(buf, len, nic);
+    return true;
+}
+
+bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
+                        const uint8_t* data, size_t data_len) {
+    MacAddr dst_mac;
+    if (!net_arp_resolve(nic, dst_ip.as_u32(), dst_mac)) {
+        Logger::warn("net: ARP resolution failed for ping %d.%d.%d.%d",
+            dst_ip.addr[0], dst_ip.addr[1], dst_ip.addr[2], dst_ip.addr[3]);
+        return false;
+    }
+
+    size_t icmp_total = ICMP_HEADER_LEN + data_len;
+    size_t ip_total = IPV4_MIN_HEADER_LEN + icmp_total;
+    size_t frame_len = sizeof(EtherHeader) + ip_total;
+
+    if (frame_len > MAX_PACKET_SIZE) {
+        Logger::error("net: ping packet too large (%zu)", frame_len);
+        return false;
+    }
+
+    uint8_t buf[MAX_PACKET_SIZE];
+    memset(buf, 0, MAX_PACKET_SIZE);
+
+    // Ethernet
+    auto* eth = reinterpret_cast<EtherHeader*>(buf);
+    eth->dst  = dst_mac;
+    eth->src  = nic.mac;
+    eth->type = __builtin_bswap16(ETH_TYPE_IPV4);
+
+    // IPv4
+    auto* ip = reinterpret_cast<Ipv4Header*>(buf + sizeof(EtherHeader));
+    ip->ver_ihl       = 0x45;
+    ip->dscp_ecn      = 0;
+    ip->total_length  = __builtin_bswap16(static_cast<uint16_t>(ip_total));
+    ip->ident         = __builtin_bswap16(g_ip_ident++);
+    ip->flags_frag    = __builtin_bswap16(0x4000);
+    ip->ttl           = 64;
+    ip->protocol      = IP_PROTO_ICMP;
+    ip->checksum      = 0;
+    ip->src           = nic.ip;
+    ip->dst           = dst_ip;
+    ip->checksum      = ipv4_checksum(ip);
+
+    // ICMP header
+    auto* icmp = reinterpret_cast<IcmpHeader*>(buf + sizeof(EtherHeader) + IPV4_MIN_HEADER_LEN);
+    icmp->type     = ICMP_TYPE_ECHO_REQUEST;
+    icmp->code     = 0;
+    icmp->checksum = 0;
+    icmp->ident    = id;
+    icmp->seq      = seq;
+
+    // Payload
+    if (data_len > 0) {
+        memcpy(buf + sizeof(EtherHeader) + IPV4_MIN_HEADER_LEN + ICMP_HEADER_LEN,
+               data, data_len);
+    }
+
+    icmp->checksum = icmp_checksum(
+        reinterpret_cast<const uint8_t*>(icmp), icmp_total);
 
     return nic.send_frame(buf, frame_len);
 }

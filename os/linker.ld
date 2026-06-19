@@ -16,6 +16,8 @@ SECTIONS
     /DISCARD/ : {
         *(.eh_frame)
         *(.eh_frame_hdr)
+        *(.init_array)
+        *(.init_array.*)
     }
 
     .boot_text : ALIGN(4K)
