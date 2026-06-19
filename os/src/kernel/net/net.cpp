@@ -203,6 +203,16 @@ bool net_poll(Nic& nic) {
 
 bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
                         const uint8_t* data, size_t data_len) {
+    // Loopback / self-ping: reflect instantly
+    if (dst_ip.as_u32() == 0x7F000001 || dst_ip.as_u32() == nic.ip.as_u32()) {
+        g_icmp_reply.received = true;
+        g_icmp_reply.ident    = id;
+        g_icmp_reply.seq      = seq;
+        g_icmp_reply.rx_tick  = arch::Timer::ticks();
+        g_icmp_reply.src      = dst_ip;
+        return true;
+    }
+
     MacAddr dst_mac;
     if (!net_arp_resolve(nic, dst_ip.as_u32(), dst_mac)) {
         Logger::warn("net: ARP resolution failed for ping %d.%d.%d.%d",
