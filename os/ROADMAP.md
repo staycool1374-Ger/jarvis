@@ -37,7 +37,11 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [x] IrqGuard enforcement in all tmpfs operations and sys_brk
 
 ### 0.2.15 — Hardware Enablement
-- [ ] PCI enumeration (CF8/CFC, BAR, MSI/MSI-X), Virtio transport + blk driver
+- [x] PCI enumeration — CF8/CFC config space access, bus scan, BAR parsing, PCI bridge support
+- [ ] MSI/MSI-X interrupt support
+- [ ] Virtio transport (queue negotiation, MMIO/PIO) + block driver
+- [ ] DMA driver — scatter-gather, ring-buffer management, PRD table construction
+- [ ] Minimal network stack (ARP, IPv4, UDP over virtio-net)
 - [ ] DMA driver — scatter-gather, ring-buffer management, PRD table construction
 - [ ] Minimal network stack (ARP, IPv4, UDP over virtio-net)
 

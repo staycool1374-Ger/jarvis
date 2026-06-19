@@ -69,6 +69,7 @@ void register_hal_tests();
 void register_arch_structure_tests();
 void register_buildsystem_tests();
 void register_secure_exec_tests();
+void register_pci_tests();
 
 // Runmode: kernel
 // Testidea: Registers all selftest subsystem test suites by delegating to
@@ -144,4 +145,5 @@ void register_selftest_tests() {
     register_arch_structure_tests();
     register_buildsystem_tests();
     register_secure_exec_tests();
+    register_pci_tests();
 }
