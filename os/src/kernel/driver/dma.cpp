@@ -41,6 +41,7 @@ void free_buffer(DmaBuffer& buf) {
     if (!buf.owned || !buf.phys_addr) return;
     size_t page_count = buf.size / PAGE_SIZE;
     for (size_t i = 0; i < page_count; ++i) {
+        VMM::unmap_page(buf.phys_addr + i * PAGE_SIZE);
         PMM::free_page(buf.phys_addr + i * PAGE_SIZE);
     }
     buf.phys_addr = 0;

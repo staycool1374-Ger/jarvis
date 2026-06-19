@@ -230,7 +230,7 @@ static Vnode* tmpfs_get_root() {
             tmpfs_lookup,
             tmpfs_mkdir,
             tmpfs_unlink,
-            nullptr,         // create
+            tmpfs_create,
         };
         tmpfs_root.ops = &root_ops;
         tmpfs_root.ino = next_ino++;
