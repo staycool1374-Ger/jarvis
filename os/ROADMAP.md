@@ -40,7 +40,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [x] PCI enumeration — CF8/CFC config space access, bus scan, BAR parsing, PCI bridge support
 - [x] MSI/MSI-X interrupt support — capability detection, vector allocator, MSI/MSI-X enable
 - [x] Virtio transport (modern 1.0 PCI) + block driver — capability parsing, MMIO mapping, feature negotiation, queue setup, block I/O
-- [ ] DMA driver — scatter-gather, ring-buffer management, PRD table construction
+- [x] DMA driver — physically contiguous buffer alloc, scatter-gather list, PRD table (ATA bus-master format), PCI bus master control
 - [ ] Minimal network stack (ARP, IPv4, UDP over virtio-net)
 
 ### 0.2.16 — CPU Features & RNG
