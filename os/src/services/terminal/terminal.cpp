@@ -184,16 +184,27 @@ void Terminal::advance_cursor() {
 }
 
 void Terminal::backspace() {
+    uint32_t old_x = cursor_x_;
+    uint32_t old_y = cursor_y_;
+
     if (cursor_x_ > 0) {
         --cursor_x_;
     } else if (cursor_y_ > 0) {
         --cursor_y_;
         cursor_x_ = cols_ - 1;
     }
+
     Framebuffer::draw_char(
         cursor_x_ * FONT_WIDTH,
         cursor_y_ * FONT_HEIGHT,
         ' ', fg_, bg_);
+
+    if (old_x != cursor_x_ || old_y != cursor_y_) {
+        Framebuffer::draw_char(
+            old_x * FONT_WIDTH,
+            old_y * FONT_HEIGHT,
+            ' ', fg_, bg_);
+    }
 }
 
 void Terminal::draw_status_bar(const char* left, const char* right) {
