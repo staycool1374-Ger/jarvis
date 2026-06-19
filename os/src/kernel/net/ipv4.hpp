@@ -1,0 +1,73 @@
+/// @file ipv4.hpp
+/// @brief IPv4 protocol types and helpers.
+
+#pragma once
+
+#include <types.hpp>
+
+namespace net {
+
+constexpr size_t IPV4_ADDR_LEN = 4;
+constexpr size_t IPV4_MIN_HEADER_LEN = 20;
+constexpr size_t IPV4_MAX_HEADER_LEN = 60;
+
+/// IPv4 address
+struct Ipv4Addr {
+    uint8_t addr[IPV4_ADDR_LEN];
+
+    bool operator==(const Ipv4Addr& o) const {
+        for (size_t i = 0; i < IPV4_ADDR_LEN; ++i)
+            if (addr[i] != o.addr[i]) return false;
+        return true;
+    }
+
+    uint32_t as_u32() const {
+        return (static_cast<uint32_t>(addr[0]) << 24)
+             | (static_cast<uint32_t>(addr[1]) << 16)
+             | (static_cast<uint32_t>(addr[2]) << 8)
+             | static_cast<uint32_t>(addr[3]);
+    }
+
+    static Ipv4Addr from_u32(uint32_t v) {
+        Ipv4Addr a;
+        a.addr[0] = static_cast<uint8_t>((v >> 24) & 0xFF);
+        a.addr[1] = static_cast<uint8_t>((v >> 16) & 0xFF);
+        a.addr[2] = static_cast<uint8_t>((v >> 8) & 0xFF);
+        a.addr[3] = static_cast<uint8_t>(v & 0xFF);
+        return a;
+    }
+} __attribute__((packed));
+
+/// IPv4 header (20 bytes, no options)
+struct Ipv4Header {
+    uint8_t  ver_ihl;      // version (4) | header length (5 = 20 bytes)
+    uint8_t  dscp_ecn;     // DSCP + ECN
+    uint16_t total_length; // big-endian
+    uint16_t ident;        // big-endian
+    uint16_t flags_frag;   // flags + fragment offset, big-endian
+    uint8_t  ttl;          // time to live
+    uint8_t  protocol;     // protocol (17 = UDP, 6 = TCP, 1 = ICMP)
+    uint16_t checksum;     // header checksum, big-endian
+    Ipv4Addr src;
+    Ipv4Addr dst;
+} __attribute__((packed));
+
+/// IPv4 protocol numbers
+enum Ipv4Protocol : uint8_t {
+    IP_PROTO_ICMP = 1,
+    IP_PROTO_TCP  = 6,
+    IP_PROTO_UDP  = 17,
+};
+
+/// Compute an IPv4 header checksum.
+inline uint16_t ipv4_checksum(const Ipv4Header* hdr) {
+    uint32_t sum = 0;
+    auto* words = reinterpret_cast<const uint16_t*>(hdr);
+    for (int i = 0; i < 10; ++i) { // first 20 bytes = 10 half-words
+        sum += words[i];
+    }
+    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+    return static_cast<uint16_t>(~sum & 0xFFFF);
+}
+
+} // namespace net
