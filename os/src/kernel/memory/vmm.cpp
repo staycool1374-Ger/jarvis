@@ -53,6 +53,14 @@ void VMM::init() {
             pdpt_higher_p[0] & ~0xFFFULL));
         for (size_t i = 64; i < PAGE_TABLE_ENTRIES; ++i) pd_higher[i] = 0;
     }
+
+    // Zero unused PML4 entries [1-255, 257-511] so get_table never follows
+    // residual UEFI/GRUB data left by the bootloader.  The boot code only
+    // sets PML4[0] and PML4[256]; the rest may contain garbage.
+    for (size_t i = 1; i < PAGE_TABLE_ENTRIES; ++i) {
+        if (i == 256) continue;
+        pml4[i] = 0;
+    }
 }
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,
