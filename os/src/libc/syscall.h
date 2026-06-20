@@ -55,6 +55,7 @@ struct rlimit {
 #define SYS_BRK         44
 #define SYS_GETRLIMIT   45
 #define SYS_SETRLIMIT   46
+#define SYS_GETRANDOM   47
 
 static inline long __syscall5(long num, long a0, long a1, long a2, long a3) {
     long ret;
@@ -110,6 +111,10 @@ static inline long sys_getrlimit(int resource, struct rlimit* rlp) {
 
 static inline long sys_setrlimit(int resource, const struct rlimit* rlp) {
     return __syscall5(SYS_SETRLIMIT, resource, (long)rlp, 0, 0);
+}
+
+static inline long sys_getrandom(void* buf, unsigned long len, unsigned int flags) {
+    return __syscall5(SYS_GETRANDOM, (long)buf, (long)len, (long)flags, 0);
 }
 
 #endif

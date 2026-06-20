@@ -1,5 +1,6 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/random.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/timer.hpp>
@@ -239,6 +240,19 @@ uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
     (void)rl;
     (void)arg0;
     return 0;
+}
+
+uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
+    // arg0 = buffer, arg1 = length, arg2 = flags (reserved, must be 0)
+    if (arg2 != 0) return static_cast<uint64_t>(-1);
+    if (arg1 == 0) return 0;
+
+    auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
+    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+
+    random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
+    return arg1;
 }
 
 } // namespace kernel

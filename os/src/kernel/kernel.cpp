@@ -28,6 +28,7 @@
 #include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
+#include <kernel/random.hpp>
 #include <kernel/vfs/devfs.hpp>
 #include <kernel/vfs/procfs.hpp>
 #include <kernel/vfs/tmpfs.hpp>
@@ -373,6 +374,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
     arch::RTC::init();
+    kernel::random_init();
     debug_write("[BOOT] Hardware init done\n");
 
     kernel::DriverRegistry::register_driver(

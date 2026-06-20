@@ -1,4 +1,5 @@
 #include <kernel/vfs/devfs.hpp>
+#include <kernel/random.hpp>
 #include <services/terminal/terminal.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
@@ -202,6 +203,40 @@ static Vnode kbd_vnode = {
     &kbd_ops, 4, 0, S_IFCHR, nullptr,
 };
 
+// ── random vnode ──
+static int64_t random_read(Vnode&, uint8_t* buffer, uint64_t count, uint64_t) {
+    kernel::random_fill(buffer, count);
+    return static_cast<int64_t>(count);
+}
+static int64_t random_write(Vnode&, const uint8_t*, uint64_t count,
+    uint64_t) {
+    return static_cast<int64_t>(count);
+}
+static int random_open(Vnode&, uint64_t) { return 0; }
+static void random_close(Vnode&) {}
+static int64_t random_lseek(Vnode&, int64_t, int, uint64_t*) {
+    return VFS_INVALID;
+}
+static int random_fstat(Vnode&, VfsStat& stat) {
+    stat.st_size = 0;
+    stat.st_mode = S_IFCHR;
+    return 0;
+}
+static int random_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int random_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
+static Vnode* random_lookup(Vnode&, const char*) { return nullptr; }
+
+static const VnodeOps random_ops = {
+    random_read, random_write, random_open, random_close,
+    random_lseek, random_fstat, random_ioctl, random_readdir, random_lookup,
+    nullptr, nullptr,
+    nullptr,
+};
+
+static Vnode random_vnode = {
+    &random_ops, 5, 0, S_IFCHR, nullptr,
+};
+
 // ── devfs root ──
 struct DevEntry {
     const char* name;
@@ -213,6 +248,7 @@ static DevEntry dev_entries[] = {
     {"null", &null_vnode},
     {"console", &console_vnode},
     {"kbd", &kbd_vnode},
+    {"random", &random_vnode},
 };
 static const size_t dev_entry_count = sizeof(dev_entries) / sizeof(dev_entries[0
     ]);

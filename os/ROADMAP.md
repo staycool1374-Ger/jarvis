@@ -20,7 +20,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 1. When constructing the init daemon system (`/etc/rc` parser and user quotas), isolate its lifecycle tracking from standard transient userspace applications.
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
-## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.20)
 
 ### 0.2.16 — CPU Features & RNG
 - [ ] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
@@ -43,7 +43,82 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [ ] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
 - [ ] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
 
+### 0.2.20 — Kernel Configuration & Portability
+
+A FreeRTOS-inspired `jarvis_config.h` header that makes Jarvis compile-time customizable and architecture-portable. All tunables currently scattered as `constexpr` in 20+ files get a single configuration home.
+
+- [ ] **`jarvis_config.h`** — central configuration header with `#ifndef` guard and sensible defaults. Every `#define` has a Doxygen comment explaining its effect and valid range.
+
+- [ ] **Migrate scheduling tunables:** `CONFIG_MAX_TASKS` (was `MAX_TASKS=64`), `CONFIG_TICK_HZ` (was `BootParams::timer_hz=1000` via bootargs now becomes compile-time default), `CONFIG_PRIORITY_CEILING` (was `255`), `CONFIG_PREEMPTION` (was `preempt_enabled=true`)
+
+- [ ] **Migrate memory layout tunables:** All `arch::` constants (`HHDM_OFFSET`, `PML4_USER_COUNT`, `PAGE_SIZE`, `USER_SPACE_LIMIT`, `STACK_SIZE`, `HEAP_SIZE`) — these are the main portability barriers; make them arch-overridable via `CONFIG_*`.
+
+- [ ] **Migrate subsystem sizing:** `CONFIG_MAX_FDS`, `CONFIG_MAX_MOUNTS`, `CONFIG_MAX_DRIVERS`, `CONFIG_MAX_DAEMONS`, `CONFIG_MAX_PROGRAMS`, `CONFIG_IPC_MAX_MSG_SIZE`, `CONFIG_IPC_MAX_QUEUE_MSG`, `CONFIG_IPC_PRIORITY_LEVELS`, `CONFIG_MAX_SIGNAL_HANDLERS`, `CONFIG_VFS_MAX_PATH` — all these subsystem caps currently hardcoded in individual headers.
+
+- [ ] **Migrate MemPool sizing:** Replace inline pool-table array with `CONFIG_MEMPOOL_*` defines (number of pools, block sizes, block counts per pool).
+
+- [ ] **`INCLUDE_` syscall gating** — FreeRTOS-style function inclusion/exclusion. Each syscall gets a `CONFIG_INCLUDE_SYS_<NAME>` toggle so unused syscalls can be stripped at compile time for code size reduction (safety-critical / small-footprint builds).
+
+- [ ] **Architecture feature detection:** `CONFIG_HAS_FPU`, `CONFIG_HAS_RDRAND`, `CONFIG_HAS_MPU`, `CONFIG_HAS_HPET` — compile-time feature flags for conditional compilation of architecture-dependent code paths.
+
+- [ ] **Hook configuration:** `CONFIG_IDLE_HOOK`, `CONFIG_TICK_HOOK`, `CONFIG_STACK_OVERFLOW_HOOK`, `CONFIG_OOM_HOOK` — hook points for application-specific callbacks at idle, tick, stack overflow, and OOM events.
+
+- [ ] **`CONFIG_ASSERT`** — custom assertion macro that replaces the current hardcoded `JARVIS_ASSERT` in test framework (allows user-defined panic/error action).
+
+- [ ] **Consolidate duplicate constants:** Merge the 3× `PAGE_SIZE=4096` and 2× `STACK_SIZE=64_KiB` into single `CONFIG_PAGE_SIZE` / `CONFIG_STACK_SIZE` references.
+
+#### FreeRTOS → Jarvis Config Mapping
+
+| FreeRTOS Config | Jarvis Equivalent | Status |
+|---|---|---|
+| `configUSE_PREEMPTION` | `CONFIG_PREEMPTION` | Runtime via `BootParams` now; add compile-time default |
+| `configCPU_CLOCK_HZ` | `CONFIG_CPU_CLOCK_HZ` | N/A yet (no cycle counter abstraction); add when HPET lands (v0.3.1) |
+| `configSYSTICK_CLOCK_HZ` | `CONFIG_TIMER_CLOCK_HZ` | PIT fixed at 1193182; HPET will make this configurable |
+| `configTICK_RATE_HZ` | `CONFIG_TICK_HZ` | Currently `BootParams::timer_hz`, default 1000 |
+| `configMAX_PRIORITIES` | `CONFIG_PRIORITY_CEILING` | Currently `BootParams::scheduler_priority_ceiling=255` |
+| `configMINIMAL_STACK_SIZE` | `CONFIG_MIN_STACK_SIZE` | Not enforced; add minimum for task creation |
+| `configMAX_TASK_NAME_LEN` | `CONFIG_TASK_NAME_LEN` | Task names not yet length-limited; add with config |
+| `configUSE_16_BIT_TICKS` | _(not needed)_ | Native 64-bit tick count; 16-bit not relevant |
+| `configIDLE_SHOULD_YIELD` | `CONFIG_IDLE_YIELD` | Idle task currently busy-waits; could yield to lower power |
+| `configUSE_TASK_NOTIFICATIONS` | `CONFIG_INCLUDE_SYS_NOTIFY` | Gate the notify/wait syscalls |
+| `configUSE_MUTEXES` | `CONFIG_INCLUDE_MUTEX` | Already present; add compile-time toggle |
+| `configUSE_RECURSIVE_MUTEXES` | `CONFIG_INCLUDE_RECURSIVE_MUTEX` | Not yet implemented; gate when added |
+| `configUSE_COUNTING_SEMAPHORES` | `CONFIG_INCLUDE_SEMAPHORE` | Already present; add compile-time toggle |
+| `configQUEUE_REGISTRY_SIZE` | `CONFIG_QUEUE_REGISTRY_SIZE` | Debug registry for queue monitoring |
+| `configUSE_QUEUE_SETS` | `CONFIG_INCLUDE_QUEUE_SET` | Not yet implemented |
+| `configUSE_TIME_SLICING` | `CONFIG_TIME_SLICING` | Currently always preemptive; could add round-robin mode |
+| `configNUM_THREAD_LOCAL_STORAGE_POINTERS` | `CONFIG_TLS_POINTERS` | TLS not yet supported; add when implementing |
+| `configSTACK_DEPTH_TYPE` | `CONFIG_STACK_DEPTH_TYPE` | Use `size_t`; could be `uint16_t` for small-footprint |
+| `configHEAP_CLEAR_MEMORY_ON_FREE` | `CONFIG_HEAP_CLEAR_ON_FREE` | Security: zero freed memory before returning to pool |
+| `configSUPPORT_STATIC_ALLOCATION` | `CONFIG_STATIC_ALLOC` | Safety-critical: fixed pools, no runtime heap |
+| `configSUPPORT_DYNAMIC_ALLOCATION` | `CONFIG_DYNAMIC_ALLOC` | Toggle kernel heap (`new`/`delete`/`kmalloc`) |
+| `configTOTAL_HEAP_SIZE` | `CONFIG_HEAP_TOTAL_SIZE` | Sum of all MemPool block totals (~254 KiB currently) |
+| `configAPPLICATION_ALLOCATED_HEAP` | `CONFIG_APP_HEAP` | User-provided heap region (vs. kernel-internal) |
+| `configSTACK_ALLOCATION_FROM_SEPARATE_HEAP` | `CONFIG_SEPARATE_STACK_HEAP` | Dedicated page region for kernel stacks |
+| `configUSE_IDLE_HOOK` | `CONFIG_IDLE_HOOK` | Callback invoked each idle iteration |
+| `configUSE_TICK_HOOK` | `CONFIG_TICK_HOOK` | Callback invoked on each timer tick |
+| `configCHECK_FOR_STACK_OVERFLOW` | `CONFIG_STACK_CHECK` | Guard-page or canary-based overflow detection |
+| `configUSE_MALLOC_FAILED_HOOK` | `CONFIG_OOM_HOOK` | Callback on kernel allocation failure |
+| `configUSE_DAEMON_TASK_STARTUP_HOOK` | `CONFIG_INIT_HOOK` | Callback after daemon initialization |
+| `configGENERATE_RUN_TIME_STATS` | `CONFIG_SCHED_STATS` | Per-task CPU usage counters (`/proc/sched` in v0.3.2) |
+| `configUSE_TRACE_FACILITY` | `CONFIG_TRACE` | Instrumentation trace buffer for debug |
+| `configUSE_STATS_FORMATTING_FUNCTIONS` | `CONFIG_STATS_FORMAT` | Human-readable stats output (shell `tasks` command) |
+| `configUSE_TIMERS` | `CONFIG_INCLUDE_TIMERFD` | Software timer subsystem (`timerfd` or `/dev/timer`) |
+| `configTIMER_TASK_PRIORITY` | `CONFIG_TIMER_TASK_PRIO` | Priority of internal timer management task |
+| `configTIMER_TASK_STACK_DEPTH` | `CONFIG_TIMER_TASK_STACK` | Stack size for timer task |
+| `configASSERT` | `CONFIG_ASSERT` | Custom assertion macro (replace `JARVIS_ASSERT`) |
+| `configENABLE_FPU` | `CONFIG_HAS_FPU` | FPU context switch (FXSAVE/FXRSTOR) — v0.2.16 |
+| `configENABLE_MPU` | `CONFIG_HAS_MPU` | Memory protection regions (future, not x86-64 native) |
+| `configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY` | `CONFIG_RESTRICT_SYSCALLS` | Limit syscall availability per ring level |
+| `INCLUDE_vTaskPrioritySet` | `CONFIG_INCLUDE_SYS_SETPRIO` | Syscall gating for code size |
+| `INCLUDE_vTaskDelete` | `CONFIG_INCLUDE_SYS_EXIT` | Syscall gating |
+| `INCLUDE_vTaskSuspend` | `CONFIG_INCLUDE_SYS_SUSPEND` | Syscall gating |
+| `INCLUDE_vTaskDelay` | `CONFIG_INCLUDE_SYS_NANOSLEEP` | Syscall gating |
+| `INCLUDE_xTaskGetCurrentTaskHandle` | `CONFIG_INCLUDE_SYS_GETPID` | Syscall gating |
+| `INCLUDE_uxTaskGetStackHighWaterMark` | `CONFIG_INCLUDE_SYS_STACK_INFO` | Syscall gating |
+
 ---
+
 
 ## Phase 4: Hard Real-Time (0.3.x)
 
