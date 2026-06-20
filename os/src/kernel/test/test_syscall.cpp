@@ -578,6 +578,13 @@ JARVIS_TEST(syscall_rmdir_nonempty_fails) {
                           reinterpret_cast<uint64_t>(parent), 0, 0, 0, nullptr);
     JARVIS_ASSERT(static_cast<int64_t>(ret) < 0);
 
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(child), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::RMDIR),
+                          reinterpret_cast<uint64_t>(parent), 0, 0, 0, nullptr);
+    JARVIS_ASSERT_EQ(0ULL, ret);
+
     Scheduler::set_current(*original);
     Scheduler::remove_task(*test_task);
     test_task->cleanup();

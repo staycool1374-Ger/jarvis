@@ -45,6 +45,9 @@ JARVIS_TEST(tmpfs_mkdir_ls) {
     }
     JARVIS_ASSERT(found);
 
+    ret = vfs::unlink("/tmp_mkdir_test/subdir");
+    JARVIS_ASSERT_EQ(0, ret);
+
     JARVIS_TEST_PASS();
 }
 
@@ -79,6 +82,9 @@ JARVIS_TEST(tmpfs_create_file) {
     JARVIS_ASSERT_EQ(0, ret);
     JARVIS_ASSERT_EQ(len, st.st_size);
     JARVIS_ASSERT(st.st_mode & S_IFREG);
+
+    ret = vfs::unlink("/tmp_file_test/test.txt");
+    JARVIS_ASSERT_EQ(0, ret);
 
     JARVIS_TEST_PASS();
 }
@@ -130,6 +136,11 @@ JARVIS_TEST(tmpfs_nonempty_dir_unlink_fails) {
 
     ret = vfs::unlink("/tmp_nonempty_test/parent");
     JARVIS_ASSERT_EQ(VFS_INVALID, ret);
+
+    ret = vfs::unlink("/tmp_nonempty_test/parent/child");
+    JARVIS_ASSERT_EQ(0, ret);
+    ret = vfs::unlink("/tmp_nonempty_test/parent");
+    JARVIS_ASSERT_EQ(0, ret);
 
     JARVIS_TEST_PASS();
 }

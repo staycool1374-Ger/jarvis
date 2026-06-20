@@ -318,7 +318,7 @@ test-qemu: debug
 	    printf '  %-7s %s\n' 'TEST' 'Running test suite in QEMU…'; \
 	    expect -c ' \
 	        set timeout 60; \
-	        spawn qemu-system-x86_64 $(QEMU_FLAGS) -no-reboot -device isa-debug-exit; \
+	        spawn qemu-system-x86_64 $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
 	        expect { \
 	            "Failed: 0" { \
 	                send_user "\nAll tests passed (Failed: 0)\n"; \

@@ -1,5 +1,6 @@
 #include <test.hpp>
 #include <logger.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -7,8 +8,11 @@ using namespace kernel;
 // Testidea: Verifies exit code 0 shuts down QEMU cleanly via port 0x501.
 // Input: Call qemu_debug_exit(0)
 // Expect: QEMU exits with code 0
-// Depends: kernel::debug::qemu_exit()
+// Depends: kernel::arch::qemu_debug_exit()
+// NOTE: This test must run LAST — it terminates QEMU.  Run the "debug"
+// class in isolation or use auto-shutdown (which calls exit after all tests).
 JARVIS_TEST(qemu_debug_exit_success) {
+    arch::qemu_debug_exit(0);
     JARVIS_TEST_PASS();
 }
 
@@ -17,8 +21,11 @@ JARVIS_TEST(qemu_debug_exit_success) {
 // harness.
 // Input: Call qemu_debug_exit(42)
 // Expect: QEMU exits with code 42
-// Depends: kernel::debug::qemu_exit()
+// Depends: kernel::arch::qemu_debug_exit()
+// NOTE: Same as qemu_debug_exit_success but with non-zero code.  Run this
+// test in isolation to verify the exit code propagation.
 JARVIS_TEST(qemu_debug_exit_failure) {
+    arch::qemu_debug_exit(42);
     JARVIS_TEST_PASS();
 }
 

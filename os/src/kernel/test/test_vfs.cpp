@@ -195,6 +195,9 @@ JARVIS_TEST(vfs_mkdir_valid) {
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
 
+    ret = vfs::unlink("/tmp/VFS_MKDIR_TEST");
+    JARVIS_ASSERT_EQ(0, ret);
+
     JARVIS_TEST_PASS();
 }
 
@@ -265,6 +268,11 @@ JARVIS_TEST(vfs_unlink_nonempty_dir_fails) {
 
     ret = vfs::unlink("/tmp/NONEMPTYDIR");
     JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
+
+    ret = vfs::unlink("/tmp/NONEMPTYDIR/CHILD");
+    JARVIS_ASSERT_EQ(0, ret);
+    ret = vfs::unlink("/tmp/NONEMPTYDIR");
+    JARVIS_ASSERT_EQ(0, ret);
 
     JARVIS_TEST_PASS();
 }

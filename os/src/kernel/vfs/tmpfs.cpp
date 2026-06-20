@@ -133,7 +133,7 @@ static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
         tmpfs_readdir,
         tmpfs_lookup,
         tmpfs_mkdir,
-        nullptr,         // unlink — handled at parent level
+        tmpfs_unlink,
         tmpfs_create,
     };
 
@@ -163,7 +163,12 @@ static int tmpfs_unlink(Vnode& self, const char* name) {
             else self.private_data = e->next;
             if (e->vnode->private_data && !(e->vnode->mode & S_IFDIR)) {
                 uint64_t phys = reinterpret_cast<uint64_t>(e->vnode->private_data);
-                if (phys) PMM::free_page(phys);
+                if (phys) {
+                    // tmpfs_file_write always allocates 16 contiguous pages
+                    // (64 KiB max per file).  Free all 16.
+                    for (uint64_t i = 0; i < 16; ++i)
+                        PMM::free_page(phys + i * arch::PAGE_SIZE);
+                }
             }
             MemPool::free(e->vnode);
             MemPool::free(e);
