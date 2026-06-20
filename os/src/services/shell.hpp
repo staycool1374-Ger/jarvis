@@ -184,6 +184,8 @@ private:
     static void cmd_ifconfig(int argc, const char** argv);
     /// @brief Built-in: ping a host.
     static void cmd_ping(int argc, const char** argv);
+    /// @brief Built-in: page through a file.
+    static void cmd_less(int argc, const char** argv);
 };
 
 } // namespace service

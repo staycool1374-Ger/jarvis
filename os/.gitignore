@@ -1,4 +1,6 @@
 build/
+clion/build/
+clion/.idea/
 *.o
 *.d
 *.gcno

@@ -116,6 +116,7 @@ void Shell::init() {
     register_command("ls",      "List directory contents",           cmd_ls);
     register_command("ifconfig","Show/configure network interface",  cmd_ifconfig);
     register_command("ping",    "Send ICMP echo requests",           cmd_ping);
+    register_command("less",    "Page through a text file",          cmd_less);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -1980,6 +1981,71 @@ void Shell::cmd_ping(int argc, const char** argv) {
     Terminal::write("% packet loss, time ");
     write_dec(elapsed);
     Terminal::write(" ms\n");
+}
+
+void Shell::cmd_less(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: less <path>\n");
+        return;
+    }
+
+    auto* vn = kernel::vfs::resolve(argv[1]);
+    if (!vn || !(vn->mode & kernel::vfs::S_IFREG)) {
+        Terminal::set_fg(0xFF4444);
+        Terminal::write("less: ");
+        Terminal::write(argv[1]);
+        Terminal::write(": No such file\n");
+        Terminal::set_fg(0xC0C0C0);
+        return;
+    }
+    if (!vn->ops->read) return;
+
+    static constexpr int LINES_PER_PAGE = 24;
+    static constexpr int BUF_SIZE = 512;
+
+    uint8_t buf[BUF_SIZE];
+    uint64_t offset = 0;
+    int line_count = 0;
+
+    for (;;) {
+        int64_t nread = vn->ops->read(*vn, buf, BUF_SIZE, offset);
+        if (nread <= 0) break;
+        offset += static_cast<uint64_t>(nread);
+
+        for (int64_t i = 0; i < nread; ++i) {
+            Terminal::putchar(static_cast<char>(buf[i]));
+
+            if (buf[i] == '\n') {
+                ++line_count;
+                if (line_count >= LINES_PER_PAGE) {
+                    Terminal::write("--More--");
+                    char c = 0;
+                    for (;;) {
+                        bool got = arch::Keyboard::getchar(c);
+                        if (got && (c == 'q' || c == 'Q')) {
+                            Terminal::putchar('\n');
+                            return;
+                        }
+                        if (got) break;
+                        arch::pause();
+                    }
+                    Terminal::putchar('\n');
+                    line_count = 0;
+                }
+            }
+        }
+    }
+
+    char c = 0;
+    for (;;) {
+        bool got = arch::Keyboard::getchar(c);
+        if (got && (c == 'q' || c == 'Q')) {
+            Terminal::putchar('\n');
+            return;
+        }
+        if (got) break;
+        arch::pause();
+    }
 }
 
 } // namespace service
