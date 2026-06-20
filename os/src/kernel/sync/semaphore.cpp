@@ -1,6 +1,6 @@
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -13,14 +13,14 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
 }
 
 bool Semaphore::add_waiter(TaskControlBlock* task) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ >= MAX_WAITERS) return false;
     waiters_[waiter_count_++] = task;
     return true;
 }
 
 void Semaphore::wake_one() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ == 0) return;
 
     if (waiter_count_ > 1) {
@@ -39,7 +39,7 @@ void Semaphore::wake_one() {
 }
 
 void Semaphore::wait() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
     if (!task) return;
 
@@ -56,7 +56,7 @@ void Semaphore::wait() {
 }
 
 bool Semaphore::try_wait() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (count_ > 0) {
         --count_;
         return true;
@@ -65,7 +65,7 @@ bool Semaphore::try_wait() {
 }
 
 void Semaphore::post() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {
         wake_one();
     } else if (count_ < max_count_) {

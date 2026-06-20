@@ -1,6 +1,6 @@
 #include <kernel/sync/mutex.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -14,14 +14,14 @@ void Mutex::init() {
 }
 
 bool Mutex::add_waiter(TaskControlBlock& task) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_++] = &task;
     return true;
 }
 
 void Mutex::wake_one() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (wait_count_ == 0) return;
 
     size_t best = 0;
@@ -35,7 +35,7 @@ void Mutex::wake_one() {
 }
 
 void Mutex::inherit_priority(TaskControlBlock& waiter) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (!owner_) return;
     if (waiter.priority > owner_->priority) {
         holder_priority_ = owner_->priority;
@@ -44,14 +44,14 @@ void Mutex::inherit_priority(TaskControlBlock& waiter) {
 }
 
 void Mutex::restore_priority() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (!owner_ || holder_priority_ == 0) return;
     owner_->priority = holder_priority_;
     holder_priority_ = 0;
 }
 
 void Mutex::lock() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
     if (!task) return;
 
@@ -76,7 +76,7 @@ void Mutex::lock() {
 }
 
 bool Mutex::try_lock() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
     if (!task) return false;
 
@@ -95,7 +95,7 @@ bool Mutex::try_lock() {
 }
 
 void Mutex::unlock() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
     if (!task || owner_ != task) return;
 

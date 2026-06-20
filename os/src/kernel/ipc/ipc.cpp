@@ -1,6 +1,7 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/io.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -19,6 +20,7 @@ void MessageQueue::init() {
 }
 
 bool MessageQueue::push(const Message& msg) {
+    SpinLockGuard<sync::SpinLock> guard(lock_);
     if (is_full()) return false;
 
     msgs[tail] = msg;
@@ -29,6 +31,7 @@ bool MessageQueue::push(const Message& msg) {
 }
 
 bool MessageQueue::pop(Message& out) {
+    SpinLockGuard<sync::SpinLock> guard(lock_);
     if (is_empty()) return false;
 
     // Find message with highest priority (lowest priority number).
@@ -164,7 +167,9 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
         was_blocked = true;
         Scheduler::reschedule();
         if (cur->page_table_) {
-            asm volatile("sti; hlt; cli" ::: "memory");
+            arch::sti();
+            arch::hlt();
+            arch::cli();
         }
     }
     if (was_blocked) cur->state = TaskState::READY;

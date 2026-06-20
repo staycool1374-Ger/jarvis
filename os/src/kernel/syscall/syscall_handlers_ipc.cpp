@@ -5,6 +5,7 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/memory/checked_ptr.hpp>
+#include <kernel/arch/io.hpp>
 
 namespace kernel {
 
@@ -43,7 +44,9 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
         was_blocked = true;
         Scheduler::reschedule();
         if (cur->page_table_) {
-            asm volatile("sti; hlt; cli" ::: "memory");
+            arch::sti();
+            arch::hlt();
+            arch::cli();
         }
     }
     if (was_blocked) cur->state = TaskState::READY;

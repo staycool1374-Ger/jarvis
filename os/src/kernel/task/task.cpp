@@ -288,7 +288,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->buf_list_head = -1;
 
     // Save parent's FPU state if it's currently in the registers
-    if (fpu_owner == parent) {
+    if (__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) == parent) {
         arch::fxsave(parent->fpu_state);
     }
     // Copy FPU state to child

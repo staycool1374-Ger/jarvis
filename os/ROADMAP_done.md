@@ -65,7 +65,7 @@
 - Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
 - Release tag: v0.2.16
 
-## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
 ### v0.12.14 — System Services
 - tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount

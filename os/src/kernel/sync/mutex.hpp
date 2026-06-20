@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 namespace sync {
@@ -27,6 +28,7 @@ public:
     TaskControlBlock* owner() const { return owner_; }
 
 private:
+    SpinLock lock_;
     TaskControlBlock* owner_;
     uint64_t holder_priority_;
     uint64_t lock_count_;

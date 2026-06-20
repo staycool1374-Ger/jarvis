@@ -1,13 +1,15 @@
 /// @file keyboard.hpp
-/// @brief PS/2 keyboard driver with ring buffer and modifier tracking.
+/// @brief PS/2 keyboard driver with lock-free SPSC ring buffer and modifier tracking.
 
 #pragma once
 
 #include <types.hpp>
+#include <kernel/sync/spsc_ring.hpp>
 
 namespace arch {
 
 /// @brief PS/2 keyboard driver with interrupt-driven character ring buffer.
+/// @note Uses a lock-free SPSC ring for ISR-safe character delivery.
 /// @note Tracks Shift, Ctrl, Alt, and Caps Lock modifier states.
 class Keyboard {
 public:
@@ -45,9 +47,7 @@ private:
     static constexpr uint16_t DATA_PORT = 0x60;
     static constexpr uint16_t STATUS_PORT = 0x64;
 
-    static volatile char ring_[RING_SIZE];
-    static volatile size_t head_;
-    static volatile size_t tail_;
+    static SPSCRing<char, RING_SIZE> ring_;
 
     static bool shift_;
     static bool ctrl_;

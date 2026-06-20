@@ -722,7 +722,7 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         arch::write_cr0(cr0);
 
         // Save previous owner's FPU state
-        if (fpu_owner && fpu_owner != current) {
+        if (__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) && fpu_owner != current) {
             arch::fxsave(fpu_owner->fpu_state);
         }
 
@@ -736,7 +736,7 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
             current->fpu_used = true;
         }
 
-        fpu_owner = current;
+        __atomic_store_n(&fpu_owner, current, __ATOMIC_RELEASE);
         return;
     }
 

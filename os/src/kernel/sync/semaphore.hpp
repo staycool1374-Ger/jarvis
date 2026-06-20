@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 namespace sync {
@@ -31,6 +32,7 @@ public:
     uint64_t value() const { return count_; }
 
 private:
+    SpinLock lock_;
     uint64_t count_;
     uint64_t max_count_;
     TaskControlBlock* waiters_[MAX_WAITERS];

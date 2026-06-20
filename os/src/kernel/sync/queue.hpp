@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 namespace sync {
@@ -40,6 +41,7 @@ public:
     size_t available() const { return count_; }
 
 private:
+    SpinLock lock_;
     QueueMessage msgs_[QUEUE_MAX_MSG_COUNT];
     size_t head_;
     size_t tail_;
