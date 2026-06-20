@@ -54,9 +54,9 @@ const char* Logger::level_ansi(LogLevel level) {
     switch (level) {
     case LogLevel::DEBUG: return "\033[90m";
     case LogLevel::INFO:  return "\033[37m";
-    case LogLevel::WARN:  return "\033[33m";
-    case LogLevel::ERROR: return "\033[31m";
-    case LogLevel::FATAL: return "\033[41;37m";
+    case LogLevel::WARN:  return "\033[1;33m";
+    case LogLevel::ERROR: return "\033[1;31m";
+    case LogLevel::FATAL: return "\033[1;41;37m";
     default:              return "\033[37m";
     }
 }

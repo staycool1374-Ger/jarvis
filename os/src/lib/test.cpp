@@ -138,7 +138,7 @@ void run_all() {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
             Registry::record_test(true);
         } else {
-            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
             Registry::record_test(false);
         }
     }
@@ -175,7 +175,7 @@ void run_safe() {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
             Registry::record_test(true);
         } else {
-            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
             Registry::record_test(false);
         }
     }
@@ -235,7 +235,7 @@ void run_filtered(uint8_t required_flags) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
             Registry::record_test(true);
         } else {
-            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
             Registry::record_test(false);
         }
 
@@ -323,7 +323,7 @@ void run_suite(const char* suite_name) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
             Registry::record_test(true);
         } else {
-            Logger::raw_write("\033[31m[FAIL]\033[0m\n");
+            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
             Registry::record_test(false);
         }
 
@@ -375,7 +375,7 @@ void print_report() {
 
     Logger::raw_write("  Total:  "); write_num(tt); Logger::raw_write("\n");
     Logger::raw_write("  Passed: \033[32m"); write_num(tp); Logger::raw_write("\033[0m\n");
-    Logger::raw_write("  Failed: \033[31m"); write_num(tf); Logger::raw_write("\033[0m\n");
+    Logger::raw_write("  Failed: \033[1;31m"); write_num(tf); Logger::raw_write("\033[0m\n");
     Logger::raw_write("==============================\n\n");
 }
 
