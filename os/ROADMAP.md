@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.17 — Kernel Synchronization & Real-Time Guarantees: SpinLock primitive, volatile→atomic migration, lock-free SPSC ring buffer, remove global IrqGuard dependency from sync primitives, scheduler, and VFS.
+**Target Focus:** v0.2.18 — Observability & Portability: Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration, multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit, PCI bus enumeration / device tree debug output.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -21,17 +21,6 @@ When implementing or refactoring code paths for this phase, execute the followin
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
-
-### 0.2.17 — Kernel Synchronization & Real-Time Guarantees
-- [x] **Phase 1: SpinLock primitive + RAII guards** — `src/kernel/sync/spinlock.hpp` + `SpinLockGuard<Lock>` template. Preemption-aware CAS spinlock with `arch::pause()` yield and priority-gated backoff. `[[nodiscard]]`, non-copyable, non-movable. (Effort: M — 150 LOC new)
-- [x] **Phase 2: Migrate sync primitives to SpinLock** — Replace `IrqGuard` inside Mutex, Semaphore, Queue, Notify, EventGroup with per-object `SpinLock lock_`. Interrupts stay enabled → timer tick can preempt. (Effort: M — 80 LOC changed)
-- [x] **Phase 3a: Migrate Scheduler to SpinLock** — Replace `IrqGuard` in `add_task()`, `remove_task()`, `reschedule()` with a static `Scheduler::scheduler_lock_`. (Effort: M — 40 LOC changed)
-- [x] **Phase 3b: Volatile → Atomic context-switch globals** — Migrate `scheduler_save_rsp_to`, `scheduler_load_rsp_from`, `scheduler_load_cr3_from`, `scheduler_next_task_id`, `fpu_owner` from `volatile` to `std::atomic` with explicit `memory_order_acquire`/`release`. Create C bridge functions for `isr_stubs.asm` to call `__atomic_load_n`/`__atomic_store_n`. (Effort: H — 80 LOC changed, 1 new file)
-- [x] **Phase 4: Migrate VFS (tmpfs) to sleepable per-filesystem lock** — Replace `IrqGuard` in tmpfs with a sleepable `sync::Mutex` (existing priority-inheritance mutex, without IrqGuard). Page allocation in write path may block; sleepable lock allows proper rescheduling. (Effort: M — 50 LOC changed)
-- [x] **Phase 5: Lock-free SPSC ring buffer for ISR→task handoff** — `src/kernel/sync/spsc_ring.hpp`: template `SPSCRing<T, N>` (power-of-2, cache-line padded). Single producer (ISR) `try_push` with `release` store. Single consumer (task) `try_pop` with `acquire` load. Migrate keyboard ISR from volatile ring buffer to SPSC. (Effort: H — 250 LOC new, 3 files)
-- [x] **Phase 6: Lock-free IPC receive/send** — Replace `sti; hlt; cli` asm blocks in `sys_receive()` and `send_sync()` with structured SpinLock-protected queue check + explicit BLOCKED state + reschedule. (Effort: H — 200 LOC changed, 3 files)
-- [x] **Phase 7: Remaining IrqGuard sites** — Replace in `sys_brk()` and `shell::cmd_selftest()` with appropriate fine-grained locks. (Effort: S — 20 LOC changed)
-- [x] **Phase 8: Validation & benchmarks** — `test_preemption_under_syscall.cpp`, `test_spinlock_stress.cpp`, `test_atomic_context_switch.cpp`, `bench_syscall_latency.cpp`, `bench_irq_latency.cpp`. Verify high-pri periodic task meets deadline under shell tmpfs load. (Effort: M — 150 LOC new)
 
 ### 0.2.18 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration

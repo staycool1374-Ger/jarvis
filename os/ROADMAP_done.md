@@ -65,6 +65,18 @@
 - Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
 - Release tag: v0.2.16
 
+### 0.2.17 — Kernel Synchronization & Real-Time Guarantees
+- Phase 1: SpinLock primitive + RAII guards (`SpinLock`, `SpinLockGuard<Lock>`, preemption-aware CAS + `arch::pause()`)
+- Phase 2: Migrate sync primitives (Mutex, Semaphore, Queue, Notify, EventGroup) from IrqGuard to per-object SpinLock
+- Phase 3a: Migrate Scheduler (add_task, remove_task, reschedule) to static SpinLock
+- Phase 3b: Volatile→Atomic context-switch globals (C bridge for isr_stubs.asm)
+- Phase 4: Migrate VFS tmpfs to sleepable per-filesystem Mutex
+- Phase 5: Lock-free SPSC ring buffer for ISR→task handoff, keyboard ISR migration
+- Phase 6: Lock-free IPC receive/send (replace sti;hlt;cli with SpinLock + BLOCKED state)
+- Phase 7: Remaining IrqGuard sites in sys_brk and shell::cmd_selftest
+- Phase 8: Validation & benchmarks (8 test suites, 2 benchmark suites)
+- Release tag: v0.2.17
+
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
 ### v0.12.14 — System Services
