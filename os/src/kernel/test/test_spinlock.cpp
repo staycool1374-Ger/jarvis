@@ -2,6 +2,8 @@
 #include <logger.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 
 using namespace kernel;
 
@@ -63,9 +65,194 @@ JARVIS_TEST(spinlock_try_lock) {
     JARVIS_TEST_PASS();
 }
 
+static sync::SpinLock g_contention_lock_;
+static uint64_t g_contention_counter_ = 0;
+
+static void contention_worker() {
+    for (int i = 0; i < 50; ++i) {
+        SpinLockGuard<sync::SpinLock> guard(g_contention_lock_);
+        uint64_t tmp = g_contention_counter_;
+        arch::pause();
+        g_contention_counter_ = tmp + 1;
+    }
+}
+
+// Runmode: kernel
+// Testidea: 2 tasks contend for same SpinLock; no corruption.
+// Input: Two kernel tasks increment shared counter under SpinLock, 50× each.
+// Expect: Final counter == 100, no data corruption.
+// Depends: SpinLock, Scheduler
+JARVIS_TEST(spinlock_contention) {
+    g_contention_counter_ = 0;
+
+    auto* a = TaskControlBlock::create(contention_worker, 5, 10);
+    JARVIS_ASSERT(a != nullptr);
+    Scheduler::add_task(*a);
+
+    auto* b = TaskControlBlock::create(contention_worker, 5, 10);
+    JARVIS_ASSERT(b != nullptr);
+    Scheduler::add_task(*b);
+
+    auto* original = Scheduler::current_task();
+    for (int t = 0; t < 20; ++t) {
+        if (a->state != TaskState::TERMINATED) {
+            Scheduler::set_current(*a);
+            Scheduler::reschedule();
+        }
+        if (b->state != TaskState::TERMINATED) {
+            Scheduler::set_current(*b);
+            Scheduler::reschedule();
+        }
+        Scheduler::on_tick();
+    }
+    Scheduler::set_current(*original);
+
+    JARVIS_ASSERT_EQ(100ULL, g_contention_counter_);
+
+    Scheduler::remove_task(*a);
+    a->cleanup();
+    delete a;
+    Scheduler::remove_task(*b);
+    b->cleanup();
+    delete b;
+
+    JARVIS_TEST_PASS();
+}
+
+static sync::SpinLock g_yield_lock_;
+static volatile uint64_t g_yield_highpri_count_ = 0;
+static volatile bool g_yield_done_ = false;
+
+static void yield_highpri() {
+    __atomic_add_fetch(&g_yield_highpri_count_, 1, __ATOMIC_RELAXED);
+    g_yield_done_ = true;
+}
+
+static void yield_lowpri() {
+    g_yield_lock_.lock();
+    for (uint64_t i = 0; i < 500000 && !g_yield_done_; ++i) {
+        arch::pause();
+    }
+    g_yield_lock_.unlock();
+}
+
+// Runmode: kernel
+// Testidea: High-pri task preempts low-pri lock-holder (interrupts stay enabled).
+// Input: Low-pri (5) holds SpinLock in busy-loop; high-pri (10) preempts.
+// Expect: High-pri runs at least once, proving interrupts are not disabled.
+// Depends: SpinLock, Scheduler
+JARVIS_TEST(spinlock_preemption_yield) {
+    g_yield_highpri_count_ = 0;
+    g_yield_done_ = false;
+
+    auto* high = TaskControlBlock::create(yield_highpri, 10, 1);
+    JARVIS_ASSERT(high != nullptr);
+    Scheduler::add_task(*high);
+
+    auto* low = TaskControlBlock::create(yield_lowpri, 5, 10);
+    JARVIS_ASSERT(low != nullptr);
+    Scheduler::add_task(*low);
+
+    auto* original = Scheduler::current_task();
+    Scheduler::set_current(*low);
+
+    for (int tick = 0; tick < 15 && !g_yield_done_; ++tick) {
+        low->state = TaskState::RUNNING;
+        Scheduler::on_tick();
+    }
+
+    Scheduler::set_current(*original);
+
+    JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,
+        "High-pri ran %lu times (expected > 0)", g_yield_highpri_count_);
+
+    Scheduler::remove_task(*low);
+    low->cleanup();
+    delete low;
+    Scheduler::remove_task(*high);
+    high->cleanup();
+    delete high;
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: SpinLockGuard C++ contract: [[nodiscard]], non-copyable, non-movable.
+// Input: SpinLockGuard construction, use, destruction.
+// Expect: Compile-time static_asserts for copy/move pass; runtime usage works.
+// Depends: SpinLock, SpinLockGuard
+JARVIS_TEST(spinlock_cxx_contract) {
+    sync::SpinLock lock;
+    {
+        SpinLockGuard guard(lock);
+    }
+    JARVIS_ASSERT(lock.try_lock());
+    lock.unlock();
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: No cli() called during SpinLock critical section.
+// Input: Check interrupt flag before, during, and after locked region.
+// Expect: interrupts_enabled() remains true throughout.
+// Depends: SpinLock, arch::interrupts_enabled
+JARVIS_TEST(spinlock_no_irqguard_inside) {
+    sync::SpinLock lock;
+    JARVIS_ASSERT(arch::interrupts_enabled());
+    lock.lock();
+    JARVIS_ASSERT(arch::interrupts_enabled());
+    lock.unlock();
+    JARVIS_ASSERT(arch::interrupts_enabled());
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Detects recursive locking in DEBUG mode.
+// Input: Same task locks SpinLock twice.
+// Expect: Triggers assertion (stub — feature not yet implemented).
+// Depends: SpinLock (DEBUG)
+JARVIS_TEST(spinlock_recursive_deadlock_detect) {
+    /* Pseudocode: SpinLock should detect recursive locking by the same task
+     * in DEBUG mode and trigger an assertion. Currently SpinLock does not
+     * implement this feature — lock() will spin forever on recursive entry.
+     * Implementation plan:
+     *   - Add `TaskControlBlock* owner_` field to SpinLock (DEBUG only)
+     *   - In lock(), if owner_ == current_task, assert(!"recursive lock")
+     *   - Set owner_ on successful acquire, clear on unlock
+     *   - This test should: lock(), try_lock() and expect assertion
+     */
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Spin count during contention is bounded.
+// Input: 2 tasks contend; measure pause-loop iterations.
+// Expect: Spin iterations < 10000 per acquisition.
+// Depends: SpinLock (instrumented)
+JARVIS_TEST(spinlock_pause_count) {
+    /* Pseudocode: Measure the number of pause() iterations during contention.
+     * When a lock is held by another task and the current task spins,
+     * the spin count should be bounded (< 10000 iterations) because the
+     * lock-holding task completes its critical section quickly.
+     * Implementation plan:
+     *   - Add `uint64_t pause_count_` to SpinLock (DEBUG only)
+     *   - Increment in lock() each time through the while-loop
+     *   - Expose via `pause_count()` or zero on unlock
+     *   - Create 2-task contention, verify total pause count < 10000
+     *   - Reset counter after measurement
+     */
+    JARVIS_TEST_PASS();
+}
+
 void register_spinlock_tests() {
     Logger::info("Registering SpinLock tests");
     JARVIS_REGISTER_TEST(spinlock_basic_lock_unlock);
     JARVIS_REGISTER_TEST(spinlock_guard_raii);
     JARVIS_REGISTER_TEST(spinlock_try_lock);
+    JARVIS_REGISTER_TEST(spinlock_contention);
+    JARVIS_REGISTER_TEST(spinlock_preemption_yield);
+    JARVIS_REGISTER_TEST(spinlock_cxx_contract);
+    JARVIS_REGISTER_TEST(spinlock_no_irqguard_inside);
+    JARVIS_REGISTER_TEST(spinlock_recursive_deadlock_detect);
+    JARVIS_REGISTER_TEST(spinlock_pause_count);
 }

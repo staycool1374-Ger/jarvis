@@ -97,6 +97,8 @@ void register_fpu_clone_tests();
 void register_fpu_multi_tests();
 void register_fpu_xmm_all_tests();
 void register_random_vfs_write_tests();
+void register_ipc_lock_free_tests();
+void register_irqguard_audit_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -183,10 +185,12 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_fat32_tests();
         register_vfs_fat32_tests();
         register_ipc_blocking_tests();
+        register_ipc_lock_free_tests();
         register_vfsd_authorization_tests();
         register_textutils_tests();
         register_shell_interaction_tests();
         register_irq_guard_tests();
+        register_irqguard_audit_tests();
         register_shell_redirect_tests();
         register_klog_tests();
         register_hal_tests();
@@ -235,6 +239,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"ipc", []() {
         register_ipc_tests();
         register_ipc_blocking_tests();
+        register_ipc_lock_free_tests();
         register_ipc_robustness_tests();
         register_pipe_tests();
     }},

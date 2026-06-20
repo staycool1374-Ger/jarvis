@@ -17,6 +17,7 @@ void MessageQueue::init() {
     prio_bitmap = 0;
     blocked_senders_head = nullptr;
     blocked_senders_tail = nullptr;
+    lock_.unlock();  // Ensure SpinLock is unlocked (constructor not called on MemPool alloc)
 }
 
 bool MessageQueue::push(const Message& msg) {
