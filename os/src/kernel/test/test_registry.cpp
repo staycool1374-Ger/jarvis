@@ -84,6 +84,7 @@ void register_random_tests();
 void register_random_vfs_tests();
 void register_random_syscall_tests();
 void register_random_seed_tests();
+void register_fpu_tests();
 void register_fpu_sse_tests();
 
 // ---- Test class table ----
