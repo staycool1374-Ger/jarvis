@@ -154,11 +154,45 @@ All test files compile successfully with `g++ -target x86_64-elf -std=c++20 -Wal
 - ✅ test_locking_stress.cpp
 - ✅ test_scheduler.cpp
 - ✅ test_buffer_pool.cpp
+- ✅ test_random_vfs.cpp
+- ✅ test_random_syscall.cpp
+- ✅ test_random_seed.cpp
+- ✅ test_fpu_sse.cpp
+- ✅ test_fpu_clone.cpp
+- ✅ test_fpu_multi.cpp
+- ✅ test_fpu_xmm_all.cpp
+- ✅ test_random_vfs_write.cpp
 - ✅ test_registry.cpp
+
+### 10. test_fpu_clone.cpp (1 test)
+- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_clone.cpp`
+- **Tests**:
+  - `fpu_clone_copies_state` — parent uses x87, clone copies FXSAVE tag word to child
+- **Status**: ✅ Real logic
+
+### 11. test_fpu_multi.cpp (1 test)
+- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_multi.cpp`
+- **Tests**:
+  - `fpu_multi_context_switch` — 3-way lazy FPU switch (pi, euler, sqrt2) across three tasks
+- **Status**: ✅ Real logic
+
+### 12. test_fpu_xmm_all.cpp (1 test)
+- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_xmm_all.cpp`
+- **Tests**:
+  - `sse_xmm_all_registers` — 2-task lazy switch preserves all 16 XMM registers with unique patterns
+- **Status**: ✅ Real logic
+
+### 13. test_random_vfs_write.cpp (2 tests)
+- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_random_vfs_write.cpp`
+- **Tests**:
+  - `dev_random_write` — write 128 bytes to /dev/random returns 128
+  - `dev_random_write_zero` — write zero bytes returns 0
+- **Status**: ✅ Real logic
 
 ## ✅ Summary
 
 - **5 new TEST_CLASS-based test files** (24 test classes) covering IPC robustness, syscall fuzzing, starvation/deadlock, resource exhaustion, and microkernel transition readiness
 - **4 existing test files extended** with additional tests
-- **All 14 test files compile cleanly**
+- **4 new v0.2.16 test files** (5 tests): FPU clone, 3-way FPU switch, 16-XMM register switch, /dev/random write
+- **All test files compile cleanly**
 - **`test_registry.cpp`** updated with forward declarations and class group registrations for all new files

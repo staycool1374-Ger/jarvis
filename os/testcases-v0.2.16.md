@@ -26,6 +26,23 @@
 - `syscall_getrandom_invalid_flags` — non-zero flags returns -1
 
 ### SSE/XMM context switch — test_fpu_sse.cpp (new — 3 tests)
-- `sse_cpuid_detection` — CPUID leaf 1 EDX bit 25 (SSE) + leaf 1 ECX bit 0 (SSE2)
-- `sse_mxcsr_preserve` — LDMXCSR(0x1F80) → yield → read MXCSR, verify preserved
-- `sse_xmm_context_switch` — 2-task switch with MOVAPS/MOVUPS, verify XMM register content
+- `sse_cpuid_detection` — CPUID leaf 1 EDX bit 25 (SSE) + leaf 1 EDX bit 26 (SSE2)
+- `sse_mxcsr_context_switch` — 2-task lazy switch preserves MXCSR round-toward-zero
+- `sse_xmm_context_switch` — 2-task lazy switch preserves 128-bit XMM0 pattern
+
+### SSE/XMM all 16 registers — test_fpu_xmm_all.cpp (new — 1 test)
+- `sse_xmm_all_registers` — 2-task lazy switch preserves all 16 XMM registers (XMM0–XMM15) with unique 128-bit patterns
+
+### RNG seed/reseed — test_random_seed.cpp (new — 2 tests)
+- `random_fallback_independent` — CSPRNG output non-zero regardless of HW RNG availability
+- `random_multi_block` — ChaCha20 multi-block generation (4×64B) without all-zero blocks
+
+### FPU clone — test_fpu_clone.cpp (new — 1 test)
+- `fpu_clone_copies_state` — Cloning a task that owns the FPU copies FXSAVE state to child; child fpu_state tag word shows ST0 occupied
+
+### FPU 3-way context switch — test_fpu_multi.cpp (new — 1 test)
+- `fpu_multi_context_switch` — 3-way lazy FPU switch preserves distinct IEEE 754 values (pi, euler, sqrt2) across three tasks
+
+### /dev/random VFS write — test_random_vfs_write.cpp (new — 2 tests)
+- `dev_random_write` — Write 128 bytes to /dev/random returns 128 (no-op)
+- `dev_random_write_zero` — Write zero bytes to /dev/random returns 0
