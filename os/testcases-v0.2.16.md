@@ -26,6 +26,10 @@
 - `syscall_getrandom_invalid_flags` — non-zero flags returns -1
 
 ### SSE/XMM context switch — test_fpu_sse.cpp (new — 3 tests)
-- `sse_cpuid_detection` — CPUID leaf 1 EDX bit 25 (SSE) + leaf 1 ECX bit 0 (SSE2)
-- `sse_mxcsr_preserve` — LDMXCSR(0x1F80) → yield → read MXCSR, verify preserved
-- `sse_xmm_context_switch` — 2-task switch with MOVAPS/MOVUPS, verify XMM register content
+- `sse_cpuid_detection` — CPUID leaf 1 EDX bit 25 (SSE) + leaf 1 EDX bit 26 (SSE2)
+- `sse_mxcsr_context_switch` — 2-task lazy switch preserves MXCSR round-toward-zero
+- `sse_xmm_context_switch` — 2-task lazy switch preserves 128-bit XMM0 pattern
+
+### RNG seed/reseed — test_random_seed.cpp (new — 2 tests)
+- `random_fallback_independent` — CSPRNG output non-zero regardless of HW RNG availability
+- `random_multi_block` — ChaCha20 multi-block generation (4×64B) without all-zero blocks

@@ -81,9 +81,9 @@ void register_starvation_deadlock_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
-void register_fpu_tests();
 void register_random_vfs_tests();
 void register_random_syscall_tests();
+void register_random_seed_tests();
 void register_fpu_sse_tests();
 
 // ---- Test class table ----
@@ -183,6 +183,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_random_tests();
         register_random_vfs_tests();
         register_random_syscall_tests();
+        register_random_seed_tests();
         register_fpu_tests();
         register_fpu_sse_tests();
     }},
