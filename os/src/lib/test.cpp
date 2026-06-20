@@ -197,7 +197,7 @@ void run_safe() {
     print_report();
 }
 
-void run_filtered(uint8_t required_flags) {
+void run_filtered(uint8_t required_flags, bool use_isolation) {
     Registry::reset();
     size_t n = Registry::count();
     if (n == 0) {
@@ -210,8 +210,8 @@ void run_filtered(uint8_t required_flags) {
 
     // Take a snapshot of the entire kernel state before the first test so
     // we can restore it between individual tests (full isolation).
-    bool snapshot_ok = true;
-    if (n > 0) {
+    bool snapshot_ok = false;
+    if (use_isolation && n > 0) {
         snapshot_ok = kernel::test::snapshot_create();
         if (!snapshot_ok) {
             Logger::warn("Test snapshot creation failed — isolation disabled");
@@ -274,6 +274,10 @@ void run_filtered(uint8_t required_flags) {
         // (kernel-owned page table pages are not snapshot-saved, so they
         // contain test garbage after the last restore).
         kernel::test::reload_daemon_tasks();
+    } else {
+        // No snapshot isolation — still need to clean up test-created tasks,
+        // VFS state, and restart daemons before continuing to the shell.
+        kernel::test::reload_daemon_tasks();
     }
 
     if (run_count == 0) {
@@ -284,15 +288,15 @@ void run_filtered(uint8_t required_flags) {
 }
 
 void run_debug() {
-    run_filtered(0);
+    run_filtered(0, true);
 }
 
 void run_release() {
-    run_filtered(TF_RELEASE);
+    run_filtered(TF_RELEASE, false);
 }
 
 void run_registered(uint8_t required_flags) {
-    run_filtered(required_flags);
+    run_filtered(required_flags, true);
     if (g_class_auto_shutdown) {
         uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
         arch::qemu_debug_exit(result);

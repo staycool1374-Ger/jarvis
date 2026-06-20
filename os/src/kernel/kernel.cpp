@@ -465,8 +465,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::test::run_registered(0);
 #else
     kernel::test::register_class("safe");
-    kernel::test::set_class_auto_shutdown(true);
-    kernel::test::run_registered(kernel::test::TF_RELEASE);
+    kernel::test::set_class_auto_shutdown(false);
+    kernel::test::run_release();
 #endif
 
     if (service::Terminal::instance()) {
@@ -716,6 +716,11 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
             panic("#NM with no current task");
         }
 
+        // Clear CR0.TS first so FNINIT/FXSAVE/FXRSTOR don't recursively #NM
+        uint64_t cr0 = arch::read_cr0();
+        cr0 &= ~(1ULL << 3);
+        arch::write_cr0(cr0);
+
         // Save previous owner's FPU state
         if (fpu_owner && fpu_owner != current) {
             arch::fxsave(fpu_owner->fpu_state);
@@ -732,12 +737,6 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         }
 
         fpu_owner = current;
-
-        // Clear CR0.TS so the retried instruction succeeds
-        uint64_t cr0 = arch::read_cr0();
-        cr0 &= ~(1ULL << 3);   // clear TS (bit 3)
-        arch::write_cr0(cr0);
-
         return;
     }
 

@@ -97,7 +97,7 @@ protected:
 
 void run_all();
 void run_safe();
-void run_filtered(uint8_t required_flags);
+void run_filtered(uint8_t required_flags, bool use_isolation = true);
 void run_debug();
 void run_release();
 void run_registered(uint8_t required_flags);
