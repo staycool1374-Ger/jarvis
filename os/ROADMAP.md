@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.16 — CPU Features & RNG: Lazy FPU/SSE context switch, Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG.
+**Target Focus:** v0.2.17 — Observability & Portability: Kernel log ring buffer, HAL abstraction, arch/x86_64/ migration, PCI bus enumeration.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Preserve IrqGuard Invariants:** Any new service layer code, VFS operations for `tmpfs`, or memory-mapping extensions must strictly utilize the `src/kernel/arch/irq_guard.hpp` abstraction for critical sections. Do not use open-coded `cli()`/`sti()` or unmanaged interrupt modifications.
@@ -20,11 +20,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 1. When constructing the init daemon system (`/etc/rc` parser and user quotas), isolate its lifecycle tracking from standard transient userspace applications.
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
-## Phase 3: System Services & Hardware (v0.12.14–v0.2.20)
-
-### 0.2.16 — CPU Features & RNG
-- [x] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
-- [x] Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.17)
 
 ### 0.2.17 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
