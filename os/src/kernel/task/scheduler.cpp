@@ -1,7 +1,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -26,6 +26,7 @@ uint64_t Scheduler::next_task_id_ = 1;
 bool Scheduler::preempt_enabled_ = false;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
 TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
+sync::SpinLock Scheduler::scheduler_lock_;
 
 void Scheduler::init() {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
@@ -43,7 +44,7 @@ void Scheduler::init() {
 }
 
 void Scheduler::add_task(TaskControlBlock& task) {
-    arch::IrqGuard guard;
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
@@ -51,7 +52,7 @@ void Scheduler::add_task(TaskControlBlock& task) {
 }
 
 void Scheduler::remove_task(TaskControlBlock& task) {
-    arch::IrqGuard guard;
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     id_table_remove(&task);
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
@@ -431,19 +432,19 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         ++idx;
     }
 #endif
-    scheduler_save_rsp_to = &current->context.rsp;
-    scheduler_load_rsp_from = next->context.rsp;
+    __atomic_store_n(&scheduler_save_rsp_to, &current->context.rsp, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, next->context.rsp, __ATOMIC_RELEASE);
     if (next->page_table_) {
-        scheduler_load_cr3_from = next->page_table_;
+        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_, __ATOMIC_RELEASE);
         arch::GDT::set_tss_rsp0(next->kernel_stack_top);
     } else {
-        scheduler_load_cr3_from = VMM::get_kernel_pml4();
+        __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(), __ATOMIC_RELEASE);
     }
     if (current->state == TaskState::RUNNING) {
         current->state = TaskState::READY;
     }
     next->state = TaskState::RUNNING;
-    scheduler_next_task_id = next->id;
+    __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
 
     // Set CR0.TS so the incoming task traps on first FPU/SSE instruction
     uint64_t cr0 = arch::read_cr0();
@@ -464,7 +465,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 }
 
 void Scheduler::reschedule() noexcept {
-    arch::IrqGuard guard;
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     if (task_count_ <= 1) return;
 
     auto* current = tasks_[current_index_];
@@ -523,8 +524,8 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
 } // namespace kernel
 
 extern "C" void scheduler_on_context_switch() {
-    uint64_t id = kernel::scheduler_next_task_id;
+    uint64_t id = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     if (id == 0) return;
-    kernel::scheduler_next_task_id = 0;
+    __atomic_store_n(&kernel::scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
     kernel::Scheduler::set_current_by_id(id);
 }

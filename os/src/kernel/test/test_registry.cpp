@@ -28,6 +28,7 @@ void register_rlimit_tests();
 void register_init_tests();
 void register_syscall_tests();
 void register_sync_tests();
+void register_spinlock_tests();
 void register_capability_tests();
 void register_task_lifecycle_tests();
 void register_idle_task_tests();
@@ -40,6 +41,12 @@ void register_health_tests();
 void register_timer_tests();
 void register_serial_tests();
 void register_keyboard_tests();
+void register_spsc_tests();
+void register_preemption_under_syscall_tests();
+void register_spinlock_stress_tests();
+void register_atomic_context_switch_tests();
+void register_bench_syscall_latency_tests();
+void register_bench_irq_latency_tests();
 void register_gdt_tests();
 void register_idt_tests();
 void register_bootparams_tests();
@@ -81,10 +88,10 @@ void register_starvation_deadlock_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
-void register_fpu_tests();
 void register_random_vfs_tests();
 void register_random_syscall_tests();
 void register_random_seed_tests();
+void register_fpu_tests();
 void register_fpu_sse_tests();
 void register_fpu_clone_tests();
 void register_fpu_multi_tests();
@@ -135,6 +142,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_syscall_tests();
         register_syscall_fuzz_tests();
         register_sync_tests();
+        register_spinlock_tests();
         register_capability_tests();
         register_task_lifecycle_tests();
         register_idle_task_tests();
@@ -147,6 +155,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_timer_tests();
         register_serial_tests();
         register_keyboard_tests();
+        register_spsc_tests();
         register_gdt_tests();
         register_idt_tests();
         register_bootparams_tests();
@@ -157,6 +166,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_gcov_tests();
         register_debug_tests();
         register_framebuffer_tests();
+        register_preemption_under_syscall_tests();
+        register_spinlock_stress_tests();
+        register_atomic_context_switch_tests();
+        register_bench_syscall_latency_tests();
+        register_bench_irq_latency_tests();
         register_stress_tests();
         register_starvation_deadlock_tests();
         register_pic_tests();
@@ -270,6 +284,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"device", []() {
         register_serial_tests();
         register_keyboard_tests();
+        register_spsc_tests();
         register_irq_guard_tests();
         register_framebuffer_tests();
         register_rtc_tests();
@@ -321,6 +336,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"bench", []() {
         register_ipc_benchmark_tests();
         register_microkernel_transition_tests();
+        register_bench_syscall_latency_tests();
+        register_bench_irq_latency_tests();
     }},
 };
 

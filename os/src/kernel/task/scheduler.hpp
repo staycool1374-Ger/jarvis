@@ -5,6 +5,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 
@@ -124,6 +125,7 @@ private:
     static uint64_t next_task_id_;
     static bool preempt_enabled_;
 
+    static sync::SpinLock scheduler_lock_;
     static TaskControlBlock* idle_task_;
     static TaskControlBlock* shell_task_ptr_;
 

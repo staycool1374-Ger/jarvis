@@ -288,7 +288,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     tcb->buf_list_head = -1;
 
     // Save parent's FPU state if it's currently in the registers
-    if (fpu_owner == parent) {
+    if (__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) == parent) {
         arch::fxsave(parent->fpu_state);
     }
     // Copy FPU state to child
@@ -380,7 +380,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
             size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
             if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
                 uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
-                stack_pdpt_phys = PMM::alloc_page_table();
+                stack_pdpt_phys = PMM::alloc_user_page();
                 auto* old_pdpt = reinterpret_cast<uint64_t*>(arch::
                     HHDM_OFFSET + old_pdpt_phys);
                 auto* new_pdpt = reinterpret_cast<uint64_t*>(arch::

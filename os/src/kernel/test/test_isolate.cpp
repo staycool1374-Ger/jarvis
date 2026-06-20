@@ -161,10 +161,10 @@ void snapshot_restore(const char* test_name) {
     // Clear any pending context-switch state that a test may have left
     // via reschedule().  Without this, the next timer IRQ would use stale
     // RSP/CR3 values and corrupt memory.
-    scheduler_save_rsp_to   = nullptr;
-    scheduler_load_rsp_from  = 0;
-    scheduler_load_cr3_from  = 0;
-    scheduler_next_task_id   = 0;
+    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
 
     // Check resource counters before restoring — warn on any leaks / double-frees
     {

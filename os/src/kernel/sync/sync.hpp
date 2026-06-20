@@ -1,5 +1,7 @@
 #pragma once
 
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/sync/mutex.hpp>
 #include <kernel/sync/queue.hpp>

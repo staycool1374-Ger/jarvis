@@ -9,7 +9,8 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <initrd/initrd.hpp>
@@ -898,10 +899,10 @@ void Shell::cmd_selftest(int argc, const char** argv) {
     Terminal::set_fb_enabled(false);
 
     {
-        // Disable interrupts so the timer IRQ cannot dispatch test-created kernel
-        // tasks (they would run, return, get reaped, and then the test would
-        // access freed TCB memory in cleanup/delete — a use-after-free crash).
-        arch::IrqGuard guard;
+        // Protect test execution from concurrent timer-ISR dispatch of
+        // test-created tasks with fine-grained SpinLock.
+        static kernel::sync::SpinLock test_lock;
+        SpinLockGuard<kernel::sync::SpinLock> guard(test_lock);
 
         kernel::test::Registry::init();
 

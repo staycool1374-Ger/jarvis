@@ -3,9 +3,7 @@
 
 namespace arch {
 
-volatile char Keyboard::ring_[RING_SIZE] = {};
-volatile size_t Keyboard::head_ = 0;
-volatile size_t Keyboard::tail_ = 0;
+SPSCRing<char, Keyboard::RING_SIZE> Keyboard::ring_;
 bool Keyboard::shift_ = false;
 bool Keyboard::ctrl_ = false;
 bool Keyboard::alt_ = false;
@@ -50,8 +48,7 @@ static const char scancode_upper[128] = {
 };
 
 void Keyboard::init() {
-    head_ = 0;
-    tail_ = 0;
+    ring_.reset();
     shift_ = false;
     ctrl_ = false;
     alt_ = false;
@@ -62,11 +59,7 @@ void Keyboard::init() {
 }
 
 bool Keyboard::push_ring(char c) {
-    size_t next = (head_ + 1) % RING_SIZE;
-    if (next == tail_) return false;
-    ring_[head_] = c;
-    head_ = next;
-    return true;
+    return ring_.try_push(c);
 }
 
 void Keyboard::handle_irq() {
@@ -92,24 +85,18 @@ void Keyboard::handle_irq() {
 }
 
 bool Keyboard::getchar(char& c) {
-    if (tail_ == head_) return false;
-    c = ring_[tail_];
-    tail_ = (tail_ + 1) % RING_SIZE;
-    return true;
+    return ring_.try_pop(c);
 }
 
 size_t Keyboard::read(char* buf, size_t len) {
     size_t count = 0;
-    while (count < len && tail_ != head_) {
-        buf[count++] = ring_[tail_];
-        tail_ = (tail_ + 1) % RING_SIZE;
-    }
+    while (count < len && ring_.try_pop(buf[count]))
+        ++count;
     return count;
 }
 
 void Keyboard::flush() {
-    head_ = 0;
-    tail_ = 0;
+    ring_.reset();
 }
 
 void Keyboard::update_modifiers(uint8_t scancode, bool pressed) {

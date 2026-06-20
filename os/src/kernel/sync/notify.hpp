@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 namespace sync {
@@ -28,6 +29,7 @@ public:
     uint64_t value() const { return notify_value_; }
 
 private:
+    SpinLock lock_;
     uint64_t notify_value_;
     TaskControlBlock* waiter_;
     bool initialized_;

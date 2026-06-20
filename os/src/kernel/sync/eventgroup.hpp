@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
 
 namespace kernel {
 namespace sync {
@@ -30,6 +31,7 @@ public:
     bool try_wait_bits(uint64_t bits);
 
 private:
+    SpinLock lock_;
     uint64_t bits_;
     struct EventWaiter {
         TaskControlBlock* task;

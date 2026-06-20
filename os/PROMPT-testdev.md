@@ -10,9 +10,9 @@ Develop and write flawless, production-ready test suites to verify the existing 
 * **Test-API Lockdown:** Modifying test-api macros/registration is forbidden. If in build mode: STOP. If in plan mode: suggest the change.
 
 # ResourceTracker (Mandatory Awareness for Test Authors)
-- **Kernel-internal leak detector:** `kernel::test::ResourceTracker` tracks all kernel resource allocations (PMM pages, MemPool, tasks, IPC objects, drivers, VFS vnodes/FDs, buffer pool) via `track_*_add()` / `track_*_remove()` calls embedded in production code paths.
-- **Test isolation is non-negotiable:** Every test **must** use `test_isolate.cpp` snapshot/restore mechanism. `snapshot_create()` captures baseline counters; `snapshot_restore()` calls `ResourceTracker::check(baseline, test_name)` which **fails the test** on any delta (leaks or double-frees). Do not bypass or disable — ResourceTracker is the source of truth for resource correctness.
-- **Self-cleanup rule:** Every test must free its own resources. Pair `add_task()` with `remove_task()` before `cleanup()`+`delete` to prevent scheduler task-count leaks. Implement partial init rollback on failure. ResourceTracker will catch violations automatically.
+- See AGENTS.md ResourceTracker section for leak-detection rules.
+- Test isolation is non-negotiable. Snapshot/restore with `test_isolate.cpp`.
+- **Self-cleanup rule:** Every test must free its own resources. Pair `add_task()` with `remove_task()` before `cleanup()`+`delete` to prevent scheduler task-count leaks. Implement partial init rollback on failure.
 
 # Execution Protocols
 
@@ -20,13 +20,7 @@ Develop and write flawless, production-ready test suites to verify the existing 
 * **Load Testcases:** Prior to implementation, load `testcases-v<target-version>.md` (e.g., `testcases-v0.2.10.md` for Phase 2 FAT32).
 * **Sanctity Rule:** Non-stub tests are read-only. Modify only if systemically wrong. To change, you must update both the implementation and its `Testidea`/`Input`/`Expect`/`Depends` doc-block simultaneously. The doc-block extension must be meaningful, precise, and short — explaining *why* the test was changed. Stubs (`JARVIS_TEST_PASS()`) can be freely replaced.
 
-### 2. Large File Protocol (Strictly Enforced)
-1. Split output/code into logical blocks of **max 50 lines** per message.
-2. Output exactly **ONE block** at a time.
-3. **Stop and wait.** End every message with: *"Block [X] of [Y] done. Reply 'continue' for next block."*
-4. Provide **zero conversational text**—only raw code blocks.
-
-### 3. Workflow & Branching
+### 2. Workflow & Branching
 * **Target:** All work occurs in `src/kernel/test/` on the `testbed` branch. No production code.
 * **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make test-qemu`.
 * **Gated Merging:** Tests lacking main-branch APIs remain as `JARVIS_TEST_PASS()` stubs (documented via doc-block). Merge `testbed` into `main` only when there are 0 failures. `testbed` is never deleted.

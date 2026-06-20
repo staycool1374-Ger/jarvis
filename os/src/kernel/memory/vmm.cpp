@@ -200,7 +200,7 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
     auto* pd   = get_table(pdpt, pdpt_idx, true, true);
 
     if (pd[pd_idx] & PAGE_HUGE) {
-        uint64_t new_pt_phys = PMM::alloc_page_table();
+        uint64_t new_pt_phys = PMM::alloc_user_page();
         ENSURE(new_pt_phys != 0);
         auto* new_pt = reinterpret_cast<uint64_t*>(arch::
             HHDM_OFFSET + new_pt_phys);

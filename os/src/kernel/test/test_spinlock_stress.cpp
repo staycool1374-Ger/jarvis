@@ -1,0 +1,76 @@
+#include <test.hpp>
+#include <logger.hpp>
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
+
+using namespace kernel;
+
+static sync::SpinLock stress_lock_;
+static uint64_t stress_counter_ = 0;
+static uint64_t stress_acquires_[4] = {};
+
+static void stress_worker() {
+    auto* cur = Scheduler::current_task();
+    size_t idx = cur ? (cur->id % 4) : 0;
+    for (int i = 0; i < 100; ++i) {
+        SpinLockGuard<sync::SpinLock> guard(stress_lock_);
+        uint64_t val = stress_counter_;
+        arch::pause();
+        stress_counter_ = val + 1;
+        ++stress_acquires_[idx];
+    }
+}
+
+// Runmode: kernel
+// Testidea: Multiple kernel tasks contend for the same SpinLock.
+// Input: 4 tasks all loop 100× each, lock, increment shared counter, unlock.
+// Expect: Final counter == 400, each task made progress.
+// Depends: SpinLock, Scheduler
+JARVIS_TEST(spinlock_multi_task_contention) {
+    stress_counter_ = 0;
+    for (auto& a : stress_acquires_) a = 0;
+
+    TaskControlBlock* workers[4] = {};
+    for (int i = 0; i < 4; ++i) {
+        workers[i] = TaskControlBlock::create(stress_worker, 5, 10);
+        JARVIS_ASSERT(workers[i] != nullptr);
+        Scheduler::add_task(*workers[i]);
+    }
+
+    auto* original = Scheduler::current_task();
+    for (int t = 0; t < 20; ++t) {
+        for (int i = 0; i < 4; ++i) {
+            if (workers[i] && workers[i]->state != TaskState::TERMINATED) {
+                Scheduler::set_current(*workers[i]);
+                arch::pause();
+            }
+        }
+        Scheduler::on_tick();
+    }
+    Scheduler::set_current(*original);
+
+    JARVIS_ASSERT_EQ(400ULL, stress_counter_);
+    for (int i = 0; i < 4; ++i) {
+        JARVIS_ASSERT_FMT(stress_acquires_[i] > 0,
+                          "Worker %d acquired lock %lu times (expected > 0)",
+                          i, stress_acquires_[i]);
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        if (workers[i]) {
+            if (workers[i]->state != TaskState::TERMINATED)
+                Scheduler::remove_task(*workers[i]);
+            workers[i]->cleanup();
+            delete workers[i];
+        }
+    }
+
+    JARVIS_TEST_PASS();
+}
+
+void register_spinlock_stress_tests() {
+    Logger::info("Registering spinlock stress tests");
+    JARVIS_REGISTER_TEST(spinlock_multi_task_contention);
+}

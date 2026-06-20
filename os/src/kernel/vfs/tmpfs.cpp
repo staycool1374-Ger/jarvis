@@ -2,7 +2,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/arch/io.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/mutex.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 #include <constants.hpp>
@@ -20,6 +20,8 @@ static Vnode tmpfs_root;
 
 static uint64_t next_ino = 1;
 
+static sync::Mutex tmpfs_lock;
+
 static TmpfsEntry* find_entry(Vnode& dir, const char* name) {
     auto* e = static_cast<TmpfsEntry*>(dir.private_data);
     while (e) {
@@ -30,27 +32,28 @@ static TmpfsEntry* find_entry(Vnode& dir, const char* name) {
 }
 
 static int64_t tmpfs_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset) {
-    arch::IrqGuard guard;
-    if (offset >= self.size) return 0;
+    tmpfs_lock.lock();
+    if (offset >= self.size) { tmpfs_lock.unlock(); return 0; }
     uint64_t avail = self.size - offset;
     if (count > avail) count = avail;
     uint64_t phys = reinterpret_cast<uint64_t>(self.private_data);
-    if (!phys) return 0;
+    if (!phys) { tmpfs_lock.unlock(); return 0; }
     const uint8_t* src = reinterpret_cast<const uint8_t*>(arch::HHDM_OFFSET + phys) + offset;
     __builtin_memcpy(buffer, src, count);
+    tmpfs_lock.unlock();
     return static_cast<int64_t>(count);
 }
 
 static int64_t tmpfs_file_write(Vnode& self, const uint8_t* buffer, uint64_t count, uint64_t offset) {
-    arch::IrqGuard guard;
+    tmpfs_lock.lock();
     uint64_t needed = offset + count;
-    if (needed > 64_KiB) return VFS_INVALID; // per-file limit
+    if (needed > 64_KiB) { tmpfs_lock.unlock(); return VFS_INVALID; }
 
     // Need to allocate pages if not already
     uint64_t phys = reinterpret_cast<uint64_t>(self.private_data);
     if (!phys) {
         phys = PMM::alloc_user_contiguous(16); // 16 pages = 64 KiB max
-        if (!phys) return VFS_INVALID;
+        if (!phys) { tmpfs_lock.unlock(); return VFS_INVALID; }
         self.private_data = reinterpret_cast<void*>(phys);
         __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + phys), 0, 64_KiB);
     }
@@ -58,6 +61,7 @@ static int64_t tmpfs_file_write(Vnode& self, const uint8_t* buffer, uint64_t cou
     uint8_t* dst = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + phys) + offset;
     __builtin_memcpy(dst, buffer, count);
     if (needed > self.size) self.size = needed;
+    tmpfs_lock.unlock();
     return static_cast<int64_t>(count);
 }
 
@@ -79,7 +83,7 @@ static int64_t tmpfs_file_lseek(Vnode& self, int64_t offset, int whence, uint64_
 }
 
 static int tmpfs_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
-    arch::IrqGuard guard;
+    tmpfs_lock.lock();
     uint64_t idx = 0;
     auto* e = static_cast<TmpfsEntry*>(self.private_data);
     while (e) {
@@ -92,11 +96,13 @@ static int tmpfs_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
             dent.d_name[i] = '\0';
             dent.d_ino = e->vnode->ino;
             ++pos;
+            tmpfs_lock.unlock();
             return 0;
         }
         ++idx;
         e = e->next;
     }
+    tmpfs_lock.unlock();
     return VFS_INVALID;
 }
 
@@ -105,18 +111,19 @@ static int tmpfs_unlink(Vnode& self, const char* name);
 static int tmpfs_create(Vnode& self, const char* name, uint16_t mode);
 
 static Vnode* tmpfs_lookup(Vnode& self, const char* name) {
-    arch::IrqGuard guard;
+    tmpfs_lock.lock();
     auto* e = find_entry(self, name);
+    tmpfs_lock.unlock();
     return e ? e->vnode : nullptr;
 }
 
 static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
-    arch::IrqGuard guard;
-    if (find_entry(self, name)) return VFS_INVALID;
+    tmpfs_lock.lock();
+    if (find_entry(self, name)) { tmpfs_lock.unlock(); return VFS_INVALID; }
     auto* entry = static_cast<TmpfsEntry*>(MemPool::alloc(sizeof(TmpfsEntry)));
-    if (!entry) return VFS_INVALID;
+    if (!entry) { tmpfs_lock.unlock(); return VFS_INVALID; }
     auto* vn = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
-    if (!vn) { MemPool::free(entry); return VFS_INVALID; }
+    if (!vn) { MemPool::free(entry); tmpfs_lock.unlock(); return VFS_INVALID; }
 
     size_t i = 0;
     while (name[i] && i < sizeof(entry->name) - 1) { entry->name[i] = name[i]; ++i; }
@@ -147,17 +154,18 @@ static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
     entry->vnode = vn;
     entry->next = static_cast<TmpfsEntry*>(self.private_data);
     self.private_data = entry;
+    tmpfs_lock.unlock();
     return 0;
 }
 
 static int tmpfs_unlink(Vnode& self, const char* name) {
-    arch::IrqGuard guard;
+    tmpfs_lock.lock();
     auto* prev = static_cast<TmpfsEntry*>(nullptr);
     auto* e = static_cast<TmpfsEntry*>(self.private_data);
     while (e) {
         if (strcmp(e->name, name) == 0) {
             if (e->vnode->mode & S_IFDIR) {
-                if (e->vnode->private_data) return VFS_INVALID;
+                if (e->vnode->private_data) { tmpfs_lock.unlock(); return VFS_INVALID; }
             }
             if (prev) prev->next = e->next;
             else self.private_data = e->next;
@@ -172,11 +180,13 @@ static int tmpfs_unlink(Vnode& self, const char* name) {
             }
             MemPool::free(e->vnode);
             MemPool::free(e);
+            tmpfs_lock.unlock();
             return 0;
         }
         prev = e;
         e = e->next;
     }
+    tmpfs_lock.unlock();
     return VFS_INVALID;
 }
 
@@ -196,12 +206,12 @@ static const VnodeOps tmpfs_file_ops = {
 };
 
 static int tmpfs_create(Vnode& self, const char* name, uint16_t) {
-    arch::IrqGuard guard;
-    if (find_entry(self, name)) return VFS_INVALID;
+    tmpfs_lock.lock();
+    if (find_entry(self, name)) { tmpfs_lock.unlock(); return VFS_INVALID; }
     auto* entry = static_cast<TmpfsEntry*>(MemPool::alloc(sizeof(TmpfsEntry)));
-    if (!entry) return VFS_INVALID;
+    if (!entry) { tmpfs_lock.unlock(); return VFS_INVALID; }
     auto* vn = static_cast<Vnode*>(MemPool::alloc(sizeof(Vnode)));
-    if (!vn) { MemPool::free(entry); return VFS_INVALID; }
+    if (!vn) { MemPool::free(entry); tmpfs_lock.unlock(); return VFS_INVALID; }
 
     size_t i = 0;
     while (name[i] && i < sizeof(entry->name) - 1) { entry->name[i] = name[i]; ++i; }
@@ -217,6 +227,7 @@ static int tmpfs_create(Vnode& self, const char* name, uint16_t) {
     entry->vnode = vn;
     entry->next = static_cast<TmpfsEntry*>(self.private_data);
     self.private_data = entry;
+    tmpfs_lock.unlock();
     return 0;
 }
 

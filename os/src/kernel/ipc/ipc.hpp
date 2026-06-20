@@ -5,6 +5,8 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 
 namespace kernel {
 
@@ -36,6 +38,8 @@ struct MessageQueue {
         , blocked_senders_tail(nullptr)
         , owner(nullptr)
         {}
+
+    sync::SpinLock lock_;  ///< Protects queue + blocked_senders + owner state
 
     /// @brief Initialize the message queue to empty.
     void init();

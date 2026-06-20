@@ -6,7 +6,8 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
@@ -154,7 +155,8 @@ uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
 }
 
 uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
-    arch::IrqGuard guard;
+    static sync::SpinLock brk_lock;
+    SpinLockGuard<sync::SpinLock> guard(brk_lock);
     auto* t = syscall_task();
     if (!t) return static_cast<uint64_t>(-1);
 
@@ -249,7 +251,7 @@ uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     if (arg1 == 0) return 0;
 
     auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
-    if (syscall_is_user_task() && !buf.valid()) return static_cast<uint64_t>(-1);
+    if (!buf.valid()) return static_cast<uint64_t>(-1);
 
     random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
     return arg1;

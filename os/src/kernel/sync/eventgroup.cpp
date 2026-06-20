@@ -1,6 +1,6 @@
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -12,19 +12,19 @@ void EventGroup::init() {
 }
 
 void EventGroup::set_bits(uint64_t bits) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     bits_ |= bits;
     wake_matching();
 }
 
 void EventGroup::clear_bits(uint64_t bits) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     bits_ &= ~bits;
 }
 
 bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
     ) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_].task = &task;
     waiters_[wait_count_].wanted_bits = wanted;
@@ -34,7 +34,7 @@ bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
 }
 
 void EventGroup::wake_matching() {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     for (size_t i = 0; i < wait_count_;) {
         if ((bits_ & waiters_[i].wanted_bits) == waiters_[i].wanted_bits) {
             if (waiters_[i].clear_on_exit) {
@@ -50,7 +50,7 @@ void EventGroup::wake_matching() {
 }
 
 uint64_t EventGroup::wait_bits(uint64_t bits, bool clear_on_exit) {
-    arch::IrqGuard guard;
+    SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
     if (!task) return bits_;
 
