@@ -50,6 +50,20 @@ void Registry::record_failure(const char* file, int line, const char* expr) {
     Logger::error("[TEST:FAIL] %s:%d: %s", file, line, expr);
 }
 
+void Registry::record_failure_fmt(const char* file, int line, const char* fmt, ...) {
+    ++failed_;
+    Logger::raw_write("\033[1;31m[TEST:FAIL] \033[0m");
+    Logger::raw_write(file);
+    Logger::raw_write(":");
+    Logger::print_dec(line);
+    Logger::raw_write(": ");
+    __va_list args;
+    va_start(args, fmt);
+    Logger::vprint_raw(fmt, args);
+    va_end(args);
+    Logger::raw_write("\n");
+}
+
 void Registry::record_success() {
     ++passed_;
 }

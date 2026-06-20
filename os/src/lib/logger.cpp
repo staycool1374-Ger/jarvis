@@ -122,6 +122,49 @@ void Logger::vprint(LogLevel level, const char* fmt, __va_list args) {
     puts("\033[0m\n");
 }
 
+void Logger::vprint_raw(const char* fmt, __va_list args) {
+    if (!initialized_) return;
+    while (*fmt) {
+        if (*fmt == '%') {
+            ++fmt;
+            switch (*fmt) {
+            case 's': {
+                const char* s = __builtin_va_arg(args, const char*);
+                puts(s ? s : "(null)");
+                break;
+            }
+            case 'x': {
+                uint64_t v = __builtin_va_arg(args, uint64_t);
+                print_hex(v);
+                break;
+            }
+            case 'd':
+            case 'u': {
+                uint64_t v = __builtin_va_arg(args, uint64_t);
+                print_dec(v);
+                break;
+            }
+            case 'c': {
+                int c = __builtin_va_arg(args, int);
+                putchar(static_cast<char>(c));
+                break;
+            }
+            case '%': {
+                putchar('%');
+                break;
+            }
+            default:
+                putchar('%');
+                putchar(*fmt);
+                break;
+            }
+            ++fmt;
+        } else {
+            putchar(*fmt++);
+        }
+    }
+}
+
 void Logger::debug(const char* fmt, ...) {
     __va_list args;
     va_start(args, fmt);

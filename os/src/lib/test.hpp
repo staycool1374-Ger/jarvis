@@ -38,6 +38,7 @@ public:
     static const ClassSection* class_section(size_t i);
 
     static void record_failure(const char* file, int line, const char* expr);
+    static void record_failure_fmt(const char* file, int line, const char* fmt, ...);
     static void record_success();
     static void record_test(bool passed);
 
@@ -160,6 +161,23 @@ bool register_class(const char* name);
 
 #define JARVIS_TEST_PASS()                                                     \
     kernel::test::Registry::record_success()
+
+#define JARVIS_FAIL(fmt, ...)                                                  \
+    do {                                                                       \
+        kernel::test::Registry::record_failure_fmt(                            \
+            __FILE__, __LINE__, fmt, ##__VA_ARGS__);                           \
+        return;                                                                \
+    } while (0)
+
+#define JARVIS_ASSERT_FMT(cond, fmt, ...)                                      \
+    do {                                                                       \
+        if (!(cond)) {                                                         \
+            kernel::test::Registry::record_failure_fmt(                        \
+                __FILE__, __LINE__, fmt, ##__VA_ARGS__);                       \
+            return;                                                            \
+        }                                                                      \
+        kernel::test::Registry::record_success();                              \
+    } while (0)
 
 #define JARVIS_REGISTER_TEST_FLAGS(name, flags_)                              \
     do {                                                                       \

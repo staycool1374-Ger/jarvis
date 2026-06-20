@@ -103,20 +103,14 @@ JARVIS_TEST(pml4_clone_clears_user_entries) {
     JARVIS_ASSERT(pml4 != 0);
 
     auto* virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
-    bool leak = false;
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (virt[i] != 0) {
-            Logger::raw_write("  LEAK: entry ");
-            Logger::print_dec(i);
-            Logger::raw_write(" = 0x");
-            Logger::print_hex(virt[i]);
-            Logger::raw_write("\n");
-            leak = true;
+            PMM::free_page(pml4);
+            JARVIS_FAIL("LEAK: entry %u = 0x%x", i, virt[i]);
         }
     }
 
     PMM::free_page(pml4);
-    JARVIS_ASSERT(!leak);
     JARVIS_TEST_PASS();
 }
 
@@ -134,22 +128,14 @@ JARVIS_TEST(pml4_clone_kernel_entries_match) {
     auto* new_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
     auto* kern_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
 
-    bool mismatch = false;
     for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
         if (new_virt[i] != kern_virt[i]) {
-            Logger::raw_write("  MISMATCH entry ");
-            Logger::print_dec(i);
-            Logger::raw_write(": new=0x");
-            Logger::print_hex(new_virt[i]);
-            Logger::raw_write(" kernel=0x");
-            Logger::print_hex(kern_virt[i]);
-            Logger::raw_write("\n");
-            mismatch = true;
+            PMM::free_page(pml4);
+            JARVIS_FAIL("MISMATCH entry %u: new=0x%x kernel=0x%x", i, new_virt[i], kern_virt[i]);
         }
     }
 
     PMM::free_page(pml4);
-    JARVIS_ASSERT(!mismatch);
     JARVIS_TEST_PASS();
 }
 
@@ -206,30 +192,18 @@ JARVIS_TEST(pml4_fork_user_entries_match) {
         child_virt[i] = kern_virt[i];
 
     // Verify user entries match parent
-    bool user_mismatch = false;
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (child_virt[i] != parent_virt[i]) {
-            Logger::raw_write("  USER MISMATCH entry "); Logger::print_dec(i);
-            Logger::raw_write(": child=0x"); Logger::print_hex(child_virt[i]);
-            Logger::raw_write(" parent=0x"); Logger::print_hex(parent_virt[i]);
-            Logger::raw_write("\n");
-            user_mismatch = true;
+            JARVIS_FAIL("USER MISMATCH entry %u: child=0x%x parent=0x%x", i, child_virt[i], parent_virt[i]);
         }
     }
-    JARVIS_ASSERT(!user_mismatch);
 
     // Verify kernel entries match kernel PML4
-    bool kern_mismatch = false;
     for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
         if (child_virt[i] != kern_virt[i]) {
-            Logger::raw_write("  KERN MISMATCH entry "); Logger::print_dec(i);
-            Logger::raw_write(": child=0x"); Logger::print_hex(child_virt[i]);
-            Logger::raw_write(" kernel=0x"); Logger::print_hex(kern_virt[i]);
-            Logger::raw_write("\n");
-            kern_mismatch = true;
+            JARVIS_FAIL("KERN MISMATCH entry %u: child=0x%x kernel=0x%x", i, child_virt[i], kern_virt[i]);
         }
     }
-    JARVIS_ASSERT(!kern_mismatch);
 
     // Clean up: free the user data page, page table pages, PML4 pages
     // Note: parent and child share page table pages (pdpt, pd, pt).
@@ -283,17 +257,11 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent) {
     JARVIS_ASSERT(translated == child_phys);
 
     // Verify parent's PML4 entries are unchanged
-    bool parent_unchanged = true;
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (parent_virt[i] != parent_snapshot[i]) {
-            Logger::raw_write("  PARENT CORRUPTED at entry "); Logger::print_dec(i);
-            Logger::raw_write(": before=0x"); Logger::print_hex(parent_snapshot[i]);
-            Logger::raw_write(" after=0x"); Logger::print_hex(parent_virt[i]);
-            Logger::raw_write("\n");
-            parent_unchanged = false;
+            JARVIS_FAIL("PARENT CORRUPTED at entry %u: before=0x%x after=0x%x", i, parent_snapshot[i], parent_virt[i]);
         }
     }
-    JARVIS_ASSERT(parent_unchanged);
 
     // Verify parent cannot see the mapping
     uint64_t parent_t = VMM::virt_to_phys_in_pml4(child_va, parent_pml4);
@@ -389,20 +357,14 @@ JARVIS_TEST(pml4_dump_no_user_entries) {
     dbg_dump_pml4(pml4);
 
     auto* virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
-    bool has_user_entry = false;
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (virt[i] & PAGE_PRESENT) {
-            Logger::raw_write("  UNEXPECTED PRESENT entry ");
-            Logger::print_dec(i);
-            Logger::raw_write(" = 0x");
-            Logger::print_hex(virt[i]);
-            Logger::raw_write("\n");
-            has_user_entry = true;
+            PMM::free_page(pml4);
+            JARVIS_FAIL("UNEXPECTED PRESENT entry %u = 0x%x", i, virt[i]);
         }
     }
 
     PMM::free_page(pml4);
-    JARVIS_ASSERT(!has_user_entry);
     JARVIS_TEST_PASS();
 }
 

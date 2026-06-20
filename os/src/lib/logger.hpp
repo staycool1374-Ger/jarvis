@@ -33,6 +33,7 @@ public:
     static void fatal(const char* fmt, ...);
 
     static void vprint(LogLevel level, const char* fmt, __va_list args);
+    static void vprint_raw(const char* fmt, __va_list args);
     static void raw_write(const char* s);
     static void print_hex(uint64_t v);
     static void print_dec(uint64_t v);
