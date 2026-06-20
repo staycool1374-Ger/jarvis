@@ -585,54 +585,7 @@ JARVIS_TEST(syscall_rmdir_nonempty_fails) {
     JARVIS_TEST_PASS();
 }
 
-// Runmode: kernel
-// Testidea: STUB - PAUSE syscall cannot be tested from kernel context
-// because hlt needs interrupts enabled and may never wake.
-// Input: PAUSE syscall (not invoked).
-// Expect: No assertion; test passes immediately.
-// Depends: (none)
-JARVIS_TEST(syscall_pause_in_idle_works) {
-    // PAUSE calls hlt which requires interrupts enabled; from kernel task
-    // context (test runs as kernel task) the hlt may never wake.
-    JARVIS_TEST_PASS();
-}
 
-// Runmode: kernel
-// Testidea: STUB - Verifies OPEN syscall forwards to the VFS daemon.
-// Input: OPEN syscall (not invoked).
-// Expect: No assertion; test passes immediately.
-// Depends: (none)
-JARVIS_TEST(syscall_open_forwards_to_vfsd) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Verifies READ/WRITE syscalls are routed through the VFS
-// daemon.
-// Input: READ/WRITE syscalls (not invoked).
-// Expect: No assertion; test passes immediately.
-// Depends: (none)
-JARVIS_TEST(syscall_read_write_via_vfsd) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Verifies VFS daemon handles chdir/cwd operations.
-// Input: CHDIR/GETCWD via VFS daemon (not invoked).
-// Expect: No assertion; test passes immediately.
-// Depends: (none)
-JARVIS_TEST(vfsd_cwd_operations) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Verifies VFS daemon handles stat/fstat operations.
-// Input: STAT/FSTAT via VFS daemon (not invoked).
-// Expect: No assertion; test passes immediately.
-// Depends: (none)
-JARVIS_TEST(vfsd_stat_fstat) {
-    JARVIS_TEST_PASS();
-}
 
 // Runmode: kernel
 // Testidea: Registers all syscall test cases with the test framework.
@@ -667,10 +620,4 @@ void register_syscall_tests() {
     JARVIS_REGISTER_TEST(syscall_mkdir_rmdir);
     JARVIS_REGISTER_TEST(syscall_unlink);
     JARVIS_REGISTER_TEST(syscall_rmdir_nonempty_fails);
-
-    JARVIS_REGISTER_TEST(syscall_pause_in_idle_works);
-    JARVIS_REGISTER_TEST(syscall_open_forwards_to_vfsd);
-    JARVIS_REGISTER_TEST(syscall_read_write_via_vfsd);
-    JARVIS_REGISTER_TEST(vfsd_cwd_operations);
-    JARVIS_REGISTER_TEST(vfsd_stat_fstat);
 }

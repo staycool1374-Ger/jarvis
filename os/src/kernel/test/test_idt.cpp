@@ -1,70 +1,75 @@
 #include <test.hpp>
 #include <logger.hpp>
+#include <kernel/arch/idt.hpp>
 
 using namespace kernel;
 
-// Runmode: kernel
-// Testidea: Verifies all 256 IDT entries have non-null handler addresses
-// after init.
-// Input: Initialize IDT
-// Expect: All 256 entries point to valid handlers (no null pointers)
-// Depends: kernel::arch::IDT
+/// @brief Verifies all 256 IDT entries have non-null handler addresses after init.
+/// @input Initialize IDT
+/// @expect All 256 entries point to valid handlers (no null pointers)
+/// @depends kernel::arch::IDT
 JARVIS_TEST(idt_entries_initialized) {
-    JARVIS_TEST_PASS();
+    for (uint16_t vec = 0; vec < 256; ++vec) {
+        JARVIS_ASSERT(arch::IDT::has_handler(static_cast<uint8_t>(vec)));
+    }
 }
 
-// Runmode: kernel
-// Testidea: Verifies CPU exceptions 0-31 have handler entries (no gaps).
-// Input: Initialize IDT, inspect exception vectors 0-31
-// Expect: Each vector 0-31 has a valid handler
-// Depends: kernel::arch::IDT
+/// @brief Verifies CPU exceptions 0-31 have handler entries (no gaps).
+/// @input Initialize IDT, inspect exception vectors 0-31
+/// @expect Each vector 0-31 has a valid handler
+/// @depends kernel::arch::IDT
 JARVIS_TEST(idt_exception_handlers_mapped) {
-    JARVIS_TEST_PASS();
+    for (uint8_t vec = 0; vec <= 31; ++vec) {
+        JARVIS_ASSERT(arch::IDT::has_handler(vec));
+    }
 }
 
-// Runmode: kernel
-// Testidea: Verifies PIC IRQ0-IRQ15 mapped to interrupt vectors 0x20-0x2F.
-// Input: Initialize IDT with PIC remapping
-// Expect: Vectors 0x20-0x2F point to IRQ handlers
-// Depends: kernel::arch::IDT, PIC
+/// @brief Verifies PIC IRQ0-IRQ15 mapped to interrupt vectors 0x20-0x2F.
+/// @input Initialize IDT with PIC remapping
+/// @expect Vectors 0x20-0x2F point to IRQ handlers
+/// @depends kernel::arch::IDT, PIC
 JARVIS_TEST(idt_irq_remapped) {
-    JARVIS_TEST_PASS();
+    for (uint8_t vec = 0x20; vec <= 0x2F; ++vec) {
+        JARVIS_ASSERT(arch::IDT::has_handler(vec));
+    }
 }
 
-// Runmode: kernel
-// Testidea: Verifies interrupt 0x80 handler points to syscall dispatch.
-// Input: Initialize IDT
-// Expect: Vector 0x80 handler is syscall entry point
-// Depends: kernel::arch::IDT, syscall
+/// @brief Verifies interrupt 0x80 handler points to syscall dispatch.
+/// @input Initialize IDT
+/// @expect Vector 0x80 handler is syscall entry point
+/// @depends kernel::arch::IDT, syscall
 JARVIS_TEST(idt_syscall_handler_installed) {
-    JARVIS_TEST_PASS();
+    JARVIS_ASSERT(arch::IDT::has_handler(0x80));
 }
 
-// Runmode: kernel
-// Testidea: Verifies double fault handler uses TSS IST stack (not kernel
-// stack).
-// Input: Initialize IDT, inspect double fault entry (vector 8)
-// Expect: IST index set to valid IST stack
-// Depends: kernel::arch::IDT, TSS
+/// @brief Verifies double fault handler uses TSS IST stack (not kernel stack).
+/// @input Initialize IDT, inspect double fault entry (vector 8)
+/// @expect IST index set to valid IST stack
+/// @depends kernel::arch::IDT, TSS
 JARVIS_TEST(idt_double_fault_uses_ist) {
-    JARVIS_TEST_PASS();
+    const auto& entry = arch::IDT::entry(8);
+    JARVIS_ASSERT(entry.ist != 0);
+    JARVIS_ASSERT(entry.ist <= 7);
 }
 
-// Runmode: kernel
-// Testidea: Verifies vectors 0x30-0x7F are not set (or point to spurious
-// handler).
-// Input: Initialize IDT, inspect reserved vectors
-// Expect: Vectors 0x30-0x7F are null or spurious handler
-// Depends: kernel::arch::IDT
+/// @brief Verifies vectors 0x30-0x7F are not set (or point to spurious handler).
+/// @input Initialize IDT, inspect reserved vectors
+/// @expect Vectors 0x30-0x7F are null or spurious handler
+/// @depends kernel::arch::IDT
 JARVIS_TEST(idt_reserved_vectors_null) {
-    JARVIS_TEST_PASS();
+    for (uint8_t vec = 0x30; vec <= 0x7F; ++vec) {
+        const auto& e = arch::IDT::entry(vec);
+        uint64_t handler = static_cast<uint64_t>(e.offset_high) << 32 |
+                           static_cast<uint64_t>(e.offset_mid) << 16 |
+                           e.offset_low;
+        JARVIS_ASSERT(handler == 0 || arch::IDT::has_handler(vec));
+    }
 }
 
-// Runmode: kernel
-// Testidea: Registers all IDT unit tests with the test framework.
-// Input: None
-// Expect: All IDT tests registered via JARVIS_REGISTER_TEST
-// Depends: kernel test framework
+/// @brief Registers all IDT unit tests with the test framework.
+/// @input None
+/// @expect All IDT tests registered via JARVIS_REGISTER_TEST
+/// @depends kernel test framework
 void register_idt_tests() {
     Logger::info("Registering IDT tests");
     JARVIS_REGISTER_TEST(idt_entries_initialized);

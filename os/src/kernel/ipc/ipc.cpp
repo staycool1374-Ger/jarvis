@@ -33,7 +33,7 @@ bool MessageQueue::pop(Message& out) {
 
     // Find message with highest priority (lowest priority number).
     // For same-priority messages, scan from head to preserve FIFO order.
-    size_t best_prio = IPC_PRIORITY_LEVELS;
+    size_t best_prio = IPC_PRIORITY_LEVELS + 1;
     size_t best_idx = IPC_MAX_QUEUE_MSG;
     for (size_t i = 0; i < count; ++i) {
         size_t idx = (head + i) % IPC_MAX_QUEUE_MSG;
@@ -47,23 +47,23 @@ bool MessageQueue::pop(Message& out) {
 
     out = msgs[best_idx];
 
-    // Compact: shift all entries after best_idx left by one
-    size_t pos = best_idx;
-    while (pos != tail) {
-        size_t next = (pos + 1) % IPC_MAX_QUEUE_MSG;
-        if (next == head) break;  // wrapped fully around
-        msgs[pos] = msgs[next];
-        pos = next;
-        if (pos == tail) {
-            // We've shifted everything; tail moves back one
-            break;
-        }
-    }
-    // Move tail back
-    if (tail == 0) {
-        tail = IPC_MAX_QUEUE_MSG - 1;
+    // Compact: remove the gap by either advancing head (if best_idx == head)
+    // or shifting trailing entries left by one.
+    if (best_idx == head) {
+        head = (head + 1) % IPC_MAX_QUEUE_MSG;
     } else {
-        --tail;
+        size_t pos = best_idx;
+        while (true) {
+            size_t next = (pos + 1) % IPC_MAX_QUEUE_MSG;
+            if (next == tail) break;
+            msgs[pos] = msgs[next];
+            pos = next;
+        }
+        if (tail == 0) {
+            tail = IPC_MAX_QUEUE_MSG - 1;
+        } else {
+            --tail;
+        }
     }
     --count;
 

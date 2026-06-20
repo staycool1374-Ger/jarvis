@@ -77,6 +77,15 @@ public:
     static void handle_interrupt(uint64_t vector, uint64_t error_code,
         uint64_t rip);
 
+    /// @brief Returns the IDT entry for the given vector.
+    /// @param vec The interrupt vector (0-255).
+    /// @return Const reference to the IDT entry.
+    static const IDTEntry& entry(uint8_t vec);
+
+/// @brief Returns true if the entry has a non-zero handler address.
+/// @param vec The interrupt vector (0-255).
+static bool has_handler(size_t vec);
+
 private:
     static constexpr size_t NUM_ENTRIES = 256;
     static IDTEntry entries_[NUM_ENTRIES];

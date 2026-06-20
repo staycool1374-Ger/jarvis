@@ -60,4 +60,17 @@ void IDT::handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip) {
     }
 }
 
+const IDTEntry& IDT::entry(uint8_t vec) {
+    return entries_[vec];
+}
+
+bool IDT::has_handler(size_t vec) {
+    if (vec >= NUM_ENTRIES) return false;
+    const auto& e = entries_[vec];
+    uint64_t handler = static_cast<uint64_t>(e.offset_high) << 32 |
+                       static_cast<uint64_t>(e.offset_mid) << 16 |
+                       e.offset_low;
+    return handler != 0;
+}
+
 } // namespace arch

@@ -1,0 +1,38 @@
+Tests implementable with v0.2.15 features
+==========================================
+
+1. test_idt.cpp — 6 stubs (ALL IMPLEMENTED — remove from list)
+   - idt_entries_initialized ✓
+   - idt_exception_handlers_mapped ✓
+   - idt_irq_remapped ✓
+   - idt_syscall_handler_installed ✓
+   - idt_double_fault_uses_ist ✓
+   - idt_reserved_vectors_null ✓
+
+2. test_vfs.cpp — 6 duplicate stubs (DO NOT EXIST — remove from list)
+   - vfsd_server_boots_and_responds (covered by vfsd_boots_and_registers in test_vfsd.cpp)
+   - syscall_open_forwards_to_vfsd (covered by vfsd_kernel_bypass_open in test_vfsd.cpp)
+   - syscall_read_write_via_vfsd (covered by vfsd_kernel_bypass_read/write in test_vfsd.cpp)
+   - vfsd_mount_unmount_ipc (covered by vfsd_handle_mount_unmount in test_vfsd.cpp)
+   - vfsd_cwd_operations (covered by vfsd_handle_chdir_getcwd in test_vfsd.cpp)
+   - vfsd_stat_fstat (covered by vfsd_kernel_bypass_stat/fstat in test_vfsd.cpp)
+
+3. test_vfs.cpp — 1 stub (IMPLEMENTED — remove from list)
+   - vfs_mount_unmount ✓ (line 169 in test_vfs.cpp)
+
+4. test_syscall.cpp — 4 duplicate stubs (DO NOT EXIST — remove from list)
+   - syscall_open_forwards_to_vfsd (duplicate of test_vfs.cpp entry)
+   - syscall_read_write_via_vfsd (duplicate of test_vfs.cpp entry)
+   - vfsd_cwd_operations (duplicate of test_vfs.cpp entry)
+   - vfsd_stat_fstat (duplicate of test_vfs.cpp entry)
+
+5. testcases-v0.2.15.md — 6 UDP scenarios (UPDATE TO REMOVE — no UDP socket API)
+   - UDP socket created, bound to port (BLOCKED)
+   - Packet sent to loopback IP is received (BLOCKED)
+   - UDP checksum computed and verified (BLOCKED)
+   - Payload received matches payload sent (BLOCKED)
+   - Port exhaustion returns EADDRINUSE (BLOCKED)
+   - Receive on unbound socket returns ENOTCONN (BLOCKED)
+
+---
+ALL ITEMS RESOLVED — No remaining implementable stubs.

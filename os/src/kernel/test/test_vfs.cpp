@@ -152,20 +152,33 @@ JARVIS_TEST(vfs_resolve_dotdot) {
 // Runmode: kernel
 // Testidea: Verifies mounting a filesystem registers it in the mount table
 //           and resolve can find root.
-// Input: mount(filesystem, "/mnt")
-// Expect: Mount succeeds, resolve("/mnt") returns root vnode
-// Depends: kernel::vfs::mount, kernel::vfs::resolve
-JARVIS_TEST(vfs_mount_unmount) {
-    JARVIS_TEST_PASS();
+// Input: mount(fake_fs, "/mnt/testfs")
+// Expect: Mount succeeds, resolve("/mnt/testfs") returns root vnode
+// Depends: kernel::vfs::mount, kernel::vfs::resolve, kernel::vfs::Filesystem
+static Vnode fake_root_vnode;
+
+static Vnode* fake_get_root() {
+    return &fake_root_vnode;
 }
 
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing that the VFS daemon process boots
-// and responds to IPC.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::vfsd, kernel::ipc
-JARVIS_TEST(vfsd_server_boots_and_responds) {
+static kernel::vfs::Filesystem fake_fs = {
+    .name = "fakefs",
+    .get_root = fake_get_root
+};
+
+JARVIS_TEST(vfs_mount_unmount) {
+    fake_root_vnode = Vnode();
+    fake_root_vnode.mode = vfs::S_IFDIR;
+    fake_root_vnode.ino = 1;
+
+    int ret = vfs::mount(fake_fs, "/mnt/testfs");
+    JARVIS_ASSERT_EQ(0, ret);
+
+    Vnode* vn = vfs::resolve("/mnt/testfs");
+    JARVIS_ASSERT(vn != nullptr);
+    JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
+    JARVIS_ASSERT(vn == &fake_root_vnode);
+
     JARVIS_TEST_PASS();
 }
 
@@ -256,55 +269,7 @@ JARVIS_TEST(vfs_unlink_nonempty_dir_fails) {
     JARVIS_TEST_PASS();
 }
 
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing that the open syscall forwards
-// requests to the VFS daemon.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::syscall, kernel::vfsd
-JARVIS_TEST(syscall_open_forwards_to_vfsd) {
-    JARVIS_TEST_PASS();
-}
 
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing that read/write syscalls route
-// through the VFS daemon.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::syscall, kernel::vfsd
-JARVIS_TEST(syscall_read_write_via_vfsd) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing mount/unmount IPC commands to the
-// VFS daemon.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::vfsd, kernel::ipc
-JARVIS_TEST(vfsd_mount_unmount_ipc) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing VFS daemon
-// current-working-directory operations (getcwd, chdir).
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::vfsd, kernel::ipc
-JARVIS_TEST(vfsd_cwd_operations) {
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: STUB - Placeholder for testing VFS daemon stat/fstat IPC
-// operations.
-// Input: (stub)
-// Expect: (stub)
-// Depends: kernel::vfsd, kernel::ipc
-JARVIS_TEST(vfsd_stat_fstat) {
-    JARVIS_TEST_PASS();
-}
 
 // Runmode: kernel
 // Testidea: Registers all VFS test cases into the test framework.
@@ -333,10 +298,4 @@ void register_vfs_tests() {
     JARVIS_REGISTER_TEST(vfs_unlink_file);
     JARVIS_REGISTER_TEST(vfs_unlink_nonexistent);
     JARVIS_REGISTER_TEST(vfs_unlink_nonempty_dir_fails);
-    JARVIS_REGISTER_TEST(vfsd_server_boots_and_responds);
-    JARVIS_REGISTER_TEST(syscall_open_forwards_to_vfsd);
-    JARVIS_REGISTER_TEST(syscall_read_write_via_vfsd);
-    JARVIS_REGISTER_TEST(vfsd_mount_unmount_ipc);
-    JARVIS_REGISTER_TEST(vfsd_cwd_operations);
-    JARVIS_REGISTER_TEST(vfsd_stat_fstat);
 }

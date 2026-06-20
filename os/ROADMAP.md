@@ -29,11 +29,19 @@ When implementing or refactoring code paths for this phase, execute the followin
 ### 0.2.17 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
 - [ ] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
+- [ ] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
 
 ### 0.2.18 — Kernel Memory Safety
 - [ ] `UniquePtr<T>` / `make_unique` — type-safe RAII wrapper for kernel heap allocations (placement-new construction, move-only ownership, automatic `kfree` + destructor on scope exit)
 - [ ] Audit existing `kmalloc`/`kfree` sites for leak-prone manual management and migrate to `UniquePtr` where appropriate
 - [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
+
+### 0.2.19 — System Calls & Storage
+- [ ] SYS_YIELD — cooperative task yielding for CPU-bound tasks
+- [ ] SYS_REBOOT / SYS_HALT — system power management from userspace
+- [ ] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
+- [ ] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
+- [ ] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
 
 ---
 
@@ -56,6 +64,9 @@ When implementing or refactoring code paths for this phase, execute the followin
 ### 0.3.5 — WCET & Tuning
 - [ ] Syscall WCET tracking, kernel stack profiler, allocation-free IRQ paths
 - [ ] Interrupt latency measurement, jitter benchmarking suite
+
+### 0.3.6 — ISR Safety & Data Loss Prevention
+- [ ] Lock-free SPSC ring buffer for ISR→task handoff (eliminate priority inversion and data loss in interrupt context)
 
 ---
 
@@ -124,3 +135,15 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [ ] Each server holds capabilities for owned resources (IO ports, memory regions, IRQ lines)
 - [ ] Kernel enforces capabilities on every IPC call; no server can access another server's MMIO region or memory
 - [ ] `SYS_CAP_GRANT`/`SYS_CAP_REVOKE` syscalls for capability delegation and revocation
+
+---
+
+## Phase 9: Hardware Drivers & Protocols (0.9.x)
+
+### 0.9.1 — Networking Stack
+- [ ] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver
+- [ ] Distributed real-time communication, remote logging, networked control systems
+
+### 0.9.2 — USB Stack
+- [ ] USB driver stack (UHCI/EHCI/xHCI) for keyboard, mouse, and storage
+- [ ] Replace PS/2 with USB HID for real-hardware input

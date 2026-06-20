@@ -75,10 +75,32 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - **Test isolation:** Every test **must** use `test_isolate.cpp` snapshot/restore. `snapshot_create()` captures baseline counters; `snapshot_restore()` calls `ResourceTracker::check(baseline, test_name)` which **fails the test** on any delta (leaks or double-frees). Do not bypass — ResourceTracker is the source of truth for resource correctness.
 - **Adding new resources:** If you introduce a new kernel resource type, add counters + track_* calls in ResourceTracker AND update `test_isolate.cpp` buffer layout (`off_rsrc_counts`, `total_size`). No exceptions.
 
-### 6. Minimal Version Control & Deployment
-- Commit verified changes to git. 
-- **Tag Guard:** If milestone is complete, verify tag does not already exist via `git tag` before creating a new version tag.
-- **Safe Mirror:** Only after a verified new tag, ensure destination exists (`mkdir -p ~/Nextcloud/arnold/jarvis/`) then mirror project files.
+### 6. Release Workflow (-dev → release)
+
+**Pre-flight gate (abort on any failure):**
+- Verify `git status --porcelain` is clean
+- Run `make test-qemu` — all must pass (`[FAIL]` count = 0)
+- Check `testcases-v$(KERNEL_VERSION).md` — if still `*Outline*` or any stubs remain, **abort**. If all tests implemented, delete the file.
+- Verify tag `v$(major).$(minor).$(patch)` does not exist: `git tag | grep "v$(major).$(minor).$(patch)"`
+
+**Release sequence:**
+- Read `src/lib/version.hpp`; capture `major.minor.patch`
+- Update `Doxyfile` PROJECT_NUMBER to release version
+- Run `doxygen Doxyfile`
+- Update version strings in `README.md` and `readme.html`
+- Move completed roadmap items from `ROADMAP.md` → `ROADMAP_done.md`; update `EXECUTIVE OVERRIDE` to next target
+- Strip `-dev` from `KERNEL_VERSION_STRING` and set `stage = ""` in `version.hpp`
+- Regenerate manifest: `tree -I "build|obj|.git|node_modules" > ../project_structure.txt`
+- Commit all changes: `git add -A && git commit -m "release: v$(major).$(minor).$(patch)"`
+- Push: `git push origin main`
+- Tag: `git tag v$(major).$(minor).$(patch) && git push origin v$(major).$(minor).$(patch)`
+- Mirror to Nextcloud: `mkdir -p ~/Nextcloud/arnold/jarvis/ && rsync -a --delete --exclude=build --exclude=.git ~/jarvis/ ~/Nextcloud/arnold/jarvis/`
+
+**Post-release (new dev cycle):**
+- Increment patch (or major/minor per ROADMAP.md next milestone)
+- Re-add `-dev` to `KERNEL_VERSION_STRING` and set `stage = "dev"`
+- Commit: `git add -A && git commit -m "bump: v$(next)-dev"`
+- Push: `git push origin main`
 
 ---
 
