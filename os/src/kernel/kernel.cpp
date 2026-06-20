@@ -67,6 +67,7 @@ uint64_t volatile* scheduler_save_rsp_to = nullptr;
 uint64_t volatile scheduler_load_rsp_from = 0;
 uint64_t volatile scheduler_load_cr3_from = 0;
 uint64_t volatile scheduler_next_task_id = 0;
+kernel::TaskControlBlock* volatile fpu_owner = nullptr;
 }
 
 extern "C" void debug_write_hex(uint64_t value) {
@@ -131,6 +132,19 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     arch::GDT::set_tss_rsp0(reinterpret_cast<uint64_t>(kernel_stack + 16_KiB));
     arch::IDT::init();
     arch::IDT::load();
+
+    // Enable x87 FPU: clear CR0.EM (bit 2), set CR0.NE (bit 5), set CR0.MP (bit 1)
+    uint64_t cr0 = arch::read_cr0();
+    cr0 &= ~(1ULL << 2);   // clear EM
+    cr0 |= (1ULL << 1);    // set MP
+    cr0 |= (1ULL << 5);    // set NE
+    arch::write_cr0(cr0);
+
+    // Enable FXSAVE/FXRSTOR and SSE: set CR4.OSFXSR (bit 9) and CR4.OSXMMEXCPT (bit 10)
+    uint64_t cr4 = arch::read_cr4();
+    cr4 |= (1ULL << 9);    // OSFXSR
+    cr4 |= (1ULL << 10);   // OSXMMEXCPT
+    arch::write_cr4(cr4);
 
     uint64_t mem_size = 64_MiB;
     uint64_t tag_addr = mb2_find_tag(6);
@@ -695,6 +709,38 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
     uint64_t rip,
                                    uint64_t* regs)
 {
+    // #NM (Device Not Available, vector 7) — lazy FPU/SSE context switch
+    if (vector == 7) {
+        auto* current = kernel::Scheduler::current_task();
+        if (!current) {
+            panic("#NM with no current task");
+        }
+
+        // Save previous owner's FPU state
+        if (fpu_owner && fpu_owner != current) {
+            arch::fxsave(fpu_owner->fpu_state);
+        }
+
+        // Restore or initialize for current task
+        if (current->fpu_used) {
+            arch::fxrstor(current->fpu_state);
+        } else {
+            arch::fninit();
+            uint32_t default_mxcsr = 0x1F80;
+            arch::ldmxcsr(default_mxcsr);
+            current->fpu_used = true;
+        }
+
+        fpu_owner = current;
+
+        // Clear CR0.TS so the retried instruction succeeds
+        uint64_t cr0 = arch::read_cr0();
+        cr0 &= ~(1ULL << 3);   // clear TS (bit 3)
+        arch::write_cr0(cr0);
+
+        return;
+    }
+
     if (vector < 32) {
         auto* t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;

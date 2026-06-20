@@ -23,8 +23,8 @@ When implementing or refactoring code paths for this phase, execute the followin
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.20)
 
 ### 0.2.16 — CPU Features & RNG
-- [ ] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
-- [ ] Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
+- [x] Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
+- [x] Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM
 
 ### 0.2.17 — Observability & Portability
 - [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
@@ -117,8 +117,35 @@ A FreeRTOS-inspired `jarvis_config.h` header that makes Jarvis compile-time cust
 | `INCLUDE_xTaskGetCurrentTaskHandle` | `CONFIG_INCLUDE_SYS_GETPID` | Syscall gating |
 | `INCLUDE_uxTaskGetStackHighWaterMark` | `CONFIG_INCLUDE_SYS_STACK_INFO` | Syscall gating |
 
----
 
+### 0.2.21 — ARM & RISC-V Portability
+
+Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on ARM Cortex-A and RISC-V (RV64) hardware. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/<isa>/` implementation selected by the build system.
+
+- [ ] **Architecture HAL refactor** — lift all `src/kernel/arch/` code behind `CONFIG_ARCH`-selected directories (`arch/x86_64/`, `arch/aarch64/`, `arch/riscv64/`). Each arch exports the same function signatures: `read_cr3()`/`write_cr3()`, `irq_enable()`/`irq_disable()`, `halt()`, `inb()`/`outb()`, `invlpg()`, `fxsave()`/`fxrstor()`, `rdtsc()`.
+
+- [ ] **ARM Cortex-A (aarch64)**
+  - [ ] Boot: multi-core entry (spin-table / PSCI), MMU init with TCR/MAIR, page table walk (4-level TTBR0_EL1/TTBR1_EL1)
+  - [ ] Interrupts: generic timer (CNTP_CTL_EL0), GICv2/v3 distributor & CPU interface, DAIF masking
+  - [ ] Context switch: kernel-mode SVC stack, EL1↔EL0 transitions (ERET), FPU via FPEXC32_EL2 / VFP
+  - [ ] Timer: generic timer compare (CNTP_CVAL_EL0), 1–100 MHz configurable tick rate
+  - [ ] Minimal QEMU virt platform support (PL011 UART, virtio-mmio transport)
+
+- [ ] **RISC-V (RV64)**
+  - [ ] Boot: SBI init, mstatus/satp setup, page table walk (Sv39), single-IPI for multi-core
+  - [ ] Interrupts: CLINT (mtime/mtimecmp) or ACLINT, PLIC, mstatus.MIE/mip delegation
+  - [ ] Context switch: S-mode scratch CSR, U-mode↔S-mode transitions (SRET), FPU via mstatus.FS
+  - [ ] Timer: CLINT mtimecmp-based, SBI set_timer extension as fallback
+  - [ ] Minimal QEMU virt platform support (NS16550 UART, virtio-mmio transport)
+
+- [ ] **Cross-architecture common**
+  - [ ] Build system: `ARCH=x86_64|aarch64|riscv64` selects toolchain prefix, linker script, and objects
+  - [ ] Linker scripts per arch (page-aligned `.text`/`.rodata`/`.data`/`.bss`, HHDM region reservation)
+  - [ ] Architecture-agnostic `lib/` (string, ring buffer, ChaCha20, test framework) — no changes needed
+  - [ ] Inline atomics: `__sync_synchronize()`, `__sync_fetch_and_add()`, etc. — compiler builtins work on all three ISAs
+  - [ ] UART driver abstraction: arch exports `uart_putc()`/`uart_getc()`, kernel `Logger` uses it uniformly
+
+---
 
 ## Phase 4: Hard Real-Time (0.3.x)
 

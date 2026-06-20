@@ -54,6 +54,34 @@ inline uint64_t read_cr4(
 inline void write_cr3(uint64_t value
     ) { asm volatile("mov %0, %%cr3" : : "r"(value)
     : "memory"); }
+/// @brief Write Control Register 0.
+inline void write_cr0(uint64_t value
+    ) { asm volatile("mov %0, %%cr0" : : "r"(value)
+    : "memory"); }
+/// @brief Write Control Register 4.
+inline void write_cr4(uint64_t value
+    ) { asm volatile("mov %0, %%cr4" : : "r"(value)
+    : "memory"); }
+
+// ── FPU/SSE state management helpers ──────────────────────────────────────
+
+/// @brief FNINIT — initialize x87 FPU to default state.
+inline void fninit() { asm volatile("fninit"); }
+
+/// @brief LDMXCSR — load MXCSR register (SSE control/status).
+inline void ldmxcsr(uint32_t mxcsr
+    ) { asm volatile("ldmxcsr %0" : : "m"(mxcsr)); }
+
+/// @brief FXSAVE — save x87/MMX/SSE state to 512-byte aligned buffer.
+///        The buffer must be 16-byte aligned.
+inline void fxsave(void* buf
+    ) { asm volatile("fxsave %0" : "=m"(*static_cast<uint64_t(*)[64]>(buf))
+    : : "memory"); }
+
+/// @brief FXRSTOR — restore x87/MMX/SSE state from 512-byte aligned buffer.
+inline void fxrstor(const void* buf
+    ) { asm volatile("fxrstor %0" : : "m"(*static_cast<const uint64_t(*)[64]>(buf))
+    : "memory"); }
 
 /// @brief Writes a byte to an I/O port.
 inline void outb(uint16_t port, uint8_t val) { arch_outb(port, val); }

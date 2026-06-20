@@ -81,6 +81,7 @@ void register_starvation_deadlock_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
+void register_fpu_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -177,6 +178,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_ipc_benchmark_tests();
         register_microkernel_transition_tests();
         register_random_tests();
+        register_fpu_tests();
     }},
 
     // -- individual classes --

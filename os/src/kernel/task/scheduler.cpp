@@ -444,6 +444,11 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     }
     next->state = TaskState::RUNNING;
     scheduler_next_task_id = next->id;
+
+    // Set CR0.TS so the incoming task traps on first FPU/SSE instruction
+    uint64_t cr0 = arch::read_cr0();
+    cr0 |= (1ULL << 3);   // set TS
+    arch::write_cr0(cr0);
 }
 
 void Scheduler::rate_monotonic_schedule() noexcept {

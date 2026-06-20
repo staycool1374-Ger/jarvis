@@ -29,11 +29,36 @@ inline CpuIdResult cpuid(uint32_t leaf, uint32_t subleaf = 0) {
 
 // ── Feature bit constants ──
 
-/// @brief ECX bit 30 of leaf 1: RDRAND instruction supported.
-inline constexpr uint32_t CPUID_ECX1_RDRAND = 1u << 30;
+// Leaf 1 EDX
+inline constexpr uint32_t CPUID_EDX1_FPU      = 1u << 0;
+inline constexpr uint32_t CPUID_EDX1_FXSR     = 1u << 24;
+inline constexpr uint32_t CPUID_EDX1_SSE      = 1u << 25;
+inline constexpr uint32_t CPUID_EDX1_SSE2     = 1u << 26;
 
-/// @brief EBX bit 18 of leaf 7 / subleaf 0: RDSEED instruction supported.
-inline constexpr uint32_t CPUID_EBX7_RDSEED = 1u << 18;
+// Leaf 1 ECX
+inline constexpr uint32_t CPUID_ECX1_SSE3     = 1u << 0;
+inline constexpr uint32_t CPUID_ECX1_SSSE3    = 1u << 9;
+inline constexpr uint32_t CPUID_ECX1_SSE4_1   = 1u << 19;
+inline constexpr uint32_t CPUID_ECX1_SSE4_2   = 1u << 20;
+inline constexpr uint32_t CPUID_ECX1_RDRAND   = 1u << 30;
+
+// Leaf 7 / subleaf 0 EBX
+inline constexpr uint32_t CPUID_EBX7_RDSEED   = 1u << 18;
+
+/// @brief Check whether the x87 FPU is supported.
+inline bool has_fpu() {
+    return (cpuid(1).edx & CPUID_EDX1_FPU) != 0;
+}
+
+/// @brief Check whether FXSAVE/FXRSTOR is supported.
+inline bool has_fxsr() {
+    return (cpuid(1).edx & CPUID_EDX1_FXSR) != 0;
+}
+
+/// @brief Check whether SSE is supported.
+inline bool has_sse() {
+    return (cpuid(1).edx & CPUID_EDX1_SSE) != 0;
+}
 
 /// @brief Check whether the RDRAND instruction is supported.
 inline bool has_rdrand() {

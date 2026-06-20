@@ -16,6 +16,7 @@
 #include <kernel/task/task_errors.hpp>
 #include <string.hpp>
 #include <constants.hpp>
+#include <kernel/arch/io.hpp>
 
 namespace kernel {
 
@@ -285,6 +286,16 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
     // Buffer pool starts empty — buffers are NOT inherited on fork
     tcb->buf_list_head = -1;
+
+    // Save parent's FPU state if it's currently in the registers
+    if (fpu_owner == parent) {
+        arch::fxsave(parent->fpu_state);
+    }
+    // Copy FPU state to child
+    tcb->fpu_used = parent->fpu_used;
+    if (parent->fpu_used) {
+        __builtin_memcpy(tcb->fpu_state, parent->fpu_state, 512);
+    }
 
     // Allocate and set up kernel stack
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;

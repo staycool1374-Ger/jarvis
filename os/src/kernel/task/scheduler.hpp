@@ -146,6 +146,9 @@ extern "C" {
     extern uint64_t volatile scheduler_load_cr3_from;
     /// @brief Task ID to set as current after the context switch completes.
     extern uint64_t volatile scheduler_next_task_id;
+    /// @brief Tracks which task's FPU state is currently in the registers.
+    ///        nullptr means no task has used FPU since boot.
+    extern TaskControlBlock* volatile fpu_owner;
 }
 
 } // namespace kernel

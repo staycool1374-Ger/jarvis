@@ -109,6 +109,8 @@ struct TaskControlBlock {
         , user_stack_(0)
         , user_stack_size_(0)
         , user_data(nullptr)
+        , fpu_used(false)
+        , fpu_state{}
         , program_break(0)
         , program_break_start(0)
         , fd_table({})
@@ -160,6 +162,11 @@ struct TaskControlBlock {
     uint64_t user_stack_;
     uint64_t user_stack_size_;
     void* user_data;
+
+    /// @brief FPU/SSE save area (FXSAVE/FXRSTOR — 512 bytes, 16-byte aligned).
+    ///        Zeroed on task creation; populated lazily via #NM handler.
+    bool fpu_used;
+    alignas(16) uint8_t fpu_state[512];
 
     uint64_t program_break;
     uint64_t program_break_start;
