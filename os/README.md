@@ -5,7 +5,7 @@ freestanding C++20. Designed for ISO 26262 ASIL D safety standards, deterministi
 scheduling, and clean kernel/userspace separation. All services run in a monolithic
 kernel at Ring 0 with userspace processes in Ring 3.
 
-**Current Version:** v0.12.14 — Phase 3: System Services & Test Isolation
+**Current Version:** v0.2.15 — Phase 3: Hardware Enablement
 
 ---
 

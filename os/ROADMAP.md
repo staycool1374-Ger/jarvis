@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.12.14 — tmpfs implementation, PID 1 Initialization, and Memory Expansion (`SYS_BRK`).
+**Target Focus:** v0.2.16 — CPU Features & RNG: Lazy FPU/SSE context switch, Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Preserve IrqGuard Invariants:** Any new service layer code, VFS operations for `tmpfs`, or memory-mapping extensions must strictly utilize the `src/kernel/arch/irq_guard.hpp` abstraction for critical sections. Do not use open-coded `cli()`/`sti()` or unmanaged interrupt modifications.
