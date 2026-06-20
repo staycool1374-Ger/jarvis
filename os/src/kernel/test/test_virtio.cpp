@@ -2,6 +2,7 @@
 #include <logger.hpp>
 #include <kernel/arch/virtio.hpp>
 #include <kernel/driver/virtio_blk.hpp>
+#include <kernel/memory/pmm.hpp>
 
 using namespace kernel;
 
@@ -71,6 +72,108 @@ JARVIS_TEST(virtio_init_transport_noop) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies a virtio-net device can be reset via the status register.
+// Finds the virtio-net device, writes RESET status, confirms device acknowledges.
+// Input: arch::virtio_find_device(VIRTIO_DEVICE_NET), virtio_write_status(RESET)
+// Expect: Device status reads back as RESET
+// Depends: arch::virtio_find_device, arch::virtio_write/read_status
+JARVIS_TEST(virtio_device_reset) {
+    arch::VirtioTransport transport;
+    bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
+    JARVIS_ASSERT(found);
+    arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
+    uint8_t status = arch::virtio_read_status(transport);
+    JARVIS_ASSERT_EQ(arch::VIRTIO_STATUS_RESET, status);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies feature negotiation between host and guest succeeds
+// on the virtio-net device. Offers VIRTIO_F_VERSION_1 and checks
+// FEATURES_OK is set after negotiation.
+// Input: Initialize transport, negotiate features with VIRTIO_F_VERSION_1
+// Expect: Feature negotiation succeeds (virtio_negotiate_features returns true)
+// Depends: arch::virtio_find_device, arch::virtio_init_transport,
+//          arch::virtio_negotiate_features
+JARVIS_TEST(virtio_feature_negotiation) {
+    arch::VirtioTransport transport;
+    bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
+    JARVIS_ASSERT(found);
+    arch::virtio_init_transport(transport);
+    bool ok = arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
+    JARVIS_ASSERT(ok);
+    arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies a virtqueue can be configured on the virtio-net device.
+// Sets up descriptor, available, and used rings with properly aligned
+// physical addresses and verifies the device accepts the queue.
+// Input: Initialize transport, allocate queue memory, call virtio_setup_queue
+// Expect: virtio_setup_queue returns true
+// Depends: arch::virtio_find_device, arch::virtio_init_transport,
+//          arch::virtio_setup_queue, PMM
+JARVIS_TEST(virtio_queue_configuration) {
+    arch::VirtioTransport transport;
+    bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
+    JARVIS_ASSERT(found);
+    arch::virtio_init_transport(transport);
+    arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
+    // Allocate physically contiguous pages for descriptor, avail, and used rings
+    constexpr uint16_t QSIZE = 256;
+    uint64_t desc_phys = PMM::alloc_contiguous(
+        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(desc_phys != 0);
+    uint64_t avail_phys = PMM::alloc_contiguous(
+        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(avail_phys != 0);
+    uint64_t used_phys = PMM::alloc_contiguous(
+        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(used_phys != 0);
+    bool ok = arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys, avail_phys, used_phys);
+    JARVIS_ASSERT(ok);
+    arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
+    PMM::free_page(desc_phys);
+    PMM::free_page(avail_phys);
+    PMM::free_page(used_phys);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies the guest can notify the virtio device via MMIO write
+// after a queue is configured.
+// Input: Initialize transport, set up queue, call virtio_notify(queue_idx=0)
+// Expect: No crash, MMIO write completes (no return value to assert, just
+//         verifies the notify path doesn't fault)
+// Depends: arch::virtio_find_device, arch::virtio_init_transport,
+//          arch::virtio_setup_queue, arch::virtio_notify
+JARVIS_TEST(virtio_guest_notify) {
+    arch::VirtioTransport transport;
+    bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
+    JARVIS_ASSERT(found);
+    arch::virtio_init_transport(transport);
+    arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
+    constexpr uint16_t QSIZE = 64;
+    uint64_t desc_phys = PMM::alloc_contiguous(
+        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(desc_phys != 0);
+    uint64_t avail_phys = PMM::alloc_contiguous(
+        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(avail_phys != 0);
+    uint64_t used_phys = PMM::alloc_contiguous(
+        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+    JARVIS_ASSERT(used_phys != 0);
+    arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys, avail_phys, used_phys);
+    arch::virtio_notify(transport, 0);
+    arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
+    PMM::free_page(desc_phys);
+    PMM::free_page(avail_phys);
+    PMM::free_page(used_phys);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all Virtio tests with the test framework.
 // Input: None
 // Expect: All Virtio tests are registered (no direct assertion, only logging)
@@ -82,4 +185,8 @@ void register_virtio_tests() {
     JARVIS_REGISTER_TEST(virtio_blk_probe_no_device);
     JARVIS_REGISTER_TEST(virtio_map_mmio_invalid);
     JARVIS_REGISTER_TEST(virtio_init_transport_noop);
+    JARVIS_REGISTER_TEST(virtio_device_reset);
+    JARVIS_REGISTER_TEST(virtio_feature_negotiation);
+    JARVIS_REGISTER_TEST(virtio_queue_configuration);
+    JARVIS_REGISTER_TEST(virtio_guest_notify);
 }

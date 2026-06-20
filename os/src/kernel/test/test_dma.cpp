@@ -139,6 +139,52 @@ JARVIS_TEST(dma_free_empty_buffer) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies zero-length buffer allocation returns gracefully.
+// Input: dma::alloc_buffer(0)
+// Expect: Returns DmaBuffer with phys_addr == 0 (failure, not a crash)
+// Depends: dma::alloc_buffer
+JARVIS_TEST(dma_zero_length_buffer) {
+    auto buf = dma::alloc_buffer(0);
+    JARVIS_ASSERT_EQ((uint64_t)0, buf.phys_addr);
+    JARVIS_ASSERT(!buf.owned);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies PRD table construction from non-contiguous physical pages
+// using two separate DMA buffers. Manually builds a 2-entry SG list from
+// buffers that are not physically contiguous, then calls prd_from_sg.
+// Input: Two dma::alloc_buffer calls, manual SG list setup, prd_from_sg
+// Expect: PRD table has 2 entries with different phys_addr ranges
+// Depends: dma::alloc_buffer, dma::sg_reset, dma::prd_from_sg
+JARVIS_TEST(dma_sg_non_contiguous_prd) {
+    auto buf1 = dma::alloc_buffer(4096);
+    JARVIS_ASSERT(buf1.phys_addr != 0);
+    auto buf2 = dma::alloc_buffer(4096);
+    JARVIS_ASSERT(buf2.phys_addr != 0);
+    // Buffers should not be contiguous (different allocations)
+    JARVIS_ASSERT(buf1.phys_addr != buf2.phys_addr);
+    dma::SgList sg;
+    dma::sg_reset(sg);
+    sg.entries[0].phys_addr = buf1.phys_addr;
+    sg.entries[0].virt_addr = buf1.virt_addr;
+    sg.entries[0].length    = buf1.size;
+    sg.entries[1].phys_addr = buf2.phys_addr;
+    sg.entries[1].virt_addr = buf2.virt_addr;
+    sg.entries[1].length    = buf2.size;
+    sg.count = 2;
+    sg.total_length = buf1.size + buf2.size;
+    dma::PrdTable prd;
+    size_t n = dma::prd_from_sg(prd, sg, true);
+    JARVIS_ASSERT_EQ((size_t)2, n);
+    JARVIS_ASSERT(prd.entries[0].phys_addr != prd.entries[1].phys_addr);
+    JARVIS_ASSERT((prd.entries[1].flags & 0x8000) != 0);
+    dma::free_buffer(buf1);
+    dma::free_buffer(buf2);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all DMA tests with the test framework.
 // Input: None
 // Expect: All DMA tests are registered (no direct assertion, only logging)
@@ -153,4 +199,6 @@ void register_dma_tests() {
     JARVIS_REGISTER_TEST(dma_sg_reset);
     JARVIS_REGISTER_TEST(dma_prd_reset);
     JARVIS_REGISTER_TEST(dma_free_empty_buffer);
+    JARVIS_REGISTER_TEST(dma_zero_length_buffer);
+    JARVIS_REGISTER_TEST(dma_sg_non_contiguous_prd);
 }

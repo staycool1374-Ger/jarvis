@@ -1,6 +1,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/pci.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -193,6 +194,68 @@ JARVIS_TEST(pci_isa_bridge_caps) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies at least one PCI device has valid BAR registers
+// with valid type, non-zero address, and non-zero size.
+// Input: arch::pci_scan_all(), iterate devices
+// Expect: At least one device has a BAR with address > 0 and size > 0
+// Depends: arch::pci_scan_all, arch::pci_read_device_info (pci_parse_bars)
+JARVIS_TEST(pci_bar_registers) {
+    arch::pci_scan_all();
+    bool found_valid_bar = false;
+    for (size_t i = 0; i < arch::pci_device_count(); ++i) {
+        const auto& d = arch::pci_devices()[i];
+        for (uint8_t b = 0; b < d.bar_count; ++b) {
+            JARVIS_ASSERT(d.bars[b].type == arch::PciBarType::MEMORY_32 ||
+                         d.bars[b].type == arch::PciBarType::IO ||
+                         d.bars[b].type == arch::PciBarType::MEMORY_64);
+            if (d.bars[b].address > 0 && d.bars[b].size > 0) {
+                found_valid_bar = true;
+            }
+        }
+    }
+    JARVIS_ASSERT(found_valid_bar);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies MSI/MSI-X capability chain traversal finds capabilities
+// on a device that has them (virtio-net on QEMU has MSI-X).
+// Input: Find virtio-net device, call pci_find_capability for MSI and MSI-X
+// Expect: At least one MSI or MSI-X capability found (non-zero offset)
+// Depends: arch::pci_scan_all, arch::pci_find_capability
+JARVIS_TEST(pci_msi_capability_chain) {
+    arch::pci_scan_all();
+    const arch::PciDeviceInfo* dev = nullptr;
+    for (size_t i = 0; i < arch::pci_device_count(); ++i) {
+        const auto& d = arch::pci_devices()[i];
+        if (d.vendor_id == 0x1AF4 && d.device_id == 0x1041) {
+            dev = &d;
+            break;
+        }
+    }
+    JARVIS_ASSERT(dev != nullptr);
+    uint8_t msi = arch::pci_find_capability(dev->bdf, arch::PCI_CAP_ID_MSI);
+    uint8_t msix = arch::pci_find_capability(dev->bdf, arch::PCI_CAP_ID_MSIX);
+    JARVIS_ASSERT(msi != 0 || msix != 0);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies PCI enumeration completes within bounded time.
+// Input: arch::pci_scan_all() with TSC timestamp measurement
+// Expect: Enumeration completes in < 1M TSC ticks on QEMU
+// Depends: arch::pci_scan_all, arch::rdtsc
+JARVIS_TEST(pci_enumeration_bounded_time) {
+    uint64_t tsc_start = arch::rdtsc();
+    arch::pci_scan_all();
+    uint64_t tsc_end = arch::rdtsc();
+    uint64_t elapsed = tsc_end - tsc_start;
+    JARVIS_ASSERT(elapsed < 1000000);
+    Logger::info("PCI: scan completed in %d TSC ticks", elapsed);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all PCI tests with the test framework.
 // Input: None
 // Expect: All PCI tests are registered (no direct assertion, only logging)
@@ -212,4 +275,7 @@ void register_pci_tests() {
     JARVIS_REGISTER_TEST(pci_enable_msi_no_cap);
     JARVIS_REGISTER_TEST(pci_enable_msix_no_cap);
     JARVIS_REGISTER_TEST(pci_isa_bridge_caps);
+    JARVIS_REGISTER_TEST(pci_bar_registers);
+    JARVIS_REGISTER_TEST(pci_msi_capability_chain);
+    JARVIS_REGISTER_TEST(pci_enumeration_bounded_time);
 }
