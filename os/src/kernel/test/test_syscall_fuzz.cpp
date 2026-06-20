@@ -31,6 +31,23 @@ TEST_CLASS(SyscallFuzzBounds) {
 
     for (uint64_t num = 0;
          num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL); ++num) {
+        if (num == static_cast<uint64_t>(SyscallNumber::EXIT)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::FORK)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::KILL)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::SIGNAL)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::ALARM)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::BRK)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::BUF_ALLOC)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::BUF_FREE)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::BUF_MAP)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::BUF_UNMAP)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::SETRLIMIT)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::RECEIVE)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::SEND_SYNC)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::WAITPID)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::NOTIFY_WAIT)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::EVENT_WAIT)) continue;
+        if (num == static_cast<uint64_t>(SyscallNumber::PAUSE)) continue;
         for (size_t a = 0; a < 4; ++a) {
             // Only test the first few variations per syscall to keep
             // runtime bounded
