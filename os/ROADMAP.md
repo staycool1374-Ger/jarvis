@@ -23,7 +23,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
 ### 0.2.17 — Kernel Synchronization & Real-Time Guarantees
-- [ ] **Phase 1: SpinLock primitive + RAII guards** — `src/kernel/sync/spinlock.hpp` + `SpinLockGuard<Lock>` template. Preemption-aware CAS spinlock with `arch::pause()` yield and priority-gated backoff. `[[nodiscard]]`, non-copyable, non-movable. (Effort: M — 150 LOC new)
+- [x] **Phase 1: SpinLock primitive + RAII guards** — `src/kernel/sync/spinlock.hpp` + `SpinLockGuard<Lock>` template. Preemption-aware CAS spinlock with `arch::pause()` yield and priority-gated backoff. `[[nodiscard]]`, non-copyable, non-movable. (Effort: M — 150 LOC new)
 - [x] **Phase 2: Migrate sync primitives to SpinLock** — Replace `IrqGuard` inside Mutex, Semaphore, Queue, Notify, EventGroup with per-object `SpinLock lock_`. Interrupts stay enabled → timer tick can preempt. (Effort: M — 80 LOC changed)
 - [x] **Phase 3a: Migrate Scheduler to SpinLock** — Replace `IrqGuard` in `add_task()`, `remove_task()`, `reschedule()` with a static `Scheduler::scheduler_lock_`. (Effort: M — 40 LOC changed)
 - [x] **Phase 3b: Volatile → Atomic context-switch globals** — Migrate `scheduler_save_rsp_to`, `scheduler_load_rsp_from`, `scheduler_load_cr3_from`, `scheduler_next_task_id`, `fpu_owner` from `volatile` to `std::atomic` with explicit `memory_order_acquire`/`release`. Create C bridge functions for `isr_stubs.asm` to call `__atomic_load_n`/`__atomic_store_n`. (Effort: H — 80 LOC changed, 1 new file)
