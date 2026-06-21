@@ -30,14 +30,14 @@ When implementing or refactoring code paths for this phase, execute the followin
 ### 0.2.19 — Kernel Memory Safety
 - [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
 
-### 0.2.19 — System Calls & Storage
+### 0.2.20 — System Calls & Storage
 - [ ] SYS_YIELD — cooperative task yielding for CPU-bound tasks
 - [ ] SYS_REBOOT / SYS_HALT — system power management from userspace
 - [ ] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
 - [ ] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
 - [ ] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
 
-### 0.2.20 — Kernel Configuration & Portability
+### 0.2.21 — Kernel Configuration & Portability
 
 A FreeRTOS-inspired `jarvis_config.h` header that makes Jarvis compile-time customizable and architecture-portable. All tunables currently scattered as `constexpr` in 20+ files get a single configuration home.
 
@@ -116,7 +116,7 @@ Upper and lower boundaries.
 | `INCLUDE_uxTaskGetStackHighWaterMark` | `CONFIG_INCLUDE_SYS_STACK_INFO` | Syscall gating |
 
 
-### 0.2.21 — ARM & RISC-V Portability
+### 0.2.22 — ARM & RISC-V Portability
 
 Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on ARM Cortex-A and RISC-V (RV64) hardware. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/<isa>/` implementation selected by the build system.
 
