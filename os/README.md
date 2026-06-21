@@ -1,6 +1,9 @@
 <p align="center">
   <img src="jarvis/banner.png" alt="Jarvis RTOS" width="600"/>
 </p>
+<p align="center">
+  <img src="Jarvis-RTOS-logo.png" alt="Jarvis RTOS Logo" width="200"/>
+</p>
 
 <h1 align="center">Jarvis RTOS</h1>
 <p align="center">
