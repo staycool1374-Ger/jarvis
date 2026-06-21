@@ -942,10 +942,10 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         // ISR assembly never consumed them.  If left dangling, the next timer
         // IRQ would attempt to context-switch via stalled pointers to freed
         // task memory → GPF at iretq.
-        kernel::scheduler_save_rsp_to = nullptr;
-        kernel::scheduler_load_rsp_from = 0;
-        kernel::scheduler_load_cr3_from = 0;
-        kernel::scheduler_next_task_id = 0;
+        __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+        __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&kernel::scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");
