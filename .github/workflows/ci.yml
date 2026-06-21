@@ -1,0 +1,70 @@
+name: Jarvis RTOS CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    
+    strategy:
+      matrix:
+        # Hier definierst du die Architekturen aus Phase 3 deiner Roadmap
+        architecture: [x86_64, aarch64, riscv64]
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Install Toolchains and QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          qemu-system \
+          gcc-x86-64-linux-gnu g++-x86-64-linux-gnu \
+          gcc-aarch64-linux-gnu g++-aarch64-linux-gnu \
+          gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+
+    - name: Build Kernel (Config Check & Compilation)
+      run: |
+        # 1. Vorab-Check deiner Konfiguration (dein neues v0.2.21 Target)
+        make check-config ARCH=${{ matrix.architecture }}
+        
+        # 2. Kernel sauber kompilieren
+        make clean ARCH=${{ matrix.architecture }}
+        make all ARCH=${{ matrix.architecture }}
+
+    - name: Execute Automated Headless Integration Tests
+      run: |
+        # Hier wird QEMU im Hintergrund gestartet, um die Test-Suite auszuführen.
+        # Über 'timeout' brechen wir ab, falls der Kernel in einen Deadlock läuft.
+        # Das Skript fängt das serielle Log ab und sucht nach dem Erfolgs-Indikator.
+        
+        case "${{ matrix.architecture }}" in
+          x86_64)
+            timeout 15s qemu-system-x86_64 -kernel bin/jarvis.elf -nographic -serial stdio > serial.log || true
+            ;;
+          aarch64)
+            timeout 15s qemu-system-aarch64 -M virt -cpu cortex-a57 -kernel bin/jarvis.elf -nographic -serial stdio > serial.log || true
+            ;;
+          riscv64)
+            timeout 15s qemu-system-riscv64 -M virt -cpu rv64 -kernel bin/jarvis.elf -nographic -serial stdio > serial.log || true
+            ;;
+        esac
+        
+        # Auswertung: Prüfen, ob der Kernel erfolgreich bis zum Init/Test-Ende kam
+        echo "=== SERIAL OUTPUT ==="
+        cat serial.log
+        echo "====================="
+        
+        if grep -q "ALL TESTS PASSED" serial.log; then
+          echo "✓ Integration tests passed successfully on ${{ matrix.architecture }}."
+          exit 0
+        else
+          echo "❌ Integration tests failed or timed out on ${{ matrix.architecture }}."
+          exit 1
+        fi
