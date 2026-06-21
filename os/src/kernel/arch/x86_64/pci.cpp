@@ -67,6 +67,102 @@ void probe_bus(uint8_t bus) {
     }
 }
 
+static const char* pci_class_name(uint8_t class_code) {
+    switch (class_code) {
+        case 0x00: return "Legacy";
+        case 0x01: return "Storage";
+        case 0x02: return "Network";
+        case 0x03: return "Display";
+        case 0x04: return "Multimedia";
+        case 0x05: return "Memory";
+        case 0x06: return "Bridge";
+        case 0x07: return "Comm";
+        case 0x08: return "Peripheral";
+        case 0x09: return "Input";
+        case 0x0A: return "Docking";
+        case 0x0B: return "Processor";
+        case 0x0C: return "SerialBus";
+        case 0x0D: return "Wireless";
+        case 0x0E: return "I2O";
+        case 0x0F: return "Satellite";
+        case 0x10: return "Encrypt";
+        case 0x11: return "SignalProc";
+        default:   return "Unknown";
+    }
+}
+
+static const char* pci_subclass_name(uint8_t class_code, uint8_t subclass) {
+    if (class_code == 0x01) {
+        switch (subclass) {
+            case 0x00: return "SCSI";
+            case 0x01: return "IDE";
+            case 0x02: return "Floppy";
+            case 0x03: return "IPI";
+            case 0x04: return "RAID";
+            case 0x05: return "ATA";
+            case 0x06: return "SATA";
+            case 0x07: return "SAS";
+            case 0x08: return "NVM";
+            case 0x09: return "UFS";
+            default:   return "Other";
+        }
+    }
+    if (class_code == 0x02) {
+        switch (subclass) {
+            case 0x00: return "Ethernet";
+            case 0x01: return "TokenRing";
+            case 0x02: return "FDDI";
+            case 0x03: return "ATM";
+            case 0x04: return "ISDN";
+            case 0x05: return "WorldFip";
+            case 0x06: return "PICMG";
+            case 0x07: return "Infiniband";
+            case 0x08: return "Fabric";
+            default:   return "Other";
+        }
+    }
+    if (class_code == 0x03) {
+        switch (subclass) {
+            case 0x00: return "VGA";
+            case 0x01: return "XGA";
+            case 0x02: return "3D";
+            default:   return "Other";
+        }
+    }
+    if (class_code == 0x06) {
+        switch (subclass) {
+            case 0x00: return "HostBridge";
+            case 0x01: return "ISA";
+            case 0x02: return "EISA";
+            case 0x03: return "MCABridge";
+            case 0x04: return "PCI2PCI";
+            case 0x05: return "PCMCIA";
+            case 0x06: return "NuBus";
+            case 0x07: return "CardBus";
+            case 0x08: return "RACEway";
+            case 0x09: return "PCI2PCI(Transparent)";
+            case 0x0A: return "InfiniLink";
+            default:   return "Other";
+        }
+    }
+    if (class_code == 0x0C) {
+        switch (subclass) {
+            case 0x00: return "FireWire";
+            case 0x01: return "ACCESSbus";
+            case 0x02: return "SSA";
+            case 0x03: return "USB";
+            case 0x04: return "FibreChannel";
+            case 0x05: return "SMBus";
+            case 0x06: return "InfiniBand";
+            case 0x07: return "IPMI";
+            case 0x08: return "SERCOS";
+            case 0x09: return "CANbus";
+            default:   return "Other";
+        }
+    }
+    return "";
+}
+
 } // anonymous namespace
 
 namespace arch {
@@ -75,7 +171,46 @@ size_t pci_scan_all() {
     g_device_count = 0;
     probe_bus(0);
     Logger::info("PCI: scanned, %d devices found", g_device_count);
+#ifdef CONFIG_DEBUG
+    pci_dump_tree();
+#endif
     return g_device_count;
+}
+
+void pci_dump_tree() {
+    uint8_t current_bus = 0xFF;
+    for (size_t i = 0; i < g_device_count; ++i) {
+        const auto& d = g_devices[i];
+        if (d.bdf.bus != current_bus) {
+            current_bus = d.bdf.bus;
+            Logger::raw_write("PCI Bus ");
+            Logger::print_dec(d.bdf.bus);
+            Logger::raw_write(":\n");
+        }
+        Logger::raw_write("  ");
+        Logger::print_dec(d.bdf.bus);
+        Logger::raw_write(":");
+        Logger::print_dec(d.bdf.device);
+        Logger::raw_write(".");
+        Logger::print_dec(d.bdf.function);
+        Logger::raw_write("  [");
+        Logger::print_hex(d.vendor_id);
+        Logger::raw_write(":");
+        Logger::print_hex(d.device_id);
+        Logger::raw_write("]  ");
+        const char* cn = pci_class_name(d.class_code);
+        Logger::raw_write(cn);
+        Logger::raw_write(" (");
+        Logger::print_hex(d.class_code);
+        Logger::raw_write("/");
+        Logger::print_hex(d.subclass);
+        const char* sn = pci_subclass_name(d.class_code, d.subclass);
+        if (sn[0]) {
+            Logger::raw_write(" ");
+            Logger::raw_write(sn);
+        }
+        Logger::raw_write(")\n");
+    }
 }
 
 const PciDeviceInfo* pci_devices() {

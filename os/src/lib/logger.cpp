@@ -1,5 +1,6 @@
 #include <logger.hpp>
 #include <kernel/arch/serial.hpp>
+#include <kernel/log/ring_buffer.hpp>
 
 namespace kernel {
 
@@ -19,10 +20,16 @@ void Logger::set_level(LogLevel level) {
 
 void Logger::putchar(char c) {
     arch::Serial::putchar(c);
+    if (initialized_) {
+        kernel::log::g_klog.putchar(c);
+    }
 }
 
 void Logger::puts(const char* s) {
     arch::Serial::puts(s);
+    if (initialized_) {
+        kernel::log::g_klog.puts(s);
+    }
 }
 
 void Logger::print_hex(uint64_t v) {

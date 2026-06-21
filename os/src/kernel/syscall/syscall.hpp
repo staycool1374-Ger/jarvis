@@ -57,7 +57,8 @@ enum class SyscallNumber : uint64_t {
     GETRLIMIT   = 45,
     SETRLIMIT   = 46,
     GETRANDOM   = 47,
-    MAX_SYSCALL = 48,
+    KLOG        = 48,
+    MAX_SYSCALL = 49,
 };
 
 /// @brief System call handler function signature.
@@ -158,6 +159,7 @@ private:
     static uint64_t sys_getrlimit(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_setrlimit(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
     static uint64_t sys_getrandom(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
+    static uint64_t sys_klog(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*);
 
     static constexpr SyscallHandler syscall_table_[static_cast<size_t>(
         SyscallNumber::MAX_SYSCALL)] = {
@@ -209,6 +211,7 @@ private:
         &Syscall::sys_getrlimit,
         &Syscall::sys_setrlimit,
         &Syscall::sys_getrandom,
+        &Syscall::sys_klog,
     };
 
 };

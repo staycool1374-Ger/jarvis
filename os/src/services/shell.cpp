@@ -18,8 +18,10 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/log/ring_buffer.hpp>
 #include <kernel/net/net.hpp>
 #include <kernel/driver/virtio_net.hpp>
+#include <kernel/arch/pci.hpp>
 #include <test.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -118,6 +120,8 @@ void Shell::init() {
     register_command("ifconfig","Show/configure network interface",  cmd_ifconfig);
     register_command("ping",    "Send ICMP echo requests",           cmd_ping);
     register_command("less",    "Page through a text file",          cmd_less);
+    register_command("dmesg",   "Print kernel log buffer",           cmd_dmesg);
+    register_command("lspci",   "List PCI devices",                  cmd_lspci);
 
     work_dir_[0] = '/';
     work_dir_[1] = '\0';
@@ -2046,6 +2050,50 @@ void Shell::cmd_less(int argc, const char** argv) {
         }
         if (got) break;
         arch::pause();
+    }
+}
+
+void Shell::cmd_dmesg(int, const char**) {
+    char buf[256];
+    size_t total = 0;
+    while (true) {
+        size_t n = kernel::log::g_klog.read(buf, sizeof(buf) - 1);
+        if (n == 0) break;
+        buf[n] = '\0';
+        Terminal::write(buf);
+        total += n;
+    }
+    if (total == 0) {
+        Terminal::write("Kernel log buffer is empty.\n");
+    }
+}
+
+void Shell::cmd_lspci(int, const char**) {
+    Terminal::write("PCI Device Tree:\n");
+    size_t n = arch::pci_device_count();
+    if (n == 0) {
+        Terminal::write("  No PCI devices found.\n");
+        return;
+    }
+    const auto* devs = arch::pci_devices();
+    for (size_t i = 0; i < n; ++i) {
+        const auto& d = devs[i];
+        char line[128];
+        int pos = 0;
+        auto add = [&](const char* s) { while (*s && pos < 120) line[pos++] = *s++; };
+        auto hex = [&](uint64_t v) {
+            char h[20]; int hp = 19; h[19] = 0;
+            if (v == 0) { line[pos++] = '0'; return; }
+            while (v > 0 && hp > 0) { h[--hp] = "0123456789ABCDEF"[v & 0xF]; v >>= 4; }
+            while (h[hp]) line[pos++] = h[hp++];
+        };
+        add("  ");
+        hex(d.bdf.bus); add(":"); hex(d.bdf.device); add("."); hex(d.bdf.function);
+        add("  [");
+        hex(d.vendor_id); add(":"); hex(d.device_id);
+        add("]  ");
+        Terminal::write(line);
+        Terminal::write("\n");
     }
 }
 

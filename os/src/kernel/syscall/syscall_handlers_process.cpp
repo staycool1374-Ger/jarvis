@@ -59,22 +59,39 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     return static_cast<uint64_t>(-1);
 }
 
+static bool validate_argv_envp(const char* const* ptr, bool is_user_task) {
+    if (!ptr) return true;
+    if (is_user_task) {
+        auto arr = checked(ptr, static_cast<size_t>(1));
+        if (!arr.valid()) return false;
+        const char* const* p = ptr;
+        while (*p) {
+            auto s = checked(*p, static_cast<size_t>(1));
+            if (!s.valid()) return false;
+            size_t len = 0;
+            while (s.unsafe_ptr()[len]) ++len;
+            ++p;
+            auto next = checked(p, static_cast<size_t>(1));
+            if (!next.valid()) return false;
+        }
+    }
+    return true;
+}
+
 uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t* regs) {
     if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
     vfs::Vnode* vn = nullptr;
-    if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
-        if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0),
-            SYSCALL_MAX_PATH))
-            return static_cast<uint64_t>(-1);
-        vn = vfs::resolve(path_buf);
-    } else {
-        vn = vfs::resolve(reinterpret_cast<const char*>(arg0));
-    }
+    char path_buf[SYSCALL_MAX_PATH];
+    if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0),
+        SYSCALL_MAX_PATH))
+        return static_cast<uint64_t>(-1);
+    vn = vfs::resolve(path_buf);
+    if (!vn) return static_cast<uint64_t>(-1);
     auto* argv = reinterpret_cast<const char* const*>(arg1);
     auto* envp = reinterpret_cast<const char* const*>(arg2);
-    if (!vn) return static_cast<uint64_t>(-1);
+    if (!validate_argv_envp(argv, true)) return static_cast<uint64_t>(-1);
+    if (!validate_argv_envp(envp, true)) return static_cast<uint64_t>(-1);
     if (vn->size == 0 || vn->size > 512_KiB) return static_cast<uint64_t>(-1);
     size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
     uint64_t file_phys = PMM::alloc_contiguous(file_pages);

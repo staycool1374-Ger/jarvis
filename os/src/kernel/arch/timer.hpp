@@ -7,30 +7,27 @@
 
 namespace arch {
 
-/// @brief PIT-based timer driver providing periodic ticks.
+/// @brief Timer interface used by the rest of the kernel.
+/// @note Each architecture provides a concrete implementation matching
+///       this interface.  The x86_64 implementation is PIT-based.
 class Timer {
 public:
-    /// @brief Initialises the PIT with the given frequency.
-    /// @param frequency_hz Desired interrupt frequency in Hz.
     static void init(uint32_t frequency_hz);
-    /// @brief Returns the total tick count since initialisation.
-    /// @return Tick count.
     static uint64_t ticks();
-
-    /// @brief Changes the PIT frequency at runtime.
-    /// @param frequency_hz New frequency in Hz.
     static void set_frequency(uint32_t frequency_hz);
-
-    /// @brief Handles the timer IRQ (increments tick count).
     static void handle_irq();
-
-    /// @brief Test-only: sets the tick count directly.
-    /// @param value New tick count.
     static void set_ticks_for_test(uint64_t value);
+
+    static void oneshot(uint64_t ticks_from_now);
+    static void periodic(uint64_t period_ticks);
+    static uint64_t remaining();
 
 private:
     static constexpr uint32_t PIT_BASE_FREQ = 1193182;
     static volatile uint64_t ticks_;
 };
+
+/// @brief HAL interface name for arch::Timer.
+using ArchTimer = Timer;
 
 } // namespace arch

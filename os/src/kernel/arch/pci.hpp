@@ -183,6 +183,8 @@ const PciDeviceInfo* pci_find_device(uint8_t class_code, uint8_t subclass);
 void pci_parse_bars(PciDeviceInfo& info);
 PciDeviceInfo pci_read_device_info(PciBdf bdf);
 
+void pci_dump_tree();
+
 // --- Capabilities & MSI/MSI-X ---
 
 /// Walk the capability list and return the config space offset of the

@@ -28,8 +28,6 @@ When implementing or refactoring code paths for this phase, execute the followin
 - [ ] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
 
 ### 0.2.19 — Kernel Memory Safety
-- [ ] `UniquePtr<T>` / `make_unique` — type-safe RAII wrapper for kernel heap allocations (placement-new construction, move-only ownership, automatic `kfree` + destructor on scope exit)
-- [ ] Audit existing `kmalloc`/`kfree` sites for leak-prone manual management and migrate to `UniquePtr` where appropriate
 - [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
 
 ### 0.2.19 — System Calls & Storage
@@ -151,7 +149,8 @@ Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on A
 
 ### 0.3.2 — Scheduling Analytics & Idle-Task Resource Stewardship
 - [ ] WCRT analysis, SYS_SCHED_INFO, /proc/sched metrics
-- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched)
+- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched), all preemtiable and incrementally. Idle task
+Never holds and locks any resources.
 - [ ] Idle task: slab allocator page return — scan entirely empty slabs/caches during idle cycles, return hoarded page frames to the PMM buddy allocator
 - [ ] Deterministic userspace memory pools (slab/buddy, O(1) allocation)
 
@@ -239,7 +238,9 @@ Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on A
 ## Phase 9: Hardware Drivers & Protocols (0.9.x)
 
 ### 0.9.1 — Networking Stack
-- [ ] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver
+- [ ] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver based on 
+Already implemented minimize network stack. Implementation strictly running in user space
+As network daemon (need).
 - [ ] Distributed real-time communication, remote logging, networked control systems
 
 ### 0.9.2 — USB Stack

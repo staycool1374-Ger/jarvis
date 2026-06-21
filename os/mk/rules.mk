@@ -8,11 +8,19 @@
 
 # ------------------------------------------------------------------------------
 # Source discovery & object file mapping
+#
+# Generic sources (outside arch/) + per-ARCH sources under arch/$(ARCH)/
 # ------------------------------------------------------------------------------
-SRC_CXX        := $(shell find src -name '*.cpp')
-SRC_ASM        := $(shell find src -name '*.asm')
-OBJ            := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
-DEPFILES       := $(shell find build -name '*.d' 2>/dev/null)
+SRC_CXX_GENERIC := $(shell find src -path '*/kernel/arch' -prune -o -name '*.cpp' -print)
+SRC_ASM_GENERIC := $(shell find src -path '*/kernel/arch' -prune -o -name '*.asm' -print)
+
+SRC_CXX_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.cpp' 2>/dev/null)
+SRC_ASM_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.asm' 2>/dev/null)
+
+SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH)
+SRC_ASM         := $(SRC_ASM_GENERIC) $(SRC_ASM_ARCH)
+OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
+DEPFILES        := $(shell find build -name '*.d' 2>/dev/null)
 -include $(DEPFILES)
 
 # ------------------------------------------------------------------------------

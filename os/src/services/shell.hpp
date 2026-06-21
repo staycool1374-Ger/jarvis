@@ -186,6 +186,10 @@ private:
     static void cmd_ping(int argc, const char** argv);
     /// @brief Built-in: page through a file.
     static void cmd_less(int argc, const char** argv);
+    /// @brief Built-in: print kernel log buffer.
+    static void cmd_dmesg(int argc, const char** argv);
+    /// @brief Built-in: list PCI devices.
+    static void cmd_lspci(int argc, const char** argv);
 };
 
 } // namespace service

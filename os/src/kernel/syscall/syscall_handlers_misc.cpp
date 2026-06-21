@@ -1,5 +1,6 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
+#include <kernel/log/ring_buffer.hpp>
 #include <kernel/random.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
@@ -255,6 +256,24 @@ uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
     random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
     return arg1;
+}
+
+uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
+    uint64_t, uint64_t*) {
+    // arg0 = buffer, arg1 = size, arg2 = flags (0=read, 1=clear)
+    if (arg2 == 1) {
+        kernel::log::g_klog.clear();
+        return 0;
+    }
+    if (arg0 == 0 || arg1 == 0) return 0;
+
+    if (syscall_is_user_task()) {
+        auto buf = checked(reinterpret_cast<char*>(arg0), arg1);
+        if (!buf.valid()) return static_cast<uint64_t>(-1);
+        return kernel::log::g_klog.read(buf.unsafe_ptr(), static_cast<size_t>(arg1));
+    }
+
+    return kernel::log::g_klog.read(reinterpret_cast<char*>(arg0), static_cast<size_t>(arg1));
 }
 
 } // namespace kernel

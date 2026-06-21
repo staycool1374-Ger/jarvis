@@ -1,7 +1,17 @@
 # ==============================================================================
 # Jarvis RTOS Microkernel Makefile
-# Target: x86_64 Freestanding C++20 / ISO 26262 & MISRA-Compliant Toolchain
+# Target architecture: set ARCH to build for a different arch (default: x86_64)
 # ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Architecture selection — must be set before toolchain and source discovery
+# ------------------------------------------------------------------------------
+ARCH ?= x86_64
+
+SUPPORTED_ARCHS := x86_64
+ifneq ($(filter $(ARCH),$(SUPPORTED_ARCHS)),$(ARCH))
+$(error Unsupported architecture '$(ARCH)'. Supported: $(SUPPORTED_ARCHS))
+endif
 
 # ------------------------------------------------------------------------------
 # Host Environment & OS Detection
@@ -17,12 +27,15 @@ else
 endif
 
 # ------------------------------------------------------------------------------
-# Toolchain Setup
+# Toolchain Setup — conditional per ARCH
 #
 # CXXFLAGS / CCFLAGS here are the *base* flags.  Build-type specific flags
 # (e.g. -Og -DCONFIG_DEBUG for debug, -O2 for release) are added via
 # target-specific variable overrides on the 'debug' / 'release' targets.
 # ------------------------------------------------------------------------------
+
+ifeq ($(ARCH),x86_64)
+
 CXX      := g++
 CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
@@ -45,6 +58,8 @@ LDFLAGS  := -m elf_x86_64 -nostdlib -T linker.ld -z max-page-size=0x1000 \
             -Map=build/kernel.map
 
 GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/null))
+
+endif
 
 # ------------------------------------------------------------------------------
 # Output paths

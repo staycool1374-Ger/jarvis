@@ -134,4 +134,20 @@ inline uint64_t rdtsc() {
     return (static_cast<uint64_t>(tsc_high) << 32) | tsc_low;
 }
 
+/// @brief HAL ArchIO interface — wraps the free-standing arch I/O functions.
+class ArchIO {
+public:
+    static inline void outb(uint16_t port, uint8_t val) { arch::outb(port, val); }
+    static inline uint8_t inb(uint16_t port) { return arch::inb(port); }
+    static inline void outw(uint16_t port, uint16_t val) { arch::outw(port, val); }
+    static inline uint16_t inw(uint16_t port) { return arch::inw(port); }
+    static inline void outl(uint16_t port, uint32_t val) { arch::outl(port, val); }
+    static inline uint32_t inl(uint16_t port) { return arch::inl(port); }
+    static inline void io_wait() { arch::io_wait(); }
+    static inline void hlt() { arch::hlt(); }
+    static inline void pause() { arch::pause(); }
+    static inline void cli() { arch::cli(); }
+    static inline void sti() { arch::sti(); }
+};
+
 } // namespace arch
