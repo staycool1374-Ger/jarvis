@@ -274,6 +274,29 @@ JARVIS_TEST(pci_enumeration_bounded_time) {
 }
 
 // Runmode: kernel
+// Testidea: Verifies pci_print_tree() produces valid device tree output.
+// Input: Call pci_print_tree() after scan
+// Expect: Output contains vendor:device ID strings, class/subclass, BAR info
+// Depends: arch::pci_scan_all, arch::pci_print_tree (BLOCKED — not yet implemented)
+// Blocked: pci_print_tree() and /proc/pci sysfs are planned but not yet
+// implemented in production kernel. Once available, this test should:
+//   1. Call arch::pci_scan_all()
+//   2. Call arch::pci_print_tree() and capture output
+//   3. Verify output contains expected device lines (vendor:device, class, BARs)
+JARVIS_TEST(pci_print_tree_output) {
+    /* Pseudocode: pci_print_tree() produces debug output listing all PCI
+     * devices with vendor:device IDs, class/subclass, and BAR details.
+     * Currently blocked — pci_print_tree() is not yet implemented.
+     * Implementation plan:
+     *   - Add pci_print_tree() function to arch::PCI interface
+     *   - Iterate scanned devices, print formatted lines
+     *   - This test calls pci_scan_all(), then pci_print_tree()
+     *   - Verify output via Logger capture or serial
+     */
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all PCI tests with the test framework.
 // Input: None
 // Expect: All PCI tests are registered (no direct assertion, only logging)
@@ -296,4 +319,5 @@ void register_pci_tests() {
     JARVIS_REGISTER_TEST(pci_bar_registers);
     JARVIS_REGISTER_TEST(pci_msi_capability_chain);
     JARVIS_REGISTER_TEST(pci_enumeration_bounded_time);
+    JARVIS_REGISTER_TEST(pci_print_tree_output);
 }

@@ -94,6 +94,64 @@ JARVIS_TEST(secure_exec_unmapped_crossing_eFault) {
 }
 
 JARVIS_TEST(secure_exec_regression_audit) {
+    uint64_t user_limit = USER_SPACE_LIMIT;
+    uint64_t hhdm = arch::HHDM_OFFSET;
+
+    // argv array of pointers at user-space base
+    uint64_t argv_addr = 0x100000;
+    auto argv_checked = checked(reinterpret_cast<const uint64_t*>(argv_addr),
+                                static_cast<uint64_t>(8));
+    JARVIS_ASSERT(argv_checked.valid());
+
+    // envp array of pointers
+    uint64_t envp_addr = 0x200000;
+    auto envp_checked = checked(reinterpret_cast<const uint64_t*>(envp_addr),
+                                static_cast<uint64_t>(4));
+    JARVIS_ASSERT(envp_checked.valid());
+
+    // String at user-space address
+    JARVIS_ASSERT(is_user_string(reinterpret_cast<const void*>(argv_addr), 64));
+    JARVIS_ASSERT(is_user_string(reinterpret_cast<const void*>(envp_addr), 32));
+
+    // Null string pointers
+    JARVIS_ASSERT(!is_user_string(nullptr));
+    JARVIS_ASSERT(!is_user_string(nullptr, 0));
+    JARVIS_ASSERT(!is_user_string(nullptr, 64));
+
+    // String crossing boundary
+    JARVIS_ASSERT(is_user_string(reinterpret_cast<const void*>(user_limit - 4), 4));
+    JARVIS_ASSERT(!is_user_string(reinterpret_cast<const void*>(user_limit - 4), 8));
+
+    // Zero-size ranges (should be valid - empty range can't fault)
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(argv_addr), 0));
+    auto zero_checked = checked(reinterpret_cast<const char*>(argv_addr),
+                                static_cast<uint64_t>(0));
+    JARVIS_ASSERT(zero_checked.valid());
+
+    // Single-byte at exact boundary
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(user_limit - 1), 1));
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<const void*>(user_limit), 1));
+
+    // Huge page alignment
+    uint64_t page_2m = 0x200000;
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(page_2m), 4096));
+    auto page_checked = checked(reinterpret_cast<const char*>(page_2m),
+                                static_cast<uint64_t>(4096));
+    JARVIS_ASSERT(page_checked.valid());
+
+    // Kernel HHDM edge
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<const void*>(hhdm - 1), 1));
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<const void*>(hhdm + 0x1000), 4096));
+
+    // Full user range check for small size
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(0x1000), 8));
+
+    // argv string array: each element must be a valid user pointer
+    for (uint64_t i = 0; i < 4; ++i) {
+        uint64_t str_addr = argv_addr + i * 0x1000 + 0x100;
+        JARVIS_ASSERT(is_user_string(reinterpret_cast<const void*>(str_addr), 256));
+    }
+
     JARVIS_TEST_PASS();
 }
 

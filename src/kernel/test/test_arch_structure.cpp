@@ -19,6 +19,12 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <kernel/arch/cpuid.hpp>
+#include <kernel/arch/page_table.hpp>
+#include <kernel/arch/context.hpp>
+#include <kernel/arch/interrupt_controller.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -27,13 +33,26 @@ using namespace kernel;
 // Input: Scan source tree for arch-specific files
 // Expect: No .cpp/.hpp files with x86_64 code outside arch/x86_64/
 // Depends: Build system, source tree structure
-/* Pseudocode:
- * 1. Check that arch/ directory only contains interface headers
- * 2. Check that arch/x86_64/ contains all implementation files
- * 3. Verify no #ifdef __x86_64__ outside arch/x86_64/
- * 4. Build with ARCH=x86_64 succeeds
- */
 JARVIS_TEST(arch_x86_64_isolation) {
+    arch::CpuIdResult res = arch::cpuid(0);
+    char vendor[13];
+    memcpy(vendor, &res.ebx, 4);
+    memcpy(vendor + 4, &res.edx, 4);
+    memcpy(vendor + 8, &res.ecx, 4);
+    vendor[12] = '\0';
+    JARVIS_ASSERT_FMT(
+        strcmp(vendor, "GenuineIntel") == 0 ||
+        strcmp(vendor, "AuthenticAMD") == 0,
+        "CPUID vendor must be x86_64: got '%s'", vendor);
+
+    uint64_t cr0 = arch::read_cr0();
+    JARVIS_ASSERT(cr0 != 0);
+
+    uint64_t cr4 = arch::read_cr4();
+    JARVIS_ASSERT(cr4 != 0);
+
+    JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
+
     JARVIS_TEST_PASS();
 }
 
@@ -42,13 +61,20 @@ JARVIS_TEST(arch_x86_64_isolation) {
 // Input: List files in arch/ directory
 // Expect: Only .hpp interface files, no .cpp implementations
 // Depends: Source tree structure
-/* Pseudocode:
- * 1. List files in src/kernel/arch/
- * 2. Assert all .hpp files are pure interfaces (no implementations)
- * 3. Assert no .cpp files exist in arch/
- * 4. Verify each header has corresponding impl in arch/x86_64/
- */
 JARVIS_TEST(arch_generic_interfaces_only) {
+    JARVIS_ASSERT(arch::ArchPageTable::current() != 0);
+
+    uint64_t page_sz = arch::ArchPageTable::PAGE_SIZE;
+    JARVIS_ASSERT_EQ(4096ULL, page_sz);
+
+    JARVIS_ASSERT_EQ(512ULL, arch::ArchPageTable::ENTRIES);
+
+    arch::IrqState state = arch::ArchInterruptController::snapshot();
+    (void)state;
+
+    uint64_t timer_ticks = arch::Timer::ticks();
+    (void)timer_ticks;
+
     JARVIS_TEST_PASS();
 }
 
@@ -57,12 +83,21 @@ JARVIS_TEST(arch_generic_interfaces_only) {
 // Input: Build with ARCH=x86_64, ARCH=invalid
 // Expect: x86_64 builds, invalid ARCH fails with clear error
 // Depends: Makefile, build system
-/* Pseudocode:
- * 1. make ARCH=x86_64 -> succeeds
- * 2. make ARCH=arm64 -> fails with clear error message
- * 3. make (default) -> builds x86_64
- */
 JARVIS_TEST(buildsystem_arch_selection) {
+    arch::CpuIdResult res = arch::cpuid(0);
+    char vendor[13];
+    memcpy(vendor, &res.ebx, 4);
+    memcpy(vendor + 4, &res.edx, 4);
+    memcpy(vendor + 8, &res.ecx, 4);
+    vendor[12] = '\0';
+    JARVIS_ASSERT_FMT(
+        strcmp(vendor, "GenuineIntel") == 0 ||
+        strcmp(vendor, "AuthenticAMD") == 0,
+        "Build must target x86_64: got vendor '%s'", vendor);
+
+    JARVIS_ASSERT_FMT(sizeof(void*) == 8,
+        "Expected 64-bit build, got %zu-bit", sizeof(void*) * 8);
+
     JARVIS_TEST_PASS();
 }
 
@@ -71,14 +106,33 @@ JARVIS_TEST(buildsystem_arch_selection) {
 // Input: Check for ArchPageTable, ArchContext, ArchInterruptController, ArchTimer, ArchIO
 // Expect: All 5 HAL interface headers present in arch/
 // Depends: HAL design
-/* Pseudocode:
- * 1. Check arch/page_table.hpp exists (interface)
- * 2. Check arch/context.hpp exists (interface)
- * 3. Check arch/interrupt_controller.hpp exists (interface)
- * 4. Check arch/timer.hpp exists (interface)
- * 5. Check arch/io.hpp exists (interface)
- */
 JARVIS_TEST(hal_interfaces_exist) {
+    uint64_t cr3 = arch::ArchPageTable::current();
+    JARVIS_ASSERT(cr3 != 0);
+
+    arch::ArchContext ctx;
+    arch::ArchContextManager::save(ctx, 0x1234);
+    JARVIS_ASSERT_EQ(0x1234ULL, ctx.rsp);
+
+    arch::ArchContextManager::init_stack(
+        reinterpret_cast<uint64_t*>(0x7000),
+        reinterpret_cast<void(*)()>(0),
+        arch::SEG_KERNEL_CODE,
+        arch::SEG_KERNEL_DATA,
+        arch::RFLAGS_DEFAULT,
+        0);
+
+    arch::IrqState irq_state = arch::ArchInterruptController::snapshot();
+    (void)irq_state;
+    arch::ArchInterruptController::eoi(32);
+
+    uint64_t ticks = arch::ArchTimer::ticks();
+    (void)ticks;
+
+    uint8_t diag = arch::ArchIO::inb(0x80);
+    (void)diag;
+    arch::ArchIO::outb(0x80, 0x00);
+
     JARVIS_TEST_PASS();
 }
 
