@@ -26,7 +26,7 @@ JARVIS_TEST(fpu_clone_copies_state) {
     uint64_t pi = FPU_PI_BITS;
     asm volatile("finit\nfldl %0" : : "m"(pi) : "memory");
 
-    JARVIS_ASSERT_FMT(fpu_owner == parent,
+    JARVIS_ASSERT_FMT(__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) == parent,
         "fpu_owner (%p) != parent (%p) after FINIT/FLDL",
         (void*)fpu_owner, (void*)parent);
     JARVIS_ASSERT_FMT(parent->fpu_used,

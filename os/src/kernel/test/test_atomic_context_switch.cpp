@@ -27,19 +27,15 @@ JARVIS_TEST(atomic_globals_set_on_reschedule) {
     Scheduler::set_current(*task_a);
     Scheduler::reschedule();
 
-    uint64_t saved_rsp = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_save_rsp_to),
-        __ATOMIC_ACQUIRE);
+    uint64_t* saved_rsp_ptr = __atomic_load_n(
+        &kernel::scheduler_save_rsp_to, __ATOMIC_ACQUIRE);
     uint64_t loaded_rsp = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_load_rsp_from),
-        __ATOMIC_ACQUIRE);
+        &kernel::scheduler_load_rsp_from, __ATOMIC_ACQUIRE);
     uint64_t loaded_cr3 = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_load_cr3_from),
-        __ATOMIC_ACQUIRE);
+        &kernel::scheduler_load_cr3_from, __ATOMIC_ACQUIRE);
 
-    JARVIS_ASSERT_FMT(saved_rsp == reinterpret_cast<uint64_t>(task_a),
-                      "save_rsp_to = %lx (expected %lx)", saved_rsp,
-                      reinterpret_cast<uint64_t>(task_a));
+    JARVIS_ASSERT_FMT(reinterpret_cast<uint64_t>(saved_rsp_ptr) == reinterpret_cast<uint64_t>(task_a),
+                      "save_rsp_to = %p (expected %p)", (void*)saved_rsp_ptr, (void*)task_a);
     JARVIS_ASSERT_FMT(loaded_rsp == reinterpret_cast<uint64_t>(task_b),
                       "load_rsp_from = %lx (expected %lx)", loaded_rsp,
                       reinterpret_cast<uint64_t>(task_b));
@@ -64,20 +60,12 @@ JARVIS_TEST(atomic_globals_set_on_reschedule) {
 // Expect: Value matches what was written.
 // Depends: fpu_owner atomic
 JARVIS_TEST(atomic_fpu_owner_read_write) {
-    auto* old = __atomic_load_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        __ATOMIC_ACQUIRE);
+    auto* old = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_ACQUIRE);
     auto* test_ptr = reinterpret_cast<TaskControlBlock*>(uintptr_t(0xDEADBEEF));
-    __atomic_store_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        test_ptr, __ATOMIC_RELEASE);
-    auto* val = __atomic_load_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        __ATOMIC_ACQUIRE);
+    __atomic_store_n(&kernel::fpu_owner, test_ptr, __ATOMIC_RELEASE);
+    auto* val = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_ACQUIRE);
     JARVIS_ASSERT(val == test_ptr);
-    __atomic_store_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        old, __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::fpu_owner, old, __ATOMIC_RELEASE);
     JARVIS_TEST_PASS();
 }
 
@@ -87,19 +75,11 @@ JARVIS_TEST(atomic_fpu_owner_read_write) {
 // Expect: Atomic operations preserve the value.
 // Depends: scheduler_next_task_id atomic
 JARVIS_TEST(atomic_next_task_id_consistency) {
-    uint64_t old = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        __ATOMIC_ACQUIRE);
-    __atomic_store_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        old + 100, __ATOMIC_RELEASE);
-    uint64_t val = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        __ATOMIC_ACQUIRE);
+    uint64_t old = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    __atomic_store_n(&kernel::scheduler_next_task_id, old + 100, __ATOMIC_RELEASE);
+    uint64_t val = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     JARVIS_ASSERT_EQ(old + 100, val);
-    __atomic_store_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        old, __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_next_task_id, old, __ATOMIC_RELEASE);
     JARVIS_TEST_PASS();
 }
 
@@ -122,15 +102,13 @@ JARVIS_TEST(atomic_idempotent_null_handling) {
     Scheduler::set_current(*task_a);
     Scheduler::reschedule();
 
-    uint64_t save_rsp = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_save_rsp_to),
-        __ATOMIC_ACQUIRE);
+    uint64_t* save_rsp_ptr = __atomic_load_n(
+        &kernel::scheduler_save_rsp_to, __ATOMIC_ACQUIRE);
     uint64_t load_cr3 = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_load_cr3_from),
-        __ATOMIC_ACQUIRE);
+        &kernel::scheduler_load_cr3_from, __ATOMIC_ACQUIRE);
 
     // After context switch, these globals are cleared by assembly
-    JARVIS_ASSERT_EQ(0ULL, save_rsp);
+    JARVIS_ASSERT_EQ(nullptr, save_rsp_ptr);
     JARVIS_ASSERT_EQ(0ULL, load_cr3);
 
     Scheduler::set_current(*original);
@@ -150,24 +128,16 @@ JARVIS_TEST(atomic_idempotent_null_handling) {
 // Expect: Value written with relaxed store is readable with relaxed load.
 // Depends: fpu_owner atomic
 JARVIS_TEST(atomics_fpu_owner_relaxed) {
-    TaskControlBlock* old = __atomic_load_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        __ATOMIC_RELAXED);
+    TaskControlBlock* old = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_RELAXED);
 
     auto* test_ptr = reinterpret_cast<TaskControlBlock*>(uintptr_t(0xBEEF));
-    __atomic_store_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        test_ptr, __ATOMIC_RELAXED);
+    __atomic_store_n(&kernel::fpu_owner, test_ptr, __ATOMIC_RELAXED);
 
-    TaskControlBlock* val = __atomic_load_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        __ATOMIC_RELAXED);
+    TaskControlBlock* val = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_RELAXED);
 
     JARVIS_ASSERT(val == test_ptr);
 
-    __atomic_store_n(
-        reinterpret_cast<TaskControlBlock* volatile*>(&kernel::fpu_owner),
-        old, __ATOMIC_RELAXED);
+    __atomic_store_n(&kernel::fpu_owner, old, __ATOMIC_RELAXED);
 
     JARVIS_TEST_PASS();
 }
@@ -186,12 +156,8 @@ JARVIS_TEST(atomics_assembly_bridge) {
 
     // Simulate what switch_to_task + isr_common do:
     // Set scheduler_next_task_id to the target task ID
-    uint64_t old_id = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        __ATOMIC_ACQUIRE);
-    __atomic_store_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        task->id, __ATOMIC_RELEASE);
+    uint64_t old_id = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    __atomic_store_n(&kernel::scheduler_next_task_id, task->id, __ATOMIC_RELEASE);
 
     // Call the bridge function that isr_stubs.asm invokes
     scheduler_on_context_switch();
@@ -201,16 +167,12 @@ JARVIS_TEST(atomics_assembly_bridge) {
     JARVIS_ASSERT_EQ(task->id, after->id);
 
     // Verify scheduler_next_task_id was cleared to 0
-    uint64_t cleared = __atomic_load_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        __ATOMIC_ACQUIRE);
+    uint64_t cleared = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     JARVIS_ASSERT_EQ(0ULL, cleared);
 
     // Restore original task and next_task_id
     Scheduler::set_current(*original);
-    __atomic_store_n(
-        reinterpret_cast<uint64_t volatile*>(&kernel::scheduler_next_task_id),
-        old_id, __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_next_task_id, old_id, __ATOMIC_RELEASE);
 
     Scheduler::remove_task(*task);
     task->cleanup();

@@ -61,6 +61,10 @@ A FreeRTOS-inspired `jarvis_config.h` header that makes Jarvis compile-time cust
 
 - [ ] **Consolidate duplicate constants:** Merge the 3× `PAGE_SIZE=4096` and 2× `STACK_SIZE=64_KiB` into single `CONFIG_PAGE_SIZE` / `CONFIG_STACK_SIZE` references.
 
+- [ ] extend the makefile for the target check-config. If invoked the configuration gets checked
+For the following items: consistency, plausibility, completeness, dependencies and ensure
+Upper and lower boundaries.
+
 #### FreeRTOS → Jarvis Config Mapping
 
 | FreeRTOS Config | Jarvis Equivalent | Status |
@@ -136,7 +140,7 @@ Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on A
   - [ ] Build system: `ARCH=x86_64|aarch64|riscv64` selects toolchain prefix, linker script, and objects
   - [ ] Linker scripts per arch (page-aligned `.text`/`.rodata`/`.data`/`.bss`, HHDM region reservation)
   - [ ] Architecture-agnostic `lib/` (string, ring buffer, ChaCha20, test framework) — no changes needed
-  - [ ] Inline atomics: `__sync_synchronize()`, `__sync_fetch_and_add()`, etc. — compiler builtins work on all three ISAs
+- [ ] Cross-arch atomics: Leverage C++20 std::atomic and std::atomic_ref with explicit memory_order instead of legacy compiler builtins across all three ISAs
   - [ ] UART driver abstraction: arch exports `uart_putc()`/`uart_getc()`, kernel `Logger` uses it uniformly
 
 ---

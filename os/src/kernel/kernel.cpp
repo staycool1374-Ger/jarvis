@@ -63,11 +63,11 @@ extern "C" void debug_write(const char* s) {
 }
 
 extern "C" {
-uint64_t volatile* scheduler_save_rsp_to = nullptr;
-uint64_t volatile scheduler_load_rsp_from = 0;
-uint64_t volatile scheduler_load_cr3_from = 0;
-uint64_t volatile scheduler_next_task_id = 0;
-kernel::TaskControlBlock* volatile fpu_owner = nullptr;
+uint64_t* scheduler_save_rsp_to = nullptr;
+uint64_t scheduler_load_rsp_from = 0;
+uint64_t scheduler_load_cr3_from = 0;
+uint64_t scheduler_next_task_id = 0;
+kernel::TaskControlBlock* fpu_owner = nullptr;
 }
 
 extern "C" void debug_write_hex(uint64_t value) {
