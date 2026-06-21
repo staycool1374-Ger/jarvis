@@ -1,7 +1,7 @@
 #!/bin/bash
 set -m
 
-SCRIPT_DIR="/Users/arnold/jarvis/os"
+SCRIPT_DIR="/Users/arnold/jarvis"
 export SCRIPT_DIR
 
 rm -f "$SCRIPT_DIR/build/gdb-panic-captured"

@@ -3,10 +3,10 @@ set timeout 300
 
 set UEFI "/opt/homebrew/share/qemu/edk2-x86_64-code.fd"
 spawn qemu-system-x86_64 \
-    -cdrom /Users/arnold/jarvis/os/debug/jarvis-rtos.iso \
+    -cdrom /Users/arnold/jarvis/debug/jarvis-rtos.iso \
     -m 256M -serial mon:stdio -nic none -boot order=d \
     -drive if=pflash,format=raw,readonly=on,file=$UEFI \
-    -drive file=/Users/arnold/jarvis/os/build/fat32.img,format=raw,if=ide,index=1,media=disk \
+    -drive file=/Users/arnold/jarvis/build/fat32.img,format=raw,if=ide,index=1,media=disk \
     -no-reboot -no-shutdown
 
 expect {

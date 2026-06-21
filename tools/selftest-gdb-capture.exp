@@ -1,0 +1,97 @@
+#!/usr/bin/expect -f
+set timeout 150
+match_max 500000
+
+set iso "release/jarvis-rtos.iso"
+set kernel_elf "build/kernel.elf"
+set gdb "x86_64-elf-gdb"
+set uefi "/opt/homebrew/share/qemu/edk2-x86_64-code.fd"
+
+puts "=== Starting QEMU + GDB ==="
+
+spawn qemu-system-x86_64 -cdrom $iso \
+    -m 256M -smp 2 -accel tcg \
+    -nographic \
+    -boot order=d \
+    -no-reboot \
+    -drive if=pflash,format=raw,readonly=on,file=$uefi \
+    -s -S
+set qemu $spawn_id
+
+sleep 2
+
+spawn $gdb $kernel_elf
+set gdb $spawn_id
+
+# Helper: wait for any gdb prompt, ignoring ANSI escapes
+proc wait_gdb {} {
+    global gdb
+    expect {
+        -i $gdb
+        -re {\(gdb\)}
+        { return $expect_out(buffer) }
+        -i $gdb
+        -re {gdb\$}
+        { return $expect_out(buffer) }
+        timeout
+        { return "TIMEOUT" }
+    }
+}
+
+send -i $gdb "set confirm off\r"
+wait_gdb
+send -i $gdb "set pagination off\r"
+wait_gdb
+send -i $gdb "set remotetimeout 60\r"
+wait_gdb
+send -i $gdb "target extended-remote :1234\r"
+wait_gdb
+send -i $gdb "break panic\r"
+wait_gdb
+send -i $gdb "continue\r"
+
+# Wait for shell prompt
+expect -i $qemu -re {/ \$}
+puts "Shell prompt detected!"
+send -i $qemu "selftest\r"
+puts "Sent selftest"
+
+# Wait for panic breakpoint
+puts "Waiting for panic breakpoint..."
+expect -i $gdb -re {Breakpoint 1, panic}
+puts "BREAKPOINT HIT!"
+
+# Read scheduler state without waiting for prompt
+send -i $gdb "x/gx &scheduler_save_rsp_to\r"
+sleep 1
+send -i $gdb "print/x scheduler_load_rsp_from\r"
+sleep 1
+send -i $gdb "print/x scheduler_load_cr3_from\r"
+sleep 1
+send -i $gdb "print/x scheduler_next_task_id\r"
+sleep 1
+send -i $gdb "print/x kernel::Scheduler::task_count_\r"
+sleep 1
+send -i $gdb "print/x kernel::Scheduler::current_index_\r"
+sleep 1
+send -i $gdb "print/x kernel::Scheduler::shell_task_ptr_\r"
+sleep 1
+send -i $gdb "x/5gx &kernel::Scheduler::tasks_\r"
+sleep 2
+send -i $gdb "printf \"cr3=0x%llx rip=0x%llx\\n\", \$cr3, \$rip\r"
+sleep 1
+send -i $gdb "bt 20\r"
+sleep 3
+
+# Capture all remaining output
+sleep 3
+puts "=== Full output ==="
+# Try to read from GDB spawn
+expect -i $gdb -re {.*} timeout 2
+puts $expect_out(buffer)
+
+puts "=== Done ==="
+catch { exec kill -9 [exp_pid -i $qemu] 2>/dev/null }
+catch { exec kill -9 [exp_pid -i $gdb] 2>/dev/null }
+close
+exit 0

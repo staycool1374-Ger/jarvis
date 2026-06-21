@@ -3,7 +3,7 @@
 ## ✅ Created New Test Files
 
 ### 1. test_fat32.cpp (30 tests)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fat32.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_fat32.cpp`
 - **Tests**: 30 tests covering:
   - MBR/Partition Table tests (3)
   - BPB/Boot Sector tests (10)
@@ -13,7 +13,7 @@
 - **Status**: ✅ All tests implemented as stubs (as expected for mock testing)
 
 ### 2. test_vfs_fat32.cpp (7 tests)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_vfs_fat32.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_vfs_fat32.cpp`
 - **Tests**: 7 tests covering:
   - VFS Integration (7 tests)
     - vfs_fat32_mount
@@ -32,7 +32,7 @@
 - **Status**: ✅ All tests implemented as stubs (as expected for mock testing)
 
 ### 3. test_ipc_blocking.cpp (4 tests)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_ipc_blocking.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_ipc_blocking.cpp`
 - **Tests**: 4 tests covering IPC blocking behavior:
   - ipc_receive_was_blocked_restores_state
   - ipc_send_sync_was_blocked_restores_state
@@ -41,7 +41,7 @@
 - **Status**: ✅ All tests implemented with real logic (not stubs)
 
 ### 4. test_vfsd_auth.cpp (5 tests)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_vfsd_auth.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_vfsd_auth.cpp`
 - **Tests**: 5 tests covering VFS authorization:
   - vfsd_self_authorization
   - vfsd_self_authorization_fd_op
@@ -51,7 +51,7 @@
 - **Status**: ✅ All tests implemented with real logic (not stubs)
 
 ### 5. test_ipc_robustness.cpp (6 test classes)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_ipc_robustness.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_ipc_robustness.cpp`
 - **Test Classes** (using `TEST_CLASS`/`REGISTER_CLASS` system):
   - `IpcMisformedMessages` — null sender, oversized messages, type 0, zero-size data
   - `IpcQueueWraparoundEdge` — ring buffer wraparound with 255 messages
@@ -62,7 +62,7 @@
 - **Status**: ✅ Implemented with real logic
 
 ### 6. test_syscall_fuzz.cpp (4 test classes)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_syscall_fuzz.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_syscall_fuzz.cpp`
 - **Test Classes** (using `TEST_CLASS`/`REGISTER_CLASS` system):
   - `SyscallFuzzBounds` — out-of-bounds BUF_ALLOC sizes, excessive priority, huge data sizes
   - `SyscallFuzzFlags` — invalid flag combinations across syscalls
@@ -71,7 +71,7 @@
 - **Status**: ✅ Implemented with real logic
 
 ### 7. test_starvation_deadlock.cpp (4 test classes)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_starvation_deadlock.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_starvation_deadlock.cpp`
 - **Test Classes** (using `TEST_CLASS`/`REGISTER_CLASS` system):
   - `SchedulerStarvation` — low-priority task starved by high-priority busy-wait
   - `PriorityInversionChain5` — 5-level priority inversion with nested mutexes
@@ -80,7 +80,7 @@
 - **Status**: ✅ Implemented with real logic
 
 ### 8. test_resource_exhaustion.cpp (5 test classes)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_resource_exhaustion.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_resource_exhaustion.cpp`
 - **Test Classes** (using `TEST_CLASS`/`REGISTER_CLASS` system):
   - `FdTableExhaustion` — allocate MAX_FDS fds, then verify next fails
   - `TaskLimitReached` — create MAX_TASKS-1, verify next creation fails
@@ -90,7 +90,7 @@
 - **Status**: ✅ Implemented with real logic
 
 ### 9. test_microkernel_transition.cpp (5 test classes)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_microkernel_transition.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_microkernel_transition.cpp`
 - **Test Classes** (using `TEST_CLASS`/`REGISTER_CLASS` system):
   - `KernelApiPureFunctions` — verify PMM free_memory and Scheduler task_count are side-effect free
   - `MinimalPrivilegedSurface` — only 47 syscalls exist, each has valid number
@@ -102,25 +102,25 @@
 ## ✅ Updated Existing Test Files
 
 ### test_ipc_extended.cpp
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_ipc_extended.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_ipc_extended.cpp`
 - **New Tests Added**:
   - ipc_buf_handle_max_size — verify max data size transfer via buf_handle
   - ipc_priority_inheritance_send — priority inheritance during send
 
 ### test_locking_stress.cpp
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_locking_stress.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_locking_stress.cpp`
 - **New Tests Added**:
   - mutex_recursive_deadlock — same task locking mutex twice
   - semaphore_count_underflow — try_wait on zero-count semaphore
 
 ### test_scheduler.cpp
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_scheduler.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_scheduler.cpp`
 - **New Tests Added**:
   - scheduler_shorter_period_preferred — verify shorter-period task is scheduled
   - scheduler_no_spurious_switch — verify current task not needlessly rescheduled
 
 ### test_buffer_pool.cpp
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_buffer_pool.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_buffer_pool.cpp`
 - **New Tests Added**:
   - buffer_pool_transfer_adds_to_receiver_list — verify transfer links to receiver
   - buffer_pool_forged_handle_after_free — freed handle invalidated
@@ -129,7 +129,7 @@
   - buffer_pool_kernel_task_alloc_fails — kernel task cannot alloc buffers
 
 ### test_registry.cpp
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_registry.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_registry.cpp`
 - **Changes**: Added registrations for all new test files:
   - register_ipc_robustness_tests()
   - register_syscall_fuzz_tests()
@@ -165,25 +165,25 @@ All test files compile successfully with `g++ -target x86_64-elf -std=c++20 -Wal
 - ✅ test_registry.cpp
 
 ### 10. test_fpu_clone.cpp (1 test)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_clone.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_fpu_clone.cpp`
 - **Tests**:
   - `fpu_clone_copies_state` — parent uses x87, clone copies FXSAVE tag word to child
 - **Status**: ✅ Real logic
 
 ### 11. test_fpu_multi.cpp (1 test)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_multi.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_fpu_multi.cpp`
 - **Tests**:
   - `fpu_multi_context_switch` — 3-way lazy FPU switch (pi, euler, sqrt2) across three tasks
 - **Status**: ✅ Real logic
 
 ### 12. test_fpu_xmm_all.cpp (1 test)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_fpu_xmm_all.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_fpu_xmm_all.cpp`
 - **Tests**:
   - `sse_xmm_all_registers` — 2-task lazy switch preserves all 16 XMM registers with unique patterns
 - **Status**: ✅ Real logic
 
 ### 13. test_random_vfs_write.cpp (2 tests)
-- **Location**: `/Users/arnold/jarvis/os/src/kernel/test/test_random_vfs_write.cpp`
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_random_vfs_write.cpp`
 - **Tests**:
   - `dev_random_write` — write 128 bytes to /dev/random returns 128
   - `dev_random_write_zero` — write zero bytes returns 0

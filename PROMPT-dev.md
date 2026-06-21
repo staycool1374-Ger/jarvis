@@ -11,10 +11,10 @@ Safely implement, validate, and evolve the architecture under strict functional 
 - See AGENTS.md Pre-Flight rules.
 
 ### 2. Context Collection (Targeted Parsing)
-- Parse `~/jarvis/os/ROADMAP.md` using targeted tool operations (e.g., grep for `-[ ]`) to locate ONLY the active milestone. Do not ingest completed sections ([x]) to preserve token economy.
-- Check `~/jarvis/os/BUGS.md`. **Rule:** Critical bugs must be 100% resolved before feature work.
+- Parse `~/jarvis/ROADMAP.md` using targeted tool operations (e.g., grep for `-[ ]`) to locate ONLY the active milestone. Do not ingest completed sections ([x]) to preserve token economy.
+- Check `~/jarvis/BUGS.md`. **Rule:** Critical bugs must be 100% resolved before feature work.
 - Read `~/jarvis/project_structure.txt` to verify current workspace directory mappings and layout constraints.
-- Read `~/jarvis/os/Makefile`.
+- Read `~/jarvis/Makefile`.
 - *Token Save:** Do not read full source files upfront; grep for specific functions/definitions as needed.
 
 ## Handling lessons.md (Conditional Rule)

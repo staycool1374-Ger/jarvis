@@ -1,0 +1,89 @@
+#!/usr/bin/env expect -f
+set timeout 180
+
+set kernel_elf "build/kernel.elf"
+set iso "release/jarvis-rtos.iso"
+exec rm -f build/gdb-panic-captured
+
+# Start QEMU
+spawn qemu-system-x86_64 \
+    -cdrom $iso -m 256M -serial mon:stdio \
+    -boot order=d -s -no-reboot -device isa-debug-exit \
+    -drive if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd
+set qemu_id $spawn_id
+sleep 5
+
+# Start GDB (panic breakpoint only — no conditional overhead)
+spawn gtimeout 120 x86_64-elf-gdb $kernel_elf -batch -x tools/gdb/gpf-simple.gdb
+set gdb_id $spawn_id
+sleep 3
+
+# Wait for shell prompt (ends with "$ ")
+expect {
+    -i $qemu_id
+    -re {\$\s+$} {
+        puts "Shell found. Sending 'selftest'..."
+        sleep 1
+        send -i $qemu_id "selftest\r"
+    }
+    -i $gdb_id
+    -re {PANIC CAPTURED} {
+        puts ">>> PANIC during boot <<<"
+        puts $expect_out(buffer)
+        exit 1
+    }
+    timeout { puts "TIMEOUT boot"; exit 1 }
+}
+
+# Wait for test results
+expect {
+    -i $qemu_id
+    -re {Failed: [0-9]+} {
+        puts "Tests: $expect_out(0,string)"
+    }
+    -i $gdb_id
+    -re {PANIC CAPTURED} {
+        puts ">>> PANIC during tests <<<"
+        puts $expect_out(buffer)
+        exit 1
+    }
+    timeout { puts "TIMEOUT tests"; exit 1 }
+}
+
+puts "Tests done. Watching for GPIO crash after reload_daemon_tasks..."
+
+# Watch for shell prompt (no GPF) or PANIC
+expect {
+    -i $qemu_id
+    -re {\$\s+$} {
+        puts "Shell prompt — no crash"
+        exit 0
+    }
+    -i $gdb_id
+    -re {PANIC CAPTURED} {
+        puts ">>> PANIC CAPTURED <<<"
+        puts $expect_out(buffer)
+        exit 1
+    }
+    -i $qemu_id
+    -re {KERNEL PANIC|CPU EXCEPTION} {
+        puts ">>> CRASH ON SERIAL <<<"
+        exit 1
+    }
+    timeout {
+        if {[file exists "build/gdb-panic-captured"]} {
+            puts ">>> GDB PANIC CAPTURED <<<"
+            exit 1
+        }
+        puts "Timeout — no crash"
+        exit 0
+    }
+    eof {
+        if {[file exists "build/gdb-panic-captured"]} {
+            puts ">>> GDB PANIC CAPTURED <<<"
+            exit 1
+        }
+        puts "QEMU exited"
+        exit 0
+    }
+}

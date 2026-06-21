@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Dynamic user home pathing resolution
-WORKSPACE_DIR="$HOME/jarvis/os"
+WORKSPACE_DIR="$HOME/jarvis"
 PROMPT_FILE="PROMPT.md"
 
 # 1. Structural Sanity Checks
