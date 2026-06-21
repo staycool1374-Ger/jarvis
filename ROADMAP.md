@@ -147,6 +147,7 @@ Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on A
 ---
 
 ## Phase 4: Hard Real-Time (0.3.x)
+Read and execute CODE-REVIEW-HARD-RTOS.md
 
 ### 0.3.1 — Deterministic Scheduling
 - [ ] O(1) bitmap scheduler (per-priority queues, __builtin_clzll), HPET driver (10 kHz)

@@ -1,5 +1,26 @@
 # Lessons Learned
 
+## 2026-06-21 — Nested Timer Interrupt Corrupts Scheduler State (GPF in cleanup_zombies)
+
+### Root Cause
+- The syscall handler's `sys_receive` uses `sti()` / `hlt()` / `cli()` to block waiting for IPC messages.
+- A timer interrupt can fire during this window (after `sti`, before `cli`), nesting inside the outer interrupt context.
+- The timer ISR calls `Scheduler::on_tick()` → `rate_monotonic_schedule()` → `switch_to_task()`, which sets up `scheduler_save_rsp_to` / `scheduler_load_rsp_from` and expects to perform the context switch on `iretq`.
+- However, the outer syscall ISR was *also* mid-reschedule and had set up these same globals for its own context switch.
+- The ISR assembly (`isr_stubs.asm`) was consuming the context-switch globals unconditionally, even for nested interrupts (`isr_nesting_depth > 1`). This caused the inner timer ISR to "steal" the context switch, overwriting `shell_task_ptr_` and other scheduler globals while the outer ISR was still using them.
+- In `make test-qemu`, the system exits immediately after tests via `qemu_debug_exit(0)`, so the corrupted `shell_task_ptr_` is never dereferenced. In `make run-release`, the system continues running, daemon restart triggers `cleanup_zombies()`, which reads the corrupted pointer → GPF.
+
+### Fix
+- In `src/kernel/arch/x86_64/isr_stubs.asm`, added a check: `cmp qword [rel isr_nesting_depth], 1; jne .restore` before consuming `scheduler_save_rsp_to` and performing the context switch.
+- Only the outermost interrupt (nesting depth == 1) performs the context switch. Nested interrupts skip the context-switch logic entirely.
+
+### Lesson
+- **ISR nesting must be tracked at the assembly level**, not just in C++ handlers. The `isr_nesting_depth` counter existed but the context-switch logic in the ISR epilogue didn't respect it.
+- Any global state set up for deferred operations (like context switch on `iretq`) must be guarded against nested interrupt consumption.
+- The `sti/hlt/cli` blocking pattern in syscalls is inherently racy with timer interrupts. The long-term fix is replacing it with lock-free IPC blocking (ROADMAP Phase 6).
+
+## 2026-06-08 — O(1) Syscall Dispatch Refactoring
+
 ## 2026-06-08 — O(1) Syscall Dispatch Refactoring
 
 ### Table declarations must precede their use in constexpr inline members
@@ -140,3 +161,33 @@ The "reserved bit" (bit 4) must be 0. The interrupt-vs-trap distinction is bit 3
 | Keyboard flush at boot | `devfs.cpp:15-19` | Calls `arch::Keyboard::flush()` to discard boot-time scancodes before shell reads /dev/tty |
 | /dev/tty polling | `devfs.cpp:20-40` | `tty_read` polls both COM1 serial and keyboard ring buffer for input |
 | `_exit`/`abort` hlt | `unistd.c:54`, `stdlib.c:9` | `hlt` → `pause` (`hlt` is privileged in ring 3 → GPF) |
+
+## 2026-06-21 — Scheduler Starvation: Daemons Ping-Pong, Shell Starves
+
+### Root Cause
+- `Scheduler::next_task()` used `task != current` as a tiebreaker for equal-priority/period tasks, causing vfsd and iocd (both priority=1, period=10) to continuously preempt each other.
+- The shell (priority=1, period=20) had the same priority but longer period, so it never got CPU time.
+- `next_task()` had no round-robin mechanism for equal-priority/period tasks.
+
+### Fixes Applied
+
+| Fix | File | What changed |
+|-----|------|-------------|
+| Round-robin tiebreaker | `scheduler.cpp:next_task()` | Replaced `task != current` with `remaining_ticks` comparison: when priority/period are equal, pick the task with fewer remaining ticks (been waiting longer). If both have same remaining ticks and current is `best`, pick the other task for round-robin. |
+| Shell priority/period | `kernel.cpp:517` | Changed shell from `priority=1, period=20` → `priority=2, period=5` (rate-monotonic correct: shortest period, highest priority) |
+| Liu-Leyland LUB admission | `scheduler.cpp:add_task()` | Added static LUB table and `is_rm_schedulable()` check that warns when total periodic utilization exceeds `n * (2^(1/n) - 1)` |
+
+### New Task Parameters
+
+| Task | Priority | Period (ticks) | Note |
+|------|----------|----------------|------|
+| Idle | 0 | ∞ (infinite) | Never preempts |
+| vfsd | 1 | 10 | Same bucket as iocd |
+| iocd | 1 | 10 | Round-robin with vfsd |
+| Shell | 2 | 5 | Highest priority, shortest period |
+| test_fork | 1 | 50 | Low-rate task |
+
+### Lesson
+- Rate-monotonic scheduling requires **strict prioritization** by period: shorter period = higher priority. When two tasks share the same priority and period, a round-robin tiebreaker is needed.
+- The `task != current` hack in `next_task()` caused pathological ping-pong. The correct approach: use `remaining_ticks` (higher = just started, lower = been running) for round-robin.
+- The Liu-Leyland LUB bound `n * (2^(1/n) - 1)` provides a sufficient schedulability test. Current boot tasks exceed the bound (100% CPU-bound assumption), but block on IPC in practice.

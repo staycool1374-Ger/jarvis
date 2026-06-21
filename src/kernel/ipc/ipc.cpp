@@ -153,6 +153,7 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
 
     if (tcb->state == TaskState::BLOCKED) {
         tcb->state = TaskState::READY;
+        tcb->remaining_ticks = tcb->period_ticks;
     }
     return ok;
 }
@@ -162,6 +163,21 @@ bool IPC::recv(Message& msg) {
     if (!cur || !cur->msg_queue) return false;
 
     bool ok = cur->msg_queue->pop(msg);
+    if (!ok) {
+        Logger::raw_write("[IPC] recv: task ");
+        Logger::print_hex(cur->id);
+        Logger::raw_write(" queue empty, count=");
+        Logger::print_dec(cur->msg_queue->count);
+        Logger::raw_write("\n");
+    } else {
+        Logger::raw_write("[IPC] recv: task ");
+        Logger::print_hex(cur->id);
+        Logger::raw_write(" got msg type=");
+        Logger::print_hex(msg.type);
+        Logger::raw_write(", count=");
+        Logger::print_dec(cur->msg_queue->count);
+        Logger::raw_write("\n");
+    }
     if (ok && cur->msg_queue->blocked_senders_head) {
         wake_sender(*cur->msg_queue, *cur);
     }
@@ -231,8 +247,10 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
     }
     task->blocked_next = nullptr;
     task->blocked_on_queue = nullptr;
-    if (task->state != TaskState::TERMINATED)
+    if (task->state != TaskState::TERMINATED) {
         task->state = TaskState::READY;
+        task->remaining_ticks = task->period_ticks;
+    }
 
     // Priority inheritance: restore receiver priority based on remaining
     // blocked senders

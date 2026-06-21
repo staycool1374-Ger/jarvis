@@ -47,6 +47,33 @@ TaskControlBlock* Scheduler::idle_task_ = nullptr;
 TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
 sync::SpinLock Scheduler::scheduler_lock_;
 
+// Liu-Leyland Rate-Monotonic LUB bounds (scaled by 1000000)
+static constexpr uint64_t LIU_LEYLAND_MAX_TASKS = 20;
+static constexpr uint32_t LIU_LEYLAND_BOUNDS[LIU_LEYLAND_MAX_TASKS + 1] = {
+    0,         // n = 0
+    1000000,   // n = 1 (100.0%)
+    828427,   // n = 2 (82.8%)
+    779763,   // n = 3 (78.0%)
+    756828,   // n = 4 (75.7%)
+    743491,   // n = 5 (74.3%)
+    734772,   // n = 6 (73.5%)
+    728626,   // n = 7 (72.8%)
+    724061,   // n = 8 (72.4%)
+    720537,   // n = 9 (72.0%)
+    717734,   // n = 10 (71.7%)
+    715451,   // n = 11 (71.5%)
+    713557,   // n = 12 (71.3%)
+    711958,   // n = 13 (71.2%)
+    710592,   // n = 14 (71.0%)
+    709409,   // n = 15 (70.9%)
+    708378,   // n = 16 (70.8%)
+    707472,   // n = 17 (70.7%)
+    706669,   // n = 18 (70.6%)
+    705952,   // n = 19 (70.6%)
+    705298    // n = 20 (70.5%)
+};
+static constexpr uint32_t LIU_LEYLAND_LIMIT = 693147;
+
 void Scheduler::init() {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
         id_table_[i] = nullptr;
@@ -67,6 +94,34 @@ void Scheduler::add_task(TaskControlBlock& task) {
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
+
+    // Liu-Leyland LUB admission test: warn if total utilization exceeds
+    // the rate-monotonic schedulability bound
+    if (task.period_ticks > 0 && task.period_ticks <= 100) {
+        // Use wcet = period_ticks (100% CPU-bound worst-case) for the check
+        uint64_t total_util = 0;
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* t = tasks_[i];
+            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (t->period_ticks > 0) {
+                uint64_t util = ((uint64_t)t->period_ticks * 1000000) / t->period_ticks;
+                total_util += util;
+            }
+        }
+        uint32_t bound = 0;
+        if (task_count_ <= LIU_LEYLAND_MAX_TASKS) {
+            bound = LIU_LEYLAND_BOUNDS[task_count_];
+        } else {
+            bound = LIU_LEYLAND_LIMIT;
+        }
+        if (total_util > bound) {
+            Logger::warn("Scheduler: task %d (prio=%d, period=%d) exceeds "
+                         "Liu-Leyland bound (%d > %d) — overrun possible",
+                         task.id, task.priority, task.period_ticks,
+                         total_util, bound);
+        }
+    }
+
     kernel::test::ResourceTracker::instance().track_task_add();
 }
 
@@ -137,14 +192,39 @@ TaskControlBlock* Scheduler::next_task() noexcept {
         if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state != TaskState::READY && task->state != TaskState::RUNNING
             ) continue;
-        if (task->priority > best_priority ||
-            (task->priority == best_priority && task->period_ticks < best_period
-                ) ||
-            (task->priority == best_priority &&
-                task->period_ticks == best_period && task != current)) {
+        // Higher priority always wins
+        if (task->priority > best_priority) {
             best = task;
             best_priority = task->priority;
             best_period = task->period_ticks;
+            continue;
+        }
+        // Same priority, shorter period wins
+        if (task->priority == best_priority && task->period_ticks < best_period) {
+            best = task;
+            best_priority = task->priority;
+            best_period = task->period_ticks;
+            continue;
+        }
+        // Same priority and period: round-robin by remaining_ticks
+        // Task with fewer remaining ticks has been waiting longer -> run it
+        if (task->priority == best_priority && task->period_ticks == best_period) {
+            if (!best) {
+                best = task;
+                best_priority = task->priority;
+                best_period = task->period_ticks;
+            } else if (task->remaining_ticks < best->remaining_ticks) {
+                // Task with fewer remaining ticks has been running longer -> switch to it
+                best = task;
+                best_priority = task->priority;
+                best_period = task->period_ticks;
+            } else if (task->remaining_ticks == best->remaining_ticks &&
+                       task != current && best == current) {
+                // Both have same ticks but current is best -> pick the other for RR
+                best = task;
+                best_priority = task->priority;
+                best_period = task->period_ticks;
+            }
         }
     }
 

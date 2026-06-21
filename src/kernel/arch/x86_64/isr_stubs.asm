@@ -106,6 +106,12 @@ isr_common:
     test rax, rax
     jz .restore
 
+    ; Only perform context switch if we are the outermost interrupt (nesting depth == 1).
+    ; Nested interrupts (e.g. timer during syscall sti/hlt/cli) must not consume the
+    ; context-switch globals set up by the outer interrupt.
+    cmp qword [rel isr_nesting_depth], 1
+    jne .restore
+
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
     mov qword [rel scheduler_save_rsp_to], 0

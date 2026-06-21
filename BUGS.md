@@ -12,7 +12,19 @@
 
 ### ID: #008 — GPF in cleanup_zombies after selftest on continuing builds
 - **Description:** Running `selftest` via shell in a build that continues after tests (e.g. `make run-release`) triggers a General Protection Fault in `cleanup_zombies` after all 84 tests pass. The test report prints `Failed: 0`, then daemons die/restart, then GPF at `rip=0xFFFF80000026A511` with `RAX=0xFF80000027868FFF` (non-canonical corrupted `shell_task_ptr_`). Vector `0xD`, error `0x0`.
-- **Root Cause:** Same mechanism as the nested-timer corruption addressed by the `isr_nesting_depth` fix — a timer interrupt nests inside the syscall handler's `sti()`/`hlt()`/`cli()` IPC window, calling `rate_monotonic_schedule()` → `switch_to_task()`, which overwrites scheduler globals (including `shell_task_ptr_`) while the outer `reschedule()` is mid-operation. In `make test-qemu` the system exits immediately after the test report via `qemu_debug_exit(0)`, so the corrupted memory is never dereferenced. In `make run-release` the system continues running after tests, triggering `cleanup_zombies()` during daemon restart, which reads the corrupted `shell_task_ptr_` and GPFs.
+- **Root Cause:** A timer interrupt nests inside the syscall handler's `sti()`/`hlt()`/`cli()` IPC window (in `sys_receive`), calling `rate_monotonic_schedule()` → `switch_to_task()`, which overwrites scheduler globals (including `shell_task_ptr_`) while the outer `reschedule()` is mid-operation. The ISR context-switch logic in `isr_stubs.asm` was consuming `scheduler_save_rsp_to`/`scheduler_load_rsp_from` even for nested interrupts (`isr_nesting_depth > 1`), corrupting state set up by the outer ISR.
+- **Fix:** In `src/kernel/arch/x86_64/isr_stubs.asm`, skip the context-switch logic when `isr_nesting_depth > 1`. Only the outermost interrupt performs the context switch.
 - **Severity:** High (crash on release/continuing builds)
 - **Domain:** Kernel — Scheduler / ISR
-- **Status:** Open — the `isr_nesting_depth` guard may have a gap or there is an additional path corrupting `shell_task_ptr_`
+- **Status:** Fixed (commit on main branch)
+
+### ID: #009 — Scheduler starves shell when daemons have same priority/period
+- **Description:** After Bug #008 fix, vfsd (PID 5) and iocd (PID 6) daemons prevent the shell from running. Both daemons have `priority=1, period_ticks=10`, shell has `priority=1, period_ticks=20`. `Scheduler::next_task()` used `task != current` as a tiebreaker for equal-priority/period tasks, causing vfsd and iocd to ping-pong infinitely. Shell never gets CPU.
+- **Root Cause:** The `task != current` hack in `next_task()` (line 143-144 of scheduler.cpp) was designed to prevent selecting the current task, but when the current task has the highest priority/period, it finds the *other* task as `best`, causing a context switch on every tick.
+- **Fix:** 
+  1. Changed `next_task()` tiebreaker: when priority/period equal, prefer task with fewer `remaining_ticks` (been waiting longer). If both have same remaining ticks and current is best, pick the other for round-robin.
+  2. Changed shell from `priority=1, period=20` → `priority=2, period=5` (rate-monotonic correct: shortest period = highest priority).
+  3. Added Liu-Leyland LUB admission test in `add_task()`.
+- **Severity:** High (shell unusable after boot)
+- **Domain:** Kernel — Scheduler
+- **Status:** Fixed (current session)

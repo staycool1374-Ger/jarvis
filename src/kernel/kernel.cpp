@@ -514,7 +514,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     service::Shell::init();
     {
         auto* ksh = kernel::TaskControlBlock::create(
-            &service::Shell::shell_task_main, 1, 20);
+            &service::Shell::shell_task_main, 2, 5);
         if (ksh) {
             kernel::Scheduler::add_task(*ksh);
             kernel::Scheduler::set_shell_task(ksh);

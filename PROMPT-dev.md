@@ -99,3 +99,8 @@ All mandatory coding rules, safety constraints, and error-handling patterns are 
 
 # Debugging Notes
 - See AGENTS.md Debugging Notes section for historical issues and troubleshooting tips.
+
+# Diagnostic Verification
+If a test fails or a regression is detected:
+- Immediately inspect the `debug_switch_ring` state using the GDB panic surveillance targets (`make test-gdb`) to extract `entry_addr`, `exit_rip`, and `consumed_ticks` of the faulting task sequence.
+- Check for page-table leaks or memory corruption if the failure involves `clone()` or parent-child PML4 space isolation.
