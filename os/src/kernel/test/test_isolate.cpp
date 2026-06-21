@@ -1,3 +1,21 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -101,6 +119,7 @@ bool snapshot_create() {
         // misc[0]=task_count, misc[1]=current_idx, misc[2]=next_id
         // misc[3] stores idle ptr as bits
         // preempt is in byte off_sched_misc() + 4*8
+        // misc[5] stores shell_task_ptr_
         bool& preempt = *reinterpret_cast<bool*>(
                             g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
         TaskControlBlock* idle_dummy = nullptr;
@@ -110,6 +129,9 @@ bool snapshot_create() {
         // Store the idle pointer (which capture_state set) as bits in misc[3].
         // Use memcpy to avoid strict-aliasing violations.
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
+        // Capture shell_task_ptr_ — not part of capture_state; stored in misc[5]
+        auto* shell_ptr = Scheduler::get_shell_task();
+        __builtin_memcpy(&misc[5], &shell_ptr, sizeof(shell_ptr));
     }
 
     // ---- Daemon ----
@@ -161,10 +183,10 @@ void snapshot_restore(const char* test_name) {
     // Clear any pending context-switch state that a test may have left
     // via reschedule().  Without this, the next timer IRQ would use stale
     // RSP/CR3 values and corrupt memory.
-    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
 
     // Check resource counters before restoring — warn on any leaks / double-frees
     {
@@ -259,6 +281,10 @@ void snapshot_restore(const char* test_name) {
         Scheduler::restore_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
                                  idle, preempt);
+        // Restore shell_task_ptr_ from misc[5]
+        TaskControlBlock* shell_ptr = nullptr;
+        __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));
+        Scheduler::set_shell_task(shell_ptr);
     }
 
     // ---- Daemon ----
@@ -298,6 +324,7 @@ void snapshot_destroy() {
 }
 
 void reload_daemon_tasks() {
+    arch::IrqGuard guard;
     // Terminate old daemon tasks so reap_orphans will clean them up
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
         const auto& entry = daemon::get_entry(i);

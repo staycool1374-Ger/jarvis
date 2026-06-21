@@ -1,3 +1,21 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <kernel/kernel.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
@@ -722,8 +740,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         arch::write_cr0(cr0);
 
         // Save previous owner's FPU state
-        if (__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) && fpu_owner != current) {
-            arch::fxsave(fpu_owner->fpu_state);
+        auto* prev_fpu_owner = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
+        if (prev_fpu_owner && prev_fpu_owner != current) {
+            arch::fxsave(prev_fpu_owner->fpu_state);
         }
 
         // Restore or initialize for current task

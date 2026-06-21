@@ -1,3 +1,21 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <services/shell.hpp>
 #include <services/terminal/terminal.hpp>
 #include <services/terminal/framebuffer.hpp>
@@ -9,6 +27,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/elf/elf.hpp>
@@ -926,6 +945,11 @@ void Shell::cmd_selftest(int argc, const char** argv) {
             kernel::test::run_registered(0);
         }
 
+        // Disable interrupts during cleanup so a timer IRQ cannot race
+        // with task-array modifications or read stale scheduler globals.
+        {
+            arch::IrqGuard irq_guard;
+
         // Reap any terminated test tasks that accumulated while interrupts
         // were disabled (on_tick → reap_orphans never ran).
         kernel::Scheduler::reap_orphans();
@@ -942,10 +966,11 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         // ISR assembly never consumed them.  If left dangling, the next timer
         // IRQ would attempt to context-switch via stalled pointers to freed
         // task memory → GPF at iretq.
-        __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+        }
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");

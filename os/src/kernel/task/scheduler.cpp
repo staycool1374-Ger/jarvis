@@ -1,3 +1,21 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
@@ -376,6 +394,10 @@ void Scheduler::cleanup_test_tasks() noexcept {
 
 void Scheduler::cleanup_zombies() noexcept {
     auto* shell = shell_task_ptr_;
+    // Defensive: if shell_task_ptr_ is invalid, fall back to current_task
+    if (!shell || shell->magic != TaskControlBlock::TCB_MAGIC) {
+        shell = current_task();
+    }
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
     uint64_t iocd_pid = iocd::get_iocd_pid();
 
@@ -432,7 +454,6 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         ++idx;
     }
 #endif
-    __atomic_store_n(&scheduler_save_rsp_to, &current->context.rsp, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_rsp_from, next->context.rsp, __ATOMIC_RELEASE);
     if (next->page_table_) {
         __atomic_store_n(&scheduler_load_cr3_from, next->page_table_, __ATOMIC_RELEASE);
@@ -445,6 +466,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     }
     next->state = TaskState::RUNNING;
     __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, &current->context.rsp, __ATOMIC_RELEASE);
 
     // Set CR0.TS so the incoming task traps on first FPU/SSE instruction
     uint64_t cr0 = arch::read_cr0();

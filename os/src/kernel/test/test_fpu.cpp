@@ -1,3 +1,21 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/cpuid.hpp>
@@ -35,9 +53,10 @@ JARVIS_TEST(fpu_basic_instruction) {
 
     auto* current = Scheduler::current_task();
     JARVIS_ASSERT(current != nullptr);
-    JARVIS_ASSERT_FMT(__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) == current,
+    auto* fpu_owner_val = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
+    JARVIS_ASSERT_FMT(fpu_owner_val == current,
         "fpu_owner (%p) should be current task (%p)",
-        (void*)fpu_owner, (void*)current);
+        (void*)fpu_owner_val, (void*)current);
     JARVIS_ASSERT_FMT(current->fpu_used,
         "current task fpu_used should be true after FINIT");
 

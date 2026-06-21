@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
   <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
   <img src="https://img.shields.io/badge/tests-627%20passing-2ea44f?style=flat-square" alt="627 Tests Passing"/>
-  <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License"/>
+  <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 
 ---
@@ -283,4 +283,4 @@ If this aligns with your engineering philosophy, open an issue or pull request. 
 
 ## License
 
-MIT License. See [`LICENSE`](LICENSE).
+Jarvis RTOS is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License**, either version 3 of the License, or (at your option) any later version. See [`LICENSE.txt`](LICENSE.txt) for the full text.
