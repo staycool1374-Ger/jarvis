@@ -17,6 +17,7 @@
  */
 
 #include <kernel/test/test_isolate.hpp>
+#include <test.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -187,6 +188,22 @@ void snapshot_restore(const char* test_name) {
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
+
+    // Check for scheduler corruption that occurred during the test
+    // (invalid TCB magic, RSP outside kernel-stack range, etc).
+    // The corruption counter is a monotonic counter — if it advanced during
+    // the test, something went wrong.
+    uint64_t corr = __atomic_exchange_n(&scheduler_corruption_count, (uint64_t)0, __ATOMIC_ACQ_REL);
+    if (corr > 0) {
+        Logger::raw_write("[SCHED] corruption_count=");
+        Logger::print_dec(corr);
+        Logger::raw_write(" during test \"");
+        Logger::raw_write(test_name ? test_name : "?");
+        Logger::raw_write("\" — see [SCHED] log lines above\n");
+        kernel::test::Registry::record_failure(__FILE__, __LINE__,
+            "scheduler corruption detected");
+    }
 
     // Check resource counters before restoring — warn on any leaks / double-frees
     {

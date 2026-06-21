@@ -19,6 +19,7 @@ extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
 extern scheduler_load_cr3_from
 extern scheduler_on_context_switch
+extern isr_nesting_depth
 
 %macro ISR_NOERR 1
 global isr_%1
@@ -76,6 +77,7 @@ ISR_NOERR i
 
 section .text
 isr_common:
+    inc qword [rel isr_nesting_depth]
     push r15
     push r14
     push r13
@@ -99,6 +101,7 @@ isr_common:
 
     call handle_interrupt_c
 
+    cli
     mov rax, [rel scheduler_save_rsp_to]
     test rax, rax
     jz .restore
@@ -153,6 +156,7 @@ isr_common:
     pop r15
 
     add rsp, 16
+    dec qword [rel isr_nesting_depth]
     iretq
 
 global __isr_vector

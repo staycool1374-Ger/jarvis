@@ -29,6 +29,7 @@
 #include <kernel/driver/iocd.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <signal.hpp>
+#include <logger.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -76,9 +77,13 @@ void Scheduler::remove_task(TaskControlBlock& task) {
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
             tasks_[i] = tasks_[--task_count_];
-            if (current_index_ >= task_count_) current_index_ = 0;
-            if (i < task_count_ && current_index_ == task_count_
-                ) current_index_ = i;
+            if (current_index_ == task_count_) {
+                // Current task was at the last slot — now moved to slot i
+                current_index_ = (i < task_count_) ? i : 0;
+            } else if (current_index_ >= task_count_) {
+                // Out-of-bounds (should not happen) — reset to 0
+                current_index_ = 0;
+            }
             break;
         }
     }
@@ -229,6 +234,12 @@ void Scheduler::on_tick() noexcept {
             }
         }
     }
+
+    // If this tick is from a nested interrupt (ISR inside another ISR, e.g.
+    // timer fired inside the syscall handler's sti()/hlt()/cli() window), skip
+    // non-atomic scheduler operations that could corrupt state being modified
+    // by the outer ISR (reschedule, task addition/removal).
+    if (isr_nesting_depth > 1) return;
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
@@ -392,9 +403,41 @@ void Scheduler::cleanup_test_tasks() noexcept {
     current_index_ = 0;
 }
 
+static void report_corruption(const char* label) {
+    (void)label;
+    __atomic_fetch_add(&scheduler_corruption_count, 1, __ATOMIC_RELEASE);
+#ifdef CONFIG_DEBUG
+    ENSURE(false && "scheduler corruption detected — see log above");
+#endif
+}
+
+static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock* t, const char* label) {
+    auto base = reinterpret_cast<uint64_t>(t->kernel_stack);
+    auto top = t->kernel_stack_top;
+    if (rsp >= base && rsp <= top) return true;
+    Logger::raw_write("[SCHED] "); Logger::raw_write(label);
+    Logger::raw_write(": rsp=0x"); Logger::print_hex(rsp);
+    Logger::raw_write(" outside stack [0x"); Logger::print_hex(base);
+    Logger::raw_write("-0x"); Logger::print_hex(top);
+    Logger::raw_write("]\n");
+    return false;
+}
+
+static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, const char* label) {
+    if (!current) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current=null\n"); return false; }
+    if (!next)   { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next=null\n"); return false; }
+    auto caddr = reinterpret_cast<uint64_t>(current);
+    auto naddr = reinterpret_cast<uint64_t>(next);
+    if (caddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current low 0x"); Logger::print_hex(caddr); Logger::raw_write("\n"); return false; }
+    if (naddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next low 0x"); Logger::print_hex(naddr); Logger::raw_write("\n"); return false; }
+    if (current->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current magic=0x"); Logger::print_hex(current->magic); Logger::raw_write("\n"); return false; }
+    if (next->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next magic=0x"); Logger::print_hex(next->magic); Logger::raw_write("\n"); return false; }
+    if (!rsp_in_stack_range(next->context.rsp, next, label)) return false;
+    return true;
+}
+
 void Scheduler::cleanup_zombies() noexcept {
     auto* shell = shell_task_ptr_;
-    // Defensive: if shell_task_ptr_ is invalid, fall back to current_task
     if (!shell || shell->magic != TaskControlBlock::TCB_MAGIC) {
         shell = current_task();
     }
@@ -423,11 +466,6 @@ void Scheduler::cleanup_zombies() noexcept {
         if (keep) tasks_[wr++] = t;
     }
     task_count_ = wr;
-    // After compaction the running task (shell) may have shifted to a
-    // different index.  Find it so that rate_monotonic_schedule recognises
-    // the shell as current and avoids a bogus switch_to_task that would
-    // load a stale context.rsp whose stack data was overwritten during the
-    // cli()-protected test run, causing a GPF at iretq.
     current_index_ = 0;
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == shell) {
@@ -438,7 +476,15 @@ void Scheduler::cleanup_zombies() noexcept {
 }
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
+    if (!validate_switch(current, next, "switch")) {
+        report_corruption("switch");
+        return;
+    }
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+        report_corruption("switch next state");
+        return;
+    }
+    if (current == next) {
         return;
     }
 #ifdef CONFIG_DEBUG
@@ -468,9 +514,8 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, &current->context.rsp, __ATOMIC_RELEASE);
 
-    // Set CR0.TS so the incoming task traps on first FPU/SSE instruction
     uint64_t cr0 = arch::read_cr0();
-    cr0 |= (1ULL << 3);   // set TS
+    cr0 |= (1ULL << 3);
     arch::write_cr0(cr0);
 }
 
@@ -482,6 +527,23 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
+        Logger::raw_write("[SCHED] switch curr=");
+        Logger::print_hex(current->id);
+        Logger::raw_write(" next=");
+        Logger::print_hex(next->id);
+        Logger::raw_write(" cur_rsp=");
+        Logger::print_hex(current->context.rsp);
+        Logger::raw_write(" next_rsp=");
+        Logger::print_hex(next->context.rsp);
+        Logger::raw_write(" cur_pri=");
+        Logger::print_dec(current->priority);
+        Logger::raw_write(" next_pri=");
+        Logger::print_dec(next->priority);
+        Logger::raw_write(" nxt_state=");
+        Logger::print_hex(static_cast<uint64_t>(next->state));
+        Logger::raw_write(" cur_state=");
+        Logger::print_hex(static_cast<uint64_t>(current->state));
+        Logger::raw_write("\n");
         switch_to_task(current, next);
     }
 }
@@ -499,6 +561,15 @@ void Scheduler::reschedule() noexcept {
             ) {
             return;
         }
+        Logger::raw_write("[RSCHED] curr=");
+        Logger::print_hex(current->id);
+        Logger::raw_write(" next=");
+        Logger::print_hex(next->id);
+        Logger::raw_write(" cur_rsp=");
+        Logger::print_hex(current->context.rsp);
+        Logger::raw_write(" next_rsp=");
+        Logger::print_hex(next->context.rsp);
+        Logger::raw_write("\n");
         switch_to_task(current, next);
     }
 }

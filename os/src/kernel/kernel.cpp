@@ -85,6 +85,8 @@ uint64_t* scheduler_save_rsp_to = nullptr;
 uint64_t scheduler_load_rsp_from = 0;
 uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = 0;
+uint64_t isr_nesting_depth = 0;
+uint64_t scheduler_corruption_count = 0;
 kernel::TaskControlBlock* fpu_owner = nullptr;
 }
 

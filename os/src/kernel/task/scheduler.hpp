@@ -167,6 +167,15 @@ extern "C" {
     extern uint64_t scheduler_load_cr3_from;
     /// @brief Task ID to set as current after the context switch completes.
     extern uint64_t scheduler_next_task_id;
+    /// @brief Current ISR nesting depth.  Incremented at each ISR entry,
+    ///        decremented before iretq.  Checked by on_tick() to detect
+    ///        nested timer interrupts and skip re-entrant scheduler ops.
+    extern uint64_t isr_nesting_depth;
+    /// @brief Monotonic counter incremented on every detected scheduler corruption
+    ///        (invalid TCB magic, RSP outside kernel-stack range, etc).
+    ///        Reset to zero in test_isolate restore; test framework fails any test
+    ///        where the counter advanced.
+    extern uint64_t scheduler_corruption_count;
     /// @brief Tracks which task's FPU state is currently in the registers.
     ///        nullptr means no task has used FPU since boot.
     extern TaskControlBlock* fpu_owner;

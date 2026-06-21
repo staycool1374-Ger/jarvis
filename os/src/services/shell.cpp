@@ -970,6 +970,7 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+        __atomic_store_n(&kernel::isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
         }
     }
     Terminal::set_fb_enabled(true);
