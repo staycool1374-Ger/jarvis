@@ -29,6 +29,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ### 0.2.19 — Kernel Memory Safety
 - [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
+- [ ] Renode simulation setup — integrate Renode as a secondary emulation platform alongside QEMU for early architectural bring-up of ARM Cortex-A (aarch64) and RISC-V (RV64) targets, enabling HAL validation and cross-architecture testing before hardware is available
 
 ### 0.2.20 — System Calls & Storage
 - [ ] SYS_YIELD — cooperative task yielding for CPU-bound tasks
