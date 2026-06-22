@@ -202,6 +202,7 @@ void pci_parse_bars(PciDeviceInfo& info);
 PciDeviceInfo pci_read_device_info(PciBdf bdf);
 
 void pci_dump_tree();
+void pci_print_tree(char* buffer, size_t size);
 
 // --- Capabilities & MSI/MSI-X ---
 

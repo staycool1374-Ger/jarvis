@@ -20,6 +20,7 @@
 #include <logger.hpp>
 #include <kernel/arch/pci.hpp>
 #include <kernel/arch/io.hpp>
+#include <string.hpp>
 
 using namespace kernel;
 
@@ -277,22 +278,24 @@ JARVIS_TEST(pci_enumeration_bounded_time) {
 // Testidea: Verifies pci_print_tree() produces valid device tree output.
 // Input: Call pci_print_tree() after scan
 // Expect: Output contains vendor:device ID strings, class/subclass, BAR info
-// Depends: arch::pci_scan_all, arch::pci_print_tree (BLOCKED — not yet implemented)
-// Blocked: pci_print_tree() and /proc/pci sysfs are planned but not yet
-// implemented in production kernel. Once available, this test should:
-//   1. Call arch::pci_scan_all()
-//   2. Call arch::pci_print_tree() and capture output
-//   3. Verify output contains expected device lines (vendor:device, class, BARs)
+// Depends: arch::pci_scan_all, arch::pci_print_tree
 JARVIS_TEST(pci_print_tree_output) {
-    /* Pseudocode: pci_print_tree() produces debug output listing all PCI
-     * devices with vendor:device IDs, class/subclass, and BAR details.
-     * Currently blocked — pci_print_tree() is not yet implemented.
-     * Implementation plan:
-     *   - Add pci_print_tree() function to arch::PCI interface
-     *   - Iterate scanned devices, print formatted lines
-     *   - This test calls pci_scan_all(), then pci_print_tree()
-     *   - Verify output via Logger capture or serial
-     */
+    arch::pci_scan_all();
+    char buf[2048];
+    arch::pci_print_tree(buf, sizeof(buf));
+    JARVIS_ASSERT(strlen(buf) > 0);
+    bool has_bracket = false;
+    bool has_colon = false;
+    bool has_bus = false;
+    for (size_t i = 0; buf[i]; ++i) {
+        if (buf[i] == '[') has_bracket = true;
+        if (buf[i] == ':') has_colon = true;
+        if (buf[i] == 'P' && buf[i+1] == 'C' && buf[i+2] == 'I') has_bus = true;
+    }
+    JARVIS_ASSERT(has_bracket);
+    JARVIS_ASSERT(has_colon);
+    JARVIS_ASSERT(has_bus);
+    Logger::info("PCI tree:\n%s", buf);
     JARVIS_TEST_PASS();
 }
 

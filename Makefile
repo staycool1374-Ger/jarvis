@@ -179,7 +179,7 @@ include mk/rules.mk
 # ------------------------------------------------------------------------------
 .PHONY: help all build check-style run-qemu run-release run-qemu-debug \
         test-qemu test symbols objdump debug release release-test \
-        run-release-test profiling gdb test-gdb \
+        run-release-test profiling gdb test-gdb rr-record rr-replay \
         _run-shell-test
 
 # Default target
@@ -220,6 +220,8 @@ help:
 	@echo "  [I] make run-release     Build + boot release ISO (interactive shell)"
 	@echo "  [I] make gdb             Debug ISO + QEMU with GDB stub (:1234)"
 	@echo "  [I] make test-gdb        Run tests under GDB surveillance"
+	@echo "  [I] make rr-record       Record QEMU execution (deterministic replay)"
+	@echo "  [I] make rr-replay       Replay recorded session with GDB stub (:1234)"
 	@echo ""
 	@echo "  [A] = autonomous (run and done, no interaction needed)"
 	@echo "  [I] = interactive (user sits at the QEMU/GDB console)"
@@ -409,6 +411,30 @@ test-gdb: debug
 	    echo "=== test-gdb: GDB exit code $$GDB_EXIT (check serial log: build/gdb-serial.log) ==="; \
 	    exit $$GDB_EXIT; \
 	fi
+
+# ------------------------------------------------------------------------------
+# Deterministic replay (QEMU -icount + record/replay for race debugging)
+#
+# Usage:
+#   make rr-record    — boots the debug ISO and records execution to build/rr.log
+#   make rr-replay    — replays the recorded session with GDB stub on :1234
+#
+# During replay, connect GDB and set breakpoints before the race window:
+#   $(GDB) build/kernel-debug.elf -ex 'target remote :1234'
+# The deterministic -icount ensures the same instruction sequence every replay.
+# ------------------------------------------------------------------------------
+rr-record: debug
+	@printf '  %-7s %s\n' 'RR' 'Recording deterministic trace…'
+	@mkdir -p build
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -record build/rr.log -display none
+
+rr-replay:
+	@if [ ! -f build/rr.log ]; then \
+	    echo "No recording found — run 'make rr-record' first."; exit 1; \
+	fi
+	@printf '  %-7s %s\n' 'RR' 'Replaying with GDB stub on :1234…'
+	@echo "Connect GDB:  $(GDB) build/kernel-debug.elf -ex 'target remote :1234'"
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -replay build/rr.log -s -S -display none
 
 test-qemu: debug
 	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \

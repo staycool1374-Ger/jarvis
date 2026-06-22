@@ -22,6 +22,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/arch/pci.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 
@@ -101,6 +102,67 @@ static const VnodeOps meminfo_ops = {
 };
 
 static MemInfoVnode meminfo_vnode = {};
+
+// ── /proc/pci vnode ──
+struct PciVnode {
+    Vnode base;
+    char content[2048];
+    uint64_t content_len;
+};
+
+static int64_t pci_read(Vnode& self, uint8_t* buf, uint64_t count,
+    uint64_t offset) {
+    auto* pi = static_cast<PciVnode*>(self.private_data);
+    if (!pi) return VFS_INVALID;
+    if (offset >= pi->content_len) return 0;
+    uint64_t avail = pi->content_len - offset;
+    if (count > avail) count = avail;
+    memcpy(buf, pi->content + offset, count);
+    return static_cast<int64_t>(count);
+}
+
+static int64_t pci_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
+    return VFS_INVALID; }
+static int pci_open(Vnode&, uint64_t) { return 0; }
+static void pci_close(Vnode&) {}
+
+static int64_t pci_lseek(Vnode& self, int64_t offset, int whence,
+    uint64_t* out_pos) {
+    auto* pi = static_cast<PciVnode*>(self.private_data);
+    if (!pi) return VFS_INVALID;
+    uint64_t new_pos = 0;
+    switch (whence) {
+    case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
+    case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
+    case SEEK_END: new_pos = pi->content_len + static_cast<uint64_t>(offset
+        ); break;
+    default: return VFS_INVALID;
+    }
+    if (new_pos > pi->content_len) new_pos = pi->content_len;
+    *out_pos = new_pos;
+    return static_cast<int64_t>(new_pos);
+}
+
+static int pci_fstat(Vnode& self, VfsStat& st) {
+    auto* pi = static_cast<PciVnode*>(self.private_data);
+    if (!pi) return VFS_INVALID;
+    st.st_size = pi->content_len;
+    st.st_mode = S_IFREG;
+    return 0;
+}
+
+static int pci_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+static int pci_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
+static Vnode* pci_lookup(Vnode&, const char*) { return nullptr; }
+
+static const VnodeOps pci_ops = {
+    pci_read, pci_write, pci_open, pci_close,
+    pci_lseek, pci_fstat, pci_ioctl, pci_readdir, pci_lookup,
+    nullptr, nullptr,
+    nullptr,
+};
+
+static PciVnode pci_vnode = {};
 
 // ── /proc/self vnode ── (redirects to current pid's dir)
 static int64_t self_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
@@ -327,10 +389,18 @@ static int proc_root_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
         ++pos;
         return 0;
     }
+    if (position == 2) {
+        const char* n = "pci";
+        size_t i = 0; while (n[i] && i < 63) { dent.d_name[i] = n[i]; ++i; }
+        dent.d_name[i] = '\0';
+        dent.d_ino = 2;
+        ++pos;
+        return 0;
+    }
     // PID entries
-    // For readdir, skip position-2 entries worth of PIDs
+    // For readdir, skip position-3 entries worth of PIDs
     uint64_t task_count = Scheduler::task_count();
-    uint64_t pid_idx = position - 2;
+    uint64_t pid_idx = position - 3;
     uint64_t found = 0;
     for (uint64_t task_idx = 0; task_idx < task_count &&
         found <= pid_idx; ++task_idx) {
@@ -356,6 +426,7 @@ static Vnode* proc_root_lookup(Vnode& self, const char* name) {
     (void)self;
     if (strcmp(name, "meminfo") == 0) return &meminfo_vnode.base;
     if (strcmp(name, "self") == 0) return &self_vnode;
+    if (strcmp(name, "pci") == 0) return &pci_vnode.base;
 
     // Parse numeric PID
     uint64_t pid = 0;
@@ -434,6 +505,15 @@ static Vnode* proc_get_root() {
     meminfo_vnode.base.size = pos;
     meminfo_vnode.base.mode = S_IFREG;
     meminfo_vnode.base.private_data = &meminfo_vnode;
+
+    // Refresh PCI content
+    arch::pci_print_tree(pci_vnode.content, sizeof(pci_vnode.content));
+    pci_vnode.content_len = strlen(pci_vnode.content);
+    pci_vnode.base.ops = &pci_ops;
+    pci_vnode.base.ino = 2;
+    pci_vnode.base.size = pci_vnode.content_len;
+    pci_vnode.base.mode = S_IFREG;
+    pci_vnode.base.private_data = &pci_vnode;
 
     return &proc_root_vnode;
 }

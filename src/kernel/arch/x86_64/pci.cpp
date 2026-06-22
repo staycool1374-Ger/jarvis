@@ -30,6 +30,32 @@ namespace {
 arch::PciDeviceInfo g_devices[arch::PCI_MAX_DEVICES_FOUND];
 size_t g_device_count = 0;
 
+/// Write decimal uint64 to buffer, returns bytes written (excluding null).
+static size_t fmt_dec(char* buf, size_t size, uint64_t n) {
+    if (size == 0) return 0;
+    char tmp[24];
+    int p = 24;
+    tmp[--p] = '\0';
+    if (n == 0) tmp[--p] = '0';
+    else while (n) { tmp[--p] = '0' + static_cast<char>(n % 10); n /= 10; }
+    size_t i = 0;
+    while (tmp[p] && i < size - 1) buf[i++] = tmp[p++];
+    if (i < size) buf[i] = '\0';
+    return i;
+}
+
+/// Write hex uint64 with fixed digit count to buffer, returns bytes written.
+static size_t fmt_hex(char* buf, size_t size, uint64_t n, int digits) {
+    if (size == 0) return 0;
+    size_t i = 0;
+    for (int d = digits - 1; d >= 0 && i < size - 1; --d) {
+        uint8_t nibble = static_cast<uint8_t>((n >> (d * 4)) & 0xF);
+        buf[i++] = static_cast<char>(nibble < 10 ? '0' + nibble : 'a' + nibble - 10);
+    }
+    if (i < size) buf[i] = '\0';
+    return i;
+}
+
 /// Probe a single BDF; if present, read its info and store it.
 void probe_bdf(arch::PciBdf bdf) {
     if (!arch::pci_device_exists(bdf)) return;
@@ -229,6 +255,60 @@ void pci_dump_tree() {
         }
         Logger::raw_write(")\n");
     }
+}
+
+void pci_print_tree(char* buffer, size_t size) {
+    if (size == 0) return;
+    size_t pos = 0;
+    uint8_t current_bus = 0xFF;
+    for (size_t i = 0; i < g_device_count && pos + 80 < size; ++i) {
+        const auto& d = g_devices[i];
+        if (d.bdf.bus != current_bus) {
+            current_bus = d.bdf.bus;
+            char* p = buffer + pos;
+            *p++ = 'P'; *p++ = 'C'; *p++ = 'I'; *p++ = ' ';
+            *p++ = 'B'; *p++ = 'u'; *p++ = 's'; *p++ = ' ';
+            pos = p - buffer;
+            pos += fmt_dec(buffer + pos, size - pos, d.bdf.bus);
+            if (pos + 3 >= size) break;
+            buffer[pos++] = ':'; buffer[pos++] = '\n';
+        }
+        // BDF
+        pos += fmt_dec(buffer + pos, size - pos, d.bdf.bus);
+        if (pos + 1 >= size) break;
+        buffer[pos++] = ':';
+        pos += fmt_dec(buffer + pos, size - pos, d.bdf.device);
+        if (pos + 1 >= size) break;
+        buffer[pos++] = '.';
+        pos += fmt_dec(buffer + pos, size - pos, d.bdf.function);
+        // vendor:device
+        const char* fmt = "  [";
+        while (*fmt && pos + 1 < size) buffer[pos++] = *fmt++;
+        pos += fmt_hex(buffer + pos, size - pos, d.vendor_id, 4);
+        if (pos + 1 >= size) break;
+        buffer[pos++] = ':';
+        pos += fmt_hex(buffer + pos, size - pos, d.device_id, 4);
+        if (pos + 1 >= size) break;
+        buffer[pos++] = ']';
+        buffer[pos++] = ' ';
+        // class/subclass name
+        const char* cn = pci_class_name(d.class_code);
+        while (*cn && pos + 1 < size) buffer[pos++] = *cn++;
+        const char* fmt2 = " (";
+        while (*fmt2 && pos + 1 < size) buffer[pos++] = *fmt2++;
+        pos += fmt_hex(buffer + pos, size - pos, d.class_code, 2);
+        if (pos + 1 >= size) break;
+        buffer[pos++] = '/';
+        pos += fmt_hex(buffer + pos, size - pos, d.subclass, 2);
+        const char* sn = pci_subclass_name(d.class_code, d.subclass);
+        if (sn[0]) {
+            buffer[pos++] = ' ';
+            while (*sn && pos + 1 < size) buffer[pos++] = *sn++;
+        }
+        if (pos + 1 >= size) break;
+        buffer[pos++] = ')'; buffer[pos++] = '\n';
+    }
+    buffer[pos] = '\0';
 }
 
 const PciDeviceInfo* pci_devices() {
