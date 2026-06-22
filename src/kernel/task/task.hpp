@@ -57,6 +57,10 @@ class Notify;
 class EventGroup;
 }
 
+namespace task {
+class SporadicServer;
+}
+
 
 
 /// @brief States a task can be in during its lifecycle.
@@ -141,6 +145,7 @@ struct TaskControlBlock {
         , msg_queue(nullptr)
         , notify(nullptr)
         , event_group(nullptr)
+        , sporadic_server(nullptr)
         , buf_list_head(0)
         , blocked_next(nullptr)
         , blocked_prev(nullptr)
@@ -221,6 +226,11 @@ struct TaskControlBlock {
     /// init_task_common).
     sync::EventGroup* event_group;
 
+    /// @brief Optional per-task SporadicServer for aperiodic
+    /// daemon budget management (vfsd, iocd).  nullptr for normal tasks.
+    /// Allocated from MemPool in init_sporadic_server().
+    task::SporadicServer* sporadic_server;
+
     /// @brief Head of doubly-linked list of buffer handles owned by
     /// this task. -1 means the list is empty. Used by the BufferPool
     /// for zero-copy IPC.
@@ -294,6 +304,14 @@ struct TaskControlBlock {
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).
     ///        Called by WAITPID after reaping a TERMINATED child.
     void cleanup() noexcept;
+
+    /// @brief Allocates and initialises a SporadicServer for this task
+    ///        (e.g. a Ring 3 daemon like vfsd / iocd).
+    /// @param budget_c  Execution budget per period (ticks).
+    /// @param period_t  Replenishment period (ticks).
+    /// @param bg_prio   Priority level when budget exhausted.
+    void init_sporadic_server(uint64_t budget_c, uint64_t period_t,
+                              uint64_t bg_prio) noexcept;
 
     /// @brief Adds a child to this task's process hierarchy.
     void add_child(TaskControlBlock* child) noexcept;

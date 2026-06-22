@@ -443,8 +443,8 @@ test-qemu: debug
 	        set timeout 60; \
 	        spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
 	        expect { \
-	            "Failed: 0" { \
-	                send_user "\nAll tests passed (Failed: 0)\n"; \
+	            -ex "\r\n  Failed: 0" { \
+	                send_user "\nAll tests passed\n"; \
 	                exit 0; \
 	            } \
 	            "FAILED" { \

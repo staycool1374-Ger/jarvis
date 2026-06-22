@@ -20,6 +20,8 @@
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/task/sporadic_server.hpp>
+#include <kernel/arch/timer.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/memory/checked_ptr.hpp>
@@ -56,6 +58,9 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
     bool ok = false;
     bool was_blocked = false;
     while (!(ok = IPC::recv(msg))) {
+        if (cur->sporadic_server) {
+            cur->sporadic_server->on_completion(arch::Timer::ticks());
+        }
         cur->state = TaskState::BLOCKED;
         was_blocked = true;
         Logger::raw_write("[IPC] sys_receive: task ");
@@ -71,6 +76,9 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
     if (was_blocked) {
         cur->state = TaskState::READY;
         cur->remaining_ticks = cur->period_ticks;
+        if (cur->sporadic_server) {
+            cur->sporadic_server->on_activation(arch::Timer::ticks());
+        }
     }
     Logger::raw_write("[IPC] sys_receive: task ");
     Logger::print_hex(cur->id);

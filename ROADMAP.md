@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.18 — Observability & Portability: Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration, multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit, PCI bus enumeration / device tree debug output.
+**Target Focus:** v0.2.19 — Kernel Memory Safety: Audit existing `new`/`delete` usages; Renode simulation setup for ARM/RISC-V bring-up.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -23,9 +23,9 @@ When implementing or refactoring code paths for this phase, execute the followin
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
 ### 0.2.18 — Observability & Portability
-- [ ] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
-- [ ] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
-- [ ] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
+- [x] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
+- [x] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
+- [x] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
 
 ### 0.2.19 — Kernel Memory Safety
 - [ ] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern

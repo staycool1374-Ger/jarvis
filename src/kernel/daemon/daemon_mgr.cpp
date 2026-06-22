@@ -18,6 +18,7 @@
 
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 #include <kernel/elf/elf.hpp>
 #include <initrd/initrd.hpp>
 #include <logger.hpp>
@@ -156,6 +157,14 @@ void restart_stale_daemons() {
 
         task->priority = 1;
         task->period_ticks = 10;
+
+        {
+            uint64_t bg = 0;
+            uint64_t budget =
+                (strcmp(entries_[i].name, "iocd") == 0) ? 3ULL : 2ULL;
+            task->init_sporadic_server(budget, 10, bg);
+        }
+
         kernel::Scheduler::add_task(*task);
 
         ++entries_[i].restart_count;

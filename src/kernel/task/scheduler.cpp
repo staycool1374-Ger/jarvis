@@ -29,11 +29,22 @@
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/task/sporadic_server.hpp>
 #include <signal.hpp>
 #include <logger.hpp>
 #include <assert.hpp>
 
 namespace kernel {
+
+/// @brief Returns the effective scheduling priority for a task.
+/// If the task has a SporadicServer, the server's current priority
+/// (which drops to bg_priority_ when budget is exhausted) is used.
+/// Otherwise the raw TCB priority applies.
+static inline uint64_t effective_priority(const TaskControlBlock* t) noexcept {
+    if (t && t->sporadic_server)
+        return t->sporadic_server->current_priority();
+    return t ? t->priority : 0;
+}
 
 TaskControlBlock* const Scheduler::ID_TOMBSTONE =
     reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));
@@ -168,13 +179,14 @@ bool Scheduler::needs_switch() noexcept {
     auto* current = tasks_[current_index_];
     if (!current || current == idle_task_) return true;
 
+    uint64_t cur_eff = effective_priority(current);
     for (uint64_t i = 1; i < task_count_; ++i) {
         auto* task = tasks_[i];
         if (task == current) continue;
         if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state == TaskState::READY || task->state == TaskState::RUNNING
             ) {
-            if (task->priority > current->priority) return true;
+            if (effective_priority(task) > cur_eff) return true;
         }
     }
     return false;
@@ -193,37 +205,38 @@ TaskControlBlock* Scheduler::next_task() noexcept {
         if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (task->state != TaskState::READY && task->state != TaskState::RUNNING
             ) continue;
+        uint64_t ep = effective_priority(task);
         // Higher priority always wins
-        if (task->priority > best_priority) {
+        if (ep > best_priority) {
             best = task;
-            best_priority = task->priority;
+            best_priority = ep;
             best_period = task->period_ticks;
             continue;
         }
         // Same priority, shorter period wins
-        if (task->priority == best_priority && task->period_ticks < best_period) {
+        if (ep == best_priority && task->period_ticks < best_period) {
             best = task;
-            best_priority = task->priority;
+            best_priority = ep;
             best_period = task->period_ticks;
             continue;
         }
         // Same priority and period: round-robin by remaining_ticks
         // Task with fewer remaining ticks has been waiting longer -> run it
-        if (task->priority == best_priority && task->period_ticks == best_period) {
+        if (ep == best_priority && task->period_ticks == best_period) {
             if (!best) {
                 best = task;
-                best_priority = task->priority;
+                best_priority = ep;
                 best_period = task->period_ticks;
             } else if (task->remaining_ticks < best->remaining_ticks) {
                 // Task with fewer remaining ticks has been running longer -> switch to it
                 best = task;
-                best_priority = task->priority;
+                best_priority = ep;
                 best_period = task->period_ticks;
             } else if (task->remaining_ticks == best->remaining_ticks &&
                        task != current && best == current) {
                 // Both have same ticks but current is best -> pick the other for RR
                 best = task;
-                best_priority = task->priority;
+                best_priority = ep;
                 best_period = task->period_ticks;
             }
         }
@@ -320,6 +333,22 @@ void Scheduler::on_tick() noexcept {
                 // Deliver SIGALRM to the task
                 task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::
                     SIGALRM));
+            }
+        }
+    }
+
+    // Sporadic Server budget management: process replenishments for all
+    // sporadic-server tasks, and consume one tick for the current task.
+    {
+        auto* cur = current_task();
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* t = tasks_[i];
+            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (t->sporadic_server) {
+                t->sporadic_server->process_replenishments(current_tick);
+                if (t == cur) {
+                    t->sporadic_server->consume(current_tick);
+                }
             }
         }
     }

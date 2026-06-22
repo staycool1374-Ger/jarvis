@@ -18,6 +18,7 @@
 
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/sporadic_server.hpp>
 #include <logger.hpp>
 #include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -37,6 +38,21 @@
 #include <kernel/arch/io.hpp>
 
 namespace kernel {
+
+/// @brief Allocates and initialises a SporadicServer for a daemon task
+///        from the MemPool.  Idempotent (returns early if already set).
+void TaskControlBlock::init_sporadic_server(uint64_t budget_c,
+                                            uint64_t period_t,
+                                            uint64_t bg_prio) noexcept {
+    if (sporadic_server) return;
+    auto* ss = static_cast<task::SporadicServer*>(
+        MemPool::alloc(sizeof(task::SporadicServer)));
+    if (!ss) return;
+    memset(ss, 0, sizeof(task::SporadicServer));
+    ss->init(budget_c, period_t, bg_prio);
+    ss->set_base_priority(priority);
+    sporadic_server = ss;
+}
 
 void init_task_common(TaskControlBlock& tcb) {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
@@ -633,6 +649,10 @@ void TaskControlBlock::cleanup() noexcept {
     if (event_group) {
         kernel::test::ResourceTracker::instance().track_event_group_remove();
         MemPool::free(event_group); event_group = nullptr;
+    }
+    if (sporadic_server) {
+        MemPool::free(sporadic_server);
+        sporadic_server = nullptr;
     }
 }
 

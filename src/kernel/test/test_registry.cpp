@@ -118,6 +118,7 @@ void register_random_vfs_write_tests();
 void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
+void register_sporadic_server_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -233,6 +234,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_fpu_xmm_all_tests();
         register_random_vfs_write_tests();
         register_memory_safety_tests();
+        register_sporadic_server_tests();
     }},
 
     // -- individual classes --
@@ -247,6 +249,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_timer_tests();
         register_wfg_tests();
         register_starvation_deadlock_tests();
+        register_sporadic_server_tests();
     }},
 
     {"memory", []() {
@@ -363,6 +366,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_microkernel_transition_tests();
         register_bench_syscall_latency_tests();
         register_bench_irq_latency_tests();
+    }},
+
+    {"sporadic", []() {
+        register_sporadic_server_tests();
     }},
 };
 

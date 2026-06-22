@@ -10,6 +10,20 @@
 
 ## Kernel Crashes
 
+### ID: #010 — vfs_resolve_proc test failure and test-report mismatch
+- **Description:** `vfs_resolve_proc` (`src/kernel/test/test_vfs.cpp:126`) asserts `vn->mode & vfs::S_IFDIR` but the `/proc` vnode returned by `vfs::resolve("/proc")` does not have the directory mode flag set. The test fails with `[FAIL]`. Additionally, the test framework's `print_report()` output (Total/Passed/Failed) is not consistently flushed to the serial port before `qemu_debug_exit()` terminates QEMU — the Makefile expect script's `-ex "\r\n  Failed: 0"` pattern may either miss a `Failed: N` line entirely or match prematurely, causing the Makefile exit code to not reflect the actual test-failure count.
+- **Root Cause:**
+  1. **vfs_resolve_proc:** The `procfs` mount is initialized during `vfs::init()` at boot, but the `procfs` vnode may not have its mode bits (`S_IFDIR`) set correctly, or the mount point is not populated before the test runs. The test isolation snapshot/restore saves/restores MemPool and scheduler state but does not guarantee VFS/procfs mount state — the `procfs` vnode mode field may be zeroed by the restore.
+  2. **report flush:** `print_report()` writes via `Logger::raw_write()` → `serial_putc()`, which waits for THR empty for each byte. However, `qemu_debug_exit()` calls `outw(0x501, code)` immediately after `print_report()` returns, triggering QEMU `exit()`. The UART's 16-byte FIFO plus shift register may still hold in-flight bytes that are never transmitted.
+- **Fix:**
+  1. **vfs_resolve_proc:** Ensure `procfs` root vnode has `S_IFDIR` set in its mode field during `procfs` mount. Alternatively, skip the mode check and only verify the vnode is non-null (the test's primary purpose is resolving `/proc` successfully).
+  2. **report flush:** Added serial TX drain loop in `run_registered()` (`src/lib/test.cpp`) — waits for THR empty (LSR bit 5) and TSR empty (LSR bit 6) before calling `qemu_debug_exit()`. Updated expect pattern to `-ex "\r\n  Failed: 0"` (exact match with CRLF line prefix).
+- **Severity:** Medium (one test fails in every `all` run; report-flush is cosmetic)
+- **Domain:** Kernel — VFS / Test Infrastructure
+- **Status:** Open — vfs_resolve_proc root cause not yet fixed; serial drain mitigation applied
+
+## Kernel Crashes
+
 ### ID: #008 — GPF in cleanup_zombies after selftest on continuing builds
 - **Description:** Running `selftest` via shell in a build that continues after tests (e.g. `make run-release`) triggers a General Protection Fault in `cleanup_zombies` after all 84 tests pass. The test report prints `Failed: 0`, then daemons die/restart, then GPF at `rip=0xFFFF80000026A511` with `RAX=0xFF80000027868FFF` (non-canonical corrupted `shell_task_ptr_`). Vector `0xD`, error `0x0`.
 - **Root Cause:** A timer interrupt nests inside the syscall handler's `sti()`/`hlt()`/`cli()` IPC window (in `sys_receive`), calling `rate_monotonic_schedule()` → `switch_to_task()`, which overwrites scheduler globals (including `shell_task_ptr_`) while the outer `reschedule()` is mid-operation. The ISR context-switch logic in `isr_stubs.asm` was consuming `scheduler_save_rsp_to`/`scheduler_load_rsp_from` even for nested interrupts (`isr_nesting_depth > 1`), corrupting state set up by the outer ISR.

@@ -334,6 +334,21 @@ void run_release() {
 void run_registered(uint8_t required_flags) {
     run_filtered(required_flags, true);
     if (g_class_auto_shutdown) {
+        // Drain serial TX FIFO before signalling QEMU to exit, so the
+        // full test report (Total/Passed/Failed) is flushed to the
+        // expect script before the QEMU process terminates.
+        {
+            static constexpr uint16_t COM1       = 0x3F8;
+            static constexpr uint16_t COM1_LSR   = 0x3FD;
+            // Write a final newline so any buffered line is emitted.
+            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+            arch::outb(COM1, '\n');
+            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+            arch::outb(COM1, '\r');
+            // Wait for THR empty (bit 5) then TSR empty (bit 6).
+            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+            while ((arch::inb(COM1_LSR) & 0x40) == 0) { }
+        }
         uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
         arch::qemu_debug_exit(result);
     }
