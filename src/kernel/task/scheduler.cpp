@@ -518,7 +518,9 @@ static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, c
 
 void Scheduler::cleanup_zombies() noexcept {
     auto* shell = shell_task_ptr_;
-    if (!shell || shell->magic != TaskControlBlock::TCB_MAGIC) {
+    if (!shell ||
+        (reinterpret_cast<uint64_t>(shell) & 0xFFFF800000000000ULL) != 0xFFFF800000000000ULL ||
+        shell->magic != TaskControlBlock::TCB_MAGIC) {
         shell = current_task();
     }
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
