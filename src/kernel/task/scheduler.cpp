@@ -23,6 +23,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/test/test_watchdog.hpp>
 #include <kernel/memory/integrity.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/vfsd.hpp>
@@ -293,9 +294,17 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 }
 
 void Scheduler::on_tick() noexcept {
-    if (!preempt_enabled_) return;
-
     uint64_t current_tick = arch::Timer::ticks();
+
+    // Test watchdog: if armed and deadline reached in this tick, dump state
+    // and halt.  Placed before the preempt_enabled_ check so it fires even
+    // if preemption is disabled (e.g. lock held in a hanging test).
+    if (kernel::test::g_watchdog_deadline &&
+        current_tick >= kernel::test::g_watchdog_deadline) {
+        kernel::test::watchdog_panic();
+    }
+
+    if (!preempt_enabled_) return;
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];

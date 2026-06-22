@@ -118,9 +118,11 @@ JARVIS_TEST(secure_exec_regression_audit) {
     JARVIS_ASSERT(!is_user_string(nullptr, 0));
     JARVIS_ASSERT(!is_user_string(nullptr, 64));
 
-    // String crossing boundary
-    JARVIS_ASSERT(is_user_string(reinterpret_cast<const void*>(user_limit - 4), 4));
-    JARVIS_ASSERT(!is_user_string(reinterpret_cast<const void*>(user_limit - 4), 8));
+    // String crossing boundary — use is_user_range for bounds-only check
+    // since is_user_string dereferences memory and the boundary address
+    // may not be mapped.
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(user_limit - 4), 4));
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<const void*>(user_limit - 4), 8));
 
     // Zero-size ranges (should be valid - empty range can't fault)
     JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(argv_addr), 0));

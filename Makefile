@@ -464,7 +464,7 @@ test-qemu: debug
 	                exit 1; \
 	            } \
 	        } \
-	    '; \
+	    ' 2>&1; \
 	    rc=$$?; \
 	    if [ $$rc -eq 0 ]; then \
 	        printf '  %-7s %s\n' 'TEST' 'All tests passed.'; \

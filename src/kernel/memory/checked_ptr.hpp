@@ -106,6 +106,8 @@ static inline CheckedPtr<T> checked(T* user_ptr, uint64_t count = 1) {
 
 /// @brief Check if a user pointer points to a valid null-terminated string.
 /// @return true if the string is within user space and has a null terminator.
+/// @note  This function dereferences user memory.  The pointer must point
+///        to mapped, readable pages.  Use is_user_range() for bounds-only checks.
 static inline bool is_user_string(const void* user_ptr, uint64_t max_len = 4096
     ) {
     uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);

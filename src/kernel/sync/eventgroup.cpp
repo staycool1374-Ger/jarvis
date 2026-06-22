@@ -42,7 +42,7 @@ void EventGroup::clear_bits(uint64_t bits) {
 
 bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
     ) {
-    SpinLockGuard<SpinLock> guard(lock_);
+    // Caller must hold lock_ (wait_bits already holds it)
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_].task = &task;
     waiters_[wait_count_].wanted_bits = wanted;
@@ -52,7 +52,7 @@ bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
 }
 
 void EventGroup::wake_matching() {
-    SpinLockGuard<SpinLock> guard(lock_);
+    // Caller must hold lock_ (set_bits / wait_bits already hold it)
     for (size_t i = 0; i < wait_count_;) {
         if ((bits_ & waiters_[i].wanted_bits) == waiters_[i].wanted_bits) {
             if (waiters_[i].clear_on_exit) {

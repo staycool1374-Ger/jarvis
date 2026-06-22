@@ -25,7 +25,10 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/test_isolate.hpp>
+#include <kernel/test/test_watchdog.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/arch/timer.hpp>
 
 namespace kernel {
 namespace test {
@@ -164,7 +167,9 @@ void run_all() {
         Logger::raw_write(tc.name);
         Logger::raw_write(" ... ");
 
+        kernel::test::watchdog_arm(30000, tc.name);
         run_one(tc);
+        kernel::test::watchdog_disarm();
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
@@ -261,7 +266,20 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         Logger::raw_write(tc.name);
         Logger::raw_write(" ... ");
 
+        // Arm the per-test watchdog (30 seconds = 30000 ticks at 1 kHz)
+        char wd_name[128];
+        int wp = 0;
+        const char* ws = tc.suite;
+        while (*ws && wp < 60) wd_name[wp++] = *ws++;
+        if (wp > 0 && tc.suite[0]) { wd_name[wp++] = ':'; wd_name[wp++] = ':'; }
+        ws = tc.name;
+        while (*ws && wp < 126) wd_name[wp++] = *ws++;
+        wd_name[wp] = '\0';
+        kernel::test::watchdog_arm(30000, wd_name);
+
         run_one(tc);
+
+        kernel::test::watchdog_disarm();
 
         if (Registry::failed() == before_fail) {
             Logger::raw_write("\033[32m[PASS]\033[0m\n");
@@ -410,8 +428,8 @@ void print_report() {
     };
 
     Logger::raw_write("  Total:  "); write_num(tt); Logger::raw_write("\n");
-    Logger::raw_write("  Passed: \033[32m"); write_num(tp); Logger::raw_write("\033[0m\n");
-    Logger::raw_write("  Failed: \033[1;31m"); write_num(tf); Logger::raw_write("\033[0m\n");
+    Logger::raw_write("  Passed: "); write_num(tp); Logger::raw_write("\n");
+    Logger::raw_write("  Failed: "); write_num(tf); Logger::raw_write("\n");
     Logger::raw_write("==============================\n\n");
 }
 
