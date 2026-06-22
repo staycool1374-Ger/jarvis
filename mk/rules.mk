@@ -96,7 +96,7 @@ $(INITRD_CPIO): $(USERSPACE_ELF)
 $(INITRD_OBJ): $(INITRD_CPIO)
 	@printf '  %-7s %s\n' 'OBJCOPY' '$@'
 	@mkdir -p $(dir $@)
-	x86_64-elf-objcopy -I binary -O elf64-x86-64 -B i386 $< $@
+	$(OBJCOPY) -I binary -O $(OBJCOPY_FMT) -B $(OBJCOPY_ARCH) $< $@
 
 # ------------------------------------------------------------------------------
 # FAT32 disk image
@@ -109,7 +109,7 @@ $(FAT32_IMG): tools/mkfat32img.py
 $(FAT32_OBJ): $(FAT32_IMG)
 	@printf '  %-7s %s\n' 'OBJCOPY' '$@'
 	@mkdir -p $(dir $@)
-	x86_64-elf-objcopy -I binary -O elf64-x86-64 -B i386 $< $@
+	$(OBJCOPY) -I binary -O $(OBJCOPY_FMT) -B $(OBJCOPY_ARCH) $< $@
 
 # ------------------------------------------------------------------------------
 # Kernel link rules
@@ -117,7 +117,7 @@ $(FAT32_OBJ): $(FAT32_IMG)
 # Both debug and release use the same LDFLAGS and same .o files.  The
 # difference in build type is driven entirely by CXXFLAGS on the .o files.
 # ------------------------------------------------------------------------------
-$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld
+$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel-debug.elf'
 	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
@@ -125,7 +125,7 @@ $(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld
 	@python3 tools/patch_code_crc.py $@
 	@printf '  %-7s %s\n' 'SIZE' "$$($(GET_SIZE) $@) bytes"
 
-$(KERNEL): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld
+$(KERNEL): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf'
 	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)

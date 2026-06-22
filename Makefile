@@ -24,10 +24,15 @@
 # ------------------------------------------------------------------------------
 ARCH ?= x86_64
 
-SUPPORTED_ARCHS := x86_64
+SUPPORTED_ARCHS := x86_64 aarch64 riscv64
 ifneq ($(filter $(ARCH),$(SUPPORTED_ARCHS)),$(ARCH))
 $(error Unsupported architecture '$(ARCH)'. Supported: $(SUPPORTED_ARCHS))
 endif
+
+# Derive upper-case ARCH for CONFIG_ARCH_* define
+ARCH_UPPER := $(shell echo $(ARCH) | tr a-z A-Z)
+
+QEMU_UEFI  ?= /opt/homebrew/share/qemu/edk2-$(ARCH)-code.fd
 
 # ------------------------------------------------------------------------------
 # Host Environment & OS Detection
@@ -50,17 +55,20 @@ endif
 # target-specific variable overrides on the 'debug' / 'release' targets.
 # ------------------------------------------------------------------------------
 
+# --- Common CXXFLAGS (shared across architectures) ---
+CXXFLAGS_COMMON := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
+                   -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
+                   -fno-threadsafe-statics \
+                   -Wall -Wextra -Werror \
+                   -I src -I src/lib -pipe -MMD -MP \
+                   -DCONFIG_ARCH_$(ARCH_UPPER) \
+                   -ffunction-sections -fdata-sections
+
 ifeq ($(ARCH),x86_64)
 
 CXX      := g++
-CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
-            -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
-            -fno-threadsafe-statics -target x86_64-elf -m64 -mno-red-zone \
-            -mgeneral-regs-only -mcmodel=large \
-            -Wall -Wextra -Werror \
-            -I src -I src/lib -pipe -MMD -MP \
-            -DCONFIG_ARCH_X86_64 \
-            -ffunction-sections -fdata-sections
+CXXFLAGS := $(CXXFLAGS_COMMON) -target x86_64-elf -m64 -mno-red-zone \
+            -mgeneral-regs-only -mcmodel=large
 
 CC       := x86_64-elf-gcc
 CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
@@ -71,12 +79,71 @@ ASFLAGS  := -f elf64
 
 LD       := x86_64-elf-ld
 AR       := x86_64-elf-ar
-LDFLAGS  := -m elf_x86_64 -nostdlib -T linker.ld -z max-page-size=0x1000 \
+OBJCOPY  := x86_64-elf-objcopy
+OBJCOPY_FMT := elf64-x86-64
+OBJCOPY_ARCH := i386
+LDFLAGS  := -m elf_x86_64 -nostdlib -T linker_$(ARCH).ld -z max-page-size=0x1000 \
             -Map=build/kernel.map
 
 GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/null))
 
+QEMU_SYSTEM    := qemu-system-x86_64
+QEMU_ARCH_FLAGS := -boot order=d \
+                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+OBJDUMP_DIS_FLAGS := -M intel
+
+else ifeq ($(ARCH),aarch64)
+
+CXX      := g++
+CXXFLAGS := $(CXXFLAGS_COMMON) -target aarch64-elf -march=armv8-a
+
+CC       := aarch64-elf-gcc
+CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
+
+AS       := aarch64-elf-as
+ASFLAGS  :=
+
+LD       := aarch64-elf-ld
+AR       := aarch64-elf-ar
+OBJCOPY  := aarch64-elf-objcopy
+OBJCOPY_FMT := elf64-littleaarch64
+OBJCOPY_ARCH := aarch64
+LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+
+QEMU_SYSTEM    := qemu-system-aarch64
+QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 \
+                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+OBJDUMP_DIS_FLAGS :=
+
+else ifeq ($(ARCH),riscv64)
+
+CXX      := g++
+CXXFLAGS := $(CXXFLAGS_COMMON) -target riscv64-elf -march=rv64imafdc -mabi=lp64d
+
+CC       := riscv64-unknown-elf-gcc
+CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections
+
+AS       := riscv64-unknown-elf-as
+ASFLAGS  :=
+
+LD       := riscv64-unknown-elf-ld
+AR       := riscv64-unknown-elf-ar
+OBJCOPY  := riscv64-unknown-elf-objcopy
+OBJCOPY_FMT := elf64-littleriscv
+OBJCOPY_ARCH := riscv
+LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+
+QEMU_SYSTEM    := qemu-system-riscv64
+QEMU_ARCH_FLAGS := -machine virt -bios default
+OBJDUMP_DIS_FLAGS :=
+
 endif
+
+# --- Derived toolchain aliases ---
+OBJDUMP := $(patsubst %-objcopy,%-objdump,$(OBJCOPY))
+GDB     := $(patsubst %-objcopy,%-gdb,$(OBJCOPY))
 
 # ------------------------------------------------------------------------------
 # Output paths
@@ -88,12 +155,10 @@ RELEASE_ISO    := release/jarvis-rtos.iso
 KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DIS     := build/kernel.dis
 
-QEMU_UEFI      ?= /opt/homebrew/share/qemu/edk2-x86_64-code.fd
 FAT32_DISK     := build/fat32.img
 QEMU_NET       := -netdev user,id=net0 -device virtio-net-pci,netdev=net0,disable-legacy=on
 QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  -boot order=d \
-                  -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
+                  $(QEMU_ARCH_FLAGS) \
                   -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
 
 # ------------------------------------------------------------------------------
@@ -228,7 +293,7 @@ profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) \
                        -Wno-class-memaccess \
                        -finstrument-functions -DCONFIG_PROFILING
 profiling: LDFLAGS += -L $(GCOV_LIB_DIR)
-profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld iso/boot
+profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld iso/boot
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf (profiling)'
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
 	cp $(KERNEL) iso/boot/kernel.elf
@@ -237,7 +302,7 @@ profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld iso/boot
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
 	@printf '  %-7s %s\n' 'PROFILE' 'Booting in QEMU…'
 	mkdir -p build/profiling
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
+	$(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial file:build/profiling/gcda.raw \
 	    $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) 2>&1 | \
 	    tee build/profiling/qemu.log
@@ -248,17 +313,17 @@ profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker.ld iso/boot
 # QEMU / Test targets
 # ------------------------------------------------------------------------------
 run-qemu: debug
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting (Ctrl+A then X to exit)…'; \
-	    qemu-system-x86_64 $(QEMU_FLAGS); \
+	    $(QEMU_SYSTEM) $(QEMU_FLAGS); \
 	else \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
 
 run-release: release
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting release image…'; \
-	    qemu-system-x86_64 -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
+	    $(QEMU_SYSTEM) -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	        -boot order=d \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
@@ -267,10 +332,10 @@ run-release: release
 	fi
 
 run-qemu-debug: debug
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting debug (GDB :1234, -d int,cpu_reset)…'; \
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
-	    qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
+	    $(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	        -boot order=d -s -d int,cpu_reset \
 	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
@@ -285,7 +350,7 @@ gdb: debug
 	@echo "=========================================="
 	@echo " QEMU started with GDB stub on :1234"
 	@echo " Connect GDB in another terminal:"
-	@echo "   x86_64-elf-gdb build/kernel-debug.elf -x tools/gdb/init.gdb"
+	@echo "   $(GDB) build/kernel-debug.elf -x tools/gdb/init.gdb"
 	@echo ""
 	@echo " Available GDB custom commands:"
 	@echo "   tasks       - list all tasks"
@@ -299,7 +364,7 @@ gdb: debug
 	@echo "   trace-syscall - toggle syscall tracing"
 	@echo "=========================================="
 	@echo ""
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
+	$(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
 	    -boot order=d -s -S -d cpu_reset \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
 	    -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
@@ -308,13 +373,13 @@ test-gdb: debug
 	@rm -f build/gdb-panic-captured build/gdb-serial.log
 	@mkdir -p build
 	@printf '  %-7s %s\n' 'GDB' 'Launching QEMU with GDB stub…'
-	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
 	@if ! command -v gtimeout >/dev/null 2>&1; then \
 	    echo "gtimeout missing. Install with: brew install coreutils"; exit 1; \
 	fi
-	qemu-system-x86_64 -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log $(QEMU_NET) \
+	$(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log $(QEMU_NET) \
 	    -boot order=d -s -no-reboot -device isa-debug-exit \
 	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) & \
 	QEMU_PID=$$!; \
@@ -324,7 +389,7 @@ test-gdb: debug
 	    sleep 1; \
 	done; \
 	printf '  %-7s %s\n' 'GDB' 'Connecting (panic surveillance, 120s timeout)…'; \
-	gtimeout 120 x86_64-elf-gdb build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
+	gtimeout 120 $(GDB) build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
 	GDB_EXIT=$$?; \
 	kill $$QEMU_PID 2>/dev/null; wait $$QEMU_PID 2>/dev/null; \
 	if [ -f build/gdb-panic-captured ]; then \
@@ -346,11 +411,11 @@ test-gdb: debug
 	fi
 
 test-qemu: debug
-	@if command -v qemu-system-x86_64 >/dev/null 2>&1; then \
+	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'TEST' 'Running test suite in QEMU…'; \
 	    expect -c ' \
 	        set timeout 60; \
-	        spawn qemu-system-x86_64 $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
+	        spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
 	        expect { \
 	            "Failed: 0" { \
 	                send_user "\nAll tests passed (Failed: 0)\n"; \
@@ -407,12 +472,12 @@ run-release-test: release
 	$(MAKE) _run-shell-test ISO=$(RELEASE_ISO)
 
 _run-shell-test:
-	@if ! command -v qemu-system-x86_64 >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
 	printf '  %-7s %s\n' 'TEST' 'Comprehensive shell command test…'; \
 	printf '%s\n' \
 	    'set timeout 15' \
 	    'set stty_init "raw -echo"' \
-	    'spawn qemu-system-x86_64 -cdrom $(ISO) -m 256M -serial mon:stdio $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
+	    'spawn $(QEMU_SYSTEM) -cdrom $(ISO) -m 256M -serial mon:stdio $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
 	    '' \
 	    'proc fail {msg} { puts "FAIL: $$msg"; exit 1 }' \
 	    '' \
@@ -580,7 +645,7 @@ symbols: $(KERNEL)
 
 objdump: $(KERNEL)
 	@printf '  %-7s %s\n' 'OBJDUMP' '$(KERNEL_DIS)'
-	x86_64-elf-objdump -d -M intel --no-show-raw-insn $(KERNEL) > $(KERNEL_DIS)
+	$(OBJDUMP) -d $(OBJDUMP_DIS_FLAGS) --no-show-raw-insn $(KERNEL) > $(KERNEL_DIS)
 
 clean:
 	@printf '  %-7s %s\n' 'CLEAN' 'Removing build artifacts…'
