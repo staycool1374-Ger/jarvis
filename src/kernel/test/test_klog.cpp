@@ -141,6 +141,54 @@ JARVIS_TEST(dmesg_prints_kernel_log) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Reading from an empty ring buffer returns 0 bytes.
+// Input: clear(), then read()
+// Expect: read returns 0
+// Depends: kernel::log::RingBuffer
+JARVIS_TEST(klog_empty_read) {
+    auto& rb = kernel::log::g_klog;
+    rb.clear();
+    JARVIS_ASSERT(rb.empty());
+    char buf[64];
+    size_t n = rb.read(buf, sizeof(buf));
+    JARVIS_ASSERT_EQ((size_t)0, n);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Clearing the ring buffer makes it empty.
+// Input: write data, clear(), check empty
+// Expect: empty() returns true after clear
+// Depends: kernel::log::RingBuffer
+JARVIS_TEST(klog_clear) {
+    auto& rb = kernel::log::g_klog;
+    rb.puts("SOME_DATA_TO_CLEAR\n");
+    JARVIS_ASSERT(!rb.empty());
+    rb.clear();
+    JARVIS_ASSERT(rb.empty());
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Reading with a buffer smaller than available data returns only
+// the requested amount.
+// Input: write data, read with small buffer
+// Expect: read returns exactly the small buffer size
+// Depends: kernel::log::RingBuffer
+JARVIS_TEST(klog_read_partial) {
+    auto& rb = kernel::log::g_klog;
+    rb.clear();
+    for (int i = 0; i < 50; ++i) rb.putchar('B');
+    char small[10];
+    size_t n = rb.read(small, 5);
+    JARVIS_ASSERT_EQ((size_t)5, n);
+    small[5] = '\0';
+    for (size_t i = 0; i < 5; ++i)
+        JARVIS_ASSERT_EQ('B', small[i]);
+    JARVIS_TEST_PASS();
+}
+
 void register_klog_tests() {
     Logger::info("Registering KLOG tests");
 
@@ -149,4 +197,7 @@ void register_klog_tests() {
     JARVIS_REGISTER_TEST(klog_concurrent_readers);
     JARVIS_REGISTER_TEST(klog_invalid_buffer_eFault);
     JARVIS_REGISTER_TEST(dmesg_prints_kernel_log);
+    JARVIS_REGISTER_TEST(klog_empty_read);
+    JARVIS_REGISTER_TEST(klog_clear);
+    JARVIS_REGISTER_TEST(klog_read_partial);
 }

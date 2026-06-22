@@ -20,6 +20,7 @@
 #include <logger.hpp>
 #include <kernel/arch/page_table.hpp>
 #include <kernel/arch/context.hpp>
+#include <kernel/arch/cpuid.hpp>
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
@@ -289,6 +290,47 @@ JARVIS_TEST(hal_delegates_to_x86_64) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies CPUID feature flags on x86-64. The architecture requires
+// SSE and SSE2 to be present on all x86-64 CPUs.
+// Input: arch::cpuid(1)
+// Expect: EDX bits 25 (SSE) and 26 (SSE2) are set
+// Depends: kernel::arch::cpuid
+JARVIS_TEST(hal_cpuid_features) {
+    arch::CpuIdResult leaf1 = arch::cpuid(1);
+    JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_SSE);
+    JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_SSE2);
+    JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_FPU);
+    JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_FXSR);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies ArchInterruptController snapshot/restore cycle correctly
+// saves and restores PIC mask state.
+// Input: Snapshot current state, mask IRQ 2, verify mask changed, restore,
+// verify original mask restored
+// Expect: Snapshot captures correct masks, restore reverts to saved state
+// Depends: kernel::arch::ArchInterruptController
+JARVIS_TEST(hal_interrupt_snapshot_restore_cycle) {
+    arch::IrqState saved = arch::ArchInterruptController::snapshot();
+
+    arch::ArchInterruptController::mask(2);
+    arch::IrqState masked = arch::ArchInterruptController::snapshot();
+    JARVIS_ASSERT((masked.pic1_mask & 0x04) != 0);
+
+    arch::ArchInterruptController::unmask(2);
+    arch::IrqState unmasked = arch::ArchInterruptController::snapshot();
+    JARVIS_ASSERT((unmasked.pic1_mask & 0x04) == 0);
+
+    arch::ArchInterruptController::restore(saved);
+    arch::IrqState restored = arch::ArchInterruptController::snapshot();
+    JARVIS_ASSERT_EQ(saved.pic1_mask, restored.pic1_mask);
+    JARVIS_ASSERT_EQ(saved.pic2_mask, restored.pic2_mask);
+
+    JARVIS_TEST_PASS();
+}
+
 void register_hal_tests() {
     Logger::info("Registering HAL tests");
 
@@ -304,4 +346,6 @@ void register_hal_tests() {
     JARVIS_REGISTER_TEST(hal_timer_remaining);
     JARVIS_REGISTER_TEST(hal_io_byte_word_long);
     JARVIS_REGISTER_TEST(hal_delegates_to_x86_64);
+    JARVIS_REGISTER_TEST(hal_cpuid_features);
+    JARVIS_REGISTER_TEST(hal_interrupt_snapshot_restore_cycle);
 }

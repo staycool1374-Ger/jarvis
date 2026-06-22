@@ -117,6 +117,7 @@ void register_fpu_xmm_all_tests();
 void register_random_vfs_write_tests();
 void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
+void register_memory_safety_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -231,6 +232,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_fpu_multi_tests();
         register_fpu_xmm_all_tests();
         register_random_vfs_write_tests();
+        register_memory_safety_tests();
     }},
 
     // -- individual classes --

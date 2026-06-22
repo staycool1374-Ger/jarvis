@@ -99,6 +99,21 @@ JARVIS_TEST(buildsystem_debug_flags) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies that CONFIG_ARCH_X86_64 is defined for x86-64 builds.
+// Input: Preprocessor check
+// Expect: CONFIG_ARCH_X86_64 is defined
+// Depends: Makefile, build system
+JARVIS_TEST(buildsystem_config_arch_defined) {
+#if defined(CONFIG_ARCH_X86_64)
+    bool arch_ok = true;
+#else
+    bool arch_ok = false;
+#endif
+    JARVIS_ASSERT_FMT(arch_ok, "CONFIG_ARCH_X86_64 must be defined for x86-64 builds");
+    JARVIS_TEST_PASS();
+}
+
 void register_buildsystem_tests() {
     Logger::info("Registering buildsystem tests");
 
@@ -106,4 +121,5 @@ void register_buildsystem_tests() {
     JARVIS_REGISTER_TEST(buildsystem_invalid_arch_error);
     JARVIS_REGISTER_TEST(buildsystem_default_arch_x86_64);
     JARVIS_REGISTER_TEST(buildsystem_debug_flags);
+    JARVIS_REGISTER_TEST(buildsystem_config_arch_defined);
 }
