@@ -41,6 +41,7 @@ size_t Registry::test_count_ = 0;
 size_t Registry::test_failed_ = 0;
 ClassSection Registry::sections_[MAX_CLASSES] = {};
 size_t Registry::class_count_ = 0;
+size_t Registry::expected_count_ = 0;
 bool g_class_auto_shutdown = false;
 
 void Registry::init() {
@@ -49,6 +50,7 @@ void Registry::init() {
     failed_ = 0;
     test_count_ = 0;
     test_failed_ = 0;
+    expected_count_ = 0;
 }
 
 void Registry::register_test(const TestCase& tc) {
@@ -107,6 +109,7 @@ void Registry::reset() {
     failed_ = 0;
     test_count_ = 0;
     test_failed_ = 0;
+    expected_count_ = 0;
 }
 
 size_t Registry::passed() { return passed_; }
@@ -115,6 +118,9 @@ size_t Registry::total() { return passed_ + failed_; }
 size_t Registry::test_count() { return test_count_; }
 size_t Registry::test_passed() { return test_count_ - test_failed_; }
 size_t Registry::test_failed() { return test_failed_; }
+
+void Registry::set_expected_count(size_t n) { expected_count_ = n; }
+size_t Registry::expected_count() { return expected_count_; }
 
 static void run_one(const TestCase& tc) {
     // Snapshot scheduler/PMM state for leak detection
@@ -230,6 +236,17 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
 
     size_t run_count = 0;
     Logger::info("[TEST:RUN] Running filtered test(s) (flags=%u)", (unsigned)required_flags);
+
+    // Pre-count tests matching the filter — this is the expected count.
+    // If post-run test_count_ differs, tests were silently lost.
+    size_t expected = 0;
+    for (size_t i = 0; i < n; ++i) {
+        auto& tc = Registry::tests()[i];
+        if (tc.flags & TF_USER) continue;
+        if (required_flags && !(tc.flags & required_flags)) continue;
+        ++expected;
+    }
+    Registry::set_expected_count(expected);
 
     // Take a snapshot of the entire kernel state before the first test so
     // we can restore it between individual tests (full isolation).
@@ -426,6 +443,7 @@ void print_report() {
     size_t tp = Registry::test_passed();
     size_t tf = Registry::test_failed();
     size_t tt = tp + tf;
+    size_t exp = Registry::expected_count();
 
     Logger::raw_write("\n");
     Logger::raw_write("==============================\n");
@@ -442,10 +460,21 @@ void print_report() {
         Logger::raw_write(buf + pos);
     };
 
-    Logger::raw_write("  Total:  "); write_num(tt); Logger::raw_write("\n");
-    Logger::raw_write("  Passed: "); write_num(tp); Logger::raw_write("\n");
-    Logger::raw_write("  Failed: "); write_num(tf); Logger::raw_write("\n");
-    Logger::raw_write("==============================\n\n");
+    Logger::raw_write("  Expected: "); write_num(exp); Logger::raw_write("\n");
+    Logger::raw_write("  Total:    "); write_num(tt); Logger::raw_write("\n");
+    Logger::raw_write("  Passed:   "); write_num(tp); Logger::raw_write("\n");
+    Logger::raw_write("  Failed:   "); write_num(tf); Logger::raw_write("\n");
+    Logger::raw_write("==============================\n");
+
+    if (exp != tt) {
+        Logger::raw_write("\033[1;31m[WARN] Expected ");
+        write_num(exp);
+        Logger::raw_write(" tests, but only ");
+        write_num(tt);
+        Logger::raw_write(" reported results — tests may have been lost\033[0m\n");
+    }
+
+    Logger::raw_write("\n");
 }
 
 } // namespace test

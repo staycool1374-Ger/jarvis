@@ -42,3 +42,21 @@
 - **Severity:** High (shell unusable after boot)
 - **Domain:** Kernel — Scheduler
 - **Status:** Fixed (current session)
+
+### ID: #011 — syscall_send_recv: SEND to self-task returns non-zero, resource leak
+- **Description:** `syscall_send_recv` in `src/kernel/test/test_syscall.cpp:450` asserts `ret == 0` after `Syscall::handle(SEND, self_task_id, 0, 42, 0, nullptr)` but the syscall returns non-zero. The test creates a throwaway task, sets it as current, sends a message to itself, then receives it back. The failure occurs on the SEND step, before any RECEIVE. Additionally, the test leaks resources (PMM pages, MemPool blocks, Tasks, MessageQueues, Notify objects, EventGroups) because `remove_task()`/`cleanup()`/`delete` may not fully release IPC-related resources allocated during the SEND.
+- **Root Cause:** Not yet determined. Possible causes:
+  1. `SYS_SEND` may require the target task to have an active IPC endpoint or a specific task state (READY/RUNNING). The throwaway task was just created and added — its IPC structures may not be fully initialized.
+  2. The `set_current()` swap changes which task's IPC permissions apply. The SEND syscall may validate the caller's identity against the target, and the artificial `set_current()` bypasses normal scheduling.
+  3. The test creates a task with a no-op function body (`[](){}`) that immediately exits — by the time SEND reaches it, the task may have already terminated.
+- **Severity:** Medium (one test fails, masked by earlier hang until now)
+- **Domain:** Kernel — IPC / Syscall
+- **Status:** Open — pre-existing, unmasked by Mutex deadlock fix
+
+### ID: #012 — print_report output lost from serial before QEMU exit
+- **Description:** The test report printed by `print_report()` (Expected/Total/Passed/Failed lines) is consistently missing from the serial output captured by `make test-qemu`. The last test's `[PASS]` line appears, followed by truncation — the `==============================\n TEST RESULTS\n...` block never arrives in the capture. The Makefile expect script matches `\r\n  Failed: 0` from a partial report or not at all (falling through to `TIMEOUT`).
+- **Root Cause:** The serial TX drain loop in `run_registered()` waits for THR empty (LSR bit 5) and TSR empty (LSR bit 6) before `qemu_debug_exit()`, but `print_report()` runs inside `run_filtered()` BEFORE the drain code. The drain only flushes bytes written AFTER `print_report()`. The report bytes are in the UART FIFO when `qemu_debug_exit()` terminates the QEMU process — the FIFO contents are lost.
+- **Fix:** Move the serial drain to AFTER `print_report()` (inside `run_filtered()` or between `print_report()` and `qemu_debug_exit()`). Or make `print_report()` itself flush the UART FIFO as its last action.
+- **Severity:** Low (cosmetic — expect script still works, but report is invisible in logs)
+- **Domain:** Test Infrastructure
+- **Status:** Open

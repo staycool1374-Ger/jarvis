@@ -18,7 +18,6 @@
 
 #include <kernel/sync/mutex.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -32,14 +31,12 @@ void Mutex::init() {
 }
 
 bool Mutex::add_waiter(TaskControlBlock& task) {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_++] = &task;
     return true;
 }
 
 void Mutex::wake_one() {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (wait_count_ == 0) return;
 
     size_t best = 0;
@@ -53,7 +50,6 @@ void Mutex::wake_one() {
 }
 
 void Mutex::inherit_priority(TaskControlBlock& waiter) {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (!owner_) return;
     if (waiter.priority > owner_->priority) {
         holder_priority_ = owner_->priority;
@@ -62,25 +58,26 @@ void Mutex::inherit_priority(TaskControlBlock& waiter) {
 }
 
 void Mutex::restore_priority() {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (!owner_ || holder_priority_ == 0) return;
     owner_->priority = holder_priority_;
     holder_priority_ = 0;
 }
 
 void Mutex::lock() {
-    SpinLockGuard<SpinLock> guard(lock_);
+    lock_.lock();
     auto* task = Scheduler::current_task();
-    if (!task) return;
+    if (!task) { lock_.unlock(); return; }
 
     if (owner_ == task) {
         ++lock_count_;
+        lock_.unlock();
         return;
     }
 
     if (owner_ == nullptr) {
         owner_ = task;
         lock_count_ = 1;
+        lock_.unlock();
         return;
     }
 
@@ -89,36 +86,42 @@ void Mutex::lock() {
     bool added = add_waiter(*task);
     ENSURE(added);
 
+    lock_.unlock();
+
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();
 }
 
 bool Mutex::try_lock() {
-    SpinLockGuard<SpinLock> guard(lock_);
+    lock_.lock();
     auto* task = Scheduler::current_task();
-    if (!task) return false;
+    if (!task) { lock_.unlock(); return false; }
 
     if (owner_ == task) {
         ++lock_count_;
+        lock_.unlock();
         return true;
     }
 
     if (owner_ == nullptr) {
         owner_ = task;
         lock_count_ = 1;
+        lock_.unlock();
         return true;
     }
 
+    lock_.unlock();
     return false;
 }
 
 void Mutex::unlock() {
-    SpinLockGuard<SpinLock> guard(lock_);
+    lock_.lock();
     auto* task = Scheduler::current_task();
-    if (!task || owner_ != task) return;
+    if (!task || owner_ != task) { lock_.unlock(); return; }
 
     if (lock_count_ > 1) {
         --lock_count_;
+        lock_.unlock();
         return;
     }
 
@@ -130,6 +133,8 @@ void Mutex::unlock() {
     if (wait_count_ > 0) {
         wake_one();
     }
+
+    lock_.unlock();
 }
 
 }

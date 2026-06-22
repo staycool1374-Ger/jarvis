@@ -40,16 +40,14 @@ If the branch does not match the intended role, do not proceed.
 - **GDB debugging:** `make gdb` launches QEMU with GDB stub on `:1234`; connect with `x86_64-elf-gdb build/kernel-debug.elf -x tools/gdb/init.gdb`
 - **UART FIFO overflow:** 16-byte FIFO capacity; drain between write bursts; release tests use external expect scripting so only affects kernel self-test loopback
 
-## Session Summary (current v0.2.18-dev → next v0.2.19-dev)
+## Session Summary (v0.2.18 → v0.2.19)
 
 ### Completed This Session
-- **HAL abstraction**: 14 interface headers in `src/kernel/arch/hal/`; x86-64 impls migrated to `arch/x86_64/hal/`; existing `arch/*.hpp` → thin shims.
-- **Multi-arch build**: `ARCH=aarch64`/`riscv64` toolchain blocks; arch-parametric `QEMU_SYSTEM`, `OBJCOPY`, `GDB`, `OBJDUMP`, linker scripts; auto `-DCONFIG_ARCH_*`; `CXXFLAGS_COMMON` factored.
-- **Deterministic replay**: `make rr-record` (QEMU `-icount` + `-record`) and `make rr-replay` (replay + GDB stub).
-- **PCI debug**: `pci_print_tree(char*, size_t)` in `x86_64/pci.cpp`; `/proc/pci` procfs entry; unblocked test.
-- **Healthcheck**: optional `ARCH` argument, per-arch toolchain checks with `brew` suggestions.
-- **Bug fix**: `#include <string.hpp>` in `test_pci.cpp`.
-- **Version**: v0.2.18 done (Observability & Portability). All committed.
+- **SporadicServer budget enforcement**: `SporadicServer` class with O(1) replenishment, wired into scheduler `on_tick()` and IPC `sys_receive()`. vfsd (C=2,T=10) and iocd (C=3,T=10) configured. 14 unit tests.
+- **CI fix**: `gcc-x86-64-elf`/`binutils-x86-64-elf` unavailable on ubuntu-24.04 → use native `gcc`/`ld`/`ar`/`objcopy` (host is x86_64, output is identical).
+- **ROADMAP**: Marked all v0.2.18 items `[x]`, bumped executive override to v0.2.19.
+- **Documentation**: Updated README.md (version, test count, SporadicServer feature), testcases-v0.2.18.md, IMPLEMENTED_TESTS_SUMMARY.md.
+- **Release**: Committed + tagged `v0.2.18`. All committed.
 
 ### Next Version (v0.2.19)
 - Kernel Memory Safety audit

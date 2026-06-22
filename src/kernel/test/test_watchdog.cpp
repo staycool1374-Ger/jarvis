@@ -7,11 +7,14 @@
 namespace kernel::test {
 
 uint64_t g_watchdog_deadline = 0;
+uint64_t g_watchdog_task_id = 0;
 static char g_test_name[128] = {};
 
 void watchdog_arm(uint64_t ms, const char* test_name) {
     uint64_t now = arch::Timer::ticks();
     g_watchdog_deadline = now + ms;
+    auto* task = Scheduler::current_task();
+    g_watchdog_task_id = task ? task->id : 0;
     // Copy the test name into a static buffer so it's safe to access from the
     // timer ISR even if the caller's stack frame is gone.
     for (int i = 0; i < 127; ++i) {

@@ -62,7 +62,7 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 
 **Pre-flight gate (abort on any failure):**
 - Verify `git status --porcelain` is clean
-- Run `make test-qemu` — all must pass (`[FAIL]` count = 0)
+- Run `make test-qemu` — this launches the kernel in QEMU and runs ALL registered tests via `run_registered(0)` (debug build, `all` test class). All must pass (`[FAIL]` count = 0). Do **not** rely on a partial test run; confirm the serial output shows the full test count (600+ tests, not ~96).
 - Check `testcases-v$(KERNEL_VERSION).md` — if still `*Outline*` or any stubs remain, **abort**. If all tests implemented, delete the file.
 - Verify tag `v$(major).$(minor).$(patch)` does not exist: `git tag | grep "v$(major).$(minor).$(patch)"`
 

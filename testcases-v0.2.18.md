@@ -42,3 +42,19 @@
 
 ### PCI Bus Enumeration — test_pci.cpp (1 new test)
 - `pci_print_tree_output` — call pci_print_tree() and verify it produces valid device lines with vendor:device IDs, class/subclass, and BAR info
+
+### Sporadic Server — test_sporadic_server.cpp (14 tests)
+- `sporadic_server_init` — init with C=2, T=10, verify budget=T, bg_prio=0, state=IDLE
+- `sporadic_server_activation` — on_activation, verify state=ACTIVE, current_priority=base
+- `sporadic_server_double_activation` — two activations while ACTIVE, verify no double-accounting
+- `sporadic_server_exhaustion` — consume budget to 0, verify state=EXHAUSTED, current_priority=bg
+- `sporadic_server_completion` — on_completion in ACTIVE state, verify replenishment scheduled
+- `sporadic_server_replenishment_restores_budget` — exhaust, complete, process replenishments, verify budget restored
+- `sporadic_server_budget_capped` — schedule 2× replenishments, process both, verify budget ≤ C
+- `sporadic_server_queue_overflow` — schedule 16 replenishments on 8-slot queue, verify drops handled
+- `sporadic_server_priority_transition` — ACTIVE→EXHAUSTED→bg→replenished→ACTIVE, verify priority at each step
+- `sporadic_server_consume_returns_false` — consume past 0, verify returns false
+- `sporadic_server_replenish_due_only` — schedule repl at t+10, process at t+5, verify no early restore
+- `sporadic_server_multi_replenish_same_tick` — two completions, two replenishments fire at same tick, verify budget = C
+- `sporadic_server_exhaust_then_activation` — exhaust, on_activation while EXHAUSTED, verify no state change
+- `sporadic_server_idle_to_exhaust` — activate, consume all, on_completion, verify no crash on idle

@@ -189,9 +189,28 @@ All test files compile successfully with `g++ -target x86_64-elf -std=c++20 -Wal
   - `dev_random_write_zero` — write zero bytes returns 0
 - **Status**: ✅ Real logic
 
+### 14. test_sporadic_server.cpp (14 tests)
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_sporadic_server.cpp`
+- **Tests**: 14 tests covering:
+  - `sporadic_server_init` — init with C=2, T=10, verify budget=T, bg_prio=0, state=IDLE
+  - `sporadic_server_activation` — on_activation, verify state=ACTIVE, current_priority=base
+  - `sporadic_server_double_activation` — two activations while ACTIVE, verify no double-accounting
+  - `sporadic_server_exhaustion` — consume budget to 0, verify state=EXHAUSTED, current_priority=bg
+  - `sporadic_server_completion` — on_completion in ACTIVE state, verify replenishment scheduled
+  - `sporadic_server_replenishment_restores_budget` — exhaust, complete, process replenishments, verify budget restored
+  - `sporadic_server_budget_capped` — schedule 2× replenishments, process both, verify budget ≤ C
+  - `sporadic_server_queue_overflow` — schedule 16 replenishments on 8-slot queue, verify drops handled
+  - `sporadic_server_priority_transition` — ACTIVE→EXHAUSTED→bg→replenished→ACTIVE, verify priority at each step
+  - `sporadic_server_consume_returns_false` — consume past 0, verify returns false
+  - `sporadic_server_replenish_due_only` — schedule repl at t+10, process at t+5, verify no early restore
+  - `sporadic_server_multi_replenish_same_tick` — two completions, two replenishments fire at same tick, verify budget = C
+  - `sporadic_server_exhaust_then_activation` — exhaust, on_activation while EXHAUSTED, verify no state change
+  - `sporadic_server_idle_to_exhaust` — activate, consume all, on_completion, verify no crash on idle
+- **Status**: ✅ Real logic
+
 ## ✅ Summary
 
-- **5 new TEST_CLASS-based test files** (24 test classes) covering IPC robustness, syscall fuzzing, starvation/deadlock, resource exhaustion, and microkernel transition readiness
+- **6 new TEST_CLASS-based test files** (24 test classes) covering IPC robustness, syscall fuzzing, starvation/deadlock, resource exhaustion, microkernel transition readiness, and SporadicServer budget enforcement
 - **4 existing test files extended** with additional tests
 - **4 new v0.2.16 test files** (5 tests): FPU clone, 3-way FPU switch, 16-XMM register switch, /dev/random write
 - **All test files compile cleanly**

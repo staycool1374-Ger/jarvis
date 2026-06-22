@@ -68,6 +68,9 @@ public:
     static size_t test_failed();
     static void reset();
 
+    static void set_expected_count(size_t n);
+    static size_t expected_count();
+
     static void record_class_section(const char* name, size_t start, size_t count);
 
 private:
@@ -81,6 +84,7 @@ private:
     static size_t test_failed_;
     static ClassSection sections_[MAX_CLASSES];
     static size_t class_count_;
+    static size_t expected_count_;
 };
 
 class TestBase {

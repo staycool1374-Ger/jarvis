@@ -309,12 +309,15 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ticks();
 
-    // Test watchdog: if armed and deadline reached in this tick, dump state
-    // and halt.  Placed before the preempt_enabled_ check so it fires even
-    // if preemption is disabled (e.g. lock held in a hanging test).
+    // Test watchdog: if armed for the current task and deadline reached,
+    // dump state and halt.  The task-ID guard prevents the watchdog from
+    // firing on a daemon tick that happens while a test has the deadline set.
     if (kernel::test::g_watchdog_deadline &&
         current_tick >= kernel::test::g_watchdog_deadline) {
-        kernel::test::watchdog_panic();
+        auto* task = current_task();
+        if (task && task->id == kernel::test::g_watchdog_task_id) {
+            kernel::test::watchdog_panic();
+        }
     }
 
     if (!preempt_enabled_) return;

@@ -27,7 +27,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.17** — Kernel Synchronization & Real-Time Guarantees.
+Current version: **v0.2.18** — Observability & Portability + SporadicServer.
 
 ---
 
@@ -85,6 +85,7 @@ This migration is architected from the start: the current monolithic ring-0 serv
 |---------|--------|
 | Preemptive rate-monotonic scheduling (256 priority levels) | ✓ |
 | Periodic and aperiodic task support | ✓ |
+| Sporadic Server budget enforcement (C/T parameters, O(1) replenishment) | ✓ |
 | O(1) task-ID → TCB hash table (open addressing) | ✓ |
 | Process lifecycle: `fork`, `waitpid`, `exit`, `exec` | ✓ |
 | ELF64 loader (static binaries from initrd or VFS) | ✓ |
