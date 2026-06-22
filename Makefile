@@ -59,6 +59,7 @@ CXXFLAGS := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
             -mgeneral-regs-only -mcmodel=large \
             -Wall -Wextra -Werror \
             -I src -I src/lib -pipe -MMD -MP \
+            -DCONFIG_ARCH_X86_64 \
             -ffunction-sections -fdata-sections
 
 CC       := x86_64-elf-gcc
