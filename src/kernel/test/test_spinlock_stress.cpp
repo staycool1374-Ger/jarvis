@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -57,6 +58,17 @@ JARVIS_TEST(spinlock_multi_task_contention) {
         Scheduler::add_task(*workers[i]);
     }
 
+    auto guard = ScopeGuard([&]() {
+        for (int i = 0; i < 4; ++i) {
+            if (workers[i]) {
+                if (workers[i]->state != TaskState::TERMINATED)
+                    Scheduler::remove_task(*workers[i]);
+                workers[i]->cleanup();
+                delete workers[i];
+            }
+        }
+    });
+
     auto* original = Scheduler::current_task();
     for (int t = 0; t < 20; ++t) {
         for (int i = 0; i < 4; ++i) {
@@ -76,6 +88,7 @@ JARVIS_TEST(spinlock_multi_task_contention) {
                           i, stress_acquires_[i]);
     }
 
+    guard.dismiss();
     for (int i = 0; i < 4; ++i) {
         if (workers[i]) {
             if (workers[i]->state != TaskState::TERMINATED)

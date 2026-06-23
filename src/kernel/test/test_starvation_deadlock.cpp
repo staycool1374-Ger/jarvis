@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/sync/mutex.hpp>
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -100,94 +101,84 @@ TEST_CLASS(PriorityInversionChain5) {
 
     auto* original = Scheduler::current_task();
 
-    // Task E (prio 30) holds S2, waits for M1
-    auto* task_e = TaskControlBlock::create([]() {
-        // In real chain: holds S2, waits M1
-        // Here we directly test the priority inheritance chain
-    }, 30, 10);
+    auto* task_e = TaskControlBlock::create([]() {}, 30, 10);
     CT_ASSERT(task_e != nullptr);
     task_e->base_priority = 30; task_e->priority = 30;
     Scheduler::add_task(*task_e);
 
-    // Task D (prio 25) holds M3, waits for S2
     auto* task_d = TaskControlBlock::create([]() {}, 25, 10);
     CT_ASSERT(task_d != nullptr);
     task_d->base_priority = 25; task_d->priority = 25;
     Scheduler::add_task(*task_d);
 
-    // Task C (prio 20) holds M2, waits for M3
     auto* task_c = TaskControlBlock::create([]() {}, 20, 10);
     CT_ASSERT(task_c != nullptr);
     task_c->base_priority = 20; task_c->priority = 20;
     Scheduler::add_task(*task_c);
 
-    // Task B (prio 15) holds S1, waits for M2
     auto* task_b = TaskControlBlock::create([]() {}, 15, 10);
     CT_ASSERT(task_b != nullptr);
     task_b->base_priority = 15; task_b->priority = 15;
     Scheduler::add_task(*task_b);
 
-    // Task A (prio 10) holds M1, waits for S1
     auto* task_a = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(task_a != nullptr);
     task_a->base_priority = 10; task_a->priority = 10;
     Scheduler::add_task(*task_a);
 
-    // A locks M1
+    auto cleanup = ScopeGuard([&]() {
+        TaskControlBlock* all[] = {task_a, task_b, task_c, task_d, task_e};
+        for (auto* t : all) {
+            if (t) {
+                t->state = TaskState::READY;
+                Scheduler::remove_task(*t);
+                t->cleanup();
+                delete t;
+            }
+        }
+    });
+
     Scheduler::set_current(*task_a);
     m1.lock();
     CT_ASSERT(m1.owner() == task_a);
 
-    // B locks S1
     Scheduler::set_current(*task_b);
-    s1.post(); // make count=1 so B can try_wait
+    s1.post();
     s1.wait();
 
-    // C locks M2
     Scheduler::set_current(*task_c);
     m2.lock();
     CT_ASSERT(m2.owner() == task_c);
 
-    // D locks M3
     Scheduler::set_current(*task_d);
     m3.lock();
     CT_ASSERT(m3.owner() == task_d);
 
-    // E posts to S2 then tries M1 (should inherit A's priority)
     Scheduler::set_current(*task_e);
     s2.post();
     s2.wait();
-    // E tries M1 — will block (A holds M1)
     m1.lock();
     CT_ASSERT(m1.owner() == task_e);
-    // Priority inheritance should have boosted A to E's priority
     CT_ASSERT(task_a->priority >= task_e->priority);
 
-    // Now D tries S2 — already held by E (after wait)
     Scheduler::set_current(*task_d);
-    s2.wait(); // blocks
+    s2.wait();
 
-    // C tries M3 — held by D (blocked)
     Scheduler::set_current(*task_c);
-    m3.lock(); // blocks
+    m3.lock();
 
-    // B tries M2 — held by C (blocked)
     Scheduler::set_current(*task_b);
-    m2.lock(); // blocks
+    m2.lock();
 
-    // A tries S1 — held by B (blocked)
     Scheduler::set_current(*task_a);
-    s1.wait(); // blocks
+    s1.wait();
 
     Scheduler::set_current(*original);
 
-    // All five tasks are now blocked. Verify no crash.
     CT_ASSERT(task_a->state == TaskState::BLOCKED);
     CT_ASSERT(task_b->state == TaskState::BLOCKED);
 
-    // Cleanup (tear tasks down from blocked states)
-    // Unwind in reverse order — set states to READY then cleanup
-    Scheduler::set_current(*original);
+    cleanup.dismiss();
     task_a->state = TaskState::READY;
     task_b->state = TaskState::READY;
     task_c->state = TaskState::READY;

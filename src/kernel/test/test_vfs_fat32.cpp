@@ -31,18 +31,38 @@ using namespace kernel::vfs;
 extern "C" uint8_t _binary_build_fat32_img_start[];
 extern "C" uint8_t _binary_build_fat32_img_end[];
 
+/// Wraps a Fat32Partition together with its backing device so both
+/// are cleaned up on destruction.
+struct Fat32TestFixture {
+    fat32::Fat32Partition* partition;
+    kernel::block::MockBlockDevice* device;
+
+    Fat32TestFixture(fat32::Fat32Partition* p, kernel::block::MockBlockDevice* d)
+        : partition(p), device(d) {}
+
+    ~Fat32TestFixture() {
+        delete partition;
+        delete device;
+    }
+
+    Fat32TestFixture(const Fat32TestFixture&) = delete;
+    Fat32TestFixture& operator=(const Fat32TestFixture&) = delete;
+};
+
+static Fat32TestFixture* g_fixture = nullptr;
+
 static void setup_fat32_fs() {
     if (fat32_partition_instance) return;
 
     uint64_t bytes = static_cast<uint64_t>(
         _binary_build_fat32_img_end - _binary_build_fat32_img_start);
 
-    // Allocate a writable partition that wraps the embedded image
     auto* dev = new kernel::block::MockBlockDevice(
         _binary_build_fat32_img_start, bytes / fat32::SECTOR_SIZE, true);
     auto* partition = new fat32::Fat32Partition(*dev);
     if (partition && partition->mount()) {
         fat32_partition_instance = partition;
+        g_fixture = new Fat32TestFixture{partition, dev};
     }
 }
 
@@ -155,7 +175,7 @@ JARVIS_TEST(vfs_fat32_subdir) {
 
 // ---- Write tests (separate writable partition, not shared global) ----
 
-static fat32::Fat32Partition* create_writable_partition() {
+static Fat32TestFixture create_writable_partition() {
     extern uint8_t _binary_build_fat32_img_start[];
     extern uint8_t _binary_build_fat32_img_end[];
     uint64_t bytes = static_cast<uint64_t>(
@@ -169,7 +189,7 @@ static fat32::Fat32Partition* create_writable_partition() {
             fat32::SECTOR_SIZE);
         dev->write_sector(i, sector);
     }
-    return new fat32::Fat32Partition(*dev);
+    return Fat32TestFixture(new fat32::Fat32Partition(*dev), dev);
 }
 
 // Runmode: kernel
@@ -178,10 +198,10 @@ static fat32::Fat32Partition* create_writable_partition() {
 // Expect: Returns 0, lookup finds new directory
 // Depends: kernel::vfs::VnodeOps::mkdir
 JARVIS_TEST(vfs_fat32_mkdir) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -198,7 +218,6 @@ JARVIS_TEST(vfs_fat32_mkdir) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 
@@ -208,10 +227,10 @@ JARVIS_TEST(vfs_fat32_mkdir) {
 // Expect: Returns 0, lookup no longer finds the file
 // Depends: kernel::vfs::VnodeOps::unlink
 JARVIS_TEST(vfs_fat32_unlink) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -226,7 +245,6 @@ JARVIS_TEST(vfs_fat32_unlink) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 
@@ -236,10 +254,10 @@ JARVIS_TEST(vfs_fat32_unlink) {
 // Expect: readdir includes "DIR2"
 // Depends: kernel::vfs::VnodeOps
 JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -260,7 +278,6 @@ JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 
@@ -270,10 +287,10 @@ JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
 // Expect: unlink returns 0, lookup fails
 // Depends: kernel::vfs::VnodeOps::unlink
 JARVIS_TEST(vfs_fat32_rmdir_empty) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -296,7 +313,6 @@ JARVIS_TEST(vfs_fat32_rmdir_empty) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 
@@ -306,10 +322,10 @@ JARVIS_TEST(vfs_fat32_rmdir_empty) {
 // Expect: unlink returns error (FAT32 enforces empty dir check)
 // Depends: kernel::vfs::VnodeOps::unlink
 JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -342,7 +358,6 @@ JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 
@@ -352,10 +367,10 @@ JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails) {
 // Expect: unlink returns 0, clusters marked free in FAT
 // Depends: kernel::fat32::add_dir_entry, kernel::fat32::unlink, kernel::fat32::Fat32Partition
 JARVIS_TEST(vfs_fat32_unlink_frees_clusters) {
-    auto* part = create_writable_partition();
-    JARVIS_ASSERT(part->mount());
+    auto fix = create_writable_partition();
+    JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
-    fat32_partition_instance = part;
+    fat32_partition_instance = fix.partition;
 
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -388,7 +403,6 @@ JARVIS_TEST(vfs_fat32_unlink_frees_clusters) {
     root->ops->close(*root);
     fat32_partition_instance = old;
     fat32_fs.get_root();
-    delete part;
     JARVIS_TEST_PASS();
 }
 

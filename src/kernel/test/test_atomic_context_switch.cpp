@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 
@@ -39,6 +40,15 @@ JARVIS_TEST(atomic_globals_set_on_reschedule) {
     auto* task_b = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(task_b != nullptr);
     Scheduler::add_task(*task_b);
+
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*task_a);
+        task_a->cleanup();
+        delete task_a;
+        Scheduler::remove_task(*task_b);
+        task_b->cleanup();
+        delete task_b;
+    });
 
     auto* original = Scheduler::current_task();
 
@@ -62,6 +72,7 @@ JARVIS_TEST(atomic_globals_set_on_reschedule) {
 
     Scheduler::set_current(*original);
 
+    guard.dismiss();
     Scheduler::remove_task(*task_a);
     task_a->cleanup();
     delete task_a;
@@ -115,6 +126,15 @@ JARVIS_TEST(atomic_idempotent_null_handling) {
     JARVIS_ASSERT(task_b != nullptr);
     Scheduler::add_task(*task_b);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*task_a);
+        task_a->cleanup();
+        delete task_a;
+        Scheduler::remove_task(*task_b);
+        task_b->cleanup();
+        delete task_b;
+    });
+
     auto* original = Scheduler::current_task();
 
     Scheduler::set_current(*task_a);
@@ -130,6 +150,7 @@ JARVIS_TEST(atomic_idempotent_null_handling) {
     JARVIS_ASSERT_EQ(0ULL, load_cr3);
 
     Scheduler::set_current(*original);
+    guard.dismiss();
     Scheduler::remove_task(*task_a);
     task_a->cleanup();
     delete task_a;

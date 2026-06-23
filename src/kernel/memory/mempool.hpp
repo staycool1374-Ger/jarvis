@@ -85,6 +85,14 @@ public:
     /// @param block Pointer to the block to free.
     static void free(void* block);
 
+    /// @brief Check if a pointer falls within any MemPool pool range.
+    /// @param ptr Pointer to check.
+    /// @return true if ptr is owned by MemPool.
+    static bool contains(void* ptr);
+
+    /// @brief Returns true after init() completes.
+    static bool is_ready() { return ready_; }
+
     /// @name Test-isolation helpers (snapshot / restore)
     struct PoolMeta {
         size_t  first_free;
@@ -109,6 +117,7 @@ public:
 
 private:
     static Pool pools_[POOL_COUNT];
+    static bool ready_;
 
     /// @brief Finds the smallest pool class that satisfies a given size.
     /// @param size Requested allocation size.

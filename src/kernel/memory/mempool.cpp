@@ -25,6 +25,7 @@
 namespace kernel {
 
 MemPool::Pool MemPool::pools_[POOL_COUNT] = {};
+bool MemPool::ready_ = false;
 
 void MemPool::init() {
     static const size_t sizes[POOL_COUNT] = {
@@ -63,6 +64,7 @@ void MemPool::init() {
 
         pool.initialized = true;
     }
+    ready_ = true;
 }
 
 void* MemPool::alloc(size_t size) {
@@ -116,6 +118,19 @@ void MemPool::free(void* block) {
             return;
         }
     }
+}
+
+bool MemPool::contains(void* ptr) {
+    if (!ptr) return false;
+    uint8_t* p = static_cast<uint8_t*>(ptr);
+    for (size_t i = 0; i < POOL_COUNT; ++i) {
+        auto& pool = pools_[i];
+        if (!pool.initialized) continue;
+        uint8_t* start = pool.data;
+        uint8_t* end = pool.data + pool.block_size * pool.block_count;
+        if (p >= start && p < end) return true;
+    }
+    return false;
 }
 
 size_t MemPool::find_pool(size_t size) {

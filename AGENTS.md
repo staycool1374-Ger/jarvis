@@ -58,5 +58,21 @@ If the branch does not match the intended role, do not proceed.
 - **Test results**: `test-all-debug` = 675/675 PASS, `TIME_ELAPSED_MS` = ~71s. All test targets green.
 
 ### Pending
-- Kernel Memory Safety audit
 - Renode simulation setup
+
+## Session Summary (v0.2.19 → v0.2.20)
+
+### Completed This Session
+- **Allocator audit**: `operator new`/`delete` mismatch fixed. `new` uses three-tier fallback: MemPool → PMM pages (with `PmmAllocHdr` header) → bump allocator. `delete` handles MemPool/PMM, no-ops on bump pointers.
+- **MemPool**: Added `contains()`, `is_ready()`, `ready_` flag.
+- **RAII wrappers**: `ScopeGuard` (`src/lib/scope_guard.hpp`), `UniquePtr<T>` (`src/lib/unique_ptr.hpp`).
+- **Test leak fixes**: 11 leaking tests fixed via `ScopeGuard` cleanup on early-return paths:
+  - `test_buffer_pool.cpp`: `buffer_pool_transfer_to_kernel_task` — proper cleanup regardless of transfer outcome
+  - `test_starvation_deadlock.cpp`: `PriorityInversionChain5` — ScopeGuard ensures 5 tasks cleaned up
+  - `test_resource_exhaustion.cpp`: `MempoolFragmentation` — ScopeGuard frees partial allocs; no longer assumes 20 allocs succeed
+  - `test_spinlock.cpp`: `spinlock_contention`, `spinlock_preemption_yield`
+  - `test_preemption_under_syscall.cpp`: `preemption_during_syscall`, `preempt_highpri_during_tmpfs_write`, `preempt_highpri_during_brk`, `preempt_lowpri_not_starved`
+  - `test_spinlock_stress.cpp`: `spinlock_multi_task_contention`
+  - `test_atomic_context_switch.cpp`: `atomic_globals_set_on_reschedule`, `atomic_idempotent_null_handling`
+- **Test verification**: Baseline confirmed `test-all-debug` hang at test 438 (MempoolFragmentation toggle) is pre-existing. Safe-class tests (incl. FAT32) pass 102/102 with our changes.
+- **Known remaining leak** (pre-existing, small): `preempt_highpri_during_tmpfs_write` — 2 MemPool blocks from tmpfs mount never unmounted (no unmount API).

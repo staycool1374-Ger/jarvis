@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -111,6 +112,15 @@ JARVIS_TEST(spinlock_contention) {
     JARVIS_ASSERT(b != nullptr);
     Scheduler::add_task(*b);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*a);
+        a->cleanup();
+        delete a;
+        Scheduler::remove_task(*b);
+        b->cleanup();
+        delete b;
+    });
+
     auto* original = Scheduler::current_task();
     for (int t = 0; t < 20; ++t) {
         if (a->state != TaskState::TERMINATED) {
@@ -127,6 +137,7 @@ JARVIS_TEST(spinlock_contention) {
 
     JARVIS_ASSERT_EQ(100ULL, g_contention_counter_);
 
+    guard.dismiss();
     Scheduler::remove_task(*a);
     a->cleanup();
     delete a;
@@ -171,6 +182,15 @@ JARVIS_TEST(spinlock_preemption_yield) {
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+        Scheduler::remove_task(*high);
+        high->cleanup();
+        delete high;
+    });
+
     auto* original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
@@ -184,6 +204,7 @@ JARVIS_TEST(spinlock_preemption_yield) {
     JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,
         "High-pri ran %lu times (expected > 0)", g_yield_highpri_count_);
 
+    guard.dismiss();
     Scheduler::remove_task(*low);
     low->cleanup();
     delete low;

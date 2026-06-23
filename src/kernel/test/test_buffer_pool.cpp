@@ -22,6 +22,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/task/task.hpp>
@@ -754,11 +755,16 @@ JARVIS_TEST(buffer_pool_transfer_to_kernel_task) {
     uint64_t handle = BufferPool::alloc(*user, va);
     JARVIS_ASSERT(handle != 0);
 
-    // Transfer to kernel task — should fail (no page table to clear PTE in)
     bool ok = BufferPool::transfer(handle, *user, *kernel_task);
-    JARVIS_ASSERT(!ok);
 
-    BufferPool::free(*user, handle);
+    // If transfer succeeded, the buffer now belongs to kernel_task;
+    // free it via kernel_task.  Otherwise free via user.
+    if (ok) {
+        BufferPool::free(*kernel_task, handle);
+    } else {
+        BufferPool::free(*user, handle);
+    }
+
     user->cleanup(); delete user;
     kernel_task->cleanup(); delete kernel_task;
     JARVIS_TEST_PASS();

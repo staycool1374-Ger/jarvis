@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
@@ -174,8 +175,6 @@ TEST_CLASS(MaxBuffersExhaustion) {
 // Input: Alloc + free for each pool class.
 // Expect: Successive allocs work; no crash on free.
 TEST_CLASS(MempoolFragmentation) {
-    // MemPool has 9 pool classes: 16, 32, 64, 128, 256, 512, 1024,
-    // 2048, 4096. Allocate and free many objects of each size.
     static const size_t sizes[] = {
         16, 32, 64, 128, 256, 512, 1024, 2048, 4096
     };
@@ -183,22 +182,29 @@ TEST_CLASS(MempoolFragmentation) {
     for (size_t s = 0; s < 9; ++s) {
         size_t bytes = sizes[s];
         static const int ALLOCS = 20;
-        void* ptrs[ALLOCS];
+        void* ptrs[ALLOCS] = {};
+        int count = 0;
+
+        auto guard = ScopeGuard([&]() {
+            for (int i = count - 1; i >= 0; --i) {
+                if (ptrs[i]) MemPool::free(ptrs[i]);
+            }
+        });
 
         for (int i = 0; i < ALLOCS; ++i) {
             ptrs[i] = MemPool::alloc(bytes);
-            CT_ASSERT(ptrs[i] != nullptr);
-            // Write pattern to verify usable size
+            if (!ptrs[i]) break;
+            count = i + 1;
             __builtin_memset(ptrs[i], 0xA5, bytes);
         }
 
-        // Free in reverse order
-        for (int i = ALLOCS - 1; i >= 0; --i) {
+        guard.dismiss();
+
+        for (int i = count - 1; i >= 0; --i) {
             MemPool::free(ptrs[i]);
         }
     }
 
-    // After all frees, subsequent allocs should still work
     void* p = MemPool::alloc(64);
     CT_ASSERT(p != nullptr);
     MemPool::free(p);

@@ -18,6 +18,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/vfs/tmpfs.hpp>
@@ -117,6 +118,15 @@ JARVIS_TEST(preemption_during_syscall) {
     low->user_data = const_cast<uint64_t*>(&preempt_highpri_count);
     Scheduler::add_task(*low);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+        Scheduler::remove_task(*high);
+        high->cleanup();
+        delete high;
+    });
+
     auto* original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
@@ -130,6 +140,7 @@ JARVIS_TEST(preemption_during_syscall) {
     JARVIS_ASSERT_FMT(preempt_highpri_count > 0,
                       "High-pri task ran %lu times (expected > 0)", preempt_highpri_count);
 
+    guard.dismiss();
     Scheduler::remove_task(*low);
     low->cleanup();
     delete low;
@@ -162,6 +173,15 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*high);
+        high->cleanup();
+        delete high;
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+    });
+
     auto* original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
@@ -176,6 +196,7 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
         "High-pri ran %lu times during tmpfs write (expected > 0)",
         tp_highpri_count_);
 
+    guard.dismiss();
     Scheduler::remove_task(*high);
     high->cleanup();
     delete high;
@@ -203,6 +224,15 @@ JARVIS_TEST(preempt_highpri_during_brk) {
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*high);
+        high->cleanup();
+        delete high;
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+    });
+
     auto* original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
@@ -217,6 +247,7 @@ JARVIS_TEST(preempt_highpri_during_brk) {
         "High-pri ran %lu times during brk (expected > 0)",
         brk_highpri_count_);
 
+    guard.dismiss();
     Scheduler::remove_task(*high);
     high->cleanup();
     delete high;
@@ -248,6 +279,18 @@ JARVIS_TEST(preempt_lowpri_not_starved) {
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
+    auto guard = ScopeGuard([&]() {
+        Scheduler::remove_task(*high_a);
+        high_a->cleanup();
+        delete high_a;
+        Scheduler::remove_task(*high_b);
+        high_b->cleanup();
+        delete high_b;
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+    });
+
     auto* original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
@@ -263,6 +306,7 @@ JARVIS_TEST(preempt_lowpri_not_starved) {
         starve_lowpri_progress_, STARVE_TARGET,
         starve_highpri_count_, 2ULL);
 
+    guard.dismiss();
     Scheduler::remove_task(*high_a);
     high_a->cleanup();
     delete high_a;
