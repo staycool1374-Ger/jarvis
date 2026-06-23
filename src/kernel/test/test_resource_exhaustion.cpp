@@ -215,24 +215,27 @@ TEST_CLASS(MempoolFragmentation) {
 // verify that the OOM handler is called and subsequent allocs return 0.
 // Input: Repeated PMM::alloc_page() calls.
 // Expect: Eventually returns 0; no crash; free restores capacity.
+// Note: 65K allocs × O(n) bitmap scan is slow; progress markers keep
+//       the host watchdog alive.
 TEST_CLASS(PmmExhaustion) {
-    // Alloc until OOM
     static const int MAX_ALLOCS = 100000;
-    uint64_t pages[MAX_ALLOCS];
+    static uint64_t pages[MAX_ALLOCS];
     int count = 0;
 
     for (int i = 0; i < MAX_ALLOCS; ++i) {
         uint64_t p = PMM::alloc_page();
         if (!p) break;
         pages[count++] = p;
+        if ((count % 1000) == 0) {
+            Logger::info("PmmExhaustion: allocated %u pages", count);
+        }
     }
+    Logger::info("PmmExhaustion: OOM at %u pages", count);
 
-    // Free all
     for (int i = 0; i < count; ++i) {
         PMM::free_page(pages[i]);
     }
 
-    // After free, alloc should work again
     uint64_t p = PMM::alloc_page();
     CT_ASSERT(p != 0);
     PMM::free_page(p);
