@@ -50,9 +50,12 @@ If the branch does not match the intended role, do not proceed.
 - **Release**: Committed + tagged `v0.2.18`. All committed.
 
 ### Debugging (v0.2.19)
-- **Root cause of test hang**: `Timer::ns()` used `unsigned __int128` arithmetic (`tsc *= 1e9; tsc /= tsc_freq_hz_`). The compiler emits `__udivti3` (128-bit division libcall) which hangs in bare-metal x86_64-elf environment. Likely cause: `__udivti3` uses `divq` with a 128-bit dividend that overflows the 64-bit quotient register, raising #DE (divide error) which is unhandled → triple fault → QEMU hang. Even simple 64-bit dividend values produce a 128-bit intermediate after multiplication by 1e9.
-- **Fix**: Replaced `__int128` with pure 64-bit arithmetic: `sec = tsc / freq; rem = tsc % freq; return sec * 1e9 + (rem * 1e9) / freq`. Also added `if (tsc_freq_hz_ == 0) return 0` guard.
-- **Test results**: `test-selftest` = 102/102 PASS, `TIME_ELAPSED_MS` = ~7s (working PIT/TSC timer).
+- **Timer::ns() fix**: Replaced `unsigned __int128` divide with pure 64-bit arithmetic. Compiler-emitted `__udivti3` caused triple fault in bare-metal x86_64-elf.
+- **Semaphore SpinLock fix**: `Semaphore::add_waiter()`/`wake_one()` redundantly took `lock_` already held by `wait()`/`post()` → non-recursive SpinLock deadlock. Removed guards.
+- **Queue SpinLock fix (same pattern)**: `Queue::add_send_waiter()`/`add_recv_waiter()`/`wake_send_one()`/`wake_recv_one()` redundantly took `lock_`. Removed guards — fixed hang at test 195.
+- **Host-side watchdog**: Background loop kills QEMU after `WATCHDOG_STALL` consecutive seconds of no serial log growth.
+- **MinimalPrivilegedSurface fix**: Skip blocking syscalls (RECEIVE, SEND_SYNC, EXIT, NOTIFY_WAIT, EVENT_WAIT, PAUSE) — calling `sys_receive()` with null args blocked the shell forever. Fixed the 625/675 hang.
+- **Test results**: `test-all-debug` = 675/675 PASS, `TIME_ELAPSED_MS` = ~71s. All test targets green.
 
 ### Pending
 - Kernel Memory Safety audit

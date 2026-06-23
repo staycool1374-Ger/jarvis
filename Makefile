@@ -449,45 +449,65 @@ rr-replay:
 # Single consistent serial log path for all automated test runs.
 TEST_SERIAL_LOG := /tmp/jarvis-serial.log
 
+# Host-side watchdog: if $(TEST_SERIAL_LOG) does not grow for WATCHDOG_STALL seconds,
+# kill QEMU and append a diagnostic message.  This catches hangs that the
+# in-kernel watchdog cannot detect (interrupts disabled during test execution).
+WATCHDOG_STALL := 10
+
 # Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
 define _run_test_qemu
 	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
 	printf '  %-7s %s\n'  'TEST'   '$(1)…'; \
+	rm -f "$(TEST_SERIAL_LOG)"; \
+	\
+	( \
+	    trap "exit 0" TERM; \
+	    LAST_SIZE=-1; \
+	    STALL=0; \
+	    while true; do \
+	        sleep 1; \
+	        CUR_SIZE=$$(wc -c < "$(TEST_SERIAL_LOG)" 2>/dev/null || echo 0); \
+	        if [ "$$CUR_SIZE" = "$$LAST_SIZE" ]; then \
+	            STALL=$$((STALL + 1)); \
+	            if [ $$STALL -ge $(WATCHDOG_STALL) ]; then \
+	                echo "[HOST-WATCHDOG] Tests interrupted — no serial output for $(WATCHDOG_STALL) s" >> "$(TEST_SERIAL_LOG)"; \
+	                pkill -f "qemu-system-x86_64.*jarvis-rtos" 2>/dev/null; \
+	                exit 1; \
+	            fi; \
+	        else \
+	            STALL=0; \
+	            LAST_SIZE=$$CUR_SIZE; \
+	        fi; \
+	    done; \
+	) & \
+	MONITOR_PID=$$!; \
+	\
 	expect -c ' \
 	    fconfigure stdout -buffering none; \
 	    set timeout $(2); \
 	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
 	    expect { \
 	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+\\d+\\n  PASSED:\\s+\\d+\\n  FAILED:\\s+(\\d+)\\n==============================} { \
-	            puts "$$expect_out(buffer)"; \
-	            flush stdout; \
+	            puts "$$expect_out(buffer)"; flush stdout; \
 	            if {$$expect_out(1,string) == $$expect_out(2,string) && $$expect_out(3,string) == 0} { \
-	                puts "RESULT: PASS ($$expect_out(1,string) tests passed)"; \
-	                flush stdout; \
-	                exit 0; \
+	                puts "RESULT: PASS ($$expect_out(1,string) tests passed)"; flush stdout; exit 0; \
 	            } else { \
-	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(3,string))"; \
-	                flush stdout; \
-	                exit 1; \
+	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(3,string))"; flush stdout; exit 1; \
 	            } \
 	        } \
 	        timeout { \
-	            puts "\\n=== TIMEOUT ===\\n"; \
-	            puts "$$expect_out(buffer)"; \
-	            puts "\\n=== END ===\\n"; \
-	            flush stdout; \
-	            exit 1; \
+	            puts "\\n=== TIMEOUT ===\\n"; puts "$$expect_out(buffer)"; puts "\\n=== END ===\\n"; flush stdout; exit 1; \
 	        } \
 	        eof { \
-	            puts "\\n=== QEMU EXIT (no summary) ===\\n"; \
-	            puts "$$expect_out(buffer)"; \
-	            puts "\\n=== END ===\\n"; \
-	            flush stdout; \
-	            exit 1; \
+	            puts "\\n=== QEMU EXIT (no summary) ===\\n"; puts "$$expect_out(buffer)"; puts "\\n=== END ===\\n"; flush stdout; exit 1; \
 	        } \
 	    } \
 	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
-	test $${PIPESTATUS[0]} -eq 0; rc=$$?; \
+	rc=$${PIPESTATUS[0]}; \
+	\
+	kill $$MONITOR_PID 2>/dev/null; \
+	wait $$MONITOR_PID 2>/dev/null; \
+	\
 	if [ $$rc -eq 0 ]; then \
 	    :; \
 	else \

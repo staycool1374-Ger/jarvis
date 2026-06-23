@@ -31,14 +31,14 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
 }
 
 bool Semaphore::add_waiter(TaskControlBlock* task) {
-    SpinLockGuard<SpinLock> guard(lock_);
+    // Caller must hold lock_ (wait already holds it)
     if (waiter_count_ >= MAX_WAITERS) return false;
     waiters_[waiter_count_++] = task;
     return true;
 }
 
 void Semaphore::wake_one() {
-    SpinLockGuard<SpinLock> guard(lock_);
+    // Caller must hold lock_ (post already holds it)
     if (waiter_count_ == 0) return;
 
     if (waiter_count_ > 1) {

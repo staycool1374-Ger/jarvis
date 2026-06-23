@@ -100,14 +100,28 @@ Test execution is driven by `initrd/tests/test-config.txt` (one class per line).
 ## Makefile Targets
 | Target | Description |
 |--------|-------------|
-| `make test-selftest` | Debug build, runs `safe` class, auto-shutdown on exit (CI gate) |
+| `make test-selftest` | Debug build, runs `safe` class, auto-shutdown (CI gate) |
 | `make test-all-debug` | Debug build, runs `all` class, auto-shutdown |
 | `make test-all-release` | Release build, runs `all` class with TF_RELEASE filter, auto-shutdown |
-| `make test-class CLASS=<name>` | Runs specific test class (kernel cmdline `test_class=` param) |
-| `make test-gdb TEST=suite::name` | GDB single-test: breaks on test symbol, runs under surveillance |
-| `make test-shell` | Interactive shell boot (legacy `run-qemu`) |
+| `make test-class CLASS=<name>` | Debug build, specific class |
+| `make test-gdb TEST=suite::name` | GDB single-test |
+| `make test-shell` | Interactive shell boot |
 
 **Legacy aliases:** `test-qemu` → `test-all-debug`, `release-test` → `test-all-release`
+
+## Host-Side Watchdog
+All test targets run under `_run_test_qemu` in the Makefile, which launches a background monitor thread. If `/tmp/jarvis-serial.log` does not grow for `WATCHDOG_STALL` consecutive seconds (default 10), the monitor kills QEMU and appends a diagnostic. This catches hangs the in-kernel watchdog cannot detect (e.g., while interrupts are disabled during test execution).
+
+The serial log is captured via `tee` to `/tmp/jarvis-serial.log` for all automated runs. The first `tee` pipe exit code (`PIPESTATUS[0]`) is used for result propagation.
+
+## CI Pipeline (`.github/workflows/ci.yml`)
+| Step | Target | Timeout |
+|------|--------|---------|
+| Build | `make debug` | — |
+| Selftest gate | `make test-selftest` (safe class) | `timeout 360` — Makefile expect timeout 120s |
+| Full suite | `make test-all-debug` (all classes) | `timeout 360` — Makefile expect timeout 180s |
+
+The full suite step runs only if selftest passes (`if: success()`). Both steps use the host-side watchdog and expect-based result parsing (extracts PLANNED/EXECUTED/FAILED from the TEST SUMMARY block).
 
 ## Output Format
 Per-test line (no ANSI colors):
@@ -115,22 +129,15 @@ Per-test line (no ANSI colors):
 S: <testclass> <suite::name> <n/m>: PASS/FAIL [LEAK: Resource +N, ...]
 ```
 
-Examples:
-```
-S: scheduler scheduler::test_yield 1/15: PASS
-S: vfs vfs::test_open 3/42: FAIL [LEAK: VNodes +1, OpenFDs +1]
-S: safe lib::test_string 1/96: PASS
-```
-
 Summary block (after all tests):
 ```
 ==============================
  TEST SUMMARY
- PLANNED: 96
- EXECUTED: 96
- TIME_ELAPSED_MS: 4231
- PASSED: 94
- FAILED: 2
+  PLANNED: 96
+  EXECUTED: 96
+  TIME_ELAPSED_MS: 4231
+  PASSED: 94
+  FAILED: 2
 ==============================
 ```
 
@@ -143,10 +150,18 @@ Summary block (after all tests):
 - `TF_BENCH` = 1<<2 (benchmark tests, excluded from normal runs)
 
 ## Serial FIFO Drain
-Both `run_filtered()` and `run_registered()` now drain the UART TX FIFO (wait for LSR bits 5&6) before QEMU exit to prevent report truncation (fixes BUGS.md #012).
+Both `run_filtered()` and `run_registered()` drain the UART TX FIFO (wait for LSR bits 5&6) before QEMU exit to prevent report truncation.
 
 ## GDB Single-Test
 `make test-gdb TEST=suite::name` launches QEMU with GDB stub, sets breakpoint on `test_suite_name`, runs to it. Use for debugging individual flaky tests.
+
+## Known Test Patterns
+
+### Blocking Syscall Handling
+`MinimalPrivilegedSurface` (test_microkernel_transition.cpp) enumerates all syscalls 0–48 with null args. Some syscalls block or terminate the calling task: `RECEIVE`, `SEND_SYNC`, `EXIT`, `NOTIFY_WAIT`, `EVENT_WAIT`, `PAUSE`. These are skipped via `is_blocking()` lambda — the test verifies dispatch for non-blocking syscalls only.
+
+### SpinLock Guard Patterns
+`Semaphore::add_waiter()`/`wake_one()` and `Queue::add_send_waiter()`/`add_recv_waiter()`/`wake_send_one()`/`wake_recv_one()` must NOT take their own `lock_` — the caller already holds it. Redundant SpinLockGuard causes immediate deadlock on non-recursive `__atomic_exchange_n` spinlocks.
 
 ---
 

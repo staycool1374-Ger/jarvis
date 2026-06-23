@@ -76,6 +76,20 @@ Summary block:
 | `make test-class CLASS=<name>` | Debug build, specific class |
 | `make test-gdb TEST=suite::name` | GDB single-test |
 
+### Host-Side Watchdog
+Every test target uses `_run_test_qemu` in the Makefile, which launches a background monitor thread. If `/tmp/jarvis-serial.log` does not grow for `WATCHDOG_STALL` seconds (default 10), the monitor kills QEMU and appends a diagnostic. This catches hangs the in-kernel watchdog cannot detect (e.g., during interrupt-disabled test execution).
+
+The serial log is `tee`'d to `/tmp/jarvis-serial.log`; the first `tee` pipe exit code (`PIPESTATUS[0]`) propagates the result.
+
+### CI Pipeline (`.github/workflows/ci.yml`)
+| Step | Command |
+|------|---------|
+| Build | `make debug` |
+| Selftest gate | `timeout 360 make test-selftest` (safe class) |
+| Full suite | `timeout 360 make test-all-debug` (if selftest passes) |
+
+Both test steps use the host-side watchdog and expect-based parsing of the `TEST SUMMARY` block.
+
 ### Test Classes (defined in `test_registry.cpp`)
 Classes: `safe`, `all`, `scheduler`, `memory`, `ipc`, `vfs`, `process`, `syscall`, `arch`, `device`, `shell`, `net`, `security`, `debug`, `integration`, `stress`, `init`, `build`, `bench`, `sporadic`.
 
@@ -87,3 +101,9 @@ Ensure clean mapping within the appropriate class lambda:
 void register_my_new_tests();
 ```
 Then add `register_my_new_tests();` to the `all` class and any domain class (e.g., `scheduler`, `memory`).
+
+### Known Test Patterns
+
+**Blocking Syscall Handling:** `MinimalPrivilegedSurface` enumerates all syscalls 0–48 with null args. Syscalls that block or terminate (`RECEIVE`, `SEND_SYNC`, `EXIT`, `NOTIFY_WAIT`, `EVENT_WAIT`, `PAUSE`) must be skipped via the `is_blocking()` lambda — calling them with null args hangs the shell task forever.
+
+**SpinLock in Semaphore/Queue helpers:** `add_waiter()`, `wake_one()`, etc. must NOT acquire `lock_` — the caller (`wait()`/`post()`, `send()`/`receive()`) already holds it. The non-recursive SpinLock deadlocks immediately if re-acquired.
