@@ -1,0 +1,17 @@
+:name: Jarvis RTOS - RISC-V 64
+:description: Boots Jarvis RTOS on RISC-V 64-bit virt machine.
+
+$name?="jarvis-riscv64"
+mach create $name
+
+machine LoadPlatformDescription @tools/renode/jarvis-riscv64.repl
+
+showAnalyzer uart0
+
+$kernel?=@debug/jarvis-rtos.iso
+
+macro reset
+"""
+    sysbus LoadELF $kernel
+"""
+runMacro $reset

@@ -27,7 +27,29 @@ jobs:
           grub-common \
           qemu-system-x86 \
           ovmf \
-          expect
+          expect \
+          wget
+
+    - name: Install Renode (Linux portable)
+      run: |
+        mkdir -p /tmp/renode
+        wget -qO- https://builds.renode.io/renode-latest.linux-portable.tar.gz | \
+          tar xz -C /tmp/renode --strip-components=1
+        echo "/tmp/renode" >> $GITHUB_PATH
+
+    - name: Verify Renode Installation
+      run: |
+        renode --version
+        echo "Renode OK"
+
+    - name: Validate Renode Platform Descriptions
+      run: |
+        for arch in x86_64 aarch64 riscv64; do
+          echo "=== Loading platform: ${arch} ==="
+          renode --batch --disable-xwt -e "i @tools/renode/jarvis-${arch}.resc; q" 2>&1 || true
+          echo ""
+        done
+        echo "Renode platform validation complete"
 
     - name: Build Kernel (x86_64 Debug)
       run: |

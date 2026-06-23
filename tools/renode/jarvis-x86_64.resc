@@ -1,0 +1,19 @@
+:name: Jarvis RTOS - x86_64
+:description: Boots Jarvis RTOS on x86_64 in Renode using SeaBIOS and the debug ISO.
+
+$name?="jarvis-x86_64"
+mach create $name
+
+machine LoadPlatformDescription @tools/renode/jarvis-x86_64.repl
+
+showAnalyzer uart0
+
+$kernel?=@debug/jarvis-rtos.iso
+$bios?=@https://dl.antmicro.com/projects/renode/virt_x86--seabios.bin-s_262144-bf6c73a297b2764eb5f5bbe34297987c16648718
+
+macro reset
+"""
+    sysbus LoadBinary $bios 0xE0000
+    sysbus LoadBinary $kernel 0x100000
+"""
+runMacro $reset

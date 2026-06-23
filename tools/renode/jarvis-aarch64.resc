@@ -1,0 +1,17 @@
+:name: Jarvis RTOS - AArch64
+:description: Boots Jarvis RTOS on ARM Cortex-A53.
+
+$name?="jarvis-aarch64"
+mach create $name
+
+machine LoadPlatformDescription @tools/renode/jarvis-aarch64.repl
+
+showAnalyzer uart0
+
+$kernel?=@debug/jarvis-rtos.iso
+
+macro reset
+"""
+    sysbus LoadELF $kernel
+"""
+runMacro $reset

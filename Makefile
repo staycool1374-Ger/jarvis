@@ -181,7 +181,7 @@ include mk/rules.mk
         test-selftest test-all-debug test-all-release test-class \
         test-qemu test symbols objdump debug release release-test \
         run-release-test profiling gdb test-gdb rr-record rr-replay \
-        _run-shell-test
+        _run-shell-test run-renode renode-test
 
 # Default target
 all: help
@@ -227,9 +227,13 @@ help:
 	@echo "  [I] make test-gdb          Run tests under GDB surveillance"
 	@echo "  [I] make rr-record         Record QEMU execution (deterministic replay)"
 	@echo "  [I] make rr-replay         Replay recorded session with GDB stub (:1234)"
+	@echo "  [I] make run-renode        Boot debug ISO in Renode (x86_64)"
+	@echo "  [I] make run-renode RENODE_ARCH=aarch64  Boot AArch64 in Renode"
+	@echo "  [I] make run-renode RENODE_ARCH=riscv64  Boot RISC-V 64 in Renode"
+	@echo "  [A] make renode-test       Run selftest in Renode (x86_64)"
 	@echo ""
 	@echo "  [A] = autonomous (run and done, no interaction needed)"
-	@echo "  [I] = interactive (user sits at the QEMU/GDB console)"
+	@echo "  [I] = interactive (user sits at the QEMU/GDB/Renode console)"
 
 # ------------------------------------------------------------------------------
 # Build-type stamp check
@@ -440,6 +444,33 @@ rr-replay:
 	@printf '  %-7s %s\n' 'RR' 'Replaying with GDB stub on :1234…'
 	@echo "Connect GDB:  $(GDB) build/kernel-debug.elf -ex 'target remote :1234'"
 	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -replay build/rr.log -s -S -display none
+
+# ------------------------------------------------------------------------------
+# Renode targets
+# ------------------------------------------------------------------------------
+RENODE_ARCH ?= x86_64
+RENODE_SUPPORTED_ARCHS := x86_64 aarch64 riscv64
+
+run-renode: debug
+	@if ! command -v renode >/dev/null 2>&1; then \
+	    echo "Renode missing. Install with: brew install renode/tap/renode"; exit 1; \
+	fi
+	@if [ "$(filter $(RENODE_ARCH),$(RENODE_SUPPORTED_ARCHS))" != "$(RENODE_ARCH)" ]; then \
+	    echo "Unsupported Renode arch '$(RENODE_ARCH)'. Supported: $(RENODE_SUPPORTED_ARCHS)"; exit 1; \
+	fi
+	@printf '  %-7s %s\n' 'RENODE' 'Starting Jarvis RTOS ($(RENODE_ARCH))…'
+	@printf '  %-7s %s\n' 'SCRIPT' 'tools/renode/jarvis-$(RENODE_ARCH).resc'
+	renode --disable-xwt -e "i @tools/renode/jarvis-$(RENODE_ARCH).resc; s"
+
+renode-test: debug
+	@if ! command -v renode >/dev/null 2>&1; then \
+	    echo "Renode missing. Install with: brew install renode/tap/renode"; exit 1; \
+	fi
+	@printf '  %-7s %s\n' 'RENODE' 'Running selftest (safe class)…'
+	@mkdir -p initrd/tests
+	@printf 'safe\n' > initrd/tests/test-config.txt
+	$(MAKE) debug
+	renode --disable-xwt --console -e "i @tools/renode/jarvis-x86_64.resc; start;"
 
 # ------------------------------------------------------------------------------
 # Test targets

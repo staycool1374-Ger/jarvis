@@ -29,8 +29,8 @@ echo -e "Host OS: ${YELLOW}${OS_TYPE}${REG}  Target Arch: ${YELLOW}${ARCH_UPPER}
 # 2. Define per-architecture toolchains
 X86_64_BINS=("x86_64-elf-gcc" "x86_64-elf-ld" "nasm" "qemu-system-x86_64")
 AARCH64_BINS=("aarch64-elf-gcc" "aarch64-elf-ld" "qemu-system-aarch64")
-RISCV64_BINS=("riscv64-unknown-elf-gcc" "riscv64-unknown-elf-ld" "qemu-system-riscv64")
-SHARED_BINS=("grub-mkrescue" "xorriso" "tree" "cpio")
+RISCV64_BINS=("riscv64-elf-gcc" "riscv64-elf-ld" "qemu-system-riscv64")
+SHARED_BINS=("grub-mkrescue" "xorriso" "tree" "cpio" "renode")
 
 REQUIRED_BINARIES=()
 if [ "$TARGET_ARCH" = "all" ] || [ "$TARGET_ARCH" = "x86_64" ]; then
@@ -49,8 +49,8 @@ case "${OS_TYPE}" in
     Darwin)
         PKG_HINT_X86="brew install x86_64-elf-gcc x86_64-elf-binutils nasm qemu"
         PKG_HINT_AARCH64="brew install aarch64-elf-gcc aarch64-elf-binutils"
-        PKG_HINT_RISCV64="brew install riscv64-unknown-elf-gcc riscv64-unknown-elf-binutils"
-        PKG_HINT_SHARED="brew install xorriso tree cpio"
+        PKG_HINT_RISCV64="brew install riscv64-elf-gcc riscv64-elf-binutils"
+        PKG_HINT_SHARED="brew install xorriso tree cpio renode/tap/renode"
         PKG_HINT_GRUB="brew install grub"
         ;;
     Linux)
@@ -79,7 +79,21 @@ for binary in "${REQUIRED_BINARIES[@]}"; do
     fi
 done
 
-# 5. Workspace integrity
+# 5. Renode platform check
+echo -e "\nEvaluating Renode platform descriptions..."
+RENODE_DIR="/opt/homebrew/Cellar/renode"
+if [ -d "$RENODE_DIR" ]; then
+    RENODE_VER=$(ls "$RENODE_DIR" 2>/dev/null | head -1)
+    if [ -d "$RENODE_DIR/$RENODE_VER/libexec/platforms" ]; then
+        echo -e "  [${GREEN}OK${REG}] Renode platform files ($RENODE_VER)"
+    else
+        echo -e "  [${YELLOW}INFO${REG}] Renode installed but platform dir not found"
+    fi
+else
+    echo -e "  [${YELLOW}INFO${REG}] Renode not found (install with: brew install renode/tap/renode)"
+fi
+
+# 6. Workspace integrity
 echo -e "\nEvaluating workspace context..."
 if [ -d "$HOME/jarvis" ]; then
     echo -e "  [${GREEN}OK${REG}] Workspace: ${GREEN}$HOME/jarvis${REG}"
@@ -88,7 +102,7 @@ else
     MISSING_TOOLS=$((MISSING_TOOLS + 1))
 fi
 
-# 6. Result
+# 7. Result
 echo -e "\n======================================================================"
 if [ ${MISSING_TOOLS} -gt 0 ]; then
     echo -e "${RED}[BLOCK] ${MISSING_TOOLS} tool(s) missing for target '${TARGET_ARCH}'${REG}"

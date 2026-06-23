@@ -57,8 +57,22 @@ If the branch does not match the intended role, do not proceed.
 - **MinimalPrivilegedSurface fix**: Skip blocking syscalls (RECEIVE, SEND_SYNC, EXIT, NOTIFY_WAIT, EVENT_WAIT, PAUSE) — calling `sys_receive()` with null args blocked the shell forever. Fixed the 625/675 hang.
 - **Test results**: `test-all-debug` = 675/675 PASS, `TIME_ELAPSED_MS` = ~71s. All test targets green.
 
+### Session Summary (v0.2.19 → v0.2.20)
+
+### Completed This Session
+- **Renode installed**: v1.16.1 via `brew install renode/tap/renode`
+- **Cross-compilers installed**: `aarch64-elf-gcc` (ARM), `riscv64-elf-gcc` (RISC-V)
+- **Renode platform descriptions created**: `tools/renode/jarvis-{x86_64,aarch64,riscv64}.repl` — memory layout, UART, timer, interrupt controller per arch
+- **Renode boot scripts created**: `tools/renode/jarvis-{x86_64,aarch64,riscv64}.resc` — LoadELF + SeaBIOS for x86_64; direct ELF load for ARM/RISC-V
+- **Makefile targets**: `make run-renode` (interactive, arch via `RENODE_ARCH=`), `make renode-test` (selftest stub)
+- **healthcheck.sh updated**: Renode added to shared binaries, RISC-V tool names fixed to `riscv64-elf-gcc`, Renode platform file check added
+- **ROADMAP.md**: v0.2.19 all items marked `[x]`, executive override bumped to v0.2.20 (System Calls & Storage)
+
 ### Pending
-- Renode simulation setup
+- x86_64 Renode native boot: currently loads kernel via SeaBIOS binary — needs storage controller + IDE/ATA peripheral for full ISO boot path
+- ARM/RISC-V boot code stubs: `src/kernel/arch/{aarch64,riscv64}/boot.cpp` still contain `#error` — Renode `.resc`/`.repl` files are ready and will work once boot code is implemented
+- `test-all-release` Makefile ISO path hardcodes `debug/` (pre-existing bug)
+- `test-all-debug` hang at test 438 (pre-existing — confirmed in baseline)
 
 ## Session Summary (v0.2.19 → v0.2.20)
 

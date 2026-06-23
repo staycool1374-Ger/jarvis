@@ -1,0 +1,39 @@
+biosMemory: Memory.MappedMemory @ {
+        sysbus 0x0;
+        sysbus <0xE0000, +0x20000>;
+        sysbus <0xFF0000, +0x10000>;
+        sysbus <0xFFFF0000, +0x10000>
+    }
+    size: 0x10000000
+
+sdram: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x70000000
+
+uart0: UART.NS16550 @ sysbus 0x3F8
+    IRQ -> pic@4
+
+cpu: CPU.X86_64 @ sysbus
+    cpuType: "x86_64"
+    lapic: lapic
+
+lapic: IRQControllers.LAPIC @ sysbus 0xFEE00000
+    IRQ -> cpu@0
+
+pic: IRQControllers.I8042 @ sysbus 0x60
+    size: 0x5
+    IRQ -> cpu@1
+
+hpet: Timers.HPET @ sysbus 0xFED00000
+
+sysbus:
+    init:
+        Tag <0x20 1> "PIC1_CMD"
+        Tag <0x21 1> "PIC1_DATA"
+        Tag <0xA0 1> "PIC2_CMD"
+        Tag <0xA1 1> "PIC2_DATA"
+        Tag <0x40 1> "PIT_CHANNEL0"
+        Tag <0x41 1> "PIT_CHANNEL1"
+        Tag <0x42 1> "PIT_CHANNEL2"
+        Tag <0x43 1> "PIT_CMDREG"
+        Tag <0x70 1> "CMOS_ADDRESS"
+        Tag <0x71 1> "CMOS_DATA"
