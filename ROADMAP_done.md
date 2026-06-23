@@ -99,3 +99,11 @@
 - Virtio transport (modern 1.0 PCI) + block driver — capability parsing, MMIO mapping, feature negotiation, queue setup, block I/O
 - DMA driver — physically contiguous buffer alloc, scatter-gather list, PRD table (ATA bus-master format), PCI bus master control
 - Minimal network stack — Ethernet/ARP/IPv4/UDP protocol types, ARP cache with resolution, IPv4 header checksum, UDP send/receive, virtio-net NIC driver (modern 1.0 PCI)
+
+### 0.2.20 — System Calls & Storage
+- [x] SYS_YIELD — cooperative task yielding for CPU-bound tasks
+- [x] SYS_REBOOT / SYS_HALT — system power management from userspace
+- [x] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
+- [x] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
+- [x] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
+- Release tag: v0.2.20

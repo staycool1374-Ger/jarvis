@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.20 — System Calls & Storage: SYS_YIELD, SYS_REBOOT, SYS_HALT, AHCI/SATA, DMA infrastructure.
+**Target Focus:** v0.2.21 — Kernel Configuration & Portability: jarvis_config.h, check-config, syscall gating, multi-arch HAL.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -22,112 +22,119 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
-### 0.2.20 — System Calls & Storage
-- [x] SYS_YIELD — cooperative task yielding for CPU-bound tasks
-- [x] SYS_REBOOT / SYS_HALT — system power management from userspace
-- [x] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
-- [x] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
-- [x] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
-
-### 0.2.21 — Kernel Configuration & Portability
-
-A FreeRTOS-inspired `jarvis_config.h` header that makes Jarvis compile-time customizable and architecture-portable. All tunables currently scattered as `constexpr` in 20+ files get a single configuration home.
-
-- [ ] **`jarvis_config.h`** — central configuration header with `#ifndef` guard and sensible defaults. Every `#define` has a Doxygen comment explaining its effect and valid range.
-
-- [ ] **Migrate scheduling tunables:** `CONFIG_MAX_TASKS` (was `MAX_TASKS=64`), `CONFIG_TICK_HZ` (was `BootParams::timer_hz=1000` via bootargs now becomes compile-time default), `CONFIG_PRIORITY_CEILING` (was `255`), `CONFIG_PREEMPTION` (was `preempt_enabled=true`)
-
-- [ ] **Migrate memory layout tunables:** All `arch::` constants (`HHDM_OFFSET`, `PML4_USER_COUNT`, `PAGE_SIZE`, `USER_SPACE_LIMIT`, `STACK_SIZE`, `HEAP_SIZE`) — these are the main portability barriers; make them arch-overridable via `CONFIG_*`.
-
-- [ ] **Migrate subsystem sizing:** `CONFIG_MAX_FDS`, `CONFIG_MAX_MOUNTS`, `CONFIG_MAX_DRIVERS`, `CONFIG_MAX_DAEMONS`, `CONFIG_MAX_PROGRAMS`, `CONFIG_IPC_MAX_MSG_SIZE`, `CONFIG_IPC_MAX_QUEUE_MSG`, `CONFIG_IPC_PRIORITY_LEVELS`, `CONFIG_MAX_SIGNAL_HANDLERS`, `CONFIG_VFS_MAX_PATH` — all these subsystem caps currently hardcoded in individual headers.
-
-- [ ] **Migrate MemPool sizing:** Replace inline pool-table array with `CONFIG_MEMPOOL_*` defines (number of pools, block sizes, block counts per pool).
-
-- [ ] **`INCLUDE_` syscall gating** — FreeRTOS-style function inclusion/exclusion. Each syscall gets a `CONFIG_INCLUDE_SYS_<NAME>` toggle so unused syscalls can be stripped at compile time for code size reduction (safety-critical / small-footprint builds).
-
-- [ ] **Architecture feature detection:** `CONFIG_HAS_FPU`, `CONFIG_HAS_RDRAND`, `CONFIG_HAS_MPU`, `CONFIG_HAS_HPET` — compile-time feature flags for conditional compilation of architecture-dependent code paths.
-
-- [ ] **Hook configuration:** `CONFIG_IDLE_HOOK`, `CONFIG_TICK_HOOK`, `CONFIG_STACK_OVERFLOW_HOOK`, `CONFIG_OOM_HOOK` — hook points for application-specific callbacks at idle, tick, stack overflow, and OOM events.
-
-- [ ] **`CONFIG_ASSERT`** — custom assertion macro that replaces the current hardcoded `JARVIS_ASSERT` in test framework (allows user-defined panic/error action).
-
-- [ ] **Consolidate duplicate constants:** Merge the 3× `PAGE_SIZE=4096` and 2× `STACK_SIZE=64_KiB` into single `CONFIG_PAGE_SIZE` / `CONFIG_STACK_SIZE` references.
-
-- [ ] extend the makefile for the target check-config. If invoked the configuration gets checked
-For the following items: consistency, plausibility, completeness, dependencies and ensure
-Upper and lower boundaries.
-
-#### FreeRTOS → Jarvis Config Mapping
-
-| FreeRTOS Config | Jarvis Equivalent | Status |
-|---|---|---|
-| `configUSE_PREEMPTION` | `CONFIG_PREEMPTION` | Runtime via `BootParams` now; add compile-time default |
-| `configCPU_CLOCK_HZ` | `CONFIG_CPU_CLOCK_HZ` | N/A yet (no cycle counter abstraction); add when HPET lands (v0.3.1) |
-| `configSYSTICK_CLOCK_HZ` | `CONFIG_TIMER_CLOCK_HZ` | PIT fixed at 1193182; HPET will make this configurable |
-| `configTICK_RATE_HZ` | `CONFIG_TICK_HZ` | Currently `BootParams::timer_hz`, default 1000 |
-| `configMAX_PRIORITIES` | `CONFIG_PRIORITY_CEILING` | Currently `BootParams::scheduler_priority_ceiling=255` |
-| `configMINIMAL_STACK_SIZE` | `CONFIG_MIN_STACK_SIZE` | Not enforced; add minimum for task creation |
-| `configMAX_TASK_NAME_LEN` | `CONFIG_TASK_NAME_LEN` | Task names not yet length-limited; add with config |
-| `configUSE_16_BIT_TICKS` | _(not needed)_ | Native 64-bit tick count; 16-bit not relevant |
-| `configIDLE_SHOULD_YIELD` | `CONFIG_IDLE_YIELD` | Idle task currently busy-waits; could yield to lower power |
-| `configUSE_TASK_NOTIFICATIONS` | `CONFIG_INCLUDE_SYS_NOTIFY` | Gate the notify/wait syscalls |
-| `configUSE_MUTEXES` | `CONFIG_INCLUDE_MUTEX` | Already present; add compile-time toggle |
-| `configUSE_RECURSIVE_MUTEXES` | `CONFIG_INCLUDE_RECURSIVE_MUTEX` | Not yet implemented; gate when added |
-| `configUSE_COUNTING_SEMAPHORES` | `CONFIG_INCLUDE_SEMAPHORE` | Already present; add compile-time toggle |
-| `configQUEUE_REGISTRY_SIZE` | `CONFIG_QUEUE_REGISTRY_SIZE` | Debug registry for queue monitoring |
-| `configUSE_QUEUE_SETS` | `CONFIG_INCLUDE_QUEUE_SET` | Not yet implemented |
-| `configUSE_TIME_SLICING` | `CONFIG_TIME_SLICING` | Currently always preemptive; could add round-robin mode |
-| `configNUM_THREAD_LOCAL_STORAGE_POINTERS` | `CONFIG_TLS_POINTERS` | TLS not yet supported; add when implementing |
-| `configSTACK_DEPTH_TYPE` | `CONFIG_STACK_DEPTH_TYPE` | Use `size_t`; could be `uint16_t` for small-footprint |
-| `configHEAP_CLEAR_MEMORY_ON_FREE` | `CONFIG_HEAP_CLEAR_ON_FREE` | Security: zero freed memory before returning to pool |
-| `configSUPPORT_STATIC_ALLOCATION` | `CONFIG_STATIC_ALLOC` | Safety-critical: fixed pools, no runtime heap |
-| `configSUPPORT_DYNAMIC_ALLOCATION` | `CONFIG_DYNAMIC_ALLOC` | Toggle kernel heap (`new`/`delete`/`kmalloc`) |
-| `configTOTAL_HEAP_SIZE` | `CONFIG_HEAP_TOTAL_SIZE` | Sum of all MemPool block totals (~254 KiB currently) |
-| `configAPPLICATION_ALLOCATED_HEAP` | `CONFIG_APP_HEAP` | User-provided heap region (vs. kernel-internal) |
-| `configSTACK_ALLOCATION_FROM_SEPARATE_HEAP` | `CONFIG_SEPARATE_STACK_HEAP` | Dedicated page region for kernel stacks |
-| `configUSE_IDLE_HOOK` | `CONFIG_IDLE_HOOK` | Callback invoked each idle iteration |
-| `configUSE_TICK_HOOK` | `CONFIG_TICK_HOOK` | Callback invoked on each timer tick |
-| `configCHECK_FOR_STACK_OVERFLOW` | `CONFIG_STACK_CHECK` | Guard-page or canary-based overflow detection |
-| `configUSE_MALLOC_FAILED_HOOK` | `CONFIG_OOM_HOOK` | Callback on kernel allocation failure |
-| `configUSE_DAEMON_TASK_STARTUP_HOOK` | `CONFIG_INIT_HOOK` | Callback after daemon initialization |
-| `configGENERATE_RUN_TIME_STATS` | `CONFIG_SCHED_STATS` | Per-task CPU usage counters (`/proc/sched` in v0.3.2) |
-| `configUSE_TRACE_FACILITY` | `CONFIG_TRACE` | Instrumentation trace buffer for debug |
-| `configUSE_STATS_FORMATTING_FUNCTIONS` | `CONFIG_STATS_FORMAT` | Human-readable stats output (shell `tasks` command) |
-| `configUSE_TIMERS` | `CONFIG_INCLUDE_TIMERFD` | Software timer subsystem (`timerfd` or `/dev/timer`) |
-| `configTIMER_TASK_PRIORITY` | `CONFIG_TIMER_TASK_PRIO` | Priority of internal timer management task |
-| `configTIMER_TASK_STACK_DEPTH` | `CONFIG_TIMER_TASK_STACK` | Stack size for timer task |
-| `configASSERT` | `CONFIG_ASSERT` | Custom assertion macro (replace `JARVIS_ASSERT`) |
-| `configENABLE_FPU` | `CONFIG_HAS_FPU` | FPU context switch (FXSAVE/FXRSTOR) — v0.2.16 |
-| `configENABLE_MPU` | `CONFIG_HAS_MPU` | Memory protection regions (future, not x86-64 native) |
-| `configENFORCE_SYSTEM_CALLS_FROM_KERNEL_ONLY` | `CONFIG_RESTRICT_SYSCALLS` | Limit syscall availability per ring level |
-| `INCLUDE_vTaskPrioritySet` | `CONFIG_INCLUDE_SYS_SETPRIO` | Syscall gating for code size |
-| `INCLUDE_vTaskDelete` | `CONFIG_INCLUDE_SYS_EXIT` | Syscall gating |
-| `INCLUDE_vTaskSuspend` | `CONFIG_INCLUDE_SYS_SUSPEND` | Syscall gating |
-| `INCLUDE_vTaskDelay` | `CONFIG_INCLUDE_SYS_NANOSLEEP` | Syscall gating |
-| `INCLUDE_xTaskGetCurrentTaskHandle` | `CONFIG_INCLUDE_SYS_GETPID` | Syscall gating |
-| `INCLUDE_uxTaskGetStackHighWaterMark` | `CONFIG_INCLUDE_SYS_STACK_INFO` | Syscall gating |
-
+### 0.2.21 — Kernel Configuration & Portability (Detailed Step-by-Step Tasks)
+- [ ] Create jarvis_config.h Central Configuration Header
+  - [ ] Create src/kernel/jarvis_config.h with #ifndef JARVIS_CONFIG_H / #define / #endif guard
+  - [ ] Add CONFIG_VERSION macro with value "0.2.21" for compile-time version detection
+  - [ ] Add Doxygen-style comments for every #define explaining effect, valid range, and default
+  - [ ] Include fallback defaults for every config so kernel builds without user-provided config
+  - [ ] Add architecture detection: #if defined(__x86_64__) || defined(__aarch64__) || defined(__riscv64)
+  - [ ] Define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, CONFIG_ARCH_RISCV64 mutually exclusive based on ARCH Makefile variable
+- [ ] Migrate Scheduling Tunables
+  - [ ] CONFIG_MAX_TASKS (default 64) — replace MAX_TASKS in scheduler.hpp and task.hpp
+  - [ ] CONFIG_TICK_HZ (default 1000) — replace BootParams::timer_hz default; update arch::Timer::init()
+  - [ ] CONFIG_PRIORITY_CEILING (default 255) — replace BootParams::scheduler_priority_ceiling
+  - [ ] CONFIG_PREEMPTION (default 1) — replace BootParams::preempt_enabled; gate Scheduler::preempt() calls
+  - [ ] CONFIG_IDLE_YIELD (default 0) — add yield in idle loop when enabled
+  - [ ] CONFIG_TIME_SLICING (default 1) — add round-robin time-slice config per priority
+- [ ] Migrate Memory Layout Tunables (Architecture-Overridable)
+  - [ ] CONFIG_PAGE_SIZE (default 4096) — replace all 3× PAGE_SIZE definitions; validate power-of-2
+  - [ ] CONFIG_HHDM_OFFSET (default 0xFFFF800000000000 x86_64, arch-specific for ARM/RISC-V) — replace arch::HHDM_OFFSET
+  - [ ] CONFIG_PML4_USER_COUNT (default 256) — x86_64 only; page table user entries
+  - [ ] CONFIG_USER_SPACE_LIMIT (default 0x00007FFFFFFFFFFF) — user virtual address ceiling
+  - [ ] CONFIG_STACK_SIZE (default 65536 / 64 KiB) — replace both STACK_SIZE definitions; validate ≥ CONFIG_MIN_STACK_SIZE
+  - [ ] CONFIG_HEAP_SIZE (default 16 MiB) — replace HEAP_SIZE in constants.hpp
+  - [ ] CONFIG_MIN_STACK_SIZE (default 4096) — minimum stack for task creation safety check
+- [ ] Migrate Subsystem Sizing Constants
+  - [ ] CONFIG_MAX_FDS (default 32) — replace MAX_FDS in vfs.hpp
+  - [ ] CONFIG_MAX_MOUNTS (default 32) — replace MAX_MOUNTS in vfs.hpp
+  - [ ] CONFIG_MAX_DRIVERS (default 16) — replace MAX_DRIVERS in driver_manager.hpp
+  - [ ] CONFIG_MAX_DAEMONS (default 16) — replace MAX_DAEMONS in init.hpp
+  - [ ] CONFIG_MAX_PROGRAMS (default 32) — replace MAX_PROGRAMS in loader.hpp
+  - [ ] CONFIG_IPC_MAX_MSG_SIZE (default 64) — replace MAX_MSG_SIZE in ipc.hpp
+  - [ ] CONFIG_IPC_MAX_QUEUE_MSG (default 16) — replace MAX_QUEUE_MSG in ipc.hpp
+  - [ ] CONFIG_IPC_PRIORITY_LEVELS (default 32) — replace PRIORITY_LEVELS in ipc.hpp
+  - [ ] CONFIG_IPC_SHMEM_MAX_PAGES - maximum of shared memory pages for ipc between via runlet loaded user space program in user task and device driver
+  - [ ] CONFIG_MAX_PROCESS_PAGES - maximum of physical pages via runelf loaded user space program in user task, for static reservation
+  - [ ] CONFIG_MAX_SIGNAL_HANDLERS (default 32) — replace MAX_SIGNAL_HANDLERS in signal.hpp
+  - [ ] CONFIG_VFS_MAX_PATH (default 256) — replace MAX_PATH in vfs.hpp
+  - [ ] CONFIG_TASK_NAME_LEN (default 16) — add task name length limit in task.hpp
+- [ ] Migrate MemPool Configuration
+  - [ ] CONFIG_MEMPOOL_NUM_POOLS (default 9) — number of fixed-size pools
+  - [ ] CONFIG_MEMPOOL_BLOCK_SIZES — comma-separated list: 16,32,64,128,256,512,1024,2048,4096
+  - [ ] CONFIG_MEMPOOL_BLOCK_COUNTS — comma-separated list matching pool count: 256,128,64,32,16,8,4,2,1
+  - [ ] CONFIG_MEMPOOL_TOTAL_SIZE — computed sum (validated at check-config time)
+  - [ ] Refactor MemPool::pool_table to use config arrays instead of hardcoded values
+- [ ] Implement INCLUDE_ Syscall Gating
+  - [ ] Define CONFIG_INCLUDE_SYS_<NAME> for each syscall (default 1 = enabled)
+  - [ ] List: YIELD, EXIT, FORK, CLONE, EXECVE, WAITPID, NANOSLEEP, GETPID, GETPPID, SETPRIO, GETPRIO, SENDSYNC, RECV, REPLY, NOTIFY, NOTIFY_WAIT, EVENT_POST, EVENT_WAIT, BRK, MMAP, MUNMAP, OPEN, CLOSE, READ, WRITE, SEEK, IOCTL, STAT, MKDIR, UNLINK, RENAME, MOUNT, UMOUNT, REBOOT, HALT
+  - [ ] Wrap syscall implementations in #if CONFIG_INCLUDE_SYS_<NAME> guards
+  - [ ] Update syscall dispatch table (syscall.cpp) to conditionally include entries
+  - [ ] Add CONFIG_SYSCALL_COUNT computed from enabled syscalls for array sizing
+- [ ] Architecture Feature Detection Flags
+  - [ ] CONFIG_HAS_FPU (default 1 on x86_64, 0 on ARM/RISC-V until implemented) — gate FXSAVE/FXRSTOR
+  - [ ] CONFIG_HAS_RDRAND (default 1 on x86_64) — gate hardware RNG usage
+  - [ ] CONFIG_HAS_MPU (default 0) — future memory protection unit support
+  - [ ] CONFIG_HAS_HPET (default 0) — gate HPET driver (v0.3.1)
+  - [ ] CONFIG_HAS_APIC (default 1 on x86_64) — gate APIC timer vs PIT
+  - [ ] CONFIG_HAS_GIC (default 1 on aarch64) — ARM interrupt controller
+  - [ ] CONFIG_HAS_PLIC (default 1 on riscv64) — RISC-V interrupt controller
+  - [ ] CONFIG_HAS_SBI (default 1 on riscv64) — SBI runtime services
+- [ ] Hook Configuration Points
+  - [ ] CONFIG_IDLE_HOOK (default 0) — function pointer void (*idle_hook)(void) called each idle iteration
+  - [ ] CONFIG_TICK_HOOK (default 0) — function pointer void (*tick_hook)(uint64_t ticks) called on timer tick
+  - [ ] CONFIG_STACK_OVERFLOW_HOOK (default 0) — void (*stack_overflow_hook)(TaskControlBlock*) on detected overflow
+  - [ ] CONFIG_OOM_HOOK (default 0) — void (*oom_hook)(size_t requested_size) on allocation failure
+  - [ ] CONFIG_INIT_HOOK (default 0) — void (*init_hook)(void) after daemon initialization complete
+  - [ ] Declare weak symbols in jarvis_config.h so user can override without modifying kernel
+- [ ] Custom Assertion Macro
+  - [ ] CONFIG_ASSERT(expr) — replace JARVIS_ASSERT macro in assert.hpp
+  - [ ] Default: #define CONFIG_ASSERT(x) do { if(!(x)) panic(#x, __FILE__, __LINE__); } while(0)
+  - [ ] Allow user to define custom CONFIG_ASSERT before including jarvis_config.h
+  - [ ] Update all JARVIS_ASSERT usages to CONFIG_ASSERT
+- [ ] Consolidate Duplicate Constants
+  - [ ] Search codebase for all PAGE_SIZE definitions — consolidate to CONFIG_PAGE_SIZE
+  - [ ] Search for all STACK_SIZE definitions — consolidate to CONFIG_STACK_SIZE
+  - [ ] Update constants.hpp to #include "jarvis_config.h" and use config values
+  - [ ] Update arch-specific constants (arch/x86_64/hal/, arch/aarch64/, arch/riscv64/) to reference config
+- [ ] Extend Makefile with check-config Target
+  - [ ] Add check-config phony target that runs validation script
+  - [ ] Create tools/check-config.py (or shell script) that:
+  - [ ] Parses jarvis_config.h for all CONFIG_* defines
+  - [ ] Validates: power-of-2 for sizes, range checks (e.g., CONFIG_MAX_TASKS >= 2 && <= 4096)
+  - [ ] Checks dependencies: CONFIG_MEMPOOL_NUM_POOLS == count of sizes == count of counts
+  - [ ] Validates arch-specific constraints (e.g., CONFIG_HHDM_OFFSET page-aligned)
+  - [ ] Ensures CONFIG_TICK_HZ divides CONFIG_TIMER_CLOCK_HZ evenly (PIT: 1193182)
+  - [ ] Verifies CONFIG_STACK_SIZE >= CONFIG_MIN_STACK_SIZE
+  - [ ] Checks CONFIG_HEAP_SIZE ≥ CONFIG_MEMPOOL_TOTAL_SIZE
+  - [ ] Reports errors/warnings with line numbers
+  - [ ]Make check-config run automatically during make all (optional, controlled by ENFORCE_CONFIG_CHECK=1)
+  - [ ]Add make config-summary target to print all active config values
+- [ ] Integration Testing & Documentation
+  - [ ]Test build with default config: make ARCH=x86_64
+  - [ ]Test build with minimal config (disable most syscalls, small pools): verify size reduction
+  - [ ]Test build with custom config via make CONFIG_FILE=my_config.h
+  - [ ]Run make check-config and verify all validations pass
+  - [ ]Run make test-all-debug — ensure 675/675 tests still pass
+  - [ ]Update README.md with configuration guide and jarvis_config.h reference
+  - [ ]Document migration path for existing BootParams runtime overrides (still supported, config provides compile-time defaults)
 
 ### 0.2.22 — ARM & RISC-V Portability
 
-Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on ARM Cortex-A and RISC-V (RV64) hardware. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/<isa>/` implementation selected by the build system.
-
+##Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on ARM Cortex-A and RISC-V (RV64) hardware. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/<isa>/` implementation selected by the build system.
 - [ ] **Architecture HAL refactor** — lift all `src/kernel/arch/` code behind `CONFIG_ARCH`-selected directories (`arch/x86_64/`, `arch/aarch64/`, `arch/riscv64/`). Each arch exports the same function signatures: `read_cr3()`/`write_cr3()`, `irq_enable()`/`irq_disable()`, `halt()`, `inb()`/`outb()`, `invlpg()`, `fxsave()`/`fxrstor()`, `rdtsc()`.
-
 - [ ] **ARM Cortex-A (aarch64)**
   - [ ] Boot: multi-core entry (spin-table / PSCI), MMU init with TCR/MAIR, page table walk (4-level TTBR0_EL1/TTBR1_EL1)
   - [ ] Interrupts: generic timer (CNTP_CTL_EL0), GICv2/v3 distributor & CPU interface, DAIF masking
   - [ ] Context switch: kernel-mode SVC stack, EL1↔EL0 transitions (ERET), FPU via FPEXC32_EL2 / VFP
   - [ ] Timer: generic timer compare (CNTP_CVAL_EL0), 1–100 MHz configurable tick rate
   - [ ] Minimal QEMU virt platform support (PL011 UART, virtio-mmio transport)
-
 - [ ] **RISC-V (RV64)**
   - [ ] Boot: SBI init, mstatus/satp setup, page table walk (Sv39), single-IPI for multi-core
   - [ ] Interrupts: CLINT (mtime/mtimecmp) or ACLINT, PLIC, mstatus.MIE/mip delegation
   - [ ] Context switch: S-mode scratch CSR, U-mode↔S-mode transitions (SRET), FPU via mstatus.FS
   - [ ] Timer: CLINT mtimecmp-based, SBI set_timer extension as fallback
   - [ ] Minimal QEMU virt platform support (NS16550 UART, virtio-mmio transport)
-
 - [ ] **Cross-architecture common**
   - [ ] Build system: `ARCH=x86_64|aarch64|riscv64` selects toolchain prefix, linker script, and objects
   - [ ] Linker scripts per arch (page-aligned `.text`/`.rodata`/`.data`/`.bss`, HHDM region reservation)
@@ -138,36 +145,200 @@ Builds on the v0.2.20 `jarvis_config.h` HAL to make Jarvis compile and boot on A
 ---
 
 ## Phase 4: Hard Real-Time (0.3.x)
-Read and execute CODE-REVIEW-HARD-RTOS.md
+##v0.3.x — Hard Real-Time Compliance Redesign (Detailed Step-by-Step Tasks)
+Executive Summary
+Current state: Soft real-time with rate-monotonic scheduling but unbounded WCET, no priority inheritance on mutex/semaphore/queue, PIC-based interrupt controller with unbounded ISR latency, dynamic PMM/VMM allocation paths, and sporadic server only for daemons. Target: Hard real-time per ISO 26262 ASIL D / IEC 61508 SIL 4.
+
+Notes
+- All changes must pass make test-all-debug (675/675) before each release
+- ResourceTracker must show zero leaks in all hard-RT tests
+- Renode simulation for ARM64/RISC-V64 required before M3
+- CONFIG_HARD_REAL_TIME=0 builds must remain functionally identical to v0.2.21 (Soft-RT compatibility)
 
 ### 0.3.1 — Deterministic Scheduling
-- [ ] O(1) bitmap scheduler (per-priority queues, __builtin_clzll), HPET driver (10 kHz)
-- [ ] Deadline monitoring with overrun callbacks
+- [ ] Determinism & Bounded WCET (Pillar 1)
+  - [ ] Scheduler — Replace O(n) Scan with O(1) Priority Bitmap
+  - [ ] Add CONFIG_MAX_PRIORITY (default 256) to jarvis_config.h
+  - [ ] Implement PriorityBitmap class (256-bit, 4×uint64_t) with __builtin_ctzll/__builtin_clzll for O(1) highest-ready lookup
+  - [ ] Replace Scheduler::next_task() linear scan with bitmap search
+  - [ ] Add per-priority ready queues (array of TaskControlBlock* head/tail)
+  - [ ] Update add_task/remove_task/on_tick to maintain bitmap + queues
+  - [ ] Validate: measure next_task() cycles — must be ≤ 150 cycles on x86_64
+- [ ] Sporadic Server — Extend to All Hard Real-Time Tasks
+  - [ ] Add CONFIG_SPORADIC_SERVER_MAX_TASKS (default 8) to config
+  - [ ] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()
+  - [ ] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
+  - [ ] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
+- [ ] Eliminate Unbounded Loops in Hot Paths
+  - [ ] Scheduler::reap_orphans() — replace while (reaped_any) with single-pass + deferred work queue
+  - [ ] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
+  - [ ] MemPool::alloc() — verify O(1) free-list traversal (no bitmap scan)
+  - [ ] VMM::map_page() — verify page-walk depth bounded (4 levels fixed)
+  - [ ] Audit all for loops in scheduler.cpp, task.cpp, mempool.cpp, vmm.cpp — add CONFIG_*_MAX_ITERATIONS bounds
 
-### 0.3.2 — Scheduling Analytics & Idle-Task Resource Stewardship
-- [ ] WCRT analysis, SYS_SCHED_INFO, /proc/sched metrics
-- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched), all preemtiable and incrementally. Idle task
-Never holds and locks any resources.
-- [ ] Idle task: slab allocator page return — scan entirely empty slabs/caches during idle cycles, return hoarded page frames to the PMM buddy allocator
-- [ ] Deterministic userspace memory pools (slab/buddy, O(1) allocation)
 
-### 0.3.3–0.3.4 — Inheritance & Ceiling
-- [ ] Priority inheritance (PIP), priority ceiling (PCP), lock ordering, cyclic-detection engine
-- [ ] Hardware budget enforcement, SYS_MLOCK/SYS_MLOCKALL
+### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
+- [ ] Deadline Miss Detection & Handler
+  - [ ] Add TaskControlBlock::deadline_ticks (absolute deadline) and deadline_missed flag
+  - [ ] In Scheduler::on_tick(): check current_tick > task->deadline_ticks for RUNNING/READY tasks
+  - [ ] On miss: call weak void deadline_miss_handler(TaskControlBlock*, uint64_t missed_by_ticks)
+  - [ ] Default handler: log + panic in debug; in release: CONFIG_DEADLINE_ACTION enum { PANIC, KILL_TASK, DEMOTE_PRIORITY, NOTIFY_MONITOR }
+  - [ ] Add CONFIG_DEADLINE_MONITOR_TASK — dedicated watchdog task (highest priority) that scans for misses
+- [ ] Budget Enforcement with Hard Preemption
+  - [ ] SporadicServer::consume() — when budget hits 0, immediately call Scheduler::reschedule() (not deferred)
+  - [ ] Add CONFIG_HARD_BUDGET_PREEMPTION — force context switch on budget exhaustion
+  - [ ] Integrate with SporadicServer::current_priority() — exhausted tasks run at bg_priority (configurable per server)
+- [ ] Time-Partitioning (ARINC 653 Style)
+  - [ ] Add TimePartition struct: start_tick, duration_ticks, budget_ticks, task_set[]
+  - [ ] Scheduler::partition_schedule() — major frame timer, minor frame dispatcher
+  - [ ] CONFIG_TIME_PARTITIONING — enable static schedule table (compile-time generated from config)
+  - [ ] Overrun detection: partition budget exhausted → deadline_miss_handler + partition switch
 
-### 0.3.5 — WCET & Tuning
-- [ ] Syscall WCET tracking, kernel stack profiler, allocation-free IRQ paths
-- [ ] Interrupt latency measurement, jitter benchmarking suite
+### 0.3.3 — Inheritance & Ceiling
+## Preemptive Priority-Based Scheduling + Priority Inversion Mitigation (Pillar 3)
+- [ ] Priority Inheritance Protocol (PIP) — Mutex
+  - [ ] Add Mutex::priority_ceiling (static ceiling = max priority of any task that may lock)
+  - [ ] In Mutex::lock(): if contested, boost owner to max(owner_prio, waiter_prio) via Scheduler::boost_priority()
+  - [ ] In Mutex::unlock(): restore owner to base_priority (or highest held ceiling)
+  - [ ] Add CONFIG_MUTEX_PIP (default 1) — disable for soft-RT builds
+  - [ ] Add CONFIG_MUTEX_PRIORITY_CEILING — compile-time ceiling validation
+- [ ] Priority Inheritance — Semaphore
+  - [ ] Same pattern: Semaphore::lock_ already exists; add owner tracking + PIP
+  - [ ] Binary semaphore: single owner; counting: track last waiter priority for boost
+  - [ ] Add CONFIG_SEMAPHORE_PIP
+- [ ] Priority Inheritance — Message Queue
+  - [ ] Queue::send_waiters / recv_waiters — boost receiver when high-prio sender blocks
+  - [ ] Boost sender when high-prio receiver blocks (rare but possible)
+  - [ ] Add CONFIG_QUEUE_PIP
+- [ ] Priority Ceiling Protocol (PCP) — Optional Stronger Guarantee
+  - [ ] Add CONFIG_PRIORITY_CEILING_PROTOCOL — mutex ceiling = static max priority of all users
+  - [ ] On lock: system ceiling = max of all held mutex ceilings; block if task prio ≤ system ceiling
+  - [ ] Prevents deadlock + chained blocking
+- [ ] Scheduler Preemption Points — Verify All
+  - [ ] Audit every cli/sti pair — ensure preemption check at each sti
+  - [ ] Scheduler::reschedule() called from: syscall return, ISR exit, on_tick, explicit yield
+  - [ ] Add CONFIG_PREEMPTION_LATENCY_MAX_CYCLES — measure and assert in test
 
-### 0.3.6 — ISR Safety & Data Loss Prevention
-- [ ] Lock-free SPSC ring buffer for ISR→task handoff (eliminate priority inversion and data loss in interrupt context)
+### 0.3.4 Minimal & Known Interrupt Latency Jitter (Pillar 4)
+- [ ] Replace PIC with APIC/x2APIC (x86_64)
+  - [ ] Create arch/x86_64/hal/apic.hpp + apic.cpp — Local APIC timer, IPI, TSC-deadline mode
+  - [ ] APIC::init() — calibrate TSC, configure timer in one-shot/periodic mode
+  - [ ] APIC::set_timer_oneshot(ns) / periodic(ns) — nanosecond resolution
+  - [ ] Per-CPU timer interrupt vector (not shared PIC IRQ0)
+  - [ ] CONFIG_USE_APIC_TIMER (default 1 on x86_64)
+- [ ] Interrupt Latency Measurement & Bounding
+  - [ ] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
+  - [ ] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
+  - [ ] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
+- [ ] Deferred Interrupt Handling (Threaded IRQs)
+  - [ ] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
+  - [ ] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
+  - [ ] IrqThread::init(vector, priority, handler) — replace IDT::register_handler for enabled IRQs
+- [ ] ARM64 / RISC-V64 Interrupt Controllers
+  - [ ] arch/aarch64/hal/gic.hpp — GICv3/v4 driver, priority masking, SGI/PPI/SPI
+  - [ ] arch/riscv64/hal/plic.hpp — PLIC driver, priority levels, threshold
+  - [ ] Common ArchInterruptController interface: init, eoi, mask, unmask, set_priority, get_priority
 
-### 0.3.7 — Dynamic RT Task Spawning & I/O Isolation (runelf)
+
+### 0.3.5 Deterministic Memory & Resource Management (Pillar 5)
+## Static Memory Pools — Zero Dynamic Allocation After Init
+  - [ ] CONFIG_STATIC_POOLS_ONLY — disable PMM::alloc_page() after kernel::init() complete
+  - [ ] Pre-allocate ALL kernel structures at boot: TCB array, page tables, IPC buffers, driver rings
+  - [ ] MemPool — replace PMM-backed growth with fixed compile-time pools (from v0.2.21 config)
+  - [ ] Add MemPool::reserve(pool_idx, count) — called once at init, fails if insufficient
+- [ ] Stack Allocation — Fixed, Guarded, No Growth
+  - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)
+  - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
+  - [ ] CONFIG_STACK_OVERFLOW_HOOK — weak symbol, called from #PF handler
+  - [ ] Compile-time stack usage analysis: -fstack-usage + script to verify ≤ CONFIG_TASK_STACK_SIZE
+- [ ] Page Tables — Static, No Fork-Time Copy
+  - [ ] Remove clone() page-table sharing (page_table_shared_) — full copy or static assignment
+  - [ ] CONFIG_MAX_PROCESS_PAGES — bound user page tables per task
+  - [ ] Pre-allocate page-table pages from dedicated PMM pool (no general PMM alloc in hot path)
+- [ ] Buffer Pool / IPC — Zero-Copy, Fixed Rings
+  - [ ] BufferPool — pre-allocated ring of fixed-size buffers, no alloc/free after init
+  - [ ] CONFIG_BUFFER_POOL_BLOCKS per size class
+  - [ ] IPC messages: inline payload (no heap), buffer handle for zero-copy
+- [ ] Eliminate operator new/delete from Kernel
+  - [ ] Replace all new/delete with MemPool::alloc/free or placement new into static storage
+  - [ ] Add -fno-exceptions -fno-rtti -fno-threadsafe-statics to kernel CFLAGS
+  - [ ] Audit lib/stdcpp.cpp — remove ::operator new implementations
+
+
+### 0.3.6 Cross-Architecture Hard Real-Time HAL
+## x86_64 — Complete APIC + TSC-Deadline
+  - [ ] arch/x86_64/hal/apic.hpp/.cpp — Local APIC, I/O APIC, TSC-deadline timer, keep in mind to check invariant of TSC (CPUID.80000007H:EDX[8])
+  - [ ] arch/x86_64/hal/tsc.hpp — Invariant TSC calibration, rdtsc/rdtscp wrappers
+  - [ ] arch/x86_64/hal/msr.hpp — MSR read/write for IA32_TSC_DEADLINE, IA32_TSC_AUX
+- [ ] ARM64 — GICv3 + Generic Timer
+  - [ ] arch/aarch64/hal/gic.hpp/.cpp — GICD/GICR/GICC init, priority, affinity routing
+  - [ ] arch/aarch64/hal/timer.hpp/.cpp — ARM Generic Timer (CNTVCT_EL0, CNTPCT_EL0)
+  - [ ] arch/aarch64/hal/context.hpp — AArch64 register save/restore, FP/SIMD
+  - [ ] arch/aarch64/boot.cpp — EL2→EL1 transition, MMU init, GIC init
+- [ ] RISC-V64 — PLIC + CLINT/S-Mode Timer
+  - [ ] arch/riscv64/hal/plic.hpp/.cpp — PLIC init, priority, threshold, claim/complete
+  - [ ] arch/riscv64/hal/timer.hpp/.cpp — CLINT (mtime/mtimecmp) or SBI timer
+  - [ ] arch/riscv64/hal/context.hpp — RISC-V register save/restore, FP
+  - [ ] arch/riscv64/boot.cpp — M-mode→S-mode, PMP, MMU (Sv39/Sv48), PLIC init
+- [ ] Common Hard-RT HAL Interface
+  - [ ] arch/hal/hard_rt.hpp — Pure virtual interface: Timer, InterruptController, Context, IPI
+  - [ ] Compile-time selection via CONFIG_ARCH_* — no runtime polymorphism overhead
+  - [ ] WCET annotations on all HAL functions (comments with measured max cycles)
+
+### 0.3.7 Configuration & Validation (v0.2.21 Config System Integration)
+- [ ]  Hard-RT Config Profile
+  - [ ] Add CONFIG_HARD_REAL_TIME (default 0) — enables all PIP, static pools, APIC, deadline miss handler
+  - [ ] When enabled: force CONFIG_PREEMPTION=1, CONFIG_MUTEX_PIP=1, CONFIG_STATIC_POOLS_ONLY=1, CONFIG_USE_APIC_TIMER=1
+  - [ ] Add CONFIG_WCET_ANALYSIS — build with -fstack-usage -ftime-report, generate wcet_report.txt
+- [ ]  check-config Extensions
+  - [ ] Validate: CONFIG_MAX_TASKS ≤ CONFIG_ID_TABLE_SIZE / 2
+  - [ ] Validate: CONFIG_STACK_SIZE × CONFIG_MAX_TASKS < CONFIG_KERNEL_HEAP_SIZE
+  - [ ] Validate: CONFIG_TICK_HZ divides CONFIG_TIMER_CLOCK_HZ evenly (PIT/APIC)
+  - [ ] Validate: Sporadic Server C ≤ T for all configured servers
+  - [ ] Validate: Priority ceiling ≥ max task priority for each mutex
+  - [ ] Validate: CONFIG_IRQ_LATENCY_MAX_NS < CONFIG_MIN_TASK_PERIOD_NS
+
+### 0.3.8 Test & Verification Suite
+- [ ] WCET Measurement Tests
+  - [ ] test_wcet_scheduler.cpp — measure next_task(), reschedule(), switch_to_task() cycles (10k iterations)
+  - [ ] test_wcet_ipc.cpp — measure send/receive latency (same core, cross-core via IPI)
+  - [ ] test_wcet_interrupt.cpp — measure IRQ entry→handler→exit latency (histogram)
+  - [ ] test_wcet_memory.cpp — measure MemPool::alloc/free, VMM::map/unmap cycles
+- [ ] Priority Inversion Tests
+  - [ ] test_priority_inversion_mutex.cpp — classic 3-task inversion, verify PIP bounds blocking
+  - [ ] test_priority_inversion_semaphore.cpp — same for semaphore
+  - [ ] test_priority_inversion_queue.cpp — same for message queue
+  - [ ] test_chained_blocking.cpp — 5-task chain, verify PCP prevents deadlock
+- [ ] Deadline Miss Tests
+  - [ ] test_deadline_miss_detection.cpp — task misses deadline, handler invoked
+  - [ ] test_deadline_action_kill.cpp — CONFIG_DEADLINE_ACTION=KILL_TASK verified
+  - [ ] test_deadline_monitor.cpp — watchdog task detects miss within 1 tick
+- [ ] Interrupt Latency Tests
+  - [ ] test_irq_latency_histogram.cpp — inject synthetic IRQs, verify ≤ CONFIG_IRQ_LATENCY_MAX_NS
+  - [ ] test_nested_irq_latency.cpp — nested ISRs, measure tail-chaining overhead
+- [ ] Memory Determinism Tests
+  - [ ] test_no_dynamic_alloc_after_init.cpp — scan for PMM/VMM allocations post-init
+  - [ ] test_stack_guard_pages.cpp — overflow triggers #PF → hook called
+  - [ ] test_static_pool_exhaustion.cpp — exhaust each pool, verify graceful failure
+- [ ] Multi-Arch CI
+  - [ ] make test-all-hard-rt ARCH=x86_64 — all above tests pass
+  - [ ] make test-all-hard-rt ARCH=aarch64 — via Renode (when HAL ready)
+  - [ ] make test-all-hard-rt ARCH=riscv64 — via Renode (when HAL ready)
+
+### 0.3.9 — Dynamic RT Task Spawning & I/O Isolation (runelf)
 - [ ] **Real-Time `runelf` Extensions:** Extend the `runelf` framework to accept real-time attributes (`--period`, `--wcet`) directly via shell invocation or userspace process spawning.
 - [ ] **Admission Control Interception:** Intercept the `runelf` loading sequence and pass execution telemetry parameters directly to the Liu-Leyland implementation (`is_rm_schedulable`). Deny ELF execution if the new task guarantees violate schedulability limits.
 - [ ] **Hardware-Enforced WCET Monitoring:** Programmatically bind the parsed execution budget ($C$) to a high-precision hardware timer (HPET/APIC) upon task context activation to guarantee fault-detection containment during runtime overruns.
 - [ ] **Sandboxed IPC Routing:** Enforce absolute Ring 3 I/O isolation for the spawned ELF task. Restrict direct MMIO and port I/O access, routing generic hardware or file requests through capability-secured IPC channels backed by core daemons (`vfsd`, `iocd`) under Sporadic Server budgets.
 - [ ] **Zero-Overhead Shared Memory Channels:** Implement a capability delegation mechanism to map shared memory pages between the hardware driver server and the `runelf` task. Utilize lock-free SPSC ring buffers spanning page boundaries to achieve zero-syscall, zero-copy real-time data ingestion.
+
+### 0.3.10 Documentation & Certification Artifacts
+## WCET Analysis Report
+- [ ] Generate docs/wcet_analysis.md with measured max cycles per kernel function
+- [ ] Toolchain: objdump -d + static analysis (aiT, OTAWA, or custom script)
+- [ ] docs/safety_manual.md — assumptions, limitations, configuration rules for ASIL D
+- [ ] docs/traceability.csv — each requirement (ISO 26262-6) → design → code → test
+
 
 ---
 
@@ -211,6 +382,8 @@ Never holds and locks any resources.
 ### 0.6.4 — Idle-Task Safety Monitors (ASIL D)
 - [ ] Idle task: non-destructive RAM March C- algorithm over unused memory regions (back up, write 0x55/0xAA patterns, verify transistor integrity, restore) to detect single-event upsets
 - [ ] Idle task: CPU ALU and register verification (mathematical test patterns, MSR integrity validation) to detect latent CPU faults over years of deployment
+- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched), all preemtiable and incrementally. Idle task
+Never holds and locks any resources.
 
 ---
 
