@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
   <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
   <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
-  <img src="https://img.shields.io/badge/tests-627%20passing-2ea44f?style=flat-square" alt="627 Tests Passing"/>
+  <img src="https://img.shields.io/badge/tests-675%20passing-2ea44f?style=flat-square" alt="675 Tests Passing"/>
   <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 
@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.18** — Observability & Portability + SporadicServer.
+Current version: **v0.2.19** — Kernel Memory Safety Audit + Multi-Arch Infrastructure.
 
 ---
 
@@ -156,7 +156,7 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 
 ### Test Framework
 
-- **627 test cases** across 80+ test files covering every kernel subsystem
+- **675 test cases** across 80+ test files covering every kernel subsystem
 - Run automatically at boot in debug builds; 84 curated tests in release
 - Full state snapshot/restore between tests — isolation down to MemPool free-lists and page-table entries
 - Leak detection on every test (task counts, page allocations, pool frees)
@@ -181,7 +181,7 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 | **IPC** | Queues, semaphores, mutexes (C API) | Priority IPC mailboxes, zero-copy buffer pool, event groups, notifications, deadlock detection engine |
 | **VFS** | None (application defined) | Full POSIX-like VFS: initrd, devfs, procfs, FAT32, tmpfs, vnode abstraction, mount table |
 | **Formal verification** | None | `CheckedPointer` security, wait-for-graph runtime deadlock detection, stack canary markers |
-| **Testing** | Community demos, no built-in test framework | 627 kernel-mode tests with full state snapshot/isolation, QEMU CI, leak detection |
+| **Testing** | Community demos, no built-in test framework | 675 kernel-mode tests with full state snapshot/isolation, QEMU CI, leak detection |
 
 ---
 
@@ -239,7 +239,7 @@ sudo apt install build-essential git wget xorriso dosfstools \
 ```bash
 git clone <repo-url>
 cd os
-make debug          # Debug build with 627-test suite
+make debug          # Debug build with 675-test suite
 make qemu-iso       # Launch in QEMU with serial console
 make test-qemu      # Run full test suite, validate exit code
 make release        # Optimised release build (no tests)

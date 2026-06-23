@@ -5106,6 +5106,9 @@
 ├── Doxyfile
 ├── healthcheck.sh
 ├── IMPLEMENTED_TESTS_SUMMARY.md
+├── initrd
+│   └── tests
+│       └── test-config.txt
 ├── initrd.cpio
 ├── iso
 │   └── boot
@@ -5140,7 +5143,6 @@
 ├── ROADMAP_done.md
 ├── ROADMAP.md
 ├── src
-│   ├── boot
 │   ├── initrd
 │   │   ├── initrd.cpp
 │   │   └── initrd.hpp
@@ -5311,6 +5313,8 @@
 │   │   │   ├── test_buildsystem.cpp
 │   │   │   ├── test_capability.cpp
 │   │   │   ├── test_checked_ptr.cpp
+│   │   │   ├── test_config.cpp
+│   │   │   ├── test_config.hpp
 │   │   │   ├── test_deadlock_detect.cpp
 │   │   │   ├── test_deadlock_recovery.cpp
 │   │   │   ├── test_debug.cpp
@@ -5440,11 +5444,13 @@
 │   │   ├── logger.cpp
 │   │   ├── logger.hpp
 │   │   ├── new.cpp
+│   │   ├── scope_guard.hpp
 │   │   ├── signal.hpp
 │   │   ├── string.hpp
 │   │   ├── test.cpp
 │   │   ├── test.hpp
 │   │   ├── types.hpp
+│   │   ├── unique_ptr.hpp
 │   │   ├── utils.hpp
 │   │   ├── version.cpp
 │   │   └── version.hpp
@@ -5491,6 +5497,7 @@
 │           └── terminal.hpp
 ├── testcases-v0.2.18.md
 ├── testcases-v0.2.19.md
+├── testcases-v0.2.20.md
 ├── testcases-v0.3.1.md
 ├── testcases-v0.3.2.md
 ├── testcases-v0.3.3.md
@@ -5527,6 +5534,14 @@
 │   ├── mkfat32img.py
 │   ├── patch_code_crc.py
 │   ├── release-gdb.sh
+│   ├── renode
+│   │   ├── jarvis-aarch64.repl
+│   │   ├── jarvis-aarch64.resc
+│   │   ├── jarvis-riscv64.repl
+│   │   ├── jarvis-riscv64.resc
+│   │   ├── jarvis-x86_64.repl
+│   │   ├── jarvis-x86_64.resc
+│   │   └── run-renode.sh
 │   ├── selftest-gdb-capture.exp
 │   ├── selftest-gdb.exp
 │   ├── selftest-gdb.sh
@@ -5569,4 +5584,4 @@
     ├── vfsd.c.d
     └── vfsd.c.elf
 
-48 directories, 5522 files
+50 directories, 5535 files
