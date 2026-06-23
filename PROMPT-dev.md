@@ -87,6 +87,69 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 
 ---
 
+# New Test Infrastructure (v0.2.19+)
+
+## Test Classes (Config-Driven)
+Test execution is driven by `initrd/tests/test-config.txt` (one class per line). The kernel parses this at boot and registers only those classes. Default fallback: `safe` class (~96 tests, <5s target).
+
+**Available classes (defined in `src/kernel/test/test_registry.cpp`):**
+- `safe` — curated TF_RELEASE subset (lib, checked_ptr, block_device, fat32, vfs_fat32, waitpid, shell_interaction)
+- `all` — everything including benchmarks (~600+ tests)
+- Individual: `scheduler`, `memory`, `ipc`, `vfs`, `process`, `syscall`, `arch`, `device`, `shell`, `net`, `security`, `debug`, `integration`, `stress`, `init`, `build`, `bench`, `sporadic`
+
+## Makefile Targets
+| Target | Description |
+|--------|-------------|
+| `make test-selftest` | Debug build, runs `safe` class, auto-shutdown on exit (CI gate) |
+| `make test-all-debug` | Debug build, runs `all` class, auto-shutdown |
+| `make test-all-release` | Release build, runs `all` class with TF_RELEASE filter, auto-shutdown |
+| `make test-class CLASS=<name>` | Runs specific test class (kernel cmdline `test_class=` param) |
+| `make test-gdb TEST=suite::name` | GDB single-test: breaks on test symbol, runs under surveillance |
+| `make test-shell` | Interactive shell boot (legacy `run-qemu`) |
+
+**Legacy aliases:** `test-qemu` → `test-all-debug`, `release-test` → `test-all-release`
+
+## Output Format
+Per-test line (no ANSI colors):
+```
+S: <testclass> <suite::name> <n/m>: PASS/FAIL [LEAK: Resource +N, ...]
+```
+
+Examples:
+```
+S: scheduler scheduler::test_yield 1/15: PASS
+S: vfs vfs::test_open 3/42: FAIL [LEAK: VNodes +1, OpenFDs +1]
+S: safe lib::test_string 1/96: PASS
+```
+
+Summary block (after all tests):
+```
+==============================
+ TEST SUMMARY
+ PLANNED: 96
+ EXECUTED: 96
+ TIME_ELAPSED_MS: 4231
+ PASSED: 94
+ FAILED: 2
+==============================
+```
+
+**Leak details** appear only on FAIL lines. Resources tracked: MemPool0, PMM, Tasks, BufPool, MsgQueues, Notifies, EventGroups, Drivers, PipeBufs, VNodes, OpenFDs.
+
+## Test Flags (test.hpp)
+- `TF_KERNEL` = 0 (default, debug-only)
+- `TF_RELEASE` = 1<<0 (runs in release mode)
+- `TF_USER` = 1<<1 (user-space tests, skipped in kernel self-test)
+- `TF_BENCH` = 1<<2 (benchmark tests, excluded from normal runs)
+
+## Serial FIFO Drain
+Both `run_filtered()` and `run_registered()` now drain the UART TX FIFO (wait for LSR bits 5&6) before QEMU exit to prevent report truncation (fixes BUGS.md #012).
+
+## GDB Single-Test
+`make test-gdb TEST=suite::name` launches QEMU with GDB stub, sets breakpoint on `test_suite_name`, runs to it. Use for debugging individual flaky tests.
+
+---
+
 # Coding Standards
 All mandatory coding rules, safety constraints, and error-handling patterns are defined in `CODING_STYLE.md`. Refer to that document for:
 - Language & build conventions (C++20 freestanding, no STL/RTTI/exceptions)

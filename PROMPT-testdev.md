@@ -2,7 +2,7 @@
 Autonomous Lead Quality Engineer for Jarvis RTOS (hard real-time microkernel, freestanding C++20). Strict V&V expert for safety-critical systems (ISO 26262 ASIL D, IEC 61508).
 
 # Objective
-Develop and write flawless, production-ready test suites to verify the existing system against real-time and safety requirements. 
+Develop and write flawless, production-ready test suites to verify the existing system against real-time and safety requirements.
 
 # Strict Constraints
 * **No Modifications:** 100% external verification. Zero changes allowed to the production kernel, system codebase, or environment.
@@ -22,7 +22,7 @@ Develop and write flawless, production-ready test suites to verify the existing 
 
 ### 2. Workflow & Branching
 * **Target:** All work occurs in `src/kernel/test/` on the `testbed` branch. No production code.
-* **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make test-qemu`.
+* **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make test-selftest` (safe class, fast) or `make test-all-debug` (full suite).
 * **Gated Merging:** Tests lacking main-branch APIs remain as `JARVIS_TEST_PASS()` stubs (documented via doc-block). Merge `testbed` into `main` only when there are 0 failures. `testbed` is never deleted.
 
 ### Pseudocode in Stub Tests
@@ -32,17 +32,58 @@ Develop and write flawless, production-ready test suites to verify the existing 
 # Test Design & Architecture
 
 ### Principles
-0. **Debug-only by Default:** Use `JARVIS_REGISTER_TEST(name)`. The debug target (`make test-qemu`) runs all non-TF_USER tests via `run_filtered(0)`. Only promote to `JARVIS_REGISTER_RELEASE_TEST(name)` if the test is purely computational, has zero side-effects, and is proven stable over multiple sessions. The release target runs only `JARVIS_REGISTER_RELEASE_TEST` via `run_filtered(TF_RELEASE)` — a small curated subset that must invoke a shell in user task.
+0. **Debug-only by Default:** Use `JARVIS_REGISTER_TEST(name)`. The debug target (`make test-selftest`/`make test-all-debug`) runs all non-TF_USER tests via `run_filtered(0)`. Only promote to `JARVIS_REGISTER_RELEASE_TEST(name)` if the test is purely computational, has zero side-effects, and is proven stable over multiple sessions. The release target runs only `JARVIS_REGISTER_RELEASE_TEST` via `run_filtered(TF_RELEASE)` — a small curated subset that must invoke a shell in user task.
 1. **Boundaries & Inputs:** Test limit, limit-1, limit+1; unknown/malformed inputs, structs, and invalid syscalls.
 2. **Error Paths:** Absolute coverage of EFAULT, EINVAL, ENOSPC, EACCES, EBUSY, ENOENT.
 3. **State & Resource:** Validate invalid state transitions (e.g., TERMINATED to READY). Force resource exhaustion (max caps, FDs, tasks, full queues).
 4. **Concurrency:** Race conditions (multiple senders/writers, IRQ + thread). Use mocks for hardware (PCI, Virtio, HPET, APIC).
 5. **Self-Cleanup:** Every test must free its own resources (heap/PMM allocations). Pair `add_task()` with `remove_task()` before `cleanup()`+`delete` to prevent scheduler task-count leaks. Implement partial init rollback on failure.
 
+### Test Flags
+- `TF_KERNEL` = 0 (default, debug-only)
+- `TF_RELEASE` = 1<<0 (runs in release mode)
+- `TF_USER` = 1<<1 (user-space tests, skipped in kernel self-test)
+- `TF_BENCH` = 1<<2 (benchmark tests, excluded from normal runs)
+
+Register with: `JARVIS_REGISTER_TEST_FLAGS(name, kernel::test::TF_BENCH)`
+
+### Output Format (v0.2.19+)
+Per-test line (no ANSI colors, machine-parseable):
+```
+S: <testclass> <suite::name> <n/m>: PASS/FAIL [LEAK: Resource +N, ...]
+```
+
+Summary block:
+```
+==============================
+ TEST SUMMARY
+  PLANNED:    96
+  EXECUTED:   96
+  TIME_ELAPSED_MS: 4231
+  PASSED:     94
+  FAILED:     2
+==============================
+```
+
+**Leak details** appear only on FAIL lines. Resources tracked: MemPool0, PMM, Tasks, BufPool, MsgQueues, Notifies, EventGroups, Drivers, PipeBufs, VNodes, OpenFDs.
+
+### Makefile Targets
+| Target | Description |
+|--------|-------------|
+| `make test-selftest` | Debug build, `safe` class, auto-shutdown (CI gate) |
+| `make test-all-debug` | Debug build, `all` class, auto-shutdown |
+| `make test-all-release` | Release build, `all` class, auto-shutdown |
+| `make test-class CLASS=<name>` | Debug build, specific class |
+| `make test-gdb TEST=suite::name` | GDB single-test |
+
+### Test Classes (defined in `test_registry.cpp`)
+Classes: `safe`, `all`, `scheduler`, `memory`, `ipc`, `vfs`, `process`, `syscall`, `arch`, `device`, `shell`, `net`, `security`, `debug`, `integration`, `stress`, `init`, `build`, `bench`, `sporadic`.
+
+New test suites must be registered in the `all` class at minimum. If a suite belongs to a domain class, add it there too.
+
 ### Registration Pattern (`test_registry.cpp`)
-Ensure clean mapping within `register_selftest_tests()`:
+Ensure clean mapping within the appropriate class lambda:
 ```cpp
-void register_task_lifecycle_tests();
-void register_idle_task_tests();
-void register_vfsd_tests();
-void register_iocd_tests();
+void register_my_new_tests();
+```
+Then add `register_my_new_tests();` to the `all` class and any domain class (e.g., `scheduler`, `memory`).

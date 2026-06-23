@@ -122,9 +122,90 @@ size_t Registry::test_failed() { return test_failed_; }
 void Registry::set_expected_count(size_t n) { expected_count_ = n; }
 size_t Registry::expected_count() { return expected_count_; }
 
-static void run_one(const TestCase& tc) {
-    // Snapshot scheduler/PMM state for leak detection
-    size_t before_tasks = Scheduler::task_count();
+static void append_leak_detail(const ResourceCounters& before, const ResourceCounters& after) {
+    struct LeakItem {
+        const char* name;
+        size_t before_val;
+        size_t after_val;
+    };
+    LeakItem items[] = {
+        {"MemPool0", before.mempool_used[0], after.mempool_used[0]},
+        {"PMM", before.pmm_pages_used, after.pmm_pages_used},
+        {"Tasks", before.tasks, after.tasks},
+        {"BufPool", before.bufpool_entries, after.bufpool_entries},
+        {"MsgQueues", before.msg_queues, after.msg_queues},
+        {"Notifies", before.notifies, after.notifies},
+        {"EventGroups", before.event_groups, after.event_groups},
+        {"Drivers", before.drivers, after.drivers},
+        {"PipeBufs", before.pipe_buffers, after.pipe_buffers},
+        {"VNodes", before.vnodes, after.vnodes},
+        {"OpenFDs", before.open_fds, after.open_fds},
+    };
+    bool first = true;
+    for (auto& item : items) {
+        if (item.after_val != item.before_val) {
+            if (first) {
+                Logger::raw_write(" [LEAK: ");
+                first = false;
+            } else {
+                Logger::raw_write(", ");
+            }
+            Logger::raw_write(item.name);
+            Logger::raw_write(" ");
+            int diff = (int)item.after_val - (int)item.before_val;
+            if (diff >= 0) {
+                Logger::raw_write("+");
+                Logger::print_dec(diff);
+            } else {
+                Logger::raw_write("-");
+                Logger::print_dec(-diff);
+            }
+        }
+    }
+    if (!first) {
+        Logger::raw_write("]");
+    }
+}
+
+static void print_test_header(const TestCase& tc, const char* test_class, size_t test_num, size_t total_tests) {
+    Logger::raw_write("S: ");
+    if (test_class && test_class[0]) {
+        Logger::raw_write(test_class);
+        Logger::raw_write(" ");
+    }
+    Logger::raw_write(tc.suite);
+    if (tc.suite[0]) Logger::raw_write("::");
+    Logger::raw_write(tc.name);
+    Logger::raw_write(" ");
+    
+    char num_buf[32];
+    int pos = 0;
+    size_t v = test_num;
+    if (v == 0) num_buf[pos++] = '0';
+    else {
+        char rev[32];
+        int rp = 0;
+        while (v > 0) { rev[rp++] = '0' + (v % 10); v /= 10; }
+        while (rp > 0) num_buf[pos++] = rev[--rp];
+    }
+    num_buf[pos++] = '/';
+    v = total_tests;
+    if (v == 0) num_buf[pos++] = '0';
+    else {
+        char rev[32];
+        int rp = 0;
+        while (v > 0) { rev[rp++] = '0' + (v % 10); v /= 10; }
+        while (rp > 0) num_buf[pos++] = rev[--rp];
+    }
+    num_buf[pos++] = ':';
+    num_buf[pos++] = ' ';
+    num_buf[pos] = '\0';
+    Logger::raw_write(num_buf);
+}
+
+static void run_one(const TestCase& tc, const char* test_class, size_t test_num, size_t total_tests) {
+    ResourceCounters before_rsrc;
+    kernel::test::ResourceTracker::instance().capture(before_rsrc);
 
     if (tc.factory) {
         TestBase* t = tc.factory();
@@ -134,23 +215,30 @@ static void run_one(const TestCase& tc) {
         tc.func();
     }
 
-    // Leak detection: warn if scheduler task count changed
-    // (tests that intentionally create/destroy tasks must balance add+remove)
-    size_t after_tasks = Scheduler::task_count();
-    if (after_tasks != before_tasks) {
-        Logger::warn("[TEST:LEAK] %s: scheduler task count changed %d -> %d",
-                     tc.name, before_tasks, after_tasks);
-        Logger::raw_write("  Tasks after: ");
-        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-            auto* t = Scheduler::task_at(i);
-            Logger::raw_write("[");
-            Logger::print_dec(i);
-            Logger::raw_write("]id=");
-            Logger::print_dec(t ? t->id : 0);
-            Logger::raw_write(" ");
-        }
-        Logger::raw_write("\n");
+    ResourceCounters after_rsrc;
+    kernel::test::ResourceTracker::instance().capture(after_rsrc);
+
+    size_t before_fail = Registry::failed();
+    bool passed = (Registry::failed() == before_fail);
+
+    print_test_header(tc, test_class, test_num, total_tests);
+    Logger::raw_write(passed ? "PASS" : "FAIL");
+    if (!passed) {
+        append_leak_detail(before_rsrc, after_rsrc);
     }
+    Logger::raw_write("\n");
+
+    Registry::record_test(passed);
+}
+
+static const char* get_test_class(size_t test_index) {
+    for (size_t ci = 0; ci < Registry::class_count(); ++ci) {
+        auto* cs = Registry::class_section(ci);
+        if (cs && test_index >= cs->start && test_index < cs->start + cs->count) {
+            return cs->name;
+        }
+    }
+    return "";
 }
 
 void run_all() {
@@ -163,30 +251,19 @@ void run_all() {
 
     Logger::info("[TEST:RUN] Running %d test(s)", n);
 
+    uint64_t start_ns = arch::Timer::ns();
+
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
-        size_t before_fail = Registry::failed();
-
-        Logger::raw_write("  ");
-        Logger::raw_write(tc.suite);
-        if (tc.suite[0]) Logger::raw_write("::");
-        Logger::raw_write(tc.name);
-        Logger::raw_write(" ... ");
+        const char* test_class = get_test_class(i);
 
         kernel::test::watchdog_arm(30000, tc.name);
-        run_one(tc);
+        run_one(tc, test_class, i + 1, n);
         kernel::test::watchdog_disarm();
-
-        if (Registry::failed() == before_fail) {
-            Logger::raw_write("\033[32m[PASS]\033[0m\n");
-            Registry::record_test(true);
-        } else {
-            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
-            Registry::record_test(false);
-        }
     }
 
-    print_report();
+    uint64_t end_ns = arch::Timer::ns();
+    print_report(start_ns, end_ns);
 }
 
 void run_safe() {
@@ -199,31 +276,22 @@ void run_safe() {
 
     Logger::info("[TEST:RUN] Running test(s) (safe mode)");
 
+    uint64_t start_ns = arch::Timer::ns();
+    size_t run_index = 0;
+
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         if (tc.flags & TF_USER) continue;
         if (!(tc.flags & TF_RELEASE)) continue;
 
-        size_t before_fail = Registry::failed();
+        ++run_index;
+        const char* test_class = get_test_class(i);
 
-        Logger::raw_write("  ");
-        Logger::raw_write(tc.suite);
-        if (tc.suite[0]) Logger::raw_write("::");
-        Logger::raw_write(tc.name);
-        Logger::raw_write(" ... ");
-
-        run_one(tc);
-
-        if (Registry::failed() == before_fail) {
-            Logger::raw_write("\033[32m[PASS]\033[0m\n");
-            Registry::record_test(true);
-        } else {
-            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
-            Registry::record_test(false);
-        }
+        run_one(tc, test_class, run_index, n);
     }
 
-    print_report();
+    uint64_t end_ns = arch::Timer::ns();
+    print_report(start_ns, end_ns);
 }
 
 void run_filtered(uint8_t required_flags, bool use_isolation) {
@@ -258,6 +326,8 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         }
     }
 
+    uint64_t start_ns = arch::Timer::ns();
+
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         // Match: if required_flags is 0 (debug), run all non-user tests.
@@ -275,13 +345,7 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         }
 
         ++run_count;
-        size_t before_fail = Registry::failed();
-
-        Logger::raw_write("  ");
-        Logger::raw_write(tc.suite);
-        if (tc.suite[0]) Logger::raw_write("::");
-        Logger::raw_write(tc.name);
-        Logger::raw_write(" ... ");
+        const char* test_class = get_test_class(i);
 
         // Arm the per-test watchdog (30 seconds = 30000 ticks at 1 kHz)
         char wd_name[128];
@@ -292,19 +356,13 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         ws = tc.name;
         while (*ws && wp < 126) wd_name[wp++] = *ws++;
         wd_name[wp] = '\0';
+        kernel::test::watchdog_check_inline();
         kernel::test::watchdog_arm(30000, wd_name);
 
-        run_one(tc);
+        run_one(tc, test_class, run_count, expected);
 
         kernel::test::watchdog_disarm();
-
-        if (Registry::failed() == before_fail) {
-            Logger::raw_write("\033[32m[PASS]\033[0m\n");
-            Registry::record_test(true);
-        } else {
-            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
-            Registry::record_test(false);
-        }
+        kernel::test::watchdog_check_inline();
 
         // Restore the snapshot after each test so the next test starts
         // from a clean slate (tasks, memory, daemons, page tables).
@@ -320,6 +378,8 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
             kernel::test::snapshot_restore(test_buf);
         }
     }
+
+    uint64_t end_ns = arch::Timer::ns();
 
     if (snapshot_ok) {
         kernel::test::snapshot_destroy();
@@ -337,7 +397,22 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         Logger::warn("No tests matched flags 0x%x", required_flags);
     }
 
-    print_report();
+    print_report(start_ns, end_ns);
+
+    // Drain serial TX FIFO so the full test report is flushed to the
+    // expect script before QEMU exits (fixes BUGS.md #012).
+    {
+        static constexpr uint16_t COM1       = 0x3F8;
+        static constexpr uint16_t COM1_LSR   = 0x3FD;
+        // Write a final newline so any buffered line is emitted.
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        arch::outb(COM1, '\n');
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        arch::outb(COM1, '\r');
+        // Wait for THR empty (bit 5) then TSR empty (bit 6).
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        while ((arch::inb(COM1_LSR) & 0x40) == 0) { }
+    }
 }
 
 void run_debug() {
@@ -390,28 +465,18 @@ void run_suite(const char* suite_name) {
         }
     }
 
+    uint64_t start_ns = arch::Timer::ns();
     size_t run = 0;
+
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
         if (tc.suite[0] == '\0') continue;
         if (strcmp(tc.suite, suite_name) != 0) continue;
 
         ++run;
-        size_t before_fail = Registry::failed();
+        const char* test_class = get_test_class(i);
 
-        Logger::raw_write("  ");
-        Logger::raw_write(tc.name);
-        Logger::raw_write(" ... ");
-
-        run_one(tc);
-
-        if (Registry::failed() == before_fail) {
-            Logger::raw_write("\033[32m[PASS]\033[0m\n");
-            Registry::record_test(true);
-        } else {
-            Logger::raw_write("\033[1;31m[FAIL]\033[0m\n");
-            Registry::record_test(false);
-        }
+        run_one(tc, test_class, run, n);
 
         // Restore kernel state between tests (tasks, MemPool, page tables)
         if (snapshot_ok) {
@@ -427,6 +492,8 @@ void run_suite(const char* suite_name) {
         }
     }
 
+    uint64_t end_ns = arch::Timer::ns();
+
     if (snapshot_ok) {
         kernel::test::snapshot_destroy();
         kernel::test::reload_daemon_tasks();
@@ -436,18 +503,19 @@ void run_suite(const char* suite_name) {
         Logger::warn("No tests found for suite '%s'", suite_name);
     }
 
-    print_report();
+    print_report(start_ns, end_ns);
 }
 
-void print_report() {
+void print_report(uint64_t start_ns, uint64_t end_ns) {
     size_t tp = Registry::test_passed();
     size_t tf = Registry::test_failed();
     size_t tt = tp + tf;
     size_t exp = Registry::expected_count();
+    uint64_t elapsed_ms = (end_ns > start_ns) ? ((end_ns - start_ns) / 1000000ULL) : 0;
 
     Logger::raw_write("\n");
     Logger::raw_write("==============================\n");
-    Logger::raw_write(" TEST RESULTS\n");
+    Logger::raw_write(" TEST SUMMARY\n");
     Logger::raw_write("==============================\n");
 
     auto write_num = [](size_t n) {
@@ -460,18 +528,19 @@ void print_report() {
         Logger::raw_write(buf + pos);
     };
 
-    Logger::raw_write("  Expected: "); write_num(exp); Logger::raw_write("\n");
-    Logger::raw_write("  Total:    "); write_num(tt); Logger::raw_write("\n");
-    Logger::raw_write("  Passed:   "); write_num(tp); Logger::raw_write("\n");
-    Logger::raw_write("  Failed:   "); write_num(tf); Logger::raw_write("\n");
+    Logger::raw_write("  PLANNED:    "); write_num(exp); Logger::raw_write("\n");
+    Logger::raw_write("  EXECUTED:   "); write_num(tt); Logger::raw_write("\n");
+    Logger::raw_write("  TIME_ELAPSED_MS: "); write_num(elapsed_ms); Logger::raw_write("\n");
+    Logger::raw_write("  PASSED:     "); write_num(tp); Logger::raw_write("\n");
+    Logger::raw_write("  FAILED:     "); write_num(tf); Logger::raw_write("\n");
     Logger::raw_write("==============================\n");
 
     if (exp != tt) {
-        Logger::raw_write("\033[1;31m[WARN] Expected ");
+        Logger::raw_write("[WARN] Expected ");
         write_num(exp);
         Logger::raw_write(" tests, but only ");
         write_num(tt);
-        Logger::raw_write(" reported results — tests may have been lost\033[0m\n");
+        Logger::raw_write(" reported results — tests may have been lost\n");
     }
 
     Logger::raw_write("\n");

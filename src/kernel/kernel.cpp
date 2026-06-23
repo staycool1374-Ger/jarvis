@@ -58,6 +58,7 @@
 #include <programs/demo/demo.hpp>
 #include <logger.hpp>
 #include <test.hpp>
+#include <kernel/test/test_config.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
 
@@ -481,14 +482,21 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 
     kernel::test::Registry::init();
+    kernel::test::parse_test_config("./tests/test-config.txt");
+
+    const char** classes = kernel::test::get_test_classes();
+    size_t class_count = kernel::test::get_test_class_count();
+    for (size_t i = 0; i < class_count; ++i) {
+        kernel::test::register_class(classes[i]);
+    }
+
 #ifdef CONFIG_DEBUG
-    kernel::test::register_class("all");
+    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
     kernel::test::set_class_auto_shutdown(true);
     kernel::test::run_registered(0);
 #else
-    kernel::test::register_class("safe");
     kernel::test::set_class_auto_shutdown(false);
-    kernel::test::run_release();
+    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
 #endif
 
     if (service::Terminal::instance()) {

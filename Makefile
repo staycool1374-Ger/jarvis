@@ -178,6 +178,7 @@ include mk/rules.mk
 # Phony targets
 # ------------------------------------------------------------------------------
 .PHONY: help all build check-style run-qemu run-release run-qemu-debug \
+        test-selftest test-all-debug test-all-release test-class \
         test-qemu test symbols objdump debug release release-test \
         run-release-test profiling gdb test-gdb rr-record rr-replay \
         _run-shell-test
@@ -204,24 +205,28 @@ check-style:
 help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
-	@echo "  [A] make (or make all)   Show this help"
-	@echo "  [A] make build           Style check + debug ISO"
-	@echo "  [A] make check-style     Validate kernel coding style (src/kernel/)"
-	@echo "  [A] make debug           Build debug ISO"
-	@echo "  [A] make release         Build production ISO"
-	@echo "  [A] make clean           Remove all build artifacts"
-	@echo "  [A] make test-qemu       Run full test suite in QEMU (automated)"
-	@echo "  [A] make release-test    Release compilation + full test suite"
-	@echo "  [A] make run-release-test All shell commands + 2x selftest + exit (release ISO)"
-	@echo "  [A] make symbols         Kernel symbol table"
-	@echo "  [A] make objdump         Kernel disassembly"
-	@echo "  [A] make profiling       GCOV coverage capture"
-	@echo "  [I] make run-qemu        Boot debug ISO (interactive shell)"
-	@echo "  [I] make run-release     Build + boot release ISO (interactive shell)"
-	@echo "  [I] make gdb             Debug ISO + QEMU with GDB stub (:1234)"
-	@echo "  [I] make test-gdb        Run tests under GDB surveillance"
-	@echo "  [I] make rr-record       Record QEMU execution (deterministic replay)"
-	@echo "  [I] make rr-replay       Replay recorded session with GDB stub (:1234)"
+	@echo "  [A] make (or make all)     Show this help"
+	@echo "  [A] make build             Style check + debug ISO"
+	@echo "  [A] make check-style       Validate kernel coding style (src/kernel/)"
+	@echo "  [A] make debug             Build debug ISO"
+	@echo "  [A] make release           Build production ISO"
+	@echo "  [A] make clean             Remove all build artifacts"
+	@echo "  [A] make test-selftest     Debug build, safe class, auto-shutdown (CI gate)"
+	@echo "  [A] make test-all-debug    Debug build, all classes, auto-shutdown"
+	@echo "  [A] make test-all-release  Release build, all classes, auto-shutdown"
+	@echo "  [A] make test-class CLASS=<n>  Debug build, specific test class"
+	@echo "  [A] make test-qemu         Legacy alias for test-all-debug"
+	@echo "  [A] make release-test      Legacy alias for test-all-release"
+	@echo "  [A] make run-release-test  All shell commands + 2x selftest + exit (release ISO)"
+	@echo "  [A] make symbols           Kernel symbol table"
+	@echo "  [A] make objdump           Kernel disassembly"
+	@echo "  [A] make profiling         GCOV coverage capture"
+	@echo "  [I] make run-qemu          Boot debug ISO (interactive shell)"
+	@echo "  [I] make run-release       Build + boot release ISO (interactive shell)"
+	@echo "  [I] make gdb               Debug ISO + GDB stub (:1234)"
+	@echo "  [I] make test-gdb          Run tests under GDB surveillance"
+	@echo "  [I] make rr-record         Record QEMU execution (deterministic replay)"
+	@echo "  [I] make rr-replay         Replay recorded session with GDB stub (:1234)"
 	@echo ""
 	@echo "  [A] = autonomous (run and done, no interaction needed)"
 	@echo "  [I] = interactive (user sits at the QEMU/GDB console)"
@@ -436,45 +441,91 @@ rr-replay:
 	@echo "Connect GDB:  $(GDB) build/kernel-debug.elf -ex 'target remote :1234'"
 	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -replay build/rr.log -s -S -display none
 
-test-qemu: debug
-	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
-	    printf '  %-7s %s\n' 'TEST' 'Running test suite in QEMU…'; \
-	    expect -c ' \
-	        set timeout 60; \
-	        spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
-	        expect { \
-	            -ex "\r\n  Failed: 0" { \
-	                send_user "\nAll tests passed\n"; \
+# ------------------------------------------------------------------------------
+# Test targets
+# ------------------------------------------------------------------------------
+
+# Shared expect helper for autonomous test runs.
+# Single consistent serial log path for all automated test runs.
+TEST_SERIAL_LOG := /tmp/jarvis-serial.log
+
+# Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
+define _run_test_qemu
+	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	printf '  %-7s %s\n'  'TEST'   '$(1)…'; \
+	expect -c ' \
+	    fconfigure stdout -buffering none; \
+	    set timeout $(2); \
+	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
+	    expect { \
+	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+\\d+\\n  PASSED:\\s+\\d+\\n  FAILED:\\s+(\\d+)\\n==============================} { \
+	            puts "$$expect_out(buffer)"; \
+	            flush stdout; \
+	            if {$$expect_out(1,string) == $$expect_out(2,string) && $$expect_out(3,string) == 0} { \
+	                puts "RESULT: PASS ($$expect_out(1,string) tests passed)"; \
+	                flush stdout; \
 	                exit 0; \
-	            } \
-	            "FAILED" { \
-	                send_user "\nTest failures detected\n"; \
-	                exit 1; \
-	            } \
-	            timeout { \
-	                send_user "\n=== TIMEOUT — captured serial output ===\n"; \
-	                send_user "$$expect_out(buffer)"; \
-	                send_user "\n=== END ===\n"; \
-	                exit 1; \
-	            } \
-	            eof { \
-	                send_user "\n=== UNEXPECTED QEMU EXIT — captured serial output ===\n"; \
-	                send_user "$$expect_out(buffer)"; \
-	                send_user "\n=== END (check for PANIC/CPU EXCEPTION above) ===\n"; \
+	            } else { \
+	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(3,string))"; \
+	                flush stdout; \
 	                exit 1; \
 	            } \
 	        } \
-	    ' 2>&1; \
-	    rc=$$?; \
-	    if [ $$rc -eq 0 ]; then \
-	        printf '  %-7s %s\n' 'TEST' 'All tests passed.'; \
-	    else \
-	        echo "FAIL: Test validation failed with code $$rc"; \
-	        exit 1; \
-	    fi \
+	        timeout { \
+	            puts "\\n=== TIMEOUT ===\\n"; \
+	            puts "$$expect_out(buffer)"; \
+	            puts "\\n=== END ===\\n"; \
+	            flush stdout; \
+	            exit 1; \
+	        } \
+	        eof { \
+	            puts "\\n=== QEMU EXIT (no summary) ===\\n"; \
+	            puts "$$expect_out(buffer)"; \
+	            puts "\\n=== END ===\\n"; \
+	            flush stdout; \
+	            exit 1; \
+	        } \
+	    } \
+	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
+	test $${PIPESTATUS[0]} -eq 0; rc=$$?; \
+	if [ $$rc -eq 0 ]; then \
+	    :; \
 	else \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    printf '  %-7s %s\n' 'SERIAL' '$(TEST_SERIAL_LOG)'; \
+	    echo "FAIL: Test validation failed with code $$rc"; \
+	    exit 1; \
 	fi
+endef
+
+test-selftest:
+	@mkdir -p initrd/tests
+	@printf 'safe\n' > initrd/tests/test-config.txt
+	$(MAKE) debug
+	$(call _run_test_qemu,Running selftest (safe class),120)
+
+test-all-debug:
+	@mkdir -p initrd/tests
+	@printf 'all\n' > initrd/tests/test-config.txt
+	$(MAKE) debug
+	$(call _run_test_qemu,Running all debug tests,180)
+
+test-all-release:
+	@mkdir -p initrd/tests
+	@printf 'all\n' > initrd/tests/test-config.txt
+	$(MAKE) release
+	$(call _run_test_qemu,Running all release tests,120)
+
+test-class:
+	@if [ -z "$(CLASS)" ]; then echo "Usage: make test-class CLASS=<name>"; exit 1; fi
+	@mkdir -p initrd/tests
+	@printf '%s\n' "$(CLASS)" > initrd/tests/test-config.txt
+	$(MAKE) debug
+	$(call _run_test_qemu,Running test class "$(CLASS)",120)
+
+# Legacy aliases
+test-qemu: test-all-debug
+
+release-test: test-all-release
 
 test: $(KERNEL)
 	@echo "=========================================="
@@ -484,15 +535,6 @@ test: $(KERNEL)
 	$(MAKE) $(USERSPACE_ELF)
 	@echo "Userspace components compiled securely."
 	@echo "Trigger interactive tests at terminal context via 'selftest'."
-
-# ------------------------------------------------------------------------------
-# Release validation
-# ------------------------------------------------------------------------------
-release-test:
-	@printf '  %-7s %s\n' 'RELEASE' 'Compilation validation…'
-	$(MAKE) release
-	@printf '  %-7s %s\n' 'TEST' 'Running full test suite…'
-	$(MAKE) test-qemu
 
 run-release-test: release
 	$(MAKE) _run-shell-test ISO=$(RELEASE_ISO)

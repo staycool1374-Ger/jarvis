@@ -28,6 +28,7 @@ enum TestFlags : uint8_t {
     TF_KERNEL   = 0,
     TF_RELEASE  = 1 << 0,
     TF_USER     = 1 << 1,
+    TF_BENCH    = 1 << 2,
 };
 
 class TestBase;
@@ -124,7 +125,7 @@ void run_debug();
 void run_release();
 void run_registered(uint8_t required_flags);
 void run_suite(const char* suite_name);
-void print_report();
+void print_report(uint64_t start_ns, uint64_t end_ns);
 
 void set_class_auto_shutdown(bool enabled);
 extern bool g_class_auto_shutdown;

@@ -34,7 +34,7 @@ constexpr uint16_t PCI_CONFIG_DATA = 0xCFC;
 /// Max devices per bus
 constexpr uint8_t  PCI_MAX_DEVICES   = 32;
 constexpr uint8_t  PCI_MAX_FUNCTIONS = 8;
-constexpr uint8_t  PCI_MAX_BUSES     = 256;
+constexpr uint16_t PCI_MAX_BUSES     = 256;
 
 /// Standard PCI config space register offsets
 enum PciRegister : uint8_t {

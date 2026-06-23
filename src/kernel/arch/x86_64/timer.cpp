@@ -25,6 +25,7 @@
 namespace arch {
 
 volatile uint64_t Timer::ticks_ = 0;
+uint64_t Timer::tsc_freq_hz_ = 0;
 
 void Timer::init(uint32_t frequency_hz) {
     set_frequency(frequency_hz);
@@ -33,6 +34,7 @@ void Timer::init(uint32_t frequency_hz) {
         handle_irq();
         kernel::Scheduler::on_tick();
     });
+    calibrate_tsc(frequency_hz);
 }
 
 void Timer::set_frequency(uint32_t frequency_hz) {
@@ -49,6 +51,50 @@ uint64_t Timer::ticks() {
 
 void Timer::handle_irq() {
     ticks_ = ticks_ + 1;
+}
+
+void Timer::calibrate_tsc(uint32_t frequency_hz) {
+    uint32_t divisor = PIT_BASE_FREQ / frequency_hz;
+
+    for (int retry = 0; retry < 12; ++retry) {
+        outb(0x43, 0x00);
+        uint16_t c0 = inb(0x40) | ((uint16_t)inb(0x40) << 8);
+        uint64_t t0 = rdtsc();
+
+        uint64_t tsc_target = t0 + 50000ULL * (1 << retry);
+        while (rdtsc() < tsc_target) { asm volatile("pause" : : : "memory"); }
+
+        outb(0x43, 0x00);
+        uint16_t c1 = inb(0x40) | ((uint16_t)inb(0x40) << 8);
+        uint64_t t1 = rdtsc();
+
+        uint64_t tsc_delta = t1 - t0;
+        uint32_t count_delta;
+        if (c1 <= c0) {
+            count_delta = c0 - c1;
+        } else {
+            count_delta = c0 + (divisor - c1);
+        }
+
+        if (count_delta > 0 && tsc_delta > 0) {
+            uint64_t pit_ticks = (uint64_t)count_delta * 2;
+            tsc_freq_hz_ = (tsc_delta * PIT_BASE_FREQ) / pit_ticks;
+            if (tsc_freq_hz_ >= 50000000ULL && tsc_freq_hz_ <= 100000000000ULL) {
+                return;
+            }
+        }
+    }
+
+    tsc_freq_hz_ = 2000000000ULL;
+}
+
+uint64_t Timer::ns() {
+    if (tsc_freq_hz_ == 0) return 0;
+    uint64_t tsc = rdtsc();
+    // 64-bit: use (tsc / freq) * 1e9 with remainder to avoid 128-bit libcall
+    uint64_t sec = tsc / tsc_freq_hz_;
+    uint64_t rem = tsc % tsc_freq_hz_;
+    return sec * 1000000000ULL + (rem * 1000000000ULL) / tsc_freq_hz_;
 }
 
 void Timer::set_ticks_for_test(uint64_t value) {

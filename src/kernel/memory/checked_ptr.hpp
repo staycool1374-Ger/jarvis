@@ -55,7 +55,9 @@ public:
         : addr_(reinterpret_cast<uint64_t>(user_ptr)), count_(count) {}
 
     /// @brief Check if the pointer is valid (non-null, within user space).
+    /// @note Zero-size operations with null pointer are valid (no-op).
     bool valid() const {
+        if (count_ == 0) return true;
         if (addr_ == 0) return false;
         return is_user_range(reinterpret_cast<const void*>(addr_),
             count_ * sizeof(T));
