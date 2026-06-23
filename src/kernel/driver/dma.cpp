@@ -46,7 +46,6 @@ DmaBuffer alloc_buffer(size_t size) {
     buf.size      = page_count * PAGE_SIZE;
     buf.owned     = true;
 
-    // Ensure the pages are identity-mapped for device access
     for (size_t i = 0; i < page_count; ++i) {
         VMM::map_page(phys + i * PAGE_SIZE, phys + i * PAGE_SIZE, false);
     }
@@ -151,6 +150,204 @@ void pci_set_bus_master(arch::PciBdf bdf, bool enable) {
     Logger::info("dma: bus master %s on %d:%d.%d",
         enable ? "enabled" : "disabled",
         bdf.bus, bdf.device, bdf.function);
+}
+
+// --- BMDMA Channel ---
+
+BmDmaChannel::BmDmaChannel(uint16_t bm_io_base)
+    : bm_io_base_(bm_io_base) {}
+
+bool BmDmaChannel::init() {
+    if (!bm_io_base_) return false;
+    arch::outb(static_cast<uint16_t>(bm_io_base_ + 0), BMCMD_STOP);
+    Logger::info("dma: BmDmaChannel init at I/O base 0x%x", bm_io_base_);
+    return true;
+}
+
+bool BmDmaChannel::start(PrdTable& prd, Direction dir) {
+    if (!bm_io_base_ || prd.count == 0) return false;
+
+    uint64_t prd_phys = VMM::virt_to_phys(reinterpret_cast<uint64_t>(&prd));
+    if (!prd_phys) return false;
+
+    arch::outl(static_cast<uint16_t>(bm_io_base_ + 4),
+               static_cast<uint32_t>(prd_phys & 0xFFFFFFFF));
+
+    uint8_t cmd = BMCMD_START;
+    if (dir == Direction::READ) {
+        cmd |= BMCMD_READ;
+    }
+    arch::outb(static_cast<uint16_t>(bm_io_base_ + 0), cmd);
+
+    Logger::info("dma: BmDmaChannel start prd_phys=0x%x dir=%s",
+                 static_cast<unsigned>(prd_phys),
+                 dir == Direction::READ ? "READ" : "WRITE");
+    return true;
+}
+
+bool BmDmaChannel::is_busy() {
+    if (!bm_io_base_) return false;
+    uint8_t status = arch::inb(static_cast<uint16_t>(bm_io_base_ + 2));
+    return (status & BMSTAT_ACTIVE) != 0;
+}
+
+bool BmDmaChannel::handle_irq() {
+    if (!bm_io_base_) return false;
+    uint8_t status = arch::inb(static_cast<uint16_t>(bm_io_base_ + 2));
+    if (!(status & BMSTAT_INTR)) return false;
+    arch::outb(static_cast<uint16_t>(bm_io_base_ + 2),
+               static_cast<uint8_t>(status & ~BMSTAT_INTR));
+    arch::outb(static_cast<uint16_t>(bm_io_base_ + 2), status);
+    return (status & BMSTAT_ERROR) == 0;
+}
+
+void BmDmaChannel::abort() {
+    if (bm_io_base_) {
+        arch::outb(static_cast<uint16_t>(bm_io_base_ + 0), BMCMD_STOP);
+    }
+}
+
+// --- DMA Engine ---
+
+DmaEngine::DmaEngine(DmaChannel& channel)
+    : channel_(channel)
+    , active_(false)
+    , callback_(nullptr)
+    , callback_ctx_(0) {}
+
+bool DmaEngine::start_transfer(PrdTable& prd, Direction dir,
+                                DmaCallback cb, uint64_t ctx) {
+    if (active_) return false;
+    if (!channel_.start(prd, dir)) return false;
+    active_ = true;
+    callback_ = cb;
+    callback_ctx_ = ctx;
+    return true;
+}
+
+bool DmaEngine::is_busy() {
+    if (!active_) return false;
+    if (!channel_.is_busy()) {
+        active_ = false;
+        return false;
+    }
+    return true;
+}
+
+bool DmaEngine::handle_irq() {
+    if (!active_) return false;
+    bool success = channel_.handle_irq();
+    active_ = false;
+    if (callback_) {
+        callback_(callback_ctx_, success);
+    }
+    return true;
+}
+
+void DmaEngine::abort() {
+    channel_.abort();
+    active_ = false;
+    callback_ = nullptr;
+    callback_ctx_ = 0;
+}
+
+// --- Ping-Pong Double-Buffer ---
+
+PingPongDma::PingPongDma(DmaEngine& engine, size_t buf_size)
+    : engine_(engine)
+    , buf_size_(buf_size)
+    , prepare_idx_(0)
+    , xfer_idx_(1)
+    , active_(false)
+    , completed_(0)
+    , chain_cb_(nullptr)
+    , chain_ctx_(0) {
+    bufs_[0] = {};
+    bufs_[1] = {};
+}
+
+bool PingPongDma::init() {
+    bufs_[0] = alloc_buffer(buf_size_);
+    bufs_[1] = alloc_buffer(buf_size_);
+    if (!bufs_[0].phys_addr || !bufs_[1].phys_addr) {
+        shutdown();
+        return false;
+    }
+    prepare_idx_ = 0;
+    xfer_idx_ = 1;
+    active_ = false;
+    completed_ = 0;
+    Logger::info("dma: PingPongDma init bufs at 0x%lx/0x%lx",
+                 bufs_[0].phys_addr, bufs_[1].phys_addr);
+    return true;
+}
+
+DmaBuffer* PingPongDma::prepare_buf() {
+    return active_ ? &bufs_[prepare_idx_] : &bufs_[0];
+}
+
+DmaBuffer* PingPongDma::xfer_buf() {
+    return active_ ? &bufs_[xfer_idx_] : &bufs_[1];
+}
+
+static void pingpong_completion_cb(uint64_t ctx, bool success) {
+    auto* pp = reinterpret_cast<PingPongDma*>(ctx);
+    pp->on_completion(0, success);
+}
+
+bool PingPongDma::start_next(Direction dir, ChainCallback cb, uint64_t ctx) {
+    if (active_) return false;
+
+    // Build SG/PRD for the transfer buffer
+    DmaBuffer* xfer = xfer_buf();
+    SgList sg;
+    sg_reset(sg);
+    if (!sg_from_buffer(sg, *xfer)) return false;
+
+    PrdTable prd;
+    prd_from_sg(prd, sg, true);
+
+    // Swap indices: what was being prepared becomes the transfer buffer
+    uint8_t tmp = prepare_idx_;
+    prepare_idx_ = xfer_idx_;
+    xfer_idx_ = tmp;
+
+    chain_cb_ = cb;
+    chain_ctx_ = ctx;
+
+    if (!engine_.start_transfer(prd, dir, pingpong_completion_cb,
+                                 reinterpret_cast<uint64_t>(this))) {
+        // Swap back on failure
+        tmp = prepare_idx_;
+        prepare_idx_ = xfer_idx_;
+        xfer_idx_ = tmp;
+        return false;
+    }
+
+    active_ = true;
+    Logger::info("dma: PingPongDma start_next prepare=%u xfer=%u",
+                 prepare_idx_, xfer_idx_);
+    return true;
+}
+
+void PingPongDma::on_completion(uint64_t, bool success) {
+    active_ = false;
+    ++completed_;
+    if (chain_cb_) {
+        chain_cb_(chain_ctx_, &bufs_[xfer_idx_], success);
+    }
+    Logger::info("dma: PingPongDma complete #%lu success=%d",
+                 completed_, success);
+}
+
+void PingPongDma::shutdown() {
+    engine_.abort();
+    free_buffer(bufs_[0]);
+    free_buffer(bufs_[1]);
+    bufs_[0] = {};
+    bufs_[1] = {};
+    active_ = false;
+    completed_ = 0;
 }
 
 } // namespace kernel::dma

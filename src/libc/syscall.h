@@ -114,8 +114,19 @@ static inline long sys_sigreturn(void) {
     return __syscall5(SYS_SIGRETURN, 0, 0, 0, 0);
 }
 
+#define SYS_REBOOT      49
+#define SYS_HALT        50
+
 static inline long sys_pause(void) {
     return __syscall5(SYS_PAUSE, 0, 0, 0, 0);
+}
+
+static inline long sys_reboot(void) {
+    return __syscall5(SYS_REBOOT, 0, 0, 0, 0);
+}
+
+static inline long sys_halt(void) {
+    return __syscall5(SYS_HALT, 0, 0, 0, 0);
 }
 
 static inline void* sys_brk(void* addr) {

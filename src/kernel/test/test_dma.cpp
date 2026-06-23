@@ -202,61 +202,147 @@ JARVIS_TEST(dma_sg_non_contiguous_prd) {
     JARVIS_TEST_PASS();
 }
 
+static volatile uint64_t g_dma_cb_ctx = 0;
+static volatile bool g_dma_cb_fired = false;
+static volatile bool g_pp_chain_fired = false;
+
+static void dma_completion_cb(uint64_t ctx, bool success) {
+    g_dma_cb_ctx = ctx;
+    g_dma_cb_fired = true;
+    (void)success;
+}
+
+static void pp_chain_cb(uint64_t ctx, dma::DmaBuffer* buf, bool success) {
+    g_pp_chain_fired = true;
+    // Fill the completed buffer with known pattern to simulate
+    // the driver preparing it for the next cycle
+    if (buf && buf->virt_addr) {
+        __builtin_memset(reinterpret_cast<void*>(buf->virt_addr), 0xCC,
+                         buf->size > 64 ? 64 : buf->size);
+    }
+    (void)ctx;
+    (void)success;
+}
+
 // Runmode: kernel
-// Testidea: Verifies DMA completion interrupt fires and is acknowledged.
-// Input: Allocate DMA buffer, start transfer, wait for ISR
-// Expect: ISR fires, driver acknowledges and clears pending status
-// Depends: dma, PCI bus master, device IRQ
-// Blocked: DMA transfer initiation and completion interrupt infrastructure
-// not yet implemented in production kernel (planned for v0.2.20).
-// ⚠ BUG #008: Interrupt operations may trigger timer nesting paths.
-/* Pseudocode:
- * 1. Allocate DMA buffer via dma::alloc_buffer()
- * 2. Enable bus mastering on a device
- * 3. Program PRD table with buffer address
- * 4. Start DMA transfer on device
- * 5. Wait for completion interrupt
- * 6. Verify ISR fired and acknowledged
- * 7. Verify data integrity in buffer
- */
+// Testidea: Verifies DmaEngine + BmDmaChannel API: init, start_transfer,
+// is_busy, handle_irq, callback invocation, and abort.
+// Input: Create BmDmaChannel with mock I/O base, alloc buffer, build SG/PRD.
+// Expect: start_transfer succeeds, is_busy reflects state, handle_irq
+// acknowledges and invokes callback, abort stops the engine.
+// Depends: dma::DmaEngine, dma::BmDmaChannel, dma::alloc_buffer, prd_from_sg
 JARVIS_TEST(dma_completion_interrupt) {
-    /* Pseudocode: DMA completion interrupt test.
-     * Implementation plan:
-     *   - Add dma::start_transfer(PrdTable, Direction, callback) API
-     *   - Add IRQ handler registration for DMA channels
-     *   - This test allocates buffer, builds SG/PRD, starts transfer
-     *   - Blocks until ISR fires, then verifies data and status
-     * Blocked: No DMA transfer initiation API exists yet.
-     */
+    g_dma_cb_fired = false;
+    g_dma_cb_ctx = 0;
+
+    dma::BmDmaChannel channel(0xFF00);
+    JARVIS_ASSERT(channel.init());
+    dma::DmaEngine engine(channel);
+
+    auto buf = dma::alloc_buffer(512);
+    JARVIS_ASSERT(buf.phys_addr != 0);
+
+    dma::SgList sg;
+    dma::sg_reset(sg);
+    JARVIS_ASSERT(dma::sg_from_buffer(sg, buf));
+
+    dma::PrdTable prd;
+    size_t n = dma::prd_from_sg(prd, sg, true);
+    JARVIS_ASSERT_EQ((size_t)1, n);
+
+    // Start transfer
+    bool started = engine.start_transfer(prd, dma::Direction::READ,
+                                          dma_completion_cb, 0x42);
+    JARVIS_ASSERT(started);
+    JARVIS_ASSERT(engine.is_busy());
+
+    // Simulate completion via handle_irq
+    bool irq_handled = engine.handle_irq();
+    JARVIS_ASSERT(irq_handled);
+
+    // Callback should have fired
+    JARVIS_ASSERT(g_dma_cb_fired);
+    JARVIS_ASSERT_EQ((uint64_t)0x42, g_dma_cb_ctx);
+    JARVIS_ASSERT(!engine.is_busy());
+
+    // Test abort
+    started = engine.start_transfer(prd, dma::Direction::WRITE, nullptr, 0);
+    JARVIS_ASSERT(started);
+    engine.abort();
+    JARVIS_ASSERT(!engine.is_busy());
+
+    dma::free_buffer(buf);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Double-buffered DMA transfer (ping-pong).
-// Input: Two alternating DMA buffers used in ping-pong mode
-// Expect: Back-to-back transfers complete without data corruption
-// Depends: dma, PCI bus master, device IRQ
-// Blocked: DMA completion infrastructure not yet implemented.
-// ⚠ BUG #008: Interrupt operations may trigger timer nesting paths.
-/* Pseudocode:
- * 1. Allocate two DMA buffers (buf A, buf B)
- * 2. Fill A with pattern A, B with pattern B
- * 3. Start transfer with buf A
- * 4. While A transfers, prepare buf B (fill with pattern)
- * 5. On A completion ISR, start B transfer
- * 6. Verify A data integrity (no corruption during B transfer)
- * 7. On B completion, verify B data integrity
- * 8. Repeat for N ping-pong cycles
- */
+// Testidea: Double-buffered DMA (ping-pong) with automatic chaining.
+// Input: PingPongDma with two buffers, fill with alternating patterns,
+// chain transfers via start_next, simulate completions via handle_irq.
+// Expect: Back-to-back transfers complete without data corruption,
+// buffer chaining swaps indices correctly.
+// Depends: dma::PingPongDma, dma::DmaEngine, dma::BmDmaChannel
 JARVIS_TEST(dma_double_buffered_transfer) {
-    /* Pseudocode: Double-buffered DMA transfer (ping-pong).
-     * Implementation plan:
-     *   - Requires dma_start_transfer(dma::PrdTable*, callback) API
-     *   - Use two buffers with alternating patterns
-     *   - Chain transfers: completion of A triggers start of B
-     *   - Verify no data corruption between alternating transfers
-     * Blocked: No DMA transfer initiation API exists.
-     */
+    g_pp_chain_fired = false;
+
+    dma::BmDmaChannel channel(0xFF00);
+    JARVIS_ASSERT(channel.init());
+    dma::DmaEngine engine(channel);
+
+    dma::PingPongDma pp(engine, 512);
+    JARVIS_ASSERT(pp.init());
+
+    // Both buffers are zero-filled from alloc; fill with patterns
+    dma::DmaBuffer* buf_a = pp.prepare_buf();
+    JARVIS_ASSERT(buf_a != nullptr);
+    JARVIS_ASSERT(buf_a->phys_addr != 0);
+    __builtin_memset(reinterpret_cast<void*>(buf_a->virt_addr), 0xAA, 64);
+
+    // Start first transfer (buffer A goes to DMA)
+    bool started = pp.start_next(dma::Direction::READ, pp_chain_cb, 0x77);
+    JARVIS_ASSERT(started);
+    JARVIS_ASSERT(pp.busy());
+
+    // Buffer B should now be the prepare buffer
+    dma::DmaBuffer* buf_b = pp.prepare_buf();
+    JARVIS_ASSERT(buf_b != nullptr);
+    JARVIS_ASSERT(buf_b->phys_addr != buf_a->phys_addr);
+    __builtin_memset(reinterpret_cast<void*>(buf_b->virt_addr), 0xBB, 64);
+
+    // Verify buffer A data remains intact while B is being prepared
+    uint8_t* a_data = reinterpret_cast<uint8_t*>(buf_a->virt_addr);
+    for (int i = 0; i < 64; ++i) {
+        JARVIS_ASSERT_EQ((uint8_t)0xAA, a_data[i]);
+    }
+
+    // Simulate completion of transfer A
+    bool irq_handled = engine.handle_irq();
+    JARVIS_ASSERT(irq_handled);
+    JARVIS_ASSERT(!pp.busy());
+    JARVIS_ASSERT_EQ((uint64_t)1, pp.completed_count());
+
+    // Chain to buffer B transfer
+    started = pp.start_next(dma::Direction::READ, pp_chain_cb, 0x88);
+    JARVIS_ASSERT(started);
+    JARVIS_ASSERT(pp.busy());
+
+    // Buffer A is now the prepare buffer again — verify A data integrity
+    dma::DmaBuffer* buf_a_again = pp.prepare_buf();
+    JARVIS_ASSERT(buf_a_again == buf_a);
+    uint8_t* a_data2 = reinterpret_cast<uint8_t*>(buf_a_again->virt_addr);
+    for (int i = 0; i < 64; ++i) {
+        JARVIS_ASSERT_EQ((uint8_t)0xAA, a_data2[i]);
+    }
+
+    // Simulate completion of transfer B
+    irq_handled = engine.handle_irq();
+    JARVIS_ASSERT(irq_handled);
+    JARVIS_ASSERT_EQ((uint64_t)2, pp.completed_count());
+
+    // Chain callback should have fired at least once
+    JARVIS_ASSERT(g_pp_chain_fired);
+
+    pp.shutdown();
     JARVIS_TEST_PASS();
 }
 

@@ -173,6 +173,20 @@ uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
     return 0;
 }
 
+uint64_t Syscall::sys_reboot(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    // PS/2 controller CPU reset: write 0xFE to port 0x64
+    arch::outb(0x64, 0xFE);
+    arch::io_wait();
+    // If reset fails, halt
+    arch::cli();
+    for (;;) { arch::hlt(); }
+}
+
+uint64_t Syscall::sys_halt(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+    arch::cli();
+    for (;;) { arch::hlt(); }
+}
+
 uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
     static sync::SpinLock brk_lock;
     SpinLockGuard<sync::SpinLock> guard(brk_lock);

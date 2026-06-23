@@ -17,7 +17,8 @@
  */
 
 /// @file dma.hpp
-/// @brief DMA driver — buffer management, scatter-gather, PRD table construction.
+/// @brief DMA driver — buffer management, scatter-gather, PRD table construction,
+///        and portable DMA channel abstraction for kernel and userspace drivers.
 
 #pragma once
 
@@ -116,5 +117,160 @@ void prd_reset(PrdTable& prd);
 /// @param bdf     BDF address.
 /// @param enable  True to enable bus mastering, false to disable.
 void pci_set_bus_master(arch::PciBdf bdf, bool enable);
+
+// --- DMA Channel Abstraction ---
+
+/// BMDMA command register bits.
+constexpr uint8_t BMCMD_START = 0x01;
+constexpr uint8_t BMCMD_STOP  = 0x00;
+constexpr uint8_t BMCMD_READ  = 0x08; // device → memory direction
+
+/// BMDMA status register bits.
+constexpr uint8_t BMSTAT_ACTIVE = 0x01;
+constexpr uint8_t BMSTAT_ERROR  = 0x02;
+constexpr uint8_t BMSTAT_INTR   = 0x04;
+
+/// DMA completion callback.
+/// @param context  User-provided context value.
+/// @param success  True if transfer completed without error.
+using DmaCallback = void (*)(uint64_t context, bool success);
+
+/// Abstract DMA channel interface.
+/// Implementations bridge hardware-specific DMA register access (port I/O,
+/// MMIO, or IPC-mediated). Used by DmaEngine for portable driver code.
+class DmaChannel {
+public:
+    virtual ~DmaChannel() = default;
+
+    /// Initialize the channel.
+    /// @return true if the channel is ready.
+    virtual bool init() = 0;
+
+    /// Start a DMA transfer.
+    /// @param prd  PRD table (must remain valid until transfer completes).
+    /// @param dir  Transfer direction.
+    /// @return true if the transfer was started.
+    virtual bool start(PrdTable& prd, Direction dir) = 0;
+
+    /// Poll whether the channel is busy.
+    virtual bool is_busy() = 0;
+
+    /// Handle a DMA completion interrupt.
+    /// Acknowledges the interrupt and returns completion status.
+    /// @return true if the transfer completed successfully.
+    virtual bool handle_irq() = 0;
+
+    /// Abort any in-progress transfer.
+    virtual void abort() = 0;
+};
+
+/// BMDMA channel implementation via PCI port I/O (kernel mode).
+/// Accesses the BMDMA controller registers at the given I/O base.
+class BmDmaChannel final : public DmaChannel {
+public:
+    explicit BmDmaChannel(uint16_t bm_io_base);
+    bool init() override;
+    bool start(PrdTable& prd, Direction dir) override;
+    bool is_busy() override;
+    bool handle_irq() override;
+    void abort() override;
+
+private:
+    uint16_t bm_io_base_;
+};
+
+/// High-level DMA engine that manages a DmaChannel and completion callbacks.
+/// Decouples transfer orchestration from hardware register access.
+class DmaEngine {
+public:
+    explicit DmaEngine(DmaChannel& channel);
+
+    /// Start a DMA transfer with optional completion callback.
+    /// @param prd  PRD table describing the transfer.
+    /// @param dir  Transfer direction.
+    /// @param cb   Optional callback invoked on completion.
+    /// @param ctx  Context passed to callback.
+    /// @return true if transfer started successfully.
+    bool start_transfer(PrdTable& prd, Direction dir,
+                        DmaCallback cb = nullptr, uint64_t ctx = 0);
+
+    /// Check whether the engine is currently busy.
+    bool is_busy();
+
+    /// Handle a DMA completion interrupt.
+    /// Delegates to channel, then invokes callback on success.
+    /// @return true if the interrupt was consumed.
+    bool handle_irq();
+
+    /// Abort any in-progress transfer.
+    void abort();
+
+private:
+    DmaChannel& channel_;
+    bool        active_;
+    DmaCallback callback_;
+    uint64_t    callback_ctx_;
+};
+
+// --- Ping-Pong Double-Buffer ---
+
+/// Ping-pong DMA double-buffer manager.
+/// Provides two alternating DMA buffers with automatic chaining:
+/// while buffer A transfers, buffer B is available for data preparation.
+class PingPongDma {
+public:
+    /// Type of the chained completion callback.
+    /// @param ctx    User context.
+    /// @param buf    The buffer that just completed.
+    /// @param success  True if transfer completed without error.
+    using ChainCallback = void (*)(uint64_t ctx, DmaBuffer* buf, bool success);
+
+    /// Construct a ping-pong manager.
+    /// @param engine  DmaEngine to use for transfers.
+    /// @param buf_size  Size of each DMA buffer.
+    PingPongDma(DmaEngine& engine, size_t buf_size);
+
+    /// Allocate both DMA buffers.
+    /// @return true if both buffers allocated.
+    bool init();
+
+    /// Get the buffer currently available for data preparation.
+    DmaBuffer* prepare_buf();
+
+    /// Get the buffer currently being transferred.
+    DmaBuffer* xfer_buf();
+
+    /// Start or chain the next transfer.
+    /// Swaps buffers: the prepared buffer becomes the transfer buffer.
+    /// @param dir  Transfer direction.
+    /// @param cb   Chained completion callback (may be null).
+    /// @param ctx  Context for callback.
+    /// @return true if transfer started successfully.
+    bool start_next(Direction dir, ChainCallback cb = nullptr,
+                    uint64_t ctx = 0);
+
+    /// Handle a DMA completion — invoked by DmaEngine callback.
+    void on_completion(uint64_t ctx, bool success);
+
+    /// Free both buffers.
+    void shutdown();
+
+    /// Check if a transfer is in progress.
+    bool busy() const { return active_; }
+
+    /// Get the number of completed transfers.
+    uint64_t completed_count() const { return completed_; }
+
+private:
+    DmaEngine&    engine_;
+    DmaBuffer     bufs_[2];
+    size_t        buf_size_;
+    uint8_t       prepare_idx_;   // index of buffer being filled
+    uint8_t       xfer_idx_;      // index of buffer being transferred
+    bool          active_;
+    uint64_t      completed_;
+    ChainCallback chain_cb_;
+    uint64_t      chain_ctx_;
+};
 
 } // namespace kernel::dma

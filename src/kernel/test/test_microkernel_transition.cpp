@@ -82,7 +82,9 @@ TEST_CLASS(MinimalPrivilegedSurface) {
                num == static_cast<uint64_t>(SyscallNumber::EXIT) ||
                num == static_cast<uint64_t>(SyscallNumber::NOTIFY_WAIT) ||
                num == static_cast<uint64_t>(SyscallNumber::EVENT_WAIT) ||
-               num == static_cast<uint64_t>(SyscallNumber::PAUSE);
+               num == static_cast<uint64_t>(SyscallNumber::PAUSE) ||
+               num == static_cast<uint64_t>(SyscallNumber::REBOOT) ||
+               num == static_cast<uint64_t>(SyscallNumber::HALT);
     };
 
     // Verify all syscall numbers have a handler registered

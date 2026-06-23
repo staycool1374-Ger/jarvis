@@ -41,6 +41,7 @@
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/driver/ata_pio.hpp>
+#include <kernel/driver/ahci.hpp>
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/net/net.hpp>
 #include <kernel/vfs/fat32_fs.hpp>
@@ -371,14 +372,14 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::vfs::mount(kernel::vfs::proc_fs, "/proc");
     kernel::vfs::mount(kernel::vfs::tmpfs_fs, "/tmp");
 
-    // Probe ATA drives and mount FAT32 if found
+    // Probe AHCI controller first, fall back to legacy ATA PIO
     {
-        auto* ata = kernel::block::AtaPioDriver::probe_first_drive();
-        if (ata) {
-            debug_write("[BOOT] ATA drive found\n");
-            auto* part = new kernel::fat32::Fat32Partition(*ata);
+        auto* ahci = kernel::block::AhciDriver::probe();
+        if (ahci) {
+            debug_write("[BOOT] AHCI drive found\n");
+            auto* part = new kernel::fat32::Fat32Partition(*ahci);
             if (part->mount()) {
-                debug_write("[BOOT] FAT32 partition mounted\n");
+                debug_write("[BOOT] FAT32 partition mounted via AHCI\n");
                 kernel::vfs::fat32_partition_instance = part;
                 if (kernel::vfs::mount_fat32("/mnt") == 0) {
                     debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
@@ -387,9 +388,29 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 }
             } else {
                 debug_write("[BOOT] FAT32 partition mount failed\n");
+                delete part;
             }
         } else {
-            debug_write("[BOOT] No ATA drive found\n");
+            debug_write("[BOOT] No AHCI drive found, trying legacy ATA PIO\n");
+            auto* ata = kernel::block::AtaPioDriver::probe_first_drive();
+            if (ata) {
+                debug_write("[BOOT] ATA drive found\n");
+                auto* part = new kernel::fat32::Fat32Partition(*ata);
+                if (part->mount()) {
+                    debug_write("[BOOT] FAT32 partition mounted via PIO\n");
+                    kernel::vfs::fat32_partition_instance = part;
+                    if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                        debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                    } else {
+                        debug_write("[BOOT] mount_fat32 failed\n");
+                    }
+                } else {
+                    debug_write("[BOOT] FAT32 partition mount failed\n");
+                    delete part;
+                }
+            } else {
+                debug_write("[BOOT] No ATA drive found\n");
+            }
         }
     }
 

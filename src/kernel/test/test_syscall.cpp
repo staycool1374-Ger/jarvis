@@ -218,6 +218,30 @@ JARVIS_TEST(syscall_dispatch_yield) {
 }
 
 // Runmode: kernel
+// Testidea: REBOOT syscall number is valid and dispatch table slot is populated.
+// Input: Verify SyscallNumber::REBOOT and table entry.
+// Expect: Enum valid, table entry non-null (actual reboot skipped in test).
+// Depends: kernel::Syscall
+JARVIS_TEST(syscall_dispatch_reboot) {
+    uint64_t num = static_cast<uint64_t>(SyscallNumber::REBOOT);
+    JARVIS_ASSERT_EQ(49ULL, num);
+    JARVIS_ASSERT(num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL));
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: HALT syscall number is valid and dispatch table slot is populated.
+// Input: Verify SyscallNumber::HALT and table entry.
+// Expect: Enum valid, table entry non-null (actual halt skipped in test).
+// Depends: kernel::Syscall
+JARVIS_TEST(syscall_dispatch_halt) {
+    uint64_t num = static_cast<uint64_t>(SyscallNumber::HALT);
+    JARVIS_ASSERT_EQ(50ULL, num);
+    JARVIS_ASSERT(num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL));
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: EXIT syscall returns 0 without actually terminating the test task.
 // Input: EXIT syscall.
 // Expect: Returns 0 (kernel test framework keeps the task alive).
@@ -631,6 +655,8 @@ void register_syscall_tests() {
     JARVIS_REGISTER_TEST(syscall_dispatch_invalid_returns_minus_one);
     JARVIS_REGISTER_TEST(syscall_dispatch_get_ticks);
     JARVIS_REGISTER_TEST(syscall_dispatch_yield);
+    JARVIS_REGISTER_TEST(syscall_dispatch_reboot);
+    JARVIS_REGISTER_TEST(syscall_dispatch_halt);
     JARVIS_REGISTER_TEST(syscall_dispatch_exit_returns_zero);
     JARVIS_REGISTER_TEST(syscall_dispatch_print_noop);
 

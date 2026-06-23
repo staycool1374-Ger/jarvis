@@ -22,21 +22,12 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
-### 0.2.18 — Observability & Portability
-- [x] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
-- [x] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
-- [x] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
-
-### 0.2.19 — Kernel Memory Safety
-- [x] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
-- [x] Renode simulation setup — integrate Renode as a secondary emulation platform alongside QEMU for early architectural bring-up of ARM Cortex-A (aarch64) and RISC-V (RV64) targets, enabling HAL validation and cross-architecture testing before hardware is available
-
 ### 0.2.20 — System Calls & Storage
-- [ ] SYS_YIELD — cooperative task yielding for CPU-bound tasks
-- [ ] SYS_REBOOT / SYS_HALT — system power management from userspace
-- [ ] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
-- [ ] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
-- [ ] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
+- [x] SYS_YIELD — cooperative task yielding for CPU-bound tasks
+- [x] SYS_REBOOT / SYS_HALT — system power management from userspace
+- [x] AHCI/SATA driver with NCQ (replaces ATA PIO for bare-metal storage)
+- [x] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
+- [x] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
 
 ### 0.2.21 — Kernel Configuration & Portability
 
@@ -170,6 +161,13 @@ Never holds and locks any resources.
 
 ### 0.3.6 — ISR Safety & Data Loss Prevention
 - [ ] Lock-free SPSC ring buffer for ISR→task handoff (eliminate priority inversion and data loss in interrupt context)
+
+### 0.3.7 — Dynamic RT Task Spawning & I/O Isolation (runelf)
+- [ ] **Real-Time `runelf` Extensions:** Extend the `runelf` framework to accept real-time attributes (`--period`, `--wcet`) directly via shell invocation or userspace process spawning.
+- [ ] **Admission Control Interception:** Intercept the `runelf` loading sequence and pass execution telemetry parameters directly to the Liu-Leyland implementation (`is_rm_schedulable`). Deny ELF execution if the new task guarantees violate schedulability limits.
+- [ ] **Hardware-Enforced WCET Monitoring:** Programmatically bind the parsed execution budget ($C$) to a high-precision hardware timer (HPET/APIC) upon task context activation to guarantee fault-detection containment during runtime overruns.
+- [ ] **Sandboxed IPC Routing:** Enforce absolute Ring 3 I/O isolation for the spawned ELF task. Restrict direct MMIO and port I/O access, routing generic hardware or file requests through capability-secured IPC channels backed by core daemons (`vfsd`, `iocd`) under Sporadic Server budgets.
+- [ ] **Zero-Overhead Shared Memory Channels:** Implement a capability delegation mechanism to map shared memory pages between the hardware driver server and the `runelf` task. Utilize lock-free SPSC ring buffers spanning page boundaries to achieve zero-syscall, zero-copy real-time data ingestion.
 
 ---
 

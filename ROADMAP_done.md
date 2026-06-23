@@ -60,6 +60,15 @@
 - Alias expansion + command history recording in `parse_and_exec`
 - Release tag: v0.2.13
 
+### 0.2.18 — Observability & Portability
+- [x] Kernel log ring buffer (SYS_KLOG, dmesg), HAL abstraction, arch/x86_64/ migration
+- [x] Multi-arch build (ARCH variable), secure exec (CheckedPointer), regression audit
+- [x] PCI bus enumeration / device tree debug output (pci_print_tree, sysfs /proc/pci)
+
+### 0.2.19 — Kernel Memory Safety
+- [x] Audit existing `new`/`delete` usages in kernel code for consistency with the RAII pattern
+- [x] Renode simulation setup — integrate Renode as a secondary emulation platform alongside QEMU for early architectural bring-up of ARM Cortex-A (aarch64) and RISC-V (RV64) targets, enabling HAL validation and cross-architecture testing before hardware is available
+
 ### 0.2.16 — CPU Features & RNG
 - Lazy FPU/SSE context switch (FXSAVE/FXRSTOR)
 - Hardware RNG (RDRAND/RDSEED) + ChaCha20 PRNG → /dev/random, SYS_GETRANDOM

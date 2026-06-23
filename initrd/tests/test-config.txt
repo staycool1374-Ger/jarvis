@@ -1,1 +1,1 @@
-safe
+all

@@ -19,6 +19,8 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/driver/block_device.hpp>
+#include <kernel/driver/ahci_protocol.hpp>
+#include <kernel/driver/ahci.hpp>
 #include <string.hpp>
 
 using namespace kernel;
@@ -126,6 +128,64 @@ JARVIS_TEST(ata_pio_read_write_sector) {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies AHCI protocol struct sizes and constant integrity.
+// Input: Check sizeof, static_assert on key structs.
+// Expect: All structs match spec sizes (no padding surprises).
+// Depends: ahci_protocol.hpp
+JARVIS_TEST(ahci_protocol_struct_sizes) {
+    JARVIS_ASSERT_EQ((size_t)20, sizeof(kernel::ahci::CmdFIS));
+    JARVIS_ASSERT_EQ((size_t)32, sizeof(kernel::ahci::CmdHeader));
+    JARVIS_ASSERT_EQ((size_t)16, sizeof(kernel::ahci::PrdHbaEntry));
+    JARVIS_ASSERT_EQ((size_t)256, sizeof(kernel::ahci::ReceivedFis));
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies AHCI protocol constant correctness.
+// Input: Check key register offsets and bit definitions.
+// Expect: Constants match AHCI spec.
+// Depends: ahci_protocol.hpp
+JARVIS_TEST(ahci_protocol_constants) {
+    using namespace kernel::ahci;
+    JARVIS_ASSERT_EQ((uint32_t)0x00, HBA_CAP);
+    JARVIS_ASSERT_EQ((uint32_t)0x04, HBA_GHC);
+    JARVIS_ASSERT_EQ((uint32_t)0x08, HBA_IS);
+    JARVIS_ASSERT_EQ((uint32_t)0x0C, HBA_PI);
+    JARVIS_ASSERT_EQ((uint32_t)0x80000000, (uint32_t)GHC_AE);
+    JARVIS_ASSERT_EQ((uint32_t)0x100, (uint32_t)PORT_BASE);
+    JARVIS_ASSERT_EQ((uint32_t)0x80, (uint32_t)PORT_STRIDE);
+    JARVIS_ASSERT_EQ((uint8_t)0x25, ATA_CMD_READ_DMA_EXT);
+    JARVIS_ASSERT_EQ((uint8_t)0x35, ATA_CMD_WRITE_DMA_EXT);
+    JARVIS_ASSERT_EQ((uint8_t)0x60, ATA_CMD_READ_FPDMA_QUEUED);
+    JARVIS_ASSERT_EQ((uint8_t)0x61, ATA_CMD_WRITE_FPDMA_QUEUED);
+    JARVIS_ASSERT_EQ((uint8_t)0x27, FIS_TYPE_REG_H2D);
+    JARVIS_ASSERT_EQ((uint8_t)0x34, FIS_TYPE_REG_D2H);
+    JARVIS_ASSERT_EQ((uint32_t)32, (uint32_t)AHCI_MAX_CMDS);
+    JARVIS_ASSERT_EQ((uint32_t)256, (uint32_t)AHCI_MAX_PRD);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies AHCI driver hardware probe (if AHCI controller present).
+// Input: Call AhciDriver::probe().
+// Expect: Returns nullptr or valid driver (gracefully handles no hardware).
+// Depends: AHCI PCI probe, kernel::block::AhciDriver
+JARVIS_TEST(ahci_hba_probe) {
+    auto* drv = kernel::block::AhciDriver::probe();
+    // If no AHCI hardware present, probe returns nullptr gracefully
+    if (drv) {
+        JARVIS_ASSERT(drv->sector_count() > 0);
+        JARVIS_ASSERT(drv->sector_size() == kernel::block::BLOCK_SIZE);
+        // Test read/write through BlockDevice interface
+        uint8_t buf[kernel::block::BLOCK_SIZE] = {};
+        bool ok = drv->read_sector(0, buf);
+        JARVIS_ASSERT(ok);
+        delete drv;
+    }
+    JARVIS_TEST_PASS();
+}
+
 void register_block_device_tests() {
     Logger::info("Registering Block Device tests");
 
@@ -137,4 +197,7 @@ void register_block_device_tests() {
     JARVIS_REGISTER_RELEASE_TEST(block_device_raw_buffer_access);
     JARVIS_REGISTER_RELEASE_TEST(ata_pio_identify);
     JARVIS_REGISTER_RELEASE_TEST(ata_pio_read_write_sector);
+    JARVIS_REGISTER_TEST(ahci_protocol_struct_sizes);
+    JARVIS_REGISTER_TEST(ahci_protocol_constants);
+    JARVIS_REGISTER_TEST(ahci_hba_probe);
 }
