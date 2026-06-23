@@ -241,8 +241,17 @@ git clone <repo-url>
 cd os
 make debug          # Debug build with 675-test suite
 make qemu-iso       # Launch in QEMU with serial console
-make test-qemu      # Run full test suite, validate exit code
 make release        # Optimised release build (no tests)
+
+# Testing targets (QEMU)
+make test-selftest       # Safe class (~102 tests, CI gate)
+make test-all-debug      # Full 675-test suite (debug)
+make test-all-release    # Release-candidate subset
+make test-class CLASS=<name>  # Specific test class
+
+# Renode simulation (multi-arch)
+make run-renode RENODE_ARCH=x86_64   # x86_64 via SeaBIOS+ISO
+make renode-test          # Renode CI validation
 ```
 
 ### Build Architecture
