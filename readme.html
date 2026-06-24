@@ -1,285 +1,769 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvis RTOS</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            background-color: #0d1117;
-            color: #c9d1d9;
-            margin: 0;
-            padding: 2rem;
-        }
-        .container {
-            max-width: 1012px;
-            margin: 0 auto;
-            background-color: #0d1117;
-            padding: 20px;
-        }
-        h1 { color: #58a6ff; border-bottom: 1px solid #21262d; padding-bottom: 0.3em; font-size: 2em; }
-        h2 { color: #f0f6fc; border-bottom: 1px solid #21262d; padding-bottom: 0.3em; margin-top: 24px; }
-        h3 { color: #f0f6fc; }
-        h4 { color: #8b949e; margin-bottom: 5px; }
-        a { color: #58a6ff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-        ul { padding-left: 2em; }
-        li { margin-bottom: 0.25em; }
-        hr { height: 0.25em; padding: 0; margin: 24px 0; background-color: #21262d; border: 0; }
-        code {
-            padding: 0.2em 0.4em; margin: 0; font-size: 85%;
-            background-color: rgba(110,118,129,0.4); border-radius: 6px;
-            font-family: ui-monospace, SFMono-Regular, SF Pro Text, Menlo, Monaco, Consolas, monospace;
-        }
-        pre {
-            padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45;
-            background-color: #161b22; border-radius: 6px; border: 1px solid #30363d;
-        }
-        pre code { padding: 0; background-color: transparent; font-size: 100%; color: #e6edf3; }
-        table {
-            border-spacing: 0; border-collapse: collapse; margin-top: 0;
-            margin-bottom: 16px; width: 100%;
-        }
-        table th, table td { padding: 6px 13px; border: 1px solid #30363d; }
-        table tr { background-color: #0d1117; border-top: 1px solid #21262d; }
-        table tr:nth-child(2n) { background-color: #161b22; }
-        table th { font-weight: 600; background-color: #161b22; color: #f0f6fc; }
-        .architecture {
-            font-family: ui-monospace, monospace; background-color: #161b22;
-            color: #7ee787; padding: 15px; border-left: 4px solid #58a6ff;
-            border-radius: 4px; white-space: pre; overflow-x: auto;
-        }
-        .badge {
-            display: inline-block; padding: 2px 8px; border-radius: 12px;
-            font-size: 0.75em; font-weight: 600; margin-left: 6px;
-        }
-        .badge-green { background-color: #1b4721; color: #7ee787; }
-        .badge-blue { background-color: #0c2d6b; color: #58a6ff; }
-        .badge-yellow { background-color: #4d3800; color: #d29922; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.10" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Jarvis RTOS</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.1/github-markdown.min.css" />
 </head>
 <body>
-
-<div class="container">
-
-    <h1>Jarvis RTOS</h1>
-    <p>
-        A real-time operating system for the <code>x86_64</code> architecture,
-        written from scratch in freestanding C++20. Designed for ISO 26262 ASIL D
-        safety standards, deterministic scheduling, and clean kernel/userspace
-        separation. All services run in a monolithic kernel at Ring 0 with
-        userspace processes in Ring 3.
-    </p>
-
-    <p><strong>Current Version:</strong> v0.2.17 <span class="badge badge-green">release</span></p>
-
-    <hr>
-
-    <h2>Features</h2>
-
-    <h3>Core System &amp; Memory Management</h3>
-    <ul>
-        <li><strong>x86_64 Long Mode Boot</strong> – Multiboot2-compliant bootloader, 4-level page tables.</li>
-        <li><strong>Physical Memory Manager (PMM)</strong> – Buddy allocator with O(1) page frame allocation and coalescing.</li>
-        <li><strong>Virtual Memory Manager (VMM)</strong> – Full 4-level page table hierarchy, kernel/user space separation, page cloning for <code>fork()</code>.</li>
-        <li><strong>Slab Allocator (MemPool)</strong> – Deterministic fixed-size object caches for kernel allocations.</li>
-        <li><strong>Heap Allocator</strong> – Dynamic kernel heap with OOM fallback.</li>
-        <li><strong>Memory Integrity</strong> – Canary markers, stack markers in dedicated sections, bounds checking.</li>
-        <li><strong>Gcov Support</strong> – Code coverage instrumentation for debug builds.</li>
-    </ul>
-
-    <h3>Process &amp; Task Management</h3>
-    <ul>
-        <li><strong>Rate Monotonic Scheduler (RMS)</strong> – Fixed-priority preemptive scheduling with 256 priority levels.</li>
-        <li><strong>Task States</strong> – <code>READY</code>, <code>RUNNING</code>, <code>BLOCKED</code>, <code>WAITING</code>, <code>TERMINATED</code>.</li>
-        <li><strong>Userspace Isolation</strong> – Ring 3 execution with per-task page tables, user stacks, and TSS SS0/RSP0 for syscall entry.</li>
-        <li><strong>Process Lifecycle</strong> – <code>fork()</code> with copy-on-write page cloning, <code>waitpid()</code>, <code>exit()</code>, <code>exec()</code>.</li>
-        <li><strong>ELF Loader</strong> – Parses and loads statically linked ELF64 binaries from initrd or VFS.</li>
-        <li><strong>Resource Limits</strong> – Per-task RLIMIT tracking (<code>SYS_GETRLIMIT</code>/<code>SYS_SETRLIMIT</code>).</li>
-        <li><strong>Secure Execution</strong> – <code>CheckedPointer</code> validation for kernel pointer safety.</li>
-        <li><strong>Task Notifications</strong> – Lightweight 32-bit value signaling, event groups with multi-bit wait.</li>
-    </ul>
-
-    <h3>Synchronisation Primitives</h3>
-    <ul>
-        <li><strong>Mutex</strong> – Blocking mutual exclusion with priority inheritance.</li>
-        <li><strong>Semaphore</strong> – Counting semaphore with blocking wait.</li>
-        <li><strong>Event Group</strong> – Multi-bit event synchronisation (<code>SYS_EVENT_SET</code>/<code>SYS_EVENT_WAIT</code>).</li>
-        <li><strong>Queue</strong> – Fixed-size message queue (kernel space).</li>
-        <li><strong>Notify</strong> – Per-task notification value with wait/clear semantics.</li>
-        <li><strong>Wait-for-Graph</strong> – Deadlock detection engine with cycle detection.</li>
-        <li><strong>IrqGuard</strong> – RAII interrupt disable guard for critical sections.</li>
-    </ul>
-
-    <h3>Interprocess Communication (IPC)</h3>
-    <ul>
-        <li>Priority-aware message queue with per-TCB mailbox and priority bitmap.</li>
-        <li>IPC primitives: <code>SYS_SEND</code>, <code>SYS_RECEIVE</code>, <code>SYS_SEND_SYNC</code>, <code>IPC_NONBLOCK</code>.</li>
-        <li>Priority inheritance on IPC blocks prevents priority inversion.</li>
-        <li>Linked blocked-sender list for O(1) sender unblocking.</li>
-        <li>Buffer pool for zero-copy message payload transfer.</li>
-        <li>Dynamic mailbox creation/destruction.</li>
-        <li>Pipes — unidirectional byte-stream IPC (<code>SYS_PIPE</code>/<code>SYS_DUP2</code>).</li>
-    </ul>
-
-    <h3>Virtual File System (VFS)</h3>
-    <ul>
-        <li>Unified <code>vnode</code> abstraction with operation vtable (<code>read</code>, <code>write</code>, <code>open</code>, <code>close</code>, <code>readdir</code>, <code>lookup</code>, <code>fstat</code>, <code>mkdir</code>, <code>unlink</code>, <code>ioctl</code>).</li>
-        <li>Per-task file descriptor tables tracking standard I/O and custom files.</li>
-        <li>Mount table with path-based lookup.</li>
-        <li><strong>Mounted Filesystems:</strong>
-            <ul>
-                <li><strong>Initrd</strong> – POSIX cpio (newc) archive mounted at boot as rootfs.</li>
-                <li><strong>Devfs</strong> – Virtual device tree: <code>/dev/tty</code>, <code>/dev/null</code>, <code>/dev/console</code>, <code>/dev/kbd</code>, <code>/dev/fb</code>.</li>
-                <li><strong>Procfs</strong> – Kernel metrics: <code>/proc/meminfo</code>, <code>/proc/[pid]/stat</code>, <code>/proc/self</code>, <code>/proc/sched</code>.</li>
-                <li><strong>FAT32</strong> – Full read/write support: open, read, write, close, readdir, mkdir, unlink, fstat.</li>
-                <li><strong>FAT32 Image</strong> – Pre-built disk image mounted automatically at <code>/fat/</code>.</li>
-            </ul>
-        </li>
-        <li>VFS Daemon — authorises and proxies filesystem operations for userspace tasks.</li>
-    </ul>
-
-    <h3>Kernel Shell (Interactive, Kernel Task)</h3>
-    <p>A full-featured interactive shell running as a kernel task with serial and PS/2 keyboard input, framebuffer terminal output, status bar, and color-coded prompt.</p>
-    <p><strong>36+ built-in commands:</strong></p>
-    <ul>
-        <li><strong>Navigation:</strong> <code>cd</code>, <code>pwd</code>, <code>ls</code>, <code>dirs</code>, <code>pushd</code>, <code>popd</code></li>
-        <li><strong>File operations:</strong> <code>cat</code>, <code>mkdir</code>, <code>rm</code>, <code>rmdir</code>, <code>cp</code></li>
-        <li><strong>System info:</strong> <code>help</code>, <code>uptime</code>, <code>version</code>, <code>meminfo</code>, <code>tasks</code>, <code>jobs</code>, <code>ps</code>, <code>env</code>, <code>times</code></li>
-        <li><strong>Process control:</strong> <code>run</code>, <code>runelf</code>, <code>exit</code>/<code>shutdown</code>, <code>reboot</code>, <code>sleep</code>, <code>wait</code>, <code>fg</code>, <code>bg</code>, <code>disown</code></li>
-        <li><strong>Shell built-ins:</strong> <code>alias</code>/<code>unalias</code>, <code>history</code>, <code>type</code>, <code>which</code>/<code>locate</code>, <code>source</code>/<code>.</code>, <code>set</code>, <code>read</code>, <code>shift</code>, <code>export</code>, <code>echo</code>, <code>printf</code>, <code>test</code>/<code>[</code></li>
-        <li><strong>System control:</strong> <code>modprobe</code>, <code>modlist</code>, <code>selftest</code>, <code>clear</code>, <code>trap</code>, <code>umask</code>, <code>ulimit</code></li>
-        <li><strong>Features:</strong> Output redirection (<code>&gt;</code>), alias expansion, command history (100 entries, ring buffer), directory stack, 32 environment variables, shell options (<code>-x</code>, <code>-e</code>, <code>-u</code>)</li>
-    </ul>
-
-    <h3>System Calls (int 0x82, 44 syscalls)</h3>
-    <table>
-        <thead>
-            <tr><th>#</th><th>Syscall</th><th>Description</th></tr>
-        </thead>
-        <tbody>
-            <tr><td>0</td><td><code>SYS_YIELD</code></td><td>Voluntary context switch</td></tr>
-            <tr><td>1</td><td><code>SYS_SEND</code></td><td>Async message send to mailbox</td></tr>
-            <tr><td>2</td><td><code>SYS_RECEIVE</code></td><td>Blocking message receive from mailbox</td></tr>
-            <tr><td>3</td><td><code>SYS_SEND_SYNC</code></td><td>Synchronous rendezvous send/receive</td></tr>
-            <tr><td>4</td><td><code>SYS_PRINT</code></td><td>Print string to terminal</td></tr>
-            <tr><td>5</td><td><code>SYS_GET_TICKS</code></td><td>Uptime in timer ticks</td></tr>
-            <tr><td>6</td><td><code>SYS_EXIT</code></td><td>Terminate calling process</td></tr>
-            <tr><td>7</td><td><code>SYS_MAILBOX_CREATE</code></td><td>Create IPC mailbox</td></tr>
-            <tr><td>8</td><td><code>SYS_MAILBOX_DESTROY</code></td><td>Destroy IPC mailbox</td></tr>
-            <tr><td>9</td><td><code>SYS_OPEN</code></td><td>Open file by path</td></tr>
-            <tr><td>10</td><td><code>SYS_READ</code></td><td>Read from file descriptor</td></tr>
-            <tr><td>11</td><td><code>SYS_CLOSE</code></td><td>Close file descriptor</td></tr>
-            <tr><td>12</td><td><code>SYS_FSTAT</code></td><td>Get file descriptor status</td></tr>
-            <tr><td>13</td><td><code>SYS_WRITE</code></td><td>Write to file descriptor</td></tr>
-            <tr><td>14</td><td><code>SYS_LSEEK</code></td><td>Reposition file offset</td></tr>
-            <tr><td>15</td><td><code>SYS_IOCTL</code></td><td>Device I/O control</td></tr>
-            <tr><td>16</td><td><code>SYS_READDIR</code></td><td>Read directory entries</td></tr>
-            <tr><td>17</td><td><code>SYS_STAT</code></td><td>Get file status by path</td></tr>
-            <tr><td>18</td><td><code>SYS_DUP</code></td><td>Duplicate file descriptor</td></tr>
-            <tr><td>19</td><td><code>SYS_CHDIR</code></td><td>Change working directory</td></tr>
-            <tr><td>20</td><td><code>SYS_EXEC</code></td><td>Execute ELF binary</td></tr>
-            <tr><td>21</td><td><code>SYS_FORK</code></td><td>Clone calling process</td></tr>
-            <tr><td>22</td><td><code>SYS_WAITPID</code></td><td>Wait for child process</td></tr>
-            <tr><td>23</td><td><code>SYS_GETPID</code></td><td>Get current task PID</td></tr>
-            <tr><td>24</td><td><code>SYS_KILL</code></td><td>Send signal to task</td></tr>
-            <tr><td>25</td><td><code>SYS_PIPE</code></td><td>Create pipe</td></tr>
-            <tr><td>26</td><td><code>SYS_DUP2</code></td><td>Redirect file descriptor</td></tr>
-            <tr><td>27</td><td><code>SYS_NOTIFY</code></td><td>Send notification value</td></tr>
-            <tr><td>28</td><td><code>SYS_NOTIFY_WAIT</code></td><td>Wait for notification</td></tr>
-            <tr><td>29</td><td><code>SYS_EVENT_SET</code></td><td>Set event group bits</td></tr>
-            <tr><td>30</td><td><code>SYS_EVENT_WAIT</code></td><td>Wait for event group bits</td></tr>
-            <tr><td>31</td><td><code>SYS_ALARM</code></td><td>Schedule alarm signal</td></tr>
-            <tr><td>32</td><td><code>SYS_SLEEP</code></td><td>Sleep for N milliseconds</td></tr>
-            <tr><td>33</td><td><code>SYS_SEM_CREATE</code></td><td>Create counting semaphore</td></tr>
-            <tr><td>34</td><td><code>SYS_SEM_WAIT</code></td><td>Wait on semaphore</td></tr>
-            <tr><td>35</td><td><code>SYS_SEM_POST</code></td><td>Signal semaphore</td></tr>
-            <tr><td>36</td><td><code>SYS_MUTEX_CREATE</code></td><td>Create mutex</td></tr>
-            <tr><td>37</td><td><code>SYS_MUTEX_LOCK</code></td><td>Lock mutex</td></tr>
-            <tr><td>38</td><td><code>SYS_MUTEX_UNLOCK</code></td><td>Unlock mutex</td></tr>
-            <tr><td>39</td><td><code>SYS_SCHED_INFO</code></td><td>Query scheduler statistics</td></tr>
-            <tr><td>40</td><td><code>SYS_SIGNAL_RETURN</code></td><td>Return from signal handler</td></tr>
-            <tr><td>41</td><td><code>SYS_MKDIR</code></td><td>Create directory</td></tr>
-            <tr><td>42</td><td><code>SYS_UNLINK</code></td><td>Remove file</td></tr>
-            <tr><td>43</td><td><code>SYS_RMDIR</code></td><td>Remove empty directory</td></tr>
-        </tbody>
-    </table>
-
-    <h3>Hardware Support</h3>
-    <ul>
-        <li><strong>Serial (COM1)</strong> – 115200 baud, interrupt-driven I/O.</li>
-        <li><strong>PS/2 Keyboard</strong> – scancode set 2 translation, modifier key tracking.</li>
-        <li><strong>Framebuffer</strong> – Linear framebuffer via Multiboot2, terminal with status bar.</li>
-        <li><strong>PIT</strong> – Programmable interval timer, 1 kHz scheduling tick.</li>
-        <li><strong>RTC</strong> – CMOS real-time clock for wall clock display in status bar.</li>
-        <li><strong>ACPI</strong> – QEMU shutdown port for clean power-off.</li>
-        <li><strong>ATA PIO</strong> – Parallel ATA driver (read/write via PIO, block device layer).</li>
-        <li><strong>IO Controller (IOCD)</strong> – Block device I/O request dispatch queue.</li>
-    </ul>
-
-    <h3>Driver Framework</h3>
-    <ul>
-        <li><code>DriverRegistry</code> – Central registry with <code>load()</code>/<code>find()</code>/<code>count()</code>/<code>get()</code>.</li>
-        <li><code>BlockDevice</code> – Abstract base with <code>read_sectors</code>/<code>write_sectors</code>.</li>
-        <li><code>MockBlockDevice</code> – RAM-backed block device for testing.</li>
-        <li>Shell commands: <code>modprobe</code>, <code>modlist</code>.</li>
-    </ul>
-
-    <h3>Debugging &amp; Diagnostics</h3>
-    <ul>
-        <li><strong>Self-Test Framework</strong> – 509 test cases in debug build, 84 in release.</li>
-        <li><strong>Test Categories:</strong> task lifecycle, IPC, memory (PMM/VMM), VFS, FAT32, scheduler, signals, pipes, ELF, drivers, serial, keyboard, RTC, integrity, security, stress, benchmarks.</li>
-        <li><strong>QEMU Integration</strong> – Full test suite runs in QEMU with serial output capture.</li>
-        <li><strong>Gcov</strong> – Code coverage instrumentation for debug builds.</li>
-        <li><strong>ResourceTracker</strong> – Tracks allocation counts during tests to detect leaks.</li>
-        <li><strong>Serial Console</strong> – Full interactive shell over serial + keyboard.</li>
-        <li><strong>Status Bar</strong> – Live display of time, uptime, memory usage, task count.</li>
-    </ul>
-
-    <hr>
-
-    <h2>Architecture</h2>
-    <div class="architecture">  [ Userspace Apps ] &lt;--- Ring 3 Isolation
-------------- [ Syscall Interface: int 0x82 ] -------------
-  [ Shell (Kernel Task, 36+ Built-ins)  ]  [ RMS Scheduler       ]
-  [ VFS / Initrd / Devfs / Procfs / FAT32]  [ Priority IPC Mailbox]
-  [ Virtual Memory (VMM, 4-level PT)    ]  [ Notify & Event Groups]
-  [ O(1) PID→TCB Hash Table            ]  [ Priority Inheritance ]
-  [ Physical Memory (PMM, Buddy Alloc)  ]  [ Slab Alloc (MemPool) ]
-  [ Hardware: Serial, KBD, Framebuffer,  ]  [ ATA PIO, PIT, RTC   ]
-  [ Gcov, Driver Registry, Integrity    ]  [ Deadlock Detection   ]
-============= Monolithic Kernel (Ring 0) =============</div>
-
-    <hr>
-
-    <h2>Build &amp; Run</h2>
-
-    <h3>Prerequisites</h3>
-    <pre><code>sudo apt install build-essential git wget xorriso dosfstools \
-    x86_64-linux-gnu-gcc binutils qemu-system-x86</code></pre>
-
-    <h3>Build</h3>
-    <pre><code>git clone &lt;repo-url&gt;
-cd os
-make debug        # Debug build with test suite
-make release      # Release build (optimised, no tests)</code></pre>
-
-    <h3>Run in QEMU</h3>
-    <pre><code>make qemu-iso     # Build + launch ISO in QEMU with serial console</code></pre>
-
-    <h3>Run Tests</h3>
-    <p>Tests run automatically at boot in debug builds. To run the full suite:</p>
-    <pre><code>make debug        # Build debug ISO
-make test-qemu    # Launch QEMU, capture serial output, validate results</code></pre>
-
-    <hr>
-
-    <h2>License</h2>
-    <p>GNU General Public License v3 — see <code>LICENSE.txt</code>.</p>
-
-</div>
-
+<p align="center">
+<img src="Jarvis-RTOS-logo.png" alt="Jarvis RTOS Logo" width="600"/>
+</p>
+<h1 align="center">
+Jarvis RTOS
+</h1>
+<p align="center">
+<em>A deterministic, safety-critical real-time operating system built
+from scratch in freestanding C++20.</em>
+</p>
+<p align="center">
+<img src="https://img.shields.io/badge/C++20-freestanding-00599C?style=flat-square&logo=cplusplus" alt="C++20 Freestanding"/>
+<img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
+<img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
+<img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
+<img src="https://img.shields.io/badge/tests-675%20passing-2ea44f?style=flat-square" alt="675 Tests Passing"/>
+<img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
+</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Jarvis RTOS is an independent, ground-up implementation of a
+real-time operating system targeting <strong>ISO 26262 ASIL D</strong>
+safety standards. It is built exclusively in <strong>freestanding
+C++20</strong> — no libc, no libstdc++, no runtime — delivering
+zero-overhead object-oriented kernel design, compile-time type safety,
+and deterministic execution from the first instruction.</p>
+<p>The kernel is currently monolithic, serving userspace processes at
+Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
+architecture is mid-transition toward a <strong>capability-based
+microkernel</strong>, where drivers, VFS, and block I/O are externalised
+to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
+<p>Current version: <strong>v0.2.20</strong> — System Calls &amp;
+Storage: SYS_YIELD, SYS_REBOOT, SYS_HALT, AHCI/SATA, DMA
+infrastructure.</p>
+<hr />
+<h2 id="architectural-pillars">Architectural Pillars</h2>
+<h3 id="modern-freestanding-c20">Modern Freestanding C++20</h3>
+<p>The entire kernel — every scheduler data structure, every VFS vnode
+operation, every page-table walk — is written in freestanding C++20.
+There is no C legacy layer, no assembly veneer beyond the boot entry
+point and ISR stubs, and no reliance on hosted runtime primitives.</p>
+<ul>
+<li><strong>C++20 Concepts</strong> used extensively for compile-time
+validation of synchronisation primitive interfaces, memory allocator
+traits, and architecture HAL requirements.</li>
+<li><strong>constexpr</strong> and <strong>consteval</strong> enforce
+that all scheduling parameters, memory layout constants, and system
+limits are known at compile time.</li>
+<li><strong>RAII</strong> is not a userspace luxury — it is the
+fundamental lifecycle model for every kernel resource: interrupt guards,
+page-table mappings, heap allocations, IPC mailbox handles, and file
+descriptors.</li>
+<li><strong>noexcept</strong> by default. The kernel is compiled with
+<code>-fno-exceptions</code>, so every function contract is enforced
+statically or via assertion.</li>
+<li>No <code>malloc</code>, no <code>printf</code>, no
+<code>errno</code>. All memory comes from a deterministic slab allocator
+(<code>MemPool</code>), and all diagnostics go through a custom binary
+<code>Logger</code>.</li>
+</ul>
+<h3 id="raii-first-kernel-synchronisation">RAII-First Kernel
+Synchronisation</h3>
+<p>Every critical section in the kernel is enforced by a scoped guard,
+not by convention. The primary mechanism is <code>IrqGuard</code>:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// kernel/arch/irq_guard.hpp</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> <span class="op">[[</span><span class="at">nodiscard</span><span class="op">]]</span> IrqGuard <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span><span class="op">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    IrqGuard<span class="op">()</span> <span class="kw">noexcept</span> <span class="op">{</span> <span class="cf">if</span> <span class="op">(</span>interrupts_enabled<span class="op">())</span> <span class="op">{</span> cli<span class="op">();</span> <span class="va">irq_was_</span> <span class="op">=</span> <span class="kw">true</span><span class="op">;</span> <span class="op">}</span> <span class="op">}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">~</span>IrqGuard<span class="op">()</span> <span class="kw">noexcept</span> <span class="op">{</span> <span class="cf">if</span> <span class="op">(</span><span class="va">irq_was_</span><span class="op">)</span> sti<span class="op">();</span> <span class="op">}</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    IrqGuard<span class="op">(</span><span class="at">const</span> IrqGuard<span class="op">&amp;)</span>            <span class="op">=</span> <span class="kw">delete</span><span class="op">;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    IrqGuard<span class="op">&amp;</span> <span class="kw">operator</span><span class="op">=(</span><span class="at">const</span> IrqGuard<span class="op">&amp;)</span> <span class="op">=</span> <span class="kw">delete</span><span class="op">;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    IrqGuard<span class="op">(</span>IrqGuard<span class="op">&amp;&amp;)</span>                 <span class="op">=</span> <span class="kw">delete</span><span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    IrqGuard<span class="op">&amp;</span> <span class="kw">operator</span><span class="op">=(</span>IrqGuard<span class="op">&amp;&amp;)</span>      <span class="op">=</span> <span class="kw">delete</span><span class="op">;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span><span class="op">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">bool</span> <span class="va">irq_was_</span><span class="op">;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="op">};</span></span></code></pre></div>
+<p>This eliminates an entire class of check-then-act races because the
+guard cannot be forgotten, duplicated, or left dangling. The pattern
+extends to mutexes (with priority inheritance), semaphores, event
+groups, and the scheduler’s internal dispatch — all protected by RAII
+wrappers that enforce unlock-on-destruction.</p>
+<h3 id="microkernel-paradigm-shift-in-progress">Microkernel Paradigm
+Shift (In Progress)</h3>
+<p>Jarvis is intentionally transitioning from a monolithic service layer
+to a capability-based microkernel: a deliberate architectural migration
+planned over Phases 3–8 of the roadmap.</p>
+<ul>
+<li><strong>Phase 7 (v0.7.x):</strong> VFS (<code>vfsd</code>) and block
+I/O (<code>iocd</code>) are externalised to Ring 3 servers. Filesystem
+drivers (FAT32, tmpfs) run as isolated userspace processes behind an IPC
+gateway. No kernel code holds a mount table reference.</li>
+<li><strong>Phase 8 (v0.8.x):</strong> The kernel is reduced to
+scheduler + IPC + page-table manager + interrupt routing. The Shell,
+init (PID 1), VFS, and all device drivers run as Ring 3
+capability-bearing servers. <code>SYS_CAP_GRANT</code> /
+<code>SYS_CAP_REVOKE</code> gate every cross-server access — no server
+can touch another server’s MMIO region or memory without explicit
+capability delegation.</li>
+</ul>
+<p>This migration is architected from the start: the current monolithic
+ring-0 service layer is structured as a set of isolated subsystems with
+clean interface boundaries, making the extraction to individual servers
+a matter of wrapping, not rewriting.</p>
+<hr />
+<h2 id="feature-highlights">Feature Highlights</h2>
+<h3 id="scheduler-process-model">Scheduler &amp; Process Model</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Preemptive rate-monotonic scheduling (256 priority levels)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Periodic and aperiodic task support</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Sporadic Server budget enforcement (C/T parameters, O(1)
+replenishment)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>O(1) task-ID → TCB hash table (open addressing)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Process lifecycle: <code>fork</code>, <code>waitpid</code>,
+<code>exit</code>, <code>exec</code></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ELF64 loader (static binaries from initrd or VFS)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Per-task <code>RLIMIT</code> tracking (<code>SYS_GETRLIMIT</code> /
+<code>SYS_SETRLIMIT</code>)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Lazy FPU/SSE context switch (FXSAVE/FXRSTOR, CR0.TS, #NM trap)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Task notifications, event groups, alarm signals</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Per-task user page tables with <code>fork()</code>-safe PML4
+cloning</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Kernel shell with 36+ built-in commands</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="synchronisation-ipc">Synchronisation &amp; IPC</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mutex with priority inheritance</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Counting semaphore (blocking wait)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Event group (multi-bit wait)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Fixed-size message queue (kernel-space, priority bitmap)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>IPC mailbox (send, receive, synchronous rendezvous)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Buffer pool for zero-copy message payload</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Notification (per-task 32-bit value with wait/clear)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Pipes (unidirectional byte-stream, <code>SYS_PIPE</code> /
+<code>SYS_DUP2</code>)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Wait-for-graph deadlock detection engine</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>RAII <code>IrqGuard</code> for interrupt-safe critical sections</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="virtual-file-system">Virtual File System</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unified vnode abstraction with operation vtable</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Per-task file descriptor tables (32 entries)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Mount table with path-based lookup</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Initrd (cpio newc) — root filesystem at boot</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Devfs — <code>/dev/tty</code>, <code>/dev/null</code>,
+<code>/dev/console</code>, <code>/dev/kbd</code>, <code>/dev/fb</code>,
+<code>/dev/random</code></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Procfs — <code>/proc/meminfo</code>, <code>/proc/[pid]/stat</code>,
+<code>/proc/self</code>, <code>/proc/sched</code></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>FAT32 — full read/write: open, read, write, close, readdir, mkdir,
+unlink, fstat</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Tmpfs — quota-managed RAM-backed filesystem for
+<code>/tmp</code></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>VFS daemon (<code>vfsd</code>) — authorises and proxies filesystem
+ops for userspace</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>IO daemon (<code>iocd</code>) — block device I/O request
+dispatch</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hardware-enablement">Hardware Enablement</h3>
+<table>
+<colgroup>
+<col style="width: 52%" />
+<col style="width: 47%" />
+</colgroup>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>x86_64 long mode, 4-level page tables (PML4 → PDPT → PD → PT)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Multiboot2-compliant boot</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>PIT (1 kHz scheduling tick), RTC (wall clock), HPET (planned)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>PS/2 keyboard (scancode set 2, modifier tracking)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Serial (COM1, 115200 baud, interrupt-driven)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Framebuffer (linear via Multiboot2, terminal with status bar)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ACPI QEMU shutdown port</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>ATA PIO (read/write, block device layer)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>PCI bus enumeration (config space access, BAR decoding)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>MSI/MSI-X interrupt support</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Virtio-net (1.0 PCI transport, probe + network stack)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Virtio-block (1.0 PCI transport)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Hardware RNG (RDSEED &gt; RDRAND &gt; RDTSC jitter fallback,
+ChaCha20 CSPRNG)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Lazy FPU/SSE context switch (FXSAVE/FXRSTOR, #NM trap)</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="kernel-shell-36-built-in-commands">Kernel Shell (36 Built-in
+Commands)</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Category</th>
+<th>Commands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Navigation</td>
+<td><code>cd</code>, <code>pwd</code>, <code>ls</code>,
+<code>dirs</code>, <code>pushd</code>, <code>popd</code></td>
+</tr>
+<tr>
+<td>File ops</td>
+<td><code>mkdir</code>, <code>rm</code>, <code>rmdir</code>,
+<code>cat</code></td>
+</tr>
+<tr>
+<td>System info</td>
+<td><code>help</code>, <code>uptime</code>, <code>version</code>,
+<code>meminfo</code>, <code>tasks</code>, <code>jobs</code>,
+<code>env</code>, <code>times</code></td>
+</tr>
+<tr>
+<td>Process control</td>
+<td><code>run</code>, <code>runelf</code>, <code>exit</code> /
+<code>shutdown</code>, <code>reboot</code>, <code>sleep</code>,
+<code>wait</code>, <code>fg</code>, <code>bg</code>,
+<code>disown</code></td>
+</tr>
+<tr>
+<td>Shell built-ins</td>
+<td><code>alias</code> / <code>unalias</code>, <code>history</code>,
+<code>type</code>, <code>which</code> / <code>locate</code>,
+<code>source</code> / <code>.</code>, <code>set</code>,
+<code>read</code>, <code>shift</code>, <code>export</code>,
+<code>echo</code>, <code>printf</code>, <code>test</code> /
+<code>[</code></td>
+</tr>
+<tr>
+<td>System control</td>
+<td><code>modprobe</code>, <code>modlist</code>, <code>selftest</code>,
+<code>clear</code>, <code>trap</code>, <code>umask</code>,
+<code>ulimit</code></td>
+</tr>
+</tbody>
+</table>
+<p>Features: output redirection (<code>&gt;</code>), alias expansion,
+command history (100-entry ring buffer), directory stack, 32 environment
+variables, shell execution options (<code>-x</code>, <code>-e</code>,
+<code>-u</code>), Zsh‑style prompt.</p>
+<h3 id="test-framework">Test Framework</h3>
+<ul>
+<li><strong>675 test cases</strong> across 80+ test files covering every
+kernel subsystem</li>
+<li>Run automatically at boot in debug builds; 84 curated tests in
+release</li>
+<li>Full state snapshot/restore between tests — isolation down to
+MemPool free-lists and page-table entries</li>
+<li>Leak detection on every test (task counts, page allocations, pool
+frees)</li>
+<li>QEMU integration: <code>make test-qemu</code> captures serial output
+and validates pass/fail exit codes</li>
+</ul>
+<hr />
+<h2 id="competitive-comparison-freertos-vs-jarvis-rtos">Competitive
+Comparison: FreeRTOS vs Jarvis RTOS</h2>
+<table>
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 29%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>FreeRTOS</th>
+<th>Jarvis RTOS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Language</strong></td>
+<td>C89/C99 (legacy idioms, manual memory management)</td>
+<td>Freestanding C++20 (zero-overhead abstractions, RAII, Concepts)</td>
+</tr>
+<tr>
+<td><strong>Critical sections</strong></td>
+<td><code>taskENTER_CRITICAL()</code> / <code>taskEXIT_CRITICAL()</code>
+— manual pairing, leak-prone</td>
+<td><code>IrqGuard</code> — RAII scope guard, impossible to forget or
+mismatch</td>
+</tr>
+<tr>
+<td><strong>Architecture</strong></td>
+<td>Monolithic library, tightly coupled to application</td>
+<td>Capability-based microkernel (in progress, v0.7.x–v0.8.x); drivers
+run as isolated Ring 3 servers</td>
+</tr>
+<tr>
+<td><strong>Configuration</strong></td>
+<td><code>FreeRTOSConfig.h</code> — preprocessor defines scattered
+across 200+ options</td>
+<td><code>jarvis_config.h</code> — centralised, documented, with
+<code>INCLUDE_</code> syscall gating and <code>CONFIG_HAS_*</code>
+feature flags</td>
+</tr>
+<tr>
+<td><strong>Scheduling</strong></td>
+<td>Fixed-priority preemptive, tick-less option,
+<code>configUSE_TIME_SLICING</code></td>
+<td>Rate-monotonic with 256 priority levels, idle-task RAM March-C and
+ALU integrity monitors (ASIL D)</td>
+</tr>
+<tr>
+<td><strong>Idle hook</strong></td>
+<td><code>configUSE_IDLE_HOOK</code> — simple callback</td>
+<td>Full idle-task stewardship: slab page return, CPU utilisation
+tracking, non-destructive memory test, register verification</td>
+</tr>
+<tr>
+<td><strong>Memory safety</strong></td>
+<td>Manual <code>pvPortMalloc()</code> / <code>vPortFree()</code>, no
+ownership tracking</td>
+<td><code>UniquePtr&lt;T&gt;</code> RAII wrappers, deterministic
+<code>MemPool</code> slab allocator, <code>ResourceTracker</code> leak
+detection</td>
+</tr>
+<tr>
+<td><strong>Hardware support</strong></td>
+<td>HAL via <code>portmacro.h</code> — per-port assembly macros</td>
+<td>Architecture-agnostic <code>arch/&lt;isa&gt;/</code> directories
+with uniform HAL signatures (aarch64, riscv64 planned for v0.2.21)</td>
+</tr>
+<tr>
+<td><strong>RNG</strong></td>
+<td>Typically none or application-provided</td>
+<td>Hardware RNG (RDSEED / RDRAND) + ChaCha20 CSPRNG →
+<code>/dev/random</code>, <code>SYS_GETRANDOM</code></td>
+</tr>
+<tr>
+<td><strong>FPU handling</strong></td>
+<td><code>configENABLE_FPU</code> — cooperative save/restore</td>
+<td>Lazy context switch via CR0.TS + #NM trap; FXSAVE/FXRSTOR, automatic
+on first use</td>
+</tr>
+<tr>
+<td><strong>IPC</strong></td>
+<td>Queues, semaphores, mutexes (C API)</td>
+<td>Priority IPC mailboxes, zero-copy buffer pool, event groups,
+notifications, deadlock detection engine</td>
+</tr>
+<tr>
+<td><strong>VFS</strong></td>
+<td>None (application defined)</td>
+<td>Full POSIX-like VFS: initrd, devfs, procfs, FAT32, tmpfs, vnode
+abstraction, mount table</td>
+</tr>
+<tr>
+<td><strong>Formal verification</strong></td>
+<td>None</td>
+<td><code>CheckedPointer</code> security, wait-for-graph runtime
+deadlock detection, stack canary markers</td>
+</tr>
+<tr>
+<td><strong>Testing</strong></td>
+<td>Community demos, no built-in test framework</td>
+<td>675 kernel-mode tests with full state snapshot/isolation, QEMU CI,
+leak detection</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="irqguard-in-practice">IrqGuard in Practice</h2>
+<p>The following is extracted from the scheduler’s
+<code>reschedule()</code> path — a critical section that must select the
+next task and prepare the context switch globals without interruption.
+The <code>IrqGuard</code> ensures <code>cli()</code> on entry and
+<code>sti()</code> (if interrupts were on) on any exit path, including
+early returns:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> Scheduler<span class="op">::</span>reschedule<span class="op">()</span> <span class="kw">noexcept</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    arch<span class="op">::</span>IrqGuard guard<span class="op">;</span>                     <span class="co">// RAII: cli() on construction</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span><span class="va">task_count_</span> <span class="op">&lt;=</span> <span class="dv">1</span><span class="op">)</span> <span class="cf">return</span><span class="op">;</span>             <span class="co">// safe early return — guard handles sti()</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span><span class="op">*</span> current <span class="op">=</span> <span class="va">tasks_</span><span class="op">[</span><span class="va">current_index_</span><span class="op">];</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(!</span>current<span class="op">)</span> <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span><span class="op">*</span> next <span class="op">=</span> next_task<span class="op">();</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">(</span>next <span class="op">&amp;&amp;</span> next <span class="op">!=</span> current<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="op">(</span>next<span class="op">-&gt;</span>state <span class="op">!=</span> TaskState<span class="op">::</span>READY <span class="op">&amp;&amp;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>            next<span class="op">-&gt;</span>state <span class="op">!=</span> TaskState<span class="op">::</span>RUNNING<span class="op">)</span> <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        switch_to_task<span class="op">(</span>current<span class="op">,</span> next<span class="op">);</span>        <span class="co">// sets scheduler globals for ISR epilogue</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>                                             <span class="co">// guard destructor: sti()</span></span></code></pre></div>
+<p>Every synchronisation primitive in the kernel — <code>Mutex</code>,
+<code>Semaphore</code>, <code>EventGroup</code>, <code>Notify</code>,
+<code>MessageQueue</code> — follows the same RAII contract, making it
+structurally impossible to leak a critical section.</p>
+<hr />
+<h2 id="roadmap">Roadmap</h2>
+<ul class="task-list">
+<li><label><input type="checkbox" checked="" /><strong>Phase 2 — Kernel
+Core &amp; Shell</strong> — Boot, PMM, VMM, scheduler, IPC, syscalls,
+ELF loader, shell, devfs, procfs</label></li>
+<li><label><input type="checkbox" checked="" /><strong>Phase 3 — System
+Services &amp; Hardware</strong> — FAT32, tmpfs, PCI, Virtio, ATA PIO,
+RNG, FPU, DMA, network stack <em>(completed — v0.2.20)</em></label></li>
+<li><label><input type="checkbox" /><strong>Phase 4 — Hard
+Real-Time</strong> — O(1) bitmap scheduler, HPET, WCRT analysis,
+priority ceiling protocol, idle-task RAM March-C + ALU integrity
+monitors (ASIL D)</label></li>
+<li><label><input type="checkbox" /><strong>Phase 5 — SMP &amp;
+Multicore</strong> — APIC, per-CPU run queues, cache-colouring
+allocator, TLB shootdown</label></li>
+<li><label><input type="checkbox" /><strong>Phase 6 — System
+Integration</strong> — 24h stress test, safety hardening, deterministic
+userspace libc</label></li>
+<li><label><input type="checkbox" /><strong>Phase 7 — Safety
+Systems</strong> — Hardware/software watchdog, wait-for-graph deadlock
+detection, ASIL-D idle monitors</label></li>
+<li><label><input type="checkbox" /><strong>Phase 8 — Microkernel
+Transition</strong> — Externalise VFS, drivers, block I/O to Ring 3
+capability servers</label></li>
+</ul>
+<p>Full roadmap at <a href="ROADMAP.md"><code>ROADMAP.md</code></a>.</p>
+<hr />
+<h2 id="build-quick-start">Build &amp; Quick Start</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install build-essential git wget xorriso dosfstools <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    x86_64-linux-gnu-gcc binutils qemu-system-x86</span></code></pre></div>
+<h3 id="build-run">Build &amp; Run</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>repo-url<span class="op">&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> os</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> debug          <span class="co"># Debug build with 675-test suite</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> qemu-iso       <span class="co"># Launch in QEMU with serial console</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> release        <span class="co"># Optimised release build (no tests)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Testing targets (QEMU)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-selftest       <span class="co"># Safe class (~102 tests, CI gate)</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-all-debug      <span class="co"># Full 675-test suite (debug)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-all-release    <span class="co"># Release-candidate subset</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-class CLASS=<span class="op">&lt;</span>name<span class="op">&gt;</span>  <span class="co"># Specific test class</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Renode simulation (multi-arch)</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> run-renode RENODE_ARCH=x86_64   <span class="co"># x86_64 via SeaBIOS+ISO</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> renode-test          <span class="co"># Renode CI validation</span></span></code></pre></div>
+<h3 id="build-architecture">Build Architecture</h3>
+<pre><code>  [ Userspace Apps ] &lt;─── Ring 3 Isolation
+────── [ Syscall Interface: int 0x82 (47 syscalls) ] ──────
+  [ Shell (Kernel Task, 36 built-ins) ]  [ RMS Scheduler        ]
+  [ VFS / Initrd / Devfs / Procfs / FAT32 ] [ Priority IPC Mailbox]
+  [ Virtual Memory (VMM, 4-level PT)    ]  [ Notify &amp; Event Groups]
+  [ O(1) PID→TCB Hash Table             ]  [ Priority Inheritance ]
+  [ Physical Memory (PMM, Buddy Alloc)   ]  [ Slab Alloc (MemPool) ]
+  [ Hardware: Serial, KBD, Framebuffer,   ]  [ ATA PIO, PIT, RTC    ]
+  [ PCI, Virtio, ACPI                    ]  [ RNG, FPU Lazy Switch ]
+  [ Gcov, Driver Registry, Integrity     ]  [ Deadlock Detection   ]
+═════════════ Monolithic Kernel (Ring 0) ═════════════</code></pre>
+<hr />
+<h2 id="call-for-contributions">Call for Contributions</h2>
+<p>Jarvis RTOS is an architectural project first and a feature project
+second. We are seeking contributions from engineers who value
+<strong>structural correctness over velocity</strong>:</p>
+<ul>
+<li><strong>Lock-free data structures</strong> for ISR→task handoff
+(SPSC ring buffers, hazard pointers)</li>
+<li><strong>C++20 memory model experts</strong> for formalising the
+kernel’s atomic ordering guarantees (the scheduler uses
+<code>volatile</code> globals today — a migration path to
+<code>std::atomic</code> with <code>memory_order</code> is a
+high-priority engineering goal)</li>
+<li><strong>Bare-metal systems engineers</strong> for ARM Cortex-A
+(aarch64) and RISC-V (RV64) port bring-up (arch HAL abstraction, linker
+scripts, MMU init, GIC/PLIC interrupt controllers)</li>
+<li><strong>Formal methods</strong> — model-checking the wait-for-graph
+deadlock detector, proving the rate-monotonic schedule is feasible under
+declared WCETs</li>
+</ul>
+<h3 id="principles">Principles</h3>
+<ul>
+<li><strong>Architecture over features.</strong> A new driver does not
+ship without a test, a <code>ResourceTracker</code> entry, and a
+documented failure mode.</li>
+<li><strong>Compile-time over run-time.</strong> If a constraint can be
+expressed in C++20 Concepts or <code>constexpr</code>, it should
+be.</li>
+<li><strong>Determinism is non-negotiable.</strong> No dynamic
+allocation in the scheduler path, no unbounded loops in ISRs, no
+spinlocks that disable preemption for more than a single cache-line
+read.</li>
+</ul>
+<p>If this aligns with your engineering philosophy, open an issue or
+pull request. Code review is rigorous and architectural — expect
+line-by-line attention to every <code>IrqGuard</code> placement.</p>
+<hr />
+<h2 id="license">License</h2>
+<p>Jarvis RTOS is free software: you can redistribute it and/or modify
+it under the terms of the <strong>GNU General Public License</strong>,
+either version 3 of the License, or (at your option) any later version.
+See <a href="LICENSE.txt"><code>LICENSE.txt</code></a> for the full
+text.</p>
 </body>
 </html>

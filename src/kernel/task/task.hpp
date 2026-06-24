@@ -24,6 +24,7 @@
 #include <types.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <signal.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace kernel {
 
@@ -33,11 +34,11 @@ struct TaskControlBlock;
 void init_task_common(TaskControlBlock& tcb);
 
 /// @brief Maximum payload size in bytes for an IPC message.
-static constexpr size_t IPC_MAX_MSG_SIZE = 64;
+static constexpr size_t IPC_MAX_MSG_SIZE = CONFIG_IPC_MAX_MSG_SIZE;
 /// @brief Maximum number of messages in a single queue.
-static constexpr size_t IPC_MAX_QUEUE_MSG = 16;
+static constexpr size_t IPC_MAX_QUEUE_MSG = CONFIG_IPC_MAX_QUEUE_MSG;
 /// @brief Number of priority levels (0 = highest urgency).
-static constexpr size_t IPC_PRIORITY_LEVELS = 32;
+static constexpr size_t IPC_PRIORITY_LEVELS = CONFIG_IPC_PRIORITY_LEVELS;
 
 /// @brief A single IPC message with sender ID, type, priority, and payload.
 struct Message {
@@ -84,7 +85,7 @@ struct TaskContext {
 /// @brief Task control block — represents a single thread of execution.
 /// @note Includes scheduling parameters, register context, and stack info.
 struct TaskControlBlock {
-    static constexpr size_t STACK_SIZE = 64_KiB;
+    static constexpr size_t STACK_SIZE = CONFIG_STACK_SIZE;
     static constexpr uint64_t KERNEL_CS = 0x08;
     static constexpr uint64_t KERNEL_SS = 0x10;
     static constexpr uint64_t USER_CS  = 0x1B;
@@ -195,7 +196,7 @@ struct TaskControlBlock {
     uint64_t program_break_start;
 
     vfs::FdTable fd_table;
-    char cwd[256];
+    char cwd[CONFIG_VFS_MAX_PATH];
     vfs::Vnode* cwd_vnode;
 
     uint64_t waiting_child_pid;

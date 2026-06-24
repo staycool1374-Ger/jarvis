@@ -23,9 +23,9 @@
 namespace kernel {
 namespace vfs {
 
-static constexpr size_t MAX_FDS = 32;
-static constexpr size_t MAX_MOUNTS = 32;
-static constexpr size_t MAX_PATH = 256;
+static constexpr size_t MAX_FDS = CONFIG_MAX_FDS;
+static constexpr size_t MAX_MOUNTS = CONFIG_MAX_MOUNTS;
+static constexpr size_t MAX_PATH = CONFIG_VFS_MAX_PATH;
 static constexpr size_t MAX_PATH_DEPTH = 16;
 
 enum OpenFlags : uint64_t {

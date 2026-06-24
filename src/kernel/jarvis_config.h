@@ -1,0 +1,463 @@
+#ifndef JARVIS_CONFIG_H
+#define JARVIS_CONFIG_H
+
+/// @file jarvis_config.h
+/// @brief Central compile-time configuration for Jarvis RTOS.
+/// All tunables currently scattered as constexpr in 20+ files
+/// get a single configuration home.
+///
+/// Every #define has a Doxygen comment explaining its effect,
+/// valid range, and default value. Override any define before
+/// including this header to customise the build.
+
+// ---------------------------------------------------------------------------
+// Version
+// ---------------------------------------------------------------------------
+#define CONFIG_VERSION "0.2.21"
+
+// ---------------------------------------------------------------------------
+// Architecture Detection (set by Makefile ARCH variable)
+// ---------------------------------------------------------------------------
+// Exactly one of these is defined by the build system:
+//   ARCH=x86_64   → -DCONFIG_ARCH_X86_64
+//   ARCH=aarch64  → -DCONFIG_ARCH_AARCH64
+//   ARCH=riscv64  → -DCONFIG_ARCH_RISCV64
+
+#ifndef CONFIG_ARCH_X86_64
+#ifndef CONFIG_ARCH_AARCH64
+#ifndef CONFIG_ARCH_RISCV64
+// Fallback: detect from compiler defines
+#if defined(__x86_64__)
+#define CONFIG_ARCH_X86_64 1
+#elif defined(__aarch64__)
+#define CONFIG_ARCH_AARCH64 1
+#elif defined(__riscv64)
+#define CONFIG_ARCH_RISCV64 1
+#else
+#error "Unknown architecture — define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, or CONFIG_ARCH_RISCV64"
+#endif
+#endif
+#endif
+#endif
+
+// ---------------------------------------------------------------------------
+// Scheduling Tunables
+// ---------------------------------------------------------------------------
+/// Maximum number of tasks managed by the scheduler (including idle).
+/// Valid range: 2–4096. Default: 64.
+#ifndef CONFIG_MAX_TASKS
+#define CONFIG_MAX_TASKS 64
+#endif
+
+/// Scheduling tick rate in Hz.
+/// Valid range: 100–100000. Default: 1000.
+/// Must divide the timer clock frequency evenly (PIT: 1193182).
+#ifndef CONFIG_TICK_HZ
+#define CONFIG_TICK_HZ 1000
+#endif
+
+/// Highest schedulable priority (0 = lowest).
+/// Valid range: 1–255. Default: 255.
+#ifndef CONFIG_PRIORITY_CEILING
+#define CONFIG_PRIORITY_CEILING 255
+#endif
+
+/// Enable preemptive scheduling. Set to 0 for cooperative-only.
+/// Default: 1 (enabled).
+#ifndef CONFIG_PREEMPTION
+#define CONFIG_PREEMPTION 1
+#endif
+
+/// Idle task yields to lower power / background hooks.
+/// Default: 0 (busy-wait).
+#ifndef CONFIG_IDLE_YIELD
+#define CONFIG_IDLE_YIELD 0
+#endif
+
+/// Enable round-robin time-slicing within the same priority.
+/// Default: 1 (enabled).
+#ifndef CONFIG_TIME_SLICING
+#define CONFIG_TIME_SLICING 1
+#endif
+
+/// Maximum number of priority levels for the scheduler bitmap.
+/// Default: 256. Must be a power of 2.
+#ifndef CONFIG_MAX_PRIORITY
+#define CONFIG_MAX_PRIORITY 256
+#endif
+
+// ---------------------------------------------------------------------------
+// Memory Layout Tunables (Architecture-Overridable)
+// ---------------------------------------------------------------------------
+#if CONFIG_ARCH_X86_64
+/// Physical page size in bytes. Must be 4096 on x86_64.
+#ifndef CONFIG_PAGE_SIZE
+#define CONFIG_PAGE_SIZE 4096
+#endif
+
+/// Higher-half direct-map offset for physical memory.
+#ifndef CONFIG_HHDM_OFFSET
+#define CONFIG_HHDM_OFFSET 0xFFFF800000000000ULL
+#endif
+
+/// Number of PML4 entries reserved for userspace (0–255).
+#ifndef CONFIG_PML4_USER_COUNT
+#define CONFIG_PML4_USER_COUNT 256
+#endif
+
+/// Maximum user-space virtual address.
+#ifndef CONFIG_USER_SPACE_LIMIT
+#define CONFIG_USER_SPACE_LIMIT 0x00007FFFFFFFFFFFULL
+#endif
+
+#elif CONFIG_ARCH_AARCH64
+#ifndef CONFIG_PAGE_SIZE
+#define CONFIG_PAGE_SIZE 4096
+#endif
+#ifndef CONFIG_HHDM_OFFSET
+#define CONFIG_HHDM_OFFSET 0xFFFF000000000000ULL
+#endif
+#ifndef CONFIG_USER_SPACE_LIMIT
+#define CONFIG_USER_SPACE_LIMIT 0x0000FFFFFFFFFFFFULL
+#endif
+
+#elif CONFIG_ARCH_RISCV64
+#ifndef CONFIG_PAGE_SIZE
+#define CONFIG_PAGE_SIZE 4096
+#endif
+#ifndef CONFIG_HHDM_OFFSET
+#define CONFIG_HHDM_OFFSET 0xFFFFFFC000000000ULL
+#endif
+#ifndef CONFIG_USER_SPACE_LIMIT
+#define CONFIG_USER_SPACE_LIMIT 0x000000FFFFFFFFFFULL
+#endif
+#endif
+
+/// Kernel stack size per task in bytes. Must be >= CONFIG_MIN_STACK_SIZE.
+/// Default: 65536 (64 KiB).
+#ifndef CONFIG_STACK_SIZE
+#define CONFIG_STACK_SIZE 65536
+#endif
+
+/// Minimum allowed kernel stack size in bytes.
+/// Default: 4096.
+#ifndef CONFIG_MIN_STACK_SIZE
+#define CONFIG_MIN_STACK_SIZE 4096
+#endif
+
+/// Total kernel heap size in bytes (used by MemPool and early allocators).
+/// Default: 16777216 (16 MiB).
+#ifndef CONFIG_HEAP_SIZE
+#define CONFIG_HEAP_SIZE 16777216
+#endif
+
+// ---------------------------------------------------------------------------
+// Subsystem Sizing Constants
+// ---------------------------------------------------------------------------
+/// Maximum open file descriptors per task.
+#ifndef CONFIG_MAX_FDS
+#define CONFIG_MAX_FDS 32
+#endif
+
+/// Maximum number of mount points.
+#ifndef CONFIG_MAX_MOUNTS
+#define CONFIG_MAX_MOUNTS 32
+#endif
+
+/// Maximum number of registered device drivers.
+#ifndef CONFIG_MAX_DRIVERS
+#define CONFIG_MAX_DRIVERS 16
+#endif
+
+/// Maximum number of daemon tasks (vfsd, iocd, etc).
+#ifndef CONFIG_MAX_DAEMONS
+#define CONFIG_MAX_DAEMONS 16
+#endif
+
+/// Maximum number of programs in the program registry.
+#ifndef CONFIG_MAX_PROGRAMS
+#define CONFIG_MAX_PROGRAMS 32
+#endif
+
+/// Maximum IPC message payload size in bytes.
+#ifndef CONFIG_IPC_MAX_MSG_SIZE
+#define CONFIG_IPC_MAX_MSG_SIZE 64
+#endif
+
+/// Maximum number of messages in an IPC queue.
+#ifndef CONFIG_IPC_MAX_QUEUE_MSG
+#define CONFIG_IPC_MAX_QUEUE_MSG 16
+#endif
+
+/// Number of IPC priority levels.
+#ifndef CONFIG_IPC_PRIORITY_LEVELS
+#define CONFIG_IPC_PRIORITY_LEVELS 32
+#endif
+
+/// Maximum shared memory pages for IPC between user-space and drivers.
+#ifndef CONFIG_IPC_SHMEM_MAX_PAGES
+#define CONFIG_IPC_SHMEM_MAX_PAGES 64
+#endif
+
+/// Maximum physical pages for a user-space process loaded via runelf.
+#ifndef CONFIG_MAX_PROCESS_PAGES
+#define CONFIG_MAX_PROCESS_PAGES 512
+#endif
+
+/// Maximum number of signal handlers per task.
+#ifndef CONFIG_MAX_SIGNAL_HANDLERS
+#define CONFIG_MAX_SIGNAL_HANDLERS 32
+#endif
+
+/// Maximum length of a VFS path string.
+#ifndef CONFIG_VFS_MAX_PATH
+#define CONFIG_VFS_MAX_PATH 256
+#endif
+
+/// Maximum length of a task name (including null terminator).
+#ifndef CONFIG_TASK_NAME_LEN
+#define CONFIG_TASK_NAME_LEN 16
+#endif
+
+/// Maximum number of waiters in a sync primitive (Mutex, Semaphore, Queue, etc).
+#ifndef CONFIG_SYNC_MAX_WAITERS
+#define CONFIG_SYNC_MAX_WAITERS 32
+#endif
+
+// ---------------------------------------------------------------------------
+// MemPool Configuration
+// ---------------------------------------------------------------------------
+/// Number of fixed-size MemPool classes.
+#ifndef CONFIG_MEMPOOL_NUM_POOLS
+#define CONFIG_MEMPOOL_NUM_POOLS 9
+#endif
+
+/// Comma-separated list of block sizes per pool.
+/// Must have exactly CONFIG_MEMPOOL_NUM_POOLS entries.
+#ifndef CONFIG_MEMPOOL_BLOCK_SIZES
+#define CONFIG_MEMPOOL_BLOCK_SIZES 16,32,64,128,256,512,1024,2048,4096
+#endif
+
+/// Comma-separated list of block counts per pool.
+/// Must have exactly CONFIG_MEMPOOL_NUM_POOLS entries.
+#ifndef CONFIG_MEMPOOL_BLOCK_COUNTS
+#define CONFIG_MEMPOOL_BLOCK_COUNTS 256,128,64,32,16,8,4,2,1
+#endif
+
+// ---------------------------------------------------------------------------
+// Syscall Inclusion Gating
+// ---------------------------------------------------------------------------
+/// Each syscall can be individually enabled/disabled.
+/// Set to 0 to strip the syscall at compile time.
+#ifndef CONFIG_INCLUDE_SYS_YIELD
+#define CONFIG_INCLUDE_SYS_YIELD 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_EXIT
+#define CONFIG_INCLUDE_SYS_EXIT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_FORK
+#define CONFIG_INCLUDE_SYS_FORK 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_CLONE
+#define CONFIG_INCLUDE_SYS_CLONE 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_EXECVE
+#define CONFIG_INCLUDE_SYS_EXECVE 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_WAITPID
+#define CONFIG_INCLUDE_SYS_WAITPID 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_NANOSLEEP
+#define CONFIG_INCLUDE_SYS_NANOSLEEP 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_GETPID
+#define CONFIG_INCLUDE_SYS_GETPID 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_GETPPID
+#define CONFIG_INCLUDE_SYS_GETPPID 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_SETPRIO
+#define CONFIG_INCLUDE_SYS_SETPRIO 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_GETPRIO
+#define CONFIG_INCLUDE_SYS_GETPRIO 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_SENDSYNC
+#define CONFIG_INCLUDE_SYS_SENDSYNC 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_RECV
+#define CONFIG_INCLUDE_SYS_RECV 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_REPLY
+#define CONFIG_INCLUDE_SYS_REPLY 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_NOTIFY
+#define CONFIG_INCLUDE_SYS_NOTIFY 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_NOTIFY_WAIT
+#define CONFIG_INCLUDE_SYS_NOTIFY_WAIT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_EVENT_POST
+#define CONFIG_INCLUDE_SYS_EVENT_POST 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_EVENT_WAIT
+#define CONFIG_INCLUDE_SYS_EVENT_WAIT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_BRK
+#define CONFIG_INCLUDE_SYS_BRK 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_MMAP
+#define CONFIG_INCLUDE_SYS_MMAP 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_MUNMAP
+#define CONFIG_INCLUDE_SYS_MUNMAP 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_OPEN
+#define CONFIG_INCLUDE_SYS_OPEN 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_CLOSE
+#define CONFIG_INCLUDE_SYS_CLOSE 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_READ
+#define CONFIG_INCLUDE_SYS_READ 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_WRITE
+#define CONFIG_INCLUDE_SYS_WRITE 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_SEEK
+#define CONFIG_INCLUDE_SYS_SEEK 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_IOCTL
+#define CONFIG_INCLUDE_SYS_IOCTL 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_STAT
+#define CONFIG_INCLUDE_SYS_STAT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_MKDIR
+#define CONFIG_INCLUDE_SYS_MKDIR 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_UNLINK
+#define CONFIG_INCLUDE_SYS_UNLINK 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_RENAME
+#define CONFIG_INCLUDE_SYS_RENAME 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_MOUNT
+#define CONFIG_INCLUDE_SYS_MOUNT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_UMOUNT
+#define CONFIG_INCLUDE_SYS_UMOUNT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_REBOOT
+#define CONFIG_INCLUDE_SYS_REBOOT 1
+#endif
+#ifndef CONFIG_INCLUDE_SYS_HALT
+#define CONFIG_INCLUDE_SYS_HALT 1
+#endif
+/// Computed count of enabled syscalls (used for dispatch table sizing).
+#define CONFIG_SYSCALL_COUNT \
+    (CONFIG_INCLUDE_SYS_YIELD + CONFIG_INCLUDE_SYS_EXIT + \
+     CONFIG_INCLUDE_SYS_FORK + CONFIG_INCLUDE_SYS_CLONE + \
+     CONFIG_INCLUDE_SYS_EXECVE + CONFIG_INCLUDE_SYS_WAITPID + \
+     CONFIG_INCLUDE_SYS_NANOSLEEP + CONFIG_INCLUDE_SYS_GETPID + \
+     CONFIG_INCLUDE_SYS_GETPPID + CONFIG_INCLUDE_SYS_SETPRIO + \
+     CONFIG_INCLUDE_SYS_GETPRIO + CONFIG_INCLUDE_SYS_SENDSYNC + \
+     CONFIG_INCLUDE_SYS_RECV + CONFIG_INCLUDE_SYS_REPLY + \
+     CONFIG_INCLUDE_SYS_NOTIFY + CONFIG_INCLUDE_SYS_NOTIFY_WAIT + \
+     CONFIG_INCLUDE_SYS_EVENT_POST + CONFIG_INCLUDE_SYS_EVENT_WAIT + \
+     CONFIG_INCLUDE_SYS_BRK + CONFIG_INCLUDE_SYS_MMAP + \
+     CONFIG_INCLUDE_SYS_MUNMAP + CONFIG_INCLUDE_SYS_OPEN + \
+     CONFIG_INCLUDE_SYS_CLOSE + CONFIG_INCLUDE_SYS_READ + \
+     CONFIG_INCLUDE_SYS_WRITE + CONFIG_INCLUDE_SYS_SEEK + \
+     CONFIG_INCLUDE_SYS_IOCTL + CONFIG_INCLUDE_SYS_STAT + \
+     CONFIG_INCLUDE_SYS_MKDIR + CONFIG_INCLUDE_SYS_UNLINK + \
+     CONFIG_INCLUDE_SYS_RENAME + CONFIG_INCLUDE_SYS_MOUNT + \
+     CONFIG_INCLUDE_SYS_UMOUNT + CONFIG_INCLUDE_SYS_REBOOT + \
+     CONFIG_INCLUDE_SYS_HALT)
+
+// ---------------------------------------------------------------------------
+// Architecture Feature Detection Flags
+// ---------------------------------------------------------------------------
+#if CONFIG_ARCH_X86_64
+#ifndef CONFIG_HAS_FPU
+#define CONFIG_HAS_FPU 1
+#endif
+#ifndef CONFIG_HAS_RDRAND
+#define CONFIG_HAS_RDRAND 1
+#endif
+#ifndef CONFIG_HAS_APIC
+#define CONFIG_HAS_APIC 1
+#endif
+#endif
+
+#if CONFIG_ARCH_AARCH64
+#ifndef CONFIG_HAS_FPU
+#define CONFIG_HAS_FPU 1
+#endif
+#ifndef CONFIG_HAS_GIC
+#define CONFIG_HAS_GIC 1
+#endif
+#endif
+
+#if CONFIG_ARCH_RISCV64
+#ifndef CONFIG_HAS_FPU
+#define CONFIG_HAS_FPU 1
+#endif
+#ifndef CONFIG_HAS_PLIC
+#define CONFIG_HAS_PLIC 1
+#endif
+#ifndef CONFIG_HAS_SBI
+#define CONFIG_HAS_SBI 1
+#endif
+#endif
+
+#ifndef CONFIG_HAS_MPU
+#define CONFIG_HAS_MPU 0
+#endif
+#ifndef CONFIG_HAS_HPET
+#define CONFIG_HAS_HPET 0
+#endif
+
+// ---------------------------------------------------------------------------
+// Hook Configuration Points
+// ---------------------------------------------------------------------------
+/// If non-zero, declares weak symbol idle_hook() called each idle iteration.
+#ifndef CONFIG_IDLE_HOOK
+#define CONFIG_IDLE_HOOK 0
+#endif
+
+/// If non-zero, declares weak symbol tick_hook(uint64_t ticks) called on tick.
+#ifndef CONFIG_TICK_HOOK
+#define CONFIG_TICK_HOOK 0
+#endif
+
+/// If non-zero, declares weak symbol stack_overflow_hook(TaskControlBlock*).
+#ifndef CONFIG_STACK_OVERFLOW_HOOK
+#define CONFIG_STACK_OVERFLOW_HOOK 0
+#endif
+
+/// If non-zero, declares weak symbol oom_hook(size_t requested_size).
+#ifndef CONFIG_OOM_HOOK
+#define CONFIG_OOM_HOOK 0
+#endif
+
+/// If non-zero, declares weak symbol init_hook() after daemon init complete.
+#ifndef CONFIG_INIT_HOOK
+#define CONFIG_INIT_HOOK 0
+#endif
+
+// ---------------------------------------------------------------------------
+// Custom Assertion Macro
+// ---------------------------------------------------------------------------
+/// Overridable assertion macro. Default calls panic on failure.
+#ifndef CONFIG_ASSERT
+extern "C" void panic(const char* msg);
+#define CONFIG_ASSERT(expr) \
+    do { \
+        if (!(expr)) { \
+            panic("CONFIG_ASSERT: " #expr " at " __FILE__); \
+        } \
+    } while (0)
+#endif
+
+#endif // JARVIS_CONFIG_H

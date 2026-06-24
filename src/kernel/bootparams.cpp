@@ -23,10 +23,10 @@
 namespace kernel {
 
 static BootParams g_boot_params = {
-    .timer_hz = 1000,
-    .max_tasks = 64,
-    .scheduler_priority_ceiling = 255,
-    .preempt_enabled = true,
+    .timer_hz = CONFIG_TICK_HZ,
+    .max_tasks = CONFIG_MAX_TASKS,
+    .scheduler_priority_ceiling = CONFIG_PRIORITY_CEILING,
+    .preempt_enabled = CONFIG_PREEMPTION,
     .debug_scheduling = false,
     .debug_ipc = false,
     .debug_memory = false,

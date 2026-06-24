@@ -22,6 +22,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/jarvis_config.h>
 
 // ---------------------------------------------------------------------------
 // Fundamental type limits
@@ -34,14 +35,14 @@ inline constexpr uint64_t UINT64_MAX = ~0ULL;
 namespace arch {
 
 /// @brief Higher-half offset: convert physical → kernel-visible virtual.
-inline constexpr uint64_t HHDM_OFFSET = 0xFFFF800000000000ULL;
+inline constexpr uint64_t HHDM_OFFSET = CONFIG_HHDM_OFFSET;
 
 /// @brief PML4 layout constants.
-inline constexpr uint64_t PML4_USER_COUNT    = 256;   // entries 0-255
-inline constexpr uint64_t PML4_KERNEL_START  = 256;   // entry 256
+inline constexpr uint64_t PML4_USER_COUNT    = CONFIG_PML4_USER_COUNT;   // entries 0-255
+inline constexpr uint64_t PML4_KERNEL_START  = CONFIG_PML4_USER_COUNT;   // entry 256
 inline constexpr uint64_t PML4_ENTRIES       = 512;
 
-inline constexpr uint64_t PAGE_SIZE   = 4096;
+inline constexpr uint64_t PAGE_SIZE   = CONFIG_PAGE_SIZE;
 inline constexpr uint64_t PAGE_SIZE_2M = 0x200000;
 
 /// @brief x86-64 segment selectors.

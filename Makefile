@@ -181,7 +181,7 @@ include mk/rules.mk
         test-selftest test-all-debug test-all-release test-class \
         test-qemu test symbols objdump debug release release-test \
         run-release-test profiling gdb test-gdb rr-record rr-replay \
-        _run-shell-test run-renode renode-test
+        _run-shell-test run-renode renode-test check-config config-summary
 
 # Default target
 all: help
@@ -202,12 +202,30 @@ check-style:
 	    exit 1; \
 	fi
 
+check-config:
+	@printf '  %-7s %s\n' 'CONFIG' 'Validating kernel configuration…'
+	@python3 tools/check-config.py; \
+	rc=$$?; \
+	if [ $$rc -eq 0 ]; then \
+	    printf '  %-7s %s\n' 'CONFIG' 'All checks passed.'; \
+	else \
+	    printf '  %-7s %s\n' 'CONFIG' 'Errors found!'; \
+	    exit 1; \
+	fi
+
+config-summary:
+	@printf '  %-7s %s\n' 'CONFIG' 'Active configuration:'
+	@grep -h '#define CONFIG_' src/kernel/jarvis_config.h | grep -v '//' | \
+	sed 's/#define /  /' | column -t
+
 help:
 	@echo "Jarvis RTOS — Build Targets"
 	@echo ""
 	@echo "  [A] make (or make all)     Show this help"
 	@echo "  [A] make build             Style check + debug ISO"
 	@echo "  [A] make check-style       Validate kernel coding style (src/kernel/)"
+	@echo "  [A] make check-config      Validate kernel configuration consistency"
+	@echo "  [A] make config-summary    Print active configuration values"
 	@echo "  [A] make debug             Build debug ISO"
 	@echo "  [A] make release           Build production ISO"
 	@echo "  [A] make clean             Remove all build artifacts"

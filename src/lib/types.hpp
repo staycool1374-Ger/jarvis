@@ -41,3 +41,6 @@ using nullptr_t = decltype(nullptr);
 static constexpr size_t operator""_KiB(unsigned long long v) { return v * 1024; }
 /// @brief User-defined literal for mebibytes (multiplies by 1024^2).
 static constexpr size_t operator""_MiB(unsigned long long v) { return v * 1024 * 1024; }
+
+/// @brief Pull in the central configuration header.
+#include <kernel/jarvis_config.h>

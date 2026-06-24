@@ -91,7 +91,7 @@ static inline ExceptionSignalMap exception_to_signal(uint64_t vector) {
 }
 
 /// @brief Maximum number of signal handlers per task (one per signal number).
-static constexpr size_t MAX_SIGNAL_HANDLERS = 32;
+static constexpr size_t MAX_SIGNAL_HANDLERS = CONFIG_MAX_SIGNAL_HANDLERS;
 
 /// @brief Global recovery IP for safe user memory access.
 ///        Non-zero means we are in a user memory access recovery zone.

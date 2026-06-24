@@ -27,7 +27,7 @@ namespace sync {
 
 class Mutex {
 public:
-    static constexpr size_t MAX_WAITERS = 32;
+    static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Mutex() : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(
         0) {}

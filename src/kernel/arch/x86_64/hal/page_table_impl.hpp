@@ -22,7 +22,7 @@ public:
     static inline void tlb_flush(uint64_t virt_addr) { arch_page_table_tlb_flush(virt_addr); }
     static inline void tlb_flush_all() { arch_page_table_tlb_flush_all(); }
 
-    static constexpr uint64_t PAGE_SIZE = 4096;
+    static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t ENTRIES = 512;
 };
 

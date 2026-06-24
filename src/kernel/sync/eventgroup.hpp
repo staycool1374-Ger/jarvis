@@ -27,7 +27,7 @@ namespace sync {
 
 class EventGroup {
 public:
-    static constexpr size_t MAX_WAITERS = 32;
+    static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     EventGroup() : bits_(0), wait_count_(0) {}
     /// @brief Initialize the event group to zero bits.

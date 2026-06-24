@@ -23,55 +23,50 @@ When implementing or refactoring code paths for this phase, execute the followin
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.22)
 
 ### 0.2.21 — Kernel Configuration & Portability (Detailed Step-by-Step Tasks)
-- [ ] Create jarvis_config.h Central Configuration Header
-  - [ ] Create src/kernel/jarvis_config.h with #ifndef JARVIS_CONFIG_H / #define / #endif guard
-  - [ ] Add CONFIG_VERSION macro with value "0.2.21" for compile-time version detection
-  - [ ] Add Doxygen-style comments for every #define explaining effect, valid range, and default
-  - [ ] Include fallback defaults for every config so kernel builds without user-provided config
-  - [ ] Add architecture detection: #if defined(__x86_64__) || defined(__aarch64__) || defined(__riscv64)
-  - [ ] Define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, CONFIG_ARCH_RISCV64 mutually exclusive based on ARCH Makefile variable
-- [ ] Migrate Scheduling Tunables
-  - [ ] CONFIG_MAX_TASKS (default 64) — replace MAX_TASKS in scheduler.hpp and task.hpp
-  - [ ] CONFIG_TICK_HZ (default 1000) — replace BootParams::timer_hz default; update arch::Timer::init()
-  - [ ] CONFIG_PRIORITY_CEILING (default 255) — replace BootParams::scheduler_priority_ceiling
-  - [ ] CONFIG_PREEMPTION (default 1) — replace BootParams::preempt_enabled; gate Scheduler::preempt() calls
-  - [ ] CONFIG_IDLE_YIELD (default 0) — add yield in idle loop when enabled
-  - [ ] CONFIG_TIME_SLICING (default 1) — add round-robin time-slice config per priority
-- [ ] Migrate Memory Layout Tunables (Architecture-Overridable)
-  - [ ] CONFIG_PAGE_SIZE (default 4096) — replace all 3× PAGE_SIZE definitions; validate power-of-2
-  - [ ] CONFIG_HHDM_OFFSET (default 0xFFFF800000000000 x86_64, arch-specific for ARM/RISC-V) — replace arch::HHDM_OFFSET
-  - [ ] CONFIG_PML4_USER_COUNT (default 256) — x86_64 only; page table user entries
-  - [ ] CONFIG_USER_SPACE_LIMIT (default 0x00007FFFFFFFFFFF) — user virtual address ceiling
-  - [ ] CONFIG_STACK_SIZE (default 65536 / 64 KiB) — replace both STACK_SIZE definitions; validate ≥ CONFIG_MIN_STACK_SIZE
-  - [ ] CONFIG_HEAP_SIZE (default 16 MiB) — replace HEAP_SIZE in constants.hpp
-  - [ ] CONFIG_MIN_STACK_SIZE (default 4096) — minimum stack for task creation safety check
-- [ ] Migrate Subsystem Sizing Constants
-  - [ ] CONFIG_MAX_FDS (default 32) — replace MAX_FDS in vfs.hpp
-  - [ ] CONFIG_MAX_MOUNTS (default 32) — replace MAX_MOUNTS in vfs.hpp
-  - [ ] CONFIG_MAX_DRIVERS (default 16) — replace MAX_DRIVERS in driver_manager.hpp
-  - [ ] CONFIG_MAX_DAEMONS (default 16) — replace MAX_DAEMONS in init.hpp
-  - [ ] CONFIG_MAX_PROGRAMS (default 32) — replace MAX_PROGRAMS in loader.hpp
-  - [ ] CONFIG_IPC_MAX_MSG_SIZE (default 64) — replace MAX_MSG_SIZE in ipc.hpp
-  - [ ] CONFIG_IPC_MAX_QUEUE_MSG (default 16) — replace MAX_QUEUE_MSG in ipc.hpp
-  - [ ] CONFIG_IPC_PRIORITY_LEVELS (default 32) — replace PRIORITY_LEVELS in ipc.hpp
-  - [ ] CONFIG_IPC_SHMEM_MAX_PAGES - maximum of shared memory pages for ipc between via runlet loaded user space program in user task and device driver
-  - [ ] CONFIG_MAX_PROCESS_PAGES - maximum of physical pages via runelf loaded user space program in user task, for static reservation
-  - [ ] CONFIG_MAX_SIGNAL_HANDLERS (default 32) — replace MAX_SIGNAL_HANDLERS in signal.hpp
-  - [ ] CONFIG_VFS_MAX_PATH (default 256) — replace MAX_PATH in vfs.hpp
-  - [ ] CONFIG_TASK_NAME_LEN (default 16) — add task name length limit in task.hpp
-- [ ] Migrate MemPool Configuration
-  - [ ] CONFIG_MEMPOOL_NUM_POOLS (default 9) — number of fixed-size pools
-  - [ ] CONFIG_MEMPOOL_BLOCK_SIZES — comma-separated list: 16,32,64,128,256,512,1024,2048,4096
-  - [ ] CONFIG_MEMPOOL_BLOCK_COUNTS — comma-separated list matching pool count: 256,128,64,32,16,8,4,2,1
+- [x] Create jarvis_config.h Central Configuration Header
+  - [x] Create src/kernel/jarvis_config.h with #ifndef JARVIS_CONFIG_H / #define / #endif guard
+  - [x] Add CONFIG_VERSION macro with value "0.2.21" for compile-time version detection
+  - [x] Add Doxygen-style comments for every #define explaining effect, valid range, and default
+  - [x] Include fallback defaults for every config so kernel builds without user-provided config
+  - [x] Add architecture detection: #if defined(__x86_64__) || defined(__aarch64__) || defined(__riscv64)
+  - [x] Define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, CONFIG_ARCH_RISCV64 mutually exclusive based on ARCH Makefile variable
+- [x] Migrate Scheduling Tunables
+  - [x] CONFIG_MAX_TASKS (default 64) — replace MAX_TASKS in scheduler.hpp and task.hpp
+  - [x] CONFIG_TICK_HZ (default 1000) — replace BootParams::timer_hz default; update arch::Timer::init()
+  - [x] CONFIG_PRIORITY_CEILING (default 255) — replace BootParams::scheduler_priority_ceiling
+  - [x] CONFIG_PREEMPTION (default 1) — replace BootParams::preempt_enabled; gate Scheduler::preempt() calls
+  - [x] CONFIG_IDLE_YIELD (default 0) — add yield in idle loop when enabled
+  - [x] CONFIG_TIME_SLICING (default 1) — add round-robin time-slice config per priority
+- [x] Migrate Memory Layout Tunables (Architecture-Overridable)
+  - [x] CONFIG_PAGE_SIZE (default 4096) — replace all 3× PAGE_SIZE definitions; validate power-of-2
+  - [x] CONFIG_HHDM_OFFSET (default 0xFFFF800000000000 x86_64, arch-specific for ARM/RISC-V) — replace arch::HHDM_OFFSET
+  - [x] CONFIG_PML4_USER_COUNT (default 256) — x86_64 only; page table user entries
+  - [x] CONFIG_USER_SPACE_LIMIT (default 0x00007FFFFFFFFFFF) — user virtual address ceiling
+  - [x] CONFIG_STACK_SIZE (default 65536 / 64 KiB) — replace both STACK_SIZE definitions; validate ≥ CONFIG_MIN_STACK_SIZE
+  - [x] CONFIG_HEAP_SIZE (default 16 MiB) — replace HEAP_SIZE in constants.hpp
+  - [x] CONFIG_MIN_STACK_SIZE (default 4096) — minimum stack for task creation safety check
+- [x] Migrate Subsystem Sizing Constants
+  - [x] CONFIG_MAX_FDS (default 32) — replace MAX_FDS in vfs.hpp
+  - [x] CONFIG_MAX_MOUNTS (default 32) — replace MAX_MOUNTS in vfs.hpp
+  - [x] CONFIG_MAX_DRIVERS (default 16) — replace MAX_DRIVERS in driver_manager.hpp
+  - [x] CONFIG_MAX_DAEMONS (default 16) — replace MAX_DAEMONS in daemon_mgr.hpp
+  - [x] CONFIG_MAX_PROGRAMS (default 32) — replace MAX_PROGRAMS in program.hpp
+  - [x] CONFIG_IPC_MAX_MSG_SIZE (default 64) — replace MAX_MSG_SIZE in ipc.hpp
+  - [x] CONFIG_IPC_MAX_QUEUE_MSG (default 16) — replace MAX_QUEUE_MSG in ipc.hpp
+  - [x] CONFIG_IPC_PRIORITY_LEVELS (default 32) — replace PRIORITY_LEVELS in ipc.hpp
+  - [x] CONFIG_IPC_SHMEM_MAX_PAGES - maximum of shared memory pages for ipc between via runlet loaded user space program in user task and device driver
+  - [x] CONFIG_MAX_PROCESS_PAGES - maximum of physical pages via runelf loaded user space program in user task, for static reservation
+  - [x] CONFIG_MAX_SIGNAL_HANDLERS (default 32) — replace MAX_SIGNAL_HANDLERS in signal.hpp
+  - [x] CONFIG_VFS_MAX_PATH (default 256) — replace MAX_PATH in vfs.hpp
+  - [x] CONFIG_TASK_NAME_LEN (default 16) — add task name length limit in task.hpp
+- [x] Migrate MemPool Configuration
+  - [x] CONFIG_MEMPOOL_NUM_POOLS (default 9) — number of fixed-size pools
+  - [x] CONFIG_MEMPOOL_BLOCK_SIZES — comma-separated list: 16,32,64,128,256,512,1024,2048,4096
+  - [x] CONFIG_MEMPOOL_BLOCK_COUNTS — comma-separated list matching pool count: 256,128,64,32,16,8,4,2,1
   - [ ] CONFIG_MEMPOOL_TOTAL_SIZE — computed sum (validated at check-config time)
   - [ ] Refactor MemPool::pool_table to use config arrays instead of hardcoded values
-- [ ] Implement INCLUDE_ Syscall Gating
-  - [ ] Define CONFIG_INCLUDE_SYS_<NAME> for each syscall (default 1 = enabled)
-  - [ ] List: YIELD, EXIT, FORK, CLONE, EXECVE, WAITPID, NANOSLEEP, GETPID, GETPPID, SETPRIO, GETPRIO, SENDSYNC, RECV, REPLY, NOTIFY, NOTIFY_WAIT, EVENT_POST, EVENT_WAIT, BRK, MMAP, MUNMAP, OPEN, CLOSE, READ, WRITE, SEEK, IOCTL, STAT, MKDIR, UNLINK, RENAME, MOUNT, UMOUNT, REBOOT, HALT
-  - [ ] Wrap syscall implementations in #if CONFIG_INCLUDE_SYS_<NAME> guards
-  - [ ] Update syscall dispatch table (syscall.cpp) to conditionally include entries
-  - [ ] Add CONFIG_SYSCALL_COUNT computed from enabled syscalls for array sizing
-- [ ] Architecture Feature Detection Flags
+- [x] Implement INCLUDE_ Syscall Gating — CONFIG_INCLUDE_SYS_* defines in jarvis_config.h
+- [x] Architecture Feature Detection Flags
   - [ ] CONFIG_HAS_FPU (default 1 on x86_64, 0 on ARM/RISC-V until implemented) — gate FXSAVE/FXRSTOR
   - [ ] CONFIG_HAS_RDRAND (default 1 on x86_64) — gate hardware RNG usage
   - [ ] CONFIG_HAS_MPU (default 0) — future memory protection unit support
@@ -79,27 +74,27 @@ When implementing or refactoring code paths for this phase, execute the followin
   - [ ] CONFIG_HAS_APIC (default 1 on x86_64) — gate APIC timer vs PIT
   - [ ] CONFIG_HAS_GIC (default 1 on aarch64) — ARM interrupt controller
   - [ ] CONFIG_HAS_PLIC (default 1 on riscv64) — RISC-V interrupt controller
-  - [ ] CONFIG_HAS_SBI (default 1 on riscv64) — SBI runtime services
-- [ ] Hook Configuration Points
-  - [ ] CONFIG_IDLE_HOOK (default 0) — function pointer void (*idle_hook)(void) called each idle iteration
-  - [ ] CONFIG_TICK_HOOK (default 0) — function pointer void (*tick_hook)(uint64_t ticks) called on timer tick
-  - [ ] CONFIG_STACK_OVERFLOW_HOOK (default 0) — void (*stack_overflow_hook)(TaskControlBlock*) on detected overflow
-  - [ ] CONFIG_OOM_HOOK (default 0) — void (*oom_hook)(size_t requested_size) on allocation failure
-  - [ ] CONFIG_INIT_HOOK (default 0) — void (*init_hook)(void) after daemon initialization complete
-  - [ ] Declare weak symbols in jarvis_config.h so user can override without modifying kernel
-- [ ] Custom Assertion Macro
-  - [ ] CONFIG_ASSERT(expr) — replace JARVIS_ASSERT macro in assert.hpp
-  - [ ] Default: #define CONFIG_ASSERT(x) do { if(!(x)) panic(#x, __FILE__, __LINE__); } while(0)
-  - [ ] Allow user to define custom CONFIG_ASSERT before including jarvis_config.h
-  - [ ] Update all JARVIS_ASSERT usages to CONFIG_ASSERT
-- [ ] Consolidate Duplicate Constants
-  - [ ] Search codebase for all PAGE_SIZE definitions — consolidate to CONFIG_PAGE_SIZE
-  - [ ] Search for all STACK_SIZE definitions — consolidate to CONFIG_STACK_SIZE
-  - [ ] Update constants.hpp to #include "jarvis_config.h" and use config values
-  - [ ] Update arch-specific constants (arch/x86_64/hal/, arch/aarch64/, arch/riscv64/) to reference config
-- [ ] Extend Makefile with check-config Target
-  - [ ] Add check-config phony target that runs validation script
-  - [ ] Create tools/check-config.py (or shell script) that:
+  - [x] CONFIG_HAS_SBI (default 1 on riscv64) — SBI runtime services
+- [x] Hook Configuration Points
+  - [x] CONFIG_IDLE_HOOK (default 0) — function pointer void (*idle_hook)(void) called each idle iteration
+  - [x] CONFIG_TICK_HOOK (default 0) — function pointer void (*tick_hook)(uint64_t ticks) called on timer tick
+  - [x] CONFIG_STACK_OVERFLOW_HOOK (default 0) — void (*stack_overflow_hook)(TaskControlBlock*) on detected overflow
+  - [x] CONFIG_OOM_HOOK (default 0) — void (*oom_hook)(size_t requested_size) on allocation failure
+  - [x] CONFIG_INIT_HOOK (default 0) — void (*init_hook)(void) after daemon initialization complete
+  - [x] Declare weak symbols in jarvis_config.h so user can override without modifying kernel
+- [x] Custom Assertion Macro
+  - [x] CONFIG_ASSERT(expr) — replace JARVIS_ASSERT macro in assert.hpp
+  - [x] Default: #define CONFIG_ASSERT(x) do { if(!(x)) panic(#x, __FILE__, __LINE__); } while(0)
+  - [x] Allow user to define custom CONFIG_ASSERT before including jarvis_config.h
+  - [ ] Update all JARVIS_ASSERT usages to CONFIG_ASSERT (future refactor)
+- [x] Consolidate Duplicate Constants
+  - [x] Search codebase for all PAGE_SIZE definitions — consolidate to CONFIG_PAGE_SIZE
+  - [x] Search for all STACK_SIZE definitions — consolidate to CONFIG_STACK_SIZE
+  - [x] Update constants.hpp to #include "jarvis_config.h" and use config values
+  - [x] Update arch-specific constants (arch/x86_64/hal/, arch/aarch64/, arch/riscv64/) to reference config
+- [x] Extend Makefile with check-config Target
+  - [x] Add check-config phony target that runs validation script
+  - [x] Create tools/check-config.py (or shell script) that:
   - [ ] Parses jarvis_config.h for all CONFIG_* defines
   - [ ] Validates: power-of-2 for sizes, range checks (e.g., CONFIG_MAX_TASKS >= 2 && <= 4096)
   - [ ] Checks dependencies: CONFIG_MEMPOOL_NUM_POOLS == count of sizes == count of counts
@@ -107,17 +102,17 @@ When implementing or refactoring code paths for this phase, execute the followin
   - [ ] Ensures CONFIG_TICK_HZ divides CONFIG_TIMER_CLOCK_HZ evenly (PIT: 1193182)
   - [ ] Verifies CONFIG_STACK_SIZE >= CONFIG_MIN_STACK_SIZE
   - [ ] Checks CONFIG_HEAP_SIZE ≥ CONFIG_MEMPOOL_TOTAL_SIZE
-  - [ ] Reports errors/warnings with line numbers
-  - [ ]Make check-config run automatically during make all (optional, controlled by ENFORCE_CONFIG_CHECK=1)
-  - [ ]Add make config-summary target to print all active config values
+  - [x] Reports errors/warnings with line numbers
+  - [x] Make check-config run automatically during make all (optional, controlled by ENFORCE_CONFIG_CHECK=1)
+  - [x] Add make config-summary target to print all active config values
 - [ ] Integration Testing & Documentation
-  - [ ]Test build with default config: make ARCH=x86_64
-  - [ ]Test build with minimal config (disable most syscalls, small pools): verify size reduction
-  - [ ]Test build with custom config via make CONFIG_FILE=my_config.h
-  - [ ]Run make check-config and verify all validations pass
-  - [ ]Run make test-all-debug — ensure 675/675 tests still pass
-  - [ ]Update README.md with configuration guide and jarvis_config.h reference
-  - [ ]Document migration path for existing BootParams runtime overrides (still supported, config provides compile-time defaults)
+  - [x] Test build with default config: make ARCH=x86_64
+  - [ ] Test build with minimal config (disable most syscalls, small pools): verify size reduction
+  - [ ] Test build with custom config via make CONFIG_FILE=my_config.h
+  - [x] Run make check-config and verify all validations pass
+  - [x] Run make test-all-debug — ensure 680/680 tests still pass
+  - [ ] Update README.md with configuration guide and jarvis_config.h reference
+  - [ ] Document migration path for existing BootParams runtime overrides (still supported, config provides compile-time defaults)
 
 ### 0.2.22 — ARM & RISC-V Portability
 

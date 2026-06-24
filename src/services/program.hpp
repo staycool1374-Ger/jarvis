@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    static constexpr size_t MAX_PROGRAMS = 32;
+    static constexpr size_t MAX_PROGRAMS = CONFIG_MAX_PROGRAMS;
     static const Program* programs_[MAX_PROGRAMS];
     static size_t count_;
 };

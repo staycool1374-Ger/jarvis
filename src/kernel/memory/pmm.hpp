@@ -80,7 +80,7 @@ public:
     static uint64_t& free_pages_ref()       { return free_pages_; }
 
 private:
-    static constexpr uint64_t PAGE_SIZE = 4096;
+    static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
 
     static uint64_t total_pages_;
     static uint64_t free_pages_;

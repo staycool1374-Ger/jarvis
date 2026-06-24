@@ -24,6 +24,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace kernel {
 
@@ -129,8 +130,8 @@ public:
                               bool preempt_in);
 
 private:
-    static constexpr uint64_t MAX_TASKS = 64;
-    static constexpr uint64_t ID_TABLE_SIZE = 128;
+    static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
+    static constexpr uint64_t ID_TABLE_SIZE = CONFIG_MAX_TASKS * 2;
     static constexpr uint64_t ID_TABLE_MASK = ID_TABLE_SIZE - 1;
 
     /// @brief Sentinel value for a removed hash-table entry.

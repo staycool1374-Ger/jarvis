@@ -95,7 +95,7 @@ public:
     }
 
 private:
-    static constexpr size_t MAX_DRIVERS = 32;
+    static constexpr size_t MAX_DRIVERS = CONFIG_MAX_DRIVERS;
     static Driver* drivers_[MAX_DRIVERS];
     static size_t count_;
 };

@@ -23,7 +23,7 @@
 namespace kernel {
 namespace daemon {
 
-static constexpr uint64_t MAX_DAEMONS = 8;
+static constexpr uint64_t MAX_DAEMONS = CONFIG_MAX_DAEMONS;
 static constexpr uint64_t MAX_RESTART_COUNT = 10;
 
 struct DaemonEntry {

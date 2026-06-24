@@ -27,7 +27,7 @@ namespace sync {
 
 class Semaphore {
 public:
-    static constexpr size_t MAX_WAITERS = 32;
+    static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Semaphore()
         : count_(0)

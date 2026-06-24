@@ -84,7 +84,7 @@ public:
                                          uint64_t pml4_phys);
 
 private:
-    static constexpr uint64_t PAGE_SIZE = 4096;
+    static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t PAGE_TABLE_ENTRIES = 512;
     static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
     static constexpr uint64_t PAGE_WRITE    = 1ULL << 1;

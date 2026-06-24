@@ -35,7 +35,7 @@ struct QueueMessage {
 
 class Queue {
 public:
-    static constexpr size_t MAX_WAITERS = 32;
+    static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Queue() : head_(0), tail_(0), count_(0), send_waiters_(0), recv_waiters_(0
         ) {}
