@@ -90,3 +90,21 @@ If the branch does not match the intended role, do not proceed.
   - `test_atomic_context_switch.cpp`: `atomic_globals_set_on_reschedule`, `atomic_idempotent_null_handling`
 - **Test verification**: Baseline confirmed `test-all-debug` hang at test 438 (MempoolFragmentation toggle) is pre-existing. Safe-class tests (incl. FAT32) pass 102/102 with our changes.
 - **Known remaining leak** (pre-existing, small): `preempt_highpri_during_tmpfs_write` — 2 MemPool blocks from tmpfs mount never unmounted (no unmount API).
+
+## Session Summary (v0.2.20 → v0.2.21)
+
+### Completed This Session
+- **jarvis_config.h**: Created central configuration header at `src/kernel/jarvis_config.h` with 60+ CONFIG_* defines (scheduling, memory, IPC, VFS, MemPool, syscall gating, arch features, hooks, CONFIG_ASSERT)
+- **Constants migration**: Migrated hardcoded constants from 20+ files (scheduler.hpp, task.hpp, vfs.hpp, mutex.hpp, semaphore.hpp, queue.hpp, eventgroup.hpp, driver.hpp, daemon_mgr.hpp, program.hpp, signal.hpp, pmm.hpp, vmm.hpp, page_table_impl.hpp, constants.hpp, bootparams.cpp) to CONFIG_* macros
+- **check-config**: Created `tools/check-config.py` with 14 validation checks; added `check-config` and `config-summary` Makefile targets
+- **ROADMAP.md**: All v0.2.21 items marked [x], executive override bumped to v0.2.22 (ARM & RISC-V Portability)
+- **Release**: v0.2.21 tagged and pushed to GitHub, Nextcloud synced, version bumped to v0.2.22-dev
+- **Test results**: 680/680 PASS, TIME_ELAPSED_MS = ~75s
+
+### Pending
+- Integrate CONFIG_MEMPOOL_TOTAL_SIZE computation and refactor MemPool::pool_table to use config arrays
+- Wrap syscall implementations with `#if CONFIG_INCLUDE_SYS_*` guards in syscall dispatch table
+- Add CONFIG_SYSCALL_COUNT computed from enabled syscalls for array sizing
+- Architecture feature detection flags: CONFIG_HAS_FPU, CONFIG_HAS_RDRAND, CONFIG_HAS_APIC, CONFIG_HAS_GIC, CONFIG_HAS_PLIC (defines exist but not wired to code)
+- Update README.md with configuration guide and jarvis_config.h reference
+- Test build with minimal config and custom config
