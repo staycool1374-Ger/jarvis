@@ -82,7 +82,7 @@ AR       := x86_64-elf-ar
 OBJCOPY  := x86_64-elf-objcopy
 OBJCOPY_FMT := elf64-x86-64
 OBJCOPY_ARCH := i386
-LDFLAGS  := -m elf_x86_64 -nostdlib -T linker_$(ARCH).ld -z max-page-size=0x1000 \
+LDFLAGS  := -m elf_x86_64 -nostdlib -no-pie -T linker_$(ARCH).ld -z max-page-size=0x1000 \
             -Map=build/kernel.map
 
 GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/null))
