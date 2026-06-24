@@ -134,7 +134,8 @@ static void init_pic() {
 extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     multiboot_magic = magic;
     multiboot_info_ptr = mb_info;
-    asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack + 16_KiB));
+    extern const uint64_t kernel_stack_top;
+    asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack_top));
 
     kernel::Logger::init();
     kernel::test::Registry::init();
@@ -151,7 +152,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] Arch init...\n");
     arch::GDT::init();
     arch::GDT::load();
-    arch::GDT::set_tss_rsp0(reinterpret_cast<uint64_t>(kernel_stack + 16_KiB));
+    arch::GDT::set_tss_rsp0(kernel_stack_top);
     arch::IDT::init();
     arch::IDT::load();
 
