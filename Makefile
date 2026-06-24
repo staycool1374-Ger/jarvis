@@ -288,7 +288,8 @@ debug: check-build-stamp $(KERNEL_DEBUG) iso/boot
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
 	@mkdir -p $(dir $(DEBUG_ISO))
 	@printf '  %-7s %s\n' 'ISO' '$(DEBUG_ISO)'
-	@grub-mkrescue -o $(DEBUG_ISO) iso 2>/dev/null
+	@grub-mkrescue -o $(DEBUG_ISO) iso 2>&1 || \
+	 (printf '  %-7s %s\n' 'ERROR' 'grub-mkrescue failed'; echo 'Install grub-pc + xorriso'; exit 1)
 	@printf '  %-7s %s\n' 'DONE' 'Debug ISO: $(DEBUG_ISO)'
 
 # ------------------------------------------------------------------------------
