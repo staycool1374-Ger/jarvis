@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/task.hpp>
@@ -241,3 +242,4 @@ void register_task_tests() {
     JARVIS_REGISTER_TEST(task_fork_child_cleanup_preserves_parent_pages);
     JARVIS_REGISTER_TEST(task_clone_no_page_table_leak);
 }
+#endif

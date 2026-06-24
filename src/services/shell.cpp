@@ -336,10 +336,12 @@ static bool readline(char* buf, size_t max_len) {
         char c = 0;
         bool got_char = false;
 
+#if defined(CONFIG_ARCH_X86_64)
         if (arch::inb(arch::COM1_LSR) & 1) {
             c = arch::inb(arch::COM1);
             got_char = true;
         }
+#endif
 
         if (!got_char) {
             got_char = arch::Keyboard::getchar(c);
@@ -1322,7 +1324,9 @@ void Shell::cmd_read(int argc, const char** argv) {
     for (;;) {
         char c = 0;
         bool got = false;
+#if defined(CONFIG_ARCH_X86_64)
         if (arch::inb(arch::COM1_LSR) & 1) { c = arch::inb(arch::COM1); got = true; }
+#endif
         if (!got) got = arch::Keyboard::getchar(c);
         if (!got) { arch::pause(); continue; }
         if (c == '\r') c = '\n';
@@ -2094,7 +2098,8 @@ void Shell::cmd_dmesg(int, const char**) {
     }
 }
 
-void Shell::cmd_lspci(int, const char**) {
+void Shell::cmd_lspci(int /*argc*/, const char** /*argv*/) {
+#if defined(CONFIG_ARCH_X86_64)
     Terminal::write("PCI Device Tree:\n");
     size_t n = arch::pci_device_count();
     if (n == 0) {
@@ -2121,6 +2126,9 @@ void Shell::cmd_lspci(int, const char**) {
         Terminal::write(line);
         Terminal::write("\n");
     }
+#else
+    Terminal::write("PCI not supported on this architecture.\n");
+#endif
 }
 
 } // namespace service

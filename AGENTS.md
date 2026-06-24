@@ -108,3 +108,22 @@ If the branch does not match the intended role, do not proceed.
 - Architecture feature detection flags: CONFIG_HAS_FPU, CONFIG_HAS_RDRAND, CONFIG_HAS_APIC, CONFIG_HAS_GIC, CONFIG_HAS_PLIC (defines exist but not wired to code)
 - Update README.md with configuration guide and jarvis_config.h reference
 - Test build with minimal config and custom config
+
+## Session Summary (v0.2.21 → v0.2.22)
+
+### Completed This Session
+- **aarch64 compilation**: All ~90 kernel C++ files now compile for aarch64-elf with `-Wall -Wextra -Werror`
+- **`src/kernel/arch/hal/` guards**: `io_impl.hpp`, `cpuid_impl.hpp`, `rand_impl.hpp` — added `read_cr3/0/4`, `write_cr3`, renamed `CPUIDResult`→`CpuIdResult`, fixed `rdrand64`/`rdseed64` signatures
+- **Arch-aware `TaskContext`**: `task.hpp` — `x[31]`, `sp_el0`, `elr_el1`, `spsr_el1`, `vector`, `error_code` for aarch64; `TASK_STACK_PTR()` macro in `scheduler.cpp`, `syscall_handlers_misc.cpp`
+- **x86‑only test guarding**: 12 test files guarded behind `#if CONFIG_ARCH_X86_64` (FPU, SSE, PCI, RTC, GDT, PIC, arch_structure, process, task, shell_interaction, buildsystem, idt)
+- **Inline asm removal**: `CR3` reads in `vmm.cpp`/`test_memory.cpp` replaced with `arch::read_cr3()`, `invlpg` replaced with `arch::ArchPageTable::tlb_flush()`
+- **`boot.S` aarch64**: EL2→EL1 drop, VBAR_EL1, CPACR_EL1 FPEN, boot stack
+- **`syscall_entry.S` aarch64**: GAS SVC entry stub; `syscall_entry.asm` (NASM) excluded for non‑x86 via `mk/rules.mk` `filter-out`
+- **Linker progress**: ~30 remaining undefined symbols (PCI, virtio, exception_entry, vectors)
+
+### Verified
+- **Complete link**: `make build/kernel-debug.elf ARCH=aarch64` succeeds. Output is a valid aarch64 ELF (start address 0x400f1f50, ~2.5 MB).
+- **New files created**: `vectors.S` (vector table), `syscall_entry.S` (SVC stub), `test_stubs.cpp` (empty test registrations), `pci.cpp`/`virtio.cpp` stubs for aarch64
+- **Files guarded for x86_64 only**: `ahci.cpp`, `virtio_blk.cpp`, `virtio_net.cpp`, `test_pci.cpp`, `test_virtio.cpp`, `test_gdt.cpp`, `test_pic.cpp`, `test_block_device.cpp`
+- **x86 code guarded in shared files**: `kernel.cpp` (AhCI/Virtio probe), `shell.cpp` (cmd_lspci), `procfs.cpp` (pci_print_tree), `bootparams.cpp` (parse_multiboot_cmdline), `framebuffer.cpp` (init from multiboot)
+- **NASM exclusion**: `syscall_entry.asm` excluded via `mk/rules.mk` `filter-out` for non-x86

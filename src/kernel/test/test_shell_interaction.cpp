@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <services/shell.hpp>
@@ -72,6 +73,7 @@ JARVIS_TEST(shell_loopback_manual_string) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(serial_contains(buf, "HelloWorld"));
 }
+
 
 JARVIS_TEST(shell_terminal_write) {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
@@ -520,3 +522,4 @@ void register_shell_interaction_tests() {
     JARVIS_REGISTER_RELEASE_TEST(shell_sleep_zero);
     JARVIS_REGISTER_RELEASE_TEST(shell_clear_command);
 }
+#endif

@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/driver/block_device.hpp>
@@ -201,3 +203,5 @@ void register_block_device_tests() {
     JARVIS_REGISTER_TEST(ahci_protocol_constants);
     JARVIS_REGISTER_TEST(ahci_hba_probe);
 }
+
+#endif // CONFIG_ARCH_X86_64

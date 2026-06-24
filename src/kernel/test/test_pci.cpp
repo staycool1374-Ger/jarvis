@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/pci.hpp>
@@ -324,3 +326,5 @@ void register_pci_tests() {
     JARVIS_REGISTER_TEST(pci_enumeration_bounded_time);
     JARVIS_REGISTER_TEST(pci_print_tree_output);
 }
+
+#endif // CONFIG_ARCH_X86_64

@@ -37,7 +37,7 @@ namespace arch {
 /// @brief Higher-half offset: convert physical → kernel-visible virtual.
 inline constexpr uint64_t HHDM_OFFSET = CONFIG_HHDM_OFFSET;
 
-/// @brief PML4 layout constants.
+/// @brief Page-table layout: indices 0-255 = user (TTBR0), 256-511 = kernel (TTBR1).
 inline constexpr uint64_t PML4_USER_COUNT    = CONFIG_PML4_USER_COUNT;   // entries 0-255
 inline constexpr uint64_t PML4_KERNEL_START  = CONFIG_PML4_USER_COUNT;   // entry 256
 inline constexpr uint64_t PML4_ENTRIES       = 512;
@@ -45,6 +45,7 @@ inline constexpr uint64_t PML4_ENTRIES       = 512;
 inline constexpr uint64_t PAGE_SIZE   = CONFIG_PAGE_SIZE;
 inline constexpr uint64_t PAGE_SIZE_2M = 0x200000;
 
+#if defined(CONFIG_ARCH_X86_64)
 /// @brief x86-64 segment selectors.
 enum Segment : uint64_t {
     SEG_NULL        = 0x00,
@@ -69,6 +70,7 @@ inline constexpr uint16_t PIC1_CMD   = 0x20;
 inline constexpr uint16_t PIC1_DATA  = 0x21;
 inline constexpr uint16_t PIC2_CMD   = 0xA0;
 inline constexpr uint16_t PIC2_DATA  = 0xA1;
+#endif
 
 /// @brief QEMU-specific ACPI / shutdown ports.
 inline constexpr uint16_t QEMU_ACPI_PORT      = 0x604;

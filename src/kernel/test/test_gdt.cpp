@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <test.hpp>
 #include <logger.hpp>
 
@@ -81,3 +83,5 @@ void register_gdt_tests() {
     JARVIS_REGISTER_TEST(gdt_code_data_segments_present);
     JARVIS_REGISTER_TEST(gdt_user_segments_have_ring3_dpl);
 }
+
+#endif // CONFIG_ARCH_X86_64

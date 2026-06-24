@@ -1,3 +1,4 @@
+#if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -97,3 +98,4 @@ void register_idt_tests() {
     JARVIS_REGISTER_TEST(idt_double_fault_uses_ist);
     JARVIS_REGISTER_TEST(idt_reserved_vectors_null);
 }
+#endif

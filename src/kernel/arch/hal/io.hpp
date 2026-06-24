@@ -2,7 +2,8 @@
 
 #include <types.hpp>
 
-// Architecture-agnostic declarations (asms stubs provided by arch linker)
+#if defined(CONFIG_ARCH_X86_64)
+// Architecture-agnostic declarations (asm stubs provided by arch linker)
 extern "C" {
     void arch_outb(uint16_t port, uint8_t val);
     uint8_t arch_inb(uint16_t port);
@@ -15,10 +16,13 @@ extern "C" {
     void arch_cli();
     void arch_sti();
 }
+#endif
 
 // Include arch-specific inline implementations
 #if defined(CONFIG_ARCH_X86_64)
 #  include <kernel/arch/x86_64/hal/io_impl.hpp>
+#elif defined(CONFIG_ARCH_AARCH64)
+#  include <kernel/arch/aarch64/hal/io_impl.hpp>
 #else
 #  error "HAL: no io implementation for this architecture"
 #endif

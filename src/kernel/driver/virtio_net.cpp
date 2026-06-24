@@ -19,6 +19,8 @@
 /// @file virtio_net.cpp
 /// @brief Virtio-net NIC driver implementation.
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <string.hpp>
@@ -253,3 +255,5 @@ bool virtio_net_poll(uint8_t* buf, size_t& len) {
 }
 
 } // namespace kernel::net
+
+#endif // CONFIG_ARCH_X86_64

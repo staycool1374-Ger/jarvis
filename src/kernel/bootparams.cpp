@@ -98,6 +98,7 @@ void BootParams::parse_cstr(const char* cmdline) {
 }
 
 void BootParams::parse_multiboot_cmdline() {
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t tag_addr = mb2_find_tag(1);
     if (!tag_addr) return;
 
@@ -108,6 +109,7 @@ void BootParams::parse_multiboot_cmdline() {
     };
     auto* tag = reinterpret_cast<CmdlineTag*>(tag_addr);
     parse_cstr(tag->cmdline);
+#endif
 }
 
 }

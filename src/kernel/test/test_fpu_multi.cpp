@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/io.hpp>
@@ -148,3 +149,4 @@ void register_fpu_multi_tests() {
     Logger::info("Registering 3-way FPU context switch tests");
     JARVIS_REGISTER_TEST(fpu_multi_context_switch);
 }
+#endif

@@ -13,13 +13,21 @@
 # ------------------------------------------------------------------------------
 SRC_CXX_GENERIC := $(shell find src -path '*/kernel/arch' -prune -o -name '*.cpp' -print)
 SRC_ASM_GENERIC := $(shell find src -path '*/kernel/arch' -prune -o -name '*.asm' -print)
+# Exclude x86-specific NASM files for non-x86 architectures
+ifneq ($(ARCH),x86_64)
+SRC_ASM_GENERIC := $(filter-out src/kernel/syscall/syscall_entry.asm, $(SRC_ASM_GENERIC))
+SRC_ASM_GENERIC := $(filter-out src/kernel/arch/%, $(SRC_ASM_GENERIC))
+endif
+SRC_S_GENERIC   := $(shell find src -path '*/kernel/arch' -prune -o -path '*/libc' -prune -o -name '*.S' -print)
 
 SRC_CXX_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.cpp' 2>/dev/null)
 SRC_ASM_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.asm' 2>/dev/null)
+SRC_S_ARCH      := $(shell find src/kernel/arch/$(ARCH) -name '*.S' 2>/dev/null)
 
 SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH)
 SRC_ASM         := $(SRC_ASM_GENERIC) $(SRC_ASM_ARCH)
-OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o)
+SRC_S           := $(SRC_S_GENERIC) $(SRC_S_ARCH)
+OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o) $(SRC_S:src/%.S=build/%.o)
 DEPFILES        := $(shell find build -name '*.d' 2>/dev/null)
 -include $(DEPFILES)
 
@@ -53,6 +61,11 @@ build/%.o: src/%.asm
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'AS' '$@'
 	$(AS) $(ASFLAGS) -o $@ $<
+
+build/%.o: src/%.S
+	@mkdir -p $(dir $@)
+	@printf '  %-7s %s\n' 'AS' '$@'
+	$(CC) $(CCFLAGS) -c -o $@ $<
 
 # ------------------------------------------------------------------------------
 # Libc rules

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace arch {
+
+#if defined(CONFIG_ARCH_X86_64)
 
 struct IDTEntry {
     uint16_t offset_low;
@@ -65,5 +68,32 @@ private:
 };
 
 extern "C" void isr_entry();
+
+#elif defined(CONFIG_ARCH_AARCH64)
+
+enum class InterruptVector : uint8_t {
+    TIMER          = 0,
+    KEYBOARD       = 1,
+    SYSCALL        = 2,
+};
+
+using ISRHandler = void (*)(uint64_t vector, uint64_t error_code, uint64_t rip);
+
+class IDT {
+public:
+    static void init();
+    static void load();
+    static void register_handler(InterruptVector vec, ISRHandler handler);
+    static void register_handler_raw(uint8_t vec, ISRHandler handler);
+    static void handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip);
+
+private:
+    static constexpr size_t NUM_ENTRIES = 64;
+    static ISRHandler handlers_[NUM_ENTRIES];
+};
+
+#else
+#  error "HAL: no idt implementation for this architecture"
+#endif
 
 } // namespace arch

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -434,3 +435,4 @@ void register_process_tests() {
     JARVIS_REGISTER_TEST(process_remove_child_twice_no_underflow);
     JARVIS_REGISTER_TEST(process_remove_child_clears_parent_id);
 }
+#endif

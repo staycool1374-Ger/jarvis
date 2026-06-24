@@ -28,6 +28,13 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
+
+// Architecture-aware stack pointer access
+#if defined(CONFIG_ARCH_X86_64)
+#  define TASK_STACK_PTR(t) ((t)->context.rsp)
+#elif defined(CONFIG_ARCH_AARCH64)
+#  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#endif
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/task/sporadic_server.hpp>
 #include <signal.hpp>
@@ -552,7 +559,7 @@ static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, c
     if (naddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next low 0x"); Logger::print_hex(naddr); Logger::raw_write("\n"); return false; }
     if (current->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current magic=0x"); Logger::print_hex(current->magic); Logger::raw_write("\n"); return false; }
     if (next->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next magic=0x"); Logger::print_hex(next->magic); Logger::raw_write("\n"); return false; }
-    if (!rsp_in_stack_range(next->context.rsp, next, label)) return false;
+    if (!rsp_in_stack_range(TASK_STACK_PTR(next), next, label)) return false;
     return true;
 }
 
@@ -622,10 +629,12 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         ++idx;
     }
 #endif
-    __atomic_store_n(&scheduler_load_rsp_from, next->context.rsp, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next), __ATOMIC_RELEASE);
     if (next->page_table_) {
         __atomic_store_n(&scheduler_load_cr3_from, next->page_table_, __ATOMIC_RELEASE);
+#if defined(CONFIG_ARCH_X86_64)
         arch::GDT::set_tss_rsp0(next->kernel_stack_top);
+#endif
     } else {
         __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(), __ATOMIC_RELEASE);
     }
@@ -634,7 +643,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     }
     next->state = TaskState::RUNNING;
     __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to, &current->context.rsp, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, &TASK_STACK_PTR(current), __ATOMIC_RELEASE);
 
     uint64_t cr0 = arch::read_cr0();
     cr0 |= (1ULL << 3);
@@ -654,9 +663,9 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         Logger::raw_write(" next=");
         Logger::print_hex(next->id);
         Logger::raw_write(" cur_rsp=");
-        Logger::print_hex(current->context.rsp);
+        Logger::print_hex(TASK_STACK_PTR(current));
         Logger::raw_write(" next_rsp=");
-        Logger::print_hex(next->context.rsp);
+        Logger::print_hex(TASK_STACK_PTR(next));
         Logger::raw_write(" cur_pri=");
         Logger::print_dec(current->priority);
         Logger::raw_write(" next_pri=");
@@ -688,9 +697,9 @@ void Scheduler::reschedule() noexcept {
         Logger::raw_write(" next=");
         Logger::print_hex(next->id);
         Logger::raw_write(" cur_rsp=");
-        Logger::print_hex(current->context.rsp);
+        Logger::print_hex(TASK_STACK_PTR(current));
         Logger::raw_write(" next_rsp=");
-        Logger::print_hex(next->context.rsp);
+        Logger::print_hex(TASK_STACK_PTR(next));
         Logger::raw_write("\n");
         switch_to_task(current, next);
     }

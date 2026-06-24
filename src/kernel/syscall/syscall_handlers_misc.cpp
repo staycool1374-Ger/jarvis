@@ -23,6 +23,12 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/timer.hpp>
+
+#if defined(CONFIG_ARCH_X86_64)
+#  define TASK_STACK_PTR(t) ((t)->context.rsp)
+#elif defined(CONFIG_ARCH_AARCH64)
+#  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#endif
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/sync/spinlock.hpp>
@@ -123,9 +129,9 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
                     // waitpid blocked).
                     if (p->state != TaskState::TERMINATED) {
                         p->state = TaskState::READY;
-                        if (p->context.rsp) {
+                        if (TASK_STACK_PTR(p)) {
                             auto* stack = reinterpret_cast<uint64_t*>(
-                                p->context.rsp);
+                                TASK_STACK_PTR(p));
                             stack[0] = t->id;
                         }
                     }

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace arch {
+
+#if defined(CONFIG_ARCH_X86_64)
 
 struct GDTDescriptor {
     uint16_t limit;
@@ -58,5 +61,18 @@ enum {
     GDT_USER_DATA = 0x20,
     GDT_TSS   = 0x28,
 };
+
+#elif defined(CONFIG_ARCH_AARCH64)
+
+class GDT {
+public:
+    static inline void init() {}
+    static inline void load() {}
+    static inline void set_tss_rsp0(uint64_t) {}
+};
+
+#else
+#  error "HAL: no gdt implementation for this architecture"
+#endif
 
 } // namespace arch

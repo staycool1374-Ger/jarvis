@@ -3,8 +3,11 @@
 #include <types.hpp>
 #include <constants.hpp>
 #include <kernel/arch/hal/io.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace arch {
+
+#if defined(CONFIG_ARCH_X86_64)
 
 struct IrqState {
     uint16_t pic1_mask;
@@ -57,5 +60,25 @@ public:
         outb(arch::PIC2_DATA, state.pic2_mask);
     }
 };
+
+#elif defined(CONFIG_ARCH_AARCH64)
+
+struct IrqState {
+    uint64_t gic_mask;
+};
+
+class ArchInterruptController {
+public:
+    static void init();
+    static void eoi(uint8_t vector);
+    static void mask(uint8_t irq);
+    static void unmask(uint8_t irq);
+    static IrqState snapshot();
+    static void restore(const IrqState& state);
+};
+
+#else
+#  error "HAL: no interrupt_controller implementation for this architecture"
+#endif
 
 } // namespace arch

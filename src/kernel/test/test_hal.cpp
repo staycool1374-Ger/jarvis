@@ -85,6 +85,7 @@ JARVIS_TEST(hal_page_table_switch) {
     JARVIS_TEST_PASS();
 }
 
+#if defined(CONFIG_ARCH_X86_64)
 // Runmode: kernel
 // Testidea: Verifies ArchContext save/restore preserves register state.
 // Input: Save context, modify registers, restore, verify original values
@@ -137,6 +138,7 @@ JARVIS_TEST(hal_context_switch_to) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies ArchInterruptController mask/unmask operations.
@@ -144,6 +146,7 @@ JARVIS_TEST(hal_context_switch_to) {
 // Expect: Masked IRQ not delivered, unmasked IRQ delivered
 // Depends: kernel::arch::ArchInterruptController
 // ⚠ BUG #008: Interrupt operations may trigger timer nesting paths.
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_interrupt_mask_unmask) {
     arch::IrqState saved = arch::ArchInterruptController::snapshot();
 
@@ -159,6 +162,7 @@ JARVIS_TEST(hal_interrupt_mask_unmask) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies ArchInterruptController EOI signals end of interrupt.
@@ -250,6 +254,7 @@ JARVIS_TEST(hal_timer_remaining) {
 // Input: Write to port, read back, verify (mock/test port)
 // Expect: Values written match values read
 // Depends: kernel::arch::ArchIO
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_io_byte_word_long) {
     arch::ArchIO::outb(0x80, 0x42);
     uint8_t b = arch::ArchIO::inb(0x80);
@@ -267,12 +272,14 @@ JARVIS_TEST(hal_io_byte_word_long) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies HAL methods delegate to correct arch/x86_64 implementation.
 // Input: Call HAL interface methods, check they call x86_64 specifics
 // Expect: All HAL calls resolve to arch/x86_64 implementations
 // Depends: kernel::arch::*, build system
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_delegates_to_x86_64) {
     JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
 
@@ -289,6 +296,7 @@ JARVIS_TEST(hal_delegates_to_x86_64) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies CPUID feature flags on x86-64. The architecture requires
@@ -296,6 +304,7 @@ JARVIS_TEST(hal_delegates_to_x86_64) {
 // Input: arch::cpuid(1)
 // Expect: EDX bits 25 (SSE) and 26 (SSE2) are set
 // Depends: kernel::arch::cpuid
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_cpuid_features) {
     arch::CpuIdResult leaf1 = arch::cpuid(1);
     JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_SSE);
@@ -304,6 +313,7 @@ JARVIS_TEST(hal_cpuid_features) {
     JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_FXSR);
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies ArchInterruptController snapshot/restore cycle correctly
@@ -312,6 +322,7 @@ JARVIS_TEST(hal_cpuid_features) {
 // verify original mask restored
 // Expect: Snapshot captures correct masks, restore reverts to saved state
 // Depends: kernel::arch::ArchInterruptController
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_interrupt_snapshot_restore_cycle) {
     arch::IrqState saved = arch::ArchInterruptController::snapshot();
 
@@ -330,6 +341,7 @@ JARVIS_TEST(hal_interrupt_snapshot_restore_cycle) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 void register_hal_tests() {
     Logger::info("Registering HAL tests");
@@ -337,15 +349,19 @@ void register_hal_tests() {
     JARVIS_REGISTER_TEST(hal_page_table_map_unmap);
     JARVIS_REGISTER_TEST(hal_page_table_clone);
     JARVIS_REGISTER_TEST(hal_page_table_switch);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_REGISTER_TEST(hal_context_save_restore);
     JARVIS_REGISTER_TEST(hal_context_switch_to);
     JARVIS_REGISTER_TEST(hal_interrupt_mask_unmask);
+#endif
     JARVIS_REGISTER_TEST(hal_interrupt_eoi);
     JARVIS_REGISTER_TEST(hal_timer_oneshot);
     JARVIS_REGISTER_TEST(hal_timer_periodic);
     JARVIS_REGISTER_TEST(hal_timer_remaining);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_REGISTER_TEST(hal_io_byte_word_long);
     JARVIS_REGISTER_TEST(hal_delegates_to_x86_64);
     JARVIS_REGISTER_TEST(hal_cpuid_features);
     JARVIS_REGISTER_TEST(hal_interrupt_snapshot_restore_cycle);
+#endif
 }

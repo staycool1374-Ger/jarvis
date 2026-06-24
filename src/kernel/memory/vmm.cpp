@@ -20,6 +20,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
+#include <kernel/arch/page_table.hpp>
 #include <assert.hpp>
 #include <kernel/memory/vmm_errors.hpp>
 
@@ -152,7 +153,7 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     if (user) flags |= PAGE_USER;
 
     pt[pt_idx] = phys_addr | flags;
-    asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
+    arch::ArchPageTable::tlb_flush(virt_addr);
 }
 
 void VMM::unmap_page(uint64_t virt_addr) {
@@ -172,7 +173,7 @@ void VMM::unmap_page(uint64_t virt_addr) {
     if (!pt) return;
 
     pt[pt_idx] = 0;
-    asm volatile("invlpg (%0)" : : "r"(virt_addr) : "memory");
+    arch::ArchPageTable::tlb_flush(virt_addr);
 }
 
 uint64_t VMM::virt_to_phys(uint64_t virt_addr) {

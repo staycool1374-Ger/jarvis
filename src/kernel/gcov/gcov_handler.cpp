@@ -57,6 +57,7 @@ __cyg_profile_func_exit(void *func, void *caller) {
 
 void __attribute__((no_instrument_function))
 gcov_flush_to_serial() {
+#if defined(CONFIG_ARCH_X86_64)
     uint8_t magic[4] = {'F', 'U', 'N', 'C'};
     for (int i = 0; i < 4; ++i) {
         while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
@@ -79,6 +80,9 @@ gcov_flush_to_serial() {
         while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
         arch::outb(arch::COM1, called & 0xFF);
     }
+#else
+    (void)func_count; (void)func_addrs; (void)called_functions;
+#endif
 }
 
 } // extern "C"

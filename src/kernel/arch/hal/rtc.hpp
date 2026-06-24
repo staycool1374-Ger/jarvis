@@ -1,8 +1,11 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace arch {
+
+#if defined(CONFIG_ARCH_X86_64)
 
 struct tm {
     int tm_sec;
@@ -55,5 +58,30 @@ private:
     static uint64_t make_timestamp(uint16_t year, uint8_t month, uint8_t day,
                                    uint8_t hour, uint8_t min, uint8_t sec);
 };
+
+#elif defined(CONFIG_ARCH_AARCH64)
+
+struct tm {
+    int tm_sec;
+    int tm_min;
+    int tm_hour;
+    int tm_mday;
+    int tm_mon;
+    int tm_year;
+    int tm_wday;
+    int tm_yday;
+    int tm_isdst;
+};
+
+class RTC {
+public:
+    static void init() {}
+    static uint64_t read_seconds();
+    static void read_time(tm* out);
+};
+
+#else
+#  error "HAL: no rtc implementation for this architecture"
+#endif
 
 } // namespace arch

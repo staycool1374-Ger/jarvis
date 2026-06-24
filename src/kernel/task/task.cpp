@@ -158,6 +158,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_virt);
     tcb->kernel_stack_top = stack_virt + STACK_SIZE;
 
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
 
     *--stack = arch::SEG_KERNEL_DATA;
@@ -173,6 +174,16 @@ TaskControlBlock* TaskControlBlock::create(
     for (int i = 0; i < 15; ++i) *--stack = 0;
 
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_AARCH64)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = 0;                  // padding
+    *--stack = 0;                  // padding
+    *--stack = 0x3C5;              // SPSR_EL1: EL1h, all interrupts masked
+    *--stack = reinterpret_cast<uint64_t>(entry);  // ELR_EL1
+    *--stack = 0;                  // SP_EL0 (unused for kernel task)
+    for (int i = 0; i < 31; ++i) *--stack = 0;     // X0-X30
+    tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#endif
 
     return tcb;
 }
@@ -231,6 +242,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->user_stack_size_ = user_stack_size;
     uint64_t user_rsp = user_stack_virt + user_stack_size;
 
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
     *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;
@@ -241,10 +253,21 @@ TaskControlBlock* TaskControlBlock::create_user(
     *--stack = 0;
     for (int i = 0; i < 15; ++i) *--stack = 0;
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_AARCH64)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = 0;                  // padding
+    *--stack = 0;                  // padding
+    *--stack = 0x10;               // SPSR_EL1: EL0t, all interrupts unmasked (DAIF=0)
+    *--stack = reinterpret_cast<uint64_t>(entry);  // ELR_EL1
+    *--stack = user_rsp;           // SP_EL0
+    for (int i = 0; i < 31; ++i) *--stack = 0;     // X0-X30
+    tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#endif
 
     return tcb;
 }
 
+#if defined(CONFIG_ARCH_X86_64)
 void TaskControlBlock::save_context(uint64_t& rsp) noexcept {
     context.rsp = rsp;
 }
@@ -252,6 +275,15 @@ void TaskControlBlock::save_context(uint64_t& rsp) noexcept {
 void TaskControlBlock::restore_context(uint64_t& rsp) noexcept {
     rsp = context.rsp;
 }
+#elif defined(CONFIG_ARCH_AARCH64)
+void TaskControlBlock::save_context(uint64_t& rsp) noexcept {
+    context.sp_el0 = rsp;
+}
+
+void TaskControlBlock::restore_context(uint64_t& rsp) noexcept {
+    rsp = context.sp_el0;
+}
+#endif
 
 TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     auto* parent = Scheduler::current_task();
@@ -321,10 +353,14 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     // Buffer pool starts empty — buffers are NOT inherited on fork
     tcb->buf_list_head = -1;
 
+#if defined(CONFIG_ARCH_X86_64)
     // Save parent's FPU state if it's currently in the registers
     if (__atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE) == parent) {
         arch::fxsave(parent->fpu_state);
     }
+#else
+    (void)parent;
+#endif
     // Copy FPU state to child
     tcb->fpu_used = parent->fpu_used;
     if (parent->fpu_used) {
@@ -348,6 +384,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
         tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
     }
 
+#if defined(CONFIG_ARCH_X86_64)
     // Build register frame on child's kernel stack
     // Layout matches isr_common push order (high to low):
     // SS, RSP, RFLAGS, CS, RIP, error, vector, r15..r8, rbp, rdi, rsi, rdx,
@@ -376,6 +413,17 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     *--stack = regs[1];  // rbx
     *--stack = 0;        // rax = 0 (child return value)
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_AARCH64)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    // aarch64 exception frame: padding, SPSR, ELR, SP_EL0, X0-X30
+    *--stack = 0;                  // padding
+    *--stack = 0;                  // padding
+    *--stack = regs[19];           // SPSR_EL1 (from regs[19])
+    *--stack = regs[17];           // ELR_EL1 (from regs[17])
+    *--stack = regs[20];           // SP_EL0 (from regs[20])
+    for (int i = 0; i < 31; ++i) *--stack = regs[i];
+    tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#endif
 
     // For user tasks: clone page table and user stack
     if (is_user_task) {

@@ -89,6 +89,12 @@
 // ---------------------------------------------------------------------------
 // Memory Layout Tunables (Architecture-Overridable)
 // ---------------------------------------------------------------------------
+/// Number of PML4 entries reserved for userspace (0–255).
+/// Common to all 48-bit-VA architectures (512-entry page table, split 256/256).
+#ifndef CONFIG_PML4_USER_COUNT
+#define CONFIG_PML4_USER_COUNT 256
+#endif
+
 #if CONFIG_ARCH_X86_64
 /// Physical page size in bytes. Must be 4096 on x86_64.
 #ifndef CONFIG_PAGE_SIZE
@@ -98,11 +104,6 @@
 /// Higher-half direct-map offset for physical memory.
 #ifndef CONFIG_HHDM_OFFSET
 #define CONFIG_HHDM_OFFSET 0xFFFF800000000000ULL
-#endif
-
-/// Number of PML4 entries reserved for userspace (0–255).
-#ifndef CONFIG_PML4_USER_COUNT
-#define CONFIG_PML4_USER_COUNT 256
 #endif
 
 /// Maximum user-space virtual address.

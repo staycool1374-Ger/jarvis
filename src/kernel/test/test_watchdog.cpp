@@ -143,15 +143,18 @@ void watchdog_panic() {
         Logger::print_dec(task->id);
         Logger::raw_write(" state=");
         Logger::print_dec(static_cast<uint64_t>(task->state));
-        Logger::raw_write(" context.rip=0x");
+        Logger::raw_write(" context.ip=0x");
+#if defined(CONFIG_ARCH_X86_64)
         Logger::print_hex(task->context.rip);
+#elif defined(CONFIG_ARCH_AARCH64)
+        Logger::print_hex(task->context.elr_el1);
+#endif
         Logger::raw_write("\n");
     } else {
         Logger::raw_write("  (no current task)\n");
     }
 
-    uint64_t rip;
-    asm volatile("lea (%%rip), %0" : "=r"(rip));
+    uint64_t rip = reinterpret_cast<uint64_t>(__builtin_return_address(0));
     Logger::raw_write("  current_rip=0x");
     Logger::print_hex(rip);
     Logger::raw_write("\n");

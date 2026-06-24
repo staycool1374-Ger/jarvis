@@ -74,6 +74,7 @@ enum class TaskState : uint8_t {
 };
 
 /// @brief CPU register save area for context switching.
+#if defined(CONFIG_ARCH_X86_64)
 struct TaskContext {
     uint64_t rax, rbx, rcx, rdx;
     uint64_t rsi, rdi, rbp;
@@ -81,6 +82,16 @@ struct TaskContext {
     uint64_t vector, error_code;
     uint64_t rip, cs, rflags, rsp, ss;
 };
+#elif defined(CONFIG_ARCH_AARCH64)
+struct TaskContext {
+    uint64_t x[31];          // X0-X30
+    uint64_t sp_el0;         // SP_EL0 (user stack pointer)
+    uint64_t elr_el1;        // ELR_EL1 (return address)
+    uint64_t spsr_el1;       // SPSR_EL1 (processor state)
+    uint64_t vector;         // exception vector number
+    uint64_t error_code;     // exception error code
+};
+#endif
 
 /// @brief Task control block — represents a single thread of execution.
 /// @note Includes scheduling parameters, register context, and stack info.

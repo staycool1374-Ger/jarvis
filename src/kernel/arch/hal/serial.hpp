@@ -3,8 +3,11 @@
 #include <types.hpp>
 #include <constants.hpp>
 #include <kernel/arch/hal/io.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace arch {
+
+#if defined(CONFIG_ARCH_X86_64)
 
 class Serial {
 public:
@@ -32,5 +35,18 @@ public:
         while (*s) putchar(*s++);
     }
 };
+
+#elif defined(CONFIG_ARCH_AARCH64)
+
+class Serial {
+public:
+    static void init();
+    static void putchar(char c);
+    static void puts(const char* s);
+};
+
+#else
+#  error "HAL: no serial implementation for this architecture"
+#endif
 
 } // namespace arch

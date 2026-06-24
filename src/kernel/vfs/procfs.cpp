@@ -507,7 +507,9 @@ static Vnode* proc_get_root() {
     meminfo_vnode.base.private_data = &meminfo_vnode;
 
     // Refresh PCI content
+#if defined(CONFIG_ARCH_X86_64)
     arch::pci_print_tree(pci_vnode.content, sizeof(pci_vnode.content));
+#endif
     pci_vnode.content_len = strlen(pci_vnode.content);
     pci_vnode.base.ops = &pci_ops;
     pci_vnode.base.ino = 2;

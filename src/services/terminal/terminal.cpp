@@ -18,6 +18,8 @@
 
 #include <services/terminal/terminal.hpp>
 #include <services/terminal/framebuffer.hpp>
+#include <kernel/arch/io.hpp>
+#include <kernel/arch/serial.hpp>
 #include <services/terminal/font.hpp>
 #include <kernel/arch/io.hpp>
 #include <version.hpp>
@@ -49,12 +51,16 @@ void Terminal::init() {
 }
 
 static void serial_putchar(char c) {
+#if defined(CONFIG_ARCH_X86_64)
     if (c == '\n') {
         while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
         arch::outb(arch::COM1, '\r');
     }
     while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
     arch::outb(arch::COM1, c);
+#else
+    arch::Serial::putchar(c);
+#endif
 }
 
 void Terminal::putchar(char c) {
@@ -109,15 +115,26 @@ void Terminal::puts(const char* str) {
 }
 
 bool Terminal::readline(char* buf, size_t max_len) {
+#if defined(CONFIG_ARCH_AARCH64)
+    (void)buf; (void)max_len;
+    return false;
+#else
     if (!instance_) return false;
 
     instance_->line_pos_ = 0;
 
     while (true) {
+#if defined(CONFIG_ARCH_X86_64)
         while (!(arch::inb(arch::COM1_LSR) & 1)) {
             arch::pause();
         }
         char c = arch::inb(arch::COM1);
+#else
+        if (!arch::Keyboard::getchar(c)) {
+            arch::pause();
+            continue;
+        }
+#endif
         if (c == '\r') c = '\n';
 
         if (c == '\n') {
@@ -140,6 +157,7 @@ bool Terminal::readline(char* buf, size_t max_len) {
             putchar(c);
         }
     }
+#endif /* CONFIG_ARCH_AARCH64 early return */
 }
 
 void Terminal::set_fg(uint32_t color) {

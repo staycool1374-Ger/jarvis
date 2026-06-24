@@ -29,11 +29,17 @@ extern "C" void syscall_entry();
 namespace kernel {
 
 void Syscall::init() {
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t star_val = (static_cast<uint64_t>(arch::SEG_KERNEL_CODE) << 32) |
                         (static_cast<uint64_t>(arch::SEG_USER_CODE) << 48);
     arch::wrmsr(arch::IA32_STAR, star_val);
     arch::wrmsr(arch::IA32_LSTAR, reinterpret_cast<uint64_t>(syscall_entry));
     arch::wrmsr(arch::IA32_FMASK, 0x200);
+#elif defined(CONFIG_ARCH_AARCH64)
+    // AArch64 syscalls use SVC #0; VBAR_EL1 entry point handles dispatch.
+    // No MSR-based syscall setup needed.
+    (void)syscall_entry;
+#endif
 }
 
 TaskControlBlock* syscall_task() {

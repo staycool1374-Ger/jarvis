@@ -1,3 +1,4 @@
+#if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -18,9 +19,9 @@
 
 #include <test.hpp>
 #include <logger.hpp>
-#include <string.hpp>
 #include <kernel/arch/cpuid.hpp>
 #include <kernel/arch/io.hpp>
+#include <string.hpp>
 
 using namespace kernel;
 
@@ -48,6 +49,7 @@ JARVIS_TEST(buildsystem_arch_x86_64_toolchain) {
     JARVIS_TEST_PASS();
 }
 
+#if defined(CONFIG_ARCH_X86_64)
 // Runmode: kernel
 // Testidea: Verifies invalid ARCH value produces clear error message.
 // Input: Build with ARCH=invalid_arch
@@ -82,6 +84,7 @@ JARVIS_TEST(buildsystem_default_arch_x86_64) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies kernel compiles with -DCONFIG_DEBUG for test builds.
@@ -123,3 +126,4 @@ void register_buildsystem_tests() {
     JARVIS_REGISTER_TEST(buildsystem_debug_flags);
     JARVIS_REGISTER_TEST(buildsystem_config_arch_defined);
 }
+#endif

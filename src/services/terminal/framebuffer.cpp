@@ -18,7 +18,9 @@
 
 #include <services/terminal/framebuffer.hpp>
 #include <services/terminal/font.hpp>
+#if defined(CONFIG_ARCH_X86_64)
 #include <kernel/multiboot2.hpp>
+#endif
 #include <kernel/memory/vmm.hpp>
 #include <assert.hpp>
 #include <constants.hpp>
@@ -29,6 +31,7 @@ FramebufferInfo Framebuffer::info_ = {};
 bool Framebuffer::initialized_ = false;
 
 bool Framebuffer::init() {
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t tag_addr = mb2_find_tag(8);
     if (!tag_addr) return false;
 
@@ -54,6 +57,9 @@ bool Framebuffer::init() {
     initialized_ = true;
     clear(0x000000);
     return true;
+#else
+    return false;
+#endif
 }
 
 void Framebuffer::clear(uint32_t color) {

@@ -311,6 +311,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, nullptr, nullptr);
 
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
     *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;
@@ -321,6 +322,16 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     *--stack = 0;
     for (int j = 0; j < 15; ++j) *--stack = 0;
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_AARCH64)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = 0;                  // padding
+    *--stack = 0;                  // padding
+    *--stack = 0x10;               // SPSR_EL1: EL0t
+    *--stack = hdr->entry;         // ELR_EL1
+    *--stack = user_rsp;           // SP_EL0
+    for (int j = 0; j < 31; ++j) *--stack = 0;
+    tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#endif
 
     return tcb;
 }
@@ -381,12 +392,19 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
         }
     }
 
+#if defined(CONFIG_ARCH_X86_64)
     regs[17] = hdr->entry;
     regs[18] = arch::SEG_USER_CODE;
     regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = user_rsp;
     regs[21] = arch::SEG_USER_DATA;
     regs[0] = 0;
+#elif defined(CONFIG_ARCH_AARCH64)
+    regs[0] = 0;                   // X0 = 0
+    regs[17] = hdr->entry;         // ELR_EL1 (index 17)
+    regs[19] = 0x10;               // SPSR_EL1: EL0t (index 19)
+    regs[20] = user_rsp;           // SP_EL0 (index 20)
+#endif
 
     if (arch::read_cr3() != new_pml4) {
         arch::write_cr3(new_pml4);

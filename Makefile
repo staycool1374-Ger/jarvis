@@ -99,7 +99,8 @@ CXXFLAGS := $(CXXFLAGS_COMMON) -target aarch64-elf -march=armv8-a
 
 CC       := aarch64-elf-gcc
 CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections
+            -ffunction-sections -fdata-sections \
+            -I src -I src/lib
 
 AS       := aarch64-elf-as
 ASFLAGS  :=

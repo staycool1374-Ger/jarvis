@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/cpuid.hpp>
@@ -181,3 +182,4 @@ void register_fpu_xmm_all_tests() {
     Logger::info("Registering 16-XMM register context switch tests");
     JARVIS_REGISTER_TEST(sse_xmm_all_registers);
 }
+#endif

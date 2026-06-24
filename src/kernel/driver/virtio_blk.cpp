@@ -19,6 +19,8 @@
 /// @file virtio_blk.cpp
 /// @brief Virtio block driver implementation.
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <kernel/driver/virtio_blk.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <logger.hpp>
@@ -202,3 +204,5 @@ VirtioBlkDriver* VirtioBlkDriver::probe() {
 }
 
 } // namespace kernel::block
+
+#endif // CONFIG_ARCH_X86_64

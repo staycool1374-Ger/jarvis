@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <test.hpp>
 #include <logger.hpp>
 
@@ -61,3 +63,5 @@ void register_pic_tests() {
     JARVIS_REGISTER_TEST(pic_mask_all);
     JARVIS_REGISTER_TEST(pic_ocw2_end_of_interrupt);
 }
+
+#endif // CONFIG_ARCH_X86_64

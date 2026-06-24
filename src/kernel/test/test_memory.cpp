@@ -19,6 +19,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <constants.hpp>
+#include <kernel/arch/io.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -225,7 +226,7 @@ JARVIS_TEST(vmm_huge_page_split_regression) {
     uint64_t const PAGE_HUGE    = 1ULL << 7;
 
     // Walk the kernel page table to save the PD entry before the huge-page split.
-    uint64_t kernel_pml4 = []() { uint64_t v; asm volatile("mov %%cr3, %0" : "=r"(v)); return v; }();
+    uint64_t kernel_pml4 = arch::read_cr3();
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
     size_t pml4_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 39)) >> 39);
     JARVIS_ASSERT(pml4[pml4_idx] & PAGE_PRESENT);
@@ -307,7 +308,7 @@ JARVIS_TEST(vmm_hhdm_access_consistency) {
     uint64_t v = arch::HHDM_OFFSET + 0x900000; // safe: PD_HIGHER[4], PT idx 0x100
 
     // Save the PD entry (huge page) before splitting
-    uint64_t cr3 = []() { uint64_t v; asm volatile("mov %%cr3, %0" : "=r"(v)); return v; }();
+    uint64_t cr3 = arch::read_cr3();
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
     size_t pml4_i = static_cast<size_t>((v & (0x1FFULL << 39)) >> 39);
     auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_i] & ~0xFFFULL));

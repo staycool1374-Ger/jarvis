@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/rtc.hpp>
@@ -60,3 +61,4 @@ void register_rtc_tests() {
     JARVIS_REGISTER_TEST(rtc_read_seconds);
     JARVIS_REGISTER_TEST(rtc_bcd_conversion);
 }
+#endif

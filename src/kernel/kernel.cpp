@@ -23,6 +23,7 @@
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <kernel/arch/serial.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -70,26 +71,20 @@ extern "C" void gcov_flush_to_serial();
 using namespace arch;
 
 static void debug_putchar(char c) {
+#if defined(CONFIG_ARCH_X86_64)
     if (c == '\n') {
         while ((inb(arch::COM1_LSR) & 0x20) == 0);
         outb(arch::COM1, '\r');
     }
     while ((inb(arch::COM1_LSR) & 0x20) == 0);
     outb(arch::COM1, c);
+#else
+    arch::Serial::putchar(c);
+#endif
 }
 
 extern "C" void debug_write(const char* s) {
     while (*s) debug_putchar(*s++);
-}
-
-extern "C" {
-uint64_t* scheduler_save_rsp_to = nullptr;
-uint64_t scheduler_load_rsp_from = 0;
-uint64_t scheduler_load_cr3_from = 0;
-uint64_t scheduler_next_task_id = 0;
-uint64_t isr_nesting_depth = 0;
-uint64_t scheduler_corruption_count = 0;
-kernel::TaskControlBlock* fpu_owner = nullptr;
 }
 
 extern "C" void debug_write_hex(uint64_t value) {
@@ -111,13 +106,24 @@ extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3
 }
 
 extern "C" {
+    uint64_t* scheduler_save_rsp_to = nullptr;
+    uint64_t scheduler_load_rsp_from = 0;
+    uint64_t scheduler_load_cr3_from = 0;
+    uint64_t scheduler_next_task_id = 0;
+    uint64_t isr_nesting_depth = 0;
+    uint64_t scheduler_corruption_count = 0;
+    kernel::TaskControlBlock* fpu_owner = nullptr;
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t multiboot_magic = 0;
     uint64_t multiboot_info_ptr = 0;
+#endif
 }
+
 extern char kernel_virt_end[];
 extern "C" uint8_t _binary_initrd_cpio_start[];
 extern "C" uint8_t _binary_initrd_cpio_end[];
 
+#if defined(CONFIG_ARCH_X86_64)
 static void init_pic() {
     outb(arch::PIC1_CMD, 0x11);
     outb(arch::PIC2_CMD, 0x11);
@@ -130,12 +136,19 @@ static void init_pic() {
     outb(arch::PIC1_DATA, 0x00);
     outb(arch::PIC2_DATA, 0x00);
 }
+#endif
 
 extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
+#if defined(CONFIG_ARCH_X86_64)
     multiboot_magic = magic;
     multiboot_info_ptr = mb_info;
     extern const uint64_t kernel_stack_top;
     asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack_top));
+#elif defined(CONFIG_ARCH_AARCH64)
+    (void)magic;
+    (void)mb_info;
+    arch::fp_enable();
+#endif
 
     kernel::Logger::init();
     kernel::test::Registry::init();
@@ -152,23 +165,27 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write("[BOOT] Arch init...\n");
     arch::GDT::init();
     arch::GDT::load();
+#if defined(CONFIG_ARCH_X86_64)
+    extern const uint64_t kernel_stack_top;
     arch::GDT::set_tss_rsp0(kernel_stack_top);
-    arch::IDT::init();
-    arch::IDT::load();
 
     // Enable x87 FPU: clear CR0.EM (bit 2), set CR0.NE (bit 5), set CR0.MP (bit 1)
     uint64_t cr0 = arch::read_cr0();
-    cr0 &= ~(1ULL << 2);   // clear EM
-    cr0 |= (1ULL << 1);    // set MP
-    cr0 |= (1ULL << 5);    // set NE
+    cr0 &= ~(1ULL << 2);
+    cr0 |= (1ULL << 1);
+    cr0 |= (1ULL << 5);
     arch::write_cr0(cr0);
 
     // Enable FXSAVE/FXRSTOR and SSE: set CR4.OSFXSR (bit 9) and CR4.OSXMMEXCPT (bit 10)
     uint64_t cr4 = arch::read_cr4();
-    cr4 |= (1ULL << 9);    // OSFXSR
-    cr4 |= (1ULL << 10);   // OSXMMEXCPT
+    cr4 |= (1ULL << 9);
+    cr4 |= (1ULL << 10);
     arch::write_cr4(cr4);
+#endif
+    arch::IDT::init();
+    arch::IDT::load();
 
+#if defined(CONFIG_ARCH_X86_64)
     uint64_t mem_size = 64_MiB;
     uint64_t tag_addr = mb2_find_tag(6);
     if (tag_addr) {
@@ -183,12 +200,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             }
         }
     }
+#elif defined(CONFIG_ARCH_AARCH64)
+    uint64_t mem_size = 128_MiB;
+#endif
 
     uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::
         HHDM_OFFSET;
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
+#if defined(CONFIG_ARCH_X86_64)
     kernel::BootParams::parse_multiboot_cmdline();
+#endif
     {
         auto& bp = kernel::BootParams::instance();
         debug_write("[BOOT] timer_hz=");
@@ -358,6 +380,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         service::Terminal::show_splash();
     }
 
+#if defined(CONFIG_ARCH_X86_64)
     init_pic();
     arch::Keyboard::init();
     arch::IDT::register_handler(
@@ -367,6 +390,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             outb(arch::PIC1_CMD, 0x20);
         }
     );
+#endif
 
     kernel::vfs::devfs_init();
     kernel::vfs::mount(kernel::vfs::dev_fs, "/dev");
@@ -374,6 +398,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::vfs::mount(kernel::vfs::tmpfs_fs, "/tmp");
 
     // Probe AHCI controller first, fall back to legacy ATA PIO
+#if defined(CONFIG_ARCH_X86_64)
     {
         auto* ahci = kernel::block::AhciDriver::probe();
         if (ahci) {
@@ -415,7 +440,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
+#endif
+
     // Probe virtio-net NIC and initialize network stack
+#if defined(CONFIG_ARCH_X86_64)
     {
         static net::Nic g_boot_nic;
         if (kernel::net::virtio_net_probe(g_boot_nic)) {
@@ -428,6 +456,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             debug_write("[BOOT] No virtio-net NIC found\n");
         }
     }
+#endif
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
     arch::RTC::init();
@@ -606,8 +635,10 @@ static void dump_regs(uint64_t* regs) {
     L::raw_write("\n");
     L::raw_write("  R12: "); L::print_hex(regs[11]);
     L::raw_write("  R13: "); L::print_hex(regs[12]);
+#if defined(CONFIG_ARCH_X86_64)
     L::raw_write("\n");
     L::raw_write("  R14: "); L::print_hex(regs[13]);
+    L::raw_write("\n");
     L::raw_write("  R15: "); L::print_hex(regs[14]);
     L::raw_write("\n");
     L::raw_write("  RIP: "); L::print_hex(regs[17]);
@@ -634,6 +665,18 @@ static void dump_regs(uint64_t* regs) {
         L::raw_write("\n");
         rbp = reinterpret_cast<uint64_t*>(rbp[0]);
     }
+#elif defined(CONFIG_ARCH_AARCH64)
+    L::raw_write("  ELR: "); L::print_hex(regs[31]);
+    L::raw_write("  SPSR: "); L::print_hex(regs[32]);
+    L::raw_write("\n  Stack trace:\n");
+    uint64_t* fp = reinterpret_cast<uint64_t*>(regs[29]);
+    for (int i = 0; i < 8 && fp && fp[1]; ++i) {
+        L::raw_write("    ["); L::print_dec(i); L::raw_write("] ");
+        L::print_hex(fp[1]);
+        L::raw_write("\n");
+        fp = reinterpret_cast<uint64_t*>(fp[0]);
+    }
+#endif
 }
 
 static const char* exception_name(uint64_t vector) {
@@ -685,6 +728,7 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
         return false;
     }
 
+#if defined(CONFIG_ARCH_X86_64)
     // If the task has a registered handler, invoke it
     if (task->has_signal_handler(sig)) {
         kernel::Logger::info("Task %x: delivering signal %x to handler at %x",
@@ -755,12 +799,21 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
     task->state = kernel::TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
     return false;
+#elif defined(CONFIG_ARCH_AARCH64)
+    (void)vector; (void)error_code; (void)rip;
+    kernel::Logger::error("Task %x: signal %x (aarch64 stub, terminating)",
+                          task->id, sig);
+    task->state = kernel::TaskState::TERMINATED;
+    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+    return false;
+#endif
 }
 
 extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
     uint64_t rip,
                                    uint64_t* regs)
 {
+#if defined(CONFIG_ARCH_X86_64)
     // #NM (Device Not Available, vector 7) — lazy FPU/SSE context switch
     if (vector == 7) {
         auto* current = kernel::Scheduler::current_task();
@@ -792,7 +845,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         __atomic_store_n(&fpu_owner, current, __ATOMIC_RELEASE);
         return;
     }
+#endif
 
+#if defined(CONFIG_ARCH_X86_64)
     if (vector < 32) {
         auto* t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;
@@ -844,6 +899,28 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         panic("CPU EXCEPTION");
         return;
     }
+#elif defined(CONFIG_ARCH_AARCH64)
+    if (vector < 32) {
+        auto* t = kernel::Scheduler::current_task();
+        (void)t;
+        if (t && t->page_table_ != 0) {
+            auto mapping = kernel::exception_to_signal(vector);
+            uint64_t sig = static_cast<uint64_t>(mapping.signal);
+            kernel::Logger::warn("Task %x: exception vector=%x (%s)",
+                                 t->id, vector, mapping.name);
+            bool was_delivered = deliver_signal_to_user(t, sig, vector,
+                error_code, rip, regs);
+            if (!was_delivered && t->state == kernel::TaskState::TERMINATED) {
+                kernel::Scheduler::reschedule();
+            }
+            return;
+        }
+        kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x elr=%x)",
+            exception_name(vector), vector, error_code, rip);
+        dump_regs(regs);
+        panic("CPU EXCEPTION");
+    }
+#endif
 
     if (vector == 0x80) {
         regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4],
@@ -871,10 +948,12 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 
     arch::IDT::handle_interrupt(vector, error_code, rip);
 
+#if defined(CONFIG_ARCH_X86_64)
     if (vector >= 32 && vector < 48) {
         outb(arch::PIC1_CMD, 0x20);
         if (vector >= 40) outb(arch::PIC2_CMD, 0x20);
     }
+#endif
 }
 
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,

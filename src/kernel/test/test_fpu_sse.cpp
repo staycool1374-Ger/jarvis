@@ -1,3 +1,4 @@
+#if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -209,3 +210,4 @@ void register_fpu_sse_tests() {
     JARVIS_REGISTER_TEST(sse_mxcsr_context_switch);
     JARVIS_REGISTER_TEST(sse_xmm_context_switch);
 }
+#endif

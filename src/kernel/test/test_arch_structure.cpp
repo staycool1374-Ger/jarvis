@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
@@ -144,3 +145,4 @@ void register_arch_structure_tests() {
     JARVIS_REGISTER_TEST(buildsystem_arch_selection);
     JARVIS_REGISTER_TEST(hal_interfaces_exist);
 }
+#endif

@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
 #include <constants.hpp>
@@ -92,3 +93,4 @@ void register_fpu_clone_tests() {
     Logger::info("Registering FPU clone tests");
     JARVIS_REGISTER_TEST(fpu_clone_copies_state);
 }
+#endif

@@ -29,7 +29,11 @@ namespace vfs {
 
 // ── serial helpers (COM1) ──
 [[gnu::always_inline]] static inline bool serial_has_data() {
+#if defined(CONFIG_ARCH_X86_64)
     return arch::inb(arch::COM1_LSR) & 1;
+#else
+    return false;
+#endif
 }
 
 void devfs_init() {
@@ -42,9 +46,11 @@ static int64_t tty_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
     if (count == 0) return 0;
     for (uint64_t retry = 0; retry < UINT64_MAX; ++retry) {
         if (serial_has_data()) {
+#if defined(CONFIG_ARCH_X86_64)
             char character = arch::inb(arch::COM1);
             buffer[0] = (character == '\r') ? '\n' : character;
             return 1;
+#endif
         }
         char key_char = 0;
         if (arch::Keyboard::getchar(key_char)) {

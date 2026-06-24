@@ -19,6 +19,8 @@
 /// @file ahci.cpp
 /// @brief AHCI/SATA driver implementation.
 
+#if defined(CONFIG_ARCH_X86_64)
+
 #include <kernel/driver/ahci.hpp>
 #include <kernel/driver/dma.hpp>
 #include <kernel/arch/pci.hpp>
@@ -507,3 +509,5 @@ AhciDriver* AhciDriver::probe() {
 }
 
 } // namespace kernel::block
+
+#endif // CONFIG_ARCH_X86_64
