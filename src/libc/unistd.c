@@ -51,7 +51,7 @@ pid_t getpid(void) {
 
 void _exit(int status) {
     __syscall5(6, (long)status, 0, 0, 0);
-    for (;;) asm volatile("pause");
+    for (;;) __builtin_trap();
 }
 
 int mkdir(const char* path, unsigned int mode) {

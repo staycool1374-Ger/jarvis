@@ -77,12 +77,30 @@ struct rlimit {
 
 static inline long __syscall5(long num, long a0, long a1, long a2, long a3) {
     long ret;
+#if defined(__x86_64__)
     asm volatile(
         "int $0x80"
         : "=a"(ret)
         : "a"(num), "b"(a0), "c"(a1), "d"(a2), "S"(a3)
         : "memory", "cc"
     );
+#elif defined(__aarch64__)
+    register long x8 asm("x8") = num;
+    register long x0 asm("x0") = a0;
+    register long x1 asm("x1") = a1;
+    register long x2 asm("x2") = a2;
+    register long x3 asm("x3") = a3;
+    register long x4 asm("x4") = 0;
+    asm volatile(
+        "svc #0"
+        : "+r"(x0)
+        : "r"(x8), "r"(x1), "r"(x2), "r"(x3), "r"(x4)
+        : "memory"
+    );
+    ret = x0;
+#else
+#  error "Unsupported architecture for __syscall5"
+#endif
     return ret;
 }
 

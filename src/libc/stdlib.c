@@ -6,7 +6,7 @@ void exit(int status) {
 }
 
 void abort(void) {
-    for (;;) asm volatile("pause");
+    for (;;) __builtin_trap();
 }
 
 int atoi(const char* s) {
