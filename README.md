@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.20** — System Calls & Storage: SYS_YIELD, SYS_REBOOT, SYS_HALT, AHCI/SATA, DMA infrastructure.
+Current version: **v0.2.21** — Configuration System & Portability: jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch infrastructure.
 
 ---
 
@@ -215,6 +215,7 @@ Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGr
 
 - [x] **Phase 2 — Kernel Core & Shell** — Boot, PMM, VMM, scheduler, IPC, syscalls, ELF loader, shell, devfs, procfs
 - [x] **Phase 3 — System Services & Hardware** — FAT32, tmpfs, PCI, Virtio, ATA PIO, RNG, FPU, DMA, network stack *(completed — v0.2.20)*
+- [x] **Phase 4 — Kernel Configuration & Portability** — jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch HAL infrastructure *(completed — v0.2.21)*
 - [ ] **Phase 4 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
 - [ ] **Phase 5 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
 - [ ] **Phase 6 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc

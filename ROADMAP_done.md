@@ -107,3 +107,21 @@
 - [x] DMA completion interrupt infrastructure (ISR acknowledges and fires for storage I/O)
 - [x] Double-buffered DMA transfer support (ping-pong buffers for streaming storage)
 - Release tag: v0.2.20
+
+### 0.2.21 — Kernel Configuration & Portability
+- [x] jarvis_config.h central configuration header with 60+ CONFIG_* defines
+- [x] Scheduling tunables migrated: CONFIG_MAX_TASKS, CONFIG_TICK_HZ, CONFIG_PRIORITY_CEILING, CONFIG_PREEMPTION, CONFIG_IDLE_YIELD, CONFIG_TIME_SLICING
+- [x] Memory layout tunables migrated: CONFIG_PAGE_SIZE, CONFIG_HHDM_OFFSET, CONFIG_PML4_USER_COUNT, CONFIG_USER_SPACE_LIMIT, CONFIG_STACK_SIZE, CONFIG_HEAP_SIZE, CONFIG_MIN_STACK_SIZE
+- [x] Subsystem sizing migrated: MAX_FDS, MAX_MOUNTS, MAX_DRIVERS, MAX_DAEMONS, MAX_PROGRAMS, IPC_*, MAX_SIGNAL_HANDLERS, VFS_MAX_PATH, TASK_NAME_LEN
+- [x] MemPool config: CONFIG_MEMPOOL_NUM_POOLS, CONFIG_MEMPOOL_BLOCK_SIZES, CONFIG_MEMPOOL_BLOCK_COUNTS
+- [x] INCLUDE_ syscall gating defines for all 35 syscalls
+- [x] Architecture feature detection flags: FPU, RDRAND, MPU, HPET, APIC, GIC, PLIC, SBI
+- [x] Hook configuration points: IDLE, TICK, STACK_OVERFLOW, OOM, INIT (weak symbols)
+- [x] CONFIG_ASSERT macro (overridable, defaults to panic)
+- [x] CONFIG_VERSION macro ("0.2.21")
+- [x] Duplicate constants consolidated: all PAGE_SIZE (3×) and STACK_SIZE (2×) → CONFIG_*
+- [x] Makefile: check-config (toolchain validation script) and config-summary targets
+- [x] tools/check-config.py: validates ranges, power-of-2, page alignment, dependency constraints
+- [x] All constants migrated from 20+ source files to jarvis_config.h
+- [x] 680/680 tests pass after all migrations
+- [x] Release tag: v0.2.21

@@ -127,9 +127,9 @@ Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
 architecture is mid-transition toward a <strong>capability-based
 microkernel</strong>, where drivers, VFS, and block I/O are externalised
 to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
-<p>Current version: <strong>v0.2.20</strong> — System Calls &amp;
-Storage: SYS_YIELD, SYS_REBOOT, SYS_HALT, AHCI/SATA, DMA
-infrastructure.</p>
+<p>Current version: <strong>v0.2.21</strong> — Configuration System &amp;
+Portability: jarvis_config.h, CONFIG_* migration, check-config validation,
+multi-arch infrastructure.</p>
 <hr />
 <h2 id="architectural-pillars">Architectural Pillars</h2>
 <h3 id="modern-freestanding-c20">Modern Freestanding C++20</h3>
@@ -669,14 +669,18 @@ ELF loader, shell, devfs, procfs</label></li>
 <li><label><input type="checkbox" checked="" /><strong>Phase 3 — System
 Services &amp; Hardware</strong> — FAT32, tmpfs, PCI, Virtio, ATA PIO,
 RNG, FPU, DMA, network stack <em>(completed — v0.2.20)</em></label></li>
-<li><label><input type="checkbox" /><strong>Phase 4 — Hard
+<li><label><input type="checkbox" checked="" /><strong>Phase 4 — Kernel
+Configuration &amp; Portability</strong> — jarvis_config.h, CONFIG_* migration,
+check-config validation, multi-arch HAL infrastructure <em>(completed —
+v0.2.21)</em></label></li>
+<li><label><input type="checkbox" /><strong>Phase 5 — Hard
 Real-Time</strong> — O(1) bitmap scheduler, HPET, WCRT analysis,
 priority ceiling protocol, idle-task RAM March-C + ALU integrity
 monitors (ASIL D)</label></li>
-<li><label><input type="checkbox" /><strong>Phase 5 — SMP &amp;
+<li><label><input type="checkbox" /><strong>Phase 6 — SMP &amp;
 Multicore</strong> — APIC, per-CPU run queues, cache-colouring
 allocator, TLB shootdown</label></li>
-<li><label><input type="checkbox" /><strong>Phase 6 — System
+<li><label><input type="checkbox" /><strong>Phase 7 — System
 Integration</strong> — 24h stress test, safety hardening, deterministic
 userspace libc</label></li>
 <li><label><input type="checkbox" /><strong>Phase 7 — Safety
