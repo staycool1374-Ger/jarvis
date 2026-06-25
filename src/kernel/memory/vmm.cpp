@@ -31,6 +31,7 @@ uint64_t VMM::kernel_pml4_ = 0;
 void VMM::init() {
     kernel_pml4_ = arch::read_cr3();
 
+#if defined(CONFIG_ARCH_X86_64)
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         kernel_pml4_ & ~0xFFFULL));
 
@@ -80,6 +81,13 @@ void VMM::init() {
         if (i == 256) continue;
         pml4[i] = 0;
     }
+#elif defined(CONFIG_ARCH_AARCH64)
+    // Boot.S already set up page tables.  Identity map uses 2048 L2 entries
+    // across 4 tables (0-4GB).  Higher half has 2 L2 entries for kernel
+    // (0xFFFF800040000000-0xFFFF800040400000).  VMM zeroing below is
+    // x86_64-specific (PDPT/PD structure mismatch) and would corrupt the
+    // identity L1[1] entry needed for kernel code at PA 0x40080000.
+#endif
 }
 
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,

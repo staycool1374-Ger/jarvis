@@ -8,10 +8,12 @@ machine LoadPlatformDescription @tools/renode/jarvis-aarch64.repl
 
 showAnalyzer uart0
 
-$kernel?=@debug/jarvis-rtos.iso
+$kernel?=@build/kernel-debug.elf
 
 macro reset
 """
     sysbus LoadELF $kernel
+    cpu0 PC 0x400F1FA0
+    cpu0 CPSR 0x3C5
 """
 runMacro $reset

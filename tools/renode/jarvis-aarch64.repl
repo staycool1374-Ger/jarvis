@@ -1,6 +1,15 @@
 dram: Memory.MappedMemory @ sysbus 0x40000000
     size: 0x10000000
 
+dummy0: Memory.MappedMemory @ sysbus 0x0
+    size: 0x1000
+
+dummy1: Memory.MappedMemory @ sysbus 0x1000
+    size: 0x1000
+
+dummy2: Memory.MappedMemory @ sysbus 0x2000
+    size: 0x1000
+
 gic: IRQControllers.ARM_GenericInterruptController @ {
         sysbus new Bus.BusMultiRegistration { address: 0x8000000; size: 0x10000; region: "distributor" };
         sysbus new IRQControllers.ArmGicRedistributorRegistration { attachedCPU: cpu0; address: 0x80a0000 }

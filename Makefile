@@ -90,6 +90,7 @@ GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/n
 QEMU_SYSTEM    := qemu-system-x86_64
 QEMU_ARCH_FLAGS := -boot order=d \
                    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+QEMU_DEBUG_EXIT  := -device isa-debug-exit
 OBJDUMP_DIS_FLAGS := -M intel
 
 else ifeq ($(ARCH),aarch64)
@@ -113,8 +114,8 @@ OBJCOPY_ARCH := aarch64
 LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
 
 QEMU_SYSTEM    := qemu-system-aarch64
-QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 \
-                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 -kernel $(KERNEL_DEBUG)
+QEMU_DEBUG_EXIT  :=
 OBJDUMP_DIS_FLAGS :=
 
 else ifeq ($(ARCH),riscv64)
@@ -159,8 +160,18 @@ KERNEL_DIS     := build/kernel.dis
 FAT32_DISK     := build/fat32.img
 QEMU_NET       := -netdev user,id=net0 -device virtio-net-pci,netdev=net0,disable-legacy=on
 QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  $(QEMU_ARCH_FLAGS) \
-                  -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
+                  $(QEMU_ARCH_FLAGS)
+
+# For x86_64 add IDE drive for FAT32
+ifeq ($(ARCH),x86_64)
+QEMU_FLAGS     += -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
+endif
+
+# For aarch64, load kernel directly instead of via ISO/GRUB
+ifeq ($(ARCH),aarch64)
+QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
+                  -machine virt -cpu cortex-a72 -display none -no-reboot
+endif
 
 # ------------------------------------------------------------------------------
 # Build type stamp
@@ -536,7 +547,7 @@ define _run_test_qemu
 	expect -c ' \
 	    fconfigure stdout -buffering none; \
 	    set timeout $(2); \
-	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot -device isa-debug-exit; \
+	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT); \
 	    expect { \
 	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+\\d+\\n  PASSED:\\s+\\d+\\n  FAILED:\\s+(\\d+)\\n==============================} { \
 	            puts "$$expect_out(buffer)"; flush stdout; \
