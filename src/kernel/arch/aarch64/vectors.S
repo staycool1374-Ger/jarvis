@@ -62,33 +62,119 @@ default_exception:
 el0_sync:
     b       syscall_entry
 
-// IRQ handler — delegates to C code for GIC-version-aware IAR/EOIR
+// ---------------------------------------------------------------------------
+// IRQ handlers — full register save/restore with preemptive context switch
+// ---------------------------------------------------------------------------
+
+// Save area layout (36 qwords = 288 bytes):
+//   sp+0:    x0
+//   sp+8:    x1
+//   ...
+//   sp+240:  x30
+//   sp+248:  SP_EL0
+//   sp+256:  ELR_EL1
+//   sp+264:  SPSR_EL1
+
+.macro save_all
+    sub     sp, sp, #288
+    stp     x0, x1, [sp, #0]
+    stp     x2, x3, [sp, #16]
+    stp     x4, x5, [sp, #32]
+    stp     x6, x7, [sp, #48]
+    stp     x8, x9, [sp, #64]
+    stp     x10, x11, [sp, #80]
+    stp     x12, x13, [sp, #96]
+    stp     x14, x15, [sp, #112]
+    stp     x16, x17, [sp, #128]
+    stp     x18, x19, [sp, #144]
+    stp     x20, x21, [sp, #160]
+    stp     x22, x23, [sp, #176]
+    stp     x24, x25, [sp, #192]
+    stp     x26, x27, [sp, #208]
+    stp     x28, x29, [sp, #224]
+    str     x30, [sp, #240]
+    mrs     x5, sp_el0
+    mrs     x6, elr_el1
+    mrs     x7, spsr_el1
+    stp     x5, x6, [sp, #248]
+    str     x7, [sp, #264]
+.endm
+
+.macro restore_all
+    ldp     x5, x6, [sp, #248]
+    msr     sp_el0, x5
+    msr     elr_el1, x6
+    ldr     x7, [sp, #264]
+    msr     spsr_el1, x7
+    ldp     x1, x2, [sp, #8]
+    ldp     x3, x4, [sp, #24]
+    ldp     x5, x6, [sp, #40]
+    ldp     x7, x8, [sp, #56]
+    ldp     x9, x10, [sp, #72]
+    ldp     x11, x12, [sp, #88]
+    ldp     x13, x14, [sp, #104]
+    ldp     x15, x16, [sp, #120]
+    ldp     x17, x18, [sp, #136]
+    ldp     x19, x20, [sp, #152]
+    ldp     x21, x22, [sp, #168]
+    ldp     x23, x24, [sp, #184]
+    ldp     x25, x26, [sp, #200]
+    ldp     x27, x28, [sp, #216]
+    ldr     x29, [sp, #232]
+    ldr     x30, [sp, #240]
+    ldr     x0, [sp, #0]
+    add     sp, sp, #288
+.endm
+
+.extern scheduler_save_rsp_to
+.extern scheduler_load_rsp_from
+.extern scheduler_load_cr3_from
+.extern scheduler_on_context_switch
+
 .type el1_irq, @function
 el1_irq:
-    stp     x0, x1, [sp, #-16]!
-    stp     x2, x3, [sp, #-16]!
-    stp     x4, x5, [sp, #-16]!
-    stp     x6, x7, [sp, #-16]!
-    stp     x29, x30, [sp, #-16]!
+    save_all
     bl      handle_gic_irq
-    ldp     x29, x30, [sp], #16
-    ldp     x6, x7, [sp], #16
-    ldp     x4, x5, [sp], #16
-    ldp     x2, x3, [sp], #16
-    ldp     x0, x1, [sp], #16
-    eret
+    b       irq_context_switch_common
 
 .type el0_irq, @function
 el0_irq:
-    stp     x0, x1, [sp, #-16]!
-    stp     x2, x3, [sp, #-16]!
-    stp     x4, x5, [sp, #-16]!
-    stp     x6, x7, [sp, #-16]!
-    stp     x29, x30, [sp, #-16]!
+    save_all
     bl      handle_gic_irq
-    ldp     x29, x30, [sp], #16
-    ldp     x6, x7, [sp], #16
-    ldp     x4, x5, [sp], #16
-    ldp     x2, x3, [sp], #16
-    ldp     x0, x1, [sp], #16
+    // fall through to irq_context_switch_common
+
+// After handle_gic_irq, check for scheduler context switch
+irq_context_switch_common:
+    adrp    x0, scheduler_save_rsp_to
+    ldr     x0, [x0, #:lo12:scheduler_save_rsp_to]
+    cbz     x0, .restore
+
+    // Save current SP to *scheduler_save_rsp_to
+    mov     x1, sp
+    str     x1, [x0]
+
+    // Load new SP from scheduler_load_rsp_from
+    adrp    x1, scheduler_load_rsp_from
+    ldr     x1, [x1, #:lo12:scheduler_load_rsp_from]
+    mov     sp, x1
+
+    // Reset scheduler_save_rsp_to to 0
+    adrp    x2, scheduler_save_rsp_to
+    str     xzr, [x2, #:lo12:scheduler_save_rsp_to]
+
+    // Update current task (no caller-saved regs to protect — 
+    // all user registers are in the save area on the stack)
+    bl      scheduler_on_context_switch
+
+    // Handle CR3 (page table) switch
+    adrp    x3, scheduler_load_cr3_from
+    ldr     x3, [x3, #:lo12:scheduler_load_cr3_from]
+    cbz     x3, .restore
+    msr     ttbr0_el1, x3
+    adrp    x4, scheduler_load_cr3_from
+    str     xzr, [x4, #:lo12:scheduler_load_cr3_from]
+    isb
+
+.restore:
+    restore_all
     eret
