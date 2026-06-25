@@ -2,9 +2,11 @@ ENTRY(_start)
 
 PHDRS
 {
-    text   PT_LOAD FLAGS(5);
-    rodata PT_LOAD FLAGS(4);
-    data   PT_LOAD FLAGS(6);
+    boot_text PT_LOAD FLAGS(5);
+    boot_data PT_LOAD FLAGS(6);
+    text      PT_LOAD FLAGS(5);
+    rodata    PT_LOAD FLAGS(4);
+    data      PT_LOAD FLAGS(6);
 }
 
 SECTIONS
@@ -18,15 +20,40 @@ SECTIONS
 
     . = 0x40080000;
 
-    .text : ALIGN(4K)
+    .boot_text : ALIGN(4K)
+    {
+        *(.boot.text)
+        *(.boot.rodata)
+    } :boot_text
+
+    .boot_data : ALIGN(4K)
+    {
+        *(.boot.data)
+        *(.boot.bss)
+    } :boot_data
+
+    .boot_stack : ALIGN(4K)
+    {
+        *(.boot_stack)
+    } :boot_data
+
+    . = ALIGN(., 4K);
+    boot_vma_end = .;
+    phys_lma = boot_vma_end;
+
+    . = 0xFFFF800000000000 + phys_lma;
+
+    .text : AT(phys_lma) ALIGN(4K)
     {
         _text_start = .;
+        *(.vectors)
         *(.text*)
         *(.text.*)
         _text_end = .;
     } :text
+    phys_lma = ALIGN(phys_lma + SIZEOF(.text), 4K);
 
-    .rodata : ALIGN(4K)
+    .rodata : AT(phys_lma) ALIGN(4K)
     {
         _rodata_start = .;
         *(.rodata*)
@@ -36,8 +63,9 @@ SECTIONS
         QUAD(0x0000000000000000)
         _rodata_end = .;
     } :rodata
+    phys_lma = ALIGN(phys_lma + SIZEOF(.rodata), 4K);
 
-    .data : ALIGN(4K)
+    .data : AT(phys_lma) ALIGN(4K)
     {
         _data_start = .;
         *(.data*)
@@ -46,8 +74,9 @@ SECTIONS
         *(.got.plt)
         _data_end = .;
     } :data
+    phys_lma = ALIGN(phys_lma + SIZEOF(.data), 4K);
 
-    .bss : ALIGN(4K)
+    .bss : AT(phys_lma) ALIGN(4K)
     {
         _bss_start = .;
         *(COMMON)
@@ -56,6 +85,6 @@ SECTIONS
         _bss_end = .;
     } :data
 
-    kernel_phys_end = ALIGN(., 4K);
-    kernel_virt_end = kernel_phys_end;
+    kernel_phys_end = ALIGN(phys_lma + SIZEOF(.bss), 4K);
+    kernel_virt_end = ALIGN(., 4K);
 }

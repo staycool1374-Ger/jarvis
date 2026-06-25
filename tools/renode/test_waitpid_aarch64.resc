@@ -1,0 +1,21 @@
+:name: Jarvis RTOS - AArch64 Test
+:description: Boots Jarvis RTOS on ARM Cortex-A53 with waitpid test.
+
+$name?="jarvis-aarch64"
+mach create $name
+
+machine LoadPlatformDescription @tools/renode/jarvis-aarch64.repl
+
+$kernel?=@build/kernel-debug.elf
+
+macro reset
+"""
+    sysbus LoadELF $kernel
+    cpu0 PC 0x40080000
+    cpu0 CPSR 0x3C5
+"""
+runMacro $reset
+
+showAnalyzer uart0
+start
+s

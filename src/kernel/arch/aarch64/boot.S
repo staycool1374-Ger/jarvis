@@ -84,8 +84,9 @@ _start:
     str     x12, [x10, #0x18]
 
     // Fill all 2048 L2 entries with 2MB block descriptors
-    // Entries 0-7 (0-16MB): Device (AttrIdx=0)  = 0x421
-    // Entries 8-2047 (16MB-4GB): Normal (AttrIdx=1) = 0x725
+    // Entries 0-511 (0-1GB): Device (AttrIdx=0) = 0x421
+    // Entries 512-639 (1GB-1.25GB): Normal (AttrIdx=1) = 0x725 (DRAM)
+    // Entries 640-2047 (1.25GB-4GB): Device (AttrIdx=0) = 0x421
     ldr     x12, =0x40002000
     mov     x11, #2048
     ldr     x14, =0x421     // Device: Valid|Block|NS=1|AF=1 = 0x421
@@ -93,8 +94,10 @@ _start:
 
 200:
     sub     x11, x11, #1
-    cmp     x11, #8
+    cmp     x11, #512
     csel    x13, x14, x15, lo
+    cmp     x11, #640
+    csel    x13, x14, x13, hs
     lsl     x0, x11, #21
     orr     x0, x0, x13
     str     x0, [x12, x11, lsl #3]
@@ -144,23 +147,18 @@ _start:
     ldr     x13, =0x40006008  // L1[1]
     str     x12, [x13]
 
-    // L2[0] = 2MB block for kernel text at PA 0x40080000
+    // Fill L2 entries 0-127 (256MB of RAM at PA 0x40000000-0x4FFFFFFF)
+    // Each entry is a 2MB block at 0x725 (Normal WB WA, NS|AF|SH=Inner)
     ldr     x12, =0x40007000  // L2 base
-    ldr     x13, =0x40080000
     ldr     x14, =0x725       // NS|AF|SH=11|Attr=1|Table/Block
-    orr     x13, x13, x14
-    str     x13, [x12]        // L2[0]
-
-    // L2[1] = 2MB block for kernel data at PA 0x40280000
-    ldr     x13, =0x40280000
-    orr     x13, x13, x14
-    str     x13, [x12, #8]    // L2[1]
-
-    // L2[2] = 2MB block for kernel extensions at PA 0x40480000
-    // (kernel_virt_end=0x404F8000; PMM bitmap placed after, up to ~0x4050C000)
-    ldr     x13, =0x40480000
-    orr     x13, x13, x14
-    str     x13, [x12, #16]   // L2[2]
+    ldr     x15, =0x40000000  // current PA (2MB-aligned)
+    mov     x16, #128         // counter
+210:
+    orr     x0, x15, x14      // x0 = PA | flags
+    str     x0, [x12], #8     // store at L2[i], advance pointer
+    add     x15, x15, #0x200000 // next 2MB block
+    subs    x16, x16, #1
+    b.ne    210b
 
     // === Configure MMU ===
     ldr     x8, =0xFF00          // MAIR: Attr0=Device, Attr1=Normal WB WA
@@ -199,20 +197,21 @@ _start:
     dsb     sy
     isb
 
-    // Stay identity-mapped — kernel is linked at PA 0x40080000.
-    // higherhalf_entry uses linker VA for data (0x402Fxxxx),
-    // which is only reachable via PC-relative adrp from identity-mapped code.
-    // Set SP and jump to higherhalf_entry.
-    ldr     x0, =_boot_stack_end
-    mov     sp, x0
+    // === Transition to higher-half ===
+    // Convert SP from identity-mapped (PA) to higher-half VA.
+    // _boot_stack_end is linked at low VMA (identity PA); after MMU enable
+    // we must use the TTBR1_EL1 alias (HHDM_OFFSET + PA) so the kernel
+    // stack is accessible after TTBR0_EL1 is later switched to user tables.
+    ldr     x1, =0xFFFF800000000000
+    add     sp, sp, x1
 
+    // Jump via absolute address — this takes us to higherhalf_entry at its
+    // higher-half VMA.  From this point forward the kernel runs entirely
+    // via TTBR1_EL1 (higher-half) and TTBR0_EL1 can be freely switched.
     mov     x0, x20             // DTB pointer saved at _start
     mov     x1, xzr             // mb_info = 0
-    bl      higherhalf_entry
-
-    // Should not return
-    wfi
-    b       .
+    ldr     x2, =higherhalf_entry
+    br      x2
 
 .section .boot.data, "aw"
 .balign 4096

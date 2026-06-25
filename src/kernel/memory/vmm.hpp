@@ -86,10 +86,30 @@ public:
 private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t PAGE_TABLE_ENTRIES = 512;
+
+#if defined(CONFIG_ARCH_AARCH64)
+    // aarch64 stage‑1 page-table descriptor bit layout.
+    // Table descriptors (L0–L2) and page descriptors (L3): bits[1:0]=11.
+    // Block descriptors (L1–L2): bits[1:0]=01.
+    // AP[1:0] in bits[7:6];  00=EL1‑RW/EL0‑*, 01=EL1‑RW/EL0‑RW,
+    //   10=EL1‑RO/EL0‑*, 11=EL1‑RO/EL0‑RO.
+    // AF (Access Flag) must be 1 for stage‑1 — bit 8 (NOT bit 10).
+    static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
+    static constexpr uint64_t PAGE_TABLE    = 1ULL << 1;
+    static constexpr uint64_t PAGE_AF       = 1ULL << 8;  // Access Flag (stage‑1)
+    static constexpr uint64_t PAGE_AP_USER  = 1ULL << 6;  // AP[0] — EL0 accessible
+    static constexpr uint64_t PAGE_AP_RO    = 1ULL << 7;  // AP[1] — read‑only (EL1)
+
+    // Compatibility aliases (used in flag‑building expressions)
+    static constexpr uint64_t PAGE_WRITE    = 0; // no‑op — writable by default
+    static constexpr uint64_t PAGE_USER     = PAGE_AP_USER;
+    static constexpr uint64_t PAGE_HUGE     = 0; // not a flag; detected via level
+#else
     static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
     static constexpr uint64_t PAGE_WRITE    = 1ULL << 1;
     static constexpr uint64_t PAGE_USER     = 1ULL << 2;
     static constexpr uint64_t PAGE_HUGE     = 1ULL << 7;
+#endif
 
     static constexpr uint64_t PML4_SHIFT    = 39;
     static constexpr uint64_t PDPT_SHIFT    = 30;

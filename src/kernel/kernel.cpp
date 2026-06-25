@@ -210,9 +210,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #elif defined(CONFIG_ARCH_AARCH64)
     // QEMU virt: RAM at 0x40000000, 256 MiB.
     // PMM uses absolute page indices (addr/PAGE_SIZE), so total_pages_ must
-    // cover addresses 0..top_of_RAM.  Kernel is linked at PA, no HHDM adjust.
+    // cover addresses 0..top_of_RAM.
     uint64_t mem_size = 0x40000000 + 256_MiB;
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end);
+    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
 #endif
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();

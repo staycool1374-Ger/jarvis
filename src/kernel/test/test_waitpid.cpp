@@ -188,9 +188,12 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
 JARVIS_TEST(waitpid_cr3_switch_on_status_write) {
     constexpr uint64_t TEST_VA = 0x70000000;
 
+    Logger::raw_write("waitpid58: enter\n");
     // Allocate two different physical pages for parent and child
     uint64_t parent_page = PMM::alloc_page();
+    Logger::raw_write("waitpid58: alloc parent done\n");
     uint64_t child_page  = PMM::alloc_page();
+    Logger::raw_write("waitpid58: alloc child done\n");
     JARVIS_ASSERT(parent_page != 0);
     JARVIS_ASSERT(child_page != 0);
     JARVIS_ASSERT(parent_page != child_page);
@@ -229,17 +232,11 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write) {
     // but we need to write status to the parent's user-space address.
     // The fix: switch to parent's CR3 before the write.
 
-    // First, enter child's address space
-    arch::write_cr3(child_pml4);
-
-    // Now apply the fix: switch to parent's CR3 before writing
+    Logger::info("waitpid_cr3: starting CR3 switch sequence");
     arch::write_cr3(parent_pml4);
-
-    // Write status to the shared user VA — this should hit parent_page
     *reinterpret_cast<uint64_t*>(TEST_VA) = 0x42;
-
-    // Restore kernel CR3
     arch::write_cr3(saved_cr3);
+    Logger::info("waitpid_cr3: CR3 sequence done");
 
     // Verify: parent's physical page got the write
     uint64_t parent_val = *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + parent_page);

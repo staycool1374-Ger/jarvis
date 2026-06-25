@@ -51,11 +51,28 @@ exception_entry:
     .align 7
     b       default_exception  // SError
 
+.data
+.align 3
+.globl g_debug_esr
+g_debug_esr: .quad 0
+.globl g_debug_far
+g_debug_far: .quad 0
+
 .section .text
 .type default_exception, @function
 default_exception:
-1:  wfe
-    b       1b
+    stp     x0, x1, [sp, #-16]!
+    mrs     x0, esr_el1
+    adrp    x1, g_debug_esr
+    str     x0, [x1, #:lo12:g_debug_esr]
+    mrs     x0, far_el1
+    adrp    x1, g_debug_far
+    str     x0, [x1, #:lo12:g_debug_far]
+    mrs     x0, elr_el1
+    add     x0, x0, #4
+    msr     elr_el1, x0
+    ldp     x0, x1, [sp], #16
+    eret
 
 // EL0 sync handler — SVC from userspace → syscall_entry
 .type el0_sync, @function

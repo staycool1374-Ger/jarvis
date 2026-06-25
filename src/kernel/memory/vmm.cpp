@@ -93,19 +93,34 @@ void VMM::init() {
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,
     bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
-        if (table[index] & PAGE_HUGE) {
+        if (
+#if defined(CONFIG_ARCH_AARCH64)
+            (table[index] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT
+#else
+            table[index] & PAGE_HUGE
+#endif
+        ) {
             if (!create) return nullptr;
             uint64_t new_page = PMM::alloc_page_table();
             ENSURE(new_page != 0);
             auto* new_table = reinterpret_cast<uint64_t*>(arch::
                 HHDM_OFFSET + new_page);
             uint64_t huge_base  = table[index] & ~0x1FFFFFULL;
+#if defined(CONFIG_ARCH_AARCH64)
+            uint64_t base_flags = table[index] & (PAGE_PRESENT | PAGE_AF);
+            for (size_t i = 0; i < 512; ++i) {
+                new_table[i] = (huge_base + i * 0x1000) | base_flags |
+                    PAGE_TABLE;
+            }
+            table[index] = new_page | PAGE_PRESENT | PAGE_TABLE;
+#else
             uint64_t base_flags = table[index] & (
                 PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
             for (size_t i = 0; i < 512; ++i) {
                 new_table[i] = (huge_base + i * 0x1000) | base_flags;
             }
             table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+#endif
             return new_table;
         }
         return reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (table[index
@@ -122,7 +137,11 @@ uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,
         new_table[i] = 0;
     }
 
+#if defined(CONFIG_ARCH_AARCH64)
+    table[index] = new_page | PAGE_PRESENT | PAGE_TABLE;
+#else
     table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+#endif
 
     return new_table;
 }
@@ -141,24 +160,42 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 
     // If the PD entry is a 2MB huge page, split it into 512 4KB entries
     // so we can map an individual 4KB page within it.
-    if (pd[pd_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+    if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+    if (pd[pd_idx] & PAGE_HUGE)
+#endif
+    {
         uint64_t new_pt_phys = PMM::alloc_page_table();
         ENSURE(new_pt_phys != 0);
         auto* new_pt = reinterpret_cast<uint64_t*>(arch::
             HHDM_OFFSET + new_pt_phys);
         uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
+#if defined(CONFIG_ARCH_AARCH64)
+        uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_AF);
+#else
         uint64_t base_flags = pd[pd_idx] & (
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+#endif
         for (size_t i = 0; i < 512; ++i) {
             new_pt[i] = (huge_base + i * 0x1000) | base_flags;
         }
+#if defined(CONFIG_ARCH_AARCH64)
+        pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_TABLE | PAGE_AF;
+#else
         pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+#endif
     }
 
     auto* pt   = get_table(pd, pd_idx, true);
 
+#if defined(CONFIG_ARCH_AARCH64)
+    uint64_t flags = PAGE_PRESENT | PAGE_TABLE | PAGE_AF;
+    if (user) flags |= PAGE_AP_USER;
+#else
     uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
     if (user) flags |= PAGE_USER;
+#endif
 
     pt[pt_idx] = phys_addr | flags;
     arch::ArchPageTable::tlb_flush(virt_addr);
@@ -198,7 +235,12 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
     auto* pd = get_table(pdpt, pdpt_idx, false);
     if (!pd) return 0;
 
-    if (pd[pd_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+    if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+    if (pd[pd_idx] & PAGE_HUGE)
+#endif
+    {
         return (pd[pd_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
     }
 
@@ -226,24 +268,43 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
     auto* pdpt = get_table(pml4, pml4_idx, true, true);
     auto* pd   = get_table(pdpt, pdpt_idx, true, true);
 
-    if (pd[pd_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+    if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+    if (pd[pd_idx] & PAGE_HUGE)
+#endif
+    {
         uint64_t new_pt_phys = PMM::alloc_user_page();
         ENSURE(new_pt_phys != 0);
         auto* new_pt = reinterpret_cast<uint64_t*>(arch::
             HHDM_OFFSET + new_pt_phys);
         uint64_t huge_base  = pd[pd_idx] & ~0x1FFFFFULL;
+#if defined(CONFIG_ARCH_AARCH64)
+        uint64_t base_flags = pd[pd_idx] & (PAGE_PRESENT | PAGE_AF);
+        for (size_t i = 0; i < 512; ++i) {
+            new_pt[i] = (huge_base + i * 0x1000) | base_flags |
+                PAGE_TABLE;
+        }
+        pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_TABLE;
+#else
         uint64_t base_flags = pd[pd_idx] & (
             PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
         for (size_t i = 0; i < 512; ++i) {
             new_pt[i] = (huge_base + i * 0x1000) | base_flags;
         }
         pd[pd_idx] = new_pt_phys | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+#endif
     }
 
     auto* pt   = get_table(pd, pd_idx, true, true);
 
+#if defined(CONFIG_ARCH_AARCH64)
+    uint64_t flags = PAGE_PRESENT | PAGE_TABLE | PAGE_AF;
+    if (user) flags |= PAGE_AP_USER;
+#else
     uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
     if (user) flags |= PAGE_USER;
+#endif
 
     pt[pt_idx] = phys_addr | flags;
 }
@@ -279,7 +340,12 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
         auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt_phys);
         for (int pdpt_idx = 0; pdpt_idx < 512; ++pdpt_idx) {
             if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) continue;
-            if (pdpt[pdpt_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+            if ((pdpt[pdpt_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+            if (pdpt[pdpt_idx] & PAGE_HUGE)
+#endif
+            {
                 uint64_t page = pdpt[pdpt_idx] & ~0x3FFFFFULL;
                 if (!PMM::is_user_page(page)) continue;
                 PMM::free_page(page);
@@ -290,7 +356,12 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
             auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd_phys);
             for (int pd_idx = 0; pd_idx < 512; ++pd_idx) {
                 if (!(pd[pd_idx] & PAGE_PRESENT)) continue;
-                if (pd[pd_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+                if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+                if (pd[pd_idx] & PAGE_HUGE)
+#endif
+                {
                     uint64_t page = pd[pd_idx] & ~0x1FFFFFULL;
                     if (!PMM::is_user_page(page)) continue;
                     PMM::free_page(page);
@@ -333,7 +404,12 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx
         ] & ~0xFFFULL));
 
-    if (pd[pd_idx] & PAGE_HUGE) {
+#if defined(CONFIG_ARCH_AARCH64)
+    if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+    if (pd[pd_idx] & PAGE_HUGE)
+#endif
+    {
         return (pd[pd_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
     }
 
