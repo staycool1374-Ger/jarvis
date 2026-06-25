@@ -6,6 +6,26 @@ _start:
     // Save DTB address (x0 from bootloader) in x20
     mov     x20, x0
 
+    // Drop to EL1 from whichever EL we boot at
+    mrs     x0, CurrentEl
+    and     x0, x0, #0xC
+    cmp     x0, #0xC
+    b.ne    2f
+    // At EL3: configure EL2 state, then go directly to EL1
+    mov     x0, #1              // SCR_EL3: NS=1 (non-secure)
+    msr     scr_el3, x0
+    mov     x0, #(1 << 31)
+    msr     hcr_el2, x0
+    mov     x0, #0x9            // ICC_SRE_EL2: SRE=1, Enable=1
+    msr     ICC_SRE_EL2, x0
+    isb
+    mov     x0, #0x3C5          // SPSR_EL3: EL1h, DAIF masked
+    msr     spsr_el3, x0
+    adr     x0, 1f
+    msr     elr_el3, x0
+    eret
+
+2:
     // Drop from EL2 to EL1 if needed
     mrs     x0, CurrentEl
     and     x0, x0, #0xC
@@ -129,13 +149,18 @@ _start:
     orr     x12, x12, #3      // table descriptor
     str     x12, [x9, #256*8]
 
-    // L1[0] = empty L2 table at 0x40008000 (VA 0xFFFF800000000000, no RAM below 1GB)
+    // L1[0] = L2 table at 0x40008000 (VA 0xFFFF800000000000-0xFFFF80003FFFFFFF)
+    // Clear all 512 entries, then populate needed MMIO mappings
     ldr     x14, =0x40008000
-    mov     x15, #64
+    mov     x15, #512
 205:
     sub     x15, x15, #1
     str     xzr, [x14, x15, lsl #3]
     cbnz    x15, 205b
+    // Map UART at VA 0xFFFF800009000000 (PA 0x9000000), L2 index 72
+    ldr     x14, =0x40008000
+    ldr     x12, =0x9000421       // 0x9000000 | Device: Valid|Block|NS|AF
+    str     x12, [x14, #72*8]
     ldr     x12, =0x40008000
     orr     x12, x12, #3
     ldr     x13, =0x40006000  // L1 base
@@ -164,7 +189,7 @@ _start:
     ldr     x8, =0xFF00          // MAIR: Attr0=Device, Attr1=Normal WB WA
     msr     mair_el1, x8
 
-    ldr     x8, =0x535103510     // TCR: T0SZ=16, T1SZ=16, TG0=TG1=4KB, EPD1=0, IPS=48b
+    ldr     x8, =0x5B5103510     // TCR: T0SZ=16, T1SZ=16, TG0=TG1=4KB, EPD1=0, IPS=48b
     msr     tcr_el1, x8
 
     msr     ttbr0_el1, x9       // TTBR0 = L0 (identity map)
@@ -173,9 +198,9 @@ _start:
     dsb     sy
     isb
 
-    // Clean page table pages (0x40000000-0x40008000) and invalidate TLBI
+    // Clean page table pages (0x40000000-0x40008FFF) and invalidate TLBI
     mov     x11, #0x40000000
-    mov     x15, #8
+    mov     x15, #9
 202:
     dc      cvac, x11
     add     x11, x11, #0x1000

@@ -3,7 +3,8 @@
 
 namespace arch {
 
-#define UART_BASE ((volatile uint32_t*)0x9000000ULL)
+#include <kernel/memory/address.hpp>
+#define UART_BASE ((volatile uint32_t*)(arch::HHDM_OFFSET + 0x9000000ULL))
 
 #define UART_DR     0x000
 #define UART_FR     0x018

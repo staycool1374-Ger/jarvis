@@ -6,14 +6,14 @@ mach create $name
 
 machine LoadPlatformDescription @tools/renode/jarvis-aarch64.repl
 
-showAnalyzer uart0
-
 $kernel?=@build/kernel-debug.elf
 
 macro reset
 """
     sysbus LoadELF $kernel
-    cpu0 PC 0x400F1D88
+    cpu0 SetAvailableExceptionLevels true false
+    cpu0 PC 0x40080000
     cpu0 CPSR 0x3C5
 """
 runMacro $reset
+start

@@ -1,6 +1,9 @@
 dram: Memory.MappedMemory @ sysbus 0x40000000
     size: 0x10000000
 
+dram_hh: Memory.MappedMemory @ sysbus 0xFFFF800040000000
+    size: 0x10000000
+
 dummy0: Memory.MappedMemory @ sysbus 0x0
     size: 0x1000
 
@@ -12,9 +15,9 @@ dummy2: Memory.MappedMemory @ sysbus 0x2000
 
 gic: IRQControllers.ARM_GenericInterruptController @ {
         sysbus new Bus.BusMultiRegistration { address: 0x8000000; size: 0x10000; region: "distributor" };
-        sysbus new IRQControllers.ArmGicRedistributorRegistration { attachedCPU: cpu0; address: 0x80a0000 }
+        sysbus new Bus.BusMultiRegistration { address: 0x8010000; size: 0x10000; region: "cpuInterface" }
     }
-    architectureVersion: .GICv3
+    architectureVersion: .GICv2
 
 cpu0: CPU.ARMv8A @ sysbus
     cpuType: "cortex-a53"
