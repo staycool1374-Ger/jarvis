@@ -44,7 +44,11 @@ bool validate_header(const ELF64Header* hdr) {
     if (hdr->ident[4] != 2) return false;  // 64-bit
     if (hdr->ident[5] != 1) return false;  // little-endian
     if (hdr->type != ET_EXEC && hdr->type != ET_DYN) return false;
-    if (hdr->machine != 0x3E) return false;  // x86_64
+#if defined(CONFIG_ARCH_AARCH64)
+    if (hdr->machine != 0xB7) return false;  // AArch64
+#else
+    if (hdr->machine != 0x3E) return false;  // x86_64 (default)
+#endif
     if (hdr->version == 0) return false;
     if (hdr->phnum > 64) return false;
     if (hdr->ehsize < sizeof(ELF64Header)) return false;

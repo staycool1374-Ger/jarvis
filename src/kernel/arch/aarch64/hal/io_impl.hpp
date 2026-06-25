@@ -60,19 +60,24 @@ inline void qemu_debug_exit(uint8_t code) {
     while (1) { asm volatile("wfi"); }
 }
 
+inline void dsb_sy() { asm volatile("dsb sy" : : : "memory"); }
+inline void isb() { asm volatile("isb" : : : "memory"); }
+inline void tlbi_vae1(uint64_t vaddr) { asm volatile("tlbi vae1, %0" : : "r"(vaddr) : "memory"); }
+inline void tlbi_alle1() { asm volatile("tlbi alle1" : : : "memory"); }
+
 inline uint64_t read_ttbr0_el1() { uint64_t v; asm volatile("mrs %0, ttbr0_el1" : "=r"(v)); return v; }
 inline uint64_t read_ttbr1_el1() { uint64_t v; asm volatile("mrs %0, ttbr1_el1" : "=r"(v)); return v; }
-inline uint64_t read_cr3() { return read_ttbr1_el1(); }
+inline uint64_t read_cr3() { return read_ttbr0_el1(); }
 inline uint64_t read_cr0() { return 0; }
 inline void write_cr0(uint64_t) {}
 inline uint64_t read_cr4() { return 0; }
-inline void write_ttbr0_el1(uint64_t v) { asm volatile("msr ttbr0_el1, %0" : : "r"(v) : "memory"); }
+inline void write_ttbr0_el1(uint64_t v) { asm volatile("msr ttbr0_el1, %0" : : "r"(v) : "memory"); isb(); }
 inline void write_ttbr1_el1(uint64_t v) { asm volatile("msr ttbr1_el1, %0" : : "r"(v) : "memory"); }
-inline void write_cr3(uint64_t v) { write_ttbr1_el1(v); }
-inline void tlbi_vae1(uint64_t vaddr) { asm volatile("tlbi vae1, %0" : : "r"(vaddr) : "memory"); }
-inline void tlbi_alle1() { asm volatile("tlbi alle1" : : : "memory"); }
-inline void dsb_sy() { asm volatile("dsb sy" : : : "memory"); }
-inline void isb() { asm volatile("isb" : : : "memory"); }
+// NOTE: CR3 write on aarch64 switches TTBR0_EL1.  This is only safe when the kernel
+// executes from higher-half (TTBR1_EL1).  Currently the kernel is identity-mapped via
+// TTBR0_EL1, so switching TTBR0_EL1 to a user page table (which lacks the identity map)
+// will fault.  Higher-half migration is required first.
+inline void write_cr3(uint64_t v) { (void)v; }
 
 inline void fp_enable() {
     uint64_t cpacr;
