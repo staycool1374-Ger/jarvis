@@ -301,13 +301,17 @@ check-build-stamp:
 # ------------------------------------------------------------------------------
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
-debug: check-build-stamp $(KERNEL_DEBUG) iso/boot
+debug: check-build-stamp $(KERNEL_DEBUG)
+ifeq ($(ARCH),x86_64)
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
 	@mkdir -p $(dir $(DEBUG_ISO))
 	@printf '  %-7s %s\n' 'ISO' '$(DEBUG_ISO)'
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>&1 || \
 	 (printf '  %-7s %s\n' 'ERROR' 'grub-mkrescue failed'; echo 'Install grub-pc + xorriso'; exit 1)
 	@printf '  %-7s %s\n' 'DONE' 'Debug ISO: $(DEBUG_ISO)'
+else
+	@printf '  %-7s %s\n' 'DONE' 'Debug kernel: $(KERNEL_DEBUG)'
+endif
 
 # ------------------------------------------------------------------------------
 # Release build
@@ -317,6 +321,10 @@ debug: check-build-stamp $(KERNEL_DEBUG) iso/boot
 # ------------------------------------------------------------------------------
 release: CXXFLAGS += -g -O2
 release:
+ifneq ($(ARCH),x86_64)
+	@printf '  %-7s %s\n' 'ERROR' 'Release builds only supported on x86_64 (arch=$(ARCH))'
+	@exit 1
+endif
 	@printf '  %-7s %s\n' 'RELEASE' 'Building release ISO…'
 	$(MAKE) clean
 	$(MAKE) $(KERNEL) $(INITRD_OBJ) iso/boot CXXFLAGS="$(CXXFLAGS)"
@@ -334,6 +342,10 @@ release:
 # ------------------------------------------------------------------------------
 # Profiling
 # ------------------------------------------------------------------------------
+ifneq ($(ARCH),x86_64)
+profiling:
+	@printf '  %-7s %s\n' 'ERROR' 'Profiling only supported on x86_64 (arch=$(ARCH))'; exit 1
+else
 profiling: CXX := x86_64-elf-g++
 profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) \
                        -Wno-type-limits -Wno-unused-but-set-variable \
@@ -355,6 +367,7 @@ profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld iso/boot
 	    tee build/profiling/qemu.log
 	@printf '  %-7s %s\n' 'PROFILE' 'Extracting coverage data…'
 	python3 tools/extract_gcda.py build/profiling/gcda.raw
+endif
 
 # ------------------------------------------------------------------------------
 # QEMU / Test targets
@@ -368,6 +381,9 @@ run-qemu: debug
 	fi
 
 run-release: release
+ifneq ($(ARCH),x86_64)
+	@printf '  %-7s %s\n' 'ERROR' 'Run release only supported on x86_64 (arch=$(ARCH))'; exit 1
+endif
 	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting release image…'; \
 	    $(QEMU_SYSTEM) -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
@@ -382,10 +398,7 @@ run-qemu-debug: debug
 	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	    printf '  %-7s %s\n' 'QEMU' 'Starting debug (GDB :1234, -d int,cpu_reset)…'; \
 	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
-	    $(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-	        -boot order=d -s -d int,cpu_reset \
-	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
-	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
+	    $(QEMU_SYSTEM) $(QEMU_FLAGS) -s -d int,cpu_reset; \
 	else \
 	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	fi
@@ -411,12 +424,12 @@ gdb: debug
 	@echo "   trace-syscall - toggle syscall tracing"
 	@echo "=========================================="
 	@echo ""
-	$(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-	    -boot order=d -s -S -d cpu_reset \
-	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
-	    -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -s -S -d cpu_reset
 
 test-gdb: debug
+ifneq ($(ARCH),x86_64)
+	@printf '  %-7s %s\n' 'ERROR' 'test-gdb only supported on x86_64 (arch=$(ARCH))'; exit 1
+endif
 	@rm -f build/gdb-panic-captured build/gdb-serial.log
 	@mkdir -p build
 	@printf '  %-7s %s\n' 'GDB' 'Launching QEMU with GDB stub…'
@@ -502,11 +515,14 @@ renode-test: debug
 	@if ! command -v renode >/dev/null 2>&1; then \
 	    echo "Renode missing. Install with: brew install renode/tap/renode"; exit 1; \
 	fi
-	@printf '  %-7s %s\n' 'RENODE' 'Running selftest (safe class)…'
+	@if [ "$(filter $(RENODE_ARCH),$(RENODE_SUPPORTED_ARCHS))" != "$(RENODE_ARCH)" ]; then \
+	    echo "Unsupported Renode arch '$(RENODE_ARCH)'. Supported: $(RENODE_SUPPORTED_ARCHS)"; exit 1; \
+	fi
+	@printf '  %-7s %s\n' 'RENODE' 'Running selftest (safe class) on $(RENODE_ARCH)…'
 	@mkdir -p initrd/tests
 	@printf 'safe\n' > initrd/tests/test-config.txt
 	$(MAKE) debug
-	renode --disable-xwt --console -e "i @tools/renode/jarvis-x86_64.resc; start;"
+	renode --disable-xwt --console -e "i @tools/renode/jarvis-$(RENODE_ARCH).resc; start;"
 
 # ------------------------------------------------------------------------------
 # Test targets
@@ -554,12 +570,19 @@ define _run_test_qemu
 	    set timeout $(2); \
 	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT); \
 	    expect { \
-	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+\\d+\\n  PASSED:\\s+\\d+\\n  FAILED:\\s+(\\d+)\\n==============================} { \
+	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+(\\d+)\\n(?:  BOOT_TIME_MS:\\s+(\\d+)\\n)?  PASSED:\\s+(\\d+)\\n  FAILED:\\s+(\\d+)\\n==============================} { \
 	            puts "$$expect_out(buffer)"; flush stdout; \
-	            if {$$expect_out(1,string) == $$expect_out(2,string) && $$expect_out(3,string) == 0} { \
-	                puts "RESULT: PASS ($$expect_out(1,string) tests passed)"; flush stdout; exit 0; \
+	            set test_ms $$expect_out(3,string); \
+	            set boot_ms $$expect_out(4,string); \
+	            if {$$expect_out(1,string) == $$expect_out(2,string) && $$expect_out(6,string) == 0} { \
+	                if {[string length $$boot_ms] > 0} { \
+	                    puts "RESULT: PASS ($$expect_out(1,string) tests, test=$$test_ms ms, boot=$$boot_ms ms)"; \
+	                } else { \
+	                    puts "RESULT: PASS ($$expect_out(1,string) tests, test=$$test_ms ms)"; \
+	                } \
+	                flush stdout; exit 0; \
 	            } else { \
-	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(3,string))"; flush stdout; exit 1; \
+	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(6,string))"; flush stdout; exit 1; \
 	            } \
 	        } \
 	        timeout { \
@@ -627,6 +650,7 @@ run-release-test: release
 	$(MAKE) _run-shell-test ISO=$(RELEASE_ISO)
 
 _run-shell-test:
+	@if [ "$(ARCH)" != "x86_64" ]; then printf '  %-7s %s\n' 'ERROR' 'Shell test only supported on x86_64 (arch=$(ARCH))'; exit 1; fi
 	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
 	printf '  %-7s %s\n' 'TEST' 'Comprehensive shell command test…'; \
 	printf '%s\n' \

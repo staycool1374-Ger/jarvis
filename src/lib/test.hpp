@@ -127,6 +127,7 @@ void run_registered(uint8_t required_flags);
 void run_suite(const char* suite_name);
 void print_report(uint64_t start_ns, uint64_t end_ns);
 
+void set_kernel_entry_ns();
 void set_class_auto_shutdown(bool enabled);
 extern bool g_class_auto_shutdown;
 

@@ -152,6 +152,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
 
     kernel::Logger::init();
+    kernel::test::set_kernel_entry_ns();
     kernel::test::Registry::init();
     debug_write("[BOOT] ");
     debug_write(kernel::Version::string());

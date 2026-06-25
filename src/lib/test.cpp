@@ -43,6 +43,11 @@ ClassSection Registry::sections_[MAX_CLASSES] = {};
 size_t Registry::class_count_ = 0;
 size_t Registry::expected_count_ = 0;
 bool g_class_auto_shutdown = false;
+static uint64_t g_kernel_entry_ns = 0;
+
+void set_kernel_entry_ns() {
+    g_kernel_entry_ns = arch::Timer::ns();
+}
 
 void Registry::init() {
     count_ = 0;
@@ -531,6 +536,10 @@ void print_report(uint64_t start_ns, uint64_t end_ns) {
     Logger::raw_write("  PLANNED:    "); write_num(exp); Logger::raw_write("\n");
     Logger::raw_write("  EXECUTED:   "); write_num(tt); Logger::raw_write("\n");
     Logger::raw_write("  TIME_ELAPSED_MS: "); write_num(elapsed_ms); Logger::raw_write("\n");
+    if (g_kernel_entry_ns > 0 && start_ns > g_kernel_entry_ns) {
+        uint64_t boot_ms = (start_ns - g_kernel_entry_ns) / 1000000ULL;
+        Logger::raw_write("  BOOT_TIME_MS:    "); write_num(boot_ms); Logger::raw_write("\n");
+    }
     Logger::raw_write("  PASSED:     "); write_num(tp); Logger::raw_write("\n");
     Logger::raw_write("  FAILED:     "); write_num(tf); Logger::raw_write("\n");
     Logger::raw_write("==============================\n");
