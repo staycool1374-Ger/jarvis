@@ -622,7 +622,11 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
         auto& idx  = current->debug_switch_idx;
         auto& rec  = ring[idx % TaskControlBlock::DEBUG_SWITCH_RING_SIZE];
         rec.entry_addr     = reinterpret_cast<uint64_t>(__builtin_return_address(0));
-        rec.exit_rip       = current->context.rip;
+#if defined(CONFIG_ARCH_X86_64)
+        rec.exit_rip = current->context.rip;
+#elif defined(CONFIG_ARCH_AARCH64)
+        rec.exit_rip = current->context.elr_el1;
+#endif
         rec.regs           = current->context;
         rec.thread_id      = current->id;
         rec.consumed_ticks = current->executed_ticks;

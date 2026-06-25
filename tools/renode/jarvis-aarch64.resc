@@ -13,7 +13,7 @@ $kernel?=@build/kernel-debug.elf
 macro reset
 """
     sysbus LoadELF $kernel
-    cpu0 PC 0x400F1FA0
+    cpu0 PC 0x400F1D88
     cpu0 CPSR 0x3C5
 """
 runMacro $reset

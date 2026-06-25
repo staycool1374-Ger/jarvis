@@ -13,6 +13,10 @@ _start:
     b.ne    1f
     mov     x0, #(1 << 31)
     msr     hcr_el2, x0
+    // Enable GICv3 system register access from EL1
+    mov     x0, #0x9          // ICC_SRE_EL2: SRE=1, Enable=1
+    msr     ICC_SRE_EL2, x0
+    isb
     mov     x0, #0x3C5
     msr     spsr_el2, x0
     adr     x0, 1f
@@ -151,6 +155,12 @@ _start:
     ldr     x13, =0x40280000
     orr     x13, x13, x14
     str     x13, [x12, #8]    // L2[1]
+
+    // L2[2] = 2MB block for kernel extensions at PA 0x40480000
+    // (kernel_virt_end=0x404F8000; PMM bitmap placed after, up to ~0x4050C000)
+    ldr     x13, =0x40480000
+    orr     x13, x13, x14
+    str     x13, [x12, #16]   // L2[2]
 
     // === Configure MMU ===
     ldr     x8, =0xFF00          // MAIR: Attr0=Device, Attr1=Normal WB WA

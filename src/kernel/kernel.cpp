@@ -20,6 +20,7 @@
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
@@ -184,6 +185,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
     arch::IDT::init();
     arch::IDT::load();
+
+#if defined(CONFIG_ARCH_AARCH64)
+    arch::ArchInterruptController::init();
+#endif
 
 #if defined(CONFIG_ARCH_X86_64)
     uint64_t mem_size = 64_MiB;

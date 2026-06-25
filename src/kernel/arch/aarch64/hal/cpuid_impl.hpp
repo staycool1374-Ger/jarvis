@@ -13,8 +13,8 @@ inline CpuIdResult cpuid(uint32_t leaf) {
     return {};
 }
 
-inline bool has_rdrand() { return true; }
-inline bool has_rdseed() { return true; }
+inline bool has_rdrand() { return false; }
+inline bool has_rdseed() { return false; }
 
 inline bool has_fpu() {
     uint64_t id_aa64pfr0;

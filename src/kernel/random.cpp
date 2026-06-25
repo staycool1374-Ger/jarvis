@@ -125,7 +125,7 @@ void random_init() {
     g_state.have_rdrand = arch::has_rdrand();
     g_state.have_rdseed = arch::has_rdseed();
     g_state.counter = 0;
-    g_state.position = CHACHA_BLOCK_SIZE; // trigger first block
+    g_state.position = CHACHA_BLOCK_SIZE;
     g_state.blocks_generated = 0;
 
     bool seeded = false;
@@ -138,7 +138,6 @@ void random_init() {
         seed_from_jitter(g_state.key, g_state.nonce);
     }
 
-    // Immediately generate one block to absorb any boot-time pattern
     prng_next_block();
 
     g_initialized = true;

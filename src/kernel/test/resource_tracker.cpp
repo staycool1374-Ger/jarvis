@@ -24,18 +24,25 @@ namespace kernel::test {
 
 #ifdef CONFIG_DEBUG
 
-static inline uint64_t read_rbp() {
+#if defined(CONFIG_ARCH_X86_64)
+static inline uint64_t read_fp() {
     uint64_t v;
     asm volatile("mov %%rbp, %0" : "=r"(v));
     return v;
 }
+#elif defined(CONFIG_ARCH_AARCH64)
+static inline uint64_t read_fp() {
+    uint64_t v;
+    asm volatile("mov %0, x29" : "=r"(v));
+    return v;
+}
+#endif
 
 static void print_backtrace() {
-    uint64_t rbp = read_rbp();
+    uint64_t fp = read_fp();
     Logger::warn("[RESOURCE]   Call stack:");
-    for (int i = 0; i < 5 && rbp; ++i) {
-        uint64_t ret = *reinterpret_cast<uint64_t*>(rbp + 8);
-        // Format ret as 16-digit hex
+    for (int i = 0; i < 5 && fp; ++i) {
+        uint64_t ret = *reinterpret_cast<uint64_t*>(fp + 8);
         char buf[20];
         int p = 18;
         buf[18] = '\0';
@@ -45,7 +52,7 @@ static void print_backtrace() {
         }
         buf[0] = '0'; buf[1] = 'x';
         Logger::warn("[RESOURCE]     #%d  %s", i, buf);
-        rbp = *reinterpret_cast<uint64_t*>(rbp); // walk to caller's frame
+        fp = *reinterpret_cast<uint64_t*>(fp);
     }
 }
 

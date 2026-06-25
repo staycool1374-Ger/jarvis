@@ -170,7 +170,8 @@ endif
 # For aarch64, load kernel directly instead of via ISO/GRUB
 ifeq ($(ARCH),aarch64)
 QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  -machine virt -cpu cortex-a72 -display none -no-reboot
+                  -machine virt -cpu cortex-a72 -display none -no-reboot \
+                  -semihosting-config enable=on,target=native
 endif
 
 # ------------------------------------------------------------------------------
@@ -533,7 +534,7 @@ define _run_test_qemu
 	            STALL=$$((STALL + 1)); \
 	            if [ $$STALL -ge $(WATCHDOG_STALL) ]; then \
 	                echo "[HOST-WATCHDOG] Tests interrupted — no serial output for $(WATCHDOG_STALL) s" >> "$(TEST_SERIAL_LOG)"; \
-	                pkill -f "qemu-system-x86_64.*jarvis-rtos" 2>/dev/null; \
+	                pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null; \
 	                exit 1; \
 	            fi; \
 	        else \

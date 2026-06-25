@@ -47,7 +47,16 @@ inline uint64_t rdtsc() {
 }
 
 inline void qemu_debug_exit(uint8_t code) {
-    (void)code;
+    // ARM Semihosting SYS_EXIT (0x18) with ADP_Stopped_ApplicationExit
+    uint32_t params[2] = { 0x18, code };
+    uint64_t addr = reinterpret_cast<uint64_t>(params);
+    __asm__ volatile(
+        "mov x0, #0x18\n\t"
+        "mov x1, %0\n\t"
+        "hlt #0xf000"
+        :
+        : "r"(addr)
+        : "x0", "x1", "memory");
     while (1) { asm volatile("wfi"); }
 }
 
