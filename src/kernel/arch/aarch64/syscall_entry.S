@@ -2,32 +2,82 @@
 .globl syscall_entry
 .type syscall_entry, @function
 
-// AArch64 syscall entry via SVC #0
+// AArch64 syscall entry via SVC #0 from EL0
 // On entry:
-//   X0 = syscall number
-//   X1-X4 = args
-//   EL0t mode
+//   x0 = syscall number
+//   x1-x4 = arguments
+//   SP_EL1 = kernel stack, SP_EL0 = user stack
+//   ELR_EL1 = return address (user PC)
+//   SPSR_EL1 = saved processor state
 //
-// We save registers, call the C handler, and return.
+// Save area layout (36 qwords = 288 bytes):
+//   sp+0:    x0
+//   sp+8:    x1
+//   ...
+//   sp+240:  x30
+//   sp+248:  SP_EL0
+//   sp+256:  ELR_EL1
+//   sp+264:  SPSR_EL1
+//   sp+272:  (temp for return value)
 syscall_entry:
-    // Save return address and frame
-    stp     x29, x30, [sp, #-16]!
-    mov     x29, sp
+    sub     sp, sp, #288
 
-    // Save X0-X4 (args + syscall number)
-    stp     x0, x1, [sp, #-16]!
-    stp     x2, x3, [sp, #-16]!
-    str     x4, [sp, #-16]!
+    stp     x0, x1, [sp, #0]
+    stp     x2, x3, [sp, #16]
+    stp     x4, x5, [sp, #32]
+    stp     x6, x7, [sp, #48]
+    stp     x8, x9, [sp, #64]
+    stp     x10, x11, [sp, #80]
+    stp     x12, x13, [sp, #96]
+    stp     x14, x15, [sp, #112]
+    stp     x16, x17, [sp, #128]
+    stp     x18, x19, [sp, #144]
+    stp     x20, x21, [sp, #160]
+    stp     x22, x23, [sp, #176]
+    stp     x24, x25, [sp, #192]
+    stp     x26, x27, [sp, #208]
+    stp     x28, x29, [sp, #224]
+    str     x30, [sp, #240]
 
-    // Call kernel syscall handler: syscall_handler(number, arg0, arg1, arg2, arg3, regs)
-    // X0-X5 are already set up by SVC caller
-    // We need to pass the register save area as the last argument
+    mrs     x5, sp_el0
+    mrs     x6, elr_el1
+    mrs     x7, spsr_el1
+    stp     x5, x6, [sp, #248]
+    str     x7, [sp, #264]
+
+    // syscall_handler(number, arg0, arg1, arg2, arg3, regs)
+    ldp     x0, x1, [sp, #0]
+    ldp     x2, x3, [sp, #16]
+    ldr     x4, [sp, #32]
     mov     x5, sp
     bl      syscall_handler
 
-    // Restore and return
-    ldr     x4, [sp], #16
-    ldp     x2, x3, [sp], #16
-    ldp     x0, x1, [sp], #16
-    ldp     x29, x30, [sp], #16
+    str     x0, [sp, #272]
+
+    ldp     x5, x6, [sp, #248]
+    msr     sp_el0, x5
+    msr     elr_el1, x6
+    ldr     x7, [sp, #264]
+    msr     spsr_el1, x7
+
+    ldp     x1, x2, [sp, #8]
+    ldp     x3, x4, [sp, #24]
+    ldp     x5, x6, [sp, #40]
+    ldp     x7, x8, [sp, #56]
+    ldp     x9, x10, [sp, #72]
+    ldp     x11, x12, [sp, #88]
+    ldp     x13, x14, [sp, #104]
+    ldp     x15, x16, [sp, #120]
+    ldp     x17, x18, [sp, #136]
+    ldp     x19, x20, [sp, #152]
+    ldp     x21, x22, [sp, #168]
+    ldp     x23, x24, [sp, #184]
+    ldp     x25, x26, [sp, #200]
+    ldp     x27, x28, [sp, #216]
+    ldr     x29, [sp, #232]
+    ldr     x30, [sp, #240]
+
+    ldr     x0, [sp, #272]
+
+    add     sp, sp, #288
     eret

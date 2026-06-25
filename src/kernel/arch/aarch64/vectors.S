@@ -33,7 +33,7 @@ exception_entry:
 
     // Lower EL using AArch64
     .align 7
-    b       default_exception  // Sync (SVC from EL0 → syscall — TODO)
+    b       el0_sync           // Sync (SVC from EL0 → syscall)
     .align 7
     b       el0_irq            // IRQ while at EL0
     .align 7
@@ -56,6 +56,11 @@ exception_entry:
 default_exception:
 1:  wfe
     b       1b
+
+// EL0 sync handler — SVC from userspace → syscall_entry
+.type el0_sync, @function
+el0_sync:
+    b       syscall_entry
 
 // IRQ handler — delegates to C code for GIC-version-aware IAR/EOIR
 .type el1_irq, @function
