@@ -131,7 +131,21 @@ $(FAT32_OBJ): $(FAT32_IMG)
 # Both debug and release use the same LDFLAGS and same .o files.  The
 # difference in build type is driven entirely by CXXFLAGS on the .o files.
 # ------------------------------------------------------------------------------
-$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld
+ARCH_STAMP := build/.arch-stamp
+
+# .PHONY check that triggers clean when ARCH changes
+.PHONY: check-arch
+check-arch:
+	@stamp_arch=$$(cat $(ARCH_STAMP) 2>/dev/null); \
+	if [ "$$stamp_arch" != "$(ARCH)" ] && [ -n "$$stamp_arch" ]; then \
+	    printf '  %-7s %s\n' 'CLEAN' "Architecture changed ($$stamp_arch -> $(ARCH))"; \
+	    $(MAKE) clean >/dev/null 2>&1; \
+	    $(MAKE) $(MAKECMDGOALS) >/dev/null 2>&1; \
+	    exit $$?; \
+	fi; \
+	mkdir -p $$(dirname $(ARCH_STAMP)); echo $(ARCH) > $(ARCH_STAMP)
+
+$(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) check-arch linker_$(ARCH).ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel-debug.elf'
 	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
@@ -139,7 +153,7 @@ $(KERNEL_DEBUG): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld
 	@python3 tools/patch_code_crc.py $@
 	@printf '  %-7s %s\n' 'SIZE' "$$($(GET_SIZE) $@) bytes"
 
-$(KERNEL): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld
+$(KERNEL): $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) check-arch linker_$(ARCH).ld
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf'
 	$(LD) $(LDFLAGS) -o $@ $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)

@@ -29,6 +29,10 @@ ifneq ($(filter $(ARCH),$(SUPPORTED_ARCHS)),$(ARCH))
 $(error Unsupported architecture '$(ARCH)'. Supported: $(SUPPORTED_ARCHS))
 endif
 
+# Architecture stamp — forces rebuild of arch-specific binaries (initrd, fat32)
+# when ARCH changes between invocations.
+# ------------------------------------------------------------------------------
+
 # Derive upper-case ARCH for CONFIG_ARCH_* define
 ARCH_UPPER := $(shell echo $(ARCH) | tr a-z A-Z)
 
