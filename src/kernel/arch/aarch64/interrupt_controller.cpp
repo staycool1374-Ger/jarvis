@@ -44,15 +44,15 @@ void ArchInterruptController::init() {
 
     // === Distributor init ===
     gicd[GICD_CTLR / 4] = 0;
-    dsb_sy();
+    arch::dsb_sy();
 
     gicd[GICD_ICENABLER / 4] = 0xFFFFFFFF;
     gicd[GICD_ICENABLER / 4 + 1] = 0xFFFFFFFF;
-    dsb_sy();
+    arch::dsb_sy();
 
     gicd[GICD_IGROUPR / 4] = 0xFFFFFFFF;
     gicd[GICD_IGROUPR / 4 + 1] = 0xFFFFFFFF;
-    dsb_sy();
+    arch::dsb_sy();
 
     if (gic_is_v3) {
         // === GICv3: system registers + redistributor ===
@@ -63,58 +63,58 @@ void ArchInterruptController::init() {
         uint32_t waker = gicr_rd[GICR_WAKER / 4];
         waker &= ~(1U << 0);
         gicr_rd[GICR_WAKER / 4] = waker;
-        dsb_sy();
+        arch::dsb_sy();
         int timeout = 1000000;
         while ((gicr_rd[GICR_WAKER / 4] & (1U << 1)) && --timeout > 0) {
-            dsb_sy();
+            arch::dsb_sy();
         }
 
         // Set PPIs 16-31 to Group 1
         gicr_sgi[GICR_IGROUPR0 / 4] |= 0xFFFF0000U;
-        dsb_sy();
+        arch::dsb_sy();
 
         // Enable system register access for CPU interface
         uint64_t sre;
         asm volatile("mrs %0, ICC_SRE_EL1" : "=r"(sre));
         sre |= 1;
         asm volatile("msr ICC_SRE_EL1, %0" : : "r"(sre));
-        dsb_sy();
+        arch::dsb_sy();
 
         // Set priority mask
         asm volatile("msr ICC_PMR_EL1, %0" : : "r"(0xFFUL));
-        dsb_sy();
+        arch::dsb_sy();
 
         // Enable Group 1
         asm volatile("msr ICC_IGRPEN1_EL1, %0" : : "r"(1UL));
-        dsb_sy();
-        isb();
+        arch::dsb_sy();
+        arch::isb();
 
         // Enable Timer PPI 30
         gicr_sgi[GICR_ISENABLER0 / 4] = (1U << 30);
-        dsb_sy();
+        arch::dsb_sy();
     } else {
         // === GICv2: memory-mapped CPU interface ===
         gicc[GICC_CTLR / 4] = 0;
-        dsb_sy();
+        arch::dsb_sy();
 
         gicc[GICC_PMR / 4] = 0xFF;
-        dsb_sy();
+        arch::dsb_sy();
 
         // Enable Timer PPI 30 through distributor
         gicd[GICD_ISENABLER / 4] = (1U << 30);
-        dsb_sy();
+        arch::dsb_sy();
     }
 
     // Enable distributor
     gicd[GICD_CTLR / 4] = 1;
-    dsb_sy();
+    arch::dsb_sy();
 
     if (!gic_is_v3) {
         // Enable GICv2 CPU interface
         gicc[GICC_CTLR / 4] = 1;
-        dsb_sy();
+        arch::dsb_sy();
     }
-    isb();
+    arch::isb();
 }
 
 void ArchInterruptController::eoi(uint8_t vector) {
@@ -124,7 +124,7 @@ void ArchInterruptController::eoi(uint8_t vector) {
         volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
         gicc[GICC_EOIR / 4] = vector;
     }
-    dsb_sy();
+    arch::dsb_sy();
 }
 
 void ArchInterruptController::mask(uint8_t irq) {
@@ -135,7 +135,7 @@ void ArchInterruptController::mask(uint8_t irq) {
     } else {
         gicd[GICD_ICENABLER / 4 + (irq / 32)] = (1U << (irq % 32));
     }
-    dsb_sy();
+    arch::dsb_sy();
 }
 
 void ArchInterruptController::unmask(uint8_t irq) {
@@ -146,7 +146,7 @@ void ArchInterruptController::unmask(uint8_t irq) {
     } else {
         gicd[GICD_ISENABLER / 4 + (irq / 32)] = (1U << (irq % 32));
     }
-    dsb_sy();
+    arch::dsb_sy();
 }
 
 IrqState ArchInterruptController::snapshot() {
@@ -161,10 +161,10 @@ void ArchInterruptController::restore(const IrqState& state) {
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
     gicd[GICD_ICENABLER / 4] = 0xFFFFFFFF;
     gicd[GICD_ICENABLER / 4 + 1] = 0xFFFFFFFF;
-    dsb_sy();
+    arch::dsb_sy();
     gicd[GICD_ISENABLER / 4] = state.gic_mask & 0xFFFFFFFF;
     gicd[GICD_ISENABLER / 4 + 1] = (state.gic_mask >> 32) & 0xFFFFFFFF;
-    dsb_sy();
+    arch::dsb_sy();
 }
 
 /// Main IRQ handler — called from vectors.S IRQ entries.

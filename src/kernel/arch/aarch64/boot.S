@@ -189,7 +189,7 @@ _start:
     ldr     x8, =0xFF00          // MAIR: Attr0=Device, Attr1=Normal WB WA
     msr     mair_el1, x8
 
-    ldr     x8, =0x5B5103510     // TCR: T0SZ=16, T1SZ=16, TG0=TG1=4KB, EPD1=0, IPS=48b
+    ldr     x8, =0x5B1103510     // TCR: T0SZ=16, T1SZ=16, TG0=TG1=4KB, EPD1=0, IPS=48b
     msr     tcr_el1, x8
 
     msr     ttbr0_el1, x9       // TTBR0 = L0 (identity map)
