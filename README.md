@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
   <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
   <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
-  <img src="https://img.shields.io/badge/tests-675%20passing-2ea44f?style=flat-square" alt="675 Tests Passing"/>
+  <img src="https://img.shields.io/badge/tests-679%20passing-2ea44f?style=flat-square" alt="679 Tests Passing"/>
   <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 
@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.21** — Configuration System & Portability: jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch infrastructure.
+Current version: **v0.2.22** — aarch64 Port: HAL refactoring, ARM Cortex-A boot, context switch, timer, UART, PCI ECAM, GICv3 interrupt controller, Renode simulation support, multi-arch build system.
 
 ---
 
@@ -156,7 +156,7 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 
 ### Test Framework
 
-- **675 test cases** across 80+ test files covering every kernel subsystem
+- **679 test cases** across 80+ test files covering every kernel subsystem
 - Run automatically at boot in debug builds; 84 curated tests in release
 - Full state snapshot/restore between tests — isolation down to MemPool free-lists and page-table entries
 - Leak detection on every test (task counts, page allocations, pool frees)
@@ -175,13 +175,13 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 | **Scheduling** | Fixed-priority preemptive, tick-less option, `configUSE_TIME_SLICING` | Rate-monotonic with 256 priority levels, idle-task RAM March-C and ALU integrity monitors (ASIL D) |
 | **Idle hook** | `configUSE_IDLE_HOOK` — simple callback | Full idle-task stewardship: slab page return, CPU utilisation tracking, non-destructive memory test, register verification |
 | **Memory safety** | Manual `pvPortMalloc()` / `vPortFree()`, no ownership tracking | `UniquePtr<T>` RAII wrappers, deterministic `MemPool` slab allocator, `ResourceTracker` leak detection |
-| **Hardware support** | HAL via `portmacro.h` — per-port assembly macros | Architecture-agnostic `arch/<isa>/` directories with uniform HAL signatures (aarch64, riscv64 planned for v0.2.21) |
+| **Hardware support** | HAL via `portmacro.h` — per-port assembly macros | Architecture-agnostic `arch/<isa>/` directories with uniform HAL signatures (aarch64 supported, riscv64 planned for v0.2.23) |
 | **RNG** | Typically none or application-provided | Hardware RNG (RDSEED / RDRAND) + ChaCha20 CSPRNG → `/dev/random`, `SYS_GETRANDOM` |
 | **FPU handling** | `configENABLE_FPU` — cooperative save/restore | Lazy context switch via CR0.TS + #NM trap; FXSAVE/FXRSTOR, automatic on first use |
 | **IPC** | Queues, semaphores, mutexes (C API) | Priority IPC mailboxes, zero-copy buffer pool, event groups, notifications, deadlock detection engine |
 | **VFS** | None (application defined) | Full POSIX-like VFS: initrd, devfs, procfs, FAT32, tmpfs, vnode abstraction, mount table |
 | **Formal verification** | None | `CheckedPointer` security, wait-for-graph runtime deadlock detection, stack canary markers |
-| **Testing** | Community demos, no built-in test framework | 675 kernel-mode tests with full state snapshot/isolation, QEMU CI, leak detection |
+| **Testing** | Community demos, no built-in test framework | 679 kernel-mode tests with full state snapshot/isolation, QEMU CI, leak detection |
 
 ---
 
@@ -216,11 +216,12 @@ Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGr
 - [x] **Phase 2 — Kernel Core & Shell** — Boot, PMM, VMM, scheduler, IPC, syscalls, ELF loader, shell, devfs, procfs
 - [x] **Phase 3 — System Services & Hardware** — FAT32, tmpfs, PCI, Virtio, ATA PIO, RNG, FPU, DMA, network stack *(completed — v0.2.20)*
 - [x] **Phase 4 — Kernel Configuration & Portability** — jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch HAL infrastructure *(completed — v0.2.21)*
-- [ ] **Phase 4 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
-- [ ] **Phase 5 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
-- [ ] **Phase 6 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
-- [ ] **Phase 7 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection, ASIL-D idle monitors
-- [ ] **Phase 8 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
+- [x] **Phase 5 — aarch64 Port (ARM Cortex-A)** — HAL refactoring, ARM boot, page tables, context switch, GICv3, timer, UART, PCI ECAM, Renode simulation *(completed — v0.2.22)*
+- [ ] **Phase 6 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
+- [ ] **Phase 7 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
+- [ ] **Phase 8 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
+- [ ] **Phase 9 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection, ASIL-D idle monitors
+- [ ] **Phase 10 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
 
 Full roadmap at [`ROADMAP.md`](ROADMAP.md).
 
@@ -240,13 +241,13 @@ sudo apt install build-essential git wget xorriso dosfstools \
 ```bash
 git clone <repo-url>
 cd os
-make debug          # Debug build with 675-test suite
+make debug          # Debug build with 679-test suite
 make qemu-iso       # Launch in QEMU with serial console
 make release        # Optimised release build (no tests)
 
 # Testing targets (QEMU)
 make test-selftest       # Safe class (~102 tests, CI gate)
-make test-all-debug      # Full 675-test suite (debug)
+make test-all-debug      # Full 679-test suite (debug)
 make test-all-release    # Release-candidate subset
 make test-class CLASS=<name>  # Specific test class
 

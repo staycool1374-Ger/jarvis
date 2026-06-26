@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.22 — aarch64 Port: HAL refactoring, ARM Cortex-A boot, context switch, timer, UART, Makefile cross-arch cleanup.
+**Target Focus:** v0.2.23 — riscv64 Port: RV64 boot, Sv39 page tables, PLIC, CLINT timer, NS16550A UART, Renode simulation.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
