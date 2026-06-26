@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
 **Status:** ACTIVE — System Services.
-**Target Focus:** v0.2.23 — riscv64 Port: RV64 boot, Sv39 page tables, PLIC, CLINT timer, NS16550A UART, Renode simulation.
+**Target Focus:** v0.2.24 — Cross-Architecture Hardening: cross-arch atomics, boot flow unification, UART driver abstraction.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -89,53 +89,52 @@ Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU
 
 Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) in QEMU virt.
 
-- [ ] **A. Boot Entry (`arch/riscv64/boot.S`)**
-  - [ ] M-mode→S-mode transition via SBI, or start in S-mode (QEMU virt `-bios default`)
-  - [ ] SATP init with Sv39 page tables (3-level, 4KB pages, 512 GiB virtual address space)
-  - [ ] Trap vector setup (stvec), S-mode CSRs (sie, sip, sstatus)
-  - [ ] Identity-map kernel + map higher half, enable MMU, jump to higher half
-  - [ ] Call `higherhalf_entry(uint64_t magic, uint64_t dtb_ptr)`
+- [x] **A. Boot Entry (`arch/riscv64/boot.S`)**
+  - [x] M-mode→S-mode transition via SBI, or start in S-mode (QEMU virt `-bios default`)
+  - [x] SATP init with Sv39 page tables (3-level, 4KB pages, 512 GiB virtual address space)
+  - [x] Trap vector setup (stvec), S-mode CSRs (sie, sip, sstatus)
+  - [x] Identity-map kernel + map higher half, enable MMU, jump to higher half
+  - [x] Call `higherhalf_entry(uint64_t magic, uint64_t dtb_ptr)`
 
-- [ ] **B. Page Tables (`arch/riscv64/hal/page_table_impl.hpp`)**
-  - [ ] `ArchPageTable` class with SATP CSR: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
-  - [ ] Sv39: 3-level page table walk (9-bit each, 4KB pages), `map_page()`, `unmap_page()`
+- [x] **B. Page Tables (`arch/riscv64/hal/page_table_impl.hpp`)**
+  - [x] `ArchPageTable` class with SATP CSR: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
+  - [x] Sv39: 3-level page table walk (9-bit each, 4KB pages), `map_page()`, `unmap_page()`
   - [ ] Support 2MB and 1GB huge pages (page table entry R/W bits)
 
-- [ ] **C. Context Switch (`arch/riscv64/hal/context.hpp`)**
-  - [ ] `ArchContext` struct: ra, sp, gp, tp, s0–s11, sepc, sstatus, stvec
-  - [ ] `ArchContextManager::init_stack()` — build trap frame for SRET to U-mode
-  - [ ] `ArchContextManager::switch_to()` — save/restore callee-saved, SRET
-  - [ ] S-mode scratch CSR for kernel stack pointer on trap entry
+- [x] **C. Context Switch (`arch/riscv64/hal/context.hpp`)**
+  - [x] `ArchContext` struct: ra, sp, gp, tp, s0–s11, sepc, sstatus
+  - [x] Build trap frame for SRET (via `create`/`create_user`/`clone`)
+  - [x] Context switch via scheduler save/load globals + trap return (same pattern as x86_64/aarch64)
 
-- [ ] **D. Interrupts (PLIC) & CLINT Timer**
-  - [ ] S-mode interrupt delegation: sie.SEIE (external), sie.STIE (timer), sie.SSIE (software)
-  - [ ] PLIC: init, enable/disable IRQ per context, priority, claim/complete
-  - [ ] `ArchInterruptController::init()`, `eoi()`, `mask()`, `unmask()`
-  - [ ] `arch::Timer` via CLINT mtimecmp (MMIO) or SBI set_timer ecall
-  - [ ] `Timer::init()`, `ticks()`, `ns()`, `handle_irq()`, `set_frequency()`
-  - [ ] ECALL handler for syscall entry (U-mode→S-mode)
+- [x] **D. Interrupts (PLIC) & Timer**
+  - [x] S-mode interrupt delegation: sie.SEIE (external), sie.STIE (timer), sie.SSIE (software)
+  - [x] PLIC: init, enable/disable IRQ per context, priority, claim/complete
+  - [x] `ArchInterruptController::init()`, `eoi()`, `mask()`, `unmask()`
+  - [x] `arch::Timer` via SBI set_timer ecall
+  - [x] `Timer::init()`, `ticks()`, `ns()`, `handle_irq()`, `set_frequency()`
+  - [x] ECALL handler for syscall entry (U-mode→S-mode)
 
-- [ ] **E. UART & Serial**
-  - [ ] `arch::Serial` — NS16550A UART at `0x10000000` (QEMU virt): init, putc, getc
-  - [ ] Wire into kernel `Logger`
+- [x] **E. UART & Serial**
+  - [x] `arch::Serial` — NS16550A UART at `0x10000000` (QEMU virt) via SBI putchar
+  - [x] Wire into kernel `Logger`
 
-- [ ] **F. RNG**
-  - [ ] No native RNG in RISC-V ISA. Implement via SBI getrandom extension or ChaCha20 PRNG fallback
+- [x] **F. RNG**
+  - [x] No native RNG in RISC-V ISA. Implement via SBI getrandom extension or ChaCha20 PRNG fallback
 
-- [ ] **G. PCI (ECAM)**
-  - [ ] Same ECAM mechanism as aarch64 — memory-mapped config space
+- [x] **G. PCI (ECAM)**
+  - [x] Same ECAM mechanism as aarch64 — memory-mapped config space
 
-- [ ] **H. Remaining HAL surface**
-  - [ ] `arch::RTC` — via mtime/mtimecmp
-  - [ ] `arch::cpuid()` — read misa, mvendorid, marchid CSRs
-  - [ ] `arch::IrqGuard` — RAII via sstatus.SIE
+- [x] **H. Remaining HAL surface**
+  - [x] `arch::RTC` — via mtime/mtimecmp
+  - [x] `arch::cpuid()` — read misa, mvendorid, marchid CSRs
+  - [x] `arch::IrqGuard` — RAII via sstatus.SIE (generic in hal/irq_guard.hpp)
   - [ ] Keyboard stub (virtio-input later)
 
 - [ ] **I. Integration & Tests**
   - [ ] `make run ARCH=riscv64` — boots to UART output in QEMU
   - [ ] Validate Renode platform `tools/renode/jarvis-riscv64.repl`
   - [ ] Initial test class passes on riscv64
-  - [ ] x86_64 and aarch64 remain fully functional
+  - [x] x86_64 and aarch64 remain fully functional
 
 ### 0.2.24 — Cross-Architecture Hardening
 
