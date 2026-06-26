@@ -7,6 +7,8 @@
 #  include <kernel/arch/x86_64/hal/cpuid_impl.hpp>
 #elif defined(CONFIG_ARCH_AARCH64)
 #  include <kernel/arch/aarch64/hal/cpuid_impl.hpp>
+#elif defined(CONFIG_ARCH_RISCV64)
+#  include <kernel/arch/riscv64/hal/cpuid_impl.hpp>
 #else
 #  error "HAL: no cpuid implementation for this architecture"
 #endif

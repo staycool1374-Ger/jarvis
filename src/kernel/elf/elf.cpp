@@ -276,13 +276,26 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
     if (!tcb) return nullptr;
-    __builtin_memset(tcb, 0, sizeof(TaskControlBlock));
-
     tcb->magic = TaskControlBlock::TCB_MAGIC;
     tcb->id = kernel::Scheduler::alloc_id();
     tcb->state = TaskState::READY;
     tcb->priority = 5;
     tcb->period_ticks = 20;
+    tcb->base_priority = 5;
+    tcb->executed_ticks = 0;
+    tcb->remaining_ticks = 20;
+    tcb->deadline_ticks = 20;
+    tcb->page_table_ = 0;
+    tcb->page_table_shared_ = false;
+    tcb->stack_phys_ = 0;
+    tcb->kernel_stack = nullptr;
+    tcb->kernel_stack_top = 0;
+    tcb->user_stack_ = 0;
+    tcb->user_stack_size_ = 0;
+    tcb->program_break_start = 0;
+    tcb->program_break = 0;
+    tcb->buf_list_head = -1;
+    tcb->fpu_used = false;
 
     init_task_common(*tcb);
 
@@ -335,6 +348,19 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     *--stack = user_rsp;           // SP_EL0
     for (int j = 0; j < 31; ++j) *--stack = 0;
     tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_RISCV64)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    *--stack = 0;                  // padding
+    *--stack = hdr->entry;         // sepc
+    *--stack = user_rsp;           // sp (user stack)
+    *--stack = 0x100;              // sstatus: SPP=0 (U-mode), SPIE=1
+    *--stack = 0;                  // stvec
+    for (int j = 0; j < 12; ++j) *--stack = 0;  // s0-s11
+    *--stack = 0;                  // tp
+    *--stack = 0;                  // gp
+    *--stack = 0;                  // sp (init)
+    *--stack = 0;                  // ra
+    tcb->context.sp = reinterpret_cast<uint64_t>(stack);
 #endif
 
     return tcb;
@@ -408,6 +434,10 @@ bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
     regs[17] = hdr->entry;         // ELR_EL1 (index 17)
     regs[19] = 0x10;               // SPSR_EL1: EL0t (index 19)
     regs[20] = user_rsp;           // SP_EL0 (index 20)
+#elif defined(CONFIG_ARCH_RISCV64)
+    (void)regs;
+    (void)user_rsp;
+    (void)hdr;
 #endif
 
     if (arch::read_cr3() != new_pml4) {

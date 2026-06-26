@@ -5,8 +5,8 @@
 
 #if defined(CONFIG_ARCH_X86_64)
 #  include <kernel/arch/x86_64/hal/msr_impl.hpp>
-#elif defined(CONFIG_ARCH_AARCH64)
-// AArch64 does not have x86-style MSRs; system registers use mrs/msr directly.
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
+// AArch64/RISC-V do not have x86-style MSRs; system registers use CSR directly.
 // Provide empty stubs so code that conditionally calls wrmsr/rdmsr compiles.
 namespace arch {
 inline void wrmsr(uint32_t, uint64_t) {}

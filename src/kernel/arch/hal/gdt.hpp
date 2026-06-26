@@ -62,7 +62,7 @@ enum {
     GDT_TSS   = 0x28,
 };
 
-#elif defined(CONFIG_ARCH_AARCH64)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 
 class GDT {
 public:

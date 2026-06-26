@@ -149,6 +149,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     (void)magic;
     (void)mb_info;
     arch::fp_enable();
+#elif defined(CONFIG_ARCH_RISCV64)
+    (void)magic;
+    (void)mb_info;
+    arch::fp_enable();
 #endif
 
     kernel::Logger::init();
@@ -187,7 +191,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     arch::IDT::init();
     arch::IDT::load();
 
-#if defined(CONFIG_ARCH_AARCH64)
+#if defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
     arch::ArchInterruptController::init();
 #endif
 
@@ -213,6 +217,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // PMM uses absolute page indices (addr/PAGE_SIZE), so total_pages_ must
     // cover addresses 0..top_of_RAM.
     uint64_t mem_size = 0x40000000 + 256_MiB;
+    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
+#elif defined(CONFIG_ARCH_RISCV64)
+    // QEMU virt: RAM at 0x80000000, 128 MiB.
+    uint64_t mem_size = 0x80000000 + 128_MiB;
     uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
 #endif
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
@@ -619,6 +627,7 @@ extern "C" void panic(const char* msg) {
     __builtin_unreachable();
 }
 
+#if CONFIG_ARCH_X86_64
 static void dump_regs(uint64_t* regs) {
     if (!regs) return;
 
@@ -688,7 +697,11 @@ static void dump_regs(uint64_t* regs) {
 #endif
 }
 
+#endif // CONFIG_ARCH_X86_64
+
+static const char* exception_name(uint64_t vector) __attribute__((unused));
 static const char* exception_name(uint64_t vector) {
+#if defined(CONFIG_ARCH_X86_64)
     switch (vector) {
     case 0:  return "Division by Zero";
     case 1:  return "Debug";
@@ -711,6 +724,30 @@ static const char* exception_name(uint64_t vector) {
     case 30: return "Security Exception";
     default: return "Reserved";
     }
+#elif defined(CONFIG_ARCH_AARCH64)
+    switch (vector) {
+    case 0:  return "Synchronous EL1t";
+    case 1:  return "IRQ EL1t";
+    case 2:  return "FIQ EL1t";
+    case 3:  return "SError EL1t";
+    case 4:  return "Synchronous EL1h";
+    case 5:  return "IRQ EL1h";
+    case 6:  return "FIQ EL1h";
+    case 7:  return "SError EL1h";
+    case 8:  return "Synchronous EL0 64";
+    case 9:  return "IRQ EL0 64";
+    case 10: return "FIQ EL0 64";
+    case 11: return "SError EL0 64";
+    case 12: return "Synchronous EL0 32";
+    case 13: return "IRQ EL0 32";
+    case 14: return "FIQ EL0 32";
+    case 15: return "SError EL0 32";
+    default: return "Reserved";
+    }
+#else
+    (void)vector;
+    return "Unknown";
+#endif
 }
 
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
@@ -811,6 +848,13 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
 #elif defined(CONFIG_ARCH_AARCH64)
     (void)vector; (void)error_code; (void)rip;
     kernel::Logger::error("Task %x: signal %x (aarch64 stub, terminating)",
+                          task->id, sig);
+    task->state = kernel::TaskState::TERMINATED;
+    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+    return false;
+#elif defined(CONFIG_ARCH_RISCV64)
+    (void)vector; (void)error_code; (void)rip;
+    kernel::Logger::error("Task %x: signal %x (riscv64 stub, terminating)",
                           task->id, sig);
     task->state = kernel::TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
@@ -926,7 +970,6 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         }
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x elr=%x)",
             exception_name(vector), vector, error_code, rip);
-        dump_regs(regs);
         panic("CPU EXCEPTION");
     }
 #endif

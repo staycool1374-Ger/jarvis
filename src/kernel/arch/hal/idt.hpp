@@ -69,7 +69,7 @@ private:
 
 extern "C" void isr_entry();
 
-#elif defined(CONFIG_ARCH_AARCH64)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 
 enum class InterruptVector : uint8_t {
     TIMER          = 0,

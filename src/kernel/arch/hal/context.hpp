@@ -86,6 +86,42 @@ public:
     }
 };
 
+#elif defined(CONFIG_ARCH_RISCV64)
+
+struct ArchContext {
+    uint64_t ra, sp, gp, tp;
+    uint64_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+    uint64_t sepc, sstatus, stvec;
+    uint64_t vector, error_code;
+};
+
+class ArchContextManager {
+public:
+    static inline void init_stack(uint64_t* stack_top, void (*entry)(),
+                                  uint64_t /*cs*/, uint64_t /*ss*/,
+                                  uint64_t psr, uint64_t user_rsp) {
+        *--stack_top = 0;
+        *--stack_top = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(entry));
+        *--stack_top = user_rsp;
+        *--stack_top = psr;
+        for (int i = 0; i < 16; ++i) *--stack_top = 0;
+    }
+
+    static inline void save(ArchContext& ctx, uint64_t rsp) {
+        ctx.sp = rsp;
+    }
+
+    static inline void restore(const ArchContext& ctx, uint64_t& rsp) {
+        rsp = ctx.sp;
+    }
+
+    static inline void switch_to(ArchContext& from, const ArchContext& to,
+                                  uint64_t& rsp) {
+        from.sp = rsp;
+        rsp = to.sp;
+    }
+};
+
 #else
 #  error "HAL: no context implementation for this architecture"
 #endif

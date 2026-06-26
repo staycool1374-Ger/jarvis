@@ -127,19 +127,25 @@ else ifeq ($(ARCH),riscv64)
 CXX      := g++
 CXXFLAGS := $(CXXFLAGS_COMMON) -target riscv64-elf -march=rv64imafdc -mabi=lp64d
 
-CC       := riscv64-unknown-elf-gcc
-CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections
+CXX      := riscv64-elf-g++
+CXXFLAGS := $(CXXFLAGS_COMMON) -march=rv64imafdc -mabi=lp64d -mcmodel=medany
 
-AS       := riscv64-unknown-elf-as
+CC       := riscv64-elf-gcc
+CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+            -ffunction-sections -fdata-sections \
+            -DCONFIG_ARCH_RISCV64 \
+            -mcmodel=medany
+
+AS       := riscv64-elf-as
 ASFLAGS  :=
 
-LD       := riscv64-unknown-elf-ld
-AR       := riscv64-unknown-elf-ar
-OBJCOPY  := riscv64-unknown-elf-objcopy
+LD       := riscv64-elf-ld
+AR       := riscv64-elf-ar
+OBJCOPY  := riscv64-elf-objcopy
 OBJCOPY_FMT := elf64-littleriscv
 OBJCOPY_ARCH := riscv
 LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+LD_LIBS  :=
 
 QEMU_SYSTEM    := qemu-system-riscv64
 QEMU_ARCH_FLAGS := -machine virt -bios default

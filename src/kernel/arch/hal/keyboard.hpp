@@ -33,7 +33,7 @@ private:
     static void update_modifiers(uint8_t scancode, bool pressed);
 };
 
-#elif defined(CONFIG_ARCH_AARCH64)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 
 class Keyboard {
 public:

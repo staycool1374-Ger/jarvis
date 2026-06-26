@@ -124,6 +124,8 @@ struct PciBdf {
 
 #if CONFIG_ARCH_AARCH64
 #include <kernel/arch/aarch64/hal/pci_impl.hpp>
+#elif CONFIG_ARCH_RISCV64
+#include <kernel/arch/riscv64/hal/pci_impl.hpp>
 #endif
 
 /// Discovered device info
@@ -196,6 +198,36 @@ inline bool pci_device_exists(PciBdf bdf) {
 }
 
 #elif CONFIG_ARCH_AARCH64
+
+/// Read vendor ID (return 0xFFFF if no device)
+inline uint16_t pci_read_vendor(PciBdf bdf) {
+    return arch::pci_read_vendor_ecam(bdf);
+}
+
+/// Read device ID
+inline uint16_t pci_read_device(PciBdf bdf) {
+    return arch::pci_read_device_ecam(bdf);
+}
+
+/// Check if a BDF has a valid device
+inline bool pci_device_exists(PciBdf bdf) {
+    return arch::pci_device_exists_ecam(bdf);
+}
+
+/// Build ECAM address from BDF + register offset
+inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
+    return arch::pci_ecam_addr(bdf, reg);
+}
+
+/// ECAM config space access wrappers for common code
+inline uint32_t pci_config_readl(uint32_t addr) { (void)addr; return 0; }
+inline uint8_t pci_config_readb(uint32_t addr) { (void)addr; return 0; }
+inline void pci_config_writel(uint32_t addr, uint32_t val) { (void)addr; (void)val; }
+inline uint16_t pci_config_readw(uint32_t addr) { (void)addr; return 0; }
+
+#elif CONFIG_ARCH_RISCV64
+
+#include <kernel/arch/riscv64/hal/io_impl.hpp>
 
 /// Read vendor ID (return 0xFFFF if no device)
 inline uint16_t pci_read_vendor(PciBdf bdf) {

@@ -20,14 +20,33 @@
 
 namespace kernel {
 
+// GCC 16+ needs indirect type traits for template-dependent contexts
+template<typename T> constexpr inline bool _is_integral_v = false;
+template<> constexpr inline bool _is_integral_v<bool> = true;
+template<> constexpr inline bool _is_integral_v<char> = true;
+template<> constexpr inline bool _is_integral_v<signed char> = true;
+template<> constexpr inline bool _is_integral_v<unsigned char> = true;
+template<> constexpr inline bool _is_integral_v<short> = true;
+template<> constexpr inline bool _is_integral_v<unsigned short> = true;
+template<> constexpr inline bool _is_integral_v<int> = true;
+template<> constexpr inline bool _is_integral_v<unsigned int> = true;
+template<> constexpr inline bool _is_integral_v<long> = true;
+template<> constexpr inline bool _is_integral_v<unsigned long> = true;
+template<> constexpr inline bool _is_integral_v<long long> = true;
+template<> constexpr inline bool _is_integral_v<unsigned long long> = true;
+
+template<typename T> constexpr inline bool _is_reference_v = false;
+template<typename T> constexpr inline bool _is_reference_v<T&> = true;
+template<typename T> constexpr inline bool _is_reference_v<T&&> = true;
+
 template<typename T>
-concept Integral = __is_integral(T);
+concept Integral = _is_integral_v<T>;
 
 template<typename T>
 concept TriviallyCopiable = __is_trivially_copyable(T);
 
 template<typename T>
-concept ValueType = !__is_reference(T);
+concept ValueType = !_is_reference_v<T>;
 
 template<typename T>
 concept ErrorEnum = __is_enum(T);

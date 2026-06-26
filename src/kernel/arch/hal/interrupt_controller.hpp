@@ -77,6 +77,22 @@ public:
     static void restore(const IrqState& state);
 };
 
+#elif defined(CONFIG_ARCH_RISCV64)
+
+struct IrqState {
+    uint32_t plic_threshold;
+};
+
+class ArchInterruptController {
+public:
+    static void init();
+    static void eoi(uint8_t vector);
+    static void mask(uint8_t irq);
+    static void unmask(uint8_t irq);
+    static IrqState snapshot();
+    static void restore(const IrqState& state);
+};
+
 #else
 #  error "HAL: no interrupt_controller implementation for this architecture"
 #endif

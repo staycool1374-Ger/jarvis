@@ -140,8 +140,12 @@ static const VnodeOps pipe_write_ops = {
 int create_pipe(int fds[2]) {
     auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
     if (!pb) return VFS_INVALID;
-    __builtin_memset(pb, 0, sizeof(PipeBuffer));
+    pb->read_pos = 0;
+    pb->write_pos = 0;
+    pb->count = 0;
     pb->refcount = 2;
+    pb->read_closed = false;
+    pb->write_closed = false;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
     kernel::test::ResourceTracker::instance().track_pipe_buffer_add();
 

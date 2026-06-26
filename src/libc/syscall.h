@@ -98,6 +98,19 @@ static inline long __syscall5(long num, long a0, long a1, long a2, long a3) {
         : "memory"
     );
     ret = x0;
+#elif defined(__riscv) && __riscv_xlen == 64
+    register long a7 asm("a7") = num;
+    register long a0_reg asm("a0") = a0;
+    register long a1_reg asm("a1") = a1;
+    register long a2_reg asm("a2") = a2;
+    register long a3_reg asm("a3") = a3;
+    asm volatile(
+        "ecall"
+        : "+r"(a0_reg)
+        : "r"(a7), "r"(a1_reg), "r"(a2_reg), "r"(a3_reg)
+        : "memory"
+    );
+    ret = a0_reg;
 #else
 #  error "Unsupported architecture for __syscall5"
 #endif

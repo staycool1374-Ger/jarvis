@@ -28,6 +28,8 @@
 #  define TASK_STACK_PTR(t) ((t)->context.rsp)
 #elif defined(CONFIG_ARCH_AARCH64)
 #  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#elif defined(CONFIG_ARCH_RISCV64)
+#  define TASK_STACK_PTR(t) ((t)->context.sp)
 #endif
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>

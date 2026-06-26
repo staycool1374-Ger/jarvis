@@ -183,6 +183,16 @@ TaskControlBlock* TaskControlBlock::create(
     *--stack = 0;                  // SP_EL0 (unused for kernel task)
     for (int i = 0; i < 31; ++i) *--stack = 0;     // X0-X30
     tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_RISCV64)
+    // Build trap frame matching syscall_entry.S save area layout.
+    // Offsets (in qwords): [0]=RA, [1]=SP, [9]=A0, [13]=A4 (regs ptr),
+    //   [31]=SEPC, [32]=SSTATUS. SAVE_SIZE = 37 qwords (296 bytes).
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    stack -= 37;
+    __builtin_memset(stack, 0, 37 * 8);
+    stack[31] = reinterpret_cast<uint64_t>(entry);  // SEPC = entry point
+    stack[32] = (1ULL << 5) | (1ULL << 8);          // SSTATUS: SPIE=1, SPP=1 (S-mode)
+    tcb->context.sp = reinterpret_cast<uint64_t>(stack);
 #endif
 
     return tcb;
@@ -262,6 +272,15 @@ TaskControlBlock* TaskControlBlock::create_user(
     *--stack = user_rsp;           // SP_EL0
     for (int i = 0; i < 31; ++i) *--stack = 0;     // X0-X30
     tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_RISCV64)
+    // Build trap frame matching syscall_entry.S save area layout
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    stack -= 37;
+    __builtin_memset(stack, 0, 37 * 8);
+    stack[1] = user_rsp;                           // X2/SP = user stack
+    stack[31] = reinterpret_cast<uint64_t>(entry);  // SEPC = entry point
+    stack[32] = (1ULL << 5);                        // SSTATUS: SPIE=1, SPP=0 (U-mode)
+    tcb->context.sp = reinterpret_cast<uint64_t>(stack);
 #endif
 
     return tcb;
@@ -423,6 +442,14 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     *--stack = regs[20];           // SP_EL0 (from regs[20])
     for (int i = 0; i < 31; ++i) *--stack = regs[i];
     tcb->context.sp_el0 = reinterpret_cast<uint64_t>(stack);
+#elif defined(CONFIG_ARCH_RISCV64)
+    // Copy trap frame from parent (regs matches syscall_entry.S save area layout:
+    // [0..30]=X1-X31, [31]=SEPC, [32]=SSTATUS, [33]=SCAUSE, [34]=STVAL)
+    uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
+    stack -= 37;
+    for (int i = 0; i < 37; ++i) stack[i] = regs[i];
+    stack[9] = 0;   // X10/A0 = 0 (fork returns 0 in child)
+    tcb->context.sp = reinterpret_cast<uint64_t>(stack);
 #endif
 
     // For user tasks: clone page table and user stack

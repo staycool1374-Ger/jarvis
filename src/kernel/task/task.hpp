@@ -91,6 +91,16 @@ struct TaskContext {
     uint64_t vector;         // exception vector number
     uint64_t error_code;     // exception error code
 };
+#elif defined(CONFIG_ARCH_RISCV64)
+struct TaskContext {
+    uint64_t ra, sp, gp, tp;
+    uint64_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+    uint64_t sepc;           // exception return address
+    uint64_t sstatus;        // supervisor status register
+    uint64_t stvec;          // trap vector base
+    uint64_t vector;         // exception vector number
+    uint64_t error_code;     // exception error code
+};
 #endif
 
 /// @brief Task control block — represents a single thread of execution.

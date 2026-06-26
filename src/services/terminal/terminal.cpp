@@ -20,8 +20,8 @@
 #include <services/terminal/framebuffer.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/serial.hpp>
+#include <kernel/arch/keyboard.hpp>
 #include <services/terminal/font.hpp>
-#include <kernel/arch/io.hpp>
 #include <version.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -130,6 +130,7 @@ bool Terminal::readline(char* buf, size_t max_len) {
         }
         char c = arch::inb(arch::COM1);
 #else
+        char c;
         if (!arch::Keyboard::getchar(c)) {
             arch::pause();
             continue;

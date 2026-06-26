@@ -45,6 +45,15 @@ public:
     static void puts(const char* s);
 };
 
+#elif defined(CONFIG_ARCH_RISCV64)
+
+class Serial {
+public:
+    static void init();
+    static void putchar(char c);
+    static void puts(const char* s);
+};
+
 #else
 #  error "HAL: no serial implementation for this architecture"
 #endif

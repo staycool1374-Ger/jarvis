@@ -59,7 +59,7 @@ private:
                                    uint8_t hour, uint8_t min, uint8_t sec);
 };
 
-#elif defined(CONFIG_ARCH_AARCH64)
+#elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 
 struct tm {
     int tm_sec;
