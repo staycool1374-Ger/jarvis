@@ -4,7 +4,14 @@
 .type trap_vector, @function
 .type syscall_entry, @function
 
+# Must be 4-byte aligned for stvec Direct mode (low 2 bits = 0)
+.balign 4
 .equ SAVE_SIZE, 296
+
+trap_vector:
+syscall_entry:
+    # Save area: subtract SAVE_SIZE from SP
+    addi sp, sp, -SAVE_SIZE
 
 # Register save area offsets (from sp):
 #   0-248: x1-x31 (GPRs)
@@ -50,10 +57,12 @@
 .equ OFF_STVAL, 272
 .equ OFF_RET,  280
 
-trap_vector:
-syscall_entry:
-    # Allocate save area on stack
     addi sp, sp, -SAVE_SIZE
+
+    # TRACE: print 'A' after save area alloc
+    li a0, 65
+    li a7, 1
+    ecall
 
     # Save all GPRs (x1-x31)
     sd x1, OFF_RA(sp)
@@ -98,11 +107,21 @@ syscall_entry:
     csrr t0, stval
     sd t0, OFF_STVAL(sp)
 
+    # TRACE: print 'B' after CSR save
+    li a0, 66
+    li a7, 1
+    ecall
+
     # Increment isr_nesting_depth (matches x86_64: wrap entire handler)
     la t0, isr_nesting_depth
     ld t1, 0(t0)
     addi t1, t1, 1
     sd t1, 0(t0)
+
+    # TRACE: print 'C' after nesting depth inc
+    li a0, 67
+    li a7, 1
+    ecall
 
     # Load scause
     ld t0, OFF_SCAUSE(sp)
@@ -123,7 +142,13 @@ syscall_entry:
     beq t0, t1, 6f
     li t1, 9                   # ECALL from S-mode
     beq t0, t1, 6f
-    # Other exceptions: panic
+    # Other exceptions: output 'E' via SBI then call C handler
+    li a0, 69
+    li a7, 1
+    ecall
+    li a0, 10
+    li a7, 1
+    ecall
     ld a0, OFF_SEPC(sp)
     ld a1, OFF_SCAUSE(sp)
     ld a2, OFF_STVAL(sp)

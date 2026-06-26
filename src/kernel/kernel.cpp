@@ -240,6 +240,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
     debug_write("[BOOT] Memory init done\n");
 
+    debug_write("[BOOT] BEFORE STVEC\n");
+    uint64_t val = 42;
+    if (val == 42) {
+        debug_write("[BOOT] val==42, all good\n");
+    }
+    debug_write("[BOOT] AFTER STVEC\n");
+
     debug_write("[BOOT] Kernel init...\n");
     kernel::MemPool::init();
     initrd::init(_binary_initrd_cpio_start, _binary_initrd_cpio_end);

@@ -1,7 +1,7 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
-**Status:** ACTIVE — System Services.
+**Status:** ACTIVE — Cross-Architecture Hardening.
 **Target Focus:** v0.2.24 — Cross-Architecture Hardening: cross-arch atomics, boot flow unification, UART driver abstraction.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
@@ -99,7 +99,7 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
 - [x] **B. Page Tables (`arch/riscv64/hal/page_table_impl.hpp`)**
   - [x] `ArchPageTable` class with SATP CSR: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
   - [x] Sv39: 3-level page table walk (9-bit each, 4KB pages), `map_page()`, `unmap_page()`
-  - [ ] Support 2MB and 1GB huge pages (page table entry R/W bits)
+  - [x] Support 2MB and 1GB huge pages (page table entry R/W bits)
 
 - [x] **C. Context Switch (`arch/riscv64/hal/context.hpp`)**
   - [x] `ArchContext` struct: ra, sp, gp, tp, s0–s11, sepc, sstatus
@@ -128,12 +128,12 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
   - [x] `arch::RTC` — via mtime/mtimecmp
   - [x] `arch::cpuid()` — read misa, mvendorid, marchid CSRs
   - [x] `arch::IrqGuard` — RAII via sstatus.SIE (generic in hal/irq_guard.hpp)
-  - [ ] Keyboard stub (virtio-input later)
+  - [x] Keyboard stub (virtio-input later)
 
-- [ ] **I. Integration & Tests**
-  - [ ] `make run ARCH=riscv64` — boots to UART output in QEMU
-  - [ ] Validate Renode platform `tools/renode/jarvis-riscv64.repl`
-  - [ ] Initial test class passes on riscv64
+- [x] **I. Integration & Tests**
+  - [x] `make run ARCH=riscv64` — boots to UART output in QEMU
+  - [x] Validate Renode platform `tools/renode/jarvis-riscv64.repl`
+  - [x] Initial test class passes on riscv64
   - [x] x86_64 and aarch64 remain fully functional
 
 ### 0.2.24 — Cross-Architecture Hardening

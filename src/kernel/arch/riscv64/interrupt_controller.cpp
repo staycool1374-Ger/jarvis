@@ -69,10 +69,51 @@ extern "C" void handle_plic_trap(uint64_t scause, uint64_t sepc, uint64_t* regs)
 }
 
 extern "C" void handle_kernel_exception(uint64_t sepc, uint64_t scause, uint64_t stval) {
-    // TODO: log exception details
-    (void)sepc;
-    (void)scause;
-    (void)stval;
+    // Output exception info via direct SBI ecall
+    const char msg[] = {'[', 'E', 'X', 'C', ']', ' ', 's', 'c', 'a', 'u', 's', 'e', '=', 0};
+    for (const char* p = msg; *p; ++p) {
+        uint64_t ch = (unsigned char)*p;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    // Print scause as hex digits
+    uint64_t v = scause;
+    for (int i = 60; i >= 0; i -= 4) {
+        uint64_t nibble = (v >> i) & 0xF;
+        char c = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+        uint64_t ch = (unsigned char)c;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    // Print " sepc="
+    const char msg2[] = {' ', 's', 'e', 'p', 'c', '=', 0};
+    for (const char* p = msg2; *p; ++p) {
+        uint64_t ch = (unsigned char)*p;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    v = sepc;
+    for (int i = 60; i >= 0; i -= 4) {
+        uint64_t nibble = (v >> i) & 0xF;
+        char c = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+        uint64_t ch = (unsigned char)c;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    // Print " stval="
+    const char msg3[] = {' ', 's', 't', 'v', 'a', 'l', '=', 0};
+    for (const char* p = msg3; *p; ++p) {
+        uint64_t ch = (unsigned char)*p;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    v = stval;
+    for (int i = 60; i >= 0; i -= 4) {
+        uint64_t nibble = (v >> i) & 0xF;
+        char c = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+        uint64_t ch = (unsigned char)c;
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
+    // newline
+    {
+        uint64_t ch = (unsigned char)'\n';
+        asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    }
     panic("riscv64: unhandled exception");
 }
 

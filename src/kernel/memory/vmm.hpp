@@ -104,6 +104,31 @@ private:
     static constexpr uint64_t PAGE_WRITE    = 0; // no‑op — writable by default
     static constexpr uint64_t PAGE_USER     = PAGE_AP_USER;
     static constexpr uint64_t PAGE_HUGE     = 0; // not a flag; detected via level
+#elif defined(CONFIG_ARCH_RISCV64)
+    // RISC-V Sv39 PTE format (from privilege spec)
+    // bit 0: V (Valid)
+    // bit 1: R (Readable)
+    // bit 2: W (Writable)
+    // bit 3: X (Executable)
+    // bit 4: U (User)
+    // bit 5: G (Global)
+    // bit 6: A (Accessed)
+    // bit 7: D (Dirty)
+    // bit 8: RSW (reserved for software)
+    // bits 9-53: PPN[0..44] (physical page number)
+    // bits 54-63: reserved for future use
+    static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;  // V
+    static constexpr uint64_t PAGE_READ     = 1ULL << 1;  // R
+    static constexpr uint64_t PAGE_WRITE    = 1ULL << 2;  // W
+    static constexpr uint64_t PAGE_EXEC     = 1ULL << 3;  // X
+    static constexpr uint64_t PAGE_USER     = 1ULL << 4;  // U
+    static constexpr uint64_t PAGE_GLOBAL   = 1ULL << 5;  // G
+    static constexpr uint64_t PAGE_ACCESSED = 1ULL << 6;  // A
+    static constexpr uint64_t PAGE_DIRTY    = 1ULL << 7;  // D
+    // Table entry: V=1, R=W=X=0 (points to next level)
+    static constexpr uint64_t PAGE_TABLE    = PAGE_PRESENT; // V=1, no RWX = table pointer
+    // Block/leaf detection: if V=1 and (R|W|X)=1 then leaf page
+    static constexpr uint64_t PAGE_HUGE     = 0; // detected via R|W|X bits
 #else
     static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
     static constexpr uint64_t PAGE_WRITE    = 1ULL << 1;
@@ -120,6 +145,20 @@ private:
     static constexpr uint64_t PDPT_MASK     = 0x1FFULL << PDPT_SHIFT;
     static constexpr uint64_t PD_MASK       = 0x1FFULL << PD_SHIFT;
     static constexpr uint64_t PT_MASK       = 0x1FFULL << PT_SHIFT;
+
+#if defined(CONFIG_ARCH_RISCV64)
+    // Sv39: 3-level page table
+    // L0 (1GB): bits 38:30
+    // L1 (2MB): bits 29:21
+    // L2 (4KB): bits 20:12
+    static constexpr uint64_t L0_SHIFT      = 30;
+    static constexpr uint64_t L1_SHIFT      = 21;
+    static constexpr uint64_t L2_SHIFT      = 12;
+    static constexpr uint64_t TABLE_MASK    = 0x1FFULL;
+    static constexpr uint64_t L0_MASK       = TABLE_MASK << L0_SHIFT;
+    static constexpr uint64_t L1_MASK       = TABLE_MASK << L1_SHIFT;
+    static constexpr uint64_t L2_MASK       = TABLE_MASK << L2_SHIFT;
+#endif
 
     static uint64_t kernel_pml4_;
 

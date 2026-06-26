@@ -36,8 +36,13 @@ SECTIONS
     boot_vma_end = .;
     phys_lma = boot_vma_end;
 
-    /* Higher-half kernel virtual base */
-    . = 0xFFFFFFC080200000;
+    /* Higher-half kernel virtual base.
+     * .text loads at LMA 0x80207000 (0x7000 into the 2MB page at PA 0x80200000).
+     * The boot page table maps PA 0x80200000 → VA 0xFFFFFFC080200000 (2MB page),
+     * so .text at PA 0x80207000 is accessible at VA 0xFFFFFFC080207000.
+     * Must match: VMA = HHDM_base + (LMA & 0x1FFFFF).
+     */
+    . = 0xFFFFFFC080207000;
 
     .text : AT(phys_lma) ALIGN(4K)
     {

@@ -184,6 +184,12 @@ QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) 
                   -semihosting-config enable=on,target=native
 endif
 
+# For riscv64, load kernel directly via -kernel with OpenSBI BIOS
+ifeq ($(ARCH),riscv64)
+QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
+                  -machine virt -bios default -display none -no-reboot
+endif
+
 # ------------------------------------------------------------------------------
 # Build type stamp
 #

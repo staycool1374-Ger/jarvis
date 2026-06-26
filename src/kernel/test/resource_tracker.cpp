@@ -36,6 +36,12 @@ static inline uint64_t read_fp() {
     asm volatile("mov %0, x29" : "=r"(v));
     return v;
 }
+#elif defined(CONFIG_ARCH_RISCV64)
+static inline uint64_t read_fp() {
+    uint64_t v;
+    asm volatile("mv %0, s0" : "=r"(v));
+    return v;
+}
 #endif
 
 static void print_backtrace() {

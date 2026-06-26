@@ -65,8 +65,8 @@ inline void sfence_vma_va(uint64_t vaddr) { asm volatile("sfence.vma %0" : : "r"
 inline uint64_t read_satp() { uint64_t v; asm volatile("csrr %0, satp" : "=r"(v)); return v; }
 inline void write_satp(uint64_t v) { asm volatile("csrw satp, %0" : : "r"(v) : "memory"); sfence_vma(); }
 
-inline uint64_t read_cr3() { return read_satp() & 0xFFFFFFFFFFF; } // extract PPN from satp
-inline void write_cr3(uint64_t v) { write_satp((8ULL << 60) | v); } // Sv39 mode
+inline uint64_t read_cr3() { return (read_satp() & 0xFFFFFFFFFFF) << 12; } // PPN -> PA
+inline void write_cr3(uint64_t v) { write_satp((8ULL << 60) | (v >> 12)); } // Sv39 mode: PA -> PPN
 inline void write_cr3_notlbi(uint64_t v) { write_satp((8ULL << 60) | v); }
 
 inline uint64_t read_cr0() { return 0; }

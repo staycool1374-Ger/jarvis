@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.22** — aarch64 Port: HAL refactoring, ARM Cortex-A boot, context switch, timer, UART, PCI ECAM, GICv3 interrupt controller, Renode simulation support, multi-arch build system.
+Current version: **v0.2.23** — riscv64 Port: RISC-V RV64 boot, Sv39 page tables, context switch, PLIC, SBI UART/timer, 679 kernel self-tests passing on QEMU virt.
 
 ---
 
@@ -175,7 +175,7 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 | **Scheduling** | Fixed-priority preemptive, tick-less option, `configUSE_TIME_SLICING` | Rate-monotonic with 256 priority levels, idle-task RAM March-C and ALU integrity monitors (ASIL D) |
 | **Idle hook** | `configUSE_IDLE_HOOK` — simple callback | Full idle-task stewardship: slab page return, CPU utilisation tracking, non-destructive memory test, register verification |
 | **Memory safety** | Manual `pvPortMalloc()` / `vPortFree()`, no ownership tracking | `UniquePtr<T>` RAII wrappers, deterministic `MemPool` slab allocator, `ResourceTracker` leak detection |
-| **Hardware support** | HAL via `portmacro.h` — per-port assembly macros | Architecture-agnostic `arch/<isa>/` directories with uniform HAL signatures (aarch64 supported, riscv64 planned for v0.2.23) |
+| **Hardware support** | HAL via `portmacro.h` — per-port assembly macros | Architecture-agnostic `arch/<isa>/` directories with uniform HAL signatures (aarch64, riscv64 supported) |
 | **RNG** | Typically none or application-provided | Hardware RNG (RDSEED / RDRAND) + ChaCha20 CSPRNG → `/dev/random`, `SYS_GETRANDOM` |
 | **FPU handling** | `configENABLE_FPU` — cooperative save/restore | Lazy context switch via CR0.TS + #NM trap; FXSAVE/FXRSTOR, automatic on first use |
 | **IPC** | Queues, semaphores, mutexes (C API) | Priority IPC mailboxes, zero-copy buffer pool, event groups, notifications, deadlock detection engine |
@@ -217,11 +217,12 @@ Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGr
 - [x] **Phase 3 — System Services & Hardware** — FAT32, tmpfs, PCI, Virtio, ATA PIO, RNG, FPU, DMA, network stack *(completed — v0.2.20)*
 - [x] **Phase 4 — Kernel Configuration & Portability** — jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch HAL infrastructure *(completed — v0.2.21)*
 - [x] **Phase 5 — aarch64 Port (ARM Cortex-A)** — HAL refactoring, ARM boot, page tables, context switch, GICv3, timer, UART, PCI ECAM, Renode simulation *(completed — v0.2.22)*
-- [ ] **Phase 6 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
-- [ ] **Phase 7 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
-- [ ] **Phase 8 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
-- [ ] **Phase 9 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection, ASIL-D idle monitors
-- [ ] **Phase 10 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
+- [x] **Phase 6 — riscv64 Port (RV64)** — RISC-V boot (OpenSBI→S-mode), Sv39 page tables, context switch, PLIC, SBI UART/timer, 3-arch build system, Renode support *(completed — v0.2.23)*
+- [ ] **Phase 7 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
+- [ ] **Phase 8 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
+- [ ] **Phase 9 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
+- [ ] **Phase 10 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection, ASIL-D idle monitors
+- [ ] **Phase 11 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
 
 Full roadmap at [`ROADMAP.md`](ROADMAP.md).
 
