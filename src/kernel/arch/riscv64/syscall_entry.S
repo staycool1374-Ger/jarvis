@@ -57,8 +57,6 @@ syscall_entry:
 .equ OFF_STVAL, 272
 .equ OFF_RET,  280
 
-    addi sp, sp, -SAVE_SIZE
-
     # TRACE: print 'A' after save area alloc
     li a0, 65
     li a7, 1

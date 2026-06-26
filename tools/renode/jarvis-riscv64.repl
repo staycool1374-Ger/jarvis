@@ -5,14 +5,14 @@ uart0: UART.NS16550 @ sysbus 0x10000000
     IRQ -> plic@3
 
 cpu: CPU.RiscV64 @ sysbus
-    cpuType: "rv64imafdc"
-    privilegedArchitecture: PrivilegedArchitecture.Priv1_11
+    cpuType: "rv64imafdc_zifencei_zicsr"
+    privilegedArchitecture: PrivilegedArchitecture.Priv1_12
     timeProvider: clint
     hartId: 0
 
 plic: IRQControllers.PlatformLevelInterruptController @ sysbus 0x0C000000
     0 -> cpu@11
-    numberOfSources: 52
+    numberOfSources: 95
     numberOfContexts: 1
 
 clint: IRQControllers.CoreLevelInterruptor @ sysbus 0x02000000

@@ -1,5 +1,5 @@
 :name: Jarvis RTOS - RISC-V 64
-:description: Boots Jarvis RTOS on RISC-V 64-bit virt machine.
+:description: Boots Jarvis RTOS on RISC-V 64-bit via OpenSBI fw_dynamic.
 
 $name?="jarvis-riscv64"
 mach create $name
@@ -8,10 +8,53 @@ machine LoadPlatformDescription @tools/renode/jarvis-riscv64.repl
 
 showAnalyzer uart0
 
-$kernel?=@debug/jarvis-rtos.iso
+$kernel?=@build/kernel-debug.elf
+$opensbi?=@tools/renode/opensbi-riscv64-generic-fw_dynamic.bin
+$dtb?=@tools/renode/jarvis-riscv64.dtb
 
 macro reset
 """
+    # Load OpenSBI at 0x80000000 (firmware base)
+    sysbus LoadBinary $opensbi 0x80000000
+
+    # Load kernel ELF (LoadELF sets PC to ELF entry point 0x80200000)
     sysbus LoadELF $kernel
+
+    # Load DTB at 0x8FE00000 (standard QEMU virt DTB address)
+    sysbus LoadBinary $dtb 0x8FE00000
+
+    # Build fw_dynamic info structure at 0x8E000000 (unused RAM)
+    # struct fw_dynamic_info {
+    #     uint64_t magic;       = 0x4942534f ("SBI\0")
+    #     uint64_t version;     = 1
+    #     uint64_t next_addr;   = 0x80200000
+    #     uint32_t next_mode;   = 1 (S-mode)
+    #     uint32_t padding;
+    #     uint64_t options;     = 0
+    #     uint64_t boot_hart;   = 0
+    # }
+    sysbus WriteDoubleWord 0x8E000000 0x4942534F
+    sysbus WriteDoubleWord 0x8E000004 0x00000000
+    sysbus WriteDoubleWord 0x8E000008 0x00000001
+    sysbus WriteDoubleWord 0x8E00000C 0x00000000
+    sysbus WriteDoubleWord 0x8E000010 0x80200000
+    sysbus WriteDoubleWord 0x8E000014 0x00000000
+    sysbus WriteDoubleWord 0x8E000018 0x00000001
+    sysbus WriteDoubleWord 0x8E00001C 0x00000000
+    sysbus WriteDoubleWord 0x8E000020 0x00000000
+    sysbus WriteDoubleWord 0x8E000024 0x00000000
+    sysbus WriteDoubleWord 0x8E000028 0x00000000
+    sysbus WriteDoubleWord 0x8E00002C 0x00000000
+
+    # Set CPU registers as OpenSBI fw_dynamic expects:
+    #   a0 = hart id (0)
+    #   a1 = DTB address
+    #   a2 = fw_dynamic info address
+    cpu SetRegister 10 0            # a0 = 0 (hart 0)
+    cpu SetRegister 11 0x8FE00000   # a1 = DTB address
+    cpu SetRegister 12 0x8E000000   # a2 = info address
+
+    # Override PC to start at OpenSBI entry (0x80000000), not kernel entry
+    cpu PC 0x80000000
 """
 runMacro $reset
