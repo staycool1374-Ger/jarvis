@@ -17,7 +17,7 @@
  */
 
 /// @file pci.hpp
-/// @brief PCI enumeration — CF8/CFC config space access and bus scan.
+/// @brief PCI enumeration — arch-specific config space access and bus scan.
 
 #pragma once
 
@@ -26,10 +26,6 @@
 #include <kernel/arch/pci_errors.hpp>
 
 namespace arch {
-
-/// PCI configuration space I/O ports
-constexpr uint16_t PCI_CONFIG_ADDR = 0xCF8;
-constexpr uint16_t PCI_CONFIG_DATA = 0xCFC;
 
 /// Max devices per bus
 constexpr uint8_t  PCI_MAX_DEVICES   = 32;
@@ -126,6 +122,10 @@ struct PciBdf {
     bool operator!=(const PciBdf& o) const { return !(*this == o); }
 };
 
+#if CONFIG_ARCH_AARCH64
+#include <kernel/arch/aarch64/hal/pci_impl.hpp>
+#endif
+
 /// Discovered device info
 struct PciDeviceInfo {
     PciBdf  bdf;
@@ -140,7 +140,12 @@ struct PciDeviceInfo {
     uint8_t  bar_count;
 };
 
-// --- Inline config space access helpers ---
+// --- Architecture-specific config space access ---
+#if CONFIG_ARCH_X86_64
+
+/// PCI configuration space I/O ports
+constexpr uint16_t PCI_CONFIG_ADDR = 0xCF8;
+constexpr uint16_t PCI_CONFIG_DATA = 0xCFC;
 
 inline void pci_config_addr(uint32_t addr) {
     outl(PCI_CONFIG_ADDR, addr);
@@ -189,6 +194,38 @@ inline uint16_t pci_read_device(PciBdf bdf) {
 inline bool pci_device_exists(PciBdf bdf) {
     return pci_read_vendor(bdf) != 0xFFFF;
 }
+
+#elif CONFIG_ARCH_AARCH64
+
+/// Read vendor ID (return 0xFFFF if no device)
+inline uint16_t pci_read_vendor(PciBdf bdf) {
+    return arch::pci_read_vendor_ecam(bdf);
+}
+
+/// Read device ID
+inline uint16_t pci_read_device(PciBdf bdf) {
+    return arch::pci_read_device_ecam(bdf);
+}
+
+/// Check if a BDF has a valid device
+inline bool pci_device_exists(PciBdf bdf) {
+    return arch::pci_device_exists_ecam(bdf);
+}
+
+/// Build ECAM address from BDF + register offset
+inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
+    return arch::pci_ecam_addr(bdf, reg);
+}
+
+/// ECAM config space access wrappers for common code
+inline uint32_t pci_config_readl(uint32_t addr) { (void)addr; return 0; }
+inline uint8_t pci_config_readb(uint32_t addr) { (void)addr; return 0; }
+inline void pci_config_writel(uint32_t addr, uint32_t val) { (void)addr; (void)val; }
+inline uint16_t pci_config_readw(uint32_t addr) { (void)addr; return 0; }
+
+#else
+#error "Unsupported architecture for PCI"
+#endif
 
 // --- Enumeration ---
 

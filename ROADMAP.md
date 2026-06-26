@@ -26,9 +26,9 @@ When implementing or refactoring code paths for this phase, execute the followin
 
 Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU virt. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/aarch64/` implementation.
 
-- [ ] **A. HAL Interface Refactoring (structural)**
-  - [ ] Move `arch/x86_64/timer.cpp`, `gdt.cpp`, `idt.cpp` → `arch/x86_64/hal/` with interface headers matching `arch/hal/` API
-  - [ ] `arch/hal/context.hpp` — make `ArchContext` arch-selected (x86_64 vs aarch64 vs riscv64)
+- [x] **A. HAL Interface Refactoring (structural)**
+  - [x] Move `arch/x86_64/timer.cpp`, `gdt.cpp`, `idt.cpp` → `arch/x86_64/hal/` with interface headers matching `arch/hal/` API
+  - [x] `arch/hal/context.hpp` — make `ArchContext` arch-selected (x86_64 vs aarch64 vs riscv64)
   - [x] `arch/hal/io.hpp` — add `#elif CONFIG_ARCH_AARCH64` branch mapping port I/O to MMIO (`arch/aarch64/hal/io_impl.hpp`)
   - [x] `arch/hal/page_table.hpp` — dispatches to arch-specific `page_table_impl.hpp` per arch
   - [x] Build system: arch-specific `OBJ` lists in `mk/rules.mk` via `arch/$(ARCH)/` source discovery
@@ -37,15 +37,15 @@ Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU
 - [x] **B. Boot Entry (`arch/aarch64/boot.S`)**
   - [x] EL2→EL1 transition (QEMU virt starts at EL2), or stay at EL1 if configured
   - [x] Exception level drop, VBAR_EL1 vector table install
-  - [ ] MMU init: TCR_EL1 (4KB granule, 4-level), MAIR_EL1 (normal/device memory), TTBR0_EL1/TTBR1_EL1 with 4-level page tables
-  - [ ] Identity-map kernel low region + map higher half using boot page tables
-  - [ ] Enable MMU (SCTLR_EL1.M), jump to higher half
+  - [x] MMU init: TCR_EL1 (4KB granule, 4-level), MAIR_EL1 (normal/device memory), TTBR0_EL1/TTBR1_EL1 with 4-level page tables
+  - [x] Identity-map kernel low region + map higher half using boot page tables
+  - [x] Enable MMU (SCTLR_EL1.M), jump to higher half
   - [x] Call `higherhalf_entry(uint64_t magic, uint64_t dtb_ptr)` — device tree pointer instead of multiboot
 
 - [x] **C. Page Tables (`arch/aarch64/hal/page_table_impl.hpp`)**
   - [x] `ArchPageTable` class: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
   - [x] 4-level page table walk (L0–L3, 9-bit each, 4KB granule), `map_page()`, `unmap_page()`, `get_physical()`
-  - [ ] Support 2MB block mappings at L2 (huge pages)
+  - [x] Support 2MB block mappings at L2 (huge pages)
 
 - [x] **D. Context Switch (`arch/aarch64/hal/context.hpp`)**
   - [x] `ArchContext` struct: x0–x29, x30/LR, SP_EL1, ELR_EL1, SPSR_EL1
@@ -66,16 +66,16 @@ Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU
   - [x] `arch::Serial` — PL011 UART at `0x9000000` (QEMU virt): init (8N1), putc, getc
   - [x] Wire into kernel `Logger::init()` and `debug_write()` via `uart_putc()`
 
-- [ ] **G. PCI (ECAM)**
-  - [ ] Replace CF8/CFC port I/O with ECAM memory-mapped config space at QEMU virt ECAM base — stubs exist (`pci.cpp`/`virtio.cpp`), full ECAM driver pending
-  - [ ] PCI bus scan, BAR parsing, MSI/MSI-X capability detection
+- [x] **G. PCI (ECAM)**
+  - [x] Replace CF8/CFC port I/O with ECAM memory-mapped config space at QEMU virt ECAM base — ECAM driver implemented in `pci_impl.hpp`, wired via `pci.hpp` `CONFIG_ARCH_AARCH64` branch
+  - [x] PCI bus scan, BAR parsing, MSI/MSI-X capability detection — generic `pci.cpp` uses arch-specific accessors (ECAM on aarch64, CF8/CFC on x86_64)
 
 - [x] **H. Remaining HAL surface**
   - [x] `arch::RTC` — ARM Generic Timer based (CNTPCT_EL0 / CNTFRQ_EL0)
   - [x] `arch::cpuid()` — read ID_AA64*_EL1 system registers for FPU/SIMD feature detection (`arch/aarch64/hal/cpuid_impl.hpp`)
   - [x] `arch::IrqGuard` — RAII via DAIF masking
   - [x] `arch::rdrand64()` — via `arch/aarch64/hal/rand_impl.hpp` (RNDRRS_EL0 or ChaCha20 fallback)
-  - [ ] `arch::Keyboard` — stub (no PS/2 on ARM virt); future: virtio-input
+  - [x] `arch::Keyboard` — stub (no PS/2 on ARM virt); future: virtio-input
 
 - [x] **I. Integration & Tests**
   - [x] `make run ARCH=aarch64` — boots to kernel UART output (debug builds + safe-class tests)
