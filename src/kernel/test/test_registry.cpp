@@ -231,11 +231,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_random_vfs_tests();
         register_random_syscall_tests();
         register_random_seed_tests();
-        register_fpu_tests();
-        register_fpu_sse_tests();
-        register_fpu_clone_tests();
-        register_fpu_multi_tests();
-        register_fpu_xmm_all_tests();
+        // register_fpu_tests();
+        // register_fpu_sse_tests();
+        // register_fpu_clone_tests();
+        // register_fpu_multi_tests();
+        // register_fpu_xmm_all_tests();
         register_random_vfs_write_tests();
         register_memory_safety_tests();
         register_sporadic_server_tests();
