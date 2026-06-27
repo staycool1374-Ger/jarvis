@@ -356,6 +356,14 @@ void Scheduler::on_tick() noexcept {
             auto* t = tasks_[i];
             if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (t->sporadic_server) {
+                if (reinterpret_cast<uint64_t>(t->sporadic_server) == 0xFFFFFFFFFFFFFFFFULL) {
+                    Logger::raw_write("[BUG] on_tick: t=");
+                    Logger::print_dec(t->id);
+                    Logger::raw_write(" sporadic_server=-1 at i=");
+                    Logger::print_dec(i);
+                    Logger::raw_write("\n");
+                    continue;
+                }
                 t->sporadic_server->process_replenishments(current_tick);
                 if (t == cur) {
                     t->sporadic_server->consume(current_tick);
