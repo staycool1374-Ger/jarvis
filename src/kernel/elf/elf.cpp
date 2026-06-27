@@ -296,6 +296,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->program_break = 0;
     tcb->buf_list_head = -1;
     tcb->fpu_used = false;
+    tcb->sporadic_server = nullptr;
 
     init_task_common(*tcb);
 

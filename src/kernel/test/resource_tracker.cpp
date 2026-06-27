@@ -19,6 +19,7 @@
 #include <kernel/test/resource_tracker.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <constants.hpp>
 
 namespace kernel::test {
 
@@ -48,6 +49,7 @@ static void print_backtrace() {
     uint64_t fp = read_fp();
     Logger::warn("[RESOURCE]   Call stack:");
     for (int i = 0; i < 5 && fp; ++i) {
+        if (fp < arch::HHDM_OFFSET) break;
         uint64_t ret = *reinterpret_cast<uint64_t*>(fp + 8);
         char buf[20];
         int p = 18;

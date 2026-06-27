@@ -176,31 +176,28 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     size_t l2_idx = (virt_addr & VMM::L2_MASK) >> VMM::L2_SHIFT;
 
     auto* l1 = get_table(l0, l0_idx, true);
-    auto* l2 = get_table(l1, l1_idx, true);
 
-    // If L2 entry is a 2MB block (V=1, R|W|X=1), split it
-    if ((l2[l2_idx] & PAGE_PRESENT) &&
-        (l2[l2_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-        uint64_t new_l3_phys = PMM::alloc_page_table();
-        ENSURE(new_l3_phys != 0);
-        auto* new_l3 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_l3_phys);
-        uint64_t block_base = l2[l2_idx] & ~0x1FFFFFULL;
-        uint64_t base_flags = l2[l2_idx] & (PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC | PAGE_USER | PAGE_GLOBAL | PAGE_ACCESSED | PAGE_DIRTY);
+    // If L1 entry is a 2MB block, split it into 512 4KB entries
+    if ((l1[l1_idx] & PAGE_PRESENT) &&
+        (l1[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
+        uint64_t new_l2_phys = PMM::alloc_page_table();
+        ENSURE(new_l2_phys != 0);
+        auto* new_l2 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_l2_phys);
+        uint64_t block_base = l1[l1_idx] & ~0x1FFFFFULL;
+        uint64_t base_flags = l1[l1_idx] & (PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC | PAGE_USER | PAGE_GLOBAL | PAGE_ACCESSED | PAGE_DIRTY);
         for (size_t i = 0; i < 512; ++i) {
-            new_l3[i] = (block_base + i * 0x1000) | base_flags | PAGE_ACCESSED | PAGE_DIRTY;
+            new_l2[i] = (block_base + i * 0x1000) | base_flags | PAGE_ACCESSED | PAGE_DIRTY;
         }
-        // Table entry: V=1, no RWX
-        l2[l2_idx] = new_l3_phys | PAGE_PRESENT;
+        l1[l1_idx] = new_l2_phys | PAGE_PRESENT;
     }
 
-    auto* l3 = get_table(l2, l2_idx, true);
+    auto* l2 = get_table(l1, l1_idx, true);
 
     uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC;
     if (user) flags |= PAGE_USER;
-    // Always set A/D bits
     flags |= PAGE_ACCESSED | PAGE_DIRTY;
 
-    l3[l2_idx] = phys_addr | flags;
+    l2[l2_idx] = phys_addr | flags;
     arch::ArchPageTable::tlb_flush(virt_addr);
 #else
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -271,10 +268,8 @@ void VMM::unmap_page(uint64_t virt_addr) {
     if (!l1) return;
     auto* l2 = get_table(l1, l1_idx, false);
     if (!l2) return;
-    auto* l3 = get_table(l2, l2_idx, false);
-    if (!l3) return;
 
-    l3[l2_idx] = 0;
+    l2[l2_idx] = 0;
     arch::ArchPageTable::tlb_flush(virt_addr);
 #else
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -308,19 +303,17 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
 
     auto* l1 = get_table(l0, l0_idx, false);
     if (!l1) return 0;
-    auto* l2 = get_table(l1, l1_idx, false);
-    if (!l2) return 0;
 
-    // Check for 2MB block mapping (leaf at L1 level - V=1, R|W|X=1)
-    if ((l2[l1_idx] & PAGE_PRESENT) &&
-        (l2[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-        return (l2[l1_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+    // Check for 2MB block mapping (leaf at L1 level)
+    if ((l1[l1_idx] & PAGE_PRESENT) &&
+        (l1[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
+        return (l1[l1_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
     }
 
-    auto* l3 = get_table(l2, l2_idx, false);
-    if (!l3 || !(l3[l2_idx] & PAGE_PRESENT)) return 0;
+    auto* l2 = get_table(l1, l1_idx, false);
+    if (!l2 || !(l2[l2_idx] & PAGE_PRESENT)) return 0;
 
-    return (l3[l2_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
+    return (l2[l2_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
 #else
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         kernel_pml4_ & ~0xFFFULL));
@@ -370,28 +363,11 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
     auto* l1 = get_table(l0, l0_idx, true, true);
     auto* l2 = get_table(l1, l1_idx, true, true);
 
-    // If L2 entry is a 2MB block (V=1, R|W|X=1), split it
-    if ((l2[l2_idx] & PAGE_PRESENT) &&
-        (l2[l2_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-        uint64_t new_l3_phys = PMM::alloc_user_page();
-        ENSURE(new_l3_phys != 0);
-        auto* new_l3 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + new_l3_phys);
-        uint64_t block_base = l2[l2_idx] & ~0x1FFFFFULL;
-        uint64_t base_flags = l2[l2_idx] & (PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC | PAGE_USER | PAGE_GLOBAL | PAGE_ACCESSED | PAGE_DIRTY);
-        for (size_t i = 0; i < 512; ++i) {
-            new_l3[i] = (block_base + i * 0x1000) | base_flags | PAGE_ACCESSED | PAGE_DIRTY;
-        }
-        // Table entry: V=1, no RWX
-        l2[l2_idx] = new_l3_phys | PAGE_PRESENT;
-    }
-
-    auto* l3 = get_table(l2, l2_idx, true, true);
-
     uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC;
     if (user) flags |= PAGE_USER;
     flags |= PAGE_ACCESSED | PAGE_DIRTY;
 
-    l3[l2_idx] = phys_addr | flags;
+    l2[l2_idx] = phys_addr | flags;
 #else
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         pml4_phys & ~0xFFFULL));
@@ -486,15 +462,22 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         pml4_phys & ~0xFFFULL));
-    // User space: L0 indices 0-255 (0-256GB)
+    // User space: L0 indices 0-255 for Sv39 (0-256GB)
     for (int l0_idx = 0; l0_idx < 256; ++l0_idx) {
         if (!(l0[l0_idx] & PAGE_PRESENT)) continue;
+        // Check for 1GB block at L0
+        if ((l0[l0_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
+            uint64_t page = l0[l0_idx] & ~0x3FFFFFFFULL;
+            if (!PMM::is_user_page(page)) continue;
+            PMM::free_page(page);
+            continue;
+        }
         uint64_t l1_phys = l0[l0_idx] & ~0xFFFULL;
         if (!PMM::is_user_page(l1_phys)) continue;
         auto* l1 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + l1_phys);
         for (int l1_idx = 0; l1_idx < 512; ++l1_idx) {
             if (!(l1[l1_idx] & PAGE_PRESENT)) continue;
-            // Check for 2MB block at L1 level
+            // Check for 2MB block at L1
             if ((l1[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
                 uint64_t page = l1[l1_idx] & ~0x1FFFFFULL;
                 if (!PMM::is_user_page(page)) continue;
@@ -506,13 +489,14 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
             auto* l2 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + l2_phys);
             for (int l2_idx = 0; l2_idx < 512; ++l2_idx) {
                 if (!(l2[l2_idx] & PAGE_PRESENT)) continue;
-                // Check for 2MB block at L2 level
+                // Check for leaf PTE (V=1, R|W|X=1) — 3-level Sv39 format
                 if ((l2[l2_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-                    uint64_t page = l2[l2_idx] & ~0x1FFFFFULL;
-                    if (!PMM::is_user_page(page)) continue;
-                    PMM::free_page(page);
+                    uint64_t leaf = l2[l2_idx] & ~0xFFFULL;
+                    if (!PMM::is_user_page(leaf)) continue;
+                    PMM::free_page(leaf);
                     continue;
                 }
+                // Table entry (V=1, R=W=X=0) — old 4-level format with L3 beneath
                 uint64_t l3_phys = l2[l2_idx] & ~0xFFFULL;
                 if (!PMM::is_user_page(l3_phys)) continue;
                 auto* l3 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + l3_phys);

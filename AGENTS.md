@@ -146,3 +146,23 @@ If the branch does not match the intended role, do not proceed.
 - riscv64 VMM user page management incomplete: `create_user` allocates page tables not freed on `cleanup()`; buffer pool map/unmap fails; ELF load crashes with store page faults.
 - aarch64 `make test-all-debug` not yet attempted.
 
+## Session Summary (v0.2.22 — GPF & riscv64 VMM fixes)
+
+### Completed
+- **Fix sporadic_server=-1 GPF**: `elf::load()` (elf.cpp:297) did not zero-initialize the TCB or set `sporadic_server = nullptr`, unlike `TaskControlBlock::create()` (task.cpp:135) which uses `memset`. This left stale MemPool free-list sentinel (`0xFFFFFFFFFFFFFFFF`) in the field. `init_sporadic_server()` hit `if (sporadic_server) return;` and never allocated the real SporadicServer. `on_tick()` then dereferenced `0xFFFFFFFFFFFFFFFF` → GPF. Fixed by adding `tcb->sporadic_server = nullptr`. All 675 x86_64 tests pass with no `[BUG]` messages.
+- **Fix riscv64 Sv39 VMM page table walk**: All riscv64 page-table-walk functions (`map_page`, `map_page_in_pml4`, `unmap_page`, `virt_to_phys`) incorrectly assumed 4 levels (L0→L1→L2→L3). Sv39 is 3-level (L0→L1→L2, with L2 as leaf). Walked non-existent L3, creating corrupt page tables that caused store page faults (scause=0xD) in `syscall_open_read_close`. Rewritten to correct 3-level walk.
+- **Fix `free_user_pages` cleanup leak**: Handles both 3-level (new) and old 4-level page tables during daemon cleanup transition. L2 entries with V=1,R|W|X=0 (old table pointers) are walked as L3; L2 entries with R|W|X=1 (new leaf PTEs) freed directly.
+- **Fix `print_backtrace` crash**: Added `fp < arch::HHDM_OFFSET` check in `print_backtrace()` to prevent dereferencing user-space addresses when the frame pointer chain crosses the kernel/user boundary.
+- **Verified**: `make test-class CLASS=syscall ARCH=riscv64` → 28/28 PASS (was crashing). `make test-class CLASS=process ARCH=riscv64` → 27/27 PASS. `make test-all-debug ARCH=x86_64` → 675/675 PASS.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `src/kernel/elf/elf.cpp` | Added `tcb->sporadic_server = nullptr;` |
+| `src/kernel/memory/vmm.cpp` | Fixed riscv64 walk in 5 functions (3-level Sv39) |
+| `src/kernel/test/resource_tracker.cpp` | Added `#include <constants.hpp>`, fp validity check |
+
+### Known Remaining
+- `PmmExhaustion` test (in `memory` class) allocates 100K pages — extremely slow on riscv64 QEMU emulation. Pre-existing.
+- Two `[TEST:FAIL]` assertions in `test_sporadic_server.cpp` (lines 35, 213) — pre-existing, tests still report PASS.
+
