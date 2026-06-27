@@ -147,6 +147,15 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
 - [ ] **Memory model** — verify C++20 `std::atomic` works correctly across all three ISAs (no SEQCST assumptions)
 - [ ] **Cross-arch test suite** — common test classes that validate identical behavior on all three architectures
 
+### 0.2.25 — Test Safety & RAII Hardening
+
+- [ ] **Eliminate dangling pointer accesses in tests** — convert remaining raw `delete ptr; ptr->member` patterns to `ScopeGuard` or `UniquePtr<T>` with custom deleter
+  - [ ] `test_task_lifecycle.cpp` — use `ScopeGuard` for `tcb` lifetime
+  - [ ] `test_waitpid.cpp` — use `ScopeGuard` for `child1`/`child2` lifetime
+  - [ ] `test_buffer_pool.cpp` — audit remaining raw `delete` patterns
+  - [ ] `test_spinlock.cpp`, `test_preemption_under_syscall.cpp` — verify existing `ScopeGuard` usage is consistent
+  - [ ] Add `UniquePtr<T, Deleter>` usage guide to code style docs
+
 ---
 
 ## Phase 4: Hard Real-Time (0.3.x)

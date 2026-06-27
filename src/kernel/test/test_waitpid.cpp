@@ -83,13 +83,14 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
     JARVIS_ASSERT(Scheduler::find_task(child1->id) == child1);
 
     // Now actually reap child1
+    uint64_t child1_id = child1->id;
     parent->remove_child(child1);
     child1->cleanup();
     Scheduler::remove_task(*child1);
     delete child1;
 
     // Child1 should be gone from scheduler
-    JARVIS_ASSERT(Scheduler::find_task(child1->id) == nullptr);
+    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
 
     // Child2 should still be present
     JARVIS_ASSERT(Scheduler::find_task(child2->id) == child2);
@@ -144,11 +145,12 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
         }
     }
     JARVIS_ASSERT(found == child1);
+    uint64_t child1_id = child1->id;
     parent->remove_child(child1);
     child1->cleanup();
     Scheduler::remove_task(*child1);
     delete child1;
-    JARVIS_ASSERT(Scheduler::find_task(child1->id) == nullptr);
+    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
 
     // Second waitpid: find and reap child2
     found = nullptr;
@@ -161,11 +163,12 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
         }
     }
     JARVIS_ASSERT(found == child2);
+    uint64_t child2_id = child2->id;
     parent->remove_child(child2);
     child2->cleanup();
     Scheduler::remove_task(*child2);
     delete child2;
-    JARVIS_ASSERT(Scheduler::find_task(child2->id) == nullptr);
+    JARVIS_ASSERT(Scheduler::find_task(child2_id) == nullptr);
 
     Scheduler::remove_task(*parent);
     parent->cleanup();

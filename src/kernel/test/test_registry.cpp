@@ -92,7 +92,6 @@ void register_irq_guard_tests();
 void register_shell_redirect_tests();
 void register_klog_tests();
 void register_hal_tests();
-void register_arch_structure_tests();
 void register_buildsystem_tests();
 void register_secure_exec_tests();
 void register_pci_tests();
@@ -119,8 +118,12 @@ void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
 void register_sporadic_server_tests();
+#if defined(CONFIG_ARCH_AARCH64)
 void register_aarch64_tests();
+#endif
+#if defined(CONFIG_ARCH_RISCV64)
 void register_riscv64_tests();
+#endif
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -216,7 +219,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_shell_redirect_tests();
         register_klog_tests();
         register_hal_tests();
-        register_arch_structure_tests();
         register_buildsystem_tests();
         register_secure_exec_tests();
         register_pci_tests();
@@ -237,8 +239,12 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_random_vfs_write_tests();
         register_memory_safety_tests();
         register_sporadic_server_tests();
+#if defined(CONFIG_ARCH_AARCH64)
         register_aarch64_tests();
+#endif
+#if defined(CONFIG_ARCH_RISCV64)
         register_riscv64_tests();
+#endif
     }},
 
     // -- individual classes --
@@ -310,18 +316,25 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_address_tests();
         register_pic_tests();
         register_hal_tests();
-        register_arch_structure_tests();
+#if defined(CONFIG_ARCH_AARCH64)
         register_aarch64_tests();
+#endif
+#if defined(CONFIG_ARCH_RISCV64)
         register_riscv64_tests();
+#endif
     }},
 
+#if defined(CONFIG_ARCH_AARCH64)
     {"arm64", []() {
         register_aarch64_tests();
     }},
+#endif
 
+#if defined(CONFIG_ARCH_RISCV64)
     {"risc64", []() {
         register_riscv64_tests();
     }},
+#endif
 
     {"device", []() {
         register_serial_tests();

@@ -50,10 +50,6 @@ void register_pic_tests() {
     kernel::Logger::info("Skipped: register_pic_tests (not supported on this arch)");
 }
 
-void register_arch_structure_tests() {
-    kernel::Logger::info("Skipped: register_arch_structure_tests (not supported on this arch)");
-}
-
 void register_rtc_tests() {
     kernel::Logger::info("Skipped: register_rtc_tests (not supported on this arch)");
 }

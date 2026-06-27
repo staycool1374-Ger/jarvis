@@ -206,11 +206,12 @@ JARVIS_TEST(task_zombie_state_cleanup) {
 
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb);
 
+    uint64_t tcb_id = tcb->id;
     tcb->cleanup();
     Scheduler::remove_task(*tcb);
     delete tcb;
 
-    JARVIS_ASSERT(Scheduler::find_task(tcb->id) == nullptr);
+    JARVIS_ASSERT(Scheduler::find_task(tcb_id) == nullptr);
     JARVIS_TEST_PASS();
 }
 
