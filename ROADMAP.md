@@ -139,7 +139,7 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
 ### 0.2.24 — Cross-Architecture Hardening
 
 - [x] **Architecture test suites** — aarch64 (17 tests, class `arm64`) and riscv64 (18 tests, class `risc64`) covering page tables, context switch, interrupts, timer, FPU, PCI, RTC, boot CSRs
-- [ ] **Cross-arch atomics** — replace `__sync_*` builtins with `std::atomic` / `std::atomic_ref` using explicit memory_order across all three ISAs
+- [ ] **Cross-arch atomics** — replace `__sync_*` builtins with `kernel::atomic<T>` / `kernel::atomic<&T>` using explicit memory_order across all three ISAs
 - [ ] **Boot flow unification** — generalize `higherhalf_entry()` to accept both multiboot (x86_64) and device tree (aarch64, riscv64) boot info
 - [ ] **UART driver abstraction** — `arch/hal/serial.hpp` defines `uart_putc()`/`uart_getc()`, `Logger` uses it uniformly
 - [ ] **Renode CI** — `make renode-test ARCH=aarch64` and `ARCH=riscv64` as CI gate
