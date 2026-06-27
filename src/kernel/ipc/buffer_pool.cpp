@@ -31,12 +31,33 @@ int32_t BufferPool::free_head_ = LIST_EMPTY;
 uint32_t BufferPool::next_cookie_ = 1;
 
 static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
+    constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+
+#if defined(CONFIG_ARCH_RISCV64)
+    constexpr uint64_t L0_SHIFT = 30;
+    constexpr uint64_t L1_SHIFT = 21;
+    constexpr uint64_t L2_SHIFT = 12;
+    constexpr uint64_t PAGE_READ  = 1ULL << 1;
+    constexpr uint64_t PAGE_WRITE = 1ULL << 2;
+    constexpr uint64_t PAGE_EXEC  = 1ULL << 3;
+    constexpr uint64_t RWX = PAGE_READ | PAGE_WRITE | PAGE_EXEC;
+
+    auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
+        pml4_phys & ~0xFFFULL));
+    size_t l0_idx = (virt_addr >> L0_SHIFT) & 0x1FF;
+    if (!(l0[l0_idx] & PAGE_PRESENT)) return;
+    auto* l1 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (l0[l0_idx] & ~0xFFFULL));
+    size_t l1_idx = (virt_addr >> L1_SHIFT) & 0x1FF;
+    if (!(l1[l1_idx] & PAGE_PRESENT)) return;
+    if (l1[l1_idx] & RWX) { l1[l1_idx] = 0; return; } // 2MB block
+    auto* l2 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (l1[l1_idx] & ~0xFFFULL));
+    size_t l2_idx = (virt_addr >> L2_SHIFT) & 0x1FF;
+    l2[l2_idx] = 0;
+#else
     constexpr uint64_t PML4_SHIFT = 39;
     constexpr uint64_t PDPT_SHIFT = 30;
     constexpr uint64_t PD_SHIFT = 21;
     constexpr uint64_t PT_SHIFT = 12;
-    constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
-    constexpr uint64_t PAGE_TABLE = 1ULL << 1;
 
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         pml4_phys & ~0xFFFULL));
@@ -53,6 +74,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
         ] & ~0xFFFULL));
     if (pd[pd_idx] & PAGE_PRESENT) {
 #if defined(CONFIG_ARCH_AARCH64)
+        constexpr uint64_t PAGE_TABLE = 1ULL << 1;
         if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
 #else
         if (pd[pd_idx] & (1ULL << 7))
@@ -62,6 +84,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
             ] & ~0xFFFULL));
         pt[pt_idx] = 0;
     }
+#endif
 }
 
 static void list_insert(TaskControlBlock& task, int32_t idx) {
