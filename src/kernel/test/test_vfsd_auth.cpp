@@ -31,7 +31,7 @@
 
 using namespace kernel;
 
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 
 JARVIS_TEST(vfsd_self_authorization) {
     auto* vfsd_task = TaskControlBlock::create_user([]() {

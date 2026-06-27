@@ -66,12 +66,4 @@ void register_block_device_tests() {
     kernel::Logger::info("Skipped: register_block_device_tests (not supported on this arch)");
 }
 
-void register_vfsd_authorization_tests() {
-    kernel::Logger::info("Skipped: register_vfsd_authorization_tests (not supported on this arch)");
-}
-
-void register_buffer_pool_tests() {
-    kernel::Logger::info("Skipped: register_buffer_pool_tests (not supported on this arch)");
-}
-
 #endif // !defined(CONFIG_ARCH_X86_64)

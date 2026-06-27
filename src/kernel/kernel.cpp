@@ -124,6 +124,10 @@ extern char kernel_virt_end[];
 extern "C" uint8_t _binary_initrd_cpio_start[];
 extern "C" uint8_t _binary_initrd_cpio_end[];
 
+#if defined(CONFIG_ARCH_AARCH64)
+extern "C" void* g_dtb_ptr = nullptr;
+#endif
+
 #if defined(CONFIG_ARCH_X86_64)
 static void init_pic() {
     outb(arch::PIC1_CMD, 0x11);
@@ -146,7 +150,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     extern const uint64_t kernel_stack_top;
     asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack_top));
 #elif defined(CONFIG_ARCH_AARCH64)
-    (void)magic;
+    g_dtb_ptr = reinterpret_cast<void*>(magic);
     (void)mb_info;
     arch::fp_enable();
 #elif defined(CONFIG_ARCH_RISCV64)

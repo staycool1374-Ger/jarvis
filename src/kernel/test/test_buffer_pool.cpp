@@ -39,7 +39,7 @@ using namespace kernel;
 // Tasks are not added to the scheduler (just created and cleaned up).
 // -------------------------------------------------------------------
 
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 
 JARVIS_TEST(buffer_pool_basic_alloc_free) {
     auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);

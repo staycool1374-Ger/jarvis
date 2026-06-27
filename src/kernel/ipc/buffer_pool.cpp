@@ -36,6 +36,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t PD_SHIFT = 21;
     constexpr uint64_t PT_SHIFT = 12;
     constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+    constexpr uint64_t PAGE_TABLE = 1ULL << 1;
 
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         pml4_phys & ~0xFFFULL));
@@ -51,7 +52,12 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx
         ] & ~0xFFFULL));
     if (pd[pd_idx] & PAGE_PRESENT) {
-        if (pd[pd_idx] & (1ULL << 7)) { pd[pd_idx] = 0; return; } // huge page
+#if defined(CONFIG_ARCH_AARCH64)
+        if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
+#else
+        if (pd[pd_idx] & (1ULL << 7))
+#endif
+        { pd[pd_idx] = 0; return; } // huge page
         auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pd[pd_idx
             ] & ~0xFFFULL));
         pt[pt_idx] = 0;

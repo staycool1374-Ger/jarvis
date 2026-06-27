@@ -151,7 +151,7 @@ JARVIS_TEST(elf_validate_header_bad_entry) {
     JARVIS_TEST_PASS();
 }
 
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* phdr, uint8_t* data) {
     hdr->ident[0] = 0x7F;
     hdr->ident[1] = 'E';
@@ -198,7 +198,7 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
 // Input: ELF with W^X violating segment (both writable and executable)
 // Expect: elf::load returns nullptr
 // Depends: test, elf
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 JARVIS_TEST(elf_load_invalid_segment) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -221,7 +221,7 @@ JARVIS_TEST(elf_load_invalid_segment) {
 // Expect: JARVIS_ASSERT checks tcb non-null, /dev/tty resolves, and fd_table
 // entries 0-2 exist, are used, and point to the tty vnode
 // Depends: test, elf, vfs
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 JARVIS_TEST(elf_load_sets_std_fds) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -254,7 +254,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 // Expect: JARVIS_ASSERT checks tcb->user_stack_ non-zero and
 // tcb->user_stack_size_ equals mem::STACK_SIZE
 // Depends: test, elf
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 JARVIS_TEST(elf_load_creates_user_stack) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -272,7 +272,7 @@ JARVIS_TEST(elf_load_creates_user_stack) {
 }
 #endif
 
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
 JARVIS_TEST(elf_load_from_hhdm_buffer) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -304,7 +304,7 @@ void register_elf_tests() {
     JARVIS_REGISTER_TEST(elf_validate_header_bad_machine);
     JARVIS_REGISTER_TEST(elf_validate_header_excessive_phnum);
     JARVIS_REGISTER_TEST(elf_validate_header_bad_entry);
-#if defined(CONFIG_ARCH_X86_64)
+#if !defined(CONFIG_ARCH_RISCV64)
     JARVIS_REGISTER_TEST(elf_load_invalid_segment);
     JARVIS_REGISTER_TEST(elf_load_sets_std_fds);
     JARVIS_REGISTER_TEST(elf_load_creates_user_stack);
