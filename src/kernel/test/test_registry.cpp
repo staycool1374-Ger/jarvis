@@ -120,6 +120,7 @@ void register_irqguard_audit_tests();
 void register_memory_safety_tests();
 void register_sporadic_server_tests();
 void register_aarch64_tests();
+void register_riscv64_tests();
 
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
@@ -237,6 +238,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_memory_safety_tests();
         register_sporadic_server_tests();
         register_aarch64_tests();
+        register_riscv64_tests();
     }},
 
     // -- individual classes --
@@ -310,10 +312,15 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_hal_tests();
         register_arch_structure_tests();
         register_aarch64_tests();
+        register_riscv64_tests();
     }},
 
     {"arm64", []() {
         register_aarch64_tests();
+    }},
+
+    {"risc64", []() {
+        register_riscv64_tests();
     }},
 
     {"device", []() {
