@@ -127,3 +127,22 @@ If the branch does not match the intended role, do not proceed.
 - **Files guarded for x86_64 only**: `ahci.cpp`, `virtio_blk.cpp`, `virtio_net.cpp`, `test_pci.cpp`, `test_virtio.cpp`, `test_gdt.cpp`, `test_pic.cpp`, `test_block_device.cpp`
 - **x86 code guarded in shared files**: `kernel.cpp` (AhCI/Virtio probe), `shell.cpp` (cmd_lspci), `procfs.cpp` (pci_print_tree), `bootparams.cpp` (parse_multiboot_cmdline), `framebuffer.cpp` (init from multiboot)
 - **NASM exclusion**: `syscall_entry.asm` excluded via `mk/rules.mk` `filter-out` for non-x86
+
+## Session Summary (risc-dev branch current)
+
+### Completed This Session
+- **Cross-arch test guard fix (riscv64 GCC 14 `-Werror=class-memaccess`)**: `pipe.cpp` — placement `new` instead of `memset`; `semaphore.cpp` — `lock_.reset()` instead of `memset`; `spinlock.hpp` — added `reset()`. Fixed `resource_tracker.cpp` while-loop braces.
+- **test_buffer_pool.cpp**: Wrapped entire file in `#if defined(CONFIG_ARCH_X86_64)` (23 tests use `create_user`). Added stubs in both `test_stubs.cpp`.
+- **test_vfsd_auth.cpp**: Wrapped entire file in `#if defined(CONFIG_ARCH_X86_64)` (5 tests use `create_user`). Added stubs in both `test_stubs.cpp`.
+- **test_elf.cpp**: Guarded `elf::load` tests (`build_minimal_elf` + 4 tests) with `#if CONFIG_ARCH_X86_64`.
+- **test_ipc_robustness.cpp**: Guarded `IpcBufHandleTransferRoundtrip` with `#if CONFIG_ARCH_X86_64`.
+- **test_memory.cpp**: Guarded `vmm_huge_page_split_regression`, `vmm_hhdm_access_consistency`, `<128MiB` asserts.
+- **test_pmm.cpp**: Guarded `<128MiB` assert.
+- **Makefile**: Added `KERNEL_RISCV_BIN` build step (`objcopy -O binary`) and QEMU flag for raw binary (QEMU 11 fw_dynamic bug).
+- **Commit `ff6b8fb`**: 13 files, 75 insertions, 63 deletions. Both x86_64 and riscv64 build cleanly.
+- **`make test-all-debug` status**: 675/675 PASS (x86_64); riscv64 build succeeds, boots via QEMU, but remaining ~460 user-mode tests crash/leak (VMM user page management incomplete on riscv64).
+
+### Remaining (User-mode tests on riscv64)
+- riscv64 VMM user page management incomplete: `create_user` allocates page tables not freed on `cleanup()`; buffer pool map/unmap fails; ELF load crashes with store page faults.
+- aarch64 `make test-all-debug` not yet attempted.
+
