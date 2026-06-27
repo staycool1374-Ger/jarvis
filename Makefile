@@ -52,14 +52,20 @@ else
 endif
 
 # ------------------------------------------------------------------------------
-# Toolchain Setup — conditional per ARCH
+# Toolchain Setup — Host- und Architektur-unabhängig
 #
-# CXXFLAGS / CCFLAGS here are the *base* flags.  Build-type specific flags
-# (e.g. -Og -DCONFIG_DEBUG for debug, -O2 for release) are added via
-# target-specific variable overrides on the 'debug' / 'release' targets.
+# Erkennung des Host-Betriebssystems (Darwin / Linux) und Auswahl des
+# passenden Cross-Compiler-Triplets, sodass bare-metal GCC/ld/objcopy
+# sowohl auf macOS (Homebrew) als auch auf Linux (Distro-Pakete) korrekt
+# gefunden werden.
+#
+# CXXFLAGS / CCFLAGS hier sind die *Basis*-Flags.  Bauartspezifische
+# Flags (z.B. -Og -DCONFIG_DEBUG für Debug, -O2 für Release) werden
+# über target-specific variable overrides auf den 'debug'/'release'-
+# Targets hinzugefügt.
 # ------------------------------------------------------------------------------
 
-# --- Common CXXFLAGS (shared across architectures) ---
+# --- Gemeinsame CXXFLAGS (architekturunabhängig) ---
 CXXFLAGS_COMMON := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
                    -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
                    -fno-threadsafe-statics \
@@ -68,92 +74,100 @@ CXXFLAGS_COMMON := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
                    -DCONFIG_ARCH_$(ARCH_UPPER) \
                    -ffunction-sections -fdata-sections
 
+# 1. Cross-Compiler-Prefixe basierend auf dem Host-OS
+ifeq ($(UNAME_S),Darwin)
+    X86_64_TRIPLET  ?= x86_64-elf-
+    AARCH64_TRIPLET ?= aarch64-elf-
+    RISCV64_TRIPLET ?= riscv64-elf-
+    export PATH := /opt/homebrew/bin:$(PATH)
+else
+    X86_64_TRIPLET  ?= x86_64-linux-gnu-
+    AARCH64_TRIPLET ?= aarch64-linux-gnu-
+    RISCV64_TRIPLET ?= riscv64-linux-gnu-
+endif
+
+# 2. Architektur-spezifische Werkzeuge und Flags
 ifeq ($(ARCH),x86_64)
 
-CXX      := g++
-CXXFLAGS := $(CXXFLAGS_COMMON) -target x86_64-elf -m64 -mno-red-zone \
-            -mgeneral-regs-only -mcmodel=large
+    CC          := $(X86_64_TRIPLET)gcc
+    CXX         := $(X86_64_TRIPLET)g++
+    LD          := $(X86_64_TRIPLET)ld
+    AR          := $(X86_64_TRIPLET)ar
+    OBJCOPY     := $(X86_64_TRIPLET)objcopy
 
-CC       := x86_64-elf-gcc
-CCFLAGS  := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections
+    CXXFLAGS    := $(CXXFLAGS_COMMON) -m64 -mno-red-zone -mgeneral-regs-only -mcmodel=large
+    CCFLAGS     := -m64 -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+                   -ffunction-sections -fdata-sections
 
-AS       := nasm
-ASFLAGS  := -f elf64
+    AS          := nasm
+    ASFLAGS     := -f elf64
 
-LD       := x86_64-elf-ld
-AR       := x86_64-elf-ar
-OBJCOPY  := x86_64-elf-objcopy
-OBJCOPY_FMT := elf64-x86-64
-OBJCOPY_ARCH := i386
-LDFLAGS  := -m elf_x86_64 -nostdlib -no-pie -T linker_$(ARCH).ld -z max-page-size=0x1000 \
-            -Map=build/kernel.map
+    OBJCOPY_FMT  := elf64-x86-64
+    OBJCOPY_ARCH := i386
+    LDFLAGS     := -m elf_x86_64 -nostdlib -no-pie -T linker_$(ARCH).ld \
+                   -z max-page-size=0x1000 -Map=build/kernel.map
 
-GCOV_LIB_DIR := $(dir $(shell x86_64-elf-gcc -print-file-name=libgcov.a 2>/dev/null))
-
-QEMU_SYSTEM    := qemu-system-x86_64
-QEMU_ARCH_FLAGS := -boot order=d \
-                   -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
-QEMU_DEBUG_EXIT  := -device isa-debug-exit
-OBJDUMP_DIS_FLAGS := -M intel
+    GCOV_LIB_DIR    := $(dir $(shell $(CC) -print-file-name=libgcov.a 2>/dev/null))
+    QEMU_SYSTEM     := qemu-system-x86_64
+    QEMU_ARCH_FLAGS := -boot order=d \
+                       -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)
+    QEMU_DEBUG_EXIT := -device isa-debug-exit
+    OBJDUMP_DIS_FLAGS := -M intel
 
 else ifeq ($(ARCH),aarch64)
 
-CXX      := g++
-CXXFLAGS := $(CXXFLAGS_COMMON) -target aarch64-elf -march=armv8-a
+    CC          := $(AARCH64_TRIPLET)gcc
+    CXX         := $(AARCH64_TRIPLET)g++
+    LD          := $(AARCH64_TRIPLET)ld
+    AR          := $(AARCH64_TRIPLET)ar
+    OBJCOPY     := $(AARCH64_TRIPLET)objcopy
 
-CC       := aarch64-elf-gcc
-CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections \
-            -I src -I src/lib
+    CXXFLAGS    := $(CXXFLAGS_COMMON) -march=armv8-a
+    CCFLAGS     := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+                   -ffunction-sections -fdata-sections \
+                   -I src -I src/lib
 
-AS       := aarch64-elf-as
-ASFLAGS  :=
+    AS          := $(AARCH64_TRIPLET)as
+    ASFLAGS     :=
 
-LD       := aarch64-elf-ld
-AR       := aarch64-elf-ar
-OBJCOPY  := aarch64-elf-objcopy
-OBJCOPY_FMT := elf64-littleaarch64
-OBJCOPY_ARCH := aarch64
-LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+    OBJCOPY_FMT  := elf64-littleaarch64
+    OBJCOPY_ARCH := aarch64
+    LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
 
-QEMU_SYSTEM    := qemu-system-aarch64
-QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 -kernel $(KERNEL_DEBUG)
-QEMU_DEBUG_EXIT  :=
-OBJDUMP_DIS_FLAGS :=
+    QEMU_SYSTEM     := qemu-system-aarch64
+    QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 -kernel $(KERNEL_DEBUG)
+    QEMU_DEBUG_EXIT  :=
+    OBJDUMP_DIS_FLAGS :=
 
 else ifeq ($(ARCH),riscv64)
 
-CXX      := g++
-CXXFLAGS := $(CXXFLAGS_COMMON) -target riscv64-elf -march=rv64imafdc -mabi=lp64d
+    CC          := $(RISCV64_TRIPLET)gcc
+    CXX         := $(RISCV64_TRIPLET)g++
+    LD          := $(RISCV64_TRIPLET)ld
+    AR          := $(RISCV64_TRIPLET)ar
+    OBJCOPY     := $(RISCV64_TRIPLET)objcopy
 
-CXX      := riscv64-elf-g++
-CXXFLAGS := $(CXXFLAGS_COMMON) -march=rv64imafdc -mabi=lp64d -mcmodel=medany
+    CXXFLAGS    := $(CXXFLAGS_COMMON) -march=rv64imafdc -mabi=lp64d -mcmodel=medany
+    CCFLAGS     := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
+                   -ffunction-sections -fdata-sections \
+                   -DCONFIG_ARCH_RISCV64 \
+                   -mcmodel=medany
 
-CC       := riscv64-elf-gcc
-CCFLAGS  := -static -nostdlib -ffreestanding -O2 -pipe -MMD -MP \
-            -ffunction-sections -fdata-sections \
-            -DCONFIG_ARCH_RISCV64 \
-            -mcmodel=medany
+    AS          := $(RISCV64_TRIPLET)as
+    ASFLAGS     :=
 
-AS       := riscv64-elf-as
-ASFLAGS  :=
+    OBJCOPY_FMT  := elf64-littleriscv
+    OBJCOPY_ARCH := riscv
+    LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+    LD_LIBS      :=
 
-LD       := riscv64-elf-ld
-AR       := riscv64-elf-ar
-OBJCOPY  := riscv64-elf-objcopy
-OBJCOPY_FMT := elf64-littleriscv
-OBJCOPY_ARCH := riscv
-LDFLAGS  := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
-LD_LIBS  :=
-
-QEMU_SYSTEM    := qemu-system-riscv64
-QEMU_ARCH_FLAGS := -machine virt -bios default
-OBJDUMP_DIS_FLAGS :=
+    QEMU_SYSTEM     := qemu-system-riscv64
+    QEMU_ARCH_FLAGS := -machine virt -bios default
+    OBJDUMP_DIS_FLAGS :=
 
 endif
 
-# --- Derived toolchain aliases ---
+# --- Abgeleitete Toolchain-Aliase ---
 OBJDUMP := $(patsubst %-objcopy,%-objdump,$(OBJCOPY))
 GDB     := $(patsubst %-objcopy,%-gdb,$(OBJCOPY))
 
