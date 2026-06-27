@@ -21,6 +21,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
 namespace sync {
@@ -32,11 +33,22 @@ public:
     EventGroup() : bits_(0), wait_count_(0) {}
     /// @brief Initialize the event group to zero bits.
     void init();
+    /// @brief Initialize the event group to zero bits (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    errors::SyncError init_err();
 
     /// @brief Atomically set bits, waking satisfied waiters.
     void set_bits(uint64_t bits);
+    /// @brief Atomically set bits, waking satisfied waiters (error-returning overload).
+    /// @return SYNC_ERR_OK on success.
+    errors::SyncError set_bits_err(uint64_t bits);
+
     /// @brief Atomically clear bits.
     void clear_bits(uint64_t bits);
+    /// @brief Atomically clear bits (error-returning overload).
+    /// @return SYNC_ERR_OK on success.
+    errors::SyncError clear_bits_err(uint64_t bits);
+
     uint64_t get_bits() const { return bits_; }
 
     /// @brief Block until any of the requested bits are set.
@@ -44,9 +56,20 @@ public:
     /// @param clear_on_exit If true, clear matched bits before returning.
     /// @return The bits that were set when the wait completed.
     uint64_t wait_bits(uint64_t bits, bool clear_on_exit = false);
+    /// @brief Block until any of the requested bits are set (error-returning overload).
+    /// @param bits Bitmask of bits to wait for.
+    /// @param clear_on_exit If true, clear matched bits before returning.
+    /// @param[out] out_bits The bits that were set when the wait completed.
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    errors::SyncError wait_bits_err(uint64_t bits, bool clear_on_exit, uint64_t* out_bits);
+
     /// @brief Check if bits are set without blocking.
     /// @return true if any of the requested bits are currently set.
     bool try_wait_bits(uint64_t bits);
+    /// @brief Check if bits are set without blocking (error-returning overload).
+    /// @param[out] out_result true if bits were set, false otherwise.
+    /// @return SYNC_ERR_OK on success.
+    errors::SyncError try_wait_bits_err(uint64_t bits, bool* out_result);
 
 private:
     SpinLock lock_;

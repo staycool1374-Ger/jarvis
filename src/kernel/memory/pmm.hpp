@@ -23,6 +23,7 @@
 
 #include <types.hpp>
 #include <constants.hpp>
+#include <kernel/memory/pmm_errors.hpp>
 
 namespace kernel {
 
@@ -37,23 +38,63 @@ public:
     /// @param kernel_end End of kernel image in physical memory.
     static void init(uint64_t mem_size, uint64_t kernel_start,
         uint64_t kernel_end);
+    /// @brief Initialize with error code.
+    /// @return PmmError code.
+    static errors::PmmError init_err(uint64_t mem_size, uint64_t kernel_start,
+        uint64_t kernel_end);
 
     /// @brief Allocates a single 4 KiB page (KERNEL ownership).
     static uint64_t alloc_page();
+    /// @brief Allocates a single 4 KiB page (KERNEL ownership) with error code.
+    /// @param[out] out_phys_addr Physical address of allocated page.
+    /// @return PmmError code.
+    static errors::PmmError alloc_page_err(uint64_t& out_phys_addr);
+
     /// @brief Allocates a contiguous block of pages (KERNEL ownership).
     static uint64_t alloc_contiguous(size_t count);
+    /// @brief Allocates a contiguous block of pages (KERNEL ownership) with error code.
+    /// @param count Number of contiguous pages to allocate.
+    /// @param[out] out_phys_addr Physical address of first page.
+    /// @return PmmError code.
+    static errors::PmmError alloc_contiguous_err(size_t count, uint64_t& out_phys_addr);
+
     /// @brief Allocates a single 4 KiB page (USER ownership).
     static uint64_t alloc_user_page();
+    /// @brief Allocates a single 4 KiB page (USER ownership) with error code.
+    /// @param[out] out_phys_addr Physical address of allocated page.
+    /// @return PmmError code.
+    static errors::PmmError alloc_user_page_err(uint64_t& out_phys_addr);
+
     /// @brief Allocates contiguous pages (USER ownership).
     static uint64_t alloc_user_contiguous(size_t count);
+    /// @brief Allocates contiguous pages (USER ownership) with error code.
+    /// @param count Number of contiguous pages to allocate.
+    /// @param[out] out_phys_addr Physical address of first page.
+    /// @return PmmError code.
+    static errors::PmmError alloc_user_contiguous_err(size_t count, uint64_t& out_phys_addr);
+
     /// @brief Allocates a single 4 KiB page for page tables (KERNEL
     /// ownership, from reserved low-memory pool).
     static uint64_t alloc_page_table();
+    /// @brief Allocates a single 4 KiB page for page tables with error code.
+    /// @param[out] out_phys_addr Physical address of allocated page table page.
+    /// @return PmmError code.
+    static errors::PmmError alloc_page_table_err(uint64_t& out_phys_addr);
+
     /// @brief Frees a page regardless of ownership.
     static void free_page(uint64_t phys_addr);
+    /// @brief Frees a page with error code.
+    /// @param phys_addr Physical address to free.
+    /// @return PmmError code.
+    static errors::PmmError free_page_err(uint64_t phys_addr);
 
     /// @brief Returns true if the page was allocated as USER ownership.
     static bool is_user_page(uint64_t phys_addr);
+    /// @brief Returns true if the page was allocated as USER ownership with error code.
+    /// @param phys_addr Physical address to check.
+    /// @param[out] out_is_user Output: true if user page.
+    /// @return PmmError code.
+    static errors::PmmError is_user_page_err(uint64_t phys_addr, bool& out_is_user);
 
     static uint64_t free_memory() noexcept {
         return free_pages_ * arch::PAGE_SIZE;

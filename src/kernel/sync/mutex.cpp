@@ -30,6 +30,17 @@ void Mutex::init() {
     wait_count_ = 0;
 }
 
+errors::SyncError Mutex::init_err() {
+    if (owner_ != nullptr || lock_count_ != 0 || wait_count_ != 0) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    owner_ = nullptr;
+    holder_priority_ = 0;
+    lock_count_ = 0;
+    wait_count_ = 0;
+    return errors::SYNC_ERR_OK;
+}
+
 bool Mutex::add_waiter(TaskControlBlock& task) {
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_++] = &task;
@@ -92,6 +103,39 @@ void Mutex::lock() {
     Scheduler::reschedule();
 }
 
+errors::SyncError Mutex::lock_err() {
+    lock_.lock();
+    auto* task = Scheduler::current_task();
+    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
+
+    if (owner_ == task) {
+        ++lock_count_;
+        lock_.unlock();
+        return errors::SYNC_ERR_OK;
+    }
+
+    if (owner_ == nullptr) {
+        owner_ = task;
+        lock_count_ = 1;
+        lock_.unlock();
+        return errors::SYNC_ERR_OK;
+    }
+
+    inherit_priority(*task);
+
+    bool added = add_waiter(*task);
+    if (!added) {
+        lock_.unlock();
+        return errors::SYNC_ERR_MAX_WAITERS;
+    }
+
+    lock_.unlock();
+
+    task->state = TaskState::BLOCKED;
+    Scheduler::reschedule();
+    return errors::SYNC_ERR_OK;
+}
+
 bool Mutex::try_lock() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -112,6 +156,28 @@ bool Mutex::try_lock() {
 
     lock_.unlock();
     return false;
+}
+
+errors::SyncError Mutex::try_lock_err() {
+    lock_.lock();
+    auto* task = Scheduler::current_task();
+    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
+
+    if (owner_ == task) {
+        ++lock_count_;
+        lock_.unlock();
+        return errors::SYNC_ERR_OK;
+    }
+
+    if (owner_ == nullptr) {
+        owner_ = task;
+        lock_count_ = 1;
+        lock_.unlock();
+        return errors::SYNC_ERR_OK;
+    }
+
+    lock_.unlock();
+    return errors::SYNC_ERR_NOT_OWNER;
 }
 
 void Mutex::unlock() {
@@ -135,6 +201,32 @@ void Mutex::unlock() {
     }
 
     lock_.unlock();
+}
+
+errors::SyncError Mutex::unlock_err() {
+    lock_.lock();
+    auto* task = Scheduler::current_task();
+    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
+    if (owner_ != task) { lock_.unlock(); return errors::SYNC_ERR_NOT_OWNER; }
+    if (lock_count_ == 0) { lock_.unlock(); return errors::SYNC_ERR_NOT_LOCKED; }
+
+    if (lock_count_ > 1) {
+        --lock_count_;
+        lock_.unlock();
+        return errors::SYNC_ERR_OK;
+    }
+
+    owner_ = nullptr;
+    lock_count_ = 0;
+
+    restore_priority();
+
+    if (wait_count_ > 0) {
+        wake_one();
+    }
+
+    lock_.unlock();
+    return errors::SYNC_ERR_OK;
 }
 
 }

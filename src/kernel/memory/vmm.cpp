@@ -633,3 +633,70 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 }
 
 } // namespace kernel
+
+// --- Error-returning overloads ---
+namespace kernel {
+
+using namespace errors;
+
+VmmError VMM::init_err() {
+    init();
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::map_page_err(uint64_t virt_addr, uint64_t phys_addr, bool user) {
+    if ((virt_addr & 0xFFF) != 0 || (phys_addr & 0xFFF) != 0) {
+        return VMM_ERR_INVALID_ADDR;
+    }
+    map_page(virt_addr, phys_addr, user);
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::unmap_page_err(uint64_t virt_addr) {
+    if ((virt_addr & 0xFFF) != 0) {
+        return VMM_ERR_INVALID_ADDR;
+    }
+    unmap_page(virt_addr);
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::virt_to_phys_err(uint64_t virt_addr, uint64_t& out_phys_addr) {
+    if ((virt_addr & 0xFFF) != 0) {
+        return VMM_ERR_INVALID_ADDR;
+    }
+    out_phys_addr = virt_to_phys(virt_addr);
+    return out_phys_addr != 0 ? VMM_ERR_OK : VMM_ERR_NOT_MAPPED;
+}
+
+VmmError VMM::clone_kernel_pml4_err(uint64_t& out_pml4_phys) {
+    uint64_t phys = clone_kernel_pml4();
+    if (!phys) {
+        return VMM_ERR_PML4_ALLOC;
+    }
+    out_pml4_phys = phys;
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
+                                   bool user, uint64_t pml4_phys) {
+    if ((virt_addr & 0xFFF) != 0 || (phys_addr & 0xFFF) != 0) {
+        return VMM_ERR_INVALID_ADDR;
+    }
+    map_page_in_pml4(virt_addr, phys_addr, user, pml4_phys);
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::free_user_pages_err(uint64_t pml4_phys) {
+    free_user_pages(pml4_phys);
+    return VMM_ERR_OK;
+}
+
+VmmError VMM::virt_to_phys_in_pml4_err(uint64_t virt_addr, uint64_t pml4_phys, uint64_t& out_phys_addr) {
+    if ((virt_addr & 0xFFF) != 0) {
+        return VMM_ERR_INVALID_ADDR;
+    }
+    out_phys_addr = virt_to_phys_in_pml4(virt_addr, pml4_phys);
+    return out_phys_addr != 0 ? VMM_ERR_OK : VMM_ERR_NOT_MAPPED;
+}
+
+} // namespace kernel

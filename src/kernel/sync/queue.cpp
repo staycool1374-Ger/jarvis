@@ -32,6 +32,18 @@ void Queue::init() {
     recv_waiters_count_ = 0;
 }
 
+errors::SyncError Queue::init_err() {
+    if (count_ != 0 || send_waiters_count_ != 0 || recv_waiters_count_ != 0) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    head_ = 0;
+    tail_ = 0;
+    count_ = 0;
+    send_waiters_count_ = 0;
+    recv_waiters_count_ = 0;
+    return errors::SYNC_ERR_OK;
+}
+
 bool Queue::add_send_waiter(TaskControlBlock* task) {
     // Caller must hold lock_
     if (send_waiters_count_ >= MAX_WAITERS) return false;
@@ -94,6 +106,31 @@ bool Queue::send(const uint8_t* data, size_t size) {
     return true;
 }
 
+errors::SyncError Queue::send_err(const uint8_t* data, size_t size, size_t* sent_bytes) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (size > QUEUE_MAX_MSG_SIZE) return errors::SYNC_ERR_MSG_TOO_LARGE;
+
+    auto* task = Scheduler::current_task();
+    if (!task) return errors::SYNC_ERR_NO_TASK;
+
+    while (is_full()) {
+        if (send_waiters_count_ >= MAX_WAITERS) return errors::SYNC_ERR_MAX_WAITERS;
+        send_waiters_[send_waiters_count_++] = task;
+        task->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+    }
+
+    memcpy(msgs_[tail_].data, data, size);
+    msgs_[tail_].size = size;
+    tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
+    ++count_;
+
+    wake_recv_one();
+
+    if (sent_bytes) *sent_bytes = size;
+    return errors::SYNC_ERR_OK;
+}
+
 bool Queue::try_send(const uint8_t* data, size_t size) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (size > QUEUE_MAX_MSG_SIZE || is_full()) return false;
@@ -105,6 +142,22 @@ bool Queue::try_send(const uint8_t* data, size_t size) {
 
     wake_recv_one();
     return true;
+}
+
+errors::SyncError Queue::try_send_err(const uint8_t* data, size_t size, size_t* sent_bytes) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (size > QUEUE_MAX_MSG_SIZE) return errors::SYNC_ERR_MSG_TOO_LARGE;
+    if (is_full()) return errors::SYNC_ERR_QUEUE_FULL;
+
+    memcpy(msgs_[tail_].data, data, size);
+    msgs_[tail_].size = size;
+    tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
+    ++count_;
+
+    wake_recv_one();
+
+    if (sent_bytes) *sent_bytes = size;
+    return errors::SYNC_ERR_OK;
 }
 
 bool Queue::receive(uint8_t* buf, size_t* size) {
@@ -131,6 +184,34 @@ bool Queue::receive(uint8_t* buf, size_t* size) {
     return true;
 }
 
+errors::SyncError Queue::receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    auto* task = Scheduler::current_task();
+    if (!task) return errors::SYNC_ERR_NO_TASK;
+
+    while (is_empty()) {
+        if (recv_waiters_count_ >= MAX_WAITERS) return errors::SYNC_ERR_MAX_WAITERS;
+        recv_waiters_[recv_waiters_count_++] = task;
+        task->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+    }
+
+    size_t copy_size = msgs_[head_].size;
+    if (buf && size) {
+        if (*size < copy_size) copy_size = *size;
+        memcpy(buf, msgs_[head_].data, copy_size);
+        *size = copy_size;
+    }
+
+    head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
+    --count_;
+
+    wake_send_one();
+
+    if (received_bytes) *received_bytes = copy_size;
+    return errors::SYNC_ERR_OK;
+}
+
 bool Queue::try_receive(uint8_t* buf, size_t* size) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (is_empty()) return false;
@@ -147,6 +228,26 @@ bool Queue::try_receive(uint8_t* buf, size_t* size) {
 
     wake_send_one();
     return true;
+}
+
+errors::SyncError Queue::try_receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (is_empty()) return errors::SYNC_ERR_QUEUE_EMPTY;
+
+    size_t copy_size = msgs_[head_].size;
+    if (buf && size) {
+        if (*size < copy_size) copy_size = *size;
+        memcpy(buf, msgs_[head_].data, copy_size);
+        *size = copy_size;
+    }
+
+    head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
+    --count_;
+
+    wake_send_one();
+
+    if (received_bytes) *received_bytes = copy_size;
+    return errors::SYNC_ERR_OK;
 }
 
 }

@@ -262,4 +262,188 @@ bool PMM::owner_test(size_t index) {
     return (owner[index / 8] >> (index % 8)) & 1;
 }
 
+errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
+    uint64_t kernel_end) {
+    total_pages_ = mem_size / PAGE_SIZE;
+    free_pages_ = total_pages_;
+
+    bitmap_size_ = align_up<uint64_t>(total_pages_ / 8, 8_KiB);
+    uint64_t bitmap_phys = align_up<uint64_t>(kernel_end, 8_KiB);
+    uint64_t owner_bitmap_phys = bitmap_phys + bitmap_size_;
+    bitmap_ = arch::HHDM_OFFSET + bitmap_phys;
+    owner_bitmap_ = arch::HHDM_OFFSET + owner_bitmap_phys;
+
+    auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
+    auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
+    for (uint64_t i = 0; i < bitmap_size_; ++i) {
+        bitmap[i] = 0;
+        owner[i] = 0;
+    }
+
+    uint64_t kernel_start_page = kernel_start / PAGE_SIZE;
+    uint64_t reserved_end = bitmap_phys + bitmap_size_ + bitmap_size_;
+    uint64_t reserved_end_page = (reserved_end + PAGE_SIZE - 1) / PAGE_SIZE;
+
+    for (uint64_t i = 0; i < kernel_start_page; ++i) {
+        bitmap_set(i);
+        owner_set_kernel(i);
+        --free_pages_;
+    }
+
+    for (uint64_t i = kernel_start_page; i < reserved_end_page; ++i) {
+        bitmap_set(i);
+        owner_set_kernel(i);
+        --free_pages_;
+    }
+
+    uint64_t pool_start_page = reserved_end_page;
+    uint64_t pool_size_pages = 4096;
+    if (pool_start_page + pool_size_pages < total_pages_) {
+        page_table_pool_start_ = pool_start_page * PAGE_SIZE;
+        page_table_pool_end_ = page_table_pool_start_ +
+                               pool_size_pages * PAGE_SIZE;
+        for (uint64_t i = pool_start_page;
+             i < pool_start_page + pool_size_pages; ++i) {
+            bitmap_set(i);
+            owner_set_kernel(i);
+            --free_pages_;
+        }
+    }
+
+    if (total_pages_ > 16) {
+        for (uint64_t i = total_pages_ - 1; i >= total_pages_ - 16; --i) {
+            if (!bitmap_test(i)) {
+                bitmap_set(i);
+                owner_set_kernel(i);
+                --free_pages_;
+            }
+        }
+    }
+
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::alloc_page_err(uint64_t& out_phys_addr) {
+    uint64_t result = try_alloc_kernel(1);
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+        out_phys_addr = result;
+        return errors::PMM_ERR_OK;
+    }
+    if (oom_handler_ && oom_handler_()) {
+        result = try_alloc_kernel(1);
+    }
+    if (!result) {
+        return errors::PMM_ERR_OOM;
+    }
+    kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+    out_phys_addr = result;
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::alloc_contiguous_err(size_t count, uint64_t& out_phys_addr) {
+    if (count == 0 || count > total_pages_) {
+        return errors::PMM_ERR_INVALID;
+    }
+    uint64_t result = try_alloc_kernel(count);
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+        out_phys_addr = result;
+        return errors::PMM_ERR_OK;
+    }
+    if (oom_handler_ && oom_handler_()) {
+        result = try_alloc_kernel(count);
+    }
+    if (!result) {
+        return errors::PMM_ERR_OOM;
+    }
+    kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+    out_phys_addr = result;
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::alloc_user_page_err(uint64_t& out_phys_addr) {
+    uint64_t result = try_alloc_user(1);
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+        out_phys_addr = result;
+        return errors::PMM_ERR_OK;
+    }
+    if (oom_handler_ && oom_handler_()) {
+        result = try_alloc_user(1);
+    }
+    if (!result) {
+        return errors::PMM_ERR_USER_OOM;
+    }
+    kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+    out_phys_addr = result;
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::alloc_user_contiguous_err(size_t count, uint64_t& out_phys_addr) {
+    if (count == 0 || count > total_pages_) {
+        return errors::PMM_ERR_INVALID;
+    }
+    uint64_t result = try_alloc_user(count);
+    if (result) {
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+        out_phys_addr = result;
+        return errors::PMM_ERR_OK;
+    }
+    if (oom_handler_ && oom_handler_()) {
+        result = try_alloc_user(count);
+    }
+    if (!result) {
+        return errors::PMM_ERR_USER_OOM;
+    }
+    kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+    out_phys_addr = result;
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::alloc_page_table_err(uint64_t& out_phys_addr) {
+    if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0) {
+        return alloc_page_err(out_phys_addr);
+    }
+    uint64_t pool_start_page = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t pool_end_page = page_table_pool_end_ / PAGE_SIZE;
+    for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
+        if (!bitmap_test(i)) {
+            bitmap_set(i);
+            owner_set_kernel(i);
+            --free_pages_;
+            kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+            out_phys_addr = i * PAGE_SIZE;
+            return errors::PMM_ERR_OK;
+        }
+    }
+    auto err = alloc_page_err(out_phys_addr);
+    if (err != errors::PMM_ERR_OK) {
+        return errors::PMM_ERR_TABLE_OOM;
+    }
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::free_page_err(uint64_t phys_addr) {
+    uint64_t index = phys_addr / PAGE_SIZE;
+    if (index >= total_pages_) {
+        return errors::PMM_ERR_INVALID;
+    }
+    if (bitmap_test(index)) {
+        bitmap_clear(index);
+        ++free_pages_;
+        kernel::test::ResourceTracker::instance().track_pmm_free(1);
+    }
+    return errors::PMM_ERR_OK;
+}
+
+errors::PmmError PMM::is_user_page_err(uint64_t phys_addr, bool& out_is_user) {
+    uint64_t index = phys_addr / arch::PAGE_SIZE;
+    if (index >= total_pages_) {
+        return errors::PMM_ERR_INVALID;
+    }
+    out_is_user = owner_test(index);
+    return errors::PMM_ERR_OK;
+}
+
 } // namespace kernel

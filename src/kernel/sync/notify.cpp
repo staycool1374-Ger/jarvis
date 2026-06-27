@@ -29,6 +29,16 @@ void Notify::init() {
     initialized_ = true;
 }
 
+errors::SyncError Notify::init_err() {
+    if (initialized_) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    notify_value_ = 0;
+    waiter_ = nullptr;
+    initialized_ = true;
+    return errors::SYNC_ERR_OK;
+}
+
 void Notify::notify(uint64_t value) {
     SpinLockGuard<SpinLock> guard(lock_);
     notify_value_ = value;
@@ -37,6 +47,18 @@ void Notify::notify(uint64_t value) {
             waiter_->state = TaskState::READY;
         waiter_ = nullptr;
     }
+}
+
+errors::SyncError Notify::notify_err(uint64_t value) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    notify_value_ = value;
+    if (waiter_) {
+        if (waiter_->state != TaskState::TERMINATED)
+            waiter_->state = TaskState::READY;
+        waiter_ = nullptr;
+        return errors::SYNC_ERR_OK;
+    }
+    return errors::SYNC_ERR_NO_WAITER;
 }
 
 uint64_t Notify::wait() {
@@ -53,6 +75,23 @@ uint64_t Notify::wait() {
     return notify_value_;
 }
 
+errors::SyncError Notify::wait_err(uint64_t* out_value) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    auto* task = Scheduler::current_task();
+    if (!task) return errors::SYNC_ERR_NO_TASK;
+
+    if (waiter_ != nullptr) {
+        return errors::SYNC_ERR_ALREADY_WAITING;
+    }
+
+    waiter_ = task;
+    task->state = TaskState::BLOCKED;
+    Scheduler::reschedule();
+
+    if (out_value) *out_value = notify_value_;
+    return errors::SYNC_ERR_OK;
+}
+
 bool Notify::try_wait(uint64_t* value) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_ == nullptr && value && notify_value_ != 0) {
@@ -61,6 +100,16 @@ bool Notify::try_wait(uint64_t* value) {
         return true;
     }
     return false;
+}
+
+errors::SyncError Notify::try_wait_err(uint64_t* value) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (waiter_ == nullptr && value && notify_value_ != 0) {
+        *value = notify_value_;
+        notify_value_ = 0;
+        return errors::SYNC_ERR_OK;
+    }
+    return errors::SYNC_ERR_BUFFER_EMPTY;
 }
 
 }

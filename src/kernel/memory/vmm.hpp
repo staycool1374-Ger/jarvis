@@ -23,6 +23,7 @@
 
 #include <types.hpp>
 #include <constants.hpp>
+#include <kernel/memory/vmm_errors.hpp>
 
 namespace kernel {
 
@@ -32,6 +33,9 @@ class VMM {
 public:
     /// @brief Initialises the VMM and sets up the kernel page tables.
     static void init();
+    /// @brief Initialises the VMM with error code.
+    /// @return VmmError code.
+    static errors::VmmError init_err();
 
     /// @brief Maps a virtual page to a physical page.
     /// @param virt_addr Virtual address (page-aligned).
@@ -39,13 +43,31 @@ public:
     /// @param user      If true, sets the user-accessible flag.
     static void map_page(uint64_t virt_addr, uint64_t phys_addr,
         bool user = false);
+    /// @brief Maps a virtual page to a physical page with error code.
+    /// @param virt_addr Virtual address (page-aligned).
+    /// @param phys_addr Physical address (page-aligned).
+    /// @param user      If true, sets the user-accessible flag.
+    /// @return VmmError code.
+    static errors::VmmError map_page_err(uint64_t virt_addr, uint64_t phys_addr,
+        bool user = false);
+
     /// @brief Unmaps a virtual page.
     /// @param virt_addr Virtual address to unmap.
     static void unmap_page(uint64_t virt_addr);
+    /// @brief Unmaps a virtual page with error code.
+    /// @param virt_addr Virtual address to unmap.
+    /// @return VmmError code.
+    static errors::VmmError unmap_page_err(uint64_t virt_addr);
+
     /// @brief Translates a virtual address to its physical address.
     /// @param virt_addr Virtual address.
     /// @return Physical address, or 0 if not mapped.
     static uint64_t virt_to_phys(uint64_t virt_addr);
+    /// @brief Translates a virtual address to its physical address with error code.
+    /// @param virt_addr Virtual address.
+    /// @param[out] out_phys_addr Physical address on success.
+    /// @return VmmError code.
+    static errors::VmmError virt_to_phys_err(uint64_t virt_addr, uint64_t& out_phys_addr);
 
     /// @brief Returns the physical address of the current PML4 table.
     /// @return Physical address of PML4.
@@ -56,6 +78,10 @@ public:
     /// NOT for fork (which needs parent user entries).
     /// @return Physical address of the new PML4, or 0 on failure.
     static uint64_t clone_kernel_pml4();
+    /// @brief Creates a fresh PML4 with error code.
+    /// @param[out] out_pml4_phys Physical address of the new PML4.
+    /// @return VmmError code.
+    static errors::VmmError clone_kernel_pml4_err(uint64_t& out_pml4_phys);
 
     /// @brief Maps a page into a specific page table (not the kernel one).
     /// @param virt_addr Virtual address (page-aligned).
@@ -63,6 +89,14 @@ public:
     /// @param user      If true, sets user-accessible flag.
     /// @param pml4_phys Physical address of the target PML4.
     static void map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
+                                 bool user, uint64_t pml4_phys);
+    /// @brief Maps a page into a specific page table with error code.
+    /// @param virt_addr Virtual address (page-aligned).
+    /// @param phys_addr Physical address (page-aligned).
+    /// @param user      If true, sets user-accessible flag.
+    /// @param pml4_phys Physical address of the target PML4.
+    /// @return VmmError code.
+    static errors::VmmError map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
                                  bool user, uint64_t pml4_phys);
 
     /// @brief Returns the physical address of the kernel PML4.
@@ -74,6 +108,10 @@ public:
     /// page_table_shared_ flag.
     /// @param pml4_phys Physical address of the user PML4.
     static void free_user_pages(uint64_t pml4_phys);
+    /// @brief Frees all user-space pages and page tables with error code.
+    /// @param pml4_phys Physical address of the user PML4.
+    /// @return VmmError code.
+    static errors::VmmError free_user_pages_err(uint64_t pml4_phys);
 
     /// @brief Translates a virtual address to a physical address
     /// using a specific PML4.
@@ -82,26 +120,33 @@ public:
     /// @return Physical address, or 0 if not mapped.
     static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr,
                                          uint64_t pml4_phys);
+    /// @brief Translates a virtual address to a physical address using a specific PML4 with error code.
+    /// @param virt_addr Virtual address to translate.
+    /// @param pml4_phys Physical address of the target PML4.
+    /// @param[out] out_phys_addr Physical address on success.
+    /// @return VmmError code.
+    static errors::VmmError virt_to_phys_in_pml4_err(uint64_t virt_addr,
+                                          uint64_t pml4_phys, uint64_t& out_phys_addr);
 
 private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t PAGE_TABLE_ENTRIES = 512;
 
 #if defined(CONFIG_ARCH_AARCH64)
-    // aarch64 stage‑1 page-table descriptor bit layout.
-    // Table descriptors (L0–L2) and page descriptors (L3): bits[1:0]=11.
-    // Block descriptors (L1–L2): bits[1:0]=01.
-    // AP[1:0] in bits[7:6];  00=EL1‑RW/EL0‑*, 01=EL1‑RW/EL0‑RW,
-    //   10=EL1‑RO/EL0‑*, 11=EL1‑RO/EL0‑RO.
-    // AF (Access Flag) must be 1 for stage‑1 — bit 8 (NOT bit 10).
+    // aarch64 stage-1 page-table descriptor bit layout.
+    // Table descriptors (L0-L2) and page descriptors (L3): bits[1:0]=11.
+    // Block descriptors (L1-L2): bits[1:0]=01.
+    // AP[1:0] in bits[7:6];  00=EL1-RW/EL0-*, 01=EL1-RW/EL0-RW,
+    //   10=EL1-RO/EL0-*, 11=EL1-RO/EL0-RO.
+    // AF (Access Flag) must be 1 for stage-1 - bit 8 (NOT bit 10).
     static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
     static constexpr uint64_t PAGE_TABLE    = 1ULL << 1;
-    static constexpr uint64_t PAGE_AF       = 1ULL << 8;  // Access Flag (stage‑1)
-    static constexpr uint64_t PAGE_AP_USER  = 1ULL << 6;  // AP[0] — EL0 accessible
-    static constexpr uint64_t PAGE_AP_RO    = 1ULL << 7;  // AP[1] — read‑only (EL1)
+    static constexpr uint64_t PAGE_AF       = 1ULL << 8;  // Access Flag (stage-1)
+    static constexpr uint64_t PAGE_AP_USER  = 1ULL << 6;  // AP[0] - EL0 accessible
+    static constexpr uint64_t PAGE_AP_RO    = 1ULL << 7;  // AP[1] - read-only (EL1)
 
-    // Compatibility aliases (used in flag‑building expressions)
-    static constexpr uint64_t PAGE_WRITE    = 0; // no‑op — writable by default
+    // Compatibility aliases (used in flag-building expressions)
+    static constexpr uint64_t PAGE_WRITE    = 0; // no-op - writable by default
     static constexpr uint64_t PAGE_USER     = PAGE_AP_USER;
     static constexpr uint64_t PAGE_HUGE     = 0; // not a flag; detected via level
 #elif defined(CONFIG_ARCH_RISCV64)

@@ -31,6 +31,17 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
     lock_.reset();
 }
 
+errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
+    if (waiter_count_ != 0 || count_ != 0 || max_count_ != 1) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    count_ = initial;
+    max_count_ = max;
+    waiter_count_ = 0;
+    lock_.reset();
+    return errors::SYNC_ERR_OK;
+}
+
 bool Semaphore::add_waiter(TaskControlBlock* task) {
     // Caller must hold lock_ (wait already holds it)
     if (waiter_count_ >= MAX_WAITERS) return false;
@@ -74,6 +85,27 @@ void Semaphore::wait() {
     Scheduler::reschedule();
 }
 
+errors::SyncError Semaphore::wait_err() {
+    SpinLockGuard<SpinLock> guard(lock_);
+    auto* task = Scheduler::current_task();
+    if (!task) return errors::SYNC_ERR_NO_TASK;
+
+    if (count_ > 0) {
+        --count_;
+        return errors::SYNC_ERR_OK;
+    }
+
+    if (waiter_count_ >= MAX_WAITERS) {
+        return errors::SYNC_ERR_MAX_WAITERS;
+    }
+
+    waiters_[waiter_count_++] = task;
+    task->state = TaskState::BLOCKED;
+    Scheduler::reschedule();
+
+    return errors::SYNC_ERR_OK;
+}
+
 bool Semaphore::try_wait() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (count_ > 0) {
@@ -83,6 +115,15 @@ bool Semaphore::try_wait() {
     return false;
 }
 
+errors::SyncError Semaphore::try_wait_err() {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (count_ > 0) {
+        --count_;
+        return errors::SYNC_ERR_OK;
+    }
+    return errors::SYNC_ERR_QUEUE_EMPTY;
+}
+
 void Semaphore::post() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {
@@ -90,6 +131,19 @@ void Semaphore::post() {
     } else if (count_ < max_count_) {
         ++count_;
     }
+}
+
+errors::SyncError Semaphore::post_err() {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (waiter_count_ > 0) {
+        wake_one();
+        return errors::SYNC_ERR_OK;
+    }
+    if (count_ < max_count_) {
+        ++count_;
+        return errors::SYNC_ERR_OK;
+    }
+    return errors::SYNC_ERR_BUFFER_FULL;
 }
 
 }

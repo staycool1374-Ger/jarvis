@@ -21,6 +21,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
 namespace sync {
@@ -41,21 +42,48 @@ public:
         ) {}
     /// @brief Initialize the message queue to empty.
     void init();
+    /// @brief Initialize the message queue to empty (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    errors::SyncError init_err();
 
     /// @brief Send a message, blocking if the queue is full.
     /// @return true on success.
     bool send(const uint8_t* data, size_t size);
+    /// @brief Send a message, blocking if the queue is full (error-returning overload).
+    /// @param[out] sent_bytes Number of bytes sent (if successful).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_QUEUE_FULL if full, SYNC_ERR_MSG_TOO_LARGE if size > MAX, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    errors::SyncError send_err(const uint8_t* data, size_t size, size_t* sent_bytes);
+
     /// @brief Send a message without blocking.
     /// @return true if the message was enqueued.
     bool try_send(const uint8_t* data, size_t size);
+    /// @brief Send a message without blocking (error-returning overload).
+    /// @param[out] sent_bytes Number of bytes sent (if successful).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_QUEUE_FULL if full, SYNC_ERR_MSG_TOO_LARGE if size > MAX.
+    errors::SyncError try_send_err(const uint8_t* data, size_t size, size_t* sent_bytes);
+
     /// @brief Receive a message, blocking if the queue is empty.
     /// @param[out] buf Destination buffer.
     /// @param[out] size Receives the message size.
     /// @return true on success.
     bool receive(uint8_t* buf, size_t* size);
+    /// @brief Receive a message, blocking if the queue is empty (error-returning overload).
+    /// @param[out] buf Destination buffer.
+    /// @param[out] size Receives the message size.
+    /// @param[out] received_bytes Number of bytes received.
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_QUEUE_EMPTY if empty, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    errors::SyncError receive_err(uint8_t* buf, size_t* size, size_t* received_bytes);
+
     /// @brief Receive a message without blocking.
     /// @return true if a message was dequeued.
     bool try_receive(uint8_t* buf, size_t* size);
+    /// @brief Receive a message without blocking (error-returning overload).
+    /// @param[out] buf Destination buffer.
+    /// @param[out] size Receives the message size.
+    /// @param[out] received_bytes Number of bytes received.
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_QUEUE_EMPTY if empty.
+    errors::SyncError try_receive_err(uint8_t* buf, size_t* size, size_t* received_bytes);
+
     size_t available() const { return count_; }
 
 private:

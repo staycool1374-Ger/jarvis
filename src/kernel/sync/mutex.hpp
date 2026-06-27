@@ -21,6 +21,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
 namespace sync {
@@ -33,14 +34,28 @@ public:
         0) {}
     /// @brief Initialize the mutex to unlocked state.
     void init();
+    /// @brief Initialize the mutex to unlocked state (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    errors::SyncError init_err();
 
     /// @brief Acquire the mutex, blocking until available.
     void lock();
+    /// @brief Acquire the mutex, blocking until available (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    errors::SyncError lock_err();
+
     /// @brief Attempt to acquire the mutex without blocking.
     /// @return true if the lock was acquired.
     bool try_lock();
+    /// @brief Attempt to acquire the mutex without blocking (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task.
+    errors::SyncError try_lock_err();
+
     /// @brief Release the mutex, waking the next waiter if any.
     void unlock();
+    /// @brief Release the mutex, waking the next waiter if any (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NOT_OWNER if not the owner, SYNC_ERR_NOT_LOCKED if not locked.
+    errors::SyncError unlock_err();
 
     bool is_locked() const { return owner_ != nullptr; }
     TaskControlBlock* owner() const { return owner_; }

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/vfs/vfs_errors.hpp>
 
 namespace kernel {
 namespace vfs {
@@ -46,6 +47,8 @@ enum class VfsSentinel : int64_t {
     INVALID_FD = -4,
 };
 constexpr int64_t VFS_INVALID = static_cast<int64_t>(VfsSentinel::INVALID_FD);
+
+using errors::VfsError;
 
 enum FileMode : uint16_t {
     S_IFREG  = 0x8000,
@@ -123,11 +126,22 @@ struct FdTable {
     /// @brief Allocate a file descriptor entry.
     /// @return The fd index, or VFS_INVALID if full.
     int alloc();
+    /// @brief Allocate a file descriptor entry with error code.
+    /// @param[out] out_fd The allocated fd on success.
+    /// @return VfsError code.
+    VfsError alloc_err(int& out_fd);
     /// @brief Release a file descriptor entry.
     void free(int file_descriptor);
+    /// @brief Release a file descriptor entry with error code.
+    /// @return VfsError code.
+    VfsError free_err(int file_descriptor);
     /// @brief Look up a file descriptor by index.
     /// @return Pointer to the entry, or nullptr if invalid.
     FileDescription* get(int file_descriptor);
+    /// @brief Look up a file descriptor by index with error code.
+    /// @param[out] out_fd Pointer to the entry on success.
+    /// @return VfsError code.
+    VfsError get_err(int file_descriptor, FileDescription*& out_fd);
 };
 
 struct Filesystem {
@@ -145,30 +159,56 @@ struct Mount {
 /// @brief Resolve an absolute path to a vnode.
 /// @return The vnode, or nullptr if not found.
 Vnode* resolve(const char* path);
+/// @brief Resolve an absolute path to a vnode with error code.
+/// @param[out] out_vnode The resolved vnode on success.
+/// @return VfsError code.
+VfsError resolve_err(const char* path, Vnode*& out_vnode);
 /// @brief Mount a filesystem at a given mount point.
 /// @return 0 on success, or VFS_INVALID on failure.
 int mount(Filesystem& filesystem, const char* mount_point);
+/// @brief Mount a filesystem at a given mount point with error code.
+/// @return VfsError code.
+VfsError mount_err(Filesystem& filesystem, const char* mount_point);
 /// @brief Initialize the VFS subsystem (root vnode, mounts, etc.).
 void init();
+/// @brief Initialize the VFS subsystem with error code.
+/// @return VfsError code.
+VfsError init_err();
 /// @brief Find a registered filesystem driver by name.
 /// @return The filesystem, or nullptr if not found.
 Filesystem* find_fs(const char* name);
+/// @brief Find a registered filesystem driver by name with error code.
+/// @param[out] out_fs The filesystem on success.
+/// @return VfsError code.
+VfsError find_fs_err(const char* name, Filesystem*& out_fs);
 /// @brief Get the root vnode of the VFS tree.
 Vnode* get_root_vnode();
 /// @brief Set the root vnode of the VFS tree.
 void set_root_vnode(Vnode& vnode);
+/// @brief Set the root vnode of the VFS tree with error code.
+/// @return VfsError code.
+VfsError set_root_vnode_err(Vnode& vnode);
 
 /// @brief Create a subdirectory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int mkdir(const char* path, uint16_t mode);
+/// @brief Create a subdirectory at the given path with error code.
+/// @return VfsError code.
+VfsError mkdir_err(const char* path, uint16_t mode);
 
 /// @brief Create a regular file at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int create(const char* path, uint16_t mode);
+/// @brief Create a regular file at the given path with error code.
+/// @return VfsError code.
+VfsError create_err(const char* path, uint16_t mode);
 
 /// @brief Remove a file or empty directory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int unlink(const char* path);
+/// @brief Remove a file or empty directory at the given path with error code.
+/// @return VfsError code.
+VfsError unlink_err(const char* path);
 
 } // namespace vfs
 } // namespace kernel

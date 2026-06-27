@@ -29,15 +29,37 @@ void EventGroup::init() {
     wait_count_ = 0;
 }
 
+errors::SyncError EventGroup::init_err() {
+    if (wait_count_ != 0 || bits_ != 0) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    bits_ = 0;
+    wait_count_ = 0;
+    return errors::SYNC_ERR_OK;
+}
+
 void EventGroup::set_bits(uint64_t bits) {
     SpinLockGuard<SpinLock> guard(lock_);
     bits_ |= bits;
     wake_matching();
 }
 
+errors::SyncError EventGroup::set_bits_err(uint64_t bits) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    bits_ |= bits;
+    wake_matching();
+    return errors::SYNC_ERR_OK;
+}
+
 void EventGroup::clear_bits(uint64_t bits) {
     SpinLockGuard<SpinLock> guard(lock_);
     bits_ &= ~bits;
+}
+
+errors::SyncError EventGroup::clear_bits_err(uint64_t bits) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    bits_ &= ~bits;
+    return errors::SYNC_ERR_OK;
 }
 
 bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
@@ -86,8 +108,41 @@ uint64_t EventGroup::wait_bits(uint64_t bits, bool clear_on_exit) {
     return bits_;
 }
 
+errors::SyncError EventGroup::wait_bits_err(uint64_t bits, bool clear_on_exit, uint64_t* out_bits) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    auto* task = Scheduler::current_task();
+    if (!task) return errors::SYNC_ERR_NO_TASK;
+
+    if ((bits_ & bits) == bits) {
+        if (clear_on_exit) bits_ &= ~bits;
+        if (out_bits) *out_bits = bits_;
+        return errors::SYNC_ERR_OK;
+    }
+
+    if (wait_count_ >= MAX_WAITERS) {
+        return errors::SYNC_ERR_MAX_WAITERS;
+    }
+
+    waiters_[wait_count_].task = task;
+    waiters_[wait_count_].wanted_bits = bits;
+    waiters_[wait_count_].clear_on_exit = clear_on_exit;
+    ++wait_count_;
+
+    task->state = TaskState::BLOCKED;
+    Scheduler::reschedule();
+
+    if (out_bits) *out_bits = bits_;
+    return errors::SYNC_ERR_OK;
+}
+
 bool EventGroup::try_wait_bits(uint64_t bits) {
     return (bits_ & bits) == bits;
+}
+
+errors::SyncError EventGroup::try_wait_bits_err(uint64_t bits, bool* out_result) {
+    bool result = (bits_ & bits) == bits;
+    if (out_result) *out_result = result;
+    return errors::SYNC_ERR_OK;
 }
 
 }
