@@ -25,6 +25,9 @@
 #include <kernel/test/resource_tracker.hpp>
 #include <string.hpp>
 
+// Placement new (defined in lib/new.cpp, no <new> header in freestanding)
+inline void* operator new(unsigned long, void* p) noexcept { return p; }
+
 namespace kernel {
 namespace vfs {
 
@@ -140,8 +143,7 @@ static const VnodeOps pipe_write_ops = {
 int create_pipe(int fds[2]) {
     auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
     if (!pb) return VFS_INVALID;
-    __builtin_memset(pb, 0, sizeof(PipeBuffer));
-    pb->refcount = 2;
+    new (pb) PipeBuffer;
     pb->data_avail.init(0, PIPE_BUF_SIZE);
     kernel::test::ResourceTracker::instance().track_pipe_buffer_add();
 

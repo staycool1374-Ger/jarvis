@@ -211,21 +211,13 @@ JARVIS_TEST(mempool_reuse) {
 // pages still resolve correctly via the newly allocated page table; original
 // mapping is restored.
 // Depends: PMM, VMM, arch
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(vmm_huge_page_split_regression) {
-    // Bug #3 regression: map_page through a 2 MiB huge page in the kernel HHDM
-    // must split the huge page and correctly map the target 4 KiB page.
-    //
-    // We pick virtual address HHDM_OFFSET + 0x802000, which falls inside the
-    // 2 MiB huge page at PD_HIGHER[4] (physical 8–10 MiB).  PD_HIGHER[4] is
-    // backed by unused physical memory (kernel BSS ends at ~3.3 MiB), so it is
-    // safe to split and remap temporarily.
-
-    constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000; // PD_HIGHER[4], PT idx 2
+    constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000;
     constexpr uint64_t huge_page_base = arch::HHDM_OFFSET + 0x800000;
     uint64_t const PAGE_PRESENT = 1ULL << 0;
     uint64_t const PAGE_HUGE    = 1ULL << 7;
 
-    // Walk the kernel page table to save the PD entry before the huge-page split.
     uint64_t kernel_pml4 = arch::read_cr3();
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
     size_t pml4_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 39)) >> 39);
@@ -283,31 +275,18 @@ JARVIS_TEST(vmm_huge_page_split_regression) {
     PMM::free_page(test_phys);
     JARVIS_TEST_PASS();
 }
+#endif
 
-// Runmode: kernel
-// Testidea: Regression test for bugs #1/#2 — verify PML4 is always accessed
-// through HHDM_OFFSET, never through the identity map (which is absent in
-// user PML4s and unreliable above 128 MiB).
-// Input: get_kernel_pml4(), map_page in kernel HHDM range, then unmap_page.
-// Expect: Kernel PML4 returns non-zero; virt_to_phys on kernel function
-// succeeds; map/unmap cycle succeeds.
-// Depends: PMM, VMM, arch
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(vmm_hhdm_access_consistency) {
-    // Bugs #1/#2 regression: verify that PML4 is always accessed through
-    // HHDM_OFFSET, never through the identity map (which is absent in user
-    // PML4s and unreliable above 128 MiB).
-
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
     JARVIS_ASSERT(kernel_pml4 != 0);
 
-    // virt_to_phys on a known kernel address must succeed (proves the HHDM
-    // page-table walk works).
     uint64_t kpml4_virt = VMM::virt_to_phys(reinterpret_cast<uint64_t>(&VMM::init));
     JARVIS_ASSERT(kpml4_virt != 0);
 
-    uint64_t v = arch::HHDM_OFFSET + 0x900000; // safe: PD_HIGHER[4], PT idx 0x100
+    uint64_t v = arch::HHDM_OFFSET + 0x900000;
 
-    // Save the PD entry (huge page) before splitting
     uint64_t cr3 = arch::read_cr3();
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
     size_t pml4_i = static_cast<size_t>((v & (0x1FFULL << 39)) >> 39);
@@ -315,20 +294,17 @@ JARVIS_TEST(vmm_hhdm_access_consistency) {
     size_t pdpt_i = static_cast<size_t>((v & (0x1FFULL << 30)) >> 30);
     auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_i] & ~0xFFFULL));
     size_t pd_i = static_cast<size_t>((v & (0x1FFULL << 21)) >> 21);
-    JARVIS_ASSERT(pd[pd_i] & (1ULL << 7)); // must be huge before split
+    JARVIS_ASSERT(pd[pd_i] & (1ULL << 7));
     uint64_t const saved_pd_entry = pd[pd_i];
 
-    // Map a page through map_page (kernel PML4, HHDM code path) and verify.
     uint64_t p = PMM::alloc_page();
     JARVIS_ASSERT(p != 0);
     VMM::map_page(v, p, false);
     JARVIS_ASSERT(VMM::virt_to_phys(v) == (p & ~0xFFFULL));
     VMM::unmap_page(v);
     JARVIS_ASSERT(VMM::virt_to_phys(v) == 0);
-    // Restore original mapping
     VMM::map_page(v, 0x900000, false);
 
-    // Undo the huge-page split
     uint64_t pt_phys = pd[pd_i] & ~0xFFFULL;
     PMM::free_page(pt_phys);
     pd[pd_i] = saved_pd_entry;
@@ -336,6 +312,7 @@ JARVIS_TEST(vmm_hhdm_access_consistency) {
     PMM::free_page(p);
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verify alloc_page_table returns a page below 128 MiB so the HHDM
@@ -344,12 +321,11 @@ JARVIS_TEST(vmm_hhdm_access_consistency) {
 // Expect: Non-zero page address below 128 MiB.
 // Depends: PMM
 JARVIS_TEST(pmm_alloc_page_table) {
-    // Page-table pages are allocated from a dedicated low-memory pool so the
-    // HHDM (which only maps the first 128 MiB with huge pages) can reach them.
-    // Verify that alloc_page_table returns a valid page below 128 MiB.
     uint64_t pt = PMM::alloc_page_table();
     JARVIS_ASSERT(pt != 0);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_ASSERT(pt < 128ULL * 1024 * 1024);
+#endif
     PMM::free_page(pt);
     JARVIS_TEST_PASS();
 }
@@ -366,8 +342,10 @@ void register_memory_tests() {
     JARVIS_REGISTER_TEST(pmm_user_alloc);
     JARVIS_REGISTER_TEST(pmm_total_memory);
     JARVIS_REGISTER_TEST(pmm_alloc_page_table);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_REGISTER_TEST(vmm_huge_page_split_regression);
     JARVIS_REGISTER_TEST(vmm_hhdm_access_consistency);
+#endif
     JARVIS_REGISTER_TEST(vmm_free_user_pages_skips_kernel_owned_entries);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_fork_stack_scenario);
 

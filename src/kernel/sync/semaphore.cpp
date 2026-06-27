@@ -28,7 +28,7 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
     count_ = initial;
     max_count_ = max;
     waiter_count_ = 0;
-    __builtin_memset(&lock_, 0, sizeof(lock_));
+    lock_.reset();
 }
 
 bool Semaphore::add_waiter(TaskControlBlock* task) {

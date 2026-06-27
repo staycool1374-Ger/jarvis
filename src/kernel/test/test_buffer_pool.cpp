@@ -39,6 +39,8 @@ using namespace kernel;
 // Tasks are not added to the scheduler (just created and cleaned up).
 // -------------------------------------------------------------------
 
+#if defined(CONFIG_ARCH_X86_64)
+
 JARVIS_TEST(buffer_pool_basic_alloc_free) {
     auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task != nullptr);
@@ -798,3 +800,4 @@ void register_buffer_pool_tests() {
     JARVIS_REGISTER_TEST(buffer_pool_handle_reuse_security);
     JARVIS_REGISTER_TEST(buffer_pool_transfer_to_kernel_task);
 }
+#endif

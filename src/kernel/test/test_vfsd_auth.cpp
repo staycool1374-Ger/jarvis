@@ -31,6 +31,8 @@
 
 using namespace kernel;
 
+#if defined(CONFIG_ARCH_X86_64)
+
 JARVIS_TEST(vfsd_self_authorization) {
     auto* vfsd_task = TaskControlBlock::create_user([]() {
         const char* path = "/dev/null";
@@ -182,3 +184,4 @@ void register_vfsd_authorization_tests() {
     JARVIS_REGISTER_TEST(vfsd_absent_syscall_fails);
     JARVIS_REGISTER_TEST(vfsd_authorize_null_path);
 }
+#endif

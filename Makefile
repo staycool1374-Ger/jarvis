@@ -184,10 +184,16 @@ QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) 
                   -semihosting-config enable=on,target=native
 endif
 
-# For riscv64, load kernel directly via -kernel with OpenSBI BIOS
+# For riscv64, QEMU 11+ has a fw_dynamic bug where ELF entry point is not
+# passed to OpenSBI. Use raw binary instead (objcopy strips ELF headers).
+KERNEL_RISCV_BIN := build/kernel-riscv64.bin
+
 ifeq ($(ARCH),riscv64)
-QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  -machine virt -bios default -display none -no-reboot
+$(KERNEL_RISCV_BIN): $(KERNEL_DEBUG)
+	$(OBJCOPY) -O binary $< $@
+
+QEMU_FLAGS     := -kernel $(KERNEL_RISCV_BIN) -m 256M -serial mon:stdio \
+	          $(QEMU_NET) -machine virt -bios default -display none -no-reboot
 endif
 
 # ------------------------------------------------------------------------------
@@ -321,6 +327,10 @@ ifeq ($(ARCH),x86_64)
 	@grub-mkrescue -o $(DEBUG_ISO) iso 2>&1 || \
 	 (printf '  %-7s %s\n' 'ERROR' 'grub-mkrescue failed'; echo 'Install grub-pc + xorriso'; exit 1)
 	@printf '  %-7s %s\n' 'DONE' 'Debug ISO: $(DEBUG_ISO)'
+else ifeq ($(ARCH),riscv64)
+	$(OBJCOPY) -O binary $(KERNEL_DEBUG) $(KERNEL_RISCV_BIN)
+	@printf '  %-7s %s\n' 'BIN' '$(KERNEL_RISCV_BIN)'
+	@printf '  %-7s %s\n' 'DONE' 'Debug kernel: $(KERNEL_DEBUG)'
 else
 	@printf '  %-7s %s\n' 'DONE' 'Debug kernel: $(KERNEL_DEBUG)'
 endif

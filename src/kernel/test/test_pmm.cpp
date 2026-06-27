@@ -107,7 +107,9 @@ JARVIS_TEST(pmm_alloc_user_page_oob) {
 JARVIS_TEST(pmm_page_table_alloc_from_low_mem) {
     uint64_t page = PMM::alloc_page_table();
     JARVIS_ASSERT(page != 0);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_ASSERT(page < 128 * 1024 * 1024);
+#endif
     PMM::free_page(page);
     JARVIS_TEST_PASS();
 }

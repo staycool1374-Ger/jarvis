@@ -42,6 +42,10 @@ public:
         __atomic_store_n(&locked_, 0, __ATOMIC_RELEASE);
     }
 
+    void reset() noexcept {
+        locked_ = 0;
+    }
+
     bool try_lock() noexcept {
         return !__atomic_exchange_n(&locked_, 1, __ATOMIC_ACQUIRE);
     }

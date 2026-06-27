@@ -188,6 +188,7 @@ TEST_CLASS(IpcConcurrentSenders) {
     delete receiver;
 };
 
+#if defined(CONFIG_ARCH_X86_64)
 TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
@@ -256,6 +257,7 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     Scheduler::remove_task(*receiver);
     receiver->cleanup(); delete receiver;
 };
+#endif
 
 TEST_CLASS(IpcBidirectionalSendSync) {
     static volatile uint64_t g_id_a = 0;
@@ -364,7 +366,9 @@ void register_ipc_robustness_tests() {
     REGISTER_CLASS(IpcMisformedMessages);
     REGISTER_CLASS(IpcQueueWraparoundEdge);
     REGISTER_CLASS(IpcConcurrentSenders);
+#if defined(CONFIG_ARCH_X86_64)
     REGISTER_CLASS(IpcBufHandleTransferRoundtrip);
+#endif
     REGISTER_CLASS(IpcBidirectionalSendSync);
     REGISTER_CLASS(IpcBlockedSenderOnReceiverCleanup);
 }

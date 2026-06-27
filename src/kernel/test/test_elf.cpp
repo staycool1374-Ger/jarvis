@@ -151,6 +151,7 @@ JARVIS_TEST(elf_validate_header_bad_entry) {
     JARVIS_TEST_PASS();
 }
 
+#if defined(CONFIG_ARCH_X86_64)
 static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* phdr, uint8_t* data) {
     hdr->ident[0] = 0x7F;
     hdr->ident[1] = 'E';
@@ -183,15 +184,13 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     phdr->memsz = 0x1000;
     phdr->align = 0x1000;
 
-    // Embed the program header into data at phoff so load_segments_and_stack
-    // can find it
     memcpy(data + hdr->phoff, phdr, sizeof(elf::ELF64ProgramHeader));
-    // Code segment after program header
     uint64_t code_offset = sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader);
     for (size_t i = 0; i < 0x1000; ++i) {
         data[code_offset + i] = 0x90;
     }
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Validates that loading an ELF with an invalid program segment is
@@ -199,13 +198,13 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
 // Input: ELF with W^X violating segment (both writable and executable)
 // Expect: elf::load returns nullptr
 // Depends: test, elf
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(elf_load_invalid_segment) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
     
-    // Make segment W^X violating — modify the embedded copy in data
     auto* embedded_phdr = reinterpret_cast<elf::ELF64ProgramHeader*>(data + hdr.phoff);
     embedded_phdr->flags = elf::PF_W | elf::PF_X;
 
@@ -213,6 +212,7 @@ JARVIS_TEST(elf_load_invalid_segment) {
     JARVIS_ASSERT(tcb == nullptr);
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Validates that elf::load sets up stdin/stdout/stderr file
@@ -221,6 +221,7 @@ JARVIS_TEST(elf_load_invalid_segment) {
 // Expect: JARVIS_ASSERT checks tcb non-null, /dev/tty resolves, and fd_table
 // entries 0-2 exist, are used, and point to the tty vnode
 // Depends: test, elf, vfs
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(elf_load_sets_std_fds) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -244,6 +245,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
     delete tcb;
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Validates that elf::load allocates a user stack for the loaded
@@ -252,6 +254,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 // Expect: JARVIS_ASSERT checks tcb->user_stack_ non-zero and
 // tcb->user_stack_size_ equals mem::STACK_SIZE
 // Depends: test, elf
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(elf_load_creates_user_stack) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -267,25 +270,9 @@ JARVIS_TEST(elf_load_creates_user_stack) {
     delete tcb;
     JARVIS_TEST_PASS();
 }
+#endif
 
-// Runmode: kernel
-// Testidea: Registers all ELF-related unit tests with the test framework.
-// Input: (none)
-// Expect: Each JARVIS_REGISTER_TEST call registers a test function for later
-// execution
-// Depends: test, logger, elf
-// Runmode: kernel
-// Testidea: Validates that ELF loading works when the ELF data pointer uses
-// the HHDM offset
-// (simulating the fixed sys_exec behavior in bug #013). Uses the existing
-// stack-allocated
-// ELF buffer but computes its address as though it were read through
-// HHDM-mapped memory.
-// Input: A minimal valid ELF64 binary, passed to elf::load via HHDM-offset
-// address.
-// Expect: elf::load succeeds and returns a valid TCB with user stack and
-// page table.
-// Depends: test, elf, pmm, vmm
+#if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(elf_load_from_hhdm_buffer) {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
@@ -301,6 +288,7 @@ JARVIS_TEST(elf_load_from_hhdm_buffer) {
     delete tcb;
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Registers all ELF-related unit tests with the test framework.
@@ -316,8 +304,10 @@ void register_elf_tests() {
     JARVIS_REGISTER_TEST(elf_validate_header_bad_machine);
     JARVIS_REGISTER_TEST(elf_validate_header_excessive_phnum);
     JARVIS_REGISTER_TEST(elf_validate_header_bad_entry);
+#if defined(CONFIG_ARCH_X86_64)
     JARVIS_REGISTER_TEST(elf_load_invalid_segment);
     JARVIS_REGISTER_TEST(elf_load_sets_std_fds);
     JARVIS_REGISTER_TEST(elf_load_creates_user_stack);
     JARVIS_REGISTER_TEST(elf_load_from_hhdm_buffer);
+#endif
 }

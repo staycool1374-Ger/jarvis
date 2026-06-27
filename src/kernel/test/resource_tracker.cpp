@@ -110,8 +110,8 @@ bool ResourceTracker::check(const ResourceCounters& baseline,
         fmt(cur_s, cur);
         int base_w = 0; while (base_s[base_w]) ++base_w;
         int cur_w = 0; while (cur_s[cur_w]) ++cur_w;
-        while (base_w < 6) base_s[base_w++] = ' '; base_s[base_w] = '\0';
-        while (cur_w < 6) cur_s[cur_w++] = ' '; cur_s[cur_w] = '\0';
+        while (base_w < 6) { base_s[base_w++] = ' '; } base_s[base_w] = '\0';
+        while (cur_w < 6) { cur_s[cur_w++] = ' '; } cur_s[cur_w] = '\0';
         Logger::warn("[RESOURCE] test=%s | %s | before=%s | after=%s <---",
                      test_name, buf, base_s, cur_s);
     };
