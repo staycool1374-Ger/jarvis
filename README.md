@@ -164,24 +164,21 @@ Features: output redirection (`>`), alias expansion, command history (100-entry 
 
 ---
 
-## Competitive Comparison: FreeRTOS vs Jarvis RTOS
+## Architectural Competitive Comparison
 
-| Dimension | FreeRTOS | Jarvis RTOS |
-|-----------|----------|-------------|
-| **Language** | C89/C99 (legacy idioms, manual memory management) | Freestanding C++20 (zero-overhead abstractions, RAII, Concepts) |
-| **Critical sections** | `taskENTER_CRITICAL()` / `taskEXIT_CRITICAL()` — manual pairing, leak-prone | `IrqGuard` — RAII scope guard, impossible to forget or mismatch |
-| **Architecture** | Monolithic library, tightly coupled to application | Capability-based microkernel (in progress, v0.7.x–v0.8.x); drivers run as isolated Ring 3 servers |
-| **Configuration** | `FreeRTOSConfig.h` — preprocessor defines scattered across 200+ options | `jarvis_config.h` — centralised, documented, with `INCLUDE_` syscall gating and `CONFIG_HAS_*` feature flags |
-| **Scheduling** | Fixed-priority preemptive, tick-less option, `configUSE_TIME_SLICING` | Rate-monotonic with 256 priority levels, idle-task RAM March-C and ALU integrity monitors (ASIL D) |
-| **Idle hook** | `configUSE_IDLE_HOOK` — simple callback | Full idle-task stewardship: slab page return, CPU utilisation tracking, non-destructive memory test, register verification |
-| **Memory safety** | Manual `pvPortMalloc()` / `vPortFree()`, no ownership tracking | `UniquePtr<T>` RAII wrappers, deterministic `MemPool` slab allocator, `ResourceTracker` leak detection |
-| **Hardware support** | HAL via `portmacro.h` — per-port assembly macros | Architecture-agnostic `arch/<isa>/` directories with uniform HAL signatures (aarch64, riscv64 supported) |
-| **RNG** | Typically none or application-provided | Hardware RNG (RDSEED / RDRAND) + ChaCha20 CSPRNG → `/dev/random`, `SYS_GETRANDOM` |
-| **FPU handling** | `configENABLE_FPU` — cooperative save/restore | Lazy context switch via CR0.TS + #NM trap; FXSAVE/FXRSTOR, automatic on first use |
-| **IPC** | Queues, semaphores, mutexes (C API) | Priority IPC mailboxes, zero-copy buffer pool, event groups, notifications, deadlock detection engine |
-| **VFS** | None (application defined) | Full POSIX-like VFS: initrd, devfs, procfs, FAT32, tmpfs, vnode abstraction, mount table |
-| **Formal verification** | None | `CheckedPointer` security, wait-for-graph runtime deadlock detection, stack canary markers |
-| **Testing** | Community demos, no built-in test framework | 679 kernel-mode tests with full state snapshot/isolation, QEMU CI, leak detection |
+The following matrix contrasts the architectural guarantees, safety mechanisms, and design paradigms of Jarvis RTOS against prevailing open-source and commercial real-time operating systems.
+
+| Architectural Dimension | FreeRTOS | Zephyr Project | PREEMPT_RT (RT-Linux) | QNX Neutrino | VxWorks | Jarvis RTOS (v0.2.23) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Core Architecture** | Monolithic Library (Flat address space, no isolation) | Monolithic / Modular (Optional MPU-based sandboxing) | Monolithic Macrokernel (Preemptible kernel via locking patches) | Pure Microkernel (Drivers and VFS fully isolated in Ring 3) | Monolithic (With Real-Time Process [RTP] isolation) | **Mid-Transition Microkernel** (Currently moving monolithic Ring 0 services to Ring 3 capability servers) |
+| **Primary Language** | C89 / C99 (Manual state tracking, legacy idioms) | C99 / C11 (Extensive preprocessor macro use via Kconfig) | C11 / GNU C (Massive legacy codebase, macro-heavy) | ISO C / C++ (Hosted standard runtime libraries) | C / C++ (Proprietary toolchain-dependent runtime) | **Freestanding C++20** (Zero-overhead objects, compile-time Concepts, no hosted runtime) |
+| **Concurrency & Synchronization** | Manual API pairing (`taskENTER_CRITICAL()`, risk of leaks) | Macro-driven locking and explicit unlock tracking | Spinlocks, Mutexes, and raw RT-mutex structures | POSIX threads and synchronization primitives | Task locks, semaphores, and raw spinlocks | **RAII Scoped Guards** (`IrqGuard` lockouts, impossible to leak on early exit blocks)[cite: 2] |
+| **Memory Allocation** | Fragmentable heaps (`pvPortMalloc()`, no structural bounds) | Configurable dynamic heaps or static block pools | Dynamic allocation via TLSF or standard kernel SLUB/SLAB | Dynamic virtual memory management with standard page pools | Dynamic heap regions with MMU partition protection | **Post-Init Static Pools** (`MemPool` slab allocators, zero dynamic allocation on hot paths)[cite: 2] |
+| **Determinism & Jitter Guard** | Coarse scheduler ticks, manual application tuning | Dynamic thread priorities, low-latency interrupt paths | Sub-millisecond bounds, highly dependent on hardware configurations | Microsecond-bounded context-switches, high predictability | Extreme high determinism, minimal scheduling jitter | **Rate-Monotonic Scheduler** (256 priority levels, deterministic Open-Addressing Task Hash Table)[cite: 2] |
+| **Functional Safety (ISO 26262)** | None (Community-driven; commercial pre-certified forks exist) | Audited subset targeting SIL 3 / ASIL B profiles | Non-certifiable due to millions of lines of code | **Pre-certified ASIL D / SIL 4** (Commercial safety manual provided) | **Pre-certified ASIL D / SIL 4** (Commercial safety manual provided) | **Architected for ASIL D** (Traceability matrix, 100% state snapshot isolation between test runs)[cite: 2] |
+| **Application Loading Lifecycle** | Static Linking (Firmware image must be re-flashed) | Static Linking (DeviceTree and Kconfig frozen at compile-time) | Dynamic Loading (`execve` standard ELF, heavy runtime overhead) | Dynamic Loading (Isolated process management via process manager) | Dynamic Loading (Target execution of compiled RTP binaries) | **Dynamic `runelf` Subsystem** (Static ELF64 parsing from VFS/Initrd with execution quota validation)[cite: 2] |
+| **Idle Task Steward Infrastructure** | Minimal Hook (`configUSE_IDLE_HOOK` simple user callback) | Low-power state management and CPU power-down loops | Standard kernel idle loop, dynamic sleep ticks | System telemetry, background profiling counters | Performance monitoring and power management hooks | **ASIL D Integrity Monitors** (Slab page recovery, RAM March-C algorithm, CPU ALU test patterns)[cite: 2] |
+| **Integrated Test Coverage** | None (Relies on external test runner suites) | Integrated Twister framework for out-of-tree testing | Extensive LTP (Linux Test Project) suite, hosted execution | Proprietary commercial hardware validation tools | Proprietary commercial hardware validation tools | **679 In-Kernel Tests** (Automated boot-time verification with full leak detection)[cite: 2] |
 
 ---
 
