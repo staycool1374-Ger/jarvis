@@ -25,7 +25,7 @@
 
 /// @brief Kernel version — single source of truth.
 /// Format: "vmajor.minor.patch"
-#define KERNEL_VERSION_STRING "v0.2.25"
+#define KERNEL_VERSION_STRING "v0.3.1-dev"
 
 namespace kernel {
 
@@ -33,9 +33,9 @@ namespace kernel {
 /// @note Major/minor/patch and build timestamp are defined at compile time.
 struct Version {
     static constexpr unsigned major = 0;
-    static constexpr unsigned minor = 2;
-    static constexpr unsigned patch = 25;
-    static constexpr const char* stage = "";
+    static constexpr unsigned minor = 3;
+    static constexpr unsigned patch = 1;
+    static constexpr const char* stage = "dev";
 
     static const char* string();
     static const char* build_date();
