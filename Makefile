@@ -103,7 +103,7 @@ ifeq ($(ARCH),x86_64)
 
     OBJCOPY_FMT  := elf64-x86-64
     OBJCOPY_ARCH := i386
-    LDFLAGS     := -m elf_x86_64 -nostdlib -no-pie -T linker_$(ARCH).ld \
+    LDFLAGS     := -m elf_x86_64 -nostdlib -no-pie -T linker/linker_$(ARCH).ld \
                    -z max-page-size=0x1000 -Map=build/kernel.map
 
     GCOV_LIB_DIR    := $(dir $(shell $(CC) -print-file-name=libgcov.a 2>/dev/null))
@@ -133,7 +133,7 @@ else ifeq ($(ARCH),aarch64)
     OBJCOPY_ARCH := aarch64
     LIBGCC       := $(shell $(CC) --print-libgcc-file-name)
     LD_LIBS      := $(LIBGCC)
-    LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+    LDFLAGS      := -nostdlib -T linker/linker_$(ARCH).ld -Map=build/kernel.map
 
     QEMU_SYSTEM     := qemu-system-aarch64
     QEMU_ARCH_FLAGS := -machine virt -cpu cortex-a72 -kernel $(KERNEL_DEBUG)
@@ -161,7 +161,7 @@ else ifeq ($(ARCH),riscv64)
     OBJCOPY_ARCH := riscv
     LIBGCC       := $(shell $(CC) --print-libgcc-file-name)
     LD_LIBS      := $(LIBGCC)
-    LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
+    LDFLAGS      := -nostdlib -T linker/linker_$(ARCH).ld -Map=build/kernel.map
 
     QEMU_SYSTEM     := qemu-system-riscv64
     QEMU_ARCH_FLAGS := -machine virt -bios default
@@ -399,7 +399,7 @@ profiling: CXXFLAGS := $(filter-out -target x86_64-elf,$(CXXFLAGS)) \
                        -Wno-class-memaccess \
                        -finstrument-functions -DCONFIG_PROFILING
 profiling: LDFLAGS += -L $(GCOV_LIB_DIR)
-profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker_$(ARCH).ld iso/boot
+profiling: clean $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ) linker/linker_$(ARCH).ld iso/boot
 	@printf '  %-7s %s\n' 'LD' 'kernel.elf (profiling)'
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(OBJ) $(INITRD_OBJ) $(FAT32_OBJ)
 	cp $(KERNEL) iso/boot/kernel.elf
