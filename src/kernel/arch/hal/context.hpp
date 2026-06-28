@@ -22,6 +22,8 @@ public:
     static inline void init_stack(uint64_t* stack_top, void (*entry)(),
                                   uint64_t cs, uint64_t ss,
                                   uint64_t rflags, uint64_t user_rsp) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
         *--stack_top = ss;
         *--stack_top = user_rsp;
         *--stack_top = rflags;
@@ -30,6 +32,7 @@ public:
         *--stack_top = 0;
         *--stack_top = 0;
         for (int i = 0; i < 15; ++i) *--stack_top = 0;
+#pragma GCC diagnostic pop
     }
 
     static inline void save(ArchContext& ctx, uint64_t rsp) {
