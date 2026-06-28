@@ -48,7 +48,7 @@ LIBC_A         := build/libc/libc.a
 USERSPACE_SRC  := $(shell find userspace -name '*.S' -o -name '*.c' 2>/dev/null)
 USERSPACE_ELF  := $(USERSPACE_SRC:%=%.elf)
 
-INITRD_CPIO    := initrd.cpio
+INITRD_CPIO    := build/initrd.cpio
 INITRD_OBJ     := build/initrd/initrd_cpio.o
 
 FAT32_IMG      := build/fat32.img
@@ -115,7 +115,11 @@ $(INITRD_CPIO): $(USERSPACE_ELF) initrd/tests/test-config.txt
 $(INITRD_OBJ): $(INITRD_CPIO)
 	@printf '  %-7s %s\n' 'OBJCOPY' '$@'
 	@mkdir -p $(dir $@)
-	$(OBJCOPY) -I binary -O $(OBJCOPY_FMT) -B $(OBJCOPY_ARCH) $< $@
+	$(OBJCOPY) -I binary -O $(OBJCOPY_FMT) -B $(OBJCOPY_ARCH) \
+	    --redefine-sym _binary_build_initrd_cpio_start=_binary_initrd_cpio_start \
+	    --redefine-sym _binary_build_initrd_cpio_end=_binary_initrd_cpio_end \
+	    --redefine-sym _binary_build_initrd_cpio_size=_binary_initrd_cpio_size \
+	    $< $@
 
 # ------------------------------------------------------------------------------
 # FAT32 disk image
