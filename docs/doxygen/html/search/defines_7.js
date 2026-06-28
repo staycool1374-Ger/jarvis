@@ -1,5 +1,20 @@
 var searchData=
 [
-  ['ipc_5ferror_5fcodes_0',['IPC_ERROR_CODES',['../ipc__errors_8hpp.html#aae450ac95271dd8237665cad82a4c0e4',1,'ipc_errors.hpp']]],
-  ['ipc_5fnonblock_1',['IPC_NONBLOCK',['../ipc_8h.html#a02406c274ef11e7931d893a8f7e7b293',1,'ipc.h']]]
+  ['gicc_5fbase_0',['GICC_BASE',['../aarch64_2interrupt__controller_8cpp.html#a971c4b3a9504879ce74b96226288f742',1,'interrupt_controller.cpp']]],
+  ['gicc_5fctlr_1',['GICC_CTLR',['../aarch64_2interrupt__controller_8cpp.html#a11871e15a62cbfcc1e54f3dd2ce21e74',1,'interrupt_controller.cpp']]],
+  ['gicc_5feoir_2',['GICC_EOIR',['../aarch64_2interrupt__controller_8cpp.html#af92519fe60b0cf2183a6100bea15dd43',1,'interrupt_controller.cpp']]],
+  ['gicc_5fiar_3',['GICC_IAR',['../aarch64_2interrupt__controller_8cpp.html#a61672c3cde5301e076793c2ad904cdb9',1,'interrupt_controller.cpp']]],
+  ['gicc_5fpmr_4',['GICC_PMR',['../aarch64_2interrupt__controller_8cpp.html#a8d72b8216b091c1d148b5812bc46e7d4',1,'interrupt_controller.cpp']]],
+  ['gicd_5fbase_5',['GICD_BASE',['../aarch64_2interrupt__controller_8cpp.html#a60145b8750e840c58949fbc9483f2fc5',1,'interrupt_controller.cpp']]],
+  ['gicd_5fctlr_6',['GICD_CTLR',['../aarch64_2interrupt__controller_8cpp.html#a00f17ebce4b31e38e18375340fdf3826',1,'interrupt_controller.cpp']]],
+  ['gicd_5ficenabler_7',['GICD_ICENABLER',['../aarch64_2interrupt__controller_8cpp.html#a93b67ba2b0e625f47ef7371672c4a763',1,'interrupt_controller.cpp']]],
+  ['gicd_5figroupr_8',['GICD_IGROUPR',['../aarch64_2interrupt__controller_8cpp.html#a995349f3bfdd895c60b8eb63bc176d18',1,'interrupt_controller.cpp']]],
+  ['gicd_5fisenabler_9',['GICD_ISENABLER',['../aarch64_2interrupt__controller_8cpp.html#ad6013481a4c73be9ba10c48b63c0b4b3',1,'interrupt_controller.cpp']]],
+  ['gicd_5ftyper_10',['GICD_TYPER',['../aarch64_2interrupt__controller_8cpp.html#a1b97217a477f13f173ff4a22c0aeeef6',1,'interrupt_controller.cpp']]],
+  ['gicr_5ficenabler0_11',['GICR_ICENABLER0',['../aarch64_2interrupt__controller_8cpp.html#aa1a9392f7225fdc5f8cc79307d83aa44',1,'interrupt_controller.cpp']]],
+  ['gicr_5figroupr0_12',['GICR_IGROUPR0',['../aarch64_2interrupt__controller_8cpp.html#adfad36c83b399088cde1f97dbee45911',1,'interrupt_controller.cpp']]],
+  ['gicr_5fisenabler0_13',['GICR_ISENABLER0',['../aarch64_2interrupt__controller_8cpp.html#a740d01d87cdee0c63d23c5ca4879005e',1,'interrupt_controller.cpp']]],
+  ['gicr_5frd_5fbase_14',['GICR_RD_BASE',['../aarch64_2interrupt__controller_8cpp.html#a7b0f578b16065a69c27a4552b191f5f8',1,'interrupt_controller.cpp']]],
+  ['gicr_5fsgi_5fbase_15',['GICR_SGI_BASE',['../aarch64_2interrupt__controller_8cpp.html#a8a91895aaa3282ce57e3768e6b751539',1,'interrupt_controller.cpp']]],
+  ['gicr_5fwaker_16',['GICR_WAKER',['../aarch64_2interrupt__controller_8cpp.html#ac745828a3b83b7a1a19ffe673677e37f',1,'interrupt_controller.cpp']]]
 ];

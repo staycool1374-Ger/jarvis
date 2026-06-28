@@ -15,6 +15,7 @@ var dir_97ddee6994ce82fd2a76b10ba4d7572d =
     [ "iocd.hpp", "iocd_8hpp.html", "iocd_8hpp" ],
     [ "virtio_blk.cpp", "virtio__blk_8cpp.html", null ],
     [ "virtio_blk.hpp", "virtio__blk_8hpp.html", "virtio__blk_8hpp" ],
-    [ "virtio_net.cpp", "virtio__net_8cpp.html", null ],
-    [ "virtio_net.hpp", "virtio__net_8hpp.html", "virtio__net_8hpp" ]
+    [ "virtio_net.cpp", "virtio__net_8cpp.html", "virtio__net_8cpp" ],
+    [ "virtio_net.hpp", "virtio__net_8hpp.html", "virtio__net_8hpp" ],
+    [ "virtio_pci.cpp", "virtio__pci_8cpp.html", "virtio__pci_8cpp" ]
 ];

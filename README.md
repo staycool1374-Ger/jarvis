@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.24** — Cross-architecture hardening: unified atomics, boot flow via libfdt, UART abstraction, virtio/PCI unification, cross-arch test suite, Renode CI gates. 693 kernel self-tests passing on QEMU virt.
+Current version: **v0.2.25-dev** — Test Safety & RAII Hardening.
 
 ---
 

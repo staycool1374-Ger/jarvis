@@ -6,7 +6,7 @@ var searchData=
   ['scope_5fguard_2ehpp_3',['scope_guard.hpp',['../scope__guard_8hpp.html',1,'']]],
   ['semaphore_2ecpp_4',['semaphore.cpp',['../semaphore_8cpp.html',1,'']]],
   ['semaphore_2ehpp_5',['semaphore.hpp',['../semaphore_8hpp.html',1,'']]],
-  ['serial_2ecpp_6',['serial.cpp',['../aarch64_2serial_8cpp.html',1,'(Global Namespace)'],['../riscv64_2serial_8cpp.html',1,'(Global Namespace)']]],
+  ['serial_2ecpp_6',['serial.cpp',['../aarch64_2serial_8cpp.html',1,'(Global Namespace)'],['../riscv64_2serial_8cpp.html',1,'(Global Namespace)'],['../x86__64_2serial_8cpp.html',1,'(Global Namespace)']]],
   ['serial_2ehpp_7',['serial.hpp',['../hal_2serial_8hpp.html',1,'(Global Namespace)'],['../serial_8hpp.html',1,'(Global Namespace)']]],
   ['shell_2ecpp_8',['shell.cpp',['../shell_8cpp.html',1,'']]],
   ['shell_2ehpp_9',['shell.hpp',['../shell_8hpp.html',1,'']]],

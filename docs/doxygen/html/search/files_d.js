@@ -4,7 +4,7 @@ var searchData=
   ['page_5ftable_2ehpp_1',['page_table.hpp',['../hal_2page__table_8hpp.html',1,'(Global Namespace)'],['../page__table_8hpp.html',1,'(Global Namespace)']]],
   ['page_5ftable_5fimpl_2ehpp_2',['page_table_impl.hpp',['../aarch64_2hal_2page__table__impl_8hpp.html',1,'(Global Namespace)'],['../riscv64_2hal_2page__table__impl_8hpp.html',1,'(Global Namespace)'],['../x86__64_2hal_2page__table__impl_8hpp.html',1,'(Global Namespace)']]],
   ['pci_2ecpp_3',['pci.cpp',['../pci_8cpp.html',1,'']]],
-  ['pci_2ehpp_4',['pci.hpp',['../pci_8hpp.html',1,'']]],
+  ['pci_2ehpp_4',['pci.hpp',['../hal_2pci_8hpp.html',1,'(Global Namespace)'],['../pci_8hpp.html',1,'(Global Namespace)']]],
   ['pci_5ferrors_2ehpp_5',['pci_errors.hpp',['../pci__errors_8hpp.html',1,'']]],
   ['pci_5fimpl_2ehpp_6',['pci_impl.hpp',['../aarch64_2hal_2pci__impl_8hpp.html',1,'(Global Namespace)'],['../riscv64_2hal_2pci__impl_8hpp.html',1,'(Global Namespace)']]],
   ['pipe_2ecpp_7',['pipe.cpp',['../pipe_8cpp.html',1,'']]],

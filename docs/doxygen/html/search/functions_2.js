@@ -7,9 +7,10 @@ var searchData=
   ['bitmap_5fptr_4',['bitmap_ptr',['../classkernel_1_1_p_m_m.html#a3ba6d609baf9da2794af9e9863c5d975',1,'kernel::PMM']]],
   ['block_5fsender_5',['block_sender',['../classkernel_1_1_i_p_c.html#a4f53b532dc7d6c41ff0899389025339f',1,'kernel::IPC']]],
   ['bmdmachannel_6',['BmDmaChannel',['../classkernel_1_1dma_1_1_bm_dma_channel.html#a2283b2a4f6e408e1f7f95e69af05fc90',1,'kernel::dma::BmDmaChannel']]],
-  ['bpb_7',['bpb',['../classkernel_1_1fat32_1_1_fat32_partition.html#a63f3b9a89494f5ceab87ed786060fdeb',1,'kernel::fat32::Fat32Partition']]],
-  ['brk_8',['brk',['../stdlib_8c.html#a4b20a70d83d7f74a2734da590b4b8cf8',1,'brk(void *addr):&#160;stdlib.c'],['../unistd_8h.html#a4b20a70d83d7f74a2734da590b4b8cf8',1,'brk(void *addr):&#160;stdlib.c']]],
-  ['build_5fdate_9',['build_date',['../structkernel_1_1_version.html#a1b90692348e0b01a55537750a2e25318',1,'kernel::Version']]],
-  ['build_5ftime_10',['build_time',['../structkernel_1_1_version.html#ab8a7b6147736f55162bc5b5d88cb3b26',1,'kernel::Version']]],
-  ['busy_11',['busy',['../classkernel_1_1dma_1_1_ping_pong_dma.html#a2abcb2982e4b07286aa757caf7476845',1,'kernel::dma::PingPongDma']]]
+  ['bootinfo_7',['BootInfo',['../struct_boot_info.html#a4a058935e6b3c71ac20a9fc03d1b65bf',1,'BootInfo']]],
+  ['bpb_8',['bpb',['../classkernel_1_1fat32_1_1_fat32_partition.html#a63f3b9a89494f5ceab87ed786060fdeb',1,'kernel::fat32::Fat32Partition']]],
+  ['brk_9',['brk',['../stdlib_8c.html#a4b20a70d83d7f74a2734da590b4b8cf8',1,'brk(void *addr):&#160;stdlib.c'],['../unistd_8h.html#a4b20a70d83d7f74a2734da590b4b8cf8',1,'brk(void *addr):&#160;stdlib.c']]],
+  ['build_5fdate_10',['build_date',['../structkernel_1_1_version.html#a1b90692348e0b01a55537750a2e25318',1,'kernel::Version']]],
+  ['build_5ftime_11',['build_time',['../structkernel_1_1_version.html#ab8a7b6147736f55162bc5b5d88cb3b26',1,'kernel::Version']]],
+  ['busy_12',['busy',['../classkernel_1_1dma_1_1_ping_pong_dma.html#a2abcb2982e4b07286aa757caf7476845',1,'kernel::dma::PingPongDma']]]
 ];

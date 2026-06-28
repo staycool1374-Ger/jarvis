@@ -11,6 +11,7 @@ var kernel_8cpp =
     [ "_binary_initrd_cpio_end", "kernel_8cpp.html#a2c38eb4c3a51bab012a31eb7f42d54c0", null ],
     [ "_binary_initrd_cpio_start", "kernel_8cpp.html#a53b789d98a238ce07c0629d6ba055cff", null ],
     [ "fpu_owner", "kernel_8cpp.html#a9cb0eb86a3c6ddd3eff34b67b4a9d525", null ],
+    [ "g_boot_info", "kernel_8cpp.html#a80bb39a5269fd76f151c9193535e2e9e", null ],
     [ "isr_nesting_depth", "kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926", null ],
     [ "kernel_virt_end", "kernel_8cpp.html#acf393da2fe85b8d9fa8cd83ff83a6a0c", null ],
     [ "scheduler_corruption_count", "kernel_8cpp.html#a0f9de4949789f8c2d559e134c0bca614", null ],

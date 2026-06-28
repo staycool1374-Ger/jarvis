@@ -14,7 +14,7 @@ var searchData=
   ['get_5ftest_5fclass_5fcount_11',['get_test_class_count',['../namespacekernel_1_1test.html#a499e498dbadd7417450754e39ff8d025',1,'kernel::test']]],
   ['get_5ftest_5fclasses_12',['get_test_classes',['../namespacekernel_1_1test.html#adef941cb96fe1a42d92076d37649d84a',1,'kernel::test']]],
   ['get_5fvfsd_5fpid_13',['get_vfsd_pid',['../namespacekernel_1_1vfsd.html#aa0df972eac82190a35e45b47576066a7',1,'kernel::vfsd']]],
-  ['getchar_14',['getchar',['../stdio_8c.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c'],['../stdio_8h.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c']]],
+  ['getchar_14',['getchar',['../classarch_1_1_serial.html#a655ac032c591b1f0156f26cd18eca4e9',1,'arch::Serial::getchar()'],['../stdio_8c.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c'],['../stdio_8h.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c']]],
   ['getpid_15',['getpid',['../unistd_8c.html#ac61b207337ca21b3b309593fd1a0cb82',1,'getpid(void):&#160;unistd.c'],['../unistd_8h.html#ac61b207337ca21b3b309593fd1a0cb82',1,'getpid(void):&#160;unistd.c']]],
   ['gettimeofday_16',['gettimeofday',['../time_8c.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../time_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../unistd_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c']]]
 ];

@@ -11,8 +11,9 @@ var dir_8ecc0c9fce4a533bbde14794104582f2 =
     [ "msr.hpp", "hal_2msr_8hpp.html", null ],
     [ "page_flags.hpp", "page__flags_8hpp.html", "page__flags_8hpp" ],
     [ "page_table.hpp", "hal_2page__table_8hpp.html", null ],
+    [ "pci.hpp", "hal_2pci_8hpp.html", "hal_2pci_8hpp" ],
     [ "rand.hpp", "hal_2rand_8hpp.html", null ],
     [ "rtc.hpp", "hal_2rtc_8hpp.html", null ],
-    [ "serial.hpp", "hal_2serial_8hpp.html", null ],
+    [ "serial.hpp", "hal_2serial_8hpp.html", "hal_2serial_8hpp" ],
     [ "timer.hpp", "hal_2timer_8hpp.html", "hal_2timer_8hpp" ]
 ];

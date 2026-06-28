@@ -2,6 +2,7 @@ var test__registry_8cpp =
 [
     [ "register_address_tests", "test__registry_8cpp.html#ace83d3cddde41442e7b5e7b61cfecf5b", null ],
     [ "register_atomic_context_switch_tests", "test__registry_8cpp.html#aebaaa6526f61ba6b96a3fecf4103dabf", null ],
+    [ "register_atomic_tests", "test__registry_8cpp.html#a10be64220ae82dd229d28dd75929225c", null ],
     [ "register_bench_irq_latency_tests", "test__registry_8cpp.html#ace55408832580798c22c0b745a5d00e0", null ],
     [ "register_bench_syscall_latency_tests", "test__registry_8cpp.html#a4e4dbb1efb98e26b9383bee21164f709", null ],
     [ "register_block_device_tests", "test__registry_8cpp.html#a637112bdb55e34aca69dfce994c616cd", null ],
@@ -10,6 +11,7 @@ var test__registry_8cpp =
     [ "register_buildsystem_tests", "test__registry_8cpp.html#a0dd08c3292aaf585484267f753d2f909", null ],
     [ "register_capability_tests", "test__registry_8cpp.html#a3251e0a9d5429e8fda3aa53debc36616", null ],
     [ "register_checked_ptr_tests", "test__registry_8cpp.html#a926311e0b338d8504d5253fa3326de7f", null ],
+    [ "register_cross_arch_tests", "test__registry_8cpp.html#ab83bebb02e17a73823e833ff4719caa4", null ],
     [ "register_deadlock_detect_tests", "test__registry_8cpp.html#a6368d3fe590fd4e0471724d8efad817c", null ],
     [ "register_deadlock_recovery_tests", "test__registry_8cpp.html#a80549dbcc6db20e6191682ab58b3c327", null ],
     [ "register_debug_tests", "test__registry_8cpp.html#af7799ded87d74784946e93e698c080fa", null ],

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -119,11 +119,12 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('pci_8hpp.html'
 </div><!--header-->
 <div class="contents">
 
-<p>PCI enumeration — arch-specific config space access and bus scan.  
+<p>PCI enumeration — arch-independent interface using HAL config space access.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pci__errors_8hpp_source.html">kernel/arch/pci_errors.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="hal_2pci_8hpp_source.html">kernel/arch/hal/pci.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for pci.hpp:</div>
 <div class="dyncontent">
@@ -143,8 +144,6 @@ This graph shows which files directly or indirectly include this file:</div>
 Data Structures</h2></td></tr>
 <tr class="memitem:arch_3A_3APciBar" id="r_arch_3A_3APciBar"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_pci_bar.html">arch::PciBar</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parsed BAR descriptor.  <a href="structarch_1_1_pci_bar.html#details">More...</a><br /></td></tr>
-<tr class="memitem:arch_3A_3APciBdf" id="r_arch_3A_3APciBdf"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_pci_bdf.html">arch::PciBdf</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">BDF (Bus:Device.Function) address.  <a href="structarch_1_1_pci_bdf.html#details">More...</a><br /></td></tr>
 <tr class="memitem:arch_3A_3APciDeviceInfo" id="r_arch_3A_3APciDeviceInfo"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_pci_device_info.html">arch::PciDeviceInfo</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Discovered device info.  <a href="structarch_1_1_pci_device_info.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
@@ -195,6 +194,12 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a618ff63a4488522a84314c2073680fcb" id="r_a618ff63a4488522a84314c2073680fcb"><td class="memItemLeft"><a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a618ff63a4488522a84314c2073680fcb">arch::pci_read_vendor</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
+<tr class="memdesc:a618ff63a4488522a84314c2073680fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read vendor ID (return 0xFFFF if no device).  <br /></td></tr>
+<tr class="memitem:a82d6e35824ae89c5c235ebc573c957e3" id="r_a82d6e35824ae89c5c235ebc573c957e3"><td class="memItemLeft"><a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a82d6e35824ae89c5c235ebc573c957e3">arch::pci_read_device</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
+<tr class="memdesc:a82d6e35824ae89c5c235ebc573c957e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read device ID.  <br /></td></tr>
+<tr class="memitem:a89e6f2f91ea2a053b66d1be3e714b76d" id="r_a89e6f2f91ea2a053b66d1be3e714b76d"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a89e6f2f91ea2a053b66d1be3e714b76d">arch::pci_device_exists</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
+<tr class="memdesc:a89e6f2f91ea2a053b66d1be3e714b76d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a BDF has a valid device.  <br /></td></tr>
 <tr class="memitem:adf555b81d7d72b5c61d212eaf1aa1e69" id="r_adf555b81d7d72b5c61d212eaf1aa1e69"><td class="memItemLeft"><a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#adf555b81d7d72b5c61d212eaf1aa1e69">arch::pci_scan_all</a> ()</td></tr>
 <tr class="memitem:ad0eacdfd4f0fbf174271a31b0aee7bd6" id="r_ad0eacdfd4f0fbf174271a31b0aee7bd6"><td class="memItemLeft">const <a class="el" href="structarch_1_1_pci_device_info.html">PciDeviceInfo</a> *&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ad0eacdfd4f0fbf174271a31b0aee7bd6">arch::pci_devices</a> ()</td></tr>
 <tr class="memitem:a9409db147e4855832856d485ddfc9ac3" id="r_a9409db147e4855832856d485ddfc9ac3"><td class="memItemLeft"><a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a9409db147e4855832856d485ddfc9ac3">arch::pci_device_count</a> ()</td></tr>
@@ -242,7 +247,7 @@ Variables</h2></td></tr>
 <tr class="memitem:a7b9b3fb39b3d73b191720c45ae15a7a5" id="r_a7b9b3fb39b3d73b191720c45ae15a7a5"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a7b9b3fb39b3d73b191720c45ae15a7a5">arch::PCI_MAX_DEVICES_FOUND</a> = 128</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>PCI enumeration — arch-specific config space access and bus scan. </p>
+<div class="textblock"><p>PCI enumeration — arch-independent interface using HAL config space access. </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

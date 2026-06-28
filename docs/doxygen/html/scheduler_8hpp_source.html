@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('scheduler_8hpp
 <div class="ttc" id="aclasskernel_1_1_scheduler_html_ad6a4601a5f91b36b4d95bcf1c36a528e"><div class="ttname"><a href="classkernel_1_1_scheduler.html#ad6a4601a5f91b36b4d95bcf1c36a528e">kernel::Scheduler::restore_state</a></div><div class="ttdeci">static void restore_state(TaskControlBlock *const *tasks_in, TaskControlBlock *const *id_table_in, uint64_t task_count_in, uint64_t current_idx_in, uint64_t next_id_in, TaskControlBlock *idle_in, bool preempt_in)</div><div class="ttdef"><b>Definition</b> scheduler.cpp:744</div></div>
 <div class="ttc" id="aclasskernel_1_1_scheduler_html_adbf15b7eb697f6c14bcf76c438895b18"><div class="ttname"><a href="classkernel_1_1_scheduler.html#adbf15b7eb697f6c14bcf76c438895b18">kernel::Scheduler::find_task</a></div><div class="ttdeci">static TaskControlBlock * find_task(uint64_t id) noexcept</div><div class="ttdoc">Finds a task by its ID (hash table, O(1) amortized).</div><div class="ttdef"><b>Definition</b> scheduler.cpp:182</div></div>
 <div class="ttc" id="aclasskernel_1_1_scheduler_html_afd4d3fa549d043821c690659b334caf1"><div class="ttname"><a href="classkernel_1_1_scheduler.html#afd4d3fa549d043821c690659b334caf1">kernel::Scheduler::alloc_id_err</a></div><div class="ttdeci">static errors::SchedulerError alloc_id_err(uint64_t &amp;out_id)</div><div class="ttdoc">Error-returning overload for alloc_id().</div><div class="ttdef"><b>Definition</b> scheduler.cpp:803</div></div>
-<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html">kernel::sync::SpinLock</a></div><div class="ttdef"><b>Definition</b> spinlock.hpp:26</div></div>
+<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html">kernel::sync::SpinLock</a></div><div class="ttdef"><b>Definition</b> spinlock.hpp:27</div></div>
 <div class="ttc" id="ajarvis__config_8h_html"><div class="ttname"><a href="jarvis__config_8h.html">jarvis_config.h</a></div><div class="ttdoc">Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...</div></div>
 <div class="ttc" id="anamespacekernel_1_1errors_html"><div class="ttname"><a href="namespacekernel_1_1errors.html">kernel::errors</a></div><div class="ttdoc">Primary template for per-module error-string lookup. Each module that defines error codes specialises...</div><div class="ttdef"><b>Definition</b> pci_errors.hpp:27</div></div>
 <div class="ttc" id="anamespacekernel_1_1errors_html_ae886175cc5c137dd98ed440d4a46c203"><div class="ttname"><a href="namespacekernel_1_1errors.html#ae886175cc5c137dd98ed440d4a46c203">kernel::errors::SchedulerError</a></div><div class="ttdeci">SchedulerError</div><div class="ttdef"><b>Definition</b> scheduler_errors.hpp:40</div></div>

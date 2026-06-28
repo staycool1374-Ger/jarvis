@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -140,20 +140,26 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('kernel_8hpp_so
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615">   30</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615">higherhalf_entry</a>(uint64_t magic, uint64_t mb_info);</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#a47968ee10f6b34a8111739e655a6c6c1">panic</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* msg) __attribute__((noreturn));</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="kernel_8hpp.html#a59c51dc200e018623c3a7468c91552b7">   39</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#a59c51dc200e018623c3a7468c91552b7">handle_interrupt_c</a>(uint64_t vector, uint64_t error_code, uint64_t rip,</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        uint64_t* regs);</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>}</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="keyword">extern</span> <a class="code hl_typedef" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> <a class="code hl_variable" href="kernel_8hpp.html#af2dbba54a64ff017f6a9b4e91b3b29a8">kernel_stack</a>[];</div>
-<div class="ttc" id="akernel_8hpp_html_a47968ee10f6b34a8111739e655a6c6c1"><div class="ttname"><a href="kernel_8hpp.html#a47968ee10f6b34a8111739e655a6c6c1">panic</a></div><div class="ttdeci">void panic(const char *msg) __attribute__((noreturn))</div><div class="ttdoc">Kernel panic handler (noreturn).</div><div class="ttdef"><b>Definition</b> kernel.cpp:635</div></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;<a class="code" href="bootinfo_8hpp.html">kernel/boot/bootinfo.hpp</a>&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">extern</span> <a class="code hl_struct" href="struct_boot_info.html">BootInfo</a> <a class="code hl_variable" href="kernel_8cpp.html#a80bb39a5269fd76f151c9193535e2e9e">g_boot_info</a>;</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615">   33</a></span><span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615">higherhalf_entry</a>(uint64_t magic, uint64_t mb_info);</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#a47968ee10f6b34a8111739e655a6c6c1">panic</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* msg) __attribute__((noreturn));</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="kernel_8hpp.html#a59c51dc200e018623c3a7468c91552b7">   42</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="kernel_8hpp.html#a59c51dc200e018623c3a7468c91552b7">handle_interrupt_c</a>(uint64_t vector, uint64_t error_code, uint64_t rip,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        uint64_t* regs);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>}</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="keyword">extern</span> <a class="code hl_typedef" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> <a class="code hl_variable" href="kernel_8hpp.html#af2dbba54a64ff017f6a9b4e91b3b29a8">kernel_stack</a>[];</div>
+<div class="ttc" id="abootinfo_8hpp_html"><div class="ttname"><a href="bootinfo_8hpp.html">bootinfo.hpp</a></div></div>
+<div class="ttc" id="akernel_8cpp_html_a80bb39a5269fd76f151c9193535e2e9e"><div class="ttname"><a href="kernel_8cpp.html#a80bb39a5269fd76f151c9193535e2e9e">g_boot_info</a></div><div class="ttdeci">BootInfo g_boot_info</div><div class="ttdef"><b>Definition</b> kernel.cpp:131</div></div>
+<div class="ttc" id="akernel_8hpp_html_a47968ee10f6b34a8111739e655a6c6c1"><div class="ttname"><a href="kernel_8hpp.html#a47968ee10f6b34a8111739e655a6c6c1">panic</a></div><div class="ttdeci">void panic(const char *msg) __attribute__((noreturn))</div><div class="ttdoc">Kernel panic handler (noreturn).</div><div class="ttdef"><b>Definition</b> kernel.cpp:715</div></div>
 <div class="ttc" id="akernel_8hpp_html_a59c51dc200e018623c3a7468c91552b7"><div class="ttname"><a href="kernel_8hpp.html#a59c51dc200e018623c3a7468c91552b7">handle_interrupt_c</a></div><div class="ttdeci">void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip, uint64_t *regs)</div><div class="ttdoc">C-level interrupt handler dispatcher.</div></div>
 <div class="ttc" id="akernel_8hpp_html_ae54e1bcf3fe5f14443fdc8ddadfbb615"><div class="ttname"><a href="kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615">higherhalf_entry</a></div><div class="ttdeci">void higherhalf_entry(uint64_t magic, uint64_t mb_info)</div><div class="ttdoc">Entry point after transitioning to the higher half.</div></div>
 <div class="ttc" id="akernel_8hpp_html_af2dbba54a64ff017f6a9b4e91b3b29a8"><div class="ttname"><a href="kernel_8hpp.html#af2dbba54a64ff017f6a9b4e91b3b29a8">kernel_stack</a></div><div class="ttdeci">uint8_t kernel_stack[]</div><div class="ttdoc">Kernel stack base (bottom address).</div></div>
 <div class="ttc" id="anamespacearch_html_abf2008b4b5cca56bc6c26fe0536ed955"><div class="ttname"><a href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">arch::uint8_t</a></div><div class="ttdeci">unsigned char uint8_t</div><div class="ttdef"><b>Definition</b> serial.cpp:25</div></div>
+<div class="ttc" id="astruct_boot_info_html"><div class="ttname"><a href="struct_boot_info.html">BootInfo</a></div><div class="ttdef"><b>Definition</b> bootinfo.hpp:7</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

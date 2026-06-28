@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -139,66 +139,70 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('spinlock_8hpp_
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;<a class="code" href="io_8hpp.html">kernel/arch/io.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel_1_1sync.html">sync</a> {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="foldopen" id="foldopen00026" data-start="{" data-end="};">
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html">   26</a></span><span class="keyword">class </span><a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a> {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">   28</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a5c9d51e941f57926ba74eb5a5c58bcce">   30</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a5c9d51e941f57926ba74eb5a5c58bcce">SpinLock</a>(<span class="keyword">const</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;)            = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a3f749cd1923cde5a9f7ce0a0902957b2">   31</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp; <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a3f749cd1923cde5a9f7ce0a0902957b2">operator=</a>(<span class="keyword">const</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;) = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a065d94a108176854fd6e5e3ff4559683">   32</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a065d94a108176854fd6e5e3ff4559683">SpinLock</a>(<a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;&amp;)                 = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#ac720b9debc04ab54bbf1a5bea3d415f9">   33</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp; <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#ac720b9debc04ab54bbf1a5bea3d415f9">operator=</a>(<a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;&amp;)      = <span class="keyword">delete</span>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
-<div class="foldopen" id="foldopen00035" data-start="{" data-end="}">
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">   35</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">lock</a>() noexcept {</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keywordflow">while</span> (__atomic_exchange_n(&amp;locked_, 1, __ATOMIC_ACQUIRE)) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>            <a class="code hl_function" href="namespacearch.html#a758a63db8fd03d589e2c7cac631fb66d">arch::pause</a>();</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        }</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    }</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;<a class="code" href="atomic_8hpp.html">lib/atomic.hpp</a>&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel_1_1sync.html">sync</a> {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
+<div class="foldopen" id="foldopen00027" data-start="{" data-end="};">
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html">   27</a></span><span class="keyword">class </span><a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a> {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">   29</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a5c9d51e941f57926ba74eb5a5c58bcce">   31</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a5c9d51e941f57926ba74eb5a5c58bcce">SpinLock</a>(<span class="keyword">const</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;)            = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a3f749cd1923cde5a9f7ce0a0902957b2">   32</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp; <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a3f749cd1923cde5a9f7ce0a0902957b2">operator=</a>(<span class="keyword">const</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;) = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a065d94a108176854fd6e5e3ff4559683">   33</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a065d94a108176854fd6e5e3ff4559683">SpinLock</a>(<a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;&amp;)                 = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#ac720b9debc04ab54bbf1a5bea3d415f9">   34</a></span>    <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp; <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#ac720b9debc04ab54bbf1a5bea3d415f9">operator=</a>(<a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">SpinLock</a>&amp;&amp;)      = <span class="keyword">delete</span>;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
+<div class="foldopen" id="foldopen00036" data-start="{" data-end="}">
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">   36</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">lock</a>() noexcept {</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keywordflow">while</span> (<a class="code hl_function" href="namespacekernel.html#a3dd3bd74efa8bab6fd34d9ada348781d">atomic_exchange</a>(&amp;locked_, 1, __ATOMIC_ACQUIRE)) {</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>            <a class="code hl_function" href="namespacearch.html#a758a63db8fd03d589e2c7cac631fb66d">arch::pause</a>();</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        }</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    }</div>
 </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="foldopen" id="foldopen00041" data-start="{" data-end="}">
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">   41</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">unlock</a>() noexcept {</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        __atomic_store_n(&amp;locked_, 0, __ATOMIC_RELEASE);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    }</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="foldopen" id="foldopen00042" data-start="{" data-end="}">
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">   42</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">unlock</a>() noexcept {</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <a class="code hl_function" href="namespacekernel.html#a990823fa4f88496f91379344984fe8d5">atomic_store</a>(&amp;locked_, 0, __ATOMIC_RELEASE);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    }</div>
 </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="foldopen" id="foldopen00045" data-start="{" data-end="}">
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">   45</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">reset</a>() noexcept {</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        locked_ = 0;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    }</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="foldopen" id="foldopen00046" data-start="{" data-end="}">
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">   46</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">reset</a>() noexcept {</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        locked_ = 0;</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    }</div>
 </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="foldopen" id="foldopen00049" data-start="{" data-end="}">
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">   49</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">try_lock</a>() noexcept {</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        <span class="keywordflow">return</span> !__atomic_exchange_n(&amp;locked_, 1, __ATOMIC_ACQUIRE);</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    }</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="foldopen" id="foldopen00050" data-start="{" data-end="}">
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">   50</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">try_lock</a>() noexcept {</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <span class="keywordflow">return</span> !<a class="code hl_function" href="namespacekernel.html#a3dd3bd74efa8bab6fd34d9ada348781d">atomic_exchange</a>(&amp;locked_, 1, __ATOMIC_ACQUIRE);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    }</div>
 </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordtype">int</span> locked_ = 0;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>};</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="keywordtype">int</span> locked_ = 0;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>};</div>
 </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>} <span class="comment">// namespace sync</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>} <span class="comment">// namespace kernel</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>} <span class="comment">// namespace sync</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>} <span class="comment">// namespace kernel</span></div>
+<div class="ttc" id="aatomic_8hpp_html"><div class="ttname"><a href="atomic_8hpp.html">atomic.hpp</a></div></div>
 <div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a065d94a108176854fd6e5e3ff4559683"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a065d94a108176854fd6e5e3ff4559683">kernel::sync::SpinLock::SpinLock</a></div><div class="ttdeci">SpinLock(SpinLock &amp;&amp;)=delete</div></div>
-<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a097026b8a7aef9e203d1ce500438f618"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">kernel::sync::SpinLock::lock</a></div><div class="ttdeci">void lock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:35</div></div>
+<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a097026b8a7aef9e203d1ce500438f618"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a097026b8a7aef9e203d1ce500438f618">kernel::sync::SpinLock::lock</a></div><div class="ttdeci">void lock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:36</div></div>
 <div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a23ce5409dd98d436e160743c979e36ba"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a23ce5409dd98d436e160743c979e36ba">kernel::sync::SpinLock::SpinLock</a></div><div class="ttdeci">SpinLock()=default</div></div>
 <div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a3f749cd1923cde5a9f7ce0a0902957b2"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a3f749cd1923cde5a9f7ce0a0902957b2">kernel::sync::SpinLock::operator=</a></div><div class="ttdeci">SpinLock &amp; operator=(const SpinLock &amp;)=delete</div></div>
-<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a41e703bd7a7c64500b8837a290aa0062"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">kernel::sync::SpinLock::reset</a></div><div class="ttdeci">void reset() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:45</div></div>
+<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a41e703bd7a7c64500b8837a290aa0062"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">kernel::sync::SpinLock::reset</a></div><div class="ttdeci">void reset() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:46</div></div>
 <div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_a5c9d51e941f57926ba74eb5a5c58bcce"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#a5c9d51e941f57926ba74eb5a5c58bcce">kernel::sync::SpinLock::SpinLock</a></div><div class="ttdeci">SpinLock(const SpinLock &amp;)=delete</div></div>
-<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_aa2cf505af8296bb91213f93d379c1930"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">kernel::sync::SpinLock::unlock</a></div><div class="ttdeci">void unlock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:41</div></div>
-<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_abe0b78f8a620a351e3fd4d6b752783ab"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">kernel::sync::SpinLock::try_lock</a></div><div class="ttdeci">bool try_lock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:49</div></div>
+<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_aa2cf505af8296bb91213f93d379c1930"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#aa2cf505af8296bb91213f93d379c1930">kernel::sync::SpinLock::unlock</a></div><div class="ttdeci">void unlock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:42</div></div>
+<div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_abe0b78f8a620a351e3fd4d6b752783ab"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#abe0b78f8a620a351e3fd4d6b752783ab">kernel::sync::SpinLock::try_lock</a></div><div class="ttdeci">bool try_lock() noexcept</div><div class="ttdef"><b>Definition</b> spinlock.hpp:50</div></div>
 <div class="ttc" id="aclasskernel_1_1sync_1_1_spin_lock_html_ac720b9debc04ab54bbf1a5bea3d415f9"><div class="ttname"><a href="classkernel_1_1sync_1_1_spin_lock.html#ac720b9debc04ab54bbf1a5bea3d415f9">kernel::sync::SpinLock::operator=</a></div><div class="ttdeci">SpinLock &amp; operator=(SpinLock &amp;&amp;)=delete</div></div>
 <div class="ttc" id="aio_8hpp_html"><div class="ttname"><a href="io_8hpp.html">io.hpp</a></div></div>
 <div class="ttc" id="anamespacearch_html_a758a63db8fd03d589e2c7cac631fb66d"><div class="ttname"><a href="namespacearch.html#a758a63db8fd03d589e2c7cac631fb66d">arch::pause</a></div><div class="ttdeci">void pause()</div><div class="ttdef"><b>Definition</b> io_impl.hpp:33</div></div>
 <div class="ttc" id="anamespacekernel_1_1sync_html"><div class="ttname"><a href="namespacekernel_1_1sync.html">kernel::sync</a></div><div class="ttdef"><b>Definition</b> eventgroup.cpp:25</div></div>
 <div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> page_flags.hpp:5</div></div>
+<div class="ttc" id="anamespacekernel_html_a3dd3bd74efa8bab6fd34d9ada348781d"><div class="ttname"><a href="namespacekernel.html#a3dd3bd74efa8bab6fd34d9ada348781d">kernel::atomic_exchange</a></div><div class="ttdeci">T atomic_exchange(T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</div><div class="ttdef"><b>Definition</b> atomic.hpp:68</div></div>
+<div class="ttc" id="anamespacekernel_html_a990823fa4f88496f91379344984fe8d5"><div class="ttname"><a href="namespacekernel.html#a990823fa4f88496f91379344984fe8d5">kernel::atomic_store</a></div><div class="ttdeci">void atomic_store(T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</div><div class="ttdef"><b>Definition</b> atomic.hpp:56</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

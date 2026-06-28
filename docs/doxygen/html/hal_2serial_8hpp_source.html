@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -120,75 +120,25 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('hal_2serial_8h
 <div class="contents">
 <a href="hal_2serial_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;<a class="code" href="constants_8hpp.html">constants.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;<a class="code" href="hal_2io_8hpp.html">kernel/arch/hal/io.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;<a class="code" href="jarvis__config_8h.html">kernel/jarvis_config.h</a>&gt;</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span> </div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacearch.html">arch</a> {</div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span> </div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="preprocessor">#if defined(CONFIG_ARCH_X86_64)</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span> </div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="keyword">class </span>Serial {</div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">init</a>() {</div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 1, 0x00);</div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 3, 0x80);</div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 0, 0x01);</div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 1, 0x00);</div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 3, 0x03);</div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 2, 0xC7);</div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 4, 0x0B);</div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1 + 4, 0x0F);</div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    }</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a>(<span class="keywordtype">char</span> c) {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>        <span class="keywordflow">if</span> (c == <span class="charliteral">&#39;\n&#39;</span>) {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>            <span class="keywordflow">while</span> ((<a class="code hl_function" href="namespacearch.html#addead5fdd04206009d38bb2eb805dc0c">inb</a>(arch::COM1 + 5) &amp; 0x20) == 0);</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>            <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1, <span class="charliteral">&#39;\r&#39;</span>);</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>        }</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>        <span class="keywordflow">while</span> ((<a class="code hl_function" href="namespacearch.html#addead5fdd04206009d38bb2eb805dc0c">inb</a>(arch::COM1 + 5) &amp; 0x20) == 0);</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        <a class="code hl_function" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">outb</a>(arch::COM1, c);</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    }</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* s) {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        <span class="keywordflow">while</span> (*s) <a class="code hl_function" href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a>(*s++);</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    }</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>};</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#elif defined(CONFIG_ARCH_AARCH64)</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="keyword">class </span>Serial {</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">init</a>();</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a>(<span class="keywordtype">char</span> c);</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* s);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>};</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#elif defined(CONFIG_ARCH_RISCV64)</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="keyword">class </span>Serial {</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">init</a>();</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a>(<span class="keywordtype">char</span> c);</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* s);</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>};</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">#  error &quot;HAL: no serial implementation for this architecture&quot;</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>} <span class="comment">// namespace arch</span></div>
-<div class="ttc" id="aconstants_8hpp_html"><div class="ttname"><a href="constants_8hpp.html">constants.hpp</a></div><div class="ttdoc">Central hardware and memory-layout constants (no magic numbers).</div></div>
-<div class="ttc" id="ahal_2io_8hpp_html"><div class="ttname"><a href="hal_2io_8hpp.html">io.hpp</a></div></div>
-<div class="ttc" id="ajarvis__config_8h_html"><div class="ttname"><a href="jarvis__config_8h.html">jarvis_config.h</a></div><div class="ttdoc">Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...</div></div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacearch.html">arch</a> {</div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
+<div class="foldopen" id="foldopen00005" data-start="{" data-end="};">
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno"><a class="line" href="classarch_1_1_serial.html">    5</a></span><span class="keyword">class </span><a class="code hl_class" href="classarch_1_1_serial.html">Serial</a> {</div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#acd5b088c85ae5925492a248973f382ee">init</a>();</div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#a2f8bcf0e34fb705854192fbdb8b3a04d">putchar</a>(<span class="keywordtype">char</span> c);</div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>    <span class="keyword">static</span> <span class="keywordtype">char</span> <a class="code hl_function" href="classarch_1_1_serial.html#a655ac032c591b1f0156f26cd18eca4e9">getchar</a>();</div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#a46ee5ade7378701ed69f936fdbea2039">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* str);</div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>};</div>
+</div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>} <span class="comment">// namespace arch</span></div>
+<div class="ttc" id="aclassarch_1_1_serial_html"><div class="ttname"><a href="classarch_1_1_serial.html">arch::Serial</a></div><div class="ttdef"><b>Definition</b> serial.hpp:5</div></div>
+<div class="ttc" id="aclassarch_1_1_serial_html_a2f8bcf0e34fb705854192fbdb8b3a04d"><div class="ttname"><a href="classarch_1_1_serial.html#a2f8bcf0e34fb705854192fbdb8b3a04d">arch::Serial::putchar</a></div><div class="ttdeci">static void putchar(char c)</div><div class="ttdef"><b>Definition</b> serial.cpp:30</div></div>
+<div class="ttc" id="aclassarch_1_1_serial_html_a46ee5ade7378701ed69f936fdbea2039"><div class="ttname"><a href="classarch_1_1_serial.html#a46ee5ade7378701ed69f936fdbea2039">arch::Serial::puts</a></div><div class="ttdeci">static void puts(const char *str)</div><div class="ttdef"><b>Definition</b> serial.cpp:44</div></div>
+<div class="ttc" id="aclassarch_1_1_serial_html_a655ac032c591b1f0156f26cd18eca4e9"><div class="ttname"><a href="classarch_1_1_serial.html#a655ac032c591b1f0156f26cd18eca4e9">arch::Serial::getchar</a></div><div class="ttdeci">static char getchar()</div><div class="ttdef"><b>Definition</b> serial.cpp:39</div></div>
+<div class="ttc" id="aclassarch_1_1_serial_html_acd5b088c85ae5925492a248973f382ee"><div class="ttname"><a href="classarch_1_1_serial.html#acd5b088c85ae5925492a248973f382ee">arch::Serial::init</a></div><div class="ttdeci">static void init()</div><div class="ttdef"><b>Definition</b> serial.cpp:19</div></div>
 <div class="ttc" id="anamespacearch_html"><div class="ttname"><a href="namespacearch.html">arch</a></div><div class="ttdef"><b>Definition</b> cpuid_impl.hpp:5</div></div>
-<div class="ttc" id="anamespacearch_html_ab1e7d8f3b867b1b2a37b796b1c749c0a"><div class="ttname"><a href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">arch::outb</a></div><div class="ttdeci">void outb(uint16_t port, uint8_t val)</div><div class="ttdef"><b>Definition</b> io_impl.hpp:24</div></div>
-<div class="ttc" id="anamespacearch_html_addead5fdd04206009d38bb2eb805dc0c"><div class="ttname"><a href="namespacearch.html#addead5fdd04206009d38bb2eb805dc0c">arch::inb</a></div><div class="ttdeci">uint8_t inb(uint16_t port)</div><div class="ttdef"><b>Definition</b> io_impl.hpp:25</div></div>
-<div class="ttc" id="anamespaceinitrd_html_a7b70f1cbe142d57f40fb7691d81ce5de"><div class="ttname"><a href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">initrd::init</a></div><div class="ttdeci">void init(const uint8_t *start, const uint8_t *end)</div><div class="ttdef"><b>Definition</b> initrd.cpp:60</div></div>
-<div class="ttc" id="astdio_8c_html_ad41876f99f190c7488e64ef39c50a23f"><div class="ttname"><a href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a></div><div class="ttdeci">int puts(const char *s)</div><div class="ttdef"><b>Definition</b> stdio.c:13</div></div>
-<div class="ttc" id="astdio_8c_html_af4de2514b7778805db3815e8dd6cf09a"><div class="ttname"><a href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a></div><div class="ttdeci">int putchar(int c)</div><div class="ttdef"><b>Definition</b> stdio.c:7</div></div>
-<div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

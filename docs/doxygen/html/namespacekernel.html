@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.24</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.2.25</span>
    </div>
   </td>
  </tr>
@@ -389,6 +389,29 @@ Functions</h2></td></tr>
 <tr class="memdesc:a9799f9b32ab65aeb956ce8717fe91bc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve a path and open it as a file descriptor.  <br /></td></tr>
 <tr class="memitem:abb9b26c8d76b814b9ed2a3c78bad290e" id="r_abb9b26c8d76b814b9ed2a3c78bad290e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abb9b26c8d76b814b9ed2a3c78bad290e">init_task_common</a> (<a class="el" href="structkernel_1_1_task_control_block.html">TaskControlBlock</a> &amp;tcb)</td></tr>
 <tr class="memdesc:abb9b26c8d76b814b9ed2a3c78bad290e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize common task fields after allocation.  <br /></td></tr>
+<tr class="memitem:a71095cad3c5bc16f145256f5659bc4f5" id="r_a71095cad3c5bc16f145256f5659bc4f5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a71095cad3c5bc16f145256f5659bc4f5">atomic_fence</a> ()</td></tr>
+<tr class="memitem:a0a3c6d96045314e760c63011e9568f9b" id="r_a0a3c6d96045314e760c63011e9568f9b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a3c6d96045314e760c63011e9568f9b">atomic_acquire_fence</a> ()</td></tr>
+<tr class="memitem:a694a81cf88aaa57b10bbb8850672ef0c" id="r_a694a81cf88aaa57b10bbb8850672ef0c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a694a81cf88aaa57b10bbb8850672ef0c">atomic_release_fence</a> ()</td></tr>
+<tr class="memitem:a3467ffae4985a6e455b41fc91dfb2758" id="r_a3467ffae4985a6e455b41fc91dfb2758"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a3467ffae4985a6e455b41fc91dfb2758 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#a3467ffae4985a6e455b41fc91dfb2758">atomic_load</a> (const T *ptr, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:aec2ff29f4a73c59d1148d80456efef70" id="r_aec2ff29f4a73c59d1148d80456efef70"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:aec2ff29f4a73c59d1148d80456efef70 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#aec2ff29f4a73c59d1148d80456efef70">atomic_load</a> (const volatile T *ptr, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a990823fa4f88496f91379344984fe8d5" id="r_a990823fa4f88496f91379344984fe8d5"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a990823fa4f88496f91379344984fe8d5 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a990823fa4f88496f91379344984fe8d5">atomic_store</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a6150ab02de411dbe57ab81bb5b9ff39a" id="r_a6150ab02de411dbe57ab81bb5b9ff39a"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a6150ab02de411dbe57ab81bb5b9ff39a template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6150ab02de411dbe57ab81bb5b9ff39a">atomic_store</a> (volatile T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a3dd3bd74efa8bab6fd34d9ada348781d" id="r_a3dd3bd74efa8bab6fd34d9ada348781d"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a3dd3bd74efa8bab6fd34d9ada348781d template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#a3dd3bd74efa8bab6fd34d9ada348781d">atomic_exchange</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:abb19c90f47d9e7fb9a58a92ea6c56444" id="r_abb19c90f47d9e7fb9a58a92ea6c56444"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:abb19c90f47d9e7fb9a58a92ea6c56444 template"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#abb19c90f47d9e7fb9a58a92ea6c56444">atomic_compare_exchange</a> (T *ptr, T *expected, T desired, int success_memorder=__ATOMIC_SEQ_CST, int failure_memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a56f268eef1f35b70000df579cb696402" id="r_a56f268eef1f35b70000df579cb696402"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a56f268eef1f35b70000df579cb696402 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#a56f268eef1f35b70000df579cb696402">atomic_fetch_add</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a234c39089a2fb2655713b1517a5434f8" id="r_a234c39089a2fb2655713b1517a5434f8"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a234c39089a2fb2655713b1517a5434f8 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#a234c39089a2fb2655713b1517a5434f8">atomic_fetch_sub</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:a0b53ebdcfd727696c38e53dd231e6bc8" id="r_a0b53ebdcfd727696c38e53dd231e6bc8"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:a0b53ebdcfd727696c38e53dd231e6bc8 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#a0b53ebdcfd727696c38e53dd231e6bc8">atomic_fetch_and</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
+<tr class="memitem:aeff92d0686d5caa3ef582908fce213f2" id="r_aeff92d0686d5caa3ef582908fce213f2"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
+<tr class="memitem:aeff92d0686d5caa3ef582908fce213f2 template"><td class="memItemLeft">T&#160;</td><td class="memItemRight"><a class="el" href="#aeff92d0686d5caa3ef582908fce213f2">atomic_fetch_or</a> (T *ptr, T val, int memorder=__ATOMIC_SEQ_CST)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -852,6 +875,441 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="a0a3c6d96045314e760c63011e9568f9b" name="a0a3c6d96045314e760c63011e9568f9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a3c6d96045314e760c63011e9568f9b">&#9670;&#160;</a></span>atomic_acquire_fence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::atomic_acquire_fence </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abb19c90f47d9e7fb9a58a92ea6c56444" name="abb19c90f47d9e7fb9a58a92ea6c56444"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb19c90f47d9e7fb9a58a92ea6c56444">&#9670;&#160;</a></span>atomic_compare_exchange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool kernel::atomic_compare_exchange </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>expected</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>desired</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>success_memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>failure_memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3dd3bd74efa8bab6fd34d9ada348781d" name="a3dd3bd74efa8bab6fd34d9ada348781d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dd3bd74efa8bab6fd34d9ada348781d">&#9670;&#160;</a></span>atomic_exchange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_exchange </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a71095cad3c5bc16f145256f5659bc4f5" name="a71095cad3c5bc16f145256f5659bc4f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71095cad3c5bc16f145256f5659bc4f5">&#9670;&#160;</a></span>atomic_fence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::atomic_fence </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a56f268eef1f35b70000df579cb696402" name="a56f268eef1f35b70000df579cb696402"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56f268eef1f35b70000df579cb696402">&#9670;&#160;</a></span>atomic_fetch_add()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_fetch_add </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0b53ebdcfd727696c38e53dd231e6bc8" name="a0b53ebdcfd727696c38e53dd231e6bc8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b53ebdcfd727696c38e53dd231e6bc8">&#9670;&#160;</a></span>atomic_fetch_and()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_fetch_and </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aeff92d0686d5caa3ef582908fce213f2" name="aeff92d0686d5caa3ef582908fce213f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeff92d0686d5caa3ef582908fce213f2">&#9670;&#160;</a></span>atomic_fetch_or()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_fetch_or </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a234c39089a2fb2655713b1517a5434f8" name="a234c39089a2fb2655713b1517a5434f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a234c39089a2fb2655713b1517a5434f8">&#9670;&#160;</a></span>atomic_fetch_sub()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_fetch_sub </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3467ffae4985a6e455b41fc91dfb2758" name="a3467ffae4985a6e455b41fc91dfb2758"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3467ffae4985a6e455b41fc91dfb2758">&#9670;&#160;</a></span>atomic_load() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_load </td>
+          <td>(</td>
+          <td class="paramtype">const T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aec2ff29f4a73c59d1148d80456efef70" name="aec2ff29f4a73c59d1148d80456efef70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec2ff29f4a73c59d1148d80456efef70">&#9670;&#160;</a></span>atomic_load() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T kernel::atomic_load </td>
+          <td>(</td>
+          <td class="paramtype">const volatile T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a694a81cf88aaa57b10bbb8850672ef0c" name="a694a81cf88aaa57b10bbb8850672ef0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a694a81cf88aaa57b10bbb8850672ef0c">&#9670;&#160;</a></span>atomic_release_fence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::atomic_release_fence </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a990823fa4f88496f91379344984fe8d5" name="a990823fa4f88496f91379344984fe8d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a990823fa4f88496f91379344984fe8d5">&#9670;&#160;</a></span>atomic_store() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::atomic_store </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6150ab02de411dbe57ab81bb5b9ff39a" name="a6150ab02de411dbe57ab81bb5b9ff39a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6150ab02de411dbe57ab81bb5b9ff39a">&#9670;&#160;</a></span>atomic_store() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::atomic_store </td>
+          <td>(</td>
+          <td class="paramtype">volatile T *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T</td>          <td class="paramname"><span class="paramname"><em>val</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>memorder</em></span><span class="paramdefsep"> = </span><span class="paramdefval">__ATOMIC_SEQ_CST</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="abb9b26c8d76b814b9ed2a3c78bad290e" name="abb9b26c8d76b814b9ed2a3c78bad290e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abb9b26c8d76b814b9ed2a3c78bad290e">&#9670;&#160;</a></span>init_task_common()</h2>
 

@@ -13,7 +13,7 @@ var searchData=
   ['virtio_5fis_5fvirtio_5fdevice_10',['virtio_is_virtio_device',['../namespacearch.html#a64341dad32d20057d49823aed7beb9b6',1,'arch']]],
   ['virtio_5fmap_5fmmio_11',['virtio_map_mmio',['../namespacearch.html#a1888fb8a7b37d30dec1c191cacb1fbf2',1,'arch']]],
   ['virtio_5fnegotiate_5ffeatures_12',['virtio_negotiate_features',['../namespacearch.html#a61b1d4d8c642abd27d65bb1f64405e58',1,'arch']]],
-  ['virtio_5fnet_5fpoll_13',['virtio_net_poll',['../namespacekernel_1_1net.html#ad963f2495bdf069ba09023e4b584c4b2',1,'kernel::net']]],
+  ['virtio_5fnet_5fpoll_13',['virtio_net_poll',['../namespacekernel_1_1net.html#ad963f2495bdf069ba09023e4b584c4b2',1,'kernel::net::virtio_net_poll(uint8_t *buf, size_t &amp;len)'],['../namespacekernel_1_1net.html#ad963f2495bdf069ba09023e4b584c4b2',1,'kernel::net::virtio_net_poll(uint8_t *buf, size_t &amp;len)']]],
   ['virtio_5fnet_5fprobe_14',['virtio_net_probe',['../namespacekernel_1_1net.html#ac79735cf719349d1a7d42f5c788b1406',1,'kernel::net']]],
   ['virtio_5fnotify_15',['virtio_notify',['../namespacearch.html#ab9a24e5dc4b786ed804047b81b013955',1,'arch']]],
   ['virtio_5fread_5fcommon_16',['virtio_read_common',['../namespacearch.html#aa491a140a1a188628a28ebb2c3ff6496',1,'arch']]],
