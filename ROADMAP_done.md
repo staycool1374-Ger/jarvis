@@ -86,7 +86,7 @@
 - Phase 8: Validation & benchmarks (8 test suites, 2 benchmark suites)
 - Release tag: v0.2.17
 
-## Phase 3: System Services & Hardware (v0.12.14–v0.2.24)
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.25)
 
 ### v0.12.14 — System Services
 - tmpfs (/tmp, user quotas), init system (PID 1, /etc/rc), fstab automount
@@ -187,3 +187,74 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
 - [x] **Virtio transport unification** — unified PCI HAL (CF8/CFC + ECAM), shared `virtio_pci.cpp`, ECAM for aarch64/riscv64
 - [x] **Memory model tests** — 12 atomic tests (load/store/exchange/CAS/SB/MP/pingpong, acquire/release ordering)
 - [x] **Cross-arch test suite** — `test_cross_arch.cpp` with 16 shared tests (page table, context, timer, interrupts, IPC, VFS)
+
+### 0.2.22 — aarch64 Port (ARM Cortex-A)
+
+Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU virt. Every architecture-dependent surface (page tables, interrupts, context switch, timer, boot) gets an `arch/aarch64/` implementation.
+
+- [x] **A. HAL Interface Refactoring (structural)**
+  - [x] Move `arch/x86_64/timer.cpp`, `gdt.cpp`, `idt.cpp` → `arch/x86_64/hal/` with interface headers matching `arch/hal/` API
+  - [x] `arch/hal/context.hpp` — make `ArchContext` arch-selected (x86_64 vs aarch64 vs riscv64)
+  - [x] `arch/hal/io.hpp` — add `#elif CONFIG_ARCH_AARCH64` branch mapping port I/O to MMIO (`arch/aarch64/hal/io_impl.hpp`)
+  - [x] `arch/hal/page_table.hpp` — dispatches to arch-specific `page_table_impl.hpp` per arch
+  - [x] Build system: arch-specific `OBJ` lists in `mk/rules.mk` via `arch/$(ARCH)/` source discovery
+  - [x] Validate `linker_aarch64.ld` — links successfully, sections/symbols verified via `make build/kernel-debug.elf ARCH=aarch64`
+
+- [x] **B. Boot Entry (`arch/aarch64/boot.S`)**
+  - [x] EL2→EL1 transition (QEMU virt starts at EL2), or stay at EL1 if configured
+  - [x] Exception level drop, VBAR_EL1 vector table install
+  - [x] MMU init: TCR_EL1 (4KB granule, 4-level), MAIR_EL1 (normal/device memory), TTBR0_EL1/TTBR1_EL1 with 4-level page tables
+  - [x] Identity-map kernel low region + map higher half using boot page tables
+  - [x] Enable MMU (SCTLR_EL1.M), jump to higher half
+  - [x] Call `higherhalf_entry(uint64_t magic, uint64_t dtb_ptr)` — device tree pointer instead of multiboot
+
+- [x] **C. Page Tables (`arch/aarch64/hal/page_table_impl.hpp`)**
+  - [x] `ArchPageTable` class: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
+  - [x] 4-level page table walk (L0–L3, 9-bit each, 4KB granule), `map_page()`, `unmap_page()`, `get_physical()`
+  - [x] Support 2MB block mappings at L2 (huge pages)
+
+- [x] **D. Context Switch (`arch/aarch64/hal/context.hpp`)**
+  - [x] `ArchContext` struct: x0–x29, x30/LR, SP_EL1, ELR_EL1, SPSR_EL1
+  - [x] `ArchContextManager::init_stack()` — build initial pt_regs frame for ERET to EL0
+  - [x] `ArchContextManager::switch_to(from, to, rsp)` — save/restore callee-saved regs, SP_EL1, ELR_EL1
+  - [x] `switch_to_task()` assembly trampoline — context-switch via ERET
+
+- [x] **E. Interrupts & Generic Timer**
+  - [x] DAIF masking: `irq_enable()`/`irq_disable()` via `MSR DAIFClr/DAIFSet, #2`
+  - [x] GICv3: distributor init, CPU interface init, SPI/PPI routing, eoi
+  - [x] `ArchInterruptController::init()`, `eoi()`, `mask()`, `unmask()`
+  - [x] VBAR_EL1 exception vector table (~32 entries): sync, IRQ, FIQ, SError × 4 exception levels
+  - [x] SVC #0 handler for syscall entry (EL0→EL1)
+  - [x] `arch::Timer`: init via CNTP_TVAL_EL0, ticks via ticks_ counter, ns via CNTPCT_EL0
+  - [x] `Timer::set_frequency()` — program CNTP_TVAL_EL0 period, no calibration needed (CNTFRQ_EL0 is fixed)
+
+- [x] **F. UART & Serial**
+  - [x] `arch::Serial` — PL011 UART at `0x9000000` (QEMU virt): init (8N1), putc, getc
+  - [x] Wire into kernel `Logger::init()` and `debug_write()` via `uart_putc()`
+
+- [x] **G. PCI (ECAM)**
+  - [x] Replace CF8/CFC port I/O with ECAM memory-mapped config space at QEMU virt ECAM base — ECAM driver implemented in `pci_impl.hpp`, wired via `pci.hpp` `CONFIG_ARCH_AARCH64` branch
+  - [x] PCI bus scan, BAR parsing, MSI/MSI-X capability detection — generic `pci.cpp` uses arch-specific accessors (ECAM on aarch64, CF8/CFC on x86_64)
+
+- [x] **H. Remaining HAL surface**
+  - [x] `arch::RTC` — ARM Generic Timer based (CNTPCT_EL0 / CNTFRQ_EL0)
+  - [x] `arch::cpuid()` — read ID_AA64*_EL1 system registers for FPU/SIMD feature detection (`arch/aarch64/hal/cpuid_impl.hpp`)
+  - [x] `arch::IrqGuard` — RAII via DAIF masking
+  - [x] `arch::rdrand64()` — via `arch/aarch64/hal/rand_impl.hpp` (RNDRRS_EL0 or ChaCha20 fallback)
+  - [x] `arch::Keyboard` — stub (no PS/2 on ARM virt); future: virtio-input
+
+- [x] **I. Integration & Tests**
+  - [x] `make run ARCH=aarch64` — boots to kernel UART output (debug builds + safe-class tests)
+  - [x] Validate Renode platform `tools/renode/jarvis-aarch64.repl`
+  - [x] Port kernel selftest framework to aarch64 (test registration + serial output) — safe class runs
+  - [ ] `make test-all-debug ARCH=aarch64` — all test classes pass (safe class OK, full suite has failures)
+  - [x] x86_64 must remain fully functional through every change
+
+### 0.2.25 — Test Safety & RAII Hardening
+
+- [x] **Eliminate dangling pointer accesses in tests** — convert remaining raw `delete ptr; ptr->member` patterns to `ScopeGuard` or `UniquePtr<T>` with custom deleter
+  - [x] `test_task_lifecycle.cpp` — `TaskPtr`/`SimpleTaskPtr` for 4 single-TCB tests, `ScopeGuard` for 4 multi-TCB tests
+  - [x] `test_waitpid.cpp` — evaluated, 3-TCB pattern with asymmetric cleanup; `ScopeGuard` not cleaner than existing manual cleanup
+  - [x] `test_buffer_pool.cpp` — `SimpleTaskPtr` for 17 single-TCB tests, `ScopeGuard` for 5 dual-TCB tests
+  - [x] `test_spinlock.cpp`, `test_preemption_under_syscall.cpp` — removed `guard.dismiss()` + manual redo anti-pattern in all 6 sites
+  - [x] Add `UniquePtr<T, Deleter>` usage guide to code style docs

@@ -47,7 +47,8 @@ var NAVTREE =
         [ "Variables", "functions_vars.html", "functions_vars" ],
         [ "Typedefs", "functions_type.html", null ],
         [ "Enumerations", "functions_enum.html", null ],
-        [ "Enumerator", "functions_eval.html", null ]
+        [ "Enumerator", "functions_eval.html", null ],
+        [ "Related Symbols", "functions_rela.html", null ]
       ] ]
     ] ],
     [ "Files", "files.html", [
@@ -69,27 +70,27 @@ var NAVTREEINDEX =
 [
 "aarch64_2early__init_8cpp.html",
 "class_s_p_s_c_ring.html#aee423335954c345b27244c25499d90db",
-"classkernel_1_1block_1_1_ata_pio_driver.html#a210c05a8bf1603ec248ab96d0c21c565",
-"classkernel_1_1sync_1_1_notify.html#a7f78509dfc82409073a6a539bc5d7adb",
-"crc32_8hpp_source.html",
-"functions_h.html",
-"jarvis__config_8h.html#a2c580044f067f2f953c3bdd1471189c6",
-"namespacearch.html#a66003ca971696e3917826a48b2a42dee",
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa42b2fb0e720a080e79a92f4ca97d927",
-"namespacekernel_1_1ahci.html#af6639f6b6c231027d39165b53ddf515c",
-"namespacekernel_1_1vfs.html#ad4618eec85ebd8a3d27bfc4d974d7591",
-"riscv64_2test__stubs_8cpp.html#aafca8a4a2c2a9e7a9ef7d14f7f577c35",
-"struct_utsname.html#a2238669fd24d0bed2a46aa978d2db00c",
-"structkernel_1_1_buffer_pool_1_1_entry.html#aa11e4d077393601ccb3ec8c0d6e3bb13",
-"structkernel_1_1_task_control_block.html#ab8ca92aaf0138154ab2a95e429c997eb",
-"structkernel_1_1fat32_1_1_dir_entry.html#a272dde2b04ddb04f582be48da624526a",
-"structkernel_1_1test_1_1_test_case.html#af4765d0746e3055730a7fd1e39e3acbf",
-"structnet_1_1_ether_header.html#ad82b93ea3fcc348886989c92eb74f45e",
-"test_8hpp.html#a4703e31ee404c84ab24e93550de2caad",
-"test__gcov_8cpp.html",
-"test__pmm_8cpp.html#a2eb634fff184c50083c2b9a2897d14d1",
-"test__spsc_8cpp.html#ace58f8d4cd1934b3d07473c3dc8b96b5",
-"udp_8hpp.html#ab98974981cf4c143fcee028643f313e6"
+"classkernel_1_1block_1_1_ahci_driver.html#ae8a751068cb12582e54c8a42771152b6",
+"classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97",
+"constants_8hpp_source.html",
+"functions_func_t.html",
+"jarvis__config_8h.html#a0b9c9423efd7e8b9bd77eea32bac9c93",
+"namespacearch.html#a5bfc66a6fc66f9f6074b860211118e94",
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa89aa2bca1f427b3bba6335129f479f77",
+"namespacekernel_1_1ahci.html#aece0df4d0b28c70079571b1ba992c49c",
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d",
+"riscv64_2test__stubs_8cpp.html#a5ceb5bd7cd243830f61b4e6d18eaafc5",
+"struct_send_sync_ctx.html",
+"structkernel_1_1_boot_params.html#adc46688370cb939e5934ce20ca5b34ab",
+"structkernel_1_1_task_control_block.html#a8e5b83bf2611b4f741545cae31102884",
+"structkernel_1_1elf_1_1_e_l_f64_program_header.html#abd51ed754a6243b59f8e68f4602ce421",
+"structkernel_1_1test_1_1_resource_counters.html#ab9b9548a06c39c6a31bc16cdf75317c5",
+"structnet_1_1_arp_header.html#ad2c02e8c8ebe859b757239a5f9fa5fb8",
+"task_8hpp.html",
+"test__fpu__clone_8cpp.html",
+"test__pipe_8cpp.html#a5c0c68c390d6efde13104980a48bcbc6",
+"test__sporadic__server_8cpp.html#a6888d92b64e8c268d3c5f0fe196d0c27",
+"types_8h.html"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

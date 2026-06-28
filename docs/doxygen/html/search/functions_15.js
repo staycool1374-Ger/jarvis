@@ -1,7 +1,7 @@
 var searchData=
 [
   ['uname_0',['uname',['../utsname_8h.html#a8aad464bbe437c5776c520d958dcff58',1,'uname(struct utsname *buf):&#160;utsname.h'],['../unistd_8h.html#a8aad464bbe437c5776c520d958dcff58',1,'uname(struct utsname *buf):&#160;unistd.h']]],
-  ['uniqueptr_1',['UniquePtr',['../class_unique_ptr.html#a011fd2876ab1b35415f82842dba8c017',1,'UniquePtr::UniquePtr(T *p=nullptr)'],['../class_unique_ptr.html#afa4131d6dc0cfe42951416ed553c361d',1,'UniquePtr::UniquePtr(const UniquePtr &amp;)=delete'],['../class_unique_ptr.html#a01f8666c2df4d5c46db92311ea3ae354',1,'UniquePtr::UniquePtr(UniquePtr &amp;&amp;other) noexcept']]],
+  ['uniqueptr_1',['UniquePtr',['../class_unique_ptr.html#a4e694c0ff3d7795be7a14478a80e128c',1,'UniquePtr::UniquePtr(T *p=nullptr)'],['../class_unique_ptr.html#a09da9dffb3db27e3b2576272e3b793a1',1,'UniquePtr::UniquePtr(T *p, Deleter d)'],['../class_unique_ptr.html#a7c22f9125b2f1e906512d79d4c06d24a',1,'UniquePtr::UniquePtr(const UniquePtr &amp;)=delete'],['../class_unique_ptr.html#a36d7c0532d4bcfde419a27d383418aa3',1,'UniquePtr::UniquePtr(UniquePtr &amp;&amp;other) noexcept']]],
   ['unlink_2',['unlink',['../namespacekernel_1_1vfs.html#ab8191b68620f64ca864fad18239e5bce',1,'kernel::vfs::unlink()'],['../unistd_8c.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c'],['../unistd_8h.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c']]],
   ['unlink_5ferr_3',['unlink_err',['../namespacekernel_1_1vfs.html#af555f6cb1ba4c592ec31fcf5902e367f',1,'kernel::vfs']]],
   ['unload_4',['unload',['../classkernel_1_1_driver_registry.html#a0105f4d816da40cb4301a57d374a8cbf',1,'kernel::DriverRegistry']]],

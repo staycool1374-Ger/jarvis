@@ -1,5 +1,13 @@
 var NAVTREEINDEX9 =
 {
+"namespacekernel_1_1ahci.html#aece0df4d0b28c70079571b1ba992c49c":[0,0,3,0,112],
+"namespacekernel_1_1ahci.html#aee783b704f20411de059c31411387154":[0,0,3,0,146],
+"namespacekernel_1_1ahci.html#af10d7e1c9f0aaf8ef7853bf8445ca0fc":[0,0,3,0,47],
+"namespacekernel_1_1ahci.html#af1c26cc7520894f7b352a7e51c321443":[0,0,3,0,72],
+"namespacekernel_1_1ahci.html#af2ea45ffa3f016525269a87fe49dbb47":[0,0,3,0,63],
+"namespacekernel_1_1ahci.html#af31677808045bbc11398d87acee6f7d8":[0,0,3,0,5],
+"namespacekernel_1_1ahci.html#af335369ed094f3b69cb1f47b0a03b7b6":[0,0,3,0,14],
+"namespacekernel_1_1ahci.html#af3ddea6bdeef1f5c2e6030bde7ee5165":[0,0,3,0,87],
 "namespacekernel_1_1ahci.html#af6639f6b6c231027d39165b53ddf515c":[0,0,3,0,118],
 "namespacekernel_1_1ahci.html#af7f09cc484b22a846c3dcab9a1f479dd":[0,0,3,0,105],
 "namespacekernel_1_1ahci.html#af85a08baeb7d3bcf4e823fc398f2287e":[0,0,3,0,123],
@@ -241,13 +249,5 @@ var NAVTREEINDEX9 =
 "namespacekernel_1_1vfs.html#a94bddce0efe1b0b6a3dade264883f7ce":[0,0,3,14,22],
 "namespacekernel_1_1vfs.html#a9d792be7e3f099e025d10c0a6ce0680d":[0,0,3,14,26],
 "namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04":[0,0,3,14,18],
-"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e":[0,0,3,14,18,1],
-"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d":[0,0,3,14,18,0],
-"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b":[0,0,3,14,18,2],
-"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d":[0,0,3,14,18,3],
-"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1":[0,0,3,14,18,4],
-"namespacekernel_1_1vfs.html#ab8191b68620f64ca864fad18239e5bce":[0,0,3,14,41],
-"namespacekernel_1_1vfs.html#abf5c58a8fb7ecb09a275d19b1029b125":[0,0,3,14,39],
-"namespacekernel_1_1vfs.html#ac37c50582b436a337d048c3039465d0b":[0,0,3,14,43],
-"namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a":[0,0,3,14,37]
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e":[0,0,3,14,18,1]
 };

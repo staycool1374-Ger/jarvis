@@ -246,8 +246,8 @@ var NAVTREEINDEX0 =
 "chacha_8hpp_source.html":[3,0,0,2,4],
 "checked__ptr_8hpp.html":[3,0,0,1,8,1],
 "checked__ptr_8hpp_source.html":[3,0,0,1,8,1],
-"class_s_p_s_c_ring.html":[2,0,33],
-"class_s_p_s_c_ring.html#a16b7c28cc6138d3a714bd69a573e0e5d":[2,0,33,0],
-"class_s_p_s_c_ring.html#a81616fdd3faf3c96f3489183f1f7bc4d":[2,0,33,3],
-"class_s_p_s_c_ring.html#aa23a0ba676b8f4f87dae0c26493fff40":[2,0,33,2]
+"class_s_p_s_c_ring.html":[2,0,35],
+"class_s_p_s_c_ring.html#a16b7c28cc6138d3a714bd69a573e0e5d":[2,0,35,0],
+"class_s_p_s_c_ring.html#a81616fdd3faf3c96f3489183f1f7bc4d":[2,0,35,3],
+"class_s_p_s_c_ring.html#aa23a0ba676b8f4f87dae0c26493fff40":[2,0,35,2]
 };

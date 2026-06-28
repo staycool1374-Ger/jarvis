@@ -10,6 +10,6 @@ var searchData=
   ['_7escopeguard_7',['~ScopeGuard',['../class_scope_guard.html#a09de18ca9299f746a645bd8567b0a108',1,'ScopeGuard']]],
   ['_7espinlockguard_8',['~SpinLockGuard',['../class_spin_lock_guard.html#a29d70f70e6499f0a1b97ca4282c3974c',1,'SpinLockGuard']]],
   ['_7etestbase_9',['~TestBase',['../classkernel_1_1test_1_1_test_base.html#ade0e5482ab43dd1ab71c296033c77b3a',1,'kernel::test::TestBase']]],
-  ['_7euniqueptr_10',['~UniquePtr',['../class_unique_ptr.html#ae28ecb0b6f10b7f4c053ff76c4d5224d',1,'UniquePtr']]],
+  ['_7euniqueptr_10',['~UniquePtr',['../class_unique_ptr.html#a391fe31b50f16071462d1e4968d35e8c',1,'UniquePtr']]],
   ['_7evirtioblkdriver_11',['~VirtioBlkDriver',['../classkernel_1_1block_1_1_virtio_blk_driver.html#aa8b0fd962bc567f6c54b6d2cf199a780',1,'kernel::block::VirtioBlkDriver']]]
 ];

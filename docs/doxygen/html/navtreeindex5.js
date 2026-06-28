@@ -1,5 +1,12 @@
 var NAVTREEINDEX5 =
 {
+"functions_func_t.html":[2,3,1,17],
+"functions_func_u.html":[2,3,1,18],
+"functions_func_v.html":[2,3,1,19],
+"functions_func_w.html":[2,3,1,20],
+"functions_func_x.html":[2,3,1,21],
+"functions_func_~.html":[2,3,1,22],
+"functions_g.html":[2,3,0,6],
 "functions_h.html":[2,3,0,7],
 "functions_i.html":[2,3,0,8],
 "functions_k.html":[2,3,0,9],
@@ -10,6 +17,7 @@ var NAVTREEINDEX5 =
 "functions_p.html":[2,3,0,14],
 "functions_q.html":[2,3,0,15],
 "functions_r.html":[2,3,0,16],
+"functions_rela.html":[2,3,6],
 "functions_s.html":[2,3,0,17],
 "functions_t.html":[2,3,0,18],
 "functions_type.html":[2,3,3],
@@ -241,13 +249,5 @@ var NAVTREEINDEX5 =
 "irq__guard_8hpp_source.html":[3,0,0,1,0,10],
 "jarvis__config_8h.html":[3,0,0,1,17],
 "jarvis__config_8h.html#a00ddc4bdfc7fab2e08f3a292412ef50c":[3,0,0,1,17,45],
-"jarvis__config_8h.html#a0b5fcae55cc325a4a22a0fbbaaa943c9":[3,0,0,1,17,8],
-"jarvis__config_8h.html#a0b9c9423efd7e8b9bd77eea32bac9c93":[3,0,0,1,17,57],
-"jarvis__config_8h.html#a0c3cfd9ed7438076d36385368e245b04":[3,0,0,1,17,53],
-"jarvis__config_8h.html#a0c463c0a261b2aded2e61cc266e61b38":[3,0,0,1,17,25],
-"jarvis__config_8h.html#a0eb00eae76043356257ebf25c7417e4e":[3,0,0,1,17,39],
-"jarvis__config_8h.html#a15f72011bdc6888b3a6aef544acc4604":[3,0,0,1,17,1],
-"jarvis__config_8h.html#a17a756a1a1d4b973d32c8a694b3a944d":[3,0,0,1,17,71],
-"jarvis__config_8h.html#a2485c748a6ebc8b2a808f594ec4fba23":[3,0,0,1,17,11],
-"jarvis__config_8h.html#a27810d82f14dd0845d2c9f7d1c4c4544":[3,0,0,1,17,20]
+"jarvis__config_8h.html#a0b5fcae55cc325a4a22a0fbbaaa943c9":[3,0,0,1,17,8]
 };

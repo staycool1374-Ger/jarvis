@@ -118,13 +118,21 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('unique__ptr_8h
   <div class="headertitle"><div class="title">unique_ptr.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
+<div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="unique__ptr_8hpp__dep__incl.png" border="0" usemap="#asrc_2lib_2unique__ptr_8hppdep" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
+</div>
 <p><a href="unique__ptr_8hpp_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:UniquePtr_3C_20T_20_3E" id="r_UniquePtr_3C_20T_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="class_unique_ptr.html">UniquePtr&lt; T &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction. Move-only.  <a href="class_unique_ptr.html#details">More...</a><br /></td></tr>
+<tr class="memitem:DefaultDeleter" id="r_DefaultDeleter"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="struct_default_deleter.html">DefaultDeleter</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default deleter — calls <span class="tt">delete</span> on the owned pointer.  <a href="struct_default_deleter.html#details">More...</a><br /></td></tr>
+<tr class="memitem:UniquePtr_3C_20T_2C_20Deleter_20_3E" id="r_UniquePtr_3C_20T_2C_20Deleter_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="class_unique_ptr.html">UniquePtr&lt; T, Deleter &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction using Deleter. Move-only.  <a href="class_unique_ptr.html#details">More...</a><br /></td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

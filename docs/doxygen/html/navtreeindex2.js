@@ -1,5 +1,12 @@
 var NAVTREEINDEX2 =
 {
+"classkernel_1_1block_1_1_ahci_driver.html#ae8a751068cb12582e54c8a42771152b6":[2,0,3,1,0,4],
+"classkernel_1_1block_1_1_ahci_driver.html#afab32d435a03b684777d3afbccbaa482":[0,0,3,1,0,3],
+"classkernel_1_1block_1_1_ahci_driver.html#afab32d435a03b684777d3afbccbaa482":[2,0,3,1,0,3],
+"classkernel_1_1block_1_1_ata_pio_driver.html":[0,0,3,1,1],
+"classkernel_1_1block_1_1_ata_pio_driver.html":[2,0,3,1,1],
+"classkernel_1_1block_1_1_ata_pio_driver.html#a0d4e80cc74e43b85cddd753f1d235d17":[0,0,3,1,1,3],
+"classkernel_1_1block_1_1_ata_pio_driver.html#a0d4e80cc74e43b85cddd753f1d235d17":[2,0,3,1,1,3],
 "classkernel_1_1block_1_1_ata_pio_driver.html#a210c05a8bf1603ec248ab96d0c21c565":[0,0,3,1,1,6],
 "classkernel_1_1block_1_1_ata_pio_driver.html#a210c05a8bf1603ec248ab96d0c21c565":[2,0,3,1,1,6],
 "classkernel_1_1block_1_1_ata_pio_driver.html#a2a4b7bd6f929b0a87fa4479af7133521":[0,0,3,1,1,4],
@@ -242,12 +249,5 @@ var NAVTREEINDEX2 =
 "classkernel_1_1sync_1_1_mutex.html#aeec01ec68c89532effeda70ef135ae54":[2,0,3,9,1,10],
 "classkernel_1_1sync_1_1_notify.html":[0,0,3,11,2],
 "classkernel_1_1sync_1_1_notify.html":[2,0,3,9,2],
-"classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97":[0,0,3,11,2,0],
-"classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97":[2,0,3,9,2,0],
-"classkernel_1_1sync_1_1_notify.html#a19ab2ce9b81e5537feab345f5ab227f9":[0,0,3,11,2,7],
-"classkernel_1_1sync_1_1_notify.html#a19ab2ce9b81e5537feab345f5ab227f9":[2,0,3,9,2,7],
-"classkernel_1_1sync_1_1_notify.html#a288a4d84afc3d9c99728d7ec98683b16":[0,0,3,11,2,8],
-"classkernel_1_1sync_1_1_notify.html#a288a4d84afc3d9c99728d7ec98683b16":[2,0,3,9,2,8],
-"classkernel_1_1sync_1_1_notify.html#a38a64ff48c7afcaf1e0d53545dcef60b":[0,0,3,11,2,4],
-"classkernel_1_1sync_1_1_notify.html#a38a64ff48c7afcaf1e0d53545dcef60b":[2,0,3,9,2,4]
+"classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97":[0,0,3,11,2,0]
 };

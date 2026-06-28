@@ -1,5 +1,13 @@
 var NAVTREEINDEX8 =
 {
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa89aa2bca1f427b3bba6335129f479f77":[0,0,3,60,18],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa8ac715a414285eb52086b6cc2ed90f50":[0,0,3,60,15],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa8edfe52745344b08b4f3dacd29e47b4a":[0,0,3,60,22],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa956eb9c6fa494b7fb17c6c58ab2c5616":[0,0,3,60,26],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa9d087bfb809874e1b3e9adcbae8ca761":[0,0,3,60,27],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa9de6d0a670ae5a0dee31a6318aa00e8d":[0,0,3,60,33],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa07e75cb3ec757003bb6b1284024135b":[0,0,3,60,42],
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa38bd5138bf35514df41a1795ebbf5c3":[0,0,3,60,9],
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa42b2fb0e720a080e79a92f4ca97d927":[0,0,3,60,6],
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa59a5773c21e7a30b474d0b16ac5e8d2":[0,0,3,60,21],
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa92f893dfda86f015146aed133010143":[0,0,3,60,39],
@@ -241,13 +249,5 @@ var NAVTREEINDEX8 =
 "namespacekernel_1_1ahci.html#ae7ec6b85e658e701933919f055d143a3":[0,0,3,0,27],
 "namespacekernel_1_1ahci.html#ae95b751c13364d3323d619f7a9dc1431":[0,0,3,0,136],
 "namespacekernel_1_1ahci.html#aeaf52a193dc68958becb8c34843e994d":[0,0,3,0,81],
-"namespacekernel_1_1ahci.html#aec043c36b4d6dc972fc8aaa63c7c49f5":[0,0,3,0,85],
-"namespacekernel_1_1ahci.html#aece0df4d0b28c70079571b1ba992c49c":[0,0,3,0,112],
-"namespacekernel_1_1ahci.html#aee783b704f20411de059c31411387154":[0,0,3,0,146],
-"namespacekernel_1_1ahci.html#af10d7e1c9f0aaf8ef7853bf8445ca0fc":[0,0,3,0,47],
-"namespacekernel_1_1ahci.html#af1c26cc7520894f7b352a7e51c321443":[0,0,3,0,72],
-"namespacekernel_1_1ahci.html#af2ea45ffa3f016525269a87fe49dbb47":[0,0,3,0,63],
-"namespacekernel_1_1ahci.html#af31677808045bbc11398d87acee6f7d8":[0,0,3,0,5],
-"namespacekernel_1_1ahci.html#af335369ed094f3b69cb1f47b0a03b7b6":[0,0,3,0,14],
-"namespacekernel_1_1ahci.html#af3ddea6bdeef1f5c2e6030bde7ee5165":[0,0,3,0,87]
+"namespacekernel_1_1ahci.html#aec043c36b4d6dc972fc8aaa63c7c49f5":[0,0,3,0,85]
 };

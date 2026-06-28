@@ -4,6 +4,7 @@ var dir_6198906391a1b3439aea9d345bf1b4f0 =
     [ "bench_syscall_latency.cpp", "bench__syscall__latency_8cpp.html", "bench__syscall__latency_8cpp" ],
     [ "resource_tracker.cpp", "resource__tracker_8cpp.html", null ],
     [ "resource_tracker.hpp", "resource__tracker_8hpp.html", "resource__tracker_8hpp" ],
+    [ "task_ptr.hpp", "task__ptr_8hpp.html", "task__ptr_8hpp" ],
     [ "test_address.cpp", "test__address_8cpp.html", "test__address_8cpp" ],
     [ "test_atomic.cpp", "test__atomic_8cpp.html", "test__atomic_8cpp" ],
     [ "test_atomic_context_switch.cpp", "test__atomic__context__switch_8cpp.html", "test__atomic__context__switch_8cpp" ],

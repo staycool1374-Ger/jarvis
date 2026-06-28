@@ -1,5 +1,13 @@
 var NAVTREEINDEX10 =
 {
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d":[0,0,3,14,18,0],
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b":[0,0,3,14,18,2],
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d":[0,0,3,14,18,3],
+"namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1":[0,0,3,14,18,4],
+"namespacekernel_1_1vfs.html#ab8191b68620f64ca864fad18239e5bce":[0,0,3,14,41],
+"namespacekernel_1_1vfs.html#abf5c58a8fb7ecb09a275d19b1029b125":[0,0,3,14,39],
+"namespacekernel_1_1vfs.html#ac37c50582b436a337d048c3039465d0b":[0,0,3,14,43],
+"namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a":[0,0,3,14,37],
 "namespacekernel_1_1vfs.html#ad4618eec85ebd8a3d27bfc4d974d7591":[0,0,3,14,34],
 "namespacekernel_1_1vfs.html#ad97a3b4278a3acc170ad8a0f457bc350":[0,0,3,14,40],
 "namespacekernel_1_1vfs.html#adb50110880ce45345185d1204eaf4fef":[0,0,3,14,44],
@@ -241,13 +249,5 @@ var NAVTREEINDEX10 =
 "riscv64_2test__stubs_8cpp.html#a0dd08c3292aaf585484267f753d2f909":[3,0,0,1,0,2,7,2],
 "riscv64_2test__stubs_8cpp.html#a13714cd376989323d066b68000c5ca93":[3,0,0,1,0,2,7,14],
 "riscv64_2test__stubs_8cpp.html#a3ab66b0eea8703db9755ada9d14e2ff8":[3,0,0,1,0,2,7,7],
-"riscv64_2test__stubs_8cpp.html#a5c1a54812368e4ac2f814c6a1ef88e24":[3,0,0,1,0,2,7,9],
-"riscv64_2test__stubs_8cpp.html#a5ceb5bd7cd243830f61b4e6d18eaafc5":[3,0,0,1,0,2,7,15],
-"riscv64_2test__stubs_8cpp.html#a61e37195860bf4a23fe7d568eb51c735":[3,0,0,1,0,2,7,17],
-"riscv64_2test__stubs_8cpp.html#a637112bdb55e34aca69dfce994c616cd":[3,0,0,1,0,2,7,0],
-"riscv64_2test__stubs_8cpp.html#a6685cde06dcd80a022800c8644c2bfe9":[3,0,0,1,0,2,7,10],
-"riscv64_2test__stubs_8cpp.html#a6b203c2ce630993d8d83e48588e18b0b":[3,0,0,1,0,2,7,16],
-"riscv64_2test__stubs_8cpp.html#a782a4d8da57d29e671b70c1a7870f9a8":[3,0,0,1,0,2,7,5],
-"riscv64_2test__stubs_8cpp.html#aa59c860ec78de1ec56ff1fcac00994dd":[3,0,0,1,0,2,7,3],
-"riscv64_2test__stubs_8cpp.html#aae15a79ba7cb568b6210f193130060ba":[3,0,0,1,0,2,7,13]
+"riscv64_2test__stubs_8cpp.html#a5c1a54812368e4ac2f814c6a1ef88e24":[3,0,0,1,0,2,7,9]
 };

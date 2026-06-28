@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.17.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Jarvis RTOS: UniquePtr&lt; T &gt; Class Template Reference</title>
+<title>Jarvis RTOS: UniquePtr&lt; T, Deleter &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="codefolding.js"></script>
 <script type="text/javascript" src="clipboard.js"></script>
@@ -115,53 +115,63 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('class_unique_p
 </div>
 
 <div class="header">
-  <div class="headertitle"><div class="title">UniquePtr&lt; T &gt; Class Template Reference</div></div>
+  <div class="headertitle"><div class="title">UniquePtr&lt; T, Deleter &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction. Move-only.  
+<p>Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction using Deleter. Move-only.  
  <a href="#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="unique__ptr_8hpp_source.html">unique_ptr.hpp</a>&gt;</code></p>
 <div class="dynheader">
-Collaboration diagram for UniquePtr&lt; T &gt;:</div>
+Collaboration diagram for UniquePtr&lt; T, Deleter &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="class_unique_ptr__coll__graph.png" border="0" usemap="#a_unique_ptr_3_01_t_01_4_coll__map" loading="lazy" alt="Collaboration graph"/></div>
+<div class="center"><img src="class_unique_ptr__coll__graph.png" border="0" usemap="#a_unique_ptr_3_01_t_00_01_deleter_01_4_coll__map" loading="lazy" alt="Collaboration graph"/></div>
 <!-- MAP 0 -->
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a011fd2876ab1b35415f82842dba8c017" id="r_a011fd2876ab1b35415f82842dba8c017"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a011fd2876ab1b35415f82842dba8c017">UniquePtr</a> (T *p=nullptr)</td></tr>
-<tr class="memitem:ae28ecb0b6f10b7f4c053ff76c4d5224d" id="r_ae28ecb0b6f10b7f4c053ff76c4d5224d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ae28ecb0b6f10b7f4c053ff76c4d5224d">~UniquePtr</a> ()</td></tr>
-<tr class="memitem:afa4131d6dc0cfe42951416ed553c361d" id="r_afa4131d6dc0cfe42951416ed553c361d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#afa4131d6dc0cfe42951416ed553c361d">UniquePtr</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;)=delete</td></tr>
-<tr class="memitem:a0249085966b16e6125940ad631587bee" id="r_a0249085966b16e6125940ad631587bee"><td class="memItemLeft"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a0249085966b16e6125940ad631587bee">operator=</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;)=delete</td></tr>
-<tr class="memitem:a01f8666c2df4d5c46db92311ea3ae354" id="r_a01f8666c2df4d5c46db92311ea3ae354"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a01f8666c2df4d5c46db92311ea3ae354">UniquePtr</a> (<a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&amp;other) noexcept</td></tr>
-<tr class="memitem:aa6c0172e813395cb642251aaf8eda25e" id="r_aa6c0172e813395cb642251aaf8eda25e"><td class="memItemLeft"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aa6c0172e813395cb642251aaf8eda25e">operator=</a> (<a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&amp;other) noexcept</td></tr>
-<tr class="memitem:ab7f7ad01e7e7955edb07e3d11d2b6e30" id="r_ab7f7ad01e7e7955edb07e3d11d2b6e30"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#ab7f7ad01e7e7955edb07e3d11d2b6e30">get</a> () const</td></tr>
-<tr class="memitem:a602017edaca3052ce064585efe456fe5" id="r_a602017edaca3052ce064585efe456fe5"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#a602017edaca3052ce064585efe456fe5">release</a> ()</td></tr>
-<tr class="memitem:aac935f7626eea5a0f7d59dc8c50e9907" id="r_aac935f7626eea5a0f7d59dc8c50e9907"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aac935f7626eea5a0f7d59dc8c50e9907">reset</a> (T *p=nullptr)</td></tr>
-<tr class="memitem:aa918e90640b3ca0e3d21b1e7a51632bd" id="r_aa918e90640b3ca0e3d21b1e7a51632bd"><td class="memItemLeft">T &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aa918e90640b3ca0e3d21b1e7a51632bd">operator*</a> () const</td></tr>
-<tr class="memitem:a3a2058cf2711693b96c94dfbeaf18709" id="r_a3a2058cf2711693b96c94dfbeaf18709"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#a3a2058cf2711693b96c94dfbeaf18709">operator-&gt;</a> () const</td></tr>
-<tr class="memitem:abbaa6b8717b2ed35d8d0b9a4d0c968dc" id="r_abbaa6b8717b2ed35d8d0b9a4d0c968dc"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#abbaa6b8717b2ed35d8d0b9a4d0c968dc">operator bool</a> () const</td></tr>
+<tr class="memitem:a4e694c0ff3d7795be7a14478a80e128c" id="r_a4e694c0ff3d7795be7a14478a80e128c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4e694c0ff3d7795be7a14478a80e128c">UniquePtr</a> (T *p=nullptr)</td></tr>
+<tr class="memitem:a09da9dffb3db27e3b2576272e3b793a1" id="r_a09da9dffb3db27e3b2576272e3b793a1"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a09da9dffb3db27e3b2576272e3b793a1">UniquePtr</a> (T *p, Deleter d)</td></tr>
+<tr class="memitem:a391fe31b50f16071462d1e4968d35e8c" id="r_a391fe31b50f16071462d1e4968d35e8c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a391fe31b50f16071462d1e4968d35e8c">~UniquePtr</a> ()</td></tr>
+<tr class="memitem:a7c22f9125b2f1e906512d79d4c06d24a" id="r_a7c22f9125b2f1e906512d79d4c06d24a"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7c22f9125b2f1e906512d79d4c06d24a">UniquePtr</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;)=delete</td></tr>
+<tr class="memitem:ae99bfc054389b0915f5241729c01ef71" id="r_ae99bfc054389b0915f5241729c01ef71"><td class="memItemLeft"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ae99bfc054389b0915f5241729c01ef71">operator=</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;)=delete</td></tr>
+<tr class="memitem:a36d7c0532d4bcfde419a27d383418aa3" id="r_a36d7c0532d4bcfde419a27d383418aa3"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a36d7c0532d4bcfde419a27d383418aa3">UniquePtr</a> (<a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&amp;other) noexcept</td></tr>
+<tr class="memitem:ac756c03da141be205b78e4f36be0210a" id="r_ac756c03da141be205b78e4f36be0210a"><td class="memItemLeft"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ac756c03da141be205b78e4f36be0210a">operator=</a> (<a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;&amp;other) noexcept</td></tr>
+<tr class="memitem:a2ee33fa2b9510eb782fadfccee197a65" id="r_a2ee33fa2b9510eb782fadfccee197a65"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#a2ee33fa2b9510eb782fadfccee197a65">get</a> () const</td></tr>
+<tr class="memitem:a0ea4cbed1b3969f4eb84c855cc5c7f2e" id="r_a0ea4cbed1b3969f4eb84c855cc5c7f2e"><td class="memItemLeft">Deleter &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a0ea4cbed1b3969f4eb84c855cc5c7f2e">get_deleter</a> ()</td></tr>
+<tr class="memitem:a02e6a7e1c8bc9b6f22b1228ebd25375d" id="r_a02e6a7e1c8bc9b6f22b1228ebd25375d"><td class="memItemLeft">const Deleter &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a02e6a7e1c8bc9b6f22b1228ebd25375d">get_deleter</a> () const</td></tr>
+<tr class="memitem:a330351f60b992aa2e5c9c6953f87b400" id="r_a330351f60b992aa2e5c9c6953f87b400"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#a330351f60b992aa2e5c9c6953f87b400">release</a> ()</td></tr>
+<tr class="memitem:a36d2b7f272979ead8a83fddb580ab5a2" id="r_a36d2b7f272979ead8a83fddb580ab5a2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a36d2b7f272979ead8a83fddb580ab5a2">reset</a> (T *p=nullptr)</td></tr>
+<tr class="memitem:a1312335ec92b9f2c894b696c60d2d2d8" id="r_a1312335ec92b9f2c894b696c60d2d2d8"><td class="memItemLeft">T &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a1312335ec92b9f2c894b696c60d2d2d8">operator*</a> () const</td></tr>
+<tr class="memitem:a4e776786151f53c1ea2890b1e7741c0a" id="r_a4e776786151f53c1ea2890b1e7741c0a"><td class="memItemLeft">T *&#160;</td><td class="memItemRight"><a class="el" href="#a4e776786151f53c1ea2890b1e7741c0a">operator-&gt;</a> () const</td></tr>
+<tr class="memitem:a2de96a6c609e8638a9dc1fabcb19b4c5" id="r_a2de96a6c609e8638a9dc1fabcb19b4c5"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a2de96a6c609e8638a9dc1fabcb19b4c5">operator bool</a> () const</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-friends" class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a5ec054909c2259216ba5bce42b6aef42" id="r_a5ec054909c2259216ba5bce42b6aef42"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a5ec054909c2259216ba5bce42b6aef42">operator==</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;a, decltype(nullptr))</td></tr>
+<tr class="memitem:aa6eae7af92770070bb61a5b8b5c18f7a" id="r_aa6eae7af92770070bb61a5b8b5c18f7a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aa6eae7af92770070bb61a5b8b5c18f7a">operator==</a> (decltype(nullptr), const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;a)</td></tr>
+<tr class="memitem:ac59201039d01d00b6566b2f42aa59d1e" id="r_ac59201039d01d00b6566b2f42aa59d1e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac59201039d01d00b6566b2f42aa59d1e">operator!=</a> (const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;a, decltype(nullptr))</td></tr>
+<tr class="memitem:afcec4f00e9b34d34ea6c1e0937a18940" id="r_afcec4f00e9b34d34ea6c1e0937a18940"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#afcec4f00e9b34d34ea6c1e0937a18940">operator!=</a> (decltype(nullptr), const <a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp;a)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename T&gt;<br />
-class UniquePtr&lt; T &gt;</div><p>Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction. Move-only. </p>
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, typename Deleter = DefaultDeleter&gt;<br />
+class UniquePtr&lt; T, Deleter &gt;</div><p>Minimal unique ownership wrapper for heap-allocated objects. Deletes the owned object on destruction using Deleter. Move-only. </p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a011fd2876ab1b35415f82842dba8c017" name="a011fd2876ab1b35415f82842dba8c017"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a011fd2876ab1b35415f82842dba8c017">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[1/3]</span></h2>
+<a id="a4e694c0ff3d7795be7a14478a80e128c" name="a4e694c0ff3d7795be7a14478a80e128c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e694c0ff3d7795be7a14478a80e128c">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::UniquePtr </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::UniquePtr </td>
           <td>(</td>
           <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>p</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span></td><td>)</td>
           <td></td>
@@ -176,19 +186,50 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="ae28ecb0b6f10b7f4c053ff76c4d5224d" name="ae28ecb0b6f10b7f4c053ff76c4d5224d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae28ecb0b6f10b7f4c053ff76c4d5224d">&#9670;&#160;</a></span>~UniquePtr()</h2>
+<a id="a09da9dffb3db27e3b2576272e3b793a1" name="a09da9dffb3db27e3b2576272e3b793a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09da9dffb3db27e3b2576272e3b793a1">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::~<a class="el" href="class_unique_ptr.html">UniquePtr</a> </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::UniquePtr </td>
+          <td>(</td>
+          <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>p</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Deleter</td>          <td class="paramname"><span class="paramname"><em>d</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a391fe31b50f16071462d1e4968d35e8c" name="a391fe31b50f16071462d1e4968d35e8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a391fe31b50f16071462d1e4968d35e8c">&#9670;&#160;</a></span>~UniquePtr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::~<a class="el" href="class_unique_ptr.html">UniquePtr</a> </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -203,21 +244,21 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="afa4131d6dc0cfe42951416ed553c361d" name="afa4131d6dc0cfe42951416ed553c361d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa4131d6dc0cfe42951416ed553c361d">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[2/3]</span></h2>
+<a id="a7c22f9125b2f1e906512d79d4c06d24a" name="a7c22f9125b2f1e906512d79d4c06d24a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c22f9125b2f1e906512d79d4c06d24a">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::UniquePtr </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::UniquePtr </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -227,30 +268,24 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="class_unique_ptr_afa4131d6dc0cfe42951416ed553c361d_cgraph.png" border="0" usemap="#aclass_unique_ptr_afa4131d6dc0cfe42951416ed553c361d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
 
 </div>
 </div>
-<a id="a01f8666c2df4d5c46db92311ea3ae354" name="a01f8666c2df4d5c46db92311ea3ae354"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01f8666c2df4d5c46db92311ea3ae354">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[3/3]</span></h2>
+<a id="a36d7c0532d4bcfde419a27d383418aa3" name="a36d7c0532d4bcfde419a27d383418aa3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36d7c0532d4bcfde419a27d383418aa3">&#9670;&#160;</a></span>UniquePtr() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::UniquePtr </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::UniquePtr </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -260,29 +295,23 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="class_unique_ptr_a01f8666c2df4d5c46db92311ea3ae354_cgraph.png" border="0" usemap="#aclass_unique_ptr_a01f8666c2df4d5c46db92311ea3ae354_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="ab7f7ad01e7e7955edb07e3d11d2b6e30" name="ab7f7ad01e7e7955edb07e3d11d2b6e30"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab7f7ad01e7e7955edb07e3d11d2b6e30">&#9670;&#160;</a></span>get()</h2>
+<a id="a2ee33fa2b9510eb782fadfccee197a65" name="a2ee33fa2b9510eb782fadfccee197a65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ee33fa2b9510eb782fadfccee197a65">&#9670;&#160;</a></span>get()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::get </td>
+          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::get </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -297,19 +326,73 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="abbaa6b8717b2ed35d8d0b9a4d0c968dc" name="abbaa6b8717b2ed35d8d0b9a4d0c968dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbaa6b8717b2ed35d8d0b9a4d0c968dc">&#9670;&#160;</a></span>operator bool()</h2>
+<a id="a0ea4cbed1b3969f4eb84c855cc5c7f2e" name="a0ea4cbed1b3969f4eb84c855cc5c7f2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ea4cbed1b3969f4eb84c855cc5c7f2e">&#9670;&#160;</a></span>get_deleter() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::operator bool </td>
+          <td class="memname">Deleter &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::get_deleter </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a02e6a7e1c8bc9b6f22b1228ebd25375d" name="a02e6a7e1c8bc9b6f22b1228ebd25375d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02e6a7e1c8bc9b6f22b1228ebd25375d">&#9670;&#160;</a></span>get_deleter() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const Deleter &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::get_deleter </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2de96a6c609e8638a9dc1fabcb19b4c5" name="a2de96a6c609e8638a9dc1fabcb19b4c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2de96a6c609e8638a9dc1fabcb19b4c5">&#9670;&#160;</a></span>operator bool()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::operator bool </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -324,19 +407,19 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="aa918e90640b3ca0e3d21b1e7a51632bd" name="aa918e90640b3ca0e3d21b1e7a51632bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa918e90640b3ca0e3d21b1e7a51632bd">&#9670;&#160;</a></span>operator*()</h2>
+<a id="a1312335ec92b9f2c894b696c60d2d2d8" name="a1312335ec92b9f2c894b696c60d2d2d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1312335ec92b9f2c894b696c60d2d2d8">&#9670;&#160;</a></span>operator*()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">T &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::operator* </td>
+          <td class="memname">T &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::operator* </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -351,19 +434,19 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="a3a2058cf2711693b96c94dfbeaf18709" name="a3a2058cf2711693b96c94dfbeaf18709"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3a2058cf2711693b96c94dfbeaf18709">&#9670;&#160;</a></span>operator-&gt;()</h2>
+<a id="a4e776786151f53c1ea2890b1e7741c0a" name="a4e776786151f53c1ea2890b1e7741c0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e776786151f53c1ea2890b1e7741c0a">&#9670;&#160;</a></span>operator-&gt;()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::operator-&gt; </td>
+          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::operator-&gt; </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -378,21 +461,21 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="a0249085966b16e6125940ad631587bee" name="a0249085966b16e6125940ad631587bee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0249085966b16e6125940ad631587bee">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
+<a id="ae99bfc054389b0915f5241729c01ef71" name="ae99bfc054389b0915f5241729c01ef71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae99bfc054389b0915f5241729c01ef71">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::operator= </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -402,30 +485,24 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="class_unique_ptr_a0249085966b16e6125940ad631587bee_cgraph.png" border="0" usemap="#aclass_unique_ptr_a0249085966b16e6125940ad631587bee_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
-<a id="aa6c0172e813395cb642251aaf8eda25e" name="aa6c0172e813395cb642251aaf8eda25e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6c0172e813395cb642251aaf8eda25e">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
+<a id="ac756c03da141be205b78e4f36be0210a" name="ac756c03da141be205b78e4f36be0210a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac756c03da141be205b78e4f36be0210a">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::operator= </td>
+          <td class="memname"><a class="el" href="class_unique_ptr.html">UniquePtr</a> &amp; <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -435,28 +512,22 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="class_unique_ptr_aa6c0172e813395cb642251aaf8eda25e_cgraph.png" border="0" usemap="#aclass_unique_ptr_aa6c0172e813395cb642251aaf8eda25e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
-<a id="a602017edaca3052ce064585efe456fe5" name="a602017edaca3052ce064585efe456fe5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a602017edaca3052ce064585efe456fe5">&#9670;&#160;</a></span>release()</h2>
+<a id="a330351f60b992aa2e5c9c6953f87b400" name="a330351f60b992aa2e5c9c6953f87b400"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a330351f60b992aa2e5c9c6953f87b400">&#9670;&#160;</a></span>release()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::release </td>
+          <td class="memname">T * <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::release </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -471,19 +542,19 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
-<a id="aac935f7626eea5a0f7d59dc8c50e9907" name="aac935f7626eea5a0f7d59dc8c50e9907"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac935f7626eea5a0f7d59dc8c50e9907">&#9670;&#160;</a></span>reset()</h2>
+<a id="a36d2b7f272979ead8a83fddb580ab5a2" name="a36d2b7f272979ead8a83fddb580ab5a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36d2b7f272979ead8a83fddb580ab5a2">&#9670;&#160;</a></span>reset()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T&gt; </div>
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T &gt;::reset </td>
+          <td class="memname">void <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt;::reset </td>
           <td>(</td>
           <td class="paramtype">T *</td>          <td class="paramname"><span class="paramname"><em>p</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span></td><td>)</td>
           <td></td>
@@ -492,6 +563,131 @@ template&lt;typename T&gt; </div>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a name="doc-related-members" id="doc-related-members"></a><h2 id="header-doc-related-members" class="groupheader">Friends And Related Symbol Documentation</h2>
+<a id="ac59201039d01d00b6566b2f42aa59d1e" name="ac59201039d01d00b6566b2f42aa59d1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac59201039d01d00b6566b2f42aa59d1e">&#9670;&#160;</a></span>operator!= <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator!= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">decltype(nullptr)</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel friend">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afcec4f00e9b34d34ea6c1e0937a18940" name="afcec4f00e9b34d34ea6c1e0937a18940"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afcec4f00e9b34d34ea6c1e0937a18940">&#9670;&#160;</a></span>operator!= <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator!= </td>
+          <td>(</td>
+          <td class="paramtype">decltype(nullptr)</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel friend">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5ec054909c2259216ba5bce42b6aef42" name="a5ec054909c2259216ba5bce42b6aef42"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ec054909c2259216ba5bce42b6aef42">&#9670;&#160;</a></span>operator== <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator== </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">decltype(nullptr)</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel friend">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa6eae7af92770070bb61a5b8b5c18f7a" name="aa6eae7af92770070bb61a5b8b5c18f7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6eae7af92770070bb61a5b8b5c18f7a">&#9670;&#160;</a></span>operator== <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, typename Deleter = DefaultDeleter&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool operator== </td>
+          <td>(</td>
+          <td class="paramtype">decltype(nullptr)</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="class_unique_ptr.html">UniquePtr</a>&lt; T, Deleter &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>a</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel friend">friend</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

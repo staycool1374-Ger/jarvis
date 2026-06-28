@@ -9,10 +9,11 @@ var searchData=
   ['sglist_6',['SgList',['../structkernel_1_1dma_1_1_sg_list.html',1,'kernel::dma']]],
   ['shell_7',['Shell',['../classservice_1_1_shell.html',1,'service']]],
   ['signalframe_8',['SignalFrame',['../structkernel_1_1_signal_frame.html',1,'kernel']]],
-  ['spinlock_9',['SpinLock',['../classkernel_1_1sync_1_1_spin_lock.html',1,'kernel::sync']]],
-  ['spinlockguard_10',['SpinLockGuard',['../class_spin_lock_guard.html',1,'']]],
-  ['sporadicserver_11',['SporadicServer',['../classkernel_1_1task_1_1_sporadic_server.html',1,'kernel::task']]],
-  ['spscring_12',['SPSCRing',['../class_s_p_s_c_ring.html',1,'']]],
-  ['stat_13',['stat',['../structstat.html',1,'']]],
-  ['syscall_14',['Syscall',['../classkernel_1_1_syscall.html',1,'kernel']]]
+  ['simpletaskdeleter_9',['SimpleTaskDeleter',['../struct_simple_task_deleter.html',1,'']]],
+  ['spinlock_10',['SpinLock',['../classkernel_1_1sync_1_1_spin_lock.html',1,'kernel::sync']]],
+  ['spinlockguard_11',['SpinLockGuard',['../class_spin_lock_guard.html',1,'']]],
+  ['sporadicserver_12',['SporadicServer',['../classkernel_1_1task_1_1_sporadic_server.html',1,'kernel::task']]],
+  ['spscring_13',['SPSCRing',['../class_s_p_s_c_ring.html',1,'']]],
+  ['stat_14',['stat',['../structstat.html',1,'']]],
+  ['syscall_15',['Syscall',['../classkernel_1_1_syscall.html',1,'kernel']]]
 ];

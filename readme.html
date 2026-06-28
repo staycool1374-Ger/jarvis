@@ -127,9 +127,8 @@ Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
 architecture is mid-transition toward a <strong>capability-based
 microkernel</strong>, where drivers, VFS, and block I/O are externalised
 to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
-<p>Current version: <strong>v0.2.21</strong> — Configuration System &amp;
-Portability: jarvis_config.h, CONFIG_* migration, check-config validation,
-multi-arch infrastructure.</p>
+<p>Current version: <strong>v0.2.25</strong> — Test Safety &amp; RAII Hardening:
+UniquePtr/ScopeGuard, dangling-pointer elimination, cross-arch test suite, CI.</p>
 <hr />
 <h2 id="architectural-pillars">Architectural Pillars</h2>
 <h3 id="modern-freestanding-c20">Modern Freestanding C++20</h3>

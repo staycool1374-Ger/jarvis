@@ -1,5 +1,13 @@
 var NAVTREEINDEX7 =
 {
+"namespacearch.html#a5bfc66a6fc66f9f6074b860211118e94":[0,0,0,160],
+"namespacearch.html#a5e66929017560c032582b51dd0580641":[0,0,0,202],
+"namespacearch.html#a618ff63a4488522a84314c2073680fcb":[0,0,0,90],
+"namespacearch.html#a61b1d4d8c642abd27d65bb1f64405e58":[0,0,0,113],
+"namespacearch.html#a61d74b5530b253fac22c2020cfd32dc4":[0,0,0,98],
+"namespacearch.html#a62b72defc904b61b774d75efaa3684e2":[0,0,0,200],
+"namespacearch.html#a63108eedc9cb72d26630ba413090b4d8":[0,0,0,159],
+"namespacearch.html#a64341dad32d20057d49823aed7beb9b6":[0,0,0,111],
 "namespacearch.html#a66003ca971696e3917826a48b2a42dee":[0,0,0,45],
 "namespacearch.html#a66512c61043d45228b5710246c923051":[0,0,0,37],
 "namespacearch.html#a674edb5100adc1b68f1c61c9a3ec45ea":[0,0,0,156],
@@ -241,13 +249,5 @@ var NAVTREEINDEX7 =
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa7286293c9125ac7d7bace94c190bc16d":[0,0,3,60,11],
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa73f760f8a96d0acec3dec614a688ff79":[0,0,3,60,17],
 "namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa81fba48cb5642dcd38bffcf0f7147ea1":[0,0,3,60,12],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa83e990574e4601b663d42b05121bf312":[0,0,3,60,5],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa89aa2bca1f427b3bba6335129f479f77":[0,0,3,60,18],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa8ac715a414285eb52086b6cc2ed90f50":[0,0,3,60,15],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa8edfe52745344b08b4f3dacd29e47b4a":[0,0,3,60,22],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa956eb9c6fa494b7fb17c6c58ab2c5616":[0,0,3,60,26],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa9d087bfb809874e1b3e9adcbae8ca761":[0,0,3,60,27],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa9de6d0a670ae5a0dee31a6318aa00e8d":[0,0,3,60,33],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa07e75cb3ec757003bb6b1284024135b":[0,0,3,60,42],
-"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa38bd5138bf35514df41a1795ebbf5c3":[0,0,3,60,9]
+"namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa83e990574e4601b663d42b05121bf312":[0,0,3,60,5]
 };
