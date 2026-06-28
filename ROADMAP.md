@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 3 SYSTEM SERVICES MODE
-**Status:** ACTIVE — Cross-Architecture Hardening.
-**Target Focus:** v0.2.24 — Cross-Architecture Hardening: cross-arch atomics, boot flow unification, UART driver abstraction.
+**Status:** ACTIVE — Test Safety & RAII Hardening.
+**Target Focus:** v0.2.25 — Test Safety & RAII Hardening: eliminate dangling pointer accesses in tests, ScopeGuard/UniquePtr audit, cross-arch test suite CI.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -21,6 +21,8 @@ When implementing or refactoring code paths for this phase, execute the followin
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
 ## Phase 3: System Services & Hardware (v0.12.14–v0.2.24)
+
+Completed. v0.2.24 delivered cross-architecture hardening across x86_64, aarch64, and riscv64: unified atomics, boot flow via libfdt, UART abstraction, virtio/PCI unification, cross-arch test suite, and Renode CI gates.
 
 ### 0.2.22 — aarch64 Port (ARM Cortex-A)
 
@@ -139,13 +141,13 @@ Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) 
 ### 0.2.24 — Cross-Architecture Hardening
 
 - [x] **Architecture test suites** — aarch64 (17 tests, class `arm64`) and riscv64 (18 tests, class `risc64`) covering page tables, context switch, interrupts, timer, FPU, PCI, RTC, boot CSRs
-- [ ] **Cross-arch atomics** — replace `__sync_*` builtins with `kernel::atomic<T>` / `kernel::atomic<&T>` using explicit memory_order across all three ISAs
-- [ ] **Boot flow unification** — generalize `higherhalf_entry()` to accept both multiboot (x86_64) and device tree (aarch64, riscv64) boot info
-- [ ] **UART driver abstraction** — `arch/hal/serial.hpp` defines `uart_putc()`/`uart_getc()`, `Logger` uses it uniformly
-- [ ] **Renode CI** — `make renode-test ARCH=aarch64` and `ARCH=riscv64` as CI gate
-- [ ] **Virtio transport unification** — abstract MMIO vs PCI transport for virtio devices
-- [ ] **Memory model** — verify C++20 `std::atomic` works correctly across all three ISAs (no SEQCST assumptions)
-- [ ] **Cross-arch test suite** — common test classes that validate identical behavior on all three architectures
+- [x] **Cross-arch atomics** — `kernel::atomic<T>` wrapper, 12 `__sync_synchronize()` replaced, `__atomic_*` wrapped in spinlock/spsc/ring_buffer/dmesg
+- [x] **Boot flow unification** — libfdt subset ported, `BootInfo` struct, `higherhalf_entry()` unified, FDT memory parsing for aarch64/riscv64
+- [x] **UART driver abstraction** — `arch/hal/serial.hpp` pure interface, x86_64 impl in own `.cpp`, `Logger` uses uniform API
+- [x] **Renode CI** — `make renode-test ARCH=aarch64` and `ARCH=riscv64` as CI gate
+- [x] **Virtio transport unification** — unified PCI HAL (CF8/CFC + ECAM), shared `virtio_pci.cpp`, ECAM for aarch64/riscv64
+- [x] **Memory model tests** — 12 atomic tests (load/store/exchange/CAS/SB/MP/pingpong, acquire/release ordering)
+- [x] **Cross-arch test suite** — `test_cross_arch.cpp` with 16 shared tests (page table, context, timer, interrupts, IPC, VFS)
 
 ### 0.2.25 — Test Safety & RAII Hardening
 
@@ -164,7 +166,7 @@ Executive Summary
 Current state: Soft real-time with rate-monotonic scheduling but unbounded WCET, no priority inheritance on mutex/semaphore/queue, PIC-based interrupt controller with unbounded ISR latency, dynamic PMM/VMM allocation paths, and sporadic server only for daemons. Target: Hard real-time per ISO 26262 ASIL D / IEC 61508 SIL 4.
 
 Notes
-- All changes must pass make test-all-debug (675/675) before each release
+- All changes must pass make test-all-debug (693/693) before each release
 - ResourceTracker must show zero leaks in all hard-RT tests
 - Renode simulation for ARM64/RISC-V64 required before M3
 - CONFIG_HARD_REAL_TIME=0 builds must remain functionally identical to v0.2.21 (Soft-RT compatibility)
