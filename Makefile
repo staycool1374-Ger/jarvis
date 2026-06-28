@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+SHELL := /bin/bash
+
 # ==============================================================================
 # Jarvis RTOS Microkernel Makefile
 # Target architecture: set ARCH to build for a different arch (default: x86_64)
