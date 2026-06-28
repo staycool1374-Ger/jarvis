@@ -1,0 +1,15 @@
+CompileFlags:
+  CompilationDatabase: .
+  Remove:
+    - -mno-red-zone
+    - -mgeneral-regs-only
+  Add:
+    - -DCONFIG_ARCH_X86_64
+    - -w
+
+Diagnostics:
+  Suppress:
+    - unknown_register_name
+    - missing_include
+    - incompatible_pointer_types
+    - incompatible_function_pointer_types
