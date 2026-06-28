@@ -67,7 +67,7 @@ void Queue::wake_send_one() {
             ) best = i;
     }
     if (send_waiters_[best]->state != TaskState::TERMINATED)
-        send_waiters_[best]->state = TaskState::READY;
+        Scheduler::set_task_ready(*send_waiters_[best]);
     send_waiters_[best] = send_waiters_[--send_waiters_count_];
 }
 
@@ -80,7 +80,7 @@ void Queue::wake_recv_one() {
             ) best = i;
     }
     if (recv_waiters_[best]->state != TaskState::TERMINATED)
-        recv_waiters_[best]->state = TaskState::READY;
+        Scheduler::set_task_ready(*recv_waiters_[best]);
     recv_waiters_[best] = recv_waiters_[--recv_waiters_count_];
 }
 

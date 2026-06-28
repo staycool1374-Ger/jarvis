@@ -131,7 +131,7 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
                     // the child's PID instead of -1 (the value set when
                     // waitpid blocked).
                     if (p->state != TaskState::TERMINATED) {
-                        p->state = TaskState::READY;
+                        Scheduler::set_task_ready(*p);
                         if (TASK_STACK_PTR(p)) {
                             auto* stack = reinterpret_cast<uint64_t*>(
                                 TASK_STACK_PTR(p));

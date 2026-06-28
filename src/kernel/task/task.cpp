@@ -703,7 +703,7 @@ void TaskControlBlock::cleanup() noexcept {
                 task->blocked_next = nullptr;
                 task->blocked_on_queue = nullptr;
                 if (task->state != TaskState::TERMINATED)
-                    task->state = TaskState::READY;
+                    Scheduler::set_task_ready(*task);
                 task = next;
             }
             msg_queue->blocked_senders_head = nullptr;

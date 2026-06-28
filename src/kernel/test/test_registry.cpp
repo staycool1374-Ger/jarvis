@@ -120,6 +120,8 @@ void register_memory_safety_tests();
 void register_sporadic_server_tests();
 void register_atomic_tests();
 void register_cross_arch_tests();
+void register_o1_scheduler_tests();
+void register_hal_bits_tests();
 #if defined(CONFIG_ARCH_AARCH64)
 void register_aarch64_tests();
 #endif
@@ -143,6 +145,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_vfs_fat32_tests();
         register_waitpid_tests();
         register_shell_interaction_tests();
+        register_hal_bits_tests();
+        register_o1_scheduler_tests();
     }},
 
     // -- all: everything (debug mode) --
@@ -244,6 +248,8 @@ register_random_tests();
         register_sporadic_server_tests();
         register_atomic_tests();
         register_cross_arch_tests();
+        register_hal_bits_tests();
+        register_o1_scheduler_tests();
 #if defined(CONFIG_ARCH_AARCH64)
         register_aarch64_tests();
 #endif

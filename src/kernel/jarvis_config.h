@@ -57,9 +57,10 @@
 #endif
 
 /// Highest schedulable priority (0 = lowest).
-/// Valid range: 1–255. Default: 255.
+/// Valid range: 1–127. Default: 127.
+/// Limited to 128 levels for O(1) bitmap scheduler (2 × uint64_t).
 #ifndef CONFIG_PRIORITY_CEILING
-#define CONFIG_PRIORITY_CEILING 255
+#define CONFIG_PRIORITY_CEILING 127
 #endif
 
 /// Enable preemptive scheduling. Set to 0 for cooperative-only.
@@ -81,9 +82,9 @@
 #endif
 
 /// Maximum number of priority levels for the scheduler bitmap.
-/// Default: 256. Must be a power of 2.
+/// Default: 128. Must match CONFIG_PRIORITY_CEILING + 1.
 #ifndef CONFIG_MAX_PRIORITY
-#define CONFIG_MAX_PRIORITY 256
+#define CONFIG_MAX_PRIORITY 128
 #endif
 
 // ---------------------------------------------------------------------------

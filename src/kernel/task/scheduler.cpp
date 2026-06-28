@@ -55,6 +55,19 @@ static inline uint64_t effective_priority(const TaskControlBlock* t) noexcept {
     return t ? t->priority : 0;
 }
 
+void Scheduler::enqueue_ready(TaskControlBlock& task) noexcept {
+    ready_queue_.enqueue(task, effective_priority(&task));
+}
+
+void Scheduler::dequeue_ready(TaskControlBlock& task) noexcept {
+    ready_queue_.remove(task, effective_priority(&task));
+}
+
+void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
+    task.state = TaskState::READY;
+    enqueue_ready(task);
+}
+
 TaskControlBlock* const Scheduler::ID_TOMBSTONE =
     reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));
 
@@ -64,6 +77,7 @@ uint64_t Scheduler::task_count_ = 0;
 uint64_t Scheduler::current_index_ = 0;
 uint64_t Scheduler::next_task_id_ = 1;
 bool Scheduler::preempt_enabled_ = false;
+ReadyQueueManager Scheduler::ready_queue_;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
 TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
 sync::SpinLock Scheduler::scheduler_lock_;
@@ -115,6 +129,10 @@ void Scheduler::add_task(TaskControlBlock& task) {
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
+    task.in_ready_queue_ = false;
+    task.runq_next_ = nullptr;
+    task.runq_prev_ = nullptr;
+    ready_queue_.enqueue(task, effective_priority(&task));
 
     // Liu-Leyland LUB admission test: warn if total utilization exceeds
     // the rate-monotonic schedulability bound
@@ -149,6 +167,7 @@ void Scheduler::add_task(TaskControlBlock& task) {
 void Scheduler::remove_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     id_table_remove(&task);
+    dequeue_ready(task);
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
@@ -204,55 +223,32 @@ bool Scheduler::needs_switch() noexcept {
 TaskControlBlock* Scheduler::next_task() noexcept {
     if (task_count_ <= 1) return tasks_[0];
 
-    auto* current = tasks_[current_index_];
-    TaskControlBlock* best = nullptr;
-    uint64_t best_priority = 0;
-    uint64_t best_period = ~0ULL;
+    // O(1) fast path: dequeue from ready queue
+    {
+        auto* next = ready_queue_.dequeue_highest();
+        if (next) return next;
+    }
 
+    // Lazy rebuild: clear and rebuild ready queue from tasks_[]
+    // Handles edge cases where tasks became READY outside the scheduler
+    // (test code, race conditions) without going through set_task_ready().
+    ready_queue_.clear_all();
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
         if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
-        if (task->state != TaskState::READY && task->state != TaskState::RUNNING
-            ) continue;
-        uint64_t ep = effective_priority(task);
-        // Higher priority always wins
-        if (ep > best_priority) {
-            best = task;
-            best_priority = ep;
-            best_period = task->period_ticks;
-            continue;
-        }
-        // Same priority, shorter period wins
-        if (ep == best_priority && task->period_ticks < best_period) {
-            best = task;
-            best_priority = ep;
-            best_period = task->period_ticks;
-            continue;
-        }
-        // Same priority and period: round-robin by remaining_ticks
-        // Task with fewer remaining ticks has been waiting longer -> run it
-        if (ep == best_priority && task->period_ticks == best_period) {
-            if (!best) {
-                best = task;
-                best_priority = ep;
-                best_period = task->period_ticks;
-            } else if (task->remaining_ticks < best->remaining_ticks) {
-                // Task with fewer remaining ticks has been running longer -> switch to it
-                best = task;
-                best_priority = ep;
-                best_period = task->period_ticks;
-            } else if (task->remaining_ticks == best->remaining_ticks &&
-                       task != current && best == current) {
-                // Both have same ticks but current is best -> pick the other for RR
-                best = task;
-                best_priority = ep;
-                best_period = task->period_ticks;
-            }
+        if (task->state == TaskState::READY) {
+            ready_queue_.enqueue(*task, effective_priority(task));
         }
     }
 
-    if (!best) return tasks_[0];
-    return best;
+    {
+        auto* next = ready_queue_.dequeue_highest();
+        if (next) return next;
+    }
+
+    // Nothing ready — return current or idle
+    auto* cur = current_task();
+    return cur ? cur : tasks_[0];
 }
 
 void Scheduler::set_current(TaskControlBlock& task) noexcept {
@@ -483,6 +479,9 @@ void Scheduler::reap_orphans() noexcept {
                 if (t == idle_task_) {
                     auto* new_idle = TaskControlBlock::create(kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
                     new_idle->state = TaskState::READY;
+                    // Remove old idle from ready queue (might have been
+                    // re-enqueued by switch_to_task) before cleanup
+                    dequeue_ready(*t);
                     t->cleanup();
                     id_table_remove(t);
                     // Compact by shifting left past the removed old idle
@@ -538,6 +537,8 @@ void Scheduler::cleanup_test_tasks() noexcept {
     task_count_ = 1;
     tasks_[0] = idle_task_;
     current_index_ = 0;
+    // Drain ready queue — will be repopulated as tasks become READY
+    ready_queue_.reset();
 }
 
 static void report_corruption(const char* label) {
@@ -596,6 +597,10 @@ void Scheduler::cleanup_zombies() noexcept {
                    t->id == vfsd_pid || t->id == iocd_pid) {
             keep = true;
         } else {
+            // Remove from ready queue before cleanup
+            if (t->state == TaskState::READY) {
+                Scheduler::dequeue_ready(*t);
+            }
             t->cleanup();
             id_table_remove(t);
             MemPool::free(t);
@@ -654,6 +659,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
     }
     if (current->state == TaskState::RUNNING) {
         current->state = TaskState::READY;
+        Scheduler::enqueue_ready(*current);
     }
     next->state = TaskState::RUNNING;
     __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
@@ -729,7 +735,9 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
                               uint64_t& current_idx_out,
                               uint64_t& next_id_out,
                               TaskControlBlock*& idle_out,
-                              bool& preempt_out) {
+                              bool& preempt_out,
+                              uint64_t* rq_bitmap_hi,
+                              uint64_t* rq_bitmap_lo) {
     __builtin_memcpy(tasks_out, tasks_,
                      sizeof(TaskControlBlock*) * MAX_TASKS);
     __builtin_memcpy(id_table_out, id_table_,
@@ -739,6 +747,8 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
     next_id_out      = next_task_id_;
     idle_out         = idle_task_;
     preempt_out      = preempt_enabled_;
+    if (rq_bitmap_hi) *rq_bitmap_hi = ready_queue_.bitmap().raw_hi();
+    if (rq_bitmap_lo) *rq_bitmap_lo = ready_queue_.bitmap().raw_lo();
 }
 
 void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
@@ -747,7 +757,10 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               uint64_t current_idx_in,
                               uint64_t next_id_in,
                               TaskControlBlock* idle_in,
-                              bool preempt_in) {
+                              bool preempt_in,
+                              uint64_t rq_bitmap_hi,
+                              uint64_t rq_bitmap_lo) {
+    (void)rq_bitmap_hi; (void)rq_bitmap_lo;
     __builtin_memcpy(tasks_, tasks_in,
                      sizeof(TaskControlBlock*) * MAX_TASKS);
     __builtin_memcpy(id_table_, id_table_in,
@@ -757,6 +770,19 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     next_task_id_   = next_id_in;
     idle_task_      = idle_in;
     preempt_enabled_ = preempt_in;
+
+// Rebuild ready queue from restored tasks
+    ready_queue_.reset();
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        auto* t = tasks_[i];
+        if (t) {
+            t->in_ready_queue_ = false;
+            if (t->magic == TaskControlBlock::TCB_MAGIC &&
+                t->state == TaskState::READY) {
+                ready_queue_.enqueue(*t, effective_priority(t));
+            }
+        }
+    }
 }
 
 } // namespace kernel
@@ -777,6 +803,7 @@ SchedulerError Scheduler::add_task_err(TaskControlBlock& task) {
     if (id_table_find(task.id) != nullptr) return SCHED_ERR_DUPLICATE_ID;
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
+    ready_queue_.enqueue(task, effective_priority(&task));
     kernel::test::ResourceTracker::instance().track_task_add();
     return SCHED_ERR_OK;
 }
@@ -785,6 +812,7 @@ SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     if (id_table_find(task.id) == nullptr) return SCHED_ERR_NOT_FOUND;
     id_table_remove(&task);
+    dequeue_ready(task);
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {

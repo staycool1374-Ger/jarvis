@@ -74,7 +74,7 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
         }
     }
     if (was_blocked) {
-        cur->state = TaskState::READY;
+        Scheduler::set_task_ready(*cur);
         cur->remaining_ticks = cur->period_ticks;
         if (cur->sporadic_server) {
             cur->sporadic_server->on_activation(arch::Timer::ticks());

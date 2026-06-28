@@ -56,7 +56,7 @@ void Mutex::wake_one() {
     }
 
     if (waiters_[best]->state != TaskState::TERMINATED)
-        waiters_[best]->state = TaskState::READY;
+        Scheduler::set_task_ready(*waiters_[best]);
     waiters_[best] = waiters_[--wait_count_];
 }
 

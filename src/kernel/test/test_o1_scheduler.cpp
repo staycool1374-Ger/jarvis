@@ -1,0 +1,270 @@
+#include <test.hpp>
+#include <logger.hpp>
+#include <kernel/jarvis_config.h>
+#include <kernel/task/task.hpp>
+#include <kernel/task/priority_map.hpp>
+#include <kernel/task/task_queue.hpp>
+#include <kernel/task/ready_queue_manager.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
+#include <kernel/test/task_ptr.hpp>
+#include <scope_guard.hpp>
+
+using namespace kernel;
+
+// ---------------------------------------------------------------------------
+// PriorityMap tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(o1_priority_map_set_get) {
+    PriorityMap pm;
+    JARVIS_ASSERT(pm.empty());
+    pm.set(5);
+    JARVIS_ASSERT(pm.is_set(5));
+    JARVIS_ASSERT_EQ(5ULL, pm.get_highest_priority());
+    pm.clear(5);
+    JARVIS_ASSERT(!pm.is_set(5));
+    JARVIS_ASSERT(pm.empty());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_priority_map_multiple) {
+    PriorityMap pm;
+    pm.set(10);
+    pm.set(5);
+    pm.set(127);
+    pm.set(0);
+    JARVIS_ASSERT_EQ(127ULL, pm.get_highest_priority());
+    pm.clear(127);
+    JARVIS_ASSERT_EQ(10ULL, pm.get_highest_priority());
+    pm.clear(10);
+    JARVIS_ASSERT_EQ(5ULL, pm.get_highest_priority());
+    pm.clear(5);
+    JARVIS_ASSERT_EQ(0ULL, pm.get_highest_priority());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_priority_map_boundary) {
+    PriorityMap pm;
+    pm.set(0);
+    JARVIS_ASSERT_EQ(0ULL, pm.get_highest_priority());
+    pm.clear(0);
+    pm.set(63);
+    JARVIS_ASSERT_EQ(63ULL, pm.get_highest_priority());
+    pm.set(64);
+    JARVIS_ASSERT_EQ(64ULL, pm.get_highest_priority());
+    pm.set(127);
+    JARVIS_ASSERT_EQ(127ULL, pm.get_highest_priority());
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_priority_map_clear_nonexistent) {
+    PriorityMap pm;
+    pm.clear(42);
+    JARVIS_ASSERT(pm.empty());
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// TaskQueue tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(o1_task_queue_single) {
+    auto* tcb = TaskControlBlock::create([]() {}, 5, 20);
+    JARVIS_ASSERT(tcb != nullptr);
+    TaskQueue q;
+    JARVIS_ASSERT(q.empty());
+
+    q.push_back(*tcb);
+    JARVIS_ASSERT(!q.empty());
+    JARVIS_ASSERT_EQ(1ULL, q.count());
+
+    auto* popped = q.pop_front();
+    JARVIS_ASSERT(popped == tcb);
+    JARVIS_ASSERT(q.empty());
+
+    tcb->state = TaskState::TERMINATED;
+    tcb->cleanup();
+    delete tcb;
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_task_queue_multiple) {
+    auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
+    auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
+    auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
+    JARVIS_ASSERT(t1 && t2 && t3);
+
+    TaskQueue q;
+    q.push_back(*t1);
+    q.push_back(*t2);
+    q.push_back(*t3);
+    JARVIS_ASSERT_EQ(3ULL, q.count());
+
+    JARVIS_ASSERT(q.pop_front() == t1);
+    JARVIS_ASSERT(q.pop_front() == t2);
+    JARVIS_ASSERT(q.pop_front() == t3);
+    JARVIS_ASSERT(q.empty());
+
+    t1->state = TaskState::TERMINATED; t1->cleanup(); delete t1;
+    t2->state = TaskState::TERMINATED; t2->cleanup(); delete t2;
+    t3->state = TaskState::TERMINATED; t3->cleanup(); delete t3;
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_task_queue_remove_middle) {
+    auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
+    auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
+    auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
+    JARVIS_ASSERT(t1 && t2 && t3);
+
+    TaskQueue q;
+    q.push_back(*t1);
+    q.push_back(*t2);
+    q.push_back(*t3);
+
+    q.remove(*t2);
+    JARVIS_ASSERT_EQ(2ULL, q.count());
+    JARVIS_ASSERT(q.pop_front() == t1);
+    JARVIS_ASSERT(q.pop_front() == t3);
+    JARVIS_ASSERT(q.empty());
+
+    t1->state = TaskState::TERMINATED; t1->cleanup(); delete t1;
+    t2->state = TaskState::TERMINATED; t2->cleanup(); delete t2;
+    t3->state = TaskState::TERMINATED; t3->cleanup(); delete t3;
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// ReadyQueueManager tests
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(o1_ready_queue_single) {
+    SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 20));
+    JARVIS_ASSERT(tcb != nullptr);
+    ReadyQueueManager rqm;
+
+    rqm.enqueue(*tcb, 5);
+    JARVIS_ASSERT(rqm.has_ready());
+
+    auto* popped = rqm.dequeue_highest();
+    JARVIS_ASSERT(popped == tcb.get());
+    JARVIS_ASSERT(!rqm.has_ready());
+
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_ready_queue_highest_priority) {
+    SimpleTaskPtr low(TaskControlBlock::create([]() {}, 5, 20));
+    SimpleTaskPtr mid(TaskControlBlock::create([]() {}, 10, 20));
+    SimpleTaskPtr high(TaskControlBlock::create([]() {}, 15, 20));
+    JARVIS_ASSERT(low && mid && high);
+
+    ReadyQueueManager rqm;
+    rqm.enqueue(*low, 5);
+    rqm.enqueue(*mid, 10);
+    rqm.enqueue(*high, 15);
+
+    JARVIS_ASSERT(rqm.dequeue_highest() == high.get());
+    JARVIS_ASSERT(rqm.dequeue_highest() == mid.get());
+    JARVIS_ASSERT(rqm.dequeue_highest() == low.get());
+    JARVIS_ASSERT(!rqm.has_ready());
+
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_ready_queue_remove) {
+    SimpleTaskPtr t1(TaskControlBlock::create([]() {}, 5, 20));
+    SimpleTaskPtr t2(TaskControlBlock::create([]() {}, 10, 20));
+    JARVIS_ASSERT(t1 && t2);
+
+    ReadyQueueManager rqm;
+    rqm.enqueue(*t1, 5);
+    rqm.enqueue(*t2, 10);
+
+    rqm.remove(*t2, 10);
+    JARVIS_ASSERT(rqm.dequeue_highest() == t1.get());
+    JARVIS_ASSERT(!rqm.has_ready());
+
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_ready_queue_128_levels) {
+    ReadyQueueManager rqm;
+    SimpleTaskPtr tasks[128];
+
+    for (uint64_t p = 0; p < 128; ++p) {
+        tasks[p].reset(TaskControlBlock::create([]() {}, 1, 20));
+        JARVIS_ASSERT(tasks[p] != nullptr);
+        rqm.enqueue(*tasks[p], p);
+    }
+
+    for (uint64_t p = 127; ; --p) {
+        auto* t = rqm.dequeue_highest();
+        JARVIS_ASSERT(t != nullptr);
+        if (p == 0) break;
+    }
+    JARVIS_ASSERT(!rqm.has_ready());
+
+    for (uint64_t p = 0; p < 128; ++p) {
+        tasks[p]->state = TaskState::TERMINATED;
+        tasks[p]->cleanup();
+    }
+    JARVIS_TEST_PASS();
+}
+
+// ---------------------------------------------------------------------------
+// Scheduler integration tests (O(1) next_task)
+// ---------------------------------------------------------------------------
+
+JARVIS_TEST(o1_scheduler_dequeues_highest) {
+    SimpleTaskPtr low(TaskControlBlock::create([]() {}, 5, 20));
+    SimpleTaskPtr high(TaskControlBlock::create([]() {}, 15, 20));
+    JARVIS_ASSERT(low && high);
+
+    Scheduler::add_task(*low);
+    Scheduler::add_task(*high);
+    auto guard = ScopeGuard([&]() {
+        low->state = TaskState::TERMINATED; low->cleanup();
+        high->state = TaskState::TERMINATED; high->cleanup();
+    });
+
+    auto* next = Scheduler::next_task();
+    // next_task should return the highest priority task (15)
+    JARVIS_ASSERT(next != nullptr);
+    JARVIS_ASSERT(next->priority == 15);
+
+    JARVIS_TEST_PASS();
+}
+
+JARVIS_TEST(o1_scheduler_add_remove_ready_queue) {
+    SimpleTaskPtr t1(TaskControlBlock::create([]() {}, 10, 20));
+    JARVIS_ASSERT(t1);
+
+    Scheduler::add_task(*t1);
+    // t1 was enqueued by add_task
+    auto* next = Scheduler::next_task();
+    JARVIS_ASSERT(next != nullptr);
+    JARVIS_ASSERT_EQ(10ULL, next->priority);
+
+    t1->state = TaskState::TERMINATED; t1->cleanup();
+    JARVIS_TEST_PASS();
+}
+
+void register_o1_scheduler_tests() {
+    Logger::info("Registering O(1) scheduler tests");
+    JARVIS_REGISTER_TEST(o1_priority_map_set_get);
+    JARVIS_REGISTER_TEST(o1_priority_map_multiple);
+    JARVIS_REGISTER_TEST(o1_priority_map_boundary);
+    JARVIS_REGISTER_TEST(o1_priority_map_clear_nonexistent);
+    JARVIS_REGISTER_TEST(o1_task_queue_single);
+    JARVIS_REGISTER_TEST(o1_task_queue_multiple);
+    JARVIS_REGISTER_TEST(o1_task_queue_remove_middle);
+    JARVIS_REGISTER_TEST(o1_ready_queue_single);
+    JARVIS_REGISTER_TEST(o1_ready_queue_highest_priority);
+    JARVIS_REGISTER_TEST(o1_ready_queue_remove);
+    JARVIS_REGISTER_TEST(o1_ready_queue_128_levels);
+    JARVIS_REGISTER_TEST(o1_scheduler_dequeues_highest);
+    JARVIS_REGISTER_TEST(o1_scheduler_add_remove_ready_queue);
+}

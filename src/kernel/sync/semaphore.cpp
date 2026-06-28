@@ -59,11 +59,11 @@ void Semaphore::wake_one() {
             if (waiters_[i]->priority > waiters_[best]->priority) best = i;
         }
         if (waiters_[best]->state != TaskState::TERMINATED)
-            waiters_[best]->state = TaskState::READY;
+            Scheduler::set_task_ready(*waiters_[best]);
         waiters_[best] = waiters_[--waiter_count_];
     } else {
         if (waiters_[0]->state != TaskState::TERMINATED)
-            waiters_[0]->state = TaskState::READY;
+            Scheduler::set_task_ready(*waiters_[0]);
         waiter_count_ = 0;
     }
 }

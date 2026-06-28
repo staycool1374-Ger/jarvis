@@ -152,7 +152,7 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     }
 
     if (tcb->state == TaskState::BLOCKED) {
-        tcb->state = TaskState::READY;
+        Scheduler::set_task_ready(*tcb);
         tcb->remaining_ticks = tcb->period_ticks;
     }
     return ok;
@@ -207,7 +207,7 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
             arch::cli();
         }
     }
-    if (was_blocked) cur->state = TaskState::READY;
+    if (was_blocked) Scheduler::set_task_ready(*cur);
 
     return cur->msg_queue->pop(reply);
 }
@@ -248,7 +248,7 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
     task->blocked_next = nullptr;
     task->blocked_on_queue = nullptr;
     if (task->state != TaskState::TERMINATED) {
-        task->state = TaskState::READY;
+        Scheduler::set_task_ready(*task);
         task->remaining_ticks = task->period_ticks;
     }
 

@@ -44,7 +44,7 @@ void Notify::notify(uint64_t value) {
     notify_value_ = value;
     if (waiter_) {
         if (waiter_->state != TaskState::TERMINATED)
-            waiter_->state = TaskState::READY;
+            Scheduler::set_task_ready(*waiter_);
         waiter_ = nullptr;
     }
 }
@@ -54,7 +54,7 @@ errors::SyncError Notify::notify_err(uint64_t value) {
     notify_value_ = value;
     if (waiter_) {
         if (waiter_->state != TaskState::TERMINATED)
-            waiter_->state = TaskState::READY;
+            Scheduler::set_task_ready(*waiter_);
         waiter_ = nullptr;
         return errors::SYNC_ERR_OK;
     }

@@ -163,6 +163,9 @@ struct TaskControlBlock {
         , program_break_start(0)
         , fd_table({})
         , cwd_vnode(nullptr)
+        , runq_next_(nullptr)
+        , runq_prev_(nullptr)
+        , in_ready_queue_(false)
         , waiting_child_pid(0)
         , waiting_child_status(nullptr)
         , pending_signals(0)
@@ -223,6 +226,13 @@ struct TaskControlBlock {
     vfs::FdTable fd_table;
     char cwd[CONFIG_VFS_MAX_PATH];
     vfs::Vnode* cwd_vnode;
+
+    /// @brief Intrusive linked-list pointers for O(1) ready queue.
+    TaskControlBlock* runq_next_;
+    TaskControlBlock* runq_prev_;
+    /// @brief True if this task is currently in the ready queue.
+    /// Used to prevent double-enqueue.
+    bool in_ready_queue_;
 
     uint64_t waiting_child_pid;
     uint64_t* waiting_child_status;

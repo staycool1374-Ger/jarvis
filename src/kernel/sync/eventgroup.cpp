@@ -81,7 +81,7 @@ void EventGroup::wake_matching() {
                 bits_ &= ~waiters_[i].wanted_bits;
             }
             if (waiters_[i].task->state != TaskState::TERMINATED)
-                waiters_[i].task->state = TaskState::READY;
+                Scheduler::set_task_ready(*waiters_[i].task);
             waiters_[i] = waiters_[--wait_count_];
         } else {
             ++i;

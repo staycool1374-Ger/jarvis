@@ -36,14 +36,27 @@ Notes
 - CONFIG_HARD_REAL_TIME=0 builds must remain functionally identical to v0.2.21 (Soft-RT compatibility)
 
 ### 0.3.1 — Deterministic Scheduling
-- [ ] Determinism & Bounded WCET (Pillar 1)
-  - [ ] Scheduler — Replace O(n) Scan with O(1) Priority Bitmap
-  - [ ] Add CONFIG_MAX_PRIORITY (default 256) to jarvis_config.h
-  - [ ] Implement PriorityBitmap class (256-bit, 4×uint64_t) with __builtin_ctzll/__builtin_clzll for O(1) highest-ready lookup
-  - [ ] Replace Scheduler::next_task() linear scan with bitmap search
-  - [ ] Add per-priority ready queues (array of TaskControlBlock* head/tail)
-  - [ ] Update add_task/remove_task/on_tick to maintain bitmap + queues
-  - [ ] Validate: measure next_task() cycles — must be ≤ 150 cycles on x86_64
+## v0.3.1 — Deterministic Scheduling (O(1) Core Architecture
+- [ ] **I. Hardware-Accelerated Bitmask Layer (HAL)**
+  - [ ] Implement `hal::bits::find_highest_bit(uint64_t)` under `arch/hal/`
+  - [ ] Optimize via compiler builtins (`63 - __builtin_clzll(mask)`) for native assembly matching across targets:
+    - `BSR` (Bit Scan Reverse) on **x86_64**
+    - `CLZ` (Count Leading Zeros) on **aarch64**
+    - `CLZ` (Zbb-Extension) or bitwise fallback on **riscv64**
+  - [ ] Add dedicated cross-arch unit tests to verify edge cases (null mask, MSB, LSB)
+- [ ] **II. Fixed-Size Priority Mapping**
+  - [ ] Design the `kernel::PriorityMap` class encapsulating a single `uint64_t` (supporting up to 64 discrete real-time priority levels)
+  - [ ] Implement lock-free, bitwise operations for `set(prio)`, `clear(prio)`, and `get_highest_priority()`
+  - [ ] Enforce compile-time invariant checks via `static_assert(CONFIG_PRIORITY_CEILING <= 64)`
+
+- [ ] **III. Multi-Queue Ready Manager**
+  - [ ] Implement `ReadyQueueManager` as a fixed array of intrusive task lists (`TaskQueue _queues[CONFIG_PRIORITY_CEILING]`)
+  - [ ] Guarantee true **$O(1)$ complexity** for insertion (`enqueue_task`) and extraction (`dequeue_highest`) operations
+  - [ ] Bind bitmap state synchronization: when a `TaskQueue` drains completely, its respective bit in the `PriorityMap` must be deterministically cleared
+
+- [ ] **IV. Execution & Isolation Tests**
+  - [ ] Create an isolated scheduler test-kit measuring dispatch latencies across 1, 10, and 64 concurrently active queues
+  - [ ] Verify bounded Worst-Case Execution Time (WCET) constraints in the CPU simulator / Renode CI pipeline
 - [ ] Sporadic Server — Extend to All Hard Real-Time Tasks
   - [ ] Add CONFIG_SPORADIC_SERVER_MAX_TASKS (default 8) to config
   - [ ] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()

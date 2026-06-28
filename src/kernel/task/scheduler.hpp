@@ -27,6 +27,7 @@
 #include <kernel/jarvis_config.h>
 #include <kernel/task/scheduler_errors.hpp>
 #include <kernel/task/task_errors.hpp>
+#include <kernel/task/ready_queue_manager.hpp>
 
 namespace kernel {
 
@@ -95,6 +96,11 @@ public:
     /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
     static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
  
+    /// @brief Marks a task as READY and adds it to the O(1) ready queue.
+    ///        Call this instead of directly setting `task.state = READY`
+    ///        to keep the ready-queue bitmap in sync.
+    static void set_task_ready(TaskControlBlock& task) noexcept;
+
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;
@@ -127,6 +133,11 @@ public:
     /// @param en True to enable preemption.
     static void set_preemptible(bool en) noexcept { preempt_enabled_ = en; }
 
+    /// @brief Enqueues a task into the O(1) ready queue at its effective priority.
+    static void enqueue_ready(TaskControlBlock& task) noexcept;
+    /// @brief Removes a task from the O(1) ready queue.
+    static void dequeue_ready(TaskControlBlock& task) noexcept;
+
     /// @name Test-isolation helpers
     static uint64_t snapshot_max_tasks() { return MAX_TASKS; }
     static uint64_t snapshot_id_size()  { return ID_TABLE_SIZE; }
@@ -136,14 +147,18 @@ public:
                               uint64_t& current_idx_out,
                               uint64_t& next_id_out,
                               TaskControlBlock*& idle_out,
-                              bool& preempt_out);
+                              bool& preempt_out,
+                              uint64_t* rq_bitmap_hi = nullptr,
+                              uint64_t* rq_bitmap_lo = nullptr);
     static void restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* const* id_table_in,
                               uint64_t task_count_in,
                               uint64_t current_idx_in,
                               uint64_t next_id_in,
                               TaskControlBlock* idle_in,
-                              bool preempt_in);
+                              bool preempt_in,
+                              uint64_t rq_bitmap_hi = 0,
+                              uint64_t rq_bitmap_lo = 0);
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
@@ -161,6 +176,7 @@ private:
     static bool preempt_enabled_;
 
     static sync::SpinLock scheduler_lock_;
+    static ReadyQueueManager ready_queue_;
     static TaskControlBlock* idle_task_;
     static TaskControlBlock* shell_task_ptr_;
 
