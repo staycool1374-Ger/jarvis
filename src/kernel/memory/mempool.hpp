@@ -22,6 +22,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/memory/mempool_errors.hpp>
 
 namespace kernel {
 
@@ -77,13 +78,27 @@ public:
 
     /// @brief Initialises all pool classes from pre-allocated memory.
     static void init();
+    /// @brief Initialises with error code.
+    /// @return MemPoolError code.
+    static errors::MemPoolError init_err();
+
     /// @brief Allocates a block of at least the requested size.
     /// @param size Minimum number of bytes.
     /// @return Pointer to the allocated block, or nullptr.
     static void* alloc(size_t size);
+    /// @brief Allocates a block with error code.
+    /// @param size Minimum number of bytes.
+    /// @param[out] out_ptr Pointer to allocated block on success.
+    /// @return MemPoolError code.
+    static errors::MemPoolError alloc_err(size_t size, void*& out_ptr);
+
     /// @brief Frees a block previously returned by alloc().
     /// @param block Pointer to the block to free.
     static void free(void* block);
+    /// @brief Frees a block with error code.
+    /// @param block Pointer to the block to free.
+    /// @return MemPoolError code.
+    static errors::MemPoolError free_err(void* block);
 
     /// @brief Check if a pointer falls within any MemPool pool range.
     /// @param ptr Pointer to check.

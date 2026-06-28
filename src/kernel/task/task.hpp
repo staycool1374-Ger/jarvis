@@ -22,9 +22,12 @@
 #pragma once
 
 #include <types.hpp>
+#include <constants.hpp>
+#include <kernel/sync/spinlock.hpp>
+#include <kernel/jarvis_config.h>
+#include <kernel/task/task_errors.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <signal.hpp>
-#include <kernel/jarvis_config.h>
 
 namespace kernel {
 
@@ -60,6 +63,7 @@ class EventGroup;
 
 namespace task {
 class SporadicServer;
+void dmesg_task_main();
 }
 
 
@@ -299,6 +303,17 @@ struct TaskControlBlock {
         void (*entry)(),
         uint64_t priority,
         uint64_t period_ticks);
+    /// @brief Creates a new kernel task with error code.
+    /// @param entry Entry function for the task.
+    /// @param priority Task priority.
+    /// @param period_ticks Task period in ticks.
+    /// @param[out] out_tcb Pointer to the created TCB on success.
+    /// @return TaskError code.
+    static errors::TaskError create_err(
+        void (*entry)(),
+        uint64_t priority,
+        uint64_t period_ticks,
+        TaskControlBlock*& out_tcb);
 
     /// @brief Creates a new user task running in ring 3 with its own
     /// page table.
@@ -307,6 +322,19 @@ struct TaskControlBlock {
         uint64_t priority,
         uint64_t period_ticks,
         size_t user_stack_size = 32_KiB);
+    /// @brief Creates a new user task with error code.
+    /// @param entry Entry function for the task.
+    /// @param priority Task priority.
+    /// @param period_ticks Task period in ticks.
+    /// @param user_stack_size Size of the user stack (default 32 KiB).
+    /// @param[out] out_tcb Pointer to the created TCB on success.
+    /// @return TaskError code.
+    static errors::TaskError create_user_err(
+        void (*entry)(),
+        uint64_t priority,
+        uint64_t period_ticks,
+        size_t user_stack_size,
+        TaskControlBlock*& out_tcb);
 
     /// @brief Clones the current task — creates a child with copied
     /// context.
@@ -315,6 +343,11 @@ struct TaskControlBlock {
     /// @return Pointer to the new child TaskControlBlock, or nullptr
     /// on failure.
     static TaskControlBlock* clone(uint64_t* regs);
+    /// @brief Clones the current task with error code.
+    /// @param regs Register save area from the interrupt.
+    /// @param[out] out_tcb Pointer to the created TCB on success.
+    /// @return TaskError code.
+    static errors::TaskError clone_err(uint64_t* regs, TaskControlBlock*& out_tcb);
 
     /// @brief Save the current register context into this TCB.
     /// @param rsp Reference to current stack pointer (updated on save).

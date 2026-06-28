@@ -227,10 +227,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_net_tests();
         register_ipc_benchmark_tests();
         register_microkernel_transition_tests();
-        register_random_tests();
+register_random_tests();
         register_random_vfs_tests();
         register_random_syscall_tests();
         register_random_seed_tests();
+        // FPU/SSE tests require GCC 13 or older for inline asm register constraints
         // register_fpu_tests();
         // register_fpu_sse_tests();
         // register_fpu_clone_tests();

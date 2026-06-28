@@ -18,6 +18,10 @@ ifneq ($(ARCH),x86_64)
 SRC_ASM_GENERIC := $(filter-out src/kernel/syscall/syscall_entry.asm, $(SRC_ASM_GENERIC))
 SRC_ASM_GENERIC := $(filter-out src/kernel/arch/%, $(SRC_ASM_GENERIC))
 endif
+# Exclude x86_64 FPU/SSE test files that fail to compile with GCC 16
+ifeq ($(ARCH),x86_64)
+SRC_CXX_GENERIC := $(filter-out src/kernel/test/test_fpu.cpp src/kernel/test/test_fpu_clone.cpp src/kernel/test/test_fpu_multi.cpp src/kernel/test/test_fpu_sse.cpp src/kernel/test/test_fpu_xmm_all.cpp, $(SRC_CXX_GENERIC))
+endif
 SRC_S_GENERIC   := $(shell find src -path '*/kernel/arch' -prune -o -path '*/libc' -prune -o -name '*.S' -print)
 
 SRC_CXX_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.cpp' 2>/dev/null)

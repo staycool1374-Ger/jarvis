@@ -38,6 +38,7 @@
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/log/ring_buffer.hpp>
+#include <kernel/log/dmesg.hpp>
 #include <kernel/net/net.hpp>
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/arch/pci.hpp>
@@ -944,6 +945,8 @@ void Shell::cmd_selftest(int argc, const char** argv) {
                     Terminal::write("\n");
                 }
             }
+            // Enable auto-shutdown for explicit test class runs (e.g. "all")
+            kernel::test::set_class_auto_shutdown(true);
             kernel::test::run_registered(0);
         }
 
@@ -986,6 +989,7 @@ void Shell::cmd_exit(int, const char**) {
 
     arch::outw(arch::QEMU_ACPI_PORT, 0x2000);
     arch::outw(arch::QEMU_SHUTDOWN_PORT, 0x2000);
+    arch::qemu_debug_exit(0);
 
     for (int i = 0; i < 100000000; ++i) arch::pause();
     Terminal::write("Shutdown failed. Halting.\n");
@@ -2084,15 +2088,58 @@ void Shell::cmd_less(int argc, const char** argv) {
 }
 
 void Shell::cmd_dmesg(int, const char**) {
-    char buf[256];
     size_t total = 0;
-    while (true) {
-        size_t n = kernel::log::g_klog.read(buf, sizeof(buf) - 1);
-        if (n == 0) break;
-        buf[n] = '\0';
+    kernel::log::g_dmesg.for_each([&](const kernel::log::LogEntry& e) {
+        char buf[256];
+        char* p = buf;
+        char* end = buf + sizeof(buf) - 1;
+
+        *p++ = '['; *p++ = 'T'; *p++ = 'S'; *p++ = '=';
+        uint64_t ts = e.timestamp;
+        char tsbuf[24]; int tlen = 0;
+        if (ts == 0) tsbuf[tlen++] = '0';
+        else { while (ts > 0 && tlen < 23) { tsbuf[tlen++] = '0' + (ts % 10); ts /= 10; } }
+        for (int i = 0; i < tlen/2; ++i) { char c = tsbuf[i]; tsbuf[i] = tsbuf[tlen-1-i]; tsbuf[tlen-1-i] = c; }
+        for (int i = 0; i < tlen && p < end; ++i) *p++ = tsbuf[i];
+        *p++ = ']'; *p++ = ' ';
+
+        const char* task_s = "TASK=";
+        while (*task_s && p < end) *p++ = *task_s++;
+        uint64_t tid = e.task_id;
+        char tidbuf[24]; int tidlen = 0;
+        if (tid == 0) tidbuf[tidlen++] = '0';
+        else { while (tid > 0 && tidlen < 23) { tidbuf[tidlen++] = '0' + (tid % 10); tid /= 10; } }
+        for (int i = 0; i < tidlen/2; ++i) { char c = tidbuf[i]; tidbuf[i] = tidbuf[tidlen-1-i]; tidbuf[tidlen-1-i] = c; }
+        for (int i = 0; i < tidlen && p < end; ++i) *p++ = tidbuf[i];
+        *p++ = ' ';
+
+        const char* err_s = "ERR=";
+        while (*err_s && p < end) *p++ = *err_s++;
+        const char* sub = kernel::log::subsystem_name(e.subsystem);
+        while (*sub && p < end) *p++ = *sub++;
+        *p++ = ':';
+        const char* err_name = kernel::log::error_string(e.subsystem, e.error_code);
+        while (*err_name && p < end) *p++ = *err_name++;
+        *p++ = ' ';
+
+        const char* ctx_s = "CTX=";
+        while (*ctx_s && p < end) *p++ = *ctx_s++;
+        uintptr_t ctx = e.context;
+        *p++ = '0'; *p++ = 'x';
+        for (int i = (sizeof(uintptr_t)*2)-1; i >= 0 && p < end; --i) {
+            uint8_t nib = (ctx >> (i*4)) & 0xF;
+            *p++ = nib < 10 ? '0' + nib : 'a' + (nib - 10);
+        }
+        *p++ = ':'; *p++ = ' ';
+
+        const char* msg = e.message ? e.message : "(null)";
+        while (*msg && p < end) *p++ = *msg++;
+        *p++ = '\n';
+        *p = '\0';
+
         Terminal::write(buf);
-        total += n;
-    }
+        total += p - buf;
+    });
     if (total == 0) {
         Terminal::write("Kernel log buffer is empty.\n");
     }
