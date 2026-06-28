@@ -16,12 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/// @file virtio.cpp
+/// @file virtio_pci.cpp
 /// @brief Virtio PCI transport implementation (modern 1.0 interface).
 
 #include <kernel/arch/virtio.hpp>
-#include <kernel/arch/io.hpp>
+#include <kernel/arch/pci.hpp>
 #include <logger.hpp>
+#include <lib/atomic.hpp>
 
 using namespace kernel;
 
@@ -170,7 +171,7 @@ bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
                         uint16_t queue_size, uint64_t desc_phys,
                         uint64_t avail_phys, uint64_t used_phys) {
     virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SEL, queue_idx);
-    __sync_synchronize();
+    kernel::atomic_fence();
     uint16_t size = virtio_read_common16(t, VIRTIO_COMMON_QUEUE_SIZE);
     if (size == 0) {
         Logger::error("virtio: queue %d not available", queue_idx);
@@ -192,9 +193,9 @@ bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
                         static_cast<uint32_t>((used_phys >> 32) & 0xFFFFFFFF));
 
     virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SIZE, queue_size);
-    __sync_synchronize();
+    kernel::atomic_fence();
     virtio_write_common16(t, VIRTIO_COMMON_QUEUE_ENABLE, 1);
-    __sync_synchronize();
+    kernel::atomic_fence();
 
     Logger::info("virtio: queue %d setup (size=%d)", queue_idx, queue_size);
     return true;

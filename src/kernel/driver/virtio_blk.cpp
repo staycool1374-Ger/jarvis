@@ -19,12 +19,11 @@
 /// @file virtio_blk.cpp
 /// @brief Virtio block driver implementation.
 
-#if defined(CONFIG_ARCH_X86_64)
-
 #include <kernel/driver/virtio_blk.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <lib/atomic.hpp>
 
 using namespace kernel;
 using namespace arch;
@@ -143,9 +142,9 @@ bool VirtioBlkDriver::submit_request(uint32_t type, uint64_t sector,
 
     // Place in available ring
     avail_->ring[avail_->idx % queue_size_] = idx;
-    __sync_synchronize();
+    kernel::atomic_fence();
     avail_->idx = static_cast<uint16_t>(avail_->idx + 1);
-    __sync_synchronize();
+    kernel::atomic_fence();
 
     // Kick the device
     arch::virtio_notify(transport_, 0);
@@ -154,7 +153,7 @@ bool VirtioBlkDriver::submit_request(uint32_t type, uint64_t sector,
     uint16_t used_idx = used_->idx;
     int timeout = 1000000;
     while (used_->idx == used_idx && --timeout > 0) {
-        __sync_synchronize();
+        kernel::atomic_fence();
     }
     if (timeout <= 0) {
         Logger::error("virtio-blk: request timeout");
@@ -204,5 +203,3 @@ VirtioBlkDriver* VirtioBlkDriver::probe() {
 }
 
 } // namespace kernel::block
-
-#endif // CONFIG_ARCH_X86_64

@@ -19,12 +19,11 @@
 /// @file virtio_net.cpp
 /// @brief Virtio-net NIC driver implementation.
 
-#if defined(CONFIG_ARCH_X86_64)
-
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <string.hpp>
 #include <logger.hpp>
+#include <lib/atomic.hpp>
 
 using namespace kernel;
 using namespace arch;
@@ -78,7 +77,7 @@ static void add_rx_buf(VirtioNetDevice& dev, int idx) {
     dev.rx_desc[qi].next  = 0;
 
     dev.rx_avail->ring[dev.rx_avail->idx % dev.queue_size] = qi;
-    __sync_synchronize();
+    kernel::atomic_fence();
     dev.rx_avail->idx = static_cast<uint16_t>(dev.rx_avail->idx + 1);
 }
 
@@ -211,9 +210,9 @@ static bool virtio_net_send_frame(const uint8_t* data, size_t len) {
     dev.tx_desc[idx].next  = 0;
 
     dev.tx_avail->ring[dev.tx_avail->idx % dev.queue_size] = idx;
-    __sync_synchronize();
+    kernel::atomic_fence();
     dev.tx_avail->idx = static_cast<uint16_t>(dev.tx_avail->idx + 1);
-    __sync_synchronize();
+    kernel::atomic_fence();
 
     arch::virtio_notify(dev.transport, VIRTIO_NET_QUEUE_TX);
 
@@ -221,7 +220,7 @@ static bool virtio_net_send_frame(const uint8_t* data, size_t len) {
     uint16_t used_idx = dev.tx_used->idx;
     int timeout = 100000;
     while (dev.tx_used->idx == used_idx && --timeout > 0) {
-        __sync_synchronize();
+        kernel::atomic_fence();
     }
 
     dev.tx_avail_idx = static_cast<uint16_t>(dev.tx_avail_idx + 1);
@@ -232,7 +231,7 @@ bool virtio_net_poll(uint8_t* buf, size_t& len) {
     if (!g_virtio_net_dev) return false;
     auto& dev = *g_virtio_net_dev;
 
-    __sync_synchronize();
+    kernel::atomic_fence();
     uint16_t used_idx = dev.rx_used->idx;
     if (used_idx == dev.rx_last_seen_used) return false;
 
@@ -255,5 +254,3 @@ bool virtio_net_poll(uint8_t* buf, size_t& len) {
 }
 
 } // namespace kernel::net
-
-#endif // CONFIG_ARCH_X86_64

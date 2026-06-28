@@ -17,7 +17,7 @@
  */
 
 /// @file pci.cpp
-/// @brief PCI bus enumeration using CF8/CFC config space access.
+/// @brief PCI bus enumeration — arch-independent (uses HAL config space access).
 
 #include <kernel/arch/pci.hpp>
 #include <logger.hpp>
@@ -388,7 +388,7 @@ PciDeviceInfo pci_read_device_info(PciBdf bdf) {
     info.bdf = bdf;
     info.vendor_id   = pci_read_vendor(bdf);
     info.device_id   = pci_read_device(bdf);
-    uint32_t addr_base = pci_make_addr(bdf, 0);
+    uint64_t addr_base = pci_make_addr(bdf, 0);
     info.revision    = pci_config_readb(addr_base + PCI_REVISION);
     info.prog_if     = pci_config_readb(addr_base + PCI_PROG_IF);
     info.subclass    = pci_config_readb(addr_base + PCI_SUBCLASS);

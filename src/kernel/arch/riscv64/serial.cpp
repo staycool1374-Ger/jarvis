@@ -1,4 +1,5 @@
 #include <kernel/arch/serial.hpp>
+#include <types.hpp>
 
 namespace arch {
 
@@ -11,6 +12,10 @@ void Serial::putchar(char c) {
     }
     uint64_t ch = (unsigned char)c;
     asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+}
+
+char Serial::getchar() {
+    return '\0';
 }
 
 void Serial::puts(const char* s) {

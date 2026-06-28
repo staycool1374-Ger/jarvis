@@ -19,6 +19,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <lib/atomic.hpp>
 
 namespace kernel {
 namespace log {
@@ -30,10 +31,10 @@ public:
     void putchar(char c) {
         size_t w = write_pos_;
         size_t next = (w + 1) % BUFFER_SIZE;
-        if (next == __atomic_load_n(&read_pos_, __ATOMIC_ACQUIRE))
+        if (next == atomic_load(&read_pos_, __ATOMIC_ACQUIRE))
             return;
         buf_[w] = c;
-        __atomic_store_n(&write_pos_, next, __ATOMIC_RELEASE);
+        atomic_store(&write_pos_, next, __ATOMIC_RELEASE);
     }
 
     void puts(const char* s) {
@@ -41,25 +42,25 @@ public:
     }
 
     size_t read(char* dst, size_t size) {
-        size_t r = __atomic_load_n(&read_pos_, __ATOMIC_RELAXED);
-        size_t w = __atomic_load_n(&write_pos_, __ATOMIC_ACQUIRE);
+        size_t r = atomic_load(&read_pos_, __ATOMIC_RELAXED);
+        size_t w = atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
         size_t written = 0;
         while (r != w && written < size) {
             *dst++ = buf_[r];
             r = (r + 1) % BUFFER_SIZE;
             ++written;
         }
-        __atomic_store_n(&read_pos_, r, __ATOMIC_RELEASE);
+        atomic_store(&read_pos_, r, __ATOMIC_RELEASE);
         return written;
     }
 
     void clear() {
-        __atomic_store_n(&read_pos_, __atomic_load_n(&write_pos_, __ATOMIC_RELAXED), __ATOMIC_RELEASE);
+        atomic_store(&read_pos_, atomic_load(&write_pos_, __ATOMIC_RELAXED), __ATOMIC_RELEASE);
     }
 
     bool empty() const {
-        return __atomic_load_n(&read_pos_, __ATOMIC_ACQUIRE) ==
-               __atomic_load_n(&write_pos_, __ATOMIC_ACQUIRE);
+        return atomic_load(&read_pos_, __ATOMIC_ACQUIRE) ==
+               atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
     }
 
     RingBuffer() : buf_{} {}

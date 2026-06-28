@@ -18,52 +18,52 @@ bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
                            ? kernel::Scheduler::current_task()->id
                            : 0;
 
-    size_t h = __atomic_load_n(&head, __ATOMIC_RELAXED);
-    size_t t = __atomic_load_n(&tail, __ATOMIC_ACQUIRE);
+    size_t h = atomic_load(&head, __ATOMIC_RELAXED);
+    size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
 
     size_t next_h = (h + 1) & MASK;
     bool overwrote = false;
 
     if (next_h == t) {
         overwrote = true;
-        __atomic_store_n(&tail, (t + 1) & MASK, __ATOMIC_RELEASE);
+        atomic_store(&tail, (t + 1) & MASK, __ATOMIC_RELEASE);
     }
 
     buffer[h] = LogEntry{ts, tid, subsys, err_code, ctx, msg};
 
-    __atomic_store_n(&head, next_h, __ATOMIC_RELEASE);
+    atomic_store(&head, next_h, __ATOMIC_RELEASE);
     return !overwrote;
 }
 
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::pop(LogEntry& entry) {
-    size_t t = __atomic_load_n(&tail, __ATOMIC_RELAXED);
-    size_t h = __atomic_load_n(&head, __ATOMIC_ACQUIRE);
+    size_t t = atomic_load(&tail, __ATOMIC_RELAXED);
+    size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
 
     if (t == h) return false;
 
     entry = buffer[t];
-    __atomic_store_n(&tail, (t + 1) & MASK, __ATOMIC_RELEASE);
+    atomic_store(&tail, (t + 1) & MASK, __ATOMIC_RELEASE);
     return true;
 }
 
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::empty() const {
-    return __atomic_load_n(&head, __ATOMIC_ACQUIRE) ==
-           __atomic_load_n(&tail, __ATOMIC_ACQUIRE);
+    return atomic_load(&head, __ATOMIC_ACQUIRE) ==
+           atomic_load(&tail, __ATOMIC_ACQUIRE);
 }
 
 template<size_t Capacity>
 size_t DmesgBuffer<Capacity>::size() const {
-    size_t h = __atomic_load_n(&head, __ATOMIC_ACQUIRE);
-    size_t t = __atomic_load_n(&tail, __ATOMIC_ACQUIRE);
+    size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
+    size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
     return (h - t) & MASK;
 }
 
 template<size_t Capacity>
 void DmesgBuffer<Capacity>::clear() {
-    size_t h = __atomic_load_n(&head, __ATOMIC_RELAXED);
-    __atomic_store_n(&tail, h, __ATOMIC_RELEASE);
+    size_t h = atomic_load(&head, __ATOMIC_RELAXED);
+    atomic_store(&tail, h, __ATOMIC_RELEASE);
 }
 
 template class DmesgBuffer<DMESG_CAPACITY>;

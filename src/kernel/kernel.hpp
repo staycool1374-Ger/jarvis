@@ -22,6 +22,9 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/boot/bootinfo.hpp>
+
+extern BootInfo g_boot_info;
 
 extern "C" {
 /// @brief Entry point after transitioning to the higher half.

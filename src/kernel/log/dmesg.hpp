@@ -15,6 +15,7 @@
 #include <kernel/syscall/syscall_errors.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/jarvis_config.h>
+#include <lib/atomic.hpp>
 
 namespace kernel::log {
 
@@ -52,8 +53,8 @@ public:
 
     template<typename Fn>
     void for_each(Fn&& fn) const {
-        size_t t = __atomic_load_n(&tail, __ATOMIC_ACQUIRE);
-        size_t h = __atomic_load_n(&head, __ATOMIC_ACQUIRE);
+        size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
+        size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
 
         while (t != h) {
             fn(buffer[t]);

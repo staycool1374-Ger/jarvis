@@ -28,7 +28,8 @@ SRC_CXX_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.cpp' 2>/dev/nul
 SRC_ASM_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.asm' 2>/dev/null)
 SRC_S_ARCH      := $(shell find src/kernel/arch/$(ARCH) -name '*.S' 2>/dev/null)
 
-SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH)
+SRC_CXX_ARCH_BASE := $(shell find src/kernel/arch -maxdepth 1 -name '*.cpp' 2>/dev/null)
+SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH_BASE) $(SRC_CXX_ARCH)
 SRC_ASM         := $(SRC_ASM_GENERIC) $(SRC_ASM_ARCH)
 SRC_S           := $(SRC_S_GENERIC) $(SRC_S_ARCH)
 OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o) $(SRC_S:src/%.S=build/%.o)

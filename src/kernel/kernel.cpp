@@ -44,6 +44,7 @@
 #include <kernel/driver/iocd.hpp>
 #include <kernel/driver/ata_pio.hpp>
 #include <kernel/driver/ahci.hpp>
+#include <kernel/driver/virtio_blk.hpp>
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/net/net.hpp>
 #include <kernel/vfs/fat32_fs.hpp>
@@ -64,6 +65,9 @@
 #include <kernel/test/test_config.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
+#include <fdt/libfdt.h>
+#include <fdt/libfdt_internal.h>
+#include <string.hpp>
 
 #ifdef CONFIG_PROFILING
 extern "C" void gcov_flush_to_serial();
@@ -124,8 +128,12 @@ extern char kernel_virt_end[];
 extern "C" uint8_t _binary_initrd_cpio_start[];
 extern "C" uint8_t _binary_initrd_cpio_end[];
 
+BootInfo g_boot_info;
+
 #if defined(CONFIG_ARCH_AARCH64)
-extern "C" void* g_dtb_ptr = nullptr;
+extern "C" {
+void* g_dtb_ptr = nullptr;
+}
 #endif
 
 #if defined(CONFIG_ARCH_X86_64)
@@ -144,18 +152,23 @@ static void init_pic() {
 #endif
 
 extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
+    g_boot_info = BootInfo();
+
 #if defined(CONFIG_ARCH_X86_64)
     multiboot_magic = magic;
     multiboot_info_ptr = mb_info;
     extern const uint64_t kernel_stack_top;
     asm volatile("mov %0, %%rsp\n" : : "r"(kernel_stack_top));
+    g_boot_info.multiboot_magic = magic;
+    g_boot_info.multiboot_info = mb_info;
 #elif defined(CONFIG_ARCH_AARCH64)
     g_dtb_ptr = reinterpret_cast<void*>(magic);
+    g_boot_info.dtb_ptr = magic;
     (void)mb_info;
     arch::fp_enable();
 #elif defined(CONFIG_ARCH_RISCV64)
-    (void)magic;
-    (void)mb_info;
+    g_boot_info.hart_id = static_cast<int>(magic);
+    g_boot_info.dtb_ptr = mb_info;
     arch::fp_enable();
 #endif
 
@@ -200,35 +213,77 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
 
 #if defined(CONFIG_ARCH_X86_64)
-    uint64_t mem_size = 64_MiB;
-    uint64_t tag_addr = mb2_find_tag(6);
-    if (tag_addr) {
-        auto* mem_tag = reinterpret_cast<MemoryMapTag*>(tag_addr);
-        uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)
-            ) / mem_tag->entry_size;
-        for (uint64_t i = 0; i < entries; ++i) {
-            auto& entry = mem_tag->entries[i];
-            if (entry.type == 1) {
-                uint64_t end = entry.base_addr + entry.length;
-                if (end > mem_size) mem_size = end;
+    {
+        uint64_t tag_addr = mb2_find_tag(6);
+        if (tag_addr) {
+            auto* mem_tag = reinterpret_cast<MemoryMapTag*>(tag_addr);
+            uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)
+                ) / mem_tag->entry_size;
+            for (uint64_t i = 0; i < entries; ++i) {
+                auto& entry = mem_tag->entries[i];
+                g_boot_info.add_region(entry.base_addr, entry.length, entry.type);
             }
         }
     }
+#endif
+
+#if defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
+    {
+        void* dtb = reinterpret_cast<void*>(g_boot_info.dtb_ptr);
+        if (dtb && fdt_check_header(dtb) == 0) {
+            int offset = fdt_node_offset_by_prop_value(dtb, -1,
+                "device_type", "memory", 7);
+            if (offset < 0) {
+                offset = fdt_subnode_offset_namelen(dtb, 0, "memory", 6);
+            }
+            if (offset >= 0) {
+                int len;
+                const uint32_t* reg = static_cast<const uint32_t*>(
+                    fdt_getprop_namelen(dtb, offset, "reg", &len));
+                if (reg && len >= 16) {
+                    uint64_t base = (static_cast<uint64_t>(fdt32_to_cpu(reg[0])) << 32)
+                                  | fdt32_to_cpu(reg[1]);
+                    uint64_t size = (static_cast<uint64_t>(fdt32_to_cpu(reg[2])) << 32)
+                                  | fdt32_to_cpu(reg[3]);
+                    g_boot_info.add_region(base, size, 1);
+                }
+            }
+            int chosen = fdt_subnode_offset_namelen(dtb, 0, "chosen", 6);
+            if (chosen >= 0) {
+                int len;
+                const char* bootargs = static_cast<const char*>(
+                    fdt_getprop_namelen(dtb, chosen, "bootargs", &len));
+                if (bootargs && len > 0 && len < 256) {
+                    strlcpy(g_boot_info.cmdline, bootargs, 256);
+                }
+            }
+        }
+    }
+#endif
+
     uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::
         HHDM_OFFSET;
+    uint64_t mem_size = 0;
+    if (g_boot_info.num_mem_regions > 0) {
+        for (int i = 0; i < g_boot_info.num_mem_regions; ++i) {
+            uint64_t end = g_boot_info.mem_regions[i].base
+                         + g_boot_info.mem_regions[i].size;
+            if (end > mem_size) mem_size = end;
+        }
+    } else {
+#if defined(CONFIG_ARCH_X86_64)
+        mem_size = 64_MiB;
 #elif defined(CONFIG_ARCH_AARCH64)
-    // QEMU virt: RAM at 0x40000000, 256 MiB.
-    // PMM uses absolute page indices (addr/PAGE_SIZE), so total_pages_ must
-    // cover addresses 0..top_of_RAM.
-    uint64_t mem_size = 0x40000000 + 256_MiB;
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
+        mem_size = 0x40000000 + 256_MiB;
 #elif defined(CONFIG_ARCH_RISCV64)
-    // QEMU virt: RAM at 0x80000000, 128 MiB.
-    uint64_t mem_size = 0x80000000 + 128_MiB;
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
+        mem_size = 0x80000000 + 128_MiB;
 #endif
+    }
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
+    if (g_boot_info.cmdline[0]) {
+        kernel::BootParams::parse_cstr(g_boot_info.cmdline);
+    }
 #if defined(CONFIG_ARCH_X86_64)
     kernel::BootParams::parse_multiboot_cmdline();
 #endif
@@ -469,6 +524,31 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 
 #endif
+
+    // Probe virtio-blk device (arch-independent, uses unified PCI HAL)
+    {
+        auto* vblk = kernel::block::VirtioBlkDriver::probe();
+        if (vblk) {
+            debug_write("[BOOT] Virtio-blk drive found\n");
+            auto* part = new kernel::fat32::Fat32Partition(*vblk);
+            if (part->mount()) {
+                debug_write("[BOOT] FAT32 partition mounted via virtio-blk\n");
+                if (!kernel::vfs::fat32_partition_instance) {
+                    kernel::vfs::fat32_partition_instance = part;
+                    if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                        debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                    } else {
+                        debug_write("[BOOT] mount_fat32 failed\n");
+                    }
+                }
+            } else {
+                debug_write("[BOOT] FAT32 partition mount failed\n");
+                delete part;
+            }
+        } else {
+            debug_write("[BOOT] No virtio-blk device found\n");
+        }
+    }
 
     // Probe virtio-net NIC and initialize network stack
 #if defined(CONFIG_ARCH_X86_64)

@@ -1,5 +1,6 @@
 #include <kernel/arch/serial.hpp>
 #include <kernel/arch/hal/io.hpp>
+#include <constants.hpp>
 
 namespace arch {
 
@@ -33,6 +34,11 @@ void Serial::putchar(char c) {
     }
     while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 5));
     mmio_write32(UART_BASE + UART_DR / 4, c);
+}
+
+char Serial::getchar() {
+    while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 4));
+    return mmio_read32(UART_BASE + UART_DR / 4) & 0xFF;
 }
 
 void Serial::puts(const char* s) {

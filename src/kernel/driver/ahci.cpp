@@ -30,6 +30,7 @@
 #include <kernel/vfs/fat32.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <lib/atomic.hpp>
 
 using namespace kernel;
 using namespace kernel::ahci;
@@ -294,7 +295,7 @@ bool AhciDriver::start_cmd(uint8_t port, uint8_t slot, uint8_t ata_cmd,
     ch->ctbau = static_cast<uint32_t>((ct_phys_[port][slot] >> 32) & 0xFFFFFFFF);
 
     // Ensure writes are visible before issuing command
-    __sync_synchronize();
+    kernel::atomic_fence();
 
     // Issue command
     port_write(port, PORT_CI, 1U << slot);

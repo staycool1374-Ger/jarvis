@@ -19,6 +19,7 @@
 #pragma once
 
 #include <kernel/arch/io.hpp>
+#include <lib/atomic.hpp>
 
 namespace kernel {
 namespace sync {
@@ -33,13 +34,13 @@ public:
     SpinLock& operator=(SpinLock&&)      = delete;
 
     void lock() noexcept {
-        while (__atomic_exchange_n(&locked_, 1, __ATOMIC_ACQUIRE)) {
+        while (atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE)) {
             arch::pause();
         }
     }
 
     void unlock() noexcept {
-        __atomic_store_n(&locked_, 0, __ATOMIC_RELEASE);
+        atomic_store(&locked_, 0, __ATOMIC_RELEASE);
     }
 
     void reset() noexcept {
@@ -47,7 +48,7 @@ public:
     }
 
     bool try_lock() noexcept {
-        return !__atomic_exchange_n(&locked_, 1, __ATOMIC_ACQUIRE);
+        return !atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE);
     }
 
 private:

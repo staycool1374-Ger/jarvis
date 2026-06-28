@@ -12,10 +12,12 @@
 #include <kernel/arch/pci.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <lib/string.hpp>
+#include <kernel/boot/bootinfo.hpp>
+#include <fdt/libfdt.h>
 
 using namespace kernel;
 
-extern "C" void* g_dtb_ptr;
+extern BootInfo g_boot_info;
 
 JARVIS_TEST(aarch64_page_table_4level_walk) {
     uint64_t ttbr1 = arch::read_ttbr1_el1();
@@ -316,15 +318,23 @@ JARVIS_TEST(aarch64_rtc_read) {
 }
 
 JARVIS_TEST(aarch64_boot_dtb_pointer) {
-    JARVIS_ASSERT_FMT(g_dtb_ptr != nullptr, "DTB pointer is null");
+    JARVIS_ASSERT_FMT(g_boot_info.dtb_ptr != 0, "DTB pointer is zero");
 
-    uintptr_t dtb_addr = reinterpret_cast<uintptr_t>(g_dtb_ptr);
+    uintptr_t dtb_addr = static_cast<uintptr_t>(g_boot_info.dtb_ptr);
     JARVIS_ASSERT_FMT(dtb_addr >= 0x40000000ULL && dtb_addr <= 0x50000000ULL,
         "DTB pointer 0x%lx not in expected RAM range (0x40000000-0x50000000)", dtb_addr);
 
-    uint32_t* dtb = reinterpret_cast<uint32_t*>(g_dtb_ptr);
-    uint32_t magic = __builtin_bswap32(dtb[0]);
+    void* dtb = reinterpret_cast<void*>(g_boot_info.dtb_ptr);
+    JARVIS_ASSERT_FMT(fdt_check_header(dtb) == 0, "FDT header validation failed");
+
+    uint32_t magic = *static_cast<const uint32_t*>(dtb);
+    magic = __builtin_bswap32(magic);
     JARVIS_ASSERT_FMT(magic == 0xD00DFEED, "DTB magic mismatch: 0x%x (expected 0xD00DFEED)", magic);
+
+    JARVIS_ASSERT_FMT(g_boot_info.num_mem_regions > 0,
+        "No memory regions parsed from DTB");
+    JARVIS_ASSERT_FMT(g_boot_info.total_mem_size > 0,
+        "Total memory size is zero after DTB parsing");
 
     JARVIS_TEST_PASS();
 }

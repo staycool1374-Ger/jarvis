@@ -19,6 +19,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <lib/atomic.hpp>
 
 template<typename T, size_t N>
 class SPSCRing {
@@ -29,33 +30,33 @@ class SPSCRing {
 public:
     bool try_push(const T& item) {
         size_t h = head_;
-        size_t t = __atomic_load_n(&tail_, __ATOMIC_ACQUIRE);
+        size_t t = kernel::atomic_load(&tail_, __ATOMIC_ACQUIRE);
         size_t next = (h + 1) & MASK;
         if (next == t)
             return false;
         data_[h] = item;
-        __atomic_store_n(&head_, next, __ATOMIC_RELEASE);
+        kernel::atomic_store(&head_, next, __ATOMIC_RELEASE);
         return true;
     }
 
     bool try_pop(T& item) {
         size_t t = tail_;
-        size_t h = __atomic_load_n(&head_, __ATOMIC_ACQUIRE);
+        size_t h = kernel::atomic_load(&head_, __ATOMIC_ACQUIRE);
         if (t == h)
             return false;
         item = data_[t];
-        __atomic_store_n(&tail_, (t + 1) & MASK, __ATOMIC_RELEASE);
+        kernel::atomic_store(&tail_, (t + 1) & MASK, __ATOMIC_RELEASE);
         return true;
     }
 
     bool empty() const {
-        return __atomic_load_n(&head_, __ATOMIC_ACQUIRE) ==
-               __atomic_load_n(&tail_, __ATOMIC_ACQUIRE);
+        return kernel::atomic_load(&head_, __ATOMIC_ACQUIRE) ==
+               kernel::atomic_load(&tail_, __ATOMIC_ACQUIRE);
     }
 
     void reset() {
-        __atomic_store_n(&head_, 0, __ATOMIC_RELEASE);
-        __atomic_store_n(&tail_, 0, __ATOMIC_RELAXED);
+        kernel::atomic_store(&head_, size_t{0}, __ATOMIC_RELEASE);
+        kernel::atomic_store(&tail_, size_t{0}, __ATOMIC_RELAXED);
     }
 
 private:

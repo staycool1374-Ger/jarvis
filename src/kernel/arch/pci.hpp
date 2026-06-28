@@ -17,13 +17,14 @@
  */
 
 /// @file pci.hpp
-/// @brief PCI enumeration — arch-specific config space access and bus scan.
+/// @brief PCI enumeration — arch-independent interface using HAL config space access.
 
 #pragma once
 
 #include <types.hpp>
-#include <kernel/arch/io.hpp>
+#include <kernel/arch/hal/io.hpp>
 #include <kernel/arch/pci_errors.hpp>
+#include <kernel/arch/hal/pci.hpp>
 
 namespace arch {
 
@@ -110,24 +111,6 @@ struct PciBar {
     bool        prefetchable;
 };
 
-/// BDF (Bus:Device.Function) address
-struct PciBdf {
-    uint8_t bus;
-    uint8_t device;
-    uint8_t function;
-
-    bool operator==(const PciBdf& o) const {
-        return bus == o.bus && device == o.device && function == o.function;
-    }
-    bool operator!=(const PciBdf& o) const { return !(*this == o); }
-};
-
-#if CONFIG_ARCH_AARCH64
-#include <kernel/arch/aarch64/hal/pci_impl.hpp>
-#elif CONFIG_ARCH_RISCV64
-#include <kernel/arch/riscv64/hal/pci_impl.hpp>
-#endif
-
 /// Discovered device info
 struct PciDeviceInfo {
     PciBdf  bdf;
@@ -142,45 +125,7 @@ struct PciDeviceInfo {
     uint8_t  bar_count;
 };
 
-// --- Architecture-specific config space access ---
-#if CONFIG_ARCH_X86_64
-
-/// PCI configuration space I/O ports
-constexpr uint16_t PCI_CONFIG_ADDR = 0xCF8;
-constexpr uint16_t PCI_CONFIG_DATA = 0xCFC;
-
-inline void pci_config_addr(uint32_t addr) {
-    outl(PCI_CONFIG_ADDR, addr);
-}
-
-inline uint32_t pci_config_readl(uint32_t addr) {
-    pci_config_addr(addr);
-    return inl(PCI_CONFIG_DATA);
-}
-
-inline uint8_t pci_config_readb(uint32_t addr) {
-    uint32_t val = pci_config_readl(addr & ~3);
-    return static_cast<uint8_t>((val >> ((addr & 3) * 8)) & 0xFF);
-}
-
-inline void pci_config_writel(uint32_t addr, uint32_t val) {
-    pci_config_addr(addr);
-    outl(PCI_CONFIG_DATA, val);
-}
-
-inline uint16_t pci_config_readw(uint32_t addr) {
-    uint32_t val = pci_config_readl(addr & ~3);
-    return static_cast<uint16_t>((val >> ((addr & 2) * 8)) & 0xFFFF);
-}
-
-/// Build a config space address from BDF + register offset
-inline uint32_t pci_make_addr(PciBdf bdf, uint8_t reg) {
-    return 0x80000000U
-         | (static_cast<uint32_t>(bdf.bus)      << 16)
-         | (static_cast<uint32_t>(bdf.device)    << 11)
-         | (static_cast<uint32_t>(bdf.function)  << 8)
-         | reg;
-}
+// --- Unified (arch-independent) config space access wrappers ---
 
 /// Read vendor ID (return 0xFFFF if no device)
 inline uint16_t pci_read_vendor(PciBdf bdf) {
@@ -196,68 +141,6 @@ inline uint16_t pci_read_device(PciBdf bdf) {
 inline bool pci_device_exists(PciBdf bdf) {
     return pci_read_vendor(bdf) != 0xFFFF;
 }
-
-#elif CONFIG_ARCH_AARCH64
-
-/// Read vendor ID (return 0xFFFF if no device)
-inline uint16_t pci_read_vendor(PciBdf bdf) {
-    return arch::pci_read_vendor_ecam(bdf);
-}
-
-/// Read device ID
-inline uint16_t pci_read_device(PciBdf bdf) {
-    return arch::pci_read_device_ecam(bdf);
-}
-
-/// Check if a BDF has a valid device
-inline bool pci_device_exists(PciBdf bdf) {
-    return arch::pci_device_exists_ecam(bdf);
-}
-
-/// Build ECAM address from BDF + register offset
-inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
-    return arch::pci_ecam_addr(bdf, reg);
-}
-
-/// ECAM config space access wrappers for common code
-inline uint32_t pci_config_readl(uint32_t addr) { (void)addr; return 0; }
-inline uint8_t pci_config_readb(uint32_t addr) { (void)addr; return 0; }
-inline void pci_config_writel(uint32_t addr, uint32_t val) { (void)addr; (void)val; }
-inline uint16_t pci_config_readw(uint32_t addr) { (void)addr; return 0; }
-
-#elif CONFIG_ARCH_RISCV64
-
-#include <kernel/arch/riscv64/hal/io_impl.hpp>
-
-/// Read vendor ID (return 0xFFFF if no device)
-inline uint16_t pci_read_vendor(PciBdf bdf) {
-    return arch::pci_read_vendor_ecam(bdf);
-}
-
-/// Read device ID
-inline uint16_t pci_read_device(PciBdf bdf) {
-    return arch::pci_read_device_ecam(bdf);
-}
-
-/// Check if a BDF has a valid device
-inline bool pci_device_exists(PciBdf bdf) {
-    return arch::pci_device_exists_ecam(bdf);
-}
-
-/// Build ECAM address from BDF + register offset
-inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
-    return arch::pci_ecam_addr(bdf, reg);
-}
-
-/// ECAM config space access wrappers for common code
-inline uint32_t pci_config_readl(uint32_t addr) { (void)addr; return 0; }
-inline uint8_t pci_config_readb(uint32_t addr) { (void)addr; return 0; }
-inline void pci_config_writel(uint32_t addr, uint32_t val) { (void)addr; (void)val; }
-inline uint16_t pci_config_readw(uint32_t addr) { (void)addr; return 0; }
-
-#else
-#error "Unsupported architecture for PCI"
-#endif
 
 // --- Enumeration ---
 

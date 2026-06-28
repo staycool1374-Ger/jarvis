@@ -131,6 +131,8 @@ else ifeq ($(ARCH),aarch64)
 
     OBJCOPY_FMT  := elf64-littleaarch64
     OBJCOPY_ARCH := aarch64
+    LIBGCC       := $(shell $(CC) --print-libgcc-file-name)
+    LD_LIBS      := $(LIBGCC)
     LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
 
     QEMU_SYSTEM     := qemu-system-aarch64
@@ -157,8 +159,9 @@ else ifeq ($(ARCH),riscv64)
 
     OBJCOPY_FMT  := elf64-littleriscv
     OBJCOPY_ARCH := riscv
+    LIBGCC       := $(shell $(CC) --print-libgcc-file-name)
+    LD_LIBS      := $(LIBGCC)
     LDFLAGS      := -nostdlib -T linker_$(ARCH).ld -Map=build/kernel.map
-    LD_LIBS      :=
 
     QEMU_SYSTEM     := qemu-system-riscv64
     QEMU_ARCH_FLAGS := -machine virt -bios default
@@ -168,6 +171,9 @@ endif
 
 # ----- ccache (optional, no-op if not installed) -----
 CCACHE := $(shell which ccache 2>/dev/null)
+# Prepend ccache-wrapper and include arch-stamp in hash so cross-arch
+# builds don't poison each other's cache.
+CCACHE_EXTRAFILES := $(ARCH_STAMP)
 CXX := $(CCACHE) $(CXX)
 
 # --- Abgeleitete Toolchain-Aliase ---
@@ -301,6 +307,8 @@ help:
 	@echo "  [I] make run-renode RENODE_ARCH=aarch64  Boot AArch64 in Renode"
 	@echo "  [I] make run-renode RENODE_ARCH=riscv64  Boot RISC-V 64 in Renode"
 	@echo "  [A] make renode-test       Run selftest in Renode (x86_64)"
+	@echo "  [A] make renode-test RENODE_ARCH=aarch64  Run selftest on AArch64"
+	@echo "  [A] make renode-test RENODE_ARCH=riscv64  Run selftest on RISC-V 64"
 	@echo ""
 	@echo "  [A] = autonomous (run and done, no interaction needed)"
 	@echo "  [I] = interactive (user sits at the QEMU/GDB/Renode console)"
@@ -550,18 +558,24 @@ run-renode: debug
 	@printf '  %-7s %s\n' 'SCRIPT' 'tools/renode/jarvis-$(RENODE_ARCH).resc'
 	renode --disable-xwt -e "i @tools/renode/jarvis-$(RENODE_ARCH).resc; s"
 
-renode-test: debug
+RENODE_TEST_TIMEOUT ?= 300
+
+.PHONY: renode-test
+renode-test:
 	@if ! command -v renode >/dev/null 2>&1; then \
 	    echo "Renode missing. Install with: brew install renode/tap/renode"; exit 1; \
 	fi
 	@if [ "$(filter $(RENODE_ARCH),$(RENODE_SUPPORTED_ARCHS))" != "$(RENODE_ARCH)" ]; then \
 	    echo "Unsupported Renode arch '$(RENODE_ARCH)'. Supported: $(RENODE_SUPPORTED_ARCHS)"; exit 1; \
 	fi
-	@printf '  %-7s %s\n' 'RENODE' 'Running selftest (safe class) on $(RENODE_ARCH)…'
 	@mkdir -p initrd/tests
 	@printf 'safe\n' > initrd/tests/test-config.txt
-	$(MAKE) debug
-	renode --disable-xwt --console -e "i @tools/renode/jarvis-$(RENODE_ARCH).resc; start;"
+	$(MAKE) debug ARCH=$(RENODE_ARCH)
+	@printf '  %-7s %s\n' 'RENODE' 'Running tests in Renode ($(RENODE_ARCH))…'
+	renode-test tools/renode/test_renode_$(RENODE_ARCH).py \
+	    --test-timeout $(RENODE_TEST_TIMEOUT) \
+	    -r build/renode-results-$(RENODE_ARCH)
+	@printf '  %-7s %s\n' 'RENODE' 'Tests passed.'
 
 # ------------------------------------------------------------------------------
 # Test targets

@@ -118,6 +118,8 @@ void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
 void register_sporadic_server_tests();
+void register_atomic_tests();
+void register_cross_arch_tests();
 #if defined(CONFIG_ARCH_AARCH64)
 void register_aarch64_tests();
 #endif
@@ -240,6 +242,8 @@ register_random_tests();
         register_random_vfs_write_tests();
         register_memory_safety_tests();
         register_sporadic_server_tests();
+        register_atomic_tests();
+        register_cross_arch_tests();
 #if defined(CONFIG_ARCH_AARCH64)
         register_aarch64_tests();
 #endif
@@ -309,7 +313,12 @@ register_random_tests();
         register_syscall_fuzz_tests();
     }},
 
+    {"cross_arch", []() {
+        register_cross_arch_tests();
+    }},
+
     {"arch", []() {
+        register_cross_arch_tests();
         register_gdt_tests();
         register_idt_tests();
         register_bootparams_tests();
@@ -398,6 +407,10 @@ register_random_tests();
 
     {"sporadic", []() {
         register_sporadic_server_tests();
+    }},
+
+    {"atomic", []() {
+        register_atomic_tests();
     }},
 };
 
