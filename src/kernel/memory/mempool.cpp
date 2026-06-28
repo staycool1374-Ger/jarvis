@@ -216,3 +216,76 @@ size_t MemPool::pool_data_bytes() {
 }
 
 } // namespace kernel
+
+// --- Error-returning overloads ---
+namespace kernel {
+
+using namespace errors;
+
+MemPoolError MemPool::init_err() {
+    init();
+    return MEMPOOL_ERR_OK;
+}
+
+MemPoolError MemPool::alloc_err(size_t size, void*& out_ptr) {
+    size_t idx = find_pool(size);
+    if (idx >= POOL_COUNT) {
+        return MEMPOOL_ERR_TOO_LARGE;
+    }
+
+    auto& pool = pools_[idx];
+    if (pool.free_count == 0) {
+        return MEMPOOL_ERR_OOM;
+    }
+
+    size_t block = pool.first_free;
+    ENSURE(block < pool.block_count);
+    ENSURE(pool.is_block_freed(block)
+           && "free-list corruption: alloc of already-allocated block");
+    size_t* next = reinterpret_cast<size_t*>(pool.data + block * pool.block_size
+        );
+    pool.first_free = *next;
+    --pool.free_count;
+    pool.clear_block_freed(block);
+
+    kernel::test::ResourceTracker::instance().track_mempool_alloc(idx);
+    out_ptr = pool.data + block * pool.block_size;
+    return MEMPOOL_ERR_OK;
+}
+
+MemPoolError MemPool::free_err(void* block) {
+    if (!block) {
+        return MEMPOOL_ERR_INVALID_PTR;
+    }
+
+    for (size_t i = 0; i < POOL_COUNT; ++i) {
+        auto& pool = pools_[i];
+        if (!pool.initialized) continue;
+
+        uint8_t* start = pool.data;
+        uint8_t* end = pool.data + pool.block_size * pool.block_count;
+        uint8_t* p = static_cast<uint8_t*>(block);
+
+        if (p >= start && p < end) {
+            size_t offset = static_cast<size_t>(p - start);
+            size_t block_idx = offset / pool.block_size;
+            ENSURE(offset % pool.block_size == 0);
+            ENSURE(block_idx < pool.block_count);
+            ENSURE(!pool.is_block_freed(block_idx)
+                   && "double-free detected");
+#ifdef CONFIG_DEBUG
+            __builtin_memset(p, 0xDD, pool.block_size);
+#endif
+            pool.set_block_freed(block_idx);
+            size_t* next = reinterpret_cast<size_t*>(p);
+            *next = pool.first_free;
+            pool.first_free = block_idx;
+            ++pool.free_count;
+            kernel::test::ResourceTracker::instance().track_mempool_free(i);
+            return MEMPOOL_ERR_OK;
+        }
+    }
+    return MEMPOOL_ERR_INVALID_PTR;
+}
+
+} // namespace kernel

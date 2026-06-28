@@ -21,6 +21,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
 namespace sync {
@@ -38,14 +39,28 @@ public:
     /// @param initial Starting count.
     /// @param max Maximum count (default unlimited).
     void init(uint64_t initial, uint64_t max = 0xFFFFFFFF);
+    /// @brief Initialize semaphore with a count and optional maximum (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    errors::SyncError init_err(uint64_t initial, uint64_t max = 0xFFFFFFFF);
 
     /// @brief Decrement count, blocking if zero.
     void wait();
+    /// @brief Decrement count, blocking if zero (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    errors::SyncError wait_err();
+
     /// @brief Decrement count without blocking.
     /// @return true if the count was decremented.
     bool try_wait();
+    /// @brief Decrement count without blocking (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_QUEUE_EMPTY if count is zero.
+    errors::SyncError try_wait_err();
+
     /// @brief Increment count, waking a waiter if any.
     void post();
+    /// @brief Increment count, waking a waiter if any (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_BUFFER_FULL if max count reached.
+    errors::SyncError post_err();
 
     uint64_t value() const { return count_; }
 

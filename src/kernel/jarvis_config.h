@@ -225,6 +225,12 @@
 #define CONFIG_SYNC_MAX_WAITERS 32
 #endif
 
+/// Kernel log (dmesg) ring buffer capacity in entries. Must be a power of 2.
+/// Default: 4096 (~256 KiB at ~64 bytes/entry).
+#ifndef CONFIG_DMESG_CAPACITY
+#define CONFIG_DMESG_CAPACITY 4096
+#endif
+
 // ---------------------------------------------------------------------------
 // MemPool Configuration
 // ---------------------------------------------------------------------------

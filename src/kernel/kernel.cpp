@@ -610,6 +610,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
+    // Kernel log consumer (dmesg) - low priority, periodic
+    {
+        auto* dmesg_task = kernel::TaskControlBlock::create(
+            &kernel::task::dmesg_task_main, 1, 10);
+        if (dmesg_task) {
+            kernel::Scheduler::add_task(*dmesg_task);
+        }
+    }
+
 #ifdef CONFIG_PROFILING
     gcov_flush_to_serial();
     arch::qemu_debug_exit(0);

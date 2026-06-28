@@ -26,7 +26,7 @@ inline uint16_t inw(uint16_t port) { return arch_inw(port); }
 inline void outl(uint16_t port, uint32_t val) { arch_outl(port, val); }
 inline uint32_t inl(uint16_t port) { return arch_inl(port); }
 inline void io_wait() { outb(0x80, 0); }
-inline void qemu_debug_exit(uint8_t code) { outw(0x501, code); }
+inline void qemu_debug_exit(uint8_t code) { outb(0x501, code); }
 inline void hlt() { arch_hlt(); }
 inline void pause() { arch_pause(); }
 inline void cli() { arch_cli(); }

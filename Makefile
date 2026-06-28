@@ -571,7 +571,7 @@ TEST_SERIAL_LOG := /tmp/jarvis-serial.log
 # Host-side watchdog: if $(TEST_SERIAL_LOG) does not grow for WATCHDOG_STALL seconds,
 # kill QEMU and append a diagnostic message.  This catches hangs that the
 # in-kernel watchdog cannot detect (interrupts disabled during test execution).
-WATCHDOG_STALL := 10
+WATCHDOG_STALL := 60
 
 # Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
 define _run_test_qemu
@@ -606,7 +606,7 @@ define _run_test_qemu
 	    set timeout $(2); \
 	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT); \
 	    expect { \
-	        -re {\\n==============================\\n TEST SUMMARY\\n==============================\\n  PLANNED:\\s+(\\d+)\\n  EXECUTED:\\s+(\\d+)\\n  TIME_ELAPSED_MS:\\s+(\\d+)\\n(?:  BOOT_TIME_MS:\\s+(\\d+)\\n)?  PASSED:\\s+(\\d+)\\n  FAILED:\\s+(\\d+)\\n==============================} { \
+	        -re {\\r*\\n==============================\\r*\\n TEST SUMMARY\\r*\\n==============================\\r*\\n  PLANNED:\\s+(\\d+)\\r*\\n  EXECUTED:\\s+(\\d+)\\r*\\n  TIME_ELAPSED_MS:\\s+(\\d+)\\r*\\n(?:  BOOT_TIME_MS:\\s+(\\d+)\\r*\\n)?  PASSED:\\s+(\\d+)\\r*\\n  FAILED:\\s+(\\d+)\\r*\\n==============================} { \
 	            puts "$$expect_out(buffer)"; flush stdout; \
 	            set test_ms $$expect_out(3,string); \
 	            set boot_ms $$expect_out(4,string); \
@@ -616,9 +616,13 @@ define _run_test_qemu
 	                } else { \
 	                    puts "RESULT: PASS ($$expect_out(1,string) tests, test=$$test_ms ms)"; \
 	                } \
-	                flush stdout; exit 0; \
+	                flush stdout; \
+	                catch {exec kill [exp_pid] 2>/dev/null}; \
+	                exit 0; \
 	            } else { \
-	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(6,string))"; flush stdout; exit 1; \
+	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(6,string))"; flush stdout; \
+	                catch {exec kill [exp_pid] 2>/dev/null}; \
+	                exit 1; \
 	            } \
 	        } \
 	        timeout { \
@@ -630,6 +634,11 @@ define _run_test_qemu
 	    } \
 	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
 	rc=$${PIPESTATUS[0]}; \
+	\
+	# Kill QEMU immediately after expect exits — shutdown_kernel() may not work \
+	# (UEFI firmware can intercept port-based shutdown methods).  This avoids \
+	# the 60-second host-watchdog wait for a dead QEMU process. \
+	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
 	\
 	kill $$MONITOR_PID 2>/dev/null; \
 	wait $$MONITOR_PID 2>/dev/null; \

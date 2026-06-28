@@ -25,6 +25,8 @@
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/jarvis_config.h>
+#include <kernel/task/scheduler_errors.hpp>
+#include <kernel/task/task_errors.hpp>
 
 namespace kernel {
 
@@ -32,21 +34,31 @@ namespace kernel {
 /// @note Scheduler is tick-driven and supports periodic and aperiodic tasks.
 class Scheduler {
 public:
-    /// @brief Initialises the scheduler and creates the idle task.
+/// @brief Initialises the scheduler and creates the idle task.
     static void init();
-
+    /// @brief Error-returning overload for init().
+    static errors::SchedulerError init_err();
+ 
     /// @brief Finds a task by its ID (hash table, O(1) amortized).
     /// @param id Task ID to find.
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock* find_task(uint64_t id) noexcept;
-
+ 
     /// @brief Adds a task to the scheduler's run queue.
     /// @param task Reference to the task to add.
     static void add_task(TaskControlBlock& task);
+    /// @brief Error-returning overload for add_task().
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if task table is full,
+    ///         SCHED_ERR_DUPLICATE_ID if task ID already exists.
+    static errors::SchedulerError add_task_err(TaskControlBlock& task);
+ 
     /// @brief Removes a task from the scheduler's run queue.
     /// @param task Reference to the task to remove.
     static void remove_task(TaskControlBlock& task);
-
+    /// @brief Error-returning overload for remove_task().
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_NOT_FOUND if task not in table.
+    static errors::SchedulerError remove_task_err(TaskControlBlock& task);
+ 
     /// @brief Returns the currently running task.
     /// @return Pointer to the current TaskControlBlock.
     static TaskControlBlock* current_task() noexcept;
@@ -57,32 +69,32 @@ public:
     /// @param index Index into the task array.
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock* task_at(uint64_t index) noexcept;
-
+ 
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
-
+ 
     /// @brief Forces a reschedule — selects the next task and sets
     /// up context switch.
     static void reschedule() noexcept;
-
+ 
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
     static void reap_orphans() noexcept;
-
+ 
     /// @brief Terminates and removes all non-idle tasks from the scheduler.
     ///        Called after the boot-time test suite to clean up test leftovers
     ///        before production tasks (shell, idle) are created.
     static void cleanup_test_tasks() noexcept;
-
+ 
     /// @brief Removes all tasks from the scheduler that have invalid magic
     ///        (freed-and-reused TCBs) without touching the TCB memory.
     ///        Also removes tasks with valid magic that are not the idle task,
     ///        the current task, or known daemons.
     /// @param shell_task Pointer to the shell task (use set_shell_task() beforehand).
     static void cleanup_zombies() noexcept;
-
+ 
     /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
     static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
-
+ 
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
     static bool needs_switch() noexcept;
@@ -95,10 +107,14 @@ public:
     /// @brief Sets the current running task by ID (used after context switch).
     /// @param id Task ID to set as current.
     static void set_current_by_id(uint64_t id) noexcept;
-
+ 
     /// @brief Allocate a unique task ID from the ID table.
     /// @return A new task ID, or TASK_INVALID if the table is full.
     [[nodiscard]] static uint64_t alloc_id() noexcept;
+    /// @brief Error-returning overload for alloc_id().
+    /// @param out_id Output parameter for the allocated ID.
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if ID table is full.
+    static errors::SchedulerError alloc_id_err(uint64_t& out_id);
 
     static uint64_t current_index() noexcept { return current_index_; }
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }

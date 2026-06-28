@@ -760,7 +760,55 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
 }
 
 } // namespace kernel
-
+ 
+// --- Error-returning overloads ---
+namespace kernel {
+ 
+using namespace errors;
+ 
+SchedulerError Scheduler::init_err() {
+    init();
+    return SCHED_ERR_OK;
+}
+ 
+SchedulerError Scheduler::add_task_err(TaskControlBlock& task) {
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    if (task_count_ >= MAX_TASKS) return SCHED_ERR_TABLE_FULL;
+    if (id_table_find(task.id) != nullptr) return SCHED_ERR_DUPLICATE_ID;
+    tasks_[task_count_++] = &task;
+    id_table_insert(task.id, &task);
+    kernel::test::ResourceTracker::instance().track_task_add();
+    return SCHED_ERR_OK;
+}
+ 
+SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    if (id_table_find(task.id) == nullptr) return SCHED_ERR_NOT_FOUND;
+    id_table_remove(&task);
+    kernel::test::ResourceTracker::instance().track_task_remove();
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i] == &task) {
+            tasks_[i] = tasks_[--task_count_];
+            if (current_index_ == task_count_) {
+                current_index_ = (i < task_count_) ? i : 0;
+            } else if (current_index_ >= task_count_) {
+                current_index_ = 0;
+            }
+            break;
+        }
+    }
+    return SCHED_ERR_OK;
+}
+ 
+SchedulerError Scheduler::alloc_id_err(uint64_t& out_id) {
+    // ID allocation never fails in current implementation (64-bit counter)
+    // But we keep the error return for API consistency
+    out_id = next_task_id_++;
+    return SCHED_ERR_OK;
+}
+ 
+} // namespace kernel
+ 
 extern "C" void scheduler_on_context_switch() {
     uint64_t id = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     if (id == 0) return;

@@ -428,26 +428,57 @@ void run_release() {
     run_filtered(TF_RELEASE, false);
 }
 
+[[noreturn]] void shutdown_kernel(uint64_t result) {
+    // Disable interrupts so no timer/IRQ can fire and produce more
+    // serial output after the summary.
+    arch::cli();
+    // Drain serial TX FIFO before signalling QEMU to exit.
+    {
+        static constexpr uint16_t COM1       = 0x3F8;
+        static constexpr uint16_t COM1_LSR   = 0x3FD;
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        arch::outb(COM1, '\n');
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        arch::outb(COM1, '\r');
+        while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
+        while ((arch::inb(COM1_LSR) & 0x40) == 0) { }
+    }
+    // Signal QEMU to exit via multiple methods with io_wait() between
+    // attempts to ensure each out* instruction completes.  Even if none
+    // work (e.g. UEFI intercepts legacy ports), the Makefile kills QEMU
+    // from the host side after the expect script exits.
+    arch::io_wait();
+    arch::outw(arch::QEMU_ACPI_PORT, 0x2000);
+    arch::io_wait();
+    arch::outw(arch::QEMU_SHUTDOWN_PORT, 0x2000);
+    arch::io_wait();
+    arch::qemu_debug_exit(static_cast<uint8_t>(result));
+    arch::io_wait();
+    // Keyboard controller reset (triple fault -> QEMU exit with -no-reboot)
+    {
+        uint8_t good;
+        do {
+            good = arch::inb(0x64);
+        } while (good & 0x02);
+        arch::io_wait();
+        arch::outb(0x64, 0xFE);
+    }
+    arch::io_wait();
+    // If QEMU doesn't exit, halt permanently.
+    for (;;) {
+        arch::hlt();
+    }
+    __builtin_unreachable();
+}
+
 void run_registered(uint8_t required_flags) {
+    uint64_t start_ns = arch::Timer::ns();
     run_filtered(required_flags, true);
+    uint64_t end_ns = arch::Timer::ns();
+    print_report(start_ns, end_ns);
     if (g_class_auto_shutdown) {
-        // Drain serial TX FIFO before signalling QEMU to exit, so the
-        // full test report (Total/Passed/Failed) is flushed to the
-        // expect script before the QEMU process terminates.
-        {
-            static constexpr uint16_t COM1       = 0x3F8;
-            static constexpr uint16_t COM1_LSR   = 0x3FD;
-            // Write a final newline so any buffered line is emitted.
-            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
-            arch::outb(COM1, '\n');
-            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
-            arch::outb(COM1, '\r');
-            // Wait for THR empty (bit 5) then TSR empty (bit 6).
-            while ((arch::inb(COM1_LSR) & 0x20) == 0) { }
-            while ((arch::inb(COM1_LSR) & 0x40) == 0) { }
-        }
         uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
-        arch::qemu_debug_exit(result);
+        shutdown_kernel(result);
     }
 }
 

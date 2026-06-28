@@ -730,5 +730,38 @@ void TaskControlBlock::cleanup() noexcept {
         sporadic_server = nullptr;
     }
 }
-
+ 
+} // namespace kernel
+ 
+// --- Error-returning overloads ---
+namespace kernel {
+ 
+using namespace errors;
+ 
+TaskError TaskControlBlock::create_err(
+    void (*entry)(),
+    uint64_t priority,
+    uint64_t period_ticks,
+    TaskControlBlock*& out_tcb)
+{
+    out_tcb = create(entry, priority, period_ticks);
+    return out_tcb ? TASK_ERR_OK : TASK_ERR_OOM;
+}
+ 
+TaskError TaskControlBlock::create_user_err(
+    void (*entry)(),
+    uint64_t priority,
+    uint64_t period_ticks,
+    size_t user_stack_size,
+    TaskControlBlock*& out_tcb)
+{
+    out_tcb = create_user(entry, priority, period_ticks, user_stack_size);
+    return out_tcb ? TASK_ERR_OK : TASK_ERR_OOM;
+}
+ 
+TaskError TaskControlBlock::clone_err(uint64_t* regs, TaskControlBlock*& out_tcb) {
+    out_tcb = clone(regs);
+    return out_tcb ? TASK_ERR_OK : TASK_ERR_OOM;
+}
+ 
 } // namespace kernel
