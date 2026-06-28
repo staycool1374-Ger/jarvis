@@ -137,14 +137,6 @@ JARVIS_TEST(spinlock_contention) {
 
     JARVIS_ASSERT_EQ(100ULL, g_contention_counter_);
 
-    guard.dismiss();
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
-
     JARVIS_TEST_PASS();
 }
 
@@ -203,14 +195,6 @@ JARVIS_TEST(spinlock_preemption_yield) {
 
     JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,
         "High-pri ran %lu times (expected > 0)", g_yield_highpri_count_);
-
-    guard.dismiss();
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
 
     JARVIS_TEST_PASS();
 }

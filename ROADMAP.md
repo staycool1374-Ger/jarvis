@@ -20,9 +20,7 @@ When implementing or refactoring code paths for this phase, execute the followin
 1. When constructing the init daemon system (`/etc/rc` parser and user quotas), isolate its lifecycle tracking from standard transient userspace applications.
 2. Involuntary preemption must remain active and safe during initial daemon forks. Track scheduling states using the `debug_switch_ring` if unexpected page faults occur during `sys_clone` executions.
 
-## Phase 3: System Services & Hardware (v0.12.14–v0.2.24)
-
-Completed. v0.2.24 delivered cross-architecture hardening across x86_64, aarch64, and riscv64: unified atomics, boot flow via libfdt, UART abstraction, virtio/PCI unification, cross-arch test suite, and Renode CI gates.
+## Phase 3: System Services & Hardware (v0.12.14–v0.2.25)
 
 ### 0.2.22 — aarch64 Port (ARM Cortex-A)
 
@@ -86,77 +84,14 @@ Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU
   - [ ] `make test-all-debug ARCH=aarch64` — all test classes pass (safe class OK, full suite has failures)
   - [x] x86_64 must remain fully functional through every change
 
-
-### 0.2.23 — riscv64 Port (RV64)
-
-Follows the same pattern established by v0.2.22, targeting RISC-V 64-bit (RV64) in QEMU virt.
-
-- [x] **A. Boot Entry (`arch/riscv64/boot.S`)**
-  - [x] M-mode→S-mode transition via SBI, or start in S-mode (QEMU virt `-bios default`)
-  - [x] SATP init with Sv39 page tables (3-level, 4KB pages, 512 GiB virtual address space)
-  - [x] Trap vector setup (stvec), S-mode CSRs (sie, sip, sstatus)
-  - [x] Identity-map kernel + map higher half, enable MMU, jump to higher half
-  - [x] Call `higherhalf_entry(uint64_t magic, uint64_t dtb_ptr)`
-
-- [x] **B. Page Tables (`arch/riscv64/hal/page_table_impl.hpp`)**
-  - [x] `ArchPageTable` class with SATP CSR: `current()`, `activate(phys)`, `tlb_flush(va)`, `tlb_flush_all()`
-  - [x] Sv39: 3-level page table walk (9-bit each, 4KB pages), `map_page()`, `unmap_page()`
-  - [x] Support 2MB and 1GB huge pages (page table entry R/W bits)
-
-- [x] **C. Context Switch (`arch/riscv64/hal/context.hpp`)**
-  - [x] `ArchContext` struct: ra, sp, gp, tp, s0–s11, sepc, sstatus
-  - [x] Build trap frame for SRET (via `create`/`create_user`/`clone`)
-  - [x] Context switch via scheduler save/load globals + trap return (same pattern as x86_64/aarch64)
-
-- [x] **D. Interrupts (PLIC) & Timer**
-  - [x] S-mode interrupt delegation: sie.SEIE (external), sie.STIE (timer), sie.SSIE (software)
-  - [x] PLIC: init, enable/disable IRQ per context, priority, claim/complete
-  - [x] `ArchInterruptController::init()`, `eoi()`, `mask()`, `unmask()`
-  - [x] `arch::Timer` via SBI set_timer ecall
-  - [x] `Timer::init()`, `ticks()`, `ns()`, `handle_irq()`, `set_frequency()`
-  - [x] ECALL handler for syscall entry (U-mode→S-mode)
-
-- [x] **E. UART & Serial**
-  - [x] `arch::Serial` — NS16550A UART at `0x10000000` (QEMU virt) via SBI putchar
-  - [x] Wire into kernel `Logger`
-
-- [x] **F. RNG**
-  - [x] No native RNG in RISC-V ISA. Implement via SBI getrandom extension or ChaCha20 PRNG fallback
-
-- [x] **G. PCI (ECAM)**
-  - [x] Same ECAM mechanism as aarch64 — memory-mapped config space
-
-- [x] **H. Remaining HAL surface**
-  - [x] `arch::RTC` — via mtime/mtimecmp
-  - [x] `arch::cpuid()` — read misa, mvendorid, marchid CSRs
-  - [x] `arch::IrqGuard` — RAII via sstatus.SIE (generic in hal/irq_guard.hpp)
-  - [x] Keyboard stub (virtio-input later)
-
-- [x] **I. Integration & Tests**
-  - [x] `make run ARCH=riscv64` — boots to UART output in QEMU
-  - [x] Validate Renode platform `tools/renode/jarvis-riscv64.repl`
-  - [x] Initial test class passes on riscv64
-  - [x] x86_64 and aarch64 remain fully functional
-
-### 0.2.24 — Cross-Architecture Hardening
-
-- [x] **Architecture test suites** — aarch64 (17 tests, class `arm64`) and riscv64 (18 tests, class `risc64`) covering page tables, context switch, interrupts, timer, FPU, PCI, RTC, boot CSRs
-- [x] **Cross-arch atomics** — `kernel::atomic<T>` wrapper, 12 `__sync_synchronize()` replaced, `__atomic_*` wrapped in spinlock/spsc/ring_buffer/dmesg
-- [x] **Boot flow unification** — libfdt subset ported, `BootInfo` struct, `higherhalf_entry()` unified, FDT memory parsing for aarch64/riscv64
-- [x] **UART driver abstraction** — `arch/hal/serial.hpp` pure interface, x86_64 impl in own `.cpp`, `Logger` uses uniform API
-- [x] **Renode CI** — `make renode-test ARCH=aarch64` and `ARCH=riscv64` as CI gate
-- [x] **Virtio transport unification** — unified PCI HAL (CF8/CFC + ECAM), shared `virtio_pci.cpp`, ECAM for aarch64/riscv64
-- [x] **Memory model tests** — 12 atomic tests (load/store/exchange/CAS/SB/MP/pingpong, acquire/release ordering)
-- [x] **Cross-arch test suite** — `test_cross_arch.cpp` with 16 shared tests (page table, context, timer, interrupts, IPC, VFS)
-
 ### 0.2.25 — Test Safety & RAII Hardening
 
-- [ ] **Eliminate dangling pointer accesses in tests** — convert remaining raw `delete ptr; ptr->member` patterns to `ScopeGuard` or `UniquePtr<T>` with custom deleter
-  - [ ] `test_task_lifecycle.cpp` — use `ScopeGuard` for `tcb` lifetime
-  - [ ] `test_waitpid.cpp` — use `ScopeGuard` for `child1`/`child2` lifetime
-  - [ ] `test_buffer_pool.cpp` — audit remaining raw `delete` patterns
-  - [ ] `test_spinlock.cpp`, `test_preemption_under_syscall.cpp` — verify existing `ScopeGuard` usage is consistent
-  - [ ] Add `UniquePtr<T, Deleter>` usage guide to code style docs
+- [x] **Eliminate dangling pointer accesses in tests** — convert remaining raw `delete ptr; ptr->member` patterns to `ScopeGuard` or `UniquePtr<T>` with custom deleter
+  - [x] `test_task_lifecycle.cpp` — `TaskPtr`/`SimpleTaskPtr` for 4 single-TCB tests, `ScopeGuard` for 4 multi-TCB tests
+  - [x] `test_waitpid.cpp` — evaluated, 3-TCB pattern with asymmetric cleanup; `ScopeGuard` not cleaner than existing manual cleanup
+  - [x] `test_buffer_pool.cpp` — `SimpleTaskPtr` for 17 single-TCB tests, `ScopeGuard` for 5 dual-TCB tests
+  - [x] `test_spinlock.cpp`, `test_preemption_under_syscall.cpp` — removed `guard.dismiss()` + manual redo anti-pattern in all 6 sites
+  - [x] Add `UniquePtr<T, Deleter>` usage guide to code style docs
 
 ---
 

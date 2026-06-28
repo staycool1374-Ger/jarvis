@@ -18,35 +18,51 @@
 
 #pragma once
 
+/// @brief Default deleter — calls `delete` on the owned pointer.
+struct DefaultDeleter {
+    template<typename T>
+    void operator()(T* p) const { delete p; }
+};
+
 /// @brief Minimal unique ownership wrapper for heap-allocated objects.
-///        Deletes the owned object on destruction. Move-only.
-template <typename T>
+///        Deletes the owned object on destruction using Deleter. Move-only.
+template <typename T, typename Deleter = DefaultDeleter>
 class UniquePtr {
     T* ptr_;
+    [[no_unique_address]] Deleter del_;
 public:
     explicit UniquePtr(T* p = nullptr) : ptr_(p) {}
-    ~UniquePtr() { delete ptr_; }
+    UniquePtr(T* p, Deleter d) : ptr_(p), del_(d) {}
+    ~UniquePtr() { if (ptr_) del_(ptr_); }
 
     UniquePtr(const UniquePtr&) = delete;
     UniquePtr& operator=(const UniquePtr&) = delete;
 
-    UniquePtr(UniquePtr&& other) noexcept : ptr_(other.ptr_) {
+    UniquePtr(UniquePtr&& other) noexcept : ptr_(other.ptr_), del_(other.del_) {
         other.ptr_ = nullptr;
     }
     UniquePtr& operator=(UniquePtr&& other) noexcept {
         if (this != &other) {
-            delete ptr_;
+            if (ptr_) del_(ptr_);
             ptr_ = other.ptr_;
+            del_ = other.del_;
             other.ptr_ = nullptr;
         }
         return *this;
     }
 
     T* get() const { return ptr_; }
+    Deleter& get_deleter() { return del_; }
+    const Deleter& get_deleter() const { return del_; }
     T* release() { T* p = ptr_; ptr_ = nullptr; return p; }
-    void reset(T* p = nullptr) { delete ptr_; ptr_ = p; }
+    void reset(T* p = nullptr) { if (ptr_) del_(ptr_); ptr_ = p; }
 
     T& operator*() const { return *ptr_; }
     T* operator->() const { return ptr_; }
     explicit operator bool() const { return ptr_ != nullptr; }
+
+    friend bool operator==(const UniquePtr& a, decltype(nullptr)) { return a.ptr_ == nullptr; }
+    friend bool operator==(decltype(nullptr), const UniquePtr& a) { return a.ptr_ == nullptr; }
+    friend bool operator!=(const UniquePtr& a, decltype(nullptr)) { return a.ptr_ != nullptr; }
+    friend bool operator!=(decltype(nullptr), const UniquePtr& a) { return a.ptr_ != nullptr; }
 };

@@ -18,6 +18,8 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
+#include <kernel/test/task_ptr.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/ipc/ipc.hpp>
@@ -40,7 +42,7 @@ using namespace kernel;
 // Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue,
 // kernel::sync::Notify, kernel::sync::EventGroup
 JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
-    auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
+    SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->msg_queue != nullptr);
     JARVIS_ASSERT(tcb->notify != nullptr);
@@ -56,7 +58,6 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
     JARVIS_ASSERT(tcb->event_group == nullptr);
     JARVIS_ASSERT(tcb->kernel_stack == nullptr);
 
-    delete tcb;
     JARVIS_TEST_PASS();
 }
 
@@ -76,6 +77,14 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     auto* sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
+
+    auto cleanup = ScopeGuard([&]() {
+        Scheduler::remove_task(*sender);
+        sender->cleanup();
+        delete sender;
+        Scheduler::remove_task(*receiver);
+        delete receiver;
+    });
 
     kernel::Message msg{};
     msg.sender_id = sender->id;
@@ -112,11 +121,6 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
     // cleanup() frees the receiver's msg_queue after clearing blocked senders
     JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
-    Scheduler::remove_task(*sender);
-    Scheduler::remove_task(*receiver);
-    sender->cleanup();
-    delete sender;
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
@@ -130,7 +134,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
 // Depends: kernel::task::TaskControlBlock, kernel::memory::PMM,
 // kernel::memory::VMM
 JARVIS_TEST(task_exit_frees_page_tables_correctly) {
-    auto* tcb = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
+    SimpleTaskPtr tcb(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->page_table_ != 0);
     JARVIS_ASSERT(tcb->user_stack_ != 0);
@@ -142,7 +146,6 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly) {
     JARVIS_ASSERT(tcb->user_stack_ == 0);
     JARVIS_ASSERT(tcb->stack_phys_ == 0);
 
-    delete tcb;
     JARVIS_TEST_PASS();
 }
 
@@ -162,6 +165,13 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
+
+    auto cleanup = ScopeGuard([&]() {
+        Scheduler::remove_task(*child);
+        child->cleanup();
+        delete child;
+    });
+
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -180,11 +190,6 @@ JARVIS_TEST(task_reparent_preserves_resources) {
     JARVIS_ASSERT(child->parent_id == actual_init->id);
     JARVIS_ASSERT(actual_init->num_children >= 1);
 
-    // Cleanup: reap_orphans already freed+removed the terminated parent.
-    // Only the child needs manual removal and freeing.
-    Scheduler::remove_task(*child);
-    child->cleanup();
-    delete child;
     JARVIS_TEST_PASS();
 }
 
@@ -197,19 +202,17 @@ JARVIS_TEST(task_reparent_preserves_resources) {
 // removal+delete.
 // Depends: kernel::task::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_zombie_state_cleanup) {
-    auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
+    TaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
     JARVIS_ASSERT(tcb != nullptr);
     Scheduler::add_task(*tcb);
 
     tcb->state = TaskState::TERMINATED;
     tcb->exit_code = 0;
 
-    JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb);
+    JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb.get());
 
     uint64_t tcb_id = tcb->id;
-    tcb->cleanup();
-    Scheduler::remove_task(*tcb);
-    delete tcb;
+    tcb.reset();  // TaskDeleter: remove_task + cleanup + delete
 
     JARVIS_ASSERT(Scheduler::find_task(tcb_id) == nullptr);
     JARVIS_TEST_PASS();
@@ -230,6 +233,13 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
+
+    auto cleanup = ScopeGuard([&]() {
+        Scheduler::remove_task(*parent);
+        parent->cleanup();
+        delete parent;
+    });
+
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -257,9 +267,6 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
 
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
     JARVIS_TEST_PASS();
 }
 
@@ -286,7 +293,7 @@ JARVIS_TEST(elf_load_init_task_common_called) {
         return;
     }
 
-    auto* tcb = kernel::elf::load(hdr, f.data);
+    SimpleTaskPtr tcb(kernel::elf::load(hdr, f.data));
     JARVIS_ASSERT(tcb != nullptr);
 
     // init_task_common should have been called, so IPC objects should be
@@ -295,9 +302,6 @@ JARVIS_TEST(elf_load_init_task_common_called) {
     JARVIS_ASSERT(tcb->notify != nullptr);
     JARVIS_ASSERT(tcb->event_group != nullptr);
 
-    // Cleanup
-    tcb->cleanup();
-    delete tcb;
     JARVIS_TEST_PASS();
 }
 
@@ -341,6 +345,14 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
+    auto cleanup = ScopeGuard([&]() {
+        Scheduler::remove_task(*sender);
+        sender->cleanup();
+        delete sender;
+        Scheduler::remove_task(*receiver);
+        delete receiver;
+    });
+
     Message msg{};
     msg.sender_id = sender->id;
     msg.type = 1;
@@ -369,11 +381,6 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
 
     JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
-    Scheduler::remove_task(*receiver);
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 

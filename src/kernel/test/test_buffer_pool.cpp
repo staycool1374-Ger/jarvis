@@ -23,6 +23,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>
+#include <kernel/test/task_ptr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/task/task.hpp>
@@ -42,7 +43,7 @@ using namespace kernel;
 #if !defined(CONFIG_ARCH_RISCV64)
 
 JARVIS_TEST(buffer_pool_basic_alloc_free) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0x10000000;
@@ -59,13 +60,11 @@ JARVIS_TEST(buffer_pool_basic_alloc_free) {
     // After free, entry should be recycled
     JARVIS_ASSERT(BufferPool::entries[idx].phys_addr == 0);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_multiple_alloc) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t handles[5];
@@ -91,13 +90,11 @@ JARVIS_TEST(buffer_pool_multiple_alloc) {
 
     JARVIS_ASSERT_EQ(-1, task->buf_list_head);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_invalid_handle) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     // Handle 0 should always be invalid
@@ -124,13 +121,11 @@ JARVIS_TEST(buffer_pool_invalid_handle) {
 
     BufferPool::free(*task, good);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_exhaustion) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     int alloc_count = 0;
@@ -152,13 +147,11 @@ JARVIS_TEST(buffer_pool_exhaustion) {
         idx = next;
     }
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_double_free) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t handle = BufferPool::alloc(*task, 0x50000000);
@@ -169,13 +162,11 @@ JARVIS_TEST(buffer_pool_double_free) {
     // Double free must fail
     JARVIS_ASSERT(!BufferPool::free(*task, handle));
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_map_unmap) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0x60000000;
@@ -189,8 +180,6 @@ JARVIS_TEST(buffer_pool_map_unmap) {
     // Free should still work (unmapped)
     JARVIS_ASSERT(BufferPool::free(*task, handle));
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -198,6 +187,11 @@ JARVIS_TEST(buffer_pool_transfer) {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+
+    auto cleanup = ScopeGuard([&]() {
+        sender->cleanup(); delete sender;
+        receiver->cleanup(); delete receiver;
+    });
 
     uint64_t va = 0x80000000;
     uint64_t handle = BufferPool::alloc(*sender, va);
@@ -216,15 +210,11 @@ JARVIS_TEST(buffer_pool_transfer) {
     JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
     JARVIS_ASSERT(BufferPool::free(*receiver, handle));
 
-    sender->cleanup();
-    delete sender;
-    receiver->cleanup();
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_unmap_all) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0xA0000000;
@@ -240,13 +230,11 @@ JARVIS_TEST(buffer_pool_unmap_all) {
     JARVIS_ASSERT(BufferPool::entries[h2 & 0xFFFFFFFF].phys_addr == 0);
     JARVIS_ASSERT(BufferPool::entries[h3 & 0xFFFFFFFF].phys_addr == 0);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_syscall_dispatch) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    TaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
     Scheduler::add_task(*task);
     auto* original = Scheduler::current_task();
@@ -262,9 +250,6 @@ JARVIS_TEST(buffer_pool_syscall_dispatch) {
     JARVIS_ASSERT_EQ(0ULL, result);
 
     Scheduler::set_current(*original);
-    Scheduler::remove_task(*task);
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -274,6 +259,11 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
     Scheduler::add_task(*sender);
     Scheduler::add_task(*receiver);
+
+    auto cleanup = ScopeGuard([&]() {
+        Scheduler::remove_task(*sender); sender->cleanup(); delete sender;
+        Scheduler::remove_task(*receiver); receiver->cleanup(); delete receiver;
+    });
 
     auto* original = Scheduler::current_task();
 
@@ -307,17 +297,11 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     JARVIS_ASSERT(BufferPool::free(*receiver, handle));
 
     Scheduler::set_current(*original);
-    Scheduler::remove_task(*sender);
-    Scheduler::remove_task(*receiver);
-    sender->cleanup();
-    delete sender;
-    receiver->cleanup();
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0xE0000000;
@@ -332,7 +316,6 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
     JARVIS_ASSERT(BufferPool::entries[h1 & 0xFFFFFFFF].phys_addr == 0);
     JARVIS_ASSERT(BufferPool::entries[h2 & 0xFFFFFFFF].phys_addr == 0);
 
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -347,7 +330,7 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
 // Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::VMM,
 // kernel::PMM
 JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0xF0000000;
@@ -384,8 +367,6 @@ JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers) {
     JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0);
     JARVIS_ASSERT(task->buf_list_head == -1);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -404,6 +385,11 @@ JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+
+    auto cleanup = ScopeGuard([&]() {
+        sender->cleanup(); delete sender;
+        delete receiver;
+    });
 
     uint64_t va = 0x100000000ULL;
     uint64_t handle = BufferPool::alloc(*sender, va);
@@ -444,9 +430,6 @@ JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
     JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0);
     JARVIS_ASSERT(receiver->buf_list_head == -1);
 
-    sender->cleanup();
-    delete sender;
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
@@ -468,7 +451,7 @@ JARVIS_TEST(buffer_pool_va_conflict_rejected) {
 // Expect: Both allocs return 0
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t h1 = BufferPool::alloc(*task, USER_SPACE_LIMIT);
@@ -476,8 +459,6 @@ JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
     JARVIS_ASSERT_EQ(0ULL, h1);
     JARVIS_ASSERT_EQ(0ULL, h2);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -498,7 +479,7 @@ JARVIS_TEST(buffer_pool_zero_va_rejected) {
 // Expect: Returns 0
 // Depends: kernel::BufferPool, kernel::TaskControlBlock
 JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
     
     uint64_t saved_pt = task->page_table_;
@@ -509,8 +490,6 @@ JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
     JARVIS_ASSERT_EQ(0ULL, h);
 
     task->page_table_ = saved_pt;
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -520,7 +499,7 @@ JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
 // Expect: validate returns -1
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_forged_handle_after_free) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0x400000000ULL;
@@ -532,8 +511,6 @@ JARVIS_TEST(buffer_pool_forged_handle_after_free) {
     // Try to use the old handle (same idx, same gen)
     JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(handle));
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -544,7 +521,7 @@ JARVIS_TEST(buffer_pool_forged_handle_after_free) {
 // Expect: New handle has same idx, different (incremented) gen
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0x500000000ULL;
@@ -566,8 +543,6 @@ JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
     JARVIS_ASSERT(gen2 == gen1 + 1);
 
     BufferPool::free(*task, h2);
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -578,7 +553,7 @@ JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
 // Expect: New alloc succeeds and uses the freed entry index
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t handles[BufferPool::MAX_BUFFERS];
@@ -611,8 +586,6 @@ JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
     }
     BufferPool::free(*task, h);
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -623,7 +596,7 @@ JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
 // Expect: Entries 4 and 6 are correctly linked, head/tail intact
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t handles[10];
@@ -669,8 +642,6 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
         }
     }
 
-    task->cleanup();
-    delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -684,6 +655,11 @@ JARVIS_TEST(buffer_pool_transfer_race) {
     auto* task_a = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* task_b = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task_a != nullptr && task_b != nullptr);
+
+    auto cleanup = ScopeGuard([&]() {
+        task_a->cleanup(); delete task_a;
+        task_b->cleanup(); delete task_b;
+    });
 
     uint64_t va = 0x100000000ULL;
     uint64_t handle = BufferPool::alloc(*task_a, va);
@@ -707,8 +683,6 @@ JARVIS_TEST(buffer_pool_transfer_race) {
     // Final cleanup by A
     JARVIS_ASSERT(BufferPool::free(*task_a, handle));
 
-    task_a->cleanup(); delete task_a;
-    task_b->cleanup(); delete task_b;
     JARVIS_TEST_PASS();
 }
 
@@ -719,7 +693,7 @@ JARVIS_TEST(buffer_pool_transfer_race) {
 // Input: Alloc -> free -> try old handle -> alloc -> try old handle
 // Expect: Old handle always rejected; new handle valid.
 JARVIS_TEST(buffer_pool_handle_reuse_security) {
-    auto* task = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
     uint64_t va = 0x200000000ULL;
@@ -738,7 +712,6 @@ JARVIS_TEST(buffer_pool_handle_reuse_security) {
     JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
 
     BufferPool::free(*task, h2);
-    task->cleanup(); delete task;
     JARVIS_TEST_PASS();
 }
 
@@ -752,6 +725,11 @@ JARVIS_TEST(buffer_pool_transfer_to_kernel_task) {
     auto* kernel_task = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(user != nullptr && kernel_task != nullptr);
     JARVIS_ASSERT(kernel_task->page_table_ == 0);
+
+    auto cleanup = ScopeGuard([&]() {
+        user->cleanup(); delete user;
+        kernel_task->cleanup(); delete kernel_task;
+    });
 
     uint64_t va = 0x300000000ULL;
     uint64_t handle = BufferPool::alloc(*user, va);
@@ -767,8 +745,6 @@ JARVIS_TEST(buffer_pool_transfer_to_kernel_task) {
         BufferPool::free(*user, handle);
     }
 
-    user->cleanup(); delete user;
-    kernel_task->cleanup(); delete kernel_task;
     JARVIS_TEST_PASS();
 }
 

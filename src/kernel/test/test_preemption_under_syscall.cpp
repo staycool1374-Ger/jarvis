@@ -140,14 +140,6 @@ JARVIS_TEST(preemption_during_syscall) {
     JARVIS_ASSERT_FMT(preempt_highpri_count > 0,
                       "High-pri task ran %lu times (expected > 0)", preempt_highpri_count);
 
-    guard.dismiss();
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-
     JARVIS_TEST_PASS();
 }
 
@@ -196,14 +188,6 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
         "High-pri ran %lu times during tmpfs write (expected > 0)",
         tp_highpri_count_);
 
-    guard.dismiss();
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
-
     JARVIS_TEST_PASS();
 }
 
@@ -246,14 +230,6 @@ JARVIS_TEST(preempt_highpri_during_brk) {
     JARVIS_ASSERT_FMT(brk_highpri_count_ > 0,
         "High-pri ran %lu times during brk (expected > 0)",
         brk_highpri_count_);
-
-    guard.dismiss();
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
 
     JARVIS_TEST_PASS();
 }
@@ -305,17 +281,6 @@ JARVIS_TEST(preempt_lowpri_not_starved) {
         "Low-pri progress %lu (expected %lu), high-pri ran %lu/%lu times",
         starve_lowpri_progress_, STARVE_TARGET,
         starve_highpri_count_, 2ULL);
-
-    guard.dismiss();
-    Scheduler::remove_task(*high_a);
-    high_a->cleanup();
-    delete high_a;
-    Scheduler::remove_task(*high_b);
-    high_b->cleanup();
-    delete high_b;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
 
     JARVIS_TEST_PASS();
 }

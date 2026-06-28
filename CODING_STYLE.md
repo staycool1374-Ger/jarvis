@@ -90,6 +90,13 @@ uint64_t page = *r;
 - Registration: `JARVIS_REGISTER_TEST(name)` (debug), `JARVIS_REGISTER_RELEASE_TEST(name)` (release)
 - Tests on `testbed` branch, merged to `main`
 
+### 7.1 Test Resource Management
+
+- **Single-owner resources** use `UniquePtr<T, Deleter>` (e.g., `TaskPtr`, `SimpleTaskPtr` from `<kernel/test/task_ptr.hpp>`)
+- **Multi-resource cleanup** uses `ScopeGuard` with a lambda
+- **Never** `dismiss()` a `ScopeGuard` and manually repeat the same cleanup — let the destructor fire on all exit paths
+- Custom deleters live in `src/kernel/test/task_ptr.hpp`
+
 ## 8. Formatting
 
 - **Indent**: 4 spaces, no tabs
