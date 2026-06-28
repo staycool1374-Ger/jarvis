@@ -2087,7 +2087,19 @@ void Shell::cmd_less(int argc, const char** argv) {
     }
 }
 
-void Shell::cmd_dmesg(int, const char**) {
+void Shell::cmd_dmesg(int argc, const char** argv) {
+    if (argc >= 3 && (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--inject") == 0)) {
+        unsigned subsys = 0; {
+            const char* s = argv[2]; while (*s) { subsys = subsys * 10 + (*s - '0'); ++s; }
+        }
+        unsigned code = 0; {
+            const char* s = argv[3]; while (*s) { code = code * 10 + (*s - '0'); ++s; }
+        }
+        const char* msg = (argc >= 5) ? argv[4] : "(no message)";
+        kernel::log::g_dmesg.push(static_cast<kernel::log::ErrorSubsystem>(subsys), code, msg, 0);
+        Terminal::write("ok\n");
+        return;
+    }
     size_t total = 0;
     kernel::log::g_dmesg.for_each([&](const kernel::log::LogEntry& e) {
         char buf[256];

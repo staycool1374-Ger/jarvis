@@ -52,8 +52,8 @@ else
 endif
 
 # ------------------------------------------------------------------------------
-# Toolchain Setup — Host- und Architektur-unabhängig
-#
+# Noch keine targets — das folgt weiter unten.
+# 
 # Erkennung des Host-Betriebssystems (Darwin / Linux) und Auswahl des
 # passenden Cross-Compiler-Triplets, sodass bare-metal GCC/ld/objcopy
 # sowohl auf macOS (Homebrew) als auch auf Linux (Distro-Pakete) korrekt
@@ -166,6 +166,10 @@ else ifeq ($(ARCH),riscv64)
     OBJDUMP_DIS_FLAGS :=
 
 endif
+
+# ----- ccache (optional, no-op if not installed) -----
+CCACHE := $(shell which ccache 2>/dev/null)
+CXX := $(CCACHE) $(CXX)
 
 # --- Abgeleitete Toolchain-Aliase ---
 OBJDUMP := $(patsubst %-objcopy,%-objdump,$(OBJCOPY))
