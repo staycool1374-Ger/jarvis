@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['idle_0',['IDLE',['../classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096ad7d7bda050383f92f545fe17afc73ff9',1,'kernel::task::SporadicServer']]],
+  ['ignore_1',['IGNORE',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749aa2e843feab94ef623fea888f07c28696',1,'kernel']]],
+  ['info_2',['INFO',['../namespacekernel.html#a608b4a9ee1c4d240362c930be12ae9f2a551b723eafd6a31d444fcb2f5920fbd3',1,'kernel']]],
+  ['invalid_5farg_3',['INVALID_ARG',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcda894ac82c59da1ab27f0f2ec607e67de4',1,'kernel']]],
+  ['invalid_5ffd_4',['INVALID_FD',['../namespacekernel_1_1vfs.html#a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912',1,'kernel::vfs']]],
+  ['invalid_5fhandle_5',['INVALID_HANDLE',['../namespacekernel.html#a189758029e738ae4aa7fce502f1644f5a91bf81a15031ab01510ec064d6004db5',1,'kernel']]],
+  ['invalid_5findex_6',['INVALID_INDEX',['../namespacekernel.html#a189758029e738ae4aa7fce502f1644f5af059dd129fb8a61588d41ba6df391a4e',1,'kernel']]],
+  ['io_7',['IO',['../namespacearch.html#ace55aa6ebb17936eac963ce91904fc17acf3882f1c43ab22bff0bd9d82d83251b',1,'arch']]],
+  ['io_5ferror_8',['IO_ERROR',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcda198489bd72edc2407c15917c5323cd93',1,'kernel']]],
+  ['ioctl_9',['IOCTL',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa8ac715a414285eb52086b6cc2ed90f50',1,'kernel']]],
+  ['ip_5fproto_5ficmp_10',['IP_PROTO_ICMP',['../namespacenet.html#a0eb0983814a72820e9c1094d5cca6cdaab40670dfb8f63f60c71be7ab518f47f1',1,'net']]],
+  ['ip_5fproto_5ftcp_11',['IP_PROTO_TCP',['../namespacenet.html#a0eb0983814a72820e9c1094d5cca6cdaa46aa3ac8da35d70b83de1386ee032183',1,'net']]],
+  ['ip_5fproto_5fudp_12',['IP_PROTO_UDP',['../namespacenet.html#a0eb0983814a72820e9c1094d5cca6cdaa42b2f8065c0a1302b3cd0ba89e1e5525',1,'net']]],
+  ['ipc_13',['IPC',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aac8660c6d72e7323867ec800d6bb953df',1,'kernel::log']]],
+  ['ipc_5ferror_5fcodes_14',['IPC_ERROR_CODES',['../namespacekernel_1_1errors.html#ad1f7fbc5e0a7a7fc2ade1589e27236ffaee4229bc9e7639f279456c8ed5ce0c25',1,'kernel::errors']]],
+  ['ipc_5fnonblock_15',['IPC_NONBLOCK',['../namespacekernel.html#acf26df622e6621b8e36d62ce14d07809a68f1114534e580a5fd150623827ff14e',1,'kernel']]]
+];

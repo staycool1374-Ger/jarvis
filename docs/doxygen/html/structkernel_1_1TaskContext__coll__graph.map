@@ -1,0 +1,3 @@
+<map id="kernel::TaskContext" name="kernel::TaskContext">
+<area shape="rect" id="Node000001" title="CPU register save area for context switching." alt="" coords="5,5,133,288"/>
+</map>

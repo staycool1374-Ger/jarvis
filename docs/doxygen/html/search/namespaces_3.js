@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['kernel_0',['kernel',['../namespacekernel.html',1,'']]],
+  ['kernel_3a_3aahci_1',['ahci',['../namespacekernel_1_1ahci.html',1,'kernel']]],
+  ['kernel_3a_3ablock_2',['block',['../namespacekernel_1_1block.html',1,'kernel']]],
+  ['kernel_3a_3adaemon_3',['daemon',['../namespacekernel_1_1daemon.html',1,'kernel']]],
+  ['kernel_3a_3adma_4',['dma',['../namespacekernel_1_1dma.html',1,'kernel']]],
+  ['kernel_3a_3aelf_5',['elf',['../namespacekernel_1_1elf.html',1,'kernel']]],
+  ['kernel_3a_3aerrors_6',['errors',['../namespacekernel_1_1errors.html',1,'kernel']]],
+  ['kernel_3a_3afat32_7',['fat32',['../namespacekernel_1_1fat32.html',1,'kernel']]],
+  ['kernel_3a_3aintegrity_8',['integrity',['../namespacekernel_1_1integrity.html',1,'kernel']]],
+  ['kernel_3a_3aiocd_9',['iocd',['../namespacekernel_1_1iocd.html',1,'kernel']]],
+  ['kernel_3a_3alog_10',['log',['../namespacekernel_1_1log.html',1,'kernel']]],
+  ['kernel_3a_3anet_11',['net',['../namespacekernel_1_1net.html',1,'kernel']]],
+  ['kernel_3a_3async_12',['sync',['../namespacekernel_1_1sync.html',1,'kernel']]],
+  ['kernel_3a_3atask_13',['task',['../namespacekernel_1_1task.html',1,'kernel']]],
+  ['kernel_3a_3atest_14',['test',['../namespacekernel_1_1test.html',1,'kernel']]],
+  ['kernel_3a_3avfs_15',['vfs',['../namespacekernel_1_1vfs.html',1,'kernel']]],
+  ['kernel_3a_3avfsd_16',['vfsd',['../namespacekernel_1_1vfsd.html',1,'kernel']]]
+];

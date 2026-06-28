@@ -1,0 +1,13 @@
+var namespacekernel_1_1daemon =
+[
+    [ "DaemonEntry", "structkernel_1_1daemon_1_1_daemon_entry.html", "structkernel_1_1daemon_1_1_daemon_entry" ],
+    [ "capture_state", "namespacekernel_1_1daemon.html#ae09ac16adefc443c674743c771bf7df9", null ],
+    [ "get_entry", "namespacekernel_1_1daemon.html#a978776a5839d1f7bbac1e5a22572afca", null ],
+    [ "init", "namespacekernel_1_1daemon.html#a0a2e6431675517acca87d324b2cff80e", null ],
+    [ "notify_death", "namespacekernel_1_1daemon.html#ad9b66d7bd710825a0369b48617055996", null ],
+    [ "register_daemon", "namespacekernel_1_1daemon.html#a805ce70d7458d932a10b9f7aec27fde1", null ],
+    [ "reset_daemons", "namespacekernel_1_1daemon.html#a684c1dfba062f9ac957b0182d89dcb61", null ],
+    [ "reset_restart_count", "namespacekernel_1_1daemon.html#aadff7e665c02eef5c3cf2d52db58b8bd", null ],
+    [ "restart_stale_daemons", "namespacekernel_1_1daemon.html#a7910dce2d3de5e1d57e8d1ac0cca68c9", null ],
+    [ "restore_state", "namespacekernel_1_1daemon.html#a813c05f435562a463683747e67315718", null ]
+];

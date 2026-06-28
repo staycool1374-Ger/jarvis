@@ -1,0 +1,28 @@
+var classkernel_1_1test_1_1_resource_tracker =
+[
+    [ "capture", "classkernel_1_1test_1_1_resource_tracker.html#aa40c9e9b5a5f70b87cfa885f87746f87", null ],
+    [ "check", "classkernel_1_1test_1_1_resource_tracker.html#a564f1155089c2d73d397d4ba55e2e115", null ],
+    [ "restore", "classkernel_1_1test_1_1_resource_tracker.html#a9cbf258352ad6e1bb21722afbd6921e9", null ],
+    [ "track_bufpool_alloc", "classkernel_1_1test_1_1_resource_tracker.html#aeabc28e85cfae6ba0fc4e3976cab2bd8", null ],
+    [ "track_bufpool_free", "classkernel_1_1test_1_1_resource_tracker.html#abe2243d510f690921c7495796b4491e2", null ],
+    [ "track_driver_add", "classkernel_1_1test_1_1_resource_tracker.html#a2650049389c548709a1e39ce808b8560", null ],
+    [ "track_driver_remove", "classkernel_1_1test_1_1_resource_tracker.html#a5facb5a62287fc23077ab10031c1dfe3", null ],
+    [ "track_event_group_add", "classkernel_1_1test_1_1_resource_tracker.html#a3524e873e37a16ae37cee06db2e3ee82", null ],
+    [ "track_event_group_remove", "classkernel_1_1test_1_1_resource_tracker.html#a338bfd6ceaacc6485979606a16ba71b6", null ],
+    [ "track_fd_add", "classkernel_1_1test_1_1_resource_tracker.html#a799a46bad1aef8f30165f4f1918433e5", null ],
+    [ "track_fd_remove", "classkernel_1_1test_1_1_resource_tracker.html#a9decf45da0161d118d22dbe2ecf253b8", null ],
+    [ "track_mempool_alloc", "classkernel_1_1test_1_1_resource_tracker.html#a39c44e4ecaaaf36a5d5c50a4003895be", null ],
+    [ "track_mempool_free", "classkernel_1_1test_1_1_resource_tracker.html#ad6a76117c28c904b9db90d90203e8545", null ],
+    [ "track_msg_queue_add", "classkernel_1_1test_1_1_resource_tracker.html#a1ff98157ae2e34b5a0299e2afa125e34", null ],
+    [ "track_msg_queue_remove", "classkernel_1_1test_1_1_resource_tracker.html#aa7f66d7eeb01804c32132a5a9d9a6275", null ],
+    [ "track_notify_add", "classkernel_1_1test_1_1_resource_tracker.html#ac393b7dca872d2e0efa11891831e209e", null ],
+    [ "track_notify_remove", "classkernel_1_1test_1_1_resource_tracker.html#ac66cd9970068974951c2d3ef79e139f6", null ],
+    [ "track_pipe_buffer_add", "classkernel_1_1test_1_1_resource_tracker.html#a996454521088e7f11d25d08c7a6ed396", null ],
+    [ "track_pipe_buffer_remove", "classkernel_1_1test_1_1_resource_tracker.html#a26d4ba968ca799597540d4d7a858de86", null ],
+    [ "track_pmm_alloc", "classkernel_1_1test_1_1_resource_tracker.html#afccf421c97a25c3445c7bed5e78a07f2", null ],
+    [ "track_pmm_free", "classkernel_1_1test_1_1_resource_tracker.html#a0ad847224fa544b4904a62e1245fbe41", null ],
+    [ "track_task_add", "classkernel_1_1test_1_1_resource_tracker.html#a2189b8a84d031035519f6bbc443cbd97", null ],
+    [ "track_task_remove", "classkernel_1_1test_1_1_resource_tracker.html#a5d0b497c9a0e20a78a3f4a4733a1c367", null ],
+    [ "track_vnode_add", "classkernel_1_1test_1_1_resource_tracker.html#a32f6625487713a98967186fa72379a06", null ],
+    [ "track_vnode_remove", "classkernel_1_1test_1_1_resource_tracker.html#ae9b4b6e4da7760651e163157488d4b98", null ]
+];

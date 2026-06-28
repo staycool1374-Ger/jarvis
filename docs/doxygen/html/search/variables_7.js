@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['g_5fclass_5fauto_5fshutdown_0',['g_class_auto_shutdown',['../namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a',1,'kernel::test']]],
+  ['g_5fdmesg_1',['g_dmesg',['../namespacekernel_1_1log.html#a5ddfffb1758c3078ae879afa99b135c6',1,'kernel::log']]],
+  ['g_5fklog_2',['g_klog',['../namespacekernel_1_1log.html#a5d37b94a40a3fb0722d235be6d2b43d8',1,'kernel::log']]],
+  ['g_5fnic_3',['g_nic',['../namespacenet.html#aad3a329be80ed3a001c29a1cec8e7fa4',1,'net']]],
+  ['g_5fuser_5faccess_5frecover_5fip_4',['g_user_access_recover_ip',['../namespacekernel.html#ad4828674f1ccfdc18414843eedc4892f',1,'kernel::g_user_access_recover_ip'],['../cxxabi_8cpp.html#a1b5fda023c78bb33539b3e9ace918dc8',1,'g_user_access_recover_ip:&#160;cxxabi.cpp']]],
+  ['g_5fwatchdog_5fdeadline_5fns_5',['g_watchdog_deadline_ns',['../namespacekernel_1_1test.html#a74d790429154a6100e23fdf3ac51371e',1,'kernel::test']]],
+  ['g_5fwatchdog_5ftask_5fid_6',['g_watchdog_task_id',['../namespacekernel_1_1test.html#a5b59830418dc51c0e6381baa16153565',1,'kernel::test']]],
+  ['gateway_7',['gateway',['../structnet_1_1_nic.html#ab3a59b0d764395c5787e73ea9b89215b',1,'net::Nic::gateway'],['../structkernel_1_1net_1_1_nic.html#ab3a59b0d764395c5787e73ea9b89215b',1,'kernel::net::Nic::gateway']]],
+  ['generation_8',['generation',['../structkernel_1_1_buffer_pool_1_1_entry.html#aa88ac2204d0cc6722a7144991ab78c80',1,'kernel::BufferPool::Entry']]],
+  ['get_5fpid_5ffn_9',['get_pid_fn',['../structkernel_1_1daemon_1_1_daemon_entry.html#ab9340e0190f5449718707c425a956b93',1,'kernel::daemon::DaemonEntry']]],
+  ['get_5froot_10',['get_root',['../structkernel_1_1vfs_1_1_filesystem.html#a7d9b588d608f7964ff76c5b06fc3642c',1,'kernel::vfs::Filesystem']]],
+  ['ghc_5fae_11',['GHC_AE',['../namespacekernel_1_1ahci.html#aeaf52a193dc68958becb8c34843e994d',1,'kernel::ahci']]],
+  ['ghc_5fhr_12',['GHC_HR',['../namespacekernel_1_1ahci.html#a0adcf90f41e86825f13d8e25b34306dd',1,'kernel::ahci']]],
+  ['ghc_5fie_13',['GHC_IE',['../namespacekernel_1_1ahci.html#afd3a348161d043a808fbecabe11c685e',1,'kernel::ahci']]],
+  ['ghc_5fmrsm_14',['GHC_MRSM',['../namespacekernel_1_1ahci.html#a8ba4aacd002242d2cb6a5d2ccef2571a',1,'kernel::ahci']]],
+  ['gso_5fsize_15',['gso_size',['../structkernel_1_1net_1_1_virtio_net_hdr.html#ac4aec51cf342675f2e6a15d1d5bdf9aa',1,'kernel::net::VirtioNetHdr::gso_size'],['../virtio__net_8hpp.html#a8bda46892fe42bfda4f9aa31c80a5ccc',1,'gso_size:&#160;virtio_net.hpp']]],
+  ['gso_5ftype_16',['gso_type',['../structkernel_1_1net_1_1_virtio_net_hdr.html#a91168dc02f315ccb637a647cc6a033e8',1,'kernel::net::VirtioNetHdr::gso_type'],['../virtio__net_8hpp.html#a93accb5ba722083c10375148df23f5ba',1,'gso_type:&#160;virtio_net.hpp']]]
+];

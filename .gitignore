@@ -8,7 +8,6 @@ clion/.idea/
 initrd.cpio
 iso/boot/kernel.elf
 jarvis-rtos.iso
-docs/doxygen/
 jarvis/
 userspace/*.elf
 pico.save

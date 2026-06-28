@@ -1,0 +1,3 @@
+<map id="kernel::ExceptionSignalMap" name="kernel::ExceptionSignalMap">
+<area shape="rect" id="Node000001" title="Maps a CPU exception vector to a signal number and action." alt="" coords="5,5,178,117"/>
+</map>

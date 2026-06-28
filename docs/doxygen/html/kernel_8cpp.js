@@ -1,0 +1,21 @@
+var kernel_8cpp =
+[
+    [ "__attribute__", "kernel_8cpp.html#a6773415358edda571fb1be7fb810a2c2", null ],
+    [ "debug_task_switch", "kernel_8cpp.html#a349d28bdc2232b6cde3b99f71e5d8672", null ],
+    [ "debug_write", "kernel_8cpp.html#a80e920b60042b6c2750fd88974610e99", null ],
+    [ "debug_write_hex", "kernel_8cpp.html#afc833d2926e5dca3c9fbed32f7a7656a", null ],
+    [ "handle_interrupt_c", "kernel_8cpp.html#a59c51dc200e018623c3a7468c91552b7", null ],
+    [ "higherhalf_entry", "kernel_8cpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615", null ],
+    [ "panic", "kernel_8cpp.html#ae22655ba6f328217f1ebd6248ed82727", null ],
+    [ "syscall_handler", "kernel_8cpp.html#a05b6e6675cd9f2f3cb2fd0aa3bc812a3", null ],
+    [ "_binary_initrd_cpio_end", "kernel_8cpp.html#a2c38eb4c3a51bab012a31eb7f42d54c0", null ],
+    [ "_binary_initrd_cpio_start", "kernel_8cpp.html#a53b789d98a238ce07c0629d6ba055cff", null ],
+    [ "fpu_owner", "kernel_8cpp.html#a9cb0eb86a3c6ddd3eff34b67b4a9d525", null ],
+    [ "isr_nesting_depth", "kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926", null ],
+    [ "kernel_virt_end", "kernel_8cpp.html#acf393da2fe85b8d9fa8cd83ff83a6a0c", null ],
+    [ "scheduler_corruption_count", "kernel_8cpp.html#a0f9de4949789f8c2d559e134c0bca614", null ],
+    [ "scheduler_load_cr3_from", "kernel_8cpp.html#a267d71f6467066b1a2df5d1c390f014a", null ],
+    [ "scheduler_load_rsp_from", "kernel_8cpp.html#a0bfda50437b4177036ebf965a8ae9735", null ],
+    [ "scheduler_next_task_id", "kernel_8cpp.html#ac624c3223df92f059074d6001ef70e60", null ],
+    [ "scheduler_save_rsp_to", "kernel_8cpp.html#aa7ffada5937bf60f2ad11eb7c57a9dcc", null ]
+];

@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['lba_5fhi_0',['lba_hi',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#a4b9cfa5e60e74021b9c94e3809a231d0',1,'kernel::ahci::CmdFIS::lba_hi'],['../ahci__protocol_8hpp.html#a956e2070d17dadc9bf0f2a0f55a9b1f6',1,'lba_hi:&#160;ahci_protocol.hpp']]],
+  ['lba_5fhi_5fexp_1',['lba_hi_exp',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#aec638700329587f41e1d7393878a99ea',1,'kernel::ahci::CmdFIS::lba_hi_exp'],['../ahci__protocol_8hpp.html#a9190bb29d1ab3d984b19f782300bcef9',1,'lba_hi_exp:&#160;ahci_protocol.hpp']]],
+  ['lba_5flo_2',['lba_lo',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#a9c69e6897acca8ef530f4c4e38cfa6b3',1,'kernel::ahci::CmdFIS::lba_lo'],['../ahci__protocol_8hpp.html#a286fe3731b924d7ff9e6af7ca3493858',1,'lba_lo:&#160;ahci_protocol.hpp']]],
+  ['lba_5flo_5fexp_3',['lba_lo_exp',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#ad6046d1929a8a38ed8cf6ddbf7eedd26',1,'kernel::ahci::CmdFIS::lba_lo_exp'],['../ahci__protocol_8hpp.html#a086756bcdc5d09814644b8af8d04443c',1,'lba_lo_exp:&#160;ahci_protocol.hpp']]],
+  ['lba_5fmid_4',['lba_mid',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#a952a93b3302c36eb4eeb11e42ad02bf7',1,'kernel::ahci::CmdFIS::lba_mid'],['../ahci__protocol_8hpp.html#ac8cf7f1e120c2741b43f31947b31b2f2',1,'lba_mid:&#160;ahci_protocol.hpp']]],
+  ['lba_5fmid_5fexp_5',['lba_mid_exp',['../structkernel_1_1ahci_1_1_cmd_f_i_s.html#a435f228973953f5c3567afe91c36ddc8',1,'kernel::ahci::CmdFIS::lba_mid_exp'],['../ahci__protocol_8hpp.html#aac985410a18400a2c715fd828824f735',1,'lba_mid_exp:&#160;ahci_protocol.hpp']]],
+  ['lba_5fstart_6',['lba_start',['../structkernel_1_1fat32_1_1_mbr_partition.html#a33c15866ceda30253efead9193ed4d5d',1,'kernel::fat32::MbrPartition']]],
+  ['len_7',['len',['../structarch_1_1_virtq_desc.html#ae94f63da7ab3f578a2f1faeb65fca28a',1,'arch::VirtqDesc::len'],['../structarch_1_1_virtq_used_elem.html#a8ad58baf1329f3509a30dd14843a0461',1,'arch::VirtqUsedElem::len'],['../virtio_8hpp.html#a96bbf959016e4411c9e6b9812a8be60a',1,'len:&#160;virtio.hpp']]],
+  ['length_8',['length',['../structarch_1_1_virtio_mmio.html#aab2ab34b0b75c19fb3287fb7fd825556',1,'arch::VirtioMmio::length'],['../structarch_1_1_virtio_pci_cap.html#a62bae513ed7f354a9620c91fa44b4faf',1,'arch::VirtioPciCap::length'],['../structkernel_1_1dma_1_1_sg_entry.html#a01c30abb10b87e66beaf2bdf71c239ab',1,'kernel::dma::SgEntry::length'],['../struct_memory_map_entry.html#aae7c4107c34c6d9674ee24c1ec2955f3',1,'MemoryMapEntry::length'],['../structnet_1_1_udp_header.html#abfd401cbe8582afe1d9df5cca7dec521',1,'net::UdpHeader::length'],['../virtio_8hpp.html#aebb70c2aab3407a9f05334c47131a43b',1,'length:&#160;virtio.hpp'],['../udp_8hpp.html#a1892eba2086d12ac2b09005aeb09ea3b',1,'length:&#160;udp.hpp']]],
+  ['line_5fbuf_5fsize_9',['LINE_BUF_SIZE',['../classservice_1_1_terminal.html#aaa9841cb6a1fb762bfc3ee845df1310b',1,'service::Terminal']]],
+  ['list_5fempty_10',['LIST_EMPTY',['../namespacekernel.html#ac4361f9f724be73ea2c03833ef010289',1,'kernel']]],
+  ['list_5fnext_11',['list_next',['../structkernel_1_1_buffer_pool_1_1_entry.html#af32897e0abcd8c3582598c83e2c241c3',1,'kernel::BufferPool::Entry']]],
+  ['list_5fprev_12',['list_prev',['../structkernel_1_1_buffer_pool_1_1_entry.html#a3d4b6c3d5ca6d8850d7c2957cef91843',1,'kernel::BufferPool::Entry']]],
+  ['lock_5f_13',['lock_',['../structkernel_1_1_message_queue.html#a39648f13a2c18bb6049b06a0ac5b1fab',1,'kernel::MessageQueue']]],
+  ['lookup_14',['lookup',['../structkernel_1_1vfs_1_1_vnode_ops.html#add952f09531db47accba4d61ddf1af91',1,'kernel::vfs::VnodeOps']]],
+  ['lseek_15',['lseek',['../structkernel_1_1vfs_1_1_vnode_ops.html#a0a174f80c08dfac3a680bca68201ad83',1,'kernel::vfs::VnodeOps']]]
+];

@@ -1,0 +1,3 @@
+<map id="kernel::Scheduler" name="kernel::Scheduler">
+<area shape="rect" id="Node000001" title="Preemptive, rate&#45;monotonic scheduler managing up to MAX_TASKS tasks." alt="" coords="5,5,129,373"/>
+</map>
