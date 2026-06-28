@@ -895,3 +895,4 @@ clean:
 	rm -f $(BUILD_STAMP)
 	rm -rf initrd_root debug release profiling
 	rm -f $(FAT32_DISK)
+	rm -f *.d
