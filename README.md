@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
   <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
   <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
-  <img src="https://img.shields.io/badge/tests-679%20passing-2ea44f?style=flat-square" alt="679 Tests Passing"/>
+  <img src="https://img.shields.io/badge/tests-665%20passing-2ea44f?style=flat-square" alt="665 Tests Passing"/>
   <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 
@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.2.23** — riscv64 Port: RISC-V RV64 boot, Sv39 page tables, context switch, PLIC, SBI UART/timer, 679 kernel self-tests passing on QEMU virt.
+Current version: **v0.2.24** — dmesg ring buffer, structured error system, test runner fixes, 665 kernel self-tests passing on QEMU virt.
 
 ---
 
@@ -74,111 +74,9 @@ This migration is architected from the start: the current monolithic ring-0 serv
 
 ---
 
-## Feature Highlights
+## Features
 
-### Scheduler & Process Model
-
-| Feature | Status |
-|---------|--------|
-| Preemptive rate-monotonic scheduling (256 priority levels) | ✓ |
-| Periodic and aperiodic task support | ✓ |
-| Sporadic Server budget enforcement (C/T parameters, O(1) replenishment) | ✓ |
-| O(1) task-ID → TCB hash table (open addressing) | ✓ |
-| Process lifecycle: `fork`, `waitpid`, `exit`, `exec` | ✓ |
-| ELF64 loader (static binaries from initrd or VFS) | ✓ |
-| Per-task `RLIMIT` tracking (`SYS_GETRLIMIT` / `SYS_SETRLIMIT`) | ✓ |
-| Lazy FPU/SSE context switch (FXSAVE/FXRSTOR, CR0.TS, #NM trap) | ✓ |
-| Task notifications, event groups, alarm signals | ✓ |
-| Per-task user page tables with `fork()`-safe PML4 cloning | ✓ |
-| Kernel shell with 36+ built-in commands | ✓ |
-
-### Synchronisation & IPC
-
-| Feature | Status |
-|---------|--------|
-| Mutex with priority inheritance | ✓ |
-| Counting semaphore (blocking wait) | ✓ |
-| Event group (multi-bit wait) | ✓ |
-| Fixed-size message queue (kernel-space, priority bitmap) | ✓ |
-| IPC mailbox (send, receive, synchronous rendezvous) | ✓ |
-| Buffer pool for zero-copy message payload | ✓ |
-| Notification (per-task 32-bit value with wait/clear) | ✓ |
-| Pipes (unidirectional byte-stream, `SYS_PIPE` / `SYS_DUP2`) | ✓ |
-| Wait-for-graph deadlock detection engine | ✓ |
-| RAII `IrqGuard` for interrupt-safe critical sections | ✓ |
-
-### Virtual File System
-
-| Feature | Status |
-|---------|--------|
-| Unified vnode abstraction with operation vtable | ✓ |
-| Per-task file descriptor tables (32 entries) | ✓ |
-| Mount table with path-based lookup | ✓ |
-| Initrd (cpio newc) — root filesystem at boot | ✓ |
-| Devfs — `/dev/tty`, `/dev/null`, `/dev/console`, `/dev/kbd`, `/dev/fb`, `/dev/random` | ✓ |
-| Procfs — `/proc/meminfo`, `/proc/[pid]/stat`, `/proc/self`, `/proc/sched` | ✓ |
-| FAT32 — full read/write: open, read, write, close, readdir, mkdir, unlink, fstat | ✓ |
-| Tmpfs — quota-managed RAM-backed filesystem for `/tmp` | ✓ |
-| VFS daemon (`vfsd`) — authorises and proxies filesystem ops for userspace | ✓ |
-| IO daemon (`iocd`) — block device I/O request dispatch | ✓ |
-
-### Hardware Enablement
-
-| Feature | Status |
-|---------|--------|
-| x86_64 long mode, 4-level page tables (PML4 → PDPT → PD → PT) | ✓ |
-| Multiboot2-compliant boot | ✓ |
-| PIT (1 kHz scheduling tick), RTC (wall clock), HPET (planned) | ✓ |
-| PS/2 keyboard (scancode set 2, modifier tracking) | ✓ |
-| Serial (COM1, 115200 baud, interrupt-driven) | ✓ |
-| Framebuffer (linear via Multiboot2, terminal with status bar) | ✓ |
-| ACPI QEMU shutdown port | ✓ |
-| ATA PIO (read/write, block device layer) | ✓ |
-| PCI bus enumeration (config space access, BAR decoding) | ✓ |
-| MSI/MSI-X interrupt support | ✓ |
-| Virtio-net (1.0 PCI transport, probe + network stack) | ✓ |
-| Virtio-block (1.0 PCI transport) | ✓ |
-| Hardware RNG (RDSEED > RDRAND > RDTSC jitter fallback, ChaCha20 CSPRNG) | ✓ |
-| Lazy FPU/SSE context switch (FXSAVE/FXRSTOR, #NM trap) | ✓ |
-
-### Kernel Shell (36 Built-in Commands)
-
-| Category | Commands |
-|----------|----------|
-| Navigation | `cd`, `pwd`, `ls`, `dirs`, `pushd`, `popd` |
-| File ops | `mkdir`, `rm`, `rmdir`, `cat` |
-| System info | `help`, `uptime`, `version`, `meminfo`, `tasks`, `jobs`, `env`, `times` |
-| Process control | `run`, `runelf`, `exit` / `shutdown`, `reboot`, `sleep`, `wait`, `fg`, `bg`, `disown` |
-| Shell built-ins | `alias` / `unalias`, `history`, `type`, `which` / `locate`, `source` / `.`, `set`, `read`, `shift`, `export`, `echo`, `printf`, `test` / `[` |
-| System control | `modprobe`, `modlist`, `selftest`, `clear`, `trap`, `umask`, `ulimit` |
-
-Features: output redirection (`>`), alias expansion, command history (100-entry ring buffer), directory stack, 32 environment variables, shell execution options (`-x`, `-e`, `-u`), Zsh‑style prompt.
-
-### Test Framework
-
-- **679 test cases** across 80+ test files covering every kernel subsystem
-- Run automatically at boot in debug builds; 84 curated tests in release
-- Full state snapshot/restore between tests — isolation down to MemPool free-lists and page-table entries
-- Leak detection on every test (task counts, page allocations, pool frees)
-- QEMU integration: `make test-qemu` captures serial output and validates pass/fail exit codes
-
----
-
-## Architectural Competitive Comparison
-
-The following matrix contrasts the architectural guarantees, safety mechanisms, and design paradigms of Jarvis RTOS against prevailing open-source and commercial real-time operating systems.
-
-| Architectural Dimension | FreeRTOS | Zephyr Project | PREEMPT_RT (RT-Linux) | QNX Neutrino | VxWorks | Jarvis RTOS (v0.2.23) |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Core Architecture** | Monolithic Library (Flat address space, no isolation) | Monolithic / Modular (Optional MPU-based sandboxing) | Monolithic Macrokernel (Preemptible kernel via locking patches) | Pure Microkernel (Drivers and VFS fully isolated in Ring 3) | Monolithic (With Real-Time Process [RTP] isolation) | **Mid-Transition Microkernel** (Currently moving monolithic Ring 0 services to Ring 3 capability servers) |
-| **Primary Language** | C89 / C99 (Manual state tracking, legacy idioms) | C99 / C11 (Extensive preprocessor macro use via Kconfig) | C11 / GNU C (Massive legacy codebase, macro-heavy) | ISO C / C++ (Hosted standard runtime libraries) | C / C++ (Proprietary toolchain-dependent runtime) | **Freestanding C++20** (Zero-overhead objects, compile-time Concepts, no hosted runtime) |
-| **Concurrency & Synchronization** | Manual API pairing (`taskENTER_CRITICAL()`, risk of leaks) | Macro-driven locking and explicit unlock tracking | Spinlocks, Mutexes, and raw RT-mutex structures | POSIX threads and synchronization primitives | Task locks, semaphores, and raw spinlocks | **RAII Scoped Guards** (`IrqGuard` lockouts, impossible to leak on early exit blocks)[cite: 2] |
-| **Memory Allocation** | Fragmentable heaps (`pvPortMalloc()`, no structural bounds) | Configurable dynamic heaps or static block pools | Dynamic allocation via TLSF or standard kernel SLUB/SLAB | Dynamic virtual memory management with standard page pools | Dynamic heap regions with MMU partition protection | **Post-Init Static Pools** (`MemPool` slab allocators, zero dynamic allocation on hot paths)[cite: 2] |
-| **Determinism & Jitter Guard** | Coarse scheduler ticks, manual application tuning | Dynamic thread priorities, low-latency interrupt paths | Sub-millisecond bounds, highly dependent on hardware configurations | Microsecond-bounded context-switches, high predictability | Extreme high determinism, minimal scheduling jitter | **Rate-Monotonic Scheduler** (256 priority levels, deterministic Open-Addressing Task Hash Table)[cite: 2] |
-| **Functional Safety (ISO 26262)** | None (Community-driven; commercial pre-certified forks exist) | Audited subset targeting SIL 3 / ASIL B profiles | Non-certifiable due to millions of lines of code | **Pre-certified ASIL D / SIL 4** (Commercial safety manual provided) | **Pre-certified ASIL D / SIL 4** (Commercial safety manual provided) | **Architected for ASIL D** (Traceability matrix, 100% state snapshot isolation between test runs)[cite: 2] |
-| **Application Loading Lifecycle** | Static Linking (Firmware image must be re-flashed) | Static Linking (DeviceTree and Kconfig frozen at compile-time) | Dynamic Loading (`execve` standard ELF, heavy runtime overhead) | Dynamic Loading (Isolated process management via process manager) | Dynamic Loading (Target execution of compiled RTP binaries) | **Dynamic `runelf` Subsystem** (Static ELF64 parsing from VFS/Initrd with execution quota validation)[cite: 2] |
-| **Idle Task Steward Infrastructure** | Minimal Hook (`configUSE_IDLE_HOOK` simple user callback) | Low-power state management and CPU power-down loops | Standard kernel idle loop, dynamic sleep ticks | System telemetry, background profiling counters | Performance monitoring and power management hooks | **ASIL D Integrity Monitors** (Slab page recovery, RAM March-C algorithm, CPU ALU test patterns)[cite: 2] |
-| **Integrated Test Coverage** | None (Relies on external test runner suites) | Integrated Twister framework for out-of-tree testing | Extensive LTP (Linux Test Project) suite, hosted execution | Proprietary commercial hardware validation tools | Proprietary commercial hardware validation tools | **679 In-Kernel Tests** (Automated boot-time verification with full leak detection)[cite: 2] |
+For a complete catalog of all implemented features — scheduler, IPC, VFS, hardware enablement, shell, test framework, dmesg diagnostics, and architectural comparison — see [`README_done.md`](README_done.md).
 
 ---
 
@@ -210,11 +108,8 @@ Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGr
 
 ## Roadmap
 
-- [x] **Phase 2 — Kernel Core & Shell** — Boot, PMM, VMM, scheduler, IPC, syscalls, ELF loader, shell, devfs, procfs
-- [x] **Phase 3 — System Services & Hardware** — FAT32, tmpfs, PCI, Virtio, ATA PIO, RNG, FPU, DMA, network stack *(completed — v0.2.20)*
-- [x] **Phase 4 — Kernel Configuration & Portability** — jarvis_config.h, CONFIG_* migration, check-config validation, multi-arch HAL infrastructure *(completed — v0.2.21)*
-- [x] **Phase 5 — aarch64 Port (ARM Cortex-A)** — HAL refactoring, ARM boot, page tables, context switch, GICv3, timer, UART, PCI ECAM, Renode simulation *(completed — v0.2.22)*
-- [x] **Phase 6 — riscv64 Port (RV64)** — RISC-V boot (OpenSBI→S-mode), Sv39 page tables, context switch, PLIC, SBI UART/timer, 3-arch build system, Renode support *(completed — v0.2.23)*
+Completed phases (v0.2.0–v0.2.23) archived in [`README_done.md`](README_done.md).
+
 - [ ] **Phase 7 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
 - [ ] **Phase 8 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
 - [ ] **Phase 9 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
@@ -239,13 +134,13 @@ sudo apt install build-essential git wget xorriso dosfstools \
 ```bash
 git clone <repo-url>
 cd os
-make debug          # Debug build with 679-test suite
+make debug          # Debug build with 665-test suite
 make qemu-iso       # Launch in QEMU with serial console
 make release        # Optimised release build (no tests)
 
 # Testing targets (QEMU)
 make test-selftest       # Safe class (~102 tests, CI gate)
-make test-all-debug      # Full 679-test suite (debug)
+make test-all-debug      # Full 665-test suite (debug)
 make test-all-release    # Release-candidate subset
 make test-class CLASS=<name>  # Specific test class
 
