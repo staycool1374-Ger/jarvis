@@ -17,6 +17,71 @@
 │   ├── doxygen
 │   │   └── html
 │   │       ├── aarch64_2boot_8cpp.html
+│   │       ├── aarch64_2early__init_8cpp.html
+│   │       ├── aarch64_2early__init_8cpp.js
+│   │       ├── aarch64_2hal_2cpuid__impl_8hpp__incl.md5
+│   │       ├── aarch64_2hal_2cpuid__impl_8hpp_source.html
+│   │       ├── aarch64_2hal_2cpuid__impl_8hpp.html
+│   │       ├── aarch64_2hal_2cpuid__impl_8hpp.js
+│   │       ├── aarch64_2hal_2io__impl_8hpp__incl.md5
+│   │       ├── aarch64_2hal_2io__impl_8hpp_source.html
+│   │       ├── aarch64_2hal_2io__impl_8hpp.html
+│   │       ├── aarch64_2hal_2io__impl_8hpp.js
+│   │       ├── aarch64_2hal_2page__table__impl_8hpp__incl.md5
+│   │       ├── aarch64_2hal_2page__table__impl_8hpp_source.html
+│   │       ├── aarch64_2hal_2page__table__impl_8hpp.html
+│   │       ├── aarch64_2hal_2page__table__impl_8hpp.js
+│   │       ├── aarch64_2hal_2pci__impl_8hpp__incl.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a08a84069578488cf464906244778c1d7_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a1433807aabf186dae62bd765c77eb1f3_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a451540a5d0c6948aa2f412bba655bd21_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a5def1a277614b6ab73030e046b3e3830_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a66adbfb426ee2a6bec228350397c1d89_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a696858ab3d98b3921f2eae4f60365beb_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_a941862173e6f3a914c8ab88698ec4302_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_abbe51d6ae95ea245927f7f40dca06e0f_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_ae085865c023791df9a0e0198a1824179_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_af638d9eee1fcc8e7b99567445aedf924_cgraph.md5
+│   │       ├── aarch64_2hal_2pci__impl_8hpp_source.html
+│   │       ├── aarch64_2hal_2pci__impl_8hpp.html
+│   │       ├── aarch64_2hal_2pci__impl_8hpp.js
+│   │       ├── aarch64_2hal_2rand__impl_8hpp__incl.md5
+│   │       ├── aarch64_2hal_2rand__impl_8hpp_source.html
+│   │       ├── aarch64_2hal_2rand__impl_8hpp.html
+│   │       ├── aarch64_2hal_2rand__impl_8hpp.js
+│   │       ├── aarch64_2idt_8cpp__incl.md5
+│   │       ├── aarch64_2idt_8cpp.html
+│   │       ├── aarch64_2idt_8cpp.js
+│   │       ├── aarch64_2interrupt__controller_8cpp__incl.md5
+│   │       ├── aarch64_2interrupt__controller_8cpp.html
+│   │       ├── aarch64_2interrupt__controller_8cpp.js
+│   │       ├── aarch64_2rtc_8cpp__incl.md5
+│   │       ├── aarch64_2rtc_8cpp.html
+│   │       ├── aarch64_2serial_8cpp__incl.md5
+│   │       ├── aarch64_2serial_8cpp.html
+│   │       ├── aarch64_2serial_8cpp.js
+│   │       ├── aarch64_2test__stubs_8cpp__incl.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a07bf5de326f03950b4012c1b42f5c171_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a0dd08c3292aaf585484267f753d2f909_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a13714cd376989323d066b68000c5ca93_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a3ab66b0eea8703db9755ada9d14e2ff8_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a5c1a54812368e4ac2f814c6a1ef88e24_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a5ceb5bd7cd243830f61b4e6d18eaafc5_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a61e37195860bf4a23fe7d568eb51c735_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a637112bdb55e34aca69dfce994c616cd_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a6685cde06dcd80a022800c8644c2bfe9_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_a782a4d8da57d29e671b70c1a7870f9a8_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_aa59c860ec78de1ec56ff1fcac00994dd_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_aae15a79ba7cb568b6210f193130060ba_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_ab69bd5c81e5dc927d22eeaaa2c80e226_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_adaad5cbf59a873be4f9b89273f3c83c0_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_ae1d5232fbf708fd2680b373e55efe60e_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp_affc6e1f3c00d359c180ade7c951bb83f_cgraph.md5
+│   │       ├── aarch64_2test__stubs_8cpp.html
+│   │       ├── aarch64_2test__stubs_8cpp.js
+│   │       ├── aarch64_2timer_8cpp__incl.md5
+│   │       ├── aarch64_2timer_8cpp.html
+│   │       ├── address_8hpp__dep__incl.md5
 │   │       ├── address_8hpp__incl.md5
 │   │       ├── address_8hpp_source.html
 │   │       ├── address_8hpp.html
@@ -171,7 +236,11 @@
 │   │       ├── classarch_1_1_arch_page_table__coll__graph.md5
 │   │       ├── classarch_1_1_arch_page_table_a0bf7018cfd27b0d4bc69fba3d2d08d52_cgraph.md5
 │   │       ├── classarch_1_1_arch_page_table_a11b793ea7932c8874b68653341f2e7b3_cgraph.md5
+│   │       ├── classarch_1_1_arch_page_table_a17854c79d430577cb4997ba941064656_cgraph.md5
 │   │       ├── classarch_1_1_arch_page_table_a8274bdad35d659f5254c171a6d68d51a_cgraph.md5
+│   │       ├── classarch_1_1_arch_page_table_aa84640a1aaf5ed6eb7f63dcfe69c5fc5_cgraph.md5
+│   │       ├── classarch_1_1_arch_page_table_ab1318f6de6e222b7817a43033565828d_cgraph.md5
+│   │       ├── classarch_1_1_arch_page_table_acf398cb21e7d3c01a46cefe8307c7a79_cgraph.md5
 │   │       ├── classarch_1_1_arch_page_table_adecb51dbde0ed34a18de24e02e97aee4_cgraph.md5
 │   │       ├── classarch_1_1_arch_page_table.html
 │   │       ├── classarch_1_1_g_d_t__coll__graph.md5
@@ -214,6 +283,17 @@
 │   │       ├── classarch_1_1IDT__coll__graph.md5
 │   │       ├── classarch_1_1IDT__coll__graph.png
 │   │       ├── classarch_1_1IDT.html
+│   │       ├── classarch_1_1kernel_1_1_page_address__coll__graph.md5
+│   │       ├── classarch_1_1kernel_1_1_page_address__inherit__graph.md5
+│   │       ├── classarch_1_1kernel_1_1_page_address.html
+│   │       ├── classarch_1_1kernel_1_1_page_address.js
+│   │       ├── classarch_1_1kernel_1_1_physical_address__coll__graph.md5
+│   │       ├── classarch_1_1kernel_1_1_physical_address__inherit__graph.md5
+│   │       ├── classarch_1_1kernel_1_1_physical_address.html
+│   │       ├── classarch_1_1kernel_1_1_physical_address.js
+│   │       ├── classarch_1_1kernel_1_1_virtual_address__coll__graph.md5
+│   │       ├── classarch_1_1kernel_1_1_virtual_address.html
+│   │       ├── classarch_1_1kernel_1_1_virtual_address.js
 │   │       ├── classarch_1_1Keyboard__coll__graph.map
 │   │       ├── classarch_1_1Keyboard__coll__graph.md5
 │   │       ├── classarch_1_1Keyboard__coll__graph.png
@@ -274,17 +354,26 @@
 │   │       ├── classkernel_1_1_logger_ac55cd7a631b4e76a2293edf8b8bb0bd4_cgraph.md5
 │   │       ├── classkernel_1_1_logger.html
 │   │       ├── classkernel_1_1_mem_pool__coll__graph.md5
+│   │       ├── classkernel_1_1_mem_pool_a0f83e43e9d8759a022fbe7806d015d3e_cgraph.md5
 │   │       ├── classkernel_1_1_mem_pool_a1f64a714659b3a9b32efc18eb09e0830_cgraph.md5
+│   │       ├── classkernel_1_1_mem_pool_a3f1c8c8d44fb19cc7042070adb022533_cgraph.md5
+│   │       ├── classkernel_1_1_mem_pool_a6118e3487183d980a9f35e1fc8adc509_cgraph.md5
 │   │       ├── classkernel_1_1_mem_pool_a8902cb2684eb416cb181803ffbb04b9f_cgraph.md5
 │   │       ├── classkernel_1_1_mem_pool_afa2f4dd4e1b0bfbd311c339b772498c0_cgraph.md5
 │   │       ├── classkernel_1_1_mem_pool.html
 │   │       ├── classkernel_1_1_mem_pool.js
 │   │       ├── classkernel_1_1_p_m_m__coll__graph.md5
 │   │       ├── classkernel_1_1_p_m_m_a0daaa2d1b36579ff9c0eb60caddee59d_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_a2b5af6ef9cd75524423988e0ecf27107_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m_a305d66e38020dc96af630796440c80f8_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m_a604f2d4587e26dd794e13a22d2213615_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m_a8f9fb6564b0e66f0544e4af3205dd4d0_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_aa463df4ae7427d4c22f07c2d2224653a_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_ab6db019143467fd1a2da495b86d69c74_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_ab9f9e75ec3300f19461a1c0580a85586_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_ac875a7cc225949a791f100851d4bd470_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m_acd322564470938305549042daa42732d_cgraph.md5
+│   │       ├── classkernel_1_1_p_m_m_ace62ea3ef912611c5a6e756b35f25e9a_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m_ae68479eae708fc368405715ad92a5fc3_cgraph.md5
 │   │       ├── classkernel_1_1_p_m_m.html
 │   │       ├── classkernel_1_1_p_m_m.js
@@ -315,20 +404,32 @@
 │   │       ├── classkernel_1_1_scheduler_a392525912608998bc99fa1a3d4816538_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler_a6421e44dae2dd343f7f0e7064a89ad97_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler_a6cb4f7ab4207b34c9e4a278492fe8efc_cgraph.md5
+│   │       ├── classkernel_1_1_scheduler_a72a9265e4e4721353cbcee6ecc293fdc_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler_a73f226e2fca1b403063e72db60d7a3f5_cgraph.md5
+│   │       ├── classkernel_1_1_scheduler_a7e36233fc7325aab8561e55c8e07e594_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler_abde09e0c1b73175a95f3e78104e437fd_cgraph.md5
+│   │       ├── classkernel_1_1_scheduler_abe771365aff3aee22925d9339f9a5d9d_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler_ac92ab8abdaaf924f98d66fd5f8ab2a50_cgraph.md5
 │   │       ├── classkernel_1_1_scheduler.html
 │   │       ├── classkernel_1_1_syscall__coll__graph.md5
 │   │       ├── classkernel_1_1_syscall_acf1a63e5b0e8d0cd318d25ec04e34962_cgraph.md5
 │   │       ├── classkernel_1_1_syscall.html
 │   │       ├── classkernel_1_1_v_m_m__coll__graph.md5
+│   │       ├── classkernel_1_1_v_m_m_a00badc7d69ae6df6b9ec4ece614fe766_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_a05dddb595ff91d7b1c0ed494e503b205_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_a0bf86a0e97402ac5e989fa1aa55a0df5_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_a385de660f1f7a0aab86ad1a31cb4971b_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_a464e326efd7e29354e19617ca99d9e86_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_a5da462b4221e1837dadb8f296652904c_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_a60a557d98925cd250a9180effab1e774_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_a6c283a922356a4a1b0a157a996a2bb03_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_a76ece689da1d37a1ff4c78d747035edf_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_aa31478530f584907b7a8d79cd60a8e46_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m_ab204c9d0ee0ad66661be51ce72280bff_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_abeb64ef713899d8f0a29c24d1a3b4be6_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_ac75e4a39be64ad3c364d4321c1a621e1_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_aca50fe995582fa2e7697f4b241bf54ac_cgraph.md5
+│   │       ├── classkernel_1_1_v_m_m_af16c2a20fa00db35b4aea6f91227818b_cgraph.md5
 │   │       ├── classkernel_1_1_v_m_m.html
 │   │       ├── classkernel_1_1_virtual_address__coll__graph.md5
 │   │       ├── classkernel_1_1_virtual_address_a3f3de2dd032fac31289d04004937c151_cgraph.md5
@@ -346,6 +447,7 @@
 │   │       ├── classkernel_1_1block_1_1_ahci_driver_a2f9ef67bfd44b721402eeef2a4c54314_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_ahci_driver_a3cd242d14e4bbdf237045d264645cfb9_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_ahci_driver_a66c53202b7929c0080ac0ea6fda81f4f_cgraph.md5
+│   │       ├── classkernel_1_1block_1_1_ahci_driver_aa258d5a2509fe8f45957670ff024a8d4_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_ahci_driver_aa99c80fea14ae9d8ecb91828c518ec87_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_ahci_driver_ae8a751068cb12582e54c8a42771152b6_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_ahci_driver.html
@@ -373,6 +475,7 @@
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver__inherit__graph.md5
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver_a33aaa4031a55127427d27f9735503fae_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver_a54ea2602f8d1d7e8d8c6913fee2c409f_cgraph.md5
+│   │       ├── classkernel_1_1block_1_1_virtio_blk_driver_a99a6960eb18094cd57ca99c3915736d9_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver_aa8b0fd962bc567f6c54b6d2cf199a780_cgraph.md5
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver.html
 │   │       ├── classkernel_1_1block_1_1_virtio_blk_driver.js
@@ -456,6 +559,10 @@
 │   │       ├── classkernel_1_1IPC_ac7226ea23e0648465176fd0e0682f107_cgraph.md5
 │   │       ├── classkernel_1_1IPC_ac7226ea23e0648465176fd0e0682f107_cgraph.png
 │   │       ├── classkernel_1_1IPC.html
+│   │       ├── classkernel_1_1log_1_1_dmesg_buffer__coll__graph.md5
+│   │       ├── classkernel_1_1log_1_1_dmesg_buffer_ab29e525135d32a9f4e3f3a5100ee0087_cgraph.md5
+│   │       ├── classkernel_1_1log_1_1_dmesg_buffer.html
+│   │       ├── classkernel_1_1log_1_1_dmesg_buffer.js
 │   │       ├── classkernel_1_1log_1_1_ring_buffer__coll__graph.md5
 │   │       ├── classkernel_1_1log_1_1_ring_buffer_a1df984ebae363f81498eff87693a458e_cgraph.md5
 │   │       ├── classkernel_1_1log_1_1_ring_buffer.html
@@ -515,30 +622,42 @@
 │   │       ├── classkernel_1_1Scheduler_ac92ab8abdaaf924f98d66fd5f8ab2a50_cgraph.png
 │   │       ├── classkernel_1_1Scheduler.html
 │   │       ├── classkernel_1_1sync_1_1_event_group__coll__graph.md5
+│   │       ├── classkernel_1_1sync_1_1_event_group_a4c00794ef6fa784690c6e36f1c3af1ec_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_event_group_add62c2c0758d7247b4103a948bc33bc5_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_event_group.html
 │   │       ├── classkernel_1_1sync_1_1_event_group.js
 │   │       ├── classkernel_1_1sync_1_1_mutex__coll__graph.md5
+│   │       ├── classkernel_1_1sync_1_1_mutex_a2c10add2c52745fb38a034d7b8d6e086_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_mutex_a4249f0561e075fea3b1399dcc2bd2cb1_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_mutex_a44a2716f5eef3240695d13d2ea336d0b_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_mutex_a48b14cca7de3ff4ca22c8a86cbff0475_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_mutex_a89da4d0ccfbb1d4c3eacc4e1b10302ad_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_mutex_aeec01ec68c89532effeda70ef135ae54_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_mutex.html
 │   │       ├── classkernel_1_1sync_1_1_mutex.js
 │   │       ├── classkernel_1_1sync_1_1_notify__coll__graph.md5
 │   │       ├── classkernel_1_1sync_1_1_notify_a288a4d84afc3d9c99728d7ec98683b16_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_notify_a38a64ff48c7afcaf1e0d53545dcef60b_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_notify_a7f78509dfc82409073a6a539bc5d7adb_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_notify_a9e19afa2f0a412aecd8045fa5088a2f1_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_notify_ab2447020077510b35d6afa6cce36d485_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_notify_adba405a64fbbe9fee6583e415cafc488_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_notify.html
 │   │       ├── classkernel_1_1sync_1_1_notify.js
 │   │       ├── classkernel_1_1sync_1_1_queue__coll__graph.md5
+│   │       ├── classkernel_1_1sync_1_1_queue_a1344f366c0611f3357b986b98b0bb962_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_queue_a68bf24596e5e242c54a765b5fabb9074_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_queue_a695903ebc76f7dee0922bb3ab59a111c_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_queue_a7dda801315d3bd250b0014a9f6c7130f_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_queue_a8a679de7b0f3ddd7a2d5ccdd79044979_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_queue_aaa6469206558097df3c402ecb39cf190_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_queue_ab48aea9d45391283bfdb83fae3bd8acb_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_queue_ac1d6b6e517641752502daaa5ce5fdb45_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_queue.html
 │   │       ├── classkernel_1_1sync_1_1_queue.js
 │   │       ├── classkernel_1_1sync_1_1_semaphore__coll__graph.md5
 │   │       ├── classkernel_1_1sync_1_1_semaphore_a420b57b04448016d930f8eb327215bc0_cgraph.md5
+│   │       ├── classkernel_1_1sync_1_1_semaphore_afb3bcce002a8c49c2d089e92e516e2ac_cgraph.md5
 │   │       ├── classkernel_1_1sync_1_1_semaphore.html
 │   │       ├── classkernel_1_1sync_1_1_semaphore.js
 │   │       ├── classkernel_1_1sync_1_1_spin_lock__coll__graph.md5
@@ -750,6 +869,8 @@
 │   │       ├── classservice_1_1Terminal.html
 │   │       ├── clipboard.js
 │   │       ├── codefolding.js
+│   │       ├── compiler__rt_8cpp.html
+│   │       ├── compiler__rt_8cpp.js
 │   │       ├── conceptkernel_1_1_error_enum.html
 │   │       ├── conceptkernel_1_1_integral.html
 │   │       ├── conceptkernel_1_1_lockable.html
@@ -843,11 +964,15 @@
 │   │       ├── devfs_8hpp.js
 │   │       ├── dir_000000_000005.html
 │   │       ├── dir_000000_000007.html
+│   │       ├── dir_000000_000008.html
 │   │       ├── dir_000000_000009.html
 │   │       ├── dir_000000_000011.html
+│   │       ├── dir_000000_000014.html
 │   │       ├── dir_000000_000016.html
+│   │       ├── dir_000000_000017.html
 │   │       ├── dir_000000_000018.html
 │   │       ├── dir_000000_000019.html
+│   │       ├── dir_000000_000026.html
 │   │       ├── dir_000001_000004.html
 │   │       ├── dir_000001_000005.html
 │   │       ├── dir_000001_000006.html
@@ -856,25 +981,33 @@
 │   │       ├── dir_000001_000009.html
 │   │       ├── dir_000001_000011.html
 │   │       ├── dir_000001_000012.html
+│   │       ├── dir_000001_000014.html
 │   │       ├── dir_000001_000015.html
+│   │       ├── dir_000001_000017.html
 │   │       ├── dir_000001_000018.html
 │   │       ├── dir_000001_000019.html
 │   │       ├── dir_000001_000021.html
+│   │       ├── dir_000001_000023.html
 │   │       ├── dir_000001_000024.html
+│   │       ├── dir_000001_000026.html
 │   │       ├── dir_000002_000005.html
 │   │       ├── dir_000002_000007.html
 │   │       ├── dir_000002_000008.html
 │   │       ├── dir_000002_000009.html
+│   │       ├── dir_000002_000011.html
 │   │       ├── dir_000002_000012.html
 │   │       ├── dir_000002_000013.html
 │   │       ├── dir_000002_000014.html
 │   │       ├── dir_000002_000024.html
+│   │       ├── dir_000002_000026.html
 │   │       ├── dir_000003_000000.html
 │   │       ├── dir_000003_000005.html
 │   │       ├── dir_000003_000007.html
 │   │       ├── dir_000003_000009.html
 │   │       ├── dir_000003_000011.html
 │   │       ├── dir_000003_000012.html
+│   │       ├── dir_000003_000013.html
+│   │       ├── dir_000003_000014.html
 │   │       ├── dir_000003_000016.html
 │   │       ├── dir_000003_000018.html
 │   │       ├── dir_000003_000019.html
@@ -892,8 +1025,10 @@
 │   │       ├── dir_000004_000010.html
 │   │       ├── dir_000004_000011.html
 │   │       ├── dir_000004_000012.html
+│   │       ├── dir_000004_000014.html
 │   │       ├── dir_000004_000015.html
 │   │       ├── dir_000004_000016.html
+│   │       ├── dir_000004_000017.html
 │   │       ├── dir_000004_000018.html
 │   │       ├── dir_000004_000019.html
 │   │       ├── dir_000004_000021.html
@@ -901,6 +1036,7 @@
 │   │       ├── dir_000004_000024.html
 │   │       ├── dir_000004_000026.html
 │   │       ├── dir_000004_000027.html
+│   │       ├── dir_000004_000028.html
 │   │       ├── dir_000005_000000.html
 │   │       ├── dir_000005_000001.html
 │   │       ├── dir_000005_000004.html
@@ -908,10 +1044,14 @@
 │   │       ├── dir_000005_000009.html
 │   │       ├── dir_000005_000010.html
 │   │       ├── dir_000005_000012.html
+│   │       ├── dir_000005_000014.html
 │   │       ├── dir_000005_000015.html
 │   │       ├── dir_000005_000016.html
+│   │       ├── dir_000005_000017.html
 │   │       ├── dir_000005_000024.html
+│   │       ├── dir_000005_000026.html
 │   │       ├── dir_000005_000027.html
+│   │       ├── dir_000005_000029.html
 │   │       ├── dir_000006_000000.html
 │   │       ├── dir_000006_000001.html
 │   │       ├── dir_000006_000002.html
@@ -924,6 +1064,7 @@
 │   │       ├── dir_000006_000011.html
 │   │       ├── dir_000006_000012.html
 │   │       ├── dir_000006_000013.html
+│   │       ├── dir_000006_000014.html
 │   │       ├── dir_000006_000015.html
 │   │       ├── dir_000006_000016.html
 │   │       ├── dir_000006_000018.html
@@ -936,7 +1077,9 @@
 │   │       ├── dir_000007_000009.html
 │   │       ├── dir_000007_000011.html
 │   │       ├── dir_000007_000012.html
+│   │       ├── dir_000007_000014.html
 │   │       ├── dir_000007_000016.html
+│   │       ├── dir_000007_000017.html
 │   │       ├── dir_000007_000018.html
 │   │       ├── dir_000007_000019.html
 │   │       ├── dir_000007_000020.html
@@ -961,18 +1104,23 @@
 │   │       ├── dir_000008_000020.html
 │   │       ├── dir_000008_000021.html
 │   │       ├── dir_000008_000022.html
+│   │       ├── dir_000008_000023.html
 │   │       ├── dir_000009_000007.html
 │   │       ├── dir_000009_000008.html
 │   │       ├── dir_000009_000012.html
+│   │       ├── dir_000009_000014.html
 │   │       ├── dir_000009_000016.html
+│   │       ├── dir_000009_000017.html
 │   │       ├── dir_000010_000000.html
 │   │       ├── dir_000010_000001.html
 │   │       ├── dir_000010_000003.html
 │   │       ├── dir_000010_000005.html
 │   │       ├── dir_000010_000006.html
 │   │       ├── dir_000010_000007.html
+│   │       ├── dir_000010_000008.html
 │   │       ├── dir_000010_000011.html
 │   │       ├── dir_000010_000012.html
+│   │       ├── dir_000010_000014.html
 │   │       ├── dir_000010_000015.html
 │   │       ├── dir_000010_000016.html
 │   │       ├── dir_000010_000017.html
@@ -989,6 +1137,7 @@
 │   │       ├── dir_000011_000009.html
 │   │       ├── dir_000011_000010.html
 │   │       ├── dir_000011_000012.html
+│   │       ├── dir_000011_000014.html
 │   │       ├── dir_000011_000015.html
 │   │       ├── dir_000011_000016.html
 │   │       ├── dir_000011_000017.html
@@ -1001,24 +1150,45 @@
 │   │       ├── dir_000011_000026.html
 │   │       ├── dir_000011_000027.html
 │   │       ├── dir_000012_000000.html
+│   │       ├── dir_000012_000001.html
 │   │       ├── dir_000012_000004.html
 │   │       ├── dir_000012_000005.html
 │   │       ├── dir_000012_000008.html
 │   │       ├── dir_000012_000009.html
 │   │       ├── dir_000012_000011.html
 │   │       ├── dir_000012_000013.html
+│   │       ├── dir_000012_000014.html
+│   │       ├── dir_000012_000017.html
+│   │       ├── dir_000012_000023.html
+│   │       ├── dir_000012_000026.html
+│   │       ├── dir_000012_000028.html
+│   │       ├── dir_000013_000001.html
+│   │       ├── dir_000013_000002.html
+│   │       ├── dir_000013_000004.html
+│   │       ├── dir_000013_000005.html
 │   │       ├── dir_000013_000006.html
 │   │       ├── dir_000013_000007.html
 │   │       ├── dir_000013_000008.html
 │   │       ├── dir_000013_000009.html
+│   │       ├── dir_000013_000011.html
+│   │       ├── dir_000013_000012.html
 │   │       ├── dir_000013_000014.html
 │   │       ├── dir_000013_000016.html
+│   │       ├── dir_000013_000017.html
+│   │       ├── dir_000013_000018.html
 │   │       ├── dir_000013_000019.html
+│   │       ├── dir_000013_000021.html
 │   │       ├── dir_000013_000022.html
+│   │       ├── dir_000013_000023.html
+│   │       ├── dir_000013_000025.html
+│   │       ├── dir_000013_000026.html
+│   │       ├── dir_000013_000028.html
+│   │       ├── dir_000013_000029.html
 │   │       ├── dir_000014_000006.html
 │   │       ├── dir_000014_000008.html
 │   │       ├── dir_000014_000009.html
 │   │       ├── dir_000014_000012.html
+│   │       ├── dir_000014_000013.html
 │   │       ├── dir_000014_000020.html
 │   │       ├── dir_000015_000000.html
 │   │       ├── dir_000015_000001.html
@@ -1041,18 +1211,28 @@
 │   │       ├── dir_000016_000009.html
 │   │       ├── dir_000016_000012.html
 │   │       ├── dir_000016_000013.html
+│   │       ├── dir_000016_000014.html
+│   │       ├── dir_000016_000017.html
 │   │       ├── dir_000016_000019.html
+│   │       ├── dir_000016_000023.html
+│   │       ├── dir_000016_000025.html
+│   │       ├── dir_000016_000026.html
+│   │       ├── dir_000016_000029.html
 │   │       ├── dir_000017_000000.html
+│   │       ├── dir_000017_000001.html
 │   │       ├── dir_000017_000004.html
 │   │       ├── dir_000017_000006.html
 │   │       ├── dir_000017_000007.html
 │   │       ├── dir_000017_000009.html
 │   │       ├── dir_000017_000011.html
 │   │       ├── dir_000017_000012.html
+│   │       ├── dir_000017_000014.html
 │   │       ├── dir_000017_000015.html
 │   │       ├── dir_000017_000018.html
 │   │       ├── dir_000017_000019.html
 │   │       ├── dir_000017_000021.html
+│   │       ├── dir_000017_000026.html
+│   │       ├── dir_000017_000028.html
 │   │       ├── dir_000018_000000.html
 │   │       ├── dir_000018_000001.html
 │   │       ├── dir_000018_000002.html
@@ -1063,6 +1243,7 @@
 │   │       ├── dir_000018_000009.html
 │   │       ├── dir_000018_000011.html
 │   │       ├── dir_000018_000013.html
+│   │       ├── dir_000018_000014.html
 │   │       ├── dir_000018_000015.html
 │   │       ├── dir_000018_000016.html
 │   │       ├── dir_000018_000019.html
@@ -1079,6 +1260,7 @@
 │   │       ├── dir_000019_000011.html
 │   │       ├── dir_000019_000012.html
 │   │       ├── dir_000019_000013.html
+│   │       ├── dir_000019_000014.html
 │   │       ├── dir_000019_000016.html
 │   │       ├── dir_000019_000021.html
 │   │       ├── dir_000019_000022.html
@@ -1093,10 +1275,12 @@
 │   │       ├── dir_000020_000009.html
 │   │       ├── dir_000020_000011.html
 │   │       ├── dir_000020_000013.html
+│   │       ├── dir_000020_000014.html
 │   │       ├── dir_000020_000015.html
 │   │       ├── dir_000020_000017.html
 │   │       ├── dir_000020_000018.html
 │   │       ├── dir_000020_000021.html
+│   │       ├── dir_000020_000026.html
 │   │       ├── dir_000021_000000.html
 │   │       ├── dir_000021_000001.html
 │   │       ├── dir_000021_000003.html
@@ -1115,6 +1299,7 @@
 │   │       ├── dir_000021_000020.html
 │   │       ├── dir_000021_000022.html
 │   │       ├── dir_000021_000024.html
+│   │       ├── dir_000021_000027.html
 │   │       ├── dir_000022_000000.html
 │   │       ├── dir_000022_000003.html
 │   │       ├── dir_000022_000006.html
@@ -1132,6 +1317,7 @@
 │   │       ├── dir_000023_000015.html
 │   │       ├── dir_000023_000021.html
 │   │       ├── dir_000023_000024.html
+│   │       ├── dir_000023_000026.html
 │   │       ├── dir_000023_000027.html
 │   │       ├── dir_000024_000001.html
 │   │       ├── dir_000024_000002.html
@@ -1142,8 +1328,16 @@
 │   │       ├── dir_000024_000021.html
 │   │       ├── dir_000024_000026.html
 │   │       ├── dir_000024_000027.html
+│   │       ├── dir_000025_000001.html
+│   │       ├── dir_000025_000005.html
 │   │       ├── dir_000025_000011.html
 │   │       ├── dir_000025_000012.html
+│   │       ├── dir_000025_000014.html
+│   │       ├── dir_000025_000016.html
+│   │       ├── dir_000025_000017.html
+│   │       ├── dir_000025_000023.html
+│   │       ├── dir_000025_000026.html
+│   │       ├── dir_000025_000029.html
 │   │       ├── dir_000026_000001.html
 │   │       ├── dir_000026_000002.html
 │   │       ├── dir_000026_000004.html
@@ -1154,23 +1348,55 @@
 │   │       ├── dir_000026_000014.html
 │   │       ├── dir_000026_000015.html
 │   │       ├── dir_000026_000016.html
+│   │       ├── dir_000026_000017.html
 │   │       ├── dir_000026_000019.html
 │   │       ├── dir_000026_000021.html
 │   │       ├── dir_000026_000023.html
 │   │       ├── dir_000026_000024.html
+│   │       ├── dir_000026_000025.html
 │   │       ├── dir_000026_000027.html
+│   │       ├── dir_000026_000028.html
+│   │       ├── dir_000026_000029.html
 │   │       ├── dir_000027_000001.html
 │   │       ├── dir_000027_000004.html
 │   │       ├── dir_000027_000009.html
 │   │       ├── dir_000027_000012.html
+│   │       ├── dir_000027_000013.html
+│   │       ├── dir_000027_000014.html
 │   │       ├── dir_000027_000015.html
 │   │       ├── dir_000027_000019.html
 │   │       ├── dir_000027_000021.html
 │   │       ├── dir_000027_000024.html
 │   │       ├── dir_000027_000026.html
+│   │       ├── dir_000028_000001.html
+│   │       ├── dir_000028_000002.html
+│   │       ├── dir_000028_000004.html
+│   │       ├── dir_000028_000005.html
 │   │       ├── dir_000028_000007.html
+│   │       ├── dir_000028_000011.html
 │   │       ├── dir_000028_000012.html
+│   │       ├── dir_000028_000014.html
+│   │       ├── dir_000028_000016.html
+│   │       ├── dir_000028_000017.html
+│   │       ├── dir_000028_000018.html
+│   │       ├── dir_000028_000021.html
+│   │       ├── dir_000028_000023.html
 │   │       ├── dir_000028_000024.html
+│   │       ├── dir_000028_000025.html
+│   │       ├── dir_000028_000026.html
+│   │       ├── dir_000028_000029.html
+│   │       ├── dir_000029_000001.html
+│   │       ├── dir_000029_000004.html
+│   │       ├── dir_000029_000011.html
+│   │       ├── dir_000029_000014.html
+│   │       ├── dir_000029_000017.html
+│   │       ├── dir_000029_000021.html
+│   │       ├── dir_000029_000023.html
+│   │       ├── dir_000029_000026.html
+│   │       ├── dir_000029_000028.html
+│   │       ├── dir_000030_000008.html
+│   │       ├── dir_000030_000014.html
+│   │       ├── dir_000030_000026.html
 │   │       ├── dir_0acad8e611f5f3679e26f7f6ddf45d1c_dep.md5
 │   │       ├── dir_0acad8e611f5f3679e26f7f6ddf45d1c.html
 │   │       ├── dir_0acad8e611f5f3679e26f7f6ddf45d1c.js
@@ -1194,6 +1420,9 @@
 │   │       ├── dir_507c9ec95be9a201f49444d5da26e8a6_dep.png
 │   │       ├── dir_507c9ec95be9a201f49444d5da26e8a6.html
 │   │       ├── dir_507c9ec95be9a201f49444d5da26e8a6.js
+│   │       ├── dir_5388e8f8e0288c01be8d73796fdfcd89_dep.md5
+│   │       ├── dir_5388e8f8e0288c01be8d73796fdfcd89.html
+│   │       ├── dir_5388e8f8e0288c01be8d73796fdfcd89.js
 │   │       ├── dir_5d78c82c73cee529a313d94efe356afe_dep.md5
 │   │       ├── dir_5d78c82c73cee529a313d94efe356afe.html
 │   │       ├── dir_5d78c82c73cee529a313d94efe356afe.js
@@ -1253,6 +1482,9 @@
 │   │       ├── dir_97ddee6994ce82fd2a76b10ba4d7572d_dep.png
 │   │       ├── dir_97ddee6994ce82fd2a76b10ba4d7572d.html
 │   │       ├── dir_97ddee6994ce82fd2a76b10ba4d7572d.js
+│   │       ├── dir_9e7724eaab34cf52dfe339df28f10909_dep.md5
+│   │       ├── dir_9e7724eaab34cf52dfe339df28f10909.html
+│   │       ├── dir_9e7724eaab34cf52dfe339df28f10909.js
 │   │       ├── dir_a3ed1f598272af857136c72554a501e4_dep.map
 │   │       ├── dir_a3ed1f598272af857136c72554a501e4_dep.md5
 │   │       ├── dir_a3ed1f598272af857136c72554a501e4_dep.png
@@ -1306,6 +1538,21 @@
 │   │       ├── dma_8hpp_source.html
 │   │       ├── dma_8hpp.html
 │   │       ├── dma_8hpp.js
+│   │       ├── dmesg__task_8cpp__incl.md5
+│   │       ├── dmesg__task_8cpp.html
+│   │       ├── dmesg__task_8cpp.js
+│   │       ├── dmesg__task_8hpp__dep__incl.md5
+│   │       ├── dmesg__task_8hpp_source.html
+│   │       ├── dmesg__task_8hpp.html
+│   │       ├── dmesg__task_8hpp.js
+│   │       ├── dmesg_8cpp__incl.md5
+│   │       ├── dmesg_8cpp.html
+│   │       ├── dmesg_8cpp.js
+│   │       ├── dmesg_8hpp__dep__incl.md5
+│   │       ├── dmesg_8hpp__incl.md5
+│   │       ├── dmesg_8hpp_source.html
+│   │       ├── dmesg_8hpp.html
+│   │       ├── dmesg_8hpp.js
 │   │       ├── doxygen_crawl.html
 │   │       ├── doxygen.css
 │   │       ├── doxygen.svg
@@ -1510,7 +1757,9 @@
 │   │       ├── globals_defs_a.html
 │   │       ├── globals_defs_b.html
 │   │       ├── globals_defs_c.html
+│   │       ├── globals_defs_d.html
 │   │       ├── globals_defs_e.html
+│   │       ├── globals_defs_g.html
 │   │       ├── globals_defs_i.html
 │   │       ├── globals_defs_j.html
 │   │       ├── globals_defs_k.html
@@ -1521,6 +1770,7 @@
 │   │       ├── globals_defs_r.html
 │   │       ├── globals_defs_s.html
 │   │       ├── globals_defs_t.html
+│   │       ├── globals_defs_u.html
 │   │       ├── globals_defs_v.html
 │   │       ├── globals_defs_x.html
 │   │       ├── globals_defs.html
@@ -2058,6 +2308,11 @@
 │   │       ├── iocd_8hpp_source.html
 │   │       ├── iocd_8hpp.html
 │   │       ├── iocd_8hpp.js
+│   │       ├── ipc__errors_8hpp__dep__incl.md5
+│   │       ├── ipc__errors_8hpp__incl.md5
+│   │       ├── ipc__errors_8hpp_source.html
+│   │       ├── ipc__errors_8hpp.html
+│   │       ├── ipc__errors_8hpp.js
 │   │       ├── ipc_8c__incl.map
 │   │       ├── ipc_8c__incl.md5
 │   │       ├── ipc_8c__incl.png
@@ -2178,6 +2433,11 @@
 │   │       ├── markers_8cpp__incl.md5
 │   │       ├── markers_8cpp.html
 │   │       ├── markers_8cpp.js
+│   │       ├── mempool__errors_8hpp__dep__incl.md5
+│   │       ├── mempool__errors_8hpp__incl.md5
+│   │       ├── mempool__errors_8hpp_source.html
+│   │       ├── mempool__errors_8hpp.html
+│   │       ├── mempool__errors_8hpp.js
 │   │       ├── mempool_8cpp__incl.map
 │   │       ├── mempool_8cpp__incl.md5
 │   │       ├── mempool_8cpp__incl.png
@@ -2224,6 +2484,8 @@
 │   │       ├── mutex_8hpp_source.html
 │   │       ├── mutex_8hpp.html
 │   │       ├── mutex_8hpp.js
+│   │       ├── namespacearch_1_1kernel.html
+│   │       ├── namespacearch_1_1kernel.js
 │   │       ├── namespacearch_a0706a5f8551789efe012ea44e933477f_cgraph.md5
 │   │       ├── namespacearch_a094e38377453d56abc811e650661c61f_cgraph.md5
 │   │       ├── namespacearch_a11748e0603d0f9b77d1198c4e14fd224_cgraph.md5
@@ -2234,6 +2496,9 @@
 │   │       ├── namespacearch_a270fa39795ea158dfa9285d6eb472e3f_cgraph.md5
 │   │       ├── namespacearch_a29e50e3d70e239bdac54ba363e7b33ea_cgraph.md5
 │   │       ├── namespacearch_a40581e9efa591e6d18d3fb472055ee01_cgraph.md5
+│   │       ├── namespacearch_a46488b8cc19b71e9d4bd3d8ea44603e4_cgraph.md5
+│   │       ├── namespacearch_a4e9328f5ec3657ba8dacf0b1d519b736_cgraph.md5
+│   │       ├── namespacearch_a521927a4944ea27557bff12e6ac2ee4d_cgraph.md5
 │   │       ├── namespacearch_a55aa88ce8e9a3ab05fdea2146ed21aeb_cgraph.md5
 │   │       ├── namespacearch_a5ad6fec9a5db5150ccc91cb37e0317af_cgraph.md5
 │   │       ├── namespacearch_a618ff63a4488522a84314c2073680fcb_cgraph.md5
@@ -2243,6 +2508,7 @@
 │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.map
 │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.md5
 │   │       ├── namespacearch_a6f8baf3132cf31d6a3859a67315a7c79_cgraph.png
+│   │       ├── namespacearch_a705f20af9607088bbe06bf00168fb34b_cgraph.md5
 │   │       ├── namespacearch_a73ff844e6d887445b626a7d9160241c6_cgraph.md5
 │   │       ├── namespacearch_a7526d378a0b20acb2131dd1988688df8_cgraph.md5
 │   │       ├── namespacearch_a758a63db8fd03d589e2c7cac631fb66d_cgraph.md5
@@ -2259,17 +2525,22 @@
 │   │       ├── namespacearch_aa3bfd922c7eb371defc2659ada7f8192_cgraph.png
 │   │       ├── namespacearch_aadd8e0d3501a2ba894235b75f5f82f75_cgraph.md5
 │   │       ├── namespacearch_ab1e7d8f3b867b1b2a37b796b1c749c0a_cgraph.md5
+│   │       ├── namespacearch_ab6e078993894a164e0adec1d37130cbd_cgraph.md5
 │   │       ├── namespacearch_ab8a3d0ed72e0355f607878da738a53e4_cgraph.md5
 │   │       ├── namespacearch_abbeb3ab0f47eb34d314b97e6a8d462bc_cgraph.md5
 │   │       ├── namespacearch_abc54811c04e86d3fe207d2c3fcc0d6b3_cgraph.md5
 │   │       ├── namespacearch_ac4c4e3fb0b0fd7eca30243a625be5ce0_cgraph.md5
+│   │       ├── namespacearch_ac8d928a29e65bd03b83c3811e5f6feda_cgraph.md5
 │   │       ├── namespacearch_ad1bd3651496d2b1ba81f482883b82572_cgraph.md5
 │   │       ├── namespacearch_ad2765eeec915fbd6338e6bd47083f1de_cgraph.md5
 │   │       ├── namespacearch_adc4b509b8ba2e26aae708fff98409565_cgraph.md5
 │   │       ├── namespacearch_addead5fdd04206009d38bb2eb805dc0c_cgraph.md5
+│   │       ├── namespacearch_ade82e23d3659eed529a27355052fcdac_cgraph.md5
+│   │       ├── namespacearch_adef81936ae46d5b6f0d6745b57f2fa2b_cgraph.md5
 │   │       ├── namespacearch_adf555b81d7d72b5c61d212eaf1aa1e69_cgraph.md5
 │   │       ├── namespacearch_aeede1719c635a9d4c3774cc764567f26_cgraph.md5
 │   │       ├── namespacearch_af1db3b0c561e94a99c8f3f6d020093f5_cgraph.md5
+│   │       ├── namespacearch_af2c8cf8af0cd94cd8162d6f45b689426_cgraph.md5
 │   │       ├── namespacearch_af42ba0c651229ba30e96c82094e72d88_cgraph.md5
 │   │       ├── namespacearch.html
 │   │       ├── namespacearch.js
@@ -2323,6 +2594,7 @@
 │   │       ├── namespacekernel_1_1iocd_af3dc88f6386fc50faedb450547369a6c_cgraph.md5
 │   │       ├── namespacekernel_1_1iocd.html
 │   │       ├── namespacekernel_1_1iocd.js
+│   │       ├── namespacekernel_1_1log_a3d54be80d65b536f19f6aabdb6878bd5_cgraph.md5
 │   │       ├── namespacekernel_1_1log.html
 │   │       ├── namespacekernel_1_1log.js
 │   │       ├── namespacekernel_1_1net_ac79735cf719349d1a7d42f5c788b1406_cgraph.md5
@@ -2331,10 +2603,12 @@
 │   │       ├── namespacekernel_1_1net.js
 │   │       ├── namespacekernel_1_1sync.html
 │   │       ├── namespacekernel_1_1sync.js
+│   │       ├── namespacekernel_1_1task_ae7fc9a59f78d98d18c2d3c5a25ec2193_cgraph.md5
 │   │       ├── namespacekernel_1_1task.html
 │   │       ├── namespacekernel_1_1task.js
 │   │       ├── namespacekernel_1_1test_a0fb9d643d01186cc11f1c2868176b39c_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph.md5
+│   │       ├── namespacekernel_1_1test_a1becd6394583e37ae0142fa07904cb67_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph.md5
@@ -2365,6 +2639,9 @@
 │   │       ├── namespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph.map
 │   │       ├── namespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph.png
+│   │       ├── namespacekernel_1_1vfs_a19093f8bf45bac4a87dc6818084e3843_cgraph.md5
+│   │       ├── namespacekernel_1_1vfs_a32714102a524a6f980eac4fd048b3604_cgraph.md5
+│   │       ├── namespacekernel_1_1vfs_a4e062ba9d7ffaca41f17dce1644388a8_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph.map
 │   │       ├── namespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph.png
@@ -2374,7 +2651,9 @@
 │   │       ├── namespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph.png
 │   │       ├── namespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph.md5
+│   │       ├── namespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs_af07f68076c35369863e1297a548c9f94_cgraph.md5
+│   │       ├── namespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph.md5
 │   │       ├── namespacekernel_1_1vfs.html
 │   │       ├── namespacekernel_1_1vfs.js
 │   │       ├── namespacekernel_1_1vfsd_a488cc7b15c3330b8558e1035654be4ba_cgraph.md5
@@ -2545,6 +2824,11 @@
 │   │       ├── notify_8hpp_source.html
 │   │       ├── notify_8hpp.html
 │   │       ├── notify_8hpp.js
+│   │       ├── page__flags_8hpp__dep__incl.md5
+│   │       ├── page__flags_8hpp__incl.md5
+│   │       ├── page__flags_8hpp_source.html
+│   │       ├── page__flags_8hpp.html
+│   │       ├── page__flags_8hpp.js
 │   │       ├── page__table__impl_8hpp__incl.md5
 │   │       ├── page__table__impl_8hpp_source.html
 │   │       ├── page__table__impl_8hpp.html
@@ -2670,6 +2954,75 @@
 │   │       ├── ring__buffer_8hpp.html
 │   │       ├── ring__buffer_8hpp.js
 │   │       ├── riscv64_2boot_8cpp.html
+│   │       ├── riscv64_2early__init_8cpp.html
+│   │       ├── riscv64_2early__init_8cpp.js
+│   │       ├── riscv64_2hal_2cpuid__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2cpuid__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2cpuid__impl_8hpp.html
+│   │       ├── riscv64_2hal_2cpuid__impl_8hpp.js
+│   │       ├── riscv64_2hal_2io__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2io__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2io__impl_8hpp.html
+│   │       ├── riscv64_2hal_2io__impl_8hpp.js
+│   │       ├── riscv64_2hal_2msr__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2msr__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2msr__impl_8hpp.html
+│   │       ├── riscv64_2hal_2msr__impl_8hpp.js
+│   │       ├── riscv64_2hal_2page__table__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2page__table__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2page__table__impl_8hpp.html
+│   │       ├── riscv64_2hal_2page__table__impl_8hpp.js
+│   │       ├── riscv64_2hal_2pci__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a08a84069578488cf464906244778c1d7_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a1433807aabf186dae62bd765c77eb1f3_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a451540a5d0c6948aa2f412bba655bd21_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a5def1a277614b6ab73030e046b3e3830_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a66adbfb426ee2a6bec228350397c1d89_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a696858ab3d98b3921f2eae4f60365beb_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_a941862173e6f3a914c8ab88698ec4302_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_abbe51d6ae95ea245927f7f40dca06e0f_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_ae085865c023791df9a0e0198a1824179_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_af638d9eee1fcc8e7b99567445aedf924_cgraph.md5
+│   │       ├── riscv64_2hal_2pci__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2pci__impl_8hpp.html
+│   │       ├── riscv64_2hal_2pci__impl_8hpp.js
+│   │       ├── riscv64_2hal_2rand__impl_8hpp__incl.md5
+│   │       ├── riscv64_2hal_2rand__impl_8hpp_source.html
+│   │       ├── riscv64_2hal_2rand__impl_8hpp.html
+│   │       ├── riscv64_2hal_2rand__impl_8hpp.js
+│   │       ├── riscv64_2idt_8cpp__incl.md5
+│   │       ├── riscv64_2idt_8cpp.html
+│   │       ├── riscv64_2idt_8cpp.js
+│   │       ├── riscv64_2interrupt__controller_8cpp__incl.md5
+│   │       ├── riscv64_2interrupt__controller_8cpp.html
+│   │       ├── riscv64_2interrupt__controller_8cpp.js
+│   │       ├── riscv64_2rtc_8cpp__incl.md5
+│   │       ├── riscv64_2rtc_8cpp.html
+│   │       ├── riscv64_2serial_8cpp__incl.md5
+│   │       ├── riscv64_2serial_8cpp.html
+│   │       ├── riscv64_2test__stubs_8cpp__incl.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a07bf5de326f03950b4012c1b42f5c171_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a0dd08c3292aaf585484267f753d2f909_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a13714cd376989323d066b68000c5ca93_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a3ab66b0eea8703db9755ada9d14e2ff8_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a5c1a54812368e4ac2f814c6a1ef88e24_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a5ceb5bd7cd243830f61b4e6d18eaafc5_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a61e37195860bf4a23fe7d568eb51c735_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a637112bdb55e34aca69dfce994c616cd_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a6685cde06dcd80a022800c8644c2bfe9_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a6b203c2ce630993d8d83e48588e18b0b_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_a782a4d8da57d29e671b70c1a7870f9a8_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_aa59c860ec78de1ec56ff1fcac00994dd_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_aae15a79ba7cb568b6210f193130060ba_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_aafca8a4a2c2a9e7a9ef7d14f7f577c35_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_ab69bd5c81e5dc927d22eeaaa2c80e226_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_adaad5cbf59a873be4f9b89273f3c83c0_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_ae1d5232fbf708fd2680b373e55efe60e_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp_affc6e1f3c00d359c180ade7c951bb83f_cgraph.md5
+│   │       ├── riscv64_2test__stubs_8cpp.html
+│   │       ├── riscv64_2test__stubs_8cpp.js
+│   │       ├── riscv64_2timer_8cpp__incl.md5
+│   │       ├── riscv64_2timer_8cpp.html
 │   │       ├── rtc_8cpp__incl.md5
 │   │       ├── rtc_8cpp.html
 │   │       ├── rtc_8hpp__dep__incl.md5
@@ -2677,6 +3030,11 @@
 │   │       ├── rtc_8hpp_source.html
 │   │       ├── rtc_8hpp.html
 │   │       ├── rtc_8hpp.js
+│   │       ├── scheduler__errors_8hpp__dep__incl.md5
+│   │       ├── scheduler__errors_8hpp__incl.md5
+│   │       ├── scheduler__errors_8hpp_source.html
+│   │       ├── scheduler__errors_8hpp.html
+│   │       ├── scheduler__errors_8hpp.js
 │   │       ├── scheduler_8cpp__incl.map
 │   │       ├── scheduler_8cpp__incl.md5
 │   │       ├── scheduler_8cpp__incl.png
@@ -2753,6 +3111,8 @@
 │   │       │   ├── defines_1.js
 │   │       │   ├── defines_10.js
 │   │       │   ├── defines_11.js
+│   │       │   ├── defines_12.js
+│   │       │   ├── defines_13.js
 │   │       │   ├── defines_2.js
 │   │       │   ├── defines_3.js
 │   │       │   ├── defines_4.js
@@ -2779,6 +3139,7 @@
 │   │       │   ├── enums_9.js
 │   │       │   ├── enums_a.js
 │   │       │   ├── enums_b.js
+│   │       │   ├── enums_c.js
 │   │       │   ├── enumvalues_0.js
 │   │       │   ├── enumvalues_1.js
 │   │       │   ├── enumvalues_10.js
@@ -3103,6 +3464,9 @@
 │   │       ├── struct_bench_result__coll__graph.md5
 │   │       ├── struct_bench_result.html
 │   │       ├── struct_bench_result.js
+│   │       ├── struct_early_init_stub__coll__graph.md5
+│   │       ├── struct_early_init_stub.html
+│   │       ├── struct_early_init_stub.js
 │   │       ├── struct_fat32_test_fixture__coll__graph.md5
 │   │       ├── struct_fat32_test_fixture_a0e8208a5ed3be74c980128d4237d2b10_cgraph.md5
 │   │       ├── struct_fat32_test_fixture_af3f4fa051ab45a0c736582d296fb6725_cgraph.md5
@@ -3328,6 +3692,8 @@
 │   │       ├── structkernel_1_1_message_queue.js
 │   │       ├── structkernel_1_1_message.html
 │   │       ├── structkernel_1_1_message.js
+│   │       ├── structkernel_1_1_page_flags__coll__graph.md5
+│   │       ├── structkernel_1_1_page_flags.html
 │   │       ├── structkernel_1_1_rlimit__coll__graph.md5
 │   │       ├── structkernel_1_1_rlimit.html
 │   │       ├── structkernel_1_1_rlimit.js
@@ -3338,14 +3704,18 @@
 │   │       ├── structkernel_1_1_task_context.html
 │   │       ├── structkernel_1_1_task_context.js
 │   │       ├── structkernel_1_1_task_control_block__coll__graph.md5
+│   │       ├── structkernel_1_1_task_control_block_a02994288d778ac145ce6758472227cec_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a121ed14dd4f6a9632642bf0dea75416b_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a1443c8caa63e4d8af39ad150f91d413d_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a15067eade15b4dd699007f2c3c7673eb_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a1a0b0c99fcacedaf0d60e51d87466052_cgraph.md5
+│   │       ├── structkernel_1_1_task_control_block_a3c6d103f4da66b64efa1af7f31a5b763_cgraph.md5
+│   │       ├── structkernel_1_1_task_control_block_a5970a87b395499a88856bb6bf9c1cd57_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a82a06cb63bdaa30a038a40e5632fbe9d_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a847355f329bada9a8093f49c40d54163_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_a8957cf937750c3e05b0904815898d1b1_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block_ac1a2ba759b6c98d3c734d755a5380b3f_cgraph.md5
+│   │       ├── structkernel_1_1_task_control_block_aef2b708bdbeae5ee1d520a8a7f91325b_cgraph.md5
 │   │       ├── structkernel_1_1_task_control_block.html
 │   │       ├── structkernel_1_1_task_control_block.js
 │   │       ├── structkernel_1_1_timeval__coll__graph.md5
@@ -3454,6 +3824,9 @@
 │   │       ├── structkernel_1_1iocd_1_1_reply__coll__graph.md5
 │   │       ├── structkernel_1_1iocd_1_1_reply.html
 │   │       ├── structkernel_1_1iocd_1_1_reply.js
+│   │       ├── structkernel_1_1log_1_1_log_entry__coll__graph.md5
+│   │       ├── structkernel_1_1log_1_1_log_entry.html
+│   │       ├── structkernel_1_1log_1_1_log_entry.js
 │   │       ├── structkernel_1_1Mailbox__coll__graph.map
 │   │       ├── structkernel_1_1Mailbox__coll__graph.md5
 │   │       ├── structkernel_1_1Mailbox__coll__graph.png
@@ -3559,7 +3932,9 @@
 │   │       ├── structkernel_1_1vfs_1_1_fat32_vnode_data.html
 │   │       ├── structkernel_1_1vfs_1_1_fat32_vnode_data.js
 │   │       ├── structkernel_1_1vfs_1_1_fd_table__coll__graph.md5
+│   │       ├── structkernel_1_1vfs_1_1_fd_table_a1d38d1f93bd2d668937b5e05c2e57356_cgraph.md5
 │   │       ├── structkernel_1_1vfs_1_1_fd_table_a6dfd64a5f7abbd8917c2b99dc11d1197_cgraph.md5
+│   │       ├── structkernel_1_1vfs_1_1_fd_table_ad22ffd7651288f4b0e84a37b77434348_cgraph.md5
 │   │       ├── structkernel_1_1vfs_1_1_fd_table_ad3ac2531da920e48b0b7ba804a72ab9c_cgraph.md5
 │   │       ├── structkernel_1_1vfs_1_1_fd_table.html
 │   │       ├── structkernel_1_1vfs_1_1_fd_table.js
@@ -3793,6 +4168,11 @@
 │   │       ├── structutsname__coll__graph.md5
 │   │       ├── structutsname.html
 │   │       ├── structutsname.js
+│   │       ├── sync__errors_8hpp__dep__incl.md5
+│   │       ├── sync__errors_8hpp__incl.md5
+│   │       ├── sync__errors_8hpp_source.html
+│   │       ├── sync__errors_8hpp.html
+│   │       ├── sync__errors_8hpp.js
 │   │       ├── sync_8cpp__incl.map
 │   │       ├── sync_8cpp__incl.md5
 │   │       ├── sync_8cpp__incl.png
@@ -3807,6 +4187,11 @@
 │   │       ├── sync_8hpp_source.html
 │   │       ├── sync_8hpp.html
 │   │       ├── sync_8hpp.js
+│   │       ├── syscall__errors_8hpp__dep__incl.md5
+│   │       ├── syscall__errors_8hpp__incl.md5
+│   │       ├── syscall__errors_8hpp_source.html
+│   │       ├── syscall__errors_8hpp.html
+│   │       ├── syscall__errors_8hpp.js
 │   │       ├── syscall__handlers__fs_8cpp__incl.md5
 │   │       ├── syscall__handlers__fs_8cpp.html
 │   │       ├── syscall__handlers__ipc_8cpp__incl.md5
@@ -3879,6 +4264,7 @@
 │   │       ├── terminal_8hpp_source.html
 │   │       ├── terminal_8hpp.html
 │   │       ├── terminal_8hpp.js
+│   │       ├── test__aarch64_8cpp.html
 │   │       ├── test__address_8cpp__incl.md5
 │   │       ├── test__address_8cpp_ace83d3cddde41442e7b5e7b61cfecf5b_cgraph.md5
 │   │       ├── test__address_8cpp.html
@@ -4584,6 +4970,7 @@
 │   │       ├── test__resource__exhaustion_8cpp_af8bcd58f7bec484dec4ee82b2096fbb1_cgraph.md5
 │   │       ├── test__resource__exhaustion_8cpp.html
 │   │       ├── test__resource__exhaustion_8cpp.js
+│   │       ├── test__riscv64_8cpp.html
 │   │       ├── test__rlimit_8cpp__incl.md5
 │   │       ├── test__rlimit_8cpp_a0a5e895fc7e08f219feabb0377370e1c_cgraph.md5
 │   │       ├── test__rlimit_8cpp_a1331d36a0ab5ae6fa480f21f128ebfa3_cgraph.md5
@@ -5201,6 +5588,11 @@
 │   │       ├── version_8hpp_source.html
 │   │       ├── version_8hpp.html
 │   │       ├── version_8hpp.js
+│   │       ├── vfs__errors_8hpp__dep__incl.md5
+│   │       ├── vfs__errors_8hpp__incl.md5
+│   │       ├── vfs__errors_8hpp_source.html
+│   │       ├── vfs__errors_8hpp.html
+│   │       ├── vfs__errors_8hpp.js
 │   │       ├── vfs_8cpp__incl.map
 │   │       ├── vfs_8cpp__incl.md5
 │   │       ├── vfs_8cpp__incl.png
@@ -5263,7 +5655,34 @@
 │   │       ├── vmm_8hpp__incl.png
 │   │       ├── vmm_8hpp_source.html
 │   │       ├── vmm_8hpp.html
-│   │       └── vmm_8hpp.js
+│   │       ├── vmm_8hpp.js
+│   │       ├── x86__64_2hal_2cpuid__impl_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2cpuid__impl_8hpp_source.html
+│   │       ├── x86__64_2hal_2cpuid__impl_8hpp.html
+│   │       ├── x86__64_2hal_2cpuid__impl_8hpp.js
+│   │       ├── x86__64_2hal_2idt_8cpp__incl.md5
+│   │       ├── x86__64_2hal_2idt_8cpp.html
+│   │       ├── x86__64_2hal_2idt_8cpp.js
+│   │       ├── x86__64_2hal_2io__impl_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2io__impl_8hpp_source.html
+│   │       ├── x86__64_2hal_2io__impl_8hpp.html
+│   │       ├── x86__64_2hal_2io__impl_8hpp.js
+│   │       ├── x86__64_2hal_2msr__impl_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2msr__impl_8hpp_source.html
+│   │       ├── x86__64_2hal_2msr__impl_8hpp.html
+│   │       ├── x86__64_2hal_2msr__impl_8hpp.js
+│   │       ├── x86__64_2hal_2page__table__impl_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2page__table__impl_8hpp_source.html
+│   │       ├── x86__64_2hal_2page__table__impl_8hpp.html
+│   │       ├── x86__64_2hal_2page__table__impl_8hpp.js
+│   │       ├── x86__64_2hal_2rand__impl_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2rand__impl_8hpp_source.html
+│   │       ├── x86__64_2hal_2rand__impl_8hpp.html
+│   │       ├── x86__64_2hal_2rand__impl_8hpp.js
+│   │       ├── x86__64_2hal_2timer_8cpp__incl.md5
+│   │       ├── x86__64_2hal_2timer_8cpp.html
+│   │       ├── x86__64_2rtc_8cpp__incl.md5
+│   │       └── x86__64_2rtc_8cpp.html
 │   ├── privilege_audit.md
 │   └── TESTLOG.md
 ├── Doxyfile
@@ -5272,7 +5691,6 @@
 ├── initrd
 │   └── tests
 │       └── test-config.txt
-├── initrd.cpio
 ├── iso
 │   └── boot
 │       ├── grub
@@ -5287,20 +5705,20 @@
 │       └── VBox.png.1
 ├── JARVIS-CLA.md
 ├── Jarvis-RTOS-logo.png
-├── kernel.d
 ├── LESSONS.md
 ├── LICENSE.txt
-├── linker_aarch64.ld
-├── linker_riscv64.ld
-├── linker_x86_64.ld
+├── linker
+│   ├── linker_aarch64.ld
+│   ├── linker_riscv64.ld
+│   └── linker_x86_64.ld
 ├── Makefile
 ├── mk
 │   └── rules.mk
 ├── opencode.json
-├── pico.save
 ├── project_structure.txt
 ├── PROMPT-dev.md
 ├── PROMPT-testdev.md
+├── README_done.md
 ├── readme.html
 ├── README.md
 ├── ROADMAP_done.md
@@ -5312,7 +5730,23 @@
 │   ├── kernel
 │   │   ├── arch
 │   │   │   ├── aarch64
-│   │   │   │   └── boot.cpp
+│   │   │   │   ├── boot.S
+│   │   │   │   ├── early_init.cpp
+│   │   │   │   ├── hal
+│   │   │   │   │   ├── cpuid_impl.hpp
+│   │   │   │   │   ├── io_impl.hpp
+│   │   │   │   │   ├── page_table_impl.hpp
+│   │   │   │   │   ├── pci_impl.hpp
+│   │   │   │   │   └── rand_impl.hpp
+│   │   │   │   ├── idt.cpp
+│   │   │   │   ├── interrupt_controller.cpp
+│   │   │   │   ├── rtc.cpp
+│   │   │   │   ├── serial.cpp
+│   │   │   │   ├── syscall_entry.S
+│   │   │   │   ├── test_aarch64.cpp
+│   │   │   │   ├── test_stubs.cpp
+│   │   │   │   ├── timer.cpp
+│   │   │   │   └── vectors.S
 │   │   │   ├── context.hpp
 │   │   │   ├── cpuid.hpp
 │   │   │   ├── gdt.hpp
@@ -5326,7 +5760,9 @@
 │   │   │   │   ├── irq_guard.hpp
 │   │   │   │   ├── keyboard.hpp
 │   │   │   │   ├── msr.hpp
+│   │   │   │   ├── page_flags.hpp
 │   │   │   │   ├── page_table.hpp
+│   │   │   │   ├── pci.hpp
 │   │   │   │   ├── rand.hpp
 │   │   │   │   ├── rtc.hpp
 │   │   │   │   ├── serial.hpp
@@ -5339,10 +5775,27 @@
 │   │   │   ├── msr.hpp
 │   │   │   ├── page_table.hpp
 │   │   │   ├── pci_errors.hpp
+│   │   │   ├── pci.cpp
 │   │   │   ├── pci.hpp
 │   │   │   ├── rand.hpp
 │   │   │   ├── riscv64
-│   │   │   │   └── boot.cpp
+│   │   │   │   ├── boot.S
+│   │   │   │   ├── early_init.cpp
+│   │   │   │   ├── hal
+│   │   │   │   │   ├── cpuid_impl.hpp
+│   │   │   │   │   ├── io_impl.hpp
+│   │   │   │   │   ├── msr_impl.hpp
+│   │   │   │   │   ├── page_table_impl.hpp
+│   │   │   │   │   ├── pci_impl.hpp
+│   │   │   │   │   └── rand_impl.hpp
+│   │   │   │   ├── idt.cpp
+│   │   │   │   ├── interrupt_controller.cpp
+│   │   │   │   ├── rtc.cpp
+│   │   │   │   ├── serial.cpp
+│   │   │   │   ├── syscall_entry.S
+│   │   │   │   ├── test_riscv64.cpp
+│   │   │   │   ├── test_stubs.cpp
+│   │   │   │   └── timer.cpp
 │   │   │   ├── rtc.hpp
 │   │   │   ├── serial.hpp
 │   │   │   ├── timer.hpp
@@ -5351,21 +5804,23 @@
 │   │   │       ├── boot
 │   │   │       │   ├── boot.asm
 │   │   │       │   └── multiboot_header.asm
-│   │   │       ├── gdt.cpp
 │   │   │       ├── hal
 │   │   │       │   ├── cpuid_impl.hpp
+│   │   │       │   ├── gdt.cpp
+│   │   │       │   ├── idt.cpp
 │   │   │       │   ├── io_impl.hpp
 │   │   │       │   ├── msr_impl.hpp
 │   │   │       │   ├── page_table_impl.hpp
-│   │   │       │   └── rand_impl.hpp
-│   │   │       ├── idt.cpp
+│   │   │       │   ├── rand_impl.hpp
+│   │   │       │   └── timer.cpp
 │   │   │       ├── io_asm.asm
 │   │   │       ├── isr_stubs.asm
 │   │   │       ├── keyboard.cpp
-│   │   │       ├── pci.cpp
 │   │   │       ├── rtc.cpp
-│   │   │       ├── timer.cpp
-│   │   │       └── virtio.cpp
+│   │   │       ├── serial.cpp
+│   │   │       └── stack.asm
+│   │   ├── boot
+│   │   │   └── bootinfo.hpp
 │   │   ├── bootparams.cpp
 │   │   ├── bootparams.hpp
 │   │   ├── daemon
@@ -5388,7 +5843,8 @@
 │   │   │   ├── virtio_blk.cpp
 │   │   │   ├── virtio_blk.hpp
 │   │   │   ├── virtio_net.cpp
-│   │   │   └── virtio_net.hpp
+│   │   │   ├── virtio_net.hpp
+│   │   │   └── virtio_pci.cpp
 │   │   ├── elf
 │   │   │   ├── elf.cpp
 │   │   │   └── elf.hpp
@@ -5398,12 +5854,15 @@
 │   │   │   ├── buffer_pool_errors.hpp
 │   │   │   ├── buffer_pool.cpp
 │   │   │   ├── buffer_pool.hpp
+│   │   │   ├── ipc_errors.hpp
 │   │   │   ├── ipc.cpp
 │   │   │   └── ipc.hpp
 │   │   ├── jarvis_config.h
 │   │   ├── kernel.cpp
 │   │   ├── kernel.hpp
 │   │   ├── log
+│   │   │   ├── dmesg.cpp
+│   │   │   ├── dmesg.hpp
 │   │   │   ├── ring_buffer.cpp
 │   │   │   └── ring_buffer.hpp
 │   │   ├── memory
@@ -5412,6 +5871,7 @@
 │   │   │   ├── integrity.cpp
 │   │   │   ├── integrity.hpp
 │   │   │   ├── markers.cpp
+│   │   │   ├── mempool_errors.hpp
 │   │   │   ├── mempool.cpp
 │   │   │   ├── mempool.hpp
 │   │   │   ├── pmm_errors.hpp
@@ -5446,10 +5906,12 @@
 │   │   │   ├── spinlock_guard.hpp
 │   │   │   ├── spinlock.hpp
 │   │   │   ├── spsc_ring.hpp
+│   │   │   ├── sync_errors.hpp
 │   │   │   ├── sync.cpp
 │   │   │   └── sync.hpp
 │   │   ├── syscall
 │   │   │   ├── syscall_entry.asm
+│   │   │   ├── syscall_errors.hpp
 │   │   │   ├── syscall_handlers_fs.cpp
 │   │   │   ├── syscall_handlers_ipc.cpp
 │   │   │   ├── syscall_handlers_misc.cpp
@@ -5459,6 +5921,9 @@
 │   │   │   ├── syscall.cpp
 │   │   │   └── syscall.hpp
 │   │   ├── task
+│   │   │   ├── dmesg_task.cpp
+│   │   │   ├── dmesg_task.hpp
+│   │   │   ├── scheduler_errors.hpp
 │   │   │   ├── scheduler.cpp
 │   │   │   ├── scheduler.hpp
 │   │   │   ├── sporadic_server.cpp
@@ -5472,8 +5937,8 @@
 │   │   │   ├── resource_tracker.cpp
 │   │   │   ├── resource_tracker.hpp
 │   │   │   ├── test_address.cpp
-│   │   │   ├── test_arch_structure.cpp
 │   │   │   ├── test_atomic_context_switch.cpp
+│   │   │   ├── test_atomic.cpp
 │   │   │   ├── test_block_device.cpp
 │   │   │   ├── test_bootparams.cpp
 │   │   │   ├── test_buffer_pool.cpp
@@ -5482,6 +5947,7 @@
 │   │   │   ├── test_checked_ptr.cpp
 │   │   │   ├── test_config.cpp
 │   │   │   ├── test_config.hpp
+│   │   │   ├── test_cross_arch.cpp
 │   │   │   ├── test_deadlock_detect.cpp
 │   │   │   ├── test_deadlock_recovery.cpp
 │   │   │   ├── test_debug.cpp
@@ -5594,20 +6060,29 @@
 │   │       ├── procfs.hpp
 │   │       ├── tmpfs.cpp
 │   │       ├── tmpfs.hpp
+│   │       ├── vfs_errors.hpp
 │   │       ├── vfs.cpp
 │   │       ├── vfs.hpp
 │   │       ├── vfsd.cpp
 │   │       └── vfsd.hpp
 │   ├── lib
 │   │   ├── assert.hpp
+│   │   ├── atomic.hpp
 │   │   ├── chacha.cpp
 │   │   ├── chacha.hpp
+│   │   ├── compiler_rt.cpp
 │   │   ├── concepts.hpp
 │   │   ├── constants.hpp
 │   │   ├── crc32.cpp
 │   │   ├── crc32.hpp
 │   │   ├── cxxabi.cpp
 │   │   ├── error.hpp
+│   │   ├── fdt
+│   │   │   ├── fdt_ro.cpp
+│   │   │   ├── fdt_strerror.cpp
+│   │   │   ├── fdt.h
+│   │   │   ├── libfdt_internal.h
+│   │   │   └── libfdt.h
 │   │   ├── logger.cpp
 │   │   ├── logger.hpp
 │   │   ├── new.cpp
@@ -5662,7 +6137,6 @@
 │           ├── framebuffer.hpp
 │           ├── terminal.cpp
 │           └── terminal.hpp
-├── testcases-v0.2.20.md
 ├── testcases-v0.3.1.md
 ├── testcases-v0.3.2.md
 ├── testcases-v0.3.3.md
@@ -5680,11 +6154,14 @@
 ├── tools
 │   ├── check-config.py
 │   ├── debug-gpf.sh
+│   ├── dtb
+│   │   └── qemu-virt.dtb
 │   ├── extract_gcda.py
 │   ├── fix_comments.py
 │   ├── fix_line_length.py
 │   ├── fix_long_lines.py
 │   ├── gdb
+│   │   ├── debug-crash.gdb
 │   │   ├── debug-gpf.gdb
 │   │   ├── gpf-capture.gdb
 │   │   ├── gpf-debug.gdb
@@ -5701,13 +6178,24 @@
 │   ├── patch_code_crc.py
 │   ├── release-gdb.sh
 │   ├── renode
+│   │   ├── __pycache__
+│   │   │   ├── test_renode_aarch64.cpython-314.pyc
+│   │   │   └── test_renode_riscv64.cpython-314.pyc
 │   │   ├── jarvis-aarch64.repl
 │   │   ├── jarvis-aarch64.resc
+│   │   ├── jarvis-riscv64.dtb
+│   │   ├── jarvis-riscv64.dts
 │   │   ├── jarvis-riscv64.repl
 │   │   ├── jarvis-riscv64.resc
 │   │   ├── jarvis-x86_64.repl
 │   │   ├── jarvis-x86_64.resc
-│   │   └── run-renode.sh
+│   │   ├── opensbi-riscv64-generic-fw_dynamic.bin
+│   │   ├── run-renode.sh
+│   │   ├── test_aarch64_boot.py
+│   │   ├── test_boot_aarch64.py
+│   │   ├── test_renode_aarch64.py
+│   │   ├── test_renode_riscv64.py
+│   │   └── test_waitpid_aarch64.resc
 │   ├── selftest-gdb-capture.exp
 │   ├── selftest-gdb.exp
 │   ├── selftest-gdb.sh
@@ -5750,4 +6238,4 @@
     ├── vfsd.c.d
     └── vfsd.c.elf
 
-50 directories, 5701 files
+57 directories, 6182 files
