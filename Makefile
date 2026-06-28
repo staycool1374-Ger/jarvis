@@ -52,20 +52,19 @@ else
 endif
 
 # ------------------------------------------------------------------------------
-# Noch keine targets — das folgt weiter unten.
+# No targets yet — targets are defined below.
 # 
-# Erkennung des Host-Betriebssystems (Darwin / Linux) und Auswahl des
-# passenden Cross-Compiler-Triplets, sodass bare-metal GCC/ld/objcopy
-# sowohl auf macOS (Homebrew) als auch auf Linux (Distro-Pakete) korrekt
-# gefunden werden.
+# Host-OS detection (Darwin/Linux) and selection of the correct
+# cross-compiler triplet so bare-metal GCC/ld/objcopy are found
+# correctly on both macOS (Homebrew) and Linux (distro packages).
 #
-# CXXFLAGS / CCFLAGS hier sind die *Basis*-Flags.  Bauartspezifische
-# Flags (z.B. -Og -DCONFIG_DEBUG für Debug, -O2 für Release) werden
-# über target-specific variable overrides auf den 'debug'/'release'-
-# Targets hinzugefügt.
+# CXXFLAGS / CCFLAGS here are the *base* flags.  Build-type-specific
+# flags (e.g. -Og -DCONFIG_DEBUG for debug, -O2 for release) are
+# added via target-specific variable overrides on the 'debug'/'release'
+# targets.
 # ------------------------------------------------------------------------------
 
-# --- Gemeinsame CXXFLAGS (architekturunabhängig) ---
+# --- Common CXXFLAGS (architecture-independent) ---
 CXXFLAGS_COMMON := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
                    -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
                    -fno-threadsafe-statics \
