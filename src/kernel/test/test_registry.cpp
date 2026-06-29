@@ -233,16 +233,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_net_tests();
         register_ipc_benchmark_tests();
         register_microkernel_transition_tests();
-register_random_tests();
+        register_random_tests();
         register_random_vfs_tests();
         register_random_syscall_tests();
         register_random_seed_tests();
-        // FPU/SSE tests require GCC 13 or older for inline asm register constraints
-        // register_fpu_tests();
-        // register_fpu_sse_tests();
-        // register_fpu_clone_tests();
-        // register_fpu_multi_tests();
-        // register_fpu_xmm_all_tests();
         register_random_vfs_write_tests();
         register_memory_safety_tests();
         register_sporadic_server_tests();
@@ -319,10 +313,6 @@ register_random_tests();
         register_syscall_fuzz_tests();
     }},
 
-    {"cross_arch", []() {
-        register_cross_arch_tests();
-    }},
-
     {"arch", []() {
         register_cross_arch_tests();
         register_gdt_tests();
@@ -338,6 +328,10 @@ register_random_tests();
 #if defined(CONFIG_ARCH_RISCV64)
         register_riscv64_tests();
 #endif
+    }},
+
+    {"cross_arch", []() {
+        register_cross_arch_tests();
     }},
 
 #if defined(CONFIG_ARCH_AARCH64)

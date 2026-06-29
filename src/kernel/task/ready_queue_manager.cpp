@@ -38,8 +38,8 @@ void ReadyQueueManager::capture_state(uint64_t* out_bitmap_hi, uint64_t* out_bit
     *out_bitmap_lo = bitmap_.raw_lo();
 }
 
-void ReadyQueueManager::restore_state(uint64_t /*bitmap_hi*/, uint64_t /*bitmap_lo*/) noexcept {
-    clear_all();
+void ReadyQueueManager::restore_state(uint64_t bitmap_hi, uint64_t bitmap_lo) noexcept {
+    bitmap_.set_raw(bitmap_hi, bitmap_lo);
 }
 
 void ReadyQueueManager::clear_all() noexcept {
@@ -54,5 +54,6 @@ void ReadyQueueManager::reset() noexcept {
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
         queues_[i].reset();
     }
+    bitmap_.clear_all();
 }
 } // namespace kernel

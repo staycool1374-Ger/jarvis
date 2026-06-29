@@ -39,3 +39,19 @@ These bugs have been resolved and the fixes are in the commit history:
 | #008 | GPF in cleanup_zombies after selftest on continuing builds | Older commit |
 | #009 | Scheduler starves shell when daemons have same priority/period | Older commit |
 | #011 | syscall_send_recv: SEND to self-task returns non-zero, resource leak | v0.2.24 (cross-arch hardening) |
+
+## Kernel — Scheduler / Test Isolation
+
+### ID: #014 — Stack corruption during test isolation snapshot/restore (release mode)
+- **Description:** Release build (`-O2`) crashes with General Protection Fault during `snapshot_restore()` in test isolation. The scheduler switches to an RSP (`0xFFFF800000612F70`) outside the valid kernel stack range (`[0xFFFF800001654000-0xFFFF800001664000]`). Error: `[SCHED] switch: rsp=0xFFFF800000612F70 outside stack [0xFFFF800001654000-0xFFFF800001664000]`.
+- **Root Cause:** Test isolation (`test_isolate.cpp`) captures full kernel state including ready queue bitmap. `ReadyQueueManager::restore_state()` was a no-op — it only cleared queues without rebuilding from restored TCBs or restoring the captured bitmap. Tasks that were RUNNING at snapshot time (not in ready queue) retain stale `context.rsp` values. On restore, scheduler rebuilds ready queue from ALL tasks with `state == READY`, but tasks that were RUNNING still have `state == RUNNING` in the restored array. If they later transition to READY and get enqueued, their stale RSP is used during context switch.
+- **Fix Applied:**
+  1. `PriorityMap::set_raw()` and `clear_all()` added to `src/kernel/task/priority_map.hpp` for bitmap manipulation
+  2. `TaskQueue::reset_and_clear_tcb_ptrs()` added to `src/kernel/task/task_queue.cpp` to clear TCB queue pointers during restore
+  3. `ReadyQueueManager::restore_state()` now restores captured bitmap via `bitmap_.set_raw()`
+  4. `Scheduler::restore_state()` validates RSP for tasks actually in ready queues (traversing `runq_next_`) and resets corrupt RSP to `kernel_stack_top`
+- **Verification:** Release build tests pass (84/84 PASS). Debug build has 1 pre-existing failure (`o1_ready_queue_128_levels` - OOM in test, unrelated).
+- **Severity:** High (crashes release build test isolation)
+- **Domain:** Kernel — Scheduler / Test Infrastructure
+- **Status:** Fixed (verified)
+

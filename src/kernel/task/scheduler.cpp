@@ -760,7 +760,6 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               bool preempt_in,
                               uint64_t rq_bitmap_hi,
                               uint64_t rq_bitmap_lo) {
-    (void)rq_bitmap_hi; (void)rq_bitmap_lo;
     __builtin_memcpy(tasks_, tasks_in,
                      sizeof(TaskControlBlock*) * MAX_TASKS);
     __builtin_memcpy(id_table_, id_table_in,
@@ -771,7 +770,7 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     idle_task_      = idle_in;
     preempt_enabled_ = preempt_in;
 
-// Rebuild ready queue from restored tasks
+    // Rebuild ready queue from restored tasks and restore bitmap
     ready_queue_.reset();
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* t = tasks_[i];
@@ -780,6 +779,24 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
             if (t->magic == TaskControlBlock::TCB_MAGIC &&
                 t->state == TaskState::READY) {
                 ready_queue_.enqueue(*t, effective_priority(t));
+            }
+        }
+    }
+    ready_queue_.restore_state(rq_bitmap_hi, rq_bitmap_lo);
+
+    // Validate RSP for tasks actually in ready queues (not all READY tasks)
+    // to catch stale RSP from tasks that were RUNNING at snapshot time.
+    for (uint64_t prio = 0; prio <= CONFIG_PRIORITY_CEILING; ++prio) {
+        auto& q = ready_queue_.queue(prio);
+        for (auto* t = q.head(); t; t = t->runq_next_) {
+            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (!rsp_in_stack_range(TASK_STACK_PTR(t), t, "restore")) {
+                Logger::raw_write("[SCHED] restore: RSP corruption for task ");
+                Logger::print_hex(t->id);
+                Logger::raw_write(" (rsp=0x");
+                Logger::print_hex(TASK_STACK_PTR(t));
+                Logger::raw_write("), resetting to stack top\n");
+                TASK_STACK_PTR(t) = t->kernel_stack_top;
             }
         }
     }

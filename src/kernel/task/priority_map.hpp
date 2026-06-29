@@ -52,7 +52,11 @@ public:
     uint64_t raw_hi() const noexcept { return bitmap_hi_; }
     uint64_t raw_lo() const noexcept { return bitmap_lo_; }
 
+    void set_raw(uint64_t hi, uint64_t lo) noexcept { bitmap_hi_ = hi; bitmap_lo_ = lo; }
+
     bool empty() const noexcept { return bitmap_hi_ == 0 && bitmap_lo_ == 0; }
+
+    void clear_all() noexcept { bitmap_hi_ = 0; bitmap_lo_ = 0; }
 };
 
 } // namespace kernel
