@@ -163,21 +163,6 @@ bool IPC::recv(Message& msg) {
     if (!cur || !cur->msg_queue) return false;
 
     bool ok = cur->msg_queue->pop(msg);
-    if (!ok) {
-        Logger::raw_write("[IPC] recv: task ");
-        Logger::print_hex(cur->id);
-        Logger::raw_write(" queue empty, count=");
-        Logger::print_dec(cur->msg_queue->count);
-        Logger::raw_write("\n");
-    } else {
-        Logger::raw_write("[IPC] recv: task ");
-        Logger::print_hex(cur->id);
-        Logger::raw_write(" got msg type=");
-        Logger::print_hex(msg.type);
-        Logger::raw_write(", count=");
-        Logger::print_dec(cur->msg_queue->count);
-        Logger::raw_write("\n");
-    }
     if (ok && cur->msg_queue->blocked_senders_head) {
         wake_sender(*cur->msg_queue, *cur);
     }

@@ -49,9 +49,15 @@ static size_t off_sched_idtable(){ return off_sched_tasks()
 static size_t off_sched_misc()   { return off_sched_idtable()
                                        + Scheduler::snapshot_id_size() * sizeof(TaskControlBlock*); }
 
+static size_t off_sched_misc_size() {
+    // misc[0]=task_count, misc[1]=cur_idx, misc[2]=next_id
+    // misc[3]=idle_ptr (bits), bool preempt @ offset 32
+    // misc[5]=shell_ptr, misc[6]=rq_hi, misc[7]=rq_lo
+    return sizeof(uint64_t) * 8 + sizeof(bool);
+}
+
 static size_t off_daemon_entries(){ return off_sched_misc()
-                                       + sizeof(uint64_t) * 4  // task_count, cur_idx, next_id, idle_ptr
-                                       + sizeof(bool); }       // preempt_enabled
+                                       + off_sched_misc_size(); }
 static size_t off_daemon_num()    { return off_daemon_entries()
                                        + daemon::MAX_DAEMONS * sizeof(daemon::DaemonEntry); }
 
@@ -121,12 +127,14 @@ bool snapshot_create() {
         // misc[3] stores idle ptr as bits
         // preempt is in byte off_sched_misc() + 4*8
         // misc[5] stores shell_task_ptr_
+        // misc[6]=rq_bitmap_hi, misc[7]=rq_bitmap_lo
         bool& preempt = *reinterpret_cast<bool*>(
                             g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
         TaskControlBlock* idle_dummy = nullptr;
         Scheduler::capture_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
-                                 idle_dummy, preempt);
+                                 idle_dummy, preempt,
+                                 &misc[6], &misc[7]);
         // Store the idle pointer (which capture_state set) as bits in misc[3].
         // Use memcpy to avoid strict-aliasing violations.
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
@@ -297,7 +305,8 @@ void snapshot_restore(const char* test_name) {
         __builtin_memcpy(&idle, &misc[3], sizeof(idle));
         Scheduler::restore_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
-                                 idle, preempt);
+                                 idle, preempt,
+                                 misc[6], misc[7]);
         // Restore shell_task_ptr_ from misc[5]
         TaskControlBlock* shell_ptr = nullptr;
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));

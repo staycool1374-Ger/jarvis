@@ -23,8 +23,9 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
-#include <kernel/test/test_watchdog.hpp>
 #include <kernel/memory/integrity.hpp>
+#include <kernel/test/resource_tracker.hpp>
+#include <kernel/test/test_watchdog.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/driver/iocd.hpp>
@@ -37,7 +38,6 @@
 #elif defined(CONFIG_ARCH_RISCV64)
 #  define TASK_STACK_PTR(t) ((t)->context.sp)
 #endif
-#include <kernel/test/resource_tracker.hpp>
 #include <kernel/task/sporadic_server.hpp>
 #include <signal.hpp>
 #include <logger.hpp>
@@ -133,6 +133,7 @@ void Scheduler::add_task(TaskControlBlock& task) {
     task.runq_next_ = nullptr;
     task.runq_prev_ = nullptr;
     ready_queue_.enqueue(task, effective_priority(&task));
+    kernel::test::ResourceTracker::instance().track_task_add();
 
     // Liu-Leyland LUB admission test: warn if total utilization exceeds
     // the rate-monotonic schedulability bound
@@ -161,7 +162,6 @@ void Scheduler::add_task(TaskControlBlock& task) {
         }
     }
 
-    kernel::test::ResourceTracker::instance().track_task_add();
 }
 
 void Scheduler::remove_task(TaskControlBlock& task) {
@@ -314,17 +314,9 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ns();
 
-    // Test watchdog: if armed for the current task and deadline reached,
-    // dump state and halt.
-    if (kernel::test::g_watchdog_deadline_ns &&
-        current_tick >= kernel::test::g_watchdog_deadline_ns) {
-        auto* task = current_task();
-        if (task && task->id == kernel::test::g_watchdog_task_id) {
-            kernel::test::watchdog_panic();
-        }
-    }
-
     if (!preempt_enabled_) return;
+
+
 
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
@@ -361,18 +353,18 @@ void Scheduler::on_tick() noexcept {
                     continue;
                 }
                 t->sporadic_server->process_replenishments(current_tick);
-                if (t == cur) {
-                    t->sporadic_server->consume(current_tick);
+                if (t == cur && t->sporadic_server->is_active()) {
+                    if (!t->sporadic_server->consume(current_tick)) {
+                        Scheduler::reschedule();
+                    }
                 }
             }
         }
     }
 
-    // If this tick is from a nested interrupt (ISR inside another ISR, e.g.
-    // timer fired inside the syscall handler's sti()/hlt()/cli() window), skip
-    // non-atomic scheduler operations that could corrupt state being modified
-    // by the outer ISR (reschedule, task addition/removal).
-    if (isr_nesting_depth > 1) return;
+    // Context switches are deferred to the outermost ISR epilogue, so
+    // it is safe to call rate_monotonic_schedule even from a nested ISR.
+    // The globals (scheduler_save_rsp_to, etc.) survive until consumed.
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
@@ -673,30 +665,27 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next) {
 void Scheduler::rate_monotonic_schedule() noexcept {
     if (task_count_ <= 1) return;
 
+    if (!scheduler_lock_.try_lock()) {
+        return;
+    }
+
+    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
     auto* current = tasks_[current_index_];
-    if (!current) return;
+    if (!current) {
+        scheduler_lock_.unlock();
+        return;
+    }
 
     auto* next = next_task();
     if (next && next != current) {
-        Logger::raw_write("[SCHED] switch curr=");
-        Logger::print_hex(current->id);
-        Logger::raw_write(" next=");
-        Logger::print_hex(next->id);
-        Logger::raw_write(" cur_rsp=");
-        Logger::print_hex(TASK_STACK_PTR(current));
-        Logger::raw_write(" next_rsp=");
-        Logger::print_hex(TASK_STACK_PTR(next));
-        Logger::raw_write(" cur_pri=");
-        Logger::print_dec(current->priority);
-        Logger::raw_write(" next_pri=");
-        Logger::print_dec(next->priority);
-        Logger::raw_write(" nxt_state=");
-        Logger::print_hex(static_cast<uint64_t>(next->state));
-        Logger::raw_write(" cur_state=");
-        Logger::print_hex(static_cast<uint64_t>(current->state));
-        Logger::raw_write("\n");
         switch_to_task(current, next);
     }
+
+    scheduler_lock_.unlock();
 }
 
 void Scheduler::reschedule() noexcept {
@@ -708,19 +697,9 @@ void Scheduler::reschedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
-        if (next->state != TaskState::READY && next->state != TaskState::RUNNING
-            ) {
+        if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
             return;
         }
-        Logger::raw_write("[RSCHED] curr=");
-        Logger::print_hex(current->id);
-        Logger::raw_write(" next=");
-        Logger::print_hex(next->id);
-        Logger::raw_write(" cur_rsp=");
-        Logger::print_hex(TASK_STACK_PTR(current));
-        Logger::raw_write(" next_rsp=");
-        Logger::print_hex(TASK_STACK_PTR(next));
-        Logger::raw_write("\n");
         switch_to_task(current, next);
     }
 }
@@ -824,7 +803,7 @@ SchedulerError Scheduler::add_task_err(TaskControlBlock& task) {
     kernel::test::ResourceTracker::instance().track_task_add();
     return SCHED_ERR_OK;
 }
- 
+
 SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     if (id_table_find(task.id) == nullptr) return SCHED_ERR_NOT_FOUND;

@@ -106,11 +106,10 @@ isr_common:
     test rax, rax
     jz .restore
 
-    ; Only perform context switch if we are the outermost interrupt (nesting depth == 1).
-    ; Nested interrupts (e.g. timer during syscall sti/hlt/cli) must not consume the
-    ; context-switch globals set up by the outer interrupt.
-    cmp qword [rel isr_nesting_depth], 1
-    jne .restore
+    ; Perform context switch at any nesting depth ≤ 2 (normal = 1, SYSCALL+timer = 2).
+    ; Deeper nesting (≥ 3) indicates a bug — skip to avoid stack corruption.
+    cmp qword [rel isr_nesting_depth], 2
+    ja .restore
 
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
@@ -137,6 +136,11 @@ isr_common:
     pop rcx
     pop rax
 
+    ; Reset nesting depth — the old task may have had a pending SYSCALL
+    ; (depth=1) that was absorbed by the context switch.  The new task
+    ; must start from a clean depth so its own ISRs nest correctly.
+    mov qword [rel isr_nesting_depth], 1
+
     mov rax, [rel scheduler_load_cr3_from]
     test rax, rax
     jz .restore
@@ -144,7 +148,10 @@ isr_common:
     mov qword [rel scheduler_load_cr3_from], 0
 
 .restore:
-    mov qword [rel scheduler_save_rsp_to], 0
+    ; NOTE: do NOT clear scheduler_save_rsp_to here.  If we reach .restore via
+    ; jne .restore (nested ISR, depth != 1), the outer ISR's pending context
+    ; switch must be preserved.  The successful switch path at line 117 already
+    ; clears it, so any other path must leave it for an outer ISR epilogue.
     pop rax
     pop rbx
     pop rcx

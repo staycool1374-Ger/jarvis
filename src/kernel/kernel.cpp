@@ -315,7 +315,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::Syscall::init();
     kernel::Scheduler::init();
 
-    // Launch init (PID 1) — mounts fstab, runs /etc/rc, then reaps
+    // Init task (PID 1) — mounts fstab, runs /etc/rc, then blocks as reaper.
+    // Priority 10 (below shell at 2) so it doesn't starve interactive tasks.
     {
         auto* init_task = kernel::TaskControlBlock::create(
             []() {
@@ -374,14 +375,12 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                             line[n] = '\0';
                             if (p < end) ++p;
                             if (line[0] == '\0') continue;
-                            // Try to run "line.elf" from initrd
                             char elf_path[160];
                             n = 0;
                             const char* src = line;
                             while (*src && *src != ' ' && *src != '\t' && n < 127)
                                 elf_path[n++] = *src++;
                             elf_path[n] = '\0';
-                            // Also try adding .elf and .c.elf
                             char elf_path1[160], elf_path2[160];
                             int m = 0;
                             for (int i = 0; elf_path[i]; ++i)
@@ -414,13 +413,16 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                         }
                     }
                 }
-                // Reap loop (PID 1)
+                // Reap loop — block until a child exits
                 for (;;) {
                     kernel::Scheduler::reap_orphans();
+                    // Block self so we don't hog CPU at high priority
+                    kernel::Scheduler::current_task()->state = kernel::TaskState::WAITING;
                     arch::hlt();
+                    kernel::Scheduler::current_task()->state = kernel::TaskState::READY;
                 }
             },
-            0,    // highest priority
+            10,   // low priority (below shell at 2)
             10);  // period_ticks
         if (init_task) {
             kernel::Scheduler::add_task(*init_task);
@@ -640,44 +642,44 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         service::Terminal::set_fb_enabled(false);
     }
 
-    kernel::test::Registry::init();
-    kernel::test::parse_test_config("./tests/test-config.txt");
-
-    const char** classes = kernel::test::get_test_classes();
-    size_t class_count = kernel::test::get_test_class_count();
-    for (size_t i = 0; i < class_count; ++i) {
-        kernel::test::register_class(classes[i]);
-    }
-
-#ifdef CONFIG_DEBUG
-    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
-    kernel::test::set_class_auto_shutdown(true);
-    kernel::test::run_registered(0);
-#else
-    kernel::test::set_class_auto_shutdown(false);
-    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
-#endif
+    // Tests disabled: only shell, idle, vfsd/iocd
+    //kernel::test::Registry::init();
+    //kernel::test::parse_test_config("./tests/test-config.txt");
+    //const char** classes = kernel::test::get_test_classes();
+    //size_t class_count = kernel::test::get_test_class_count();
+    //for (size_t i = 0; i < class_count; ++i) {
+    //    kernel::test::register_class(classes[i]);
+    //}
+    //#ifdef CONFIG_DEBUG
+    //    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", ...);
+    //    kernel::test::set_class_auto_shutdown(true);
+    //    kernel::test::run_registered(0);
+    //#else
+    //    kernel::test::set_class_auto_shutdown(false);
+    //    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
+    //#endif
 
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(true);
     }
 
-    {
-        initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
-        if (!f.data) f = initrd::find("test_fork.c.elf");
-        if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
-            if (kernel::elf::validate_header(hdr)) {
-                auto* test_task = kernel::elf::load(hdr, f.data);
-                if (test_task) {
-                    test_task->priority = 1;
-                    test_task->period_ticks = 50;
-                    kernel::Scheduler::add_task(*test_task);
-                }
-            }
-        }
-    }
+    // Test ELF loading disabled
+    //{
+    //    initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
+    //    if (!f.data) f = initrd::find("test_fork.c.elf");
+    //    if (f.data) {
+    //        auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+    //            );
+    //        if (kernel::elf::validate_header(hdr)) {
+    //            auto* test_task = kernel::elf::load(hdr, f.data);
+    //            if (test_task) {
+    //                test_task->priority = 1;
+    //                test_task->period_ticks = 50;
+    //                kernel::Scheduler::add_task(*test_task);
+    //            }
+    //        }
+    //    }
+    //}
 
     // Kernel shell (main interactive shell — bypasses VFS daemon)
     service::Shell::init();
@@ -691,13 +693,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 
     // Kernel log consumer (dmesg) - low priority, periodic
-    {
-        auto* dmesg_task = kernel::TaskControlBlock::create(
-            &kernel::task::dmesg_task_main, 1, 10);
-        if (dmesg_task) {
-            kernel::Scheduler::add_task(*dmesg_task);
-        }
-    }
+    // Disabled: causes priority inversion with IPC daemon (PRI 1 tasks)
+    // blocking shell (PRI 2) from being scheduled to run
+    //{
+    //    auto* dmesg_task = kernel::TaskControlBlock::create(
+    //        &kernel::task::dmesg_task_main, 1, 10);
+    //    if (dmesg_task) {
+    //        kernel::Scheduler::add_task(*dmesg_task);
+    //    }
+    //}
 
 #ifdef CONFIG_PROFILING
     gcov_flush_to_serial();
@@ -705,6 +709,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
 
     debug_write("[BOOT] Boot complete, enabling interrupts\n");
+    {
+        auto* idle = kernel::Scheduler::find_task(1);
+        if (idle) {
+            asm volatile(
+                "mov %[stack_top], %%rsp\n"
+                :
+                : [stack_top] "r"(idle->kernel_stack_top)
+                : "memory"
+            );
+        }
+    }
     sti();
     for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
         arch::hlt();

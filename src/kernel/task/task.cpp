@@ -110,6 +110,12 @@ void init_task_common(TaskControlBlock& tcb) {
 
     // Buffer pool list starts empty
     tcb.buf_list_head = -1;
+
+    // Signal handlers all default to nullptr (SIG_DFL)
+    for (size_t i = 0; i < MAX_SIGNAL_HANDLERS; ++i) {
+        tcb.signal_handlers[i] = nullptr;
+    }
+    tcb.pending_signals = 0;
 }
 
 TaskControlBlock* TaskControlBlock::create(

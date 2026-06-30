@@ -138,6 +138,8 @@ uint64_t Syscall::sys_kill(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t target_pid = arg0;
     uint64_t sig = arg1;
     if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
+    // SIG_NONE (signal 0) is the null signal — POSIX existence check, no delivery
+    if (sig == static_cast<uint64_t>(kernel::Signal::SIG_NONE)) return 0;
     auto* t = Scheduler::find_task(target_pid);
     if (!t) return static_cast<uint64_t>(-1);
     if (t == syscall_task()) {
@@ -160,6 +162,8 @@ uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t sig = arg0;
     if (sig >= MAX_SIGNAL_HANDLERS) return static_cast<uint64_t>(-1);
     if (signal_is_fatal(sig)) return static_cast<uint64_t>(-1);
+    // SIG_NONE cannot be caught or ignored
+    if (sig == static_cast<uint64_t>(kernel::Signal::SIG_NONE)) return 0;
     auto handler = reinterpret_cast<sighandler_t>(arg1);
     t->set_signal_handler(sig, handler);
     return 0;

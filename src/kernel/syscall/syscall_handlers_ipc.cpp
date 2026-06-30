@@ -63,9 +63,6 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
         }
         cur->state = TaskState::BLOCKED;
         was_blocked = true;
-        Logger::raw_write("[IPC] sys_receive: task ");
-        Logger::print_hex(cur->id);
-        Logger::raw_write(" BLOCKED, queue empty\n");
         Scheduler::reschedule();
         if (cur->page_table_) {
             arch::sti();
@@ -80,11 +77,6 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
             cur->sporadic_server->on_activation(arch::Timer::ticks());
         }
     }
-    Logger::raw_write("[IPC] sys_receive: task ");
-    Logger::print_hex(cur->id);
-    Logger::raw_write(" got msg type=");
-    Logger::print_hex(msg.type);
-    Logger::raw_write("\n");
     uint64_t copy_size = msg.data_size;
     if (copy_size > max_size) copy_size = max_size;
     for (size_t i = 0; i < copy_size; ++i) raw_buf[i] = msg.data[i];
