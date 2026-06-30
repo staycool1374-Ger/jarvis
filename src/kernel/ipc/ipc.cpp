@@ -192,7 +192,9 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
             arch::cli();
         }
     }
-    if (was_blocked) Scheduler::set_task_ready(*cur);
+    if (was_blocked) {
+        cur->remaining_ticks = cur->period_ticks;
+    }
 
     return cur->msg_queue->pop(reply);
 }
