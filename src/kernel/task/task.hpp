@@ -166,6 +166,7 @@ struct TaskControlBlock {
         , runq_next_(nullptr)
         , runq_prev_(nullptr)
         , in_ready_queue_(false)
+        , rq_priority_(0)
         , waiting_child_pid(0)
         , waiting_child_status(nullptr)
         , pending_signals(0)
@@ -233,6 +234,8 @@ struct TaskControlBlock {
     /// @brief True if this task is currently in the ready queue.
     /// Used to prevent double-enqueue.
     bool in_ready_queue_;
+    /// @brief Priority at which this task was enqueued in the ready queue.
+    uint64_t rq_priority_;
 
     uint64_t waiting_child_pid;
     uint64_t* waiting_child_status;

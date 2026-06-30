@@ -6,6 +6,7 @@ namespace kernel {
 void ReadyQueueManager::enqueue(TaskControlBlock& tcb, uint64_t priority) noexcept {
     queues_[priority].push_back(tcb);
     bitmap_.set(priority);
+    tcb.rq_priority_ = priority;
 }
 
 TaskControlBlock* ReadyQueueManager::dequeue_highest() noexcept {
@@ -17,14 +18,18 @@ TaskControlBlock* ReadyQueueManager::dequeue_highest() noexcept {
     if (queues_[prio].empty()) {
         bitmap_.clear(prio);
     }
+    if (tcb) tcb->rq_priority_ = 0;
     return tcb;
 }
 
 void ReadyQueueManager::remove(TaskControlBlock& tcb, uint64_t priority) noexcept {
-    queues_[priority].remove(tcb);
-    if (queues_[priority].empty()) {
-        bitmap_.clear(priority);
+    (void)priority;
+    uint64_t actual = tcb.rq_priority_;
+    queues_[actual].remove(tcb);
+    if (queues_[actual].empty()) {
+        bitmap_.clear(actual);
     }
+    tcb.rq_priority_ = 0;
 }
 
 void ReadyQueueManager::move_priority(TaskControlBlock& tcb, uint64_t old_prio, uint64_t new_prio) noexcept {

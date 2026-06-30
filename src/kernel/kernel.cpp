@@ -642,44 +642,44 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         service::Terminal::set_fb_enabled(false);
     }
 
-    // Tests disabled: only shell, idle, vfsd/iocd
-    //kernel::test::Registry::init();
-    //kernel::test::parse_test_config("./tests/test-config.txt");
-    //const char** classes = kernel::test::get_test_classes();
-    //size_t class_count = kernel::test::get_test_class_count();
-    //for (size_t i = 0; i < class_count; ++i) {
-    //    kernel::test::register_class(classes[i]);
-    //}
-    //#ifdef CONFIG_DEBUG
-    //    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", ...);
-    //    kernel::test::set_class_auto_shutdown(true);
-    //    kernel::test::run_registered(0);
-    //#else
-    //    kernel::test::set_class_auto_shutdown(false);
-    //    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
-    //#endif
+    kernel::test::Registry::init();
+    kernel::test::parse_test_config("./tests/test-config.txt");
+
+    const char** classes = kernel::test::get_test_classes();
+    size_t class_count = kernel::test::get_test_class_count();
+    for (size_t i = 0; i < class_count; ++i) {
+        kernel::test::register_class(classes[i]);
+    }
+
+#ifdef CONFIG_DEBUG
+    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
+    kernel::test::set_class_auto_shutdown(true);
+    kernel::test::run_registered(0);
+#else
+    kernel::test::set_class_auto_shutdown(false);
+    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
+#endif
 
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(true);
     }
 
-    // Test ELF loading disabled
-    //{
-    //    initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
-    //    if (!f.data) f = initrd::find("test_fork.c.elf");
-    //    if (f.data) {
-    //        auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-    //            );
-    //        if (kernel::elf::validate_header(hdr)) {
-    //            auto* test_task = kernel::elf::load(hdr, f.data);
-    //            if (test_task) {
-    //                test_task->priority = 1;
-    //                test_task->period_ticks = 50;
-    //                kernel::Scheduler::add_task(*test_task);
-    //            }
-    //        }
-    //    }
-    //}
+    {
+        initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
+        if (!f.data) f = initrd::find("test_fork.c.elf");
+        if (f.data) {
+            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
+                );
+            if (kernel::elf::validate_header(hdr)) {
+                auto* test_task = kernel::elf::load(hdr, f.data);
+                if (test_task) {
+                    test_task->priority = 1;
+                    test_task->period_ticks = 50;
+                    kernel::Scheduler::add_task(*test_task);
+                }
+            }
+        }
+    }
 
     // Kernel shell (main interactive shell — bypasses VFS daemon)
     service::Shell::init();

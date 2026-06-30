@@ -687,6 +687,8 @@ test-all-release:
 	@mkdir -p initrd/tests
 	@printf 'all\n' > initrd/tests/test-config.txt
 	$(MAKE) release
+	@mkdir -p $(dir $(DEBUG_ISO))
+	@cp $(RELEASE_ISO) $(DEBUG_ISO)
 	$(call _run_test_qemu,Running all release tests,120)
 
 test-class:
