@@ -62,6 +62,7 @@
 #include <programs/demo/demo.hpp>
 #include <logger.hpp>
 #include <test.hpp>
+#include <kernel/task/taskdefs.hpp>
 #include <kernel/test/test_config.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
@@ -74,6 +75,113 @@ extern "C" void gcov_flush_to_serial();
 #endif
 
 using namespace arch;
+
+// ── init_task_main ──────────────────────────────────────────────────────
+// Init task entry point for PID 1.  Mounts fstab, runs /etc/rc, then
+// blocks as reaper.  Referenced by both the manual pre-test create (below)
+// and the post-test task-definition table (taskdefs.cpp).
+void init_task_main() {
+    // Read /etc/fstab and mount entries
+    {
+        auto fstab = initrd::find("./etc/fstab");
+        if (fstab.data) {
+            const char* p = reinterpret_cast<const char*>(fstab.data);
+            const char* end = p + fstab.size;
+            while (p < end) {
+                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                if (p >= end || *p == '#' || *p == '\n') {
+                    while (p < end && *p != '\n') ++p;
+                    if (p < end) ++p;
+                    continue;
+                }
+                char fs_name[32];
+                char mp[64];
+                int n = 0;
+                while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
+                       && n < 31) fs_name[n++] = *p++;
+                fs_name[n] = '\0';
+                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                n = 0;
+                while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
+                       && n < 63) mp[n++] = *p++;
+                mp[n] = '\0';
+                while (p < end && *p != '\n') ++p;
+                if (p < end) ++p;
+                if (fs_name[0] && mp[0]) {
+                    auto* fs = kernel::vfs::find_fs(fs_name);
+                    if (fs && kernel::vfs::mount(*fs, mp) == 0) {
+                        kernel::Logger::info("init: mounted %s at %s",
+                                     fs_name, mp);
+                    }
+                }
+            }
+        }
+    }
+    // Read /etc/rc and execute each command
+    {
+        auto rc = initrd::find("./etc/rc");
+        if (rc.data) {
+            const char* p = reinterpret_cast<const char*>(rc.data);
+            const char* end = p + rc.size;
+            while (p < end) {
+                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                if (p >= end || *p == '#' || *p == '\n') {
+                    while (p < end && *p != '\n') ++p;
+                    if (p < end) ++p;
+                    continue;
+                }
+                char line[128];
+                int n = 0;
+                while (p < end && *p != '\n' && n < 127) line[n++] = *p++;
+                line[n] = '\0';
+                if (p < end) ++p;
+                if (line[0] == '\0') continue;
+                char elf_path[160];
+                n = 0;
+                const char* src = line;
+                while (*src && *src != ' ' && *src != '\t' && n < 127)
+                    elf_path[n++] = *src++;
+                elf_path[n] = '\0';
+                char elf_path1[160], elf_path2[160];
+                int m = 0;
+                for (int i = 0; elf_path[i]; ++i)
+                    elf_path1[m++] = elf_path[i];
+                elf_path1[m++] = '.'; elf_path1[m++] = 'e';
+                elf_path1[m++] = 'l'; elf_path1[m++] = 'f';
+                elf_path1[m] = '\0';
+                m = 0;
+                for (int i = 0; elf_path[i]; ++i)
+                    elf_path2[m++] = elf_path[i];
+                elf_path2[m++] = '.'; elf_path2[m++] = 'c';
+                elf_path2[m++] = '.'; elf_path2[m++] = 'e';
+                elf_path2[m++] = 'l'; elf_path2[m++] = 'f';
+                elf_path2[m] = '\0';
+                auto f = initrd::find(elf_path);
+                if (!f.data) f = initrd::find(elf_path1);
+                if (!f.data) f = initrd::find(elf_path2);
+                if (f.data) {
+                    auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+                    if (kernel::elf::validate_header(hdr)) {
+                        auto* task = kernel::elf::load(hdr, f.data);
+                        if (task) {
+                            task->priority = 1;
+                            task->period_ticks = 20;
+                            kernel::Scheduler::add_task(*task);
+                            kernel::Logger::info("init: started %s", elf_path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Reap loop — block until a child exits
+    for (;;) {
+        kernel::Scheduler::reap_orphans();
+        kernel::Scheduler::current_task()->state = kernel::TaskState::WAITING;
+        arch::hlt();
+        kernel::Scheduler::current_task()->state = kernel::TaskState::READY;
+    }
+}
 
 static void debug_putchar(char c) {
 #if defined(CONFIG_ARCH_X86_64)
@@ -319,109 +427,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // Priority 10 (below shell at 2) so it doesn't starve interactive tasks.
     {
         auto* init_task = kernel::TaskControlBlock::create(
-            []() {
-                // Read /etc/fstab and mount entries
-                {
-                    auto fstab = initrd::find("./etc/fstab");
-                    if (fstab.data) {
-                        const char* p = reinterpret_cast<const char*>(fstab.data);
-                        const char* end = p + fstab.size;
-                        while (p < end) {
-                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
-                            if (p >= end || *p == '#' || *p == '\n') {
-                                while (p < end && *p != '\n') ++p;
-                                if (p < end) ++p;
-                                continue;
-                            }
-                            char fs_name[32];
-                            char mp[64];
-                            int n = 0;
-                            while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
-                                   && n < 31) fs_name[n++] = *p++;
-                            fs_name[n] = '\0';
-                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
-                            n = 0;
-                            while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
-                                   && n < 63) mp[n++] = *p++;
-                            mp[n] = '\0';
-                            while (p < end && *p != '\n') ++p;
-                            if (p < end) ++p;
-                            if (fs_name[0] && mp[0]) {
-                                auto* fs = kernel::vfs::find_fs(fs_name);
-                                if (fs && kernel::vfs::mount(*fs, mp) == 0) {
-                                    kernel::Logger::info("init: mounted %s at %s",
-                                                 fs_name, mp);
-                                }
-                            }
-                        }
-                    }
-                }
-                // Read /etc/rc and execute each command
-                {
-                    auto rc = initrd::find("./etc/rc");
-                    if (rc.data) {
-                        const char* p = reinterpret_cast<const char*>(rc.data);
-                        const char* end = p + rc.size;
-                        while (p < end) {
-                            while (p < end && (*p == ' ' || *p == '\t')) ++p;
-                            if (p >= end || *p == '#' || *p == '\n') {
-                                while (p < end && *p != '\n') ++p;
-                                if (p < end) ++p;
-                                continue;
-                            }
-                            char line[128];
-                            int n = 0;
-                            while (p < end && *p != '\n' && n < 127) line[n++] = *p++;
-                            line[n] = '\0';
-                            if (p < end) ++p;
-                            if (line[0] == '\0') continue;
-                            char elf_path[160];
-                            n = 0;
-                            const char* src = line;
-                            while (*src && *src != ' ' && *src != '\t' && n < 127)
-                                elf_path[n++] = *src++;
-                            elf_path[n] = '\0';
-                            char elf_path1[160], elf_path2[160];
-                            int m = 0;
-                            for (int i = 0; elf_path[i]; ++i)
-                                elf_path1[m++] = elf_path[i];
-                            elf_path1[m++] = '.'; elf_path1[m++] = 'e';
-                            elf_path1[m++] = 'l'; elf_path1[m++] = 'f';
-                            elf_path1[m] = '\0';
-                            m = 0;
-                            for (int i = 0; elf_path[i]; ++i)
-                                elf_path2[m++] = elf_path[i];
-                            elf_path2[m++] = '.'; elf_path2[m++] = 'c';
-                            elf_path2[m++] = '.'; elf_path2[m++] = 'e';
-                            elf_path2[m++] = 'l'; elf_path2[m++] = 'f';
-                            elf_path2[m] = '\0';
-                            auto f = initrd::find(elf_path);
-                            if (!f.data) f = initrd::find(elf_path1);
-                            if (!f.data) f = initrd::find(elf_path2);
-                            if (f.data) {
-                                auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
-                                if (kernel::elf::validate_header(hdr)) {
-                                    auto* task = kernel::elf::load(hdr, f.data);
-                                    if (task) {
-                                        task->priority = 1;
-                                        task->period_ticks = 20;
-                                        kernel::Scheduler::add_task(*task);
-                                        kernel::Logger::info("init: started %s", elf_path);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                // Reap loop — block until a child exits
-                for (;;) {
-                    kernel::Scheduler::reap_orphans();
-                    // Block self so we don't hog CPU at high priority
-                    kernel::Scheduler::current_task()->state = kernel::TaskState::WAITING;
-                    arch::hlt();
-                    kernel::Scheduler::current_task()->state = kernel::TaskState::READY;
-                }
-            },
+            init_task_main,
             10,   // low priority (below shell at 2)
             10);  // period_ticks
         if (init_task) {
@@ -664,67 +670,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         service::Terminal::set_fb_enabled(true);
     }
 
-    {
-        initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
-        if (!f.data) f = initrd::find("test_fork.c.elf");
-        if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
-            if (kernel::elf::validate_header(hdr)) {
-                auto* test_task = kernel::elf::load(hdr, f.data);
-                if (test_task) {
-                    test_task->priority = 1;
-                    test_task->period_ticks = 50;
-                    kernel::Scheduler::add_task(*test_task);
-                }
-            }
-        }
-    }
-
-    // Kernel shell (main interactive shell — bypasses VFS daemon)
+    // Register shell commands before the shell task starts
     service::Shell::init();
-    {
-        auto* ksh = kernel::TaskControlBlock::create(
-            &service::Shell::shell_task_main, 2, 5);
-        if (ksh) {
-            kernel::Scheduler::add_task(*ksh);
-            kernel::Scheduler::set_shell_task(ksh);
-        }
-    }
 
-    // Kernel log consumer (dmesg) - low priority, periodic
-    // Disabled: causes priority inversion with IPC daemon (PRI 1 tasks)
-    // blocking shell (PRI 2) from being scheduled to run
-    //{
-    //    auto* dmesg_task = kernel::TaskControlBlock::create(
-    //        &kernel::task::dmesg_task_main, 1, 10);
-    //    if (dmesg_task) {
-    //        kernel::Scheduler::add_task(*dmesg_task);
-    //    }
-    //}
-
-#ifdef CONFIG_PROFILING
-    gcov_flush_to_serial();
-    arch::qemu_debug_exit(0);
-#endif
-
-    debug_write("[BOOT] Boot complete, enabling interrupts\n");
-    {
-        auto* idle = kernel::Scheduler::find_task(1);
-        if (idle) {
-            asm volatile(
-                "mov %[stack_top], %%rsp\n"
-                :
-                : [stack_top] "r"(idle->kernel_stack_top)
-                : "memory"
-            );
-        }
-    }
-    sti();
-    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
-        arch::hlt();
-    }
-    __builtin_unreachable();
+    // Kill all tasks and rebuild system from the task-definition table
+    kernel::task::reboot_from_table();
 }
 
 extern "C" void panic(const char* msg) {

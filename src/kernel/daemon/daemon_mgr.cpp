@@ -59,7 +59,7 @@ bool register_daemon(const char* name, const char* initrd_path,
     return true;
 }
 
-void reset_daemons() {
+void reset_clear_daemons() {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         entries_[i].restart_count = 0;
         entries_[i].pid = 0;
@@ -67,6 +67,7 @@ void reset_daemons() {
             entries_[i].set_pid_fn(0);
         }
     }
+    num_daemons_ = 0;
     Logger::info("daemon_mgr: all daemon states reset");
 }
 

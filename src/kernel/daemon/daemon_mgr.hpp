@@ -37,8 +37,9 @@ struct DaemonEntry {
 
 /// @brief Initialize the daemon manager and spawn registered daemons.
 void init();
-/// @brief Kill and re-register all daemons (used during recovery).
-void reset_daemons();
+    /// @brief Kill and re-register all daemons (used during recovery).
+    /// Also resets num_daemons_ to 0 so fresh registrations work.
+    void reset_clear_daemons();
 /// @brief Register a daemon for lifecycle management.
 /// @param name Human-readable name for the daemon.
 /// @param initrd_path Path to the daemon ELF in the initrd.
