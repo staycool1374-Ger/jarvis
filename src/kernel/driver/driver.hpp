@@ -82,6 +82,9 @@ public:
     /// @brief Unloads a driver by name.
     static void unload(const char* name);
 
+    /// @brief Unloads all registered drivers.
+    static void unload_all();
+
     /// @brief Looks up a driver by name.
     /// @return Pointer to the Driver, or nullptr.
     static const Driver* find(const char* name);

@@ -28,6 +28,22 @@ namespace kernel {
 // MessageQueue
 // ---------------------------------------------------------------------------
 
+MessageQueue::~MessageQueue() {
+    // Wake any blocked senders before the queue memory is freed,
+    // so they can fast-fail instead of blocking on a zombie destination.
+    auto* task = blocked_senders_head;
+    while (task) {
+        auto* next = task->blocked_next;
+        task->blocked_next = nullptr;
+        task->blocked_on_queue = nullptr;
+        if (task->state != TaskState::TERMINATED)
+            Scheduler::set_task_ready(*task);
+        task = next;
+    }
+    blocked_senders_head = nullptr;
+    blocked_senders_tail = nullptr;
+}
+
 void MessageQueue::init() {
     head = 0;
     tail = 0;

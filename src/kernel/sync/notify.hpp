@@ -31,6 +31,8 @@ static constexpr uint64_t NOTIFY_INVALID = 0;
 class Notify {
 public:
     Notify() : notify_value_(0), waiter_(nullptr), initialized_(false) {}
+    /// @brief Destructor — wakes any waiter before the object is freed.
+    ~Notify();
     /// @brief Initialize the notification object.
     void init();
     /// @brief Initialize the notification object (error-returning overload).

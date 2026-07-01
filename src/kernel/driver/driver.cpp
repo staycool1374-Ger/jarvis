@@ -85,6 +85,22 @@ void DriverRegistry::unload(const char* name) {
     }
 }
 
+void DriverRegistry::unload_all() {
+    for (size_t i = 0; i < count_; ++i) {
+        auto* drv = drivers_[i];
+        if (!drv) continue;
+
+        if (drv->state == DriverState::LOADED && drv->exit) {
+            drv->exit();
+        }
+        drv->state = DriverState::UNLOADED;
+        kernel::test::ResourceTracker::instance().track_driver_remove();
+        MemPool::free(drv);
+        drivers_[i] = nullptr;
+    }
+    count_ = 0;
+}
+
 const Driver* DriverRegistry::find(const char* name) {
     for (size_t i = 0; i < count_; ++i) {
         auto* drv = drivers_[i];

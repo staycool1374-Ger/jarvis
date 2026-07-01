@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/test_isolate.hpp>
+#include <kernel/test/test_cleanup.hpp>
 #include <kernel/test/test_watchdog.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/timer.hpp>
@@ -393,9 +394,10 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         // contain test garbage after the last restore).
         kernel::test::reload_daemon_tasks();
     } else {
-        // No snapshot isolation — still need to clean up test-created tasks,
-        // VFS state, and restart daemons before continuing to the shell.
-        kernel::test::reload_daemon_tasks();
+        // No snapshot isolation — call proper destructor-based cleanup
+        // to dequeue all tasks, free resources, unload drivers, and restart
+        // daemons, bringing the kernel back to a clean post-init state.
+        kernel::test::test_cleanup_all();
     }
 
     if (run_count == 0) {

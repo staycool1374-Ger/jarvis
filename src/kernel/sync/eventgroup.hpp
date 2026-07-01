@@ -31,6 +31,8 @@ public:
     static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     EventGroup() : bits_(0), wait_count_(0) {}
+    /// @brief Destructor — wakes any waiters before the object is freed.
+    ~EventGroup();
     /// @brief Initialize the event group to zero bits.
     void init();
     /// @brief Initialize the event group to zero bits (error-returning overload).

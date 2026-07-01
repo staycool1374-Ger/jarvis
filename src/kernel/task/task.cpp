@@ -701,35 +701,22 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (msg_queue) {
-        // Wake any blocked senders before destroying the queue
-        auto* task = msg_queue->blocked_senders_head;
-        if (task) {
-            while (task) {
-                auto* next = task->blocked_next;
-                task->blocked_next = nullptr;
-                task->blocked_on_queue = nullptr;
-                if (task->state != TaskState::TERMINATED)
-                    Scheduler::set_task_ready(*task);
-                task = next;
-            }
-            msg_queue->blocked_senders_head = nullptr;
-            msg_queue->blocked_senders_tail = nullptr;
-            kernel::test::ResourceTracker::instance().track_msg_queue_remove();
-            MemPool::free(msg_queue);
-            msg_queue = nullptr;
-        } else {
-            kernel::test::ResourceTracker::instance().track_msg_queue_remove();
-            MemPool::free(msg_queue);
-            msg_queue = nullptr;
-        }
+        msg_queue->~MessageQueue();
+        kernel::test::ResourceTracker::instance().track_msg_queue_remove();
+        MemPool::free(msg_queue);
+        msg_queue = nullptr;
     }
     if (notify) {
+        notify->~Notify();
         kernel::test::ResourceTracker::instance().track_notify_remove();
-        MemPool::free(notify); notify = nullptr;
+        MemPool::free(notify);
+        notify = nullptr;
     }
     if (event_group) {
+        event_group->~EventGroup();
         kernel::test::ResourceTracker::instance().track_event_group_remove();
-        MemPool::free(event_group); event_group = nullptr;
+        MemPool::free(event_group);
+        event_group = nullptr;
     }
     if (sporadic_server) {
         MemPool::free(sporadic_server);

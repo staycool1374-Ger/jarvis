@@ -24,6 +24,16 @@
 namespace kernel {
 namespace sync {
 
+EventGroup::~EventGroup() {
+    SpinLockGuard<SpinLock> guard(lock_);
+    for (size_t i = 0; i < wait_count_; ++i) {
+        if (waiters_[i].task && waiters_[i].task->state != TaskState::TERMINATED)
+            Scheduler::set_task_ready(*waiters_[i].task);
+    }
+    wait_count_ = 0;
+    bits_ = 0;
+}
+
 void EventGroup::init() {
     bits_ = 0;
     wait_count_ = 0;

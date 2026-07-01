@@ -57,6 +57,9 @@ struct MessageQueue {
         , owner(nullptr)
         {}
 
+    /// @brief Destructor — wakes any blocked senders before the queue is freed.
+    ~MessageQueue();
+
     sync::SpinLock lock_;  ///< Protects queue + blocked_senders + owner state
 
     /// @brief Initialize the message queue to empty.

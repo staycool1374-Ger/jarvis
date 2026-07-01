@@ -23,6 +23,16 @@
 namespace kernel {
 namespace sync {
 
+Notify::~Notify() {
+    SpinLockGuard<SpinLock> guard(lock_);
+    if (waiter_) {
+        if (waiter_->state != TaskState::TERMINATED)
+            Scheduler::set_task_ready(*waiter_);
+        waiter_ = nullptr;
+    }
+    initialized_ = false;
+}
+
 void Notify::init() {
     notify_value_ = 0;
     waiter_ = nullptr;
