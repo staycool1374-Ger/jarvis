@@ -576,8 +576,10 @@ void Scheduler::cleanup_zombies() noexcept {
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
     uint64_t iocd_pid = iocd::get_iocd_pid();
 
+    uint64_t max_rd = task_count_;
+    if (max_rd > MAX_TASKS) max_rd = MAX_TASKS;
     uint64_t wr = 0;
-    for (uint64_t rd = 0; rd < task_count_; ++rd) {
+    for (uint64_t rd = 0; rd < max_rd; ++rd) {
         auto* t = tasks_[rd];
         bool keep = true;
 

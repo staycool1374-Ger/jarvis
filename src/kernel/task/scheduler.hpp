@@ -90,6 +90,10 @@ public:
     ///        (freed-and-reused TCBs) without touching the TCB memory.
     ///        Also removes tasks with valid magic that are not the idle task,
     ///        the current task, or known daemons.
+    ///
+    /// Iterates at most CONFIG_MAX_TASKS entries in the task array (defensive
+    /// bound against a corrupted task_count_).  Tasks to keep are compacted
+    /// to the front of the array; task_count_ is updated accordingly.
     /// @param shell_task Pointer to the shell task (use set_shell_task() beforehand).
     static void cleanup_zombies() noexcept;
  

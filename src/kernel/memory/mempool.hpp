@@ -17,7 +17,8 @@
  */
 
 /// @file mempool.hpp
-/// @brief Fixed-size block memory pool allocator (k malloc).
+/// @brief Fixed-size block memory pool allocator (k malloc).  O(1) alloc/free
+///        via embedded free-list per pool class (9 classes, 16–4480 bytes).
 
 #pragma once
 
@@ -26,8 +27,15 @@
 
 namespace kernel {
 
-/// @brief Fixed-size block memory allocator with multiple pool classes.
-/// @note Provides O(1) allocation/free for kernel heap use.
+/// @brief Fixed-size block memory allocator with 9 pool classes.
+///
+/// Each pool is a contiguous page-aligned region partitioned into fixed-size
+/// blocks.  Free blocks are linked via an embedded singly-linked free-list
+/// (the first 8 bytes of each free block store the next index).
+///
+/// @note O(1) allocation: find_pool (linear scan of 9 classes) + pop from
+///       free-list head.  O(1) free: linear scan of 9 pools to find owner
+///       + push to free-list head.  No bitmap scans or dynamic allocation.
 class MemPool {
 public:
     static constexpr size_t POOL_COUNT = 9;
@@ -135,6 +143,7 @@ private:
     static bool ready_;
 
     /// @brief Finds the smallest pool class that satisfies a given size.
+    ///        Linear scan over POOL_COUNT (9) entries — O(1) with small constant.
     /// @param size Requested allocation size.
     /// @return Pool index, or POOL_COUNT if too large.
     static size_t find_pool(size_t size);

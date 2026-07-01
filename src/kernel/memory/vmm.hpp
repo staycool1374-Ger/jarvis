@@ -17,7 +17,8 @@
  */
 
 /// @file vmm.hpp
-/// @brief Virtual Memory Manager — x86-64 page table management.
+/// @brief Virtual Memory Manager — cross-arch page table management with
+///        bounded page-walk depth (4-level x86_64/aarch64, 3-level riscv64 Sv39).
 
 #pragma once
 
@@ -27,8 +28,12 @@
 
 namespace kernel {
 
-/// @brief Virtual memory manager for x86-64 4-level paging.
-/// @note Maps virtual to physical pages; supports user/kernel page flags.
+/// @brief Virtual memory manager — maps virtual to physical pages.
+/// @note Page-walk depth is fixed per architecture (4 levels for x86_64/aarch64,
+///       3 levels for riscv64 Sv39).  Huge-page split (512 iterations) occurs
+///       at most once per 2 MB region.  Both walks are bounded, meeting hard-RT
+///       WCET requirements for map_page / map_page_in_pml4.
+/// @note Supports user/kernel page flags, TLB flush after each mapping.
 class VMM {
 public:
     /// @brief Initialises the VMM and sets up the kernel page tables.
@@ -37,10 +42,12 @@ public:
     /// @return VmmError code.
     static errors::VmmError init_err();
 
-    /// @brief Maps a virtual page to a physical page.
+    /// @brief Maps a virtual page to a physical page in the kernel page table.
     /// @param virt_addr Virtual address (page-aligned).
     /// @param phys_addr Physical address (page-aligned).
     /// @param user      If true, sets the user-accessible flag.
+    /// @note WCET is bounded: fixed-depth page walk + at most one huge-page
+    ///       split (512 iterations) when the target PD entry is a 2 MB block.
     static void map_page(uint64_t virt_addr, uint64_t phys_addr,
         bool user = false);
     /// @brief Maps a virtual page to a physical page with error code.
