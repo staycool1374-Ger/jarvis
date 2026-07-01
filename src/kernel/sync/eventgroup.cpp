@@ -35,6 +35,7 @@ EventGroup::~EventGroup() {
 }
 
 void EventGroup::init() {
+    lock_.reset();
     bits_ = 0;
     wait_count_ = 0;
 }

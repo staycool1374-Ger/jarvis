@@ -34,6 +34,7 @@ Notify::~Notify() {
 }
 
 void Notify::init() {
+    lock_.reset();
     notify_value_ = 0;
     waiter_ = nullptr;
     initialized_ = true;

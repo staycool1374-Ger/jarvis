@@ -395,6 +395,7 @@ JARVIS_TEST(vfs_fat32_unlink_frees_clusters) {
     if (file) {
         ret = root->ops->unlink(*root, "HELLO.TXT");
         JARVIS_ASSERT_EQ(0, ret);
+        file->ops->close(*file);
         file = root->ops->lookup(*root, "HELLO.TXT");
         JARVIS_ASSERT(file == nullptr);
     }
