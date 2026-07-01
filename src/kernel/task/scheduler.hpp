@@ -79,6 +79,10 @@ public:
     static void reschedule() noexcept;
  
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
+    ///        Single-pass scan: identifies all eligible tasks, destroys them
+    ///        without compaction, then compacts the task array once at the end.
+    ///        If the idle task is reaped it is immediately recreated and placed
+    ///        at index 0 of the compacted array.
     static void reap_orphans() noexcept;
  
     /// @brief Terminates and removes all non-idle tasks from the scheduler.

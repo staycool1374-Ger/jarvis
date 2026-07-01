@@ -495,7 +495,9 @@ execute-test:
 	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
 	case "$(_CLASS)" in none|selftest|all) ;; *) ;; esac; \
 	mkdir -p initrd/tests; \
-	printf '%s\n' "$(_CLASS)" > initrd/tests/test-config.txt; \
+	_class_file=$(_CLASS); \
+	[ "$${_class_file}" = "selftest" ] && _class_file=safe; \
+	printf '%s\n' "$${_class_file}" > initrd/tests/test-config.txt; \
 	if [ "$(_CLASS)" = "none" ]; then \
 	    if [ "$(_BUILD)" = "release" ] && [ "$(_ARCH)" = "x86_64" ] && [ -f "$(RELEASE_ISO)" ]; then \
 	        :; \
@@ -521,9 +523,7 @@ execute-test:
 	        echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	    fi; \
 	else \
-	    TIMEOUT=120; \
-	    [ "$(_CLASS)" = "all" ] && TIMEOUT=180; \
-	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$$TIMEOUT); \
+	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$(if $(filter all,$(_CLASS)),180,120)); \
 	fi
 
 debug-test:
@@ -715,6 +715,7 @@ define _run_test_qemu
 	        } \
 	    } \
 	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
+	rc=$${PIPESTATUS[0]}; \
 	\
 	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
 	\
