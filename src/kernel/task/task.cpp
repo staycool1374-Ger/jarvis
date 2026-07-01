@@ -319,6 +319,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     if (!tcb) return nullptr;
     memset(tcb, 0, sizeof(TaskControlBlock));
 
+    tcb->magic = TCB_MAGIC;
     tcb->id = Scheduler::alloc_id();
     tcb->parent_id = parent->id;
     tcb->state = TaskState::READY;

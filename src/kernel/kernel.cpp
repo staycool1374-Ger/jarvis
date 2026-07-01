@@ -64,6 +64,7 @@
 #include <test.hpp>
 #include <kernel/task/taskdefs.hpp>
 #include <kernel/test/test_config.hpp>
+#include <string.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
 #include <fdt/libfdt.h>
@@ -653,18 +654,25 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     const char** classes = kernel::test::get_test_classes();
     size_t class_count = kernel::test::get_test_class_count();
-    for (size_t i = 0; i < class_count; ++i) {
-        kernel::test::register_class(classes[i]);
-    }
+
+    // "none" class means interactive mode — skip the test suite entirely
+    bool skip_tests = (class_count == 1 && classes[0] != nullptr &&
+                       strcmp(classes[0], "none") == 0);
+
+    if (!skip_tests) {
+        for (size_t i = 0; i < class_count; ++i) {
+            kernel::test::register_class(classes[i]);
+        }
 
 #ifdef CONFIG_DEBUG
-    kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
-    kernel::test::set_class_auto_shutdown(true);
-    kernel::test::run_registered(0);
+        kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
+        kernel::test::set_class_auto_shutdown(true);
+        kernel::test::run_registered(0);
 #else
-    kernel::test::set_class_auto_shutdown(false);
-    kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
+        kernel::test::set_class_auto_shutdown(false);
+        kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
 #endif
+    }
 
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(true);
