@@ -118,6 +118,16 @@ void Registry::reset() {
     expected_count_ = 0;
 }
 
+void Registry::clear() {
+    count_ = 0;
+    passed_ = 0;
+    failed_ = 0;
+    test_count_ = 0;
+    test_failed_ = 0;
+    expected_count_ = 0;
+    class_count_ = 0;
+}
+
 size_t Registry::passed() { return passed_; }
 size_t Registry::failed() { return failed_; }
 size_t Registry::total() { return passed_ + failed_; }

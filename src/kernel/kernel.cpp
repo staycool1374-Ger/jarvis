@@ -659,7 +659,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     bool skip_tests = (class_count == 1 && classes[0] != nullptr &&
                        strcmp(classes[0], "none") == 0);
 
-    if (!skip_tests) {
+    // "dump-counts" class — print per-class registration counts then exit
+    bool dump_counts = (class_count == 1 && classes[0] != nullptr &&
+                        strcmp(classes[0], "dump-counts") == 0);
+    if (dump_counts) {
+        kernel::test::dump_class_counts();
+        arch::qemu_debug_exit(0);
+    }
+
+    if (!skip_tests && !dump_counts) {
         for (size_t i = 0; i < class_count; ++i) {
             kernel::test::register_class(classes[i]);
         }

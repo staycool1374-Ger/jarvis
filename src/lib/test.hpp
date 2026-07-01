@@ -68,6 +68,7 @@ public:
     static size_t test_passed();
     static size_t test_failed();
     static void reset();
+    static void clear();
 
     static void set_expected_count(size_t n);
     static size_t expected_count();
@@ -137,6 +138,7 @@ struct TestClass {
 };
 
 bool register_class(const char* name);
+void dump_class_counts();
 
 } // namespace test
 } // namespace kernel

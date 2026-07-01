@@ -124,3 +124,38 @@ Then add `register_my_new_tests();` to the `all` class and any domain class (e.g
 **Blocking Syscall Handling:** `MinimalPrivilegedSurface` enumerates all syscalls 0–48 with null args. Syscalls that block or terminate (`RECEIVE`, `SEND_SYNC`, `EXIT`, `NOTIFY_WAIT`, `EVENT_WAIT`, `PAUSE`) must be skipped via the `is_blocking()` lambda — calling them with null args hangs the shell task forever.
 
 **SpinLock in Semaphore/Queue helpers:** `add_waiter()`, `wake_one()`, etc. must NOT acquire `lock_` — the caller (`wait()`/`post()`, `send()`/`receive()`) already holds it. The non-recursive SpinLock deadlocks immediately if re-acquired.
+
+### Per-Architecture Test-Count Validation
+The file `src/kernel/test/test_expected_counts.hpp` contains a constexpr table of expected registration counts per class per architecture. After registering a class, `register_class()` calls `validate_class_count()` which warns if the actual count differs from expected — this catches tests added/removed without updating the table.
+
+**Consistency check:** `validate_all_consistency()` sums all individual class entries and verifies the total ≥ the "all" entry, ensuring no test registered in "all" is missing from every individual class.
+
+**Rebuilding the table:** Use `make execute-test <arch> debug dump-counts` to collect fresh per-class counts. The `dump-counts` class triggers `dump_class_counts()` then `qemu_debug_exit(0)` — no interactive shell.
+
+**x86_64 counts (current):**
+| Class | Count |
+|---|---|
+| safe | 132 |
+| all | 720 |
+| scheduler | 85 |
+| memory | 45 |
+| ipc | 42 |
+| vfs | 146 |
+| process | 43 |
+| syscall | 28 |
+| arch | 59 |
+| cross_arch | 16 |
+| device | 33 |
+| shell | 22 |
+| net | 43 |
+| security | 31 |
+| debug | 14 |
+| integration | 1 |
+| stress | 10 |
+| init | 3 |
+| build | 5 |
+| bench | 17 |
+| sporadic | 14 |
+| atomic | 12 |
+
+Consistency: sum(individual)=669, all=720 (51 tests only in "all" — no individual class covers them).

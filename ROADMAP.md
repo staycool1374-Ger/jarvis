@@ -68,12 +68,17 @@ Notes
   - [ ] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()
   - [ ] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
   - [ ] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
-- [ ] Eliminate Unbounded Loops in Hot Paths
-  - [ ] Scheduler::reap_orphans() — replace while (reaped_any) with single-pass + deferred work queue
-  - [ ] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
-  - [ ] MemPool::alloc() — verify O(1) free-list traversal (no bitmap scan)
-  - [ ] VMM::map_page() — verify page-walk depth bounded (4 levels fixed)
-  - [ ] Audit all for loops in scheduler.cpp, task.cpp, mempool.cpp, vmm.cpp — add CONFIG_*_MAX_ITERATIONS bounds
+- [x] Eliminate Unbounded Loops in Hot Paths
+  - [ ] Scheduler::reap_orphans() — replace while (reaped_any) with single-pass + deferred work queue (reverted c28d811, shell broke; kept while(reaped_any))
+  - [x] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
+  - [x] MemPool::alloc() — verify O(1) free-list traversal (no bitmap scan)
+  - [x] VMM::map_page() — verify page-walk depth bounded (4 levels fixed)
+  - [x] Audit all for loops in scheduler.cpp, task.cpp, mempool.cpp, vmm.cpp — add CONFIG_*_MAX_ITERATIONS bounds
+- [x] Per-Architecture Test-Count Validation Table
+  - [x] Collect per-class registration counts via dump-counts class
+  - [x] Create constexpr test_expected_counts.hpp with x86_64 counts
+  - [x] validate_class_count() in register_class() — warns on mismatch
+  - [x] validate_all_consistency() — sums individual classes ≥ all check
 
 
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)

@@ -489,11 +489,11 @@ execute-test:
 	    echo "Usage: make execute-test <arch> <build> <class>"; \
 	    echo "  arch:  x86|x86_64|arm|aarch64|riscv|riscv64"; \
 	    echo "  build: debug|release"; \
-	    echo "  class: none|selftest|all|<name>"; \
+	    echo "  class: none|selftest|all|<name>|dump-counts"; \
 	    exit 1; \
 	fi; \
 	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
-	case "$(_CLASS)" in none|selftest|all) ;; *) ;; esac; \
+	case "$(_CLASS)" in none|selftest|all|dump-counts) ;; *) ;; esac; \
 	mkdir -p initrd/tests; \
 	_class_file=$(_CLASS); \
 	[ "$${_class_file}" = "selftest" ] && _class_file=safe; \
@@ -522,6 +522,8 @@ execute-test:
 	    else \
 	        echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	    fi; \
+	elif [ "$(_CLASS)" = "dump-counts" ]; then \
+	    $(call _run_dump_counts_qemu); \
 	else \
 	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$(if $(filter all,$(_CLASS)),180,120)); \
 	fi
@@ -729,6 +731,23 @@ define _run_test_qemu
 	    echo "FAIL: Test validation failed with code $$rc"; \
 	    exit 1; \
 	fi
+endef
+
+# Usage: $(call _run_dump_counts_qemu)
+# Runs QEMU, captures all TCOUNT lines to stdout, exits cleanly.
+DUMP_COUNTS_LOG := /tmp/jarvis-dump-counts.log
+define _run_dump_counts_qemu
+	if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	printf '  %-7s %s\n'  'TCOUNT' 'Dumping per-class registration counts…'; \
+	rm -f "$(DUMP_COUNTS_LOG)"; \
+	_DQ_FLAGS=$$(echo "$(QEMU_FLAGS)" | sed 's|-serial mon:stdio|-serial file:$(DUMP_COUNTS_LOG)|'); \
+	$(QEMU_SYSTEM) $$_DQ_FLAGS -display none -no-reboot $(QEMU_DEBUG_EXIT) 2>&1 & \
+	QEMU_PID=$$!; \
+	sleep 30; \
+	kill $$QEMU_PID 2>/dev/null; wait $$QEMU_PID 2>/dev/null || true; \
+	echo "=== Per-class test registration counts ==="; \
+	grep '\[TCOUNT\]' "$(DUMP_COUNTS_LOG)" || echo "(no TCOUNT lines found)"; \
+	rm -f "$(DUMP_COUNTS_LOG)"
 endef
 
 # ------------------------------------------------------------------------------

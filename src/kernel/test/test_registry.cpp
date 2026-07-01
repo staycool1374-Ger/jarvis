@@ -19,6 +19,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <kernel/test/test_expected_counts.hpp>
 
 using namespace kernel;
 
@@ -429,9 +430,27 @@ bool kernel::test::register_class(const char* name) {
             if (after > before) {
                 Registry::record_class_section(name, before, after - before);
             }
+            size_t added = after - before;
+            Logger::info("[TCOUNT] class=%s added=%u total=%u", name,
+                         (unsigned)added, (unsigned)after);
+            validate_class_count(name, after);
             return true;
         }
     }
     Logger::warn("Unknown test class: %s", name);
     return false;
+}
+
+void kernel::test::dump_class_counts() {
+    Logger::raw_write("[TCOUNT] dumping all class counts\n");
+    for (size_t i = 0; i < g_test_class_count; ++i) {
+        Registry::clear();
+        g_test_classes[i].register_all();
+        size_t count = Registry::count();
+        Logger::raw_write("[TCOUNT] "); Logger::raw_write(g_test_classes[i].name);
+        Logger::raw_write(" = "); Logger::print_dec(count);
+        Logger::raw_write("\n");
+    }
+    Registry::clear();
+    validate_all_consistency();
 }
