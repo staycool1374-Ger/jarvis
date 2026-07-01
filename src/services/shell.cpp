@@ -2088,7 +2088,11 @@ void Shell::cmd_less(int argc, const char** argv) {
 }
 
 void Shell::cmd_dmesg(int argc, const char** argv) {
-    if (argc >= 3 && (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "--inject") == 0)) {
+    if (argc >= 2 && (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "-I") == 0 || strcmp(argv[1], "--inject") == 0)) {
+        if (argc < 4) {
+            Terminal::write("usage: dmesg -i|--inject <subsys> <err> [msg]\n");
+            return;
+        }
         unsigned subsys = 0; {
             const char* s = argv[2]; while (*s) { subsys = subsys * 10 + (*s - '0'); ++s; }
         }
