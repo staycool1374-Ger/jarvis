@@ -22,8 +22,8 @@ Develop and write flawless, production-ready test suites to verify the existing 
 
 ### 2. Workflow & Branching
 * **Target:** All work occurs in `src/kernel/test/` on the `testbed` branch. No production code.
-* **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make test-selftest` (safe class, fast) or `make test-all-debug` (full suite).
-* **Gated Merging:** Tests lacking main-branch APIs remain as `JARVIS_TEST_PASS()` stubs (documented via doc-block). Merge `testbed` into `main` only when there are 0 failures. `testbed` is never deleted.
+* **Order:** Implement stub tests -> replace stubs with real assertions -> verify via `make execute-test x86 debug selftest` (safe class, fast) or `make execute-test x86 debug all` (full suite).
+ * **Gated Merging:** Tests lacking main-branch APIs remain as `JARVIS_TEST_PASS()` stubs (documented via doc-block). Merge `testbed` into `main` only when there are 0 failures (`make execute-test x86 debug all`). `testbed` is never deleted.
 
 ### Pseudocode in Stub Tests
 * Some stub tests contain `/* Pseudocode: ... */` comments describing intended behavior — use these for insight when implementing.
@@ -67,14 +67,31 @@ Summary block:
 
 **Leak details** appear only on FAIL lines. Resources tracked: MemPool0, PMM, Tasks, BufPool, MsgQueues, Notifies, EventGroups, Drivers, PipeBufs, VNodes, OpenFDs.
 
-### Makefile Targets
+### Unified Makefile Targets (mandatory — no other execution targets allowed)
+
+Three parameterized targets replace all old test targets. Positional arguments
+are consumed by a match-all rule at the end of the Makefile.
+
 | Target | Description |
 |--------|-------------|
-| `make test-selftest` | Debug build, `safe` class, auto-shutdown (CI gate) |
-| `make test-all-debug` | Debug build, `all` class, auto-shutdown |
-| `make test-all-release` | Release build, `all` class, auto-shutdown |
-| `make test-class CLASS=<name>` | Debug build, specific class |
-| `make test-gdb TEST=suite::name` | GDB single-test |
+| `make execute-test <arch> <build> <class>` | Unified test runner |
+| `make debug-test <arch> <build> <class> <gdb-script>` | GDB batch surveillance |
+| `make debug-shell <arch> <build> none <gdb-script> <shell-cmds>` | GDB + serial interaction |
+
+**Parameters:**
+- `<arch>` — `x86`|`x86_64`|`arm`|`aarch64`|`riscv`|`riscv64`
+- `<build>` — `debug`|`release`
+- `<class>` — `none`|`selftest`|`all`|`<name>`
+- `<gdb-script>` — path to GDB script (e.g. `tools/gdb/test-batch.gdb`)
+- `<shell-cmds>` — text file with one command per line
+
+**Examples:**
+```
+make execute-test x86 debug selftest    # CI gate (safe class, fast)
+make execute-test x86 debug all         # full debug suite
+make execute-test x86 release all       # full release suite
+make execute-test x86 debug fat32       # specific class
+```
 
 ### Host-Side Watchdog
 Every test target uses `_run_test_qemu` in the Makefile, which launches a background monitor thread. If `/tmp/jarvis-serial.log` does not grow for `WATCHDOG_STALL` seconds (default 10), the monitor kills QEMU and appends a diagnostic. This catches hangs the in-kernel watchdog cannot detect (e.g., during interrupt-disabled test execution).
@@ -85,8 +102,8 @@ The serial log is `tee`'d to `/tmp/jarvis-serial.log`; the first `tee` pipe exit
 | Step | Command |
 |------|---------|
 | Build | `make debug` |
-| Selftest gate | `timeout 360 make test-selftest` (safe class) |
-| Full suite | `timeout 360 make test-all-debug` (if selftest passes) |
+| Selftest gate | `timeout 360 make execute-test x86 debug selftest` (safe class) |
+| Full suite | `timeout 360 make execute-test x86 debug all` (if selftest passes) |
 
 Both test steps use the host-side watchdog and expect-based parsing of the `TEST SUMMARY` block.
 

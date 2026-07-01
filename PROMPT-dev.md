@@ -45,7 +45,7 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 * When writing new stub tests, a pseudocode block is required inside the test function to document the intended test flow.
 
 ### 4. Verification & QEMU Validation
-- Run automated test suites via `make test-qemu`.
+- Run automated test suites via `make execute-test x86 debug all` (or `selftest` for CI gate).
 - See AGENTS.md for Circuit Breaker limits.
 
 ### 5. Bug Tracking & Documentation Updates
@@ -62,7 +62,7 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 
 **Pre-flight gate (abort on any failure):**
 - Verify `git status --porcelain` is clean
-- Run `make test-qemu` — this launches the kernel in QEMU and runs ALL registered tests via `run_registered(0)` (debug build, `all` test class). All must pass (`[FAIL]` count = 0). Do **not** rely on a partial test run; confirm the serial output shows the full test count (600+ tests, not ~96).
+- Run `make execute-test x86 debug all` — this launches the kernel in QEMU and runs ALL registered tests via `run_registered(0)` (debug build, `all` test class). All must pass (`[FAIL]` count = 0). Do **not** rely on a partial test run; confirm the serial output shows the full test count (600+ tests, not ~96).
 - Check `testcases-v$(KERNEL_VERSION).md` — if still `*Outline*` or any stubs remain, **abort**. If all tests implemented, delete the file.
 - Verify tag `v$(major).$(minor).$(patch)` does not exist: `git tag | grep "v$(major).$(minor).$(patch)"`
 
@@ -97,17 +97,34 @@ Test execution is driven by `initrd/tests/test-config.txt` (one class per line).
 - `all` — everything including benchmarks (~600+ tests)
 - Individual: `scheduler`, `memory`, `ipc`, `vfs`, `process`, `syscall`, `arch`, `device`, `shell`, `net`, `security`, `debug`, `integration`, `stress`, `init`, `build`, `bench`, `sporadic`
 
-## Makefile Targets
+## Unified Makefile Targets (mandatory usage — no other targets are allowed)
+
+All execution is driven by three parameterized targets. Positional arguments are
+silently consumed by a match-all rule at the end of the Makefile.
+
 | Target | Description |
 |--------|-------------|
-| `make test-selftest` | Debug build, runs `safe` class, auto-shutdown (CI gate) |
-| `make test-all-debug` | Debug build, runs `all` class, auto-shutdown |
-| `make test-all-release` | Release build, runs `all` class with TF_RELEASE filter, auto-shutdown |
-| `make test-class CLASS=<name>` | Debug build, specific class |
-| `make test-gdb TEST=suite::name` | GDB single-test |
-| `make test-shell` | Interactive shell boot |
+| `make execute-test <arch> <build> <class>` | Unified test runner (replaces all old test targets) |
+| `make debug-test <arch> <build> <class> <gdb-script>` | GDB batch surveillance with panic capture |
+| `make debug-shell <arch> <build> none <gdb-script> <shell-cmds>` | GDB + serial interaction from commands file |
 
-**Legacy aliases:** `test-qemu` → `test-all-debug`, `release-test` → `test-all-release`
+**Parameters:**
+- `<arch>` — `x86`|`x86_64`|`arm`|`aarch64`|`riscv`|`riscv64` (shorthand accepted)
+- `<build>` — `debug`|`release`
+- `<class>` — `none` (interactive shell, no tests) | `selftest` (safe class, CI gate) | `all` (full suite) | `<name>` (specific class)
+- `<gdb-script>` — path to GDB batch script (e.g. `tools/gdb/test-batch.gdb`)
+- `<shell-cmds>` — text file with one shell command per line
+
+**Examples:**
+```
+make execute-test x86 debug none           # interactive QEMU (was: make run-qemu)
+make execute-test x86 debug all            # full debug suite (was: make test-all-debug)
+make execute-test x86 release all          # full release suite (was: make test-all-release)
+make execute-test x86 debug selftest       # CI gate (was: make test-selftest)
+make execute-test x86 debug fat32          # specific class (was: make test-class CLASS=fat32)
+make debug-test x86 debug all tools/gdb/test-batch.gdb  # GDB panic capture (was: make test-gdb)
+make debug-shell x86 debug none tools/gdb/init.gdb cmds.txt  # GDB + serial interaction
+```
 
 ## Host-Side Watchdog
 All test targets run under `_run_test_qemu` in the Makefile, which launches a background monitor thread. If `/tmp/jarvis-serial.log` does not grow for `WATCHDOG_STALL` consecutive seconds (default 10), the monitor kills QEMU and appends a diagnostic. This catches hangs the in-kernel watchdog cannot detect (e.g., while interrupts are disabled during test execution).
@@ -118,8 +135,8 @@ The serial log is captured via `tee` to `/tmp/jarvis-serial.log` for all automat
 | Step | Target | Timeout |
 |------|--------|---------|
 | Build | `make debug` | — |
-| Selftest gate | `make test-selftest` (safe class) | `timeout 360` — Makefile expect timeout 120s |
-| Full suite | `make test-all-debug` (all classes) | `timeout 360` — Makefile expect timeout 180s |
+| Selftest gate | `make execute-test x86 debug selftest` (safe class) | `timeout 360` — Makefile expect timeout 120s |
+| Full suite | `make execute-test x86 debug all` (all classes) | `timeout 360` — Makefile expect timeout 180s |
 
 The full suite step runs only if selftest passes (`if: success()`). Both steps use the host-side watchdog and expect-based result parsing (extracts PLANNED/EXECUTED/FAILED from the TEST SUMMARY block).
 
@@ -152,8 +169,11 @@ Summary block (after all tests):
 ## Serial FIFO Drain
 Both `run_filtered()` and `run_registered()` drain the UART TX FIFO (wait for LSR bits 5&6) before QEMU exit to prevent report truncation.
 
-## GDB Single-Test
-`make test-gdb TEST=suite::name` launches QEMU with GDB stub, sets breakpoint on `test_suite_name`, runs to it. Use for debugging individual flaky tests.
+## GDB Debugging
+- **Batch surveillance (CI):** `make debug-test x86 debug all tools/gdb/test-batch.gdb`
+- **Custom GDB script:** `make debug-test x86 debug <class> <path-to-gdb-script>`
+- **Interactive GDB + serial:** `make debug-shell x86 debug none tools/gdb/init.gdb cmds.txt`
+- **Manual (two terminals):** `make execute-test x86 debug none` in terminal 1, then `gdb build/kernel-debug.elf -ex 'target remote :1234' -x tools/gdb/init.gdb` in terminal 2
 
 ## Known Test Patterns
 

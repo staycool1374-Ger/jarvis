@@ -38,6 +38,15 @@ endif
 # Derive upper-case ARCH for CONFIG_ARCH_* define
 ARCH_UPPER := $(shell echo $(ARCH) | tr a-z A-Z)
 
+# ------------------------------------------------------------------------------
+# Architecture shorthand mapping for unified targets
+#   x86  → x86_64   arm → aarch64   riscv → riscv64
+#   Already canonical → pass through
+# ------------------------------------------------------------------------------
+_map_arch = $(or \
+    $(filter $(SUPPORTED_ARCHS),$(1)), \
+    $(patsubst x86,x86_64,$(patsubst arm,aarch64,$(patsubst riscv,riscv64,$(1)))))
+
 QEMU_UEFI  ?= /opt/homebrew/share/qemu/edk2-$(ARCH)-code.fd
 
 # ------------------------------------------------------------------------------
@@ -194,8 +203,10 @@ KERNEL_DIS     := build/kernel.dis
 
 FAT32_DISK     := build/fat32.img
 QEMU_NET       := -netdev user,id=net0 -device virtio-net-pci,netdev=net0,disable-legacy=on
-QEMU_FLAGS     := -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  $(QEMU_ARCH_FLAGS)
+# Recursive evaluation (use `=`) so that DEBUG_ISO can be overridden
+# per-target (e.g. release tests) via target-specific variables or $(eval).
+QEMU_FLAGS     = -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
+                $(QEMU_ARCH_FLAGS)
 
 # For x86_64 add IDE drive for FAT32
 ifeq ($(ARCH),x86_64)
@@ -204,9 +215,9 @@ endif
 
 # For aarch64, load kernel directly instead of via ISO/GRUB
 ifeq ($(ARCH),aarch64)
-QEMU_FLAGS     := -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
-                  -machine virt -cpu cortex-a72 -display none -no-reboot \
-                  -semihosting-config enable=on,target=native
+QEMU_FLAGS     = -kernel $(KERNEL_DEBUG) -m 256M -serial mon:stdio $(QEMU_NET) \
+                -machine virt -cpu cortex-a72 -display none -no-reboot \
+                -semihosting-config enable=on,target=native
 endif
 
 # For riscv64, QEMU 11+ has a fw_dynamic bug where ELF entry point is not
@@ -217,8 +228,8 @@ ifeq ($(ARCH),riscv64)
 $(KERNEL_RISCV_BIN): $(KERNEL_DEBUG)
 	$(OBJCOPY) -O binary $< $@
 
-QEMU_FLAGS     := -kernel $(KERNEL_RISCV_BIN) -m 256M -serial mon:stdio \
-	          $(QEMU_NET) -machine virt -bios default -display none -no-reboot
+QEMU_FLAGS     = -kernel $(KERNEL_RISCV_BIN) -m 256M -serial mon:stdio \
+                $(QEMU_NET) -machine virt -bios default -display none -no-reboot
 endif
 
 # ------------------------------------------------------------------------------
@@ -237,11 +248,10 @@ include mk/rules.mk
 # ------------------------------------------------------------------------------
 # Phony targets
 # ------------------------------------------------------------------------------
-.PHONY: help all build check-style run-qemu run-release run-qemu-debug \
-        test-selftest test-all-debug test-all-release test-class \
-        test-qemu test symbols objdump debug release release-test \
-        run-release-test profiling gdb test-gdb rr-record rr-replay \
-        _run-shell-test run-renode renode-test check-config config-summary
+.PHONY: help all build check-style run-debug-mode run-release-mode \
+        execute-test debug-test debug-shell \
+        test symbols objdump debug release profiling rr-record rr-replay \
+        run-renode renode-test check-config config-summary
 
 # Default target
 all: help
@@ -289,20 +299,26 @@ help:
 	@echo "  [A] make debug             Build debug ISO"
 	@echo "  [A] make release           Build production ISO"
 	@echo "  [A] make clean             Remove all build artifacts"
-	@echo "  [A] make test-selftest     Debug build, safe class, auto-shutdown (CI gate)"
-	@echo "  [A] make test-all-debug    Debug build, all classes, auto-shutdown"
-	@echo "  [A] make test-all-release  Release build, all classes, auto-shutdown"
-	@echo "  [A] make test-class CLASS=<n>  Debug build, specific test class"
-	@echo "  [A] make test-qemu         Legacy alias for test-all-debug"
-	@echo "  [A] make release-test      Legacy alias for test-all-release"
-	@echo "  [A] make run-release-test  All shell commands + 2x selftest + exit (release ISO)"
+	@echo "  [I] make run-debug-mode [<arch>]   Interactive debug shell (QEMU, mon:stdio)"
+	@echo "  [I] make run-release-mode [<arch>] Interactive release shell (QEMU, mon:stdio)"
+	@echo "         <arch> = x86|x86_64|arm|aarch64|riscv|riscv64  (default: x86_64)"
+	@echo "  [A] make execute-test <arch> <build> <class>  Unified test runner"
+	@echo "         <arch>  = x86|x86_64|arm|aarch64|riscv|riscv64"
+	@echo "         <build> = debug|release"
+	@echo "         <class> = none|selftest|all|<name>"
+	@echo "           none     → interactive shell (no tests, mon:stdio)"
+	@echo "           selftest → safe class, auto-shutdown (CI gate, 120s)"
+	@echo "           all      → all classes, auto-shutdown (180s debug / 120s release)"
+	@echo "           <name>   → specific test class, auto-shutdown (120s)"
+	@echo "  [A] make debug-test <arch> <build> <class> <gdb-script>"
+	@echo "         GDB batch surveillance. QEMU with -s -S, runs gdb-script,"
+	@echo "         reports panic capture. 120s timeout."
+	@echo "  [A] make debug-shell <arch> <build> none <gdb-script> <shell-cmds>"
+	@echo "         GDB + serial interaction. Reads commands from text file,"
+	@echo "         sends them via serial after GDB continues."
 	@echo "  [A] make symbols           Kernel symbol table"
 	@echo "  [A] make objdump           Kernel disassembly"
 	@echo "  [A] make profiling         GCOV coverage capture"
-	@echo "  [I] make run-qemu          Boot debug ISO (interactive shell)"
-	@echo "  [I] make run-release       Build + boot release ISO (interactive shell)"
-	@echo "  [I] make gdb               Debug ISO + GDB stub (:1234)"
-	@echo "  [I] make test-gdb          Run tests under GDB surveillance"
 	@echo "  [I] make rr-record         Record QEMU execution (deterministic replay)"
 	@echo "  [I] make rr-replay         Replay recorded session with GDB stub (:1234)"
 	@echo "  [I] make run-renode        Boot debug ISO in Renode (x86_64)"
@@ -314,6 +330,16 @@ help:
 	@echo ""
 	@echo "  [A] = autonomous (run and done, no interaction needed)"
 	@echo "  [I] = interactive (user sits at the QEMU/GDB/Renode console)"
+	@echo ""
+	@echo "  Examples:"
+	@echo "    make run-debug-mode                       # interactive x86_64 debug QEMU"
+	@echo "    make run-release-mode                     # interactive x86_64 release QEMU"
+	@echo "    make run-release-mode arm                 # interactive AArch64 release QEMU"
+	@echo "    make run-release-mode riscv               # interactive RISC-V 64 release QEMU"
+	@echo "    make execute-test x86 debug none          # interactive QEMU (verbose)"
+	@echo "    make execute-test x86 release all         # full release test suite"
+	@echo "    make debug-test x86 debug all tools/gdb/test-batch.gdb  # GDB panic capture"
+	@echo "    make debug-shell x86 debug none tools/gdb/init.gdb cmds.txt"
 
 # ------------------------------------------------------------------------------
 # Build-type stamp check
@@ -421,90 +447,127 @@ endif
 # ------------------------------------------------------------------------------
 # QEMU / Test targets
 # ------------------------------------------------------------------------------
-run-qemu: debug
-	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
-	    printf '  %-7s %s\n' 'QEMU' 'Starting (Ctrl+A then X to exit)…'; \
-	    $(QEMU_SYSTEM) $(QEMU_FLAGS); \
+# ------------------------------------------------------------------------------
+# Unified test execution targets
+#
+# Positional arguments:
+#   <arch>   — x86|x86_64|arm|aarch64|riscv|riscv64
+#   <build>  — debug|release
+#   <class>  — none|selftest|all|<class-name>
+#   <gdb-script> — path to .gdb script (debug-test only)
+#   <shell-cmds> — path to shell-commands text file (debug-shell only)
+#
+# The match-all rule (%::) at the end of the file silently consumes the
+# positional arguments so make does not reject them as unknown targets.
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Convenience aliases for interactive QEMU sessions
+#   make run-debug-mode [<arch>]   — same as execute-test <arch> debug none
+#   make run-release-mode [<arch>] — same as execute-test <arch> release none
+# ------------------------------------------------------------------------------
+
+run-debug-mode:
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae))))
+	@if [ -z "$(_ARCH)" ]; then \
+	    $(MAKE) execute-test $(ARCH) debug none; \
 	else \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    $(MAKE) execute-test $(_ARCH) debug none ARCH=$(_ARCH); \
 	fi
 
-run-release: release
-ifneq ($(ARCH),x86_64)
-	@printf '  %-7s %s\n' 'ERROR' 'Run release only supported on x86_64 (arch=$(ARCH))'; exit 1
-endif
-	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
-	    printf '  %-7s %s\n' 'QEMU' 'Starting release image…'; \
-	    $(QEMU_SYSTEM) -cdrom $(RELEASE_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-	        -boot order=d \
-	        -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) \
-	        -drive file=$(FAT32_DISK),format=raw,if=ide,index=1,media=disk; \
+run-release-mode:
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae))))
+	@if [ -z "$(_ARCH)" ]; then \
+	    $(MAKE) execute-test $(ARCH) release none; \
 	else \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    $(MAKE) execute-test $(_ARCH) release none ARCH=$(_ARCH); \
 	fi
 
-run-qemu-debug: debug
-	@if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
-	    printf '  %-7s %s\n' 'QEMU' 'Starting debug (GDB :1234, -d int,cpu_reset)…'; \
-	    echo "Connect GDB:  gdb build/kernel-debug.elf -ex 'target remote :1234'"; \
-	    $(QEMU_SYSTEM) $(QEMU_FLAGS) -s -d int,cpu_reset; \
+execute-test:
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(word 2,$(_ae))) $(eval _CLASS := $(word 3,$(_ae)))
+	@if [ -z "$(_ARCH)" -o -z "$(_BUILD)" -o -z "$(_CLASS)" ]; then \
+	    echo "Usage: make execute-test <arch> <build> <class>"; \
+	    echo "  arch:  x86|x86_64|arm|aarch64|riscv|riscv64"; \
+	    echo "  build: debug|release"; \
+	    echo "  class: none|selftest|all|<name>"; \
+	    exit 1; \
+	fi; \
+	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
+	case "$(_CLASS)" in none|selftest|all) ;; *) ;; esac; \
+	mkdir -p initrd/tests; \
+	printf '%s\n' "$(_CLASS)" > initrd/tests/test-config.txt; \
+	if [ "$(_CLASS)" = "none" ]; then \
+	    if [ "$(_BUILD)" = "release" ] && [ "$(_ARCH)" = "x86_64" ] && [ -f "$(RELEASE_ISO)" ]; then \
+	        :; \
+	    elif [ "$(_BUILD)" = "release" ] && [ "$(_ARCH)" = "x86_64" ]; then \
+	        $(MAKE) release ARCH=$(_ARCH) || exit 1; \
+	    elif [ "$(_BUILD)" = "release" ]; then \
+	        $(MAKE) $(KERNEL) ARCH=$(_ARCH) || exit 1; \
+	        if [ "$(_ARCH)" = "riscv64" ]; then \
+	            $(MAKE) $(KERNEL_RISCV_BIN) ARCH=$(_ARCH) KERNEL_DEBUG=$(KERNEL) || exit 1; \
+	        fi; \
+	    else \
+	        $(MAKE) debug ARCH=$(_ARCH) || exit 1; \
+	    fi; \
 	else \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    $(MAKE) $(_BUILD) ARCH=$(_ARCH) || exit 1; \
+	fi; \
+	true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))$(if $(and $(filter release,$(_BUILD)),$(filter aarch64,$(_ARCH))),$(eval QEMU_FLAGS := $(subst $(KERNEL_DEBUG),$(KERNEL),$(QEMU_FLAGS)))); \
+	if [ "$(_CLASS)" = "none" ]; then \
+	    if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
+	        printf '  %-7s %s\n' 'QEMU' 'Starting (Ctrl+A then X to exit)…'; \
+	        $(QEMU_SYSTEM) $(QEMU_FLAGS); \
+	    else \
+	        echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
+	    fi; \
+	else \
+	    TIMEOUT=120; \
+	    [ "$(_CLASS)" = "all" ] && TIMEOUT=180; \
+	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$$TIMEOUT); \
 	fi
 
-gdb: debug
-	@echo ""
-	@echo "=========================================="
-	@echo " Jarvis GDB Debug Session"
-	@echo "=========================================="
-	@echo " QEMU started with GDB stub on :1234"
-	@echo " Connect GDB in another terminal:"
-	@echo "   $(GDB) build/kernel-debug.elf -x tools/gdb/init.gdb"
-	@echo ""
-	@echo " Available GDB custom commands:"
-	@echo "   tasks       - list all tasks"
-	@echo "   task <n>    - show task details"
-	@echo "   regs        - register dump"
-	@echo "   pml4        - page table walk"
-	@echo "   panicinfo   - full state dump"
-	@echo "   step-into   - single-step (into)"
-	@echo "   step-over   - step over call"
-	@echo "   step-out    - finish function"
-	@echo "   trace-syscall - toggle syscall tracing"
-	@echo "=========================================="
-	@echo ""
-	$(QEMU_SYSTEM) $(QEMU_FLAGS) -s -S -d cpu_reset
-
-test-gdb: debug
-ifneq ($(ARCH),x86_64)
-	@printf '  %-7s %s\n' 'ERROR' 'test-gdb only supported on x86_64 (arch=$(ARCH))'; exit 1
-endif
-	@rm -f build/gdb-panic-captured build/gdb-serial.log
-	@mkdir -p build
-	@printf '  %-7s %s\n' 'GDB' 'Launching QEMU with GDB stub…'
-	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
-	    echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
-	fi
-	@if ! command -v gtimeout >/dev/null 2>&1; then \
-	    echo "gtimeout missing. Install with: brew install coreutils"; exit 1; \
-	fi
-	$(QEMU_SYSTEM) -cdrom $(DEBUG_ISO) -m 256M -serial file:build/gdb-serial.log $(QEMU_NET) \
-	    -boot order=d -s -no-reboot -device isa-debug-exit \
-	    -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI) & \
+debug-test:
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(word 2,$(_ae))) $(eval _CLASS := $(word 3,$(_ae))) $(eval _GDB := $(word 4,$(_ae)))
+	@if [ -z "$(_ARCH)" -o -z "$(_BUILD)" -o -z "$(_CLASS)" -o -z "$(_GDB)" ]; then \
+	    echo "Usage: make debug-test <arch> <build> <class> <gdb-script>"; \
+	    echo "  arch:  x86|x86_64|arm|aarch64|riscv|riscv64"; \
+	    echo "  build: debug|release"; \
+	    echo "  class: none|selftest|all|<name>"; \
+	    echo "  gdb-script: path to GDB batch script (e.g. tools/gdb/test-batch.gdb)"; \
+	    exit 1; \
+	fi; \
+	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
+	if [ ! -f "$(_GDB)" ]; then \
+	    echo "ERROR: GDB script not found: $(_GDB)"; exit 1; \
+	fi; \
+	if ! command -v gtimeout >/dev/null 2>&1; then \
+	    echo "gtimeout missing (install coreutils)."; exit 1; \
+	fi; \
+	mkdir -p initrd/tests; \
+	if [ "$(_CLASS)" != "none" ]; then \
+	    printf '%s\n' "$(_CLASS)" > initrd/tests/test-config.txt; \
+	else \
+	    printf 'none\n' > initrd/tests/test-config.txt; \
+	fi; \
+	$(MAKE) $(_BUILD) ARCH=$(_ARCH)
+	@true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))
+	rm -f build/gdb-panic-captured build/gdb-serial.log; \
+	printf '  %-7s %s\n' 'QEMU' 'Starting with GDB stub (:1234)…'; \
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -s -S -serial file:build/gdb-serial.log -display none -no-reboot $(QEMU_DEBUG_EXIT) & \
 	QEMU_PID=$$!; \
 	echo "Waiting for QEMU GDB stub (:1234)…"; \
 	for i in 1 2 3 4 5 6 7 8; do \
 	    nc -z localhost 1234 2>/dev/null && break; \
 	    sleep 1; \
 	done; \
-	printf '  %-7s %s\n' 'GDB' 'Connecting (panic surveillance, 120s timeout)…'; \
-	gtimeout 120 $(GDB) build/kernel-debug.elf -batch -x tools/gdb/test-batch.gdb; \
+	printf '  %-7s %s\n' 'GDB' 'Running $(_GDB)…'; \
+	gtimeout 120 $(GDB) build/kernel-debug.elf -batch -x $(_GDB); \
 	GDB_EXIT=$$?; \
 	kill $$QEMU_PID 2>/dev/null; wait $$QEMU_PID 2>/dev/null; \
 	if [ -f build/gdb-panic-captured ]; then \
 	    echo ""; \
 	    echo "!!! KERNEL PANIC CAPTURED !!!"; \
-	    echo "See GDB output above for backtrace and register dump."; \
+	    echo "See GDB output above."; \
 	    rm -f build/gdb-panic-captured; \
 	    exit 1; \
 	elif [ $$GDB_EXIT -eq 124 ]; then \
@@ -515,7 +578,7 @@ endif
 	    printf '  %-7s %s\n' 'GDB' 'No panic (QEMU exited cleanly)'; \
 	else \
 	    echo ""; \
-	    echo "=== test-gdb: GDB exit code $$GDB_EXIT (check serial log: build/gdb-serial.log) ==="; \
+	    echo "=== debug-test: GDB exit code $$GDB_EXIT (log: build/gdb-serial.log) ==="; \
 	    exit $$GDB_EXIT; \
 	fi
 
@@ -594,7 +657,7 @@ WATCHDOG_STALL := 60
 
 # Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
 define _run_test_qemu
-	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
 	printf '  %-7s %s\n'  'TEST'   '$(1)…'; \
 	rm -f "$(TEST_SERIAL_LOG)"; \
 	\
@@ -652,11 +715,7 @@ define _run_test_qemu
 	        } \
 	    } \
 	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
-	rc=$${PIPESTATUS[0]}; \
 	\
-	# Kill QEMU immediately after expect exits — shutdown_kernel() may not work \
-	# (UEFI firmware can intercept port-based shutdown methods).  This avoids \
-	# the 60-second host-watchdog wait for a dead QEMU process. \
 	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
 	\
 	kill $$MONITOR_PID 2>/dev/null; \
@@ -671,37 +730,57 @@ define _run_test_qemu
 	fi
 endef
 
-test-selftest:
-	@mkdir -p initrd/tests
-	@printf 'safe\n' > initrd/tests/test-config.txt
-	$(MAKE) debug
-	$(call _run_test_qemu,Running selftest (safe class),120)
+# ------------------------------------------------------------------------------
+# Debug shell: GDB + serial interaction from a shell-commands text file
+# ------------------------------------------------------------------------------
 
-test-all-debug:
-	@mkdir -p initrd/tests
-	@printf 'all\n' > initrd/tests/test-config.txt
-	$(MAKE) debug
-	$(call _run_test_qemu,Running all debug tests,180)
-
-test-all-release:
-	@mkdir -p initrd/tests
-	@printf 'all\n' > initrd/tests/test-config.txt
-	$(MAKE) release
-	@mkdir -p $(dir $(DEBUG_ISO))
-	@cp $(RELEASE_ISO) $(DEBUG_ISO)
-	$(call _run_test_qemu,Running all release tests,120)
-
-test-class:
-	@if [ -z "$(CLASS)" ]; then echo "Usage: make test-class CLASS=<name>"; exit 1; fi
-	@mkdir -p initrd/tests
-	@printf '%s\n' "$(CLASS)" > initrd/tests/test-config.txt
-	$(MAKE) debug
-	$(call _run_test_qemu,Running test class "$(CLASS)",120)
-
-# Legacy aliases
-test-qemu: test-all-debug
-
-release-test: test-all-release
+debug-shell:
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(word 2,$(_ae))) $(eval _CLASS := $(word 3,$(_ae))) $(eval _GDB := $(word 4,$(_ae))) $(eval _CMDS := $(word 5,$(_ae)))
+	@if [ -z "$(_ARCH)" -o -z "$(_BUILD)" -o -z "$(_CLASS)" -o -z "$(_GDB)" -o -z "$(_CMDS)" ]; then \
+	    echo "Usage: make debug-shell <arch> <build> none <gdb-script> <shell-commands>"; \
+	    echo "  arch:  x86|x86_64|arm|aarch64|riscv|riscv64"; \
+	    echo "  build: debug|release"; \
+	    echo "  class: must be 'none' (debug-shell requires interactive boot)"; \
+	    echo "  gdb-script: path to GDB batch script (e.g. tools/gdb/init.gdb)"; \
+	    echo "  shell-commands: text file with one command per line"; \
+	    exit 1; \
+	fi; \
+	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
+	if [ "$(_CLASS)" != "none" ]; then \
+	    echo "ERROR: debug-shell requires class=none"; exit 1; \
+	fi; \
+	if [ ! -f "$(_GDB)" ]; then echo "ERROR: GDB script not found: $(_GDB)"; exit 1; fi; \
+	if [ ! -f "$(_CMDS)" ]; then echo "ERROR: shell commands file not found: $(_CMDS)"; exit 1; fi; \
+	$(MAKE) $(_BUILD) ARCH=$(_ARCH)
+	@true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))
+	printf 'none\n' > initrd/tests/test-config.txt; \
+	printf '  %-7s %s\n' 'SHELL' 'Starting debug session ($(_CMDS))…'; \
+	expect -c ' \
+	    fconfigure stdout -buffering none; \
+	    set timeout 120; \
+	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -s -S -display none -no-reboot $(QEMU_DEBUG_EXIT); \
+	    after 2000; \
+	    exec $(GDB) build/kernel-debug.elf -batch -x $(_GDB) &; \
+	    expect { \
+	        -re {jarvis\$$ } { } \
+	        timeout { puts "TIMEOUT: shell prompt not reached"; exit 1 } \
+	    }; \
+	    set f [open $(_CMDS) r]; \
+	    while {[gets $$f line] >= 0} { \
+	        puts ">>> $$line"; \
+	        send "$$line\r"; \
+	        expect { \
+	            -re {jarvis\$$ } { } \
+	            timeout { puts "TIMEOUT after: $$line"; exit 1 } \
+	        }; \
+	    }; \
+	    close $$f; \
+	    puts "=== DEBUG SHELL COMPLETE ==="; \
+	    exit 0; \
+	'; \
+	rc=$$?; \
+	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
+	exit $$rc
 
 test: $(KERNEL)
 	@echo "=========================================="
@@ -711,175 +790,6 @@ test: $(KERNEL)
 	$(MAKE) $(USERSPACE_ELF)
 	@echo "Userspace components compiled securely."
 	@echo "Trigger interactive tests at terminal context via 'selftest'."
-
-run-release-test: release
-	$(MAKE) _run-shell-test ISO=$(RELEASE_ISO)
-
-_run-shell-test:
-	@if [ "$(ARCH)" != "x86_64" ]; then printf '  %-7s %s\n' 'ERROR' 'Shell test only supported on x86_64 (arch=$(ARCH))'; exit 1; fi
-	@if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
-	printf '  %-7s %s\n' 'TEST' 'Comprehensive shell command test…'; \
-	printf '%s\n' \
-	    'set timeout 15' \
-	    'set stty_init "raw -echo"' \
-	    'spawn $(QEMU_SYSTEM) -cdrom $(ISO) -m 256M -serial mon:stdio $(QEMU_NET) -boot order=d -no-reboot -device isa-debug-exit -drive if=pflash,format=raw,readonly=on,file=$(QEMU_UEFI)' \
-	    '' \
-	    'proc fail {msg} { puts "FAIL: $$msg"; exit 1 }' \
-	    '' \
-	    'proc wait_prompt {} {' \
-	    '    expect {' \
-	    '        -re {jarvis\$$ } { }' \
-	    '        "PANIC" { fail "PANIC at prompt" }' \
-	    '        "EXCEPTION" { fail "EXCEPTION at prompt" }' \
-	    '        timeout { fail "TIMEOUT waiting for prompt" }' \
-	    '    }' \
-	    '}' \
-	    '' \
-	    'proc send_cmd {cmd} {' \
-	    '    puts ">>> $$cmd"' \
-	    '    send "$$cmd\r"' \
-	    '}' \
-	    '' \
-	    'proc expect_ok {pat} {' \
-	    '    expect {' \
-	    '        -re $$pat { }' \
-	    '        "PANIC" { fail "PANIC during: $$pat" }' \
-	    '        "EXCEPTION" { fail "EXCEPTION during: $$pat" }' \
-	    '        timeout { fail "TIMEOUT waiting for: $$pat" }' \
-	    '    }' \
-	    '}' \
-	    '' \
-	    'proc expect_err {cmd} {' \
-	    '    puts ">>> $$cmd (expect error)"' \
-	    '    send "$$cmd\r"' \
-	    '    set pat [subst -nobackslashes {Unbekannter Befehl: $$cmd}]' \
-	    '    expect_ok $$pat' \
-	    '}' \
-	    '' \
-	    'puts "=== Waiting for boot + shell prompt ==="' \
-	    'wait_prompt' \
-	    'puts "Boot OK"' \
-	    '' \
-	    'puts ""' \
-	    'puts "=== Section 1: Valid commands ==="' \
-	    '' \
-	    'send_cmd "help"' \
-	    'expect_ok {Verfuegbare Befehle:}' \
-	    'puts "  \[OK\] help"' \
-	    '' \
-	    'send_cmd "clear"' \
-	    'wait_prompt' \
-	    'puts "  \[OK\] clear"' \
-	    '' \
-	    'send_cmd "echo"' \
-	    'wait_prompt' \
-	    'puts "  \[OK\] echo (empty)"' \
-	    '' \
-	    'send_cmd "echo hello"' \
-	    'expect_ok {hello}' \
-	    'puts "  \[OK\] echo hello"' \
-	    '' \
-	    'send_cmd "echo hello world"' \
-	    'expect_ok {hello world}' \
-	    'puts "  \[OK\] echo hello world"' \
-	    '' \
-	    'send_cmd "uptime"' \
-	    'expect_ok {Uptime:}' \
-	    'puts "  \[OK\] uptime"' \
-	    '' \
-	    'send_cmd "tasks"' \
-	    'expect_ok {Tasks:}' \
-	    'puts "  \[OK\] tasks"' \
-	    '' \
-	    'send_cmd "meminfo"' \
-	    'expect_ok {Gesamt:}' \
-	    'puts "  \[OK\] meminfo"' \
-	    '' \
-	    'send_cmd "version"' \
-	    'expect_ok {Kernel:}' \
-	    'puts "  \[OK\] version"' \
-	    '' \
-	    'send_cmd "jobs"' \
-	    'expect_ok {Background tasks:}' \
-	    'puts "  \[OK\] jobs"' \
-	    '' \
-	    'send_cmd "modlist"' \
-	    'expect_ok {Verfuegbare Treiber:}' \
-	    'puts "  \[OK\] modlist"' \
-	    '' \
-	    'send_cmd "listprog"' \
-	    'expect_ok {Registrierte Programme:}' \
-	    'puts "  \[OK\] listprog"' \
-	    '' \
-	    'send_cmd "cd"' \
-	    'wait_prompt' \
-	    'puts "  \[OK\] cd"' \
-	    '' \
-	    'send_cmd "export FOO=bar"' \
-	    'expect_ok {export: FOO=bar}' \
-	    'puts "  \[OK\] export"' \
-	    '' \
-	    'send_cmd "run"' \
-	    'expect_ok {Usage: run}' \
-	    'puts "  \[OK\] run"' \
-	    '' \
-	    'send_cmd "runelf"' \
-	    'expect_ok {Usage: runelf}' \
-	    'puts "  \[OK\] runelf"' \
-	    '' \
-	    'send_cmd "modprobe"' \
-	    'expect_ok {Usage: modprobe}' \
-	    'puts "  \[OK\] modprobe"' \
-	    '' \
-	    'puts ""' \
-	    'puts "=== Section 2: Invalid commands ==="' \
-	    '' \
-	    'expect_err "xyzzy"' \
-	    'puts "  \[OK\] xyzzy rejected"' \
-	    '' \
-	    'expect_err "plugh"' \
-	    'puts "  \[OK\] plugh rejected"' \
-	    '' \
-	    'puts ""' \
-	    'puts "=== Section 3: selftest (first run) ==="' \
-	    'set timeout 120' \
-	    'send_cmd "selftest"' \
-	'expect_ok {Failed:.*0}' \
-	    'expect_ok {Self-tests complete.}' \
-	    'set timeout 15' \
-	    'puts "  \[OK\] selftest #1 (all passed)"' \
-	    '' \
-	    'puts "=== Section 4: selftest (second run) ==="' \
-	    'set timeout 120' \
-	    'send_cmd "selftest"' \
-	    'expect_ok {Failed:.*0}' \
-	    'expect_ok {Self-tests complete.}' \
-	    'set timeout 15' \
-	    'puts "  \[OK\] selftest #2 (all passed)"' \
-	    '' \
-	    'puts ""' \
-	    '# NOTE: Section 5 (exit) MUST remain the last test in the sequence' \
-	    '# because it shuts down the system and terminates QEMU.' \
-	    '# Any tests added after this section will never execute.' \
-	    'puts "=== Section 5: Shutdown ==="' \
-	    'send_cmd "exit"' \
-	    'expect_ok {Shutting down\.\.\.}' \
-	    'puts "  \[OK\] exit"' \
-	    '' \
-	    'puts ""' \
-	    'puts "=============================================="' \
-	    'puts " ALL SHELL COMMANDS TEST PASSED"' \
-	    'puts "=============================================="' \
-	    'close' \
-	    'exit 0' \
-	| expect; \
-	rc=$$?; \
-	if [ $$rc -eq 0 ]; then \
-	    printf '  %-7s %s\n' 'TEST' 'All shell commands passed.'; \
-	else \
-	    echo "FAIL: Shell command test failed with code $$rc"; \
-	    exit 1; \
-	fi
 
 # ------------------------------------------------------------------------------
 # Utility targets
@@ -900,3 +810,10 @@ clean:
 	rm -rf initrd_root debug release profiling
 	rm -f $(FAT32_DISK)
 	rm -f *.d
+
+# ------------------------------------------------------------------------------
+# Match-all rule: silently consume positional arguments for unified targets.
+# MUST be the very last rule in the file so it does not shadow real targets.
+# ------------------------------------------------------------------------------
+%::
+	@true
