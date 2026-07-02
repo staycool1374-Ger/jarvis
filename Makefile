@@ -861,6 +861,18 @@ clang-tidy:
 	fi
 
 # ------------------------------------------------------------------------------
+# Module audit: cross-reference a .hpp/.cpp pair for consistency
+# Example: make audit HPP=src/kernel/task/scheduler.hpp CPP=src/kernel/task/scheduler.cpp
+# ------------------------------------------------------------------------------
+.PHONY: audit
+audit:
+	@if [ -z "$(HPP)" ] || [ -z "$(CPP)" ]; then \
+		echo "Error: Please specify HPP and CPP files. Example: make audit HPP=kernel/include/ready_queue.hpp CPP=kernel/src/ready_queue.cpp"; \
+		exit 1; \
+	fi
+	@python3 tools/audit_module.py $(HPP) $(CPP)
+
+# ------------------------------------------------------------------------------
 # Match-all rule: silently consume positional arguments for unified targets.
 # MUST be the very last rule in the file so it does not shadow real targets.
 # ------------------------------------------------------------------------------
