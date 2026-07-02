@@ -26,7 +26,7 @@ def run_agent(prompt, system_instruction):
     
     # Hier konfigurieren wir das Modell für OpenRouter
     data = {
-        "model": "anthropic/claude-3.5-sonnet", # OpenRouter-spezifischer Modell-Pfad
+        "model": "anthropic/claude-sonnet-5", # OpenRouter-spezifischer Modell-Pfad
         "temperature": 0.1,
         "messages": [
             {"role": "system", "content": system_instruction},
