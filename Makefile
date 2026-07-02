@@ -870,6 +870,10 @@ audit:
 		echo "Error: Please specify HPP and CPP files. Example: make audit HPP=kernel/include/ready_queue.hpp CPP=kernel/src/ready_queue.cpp"; \
 		exit 1; \
 	fi
+	@if [ -z "$$OPENROUTER_API_KEY" ]; then \
+		echo "Error: OPENROUTER_API_KEY environment variable is not set."; \
+		exit 1; \
+	fi
 	@python3 tools/audit_module.py $(HPP) $(CPP)
 
 # ------------------------------------------------------------------------------

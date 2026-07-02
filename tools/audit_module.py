@@ -1,23 +1,47 @@
 import os
 import sys
-import anthropic
+import requests
+import json
 
-# API Client initialisieren
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+# OpenRouter API Key aus der Umgebungsvariable laden
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 def read_file(path):
     with open(path, 'r', encoding='utf-8') as f:
         return f.read()
 
 def run_agent(prompt, system_instruction):
-    message = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=4000,
-        temperature=0.1,  # Sehr niedrig für maximale Stringenz
-        system=system_instruction,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return message.content[0].text
+    if not OPENROUTER_API_KEY:
+        print("Error: OPENROUTER_API_KEY environment variable not set.")
+        sys.exit(1)
+
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        # OpenRouter bittet um diese optionalen Header für das Ranking
+        "HTTP-Referer": "https://github.com/arnold-hasshold/jarvis-rtos", 
+        "X-Title": "Jarvis RTOS Code Auditor"
+    }
+    
+    # Hier konfigurieren wir das Modell für OpenRouter
+    data = {
+        "model": "anthropic/claude-3.5-sonnet", # OpenRouter-spezifischer Modell-Pfad
+        "temperature": 0.1,
+        "messages": [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    
+    if response.status_code != 200:
+        print(f"API Error ({response.status_code}): {response.text}")
+        sys.exit(1)
+        
+    response_json = response.json()
+    return response_json['choices'][0]['message']['content']
 
 def main():
     if len(sys.argv) < 3:
@@ -29,11 +53,9 @@ def main():
     
     code_content = f"--- HEADER FILE ({hpp_path}) ---\n{read_file(hpp_path)}\n\n--- IMPLEMENTATION FILE ({cpp_path}) ---\n{read_file(cpp_path)}"
     
-    print(f"[*] Starting customized Jarvis architectural audit for {cpp_path}...")
+    print(f"[*] Starting customized Jarvis architectural audit via OpenRouter for {cpp_path}...")
 
-    # =========================================================================
     # AGENT 1: Jarvis Context & Variable Isolation
-    # =========================================================================
     print("[>] Running Agent 1: Environmental Isolation...")
     sys_1 = (
         "You are an isolation agent for the Jarvis RTOS freestanding kernel (C++20).\n"
@@ -43,9 +65,7 @@ def main():
     prompt_1 = f"Identify all configuration flags, locking primitives, and raw pointer usages in this code:\n\n{code_content}"
     result_1 = run_agent(prompt_1, sys_1)
 
-    # =========================================================================
     # AGENT 2: The Ruthless Hard-RT Attacker
-    # =========================================================================
     print("[>] Running Agent 2: Safety & Invariant Attacker (ASIL-D Rules)...")
     sys_2 = (
         "You are a critical system safety auditor for Jarvis RTOS (Hard Real-Time, ASIL-D level).\n"
@@ -63,9 +83,7 @@ def main():
     )
     result_2 = run_agent(prompt_2, sys_2)
 
-    # =========================================================================
     # AGENT 3: Jarvis Core Synthesizer & Fixer
-    # =========================================================================
     print("[>] Running Agent 3: Kernel Synthesizer & C++20 Fixer...")
     sys_3 = (
         "You are the Lead Kernel Architect of Jarvis RTOS. You filter out false positives from the attacker's report\n"
