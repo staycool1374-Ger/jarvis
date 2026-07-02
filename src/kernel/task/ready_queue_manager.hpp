@@ -15,6 +15,7 @@ class ReadyQueueManager {
 public:
     void enqueue(TaskControlBlock& tcb, uint64_t priority) noexcept;
     TaskControlBlock* dequeue_highest() noexcept;
+    TaskControlBlock* peek_highest() noexcept;
     void remove(TaskControlBlock& tcb, uint64_t priority) noexcept;
     void move_priority(TaskControlBlock& tcb, uint64_t old_prio, uint64_t new_prio) noexcept;
 

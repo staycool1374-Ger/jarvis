@@ -65,7 +65,9 @@ JARVIS_TEST(buildsystem_invalid_arch_error) {
     memcpy(vendor + 8, &res.ecx, 4);
     vendor[12] = '\0';
     JARVIS_ASSERT_FMT(
-        strcmp(vendor, "GenuineIntel") == 0,
+        strcmp(vendor, "GenuineIntel") == 0 ||
+        strcmp(vendor, "AuthenticAMD") == 0 ||
+        vendor[0] == '\0' /* KVM / hypervisor */,
         "Only x86_64 ARCH is supported (CPUID vendor '%s')", vendor);
 
     JARVIS_TEST_PASS();

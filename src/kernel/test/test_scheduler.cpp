@@ -133,7 +133,7 @@ JARVIS_TEST(scheduler_preemptive_priority) {
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
-    auto* high = TaskControlBlock::create([](){}, 9, 5);
+    auto* high = TaskControlBlock::create([](){}, 15, 5);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
@@ -150,12 +150,12 @@ JARVIS_TEST(scheduler_preemptive_priority) {
 // Runmode: kernel
 // Testidea: Verify that two equal‑priority tasks are both eligible for
 // scheduling via next_task().
-// Input: Two tasks, both priority 5.
+// Input: Two tasks, both priority 15.
 // Expect: next_task returns one of the two tasks.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_quantum_exhaustion) {
-    auto* t1 = TaskControlBlock::create([](){}, 5, 5);
-    auto* t2 = TaskControlBlock::create([](){}, 5, 5);
+    auto* t1 = TaskControlBlock::create([](){}, 15, 5);
+    auto* t2 = TaskControlBlock::create([](){}, 15, 5);
     JARVIS_ASSERT(t1 && t2);
     Scheduler::add_task(*t1);
     Scheduler::add_task(*t2);
@@ -292,7 +292,7 @@ JARVIS_TEST(scheduler_current_task_after_switch) {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    auto* high = TaskControlBlock::create([]() {}, 9, 10);
+    auto* high = TaskControlBlock::create([]() {}, 15, 10);
     JARVIS_ASSERT(high != nullptr);
     high->state = TaskState::READY;
     Scheduler::add_task(*high);
@@ -362,8 +362,8 @@ JARVIS_TEST(scheduler_add_duplicate_id) {
 // Input: Two tasks with same priority (5) but different periods (5, 20).
 // Expect: next_task() returns the task with the shorter period.
 JARVIS_TEST(scheduler_shorter_period_preferred) {
-    auto* t1 = TaskControlBlock::create([](){}, 5, 5);   // priority=5, period=5
-    auto* t2 = TaskControlBlock::create([](){}, 5, 20);  // priority=5, period=20
+    auto* t1 = TaskControlBlock::create([](){}, 15, 5);   // priority=15, period=5
+    auto* t2 = TaskControlBlock::create([](){}, 15, 20);  // priority=15, period=20
     JARVIS_ASSERT(t1 && t2);
     Scheduler::add_task(*t1);
     Scheduler::add_task(*t2);

@@ -22,6 +22,14 @@ TaskControlBlock* ReadyQueueManager::dequeue_highest() noexcept {
     return tcb;
 }
 
+TaskControlBlock* ReadyQueueManager::peek_highest() noexcept {
+    uint64_t prio = bitmap_.get_highest_priority();
+    if (prio == 0 && queues_[0].empty()) {
+        return nullptr;
+    }
+    return queues_[prio].head();
+}
+
 void ReadyQueueManager::remove(TaskControlBlock& tcb, uint64_t priority) noexcept {
     (void)priority;
     uint64_t actual = tcb.rq_priority_;

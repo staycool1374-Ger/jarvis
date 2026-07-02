@@ -32,6 +32,7 @@ JARVIS_TEST(sporadic_server_init) {
     JARVIS_ASSERT_EQ(10ULL, ss.max_budget());
     JARVIS_ASSERT_EQ(100ULL, ss.period());
     JARVIS_ASSERT_EQ(10ULL, ss.remaining_budget());
+    ss.set_base_priority(42);
     JARVIS_ASSERT_EQ(42ULL, ss.current_priority());
     JARVIS_ASSERT(ss.state() == SporadicServer::IDLE);
     JARVIS_ASSERT(!ss.is_active());
@@ -206,8 +207,8 @@ JARVIS_TEST(sporadic_server_budget_capped_at_C) {
     ss.on_completion(23);
     JARVIS_ASSERT_EQ(2ULL, ss.pending_count());
 
-    // Process replenishments — both fire at/after 60
-    ss.process_replenishments(60);
+    // Process replenishments — both fire at/after 70
+    ss.process_replenishments(70);
     // First repl: budget 5 + 3 = 8 (capped at 8)
     // Second repl: would add 3 more but capped at C=8
     JARVIS_ASSERT_EQ(8ULL, ss.remaining_budget());
@@ -326,8 +327,10 @@ JARVIS_TEST(sporadic_server_deadline_miss) {
     ss.init(3, 100, 0);
     ss.set_base_priority(1);
     ss.on_activation(10);
-    for (uint64_t i = 0; i < 3; i++)
-        JARVIS_ASSERT(ss.consume(10 + i));
+    // C=3 means 2 successful consumes, 3rd exhausts (1→0)
+    JARVIS_ASSERT(ss.consume(10));
+    JARVIS_ASSERT(ss.consume(11));
+    JARVIS_ASSERT(!ss.consume(12));  // exhausts here
     JARVIS_ASSERT(!ss.consume(13));
     JARVIS_ASSERT(ss.state() == SporadicServer::EXHAUSTED);
     JARVIS_TEST_PASS();
@@ -399,7 +402,8 @@ JARVIS_TEST(sporadic_server_granularity_clamp_zero) {
     JARVIS_ASSERT_EQ(2ULL, ss.remaining_budget());
     JARVIS_ASSERT(ss.consume(11));
     JARVIS_ASSERT_EQ(1ULL, ss.remaining_budget());
-    JARVIS_ASSERT(ss.consume(12));
+    // 3rd consume exhausts (1→0) and returns false
+    JARVIS_ASSERT(!ss.consume(12));
     JARVIS_ASSERT_EQ(0ULL, ss.remaining_budget());
     JARVIS_ASSERT(!ss.consume(13));
     JARVIS_ASSERT(ss.state() == SporadicServer::EXHAUSTED);

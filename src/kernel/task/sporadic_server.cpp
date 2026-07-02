@@ -133,7 +133,7 @@ void SporadicServer::process_replenishments(uint64_t now) noexcept {
 
         // If budget is now positive and server was exhausted, return to
         // normal priority (the caller checks current_priority()).
-        if (new_budget > 0 && state_ == EXHAUSTED) {
+        if (new_budget > 0 && state_ != ACTIVE) {
             // Transition back to ACTIVE so the server can run at its
             // base priority again.  The server may still be mid-job
             // (if budget was exhausted mid-execution) or may be idle

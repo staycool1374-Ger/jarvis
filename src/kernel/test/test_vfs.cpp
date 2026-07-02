@@ -185,7 +185,7 @@ static kernel::vfs::Filesystem fake_fs = {
 };
 
 JARVIS_TEST(vfs_mount_unmount) {
-    fake_root_vnode = Vnode();
+    fake_root_vnode = Vnode{};
     fake_root_vnode.mode = vfs::S_IFDIR;
     fake_root_vnode.ino = 1;
 

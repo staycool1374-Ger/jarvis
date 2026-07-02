@@ -92,25 +92,6 @@ struct Vnode {
     uint16_t mode;
     void* private_data;
     uint64_t refcount;
-
-    Vnode()
-        : ops(nullptr)
-        , ino(0)
-        , size(0)
-        , mode(0)
-        , private_data(nullptr)
-        , refcount(0)
-        {}
-
-    Vnode(const VnodeOps* ops_, uint64_t ino_, uint64_t size_, uint16_t mode_,
-        void* private_data_)
-        : ops(ops_)
-        , ino(ino_)
-        , size(size_)
-        , mode(mode_)
-        , private_data(private_data_)
-        , refcount(0)
-        {}
 };
 
 struct FileDescription {

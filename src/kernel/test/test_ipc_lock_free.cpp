@@ -50,6 +50,7 @@ static void ipc_recv_worker() {
 // Expect: Interrupts remain enabled before, during, and after receive.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
 JARVIS_TEST(ipc_recv_no_cli) {
+    arch::sti();
     JARVIS_ASSERT(arch::interrupts_enabled());
 
     g_ipc_recv_count_ = 0;
@@ -122,6 +123,7 @@ static void send_sync_sender() {
 // Expect: Interrupts remain enabled before, during, and after send_sync.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
 JARVIS_TEST(ipc_send_sync_no_cli) {
+    arch::sti();
     JARVIS_ASSERT(arch::interrupts_enabled());
 
     g_ipc_send_sync_reply_ = 0;

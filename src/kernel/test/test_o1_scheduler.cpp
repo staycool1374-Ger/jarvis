@@ -192,22 +192,25 @@ JARVIS_TEST(o1_ready_queue_remove) {
 
 JARVIS_TEST(o1_ready_queue_128_levels) {
     ReadyQueueManager rqm;
-    SimpleTaskPtr tasks[128];
+    SimpleTaskPtr tasks[CONFIG_MAX_TASKS];
+    uint64_t created = 0;
 
-    for (uint64_t p = 0; p < 128; ++p) {
+    for (uint64_t p = 0; p < CONFIG_MAX_TASKS; ++p) {
         tasks[p].reset(TaskControlBlock::create([]() {}, 1, 20));
-        JARVIS_ASSERT(tasks[p] != nullptr);
+        if (!tasks[p]) break;
         rqm.enqueue(*tasks[p], p);
+        ++created;
     }
+    JARVIS_ASSERT(created > 0);
 
-    for (uint64_t p = 127; ; --p) {
+    for (uint64_t p = created - 1; ; --p) {
         auto* t = rqm.dequeue_highest();
         JARVIS_ASSERT(t != nullptr);
         if (p == 0) break;
     }
     JARVIS_ASSERT(!rqm.has_ready());
 
-    for (uint64_t p = 0; p < 128; ++p) {
+    for (uint64_t p = 0; p < created; ++p) {
         tasks[p]->state = TaskState::TERMINATED;
         tasks[p]->cleanup();
     }

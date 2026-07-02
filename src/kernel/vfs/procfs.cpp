@@ -196,7 +196,7 @@ static const VnodeOps self_ops = {
 };
 
 static Vnode self_vnode = {
-    &self_ops, 1, 0, S_IFDIR, nullptr,
+    &self_ops, 1, 0, S_IFDIR, nullptr, 0,
 };
 
 // ── pid stat vnode ──
@@ -475,7 +475,7 @@ static const VnodeOps proc_root_ops = {
 };
 
 static Vnode proc_root_vnode = {
-    &proc_root_ops, 0, 0, S_IFDIR, nullptr,
+    &proc_root_ops, 0, 0, S_IFDIR, nullptr, 0,
 };
 
 static Vnode* proc_get_root() {
