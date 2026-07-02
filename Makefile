@@ -89,7 +89,7 @@ ifeq ($(UNAME_S),Darwin)
     X86_64_TRIPLET  ?= x86_64-elf-
     AARCH64_TRIPLET ?= aarch64-elf-
     RISCV64_TRIPLET ?= riscv64-elf-
-    export PATH := /opt/homebrew/bin:$(PATH)
+    export PATH := /opt/homebrew/opt/llvm/bin:/opt/homebrew/bin:$(PATH)
 else
     X86_64_TRIPLET  ?= x86_64-linux-gnu-
     AARCH64_TRIPLET ?= aarch64-linux-gnu-
@@ -179,6 +179,11 @@ else ifeq ($(ARCH),riscv64)
     OBJDUMP_DIS_FLAGS :=
 
 endif
+
+# ----- clang-tidy (static analysis, debug builds) -----
+CLANG_TIDY          ?= /opt/homebrew/opt/llvm/bin/clang-tidy
+CLANG_TIDY_CHECKS   := bugprone-*,concurrency-*,performance-*
+CLANG_TIDY_NCORES   := $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 
 # ----- ccache (optional, no-op if not installed) -----
 CCACHE := $(shell which ccache 2>/dev/null)
@@ -370,6 +375,7 @@ check-build-stamp:
 # ------------------------------------------------------------------------------
 # Debug build
 # ------------------------------------------------------------------------------
+debug: clang-tidy
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: check-build-stamp $(KERNEL_DEBUG)
@@ -394,7 +400,7 @@ endif
 # The sub-make receives CXXFLAGS without -DCONFIG_DEBUG (never added to base).
 # The stamp is written first so an interrupted build is detected on next run.
 # ------------------------------------------------------------------------------
-release: CXXFLAGS += -g -O2
+release: CXXFLAGS += -g -O2 -fanalyzer -Wno-error=analyzer-null-argument -Wno-error=analyzer-possible-null-dereference -Wno-error=analyzer-use-of-uninitialized-value -Wno-error=analyzer-infinite-loop -Wno-error=analyzer-malloc-leak -Wno-error=analyzer-undefined-behavior-ptrdiff
 release:
 ifneq ($(ARCH),x86_64)
 	@printf '  %-7s %s\n' 'ERROR' 'Release builds only supported on x86_64 (arch=$(ARCH))'
@@ -830,6 +836,29 @@ clean:
 	rm -rf initrd_root debug release profiling
 	rm -f $(FAT32_DISK)
 	rm -f *.d
+
+# ------------------------------------------------------------------------------
+# clang-tidy static analysis (debug builds only)
+# ------------------------------------------------------------------------------
+CLANG_TIDY_SRCS := $(filter-out src/kernel/test/%.cpp src/lib/test.cpp src/lib/compiler_rt.cpp src/lib/cxxabi.cpp src/lib/new.cpp, $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH))
+CLANG_TIDY_EXCL := $(addprefix --extra-arg=-I,src src/kernel src/lib)
+CLANG_TIDY_DEFS := --extra-arg=-DCONFIG_ARCH_$(ARCH_UPPER) --extra-arg=-DCONFIG_DEBUG
+
+.PHONY: clang-tidy
+clang-tidy:
+	@if command -v $(CLANG_TIDY) >/dev/null 2>&1; then \
+		printf '  %-7s %s\n' 'TIDY' 'clang-tidy (bugprone,concurrency,performance)...';\
+		$(CLANG_TIDY) --checks=$(CLANG_TIDY_CHECKS) --quiet \
+			--extra-arg=-std=c++20 \
+			--extra-arg=-ffreestanding --extra-arg=-fno-exceptions \
+			--extra-arg=-fno-rtti --extra-arg=-fno-builtin \
+			--extra-arg=-fno-stack-protector --extra-arg=-fno-threadsafe-statics \
+			$(CLANG_TIDY_EXCL) $(CLANG_TIDY_DEFS) \
+			$(CLANG_TIDY_SRCS) 2>&1 || true; \
+		printf '  %-7s %s\n' 'TIDY' 'Done'; \
+	else \
+		printf '  %-7s %s\n' 'TIDY' 'clang-tidy not found, skipping'; \
+	fi
 
 # ------------------------------------------------------------------------------
 # Match-all rule: silently consume positional arguments for unified targets.
