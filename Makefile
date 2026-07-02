@@ -370,8 +370,8 @@ check-build-stamp:
 # ------------------------------------------------------------------------------
 # Debug build
 # ------------------------------------------------------------------------------
-debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG
-debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
+debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: check-build-stamp $(KERNEL_DEBUG)
 ifeq ($(ARCH),x86_64)
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf

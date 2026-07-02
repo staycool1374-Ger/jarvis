@@ -79,7 +79,7 @@ Notes
   - [x] Create constexpr test_expected_counts.hpp with x86_64 counts
   - [x] validate_class_count() in register_class() — warns on mismatch
   - [x] validate_all_consistency() — sums individual classes ≥ all check
-- [ ] add: CXXFLAGS += -g -Og -DCONFIG_DEBUG  explizit -fno-omit-frame-pointer for all debug targets into the makefile
+- [x] add: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer for all debug targets into the makefile
 
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
 - [ ] Deadline Miss Detection & Handler
