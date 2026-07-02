@@ -69,7 +69,7 @@ Notes
   - [x] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
   - [x] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
 - [x] Eliminate Unbounded Loops in Hot Paths
-  - [ ] Scheduler::reap_orphans() — replace while (reaped_any) with single-pass + deferred work queue (reverted c28d811, shell broke; kept while(reaped_any))
+  - [x] Scheduler::reap_orphans() — single-pass null-mark + compact, fix current_index_ restore
   - [x] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
   - [x] MemPool::alloc() — verify O(1) free-list traversal (no bitmap scan)
   - [x] VMM::map_page() — verify page-walk depth bounded (4 levels fixed)
