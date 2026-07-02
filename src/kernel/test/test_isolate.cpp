@@ -53,7 +53,8 @@ static size_t off_sched_misc_size() {
     // misc[0]=task_count, misc[1]=cur_idx, misc[2]=next_id
     // misc[3]=idle_ptr (bits), bool preempt @ offset 32
     // misc[5]=shell_ptr, misc[6]=rq_hi, misc[7]=rq_lo
-    return sizeof(uint64_t) * 8 + sizeof(bool);
+    // misc[8]=sporadic_task_count
+    return sizeof(uint64_t) * 9 + sizeof(bool);
 }
 
 static size_t off_daemon_entries(){ return off_sched_misc()
@@ -128,13 +129,14 @@ bool snapshot_create() {
         // preempt is in byte off_sched_misc() + 4*8
         // misc[5] stores shell_task_ptr_
         // misc[6]=rq_bitmap_hi, misc[7]=rq_bitmap_lo
+        // misc[8]=sporadic_task_count
         bool& preempt = *reinterpret_cast<bool*>(
                             g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
         TaskControlBlock* idle_dummy = nullptr;
         Scheduler::capture_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
                                  idle_dummy, preempt,
-                                 &misc[6], &misc[7]);
+                                 &misc[6], &misc[7], &misc[8]);
         // Store the idle pointer (which capture_state set) as bits in misc[3].
         // Use memcpy to avoid strict-aliasing violations.
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
@@ -306,7 +308,7 @@ void snapshot_restore(const char* test_name) {
         Scheduler::restore_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
                                  idle, preempt,
-                                 misc[6], misc[7]);
+                                 misc[6], misc[7], misc[8]);
         // Restore shell_task_ptr_ from misc[5]
         TaskControlBlock* shell_ptr = nullptr;
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));

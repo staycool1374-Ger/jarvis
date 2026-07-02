@@ -163,7 +163,7 @@ void restart_stale_daemons() {
             uint64_t bg = 0;
             uint64_t budget =
                 (strcmp(entries_[i].name, "iocd") == 0) ? 3ULL : 2ULL;
-            task->init_sporadic_server(budget, 10, bg);
+            task->init_sporadic_server(budget, 10, bg, 1);
         }
 
         kernel::Scheduler::add_task(*task);

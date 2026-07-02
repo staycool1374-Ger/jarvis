@@ -43,15 +43,17 @@ namespace kernel {
 ///        from the MemPool.  Idempotent (returns early if already set).
 void TaskControlBlock::init_sporadic_server(uint64_t budget_c,
                                             uint64_t period_t,
-                                            uint64_t bg_prio) noexcept {
+                                            uint64_t bg_prio,
+                                            uint64_t budget_granularity) noexcept {
     if (sporadic_server) return;
     auto* ss = static_cast<task::SporadicServer*>(
         MemPool::alloc(sizeof(task::SporadicServer)));
     if (!ss) return;
     memset(ss, 0, sizeof(task::SporadicServer));
-    ss->init(budget_c, period_t, bg_prio);
+    ss->init(budget_c, period_t, bg_prio, budget_granularity);
     ss->set_base_priority(priority);
     sporadic_server = ss;
+    Scheduler::inc_sporadic_count();
 }
 
 void init_task_common(TaskControlBlock& tcb) {
@@ -720,6 +722,7 @@ void TaskControlBlock::cleanup() noexcept {
         event_group = nullptr;
     }
     if (sporadic_server) {
+        Scheduler::dec_sporadic_count();
         MemPool::free(sporadic_server);
         sporadic_server = nullptr;
     }

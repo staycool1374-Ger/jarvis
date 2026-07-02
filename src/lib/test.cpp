@@ -484,10 +484,7 @@ void run_release() {
 }
 
 void run_registered(uint8_t required_flags) {
-    uint64_t start_ns = arch::Timer::ns();
     run_filtered(required_flags, true);
-    uint64_t end_ns = arch::Timer::ns();
-    print_report(start_ns, end_ns);
     if (g_class_auto_shutdown) {
         uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
         shutdown_kernel(result);

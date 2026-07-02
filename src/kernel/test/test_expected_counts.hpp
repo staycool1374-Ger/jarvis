@@ -34,7 +34,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
     {"bench",               17,     0,       0      },  // IPC + microkernel + syscall/IRQ latency benchmarks
-    {"sporadic",            14,     0,       0      },  // sporadic server tests
+    {"sporadic",            25,     0,       0      },  // sporadic server tests
     {"atomic",              12,     0,       0      },  // atomic operation tests
 };
 

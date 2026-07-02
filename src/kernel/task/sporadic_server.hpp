@@ -24,6 +24,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace kernel {
 namespace task {
@@ -59,10 +60,12 @@ public:
     };
 
     /// @brief Initialises the server parameters.
-    /// @param budget_c  Execution budget C (in ticks).
-    /// @param period_t  Replenishment period T (in ticks, must be > 0).
-    /// @param bg_prio   Priority level when budget is exhausted (lower = less urgent).
-    void init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio) noexcept;
+    /// @param budget_c           Execution budget C (in ticks).
+    /// @param period_t           Replenishment period T (in ticks, must be > 0).
+    /// @param bg_prio            Priority level when budget is exhausted (lower = less urgent).
+    /// @param budget_granularity Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
+    void init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,
+              uint64_t budget_granularity = CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
 
     // ---- Event interface ----
 
@@ -129,15 +132,17 @@ public:
 
 private:
     // ---- Configuration ----
-    uint64_t budget_c_;          /// C  (maximum budget per period, ticks)
-    uint64_t period_t_;          /// T  (replenishment period, ticks)
-    uint64_t base_priority_;     ///  Normal scheduling priority.
-    uint64_t bg_priority_;       ///  Background priority when exhausted.
+    uint64_t budget_c_;               /// C  (maximum budget per period, ticks)
+    uint64_t period_t_;               /// T  (replenishment period, ticks)
+    uint64_t base_priority_;          ///  Normal scheduling priority.
+    uint64_t bg_priority_;            ///  Background priority when exhausted.
+    uint64_t budget_granularity_;     ///  Ticks per budget unit.
 
     // ---- Dynamic state ----
     uint64_t budget_remaining_;       ///< Remaining budget for current period.
     uint64_t consumed_since_active_;  ///< Budget consumed since last activation.
     uint64_t activation_time_;        ///< Tick of most recent idle->active transition.
+    uint64_t consume_counter_;        ///< Tick counter for granularity skip.
     State state_;
 
     // ---- Replenishment queue (circular buffer) ----
@@ -159,6 +164,18 @@ private:
 
 static_assert(sizeof(SporadicServer::Replenishment) <= 16,
               "SporadicServer::Replenishment must fit in 16 bytes");
+
+#if CONFIG_SPORADIC_SERVER_DEADLINE_HOOK
+/// @brief Weak callback invoked on a SporadicServer deadline event.
+/// @param ss     The server that triggered the event.
+/// @param reason 0 = budget exhausted in consume(); 1 = replenishment after
+///               exhaustion in process_replenishments().
+/// The default implementation is a no-op. Override to implement deadline-miss
+/// logging, task demotion, or panic. Called from ISR context — must not block.
+__attribute__((weak))
+void sporadic_server_deadline_handler(SporadicServer* ss,
+                                      uint64_t reason) noexcept;
+#endif
 
 } // namespace task
 } // namespace kernel

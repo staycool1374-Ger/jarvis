@@ -57,6 +57,8 @@ struct TaskDef {
     void (*set_pid_fn)(uint64_t);
     uint64_t (*get_pid_fn)();
 
+    uint64_t       ss_budget_granularity;  ///< for SPORADIC_SERVER (ticks per budget unit, default 1)
+
     size_t         user_stack_size;   ///< for USER_ELF (0 = default 32_KiB)
 
     bool           is_shell;          ///< call Scheduler::set_shell_task after creation

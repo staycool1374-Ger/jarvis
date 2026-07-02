@@ -609,7 +609,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
-                    vfsd_task->init_sporadic_server(2, 10, 0);
+                    vfsd_task->init_sporadic_server(2, 10, 0, 1);
                     kernel::Scheduler::add_task(*vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
                     kernel::daemon::register_daemon(
@@ -633,7 +633,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;
-                    iocd_task->init_sporadic_server(3, 10, 0);
+                    iocd_task->init_sporadic_server(3, 10, 0, 1);
                     kernel::Scheduler::add_task(*iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);
                     kernel::daemon::register_daemon(

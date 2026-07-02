@@ -76,6 +76,7 @@ TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
 uint64_t Scheduler::task_count_ = 0;
 uint64_t Scheduler::current_index_ = 0;
 uint64_t Scheduler::next_task_id_ = 1;
+uint64_t Scheduler::sporadic_task_count_ = 0;
 bool Scheduler::preempt_enabled_ = false;
 ReadyQueueManager Scheduler::ready_queue_;
 TaskControlBlock* Scheduler::idle_task_ = nullptr;
@@ -121,6 +122,7 @@ void Scheduler::init() {
     id_table_insert(idle_task_->id, idle_task_);
     task_count_ = 1;
     current_index_ = 0;
+    sporadic_task_count_ = 0;
     preempt_enabled_ = true;
 }
 
@@ -337,13 +339,16 @@ void Scheduler::on_tick() noexcept {
     }
 
     // Sporadic Server budget management: process replenishments for all
-    // sporadic-server tasks, and consume one tick for the current task.
+    // sporadic-server tasks, bounded by CONFIG_SPORADIC_SERVER_MAX_TASKS,
+    // and consume one tick for the current task.
     {
         auto* cur = current_task();
-        for (uint64_t i = 0; i < task_count_; ++i) {
+        uint64_t found = 0;
+        for (uint64_t i = 0; i < task_count_ && found < sporadic_task_count_; ++i) {
             auto* t = tasks_[i];
             if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (t->sporadic_server) {
+                found++;
                 if (reinterpret_cast<uint64_t>(t->sporadic_server) == 0xFFFFFFFFFFFFFFFFULL) {
                     Logger::raw_write("[BUG] on_tick: t=");
                     Logger::print_dec(t->id);
@@ -704,18 +709,20 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
                               TaskControlBlock*& idle_out,
                               bool& preempt_out,
                               uint64_t* rq_bitmap_hi,
-                              uint64_t* rq_bitmap_lo) {
+                              uint64_t* rq_bitmap_lo,
+                              uint64_t* sporadic_count_out) {
     __builtin_memcpy(tasks_out, tasks_,
                      sizeof(TaskControlBlock*) * MAX_TASKS);
     __builtin_memcpy(id_table_out, id_table_,
                      sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
-    task_count_out   = task_count_;
-    current_idx_out  = current_index_;
-    next_id_out      = next_task_id_;
-    idle_out         = idle_task_;
-    preempt_out      = preempt_enabled_;
-    if (rq_bitmap_hi) *rq_bitmap_hi = ready_queue_.bitmap().raw_hi();
-    if (rq_bitmap_lo) *rq_bitmap_lo = ready_queue_.bitmap().raw_lo();
+    task_count_out    = task_count_;
+    current_idx_out   = current_index_;
+    next_id_out       = next_task_id_;
+    idle_out          = idle_task_;
+    preempt_out       = preempt_enabled_;
+    if (rq_bitmap_hi)  *rq_bitmap_hi  = ready_queue_.bitmap().raw_hi();
+    if (rq_bitmap_lo)  *rq_bitmap_lo  = ready_queue_.bitmap().raw_lo();
+    if (sporadic_count_out) *sporadic_count_out = sporadic_task_count_;
 }
 
 void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
@@ -726,16 +733,18 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* idle_in,
                               bool preempt_in,
                               uint64_t rq_bitmap_hi,
-                              uint64_t rq_bitmap_lo) {
+                              uint64_t rq_bitmap_lo,
+                              uint64_t sporadic_count_in) {
     __builtin_memcpy(tasks_, tasks_in,
                      sizeof(TaskControlBlock*) * MAX_TASKS);
     __builtin_memcpy(id_table_, id_table_in,
                      sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
-    task_count_     = task_count_in;
-    current_index_  = current_idx_in;
-    next_task_id_   = next_id_in;
-    idle_task_      = idle_in;
-    preempt_enabled_ = preempt_in;
+    task_count_          = task_count_in;
+    current_index_       = current_idx_in;
+    next_task_id_        = next_id_in;
+    idle_task_           = idle_in;
+    preempt_enabled_     = preempt_in;
+    sporadic_task_count_ = sporadic_count_in;
 
     // Rebuild ready queue from restored tasks and restore bitmap
     ready_queue_.reset();

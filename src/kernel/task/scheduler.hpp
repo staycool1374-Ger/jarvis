@@ -103,6 +103,17 @@ public:
  
     /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
     static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
+
+    /// @brief Increments the sporadic server task counter (called from init_sporadic_server).
+    static void inc_sporadic_count() noexcept {
+        if (sporadic_task_count_ < MAX_TASKS)
+            __atomic_add_fetch(&sporadic_task_count_, 1UL, __ATOMIC_RELAXED);
+    }
+    /// @brief Decrements the sporadic server task counter (called from cleanup).
+    static void dec_sporadic_count() noexcept {
+        if (sporadic_task_count_ > 0)
+            __atomic_sub_fetch(&sporadic_task_count_, 1UL, __ATOMIC_RELAXED);
+    }
  
     /// @brief Marks a task as READY and adds it to the O(1) ready queue.
     ///        Call this instead of directly setting `task.state = READY`
@@ -157,7 +168,8 @@ public:
                               TaskControlBlock*& idle_out,
                               bool& preempt_out,
                               uint64_t* rq_bitmap_hi = nullptr,
-                              uint64_t* rq_bitmap_lo = nullptr);
+                              uint64_t* rq_bitmap_lo = nullptr,
+                              uint64_t* sporadic_count_out = nullptr);
     static void restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* const* id_table_in,
                               uint64_t task_count_in,
@@ -166,7 +178,8 @@ public:
                               TaskControlBlock* idle_in,
                               bool preempt_in,
                               uint64_t rq_bitmap_hi = 0,
-                              uint64_t rq_bitmap_lo = 0);
+                              uint64_t rq_bitmap_lo = 0,
+                              uint64_t sporadic_count_in = 0);
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
@@ -181,6 +194,7 @@ private:
     static uint64_t task_count_;
     static uint64_t current_index_;
     static uint64_t next_task_id_;
+    static uint64_t sporadic_task_count_;
     static bool preempt_enabled_;
 
     static sync::SpinLock scheduler_lock_;

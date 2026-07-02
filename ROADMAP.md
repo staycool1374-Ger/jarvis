@@ -63,11 +63,11 @@ Notes
   - [x] `cleanup_zombies` dequeues READY tasks before freeing
   - [x] All 13 `state = READY` assignments replaced with `Scheduler::set_task_ready()`
   - [x] All 720 debug tests pass, 132 selftest pass
-- [ ] Sporadic Server — Extend to All Hard Real-Time Tasks
-  - [ ] Add CONFIG_SPORADIC_SERVER_MAX_TASKS (default 8) to config
-  - [ ] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()
-  - [ ] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
-  - [ ] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
+- [x] Sporadic Server — Extend to All Hard Real-Time Tasks
+  - [x] Add CONFIG_SPORADIC_SERVER_MAX_TASKS (default 8) to config
+  - [x] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()
+  - [x] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
+  - [x] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
 - [x] Eliminate Unbounded Loops in Hot Paths
   - [ ] Scheduler::reap_orphans() — replace while (reaped_any) with single-pass + deferred work queue (reverted c28d811, shell broke; kept while(reaped_any))
   - [x] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
@@ -79,7 +79,7 @@ Notes
   - [x] Create constexpr test_expected_counts.hpp with x86_64 counts
   - [x] validate_class_count() in register_class() — warns on mismatch
   - [x] validate_all_consistency() — sums individual classes ≥ all check
-
+- [ ] add: CXXFLAGS += -g -Og -DCONFIG_DEBUG  explizit -fno-omit-frame-pointer for all debug targets into the makefile
 
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
 - [ ] Deadline Miss Detection & Handler
@@ -235,6 +235,10 @@ Notes
 - [ ] **Hardware-Enforced WCET Monitoring:** Programmatically bind the parsed execution budget ($C$) to a high-precision hardware timer (HPET/APIC) upon task context activation to guarantee fault-detection containment during runtime overruns.
 - [ ] **Sandboxed IPC Routing:** Enforce absolute Ring 3 I/O isolation for the spawned ELF task. Restrict direct MMIO and port I/O access, routing generic hardware or file requests through capability-secured IPC channels backed by core daemons (`vfsd`, `iocd`) under Sporadic Server budgets.
 - [ ] **Zero-Overhead Shared Memory Channels:** Implement a capability delegation mechanism to map shared memory pages between the hardware driver server and the `runelf` task. Utilize lock-free SPSC ring buffers spanning page boundaries to achieve zero-syscall, zero-copy real-time data ingestion.
+- [ ] **Real-Time `runelf` Extensions & Incremental Loading:**
+  - [ ] Implement a chunked ELF parser that maps a maximum of CONFIG_ELF_LOAD_PAGES_PER_SLICE per scheduler invocation
+  - [ ] Utilize the existing O(1) MemPool / BufferPool for temporary I/O chunks to block dynamic kernel allocations during the loading process
+  - [ ] Bind the loading mechanism to the vfsd Sporadic Server budget to deterministically throttle the I/O load
 
 ### 0.3.10 Documentation & Certification Artifacts
 ## WCET Analysis Report
@@ -327,3 +331,11 @@ As network daemon (need).
 ### 0.9.2 — USB Stack
 - [ ] USB driver stack (UHCI/EHCI/xHCI) for keyboard, mouse, and storage
 - [ ] Replace PS/2 with USB HID for real-hardware input
+
+---
+
+## Technical Debt & Infrastructure (Cross-Cutting)
+
+### Core Data Structures
+- [ ] **TaskDef refactor:** Replace positional aggregate init with named/designated initializers or builder pattern. Adding a new parameter currently requires touching every entry in `g_task_defs[]` — easy to silently corrupt field assignment.
+- [ ] **Snapshot buffer layout:** Replace manual `sizeof` chain (`off_sched_misc_size()`, `off_daemon_entries()`, etc.) with a struct-based or generator-driven layout. Any change to buffer size shifts all downstream offsets — brittle and hard to audit.

@@ -87,6 +87,20 @@
 #define CONFIG_MAX_PRIORITY 128
 #endif
 
+/// Maximum number of tasks with a SporadicServer attached.
+/// Used to bound the O(n) scan in Scheduler::on_tick().
+/// Valid range: 0–CONFIG_MAX_TASKS. Default: 8.
+#ifndef CONFIG_SPORADIC_SERVER_MAX_TASKS
+#define CONFIG_SPORADIC_SERVER_MAX_TASKS 8
+#endif
+
+/// Number of ticks per budget unit for SporadicServer consume().
+/// Individual servers may override via init() granularity param.
+/// Default: 1 (every tick consumes 1 unit).
+#ifndef CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY
+#define CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY 1
+#endif
+
 // ---------------------------------------------------------------------------
 // Memory Layout Tunables (Architecture-Overridable)
 // ---------------------------------------------------------------------------
@@ -452,6 +466,11 @@
 /// If non-zero, declares weak symbol init_hook() after daemon init complete.
 #ifndef CONFIG_INIT_HOOK
 #define CONFIG_INIT_HOOK 0
+#endif
+
+/// If non-zero, declares weak symbol sporadic_server_deadline_handler(...).
+#ifndef CONFIG_SPORADIC_SERVER_DEADLINE_HOOK
+#define CONFIG_SPORADIC_SERVER_DEADLINE_HOOK 1
 #endif
 
 // ---------------------------------------------------------------------------

@@ -375,11 +375,13 @@ struct TaskControlBlock {
 
     /// @brief Allocates and initialises a SporadicServer for this task
     ///        (e.g. a Ring 3 daemon like vfsd / iocd).
-    /// @param budget_c  Execution budget per period (ticks).
-    /// @param period_t  Replenishment period (ticks).
-    /// @param bg_prio   Priority level when budget exhausted.
+    /// @param budget_c           Execution budget per period (ticks).
+    /// @param period_t           Replenishment period (ticks).
+    /// @param bg_prio            Priority level when budget exhausted.
+    /// @param budget_granularity Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
     void init_sporadic_server(uint64_t budget_c, uint64_t period_t,
-                              uint64_t bg_prio) noexcept;
+                              uint64_t bg_prio,
+                              uint64_t budget_granularity = CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
 
     /// @brief Adds a child to this task's process hierarchy.
     void add_child(TaskControlBlock* child) noexcept;
