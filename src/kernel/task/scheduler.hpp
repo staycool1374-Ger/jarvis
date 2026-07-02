@@ -157,6 +157,20 @@ public:
     /// @brief Removes a task from the O(1) ready queue.
     static void dequeue_ready(TaskControlBlock& task) noexcept;
 
+    /// @brief Lightweight forward iterator over valid tasks in the array.
+    struct TaskIter {
+        uint64_t idx;
+        explicit TaskIter(uint64_t start = 0) : idx(start) {}
+        TaskControlBlock* next(TaskControlBlock* exclude = nullptr) {
+            while (idx < task_count_) {
+                auto* t = tasks_[idx++];
+                if (t && t->magic == TaskControlBlock::TCB_MAGIC && t != exclude)
+                    return t;
+            }
+            return nullptr;
+        }
+    };
+
     /// @name Test-isolation helpers
     static uint64_t snapshot_max_tasks() { return MAX_TASKS; }
     static uint64_t snapshot_id_size()  { return ID_TABLE_SIZE; }

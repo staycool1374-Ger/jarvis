@@ -385,113 +385,143 @@ void Scheduler::reap_orphans() noexcept {
     static bool inside_reap = false;
     if (inside_reap) return;
     inside_reap = true;
+
     auto* current = current_task();
-    bool reaped_any = true;
-    while (reaped_any) {
-        reaped_any = false;
-        for (uint64_t i = 0; i < task_count_; ++i) {
-            auto* t = tasks_[i];
-            if (!t) continue;
-            if (t->state != TaskState::TERMINATED) continue;
-            if (t != idle_task_ && t == current) continue;
+    auto* init_task = (task_count_ > 0) ? tasks_[0] : nullptr;
+    TaskControlBlock* new_idle = nullptr;
 
-            TaskControlBlock* init_task = (task_count_ > 0) ? tasks_[0] :
-                nullptr;
+    // Single pass: null-mark reaped tasks, compact at the end.
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        auto* t = tasks_[i];
+        if (!t) continue;
+        if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+        if (t->state != TaskState::TERMINATED) continue;
+        if (t != idle_task_ && t == current) continue;
 
-            if (init_task && init_task != t) {
-                if (t->first_child) {
-                    auto* child = t->first_child;
-                    t->first_child = nullptr;
-                    if (t->num_children > 0) t->num_children = 0;
-                    while (child) {
-                        auto* next = child->next_sibling;
-                        child->prev_sibling = nullptr;
-                        child->next_sibling = nullptr;
-                        child->parent_id = 0;
-                        init_task->add_child(child);
-                        child = next;
-                    }
-                }
-                for (uint64_t j = 0; j < task_count_; ++j) {
-                    auto* c = tasks_[j];
-                    if (!c || c == t || c == current) continue;
-                    if (c == init_task) continue;
-                    if (c->parent_id == t->id) {
-                        c->parent_id = 0;
-                        if (t->num_children > 0) --t->num_children;
-                        init_task->add_child(c);
-                    }
+        // Adopt children to init_task so they become orphans.
+        if (init_task && init_task != t) {
+            if (t->first_child) {
+                auto* child = t->first_child;
+                t->first_child = nullptr;
+                if (t->num_children > 0) t->num_children = 0;
+                while (child) {
+                    auto* next = child->next_sibling;
+                    child->prev_sibling = nullptr;
+                    child->next_sibling = nullptr;
+                    child->parent_id = 0;
+                    init_task->add_child(child);
+                    child = next;
                 }
             }
+            for (TaskIter it(0);;) {
+                auto* c = it.next(t);
+                if (!c) break;
+                if (c == init_task) continue;
+                if (c->parent_id == t->id) {
+                    c->parent_id = 0;
+                    if (t->num_children > 0) --t->num_children;
+                    init_task->add_child(c);
+                }
+            }
+        }
 
-            // Determine if this task can be reaped
-            bool can_reap = false;
-            if (t->parent_id == 0) {
-                can_reap = true;
-            } else {
-                bool parent_found = false;
-                for (uint64_t j = 0; j < task_count_; ++j) {
-                    auto* p = tasks_[j];
-                    if (p && p->id == t->parent_id) {
-                        parent_found = true;
-                        if (p->state == TaskState::TERMINATED) {
-                            can_reap = true;
-                        } else if (p->waiting_child_pid != 0 &&
-                                   p->waiting_child_pid != t->id &&
-                                   p->waiting_child_pid != static_cast<uint64_t>(-1)) {
-                            can_reap = true;
-                        } else if (p->waiting_child_pid == 0) {
-                            can_reap = true;
-                        }
-                        break;
+        // Determine if this task can be reaped.
+        bool can_reap = false;
+        if (t->parent_id == 0) {
+            can_reap = true;
+        } else if (init_task && t->parent_id == init_task->id &&
+                   init_task->state == TaskState::RUNNING) {
+            // Parent is init and alive — init never blocks on waitpid
+            // in its main loop; children of init are always reapable.
+            can_reap = true;
+        } else {
+            bool parent_found = false;
+            for (TaskIter it(0);;) {
+                auto* p = it.next();
+                if (!p) break;
+                if (p->id == t->parent_id) {
+                    parent_found = true;
+                    if (p->state == TaskState::TERMINATED) {
+                        can_reap = true;
+                    } else if (p->waiting_child_pid != 0 &&
+                               p->waiting_child_pid != t->id &&
+                               p->waiting_child_pid != static_cast<uint64_t>(-1)) {
+                        can_reap = true;
+                    } else if (p->waiting_child_pid == 0) {
+                        can_reap = true;
                     }
+                    break;
                 }
-                if (!parent_found) can_reap = true;
             }
+            if (!parent_found) can_reap = true;
+        }
 
-            if (!can_reap) continue;
+        if (!can_reap) continue;
 
-            if (!t->page_table_shared_) {
-                bool has_sharing_child = false;
-                for (uint64_t j = 0; j < task_count_; ++j) {
-                    auto* c = tasks_[j];
-                    if (!c || c == t || c == current) continue;
-                    if (c->parent_id == t->id && c->page_table_shared_) {
-                        has_sharing_child = true;
-                        break;
-                    }
+        // If this task shares its page table, defer until no children depend on it.
+        if (!t->page_table_shared_) {
+            bool has_sharing_child = false;
+            for (TaskIter it(0);;) {
+                auto* c = it.next(t);
+                if (!c) break;
+                if (c == current) continue;
+                if (c->parent_id == t->id && c->page_table_shared_) {
+                    has_sharing_child = true;
+                    break;
                 }
-                if (has_sharing_child) continue;
             }
+            if (has_sharing_child) continue;
+        }
 
-            if (t == idle_task_) {
-                auto* new_idle = TaskControlBlock::create(kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
-                new_idle->state = TaskState::READY;
-                dequeue_ready(*t);
-                t->cleanup();
-                id_table_remove(t);
-                for (uint64_t k = i; k + 1 < task_count_; ++k) {
-                    tasks_[k] = tasks_[k + 1];
-                }
-                --task_count_;
-                MemPool::free(t);
-                for (uint64_t k = task_count_; k > 0; --k) {
-                    tasks_[k] = tasks_[k - 1];
-                }
-                tasks_[0] = new_idle;
-                ++task_count_;
-                current_index_ = 0;
-                idle_task_ = new_idle;
-                id_table_insert(idle_task_->id, idle_task_);
-            } else {
-                t->cleanup();
-                remove_task(*t);
-                MemPool::free(t);
-            }
-            reaped_any = true;
+        // Destroy the task (no compaction during scan).
+        if (t == idle_task_) {
+            auto* created = TaskControlBlock::create(
+                kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
+            created->state = TaskState::READY;
+            dequeue_ready(*t);
+            t->cleanup();
+            id_table_remove(t);
+            MemPool::free(t);
+            tasks_[i] = nullptr;
+            new_idle = created;
+        } else {
+            t->cleanup();
+            id_table_remove(t);
+            dequeue_ready(*t);
+            kernel::test::ResourceTracker::instance().track_task_remove();
+            MemPool::free(t);
+            tasks_[i] = nullptr;
+        }
+    }
+
+    // Compact the task array, removing null slots.
+    uint64_t wr = 0;
+    for (uint64_t rd = 0; rd < task_count_; ++rd) {
+        if (tasks_[rd]) tasks_[wr++] = tasks_[rd];
+    }
+
+    // If idle was recreated, insert it at index 0.
+    if (new_idle) {
+        for (uint64_t k = wr; k > 0; --k)
+            tasks_[k] = tasks_[k - 1];
+        tasks_[0] = new_idle;
+        ++wr;
+        idle_task_ = new_idle;
+        id_table_insert(new_idle->id, new_idle);
+    }
+
+    task_count_ = wr;
+
+    // Restore current_index_ for the calling task.
+    current_index_ = 0;
+    TaskControlBlock* target = (current == idle_task_ && new_idle) ? new_idle : current;
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i] == target) {
+            current_index_ = i;
             break;
         }
     }
+
     inside_reap = false;
 }
 
