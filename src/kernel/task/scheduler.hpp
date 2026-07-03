@@ -175,6 +175,41 @@ public:
     /// @name Test-isolation helpers
     static uint64_t snapshot_max_tasks() { return MAX_TASKS; }
     static uint64_t snapshot_id_size()  { return ID_TABLE_SIZE; }
+
+    /// @brief Per-task plain fields that are deep-copied into the snapshot.
+    ///        Pointers to heap sub-objects (kernel_stack, page_table_,
+    ///        msg_queue, etc.) are NOT included — they survive via the
+    ///        pointer array restore and MemPool/PMM restoration.
+    struct TaskFields {
+        uint64_t magic;              ///< TCB_MAGIC for validity check
+        uint64_t id;                 ///< Task ID for matching on restore
+        uint64_t parent_id;
+        TaskState state;
+        uint64_t priority;
+        uint64_t base_priority;
+        uint64_t period_ticks;
+        uint64_t deadline_ticks;
+        uint64_t executed_ticks;
+        uint64_t remaining_ticks;
+        uint64_t exit_code;
+        TaskContext context;         ///< Full register context (critical: rsp)
+        uint64_t kernel_stack_top;   ///< For RSP-range validation
+        uint64_t waiting_child_pid;
+        uint64_t waiting_child_status;
+        uint64_t pending_signals;
+        uint64_t alarm_ticks;
+        bool     alarm_armed;
+    };
+    static uint64_t snapshot_task_fields_size() { return sizeof(TaskFields) * MAX_TASKS; }
+
+    /// @brief Capture per-task plain fields into the snapshot buffer.
+    ///        Called from test_isolate's snapshot_create.
+    static void capture_task_fields(TaskFields* out);
+
+    /// @brief Restore per-task plain fields from the snapshot buffer onto
+    ///        existing task objects (matched by ID).  Called from
+    ///        test_isolate's snapshot_restore after restore_state().
+    static void restore_task_fields(const TaskFields* saved);
     static void capture_state(TaskControlBlock** tasks_out,
                               TaskControlBlock** id_table_out,
                               uint64_t& task_count_out,

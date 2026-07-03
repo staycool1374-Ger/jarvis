@@ -57,8 +57,10 @@ static size_t off_mempool_data() { return off_mempool_meta()
                                        + MemPool::pool_count() * sizeof(MemPool::PoolMeta); }
 
 static size_t off_sched_tasks()  { return off_mempool_data() + MemPool::pool_data_bytes(); }
-static size_t off_sched_idtable(){ return off_sched_tasks()
+static size_t off_sched_task_fields() { return off_sched_tasks()
                                        + Scheduler::snapshot_max_tasks() * sizeof(TaskControlBlock*); }
+static size_t off_sched_idtable(){ return off_sched_task_fields()
+                                       + Scheduler::snapshot_task_fields_size(); }
 static size_t off_sched_misc()   { return off_sched_idtable()
                                        + Scheduler::snapshot_id_size() * sizeof(TaskControlBlock*); }
 
@@ -155,6 +157,11 @@ bool snapshot_create() {
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
         auto* shell_ptr = Scheduler::get_shell_task();
         __builtin_memcpy(&misc[5], &shell_ptr, sizeof(shell_ptr));
+
+        // Save per-task plain fields for deep-copy restoration
+        auto* task_fields = reinterpret_cast<Scheduler::TaskFields*>(
+                                g_snapshot + off_sched_task_fields());
+        Scheduler::capture_task_fields(task_fields);
     }
 
     // ---- Daemon ----
@@ -325,6 +332,13 @@ void snapshot_restore(const char* test_name) {
         TaskControlBlock* shell_ptr = nullptr;
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));
         Scheduler::set_shell_task(shell_ptr);
+
+        // Restore per-task plain fields (deep-copy) to fix any corrupted
+        // context.rsp / state / scheduling params that accumulated during
+        // test execution and survived the pointer-array-only restore.
+        auto* task_fields = reinterpret_cast<const Scheduler::TaskFields*>(
+                                g_snapshot + off_sched_task_fields());
+        Scheduler::restore_task_fields(task_fields);
     }
 
     // ---- Re-identify current task by RSP match ----
@@ -332,11 +346,12 @@ void snapshot_restore(const char* test_name) {
     // actual CPU RSP belongs to the caller (kernel_main on the boot stack
     // or an existing task's kernel stack).  Find the task whose kernel stack
     // range contains the current RSP and set current_index_ to that task.
-    // If no match (RSP on boot stack), fall back to the init task (PID 1).
+    // If no match (RSP on boot stack), leave current_index_ as restored by
+    // restore_state() — switch_to_task() will detect the boot stack and skip
+    // context switches until a proper task stack is active.
     {
         uint64_t cur_rsp;
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
-        bool found = false;
         for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
             auto* t = Scheduler::task_at(i);
             if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
@@ -346,26 +361,10 @@ void snapshot_restore(const char* test_name) {
                     if (i != Scheduler::current_index()) {
                         Scheduler::set_current_index(i);
                     }
-                    found = true;
                     break;
                 }
             }
         }
-        if (!found) {
-            // RSP is on the boot stack (kernel_main running tests).
-            // Find the init task (PID 1) and make it current.
-            for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-                auto* t = Scheduler::task_at(i);
-                if (t && t->id == 1 && t->magic == TaskControlBlock::TCB_MAGIC) {
-                    if (i != Scheduler::current_index()) {
-                        Scheduler::set_current_index(i);
-                    }
-                    found = true;
-                    break;
-                }
-            }
-        }
-        (void)found;
     }
 
     // ---- Daemon ----
@@ -473,6 +472,31 @@ void snapshot_restore(const char* test_name) {
     // ---- Reload daemon tasks ----
     reload_daemon_tasks();
 
+    // ---- Post-reload fixup ----
+    // Ensure current_index_ points to a real task (not idle) to prevent
+    // timer ISRs from treating a boot-stack execution as idle's context.
+    {
+        auto* cur = Scheduler::current_task();
+        if (!cur || cur->magic != TaskControlBlock::TCB_MAGIC ||
+            cur == Scheduler::get_idle_task()) {
+            // Find first non-idle, non-null task
+            for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+                auto* t = Scheduler::task_at(i);
+                if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
+                    t != Scheduler::get_idle_task()) {
+                    Scheduler::set_current_index(i);
+                    break;
+                }
+            }
+        }
+        // Fix idle's context.rsp to its initial position so that even if
+        // a context switch reaches idle, its register frame is valid.
+        auto* idle = Scheduler::get_idle_task();
+        if (idle && idle->magic == TaskControlBlock::TCB_MAGIC) {
+            TASK_STACK_PTR(idle) = idle->kernel_stack_top - sizeof(TaskContext);
+        }
+    }
+
     // ---- Post-reload diagnostic ----
     {
         auto* cur = Scheduler::current_task();
@@ -509,18 +533,24 @@ void snapshot_destroy() {
 
 void reload_daemon_tasks() {
     arch::IrqGuard guard;
+    auto* current = Scheduler::current_task();
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
         const auto& entry = daemon::get_entry(i);
         if (entry.pid != 0) {
             auto* task = Scheduler::find_task(entry.pid);
             if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
-                task->state = TaskState::TERMINATED;
-                task->exit_code = 0;
+                // Don't kill the calling task — it's the snapshot's current
+                // task (may be a daemon).  Killing it would force
+                // reap_orphans to fall back to current_index_ = 0 (idle),
+                // triggering spurious context switches from the boot stack.
+                if (task != current) {
+                    task->state = TaskState::TERMINATED;
+                    task->exit_code = 0;
+                }
             }
             daemon::notify_death(entry.pid);
         }
     }
-    auto* current = Scheduler::current_task();
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
         if (t && t != current &&
