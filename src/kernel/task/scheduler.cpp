@@ -490,7 +490,6 @@ void Scheduler::reap_orphans() noexcept {
             t->cleanup();
             id_table_remove(t);
             dequeue_ready(*t);
-            kernel::test::ResourceTracker::instance().track_task_remove();
             MemPool::free(t);
             tasks_[i] = nullptr;
         }

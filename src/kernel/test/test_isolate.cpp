@@ -327,6 +327,47 @@ void snapshot_restore(const char* test_name) {
         Scheduler::set_shell_task(shell_ptr);
     }
 
+    // ---- Re-identify current task by RSP match ----
+    // restore_state() restores current_index_ from the snapshot, but the
+    // actual CPU RSP belongs to the caller (kernel_main on the boot stack
+    // or an existing task's kernel stack).  Find the task whose kernel stack
+    // range contains the current RSP and set current_index_ to that task.
+    // If no match (RSP on boot stack), fall back to the init task (PID 1).
+    {
+        uint64_t cur_rsp;
+        asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
+        bool found = false;
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
+                t->kernel_stack && t->kernel_stack_top) {
+                uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+                if (cur_rsp >= base && cur_rsp < t->kernel_stack_top) {
+                    if (i != Scheduler::current_index()) {
+                        Scheduler::set_current_index(i);
+                    }
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            // RSP is on the boot stack (kernel_main running tests).
+            // Find the init task (PID 1) and make it current.
+            for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+                auto* t = Scheduler::task_at(i);
+                if (t && t->id == 1 && t->magic == TaskControlBlock::TCB_MAGIC) {
+                    if (i != Scheduler::current_index()) {
+                        Scheduler::set_current_index(i);
+                    }
+                    found = true;
+                    break;
+                }
+            }
+        }
+        (void)found;
+    }
+
     // ---- Daemon ----
     {
         auto* entries = reinterpret_cast<const daemon::DaemonEntry*>(

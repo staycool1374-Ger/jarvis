@@ -726,6 +726,7 @@ void TaskControlBlock::cleanup() noexcept {
         MemPool::free(sporadic_server);
         sporadic_server = nullptr;
     }
+    kernel::test::ResourceTracker::instance().track_task_remove();
 }
  
 } // namespace kernel

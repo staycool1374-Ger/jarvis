@@ -142,6 +142,7 @@ public:
     static errors::SchedulerError alloc_id_err(uint64_t& out_id);
 
     static uint64_t current_index() noexcept { return current_index_; }
+    static void set_current_index(uint64_t idx) noexcept { current_index_ = idx; }
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
     static TaskControlBlock* get_shell_task() noexcept { return shell_task_ptr_; }
 
