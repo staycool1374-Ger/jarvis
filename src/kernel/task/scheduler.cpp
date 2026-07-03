@@ -172,6 +172,16 @@ void Scheduler::remove_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     id_table_remove(&task);
     dequeue_ready(task);
+
+    // Clear any pending context-switch globals that point to this task.
+    // remove_task is called during test cleanup — a prior reschedule()
+    // may have set save_rsp_to to &task.context.rsp, and the timer ISR
+    // will later dereference it.  If the task is freed first, the ISR
+    // writes boot-stack RSP into freed memory and loads garbage → RIP=0.
+    __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
