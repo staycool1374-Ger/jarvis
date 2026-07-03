@@ -207,7 +207,8 @@ TaskControlBlock* Scheduler::find_task(uint64_t id) noexcept {
 bool Scheduler::needs_switch() noexcept {
     if (task_count_ <= 1) return false;
     auto* current = tasks_[current_index_];
-    if (!current || current == idle_task_) return true;
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) return false;
+    if (current == idle_task_) return true;
 
     uint64_t cur_eff = effective_priority(current);
     for (uint64_t i = 1; i < task_count_; ++i) {
@@ -264,7 +265,8 @@ void Scheduler::set_current(TaskControlBlock& task) noexcept {
 
 void Scheduler::set_current_by_id(uint64_t id) noexcept {
     for (uint64_t i = 0; i < task_count_; ++i) {
-        if (tasks_[i]->id == id) {
+        auto* t = tasks_[i];
+        if (t && t->magic == TaskControlBlock::TCB_MAGIC && t->id == id) {
             current_index_ = i;
             return;
         }
@@ -494,10 +496,16 @@ void Scheduler::reap_orphans() noexcept {
         }
     }
 
-    // Compact the task array, removing null slots.
+    // Compact the task array, removing null slots and dangling pointers.
     uint64_t wr = 0;
     for (uint64_t rd = 0; rd < task_count_; ++rd) {
-        if (tasks_[rd]) tasks_[wr++] = tasks_[rd];
+        if (tasks_[rd]) {
+            if (tasks_[rd]->magic != TaskControlBlock::TCB_MAGIC) {
+                tasks_[rd] = nullptr;
+                continue;
+            }
+            tasks_[wr++] = tasks_[rd];
+        }
     }
 
     // If idle was recreated, insert it at index 0.
@@ -528,7 +536,8 @@ void Scheduler::reap_orphans() noexcept {
 void Scheduler::cleanup_test_tasks() noexcept {
     for (uint64_t i = 1; i < task_count_; ++i) {
         auto* t = tasks_[i];
-        if (t && t->state != TaskState::TERMINATED) {
+        if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
+            t->state != TaskState::TERMINATED) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
         }
@@ -537,7 +546,8 @@ void Scheduler::cleanup_test_tasks() noexcept {
     uint64_t i = 1;
     while (i < task_count_) {
         auto* t = tasks_[i];
-        if (t && t != idle_task_) {
+        if (t && t != idle_task_ &&
+            t->magic == TaskControlBlock::TCB_MAGIC) {
             t->cleanup();
             remove_task(*t);
             MemPool::free(t);
@@ -567,7 +577,8 @@ static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock* t, const ch
     auto top = t->kernel_stack_top;
     if (rsp >= base && rsp <= top) return true;
     Logger::raw_write("[SCHED] "); Logger::raw_write(label);
-    Logger::raw_write(": rsp=0x"); Logger::print_hex(rsp);
+    Logger::raw_write(": task id="); Logger::print_dec(t->id);
+    Logger::raw_write(" rsp=0x"); Logger::print_hex(rsp);
     Logger::raw_write(" outside stack [0x"); Logger::print_hex(base);
     Logger::raw_write("-0x"); Logger::print_hex(top);
     Logger::raw_write("]\n");
@@ -583,7 +594,16 @@ static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, c
     if (naddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next low 0x"); Logger::print_hex(naddr); Logger::raw_write("\n"); return false; }
     if (current->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current magic=0x"); Logger::print_hex(current->magic); Logger::raw_write("\n"); return false; }
     if (next->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next magic=0x"); Logger::print_hex(next->magic); Logger::raw_write("\n"); return false; }
-    if (!rsp_in_stack_range(TASK_STACK_PTR(next), next, label)) return false;
+    if (!rsp_in_stack_range(TASK_STACK_PTR(next), next, label)) {
+        Logger::raw_write("[SCHED] "); Logger::raw_write(label);
+        Logger::raw_write(": current id="); Logger::print_dec(current->id);
+        Logger::raw_write(" rsp=0x"); Logger::print_hex(TASK_STACK_PTR(current));
+        Logger::raw_write(" state="); Logger::print_dec(static_cast<uint64_t>(current->state));
+        Logger::raw_write(" kstack=[0x"); Logger::print_hex(reinterpret_cast<uint64_t>(current->kernel_stack));
+        Logger::raw_write("-0x"); Logger::print_hex(current->kernel_stack_top);
+        Logger::raw_write("]\n");
+        return false;
+    }
     return true;
 }
 
@@ -698,7 +718,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     }
 
     auto* current = tasks_[current_index_];
-    if (!current) {
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
         scheduler_lock_.unlock();
         return;
     }
@@ -716,7 +736,7 @@ void Scheduler::reschedule() noexcept {
     if (task_count_ <= 1) return;
 
     auto* current = tasks_[current_index_];
-    if (!current) return;
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) return;
 
     auto* next = next_task();
     if (next && next != current) {
@@ -809,7 +829,62 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
 }
 
 } // namespace kernel
- 
+
+extern "C" void scheduler_diag_pre_save() {
+#ifdef CONFIG_DEBUG
+    uint64_t rsp;
+    asm volatile("mov %%rsp, %0" : "=r"(rsp));
+    auto* cur = kernel::Scheduler::current_task();
+    auto cidx = kernel::Scheduler::current_index();
+    if (cur && cur->magic == kernel::TaskControlBlock::TCB_MAGIC) {
+        auto base = reinterpret_cast<uint64_t>(cur->kernel_stack);
+        auto top = cur->kernel_stack_top;
+        if (rsp < base || rsp > top) {
+            kernel::Logger::raw_write("[DIAG] pre-save: idx=");
+            kernel::Logger::print_dec(cidx);
+            kernel::Logger::raw_write(" id=");
+            kernel::Logger::print_dec(cur->id);
+            kernel::Logger::raw_write(" cur_rsp=0x");
+            kernel::Logger::print_hex(rsp);
+            kernel::Logger::raw_write(" ctx_rsp=0x");
+            kernel::Logger::print_hex(cur->context.rsp);
+            kernel::Logger::raw_write(" state=");
+            kernel::Logger::print_dec(static_cast<uint64_t>(cur->state));
+            kernel::Logger::raw_write(" kstack=[0x");
+            kernel::Logger::print_hex(base);
+            kernel::Logger::raw_write("-0x");
+            kernel::Logger::print_hex(top);
+            kernel::Logger::raw_write("]\n");
+        } else {
+            static uint64_t diag_cnt = 0;
+            if (++diag_cnt % 1000 == 0) {
+                kernel::Logger::raw_write("[DIAG] pre-save: idx=");
+                kernel::Logger::print_dec(cidx);
+                kernel::Logger::raw_write(" id=");
+                kernel::Logger::print_dec(cur->id);
+                kernel::Logger::raw_write(" rsp=0x");
+                kernel::Logger::print_hex(rsp);
+                kernel::Logger::raw_write("\n");
+            }
+        }
+    } else if (!cur) {
+        kernel::Logger::raw_write("[DIAG] pre-save: idx=");
+        kernel::Logger::print_dec(cidx);
+        kernel::Logger::raw_write(" cur=NULL\n");
+    } else {
+        kernel::Logger::raw_write("[DIAG] pre-save: idx=");
+        kernel::Logger::print_dec(cidx);
+        kernel::Logger::raw_write(" id=");
+        kernel::Logger::print_dec(cur->id);
+        kernel::Logger::raw_write(" magic=0x");
+        kernel::Logger::print_hex(cur->magic);
+        kernel::Logger::raw_write(" bad_magic\n");
+    }
+#else
+    (void)0;
+#endif
+}
+
 // --- Error-returning overloads ---
 namespace kernel {
  

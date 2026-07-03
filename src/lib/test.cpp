@@ -220,7 +220,7 @@ static void print_test_header(const TestCase& tc, const char* test_class, size_t
 }
 
 static void run_one(const TestCase& tc, const char* test_class, size_t test_num, size_t total_tests) {
-    ResourceCounters before_rsrc;
+    ResourceCounters before_rsrc = {};
     kernel::test::ResourceTracker::instance().capture(before_rsrc);
     size_t before_fail = Registry::failed();
 
@@ -232,7 +232,7 @@ static void run_one(const TestCase& tc, const char* test_class, size_t test_num,
         tc.func();
     }
 
-    ResourceCounters after_rsrc;
+    ResourceCounters after_rsrc = {};
     kernel::test::ResourceTracker::instance().capture(after_rsrc);
 
     bool passed = (Registry::failed() == before_fail);

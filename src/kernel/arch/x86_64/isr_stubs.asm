@@ -19,6 +19,7 @@ extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
 extern scheduler_load_cr3_from
 extern scheduler_on_context_switch
+extern scheduler_diag_pre_save
 extern isr_nesting_depth
 
 %macro ISR_NOERR 1
@@ -110,6 +111,27 @@ isr_common:
     ; Deeper nesting (≥ 3) indicates a bug — skip to avoid stack corruption.
     cmp qword [rel isr_nesting_depth], 2
     ja .restore
+
+    ; Diagnostic: check RSP before saving (preserve caller-saved regs)
+    push rax
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    call scheduler_diag_pre_save
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rsi
+    pop rdi
+    pop rdx
+    pop rcx
+    pop rax
 
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]

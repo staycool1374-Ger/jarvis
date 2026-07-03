@@ -108,6 +108,7 @@ public:
     /// @return true if memory may have been freed (caller should retry).
     using OOMHandler = bool (*)();
     static void set_oom_handler(OOMHandler h) { oom_handler_ = h; }
+    static OOMHandler get_oom_handler() { return oom_handler_; }
 
     /// @name Test-isolation helpers
     /// @brief Expose internal bitmaps for snapshot/restore.

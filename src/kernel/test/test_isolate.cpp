@@ -29,10 +29,23 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
 
+
 namespace kernel::test {
+
+#ifdef __x86_64__
+#  define TASK_STACK_PTR(t) ((t)->context.rsp)
+#elif defined(__aarch64__)
+#  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#else
+#  define TASK_STACK_PTR(t) ((t)->context.sp)
+#endif
 
 static uint8_t* g_snapshot = nullptr;
 static size_t   g_snapshot_size = 0;
+
+// Maximum kernel stack entries (one per task, conservatively bounded)
+static constexpr uint64_t KSTACK_ENTRY_SIZE = sizeof(uint64_t) * 2  // kernel_stack ptr + size
+                                             + ::mem::STACK_SIZE;
 
 // --- buffer layout helpers (all offsets relative to g_snapshot) ---
 static size_t off_pmm_bitmap()   { return 0; }
@@ -71,9 +84,16 @@ static size_t off_rsrc_counts()   { return off_bufpool() + BufferPool::state_byt
 static size_t off_user_page_count(){ return off_rsrc_counts() + sizeof(ResourceCounters); }
 static size_t off_user_page_data() { return off_user_page_count() + sizeof(uint64_t); }
 
-static size_t total_size(size_t user_page_count) {
+static size_t off_kstack_header(size_t user_page_count) {
     return off_user_page_data()
          + user_page_count * (sizeof(uint64_t) + arch::PAGE_SIZE);
+}
+
+static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
+    // kstack header + entries + context frame (rsp value + frame data)
+    size_t kstack_area = sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
+    size_t ctx_frame = sizeof(uint64_t) + sizeof(TaskContext);
+    return off_kstack_header(user_page_count) + kstack_area + ctx_frame;
 }
 
 bool snapshot_create() {
@@ -81,8 +101,8 @@ bool snapshot_create() {
 
     // Count user-owned pages from the owner bitmap
     size_t user_page_count = 0;
+    size_t total_pages_sys = PMM::total_memory() / arch::PAGE_SIZE;
     {
-        size_t total_pages_sys = PMM::total_memory() / arch::PAGE_SIZE;
         uint8_t* owner_bmp = PMM::owner_bitmap_ptr();
         for (size_t i = 0; i < total_pages_sys; ++i) {
             if ((owner_bmp[i / 8] >> (i % 8)) & 1)
@@ -90,7 +110,8 @@ bool snapshot_create() {
         }
     }
 
-    size_t total = total_size(user_page_count);
+    uint64_t task_count = Scheduler::task_count();
+    size_t total = total_size(user_page_count, task_count);
     size_t pages = (total + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
     uint64_t phys = PMM::alloc_contiguous(pages);
     if (!phys) { return false; }
@@ -124,12 +145,6 @@ bool snapshot_create() {
                             g_snapshot + off_sched_idtable());
         auto* misc    = reinterpret_cast<uint64_t*>(
                             g_snapshot + off_sched_misc());
-        // misc[0]=task_count, misc[1]=current_idx, misc[2]=next_id
-        // misc[3] stores idle ptr as bits
-        // preempt is in byte off_sched_misc() + 4*8
-        // misc[5] stores shell_task_ptr_
-        // misc[6]=rq_bitmap_hi, misc[7]=rq_bitmap_lo
-        // misc[8]=sporadic_task_count
         bool& preempt = *reinterpret_cast<bool*>(
                             g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
         TaskControlBlock* idle_dummy = nullptr;
@@ -137,10 +152,7 @@ bool snapshot_create() {
                                  misc[0], misc[1], misc[2],
                                  idle_dummy, preempt,
                                  &misc[6], &misc[7], &misc[8]);
-        // Store the idle pointer (which capture_state set) as bits in misc[3].
-        // Use memcpy to avoid strict-aliasing violations.
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
-        // Capture shell_task_ptr_ — not part of capture_state; stored in misc[5]
         auto* shell_ptr = Scheduler::get_shell_task();
         __builtin_memcpy(&misc[5], &shell_ptr, sizeof(shell_ptr));
     }
@@ -154,7 +166,7 @@ bool snapshot_create() {
         daemon::capture_state(entries, num);
     }
 
-    // ---- VFSD / IOCD PIDs (static globals not part of any snapshotted subsystem) ----
+    // ---- VFSD / IOCD PIDs ----
     *reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()) = vfsd::get_vfsd_pid();
     *reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()) = iocd::get_iocd_pid();
 
@@ -170,7 +182,6 @@ bool snapshot_create() {
     {
         *reinterpret_cast<uint64_t*>(g_snapshot + off_user_page_count()) = user_page_count;
         uint8_t* out = g_snapshot + off_user_page_data();
-        size_t total_pages_sys = PMM::total_memory() / arch::PAGE_SIZE;
         uint8_t* owner_bmp = PMM::owner_bitmap_ptr();
         for (size_t i = 0; i < total_pages_sys; ++i) {
             if ((owner_bmp[i / 8] >> (i % 8)) & 1) {
@@ -184,6 +195,45 @@ bool snapshot_create() {
         }
     }
 
+    // ---- Kernel stacks (save all tasks) ----
+    {
+        uint64_t num_kstacks = Scheduler::task_count();
+        *reinterpret_cast<uint64_t*>(g_snapshot + off_kstack_header(user_page_count)) = num_kstacks;
+        uint8_t* out = g_snapshot + off_kstack_header(user_page_count) + sizeof(uint64_t);
+        for (uint64_t i = 0; i < num_kstacks; ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (!t || !t->kernel_stack) {
+                // Write a sentinel entry so we can skip at restore
+                *reinterpret_cast<uint64_t*>(out) = 0;
+                *reinterpret_cast<uint64_t*>(out + sizeof(uint64_t)) = 0;
+                out += KSTACK_ENTRY_SIZE;
+                continue;
+            }
+            // Save kernel_stack virtual address for matching at restore
+            *reinterpret_cast<uint64_t*>(out) =
+                reinterpret_cast<uint64_t>(t->kernel_stack);
+            uint64_t kstack_size = t->kernel_stack_top
+                                 - reinterpret_cast<uint64_t>(t->kernel_stack);
+            *reinterpret_cast<uint64_t*>(out + sizeof(uint64_t)) = kstack_size;
+            __builtin_memcpy(out + sizeof(uint64_t) * 2,
+                             t->kernel_stack,
+                             kstack_size);
+            out += KSTACK_ENTRY_SIZE;
+        }
+
+        // ---- Current task context frame (after all kstack entries) ----
+        {
+            auto* current = Scheduler::current_task();
+            uint64_t rsp = TASK_STACK_PTR(current);
+            size_t ctx_off = off_kstack_header(user_page_count)
+                           + sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
+            *reinterpret_cast<uint64_t*>(g_snapshot + ctx_off) = rsp;
+            __builtin_memcpy(g_snapshot + ctx_off + sizeof(uint64_t),
+                             reinterpret_cast<void*>(rsp),
+                             sizeof(TaskContext));
+        }
+    }
+
     return true;
 }
 
@@ -191,31 +241,24 @@ void snapshot_restore(const char* test_name) {
     if (!g_snapshot) return;
     arch::IrqGuard guard;
 
-    // Clear any pending context-switch state that a test may have left
-    // via reschedule().  Without this, the next timer IRQ would use stale
-    // RSP/CR3 values and corrupt memory.
+    // Clear any pending context-switch state
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
 
-    // Check for scheduler corruption that occurred during the test
-    // (invalid TCB magic, RSP outside kernel-stack range, etc).
-    // The corruption counter is a monotonic counter — if it advanced during
-    // the test, something went wrong.
     uint64_t corr = __atomic_exchange_n(&scheduler_corruption_count, (uint64_t)0, __ATOMIC_ACQ_REL);
     if (corr > 0) {
         Logger::raw_write("[SCHED] corruption_count=");
         Logger::print_dec(corr);
         Logger::raw_write(" during test \"");
         Logger::raw_write(test_name ? test_name : "?");
-        Logger::raw_write("\" — see [SCHED] log lines above\n");
+        Logger::raw_write("\"\n");
         kernel::test::Registry::record_failure(__FILE__, __LINE__,
             "scheduler corruption detected");
     }
 
-    // Check resource counters before restoring — warn on any leaks / double-frees
     {
         ResourceCounters baseline;
         __builtin_memcpy(&baseline, g_snapshot + off_rsrc_counts(),
@@ -235,62 +278,32 @@ void snapshot_restore(const char* test_name) {
             *reinterpret_cast<uint64_t*>(g_snapshot + off_pmm_free());
     }
 
-    // ---- User page content (restore after PMM bitmap so pages are marked allocated) ----
+    // ---- User page content ----
     {
         uint64_t saved_count = *reinterpret_cast<uint64_t*>(
                                    g_snapshot + off_user_page_count());
         size_t total_pages = PMM::total_memory() / arch::PAGE_SIZE;
-        if (saved_count > total_pages) {
-            Logger::raw_write("[SNAP] user_page_count corruption detected: saved_count=");
-            Logger::print_dec(saved_count);
-            Logger::raw_write(" total_pages=");
-            Logger::print_dec(total_pages);
-            Logger::raw_write(" off_upc=");
-            Logger::print_dec(off_user_page_count());
-            Logger::raw_write(" off_upd=");
-            Logger::print_dec(off_user_page_data());
-            Logger::raw_write("\n");
-            saved_count = 0;
-        } else {
-            Logger::raw_write("[SNAP] user_page_count=");
-            Logger::print_dec(saved_count);
-            Logger::raw_write(" total_pages=");
-            Logger::print_dec(total_pages);
-            Logger::raw_write("\n");
-        }
         uint8_t* in = g_snapshot + off_user_page_data();
         for (uint64_t p = 0; p < saved_count; ++p) {
             uint64_t page_index = *reinterpret_cast<uint64_t*>(in);
-            if (page_index >= total_pages) {
-                in += sizeof(uint64_t) + arch::PAGE_SIZE;
-                continue;
+            if (page_index < total_pages) {
+                __builtin_memcpy(
+                    reinterpret_cast<void*>(page_index * arch::PAGE_SIZE
+                                            + arch::HHDM_OFFSET),
+                    in + sizeof(uint64_t),
+                    arch::PAGE_SIZE);
             }
-            __builtin_memcpy(
-                reinterpret_cast<void*>(page_index * arch::PAGE_SIZE
-                                        + arch::HHDM_OFFSET),
-                in + sizeof(uint64_t),
-                arch::PAGE_SIZE);
             in += sizeof(uint64_t) + arch::PAGE_SIZE;
         }
     }
 
-    // ---- MemPool (restore data first, then meta rebuilds free list) ----
+    // ---- MemPool ----
     {
-        Logger::raw_write("[SNAP] pre-restore pool8 fc=");
-        Logger::print_dec(MemPool::pool_free_count(8));
-        Logger::raw_write(" tcnt=");
-        Logger::print_dec(Scheduler::task_count());
-        Logger::raw_write("\n");
         MemPool::restore_pool_data(g_snapshot + off_mempool_data());
         auto* meta = reinterpret_cast<const MemPool::PoolMeta*>(
                          g_snapshot + off_mempool_meta());
         for (size_t i = 0; i < MemPool::pool_count(); ++i)
             MemPool::restore_pool_meta(i, meta[i]);
-        Logger::raw_write("[SNAP] post-restore pool8 fc=");
-        Logger::print_dec(MemPool::pool_free_count(8));
-        Logger::raw_write(" tcnt=");
-        Logger::print_dec(Scheduler::task_count());
-        Logger::raw_write("\n");
     }
 
     // ---- Scheduler ----
@@ -309,7 +322,6 @@ void snapshot_restore(const char* test_name) {
                                  misc[0], misc[1], misc[2],
                                  idle, preempt,
                                  misc[6], misc[7], misc[8]);
-        // Restore shell_task_ptr_ from misc[5]
         TaskControlBlock* shell_ptr = nullptr;
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));
         Scheduler::set_shell_task(shell_ptr);
@@ -324,7 +336,7 @@ void snapshot_restore(const char* test_name) {
         daemon::restore_state(entries, num);
     }
 
-    // ---- VFSD / IOCD PIDs (static globals not part of any snapshotted subsystem) ----
+    // ---- VFSD / IOCD PIDs ----
     vfsd::set_vfsd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()));
     iocd::set_iocd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()));
 
@@ -332,13 +344,116 @@ void snapshot_restore(const char* test_name) {
     BufferPool::restore_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
 
-    // ---- Resource Counters: restore tracker to snapshot-time baseline ----
+    // ---- Resource Counters ----
     ResourceCounters saved;
     __builtin_memcpy(&saved, g_snapshot + off_rsrc_counts(), sizeof(saved));
     ResourceTracker::instance().restore(saved);
 
-    // ---- Reset filesystem roots with state that isn't snapshot-saved ----
+    // ---- Kernel stack restore (skip current task) ----
+    {
+        uint64_t saved_user_count = *reinterpret_cast<uint64_t*>(
+                                        g_snapshot + off_user_page_count());
+        size_t kstack_hdr_off = off_kstack_header(saved_user_count);
+        uint64_t num_kstacks = *reinterpret_cast<uint64_t*>(
+                                   g_snapshot + kstack_hdr_off);
+        uint8_t* in = g_snapshot + kstack_hdr_off + sizeof(uint64_t);
+        auto* current = Scheduler::current_task();
+        for (uint64_t i = 0; i < num_kstacks; ++i) {
+            uint64_t saved_kstack = *reinterpret_cast<uint64_t*>(in);
+            uint64_t saved_size   = *reinterpret_cast<uint64_t*>(in + sizeof(uint64_t));
+            if (saved_kstack != 0 && saved_size > 0) {
+                // Find the task with this kernel stack
+                bool found = false;
+                for (uint64_t j = 0; j < Scheduler::task_count(); ++j) {
+                    auto* t = Scheduler::task_at(j);
+                    if (t && reinterpret_cast<uint64_t>(t->kernel_stack) == saved_kstack) {
+                        // Skip current task — its stack is active
+                        if (t != current) {
+                            __builtin_memcpy(t->kernel_stack,
+                                             in + sizeof(uint64_t) * 2,
+                                             saved_size);
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                // If not found, the task was likely reaped — that's OK
+                (void)found;
+            }
+            in += KSTACK_ENTRY_SIZE;
+        }
+    }
+
+    // ---- Current task state fix ----
+    // restore_state() enqueues all READY tasks, including the current task
+    // (shell) whose kernel stack content was overwritten by test execution.
+    // Remove it from the ready queue and set state=RUNNING so the first
+    // context switch is AWAY (saving the fresh ISR-frame RSP), not TO this
+    // task (which would load stale data).
+    {
+        auto* current = Scheduler::current_task();
+        if (current && current->in_ready_queue_) {
+            Scheduler::dequeue_ready(*current);
+        }
+        if (current) {
+            current->state = TaskState::RUNNING;
+        }
+    }
+
+    // ---- Diagnose: dump all task kernel stack info ----
+    {
+        Logger::raw_write("[SNAP] task dump (");
+        Logger::print_dec(Scheduler::task_count());
+        Logger::raw_write(" tasks):\n");
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (!t) { Logger::raw_write("  [null]\n"); continue; }
+            Logger::raw_write("  [");
+            Logger::print_dec(i);
+            Logger::raw_write("] id=");
+            Logger::print_dec(t->id);
+            Logger::raw_write(" kstack=0x");
+            Logger::print_hex(reinterpret_cast<uint64_t>(t->kernel_stack));
+            Logger::raw_write(" top=0x");
+            Logger::print_hex(t->kernel_stack_top);
+            Logger::raw_write(" rsp=0x");
+            Logger::print_hex(TASK_STACK_PTR(t));
+            Logger::raw_write(" state=");
+            Logger::print_dec(static_cast<uint64_t>(t->state));
+            Logger::raw_write(" magic=0x");
+            Logger::print_hex(t->magic);
+            Logger::raw_write("\n");
+        }
+    }
+
+    // ---- Reset filesystem roots ----
     kernel::vfs::tmpfs_reset_root();
+
+    // ---- Reload daemon tasks ----
+    reload_daemon_tasks();
+
+    // ---- Post-reload diagnostic ----
+    {
+        auto* cur = Scheduler::current_task();
+        auto cidx = Scheduler::current_index();
+        Logger::raw_write("[SNAP] POST-RELOAD: idx=");
+        Logger::print_dec(cidx);
+        if (cur) {
+            Logger::raw_write(" id=");
+            Logger::print_dec(cur->id);
+            Logger::raw_write(" state=");
+            Logger::print_dec(static_cast<uint64_t>(cur->state));
+            Logger::raw_write(" rsp=0x");
+            Logger::print_hex(TASK_STACK_PTR(cur));
+            Logger::raw_write(" magic=0x");
+            Logger::print_hex(cur->magic);
+            Logger::raw_write(" ptr=0x");
+            Logger::print_hex(reinterpret_cast<uint64_t>(cur));
+        } else {
+            Logger::raw_write(" cur=NULL");
+        }
+        Logger::raw_write("\n");
+    }
 }
 
 void snapshot_destroy() {
@@ -353,26 +468,22 @@ void snapshot_destroy() {
 
 void reload_daemon_tasks() {
     arch::IrqGuard guard;
-    // Terminate old daemon tasks so reap_orphans will clean them up
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
         const auto& entry = daemon::get_entry(i);
         if (entry.pid != 0) {
             auto* task = Scheduler::find_task(entry.pid);
-            if (task) {
+            if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
                 task->state = TaskState::TERMINATED;
                 task->exit_code = 0;
             }
-            // Resets both the daemon entry's pid and the external PID var
             daemon::notify_death(entry.pid);
         }
     }
-    // Terminate any remaining user tasks (test_fork, etc.) whose page
-    // tables/code pages were corrupted by test activity.
-    // Skip the current task (e.g. shell running cmd_selftest) to avoid suicide.
     auto* current = Scheduler::current_task();
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t != current && t->page_table_) {
+        if (t && t != current &&
+            t->magic == TaskControlBlock::TCB_MAGIC && t->page_table_) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
         }

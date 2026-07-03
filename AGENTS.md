@@ -8,6 +8,14 @@ Before writing or modifying kernel tests, run `git branch --show-current`:
 
 If the branch does not match the intended role, do not proceed.
 
+## Session Start
+- Determine current branch with `git branch --show-current`
+- Ask the user: **"Developer or Quality Engineer?"**
+- If `developer`: read `PROMPT-dev.md` for full role instructions
+- If `quality engineer` (`testbed` branch): read `PROMPT-testdev.md` for full role instructions
+- If neither: halt
+- Also read `AGENTS-KERNEL-BRIEFING.md` — contains Makefile reference, scheduler details, boot sequence, and all system gotchas
+
 ## Communication
 - Be concise: no conversational filler, greetings, or post-completion summaries
 - Speak only in executable commands, concise error logs, or direct code blocks

@@ -463,6 +463,27 @@ static void update_status_bar() {
 void Shell::shell_task_main() {
     if (!initialized_) init();
 
+    // Yield until all higher-priority tasks have finished initializing
+    // (daemons block on IPC once ready, kernel tasks exit/block, etc.)
+    {
+        auto* self = kernel::Scheduler::current_task();
+        uint64_t self_prio = self ? self->priority : 0;
+        for (int iter = 0; iter < 200; ++iter) {
+            bool has_higher_ready = false;
+            for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
+                auto* t = kernel::Scheduler::task_at(i);
+                if (!t || t == self || t == kernel::Scheduler::get_idle_task())
+                    continue;
+                if (t->state == kernel::TaskState::READY && t->priority > self_prio) {
+                    has_higher_ready = true;
+                    break;
+                }
+            }
+            if (!has_higher_ready) break;
+            kernel::Scheduler::reschedule();
+        }
+    }
+
     Terminal::clear();
     Terminal::write("\n");
     Terminal::set_fg(0x00FF00);

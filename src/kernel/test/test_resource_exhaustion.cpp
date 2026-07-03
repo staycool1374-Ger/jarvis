@@ -216,8 +216,9 @@ TEST_CLASS(MempoolFragmentation) {
 
 // Runmode: kernel
 // Testidea: Exhaust memory by allocating until PMM runs out, then
-// verify that the OOM handler is called and subsequent allocs return 0.
-// Input: Repeated PMM::alloc_page() calls.
+// verify that subsequent allocs return 0 and free restores capacity.
+// Input: Repeated PMM::alloc_page() calls (OOM handler temporarily
+//        disabled to avoid killing daemon tasks).
 // Expect: Eventually returns 0; no crash; free restores capacity.
 // Note: 65K allocs × O(n) bitmap scan is slow; progress markers keep
 //       the host watchdog alive.
@@ -225,6 +226,12 @@ TEST_CLASS(PmmExhaustion) {
     static const int MAX_ALLOCS = 100000;
     static uint64_t pages[MAX_ALLOCS];
     int count = 0;
+
+    PMM::OOMHandler saved_oom = PMM::get_oom_handler();
+    PMM::set_oom_handler(nullptr);
+    auto restore = ScopeGuard([&]() {
+        PMM::set_oom_handler(saved_oom);
+    });
 
     for (int i = 0; i < MAX_ALLOCS; ++i) {
         uint64_t p = PMM::alloc_page();

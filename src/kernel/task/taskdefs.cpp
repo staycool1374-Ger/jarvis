@@ -46,8 +46,8 @@ constexpr TaskDef g_task_defs[] = {
     { "init",   TaskType::KERNEL,           true,  init_task_main,              nullptr,            10, 10,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
     { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       1, 10,  2,10,0, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
     { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       1, 10,  3,10,0, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
-    { "shell",  TaskType::KERNEL,           true,  service::Shell::shell_task_main, nullptr,         2, 5,   0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, true  },
     { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  1, 50,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    { "shell",  TaskType::KERNEL,           true,  service::Shell::shell_task_main, nullptr,         0, 5,   0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, true  },
     { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1, 10,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
 };
 
