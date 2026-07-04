@@ -43,14 +43,6 @@
 #include <logger.hpp>
 #include <assert.hpp>
 
-extern "C" {
-// Dummy save target for boot-stack RSP during non-ISR context switch
-// (e.g. test harness reschedule()).  Prevents corrupting task context.rsp
-// while still allowing the context switch to proceed.  Value written by
-// isr_stubs.asm via scheduler_save_rsp_to, never read back.
-uint64_t scheduler_dummy_save_rsp = 0;
-}
-
 namespace kernel {
 
 /// @brief Returns the effective scheduling priority for a task.
@@ -721,29 +713,26 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
         return;
     }
 
-    // When the CPU is using the boot stack (e.g. during test execution
-    // after snapshot_restore), saving RSP into a task's context.rsp
-    // would later restore a freed boot-stack frame → RIP=0.
-    // ISR path: skip the switch entirely (the timer ISR shouldn't switch
-    // if we're on the boot stack — daemons will be picked up later).
-    // reschedule() path (non-ISR): redirect the save to a dummy global
-    // so the switch still happens but boot-stack RSP is harmlessly
-    // discarded instead of corrupting the task's context.rsp.
-    uint64_t* save_target = &TASK_STACK_PTR(current);
-    {
+    // When the timer ISR fires while the CPU is using the boot stack
+    // (e.g. during test execution after snapshot_restore), a context
+    // switch would save a boot-stack RSP into a task's context.rsp.
+    // Restoring that later — after the boot-stack frames were reused —
+    // would corrupt execution.  Skip saves from the boot stack so that
+    // daemon tasks are picked up by the next tick once we are on a real
+    // task kernel stack.
+    if (from_isr) {
         uint64_t cur_rsp;
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
         uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
         if (!current->kernel_stack || !current->kernel_stack_top ||
             cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
-            if (from_isr) {
-                __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
-                __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
-                __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-                return;
-            }
-            // reschedule() from boot stack — redirect save to dummy
-            save_target = reinterpret_cast<uint64_t*>(&scheduler_dummy_save_rsp);
+            __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
+            // Also clear load-from globals so a stale CR3 value from a
+            // previous reschedule() call is not loaded by the next ISR
+            // that performs a context switch.
+            __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+            __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+            return;
         }
     }
 
@@ -779,7 +768,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
     }
     next->state = TaskState::RUNNING;
     __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, &TASK_STACK_PTR(current), __ATOMIC_RELEASE);
 
     uint64_t cr0 = arch::read_cr0();
     cr0 |= (1ULL << 3);
@@ -818,12 +807,6 @@ void Scheduler::reschedule() noexcept {
 
     auto* current = tasks_[current_index_];
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) return;
-
-    // Check for already-pending context switch (set by another path within
-    // the same ISR or by a previous reschedule() that the ISR hasn't consumed).
-    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != nullptr) {
-        return;
-    }
 
     auto* next = next_task();
     if (next && next != current) {
@@ -899,27 +882,6 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     (void)rq_bitmap_hi;
     (void)rq_bitmap_lo;
     ready_queue_.reset();
-
-    // Purge any stale assembly-level context-switch globals that survived
-    // from pre-restore execution.  Without this, scheduler_load_rsp_from
-    // (never cleared by the ISR after a successful switch) can reference a
-    // kernel stack that restore freed to MemPool (0xDD-poisoned).  The next
-    // timer ISR that reads save_rsp_to != 0 would then load the poisoned
-    // RSP and iretq into garbage —> Page Fault at RIP=0.
-    // Clearing AFTER ready_queue_.reset() ensures no residual enqueued
-    // state can re-seed the globals before they are suppressed.
-    // Serialize with cpuid so that any in-flight instruction fetch or
-    // prefetch that may have consumed a stale global pointer drains before
-    // we return to the caller.
-    {
-        uint32_t _a, _b, _c, _d;
-        asm volatile("cpuid" : "=a"(_a), "=b"(_b), "=c"(_c), "=d"(_d) : "a"(0));
-    }
-    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_next_task_id,  (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to,   (uint64_t*)nullptr, __ATOMIC_RELEASE);
-    __atomic_store_n(&isr_nesting_depth,       (uint64_t)0, __ATOMIC_RELEASE);
 }
 
 void Scheduler::capture_task_fields(TaskFields* out) {
@@ -973,7 +935,6 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
             t->remaining_ticks = saved[j].remaining_ticks;
             t->exit_code       = saved[j].exit_code;
             t->context         = saved[j].context;
-            t->kernel_stack_top = saved[j].kernel_stack_top;
             t->pending_signals   = saved[j].pending_signals;
             t->alarm_ticks       = saved[j].alarm_ticks;
             t->alarm_armed       = saved[j].alarm_armed;
