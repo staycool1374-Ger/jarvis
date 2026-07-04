@@ -140,15 +140,21 @@ void Scheduler::add_task(TaskControlBlock& task) {
     kernel::test::ResourceTracker::instance().track_task_add();
 
     // Liu-Leyland LUB admission test: warn if total utilization exceeds
-    // the rate-monotonic schedulability bound
+    // the rate-monotonic schedulability bound.
+    // For each periodic task i: U_i = WCET_i / period_i (scaled by 1e6).
+    // Daemon tasks have a SporadicServer whose max_budget() is the real WCET;
+    // all other tasks use remaining_ticks (set to period_ticks at creation,
+    // giving 100% — the only safe upper bound without an explicit WCET).
     if (task.period_ticks > 0 && task.period_ticks <= 100) {
-        // Use wcet = period_ticks (100% CPU-bound worst-case) for the check
         uint64_t total_util = 0;
         for (uint64_t i = 0; i < task_count_; ++i) {
             auto* t = tasks_[i];
             if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (t->period_ticks > 0) {
-                uint64_t util = ((uint64_t)t->period_ticks * 1000000) / t->period_ticks;
+                uint64_t wcet = t->sporadic_server
+                                    ? t->sporadic_server->max_budget()
+                                    : t->remaining_ticks;
+                uint64_t util = (wcet * 1000000) / t->period_ticks;
                 total_util += util;
             }
         }
