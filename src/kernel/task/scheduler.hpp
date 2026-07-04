@@ -114,6 +114,8 @@ public:
         if (sporadic_task_count_ > 0)
             __atomic_sub_fetch(&sporadic_task_count_, 1UL, __ATOMIC_RELAXED);
     }
+    /// @brief Returns the current sporadic server task count.
+    static uint64_t sporadic_count() noexcept { return sporadic_task_count_; }
  
     /// @brief Marks a task as READY and adds it to the O(1) ready queue.
     ///        Call this instead of directly setting `task.state = READY`
