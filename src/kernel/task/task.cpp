@@ -39,6 +39,15 @@
 
 namespace kernel {
 
+/// @brief Trampoline wrapper for kernel task entry points.
+/// Set as RIP in the ISR save frame; RDI (first argument) is set to the
+/// actual entry function. After entry() returns, the task enters a hlt
+/// loop instead of crashing via ret-into-garbage.
+static void _task_trampoline(void (*entry)()) {
+    entry();
+    for (;;) arch::hlt();
+}
+
 /// @brief Allocates and initialises a SporadicServer for a daemon task
 ///        from the MemPool.  Idempotent (returns early if already set).
 void TaskControlBlock::init_sporadic_server(uint64_t budget_c,
@@ -174,12 +183,27 @@ TaskControlBlock* TaskControlBlock::create(
 
     *--stack = arch::RFLAGS_DEFAULT;
     *--stack = arch::SEG_KERNEL_CODE;
-    *--stack = reinterpret_cast<uint64_t>(entry);
+    *--stack = reinterpret_cast<uint64_t>(_task_trampoline);
 
     *--stack = 0;
     *--stack = 0;
 
-    for (int i = 0; i < 15; ++i) *--stack = 0;
+    // Register save frame matching isr_common push order
+    *--stack = 0;                               // r15
+    *--stack = 0;                               // r14
+    *--stack = 0;                               // r13
+    *--stack = 0;                               // r12
+    *--stack = 0;                               // r11
+    *--stack = 0;                               // r10
+    *--stack = 0;                               // r9
+    *--stack = 0;                               // r8
+    *--stack = 0;                               // rbp
+    *--stack = reinterpret_cast<uint64_t>(entry); // rdi = entry (SysV ABI arg1)
+    *--stack = 0;                               // rsi
+    *--stack = 0;                               // rdx
+    *--stack = 0;                               // rcx
+    *--stack = 0;                               // rbx
+    *--stack = 0;                               // rax
 
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
 #elif defined(CONFIG_ARCH_AARCH64)
@@ -266,10 +290,25 @@ TaskControlBlock* TaskControlBlock::create_user(
     *--stack = user_rsp;
     *--stack = arch::RFLAGS_DEFAULT;
     *--stack = arch::SEG_USER_CODE;
-    *--stack = reinterpret_cast<uint64_t>(entry);
+    *--stack = reinterpret_cast<uint64_t>(_task_trampoline);
     *--stack = 0;
     *--stack = 0;
-    for (int i = 0; i < 15; ++i) *--stack = 0;
+    // Register save frame matching isr_common push order
+    *--stack = 0;                               // r15
+    *--stack = 0;                               // r14
+    *--stack = 0;                               // r13
+    *--stack = 0;                               // r12
+    *--stack = 0;                               // r11
+    *--stack = 0;                               // r10
+    *--stack = 0;                               // r9
+    *--stack = 0;                               // r8
+    *--stack = 0;                               // rbp
+    *--stack = reinterpret_cast<uint64_t>(entry); // rdi = entry
+    *--stack = 0;                               // rsi
+    *--stack = 0;                               // rdx
+    *--stack = 0;                               // rcx
+    *--stack = 0;                               // rbx
+    *--stack = 0;                               // rax
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
 #elif defined(CONFIG_ARCH_AARCH64)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);

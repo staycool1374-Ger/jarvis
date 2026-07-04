@@ -742,8 +742,11 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
                 __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
                 return;
             }
-            // reschedule() from boot stack — redirect save to dummy
-            save_target = reinterpret_cast<uint64_t*>(&scheduler_dummy_save_rsp);
+            // reschedule() from boot stack (test framework proxy).
+            // Current task is a sacrificial proxy — its context.rsp will
+            // carry the boot-stack return point so the test framework
+            // resumes when this task is later selected by next_task().
+            save_target = &TASK_STACK_PTR(current);
         }
     }
 
