@@ -290,6 +290,11 @@ extern "C" {
     ///        decremented before iretq.  Checked by on_tick() to detect
     ///        nested timer interrupts and skip re-entrant scheduler ops.
     extern uint64_t isr_nesting_depth;
+    /// @brief Dummy save target for boot-stack RSP during reschedule() from
+    ///        non-ISR context (test harness).  Prevents corrupting task
+    ///        context.rsp with a boot-stack address while still allowing
+    ///        the context switch to proceed.
+    extern uint64_t scheduler_dummy_save_rsp;
     /// @brief Monotonic counter incremented on every detected scheduler corruption
     ///        (invalid TCB magic, RSP outside kernel-stack range, etc).
     ///        Reset to zero in test_isolate restore; test framework fails any test

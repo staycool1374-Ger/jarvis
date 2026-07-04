@@ -135,6 +135,7 @@ isr_common:
 
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
+    mov qword [rel scheduler_load_rsp_from], 0
     mov qword [rel scheduler_save_rsp_to], 0
 
     ; Context switch complete — update current_index_ to the next task
