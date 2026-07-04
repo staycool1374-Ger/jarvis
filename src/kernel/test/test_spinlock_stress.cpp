@@ -23,6 +23,7 @@
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -79,6 +80,7 @@ JARVIS_TEST(spinlock_multi_task_contention) {
         }
         Scheduler::on_tick();
     }
+    for (int h = 0; h < 10; ++h) arch::hlt();
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_EQ(400ULL, stress_counter_);

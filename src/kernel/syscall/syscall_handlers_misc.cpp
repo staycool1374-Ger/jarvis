@@ -292,10 +292,13 @@ uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     if (arg2 != 0) return static_cast<uint64_t>(-1);
     if (arg1 == 0) return 0;
 
-    auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
-    if (!buf.valid()) return static_cast<uint64_t>(-1);
-
-    random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
+    if (syscall_is_user_task()) {
+        auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
+        if (!buf.valid()) return static_cast<uint64_t>(-1);
+        random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
+    } else {
+        random_fill(reinterpret_cast<uint8_t*>(arg0), static_cast<size_t>(arg1));
+    }
     return arg1;
 }
 

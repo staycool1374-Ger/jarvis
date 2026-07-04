@@ -23,6 +23,7 @@
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -133,6 +134,8 @@ JARVIS_TEST(spinlock_contention) {
         }
         Scheduler::on_tick();
     }
+    // Yield to let timer ISR fire and run scheduled tasks
+    for (int h = 0; h < 6; ++h) arch::hlt();
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_EQ(100ULL, g_contention_counter_);
@@ -188,7 +191,7 @@ JARVIS_TEST(spinlock_preemption_yield) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
-
+    for (int h = 0; h < 6 && !g_yield_done_; ++h) arch::hlt();
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,

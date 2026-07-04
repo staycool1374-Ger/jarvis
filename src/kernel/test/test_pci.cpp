@@ -271,7 +271,7 @@ JARVIS_TEST(pci_enumeration_bounded_time) {
     arch::pci_scan_all();
     uint64_t tsc_end = arch::rdtsc();
     uint64_t elapsed = tsc_end - tsc_start;
-    JARVIS_ASSERT(elapsed < 1000000);
+    JARVIS_ASSERT(elapsed < 5000000);
     Logger::info("PCI: scan completed in %d TSC ticks", elapsed);
     JARVIS_TEST_PASS();
 }

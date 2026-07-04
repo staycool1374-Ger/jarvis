@@ -24,6 +24,7 @@
 #include <kernel/vfs/tmpfs.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 using namespace kernel::vfs;
@@ -134,6 +135,8 @@ JARVIS_TEST(preemption_during_syscall) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
+    // Yield to let the timer ISR consume pending context-switch globals
+    for (int h = 0; h < 6 && !preempt_highpri_count; ++h) arch::hlt();
 
     Scheduler::set_current(*original);
 
@@ -181,6 +184,8 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
+    // Yield to let the timer ISR fire and run the scheduled tasks
+    for (int h = 0; h < 6 && !tp_done_; ++h) arch::hlt();
 
     Scheduler::set_current(*original);
 
@@ -224,6 +229,7 @@ JARVIS_TEST(preempt_highpri_during_brk) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
+    for (int h = 0; h < 6 && !brk_done_; ++h) arch::hlt();
 
     Scheduler::set_current(*original);
 
@@ -274,6 +280,7 @@ JARVIS_TEST(preempt_lowpri_not_starved) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
+    for (int h = 0; h < 20 && starve_lowpri_progress_ < STARVE_TARGET; ++h) arch::hlt();
 
     Scheduler::set_current(*original);
 
