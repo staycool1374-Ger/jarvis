@@ -1024,6 +1024,17 @@ SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
     if (id_table_find(task.id) == nullptr) return SCHED_ERR_NOT_FOUND;
     id_table_remove(&task);
     dequeue_ready(task);
+
+    // Clear any pending context-switch globals that point to this task.
+    // A prior reschedule() may have set scheduler_save_rsp_to to
+    // &task.context.rsp; if the timer ISR fires after the TCB is freed
+    // (e.g. returned to MemPool and poisoned with 0xDD), the ISR writes
+    // the boot-stack RSP into freed memory and loads the poisoned value
+    // as the target stack pointer, causing RIP=0.
+    __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+
     kernel::test::ResourceTracker::instance().track_task_remove();
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
