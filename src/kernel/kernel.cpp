@@ -67,6 +67,7 @@
 #include <string.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
+#include <kernel/debug/dump.hpp>
 #include <fdt/libfdt.h>
 #include <fdt/libfdt_internal.h>
 #include <string.hpp>
@@ -1020,6 +1021,10 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
             exception_name(vector), vector, error_code, rip);
         dump_regs(regs);
 
+        // ---- Full diagnostic dump before panic ----
+        kernel::debug::dump_all_tasks();
+        kernel::debug::dump_scheduler_info();
+
         if (t) {
             kernel::Logger::raw_write("  Task: id=");
             kernel::Logger::print_hex(t->id);
@@ -1051,6 +1056,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         }
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x elr=%x)",
             exception_name(vector), vector, error_code, rip);
+        kernel::debug::dump_all_tasks();
+        kernel::debug::dump_scheduler_info();
+        kernel::debug::dump_cpu_regs();
         panic("CPU EXCEPTION");
     }
 #endif

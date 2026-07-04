@@ -67,13 +67,14 @@ static size_t off_sched_misc()   { return off_sched_idtable()
 static size_t off_sched_misc_size() {
     // misc[0]=task_count, misc[1]=cur_idx, misc[2]=next_id
     // misc[3]=idle_ptr (bits), bool preempt @ offset 32
-    // misc[5]=shell_ptr, misc[6]=rq_hi, misc[7]=rq_lo
-    // misc[8]=sporadic_task_count
+    // misc[5]=shell_ptr, misc[8]=sporadic_task_count
     return sizeof(uint64_t) * 9 + sizeof(bool);
 }
 
-static size_t off_daemon_entries(){ return off_sched_misc()
+static size_t off_sched_rqpod()  { return off_sched_misc()
                                        + off_sched_misc_size(); }
+static size_t off_daemon_entries(){ return off_sched_rqpod()
+                                       + sizeof(ReadyQueuePOD); }
 static size_t off_daemon_num()    { return off_daemon_entries()
                                        + daemon::MAX_DAEMONS * sizeof(daemon::DaemonEntry); }
 
@@ -162,6 +163,11 @@ bool snapshot_create() {
         auto* task_fields = reinterpret_cast<Scheduler::TaskFields*>(
                                 g_snapshot + off_sched_task_fields());
         Scheduler::capture_task_fields(task_fields);
+
+        // Save full ReadyQueueManager POD (queue heads, tails, counts, bitmap)
+        auto* rqpod = reinterpret_cast<ReadyQueuePOD*>(
+                          g_snapshot + off_sched_rqpod());
+        Scheduler::capture_rqpod(*rqpod);
     }
 
     // ---- Daemon ----
@@ -325,6 +331,8 @@ void snapshot_restore(const char* test_name) {
                              g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
         TaskControlBlock* idle = nullptr;
         __builtin_memcpy(&idle, &misc[3], sizeof(idle));
+        auto* task_fields = reinterpret_cast<const Scheduler::TaskFields*>(
+                                g_snapshot + off_sched_task_fields());
         Scheduler::restore_state(tasks, idtable,
                                  misc[0], misc[1], misc[2],
                                  idle, preempt,
@@ -333,12 +341,66 @@ void snapshot_restore(const char* test_name) {
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));
         Scheduler::set_shell_task(shell_ptr);
 
+        // Diagnose: check all tasks for boot-stack RSP before restore_task_fields
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+            uint64_t rsp = TASK_STACK_PTR(t);
+            if (base > 0 && t->kernel_stack_top > base &&
+                (rsp < base || rsp > t->kernel_stack_top)) {
+                Logger::raw_write("[SNAP] PRE-FIELDS BAD-RSP: idx=");
+                Logger::print_dec(i);
+                Logger::raw_write(" id=");
+                Logger::print_dec(t->id);
+                Logger::raw_write(" rsp=0x");
+                Logger::print_hex(rsp);
+                Logger::raw_write(" kstack=[0x");
+                Logger::print_hex(base);
+                Logger::raw_write("-0x");
+                Logger::print_hex(t->kernel_stack_top);
+                Logger::raw_write("]\n");
+            }
+        }
+
         // Restore per-task plain fields (deep-copy) to fix any corrupted
         // context.rsp / state / scheduling params that accumulated during
         // test execution and survived the pointer-array-only restore.
-        auto* task_fields = reinterpret_cast<const Scheduler::TaskFields*>(
-                                g_snapshot + off_sched_task_fields());
+        // This also restores runq_next_/runq_prev_/in_ready_queue_/rq_priority_
+        // so the intrusive linked lists are valid after this point.
         Scheduler::restore_task_fields(task_fields);
+
+        // Restore the full ReadyQueueManager POD (queue heads/tails/counts,
+        // priority bitmap) from the snapshot.  The per-TCB runq pointers
+        // were restored above and are valid because TCBs live at the same
+        // physical addresses across snapshot cycles.
+        {
+            auto* rqpod = reinterpret_cast<const ReadyQueuePOD*>(
+                              g_snapshot + off_sched_rqpod());
+            Scheduler::restore_rqpod(*rqpod);
+        }
+
+        // Diagnose: check all tasks for boot-stack RSP after restore_task_fields
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+            uint64_t rsp = TASK_STACK_PTR(t);
+            if (base > 0 && t->kernel_stack_top > base &&
+                (rsp < base || rsp > t->kernel_stack_top)) {
+                Logger::raw_write("[SNAP] POST-FIELDS BAD-RSP: idx=");
+                Logger::print_dec(i);
+                Logger::raw_write(" id=");
+                Logger::print_dec(t->id);
+                Logger::raw_write(" rsp=0x");
+                Logger::print_hex(rsp);
+                Logger::raw_write(" kstack=[0x");
+                Logger::print_hex(base);
+                Logger::raw_write("-0x");
+                Logger::print_hex(t->kernel_stack_top);
+                Logger::raw_write("]\n");
+            }
+        }
     }
 
     // ---- Re-identify current task by RSP match ----
@@ -346,11 +408,12 @@ void snapshot_restore(const char* test_name) {
     // actual CPU RSP belongs to the caller (kernel_main on the boot stack
     // or an existing task's kernel stack).  Find the task whose kernel stack
     // range contains the current RSP and set current_index_ to that task.
-    // If no match (RSP on boot stack), leave current_index_ as restored by
-    // restore_state() — switch_to_task() will detect the boot stack and skip
-    // context switches until a proper task stack is active.
+    // If no match (RSP on boot stack), force current_index_ to idle (0)
+    // so the scheduler doesn't think a stale task is running and later
+    // save the boot-stack RSP into that task's context.rsp.
     {
         uint64_t cur_rsp;
+        bool found = false;
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
         for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
             auto* t = Scheduler::task_at(i);
@@ -361,9 +424,13 @@ void snapshot_restore(const char* test_name) {
                     if (i != Scheduler::current_index()) {
                         Scheduler::set_current_index(i);
                     }
+                    found = true;
                     break;
                 }
             }
+        }
+        if (!found) {
+            Scheduler::set_current_index(0);
         }
     }
 
@@ -473,21 +540,15 @@ void snapshot_restore(const char* test_name) {
     reload_daemon_tasks();
 
     // ---- Post-reload fixup ----
-    // Ensure current_index_ points to a real task (not idle) to prevent
-    // timer ISRs from treating a boot-stack execution as idle's context.
+    // Keep idle as the boot-stack proxy task.  Idle's context.rsp is reset
+    // to a valid initial position below; it is never returned by next_task()
+    // (idle has the lowest priority and is RUNNING, not in the ready queue).
+    // Using idle as the proxy avoids corrupting a real task's context.rsp
+    // when the deferred switch saves boot-stack RSP into it.
     {
         auto* cur = Scheduler::current_task();
-        if (!cur || cur->magic != TaskControlBlock::TCB_MAGIC ||
-            cur == Scheduler::get_idle_task()) {
-            // Find first non-idle, non-null task
-            for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-                auto* t = Scheduler::task_at(i);
-                if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
-                    t != Scheduler::get_idle_task()) {
-                    Scheduler::set_current_index(i);
-                    break;
-                }
-            }
+        if (!cur || cur->magic != TaskControlBlock::TCB_MAGIC) {
+            Scheduler::set_current_index(0);
         }
         // Fix idle's context.rsp to its initial position so that even if
         // a context switch reaches idle, its register frame is valid.
@@ -495,6 +556,59 @@ void snapshot_restore(const char* test_name) {
         if (idle && idle->magic == TaskControlBlock::TCB_MAGIC) {
             TASK_STACK_PTR(idle) = idle->kernel_stack_top - sizeof(TaskContext);
         }
+    }
+
+    // ---- Refresh snapshot scheduler state ----
+    // reload_daemon_tasks freed the original daemon TCBs (pid=3,4) via
+    // reap_orphans / MemPool::free and created new ones (pid=5,6).  The
+    // snapshot's task-pointer array, ID table, and metadata now reference
+    // freed / reallocated memory.  Recapture the live scheduler state
+    // (task array, ID table, pool data, task fields) so subsequent restore
+    // cycles always read valid pointers and pool data.  Preserve the
+    // original next_task_id_ from the snapshot so daemon PIDs don't drift
+    // across cycles.
+    {
+        auto* tasks_snap   = reinterpret_cast<TaskControlBlock**>(
+                                 g_snapshot + off_sched_tasks());
+        auto* idtable_snap = reinterpret_cast<TaskControlBlock**>(
+                                 g_snapshot + off_sched_idtable());
+        auto* misc_snap    = reinterpret_cast<uint64_t*>(
+                                 g_snapshot + off_sched_misc());
+        uint64_t orig_next_id = misc_snap[2];
+        bool& preempt_snap = *reinterpret_cast<bool*>(
+                                 g_snapshot + off_sched_misc() + sizeof(uint64_t) * 4);
+        TaskControlBlock* idle_dummy = nullptr;
+        Scheduler::capture_state(tasks_snap, idtable_snap,
+                                 misc_snap[0], misc_snap[1], misc_snap[2],
+                                 idle_dummy, preempt_snap,
+                                 &misc_snap[6], &misc_snap[7], &misc_snap[8]);
+        misc_snap[2] = orig_next_id;
+        __builtin_memcpy(&misc_snap[3], &idle_dummy, sizeof(idle_dummy));
+        auto* shell_ptr = Scheduler::get_shell_task();
+        __builtin_memcpy(&misc_snap[5], &shell_ptr, sizeof(shell_ptr));
+
+        // Recapture pool data so restore_pool_data gives back the
+        // post-reload state (not the pre-test state that may reference
+        // freed or repurposed blocks).
+        MemPool::capture_pool_data(g_snapshot + off_mempool_data());
+        {
+            auto* meta = reinterpret_cast<MemPool::PoolMeta*>(
+                g_snapshot + off_mempool_meta());
+            for (size_t i = 0; i < MemPool::pool_count(); ++i)
+                MemPool::capture_pool_meta(i, meta[i]);
+        }
+
+        // Recapture task fields so restore_task_fields can match the
+        // post-reload task IDs (daemon PIDs changed from 3,4 to 5,6).
+        auto* task_fields = reinterpret_cast<Scheduler::TaskFields*>(
+                                g_snapshot + off_sched_task_fields());
+        Scheduler::capture_task_fields(task_fields);
+
+        // Recapture ReadyQueuePOD so restore_pod reads the post-reload
+        // queue heads/tails/counts (daemon tasks replaced).
+        auto* rqpod = reinterpret_cast<ReadyQueuePOD*>(
+                          g_snapshot + off_sched_rqpod());
+        Scheduler::capture_rqpod(*rqpod);
     }
 
     // ---- Post-reload diagnostic ----
@@ -519,6 +633,7 @@ void snapshot_restore(const char* test_name) {
         }
         Logger::raw_write("\n");
     }
+
 }
 
 void snapshot_destroy() {
@@ -553,8 +668,8 @@ void reload_daemon_tasks() {
     }
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t != current &&
-            t->magic == TaskControlBlock::TCB_MAGIC && t->page_table_) {
+        if (t && t != current && t != Scheduler::get_idle_task() &&
+            t->magic == TaskControlBlock::TCB_MAGIC) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
         }

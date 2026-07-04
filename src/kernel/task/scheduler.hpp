@@ -201,6 +201,13 @@ public:
         uint64_t pending_signals;
         uint64_t alarm_ticks;
         bool     alarm_armed;
+        /// @brief Ready-queue intrusive list pointers (POD copy).
+        ///        These form doubly-linked lists; TCBs are in-place across
+        ///        snapshot cycles so pointer values remain valid.
+        TaskControlBlock* runq_next;
+        TaskControlBlock* runq_prev;
+        bool in_ready_queue;
+        uint64_t rq_priority;
     };
     static uint64_t snapshot_task_fields_size() { return sizeof(TaskFields) * MAX_TASKS; }
 
@@ -232,6 +239,11 @@ public:
                               uint64_t rq_bitmap_hi = 0,
                               uint64_t rq_bitmap_lo = 0,
                               uint64_t sporadic_count_in = 0);
+
+    /// @brief Capture the full ReadyQueueManager POD into @p out.
+    static void capture_rqpod(ReadyQueuePOD& out) noexcept;
+    /// @brief Restore the full ReadyQueueManager POD from @p src.
+    static void restore_rqpod(const ReadyQueuePOD& src) noexcept;
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;

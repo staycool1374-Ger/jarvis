@@ -46,13 +46,25 @@ void ReadyQueueManager::move_priority(TaskControlBlock& tcb, uint64_t old_prio, 
     enqueue(tcb, new_prio);
 }
 
-void ReadyQueueManager::capture_state(uint64_t* out_bitmap_hi, uint64_t* out_bitmap_lo) const noexcept {
-    *out_bitmap_hi = bitmap_.raw_hi();
-    *out_bitmap_lo = bitmap_.raw_lo();
+void ReadyQueueManager::capture_pod(ReadyQueuePOD& out) const noexcept {
+    out.bitmap_hi = bitmap_.raw_hi();
+    out.bitmap_lo = bitmap_.raw_lo();
+    for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
+        out.queue_heads[i] = reinterpret_cast<uint64_t>(queues_[i].head());
+        out.queue_tails[i] = reinterpret_cast<uint64_t>(queues_[i].tail());
+        out.queue_counts[i] = queues_[i].count();
+    }
 }
 
-void ReadyQueueManager::restore_state(uint64_t bitmap_hi, uint64_t bitmap_lo) noexcept {
-    bitmap_.set_raw(bitmap_hi, bitmap_lo);
+void ReadyQueueManager::restore_pod(const ReadyQueuePOD& src) noexcept {
+    bitmap_.set_raw(src.bitmap_hi, src.bitmap_lo);
+    for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
+        // Restore queue head/tail from raw addresses (TCBs are in-place)
+        queues_[i].set_raw(
+            reinterpret_cast<TaskControlBlock*>(src.queue_heads[i]),
+            reinterpret_cast<TaskControlBlock*>(src.queue_tails[i]),
+            src.queue_counts[i]);
+    }
 }
 
 void ReadyQueueManager::clear_all() noexcept {

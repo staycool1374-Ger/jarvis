@@ -8,6 +8,16 @@
 
 namespace kernel {
 
+/// @brief POD snapshot of the full ReadyQueueManager state.
+///        All fields are plain data; memcpy-safe by construction.
+struct alignas(64) ReadyQueuePOD {
+    uint64_t bitmap_hi;
+    uint64_t bitmap_lo;
+    uint64_t queue_heads[CONFIG_PRIORITY_CEILING + 1];
+    uint64_t queue_tails[CONFIG_PRIORITY_CEILING + 1];
+    uint64_t queue_counts[CONFIG_PRIORITY_CEILING + 1];
+};
+
 class ReadyQueueManager {
     PriorityMap bitmap_;
     TaskQueue queues_[CONFIG_PRIORITY_CEILING + 1];
@@ -24,11 +34,9 @@ public:
     const PriorityMap& bitmap() const noexcept { return bitmap_; }
     const TaskQueue& queue(uint64_t prio) const noexcept { return queues_[prio]; }
 
-    void capture_state(uint64_t* out_bitmap_hi, uint64_t* out_bitmap_lo) const noexcept;
-    void restore_state(uint64_t bitmap_hi, uint64_t bitmap_lo) noexcept;
+    void capture_pod(ReadyQueuePOD& out) const noexcept;
+    void restore_pod(const ReadyQueuePOD& src) noexcept;
     void clear_all() noexcept;
-    /// @brief Resets all queues without following pointers.
-    ///        Safe to call with dangling pointers (e.g., during test isolation).
     void reset() noexcept;
 };
 

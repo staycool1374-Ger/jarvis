@@ -839,6 +839,14 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
     if (sporadic_count_out) *sporadic_count_out = sporadic_task_count_;
 }
 
+void Scheduler::capture_rqpod(ReadyQueuePOD& out) noexcept {
+    ready_queue_.capture_pod(out);
+}
+
+void Scheduler::restore_rqpod(const ReadyQueuePOD& src) noexcept {
+    ready_queue_.restore_pod(src);
+}
+
 void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* const* id_table_in,
                               uint64_t task_count_in,
@@ -860,36 +868,14 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     preempt_enabled_     = preempt_in;
     sporadic_task_count_ = sporadic_count_in;
 
-    // Rebuild ready queue from restored tasks and restore bitmap
+    // Ready-queue state is restored separately via restore_pod()
+    // called from snapshot_restore AFTER restore_task_fields() has
+    // restored per-TCB runq_next_/runq_prev_/in_ready_queue_/rq_priority_.
+    // The per-TCB pointer values are valid because TCBs are restored
+    // in-place (same physical addresses across snapshot cycles).
+    (void)rq_bitmap_hi;
+    (void)rq_bitmap_lo;
     ready_queue_.reset();
-    for (uint64_t i = 0; i < task_count_; ++i) {
-        auto* t = tasks_[i];
-        if (t) {
-            t->in_ready_queue_ = false;
-            if (t->magic == TaskControlBlock::TCB_MAGIC &&
-                t->state == TaskState::READY) {
-                ready_queue_.enqueue(*t, effective_priority(t));
-            }
-        }
-    }
-    ready_queue_.restore_state(rq_bitmap_hi, rq_bitmap_lo);
-
-    // Validate RSP for tasks actually in ready queues (not all READY tasks)
-    // to catch stale RSP from tasks that were RUNNING at snapshot time.
-    for (uint64_t prio = 0; prio <= CONFIG_PRIORITY_CEILING; ++prio) {
-        auto& q = ready_queue_.queue(prio);
-        for (auto* t = q.head(); t; t = t->runq_next_) {
-            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
-            if (!rsp_in_stack_range(TASK_STACK_PTR(t), t, "restore")) {
-                Logger::raw_write("[SCHED] restore: RSP corruption for task ");
-                Logger::print_hex(t->id);
-                Logger::raw_write(" (rsp=0x");
-                Logger::print_hex(TASK_STACK_PTR(t));
-                Logger::raw_write("), resetting to stack top\n");
-                TASK_STACK_PTR(t) = t->kernel_stack_top;
-            }
-        }
-    }
 }
 
 void Scheduler::capture_task_fields(TaskFields* out) {
@@ -918,6 +904,10 @@ void Scheduler::capture_task_fields(TaskFields* out) {
         out[i].pending_signals    = t->pending_signals;
         out[i].alarm_ticks        = t->alarm_ticks;
         out[i].alarm_armed        = t->alarm_armed;
+        out[i].runq_next          = t->runq_next_;
+        out[i].runq_prev          = t->runq_prev_;
+        out[i].in_ready_queue     = t->in_ready_queue_;
+        out[i].rq_priority        = t->rq_priority_;
     }
 }
 
@@ -939,9 +929,13 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
             t->remaining_ticks = saved[j].remaining_ticks;
             t->exit_code       = saved[j].exit_code;
             t->context         = saved[j].context;
-            t->pending_signals = saved[j].pending_signals;
-            t->alarm_ticks     = saved[j].alarm_ticks;
-            t->alarm_armed     = saved[j].alarm_armed;
+            t->pending_signals   = saved[j].pending_signals;
+            t->alarm_ticks       = saved[j].alarm_ticks;
+            t->alarm_armed       = saved[j].alarm_armed;
+            t->runq_next_        = saved[j].runq_next;
+            t->runq_prev_        = saved[j].runq_prev;
+            t->in_ready_queue_   = saved[j].in_ready_queue;
+            t->rq_priority_      = saved[j].rq_priority;
             break;
         }
     }
