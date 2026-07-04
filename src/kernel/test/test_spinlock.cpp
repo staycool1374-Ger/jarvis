@@ -175,10 +175,8 @@ JARVIS_TEST(spinlock_preemption_yield) {
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*low);
         low->cleanup();
         delete low;
-        Scheduler::remove_task(*high);
         high->cleanup();
         delete high;
     });

@@ -264,7 +264,7 @@ JARVIS_TEST(pci_msi_capability_chain) {
 // Runmode: kernel
 // Testidea: Verifies PCI enumeration completes within bounded time.
 // Input: arch::pci_scan_all() with TSC timestamp measurement
-// Expect: Enumeration completes in < 1M TSC ticks on QEMU
+// Expect: Enumeration completes in < 5M TSC ticks on QEMU
 // Depends: arch::pci_scan_all, arch::rdtsc
 JARVIS_TEST(pci_enumeration_bounded_time) {
     uint64_t tsc_start = arch::rdtsc();

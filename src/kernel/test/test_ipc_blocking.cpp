@@ -55,8 +55,9 @@ JARVIS_TEST(ipc_receive_was_blocked_restores_state) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT_EQ(1ULL, out.type);
 
-    // Task should be in READY state after successful receive
-    JARVIS_ASSERT(cur->state == TaskState::READY);
+    // Task should be in RUNNING state after successful non-blocking receive
+    // (the message was already in the queue — no blocking occurred)
+    JARVIS_ASSERT(cur->state == TaskState::RUNNING);
     JARVIS_TEST_PASS();
 }
 

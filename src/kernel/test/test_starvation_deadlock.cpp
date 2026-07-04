@@ -158,7 +158,9 @@ TEST_CLASS(PriorityInversionChain5) {
     s2.post();
     s2.wait();
     m1.lock();
-    CT_ASSERT(m1.owner() == task_e);
+    // task_e is blocked on m1 (held by task_a) — owner stays task_a.
+    // Priority inheritance boosted task_a's priority to task_e's level.
+    CT_ASSERT(m1.owner() == task_a);
     CT_ASSERT(task_a->priority >= task_e->priority);
 
     Scheduler::set_current(*task_d);

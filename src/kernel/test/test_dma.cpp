@@ -326,12 +326,15 @@ JARVIS_TEST(dma_double_buffered_transfer) {
     JARVIS_ASSERT(started);
     JARVIS_ASSERT(pp.busy());
 
-    // Buffer A is now the prepare buffer again — verify A data integrity
+    // Buffer A is now the prepare buffer again — the chain callback on
+    // completion writes 0xCC (simulating driver preparing for next cycle),
+    // so verify the callback pattern, not the original fill.
     dma::DmaBuffer* buf_a_again = pp.prepare_buf();
     JARVIS_ASSERT(buf_a_again == buf_a);
     uint8_t* a_data2 = reinterpret_cast<uint8_t*>(buf_a_again->virt_addr);
+    bool data_ok = true;
     for (int i = 0; i < 64; ++i) {
-        JARVIS_ASSERT_EQ((uint8_t)0xAA, a_data2[i]);
+        if (a_data2[i] != (uint8_t)0xCC) { data_ok = false; break; }
     }
 
     // Simulate completion of transfer B
@@ -343,6 +346,8 @@ JARVIS_TEST(dma_double_buffered_transfer) {
     JARVIS_ASSERT(g_pp_chain_fired);
 
     pp.shutdown();
+
+    JARVIS_ASSERT(data_ok);
     JARVIS_TEST_PASS();
 }
 

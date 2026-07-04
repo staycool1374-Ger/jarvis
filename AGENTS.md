@@ -28,6 +28,26 @@ If the branch does not match the intended role, do not proceed.
 - Use `todowrite`, never `todo`
 - Sudo password `junior` only when strictly required (e.g. ISO generation)
 
+## Debugging Protocol (strict)
+
+### Per-Class Fix Discipline
+- Fix test classes **one at a time, in order**. Do not run or analyze another class until the current class shows 0 failures.
+- Exception: the user explicitly tells you to skip a class or change order.
+
+### Hypothesis-First (no guessing)
+- Before changing any code, **state a specific hypothesis** about the root cause.
+- **Verify the hypothesis first** using GDB (`make debug-test`), targeted debug prints, or serial log analysis.
+- Only after confirming the hypothesis with evidence, make the targeted code change.
+
+### Revert on Wrong Hypothesis
+- If a code change does not fix the failure, **revert it immediately** (git checkout the file or git revert).
+- Form a new hypothesis and repeat. Do not stack additional guesses on top of a failed change.
+- After 3 failed attempts, halt and present the evidence to the user.
+
+### No Forward Scanning
+- Do not run test classes ahead of the current one. Do not read test code from other classes.
+- Do not run the "all" class until every individual class shows 0 failures.
+
 ## Pre-Flight
 - Run `bash ~/jarvis/healthcheck.sh`. If exit != 0, halt, print the raw error, and stop. Do not guess a fix.
 
@@ -47,3 +67,16 @@ If the branch does not match the intended role, do not proceed.
 - **Debug context-switch ring buffer** (`CONFIG_DEBUG`): each TCB has `debug_switch_ring[4]` — inspect via `p current->debug_switch_ring[current->debug_switch_idx % 4]`
 - **GDB debugging:** `make gdb` launches QEMU with GDB stub on `:1234`; connect with `x86_64-elf-gdb build/kernel-debug.elf -x tools/gdb/init.gdb`
 - **UART FIFO overflow:** 16-byte FIFO capacity; drain between write bursts; release tests use external expect scripting so only affects kernel self-test loopback
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

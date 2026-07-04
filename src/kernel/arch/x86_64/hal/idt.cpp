@@ -51,6 +51,11 @@ void IDT::init() {
         make_entry(__isr_vector[static_cast<int>(InterruptVector::SYSCALL)],
                    GDT_CODE, 0xEE, 0);
 
+    // Double-fault handler (vector 8) uses IST1 to switch to a dedicated stack
+    entries_[static_cast<int>(InterruptVector::DOUBLE_FAULT)] =
+        make_entry(__isr_vector[static_cast<int>(InterruptVector::DOUBLE_FAULT)],
+                   GDT_CODE, 0x8E, 1);
+
     desc_.limit = sizeof(entries_) - 1;
     desc_.base  = reinterpret_cast<uint64_t>(entries_);
 }

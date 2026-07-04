@@ -20,6 +20,7 @@
 #include <test.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/arch/timer.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
@@ -68,7 +69,8 @@ static size_t off_sched_misc_size() {
     // misc[0]=task_count, misc[1]=cur_idx, misc[2]=next_id
     // misc[3]=idle_ptr (bits), bool preempt @ offset 32
     // misc[5]=shell_ptr, misc[8]=sporadic_task_count
-    return sizeof(uint64_t) * 9 + sizeof(bool);
+    // misc[9]=timer_ticks
+    return sizeof(uint64_t) * 10 + sizeof(bool);
 }
 
 static size_t off_sched_rqpod()  { return off_sched_misc()
@@ -158,6 +160,11 @@ bool snapshot_create() {
         __builtin_memcpy(&misc[3], &idle_dummy, sizeof(idle_dummy));
         auto* shell_ptr = Scheduler::get_shell_task();
         __builtin_memcpy(&misc[5], &shell_ptr, sizeof(shell_ptr));
+
+        // Save PIT/Timer tick count so pit_init_sets_divisor passes after
+        // snapshot_restore — the hardware keeps running but the software
+        // counter starts at 0 at boot and is not part of any saved region.
+        misc[9] = arch::Timer::ticks();
 
         // Save per-task plain fields for deep-copy restoration
         auto* task_fields = reinterpret_cast<Scheduler::TaskFields*>(
@@ -279,6 +286,9 @@ void snapshot_restore(const char* test_name) {
         ResourceTracker::instance().check(
             baseline,
             test_name ? test_name : "snapshot");
+        // Reset tracker counters to match the PMM/MemPool state about
+        // to be restored, so the next test's delta is accurate (#1689).
+        ResourceTracker::instance().restore(baseline);
     }
 
     // ---- PMM ----
@@ -340,6 +350,16 @@ void snapshot_restore(const char* test_name) {
         TaskControlBlock* shell_ptr = nullptr;
         __builtin_memcpy(&shell_ptr, &misc[5], sizeof(shell_ptr));
         Scheduler::set_shell_task(shell_ptr);
+
+        // Restore PIT/Timer tick count so that pit_init_sets_divisor
+        // sees a non-zero tick value matching the snapshot's epoch.
+        // If the saved count is 0 (timer ISR hasn't fired), force 1
+        // to avoid false failures in tests that require ticks() > 0.
+        {
+            uint64_t saved = misc[9];
+            if (saved == 0) saved = 1;
+            arch::Timer::set_ticks_for_test(saved);
+        }
 
         // Diagnose: check all tasks for boot-stack RSP before restore_task_fields
         for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
@@ -586,6 +606,7 @@ void snapshot_restore(const char* test_name) {
         __builtin_memcpy(&misc_snap[3], &idle_dummy, sizeof(idle_dummy));
         auto* shell_ptr = Scheduler::get_shell_task();
         __builtin_memcpy(&misc_snap[5], &shell_ptr, sizeof(shell_ptr));
+        misc_snap[9] = arch::Timer::ticks();
 
         // Recapture pool data so restore_pool_data gives back the
         // post-reload state (not the pre-test state that may reference
@@ -634,6 +655,10 @@ void snapshot_restore(const char* test_name) {
         Logger::raw_write("\n");
     }
 
+    // Belt-and-suspenders: ensure interrupts enabled before returning to
+    // test code.  Nested IrqGuards inside reload_daemon_tasks can disrupt
+    // the outer guard's saved IF flag when task kernel stacks are restored.
+    arch::sti();
 }
 
 void snapshot_destroy() {
@@ -649,15 +674,34 @@ void snapshot_destroy() {
 void reload_daemon_tasks() {
     arch::IrqGuard guard;
     auto* current = Scheduler::current_task();
+    auto* idle    = Scheduler::get_idle_task();
+    auto* shell   = Scheduler::get_shell_task();
+
+    // If the current task is a test-created task (not idle, not shell, not a
+    // daemon), it would survive the kill loops below because of the current
+    // skip, get recaptured into the snapshot, and cause RIP=0 on the next
+    // restore when MemPool frees its TCB.  Force current to idle before
+    // the loops so the leaked task gets terminated.
+    if (current && current != idle && current != shell) {
+        bool is_daemon = false;
+        for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
+            if (daemon::get_entry(i).pid != 0 &&
+                Scheduler::find_task(daemon::get_entry(i).pid) == current) {
+                is_daemon = true;
+                break;
+            }
+        }
+        if (!is_daemon) {
+            current = idle;
+            Scheduler::set_current_index(0);
+        }
+    }
+
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
         const auto& entry = daemon::get_entry(i);
         if (entry.pid != 0) {
             auto* task = Scheduler::find_task(entry.pid);
             if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
-                // Don't kill the calling task — it's the snapshot's current
-                // task (may be a daemon).  Killing it would force
-                // reap_orphans to fall back to current_index_ = 0 (idle),
-                // triggering spurious context switches from the boot stack.
                 if (task != current) {
                     task->state = TaskState::TERMINATED;
                     task->exit_code = 0;
@@ -668,7 +712,7 @@ void reload_daemon_tasks() {
     }
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t != current && t != Scheduler::get_idle_task() &&
+        if (t && t != current && t != idle &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;

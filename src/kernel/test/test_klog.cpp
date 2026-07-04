@@ -51,6 +51,7 @@ static bool contains(const char* haystack, const char* needle) {
 JARVIS_TEST(klog_read_entries) {
     auto& rb = kernel::log::g_klog;
 
+    rb.clear();
     rb.puts("KLOG_TEST_MARKER_1\n");
     rb.puts("KLOG_TEST_MARKER_2\n");
 
@@ -129,6 +130,7 @@ JARVIS_TEST(klog_invalid_buffer_eFault) {
 JARVIS_TEST(dmesg_prints_kernel_log) {
     auto& rb = kernel::log::g_klog;
 
+    rb.clear();
     rb.puts("DMESG_TEST_MARKER\n");
 
     char buf[256];

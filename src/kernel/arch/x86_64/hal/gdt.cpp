@@ -21,6 +21,10 @@
 
 namespace arch {
 
+// Dedicated stack for double-fault handler (IST1)
+// 4 KiB = one page, allocated in .bss (zero-initialized)
+static uint8_t df_stack[4096] __attribute__((aligned(16)));
+
 GDTEntry GDT::entries_[NUM_ENTRIES] = {};
 TSS GDT::tss_ = {};
 GDTDescriptor GDT::desc_ = {};
@@ -64,6 +68,9 @@ void GDT::init() {
 
     desc_.limit = sizeof(entries_) - 1;
     desc_.base  = reinterpret_cast<uint64_t>(entries_);
+
+    // Set up IST1 for double-fault handler (vector 8)
+    tss_.ist1 = reinterpret_cast<uint64_t>(df_stack + sizeof(df_stack));
 }
 
 void GDT::load() {

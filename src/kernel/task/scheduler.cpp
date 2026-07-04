@@ -709,6 +709,7 @@ void Scheduler::cleanup_zombies() noexcept {
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
                            bool from_isr = false) {
+    (void)from_isr; // Boot-stack guard applies to both ISR and non-ISR paths
     if (!validate_switch(current, next, "switch")) {
         report_corruption("switch");
         return;
@@ -721,14 +722,14 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
         return;
     }
 
-    // When the CPU is using the boot stack (e.g. during test execution
-    // after snapshot_restore), saving RSP into a task's context.rsp
-    // would later restore a freed boot-stack frame → RIP=0.
-    // ISR path: skip the switch entirely (the timer ISR shouldn't switch
-    // if we're on the boot stack — daemons will be picked up later).
-    // reschedule() path (non-ISR): redirect the save to a dummy global
-    // so the switch still happens but boot-stack RSP is harmlessly
-    // discarded instead of corrupting the task's context.rsp.
+    // When the CPU is using the boot stack (e.g. test framework after
+    // snapshot_restore), saving RSP into a task's context.rsp acts as a
+    // boot-stack proxy: the task carries the return point back to the test
+    // framework when later selected by next_task().  The task's entry is
+    // never run — its context.rsp is overwritten with the boot-stack RSP.
+    // This works identically for ISR-triggered (on_tick → rate_monotonic)
+    // and reschedule()-triggered switches — rate_monotonic_schedule() is
+    // called from both real ISR context and simulated test on_tick().
     uint64_t* save_target = &TASK_STACK_PTR(current);
     {
         uint64_t cur_rsp;
@@ -736,16 +737,6 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
         uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
         if (!current->kernel_stack || !current->kernel_stack_top ||
             cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
-            if (from_isr) {
-                __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
-                __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
-                __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-                return;
-            }
-            // reschedule() from boot stack (test framework proxy).
-            // Current task is a sacrificial proxy — its context.rsp will
-            // carry the boot-stack return point so the test framework
-            // resumes when this task is later selected by next_task().
             save_target = &TASK_STACK_PTR(current);
         }
     }
