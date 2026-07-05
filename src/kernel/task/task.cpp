@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file task.cpp
+/// @brief TaskControlBlock lifecycle: creation, initialisation, cloning, and cleanup.
+
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/sporadic_server.hpp>
@@ -65,6 +68,9 @@ void TaskControlBlock::init_sporadic_server(uint64_t budget_c,
     Scheduler::inc_sporadic_count();
 }
 
+/// @brief Initialises common fields of a newly allocated TaskControlBlock.
+/// Sets up fd table, cwd, IPC objects (MessageQueue, Notify, EventGroup),
+/// process-hierarchy links, signal handlers, and buffer pool state.
 void init_task_common(TaskControlBlock& tcb) {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         tcb.fd_table.fds[i].used = false;
@@ -129,6 +135,13 @@ void init_task_common(TaskControlBlock& tcb) {
     tcb.pending_signals = 0;
 }
 
+/// @brief Creates a new kernel-space TaskControlBlock.
+/// Allocates a TCB from MemPool, sets up a kernel stack with an
+/// architecture-specific initial register frame, and returns it.
+/// @param entry  Kernel function pointer to execute.
+/// @param priority  Initial scheduling priority.
+/// @param period_ticks  Period for rate-monotonic scheduling.
+/// @return  Pointer to the new TCB, or nullptr on OOM.
 // NOLINTBEGIN(bugprone-easily-swappable-parameters)
 TaskControlBlock* TaskControlBlock::create(
     void (*entry)(),
@@ -234,6 +247,14 @@ TaskControlBlock* TaskControlBlock::create(
     return tcb;
 }
 
+/// @brief Creates a new user-space TaskControlBlock.
+/// Allocates a TCB, kernel stack, user stack, and a cloned PML4 page table.
+/// The initial register frame targets user-mode execution.
+/// @param entry  User-space entry point address.
+/// @param priority  Initial scheduling priority.
+/// @param period_ticks  Period for rate-monotonic scheduling.
+/// @param user_stack_size  Size of the user stack in bytes.
+/// @return  Pointer to the new TCB, or nullptr on OOM.
 // NOLINTBEGIN(bugprone-easily-swappable-parameters)
 TaskControlBlock* TaskControlBlock::create_user(
     void (*entry)(),
@@ -359,6 +380,12 @@ void TaskControlBlock::restore_context(uint64_t& rsp) noexcept {
 }
 #endif
 
+/// @brief Clones the current task (fork).
+/// Allocates a new TCB and kernel stack, copies parent's fd table, FPU state,
+/// signal handlers, and process hierarchy. For user tasks, clones the page table
+/// and copies user stack contents with COW semantics for code/data pages.
+/// @param regs  Pointer to the saved register frame from the fork syscall.
+/// @return  Pointer to the new child TCB, or nullptr on failure.
 TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     auto* parent = Scheduler::current_task();
     if (!parent) return nullptr;
@@ -671,6 +698,11 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
     PMM::free_page(pdpt_phys);
 }
 
+/// @brief Releases all resources owned by the task.
+/// Unlinks from parent's child list, detaches from message-queue blocked lists,
+/// closes file descriptors, frees user/kernel stacks, tears down page tables,
+/// destroys IPC objects, and notifies the daemon manager. After this call the
+/// TCB must not be used except for MemPool::free().
 void TaskControlBlock::cleanup() noexcept {
     magic = 0;
     // Remove self from parent's child list if we have a parent

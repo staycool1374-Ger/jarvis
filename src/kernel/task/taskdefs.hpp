@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file taskdefs.hpp
+/// @brief Boot-time task definition table and reboot-from-table facility.
+
 #pragma once
 
 #include <types.hpp>

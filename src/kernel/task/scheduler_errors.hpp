@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file scheduler_errors.hpp
+/// @brief Scheduler error codes and string lookup.
+
 #pragma once
 
 #include <types.hpp>
@@ -37,6 +40,7 @@ namespace kernel::errors {
     X(NO_SHELL,        10, "Shell task not set") \
     X(INVALID_ARGS,    11, "Invalid arguments")
 
+/// @brief Error codes returned by scheduler operations.
 // NOLINTNEXTLINE(performance-enum-size)
 enum SchedulerError : uint64_t {
 #define X(name, num, msg) SCHED_ERR_##name = (num),

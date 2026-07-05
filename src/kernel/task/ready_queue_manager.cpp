@@ -1,3 +1,6 @@
+/// @file ready_queue_manager.cpp
+/// @brief ReadyQueueManager implementation: O(1) enqueue/dequeue by priority.
+
 #include <kernel/task/ready_queue_manager.hpp>
 #include <kernel/task/task.hpp>
 

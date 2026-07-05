@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file taskdefs.cpp
+/// @brief Task definition table and reboot-from-table implementation.
+
 #include <kernel/task/taskdefs.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/sporadic_server.hpp>

@@ -3,6 +3,9 @@
  * Asynchronously drains dmesg ring buffer to UART with structured formatting.
  */
 
+/// @file dmesg_task.cpp
+/// @brief Dmesg consumer task: drains ring-buffer log entries to UART.
+
 #include <kernel/task/dmesg_task.hpp>
 #include <kernel/log/dmesg.hpp>
 #include <kernel/arch/serial.hpp>

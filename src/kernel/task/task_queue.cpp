@@ -1,3 +1,6 @@
+/// @file task_queue.cpp
+/// @brief TaskQueue intrusive doubly-linked list implementation.
+
 #include <kernel/task/task_queue.hpp>
 #include <kernel/task/task.hpp>
 

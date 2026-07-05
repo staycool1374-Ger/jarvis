@@ -1,3 +1,6 @@
+/// @file priority_map.hpp
+/// @brief Two-level bitmap for O(1) highest-priority lookup.
+
 #pragma once
 
 #include <types.hpp>
@@ -6,16 +9,20 @@
 
 namespace kernel {
 
+/// @brief Two-level bitmap supporting O(1) highest-priority find.
+/// Supports up to 128 priority levels (0–127) as two 64-bit words.
 class PriorityMap {
     static_assert(CONFIG_PRIORITY_CEILING <= 128,
                   "O(1) scheduler supports at most 128 priority levels");
 
-    uint64_t bitmap_hi_;  ///< Priorities 64–127
-    uint64_t bitmap_lo_;  ///< Priorities 0–63
+    uint64_t bitmap_hi_;  ///< Bitmap for priorities 64–127
+    uint64_t bitmap_lo_;  ///< Bitmap for priorities 0–63
 
 public:
+    /// @brief Constructs an empty PriorityMap.
     PriorityMap() : bitmap_hi_(0), bitmap_lo_(0) {}
 
+    /// @brief Sets the bit for a given priority level.
     void set(uint64_t prio) noexcept {
         if (prio >= 64) {
             bitmap_hi_ |= (1ULL << (prio - 64));
@@ -24,6 +31,7 @@ public:
         }
     }
 
+    /// @brief Clears the bit for a given priority level.
     void clear(uint64_t prio) noexcept {
         if (prio >= 64) {
             bitmap_hi_ &= ~(1ULL << (prio - 64));
@@ -32,6 +40,7 @@ public:
         }
     }
 
+    /// @brief Returns the highest set priority level, or 0 if none.
     uint64_t get_highest_priority() const noexcept {
         if (bitmap_hi_) {
             return 64 + hal::bits::find_highest_bit(bitmap_hi_);
@@ -42,6 +51,7 @@ public:
         return 0;
     }
 
+    /// @brief Returns true if the given priority level is set.
     bool is_set(uint64_t prio) const noexcept {
         if (prio >= 64) {
             return (bitmap_hi_ & (1ULL << (prio - 64))) != 0;
@@ -49,14 +59,19 @@ public:
         return (bitmap_lo_ & (1ULL << prio)) != 0;
     }
 
+    /// @brief Returns the raw upper 64-bit word.
     uint64_t raw_hi() const noexcept { return bitmap_hi_; }
+    /// @brief Returns the raw lower 64-bit word.
     uint64_t raw_lo() const noexcept { return bitmap_lo_; }
 
+    /// @brief Restores bitmap state from raw words (for snapshot restore).
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void set_raw(uint64_t hi, uint64_t lo) noexcept { bitmap_hi_ = hi; bitmap_lo_ = lo; }
 
+    /// @brief Returns true if no priority levels are set.
     bool empty() const noexcept { return bitmap_hi_ == 0 && bitmap_lo_ == 0; }
 
+    /// @brief Clears all priority levels.
     void clear_all() noexcept { bitmap_hi_ = 0; bitmap_lo_ = 0; }
 };
 

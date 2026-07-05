@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file scheduler.cpp
+/// @brief Scheduler implementation: task lifecycle, ready-queue management,
+///        rate-monotonic dispatch, context switching, and test isolation.
+
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
@@ -75,6 +79,7 @@ void Scheduler::dequeue_ready(TaskControlBlock& task) noexcept {
     ready_queue_.remove(task, effective_priority(&task));
 }
 
+/// @brief Transitions a task to READY state and inserts it into the ready queue.
 void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
     task.state = TaskState::READY;
     enqueue_ready(task);
@@ -125,6 +130,8 @@ static constexpr uint32_t LIU_LEYLAND_BOUNDS[LIU_LEYLAND_MAX_TASKS + 1] = {
 };
 static constexpr uint32_t LIU_LEYLAND_LIMIT = 693147;
 
+/// @brief Initialises the scheduler: creates the idle task, clears the
+/// ID table, and enables preemption.
 void Scheduler::init() {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
         id_table_[i] = nullptr;
@@ -141,6 +148,8 @@ void Scheduler::init() {
     preempt_enabled_ = true;
 }
 
+/// @brief Registers a task with the scheduler and enqueues it as READY.
+/// Performs Liu-Leyland utilisation-bound admission control (warn-only).
 void Scheduler::add_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task_count_ < MAX_TASKS);
@@ -187,6 +196,8 @@ void Scheduler::add_task(TaskControlBlock& task) {
 
 }
 
+/// @brief Removes a task from the scheduler's task table and ready queue.
+/// Clears context-switch globals that may reference the removed task.
 void Scheduler::remove_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     id_table_remove(&task);
@@ -217,6 +228,7 @@ void Scheduler::remove_task(TaskControlBlock& task) {
     }
 }
 
+/// @brief Returns the currently executing task, or nullptr if none.
 TaskControlBlock* Scheduler::current_task() noexcept {
     if (task_count_ == 0) return nullptr;
     return tasks_[current_index_];
@@ -231,10 +243,14 @@ TaskControlBlock* Scheduler::task_at(uint64_t index) noexcept {
     return tasks_[index];
 }
 
+/// @brief Looks up a task by its unique ID via the hash table.
+/// @param id  The task ID to find.
+/// @return  Pointer to the TaskControlBlock, or nullptr if not found.
 TaskControlBlock* Scheduler::find_task(uint64_t id) noexcept {
     return id_table_find(id);
 }
 
+/// @brief Returns true if a higher-priority task is ready to run.
 bool Scheduler::needs_switch() noexcept {
     if (task_count_ <= 1) return false;
     auto* current = tasks_[current_index_];
@@ -254,6 +270,9 @@ bool Scheduler::needs_switch() noexcept {
     return false;
 }
 
+/// @brief Selects the next task to run using the O(1) ready queue.
+/// Falls back to a full ready-queue rebuild if the fast path returns nothing.
+/// @return  The next TaskControlBlock to dispatch, or idle/current as fallback.
 TaskControlBlock* Scheduler::next_task() noexcept {
     if (task_count_ <= 1) return tasks_[0];
 
@@ -349,6 +368,9 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
     return nullptr;
 }
 
+/// @brief Timer-tick handler: accounts execution ticks, checks alarms, manages
+/// Sporadic Server budgets, reaps orphaned tasks, and triggers rate-monotonic
+/// scheduling. Called from the timer ISR at every system tick.
 void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ns();
 
@@ -790,6 +812,9 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
     arch::write_cr0(cr0);
 }
 
+/// @brief Rate-monotonic scheduling tick: selects the highest-priority ready
+/// task and performs a context switch if a different task was selected.
+/// Called from the timer ISR (on_tick) and guarded by the scheduler lock.
 void Scheduler::rate_monotonic_schedule() noexcept {
     if (task_count_ <= 1) return;
 
@@ -816,6 +841,9 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     scheduler_lock_.unlock();
 }
 
+/// @brief Requests a voluntary context switch to the highest-priority READY task.
+/// Called from non-ISR context (e.g. yield, IPC blocking). Uses the scheduler
+/// lock and defers the actual switch to assembly-level globals.
 void Scheduler::reschedule() noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     if (task_count_ <= 1) return;
