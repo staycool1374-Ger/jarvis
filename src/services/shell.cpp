@@ -768,7 +768,11 @@ void Shell::cmd_run(int argc, const char** argv) {
     if (background) {
         auto* task = kernel::TaskControlBlock::create(
             background_task_wrapper, 1, 100);
-        if (task) task->user_data = reinterpret_cast<void*>(prog->entry);
+        if (task) {
+            task->user_data = reinterpret_cast<void*>(prog->entry);
+            auto* cur = kernel::Scheduler::current_task();
+            if (cur) task->parent_id = cur->id;
+        }
         if (task) {
             kernel::Scheduler::add_task(*task);
             Terminal::write("Task #");
@@ -1634,16 +1638,22 @@ void Shell::cmd_trap(int argc, const char** argv) {
 }
 
 void Shell::cmd_wait(int, const char**) {
-    // Wait for all non-current, non-idle tasks to finish
-    uint64_t count = kernel::Scheduler::task_count();
-    for (uint64_t i = 0; i < count; ++i) {
-        auto* task = kernel::Scheduler::task_at(i);
-        if (task && task != kernel::Scheduler::current_task() && task->state != kernel::TaskState::TERMINATED) {
-            // Spin-wait for simplicity
-            while (task->state != kernel::TaskState::TERMINATED) {
-                arch::pause();
+    // Wait for all child (background) tasks to finish
+    auto* current = kernel::Scheduler::current_task();
+    uint64_t current_id = current ? current->id : 0;
+    while (true) {
+        bool any_alive = false;
+        uint64_t count = kernel::Scheduler::task_count();
+        for (uint64_t i = 0; i < count; ++i) {
+            auto* task = kernel::Scheduler::task_at(i);
+            if (task && task->parent_id == current_id &&
+                task->state != kernel::TaskState::TERMINATED) {
+                any_alive = true;
+                break;
             }
         }
+        if (!any_alive) break;
+        arch::pause();
     }
 }
 

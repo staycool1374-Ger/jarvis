@@ -8,10 +8,11 @@
 
 ### ID: #015 — wait command freezes shell
 - **Description:** The shell `wait` command hangs indefinitely instead of waiting for a child process to complete and returning. The shell becomes unresponsive and must be killed.
-- **Root Cause:** Not yet determined.
+- **Root Cause:** `cmd_wait` spins waiting for ALL non-current tasks to reach TERMINATED, but system tasks (init, vfsd, iocd) never terminate.
+- **Fix:** Background tasks now inherit `parent_id = current_task()->id` at launch. `cmd_wait` only waits for tasks where `parent_id == shell_id`, excluding all system/daemon tasks. Uses `arch::pause()` busy-spin — no scheduler interaction.
 - **Severity:** Medium (breaks shell workflow)
 - **Domain:** Kernel — Shell / Process
-- **Status:** Open
+- **Status:** Fixed (parent_id-based child wait)
 
 ## Kernel — Memory
 
