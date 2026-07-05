@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file ata_pio.cpp
+/// @brief ATA PIO driver implementation.
+
 #include <kernel/driver/ata_pio.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
@@ -32,6 +35,8 @@ using namespace arch;
 AtaPioDriver::AtaPioDriver(uint16_t port_base, uint8_t drive_head)
     : port_base_(port_base), drive_head_(drive_head) {}
 
+/// @brief Send the IDENTIFY command and populate sector_count_ / drive_present_.
+/// @return true if a valid ATA drive responded.
 bool AtaPioDriver::identify() {
     outb(static_cast<uint16_t>(port_base_ + 6), drive_head_);
 
@@ -68,10 +73,16 @@ bool AtaPioDriver::identify() {
     return true;
 }
 
+/// @brief Initialize the drive (alias for identify()).
+/// @return true if the drive is present and ready.
 bool AtaPioDriver::init() {
     return identify();
 }
 
+/// @brief Poll the ATA status register with a timeout.
+/// @param wait_for_bsy If true, wait only for BSY to clear.
+///                     If false, wait for DRQ (or ERR).
+/// @return true on success, false on timeout.
 bool AtaPioDriver::poll_status(bool wait_for_bsy) {
     for (uint64_t i = 0; i < ATA_POLL_TIMEOUT; ++i) {
         uint8_t status = inb(static_cast<uint16_t>(port_base_ + 7));
@@ -87,10 +98,16 @@ bool AtaPioDriver::poll_status(bool wait_for_bsy) {
     return false;
 }
 
+/// @brief Convenience wrapper — wait until DRQ (data request) is set.
+/// @return true if DRQ asserted within timeout.
 bool AtaPioDriver::wait_for_drq() {
     return poll_status(false);
 }
 
+/// @brief Read a single 512-byte sector via PIO.
+/// @param lba Logical block address.
+/// @param buffer Output buffer (must be at least 512 bytes).
+/// @return true on success.
 bool AtaPioDriver::read_sector(uint64_t lba, uint8_t* buffer) {
     if (!drive_present_ || !buffer || lba >= sector_count_) return false;
 
@@ -118,6 +135,10 @@ bool AtaPioDriver::read_sector(uint64_t lba, uint8_t* buffer) {
     return true;
 }
 
+/// @brief Write a single 512-byte sector via PIO.
+/// @param lba Logical block address.
+/// @param buffer Input buffer (must be at least 512 bytes).
+/// @return true on success.
 bool AtaPioDriver::write_sector(uint64_t lba, const uint8_t* buffer) {
     if (!drive_present_ || !buffer || lba >= sector_count_) return false;
 
@@ -147,6 +168,9 @@ bool AtaPioDriver::write_sector(uint64_t lba, const uint8_t* buffer) {
     return true;
 }
 
+/// @brief Probe primary and secondary IDE channels, master and slave,
+///        and return the first drive found.
+/// @return A heap-allocated AtaPioDriver, or nullptr.
 AtaPioDriver* AtaPioDriver::probe_first_drive() {
     struct Channel {
         uint16_t port_base;

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file iocd.hpp
+/// @brief I/O Controller Daemon IPC interface and message types.
+
 #pragma once
 
 #include <types.hpp>
@@ -31,14 +34,16 @@ static constexpr uint64_t IOCD_KEYBOARD_READ   = 204;
 static constexpr uint64_t IOCD_SERIAL_READ     = 205;
 static constexpr uint64_t IOCD_SERIAL_WRITE    = 206;
 
+/// @brief IOCD IPC request message.
 struct Msg {
-    uint64_t type;
-    uint64_t args[7];
+    uint64_t type;      ///< Message type (IOCD_REGISTER_DEVICE, etc.).
+    uint64_t args[7];   ///< Type-specific arguments.
 };
 
+/// @brief IOCD IPC reply message.
 struct Reply {
-    int64_t result;
-    uint64_t data[4];
+    int64_t  result;    ///< Return code (negative on error).
+    uint64_t data[4];   ///< Type-specific result data.
 };
 
 /// @brief Record the PID of the IOCD (I/O Controller Daemon) task.

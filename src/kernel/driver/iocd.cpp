@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file iocd.cpp
+/// @brief I/O Controller Daemon IPC implementation.
+
 #include <kernel/driver/iocd.hpp>
 #include <kernel/task/scheduler.hpp>
 
@@ -24,14 +27,20 @@ namespace iocd {
 
 static uint64_t g_iocd_pid = 0;
 
+/// @brief Record the PID of the I/O Controller Daemon.
+/// @param pid The IOCD task PID.
 void set_iocd_pid(uint64_t pid) {
     g_iocd_pid = pid;
 }
 
+/// @brief Retrieve the recorded IOCD PID.
+/// @return The PID, or 0 if not yet registered.
 uint64_t get_iocd_pid() {
     return g_iocd_pid;
 }
 
+/// @brief Check whether the currently running task is the IOCD.
+/// @return true if the current task PID matches the recorded IOCD PID.
 bool is_iocd_task() {
     auto* cur = Scheduler::current_task();
     return cur && cur->id == g_iocd_pid;

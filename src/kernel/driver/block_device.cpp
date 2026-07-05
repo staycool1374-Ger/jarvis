@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file block_device.cpp
+/// @brief Block device implementation (mock device).
+
 #include <kernel/driver/block_device.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <constants.hpp>
@@ -24,6 +27,8 @@
 namespace kernel {
 namespace block {
 
+/// @brief Construct a writable mock device, allocating backing storage via PMM.
+/// @param sector_count_ Number of 512-byte sectors to allocate.
 MockBlockDevice::MockBlockDevice(uint64_t sector_count_)
     : sector_count_(sector_count_), read_only_(false), owns_data_(true)
 {
@@ -37,6 +42,10 @@ MockBlockDevice::MockBlockDevice(uint64_t sector_count_)
     }
 }
 
+/// @brief Construct a mock device wrapping an existing buffer (optionally read-only).
+/// @param external_data Pointer to the backing data.
+/// @param sector_count_ Number of sectors.
+/// @param read_only If true, write_sector will fail.
 MockBlockDevice::MockBlockDevice(const uint8_t* external_data,
                                   uint64_t sector_count_, bool read_only)
     : sector_count_(sector_count_), read_only_(read_only), owns_data_(false)
@@ -44,6 +53,7 @@ MockBlockDevice::MockBlockDevice(const uint8_t* external_data,
     data_ = const_cast<uint8_t*>(external_data);
 }
 
+/// @brief Free the backing memory if it was PMM-allocated.
 MockBlockDevice::~MockBlockDevice() {
     if (owns_data_ && data_) {
         uint64_t bytes = sector_count_ * BLOCK_SIZE;
@@ -55,12 +65,20 @@ MockBlockDevice::~MockBlockDevice() {
     }
 }
 
+/// @brief Copy sector data from the backing buffer into the caller's buffer.
+/// @param lba Logical block address.
+/// @param buffer Output buffer (must be at least BLOCK_SIZE bytes).
+/// @return true on success.
 bool MockBlockDevice::read_sector(uint64_t lba, uint8_t* buffer) {
     if (!buffer || !data_ || lba >= sector_count_) return false;
     memcpy(buffer, data_ + lba * BLOCK_SIZE, BLOCK_SIZE);
     return true;
 }
 
+/// @brief Copy sector data from the caller's buffer into the backing buffer.
+/// @param lba Logical block address.
+/// @param buffer Input buffer (must be at least BLOCK_SIZE bytes).
+/// @return true on success, false if read-only or out of range.
 bool MockBlockDevice::write_sector(uint64_t lba, const uint8_t* buffer) {
     if (!buffer || !data_ || lba >= sector_count_ || read_only_) return false;
     memcpy(data_ + lba * BLOCK_SIZE, buffer, BLOCK_SIZE);

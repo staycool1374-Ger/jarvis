@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file block_device.hpp
+/// @brief Abstract block device interface and mock device.
+
 #pragma once
 
 #include <types.hpp>
@@ -23,19 +26,33 @@
 namespace kernel {
 namespace block {
 
+/// @brief Standard block size (512 bytes).
 static constexpr uint64_t BLOCK_SIZE = 512;
 
+/// @brief Abstract base class for block devices.
 class BlockDevice {
 public:
     virtual ~BlockDevice() = default;
 
+    /// @brief Read a single sector.
+    /// @param lba Logical block address.
+    /// @param buffer Output buffer (must be at least sector_size() bytes).
+    /// @return true on success.
     virtual bool read_sector(uint64_t lba, uint8_t* buffer) = 0;
+    /// @brief Write a single sector.
+    /// @param lba Logical block address.
+    /// @param buffer Input buffer (must be at least sector_size() bytes).
+    /// @return true on success.
     virtual bool write_sector(uint64_t lba, const uint8_t* buffer) = 0;
+    /// @brief Total number of sectors.
     virtual uint64_t sector_count() const = 0;
+    /// @brief Size of each sector in bytes.
     virtual uint64_t sector_size() const = 0;
+    /// @brief Whether the device reports as read-only.
     virtual bool is_read_only() const = 0;
 };
 
+/// @brief Mock block device backed by physical memory or an external buffer.
 class MockBlockDevice final : public BlockDevice {
 public:
     /// @brief Allocate writable storage via PMM.
@@ -45,19 +62,22 @@ public:
                     bool read_only);
     ~MockBlockDevice();
 
+    /// @brief Read a sector from the backing buffer.
     bool read_sector(uint64_t lba, uint8_t* buffer) override;
+    /// @brief Write a sector to the backing buffer.
     bool write_sector(uint64_t lba, const uint8_t* buffer) override;
     uint64_t sector_count() const override { return sector_count_; }
     uint64_t sector_size() const override { return BLOCK_SIZE; }
     bool is_read_only() const override { return read_only_; }
 
+    /// @brief Access the raw backing buffer (only when owned, i.e. PMM-allocated).
     uint8_t* raw_buffer() { return owns_data_ ? data_ : nullptr; }
 
 private:
-    uint64_t sector_count_;
-    uint8_t* data_;
-    bool read_only_ = false;
-    bool owns_data_ = true;
+    uint64_t sector_count_;  ///< Number of sectors.
+    uint8_t* data_;          ///< Pointer to the data buffer.
+    bool read_only_ = false; ///< Whether writes are rejected.
+    bool owns_data_ = true;  ///< Whether the buffer is owned (PMM-allocated).
 };
 
 } // namespace block
