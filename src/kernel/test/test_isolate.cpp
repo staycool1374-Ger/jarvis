@@ -30,6 +30,8 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/arch/gdt.hpp>
+#include <logger.hpp>
+#include "test_registry.gen.hpp"
 
 
 namespace kernel::test {
@@ -732,6 +734,24 @@ void reload_daemon_tasks() {
     Scheduler::reap_orphans();
     Scheduler::reset_ready_queue();
     daemon::restart_stale_daemons();
+}
+
+void run_all_isolated_tests() {
+    Logger::info("[TEST] Running %zu tests from generated registry",
+                 generated_tests_count);
+
+    for (size_t i = 0; i < generated_tests_count; ++i) {
+        const auto& test = generated_tests[i];
+
+        Logger::info("[TEST]  [%zu/%zu] %s", i + 1, generated_tests_count,
+                     test.name);
+
+        test.setup_func();
+        test.test_func();
+        test.teardown_func();
+
+        Logger::info("[TEST]  %s completed.", test.name);
+    }
 }
 
 } // namespace kernel::test

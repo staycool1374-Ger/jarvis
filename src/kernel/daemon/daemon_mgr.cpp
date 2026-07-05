@@ -184,6 +184,114 @@ void restart_stale_daemons() {
     }
 }
 
+void ensure_running(const char* name) {
+    for (uint64_t i = 0; i < num_daemons_; ++i) {
+        if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
+            continue;
+
+        // Already running — verify the task is still alive
+        if (entries_[i].pid != 0) {
+            auto* task = Scheduler::find_task(entries_[i].pid);
+            if (task && task->magic == TaskControlBlock::TCB_MAGIC &&
+                task->state != TaskState::TERMINATED) {
+                return; // healthy
+            }
+            // Stale PID — fall through to restart
+            entries_[i].pid = 0;
+        }
+
+        // Load ELF from initrd (same logic as restart_stale_daemons)
+        initrd::InitrdFile f = initrd::find(entries_[i].initrd_path);
+        if (!f.data) {
+            char with_dot[256];
+            with_dot[0] = '.';
+            with_dot[1] = '/';
+            size_t j = 0;
+            while (entries_[i].initrd_path[j] && j < 254) {
+                with_dot[j + 2] = entries_[i].initrd_path[j];
+                ++j;
+            }
+            with_dot[j + 2] = '\0';
+            f = initrd::find(with_dot);
+        }
+        if (!f.data) {
+            Logger::warn("daemon_mgr: ensure_running('%s') — initrd file not found",
+                         name);
+            return;
+        }
+
+        auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+        if (!kernel::elf::validate_header(hdr)) {
+            Logger::warn("daemon_mgr: ensure_running('%s') — invalid ELF", name);
+            return;
+        }
+
+        auto* task = kernel::elf::load(hdr, f.data);
+        if (!task) {
+            Logger::warn("daemon_mgr: ensure_running('%s') — elf::load failed", name);
+            return;
+        }
+
+        task->priority = 1;
+        task->period_ticks = 10;
+
+        {
+            uint64_t bg = 0;
+            uint64_t budget =
+                (strcmp(entries_[i].name, "iocd") == 0) ? 3ULL : 2ULL;
+            task->init_sporadic_server(budget, 10, bg, 1);
+        }
+
+        Scheduler::add_task(*task);
+
+        entries_[i].pid = task->id;
+        entries_[i].restart_count = 0;
+        if (entries_[i].set_pid_fn) {
+            entries_[i].set_pid_fn(task->id);
+        }
+
+        debug_write("[DAEMON] '");
+        debug_write(entries_[i].name);
+        debug_write("' ensured (PID=");
+        debug_write_hex(task->id);
+        debug_write(")\n");
+        return;
+    }
+
+    Logger::warn("daemon_mgr: ensure_running('%s') — no daemon with that name",
+                 name);
+}
+
+void terminate(const char* name) {
+    for (uint64_t i = 0; i < num_daemons_; ++i) {
+        if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
+            continue;
+
+        if (entries_[i].pid == 0) {
+            // Already dead — nothing to do
+            return;
+        }
+
+        auto* task = Scheduler::find_task(entries_[i].pid);
+        auto* current = Scheduler::current_task();
+        if (task && task != current &&
+            task->magic == TaskControlBlock::TCB_MAGIC) {
+            task->state = TaskState::TERMINATED;
+            task->exit_code = 0;
+        }
+
+        notify_death(entries_[i].pid); // clears PID + calls set_pid_fn(0)
+        entries_[i].restart_count = 0; // allow subsequent ensure_running
+
+        debug_write("[DAEMON] '");
+        debug_write(entries_[i].name);
+        debug_write("' terminated\n");
+        return;
+    }
+
+    Logger::warn("daemon_mgr: terminate('%s') — no daemon with that name", name);
+}
+
 void reset_restart_count(const char* name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].name && strcmp(entries_[i].name, name) == 0) {

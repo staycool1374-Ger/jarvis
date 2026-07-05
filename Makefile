@@ -251,12 +251,46 @@ BUILD_STAMP := build/.build-type
 include mk/rules.mk
 
 # ------------------------------------------------------------------------------
+# Generated test registry header
+# ------------------------------------------------------------------------------
+TEST_REGISTRY_GEN    := src/kernel/test/test_registry.gen.hpp
+TEST_REGISTRY_SCRIPT := tools/gen_test_registry.py
+TEST_SRC_DIR         := src/kernel/test
+# Use the actual compiled test file list (respects Makefile exclusions).
+# This avoids referencing symbols from #if 0 / excluded test files.
+TEST_SRC_FILES       := $(filter src/kernel/test/%.cpp, $(SRC_CXX))
+TEST_REGISTRY_DEPS   := $(TEST_SRC_FILES) $(TEST_REGISTRY_SCRIPT)
+
+# Write the file list to a temporary file so the Python script reads the
+# same files the build system compiles (no directory walk).
+TEST_FILE_LIST       := build/.test-file-list
+
+$(TEST_FILE_LIST): $(TEST_SRC_FILES)
+	@mkdir -p $(dir $@)
+	@printf '%s\n' $(TEST_SRC_FILES) > $@
+
+$(TEST_REGISTRY_GEN): $(TEST_FILE_LIST) $(TEST_REGISTRY_DEPS)
+	@printf '  %-7s %s\n' 'GEN' '$@'
+	@python3 $(TEST_REGISTRY_SCRIPT) $(TEST_SRC_DIR) $@ --file-list $(TEST_FILE_LIST)
+
+# Kernel link targets depend on the generated test registry header.
+# This ensures it exists even in sub-make invocations (e.g. release build).
+$(KERNEL_DEBUG): $(TEST_REGISTRY_GEN)
+$(KERNEL): $(TEST_REGISTRY_GEN)
+
+# test_isolate.cpp #includes the generated header; ensure it exists
+# before compiling that translation unit.
+build/kernel/test/test_isolate.o: $(TEST_REGISTRY_GEN)
+
+# ------------------------------------------------------------------------------
 # Phony targets
 # ------------------------------------------------------------------------------
 .PHONY: help all build check-style run-debug-mode run-release-mode \
         execute-test debug-test debug-shell \
         test symbols objdump debug release profiling rr-record rr-replay \
-        run-renode renode-test check-config config-summary
+        run-renode renode-test check-config config-summary test-registry-gen
+
+test-registry-gen: $(TEST_REGISTRY_GEN)
 
 # Default target
 all: help
@@ -378,6 +412,7 @@ check-build-stamp:
 debug: clang-tidy
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
+debug: $(TEST_REGISTRY_GEN)
 debug: check-build-stamp $(KERNEL_DEBUG)
 ifeq ($(ARCH),x86_64)
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
@@ -401,6 +436,7 @@ endif
 # The stamp is written first so an interrupted build is detected on next run.
 # ------------------------------------------------------------------------------
 release: CXXFLAGS += -g -O2 -fanalyzer -Wno-error=analyzer-null-argument -Wno-error=analyzer-possible-null-dereference -Wno-error=analyzer-use-of-uninitialized-value -Wno-error=analyzer-infinite-loop -Wno-error=analyzer-malloc-leak -Wno-error=analyzer-undefined-behavior-ptrdiff
+release: $(TEST_REGISTRY_GEN)
 release:
 ifneq ($(ARCH),x86_64)
 	@printf '  %-7s %s\n' 'ERROR' 'Release builds only supported on x86_64 (arch=$(ARCH))'
@@ -836,6 +872,7 @@ clean:
 	rm -rf initrd_root debug release profiling
 	rm -f $(FAT32_DISK)
 	rm -f *.d
+	rm -f $(TEST_REGISTRY_GEN) $(TEST_FILE_LIST)
 
 # ------------------------------------------------------------------------------
 # clang-tidy static analysis (debug builds only)

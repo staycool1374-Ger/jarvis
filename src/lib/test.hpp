@@ -144,12 +144,12 @@ void dump_class_counts();
 } // namespace kernel
 
 #define JARVIS_TEST(name)                                                     \
-    static void test_##name();                                                 \
-    static void test_##name()
+    void test_##name();                                                        \
+    void test_##name()
 
 #define JARVIS_TEST_SUITE(suite, name)                                        \
-    static void test_##suite##_##name();                                       \
-    static void test_##suite##_##name()
+    void test_##suite##_##name();                                              \
+    void test_##suite##_##name()
 
 #define JARVIS_ASSERT(cond)                                                   \
     do {                                                                       \

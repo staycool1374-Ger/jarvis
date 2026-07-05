@@ -53,6 +53,14 @@ void notify_death(uint64_t pid);
 /// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 
+/// @brief Ensure a daemon is running.  If its PID is 0 or the task is no
+///        longer valid, reload it from the initrd ELF immediately.
+void ensure_running(const char* name);
+
+/// @brief Terminate a daemon by name.  Marks the task as TERMINATED and
+///        clears the daemon entry so ensure_running will reload it.
+void terminate(const char* name);
+
 /// @brief Reset a daemon's restart count so it can be restarted again.
 ///        Sets restart_count=0, pid=0, and calls set_pid_fn(0).
 void reset_restart_count(const char* name);

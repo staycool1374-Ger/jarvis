@@ -31,4 +31,8 @@ void snapshot_destroy();
 ///        corrupted page tables with fresh ones from initrd.
 void reload_daemon_tasks();
 
+/// @brief Run all tests from the generated registry, calling setup/test/teardown
+///        in sequence with snapshot isolation between each test.
+void run_all_isolated_tests();
+
 }
