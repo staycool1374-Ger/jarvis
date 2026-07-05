@@ -1,8 +1,32 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file rtc.cpp
+/// @brief RISC-V64 RTC driver — reads wall-clock time via the mtime CSR.
+
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/hal/io.hpp>
 
 namespace arch {
 
+/// @brief Read the number of seconds since epoch from the mtime CSR.
+/// @return Seconds since 1970-01-01.
+/// @note Uses the QEMU virt default mtime frequency of 10 MHz.
 uint64_t RTC::read_seconds() {
     uint64_t cnt;
     asm volatile("csrr %0, time" : "=r"(cnt));
@@ -11,6 +35,8 @@ uint64_t RTC::read_seconds() {
     return cnt / freq;
 }
 
+/// @brief Populate a tm structure from the mtime CSR.
+/// @param[out] out Pointer to a tm struct to fill (no-op if nullptr).
 void RTC::read_time(tm* out) {
     if (!out) return;
     uint64_t secs = read_seconds();

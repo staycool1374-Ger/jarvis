@@ -1,3 +1,24 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file test_aarch64.cpp
+/// @brief AArch64 architecture-specific test suite.
+
 #if defined(CONFIG_ARCH_AARCH64)
 
 #include <test.hpp>
@@ -19,6 +40,8 @@ using namespace kernel;
 
 extern BootInfo g_boot_info;
 
+/// @brief Verify 4-level page table walk starting from TTBR1_EL1.
+/// Walks L0→L1→L2→L3 for a known higher-half virtual address.
 JARVIS_TEST(aarch64_page_table_4level_walk) {
     uint64_t ttbr1 = arch::read_ttbr1_el1();
     JARVIS_ASSERT_FMT(ttbr1 != 0, "TTBR1_EL1 must be non-zero, got 0x%lx", ttbr1);
@@ -72,6 +95,7 @@ JARVIS_TEST(aarch64_page_table_4level_walk) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Map a 4K leaf page, verify get_physical, then unmap.
 JARVIS_TEST(aarch64_page_table_map_leaf) {
     uint64_t phys_page = PMM::alloc_page();
     JARVIS_ASSERT_FMT(phys_page != 0, "PMM::alloc_page() returned 0");
@@ -96,6 +120,7 @@ JARVIS_TEST(aarch64_page_table_map_leaf) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Map 512 contiguous pages, then remap one page and verify the split.
 JARVIS_TEST(aarch64_page_table_block_split) {
     constexpr uint64_t BLOCK_VA = 0xFFFF800080000000ULL;
     constexpr uint64_t PAGE_VA = BLOCK_VA + 0x1000;
@@ -136,6 +161,7 @@ JARVIS_TEST(aarch64_page_table_block_split) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Save and restore two contexts, verify SP values through switch_to.
 JARVIS_TEST(aarch64_context_save_restore) {
     arch::ArchContext ctx_a{};
     arch::ArchContext ctx_b{};
@@ -160,6 +186,7 @@ JARVIS_TEST(aarch64_context_save_restore) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Initialise a context stack and verify the stack pointer is within bounds.
 JARVIS_TEST(aarch64_context_init_stack) {
     uint64_t stack[1024];
     uint64_t* stack_top = stack + 1024;
@@ -174,6 +201,7 @@ JARVIS_TEST(aarch64_context_init_stack) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify GIC initialisation: GICD_CTLR enable bit and IT lines.
 JARVIS_TEST(aarch64_gic_init) {
     arch::ArchInterruptController::init();
 
@@ -195,6 +223,7 @@ JARVIS_TEST(aarch64_gic_init) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Mask and unmask IRQ 64, verify ICENABLER and ISENABLER registers.
 JARVIS_TEST(aarch64_gic_mask_unmask) {
     arch::ArchInterruptController::mask(64);
 
@@ -209,6 +238,7 @@ JARVIS_TEST(aarch64_gic_mask_unmask) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Signal EOI and verify mask/unmask round-trip on IRQ 32.
 JARVIS_TEST(aarch64_gic_eoi) {
     arch::ArchInterruptController::eoi(32);
 
@@ -218,6 +248,7 @@ JARVIS_TEST(aarch64_gic_eoi) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify that the timer tick counter is monotonically non-decreasing.
 JARVIS_TEST(aarch64_timer_counter_monotonic) {
     uint64_t prev = arch::Timer::ticks();
     for (int i = 0; i < 10; ++i) {
@@ -229,6 +260,7 @@ JARVIS_TEST(aarch64_timer_counter_monotonic) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify CNTFRQ_EL0 is in a reasonable range and ns() conversion is accurate.
 JARVIS_TEST(aarch64_timer_frequency) {
     uint64_t freq;
     asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
@@ -244,6 +276,7 @@ JARVIS_TEST(aarch64_timer_frequency) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify TLB flush operations (all and by-VA) do not fault.
 JARVIS_TEST(aarch64_mmu_cache_tlb) {
     arch::ArchPageTable::tlb_flush_all();
 
@@ -258,6 +291,7 @@ JARVIS_TEST(aarch64_mmu_cache_tlb) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Check that FP and Advanced SIMD are implemented (ID_AA64PFR0_EL1).
 JARVIS_TEST(aarch64_fpu_neon_detection) {
     uint64_t id_aa64pfr0;
     asm volatile("mrs %0, id_aa64pfr0_el1" : "=r"(id_aa64pfr0));
@@ -274,6 +308,7 @@ JARVIS_TEST(aarch64_fpu_neon_detection) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Write printable ASCII characters to the UART and verify TXFE status.
 JARVIS_TEST(aarch64_uart_putc) {
     for (char c = 0x20; c <= 0x7E; ++c) {
         arch::Serial::putchar(c);
@@ -286,6 +321,7 @@ JARVIS_TEST(aarch64_uart_putc) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read PCI vendor/device ID via ECAM at BDF 0:0:0.
 JARVIS_TEST(aarch64_pci_ecam_read) {
     arch::PciBdf bdf{0, 0, 0};
     uint16_t vendor = arch::pci_read_vendor(bdf);
@@ -297,6 +333,7 @@ JARVIS_TEST(aarch64_pci_ecam_read) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read RTC time twice, verify year is in range and time does not regress.
 JARVIS_TEST(aarch64_rtc_read) {
     arch::RTC::read_seconds();
 
@@ -317,6 +354,7 @@ JARVIS_TEST(aarch64_rtc_read) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify the DTB pointer from boot info is valid, correctly aligned, and has a valid FDT header.
 JARVIS_TEST(aarch64_boot_dtb_pointer) {
     JARVIS_ASSERT_FMT(g_boot_info.dtb_ptr != 0, "DTB pointer is zero");
 
@@ -339,6 +377,7 @@ JARVIS_TEST(aarch64_boot_dtb_pointer) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify VBAR_EL1 is non-zero, 2KB-aligned, and contains at least one valid instruction.
 JARVIS_TEST(aarch64_exception_vector_installed) {
     uint64_t vbar;
     asm volatile("mrs %0, vbar_el1" : "=r"(vbar));
@@ -359,6 +398,7 @@ JARVIS_TEST(aarch64_exception_vector_installed) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Register all AArch64 architecture test cases.
 void register_aarch64_tests() {
     Logger::info("Registering aarch64 architecture tests");
 

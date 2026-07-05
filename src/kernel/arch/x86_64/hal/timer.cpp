@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file timer.cpp
+/// @brief PIT (Programmable Interval Timer) driver — generates periodic ticks and calibrates the TSC.
+
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/idt.hpp>
@@ -24,9 +27,13 @@
 
 namespace arch {
 
+/// @brief Monotonic tick counter, incremented on each PIT IRQ.
 constinit volatile uint64_t Timer::ticks_ = 0;
+/// @brief Calibrated TSC frequency in Hz.
 constinit uint64_t Timer::tsc_freq_hz_ = 0;
 
+/// @brief Initialise the PIT timer and register its IRQ handler.
+/// @param frequency_hz Desired tick frequency in Hertz.
 void Timer::init(uint32_t frequency_hz) {
     set_frequency(frequency_hz);
     IDT::register_handler(InterruptVector::TIMER, [](uint64_t, uint64_t,
@@ -37,6 +44,8 @@ void Timer::init(uint32_t frequency_hz) {
     calibrate_tsc(frequency_hz);
 }
 
+/// @brief Program the PIT to fire at a given frequency.
+/// @param frequency_hz Desired frequency; the PIT base frequency is divided by this value.
 void Timer::set_frequency(uint32_t frequency_hz) {
     uint32_t divisor = PIT_BASE_FREQ / frequency_hz;
 
@@ -45,14 +54,21 @@ void Timer::set_frequency(uint32_t frequency_hz) {
     outb(0x40, (divisor >> 8) & 0xFF);
 }
 
+/// @brief Return the current tick count.
+/// @return Number of PIT IRQs received since initialisation.
 uint64_t Timer::ticks() {
     return ticks_;
 }
 
+/// @brief PIT IRQ handler — increments the tick counter.
 void Timer::handle_irq() {
     ticks_ = ticks_ + 1;
 }
 
+/// @brief Calibrate the TSC frequency using the PIT as a reference.
+/// Performs up to 12 iterations with increasing measurement windows and picks the
+/// first result that falls in a plausible range (50 MHz – 100 GHz).
+/// @param frequency_hz The PIT frequency used as the timing reference.
 void Timer::calibrate_tsc(uint32_t frequency_hz) {
     uint32_t divisor = PIT_BASE_FREQ / frequency_hz;
 
@@ -88,6 +104,9 @@ void Timer::calibrate_tsc(uint32_t frequency_hz) {
     tsc_freq_hz_ = 2000000000ULL;
 }
 
+/// @brief Return the time elapsed since boot in nanoseconds.
+/// Uses the calibrated TSC frequency to convert TSC ticks to nanoseconds.
+/// @return Nanoseconds since boot, or 0 if the TSC has not been calibrated.
 uint64_t Timer::ns() {
     if (tsc_freq_hz_ == 0) return 0;
     uint64_t tsc = rdtsc();
@@ -97,6 +116,8 @@ uint64_t Timer::ns() {
     return sec * 1000000000ULL + (rem * 1000000000ULL) / tsc_freq_hz_;
 }
 
+/// @brief Override the tick counter (test support).
+/// @param value Value to assign to the tick counter.
 void Timer::set_ticks_for_test(uint64_t value) {
     ticks_ = value;
 }

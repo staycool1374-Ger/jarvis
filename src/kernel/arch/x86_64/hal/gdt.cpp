@@ -16,19 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file gdt.cpp
+/// @brief Global Descriptor Table — sets up segmentation and Task State Segment (TSS) for privilege levels and IST.
+
 #include <kernel/arch/gdt.hpp>
 #include <types.hpp>
 
 namespace arch {
 
-// Dedicated stack for double-fault handler (IST1)
-// 4 KiB = one page, allocated in .bss (zero-initialized)
+/// @brief Dedicated 4 KiB stack for the double-fault handler (IST1).
+/// @note Allocated in .bss (zero-initialised). Used by the CPU when vector 8 fires.
 static uint8_t df_stack[4096] __attribute__((aligned(16)));
 
+/// @brief GDT entry table.
 GDTEntry GDT::entries_[NUM_ENTRIES] = {};
+/// @brief Task State Segment — stores RSP0 and IST pointers.
 TSS GDT::tss_ = {};
+/// @brief GDT pseudo-descriptor (base + limit) loaded by LGDT.
 GDTDescriptor GDT::desc_ = {};
 
+/// @brief Construct a GDT entry from its raw fields.
+/// @param base Segment base address.
+/// @param limit Segment limit.
+/// @param access Access rights byte.
+/// @param gran Granularity and flags byte.
+/// @return A populated GDTEntry structure.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access,
     uint8_t gran) {
@@ -42,6 +54,8 @@ static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access,
     return e;
 }
 
+/// @brief Initialise the GDT with kernel code/data, user code/data, and TSS entries.
+/// Sets up IST1 for the double-fault handler stack.
 void GDT::init() {
     entries_[0] = {};
 
@@ -74,6 +88,8 @@ void GDT::init() {
     tss_.ist1 = reinterpret_cast<uint64_t>(df_stack + sizeof(df_stack));
 }
 
+/// @brief Load the GDT and TSS into the CPU.
+/// Executes LGDT, reloads data segments, and loads the TSS via LTR.
 void GDT::load() {
     asm volatile("lgdt %0" : : "m"(desc_));
     asm volatile("mov %0, %%ds\n"
@@ -85,6 +101,8 @@ void GDT::load() {
     asm volatile("ltr %0" : : "r"(tss_sel));
 }
 
+/// @brief Set the RSP0 field in the TSS (kernel stack pointer for ring-0 entry).
+/// @param rsp The stack pointer to use when transitioning from ring-3 to ring-0.
 void GDT::set_tss_rsp0(uint64_t rsp) {
     tss_.rsp0 = rsp;
 }

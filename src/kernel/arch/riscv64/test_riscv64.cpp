@@ -1,3 +1,25 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file test_riscv64.cpp
+/// @brief Architecture-specific test suite for RISC-V64 (Sv39 page tables,
+///        PLIC, SBI timer, context switching, RTC, PCI ECAM, CSRs).
+
 #if defined(CONFIG_ARCH_RISCV64)
 
 #include <test.hpp>
@@ -16,6 +38,8 @@
 
 using namespace kernel;
 
+/// @brief Walk the active Sv39 page table for a known kernel VA, verifying
+///        valid entries at all three levels and leaf attributes.
 JARVIS_TEST(riscv64_sv39_3level_walk) {
     uint64_t root_pa = arch::read_cr3();
     JARVIS_ASSERT_FMT(root_pa != 0, "SATP PA is 0");
@@ -55,6 +79,8 @@ JARVIS_TEST(riscv64_sv39_3level_walk) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Map a single 4 KB page and verify get_physical matches, then
+///        unmap and confirm the mapping is removed.
 JARVIS_TEST(riscv64_sv39_map_unmap) {
     uint64_t phys = PMM::alloc_page();
     JARVIS_ASSERT_FMT(phys != 0, "PMM::alloc_page() returned 0");
@@ -78,6 +104,8 @@ JARVIS_TEST(riscv64_sv39_map_unmap) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Fill a 2 MB-aligned region with 512 page mappings, then overlay
+///        a single page to trigger an L2 block-split scenario.
 JARVIS_TEST(riscv64_sv39_block_split) {
     constexpr uint64_t BLOCK_VA = 0xFFFFFFC080600000ULL;
     constexpr uint64_t PAGE_VA = BLOCK_VA + 0x1000;
@@ -115,6 +143,7 @@ JARVIS_TEST(riscv64_sv39_block_split) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Save two contexts, then switch between them and verify sp values.
 JARVIS_TEST(riscv64_context_save_restore) {
     arch::ArchContext ctx_a{};
     arch::ArchContext ctx_b{};
@@ -139,6 +168,8 @@ JARVIS_TEST(riscv64_context_save_restore) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify that init_stack builds the expected sret frame layout
+///        (sepc, user_sp, sstatus, and aligned padding).
 JARVIS_TEST(riscv64_context_sret_frame) {
     uint64_t stack[1024];
     uint64_t* stack_top = stack + 1024;
@@ -164,6 +195,8 @@ JARVIS_TEST(riscv64_context_sret_frame) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Initialize PLIC and verify threshold is 0 and at least one source
+///        is enabled.
 JARVIS_TEST(riscv64_plic_init) {
     arch::ArchInterruptController::init();
 
@@ -178,6 +211,7 @@ JARVIS_TEST(riscv64_plic_init) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Mask and unmask IRQ 10, verifying the enable register state.
 JARVIS_TEST(riscv64_plic_mask_unmask) {
     arch::ArchInterruptController::mask(10);
 
@@ -192,6 +226,7 @@ JARVIS_TEST(riscv64_plic_mask_unmask) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Write EOI for IRQ 10 and IRQ 1, then verify claim register is 0.
 JARVIS_TEST(riscv64_plic_claim_complete) {
     arch::ArchInterruptController::eoi(10);
 
@@ -206,6 +241,7 @@ JARVIS_TEST(riscv64_plic_claim_complete) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Set a future timer via SBI ecall and verify mtime is monotonic.
 JARVIS_TEST(riscv64_sbi_timer_set_stime) {
     uint64_t mtime;
     asm volatile("csrr %0, time" : "=r"(mtime));
@@ -222,6 +258,7 @@ JARVIS_TEST(riscv64_sbi_timer_set_stime) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read timer ticks in a loop and verify they are monotonic.
 JARVIS_TEST(riscv64_timer_ticks_monotonic) {
     uint64_t prev = arch::Timer::ticks();
     for (int i = 0; i < 10; ++i) {
@@ -234,6 +271,8 @@ JARVIS_TEST(riscv64_timer_ticks_monotonic) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read ns-precision time, spin, and verify delta is positive and
+///        within reasonable bounds.
 JARVIS_TEST(riscv64_timer_ns_conversion) {
     uint64_t t0 = arch::Timer::ns();
     for (int i = 0; i < 1000000; ++i) { asm volatile(""); }
@@ -246,6 +285,7 @@ JARVIS_TEST(riscv64_timer_ns_conversion) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Check MISA for F and D extensions and verify arch::has_fpu().
 JARVIS_TEST(riscv64_fpu_extension_detection) {
     uint64_t misa;
     asm volatile("csrr %0, misa" : "=r"(misa));
@@ -264,6 +304,7 @@ JARVIS_TEST(riscv64_fpu_extension_detection) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Write characters via SBI serial and check LSR TEMT status.
 JARVIS_TEST(riscv64_sbi_console_putchar) {
     arch::Serial::putchar('R');
 
@@ -281,6 +322,7 @@ JARVIS_TEST(riscv64_sbi_console_putchar) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read vendor and device ID from PCI bus 0 device 0 function 0 via ECAM.
 JARVIS_TEST(riscv64_pci_ecam_read) {
     arch::PciBdf bdf{0, 0, 0};
     uint16_t vendor = arch::pci_read_vendor(bdf);
@@ -292,6 +334,8 @@ JARVIS_TEST(riscv64_pci_ecam_read) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read RTC time twice with a small delay and verify the clock
+///        advances monotonically.
 JARVIS_TEST(riscv64_rtc_mtime_read) {
     arch::RTC::read_seconds();
 
@@ -312,6 +356,7 @@ JARVIS_TEST(riscv64_rtc_mtime_read) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify SATP CSR mode is Sv39 (8), and round-trip write_cr3/read_cr3.
 JARVIS_TEST(riscv64_satp_csr) {
     uint64_t satp_pa = arch::read_cr3();
     JARVIS_ASSERT_FMT(satp_pa != 0, "SATP PA is 0");
@@ -331,6 +376,8 @@ JARVIS_TEST(riscv64_satp_csr) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Read vendor ID, arch ID, and implementation ID CSRs — verify
+///        marchid is non-zero.
 JARVIS_TEST(riscv64_boot_mvendorid) {
     uint64_t mvendorid;
     asm volatile("csrr %0, mvendorid" : "=r"(mvendorid));
@@ -348,6 +395,8 @@ JARVIS_TEST(riscv64_boot_mvendorid) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Verify that U-mode ecall (bit 8) and timer interrupts (bit 5)
+///        are delegated to S-mode via medeleg/mideleg.
 JARVIS_TEST(riscv64_medeleg_selected) {
     uint64_t medeleg;
     asm volatile("csrr %0, medeleg" : "=r"(medeleg));
@@ -360,6 +409,7 @@ JARVIS_TEST(riscv64_medeleg_selected) {
     JARVIS_TEST_PASS();
 }
 
+/// @brief Register all riscv64 architecture tests.
 void register_riscv64_tests() {
     Logger::info("Registering riscv64 architecture tests");
 

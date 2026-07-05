@@ -1,3 +1,24 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file interrupt_controller.cpp
+/// @brief AArch64 GICv2/v3 interrupt controller driver.
+
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/hal/io.hpp>
 #include <kernel/arch/idt.hpp>
@@ -33,6 +54,9 @@ namespace arch {
 
 static bool gic_is_v3 = false;
 
+/// @brief Initialise the GIC distributor, CPU interface, and redistributor.
+/// Detects GICv2 vs GICv3 from GICD_TYPER. Enables Group 1 interrupts
+/// and the timer PPI (INTID 30). Performs full distributor reset sequence.
 void ArchInterruptController::init() {
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
     volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
@@ -117,6 +141,8 @@ void ArchInterruptController::init() {
     arch::isb();
 }
 
+/// @brief Signal end-of-interrupt to the GIC.
+/// @param[in] vector The interrupt ID to acknowledge.
 void ArchInterruptController::eoi(uint8_t vector) {
     if (gic_is_v3) {
         asm volatile("msr ICC_EOIR1_EL1, %0" : : "r"((uint64_t)vector));
@@ -127,6 +153,8 @@ void ArchInterruptController::eoi(uint8_t vector) {
     arch::dsb_sy();
 }
 
+/// @brief Mask (disable) a specific IRQ.
+/// @param[in] irq Interrupt request number.
 void ArchInterruptController::mask(uint8_t irq) {
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
     if (gic_is_v3 && irq < 32) {
@@ -138,6 +166,8 @@ void ArchInterruptController::mask(uint8_t irq) {
     arch::dsb_sy();
 }
 
+/// @brief Unmask (enable) a specific IRQ.
+/// @param[in] irq Interrupt request number.
 void ArchInterruptController::unmask(uint8_t irq) {
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
     if (gic_is_v3 && irq < 32) {
@@ -149,6 +179,8 @@ void ArchInterruptController::unmask(uint8_t irq) {
     arch::dsb_sy();
 }
 
+/// @brief Snapshot current GIC enable mask for test isolation.
+/// @return IrqState containing the combined ISENABLER mask (first 64 IRQs).
 IrqState ArchInterruptController::snapshot() {
     IrqState s = {};
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
@@ -157,6 +189,8 @@ IrqState ArchInterruptController::snapshot() {
     return s;
 }
 
+/// @brief Restore GIC enable mask from a prior snapshot.
+/// @param[in] state Previously captured IrqState.
 void ArchInterruptController::restore(const IrqState& state) {
     volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
     gicd[GICD_ICENABLER / 4] = 0xFFFFFFFF;
@@ -167,8 +201,10 @@ void ArchInterruptController::restore(const IrqState& state) {
     arch::dsb_sy();
 }
 
-/// Main IRQ handler — called from vectors.S IRQ entries.
-/// Handles both GICv2 and GICv3 IAR/EOIR.
+/// @brief Main IRQ handler called from vectors.S IRQ entries.
+/// Handles both GICv2 (memory-mapped) and GICv3 (system register) IAR/EOIR.
+/// @note Spurious interrupts (INTID >= 1023) are acknowledged and discarded.
+///       Only the timer PPI (INTID 30) is dispatched to the IDT.
 extern "C" void handle_gic_irq(void) {
     uint64_t intid;
 

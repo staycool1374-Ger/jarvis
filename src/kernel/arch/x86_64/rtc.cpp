@@ -16,17 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file rtc.cpp
+/// @brief CMOS Real-Time Clock driver — reads and configures the RTC for timekeeping.
+
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 
 namespace arch {
 
+/// @brief Read a CMOS RTC register.
+/// @param reg Register index to read (with NMI disable bit set).
+/// @return The 8-bit value stored in the register.
 static uint8_t rtc_read_register(uint8_t reg) {
     outb(RTC::CMOS_INDEX, reg | 0x80);  // Set NMI disable bit (bit 7)
     io_wait();
     return inb(RTC::CMOS_DATA);
 }
 
+/// @brief Write a CMOS RTC register.
+/// @param reg Register index to write (with NMI disable bit set).
+/// @param value 8-bit value to store in the register.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void rtc_write_register(uint8_t reg, uint8_t value) {
     outb(RTC::CMOS_INDEX, reg | 0x80);
@@ -35,6 +44,9 @@ static void rtc_write_register(uint8_t reg, uint8_t value) {
     io_wait();
 }
 
+/// @brief Initialise the RTC.
+/// Configures 24-hour mode and binary (non-BCD) format, disables periodic and
+/// update-ended interrupts, and clears Status Register C.
 void RTC::init() {
     // Read Status Register B
     uint8_t status_b = rtc_read_register(REG_STATUS_B);
@@ -57,14 +69,22 @@ void RTC::init() {
     (void)rtc_read_register(REG_STATUS_C);
 }
 
+/// @brief Read an RTC register through the public API.
+/// @param reg The register to read (from the Register enum).
+/// @return The 8-bit value from the specified register.
 uint8_t RTC::read_register(Register reg) {
     return rtc_read_register(static_cast<uint8_t>(reg));
 }
 
+/// @brief Write an RTC register through the public API.
+/// @param reg The register to write (from the Register enum).
+/// @param value 8-bit value to write.
 void RTC::write_register(Register reg, uint8_t value) {
     rtc_write_register(static_cast<uint8_t>(reg), value);
 }
 
+/// @brief Wait for the RTC update cycle to complete.
+/// Polls Status Register A until the Update-In-Progress (UIP) bit clears.
 void RTC::wait_for_update() {
     // Wait for UIP (Update In Progress) bit to clear in Status A
     while (rtc_read_register(REG_STATUS_A) & 0x80) {
@@ -72,6 +92,16 @@ void RTC::wait_for_update() {
     }
 }
 
+/// @brief Read the current time from the RTC with rollover detection.
+/// Reads all time fields twice and detects if a rollover occurred between reads.
+/// Converts from BCD to binary if the RTC is in BCD mode.
+/// @param[out] sec Seconds.
+/// @param[out] min Minutes.
+/// @param[out] hour Hours.
+/// @param[out] day Day of month.
+/// @param[out] month Month (1–12).
+/// @param[out] year Full year (e.g. 2026).
+/// @return true on success.
 bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
                         uint8_t& day, uint8_t& month, uint16_t& year) {
     wait_for_update();
@@ -128,6 +158,14 @@ bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
     return true;
 }
 
+/// @brief Convert a broken-down date/time to a Unix timestamp.
+/// @param year Full year (must be >= 1970).
+/// @param month Month (1–12).
+/// @param day Day of month (1–31).
+/// @param hour Hours (0–23).
+/// @param min Minutes (0–59).
+/// @param sec Seconds (0–59).
+/// @return Unix timestamp (seconds since 1970-01-01 00:00:00 UTC), or 0 on invalid input.
 uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
                              uint8_t hour, uint8_t min, uint8_t sec) {
     // Days in each month (non-leap year)
@@ -178,6 +216,8 @@ uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
     return timestamp;
 }
 
+/// @brief Read the current RTC time as a Unix timestamp.
+/// @return Seconds since 1970-01-01 00:00:00 UTC, or 0 on failure.
 uint64_t RTC::read_seconds() {
     uint8_t sec, min, hour, day, month;
     uint16_t year = 0;
@@ -189,6 +229,8 @@ uint64_t RTC::read_seconds() {
     return make_timestamp(year, month, day, hour, min, sec);
 }
 
+/// @brief Read the current RTC time into a standard tm structure.
+/// @param[out] out Pointer to a tm struct to populate. On failure the struct is zeroed.
 void RTC::read_time(struct tm* out) {
     if (!out) return;
 

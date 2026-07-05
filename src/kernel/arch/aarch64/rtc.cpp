@@ -1,8 +1,32 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file rtc.cpp
+/// @brief AArch64 RTC driver using the system generic timer (CNTPCT_EL0).
+
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/hal/io.hpp>
 
 namespace arch {
 
+/// @brief Read the system timer counter and convert to seconds since epoch.
+/// @return Seconds since 1970-01-01 (Unix epoch), or 0 if frequency is unknown.
+/// @note Uses CNTPCT_EL0 for the counter and CNTFRQ_EL0 for the tick rate.
 uint64_t RTC::read_seconds() {
     uint64_t cnt;
     asm volatile("mrs %0, cntpct_el0" : "=r"(cnt));
@@ -12,6 +36,8 @@ uint64_t RTC::read_seconds() {
     return cnt / freq;
 }
 
+/// @brief Read and decompose the current time into a tm structure.
+/// @param[out] out Pointer to tm struct to fill. If null, returns immediately.
 void RTC::read_time(tm* out) {
     if (!out) return;
     uint64_t secs = read_seconds();

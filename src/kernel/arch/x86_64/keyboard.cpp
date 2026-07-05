@@ -16,17 +16,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file keyboard.cpp
+/// @brief PS/2 keyboard driver — translates scancodes to ASCII characters and manages a ring-buffer input queue.
+
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/arch/io.hpp>
 
 namespace arch {
 
+/// @brief Ring buffer for queued input characters.
 SPSCRing<char, Keyboard::RING_SIZE> Keyboard::ring_;
+/// @brief Current state of the Shift modifier key.
 constinit bool Keyboard::shift_ = false;
+/// @brief Current state of the Ctrl modifier key.
 constinit bool Keyboard::ctrl_ = false;
+/// @brief Current state of the Alt modifier key.
 constinit bool Keyboard::alt_ = false;
+/// @brief Current state of the Caps Lock toggle.
 constinit bool Keyboard::caps_ = false;
 
+/// @brief Scancode-to-ASCII lookup table for unshifted (lowercase) keys.
+/// @note Indexed by scancode & 0x7F. Zero entries indicate unmapped or special keys.
 static const char scancode_lower[128] = {
     0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0,
         0,
@@ -46,6 +56,8 @@ static const char scancode_lower[128] = {
         0,
 };
 
+/// @brief Scancode-to-ASCII lookup table for shifted (uppercase) keys.
+/// @note Indexed by scancode & 0x7F. Zero entries indicate unmapped or special keys.
 static const char scancode_upper[128] = {
     0,   0,   '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0,
         0,
@@ -65,6 +77,9 @@ static const char scancode_upper[128] = {
         0,
 };
 
+/// @brief Initialise the PS/2 keyboard controller.
+/// Enables the keyboard interface, resets the scancode ring buffer, and clears all
+/// modifier key states.
 void Keyboard::init() {
     ring_.reset();
     shift_ = false;
@@ -76,10 +91,16 @@ void Keyboard::init() {
     io_wait();
 }
 
+/// @brief Push a single character onto the input ring buffer.
+/// @param c Character to enqueue.
+/// @return true if the character was successfully enqueued, false if the buffer was full.
 bool Keyboard::push_ring(char c) {
     return ring_.try_push(c);
 }
 
+/// @brief IRQ handler for keyboard interrupts.
+/// Reads the scancode from the PS/2 data port, updates modifier key states,
+/// translates the scancode to an ASCII character, and pushes it onto the ring buffer.
 void Keyboard::handle_irq() {
     uint8_t status = inb(STATUS_PORT);
     if (!(status & 0x01)) return;
@@ -102,10 +123,17 @@ void Keyboard::handle_irq() {
     if (c) push_ring(c);
 }
 
+/// @brief Dequeue a single character from the input ring buffer.
+/// @param[out] c Reference that receives the retrieved character.
+/// @return true if a character was available and dequeued, false if the buffer was empty.
 bool Keyboard::getchar(char& c) {
     return ring_.try_pop(c);
 }
 
+/// @brief Read up to @p len characters from the ring buffer into a caller-supplied buffer.
+/// @param[out] buf Destination buffer.
+/// @param len Maximum number of characters to read.
+/// @return The number of characters actually dequeued.
 size_t Keyboard::read(char* buf, size_t len) {
     size_t count = 0;
     while (count < len && ring_.try_pop(buf[count]))
@@ -113,10 +141,14 @@ size_t Keyboard::read(char* buf, size_t len) {
     return count;
 }
 
+/// @brief Discard all characters currently in the ring buffer.
 void Keyboard::flush() {
     ring_.reset();
 }
 
+/// @brief Update the keyboard modifier key state based on a scancode.
+/// @param scancode Raw scancode read from the PS/2 data port.
+/// @param pressed true if the key was pressed, false if released.
 void Keyboard::update_modifiers(uint8_t scancode, bool pressed) {
     uint8_t code = scancode & 0x7F;
     switch (code) {

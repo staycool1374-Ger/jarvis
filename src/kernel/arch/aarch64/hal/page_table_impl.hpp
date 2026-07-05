@@ -1,3 +1,24 @@
+/*
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/// @file page_table_impl.hpp
+/// @brief AArch64 4-level page table walk, map, unmap, and TLB management.
+
 #pragma once
 
 #include <types.hpp>
@@ -9,35 +30,60 @@
 
 namespace arch {
 
+/// @brief Read the current kernel page table base (TTBR1_EL1).
+/// @return Physical address of the kernel page table.
 inline uint64_t arch_page_table_current() { return read_ttbr1_el1(); }
+/// @brief Activate a kernel page table by writing TTBR1_EL1.
+/// @param[in] ttbr1_phys Physical address of the new kernel page table.
 inline void arch_page_table_activate(uint64_t ttbr1_phys) {
     write_ttbr1_el1(ttbr1_phys);
     dsb_sy();
     isb();
 }
+/// @brief Flush TLB for a single virtual address (EL1).
+/// @param[in] virt_addr Virtual address to invalidate.
 inline void arch_page_table_tlb_flush(uint64_t virt_addr) {
     tlbi_vae1(virt_addr);
     dsb_sy();
     isb();
 }
+/// @brief Flush entire TLB (EL1).
 inline void arch_page_table_tlb_flush_all() {
     tlbi_alle1();
     dsb_sy();
     isb();
 }
 
+/// @brief AArch64 4-level page table manager (TTBR1_EL1 kernel space).
 class ArchPageTable {
 public:
+    /// @brief Return the current kernel page table physical address.
     static inline uint64_t current() { return arch_page_table_current(); }
+    /// @brief Activate a kernel page table.
+    /// @param[in] phys Physical address of the page table.
     static inline void activate(uint64_t phys) { arch_page_table_activate(phys); }
+    /// @brief Flush TLB for a single virtual address.
+    /// @param[in] virt_addr Virtual address to flush.
     static inline void tlb_flush(uint64_t virt_addr) { arch_page_table_tlb_flush(virt_addr); }
+    /// @brief Flush the entire TLB.
     static inline void tlb_flush_all() { arch_page_table_tlb_flush_all(); }
 
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t ENTRIES = 512;
 
+    /// @brief Map a 4 KiB page or 2 MiB block at a given virtual address.
+    /// @param[in] virt Virtual address.
+    /// @param[in] phys Physical address.
+    /// @param[in] flags Page attribute flags.
+    /// @return Error::OOM if intermediate tables cannot be allocated, or success.
     static kernel::ErrorOr<void> map_page(uint64_t virt, uint64_t phys, uint64_t flags);
+    /// @brief Unmap a page at a given virtual address.
+    /// @param[in] virt Virtual address.
+    /// @return Error::NOT_FOUND if no mapping exists, or success.
     static kernel::ErrorOr<void> unmap_page(uint64_t virt);
+    /// @brief Resolve the physical address for a given virtual address.
+    /// @param[in] virt Virtual address.
+    /// @return Physical address, or 0 if not mapped.
     static uint64_t get_physical(uint64_t virt);
 
 private:
@@ -59,11 +105,23 @@ private:
     static constexpr uint64_t UXN = 1ULL << 54;
     static constexpr uint64_t PXN = 1ULL << 53;
 
+    /// @brief Get or create a page table entry at a given index.
+    /// @param[in] table_base Physical address of the table.
+    /// @param[in] index Entry index (0-511).
+    /// @param[in] create If true and the entry is invalid, allocate a new table.
+    /// @return Pointer to the next-level table, or nullptr on failure.
     static uint64_t* get_table(uint64_t table_base, uint64_t index, bool create);
+    /// @brief Convert PageFlags into AArch64 page descriptor attributes.
+    /// @param[in] flags PageFlags bitmask.
+    /// @return AArch64 page descriptor bits.
     static uint64_t attr_from_flags(uint64_t flags);
+    /// @brief Walk the L0 table to get or create the L1 table.
     static uint64_t* walk_l0(uint64_t l0_base, size_t l0_idx, bool create);
+    /// @brief Walk the L1 table to get or create the L2 table.
     static uint64_t* walk_l1(uint64_t l1_base, size_t l1_idx, bool create);
+    /// @brief Walk the L2 table to get or create the L3 table.
     static uint64_t* walk_l2(uint64_t l2_base, size_t l2_idx, bool create);
+    /// @brief Walk the L3 table to get or create the final page entry.
     static uint64_t* walk_l3(uint64_t l3_base, size_t l3_idx, bool create);
 };
 
