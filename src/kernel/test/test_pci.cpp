@@ -266,6 +266,8 @@ JARVIS_TEST(pci_msi_capability_chain) {
 // Input: arch::pci_scan_all() with TSC timestamp measurement
 // Expect: Enumeration completes in < 5M TSC ticks on QEMU
 // Depends: arch::pci_scan_all, arch::rdtsc
+// DISABLED: QEMU-dependent performance benchmark, not a correctness test
+#if 0
 JARVIS_TEST(pci_enumeration_bounded_time) {
     uint64_t tsc_start = arch::rdtsc();
     arch::pci_scan_all();
@@ -275,6 +277,7 @@ JARVIS_TEST(pci_enumeration_bounded_time) {
     Logger::info("PCI: scan completed in %d TSC ticks", elapsed);
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Verifies pci_print_tree() produces valid device tree output.
@@ -323,7 +326,8 @@ void register_pci_tests() {
     JARVIS_REGISTER_TEST(pci_isa_bridge_caps);
     JARVIS_REGISTER_TEST(pci_bar_registers);
     JARVIS_REGISTER_TEST(pci_msi_capability_chain);
-    JARVIS_REGISTER_TEST(pci_enumeration_bounded_time);
+    // DISABLED: QEMU-dependent performance benchmark, not a correctness test
+    // JARVIS_REGISTER_TEST(pci_enumeration_bounded_time);
     JARVIS_REGISTER_TEST(pci_print_tree_output);
 }
 

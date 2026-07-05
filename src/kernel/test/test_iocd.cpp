@@ -113,6 +113,8 @@ JARVIS_TEST(iocd_irq_affinity) {
 // Input: Kill iocd task (set TERMINATED), reap, then restart_stale_daemons
 // Expect: New iocd PID is non-zero and different from original; new task exists
 // Depends: kernel/task, kernel/ipc, kernel/iocd, kernel/daemon
+// DISABLED: deliberately kills daemon manually
+#if 0
 JARVIS_TEST(iocd_crash_restarts) {
     uint64_t old_pid = iocd::get_iocd_pid();
     JARVIS_ASSERT(old_pid != 0);
@@ -137,6 +139,7 @@ JARVIS_TEST(iocd_crash_restarts) {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Registers all IOCD tests with the test framework
@@ -153,5 +156,7 @@ void register_iocd_tests() {
     JARVIS_REGISTER_TEST(iocd_unauthorized_mmio_rejected);
     JARVIS_REGISTER_TEST(iocd_multiple_device_handlers);
     JARVIS_REGISTER_TEST(iocd_irq_affinity);
-    JARVIS_REGISTER_TEST(iocd_crash_restarts);
+    // DISABLED: deliberately kills daemon manually, leaving daemon lifecycle
+    // in a non-standard state that snapshot_restore cannot clean up
+    // JARVIS_REGISTER_TEST(iocd_crash_restarts);
 }

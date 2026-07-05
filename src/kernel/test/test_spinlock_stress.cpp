@@ -76,11 +76,11 @@ JARVIS_TEST(spinlock_multi_task_contention) {
             if (workers[i] && workers[i]->state != TaskState::TERMINATED) {
                 Scheduler::set_current(*workers[i]);
                 arch::pause();
+                arch::hlt();
             }
         }
         Scheduler::on_tick();
     }
-    for (int h = 0; h < 10; ++h) arch::hlt();
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_EQ(400ULL, stress_counter_);

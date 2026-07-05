@@ -17,6 +17,11 @@
  */
 
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/tmpfs.hpp>
+#include <kernel/vfs/devfs.hpp>
+#include <kernel/vfs/procfs.hpp>
+#include <kernel/vfs/initrd_fs.hpp>
+#include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/test/resource_tracker.hpp>
@@ -266,6 +271,28 @@ void init() {
         mount_table[i].fs = nullptr;
         mount_table[i].root_vnode = nullptr;
     }
+}
+
+void reset_and_remount() {
+    // Clear stale mount-table entries and root-vnode pointers from
+    // prior test execution.  The underlying MemPool blocks have been
+    // restored by this point, but mount_table entries still point to
+    // pre-restore vnode addresses that now contain snapshot-era data.
+    mount_count = 0;
+    root_vnode_global = nullptr;
+    for (size_t i = 0; i < MAX_MOUNTS; ++i) {
+        mount_table[i].used = false;
+        mount_table[i].mount_point = nullptr;
+        mount_table[i].fs = nullptr;
+        mount_table[i].root_vnode = nullptr;
+    }
+
+    // Re-mount standard filesystems.  get_root() allocates fresh
+    // vnodes from MemPool, which is now in snapshot-era state.
+    mount(initrd_fs, "/");
+    mount(dev_fs, "/dev");
+    mount(proc_fs, "/proc");
+    mount(tmpfs_fs, "/tmp");
 }
 
 Filesystem* find_fs(const char* name) {

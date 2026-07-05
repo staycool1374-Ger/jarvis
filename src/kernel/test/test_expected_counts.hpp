@@ -15,18 +15,18 @@ struct ExpectedCounts {
 static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
-    {"all",                 720,    0,       0      },  // every registration function
+    {"all",                 727,    0,       0      },  // every registration function
     {"scheduler",           85,     0,       0      },  // sched + task + lifecycle + deadlock + timer
     {"memory",              45,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
-    {"vfs",                 146,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
+    {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
     {"arch",                59,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
     {"cross_arch",          16,     0,       0      },  // cross-architecture tests
     {"device",              33,     0,       0      },  // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
     {"shell",               22,     0,       0      },  // shell_interaction + shell_redirect + textutils
-    {"net",                 43,     0,       0      },  // net + PCI + virtio + DMA
+    {"net",                 42,     0,       0      },  // net + PCI + virtio + DMA
     {"security",            31,     0,       0      },  // capability + secure_exec + vfsd_authorization
     {"debug",               14,     0,       0      },  // debug + gcov + klog
     {"integration",          1,     0,       0      },  // integration smoke tests

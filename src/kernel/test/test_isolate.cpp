@@ -29,6 +29,7 @@
 #include <kernel/driver/iocd.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
+#include <kernel/arch/gdt.hpp>
 
 
 namespace kernel::test {
@@ -268,6 +269,11 @@ void snapshot_restore(const char* test_name) {
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
 
+    // Clear stale static state that survives test execution
+    s_reap_in_progress = false;
+    __atomic_store_n(&fpu_owner, (TaskControlBlock*)nullptr, __ATOMIC_RELEASE);
+    scheduler_dummy_save_rsp = 0;
+
     uint64_t corr = __atomic_exchange_n(&scheduler_corruption_count, (uint64_t)0, __ATOMIC_ACQ_REL);
     if (corr > 0) {
         Logger::raw_write("[SCHED] corruption_count=");
@@ -398,6 +404,7 @@ void snapshot_restore(const char* test_name) {
             auto* rqpod = reinterpret_cast<const ReadyQueuePOD*>(
                               g_snapshot + off_sched_rqpod());
             Scheduler::restore_rqpod(*rqpod);
+            Scheduler::rebuild_ready_queue();
         }
 
         // Diagnose: check all tasks for boot-stack RSP after restore_task_fields
@@ -554,6 +561,7 @@ void snapshot_restore(const char* test_name) {
     }
 
     // ---- Reset filesystem roots ----
+    kernel::vfs::reset_and_remount();
     kernel::vfs::tmpfs_reset_root();
 
     // ---- Reload daemon tasks ----
@@ -575,6 +583,9 @@ void snapshot_restore(const char* test_name) {
         auto* idle = Scheduler::get_idle_task();
         if (idle && idle->magic == TaskControlBlock::TCB_MAGIC) {
             TASK_STACK_PTR(idle) = idle->kernel_stack_top - sizeof(TaskContext);
+#if defined(CONFIG_ARCH_X86_64)
+            arch::GDT::set_tss_rsp0(idle->kernel_stack_top);
+#endif
         }
     }
 
@@ -719,6 +730,7 @@ void reload_daemon_tasks() {
         }
     }
     Scheduler::reap_orphans();
+    Scheduler::reset_ready_queue();
     daemon::restart_stale_daemons();
 }
 

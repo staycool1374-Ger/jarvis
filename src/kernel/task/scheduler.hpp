@@ -244,6 +244,14 @@ public:
     static void capture_rqpod(ReadyQueuePOD& out) noexcept;
     /// @brief Restore the full ReadyQueueManager POD from @p src.
     static void restore_rqpod(const ReadyQueuePOD& src) noexcept;
+    /// @brief Clear all ready-queue entries.  Called after reap_orphans()
+    ///        in reload_daemon_tasks() to remove any stale TCB pointers
+    ///        before restarting daemons.
+    static void reset_ready_queue() noexcept;
+    /// @brief Rebuild the ready queue from tasks_[], enqueuing all
+    ///        tasks with state == READY.  Used after restore_rqpod()
+    ///        to ensure in_ready_queue_ flags match the actual queue.
+    static void rebuild_ready_queue() noexcept;
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
@@ -303,6 +311,10 @@ extern "C" {
     /// @brief Tracks which task's FPU state is currently in the registers.
     ///        nullptr means no task has used FPU since boot.
     extern TaskControlBlock* fpu_owner;
+    /// @brief Recursion guard for Scheduler::reap_orphans().
+    ///        Reset in snapshot_restore() to prevent deadlock if a prior
+    ///        test panicked mid-reap.
+    extern bool s_reap_in_progress;
 }
 
 } // namespace kernel

@@ -155,6 +155,11 @@ void init();
 /// @brief Initialize the VFS subsystem with error code.
 /// @return VfsError code.
 VfsError init_err();
+/// @brief Reset VFS globals and re-mount standard filesystems.
+/// Called from snapshot_restore() after MemPool/PMM restoration to
+/// clear stale mount-table entries and vnode pointers that survived
+/// test execution.
+void reset_and_remount();
 /// @brief Find a registered filesystem driver by name.
 /// @return The filesystem, or nullptr if not found.
 Filesystem* find_fs(const char* name);

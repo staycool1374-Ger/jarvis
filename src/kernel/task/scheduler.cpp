@@ -49,6 +49,10 @@ extern "C" {
 // while still allowing the context switch to proceed.  Value written by
 // isr_stubs.asm via scheduler_save_rsp_to, never read back.
 uint64_t scheduler_dummy_save_rsp = 0;
+// Recursion guard for Scheduler::reap_orphans().  Reset in
+// snapshot_restore() to prevent deadlock if a prior test panicked
+// mid-reap, leaving the guard stuck at true.
+bool s_reap_in_progress = false;
 }
 
 namespace kernel {
@@ -421,9 +425,8 @@ void Scheduler::on_tick() noexcept {
 }
 
 void Scheduler::reap_orphans() noexcept {
-    static bool inside_reap = false;
-    if (inside_reap) return;
-    inside_reap = true;
+    if (s_reap_in_progress) return;
+    s_reap_in_progress = true;
 
     auto* current = current_task();
     auto* init_task = (task_count_ > 0) ? tasks_[0] : nullptr;
@@ -569,7 +572,7 @@ void Scheduler::reap_orphans() noexcept {
         }
     }
 
-    inside_reap = false;
+    s_reap_in_progress = false;
 }
 
 void Scheduler::cleanup_test_tasks() noexcept {
@@ -862,6 +865,26 @@ void Scheduler::capture_rqpod(ReadyQueuePOD& out) noexcept {
 
 void Scheduler::restore_rqpod(const ReadyQueuePOD& src) noexcept {
     ready_queue_.restore_pod(src);
+}
+
+void Scheduler::reset_ready_queue() noexcept {
+    ready_queue_.reset();
+}
+
+void Scheduler::rebuild_ready_queue() noexcept {
+    ready_queue_.reset();
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        auto* t = tasks_[i];
+        if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
+        if (t->state == TaskState::READY) {
+            t->in_ready_queue_ = true;
+            ready_queue_.enqueue(*t, effective_priority(t));
+        } else {
+            t->in_ready_queue_ = false;
+            t->runq_next_ = nullptr;
+            t->runq_prev_ = nullptr;
+        }
+    }
 }
 
 void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
