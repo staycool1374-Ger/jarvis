@@ -1,5 +1,6 @@
 var dir_8ecc0c9fce4a533bbde14794104582f2 =
 [
+    [ "bits.hpp", "bits_8hpp.html", null ],
     [ "context.hpp", "hal_2context_8hpp.html", null ],
     [ "cpuid.hpp", "hal_2cpuid_8hpp.html", null ],
     [ "gdt.hpp", "hal_2gdt_8hpp.html", null ],

@@ -119,6 +119,11 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('vfs_8cpp.html'
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;<a class="el" href="vfs_8hpp_source.html">kernel/vfs/vfs.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="tmpfs_8hpp_source.html">kernel/vfs/tmpfs.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="devfs_8hpp_source.html">kernel/vfs/devfs.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="procfs_8hpp_source.html">kernel/vfs/procfs.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="initrd__fs_8hpp_source.html">kernel/vfs/initrd_fs.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="fat32__fs_8hpp_source.html">kernel/vfs/fat32_fs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="resource__tracker_8hpp_source.html">kernel/test/resource_tracker.hpp</a>&gt;</code><br />
@@ -129,30 +134,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('vfs_8cpp.html'
 Include dependency graph for vfs.cpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="vfs_8cpp__incl.png" border="0" usemap="#asrc_2kernel_2vfs_2vfs_8cpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2vfs_2vfs_8cpp" id="asrc_2kernel_2vfs_2vfs_8cpp">
-<area shape="rect" title=" " alt="" coords="204,5,351,32"/>
-<area shape="rect" href="vfs_8hpp.html" title=" " alt="" coords="5,229,131,256"/>
-<area shape="poly" title=" " alt="" coords="245,34,212,54,169,80,128,114,96,156,83,185,75,215,70,213,78,184,91,153,125,111,166,76,209,49,249,31"/>
-<area shape="rect" href="scheduler_8hpp.html" title="Rate&#45;monotonic scheduler for task management and dispatching." alt="" coords="193,80,362,107"/>
-<area shape="poly" title=" " alt="" coords="278,30,280,65,275,63,276,35"/>
-<area shape="rect" href="task_8hpp.html" title="Task control block and state definitions for the kernel scheduler." alt="" coords="105,155,244,181"/>
-<area shape="poly" title=" " alt="" coords="240,34,210,54,195,66,184,81,174,110,173,140,168,139,169,109,179,79,192,63,207,49,244,31"/>
-<area shape="rect" href="string_8hpp.html" title="Memory and string utility functions (extern &quot;C&quot; for ABI compat)." alt="" coords="360,155,438,181"/>
-<area shape="poly" title=" " alt="" coords="310,30,346,50,377,78,392,108,399,140,394,138,387,110,373,82,343,54,310,35"/>
-<area shape="rect" href="utils_8hpp.html" title="Utility type traits and alignment helpers." alt="" coords="438,80,508,107"/>
-<area shape="poly" title=" " alt="" coords="311,30,427,73,422,75,312,35"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="245,304,323,331"/>
-<area shape="poly" title=" " alt="" coords="106,254,234,297,230,300,105,259"/>
-<area shape="poly" title=" " alt="" coords="282,105,297,171,301,213,300,256,293,291,289,287,295,256,296,213,291,171,280,110"/>
-<area shape="poly" title=" " alt="" coords="257,109,207,147,204,143,261,105"/>
-<area shape="poly" title=" " alt="" coords="154,184,101,222,98,218,158,180"/>
-<area shape="poly" title=" " alt="" coords="176,179,181,216,186,236,196,254,217,277,243,297,238,296,213,281,191,258,181,238,176,217,173,184"/>
-<area shape="rect" href="signal_8hpp.html" title="Signal definitions used by the kernel for user exception delivery." alt="" coords="205,229,286,256"/>
-<area shape="poly" title=" " alt="" coords="188,179,225,218,220,218,186,184"/>
-<area shape="poly" title=" " alt="" coords="253,254,273,291,268,289,251,259"/>
-<area shape="poly" title=" " alt="" coords="394,180,343,258,309,295,306,291,339,254,389,183"/>
-<area shape="poly" title=" " alt="" coords="474,105,468,143,452,183,423,220,390,252,322,298,320,294,386,247,420,216,447,180,463,141,470,109"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
@@ -172,6 +154,8 @@ Functions</h2></td></tr>
 <tr class="memdesc:aebf94bc8bbd1d4da9adf682e10e082de"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point.  <br /></td></tr>
 <tr class="memitem:a509957f6e50ab1f0433a61bd4624859a" id="r_a509957f6e50ab1f0433a61bd4624859a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a509957f6e50ab1f0433a61bd4624859a">kernel::vfs::init</a> ()</td></tr>
 <tr class="memdesc:a509957f6e50ab1f0433a61bd4624859a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem (root vnode, mounts, etc.).  <br /></td></tr>
+<tr class="memitem:aaf0cf262c173f6848095480880c1cbc9" id="r_aaf0cf262c173f6848095480880c1cbc9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#aaf0cf262c173f6848095480880c1cbc9">kernel::vfs::reset_and_remount</a> ()</td></tr>
+<tr class="memdesc:aaf0cf262c173f6848095480880c1cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset VFS globals and re-mount standard filesystems. Called from snapshot_restore() after MemPool/PMM restoration to clear stale mount-table entries and vnode pointers that survived test execution.  <br /></td></tr>
 <tr class="memitem:a9d792be7e3f099e025d10c0a6ce0680d" id="r_a9d792be7e3f099e025d10c0a6ce0680d"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a9d792be7e3f099e025d10c0a6ce0680d">kernel::vfs::find_fs</a> (const char *name)</td></tr>
 <tr class="memdesc:a9d792be7e3f099e025d10c0a6ce0680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a registered filesystem driver by name.  <br /></td></tr>
 <tr class="memitem:a0411923a55f520a77d6497349fd7acf6" id="r_a0411923a55f520a77d6497349fd7acf6"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a0411923a55f520a77d6497349fd7acf6">kernel::vfs::mkdir</a> (const char *path, uint16_t mode)</td></tr>

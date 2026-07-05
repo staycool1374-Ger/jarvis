@@ -127,11 +127,6 @@ Collaboration diagram for kernel::vfs::Vnode:</div>
 <!-- MAP 0 -->
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
-Public Member Functions</h2></td></tr>
-<tr class="memitem:a91a576c27c7198635773069aada8bef4" id="r_a91a576c27c7198635773069aada8bef4"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a91a576c27c7198635773069aada8bef4">Vnode</a> ()</td></tr>
-<tr class="memitem:a5d42377d07dde6e7faa7334ed990e883" id="r_a5d42377d07dde6e7faa7334ed990e883"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5d42377d07dde6e7faa7334ed990e883">Vnode</a> (const <a class="el" href="structkernel_1_1vfs_1_1_vnode_ops.html">VnodeOps</a> *ops_, uint64_t ino_, uint64_t size_, uint16_t mode_, void *private_data_)</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Data Fields</h2></td></tr>
 <tr class="memitem:a96ba1515da9b2449bc3ec5b737615350" id="r_a96ba1515da9b2449bc3ec5b737615350"><td class="memItemLeft">const <a class="el" href="structkernel_1_1vfs_1_1_vnode_ops.html">VnodeOps</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a96ba1515da9b2449bc3ec5b737615350">ops</a></td></tr>
@@ -141,76 +136,6 @@ Data Fields</h2></td></tr>
 <tr class="memitem:aa7b31f1cf2a43e5d50c5bfec428a8dcd" id="r_aa7b31f1cf2a43e5d50c5bfec428a8dcd"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aa7b31f1cf2a43e5d50c5bfec428a8dcd">private_data</a></td></tr>
 <tr class="memitem:a5126aadec811ad6541b2439cbc6ee471" id="r_a5126aadec811ad6541b2439cbc6ee471"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a5126aadec811ad6541b2439cbc6ee471">refcount</a></td></tr>
 </table>
-<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a91a576c27c7198635773069aada8bef4" name="a91a576c27c7198635773069aada8bef4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91a576c27c7198635773069aada8bef4">&#9670;&#160;</a></span>Vnode() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">kernel::vfs::Vnode::Vnode </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a5d42377d07dde6e7faa7334ed990e883" name="a5d42377d07dde6e7faa7334ed990e883"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d42377d07dde6e7faa7334ed990e883">&#9670;&#160;</a></span>Vnode() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">kernel::vfs::Vnode::Vnode </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="structkernel_1_1vfs_1_1_vnode_ops.html">VnodeOps</a> *</td>          <td class="paramname"><span class="paramname"><em>ops_</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>ino_</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>size_</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>mode_</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>private_data_</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="addf395a53793c7d3436faa24c0c4ebda" name="addf395a53793c7d3436faa24c0c4ebda"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#addf395a53793c7d3436faa24c0c4ebda">&#9670;&#160;</a></span>ino</h2>

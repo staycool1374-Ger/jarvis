@@ -25,5 +25,6 @@ var searchData=
   ['mount_5ferr_22',['mount_err',['../namespacekernel_1_1vfs.html#ad4618eec85ebd8a3d27bfc4d974d7591',1,'kernel::vfs']]],
   ['mount_5ffat32_23',['mount_fat32',['../namespacekernel_1_1vfs.html#a739270d15fe1ac6f5a0e21d0c2e20123',1,'kernel::vfs']]],
   ['move_24',['move',['../utils_8hpp.html#a14dcf5c4e25f516d4fbe68249be2bdbf',1,'utils.hpp']]],
-  ['mutex_25',['Mutex',['../classkernel_1_1sync_1_1_mutex.html#a4f3663709d2c4a4858f5f05a5448e244',1,'kernel::sync::Mutex']]]
+  ['move_5fpriority_25',['move_priority',['../classkernel_1_1_ready_queue_manager.html#ab213aca16e35a1fe9d1702885cde4ef1',1,'kernel::ReadyQueueManager']]],
+  ['mutex_26',['Mutex',['../classkernel_1_1sync_1_1_mutex.html#a4f3663709d2c4a4858f5f05a5448e244',1,'kernel::sync::Mutex']]]
 ];

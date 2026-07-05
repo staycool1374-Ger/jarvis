@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__atomic__
 <code>#include &lt;<a class="el" href="scope__guard_8hpp_source.html">scope_guard.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_atomic_context_switch.cpp:</div>
 <div class="dyncontent">
@@ -133,17 +134,17 @@ Include dependency graph for test_atomic_context_switch.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aa045e907eeb1893918a7f28260eed3d6" id="r_aa045e907eeb1893918a7f28260eed3d6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa045e907eeb1893918a7f28260eed3d6">scheduler_on_context_switch</a> ()</td></tr>
-<tr class="memitem:ac949815e273fdf25a239c4b1d37d8b32" id="r_ac949815e273fdf25a239c4b1d37d8b32"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac949815e273fdf25a239c4b1d37d8b32">JARVIS_TEST</a> (atomic_globals_set_on_reschedule)</td></tr>
-<tr class="memitem:abf0a1cb868ebbc67402b4b2aa76c2b53" id="r_abf0a1cb868ebbc67402b4b2aa76c2b53"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#abf0a1cb868ebbc67402b4b2aa76c2b53">JARVIS_TEST</a> (atomic_fpu_owner_read_write)</td></tr>
-<tr class="memitem:ac599bebb48fa55069461d11a487f622a" id="r_ac599bebb48fa55069461d11a487f622a"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac599bebb48fa55069461d11a487f622a">JARVIS_TEST</a> (atomic_next_task_id_consistency)</td></tr>
-<tr class="memitem:a419960fdf7c8a392f95bf4a08bc77219" id="r_a419960fdf7c8a392f95bf4a08bc77219"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a419960fdf7c8a392f95bf4a08bc77219">JARVIS_TEST</a> (atomic_idempotent_null_handling)</td></tr>
-<tr class="memitem:afc4ba0ba0625bd2e5266b32bdb603d52" id="r_afc4ba0ba0625bd2e5266b32bdb603d52"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#afc4ba0ba0625bd2e5266b32bdb603d52">JARVIS_TEST</a> (atomics_fpu_owner_relaxed)</td></tr>
-<tr class="memitem:a730a7b4999d6e3dbb756dadd780af12c" id="r_a730a7b4999d6e3dbb756dadd780af12c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a730a7b4999d6e3dbb756dadd780af12c">JARVIS_TEST</a> (atomics_assembly_bridge)</td></tr>
+<tr class="memitem:a1377a0ef924b8841daa4f0b3b14bfc40" id="r_a1377a0ef924b8841daa4f0b3b14bfc40"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a1377a0ef924b8841daa4f0b3b14bfc40">JARVIS_TEST</a> (atomic_globals_set_on_reschedule, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:aee03d453e9a03909c72b2bc1a1b94333" id="r_aee03d453e9a03909c72b2bc1a1b94333"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aee03d453e9a03909c72b2bc1a1b94333">JARVIS_TEST</a> (atomic_fpu_owner_read_write, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a87a4783c33c3393d113a617afe48e334" id="r_a87a4783c33c3393d113a617afe48e334"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a87a4783c33c3393d113a617afe48e334">JARVIS_TEST</a> (atomic_next_task_id_consistency, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a09dddea9605871472062768742c28bb3" id="r_a09dddea9605871472062768742c28bb3"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a09dddea9605871472062768742c28bb3">JARVIS_TEST</a> (atomic_idempotent_null_handling, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a6c52230ab8742f6a30210239fdac0325" id="r_a6c52230ab8742f6a30210239fdac0325"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6c52230ab8742f6a30210239fdac0325">JARVIS_TEST</a> (atomics_fpu_owner_relaxed, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a849c2dd060dec313ee29743c3e1f5a03" id="r_a849c2dd060dec313ee29743c3e1f5a03"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a849c2dd060dec313ee29743c3e1f5a03">JARVIS_TEST</a> (atomics_assembly_bridge, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:aebaaa6526f61ba6b96a3fecf4103dabf" id="r_aebaaa6526f61ba6b96a3fecf4103dabf"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aebaaa6526f61ba6b96a3fecf4103dabf">register_atomic_context_switch_tests</a> ()</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="abf0a1cb868ebbc67402b4b2aa76c2b53" name="abf0a1cb868ebbc67402b4b2aa76c2b53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf0a1cb868ebbc67402b4b2aa76c2b53">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/6]</span></h2>
+<a id="aee03d453e9a03909c72b2bc1a1b94333" name="aee03d453e9a03909c72b2bc1a1b94333"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee03d453e9a03909c72b2bc1a1b94333">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -151,16 +152,20 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomic_fpu_owner_read_write</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomic_fpu_owner_read_write</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="ac949815e273fdf25a239c4b1d37d8b32" name="ac949815e273fdf25a239c4b1d37d8b32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac949815e273fdf25a239c4b1d37d8b32">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/6]</span></h2>
+<a id="a1377a0ef924b8841daa4f0b3b14bfc40" name="a1377a0ef924b8841daa4f0b3b14bfc40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1377a0ef924b8841daa4f0b3b14bfc40">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -168,22 +173,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomic_globals_set_on_reschedule</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomic_globals_set_on_reschedule</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__atomic__context__switch_8cpp_ac949815e273fdf25a239c4b1d37d8b32_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_ac949815e273fdf25a239c4b1d37d8b32_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__atomic__context__switch_8cpp_a1377a0ef924b8841daa4f0b3b14bfc40_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_a1377a0ef924b8841daa4f0b3b14bfc40_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 1 -->
 </div>
 
 </div>
 </div>
-<a id="a419960fdf7c8a392f95bf4a08bc77219" name="a419960fdf7c8a392f95bf4a08bc77219"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a419960fdf7c8a392f95bf4a08bc77219">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/6]</span></h2>
+<a id="a09dddea9605871472062768742c28bb3" name="a09dddea9605871472062768742c28bb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09dddea9605871472062768742c28bb3">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -191,22 +200,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomic_idempotent_null_handling</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomic_idempotent_null_handling</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__atomic__context__switch_8cpp_a419960fdf7c8a392f95bf4a08bc77219_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_a419960fdf7c8a392f95bf4a08bc77219_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__atomic__context__switch_8cpp_a09dddea9605871472062768742c28bb3_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_a09dddea9605871472062768742c28bb3_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 2 -->
 </div>
 
 </div>
 </div>
-<a id="ac599bebb48fa55069461d11a487f622a" name="ac599bebb48fa55069461d11a487f622a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac599bebb48fa55069461d11a487f622a">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/6]</span></h2>
+<a id="a87a4783c33c3393d113a617afe48e334" name="a87a4783c33c3393d113a617afe48e334"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a4783c33c3393d113a617afe48e334">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -214,16 +227,20 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomic_next_task_id_consistency</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomic_next_task_id_consistency</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a730a7b4999d6e3dbb756dadd780af12c" name="a730a7b4999d6e3dbb756dadd780af12c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a730a7b4999d6e3dbb756dadd780af12c">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/6]</span></h2>
+<a id="a849c2dd060dec313ee29743c3e1f5a03" name="a849c2dd060dec313ee29743c3e1f5a03"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a849c2dd060dec313ee29743c3e1f5a03">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,22 +248,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomics_assembly_bridge</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomics_assembly_bridge</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__atomic__context__switch_8cpp_a730a7b4999d6e3dbb756dadd780af12c_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_a730a7b4999d6e3dbb756dadd780af12c_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__atomic__context__switch_8cpp_a849c2dd060dec313ee29743c3e1f5a03_cgraph.png" border="0" usemap="#atest__atomic__context__switch_8cpp_a849c2dd060dec313ee29743c3e1f5a03_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 3 -->
 </div>
 
 </div>
 </div>
-<a id="afc4ba0ba0625bd2e5266b32bdb603d52" name="afc4ba0ba0625bd2e5266b32bdb603d52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc4ba0ba0625bd2e5266b32bdb603d52">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/6]</span></h2>
+<a id="a6c52230ab8742f6a30210239fdac0325" name="a6c52230ab8742f6a30210239fdac0325"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c52230ab8742f6a30210239fdac0325">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/6]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -254,8 +275,12 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">atomics_fpu_owner_relaxed</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">atomics_fpu_owner_relaxed</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">

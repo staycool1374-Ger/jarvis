@@ -4,7 +4,7 @@ var searchData=
   ['mac_5fbroadcast_1',['MAC_BROADCAST',['../namespacenet.html#ad5a420109c2abb655791051ce184c33d',1,'net']]],
   ['mac_5fnull_2',['MAC_NULL',['../namespacenet.html#a01aabe2976f3f0d3259a37c323f8f799',1,'net']]],
   ['machine_3',['machine',['../structkernel_1_1elf_1_1_e_l_f64_header.html#ab3c73385fc685b336cdea4830c62d125',1,'kernel::elf::ELF64Header::machine'],['../structkernel_1_1_utsname.html#a6eee42e6ff632c03b2c92a06333f80d5',1,'kernel::Utsname::machine'],['../struct_utsname.html#a8ef3dbdd05d465814b255af100b3759e',1,'Utsname::machine'],['../structutsname.html#adfa4a80ab040c7e5775dbbc6483f8512',1,'utsname::machine'],['../elf_8hpp.html#a5ddefb78020e9dd399d269d24330b51b',1,'machine:&#160;elf.hpp']]],
-  ['magic_4',['magic',['../structkernel_1_1_task_control_block.html#ad3905179312a733cc653f37e4d3579af',1,'kernel::TaskControlBlock::magic'],['../structfdt__header.html#a2391f4d3f878ed789de2d641738c682d',1,'fdt_header::magic']]],
+  ['magic_4',['magic',['../structkernel_1_1_scheduler_1_1_task_fields.html#ae0442901731eb7f5df2d376feafd0788',1,'kernel::Scheduler::TaskFields::magic'],['../structkernel_1_1_task_control_block.html#ad3905179312a733cc653f37e4d3579af',1,'kernel::TaskControlBlock::magic'],['../structfdt__header.html#a2391f4d3f878ed789de2d641738c682d',1,'fdt_header::magic']]],
   ['major_5',['major',['../structkernel_1_1_version.html#a3e2dcc490e3869f520c78346ca18425a',1,'kernel::Version']]],
   ['mapped_5fva_6',['mapped_va',['../structkernel_1_1_buffer_pool_1_1_entry.html#ad92439f5754cdccbdb8f21463941934c',1,'kernel::BufferPool::Entry']]],
   ['max_7',['max',['../struct_bench_result.html#ad2e6fade7f798efb1d339ef33bdc6a9e',1,'BenchResult']]],

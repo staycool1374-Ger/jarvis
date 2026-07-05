@@ -125,6 +125,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__spinlock
 <code>#include &lt;<a class="el" href="spinlock__guard_8hpp_source.html">kernel/sync/spinlock_guard.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_spinlock.cpp:</div>
 <div class="dyncontent">
@@ -134,20 +135,20 @@ Include dependency graph for test_spinlock.cpp:</div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a8eb427e30e4a5ed5e9315af6f1b880cf" id="r_a8eb427e30e4a5ed5e9315af6f1b880cf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a8eb427e30e4a5ed5e9315af6f1b880cf">JARVIS_TEST</a> (spinlock_basic_lock_unlock)</td></tr>
-<tr class="memitem:a2814688a9c5a7396e38772e341dd7304" id="r_a2814688a9c5a7396e38772e341dd7304"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a2814688a9c5a7396e38772e341dd7304">JARVIS_TEST</a> (spinlock_guard_raii)</td></tr>
-<tr class="memitem:a5ff5ced30f26c33f2fef6c0f0ccdf7cf" id="r_a5ff5ced30f26c33f2fef6c0f0ccdf7cf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5ff5ced30f26c33f2fef6c0f0ccdf7cf">JARVIS_TEST</a> (spinlock_try_lock)</td></tr>
-<tr class="memitem:a53e719fa305275591d34aee8be783e77" id="r_a53e719fa305275591d34aee8be783e77"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a53e719fa305275591d34aee8be783e77">JARVIS_TEST</a> (spinlock_contention)</td></tr>
-<tr class="memitem:ac146f41025288a55b03349e64dc863ef" id="r_ac146f41025288a55b03349e64dc863ef"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac146f41025288a55b03349e64dc863ef">JARVIS_TEST</a> (spinlock_preemption_yield)</td></tr>
-<tr class="memitem:a0a2b2d472040868590dfe034ae10a5c0" id="r_a0a2b2d472040868590dfe034ae10a5c0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0a2b2d472040868590dfe034ae10a5c0">JARVIS_TEST</a> (spinlock_cxx_contract)</td></tr>
-<tr class="memitem:a8ded689602bdac1c303890d86eede18d" id="r_a8ded689602bdac1c303890d86eede18d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a8ded689602bdac1c303890d86eede18d">JARVIS_TEST</a> (spinlock_no_irqguard_inside)</td></tr>
-<tr class="memitem:a806f21e2b209d2ef309cbcca6b76eb77" id="r_a806f21e2b209d2ef309cbcca6b76eb77"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a806f21e2b209d2ef309cbcca6b76eb77">JARVIS_TEST</a> (spinlock_recursive_deadlock_detect)</td></tr>
-<tr class="memitem:a604424b929dd7c5b50670f1ec3053e1e" id="r_a604424b929dd7c5b50670f1ec3053e1e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a604424b929dd7c5b50670f1ec3053e1e">JARVIS_TEST</a> (spinlock_pause_count)</td></tr>
+<tr class="memitem:a1f58ff0d2074c3d115e0f51e007ebf63" id="r_a1f58ff0d2074c3d115e0f51e007ebf63"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a1f58ff0d2074c3d115e0f51e007ebf63">JARVIS_TEST</a> (spinlock_basic_lock_unlock, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:ad72235181795f1976bc5a536facfc6b5" id="r_ad72235181795f1976bc5a536facfc6b5"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad72235181795f1976bc5a536facfc6b5">JARVIS_TEST</a> (spinlock_guard_raii, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a025c7ad77d477ba94280dd3916a76d65" id="r_a025c7ad77d477ba94280dd3916a76d65"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a025c7ad77d477ba94280dd3916a76d65">JARVIS_TEST</a> (spinlock_try_lock, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:aff083c7145a014a20c43fff3c93b2cf5" id="r_aff083c7145a014a20c43fff3c93b2cf5"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aff083c7145a014a20c43fff3c93b2cf5">JARVIS_TEST</a> (spinlock_contention, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a7b44384f276bb26df51bd121f0723f63" id="r_a7b44384f276bb26df51bd121f0723f63"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7b44384f276bb26df51bd121f0723f63">JARVIS_TEST</a> (spinlock_preemption_yield, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:aa7d9c8e6ad2576c74557f707c65a4220" id="r_aa7d9c8e6ad2576c74557f707c65a4220"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa7d9c8e6ad2576c74557f707c65a4220">JARVIS_TEST</a> (spinlock_cxx_contract, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a3188a20c0eaa3aae7c1357242f0c07d4" id="r_a3188a20c0eaa3aae7c1357242f0c07d4"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a3188a20c0eaa3aae7c1357242f0c07d4">JARVIS_TEST</a> (spinlock_no_irqguard_inside, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a230ec3c5089ab2abc95ed62751197eb1" id="r_a230ec3c5089ab2abc95ed62751197eb1"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a230ec3c5089ab2abc95ed62751197eb1">JARVIS_TEST</a> (spinlock_recursive_deadlock_detect, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:ac2666bd2f3539775e8e58e15636ddd74" id="r_ac2666bd2f3539775e8e58e15636ddd74"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac2666bd2f3539775e8e58e15636ddd74">JARVIS_TEST</a> (spinlock_pause_count, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:af5272ee0e6889e72a620623b02795e51" id="r_af5272ee0e6889e72a620623b02795e51"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af5272ee0e6889e72a620623b02795e51">register_spinlock_tests</a> ()</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="a8eb427e30e4a5ed5e9315af6f1b880cf" name="a8eb427e30e4a5ed5e9315af6f1b880cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8eb427e30e4a5ed5e9315af6f1b880cf">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/9]</span></h2>
+<a id="a1f58ff0d2074c3d115e0f51e007ebf63" name="a1f58ff0d2074c3d115e0f51e007ebf63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f58ff0d2074c3d115e0f51e007ebf63">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -155,22 +156,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_basic_lock_unlock</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_basic_lock_unlock</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_a8eb427e30e4a5ed5e9315af6f1b880cf_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a8eb427e30e4a5ed5e9315af6f1b880cf_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_a1f58ff0d2074c3d115e0f51e007ebf63_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a1f58ff0d2074c3d115e0f51e007ebf63_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 1 -->
 </div>
 
 </div>
 </div>
-<a id="a53e719fa305275591d34aee8be783e77" name="a53e719fa305275591d34aee8be783e77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53e719fa305275591d34aee8be783e77">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/9]</span></h2>
+<a id="aff083c7145a014a20c43fff3c93b2cf5" name="aff083c7145a014a20c43fff3c93b2cf5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff083c7145a014a20c43fff3c93b2cf5">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -178,22 +183,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_contention</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_contention</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_a53e719fa305275591d34aee8be783e77_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a53e719fa305275591d34aee8be783e77_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_aff083c7145a014a20c43fff3c93b2cf5_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_aff083c7145a014a20c43fff3c93b2cf5_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 2 -->
 </div>
 
 </div>
 </div>
-<a id="a0a2b2d472040868590dfe034ae10a5c0" name="a0a2b2d472040868590dfe034ae10a5c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a2b2d472040868590dfe034ae10a5c0">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/9]</span></h2>
+<a id="aa7d9c8e6ad2576c74557f707c65a4220" name="aa7d9c8e6ad2576c74557f707c65a4220"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7d9c8e6ad2576c74557f707c65a4220">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -201,22 +210,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_cxx_contract</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_cxx_contract</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_a0a2b2d472040868590dfe034ae10a5c0_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a0a2b2d472040868590dfe034ae10a5c0_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_aa7d9c8e6ad2576c74557f707c65a4220_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_aa7d9c8e6ad2576c74557f707c65a4220_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 3 -->
 </div>
 
 </div>
 </div>
-<a id="a2814688a9c5a7396e38772e341dd7304" name="a2814688a9c5a7396e38772e341dd7304"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2814688a9c5a7396e38772e341dd7304">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/9]</span></h2>
+<a id="ad72235181795f1976bc5a536facfc6b5" name="ad72235181795f1976bc5a536facfc6b5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad72235181795f1976bc5a536facfc6b5">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -224,16 +237,20 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_guard_raii</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_guard_raii</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a8ded689602bdac1c303890d86eede18d" name="a8ded689602bdac1c303890d86eede18d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ded689602bdac1c303890d86eede18d">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/9]</span></h2>
+<a id="a3188a20c0eaa3aae7c1357242f0c07d4" name="a3188a20c0eaa3aae7c1357242f0c07d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3188a20c0eaa3aae7c1357242f0c07d4">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -241,22 +258,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_no_irqguard_inside</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_no_irqguard_inside</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_a8ded689602bdac1c303890d86eede18d_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a8ded689602bdac1c303890d86eede18d_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_a3188a20c0eaa3aae7c1357242f0c07d4_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a3188a20c0eaa3aae7c1357242f0c07d4_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 4 -->
 </div>
 
 </div>
 </div>
-<a id="a604424b929dd7c5b50670f1ec3053e1e" name="a604424b929dd7c5b50670f1ec3053e1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a604424b929dd7c5b50670f1ec3053e1e">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/9]</span></h2>
+<a id="ac2666bd2f3539775e8e58e15636ddd74" name="ac2666bd2f3539775e8e58e15636ddd74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2666bd2f3539775e8e58e15636ddd74">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -264,16 +285,20 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_pause_count</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_pause_count</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="ac146f41025288a55b03349e64dc863ef" name="ac146f41025288a55b03349e64dc863ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac146f41025288a55b03349e64dc863ef">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[7/9]</span></h2>
+<a id="a7b44384f276bb26df51bd121f0723f63" name="a7b44384f276bb26df51bd121f0723f63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b44384f276bb26df51bd121f0723f63">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[7/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -281,22 +306,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_preemption_yield</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_preemption_yield</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_ac146f41025288a55b03349e64dc863ef_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_ac146f41025288a55b03349e64dc863ef_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_a7b44384f276bb26df51bd121f0723f63_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a7b44384f276bb26df51bd121f0723f63_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 5 -->
 </div>
 
 </div>
 </div>
-<a id="a806f21e2b209d2ef309cbcca6b76eb77" name="a806f21e2b209d2ef309cbcca6b76eb77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a806f21e2b209d2ef309cbcca6b76eb77">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[8/9]</span></h2>
+<a id="a230ec3c5089ab2abc95ed62751197eb1" name="a230ec3c5089ab2abc95ed62751197eb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a230ec3c5089ab2abc95ed62751197eb1">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[8/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -304,16 +333,20 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_recursive_deadlock_detect</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_recursive_deadlock_detect</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a5ff5ced30f26c33f2fef6c0f0ccdf7cf" name="a5ff5ced30f26c33f2fef6c0f0ccdf7cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ff5ced30f26c33f2fef6c0f0ccdf7cf">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[9/9]</span></h2>
+<a id="a025c7ad77d477ba94280dd3916a76d65" name="a025c7ad77d477ba94280dd3916a76d65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a025c7ad77d477ba94280dd3916a76d65">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[9/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,15 +354,19 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">spinlock_try_lock</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">spinlock_try_lock</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__spinlock_8cpp_a5ff5ced30f26c33f2fef6c0f0ccdf7cf_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a5ff5ced30f26c33f2fef6c0f0ccdf7cf_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__spinlock_8cpp_a025c7ad77d477ba94280dd3916a76d65_cgraph.png" border="0" usemap="#atest__spinlock_8cpp_a025c7ad77d477ba94280dd3916a76d65_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 6 -->
 </div>
 

@@ -1,6 +1,7 @@
 var classkernel_1_1sync_1_1_event_group =
 [
     [ "EventGroup", "classkernel_1_1sync_1_1_event_group.html#a215819217f11121a78832eae0aa29ff6", null ],
+    [ "~EventGroup", "classkernel_1_1sync_1_1_event_group.html#abdbbd3c6e3abdb0708f87d7045eb43c4", null ],
     [ "clear_bits", "classkernel_1_1sync_1_1_event_group.html#a6a5e8825ec074435b4e311a887b39ad5", null ],
     [ "clear_bits_err", "classkernel_1_1sync_1_1_event_group.html#a1a558918e6a858475ec12ce19162414e", null ],
     [ "get_bits", "classkernel_1_1sync_1_1_event_group.html#afd634f174190c204c6fb8be4d26b0560", null ],

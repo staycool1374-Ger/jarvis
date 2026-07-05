@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('classkernel_1_
 </div><!--header-->
 <div class="contents">
 
-<p>Fixed-size block memory allocator with multiple pool classes.  
+<p>Fixed-size block memory allocator with 9 pool classes.  
  <a href="#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="mempool_8hpp_source.html">mempool.hpp</a>&gt;</code></p>
@@ -151,7 +151,7 @@ Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a3f1c8c8d44fb19cc7042070adb022533" id="r_a3f1c8c8d44fb19cc7042070adb022533"><td class="memItemLeft">static <a class="el" href="namespacekernel_1_1errors.html#aeb48fedc2d846227f58f7b1207bd4e9f">errors::MemPoolError</a>&#160;</td><td class="memItemRight"><a class="el" href="#a3f1c8c8d44fb19cc7042070adb022533">free_err</a> (void *block)</td></tr>
 <tr class="memdesc:a3f1c8c8d44fb19cc7042070adb022533"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a block with error code.  <br /></td></tr>
 <tr class="memitem:a04165cf98a4f36671b9e99d47290e19a" id="r_a04165cf98a4f36671b9e99d47290e19a"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="#a04165cf98a4f36671b9e99d47290e19a">contains</a> (void *ptr)</td></tr>
-<tr class="memdesc:a04165cf98a4f36671b9e99d47290e19a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a pointer falls within any <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a> pool range.  <br /></td></tr>
+<tr class="memdesc:a04165cf98a4f36671b9e99d47290e19a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a pointer falls within any <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a> pool range.  <br /></td></tr>
 <tr class="memitem:a0f8971c21e35bc327dcc4492fa533dbf" id="r_a0f8971c21e35bc327dcc4492fa533dbf"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="#a0f8971c21e35bc327dcc4492fa533dbf">is_ready</a> ()</td></tr>
 <tr class="memdesc:a0f8971c21e35bc327dcc4492fa533dbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true after <a class="el" href="#afa2f4dd4e1b0bfbd311c339b772498c0" title="Initialises all pool classes from pre-allocated memory.">init()</a> completes.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -177,8 +177,12 @@ Test-isolation helpers (snapshot / restore)</h2></td></tr>
 <tr class="memdesc:a0f399177b0784f66fafc6bf0c7dffd9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total bytes needed to hold all pool block-data copies.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Fixed-size block memory allocator with multiple pool classes. </p>
-<dl class="section note"><dt>Note</dt><dd>Provides O(1) allocation/free for kernel heap use. </dd></dl>
+<div class="textblock"><p>Fixed-size block memory allocator with 9 pool classes. </p>
+<p>Each pool is a contiguous page-aligned region partitioned into fixed-size blocks. Free blocks are linked via an embedded singly-linked free-list (the first 8 bytes of each free block store the next index).</p>
+<dl class="section note"><dt>Note</dt><dd>O(1) allocation: find_pool (linear scan of 9 classes) + pop from free-list head. O(1) free: linear scan of 9 pools to find owner<ul>
+<li>push to free-list head. No bitmap scans or dynamic allocation. </li>
+</ul>
+</dd></dl>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
 <a id="a8902cb2684eb416cb181803ffbb04b9f" name="a8902cb2684eb416cb181803ffbb04b9f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8902cb2684eb416cb181803ffbb04b9f">&#9670;&#160;</a></span>alloc()</h2>
@@ -346,14 +350,14 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Check if a pointer falls within any <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a> pool range. </p>
+<p>Check if a pointer falls within any <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a> pool range. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ptr</td><td>Pointer to check. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>true if ptr is owned by <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a>. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>true if ptr is owned by <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a>. </dd></dl>
 
 </div>
 </div>

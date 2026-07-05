@@ -18,6 +18,7 @@ var searchData=
   ['prdentry_15',['PrdEntry',['../structkernel_1_1dma_1_1_prd_entry.html',1,'kernel::dma']]],
   ['prdhbaentry_16',['PrdHbaEntry',['../structkernel_1_1ahci_1_1_prd_hba_entry.html',1,'kernel::ahci']]],
   ['prdtable_17',['PrdTable',['../structkernel_1_1dma_1_1_prd_table.html',1,'kernel::dma']]],
-  ['program_18',['Program',['../structservice_1_1_program_registry_1_1_program.html',1,'service::ProgramRegistry']]],
-  ['programregistry_19',['ProgramRegistry',['../classservice_1_1_program_registry.html',1,'service']]]
+  ['prioritymap_18',['PriorityMap',['../classkernel_1_1_priority_map.html',1,'kernel']]],
+  ['program_19',['Program',['../structservice_1_1_program_registry_1_1_program.html',1,'service::ProgramRegistry']]],
+  ['programregistry_20',['ProgramRegistry',['../classservice_1_1_program_registry.html',1,'service']]]
 ];

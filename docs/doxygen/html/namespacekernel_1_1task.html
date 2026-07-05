@@ -123,11 +123,56 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacekerne
 Data Structures</h2></td></tr>
 <tr class="memitem:SporadicServer" id="r_SporadicServer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1task_1_1_sporadic_server.html">SporadicServer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-instance Sporadic Server controller.  <a href="classkernel_1_1task_1_1_sporadic_server.html#details">More...</a><br /></td></tr>
+<tr class="memitem:TaskDef" id="r_TaskDef"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1task_1_1_task_def.html">TaskDef</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single entry in the boot-time task-definition table. Entries are validated at compile time against <a class="el" href="jarvis__config_8h.html" title="Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...">jarvis_config.h</a> bounds and at boot time for ELF-file existence. Set enabled = false to skip.  <a href="structkernel_1_1task_1_1_task_def.html#details">More...</a><br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:afe20b357887445ef77f145177213ee11" id="r_afe20b357887445ef77f145177213ee11"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#afe20b357887445ef77f145177213ee11">TaskType</a> : uint8_t { <a class="el" href="#afe20b357887445ef77f145177213ee11a35c10219c45ccfb5b07444fd7e17214c">KERNEL</a>
+, <a class="el" href="#afe20b357887445ef77f145177213ee11acd249b6e7fadaba2533c7e79e653ce90">USER_ELF</a>
+, <a class="el" href="#afe20b357887445ef77f145177213ee11a7049d1e1209d2fe5152258560aadcb16">SPORADIC_SERVER</a>
+ }</td></tr>
+<tr class="memdesc:afe20b357887445ef77f145177213ee11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Classifies how a task is created from a <a class="el" href="structkernel_1_1task_1_1_task_def.html" title="Single entry in the boot-time task-definition table. Entries are validated at compile time against ja...">TaskDef</a> entry.  <a href="#afe20b357887445ef77f145177213ee11">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ae7fc9a59f78d98d18c2d3c5a25ec2193" id="r_ae7fc9a59f78d98d18c2d3c5a25ec2193"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae7fc9a59f78d98d18c2d3c5a25ec2193">dmesg_task_main</a> ()</td></tr>
+<tr class="memitem:a23341a25427d54ae2f91ec33bb133c24" id="r_a23341a25427d54ae2f91ec33bb133c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a23341a25427d54ae2f91ec33bb133c24">reboot_from_table</a> () __attribute__((noreturn))</td></tr>
+<tr class="memdesc:a23341a25427d54ae2f91ec33bb133c24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kills all tasks (except idle), spawns the system from g_task_defs[], then enters the idle loop. Never returns.  <br /></td></tr>
 </table>
+<a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
+<a id="afe20b357887445ef77f145177213ee11" name="afe20b357887445ef77f145177213ee11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe20b357887445ef77f145177213ee11">&#9670;&#160;</a></span>TaskType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="#afe20b357887445ef77f145177213ee11">kernel::task::TaskType</a> : uint8_t</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel strong">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Classifies how a task is created from a <a class="el" href="structkernel_1_1task_1_1_task_def.html" title="Single entry in the boot-time task-definition table. Entries are validated at compile time against ja...">TaskDef</a> entry. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="afe20b357887445ef77f145177213ee11a35c10219c45ccfb5b07444fd7e17214c" name="afe20b357887445ef77f145177213ee11a35c10219c45ccfb5b07444fd7e17214c"></a>KERNEL&#160;</td><td class="fielddoc"><p>kernel-space function, <a class="el" href="structkernel_1_1_task_control_block.html#a82a06cb63bdaa30a038a40e5632fbe9d" title="Creates a new kernel task with the given entry and scheduling parameters.">TaskControlBlock::create()</a> </p>
+</td></tr>
+<tr><td class="fieldname"><a id="afe20b357887445ef77f145177213ee11acd249b6e7fadaba2533c7e79e653ce90" name="afe20b357887445ef77f145177213ee11acd249b6e7fadaba2533c7e79e653ce90"></a>USER_ELF&#160;</td><td class="fielddoc"><p>user-space ELF from initrd, <a class="el" href="namespacekernel_1_1elf.html#a22fc0d9061e51931e04025e0daf1e5e7" title="Load an ELF binary into a new task.">elf::load()</a> </p>
+</td></tr>
+<tr><td class="fieldname"><a id="afe20b357887445ef77f145177213ee11a7049d1e1209d2fe5152258560aadcb16" name="afe20b357887445ef77f145177213ee11a7049d1e1209d2fe5152258560aadcb16"></a>SPORADIC_SERVER&#160;</td><td class="fielddoc"><p>user-space ELF + <a class="el" href="classkernel_1_1task_1_1_sporadic_server.html" title="Per-instance Sporadic Server controller.">SporadicServer</a> + daemon registration </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="ae7fc9a59f78d98d18c2d3c5a25ec2193" name="ae7fc9a59f78d98d18c2d3c5a25ec2193"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae7fc9a59f78d98d18c2d3c5a25ec2193">&#9670;&#160;</a></span>dmesg_task_main()</h2>
@@ -148,6 +193,31 @@ Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1task_ae7fc9a59f78d98d18c2d3c5a25ec2193_cgraph.png" border="0" usemap="#anamespacekernel_1_1task_ae7fc9a59f78d98d18c2d3c5a25ec2193_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 0 -->
+</div>
+
+</div>
+</div>
+<a id="a23341a25427d54ae2f91ec33bb133c24" name="a23341a25427d54ae2f91ec33bb133c24"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23341a25427d54ae2f91ec33bb133c24">&#9670;&#160;</a></span>reboot_from_table()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::task::reboot_from_table </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Kills all tasks (except idle), spawns the system from g_task_defs[], then enters the idle loop. Never returns. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1task_a23341a25427d54ae2f91ec33bb133c24_cgraph.png" border="0" usemap="#anamespacekernel_1_1task_a23341a25427d54ae2f91ec33bb133c24_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
 </div>
 
 </div>

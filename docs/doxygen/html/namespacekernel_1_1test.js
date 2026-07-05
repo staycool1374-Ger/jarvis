@@ -1,6 +1,7 @@
 var namespacekernel_1_1test =
 [
     [ "ClassSection", "structkernel_1_1test_1_1_class_section.html", "structkernel_1_1test_1_1_class_section" ],
+    [ "ExpectedCounts", "structkernel_1_1test_1_1_expected_counts.html", "structkernel_1_1test_1_1_expected_counts" ],
     [ "Registry", "classkernel_1_1test_1_1_registry.html", null ],
     [ "ResourceCounters", "structkernel_1_1test_1_1_resource_counters.html", "structkernel_1_1test_1_1_resource_counters" ],
     [ "ResourceTracker", "classkernel_1_1test_1_1_resource_tracker.html", "classkernel_1_1test_1_1_resource_tracker" ],
@@ -13,6 +14,9 @@ var namespacekernel_1_1test =
       [ "TF_USER", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a6ef6b63d678fd3b18029892f6956a47c", null ],
       [ "TF_BENCH", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a99ab7f179010344acb627e851eae44d8", null ]
     ] ],
+    [ "arch_count", "namespacekernel_1_1test.html#a6407505c9e51e9aafc535ceb8a0f074f", null ],
+    [ "dump_class_counts", "namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d", null ],
+    [ "expected_for_class", "namespacekernel_1_1test.html#a22a1e73ffb69f6fd807228fc5756b380", null ],
     [ "get_test_class_count", "namespacekernel_1_1test.html#a499e498dbadd7417450754e39ff8d025", null ],
     [ "get_test_classes", "namespacekernel_1_1test.html#adef941cb96fe1a42d92076d37649d84a", null ],
     [ "parse_test_config", "namespacekernel_1_1test.html#aabafa220128e328e46c2c19135411898", null ],
@@ -20,6 +24,7 @@ var namespacekernel_1_1test =
     [ "register_class", "namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450", null ],
     [ "reload_daemon_tasks", "namespacekernel_1_1test.html#abbd641156133e294c60aa475e73dd520", null ],
     [ "run_all", "namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de", null ],
+    [ "run_all_isolated_tests", "namespacekernel_1_1test.html#ad8af3e26f5e10cffe7d3eecf79016c1d", null ],
     [ "run_debug", "namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de", null ],
     [ "run_filtered", "namespacekernel_1_1test.html#a9096f1bb9a2e4b1541226759b08c1ae5", null ],
     [ "run_registered", "namespacekernel_1_1test.html#a1b7421d43e0e94ec4c1f0005f25222e2", null ],
@@ -33,6 +38,9 @@ var namespacekernel_1_1test =
     [ "snapshot_create", "namespacekernel_1_1test.html#a5b61544ff1676d3f6d4a777c3211be31", null ],
     [ "snapshot_destroy", "namespacekernel_1_1test.html#ae4288686f519dcd0faacfe54ae2f1bff", null ],
     [ "snapshot_restore", "namespacekernel_1_1test.html#aa2a58a012f3f56d28d6e0df037fd66a6", null ],
+    [ "test_cleanup_all", "namespacekernel_1_1test.html#a2116b98892188c36c2a9b053bdca9df5", null ],
+    [ "validate_all_consistency", "namespacekernel_1_1test.html#aebdef3f581d2b87696f34fa1a77a20d5", null ],
+    [ "validate_class_count", "namespacekernel_1_1test.html#ad187fb124266bd89f9f48be1d22ba617", null ],
     [ "watchdog_arm", "namespacekernel_1_1test.html#a3682848fa74834ef280e24ea7c67ff5e", null ],
     [ "watchdog_check_inline", "namespacekernel_1_1test.html#abfb7a4e797c8023392967822f5451ab1", null ],
     [ "watchdog_disarm", "namespacekernel_1_1test.html#a0a6da7c5576fe1c48584026927954c24", null ],

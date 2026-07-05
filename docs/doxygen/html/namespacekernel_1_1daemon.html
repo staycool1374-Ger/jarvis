@@ -129,12 +129,16 @@ Functions</h2></td></tr>
 <tr class="memdesc:a0a2e6431675517acca87d324b2cff80e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the daemon manager and spawn registered daemons.  <br /></td></tr>
 <tr class="memitem:a805ce70d7458d932a10b9f7aec27fde1" id="r_a805ce70d7458d932a10b9f7aec27fde1"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a805ce70d7458d932a10b9f7aec27fde1">register_daemon</a> (const char *name, const char *initrd_path, void(*set_pid)(uint64_t), uint64_t(*get_pid)())</td></tr>
 <tr class="memdesc:a805ce70d7458d932a10b9f7aec27fde1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a daemon for lifecycle management.  <br /></td></tr>
-<tr class="memitem:a684c1dfba062f9ac957b0182d89dcb61" id="r_a684c1dfba062f9ac957b0182d89dcb61"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a684c1dfba062f9ac957b0182d89dcb61">reset_daemons</a> ()</td></tr>
-<tr class="memdesc:a684c1dfba062f9ac957b0182d89dcb61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kill and re-register all daemons (used during recovery).  <br /></td></tr>
+<tr class="memitem:af8c94939f398ca91404fdf9f7aef8171" id="r_af8c94939f398ca91404fdf9f7aef8171"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af8c94939f398ca91404fdf9f7aef8171">reset_clear_daemons</a> ()</td></tr>
+<tr class="memdesc:af8c94939f398ca91404fdf9f7aef8171"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kill and re-register all daemons (used during recovery). Also resets num_daemons_ to 0 so fresh registrations work.  <br /></td></tr>
 <tr class="memitem:ad9b66d7bd710825a0369b48617055996" id="r_ad9b66d7bd710825a0369b48617055996"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad9b66d7bd710825a0369b48617055996">notify_death</a> (uint64_t pid)</td></tr>
 <tr class="memdesc:ad9b66d7bd710825a0369b48617055996"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notify the daemon manager that a daemon has exited.  <br /></td></tr>
 <tr class="memitem:a7910dce2d3de5e1d57e8d1ac0cca68c9" id="r_a7910dce2d3de5e1d57e8d1ac0cca68c9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7910dce2d3de5e1d57e8d1ac0cca68c9">restart_stale_daemons</a> ()</td></tr>
 <tr class="memdesc:a7910dce2d3de5e1d57e8d1ac0cca68c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restart any daemons that have died (up to MAX_RESTART_COUNT each).  <br /></td></tr>
+<tr class="memitem:a13c5b38a9f9303f1f5fd4f57fb244cfd" id="r_a13c5b38a9f9303f1f5fd4f57fb244cfd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a13c5b38a9f9303f1f5fd4f57fb244cfd">ensure_running</a> (const char *name)</td></tr>
+<tr class="memdesc:a13c5b38a9f9303f1f5fd4f57fb244cfd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ensure a daemon is running. If its PID is 0 or the task is no longer valid, reload it from the initrd ELF immediately.  <br /></td></tr>
+<tr class="memitem:a80477af4a63abcab7534fbffba7db6f2" id="r_a80477af4a63abcab7534fbffba7db6f2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80477af4a63abcab7534fbffba7db6f2">terminate</a> (const char *name)</td></tr>
+<tr class="memdesc:a80477af4a63abcab7534fbffba7db6f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate a daemon by name. Marks the task as TERMINATED and clears the daemon entry so ensure_running will reload it.  <br /></td></tr>
 <tr class="memitem:aadff7e665c02eef5c3cf2d52db58b8bd" id="r_aadff7e665c02eef5c3cf2d52db58b8bd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aadff7e665c02eef5c3cf2d52db58b8bd">reset_restart_count</a> (const char *name)</td></tr>
 <tr class="memdesc:aadff7e665c02eef5c3cf2d52db58b8bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset a daemon's restart count so it can be restarted again. Sets restart_count=0, pid=0, and calls set_pid_fn(0).  <br /></td></tr>
 <tr class="memitem:a978776a5839d1f7bbac1e5a22572afca" id="r_a978776a5839d1f7bbac1e5a22572afca"><td class="memItemLeft">const <a class="el" href="structkernel_1_1daemon_1_1_daemon_entry.html">DaemonEntry</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a978776a5839d1f7bbac1e5a22572afca">get_entry</a> (uint64_t index)</td></tr>
@@ -165,6 +169,31 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a13c5b38a9f9303f1f5fd4f57fb244cfd" name="a13c5b38a9f9303f1f5fd4f57fb244cfd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13c5b38a9f9303f1f5fd4f57fb244cfd">&#9670;&#160;</a></span>ensure_running()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::daemon::ensure_running </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Ensure a daemon is running. If its PID is 0 or the task is no longer valid, reload it from the initrd ELF immediately. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1daemon_a13c5b38a9f9303f1f5fd4f57fb244cfd_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_a13c5b38a9f9303f1f5fd4f57fb244cfd_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
 
 </div>
 </div>
@@ -226,7 +255,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1daemon_ad9b66d7bd710825a0369b48617055996_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_ad9b66d7bd710825a0369b48617055996_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -275,19 +304,19 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1daemon_a805ce70d7458d932a10b9f7aec27fde1_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_a805ce70d7458d932a10b9f7aec27fde1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
 </div>
-<a id="a684c1dfba062f9ac957b0182d89dcb61" name="a684c1dfba062f9ac957b0182d89dcb61"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a684c1dfba062f9ac957b0182d89dcb61">&#9670;&#160;</a></span>reset_daemons()</h2>
+<a id="af8c94939f398ca91404fdf9f7aef8171" name="af8c94939f398ca91404fdf9f7aef8171"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8c94939f398ca91404fdf9f7aef8171">&#9670;&#160;</a></span>reset_clear_daemons()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void kernel::daemon::reset_daemons </td>
+          <td class="memname">void kernel::daemon::reset_clear_daemons </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -295,12 +324,12 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Kill and re-register all daemons (used during recovery). </p>
+<p>Kill and re-register all daemons (used during recovery). Also resets num_daemons_ to 0 so fresh registrations work. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1daemon_a684c1dfba062f9ac957b0182d89dcb61_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_a684c1dfba062f9ac957b0182d89dcb61_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<div class="center"><img src="namespacekernel_1_1daemon_af8c94939f398ca91404fdf9f7aef8171_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_af8c94939f398ca91404fdf9f7aef8171_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
 </div>
 
 </div>
@@ -325,7 +354,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1daemon_aadff7e665c02eef5c3cf2d52db58b8bd_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_aadff7e665c02eef5c3cf2d52db58b8bd_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 4 -->
 </div>
 
 </div>
@@ -350,7 +379,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1daemon_a7910dce2d3de5e1d57e8d1ac0cca68c9_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_a7910dce2d3de5e1d57e8d1ac0cca68c9_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -375,6 +404,31 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Restore daemon entries and count from <code class="param">entries_in</code> / <code class="param">num_in</code>. </p>
+
+</div>
+</div>
+<a id="a80477af4a63abcab7534fbffba7db6f2" name="a80477af4a63abcab7534fbffba7db6f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80477af4a63abcab7534fbffba7db6f2">&#9670;&#160;</a></span>terminate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::daemon::terminate </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Terminate a daemon by name. Marks the task as TERMINATED and clears the daemon entry so ensure_running will reload it. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1daemon_a80477af4a63abcab7534fbffba7db6f2_cgraph.png" border="0" usemap="#anamespacekernel_1_1daemon_a80477af4a63abcab7534fbffba7db6f2_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 6 -->
+</div>
 
 </div>
 </div>

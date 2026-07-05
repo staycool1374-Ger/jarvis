@@ -35,7 +35,7 @@ struct Version {
     static constexpr unsigned major = 0;
     static constexpr unsigned minor = 3;
     static constexpr unsigned patch = 1;
-    static constexpr const char* stage = "dev";
+    static constexpr const char* stage = "";
 
     static const char* string();
     static const char* build_date();

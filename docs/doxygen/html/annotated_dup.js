@@ -96,10 +96,12 @@ var annotated_dup =
         [ "SpinLock", "classkernel_1_1sync_1_1_spin_lock.html", "classkernel_1_1sync_1_1_spin_lock" ]
       ] ],
       [ "task", "namespacekernel_1_1task.html", [
-        [ "SporadicServer", "classkernel_1_1task_1_1_sporadic_server.html", "classkernel_1_1task_1_1_sporadic_server" ]
+        [ "SporadicServer", "classkernel_1_1task_1_1_sporadic_server.html", "classkernel_1_1task_1_1_sporadic_server" ],
+        [ "TaskDef", "structkernel_1_1task_1_1_task_def.html", "structkernel_1_1task_1_1_task_def" ]
       ] ],
       [ "test", "namespacekernel_1_1test.html", [
         [ "ClassSection", "structkernel_1_1test_1_1_class_section.html", "structkernel_1_1test_1_1_class_section" ],
+        [ "ExpectedCounts", "structkernel_1_1test_1_1_expected_counts.html", "structkernel_1_1test_1_1_expected_counts" ],
         [ "Registry", "classkernel_1_1test_1_1_registry.html", null ],
         [ "ResourceCounters", "structkernel_1_1test_1_1_resource_counters.html", "structkernel_1_1test_1_1_resource_counters" ],
         [ "ResourceTracker", "classkernel_1_1test_1_1_resource_tracker.html", "classkernel_1_1test_1_1_resource_tracker" ],
@@ -148,11 +150,15 @@ var annotated_dup =
       [ "PageFlags", "structkernel_1_1_page_flags.html", null ],
       [ "PhysicalAddress", "classkernel_1_1_physical_address.html", "classkernel_1_1_physical_address" ],
       [ "PMM", "classkernel_1_1_p_m_m.html", "classkernel_1_1_p_m_m" ],
+      [ "PriorityMap", "classkernel_1_1_priority_map.html", "classkernel_1_1_priority_map" ],
+      [ "ReadyQueueManager", "classkernel_1_1_ready_queue_manager.html", "classkernel_1_1_ready_queue_manager" ],
+      [ "ReadyQueuePOD", "structkernel_1_1_ready_queue_p_o_d.html", "structkernel_1_1_ready_queue_p_o_d" ],
       [ "Rlimit", "structkernel_1_1_rlimit.html", "structkernel_1_1_rlimit" ],
-      [ "Scheduler", "classkernel_1_1_scheduler.html", null ],
+      [ "Scheduler", "classkernel_1_1_scheduler.html", "classkernel_1_1_scheduler" ],
       [ "SignalFrame", "structkernel_1_1_signal_frame.html", "structkernel_1_1_signal_frame" ],
       [ "Syscall", "classkernel_1_1_syscall.html", null ],
       [ "TaskControlBlock", "structkernel_1_1_task_control_block.html", "structkernel_1_1_task_control_block" ],
+      [ "TaskQueue", "classkernel_1_1_task_queue.html", "classkernel_1_1_task_queue" ],
       [ "Timeval", "structkernel_1_1_timeval.html", "structkernel_1_1_timeval" ],
       [ "Utsname", "structkernel_1_1_utsname.html", "structkernel_1_1_utsname" ],
       [ "Version", "structkernel_1_1_version.html", null ],
@@ -211,6 +217,7 @@ var annotated_dup =
     [ "SPSCRing", "class_s_p_s_c_ring.html", "class_s_p_s_c_ring" ],
     [ "stat", "structstat.html", "structstat" ],
     [ "TaskDeleter", "struct_task_deleter.html", "struct_task_deleter" ],
+    [ "TestMeta", "struct_test_meta.html", "struct_test_meta" ],
     [ "ThroughputCtx", "struct_throughput_ctx.html", "struct_throughput_ctx" ],
     [ "timespec", "structtimespec.html", "structtimespec" ],
     [ "Timeval", "struct_timeval.html", "struct_timeval" ],

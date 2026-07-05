@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('mempool_8hpp.h
 </div><!--header-->
 <div class="contents">
 
-<p>Fixed-size block memory pool allocator (k malloc).  
+<p>Fixed-size block memory pool allocator (k malloc). O(1) alloc/free via embedded free-list per pool class (9 classes, 16–4480 bytes).  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mempool__errors_8hpp_source.html">kernel/memory/mempool_errors.hpp</a>&gt;</code><br />
@@ -127,31 +127,13 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('mempool_8hpp.h
 Include dependency graph for mempool.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="mempool_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2memory_2mempool_8hpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2memory_2mempool_8hpp" id="asrc_2kernel_2memory_2mempool_8hpp">
-<area shape="rect" title="Fixed&#45;size block memory pool allocator (k malloc)." alt="" coords="5,5,217,32"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="72,80,150,107"/>
-<area shape="poly" title=" " alt="" coords="113,31,113,65,109,63,109,35"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="mempool_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2memory_2mempool_8hppdep" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2memory_2mempool_8hppdep" id="asrc_2kernel_2memory_2mempool_8hppdep">
-<area shape="rect" title="Fixed&#45;size block memory pool allocator (k malloc)." alt="" coords="439,5,650,32"/>
-<area shape="rect" href="kernel_8cpp.html" title=" " alt="" coords="5,88,148,115"/>
-<area shape="poly" title=" " alt="" coords="433,35,304,57,161,83,127,90,126,85,160,77,303,52,438,34"/>
-<area shape="rect" href="mempool_8cpp.html" title=" " alt="" coords="172,88,384,115"/>
-<area shape="poly" title=" " alt="" coords="491,37,320,90,319,85,486,37"/>
-<area shape="rect" href="syscall_8cpp.html" title=" " alt="" coords="408,80,532,123"/>
-<area shape="poly" title=" " alt="" coords="525,42,490,82,487,77,520,45"/>
-<area shape="rect" href="test__selftest_8cpp.html" title=" " alt="" coords="555,80,686,123"/>
-<area shape="poly" title=" " alt="" coords="568,41,604,81,599,79,566,46"/>
-<area shape="rect" href="initrd__fs_8cpp.html" title=" " alt="" coords="710,80,843,123"/>
-<area shape="poly" title=" " alt="" coords="596,35,719,79,714,79,595,40"/>
-<area shape="rect" href="procfs_8cpp.html" title=" " alt="" coords="867,88,1032,115"/>
-<area shape="poly" title=" " alt="" coords="627,33,856,77,893,88,888,87,855,83,627,38"/>
-</map>
+<!-- MAP 1 -->
 </div>
 </div>
 <p><a href="mempool_8hpp_source.html">Go to the source code of this file.</a></p>
@@ -159,7 +141,7 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:kernel_3A_3AMemPool" id="r_kernel_3A_3AMemPool"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_mem_pool.html">kernel::MemPool</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory allocator with multiple pool classes.  <a href="classkernel_1_1_mem_pool.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory allocator with 9 pool classes.  <a href="classkernel_1_1_mem_pool.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3AMemPool_3A_3APool" id="r_kernel_3A_3AMemPool_3A_3APool"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_mem_pool_1_1_pool.html">kernel::MemPool::Pool</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Describes a single pool of fixed-size blocks.  <a href="structkernel_1_1_mem_pool_1_1_pool.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3AMemPool_3A_3APoolMeta" id="r_kernel_3A_3AMemPool_3A_3APoolMeta"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_mem_pool_1_1_pool_meta.html">kernel::MemPool::PoolMeta</a></td></tr>
@@ -169,7 +151,7 @@ Namespaces</h2></td></tr>
 <tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Fixed-size block memory pool allocator (k malloc). </p>
+<div class="textblock"><p>Fixed-size block memory pool allocator (k malloc). O(1) alloc/free via embedded free-list per pool class (9 classes, 16–4480 bytes). </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

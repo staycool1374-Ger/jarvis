@@ -122,16 +122,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('dir_cfddc3e473
 Directory dependency graph for memory:</div>
 <div class="dyncontent">
 <div class="center"><img src="dir_cfddc3e4738eb751c9ecb1dcd81b4d56_dep.png" border="0" usemap="#adir__cfddc3e4738eb751c9ecb1dcd81b4d56__dep" loading="lazy" alt="src/kernel/memory"/></div>
-<map name="adir__cfddc3e4738eb751c9ecb1dcd81b4d56__dep" id="adir__cfddc3e4738eb751c9ecb1dcd81b4d56__dep">
-<area shape="rect" href="dir_507c9ec95be9a201f49444d5da26e8a6.html" title="task" alt="" coords="38,128,84,155"/>
-<area shape="rect" href="dir_cfddc3e4738eb751c9ecb1dcd81b4d56.html" title="memory" alt="" coords="27,53,96,80"/>
-<area shape="poly" href="dir_000009_000016.html" alt="" coords="63,78,64,113,59,112,60,83"/>
-<area shape="rect" href="dir_000009_000016.html" title="2" alt="" coords="66,101,73,117"/>
-<area shape="rect" href="dir_c85d3e3c5052e9ad9ce18c6863244a25.html" title="lib" alt="" coords="117,128,155,155"/>
-<area shape="poly" href="dir_000009_000007.html" alt="" coords="75,78,115,117,110,118,74,83"/>
-<area shape="rect" href="dir_000009_000007.html" title="13" alt="" coords="109,101,123,117"/>
-<area shape="rect" href="dir_cbd7f246bdf7dc0a50281a272327e6ed.html" title="kernel" alt="" coords="16,16,107,165"/>
-</map>
+<!-- MAP 0 -->
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-files" class="groupheader"><a id="files" name="files"></a>
@@ -144,7 +135,7 @@ Files</h2></td></tr>
 <tr class="memitem:markers_2Ecpp" id="r_markers_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="markers_8cpp.html">markers.cpp</a></td></tr>
 <tr class="memitem:mempool_2Ecpp" id="r_mempool_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="mempool_8cpp.html">mempool.cpp</a></td></tr>
 <tr class="memitem:mempool_2Ehpp" id="r_mempool_2Ehpp"><td class="memItemLeft"><a href="mempool_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="mempool_8hpp.html">mempool.hpp</a></td></tr>
-<tr class="memdesc:mempool_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory pool allocator (k malloc). <br /></td></tr>
+<tr class="memdesc:mempool_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory pool allocator (k malloc). O(1) alloc/free via embedded free-list per pool class (9 classes, 16–4480 bytes). <br /></td></tr>
 <tr class="memitem:mempool_5Ferrors_2Ehpp" id="r_mempool_5Ferrors_2Ehpp"><td class="memItemLeft"><a href="mempool__errors_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="mempool__errors_8hpp.html">mempool_errors.hpp</a></td></tr>
 <tr class="memitem:pmm_2Ecpp" id="r_pmm_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="pmm_8cpp.html">pmm.cpp</a></td></tr>
 <tr class="memitem:pmm_2Ehpp" id="r_pmm_2Ehpp"><td class="memItemLeft"><a href="pmm_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="pmm_8hpp.html">pmm.hpp</a></td></tr>
@@ -153,7 +144,7 @@ Files</h2></td></tr>
 <tr class="memdesc:pmm__errors_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Physical Memory Manager error codes and string lookup. <br /></td></tr>
 <tr class="memitem:vmm_2Ecpp" id="r_vmm_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="vmm_8cpp.html">vmm.cpp</a></td></tr>
 <tr class="memitem:vmm_2Ehpp" id="r_vmm_2Ehpp"><td class="memItemLeft"><a href="vmm_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="vmm_8hpp.html">vmm.hpp</a></td></tr>
-<tr class="memdesc:vmm_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual Memory Manager — x86-64 page table management. <br /></td></tr>
+<tr class="memdesc:vmm_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual Memory Manager — cross-arch page table management with bounded page-walk depth (4-level x86_64/aarch64, 3-level riscv64 Sv39). <br /></td></tr>
 <tr class="memitem:vmm_5Ferrors_2Ehpp" id="r_vmm_5Ferrors_2Ehpp"><td class="memItemLeft"><a href="vmm__errors_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="vmm__errors_8hpp.html">vmm_errors.hpp</a></td></tr>
 <tr class="memdesc:vmm__errors_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual Memory Manager error codes and string lookup. <br /></td></tr>
 </table>

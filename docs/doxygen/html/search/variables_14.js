@@ -8,5 +8,6 @@ var searchData=
   ['user_5fdata_5',['user_data',['../structkernel_1_1_task_control_block.html#af412568a7d9331e3f801598cce45bf50',1,'kernel::TaskControlBlock']]],
   ['user_5fss_6',['USER_SS',['../structkernel_1_1_task_control_block.html#a98a435c02587f00dbafaf1796a1e662f',1,'kernel::TaskControlBlock']]],
   ['user_5fstack_5f_7',['user_stack_',['../structkernel_1_1_task_control_block.html#a2888326289461dff4d14a39ff05894b6',1,'kernel::TaskControlBlock']]],
-  ['user_5fstack_5fsize_5f_8',['user_stack_size_',['../structkernel_1_1_task_control_block.html#a8cdd52c0ab23814dee9ece3c8e91d1f5',1,'kernel::TaskControlBlock']]]
+  ['user_5fstack_5fsize_8',['user_stack_size',['../structkernel_1_1task_1_1_task_def.html#ada5b7ac2f9388739e7ed1959a47980d8',1,'kernel::task::TaskDef']]],
+  ['user_5fstack_5fsize_5f_9',['user_stack_size_',['../structkernel_1_1_task_control_block.html#a8cdd52c0ab23814dee9ece3c8e91d1f5',1,'kernel::TaskControlBlock']]]
 ];

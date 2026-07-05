@@ -10,7 +10,7 @@ var classkernel_1_1task_1_1_sporadic_server =
     [ "consume", "classkernel_1_1task_1_1_sporadic_server.html#a9403aae1570e64968dbd6ccca43570bd", null ],
     [ "current_priority", "classkernel_1_1task_1_1_sporadic_server.html#a563468b3df274365d89b1e9455e84a60", null ],
     [ "has_budget", "classkernel_1_1task_1_1_sporadic_server.html#a07701533186561d0e746f8f7729f6ac6", null ],
-    [ "init", "classkernel_1_1task_1_1_sporadic_server.html#a9f51a4b7c45595dc528b78056cf43066", null ],
+    [ "init", "classkernel_1_1task_1_1_sporadic_server.html#a80cbe9a6353a1e291566615739ca8f0a", null ],
     [ "is_active", "classkernel_1_1task_1_1_sporadic_server.html#aaed6a50641d24a25fcd2319cfb04f843", null ],
     [ "max_budget", "classkernel_1_1task_1_1_sporadic_server.html#a613b766f64760d57b7018e525a66f290", null ],
     [ "on_activation", "classkernel_1_1task_1_1_sporadic_server.html#ade5beec00850620602d7058453774810", null ],

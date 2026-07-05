@@ -1,7 +1,5 @@
 var structkernel_1_1vfs_1_1_vnode =
 [
-    [ "Vnode", "structkernel_1_1vfs_1_1_vnode.html#a91a576c27c7198635773069aada8bef4", null ],
-    [ "Vnode", "structkernel_1_1vfs_1_1_vnode.html#a5d42377d07dde6e7faa7334ed990e883", null ],
     [ "ino", "structkernel_1_1vfs_1_1_vnode.html#addf395a53793c7d3436faa24c0c4ebda", null ],
     [ "mode", "structkernel_1_1vfs_1_1_vnode.html#a46c6d1e4db1f6013c873bb75e57e3627", null ],
     [ "ops", "structkernel_1_1vfs_1_1_vnode.html#a96ba1515da9b2449bc3ec5b737615350", null ],

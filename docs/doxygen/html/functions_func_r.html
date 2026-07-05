@@ -121,6 +121,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_func
 
 <h3 class="doxsection"><a id="index_r" name="index_r"></a>- r -</h3><ul>
 <li>raw_buffer()&#160;:&#160;<a class="el" href="classkernel_1_1block_1_1_mock_block_device.html#ae24edafc94232b75f331de14e324d4e0">kernel::block::MockBlockDevice</a></li>
+<li>raw_hi()&#160;:&#160;<a class="el" href="classkernel_1_1_priority_map.html#aebd42bf2374ca56c89c799442d6c1dbe">kernel::PriorityMap</a></li>
+<li>raw_lo()&#160;:&#160;<a class="el" href="classkernel_1_1_priority_map.html#ad86ecb1055324490c670f32b9e038869">kernel::PriorityMap</a></li>
 <li>raw_write()&#160;:&#160;<a class="el" href="classkernel_1_1_logger.html#ad4ae5d24650cf692a9d70d545eaa1867">kernel::Logger</a></li>
 <li>read()&#160;:&#160;<a class="el" href="classkernel_1_1_checked_ptr.html#a45756459d2aaa3dc22b82f1da917a6bf">kernel::CheckedPtr&lt; T &gt;</a>, <a class="el" href="classkernel_1_1log_1_1_ring_buffer.html#a5309c609c20d75a14d2ca9d2c471a270">kernel::log::RingBuffer</a></li>
 <li>read_cluster()&#160;:&#160;<a class="el" href="classkernel_1_1fat32_1_1_fat32_partition.html#a1405b656b91e7be53b2792a6d1813275">kernel::fat32::Fat32Partition</a></li>
@@ -128,6 +130,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_func
 <li>read_sector()&#160;:&#160;<a class="el" href="classkernel_1_1block_1_1_ahci_driver.html#ae8a751068cb12582e54c8a42771152b6">kernel::block::AhciDriver</a>, <a class="el" href="classkernel_1_1block_1_1_ata_pio_driver.html#a2a4b7bd6f929b0a87fa4479af7133521">kernel::block::AtaPioDriver</a>, <a class="el" href="classkernel_1_1block_1_1_block_device.html#a6caeec0ca8f2b83f8bbaa29eeb74ea25">kernel::block::BlockDevice</a>, <a class="el" href="classkernel_1_1block_1_1_mock_block_device.html#a40c741cb67366ab86e82f5c178973c20">kernel::block::MockBlockDevice</a>, <a class="el" href="classkernel_1_1block_1_1_virtio_blk_driver.html#aab7dc1975eda4602343bbb66d191c83d">kernel::block::VirtioBlkDriver</a></li>
 <li>readline()&#160;:&#160;<a class="el" href="classservice_1_1_terminal.html#a86e177fe04cda56e97c27853fedfd996">service::Terminal</a></li>
 <li>reap_orphans()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#a0d595ec39367db2ce160fb1d72c23fab">kernel::Scheduler</a></li>
+<li>rebuild_ready_queue()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#ab060fbcd590e46e4e1c3ab07f5fe354d">kernel::Scheduler</a></li>
 <li>receive()&#160;:&#160;<a class="el" href="classkernel_1_1sync_1_1_queue.html#a8a679de7b0f3ddd7a2d5ccdd79044979">kernel::sync::Queue</a></li>
 <li>receive_err()&#160;:&#160;<a class="el" href="classkernel_1_1sync_1_1_queue.html#a1344f366c0611f3357b986b98b0bb962">kernel::sync::Queue</a></li>
 <li>record_class_section()&#160;:&#160;<a class="el" href="classkernel_1_1test_1_1_registry.html#a8f0a16293484a37b71e56b06aa707e72">kernel::test::Registry</a></li>
@@ -142,17 +145,21 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_func
 <li>register_test()&#160;:&#160;<a class="el" href="classkernel_1_1test_1_1_registry.html#a595308d487285aa880d9ecd350e97c83">kernel::test::Registry</a></li>
 <li>release()&#160;:&#160;<a class="el" href="class_unique_ptr.html#a330351f60b992aa2e5c9c6953f87b400">UniquePtr&lt; T, Deleter &gt;</a></li>
 <li>remaining_budget()&#160;:&#160;<a class="el" href="classkernel_1_1task_1_1_sporadic_server.html#af5c851c868dac141d32a6020fbc4ca6f">kernel::task::SporadicServer</a></li>
-<li>remove()&#160;:&#160;<a class="el" href="classnet_1_1_arp_cache.html#a04c79ec3181bb756d93d4449994be6b7">net::ArpCache</a></li>
+<li>remove()&#160;:&#160;<a class="el" href="classkernel_1_1_ready_queue_manager.html#a3e5d6d4253527b778e4db340d58ed6ba">kernel::ReadyQueueManager</a>, <a class="el" href="classkernel_1_1_task_queue.html#ad622d703040e5089beed1eda860bf57b">kernel::TaskQueue</a>, <a class="el" href="classnet_1_1_arp_cache.html#a04c79ec3181bb756d93d4449994be6b7">net::ArpCache</a></li>
 <li>remove_child()&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a121ed14dd4f6a9632642bf0dea75416b">kernel::TaskControlBlock</a></li>
 <li>remove_task()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#a1faa60d8cbc8f5827b9e81f7fe135205">kernel::Scheduler</a></li>
 <li>remove_task_err()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#a7e36233fc7325aab8561e55c8e07e594">kernel::Scheduler</a></li>
 <li>reschedule()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#ac92ab8abdaaf924f98d66fd5f8ab2a50">kernel::Scheduler</a></li>
-<li>reset()&#160;:&#160;<a class="el" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">kernel::sync::SpinLock</a>, <a class="el" href="classkernel_1_1test_1_1_registry.html#a3706a331b1f53a82cec9a9020a1efdc4">kernel::test::Registry</a>, <a class="el" href="class_s_p_s_c_ring.html#aee423335954c345b27244c25499d90db">SPSCRing&lt; T, N &gt;</a>, <a class="el" href="class_unique_ptr.html#a36d2b7f272979ead8a83fddb580ab5a2">UniquePtr&lt; T, Deleter &gt;</a></li>
+<li>reset()&#160;:&#160;<a class="el" href="classkernel_1_1_ready_queue_manager.html#a8c615f613c688f940e117122299af930">kernel::ReadyQueueManager</a>, <a class="el" href="classkernel_1_1sync_1_1_spin_lock.html#a41e703bd7a7c64500b8837a290aa0062">kernel::sync::SpinLock</a>, <a class="el" href="classkernel_1_1_task_queue.html#afebb07f021c6dfe6f89820d2805b72be">kernel::TaskQueue</a>, <a class="el" href="classkernel_1_1test_1_1_registry.html#a3706a331b1f53a82cec9a9020a1efdc4">kernel::test::Registry</a>, <a class="el" href="class_s_p_s_c_ring.html#aee423335954c345b27244c25499d90db">SPSCRing&lt; T, N &gt;</a>, <a class="el" href="class_unique_ptr.html#a36d2b7f272979ead8a83fddb580ab5a2">UniquePtr&lt; T, Deleter &gt;</a></li>
+<li>reset_ready_queue()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#affd53a2cbc20336577d0b87d63714252">kernel::Scheduler</a></li>
 <li>restore()&#160;:&#160;<a class="el" href="classkernel_1_1test_1_1_resource_tracker.html#a9cbf258352ad6e1bb21722afbd6921e9">kernel::test::ResourceTracker</a></li>
 <li>restore_context()&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a02994288d778ac145ce6758472227cec">kernel::TaskControlBlock</a></li>
+<li>restore_pod()&#160;:&#160;<a class="el" href="classkernel_1_1_ready_queue_manager.html#a5bbe9153737ac77841bcbbb4ac644b42">kernel::ReadyQueueManager</a></li>
 <li>restore_pool_data()&#160;:&#160;<a class="el" href="classkernel_1_1_mem_pool.html#a04c07ce4a93a180bd1e7d1a5a86a123d">kernel::MemPool</a></li>
 <li>restore_pool_meta()&#160;:&#160;<a class="el" href="classkernel_1_1_mem_pool.html#a49b59b580660edb43a54ef4142359163">kernel::MemPool</a></li>
-<li>restore_state()&#160;:&#160;<a class="el" href="classkernel_1_1_buffer_pool.html#a82e7e5db6fa028c86db003bb77fab73b">kernel::BufferPool</a>, <a class="el" href="classkernel_1_1_scheduler.html#ad6a4601a5f91b36b4d95bcf1c36a528e">kernel::Scheduler</a></li>
+<li>restore_rqpod()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#a0c529a4f5d4844899061a70de3853e68">kernel::Scheduler</a></li>
+<li>restore_state()&#160;:&#160;<a class="el" href="classkernel_1_1_buffer_pool.html#a82e7e5db6fa028c86db003bb77fab73b">kernel::BufferPool</a>, <a class="el" href="classkernel_1_1_scheduler.html#abbb4bed7e15b38e61e5d7aeb584d0090">kernel::Scheduler</a></li>
+<li>restore_task_fields()&#160;:&#160;<a class="el" href="classkernel_1_1_scheduler.html#a8c7a0865a998b02ebf986bd029fa8202">kernel::Scheduler</a></li>
 <li>RingBuffer()&#160;:&#160;<a class="el" href="classkernel_1_1log_1_1_ring_buffer.html#aba0ed588da632effd5c96af5368704ef">kernel::log::RingBuffer</a></li>
 <li>run()&#160;:&#160;<a class="el" href="classkernel_1_1test_1_1_test_base.html#a4c0175612d2ff4a7940500bf48cc5a82">kernel::test::TestBase</a></li>
 </ul>

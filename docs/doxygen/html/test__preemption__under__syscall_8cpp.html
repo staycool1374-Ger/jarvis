@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__preempti
 <code>#include &lt;<a class="el" href="tmpfs_8hpp_source.html">kernel/vfs/tmpfs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vfs_8hpp_source.html">kernel/vfs/vfs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_preemption_under_syscall.cpp:</div>
 <div class="dyncontent">
@@ -135,15 +136,15 @@ Include dependency graph for test_preemption_under_syscall.cpp:</div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a3d9031a76ab54d2ee5c3f410d5fabfef" id="r_a3d9031a76ab54d2ee5c3f410d5fabfef"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a3d9031a76ab54d2ee5c3f410d5fabfef">JARVIS_TEST</a> (preemption_during_syscall)</td></tr>
-<tr class="memitem:a6986a319488dd04af97952eefa1e11c5" id="r_a6986a319488dd04af97952eefa1e11c5"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6986a319488dd04af97952eefa1e11c5">JARVIS_TEST</a> (preempt_highpri_during_tmpfs_write)</td></tr>
-<tr class="memitem:ad0e91a25c0625231618a1fff7585fc1d" id="r_ad0e91a25c0625231618a1fff7585fc1d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad0e91a25c0625231618a1fff7585fc1d">JARVIS_TEST</a> (preempt_highpri_during_brk)</td></tr>
-<tr class="memitem:a02cfa3abb6388a69a2c3ae62d242f80e" id="r_a02cfa3abb6388a69a2c3ae62d242f80e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a02cfa3abb6388a69a2c3ae62d242f80e">JARVIS_TEST</a> (preempt_lowpri_not_starved)</td></tr>
+<tr class="memitem:aabc532685bd107bb4d790f6d3e109070" id="r_aabc532685bd107bb4d790f6d3e109070"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aabc532685bd107bb4d790f6d3e109070">JARVIS_TEST</a> (preemption_during_syscall, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a70b288e8b87f9ae28e52a36ccc50cb81" id="r_a70b288e8b87f9ae28e52a36ccc50cb81"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a70b288e8b87f9ae28e52a36ccc50cb81">JARVIS_TEST</a> (preempt_highpri_during_tmpfs_write, &quot;PRE: vfsd, <a class="el" href="namespacekernel_1_1iocd.html">iocd</a> | POST: none&quot;)</td></tr>
+<tr class="memitem:a15fd9318dfacd3ff5a95e81d3c659652" id="r_a15fd9318dfacd3ff5a95e81d3c659652"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a15fd9318dfacd3ff5a95e81d3c659652">JARVIS_TEST</a> (preempt_highpri_during_brk, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a4189f42a31c655a68521f9983da51ff2" id="r_a4189f42a31c655a68521f9983da51ff2"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4189f42a31c655a68521f9983da51ff2">JARVIS_TEST</a> (preempt_lowpri_not_starved, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:ada6f8792de8a2c493439ab8a8bf56e57" id="r_ada6f8792de8a2c493439ab8a8bf56e57"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ada6f8792de8a2c493439ab8a8bf56e57">register_preemption_under_syscall_tests</a> ()</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="ad0e91a25c0625231618a1fff7585fc1d" name="ad0e91a25c0625231618a1fff7585fc1d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0e91a25c0625231618a1fff7585fc1d">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/4]</span></h2>
+<a id="a15fd9318dfacd3ff5a95e81d3c659652" name="a15fd9318dfacd3ff5a95e81d3c659652"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15fd9318dfacd3ff5a95e81d3c659652">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -151,22 +152,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">preempt_highpri_during_brk</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">preempt_highpri_during_brk</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_ad0e91a25c0625231618a1fff7585fc1d_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_ad0e91a25c0625231618a1fff7585fc1d_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__preemption__under__syscall_8cpp_a15fd9318dfacd3ff5a95e81d3c659652_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a15fd9318dfacd3ff5a95e81d3c659652_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 1 -->
 </div>
 
 </div>
 </div>
-<a id="a6986a319488dd04af97952eefa1e11c5" name="a6986a319488dd04af97952eefa1e11c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6986a319488dd04af97952eefa1e11c5">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/4]</span></h2>
+<a id="a70b288e8b87f9ae28e52a36ccc50cb81" name="a70b288e8b87f9ae28e52a36ccc50cb81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70b288e8b87f9ae28e52a36ccc50cb81">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,22 +179,31 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">preempt_highpri_during_tmpfs_write</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">preempt_highpri_during_tmpfs_write</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE:</td>          <td class="paramname"><span class="paramname"><em>vfsd</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespacekernel_1_1iocd.html">iocd</a>|POST:none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_a6986a319488dd04af97952eefa1e11c5_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a6986a319488dd04af97952eefa1e11c5_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__preemption__under__syscall_8cpp_a70b288e8b87f9ae28e52a36ccc50cb81_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a70b288e8b87f9ae28e52a36ccc50cb81_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 2 -->
 </div>
 
 </div>
 </div>
-<a id="a02cfa3abb6388a69a2c3ae62d242f80e" name="a02cfa3abb6388a69a2c3ae62d242f80e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02cfa3abb6388a69a2c3ae62d242f80e">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/4]</span></h2>
+<a id="a4189f42a31c655a68521f9983da51ff2" name="a4189f42a31c655a68521f9983da51ff2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4189f42a31c655a68521f9983da51ff2">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -197,22 +211,26 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">preempt_lowpri_not_starved</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">preempt_lowpri_not_starved</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_a02cfa3abb6388a69a2c3ae62d242f80e_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a02cfa3abb6388a69a2c3ae62d242f80e_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__preemption__under__syscall_8cpp_a4189f42a31c655a68521f9983da51ff2_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a4189f42a31c655a68521f9983da51ff2_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 3 -->
 </div>
 
 </div>
 </div>
-<a id="a3d9031a76ab54d2ee5c3f410d5fabfef" name="a3d9031a76ab54d2ee5c3f410d5fabfef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d9031a76ab54d2ee5c3f410d5fabfef">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/4]</span></h2>
+<a id="aabc532685bd107bb4d790f6d3e109070" name="aabc532685bd107bb4d790f6d3e109070"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabc532685bd107bb4d790f6d3e109070">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -220,15 +238,19 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">preemption_during_syscall</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">preemption_during_syscall</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_a3d9031a76ab54d2ee5c3f410d5fabfef_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a3d9031a76ab54d2ee5c3f410d5fabfef_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="test__preemption__under__syscall_8cpp_aabc532685bd107bb4d790f6d3e109070_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_aabc532685bd107bb4d790f6d3e109070_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 4 -->
 </div>
 

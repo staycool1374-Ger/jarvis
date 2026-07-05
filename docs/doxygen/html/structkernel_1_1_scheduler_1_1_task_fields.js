@@ -1,0 +1,25 @@
+var structkernel_1_1_scheduler_1_1_task_fields =
+[
+    [ "alarm_armed", "structkernel_1_1_scheduler_1_1_task_fields.html#a19746974d73ea97c73607c45ffd757db", null ],
+    [ "alarm_ticks", "structkernel_1_1_scheduler_1_1_task_fields.html#a27309f0e9bc19f99776057140c067efe", null ],
+    [ "base_priority", "structkernel_1_1_scheduler_1_1_task_fields.html#a97ae0ecfb669f8f11d73315c2d128390", null ],
+    [ "context", "structkernel_1_1_scheduler_1_1_task_fields.html#acc617a3c02f77a652a45be6ccb81a0a6", null ],
+    [ "deadline_ticks", "structkernel_1_1_scheduler_1_1_task_fields.html#af342e08b29409d1cca26c72b5ecba7bb", null ],
+    [ "executed_ticks", "structkernel_1_1_scheduler_1_1_task_fields.html#a64ac58a847682a5727b3182b7060de3b", null ],
+    [ "exit_code", "structkernel_1_1_scheduler_1_1_task_fields.html#ac06af7f69711aa38a8eacdf18402b41a", null ],
+    [ "id", "structkernel_1_1_scheduler_1_1_task_fields.html#a07e1d4833f77b1a0063ff8052e7643a3", null ],
+    [ "in_ready_queue", "structkernel_1_1_scheduler_1_1_task_fields.html#a60135de4e18f5dd456e5ed869e5df9e2", null ],
+    [ "kernel_stack_top", "structkernel_1_1_scheduler_1_1_task_fields.html#aedaae8e855558d9bb64b9be482051bf9", null ],
+    [ "magic", "structkernel_1_1_scheduler_1_1_task_fields.html#ae0442901731eb7f5df2d376feafd0788", null ],
+    [ "parent_id", "structkernel_1_1_scheduler_1_1_task_fields.html#a1deddb6c37eebb39eb479ef0bd2095b7", null ],
+    [ "pending_signals", "structkernel_1_1_scheduler_1_1_task_fields.html#a3a8da7e0197955ddbcf5c91d5e2886bc", null ],
+    [ "period_ticks", "structkernel_1_1_scheduler_1_1_task_fields.html#aaacdfbcd2ceec6cccdfca7ab10cc66f0", null ],
+    [ "priority", "structkernel_1_1_scheduler_1_1_task_fields.html#a06613a61eb8e6bf0b9a70d68163af9f3", null ],
+    [ "remaining_ticks", "structkernel_1_1_scheduler_1_1_task_fields.html#a5220916172caf562cc65cb8143cc48d0", null ],
+    [ "rq_priority", "structkernel_1_1_scheduler_1_1_task_fields.html#a619ff100b5e520327d028414753a1bb6", null ],
+    [ "runq_next", "structkernel_1_1_scheduler_1_1_task_fields.html#ac73ae1af5ef6915c916d0c3b1f1850ad", null ],
+    [ "runq_prev", "structkernel_1_1_scheduler_1_1_task_fields.html#a79d3a773fa7cb12eb78681ed6fc4cdb6", null ],
+    [ "state", "structkernel_1_1_scheduler_1_1_task_fields.html#a01bde2d9b3887ac260ba8d6e8b1cbd2c", null ],
+    [ "waiting_child_pid", "structkernel_1_1_scheduler_1_1_task_fields.html#a7f67f7194f39c7f8417c1839bf46c44c", null ],
+    [ "waiting_child_status", "structkernel_1_1_scheduler_1_1_task_fields.html#abea76adbdcd55bcde7d4ef877d045a84", null ]
+];

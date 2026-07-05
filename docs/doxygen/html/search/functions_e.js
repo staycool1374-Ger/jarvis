@@ -14,9 +14,10 @@ var searchData=
   ['net_5fpoll_11',['net_poll',['../namespacenet.html#a9b8dc944fd21a6ed2bf99a7174205fd7',1,'net']]],
   ['net_5fsend_5ficmp_5fecho_12',['net_send_icmp_echo',['../namespacenet.html#adaaadf3f0bb219c1503e146aba00c4c4',1,'net']]],
   ['net_5fsend_5fudp_13',['net_send_udp',['../namespacenet.html#a1a57b9a29bb5404650605e8cf2d52cff',1,'net']]],
-  ['next_5ftask_14',['next_task',['../classkernel_1_1_scheduler.html#a852663edfb9d43d51ca280727c2295a3',1,'kernel::Scheduler']]],
-  ['notify_15',['Notify',['../classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97',1,'kernel::sync::Notify']]],
-  ['notify_16',['notify',['../classkernel_1_1sync_1_1_notify.html#a7f78509dfc82409073a6a539bc5d7adb',1,'kernel::sync::Notify']]],
-  ['notify_5fdeath_17',['notify_death',['../namespacekernel_1_1daemon.html#ad9b66d7bd710825a0369b48617055996',1,'kernel::daemon']]],
-  ['notify_5ferr_18',['notify_err',['../classkernel_1_1sync_1_1_notify.html#a38a64ff48c7afcaf1e0d53545dcef60b',1,'kernel::sync::Notify']]]
+  ['next_14',['next',['../structkernel_1_1_scheduler_1_1_task_iter.html#aaad9e4b80e7088c464b671c7844a6244',1,'kernel::Scheduler::TaskIter']]],
+  ['next_5ftask_15',['next_task',['../classkernel_1_1_scheduler.html#a852663edfb9d43d51ca280727c2295a3',1,'kernel::Scheduler']]],
+  ['notify_16',['Notify',['../classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97',1,'kernel::sync::Notify']]],
+  ['notify_17',['notify',['../classkernel_1_1sync_1_1_notify.html#a7f78509dfc82409073a6a539bc5d7adb',1,'kernel::sync::Notify']]],
+  ['notify_5fdeath_18',['notify_death',['../namespacekernel_1_1daemon.html#ad9b66d7bd710825a0369b48617055996',1,'kernel::daemon']]],
+  ['notify_5ferr_19',['notify_err',['../classkernel_1_1sync_1_1_notify.html#a38a64ff48c7afcaf1e0d53545dcef60b',1,'kernel::sync::Notify']]]
 ];

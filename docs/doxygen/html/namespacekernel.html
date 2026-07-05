@@ -124,6 +124,7 @@ Namespaces</h2></td></tr>
 <tr class="memitem:ahci" id="r_ahci"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1ahci.html">ahci</a></td></tr>
 <tr class="memitem:block" id="r_block"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1block.html">block</a></td></tr>
 <tr class="memitem:daemon" id="r_daemon"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1daemon.html">daemon</a></td></tr>
+<tr class="memitem:debug" id="r_debug"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1debug.html">debug</a></td></tr>
 <tr class="memitem:dma" id="r_dma"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1dma.html">dma</a></td></tr>
 <tr class="memitem:elf" id="r_elf"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1elf.html">elf</a></td></tr>
 <tr class="memitem:errors" id="r_errors"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1errors.html">errors</a></td></tr>
@@ -159,7 +160,7 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inter-process communication manager.  <a href="classkernel_1_1_i_p_c.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Logger" id="r_Logger"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_logger.html">Logger</a></td></tr>
 <tr class="memitem:MemPool" id="r_MemPool"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_mem_pool.html">MemPool</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory allocator with multiple pool classes.  <a href="classkernel_1_1_mem_pool.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fixed-size block memory allocator with 9 pool classes.  <a href="classkernel_1_1_mem_pool.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Message" id="r_Message"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_message.html">Message</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A single <a class="el" href="classkernel_1_1_i_p_c.html" title="Inter-process communication manager.">IPC</a> message with sender ID, type, priority, and payload.  <a href="structkernel_1_1_message.html#details">More...</a><br /></td></tr>
 <tr class="memitem:MessageQueue" id="r_MessageQueue"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_message_queue.html">MessageQueue</a></td></tr>
@@ -167,11 +168,15 @@ Data Structures</h2></td></tr>
 <tr class="memitem:PageAddress" id="r_PageAddress"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_page_address.html">PageAddress</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Page-aligned physical address.  <a href="classkernel_1_1_page_address.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PageFlags" id="r_PageFlags"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_page_flags.html">PageFlags</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Architecture-independent page flags for page table operations. Used by <a class="el" href="classkernel_1_1_v_m_m.html" title="Virtual memory manager for x86-64 4-level paging.">VMM</a> and ArchPageTable to build page table entries.  <a href="structkernel_1_1_page_flags.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Architecture-independent page flags for page table operations. Used by <a class="el" href="classkernel_1_1_v_m_m.html" title="Virtual memory manager — maps virtual to physical pages.">VMM</a> and ArchPageTable to build page table entries.  <a href="structkernel_1_1_page_flags.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PhysicalAddress" id="r_PhysicalAddress"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_physical_address.html">PhysicalAddress</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Physical address wrapper — eliminates raw reinterpret_cast for physical memory.  <a href="classkernel_1_1_physical_address.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PMM" id="r_PMM"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_p_m_m.html">PMM</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Physical memory manager using a bitmap to track free 4 KiB pages.  <a href="classkernel_1_1_p_m_m.html#details">More...</a><br /></td></tr>
+<tr class="memitem:PriorityMap" id="r_PriorityMap"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_priority_map.html">PriorityMap</a></td></tr>
+<tr class="memitem:ReadyQueueManager" id="r_ReadyQueueManager"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_ready_queue_manager.html">ReadyQueueManager</a></td></tr>
+<tr class="memitem:ReadyQueuePOD" id="r_ReadyQueuePOD"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_ready_queue_p_o_d.html">ReadyQueuePOD</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  <a href="structkernel_1_1_ready_queue_p_o_d.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Rlimit" id="r_Rlimit"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_rlimit.html">Rlimit</a></td></tr>
 <tr class="memitem:Scheduler" id="r_Scheduler"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_scheduler.html">Scheduler</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preemptive, rate-monotonic scheduler managing up to MAX_TASKS tasks.  <a href="classkernel_1_1_scheduler.html#details">More...</a><br /></td></tr>
@@ -181,6 +186,7 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">System call handler and dispatcher.  <a href="classkernel_1_1_syscall.html#details">More...</a><br /></td></tr>
 <tr class="memitem:TaskControlBlock" id="r_TaskControlBlock"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_task_control_block.html">TaskControlBlock</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPU register save area for context switching.  <a href="structkernel_1_1_task_control_block.html#details">More...</a><br /></td></tr>
+<tr class="memitem:TaskQueue" id="r_TaskQueue"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_task_queue.html">TaskQueue</a></td></tr>
 <tr class="memitem:Timeval" id="r_Timeval"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_timeval.html">Timeval</a></td></tr>
 <tr class="memitem:Utsname" id="r_Utsname"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_utsname.html">Utsname</a></td></tr>
 <tr class="memitem:Version" id="r_Version"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_version.html">Version</a></td></tr>
@@ -188,7 +194,7 @@ Data Structures</h2></td></tr>
 <tr class="memitem:VirtualAddress" id="r_VirtualAddress"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_virtual_address.html">VirtualAddress</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual address wrapper — eliminates raw reinterpret_cast for virtual memory.  <a href="classkernel_1_1_virtual_address.html#details">More...</a><br /></td></tr>
 <tr class="memitem:VMM" id="r_VMM"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_v_m_m.html">VMM</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual memory manager for x86-64 4-level paging.  <a href="classkernel_1_1_v_m_m.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual memory manager — maps virtual to physical pages.  <a href="classkernel_1_1_v_m_m.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-concepts" class="groupheader"><a id="concepts" name="concepts"></a>
 Concepts</h2></td></tr>
@@ -431,10 +437,14 @@ Variables</h2></td></tr>
 <tr class="memdesc:ab2187af236405c0bcefe647b4a33398e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Task ID to set as current after the context switch completes.  <br /></td></tr>
 <tr class="memitem:a5fbbc3448d7b738e78241f86230e0f48" id="r_a5fbbc3448d7b738e78241f86230e0f48"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a5fbbc3448d7b738e78241f86230e0f48">isr_nesting_depth</a></td></tr>
 <tr class="memdesc:a5fbbc3448d7b738e78241f86230e0f48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Current ISR nesting depth. Incremented at each ISR entry, decremented before iretq. Checked by on_tick() to detect nested timer interrupts and skip re-entrant scheduler ops.  <br /></td></tr>
+<tr class="memitem:aee64f34cdcf8f78699fe3a179966ea39" id="r_aee64f34cdcf8f78699fe3a179966ea39"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#aee64f34cdcf8f78699fe3a179966ea39">scheduler_dummy_save_rsp</a></td></tr>
+<tr class="memdesc:aee64f34cdcf8f78699fe3a179966ea39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy save target for boot-stack RSP during reschedule() from non-ISR context (test harness). Prevents corrupting task context.rsp with a boot-stack address while still allowing the context switch to proceed.  <br /></td></tr>
 <tr class="memitem:a48b013f336f1cc7c0546ff7a5aa9db11" id="r_a48b013f336f1cc7c0546ff7a5aa9db11"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a48b013f336f1cc7c0546ff7a5aa9db11">scheduler_corruption_count</a></td></tr>
 <tr class="memdesc:a48b013f336f1cc7c0546ff7a5aa9db11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Monotonic counter incremented on every detected scheduler corruption (invalid TCB magic, RSP outside kernel-stack range, etc). Reset to zero in test_isolate restore; test framework fails any test where the counter advanced.  <br /></td></tr>
 <tr class="memitem:af4c6d5dcd3bf1b60bf71cdd2b805f5a6" id="r_af4c6d5dcd3bf1b60bf71cdd2b805f5a6"><td class="memItemLeft"><a class="el" href="structkernel_1_1_task_control_block.html">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#af4c6d5dcd3bf1b60bf71cdd2b805f5a6">fpu_owner</a></td></tr>
 <tr class="memdesc:af4c6d5dcd3bf1b60bf71cdd2b805f5a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tracks which task's FPU state is currently in the registers. nullptr means no task has used FPU since boot.  <br /></td></tr>
+<tr class="memitem:a09e65031566c423379266edcec24c050" id="r_a09e65031566c423379266edcec24c050"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a09e65031566c423379266edcec24c050">s_reap_in_progress</a></td></tr>
+<tr class="memdesc:a09e65031566c423379266edcec24c050"><td class="mdescLeft">&#160;</td><td class="mdescRight">Recursion guard for <a class="el" href="classkernel_1_1_scheduler.html#a0d595ec39367db2ce160fb1d72c23fab" title="Reaps orphan TERMINATED tasks (no parent to WAITPID them). Single-pass scan: identifies all eligible ...">Scheduler::reap_orphans()</a>. Reset in snapshot_restore() to prevent deadlock if a prior test panicked mid-reap.  <br /></td></tr>
 <tr class="memitem:a3fb2836fc67f3791312d86a01372cc32" id="r_a3fb2836fc67f3791312d86a01372cc32"><td class="memTemplParams" colspan="2">template&lt;typename T&gt; </td></tr>
 <tr class="memitem:a3fb2836fc67f3791312d86a01372cc32 template"><td class="memItemLeft">constexpr bool&#160;</td><td class="memItemRight"><a class="el" href="#a3fb2836fc67f3791312d86a01372cc32">_is_integral_v</a> = false</td></tr>
 <tr class="memitem:a0918223d95121a29478551a127691778" id="r_a0918223d95121a29478551a127691778"><td class="memItemLeft">template&lt;&gt; </td></tr>
@@ -2151,6 +2161,30 @@ template&lt;typename T&gt; </div>
 
 </div>
 </div>
+<a id="a09e65031566c423379266edcec24c050" name="a09e65031566c423379266edcec24c050"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09e65031566c423379266edcec24c050">&#9670;&#160;</a></span>s_reap_in_progress</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool kernel::s_reap_in_progress</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel extern">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Recursion guard for <a class="el" href="classkernel_1_1_scheduler.html#a0d595ec39367db2ce160fb1d72c23fab" title="Reaps orphan TERMINATED tasks (no parent to WAITPID them). Single-pass scan: identifies all eligible ...">Scheduler::reap_orphans()</a>. Reset in snapshot_restore() to prevent deadlock if a prior test panicked mid-reap. </p>
+
+</div>
+</div>
 <a id="a48b013f336f1cc7c0546ff7a5aa9db11" name="a48b013f336f1cc7c0546ff7a5aa9db11"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a48b013f336f1cc7c0546ff7a5aa9db11">&#9670;&#160;</a></span>scheduler_corruption_count</h2>
 
@@ -2172,6 +2206,30 @@ template&lt;typename T&gt; </div>
 </div><div class="memdoc">
 
 <p>Monotonic counter incremented on every detected scheduler corruption (invalid TCB magic, RSP outside kernel-stack range, etc). Reset to zero in test_isolate restore; test framework fails any test where the counter advanced. </p>
+
+</div>
+</div>
+<a id="aee64f34cdcf8f78699fe3a179966ea39" name="aee64f34cdcf8f78699fe3a179966ea39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee64f34cdcf8f78699fe3a179966ea39">&#9670;&#160;</a></span>scheduler_dummy_save_rsp</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t kernel::scheduler_dummy_save_rsp</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel extern">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Dummy save target for boot-stack RSP during reschedule() from non-ISR context (test harness). Prevents corrupting task context.rsp with a boot-stack address while still allowing the context switch to proceed. </p>
 
 </div>
 </div>

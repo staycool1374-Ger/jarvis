@@ -11,6 +11,7 @@ var vfs_8cpp =
     [ "kernel::vfs::mkdir_err", "namespacekernel_1_1vfs.html#a4e062ba9d7ffaca41f17dce1644388a8", null ],
     [ "kernel::vfs::mount", "namespacekernel_1_1vfs.html#aebf94bc8bbd1d4da9adf682e10e082de", null ],
     [ "kernel::vfs::mount_err", "namespacekernel_1_1vfs.html#ad4618eec85ebd8a3d27bfc4d974d7591", null ],
+    [ "kernel::vfs::reset_and_remount", "namespacekernel_1_1vfs.html#aaf0cf262c173f6848095480880c1cbc9", null ],
     [ "kernel::vfs::resolve", "namespacekernel_1_1vfs.html#a11645e6a37081ee178777f682740736d", null ],
     [ "kernel::vfs::resolve_err", "namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a", null ],
     [ "kernel::vfs::set_root_vnode", "namespacekernel_1_1vfs.html#a83a4478d7ebf71e6b21b38dd91fb1502", null ],

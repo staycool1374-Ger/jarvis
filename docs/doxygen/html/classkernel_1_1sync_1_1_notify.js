@@ -1,6 +1,7 @@
 var classkernel_1_1sync_1_1_notify =
 [
     [ "Notify", "classkernel_1_1sync_1_1_notify.html#a05adaea041b37192b2d0ee678d73fd97", null ],
+    [ "~Notify", "classkernel_1_1sync_1_1_notify.html#affc31a0555946b13c528049abcd63377", null ],
     [ "init", "classkernel_1_1sync_1_1_notify.html#ab975d15b3fde443ac5e76bc779ef48ac", null ],
     [ "init_err", "classkernel_1_1sync_1_1_notify.html#a997a45c9282c04b80e8669e8599bbd75", null ],
     [ "notify", "classkernel_1_1sync_1_1_notify.html#a7f78509dfc82409073a6a539bc5d7adb", null ],

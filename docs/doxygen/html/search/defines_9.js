@@ -12,7 +12,7 @@ var searchData=
   ['jarvis_5fregister_5ftest_5fflags_9',['JARVIS_REGISTER_TEST_FLAGS',['../test_8hpp.html#a374771e8d81b5baa372492a3979e5f73',1,'test.hpp']]],
   ['jarvis_5fregister_5ftest_5fsuite_10',['JARVIS_REGISTER_TEST_SUITE',['../test_8hpp.html#ab8f70fab26dfe2f99dbbf29a783b8244',1,'test.hpp']]],
   ['jarvis_5fregister_5ftest_5fsuite_5fflags_11',['JARVIS_REGISTER_TEST_SUITE_FLAGS',['../test_8hpp.html#a898e9992b56f0e0b33e86dba5b5afa59',1,'test.hpp']]],
-  ['jarvis_5ftest_12',['JARVIS_TEST',['../test_8hpp.html#a4703e31ee404c84ab24e93550de2caad',1,'test.hpp']]],
+  ['jarvis_5ftest_12',['JARVIS_TEST',['../test_8hpp.html#a85f9a17a30cbbc792b991eada487723f',1,'test.hpp']]],
   ['jarvis_5ftest_5fpass_13',['JARVIS_TEST_PASS',['../test_8hpp.html#adecb4ba72098ef39a0f4f24b829f807c',1,'test.hpp']]],
-  ['jarvis_5ftest_5fsuite_14',['JARVIS_TEST_SUITE',['../test_8hpp.html#ae88f3417c132a1cc8cb453d9d9d02935',1,'test.hpp']]]
+  ['jarvis_5ftest_5fsuite_14',['JARVIS_TEST_SUITE',['../test_8hpp.html#acb011f9c5f9d8a4cc78c234a97855696',1,'test.hpp']]]
 ];

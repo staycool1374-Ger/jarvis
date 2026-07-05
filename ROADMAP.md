@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** ACTIVE — Deterministic Scheduling.
-**Target Focus:** v0.3.1 — Deterministic Scheduling: O(1) priority bitmap scheduler, bounded WCET, hard-RT compliance framework.
+**Status:** ACTIVE — Strict Deadline Adherence.
+**Target Focus:** v0.3.2 — Strict Deadline Adherence: deadline miss detection & handler, budget enforcement with hard preemption, time-partitioning (ARINC 653).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -34,57 +34,6 @@ Notes
 - ResourceTracker must show zero leaks in all hard-RT tests
 - Renode simulation for ARM64/RISC-V64 required before M3
 - CONFIG_HARD_REAL_TIME=0 builds must remain functionally identical to v0.2.21 (Soft-RT compatibility)
-
-### 0.3.1 — Deterministic Scheduling
-## v0.3.1 — Deterministic Scheduling (O(1) Core Architecture) — COMPLETED
-- [x] **I. Hardware-Accelerated Bitmask Layer (HAL)**
-  - [x] Implement `hal::bits::find_highest_bit(uint64_t)` under `arch/hal/`
-  - [x] Optimize via compiler builtins (`63 - __builtin_clzll(mask)`) with software fallback across targets:
-    - `BSR` (Bit Scan Reverse) on **x86_64**
-    - `CLZ` (Count Leading Zeros) on **aarch64**
-    - `CLZ` (Zbb-Extension) or bitwise fallback on **riscv64**
-  - [x] Add 14 dedicated cross-arch unit tests (`test_hal_bits.cpp`) covering null mask, LSB, MSB, multi-bit, range
-- [x] **II. Fixed-Size Priority Mapping**
-  - [x] Design `kernel::PriorityMap` class encapsulating 2× `uint64_t` (128 priority levels)
-  - [x] Implement lock-free bitwise operations for `set(prio)`, `clear(prio)`, `get_highest_priority()`
-  - [x] Enforce compile-time check: `static_assert(CONFIG_PRIORITY_CEILING <= 127)`
-  - [x] 4 unit tests (`o1_priority_map_*`)
-- [x] **III. Multi-Queue Ready Manager**
-  - [x] Implement `ReadyQueueManager` as fixed array of intrusive `TaskQueue[128]`
-  - [x] O(1) complexity for `enqueue` and `dequeue_highest`
-  - [x] Bitmap synchronization: auto-clear when `TaskQueue` drains
-  - [x] `clear_all()` (iterates tasks, maintains invariants) and `reset()` (nulls heads, safe for dangling pointers)
-  - [x] 4 unit tests (`o1_ready_queue_*`)
-- [x] **IV. Execution & Isolation Tests**
-  - [x] 13 O(1) scheduler unit tests, all registered in both `safe` and `all` test classes
-  - [x] Defensive fix: `add_task` resets `in_ready_queue_`/`runq_next_`/`runq_prev_` before enqueue (fixes `elf::load` partial TCB init via `MemPool::alloc`)
-  - [x] `reap_orphans` dequeues old idle task before cleanup
-  - [x] `cleanup_test_tasks` drains ready queue via `reset()`
-  - [x] `cleanup_zombies` dequeues READY tasks before freeing
-  - [x] All 13 `state = READY` assignments replaced with `Scheduler::set_task_ready()`
-  - [x] All 720 debug tests pass, 132 selftest pass
-- [x] Sporadic Server — Extend to All Hard Real-Time Tasks
-  - [x] Add CONFIG_SPORADIC_SERVER_MAX_TASKS (default 8) to config
-  - [x] Make SporadicServer allocatable per-task via TaskControlBlock::init_sporadic_server()
-  - [x] Add SporadicServer::deadline_miss_handler callback (weak symbol) for Pillar 2
-  - [x] Add CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY (ticks per budget unit)
-- [x] Eliminate Unbounded Loops in Hot Paths
-  - [x] Scheduler::reap_orphans() — single-pass null-mark + compact, fix current_index_ restore
-  - [x] Scheduler::cleanup_zombies() — bound iteration to CONFIG_MAX_TASKS
-  - [x] MemPool::alloc() — verify O(1) free-list traversal (no bitmap scan)
-  - [x] VMM::map_page() — verify page-walk depth bounded (4 levels fixed)
-  - [x] Audit all for loops in scheduler.cpp, task.cpp, mempool.cpp, vmm.cpp — add CONFIG_*_MAX_ITERATIONS bounds
-- [x] Per-Architecture Test-Count Validation Table
-  - [x] Collect per-class registration counts via dump-counts class
-  - [x] Create constexpr test_expected_counts.hpp with x86_64 counts
-  - [x] validate_class_count() in register_class() — warns on mismatch
-  - [x] validate_all_consistency() — sums individual classes ≥ all check
-- [x] add: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer for all debug targets into the makefile
-- [x] add: release CXXFLAGS += -fanalyzer (with -Wno-error= for kernel false positives)
-- [x] add: debug `make clang-tidy` target (bugprone,concurrency,performance checks); debug target depends on it
-- [x] create: .clang-tidy project-level configuration
-- [x] fix: src/lib/cxxabi.cpp — #pragma suppress -Wanalyzer-infinite-loop for intentional trap stubs
-- [x] fix: src/services/program.cpp — #pragma suppress -Wanalyzer-possible-null-dereference for OOM-safe path
 
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
 - [ ] Deadline Miss Detection & Handler

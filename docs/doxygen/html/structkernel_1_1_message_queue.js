@@ -1,6 +1,7 @@
 var structkernel_1_1_message_queue =
 [
     [ "MessageQueue", "structkernel_1_1_message_queue.html#a1e2db928132955b19dfcc0c4aa5f2cba", null ],
+    [ "~MessageQueue", "structkernel_1_1_message_queue.html#a63dafcf01bfefb3194fdc6620b0b6955", null ],
     [ "highest_priority", "structkernel_1_1_message_queue.html#a8a538932b4d80a4aba47b95099a01060", null ],
     [ "init", "structkernel_1_1_message_queue.html#a1acc304a5f48386ce13f03498eb86752", null ],
     [ "is_empty", "structkernel_1_1_message_queue.html#a5fa4160216201932e9dba8f57706b5f9", null ],

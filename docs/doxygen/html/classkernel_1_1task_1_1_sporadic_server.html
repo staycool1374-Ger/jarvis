@@ -145,8 +145,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9f51a4b7c45595dc528b78056cf43066" id="r_a9f51a4b7c45595dc528b78056cf43066"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9f51a4b7c45595dc528b78056cf43066">init</a> (uint64_t budget_c, uint64_t period_t, uint64_t bg_prio) noexcept</td></tr>
-<tr class="memdesc:a9f51a4b7c45595dc528b78056cf43066"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialises the server parameters.  <br /></td></tr>
+<tr class="memitem:a80cbe9a6353a1e291566615739ca8f0a" id="r_a80cbe9a6353a1e291566615739ca8f0a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80cbe9a6353a1e291566615739ca8f0a">init</a> (uint64_t budget_c, uint64_t period_t, uint64_t bg_prio, uint64_t budget_granularity=<a class="el" href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a>) noexcept</td></tr>
+<tr class="memdesc:a80cbe9a6353a1e291566615739ca8f0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialises the server parameters.  <br /></td></tr>
 <tr class="memitem:ade5beec00850620602d7058453774810" id="r_ade5beec00850620602d7058453774810"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ade5beec00850620602d7058453774810">on_activation</a> (uint64_t now) noexcept</td></tr>
 <tr class="memdesc:ade5beec00850620602d7058453774810"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signals that a new aperiodic job has arrived.  <br /></td></tr>
 <tr class="memitem:a65b0a775fc44d7053298bf50bbd8f6f6" id="r_a65b0a775fc44d7053298bf50bbd8f6f6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a65b0a775fc44d7053298bf50bbd8f6f6">on_completion</a> (uint64_t now) noexcept</td></tr>
@@ -164,7 +164,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aaed6a50641d24a25fcd2319cfb04f843" id="r_aaed6a50641d24a25fcd2319cfb04f843"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aaed6a50641d24a25fcd2319cfb04f843">is_active</a> () const noexcept</td></tr>
 <tr class="memitem:a5772a501b3eb0df8688705394b5c5e5b" id="r_a5772a501b3eb0df8688705394b5c5e5b"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a5772a501b3eb0df8688705394b5c5e5b">pending_count</a> () const noexcept</td></tr>
 <tr class="memitem:a18ea63756803965143e8462cddcd4430" id="r_a18ea63756803965143e8462cddcd4430"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a18ea63756803965143e8462cddcd4430">set_base_priority</a> (uint64_t prio) noexcept</td></tr>
-<tr class="memdesc:a18ea63756803965143e8462cddcd4430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the normal scheduling priority for this server. Call this after <a class="el" href="#a9f51a4b7c45595dc528b78056cf43066" title="Initialises the server parameters.">init()</a> to assign the server's base priority level.  <br /></td></tr>
+<tr class="memdesc:a18ea63756803965143e8462cddcd4430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the normal scheduling priority for this server. Call this after <a class="el" href="#a80cbe9a6353a1e291566615739ca8f0a" title="Initialises the server parameters.">init()</a> to assign the server's base priority level.  <br /></td></tr>
 <tr class="memitem:a30fa508b06ba48b5635cd8967000f65a" id="r_a30fa508b06ba48b5635cd8967000f65a"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a30fa508b06ba48b5635cd8967000f65a">bg_priority</a> () const noexcept</td></tr>
 <tr class="memdesc:a30fa508b06ba48b5635cd8967000f65a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the configured background priority.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -321,8 +321,8 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a9f51a4b7c45595dc528b78056cf43066" name="a9f51a4b7c45595dc528b78056cf43066"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f51a4b7c45595dc528b78056cf43066">&#9670;&#160;</a></span>init()</h2>
+<a id="a80cbe9a6353a1e291566615739ca8f0a" name="a80cbe9a6353a1e291566615739ca8f0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80cbe9a6353a1e291566615739ca8f0a">&#9670;&#160;</a></span>init()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -343,7 +343,12 @@ Static Public Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>bg_prio</em></span>&#160;)</td>
+          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>bg_prio</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>budget_granularity</em></span><span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a></span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -359,6 +364,7 @@ Static Public Attributes</h2></td></tr>
     <tr><td class="paramname">budget_c</td><td>Execution budget C (in ticks). </td></tr>
     <tr><td class="paramname">period_t</td><td><a class="el" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html" title="A single scheduled replenishment event.">Replenishment</a> period T (in ticks, must be &gt; 0). </td></tr>
     <tr><td class="paramname">bg_prio</td><td>Priority level when budget is exhausted (lower = less urgent). </td></tr>
+    <tr><td class="paramname">budget_granularity</td><td>Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY). </td></tr>
   </table>
   </dd>
 </dl>
@@ -617,7 +623,7 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets the normal scheduling priority for this server. Call this after <a class="el" href="#a9f51a4b7c45595dc528b78056cf43066" title="Initialises the server parameters.">init()</a> to assign the server's base priority level. </p>
+<p>Sets the normal scheduling priority for this server. Call this after <a class="el" href="#a80cbe9a6353a1e291566615739ca8f0a" title="Initialises the server parameters.">init()</a> to assign the server's base priority level. </p>
 
 </div>
 </div>

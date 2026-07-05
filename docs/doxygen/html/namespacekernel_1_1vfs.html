@@ -181,6 +181,8 @@ Functions</h2></td></tr>
 <tr class="memdesc:aebf94bc8bbd1d4da9adf682e10e082de"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point.  <br /></td></tr>
 <tr class="memitem:a509957f6e50ab1f0433a61bd4624859a" id="r_a509957f6e50ab1f0433a61bd4624859a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a509957f6e50ab1f0433a61bd4624859a">init</a> ()</td></tr>
 <tr class="memdesc:a509957f6e50ab1f0433a61bd4624859a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem (root vnode, mounts, etc.).  <br /></td></tr>
+<tr class="memitem:aaf0cf262c173f6848095480880c1cbc9" id="r_aaf0cf262c173f6848095480880c1cbc9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aaf0cf262c173f6848095480880c1cbc9">reset_and_remount</a> ()</td></tr>
+<tr class="memdesc:aaf0cf262c173f6848095480880c1cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset VFS globals and re-mount standard filesystems. Called from snapshot_restore() after MemPool/PMM restoration to clear stale mount-table entries and vnode pointers that survived test execution.  <br /></td></tr>
 <tr class="memitem:a9d792be7e3f099e025d10c0a6ce0680d" id="r_a9d792be7e3f099e025d10c0a6ce0680d"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a9d792be7e3f099e025d10c0a6ce0680d">find_fs</a> (const char *name)</td></tr>
 <tr class="memdesc:a9d792be7e3f099e025d10c0a6ce0680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a registered filesystem driver by name.  <br /></td></tr>
 <tr class="memitem:a0411923a55f520a77d6497349fd7acf6" id="r_a0411923a55f520a77d6497349fd7acf6"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0411923a55f520a77d6497349fd7acf6">mkdir</a> (const char *path, uint16_t mode)</td></tr>
@@ -694,6 +696,31 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="aaf0cf262c173f6848095480880c1cbc9" name="aaf0cf262c173f6848095480880c1cbc9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf0cf262c173f6848095480880c1cbc9">&#9670;&#160;</a></span>reset_and_remount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::vfs::reset_and_remount </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Reset VFS globals and re-mount standard filesystems. Called from snapshot_restore() after MemPool/PMM restoration to clear stale mount-table entries and vnode pointers that survived test execution. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_aaf0cf262c173f6848095480880c1cbc9_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_aaf0cf262c173f6848095480880c1cbc9_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 6 -->
+</div>
+
+</div>
+</div>
 <a id="a11645e6a37081ee178777f682740736d" name="a11645e6a37081ee178777f682740736d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a11645e6a37081ee178777f682740736d">&#9670;&#160;</a></span>resolve()</h2>
 
@@ -759,7 +786,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -841,7 +868,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -867,7 +894,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 9 -->
 </div>
 
 </div>

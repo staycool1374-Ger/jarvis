@@ -11,11 +11,14 @@ var searchData=
   ['has_5ffxsr_8',['has_fxsr',['../namespacearch.html#aadd8e0d3501a2ba894235b75f5f82f75',1,'arch']]],
   ['has_5frdrand_9',['has_rdrand',['../namespacearch.html#a879725b11b6eaac3991de9e66446420e',1,'arch']]],
   ['has_5frdseed_10',['has_rdseed',['../namespacearch.html#abbeb3ab0f47eb34d314b97e6a8d462bc',1,'arch']]],
-  ['has_5fsignal_5fhandler_11',['has_signal_handler',['../structkernel_1_1_task_control_block.html#a4c342fe350f642a64460f9130185880e',1,'kernel::TaskControlBlock']]],
-  ['has_5fsse_12',['has_sse',['../namespacearch.html#ac4c4e3fb0b0fd7eca30243a625be5ce0',1,'arch']]],
-  ['head_5findex_13',['head_index',['../classkernel_1_1log_1_1_dmesg_buffer.html#a981fbd05ec29be91203dd1d8e6b47c7e',1,'kernel::log::DmesgBuffer']]],
-  ['height_14',['height',['../classservice_1_1_framebuffer.html#ae0b23ad1b5d7dd3e2fd87a43788c8759',1,'service::Framebuffer']]],
-  ['higherhalf_5fentry_15',['higherhalf_entry',['../kernel_8cpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615',1,'higherhalf_entry(uint64_t magic, uint64_t mb_info):&#160;kernel.cpp'],['../kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615',1,'higherhalf_entry(uint64_t magic, uint64_t mb_info):&#160;kernel.hpp']]],
-  ['highest_5fpriority_16',['highest_priority',['../structkernel_1_1_message_queue.html#a8a538932b4d80a4aba47b95099a01060',1,'kernel::MessageQueue']]],
-  ['hlt_17',['hlt',['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../namespacearch.html#a1f7585fe9c60dbdbe1439cb2ddc6407c',1,'arch::hlt()']]]
+  ['has_5fready_11',['has_ready',['../classkernel_1_1_ready_queue_manager.html#ad9860837c2ece684ae95b9de3727a584',1,'kernel::ReadyQueueManager']]],
+  ['has_5fsignal_5fhandler_12',['has_signal_handler',['../structkernel_1_1_task_control_block.html#a4c342fe350f642a64460f9130185880e',1,'kernel::TaskControlBlock']]],
+  ['has_5fsse_13',['has_sse',['../namespacearch.html#ac4c4e3fb0b0fd7eca30243a625be5ce0',1,'arch']]],
+  ['head_14',['head',['../classkernel_1_1_task_queue.html#ac679ad082b6979eb92d7605573caa40b',1,'kernel::TaskQueue']]],
+  ['head_5findex_15',['head_index',['../classkernel_1_1log_1_1_dmesg_buffer.html#a981fbd05ec29be91203dd1d8e6b47c7e',1,'kernel::log::DmesgBuffer']]],
+  ['height_16',['height',['../classservice_1_1_framebuffer.html#ae0b23ad1b5d7dd3e2fd87a43788c8759',1,'service::Framebuffer']]],
+  ['higherhalf_5fentry_17',['higherhalf_entry',['../kernel_8cpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615',1,'higherhalf_entry(uint64_t magic, uint64_t mb_info):&#160;kernel.cpp'],['../kernel_8hpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615',1,'higherhalf_entry(uint64_t magic, uint64_t mb_info):&#160;kernel.hpp']]],
+  ['highest_5fpriority_18',['highest_priority',['../structkernel_1_1_message_queue.html#a8a538932b4d80a4aba47b95099a01060',1,'kernel::MessageQueue']]],
+  ['highest_5fready_5fpriority_19',['highest_ready_priority',['../classkernel_1_1_ready_queue_manager.html#a6b670132dd09b3a80e51653b3ad92172',1,'kernel::ReadyQueueManager']]],
+  ['hlt_20',['hlt',['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../classarch_1_1_arch_i_o.html#ad91c77715c3dc8c05de1602feb36c61f',1,'arch::ArchIO::hlt()'],['../namespacearch.html#a1f7585fe9c60dbdbe1439cb2ddc6407c',1,'arch::hlt()']]]
 ];

@@ -6,6 +6,7 @@ var kernel_8cpp =
     [ "debug_write_hex", "kernel_8cpp.html#afc833d2926e5dca3c9fbed32f7a7656a", null ],
     [ "handle_interrupt_c", "kernel_8cpp.html#a59c51dc200e018623c3a7468c91552b7", null ],
     [ "higherhalf_entry", "kernel_8cpp.html#ae54e1bcf3fe5f14443fdc8ddadfbb615", null ],
+    [ "init_task_main", "kernel_8cpp.html#a3893cb01e13bf4e36090daef580b7426", null ],
     [ "panic", "kernel_8cpp.html#ae22655ba6f328217f1ebd6248ed82727", null ],
     [ "syscall_handler", "kernel_8cpp.html#a05b6e6675cd9f2f3cb2fd0aa3bc812a3", null ],
     [ "_binary_initrd_cpio_end", "kernel_8cpp.html#a2c38eb4c3a51bab012a31eb7f42d54c0", null ],

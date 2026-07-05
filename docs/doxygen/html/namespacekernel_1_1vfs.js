@@ -52,6 +52,7 @@ var namespacekernel_1_1vfs =
     [ "mount", "namespacekernel_1_1vfs.html#aebf94bc8bbd1d4da9adf682e10e082de", null ],
     [ "mount_err", "namespacekernel_1_1vfs.html#ad4618eec85ebd8a3d27bfc4d974d7591", null ],
     [ "mount_fat32", "namespacekernel_1_1vfs.html#a739270d15fe1ac6f5a0e21d0c2e20123", null ],
+    [ "reset_and_remount", "namespacekernel_1_1vfs.html#aaf0cf262c173f6848095480880c1cbc9", null ],
     [ "resolve", "namespacekernel_1_1vfs.html#a11645e6a37081ee178777f682740736d", null ],
     [ "resolve_err", "namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a", null ],
     [ "set_root_vnode", "namespacekernel_1_1vfs.html#a83a4478d7ebf71e6b21b38dd91fb1502", null ],

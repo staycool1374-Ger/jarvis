@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_p.ht
 <li>page_table_shared_&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a466394f0feea72bfe583a8b19a9bd3bb">kernel::TaskControlBlock</a></li>
 <li>PageAddress()&#160;:&#160;<a class="el" href="classarch_1_1kernel_1_1_page_address.html#a8ea63e7b8f244f3e3b6c13106e6bdd3d">arch::kernel::PageAddress</a>, <a class="el" href="classkernel_1_1_page_address.html#a909aef1a145b7baa3721c16e4e4f6022">kernel::PageAddress</a></li>
 <li>parent&#160;:&#160;<a class="el" href="structkernel_1_1vfs_1_1_fat32_vnode_data.html#a9da6ece5ae253a4f431e13ce8918f0fb">kernel::vfs::Fat32VnodeData</a>, <a class="el" href="structkernel_1_1vfs_1_1_initrd_file_node.html#a0c37ede6325f31cc76229cc1f3f69c2b">kernel::vfs::InitrdFileNode</a></li>
-<li>parent_id&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a48bd6a50fd7b153ddd8cfda3c6c6b612">kernel::TaskControlBlock</a></li>
+<li>parent_id&#160;:&#160;<a class="el" href="structkernel_1_1_scheduler_1_1_task_fields.html#a1deddb6c37eebb39eb479ef0bd2095b7">kernel::Scheduler::TaskFields</a>, <a class="el" href="structkernel_1_1_task_control_block.html#a48bd6a50fd7b153ddd8cfda3c6c6b612">kernel::TaskControlBlock</a></li>
 <li>parse_cstr()&#160;:&#160;<a class="el" href="structkernel_1_1_boot_params.html#a99f74d74355b7119c2dae784f87f7ca0">kernel::BootParams</a></li>
 <li>parse_multiboot_cmdline()&#160;:&#160;<a class="el" href="structkernel_1_1_boot_params.html#a18a875b5d2a2b8fa4b62950fe7051a10">kernel::BootParams</a></li>
 <li>partition&#160;:&#160;<a class="el" href="struct_fat32_test_fixture.html#a1b3a609e3bb7fd593378ca613d088bc3">Fat32TestFixture</a></li>
@@ -140,11 +140,12 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_p.ht
 <li>patch&#160;:&#160;<a class="el" href="structkernel_1_1_version.html#a9bd3f78524e2f139c3bfe397a89efc2f">kernel::Version</a></li>
 <li>path&#160;:&#160;<a class="el" href="structkernel_1_1vfsd_1_1_msg.html#a71b547d423c47db121838125c141a6ed">kernel::vfsd::Msg</a></li>
 <li>pause()&#160;:&#160;<a class="el" href="classarch_1_1_arch_i_o.html#a914dc0b8dabd0e29f006d425f3188e01">arch::ArchIO</a></li>
+<li>peek_highest()&#160;:&#160;<a class="el" href="classkernel_1_1_ready_queue_manager.html#a7cd0fb1e8df2a42e98dc99dc0957a5e3">kernel::ReadyQueueManager</a></li>
 <li>peer_id&#160;:&#160;<a class="el" href="struct_throughput_ctx.html#a7aaa370d4c6d462705f4e4019ca959d1">ThroughputCtx</a></li>
 <li>pending_count()&#160;:&#160;<a class="el" href="classkernel_1_1task_1_1_sporadic_server.html#a5772a501b3eb0df8688705394b5c5e5b">kernel::task::SporadicServer</a></li>
-<li>pending_signals&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a0bd672bd3f7e5e2b62f8030e6ec2e6eb">kernel::TaskControlBlock</a></li>
+<li>pending_signals&#160;:&#160;<a class="el" href="structkernel_1_1_scheduler_1_1_task_fields.html#a3a8da7e0197955ddbcf5c91d5e2886bc">kernel::Scheduler::TaskFields</a>, <a class="el" href="structkernel_1_1_task_control_block.html#a0bd672bd3f7e5e2b62f8030e6ec2e6eb">kernel::TaskControlBlock</a></li>
 <li>period()&#160;:&#160;<a class="el" href="classkernel_1_1task_1_1_sporadic_server.html#ab5bd8cf9b74ab74440b935ff87f297d7">kernel::task::SporadicServer</a></li>
-<li>period_ticks&#160;:&#160;<a class="el" href="structkernel_1_1_task_control_block.html#a523cc7837209dc5b0df17f0623af3669">kernel::TaskControlBlock</a></li>
+<li>period_ticks&#160;:&#160;<a class="el" href="structkernel_1_1_scheduler_1_1_task_fields.html#aaacdfbcd2ceec6cccdfca7ab10cc66f0">kernel::Scheduler::TaskFields</a>, <a class="el" href="structkernel_1_1task_1_1_task_def.html#a9296cce00b181b13c0365e85db44a2f3">kernel::task::TaskDef</a>, <a class="el" href="structkernel_1_1_task_control_block.html#a523cc7837209dc5b0df17f0623af3669">kernel::TaskControlBlock</a></li>
 <li>phentsize&#160;:&#160;<a class="el" href="structkernel_1_1elf_1_1_e_l_f64_header.html#a69813058df531e5113fa77c6696c51ca">kernel::elf::ELF64Header</a></li>
 <li>phnum&#160;:&#160;<a class="el" href="structkernel_1_1elf_1_1_e_l_f64_header.html#a568c98ec7d8242927ad96a6904c0ec2f">kernel::elf::ELF64Header</a></li>
 <li>phoff&#160;:&#160;<a class="el" href="structkernel_1_1elf_1_1_e_l_f64_header.html#a2d7dde713618ab10b5611fd3449eb907">kernel::elf::ELF64Header</a></li>
@@ -165,10 +166,13 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_p.ht
 <li>pool_data_bytes()&#160;:&#160;<a class="el" href="classkernel_1_1_mem_pool.html#a0f399177b0784f66fafc6bf0c7dffd9a">kernel::MemPool</a></li>
 <li>pool_free_count()&#160;:&#160;<a class="el" href="classkernel_1_1_mem_pool.html#a9b4b566672c26e373019680d14e52828">kernel::MemPool</a></li>
 <li>pop()&#160;:&#160;<a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html#a7883bec6183eef38650285e4c3ee71d9">kernel::log::DmesgBuffer&lt; Capacity &gt;</a>, <a class="el" href="structkernel_1_1_message_queue.html#a4a8b5699fccf8f2fd24701dc1c874fee">kernel::MessageQueue</a></li>
+<li>pop_front()&#160;:&#160;<a class="el" href="classkernel_1_1_task_queue.html#ab3a49cc31ec76ab3df013b2ce6997662">kernel::TaskQueue</a></li>
 <li>post()&#160;:&#160;<a class="el" href="classkernel_1_1sync_1_1_semaphore.html#aae19cc2e2987d6a57ecf736312750ee8">kernel::sync::Semaphore</a></li>
+<li>post_conditions&#160;:&#160;<a class="el" href="struct_test_meta.html#ad7055871a2e0a71cf806cfc5d65df99c">TestMeta</a></li>
 <li>post_err()&#160;:&#160;<a class="el" href="classkernel_1_1sync_1_1_semaphore.html#a22d386977a3f68483e72e68cf6ed7f0f">kernel::sync::Semaphore</a></li>
 <li>prd&#160;:&#160;<a class="el" href="structkernel_1_1ahci_1_1_cmd_table.html#aee806fab6a0cb69eb7daad2a0f66e2d0">kernel::ahci::CmdTable</a></li>
 <li>prdbc&#160;:&#160;<a class="el" href="structkernel_1_1ahci_1_1_cmd_header.html#aae047adb810959adb1a695d15017149e">kernel::ahci::CmdHeader</a></li>
+<li>pre_conditions&#160;:&#160;<a class="el" href="struct_test_meta.html#a94d1080f0b11b281af802f69e3349ea0">TestMeta</a></li>
 <li>preempt_enabled&#160;:&#160;<a class="el" href="structkernel_1_1_boot_params.html#ae844fbaddf234142ef472613a46e40fd">kernel::BootParams</a></li>
 <li>prefetchable&#160;:&#160;<a class="el" href="structarch_1_1_pci_bar.html#a3978ed7d53276167f3f936f8a076461c">arch::PciBar</a></li>
 <li>prepare_buf()&#160;:&#160;<a class="el" href="classkernel_1_1dma_1_1_ping_pong_dma.html#a2e094219e0432b6aea007fb72411d755">kernel::dma::PingPongDma</a></li>
@@ -177,7 +181,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_p.ht
 <li>print_dec()&#160;:&#160;<a class="el" href="classkernel_1_1_logger.html#ad2aea07eb751fad2fb738fe4123c7e7b">kernel::Logger</a></li>
 <li>print_hex()&#160;:&#160;<a class="el" href="classkernel_1_1_logger.html#ae7f9fd488685463ec9810c40d6f907c7">kernel::Logger</a></li>
 <li>prio_bitmap&#160;:&#160;<a class="el" href="structkernel_1_1_message_queue.html#a9ceac56ebef91d9906621f0de6d5dda9">kernel::MessageQueue</a></li>
-<li>priority&#160;:&#160;<a class="el" href="structkernel_1_1_message.html#a9e4863bbf70e030579adbf750b4fc9f4">kernel::Message</a>, <a class="el" href="structkernel_1_1_task_control_block.html#aa5b4394066fd58fee659ba551568869f">kernel::TaskControlBlock</a></li>
+<li>priority&#160;:&#160;<a class="el" href="structkernel_1_1_message.html#a9e4863bbf70e030579adbf750b4fc9f4">kernel::Message</a>, <a class="el" href="structkernel_1_1_scheduler_1_1_task_fields.html#a06613a61eb8e6bf0b9a70d68163af9f3">kernel::Scheduler::TaskFields</a>, <a class="el" href="structkernel_1_1task_1_1_task_def.html#a81735b169c391d54d58d62ca42e28634">kernel::task::TaskDef</a>, <a class="el" href="structkernel_1_1_task_control_block.html#aa5b4394066fd58fee659ba551568869f">kernel::TaskControlBlock</a></li>
+<li>PriorityMap()&#160;:&#160;<a class="el" href="classkernel_1_1_priority_map.html#a2d3e3d8feecbcb4b31dfb67a8adee94d">kernel::PriorityMap</a></li>
 <li>private_data&#160;:&#160;<a class="el" href="structkernel_1_1vfs_1_1_vnode.html#aa7b31f1cf2a43e5d50c5bfec428a8dcd">kernel::vfs::Vnode</a></li>
 <li>probe()&#160;:&#160;<a class="el" href="classkernel_1_1block_1_1_ahci_driver.html#aa258d5a2509fe8f45957670ff024a8d4">kernel::block::AhciDriver</a>, <a class="el" href="classkernel_1_1block_1_1_virtio_blk_driver.html#a54ea2602f8d1d7e8d8c6913fee2c409f">kernel::block::VirtioBlkDriver</a></li>
 <li>probe_first_drive()&#160;:&#160;<a class="el" href="classkernel_1_1block_1_1_ata_pio_driver.html#a0c326cce6cb425a3b9e7ca4f165f7f8c">kernel::block::AtaPioDriver</a></li>
@@ -188,6 +193,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('functions_p.ht
 <li>protocol&#160;:&#160;<a class="el" href="structnet_1_1_ipv4_header.html#a4c20cc6a02914f81555565ed8c6787b3">net::Ipv4Header</a></li>
 <li>ptype&#160;:&#160;<a class="el" href="structnet_1_1_arp_header.html#ad2c02e8c8ebe859b757239a5f9fa5fb8">net::ArpHeader</a></li>
 <li>push()&#160;:&#160;<a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html#ab29e525135d32a9f4e3f3a5100ee0087">kernel::log::DmesgBuffer&lt; Capacity &gt;</a>, <a class="el" href="structkernel_1_1_message_queue.html#ab0b722ca481a94d8a138fdd76a4c3922">kernel::MessageQueue</a></li>
+<li>push_back()&#160;:&#160;<a class="el" href="classkernel_1_1_task_queue.html#a921f7a683bc08d9016cf18fa58b59f99">kernel::TaskQueue</a></li>
 <li>putchar()&#160;:&#160;<a class="el" href="classarch_1_1_serial.html#a2f8bcf0e34fb705854192fbdb8b3a04d">arch::Serial</a>, <a class="el" href="classkernel_1_1log_1_1_ring_buffer.html#ad971787349e9be0a4ff889920bc9c35a">kernel::log::RingBuffer</a>, <a class="el" href="classservice_1_1_terminal.html#a2cdeef541005d6fe951835a03107ee48">service::Terminal</a></li>
 <li>puts()&#160;:&#160;<a class="el" href="classarch_1_1_serial.html#a46ee5ade7378701ed69f936fdbea2039">arch::Serial</a>, <a class="el" href="classkernel_1_1log_1_1_ring_buffer.html#a1df984ebae363f81498eff87693a458e">kernel::log::RingBuffer</a>, <a class="el" href="classservice_1_1_terminal.html#a990cbcebc0f5826d941979d8da67b8c8">service::Terminal</a></li>
 </ul>

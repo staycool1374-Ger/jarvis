@@ -35,10 +35,11 @@ var searchData=
   ['sigtstp_32',['SIGTSTP',['../namespacekernel.html#a2147e353562b65989c719e8041f0e64fa72394f94f78436b1c49fb25bb8186934',1,'kernel']]],
   ['sigusr1_33',['SIGUSR1',['../namespacekernel.html#a2147e353562b65989c719e8041f0e64fa3fca8d1bd1fd9d7eb4c4ae46c4a555e5',1,'kernel']]],
   ['sigusr2_34',['SIGUSR2',['../namespacekernel.html#a2147e353562b65989c719e8041f0e64faec2c8804a8dac6a866e1a43cfce32fc1',1,'kernel']]],
-  ['stat_35',['STAT',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa73f760f8a96d0acec3dec614a688ff79',1,'kernel']]],
-  ['stop_36',['STOP',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749a615a46af313786fc4e349f34118be111',1,'kernel']]],
-  ['sync_37',['SYNC',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3',1,'kernel::log']]],
-  ['sync_5ferror_5fcodes_38',['SYNC_ERROR_CODES',['../namespacekernel_1_1errors.html#abbe4a99ddc8a620a6497c8f2c388da9cac971f52a83605d83d1db920ea480b8b3',1,'kernel::errors']]],
-  ['syscall_39',['SYSCALL',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b',1,'kernel::log']]],
-  ['syscall_5ferror_5fcodes_40',['SYSCALL_ERROR_CODES',['../namespacekernel_1_1errors.html#a6905f268b79adff1ee2f3175485f86eeab0aaa42e66423d01d6c0262f6031201a',1,'kernel::errors']]]
+  ['sporadic_5fserver_35',['SPORADIC_SERVER',['../namespacekernel_1_1task.html#afe20b357887445ef77f145177213ee11a7049d1e1209d2fe5152258560aadcb16',1,'kernel::task']]],
+  ['stat_36',['STAT',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa73f760f8a96d0acec3dec614a688ff79',1,'kernel']]],
+  ['stop_37',['STOP',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749a615a46af313786fc4e349f34118be111',1,'kernel']]],
+  ['sync_38',['SYNC',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3',1,'kernel::log']]],
+  ['sync_5ferror_5fcodes_39',['SYNC_ERROR_CODES',['../namespacekernel_1_1errors.html#abbe4a99ddc8a620a6497c8f2c388da9cac971f52a83605d83d1db920ea480b8b3',1,'kernel::errors']]],
+  ['syscall_40',['SYSCALL',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b',1,'kernel::log']]],
+  ['syscall_5ferror_5fcodes_41',['SYSCALL_ERROR_CODES',['../namespacekernel_1_1errors.html#a6905f268b79adff1ee2f3175485f86eeab0aaa42e66423d01d6c0262f6031201a',1,'kernel::errors']]]
 ];

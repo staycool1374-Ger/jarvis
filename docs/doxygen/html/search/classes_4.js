@@ -8,5 +8,6 @@ var searchData=
   ['erroror_3c_20void_20_3e_5',['ErrorOr&lt; void &gt;',['../structkernel_1_1_error_or_3_01void_01_4.html',1,'kernel']]],
   ['etherheader_6',['EtherHeader',['../structnet_1_1_ether_header.html',1,'net']]],
   ['eventgroup_7',['EventGroup',['../classkernel_1_1sync_1_1_event_group.html',1,'kernel::sync']]],
-  ['exceptionsignalmap_8',['ExceptionSignalMap',['../structkernel_1_1_exception_signal_map.html',1,'kernel']]]
+  ['exceptionsignalmap_8',['ExceptionSignalMap',['../structkernel_1_1_exception_signal_map.html',1,'kernel']]],
+  ['expectedcounts_9',['ExpectedCounts',['../structkernel_1_1test_1_1_expected_counts.html',1,'kernel::test']]]
 ];

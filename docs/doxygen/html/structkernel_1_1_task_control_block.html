@@ -145,8 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a02994288d778ac145ce6758472227cec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restore the saved register context into CPU registers.  <br /></td></tr>
 <tr class="memitem:a15067eade15b4dd699007f2c3c7673eb" id="r_a15067eade15b4dd699007f2c3c7673eb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a15067eade15b4dd699007f2c3c7673eb">cleanup</a> () noexcept</td></tr>
 <tr class="memdesc:a15067eade15b4dd699007f2c3c7673eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees all resources owned by this task (FDs, pages, page tables). Called by WAITPID after reaping a TERMINATED child.  <br /></td></tr>
-<tr class="memitem:a8957cf937750c3e05b0904815898d1b1" id="r_a8957cf937750c3e05b0904815898d1b1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8957cf937750c3e05b0904815898d1b1">init_sporadic_server</a> (uint64_t budget_c, uint64_t period_t, uint64_t bg_prio) noexcept</td></tr>
-<tr class="memdesc:a8957cf937750c3e05b0904815898d1b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).  <br /></td></tr>
+<tr class="memitem:a8f7092231f03c923b11123a8cc121e8f" id="r_a8f7092231f03c923b11123a8cc121e8f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8f7092231f03c923b11123a8cc121e8f">init_sporadic_server</a> (uint64_t budget_c, uint64_t period_t, uint64_t bg_prio, uint64_t budget_granularity=<a class="el" href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a>) noexcept</td></tr>
+<tr class="memdesc:a8f7092231f03c923b11123a8cc121e8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).  <br /></td></tr>
 <tr class="memitem:a847355f329bada9a8093f49c40d54163" id="r_a847355f329bada9a8093f49c40d54163"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a847355f329bada9a8093f49c40d54163">add_child</a> (<a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a> *child) noexcept</td></tr>
 <tr class="memdesc:a847355f329bada9a8093f49c40d54163"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a child to this task's process hierarchy.  <br /></td></tr>
 <tr class="memitem:a121ed14dd4f6a9632642bf0dea75416b" id="r_a121ed14dd4f6a9632642bf0dea75416b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a121ed14dd4f6a9632642bf0dea75416b">remove_child</a> (<a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a> *child) noexcept</td></tr>
@@ -202,6 +202,13 @@ Data Fields</h2></td></tr>
 <tr class="memitem:adeb4989231addd4acf2a1282f5476c6f" id="r_adeb4989231addd4acf2a1282f5476c6f"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_fd_table.html">vfs::FdTable</a>&#160;</td><td class="memItemRight"><a class="el" href="#adeb4989231addd4acf2a1282f5476c6f">fd_table</a></td></tr>
 <tr class="memitem:ac08f621d86dbf9a157593002f25b6946" id="r_ac08f621d86dbf9a157593002f25b6946"><td class="memItemLeft">char&#160;</td><td class="memItemRight"><a class="el" href="#ac08f621d86dbf9a157593002f25b6946">cwd</a> [<a class="el" href="aarch64_2serial_8cpp.html#aab75aa8a7d758ce4e36fa6be7fbce78b">CONFIG_VFS_MAX_PATH</a>]</td></tr>
 <tr class="memitem:ac1748c63af497d80196d5af3e6d79021" id="r_ac1748c63af497d80196d5af3e6d79021"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">vfs::Vnode</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ac1748c63af497d80196d5af3e6d79021">cwd_vnode</a></td></tr>
+<tr class="memitem:a22f9fc9f2090dad51b251a9bbc22495d" id="r_a22f9fc9f2090dad51b251a9bbc22495d"><td class="memItemLeft"><a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a22f9fc9f2090dad51b251a9bbc22495d">runq_next_</a></td></tr>
+<tr class="memdesc:a22f9fc9f2090dad51b251a9bbc22495d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Intrusive linked-list pointers for O(1) ready queue.  <br /></td></tr>
+<tr class="memitem:acf7e9ed5f007452073f3d5981ed3c59b" id="r_acf7e9ed5f007452073f3d5981ed3c59b"><td class="memItemLeft"><a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#acf7e9ed5f007452073f3d5981ed3c59b">runq_prev_</a></td></tr>
+<tr class="memitem:aed15bbe3b98aea5939715d79a08147a8" id="r_aed15bbe3b98aea5939715d79a08147a8"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aed15bbe3b98aea5939715d79a08147a8">in_ready_queue_</a></td></tr>
+<tr class="memdesc:aed15bbe3b98aea5939715d79a08147a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">True if this task is currently in the ready queue. Used to prevent double-enqueue.  <br /></td></tr>
+<tr class="memitem:ad9d8cc3be52d509f768a72e096a4e905" id="r_ad9d8cc3be52d509f768a72e096a4e905"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#ad9d8cc3be52d509f768a72e096a4e905">rq_priority_</a></td></tr>
+<tr class="memdesc:ad9d8cc3be52d509f768a72e096a4e905"><td class="mdescLeft">&#160;</td><td class="mdescRight">Priority at which this task was enqueued in the ready queue.  <br /></td></tr>
 <tr class="memitem:ac7e6d734810eb5ca97924d3f5721a821" id="r_ac7e6d734810eb5ca97924d3f5721a821"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#ac7e6d734810eb5ca97924d3f5721a821">waiting_child_pid</a></td></tr>
 <tr class="memitem:aa408181d3eb7f5930125c09c25e1f776" id="r_aa408181d3eb7f5930125c09c25e1f776"><td class="memItemLeft">uint64_t *&#160;</td><td class="memItemRight"><a class="el" href="#aa408181d3eb7f5930125c09c25e1f776">waiting_child_status</a></td></tr>
 <tr class="memitem:adcd0c0f1f2a70ecd56e3cb0cc7ef52c9" id="r_adcd0c0f1f2a70ecd56e3cb0cc7ef52c9"><td class="memItemLeft"><a class="el" href="namespacekernel.html#ae89f8530616ba6e58eebc1f5104f6e5c">sighandler_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#adcd0c0f1f2a70ecd56e3cb0cc7ef52c9">signal_handlers</a> [MAX_SIGNAL_HANDLERS]</td></tr>
@@ -219,7 +226,7 @@ Data Fields</h2></td></tr>
 <tr class="memitem:ae410747735390026e83d615570c50aa1" id="r_ae410747735390026e83d615570c50aa1"><td class="memItemLeft"><a class="el" href="classkernel_1_1sync_1_1_event_group.html">sync::EventGroup</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ae410747735390026e83d615570c50aa1">event_group</a></td></tr>
 <tr class="memdesc:ae410747735390026e83d615570c50aa1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-task event-group object (allocated in init_task_common).  <br /></td></tr>
 <tr class="memitem:a6fa0dc332a06d99652dad7d7ee66fcd0" id="r_a6fa0dc332a06d99652dad7d7ee66fcd0"><td class="memItemLeft"><a class="el" href="classkernel_1_1task_1_1_sporadic_server.html">task::SporadicServer</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a6fa0dc332a06d99652dad7d7ee66fcd0">sporadic_server</a></td></tr>
-<tr class="memdesc:a6fa0dc332a06d99652dad7d7ee66fcd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional per-task SporadicServer for aperiodic daemon budget management (vfsd, iocd). nullptr for normal tasks. Allocated from <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a> in <a class="el" href="#a8957cf937750c3e05b0904815898d1b1" title="Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).">init_sporadic_server()</a>.  <br /></td></tr>
+<tr class="memdesc:a6fa0dc332a06d99652dad7d7ee66fcd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Optional per-task SporadicServer for aperiodic daemon budget management (vfsd, iocd). nullptr for normal tasks. Allocated from <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a> in <a class="el" href="#a8f7092231f03c923b11123a8cc121e8f" title="Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).">init_sporadic_server()</a>.  <br /></td></tr>
 <tr class="memitem:ab240a552f0dfc7bebac6181f5c04484c" id="r_ab240a552f0dfc7bebac6181f5c04484c"><td class="memItemLeft">int32_t&#160;</td><td class="memItemRight"><a class="el" href="#ab240a552f0dfc7bebac6181f5c04484c">buf_list_head</a></td></tr>
 <tr class="memdesc:ab240a552f0dfc7bebac6181f5c04484c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Head of doubly-linked list of buffer handles owned by this task. -1 means the list is empty. Used by the <a class="el" href="classkernel_1_1_buffer_pool.html">BufferPool</a> for zero-copy <a class="el" href="classkernel_1_1_i_p_c.html" title="Inter-process communication manager.">IPC</a>.  <br /></td></tr>
 <tr class="memitem:a7d048d7ef6dd3f6bb96e0d6a7029caa4" id="r_a7d048d7ef6dd3f6bb96e0d6a7029caa4"><td class="memItemLeft"><a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a7d048d7ef6dd3f6bb96e0d6a7029caa4">blocked_next</a></td></tr>
@@ -721,8 +728,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a8957cf937750c3e05b0904815898d1b1" name="a8957cf937750c3e05b0904815898d1b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8957cf937750c3e05b0904815898d1b1">&#9670;&#160;</a></span>init_sporadic_server()</h2>
+<a id="a8f7092231f03c923b11123a8cc121e8f" name="a8f7092231f03c923b11123a8cc121e8f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f7092231f03c923b11123a8cc121e8f">&#9670;&#160;</a></span>init_sporadic_server()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -743,7 +750,12 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>bg_prio</em></span>&#160;)</td>
+          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>bg_prio</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>budget_granularity</em></span><span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a></span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -754,19 +766,20 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd). </p>
-<p>Allocates and initialises a SporadicServer for a daemon task from the <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a>. Idempotent (returns early if already set).</p>
+<p>Allocates and initialises a SporadicServer for a daemon task from the <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a>. Idempotent (returns early if already set).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">budget_c</td><td>Execution budget per period (ticks). </td></tr>
     <tr><td class="paramname">period_t</td><td>Replenishment period (ticks). </td></tr>
     <tr><td class="paramname">bg_prio</td><td>Priority level when budget exhausted. </td></tr>
+    <tr><td class="paramname">budget_granularity</td><td>Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY). </td></tr>
   </table>
   </dd>
 </dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="structkernel_1_1_task_control_block_a8957cf937750c3e05b0904815898d1b1_cgraph.png" border="0" usemap="#astructkernel_1_1_task_control_block_a8957cf937750c3e05b0904815898d1b1_cgraph" loading="lazy" alt=""/></div>
+<div class="center"><img src="structkernel_1_1_task_control_block_a8f7092231f03c923b11123a8cc121e8f_cgraph.png" border="0" usemap="#astructkernel_1_1_task_control_block_a8f7092231f03c923b11123a8cc121e8f_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 10 -->
 </div>
 
@@ -1213,6 +1226,22 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="aed15bbe3b98aea5939715d79a08147a8" name="aed15bbe3b98aea5939715d79a08147a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed15bbe3b98aea5939715d79a08147a8">&#9670;&#160;</a></span>in_ready_queue_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool kernel::TaskControlBlock::in_ready_queue_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>True if this task is currently in the ready queue. Used to prevent double-enqueue. </p>
+
+</div>
+</div>
 <a id="ae65cf6fd13988d2bce6f4a6173131093" name="ae65cf6fd13988d2bce6f4a6173131093"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae65cf6fd13988d2bce6f4a6173131093">&#9670;&#160;</a></span>KERNEL_CS</h2>
 
@@ -1505,6 +1534,52 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="ad9d8cc3be52d509f768a72e096a4e905" name="ad9d8cc3be52d509f768a72e096a4e905"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9d8cc3be52d509f768a72e096a4e905">&#9670;&#160;</a></span>rq_priority_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t kernel::TaskControlBlock::rq_priority_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Priority at which this task was enqueued in the ready queue. </p>
+
+</div>
+</div>
+<a id="a22f9fc9f2090dad51b251a9bbc22495d" name="a22f9fc9f2090dad51b251a9bbc22495d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22f9fc9f2090dad51b251a9bbc22495d">&#9670;&#160;</a></span>runq_next_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a>* kernel::TaskControlBlock::runq_next_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Intrusive linked-list pointers for O(1) ready queue. </p>
+
+</div>
+</div>
+<a id="acf7e9ed5f007452073f3d5981ed3c59b" name="acf7e9ed5f007452073f3d5981ed3c59b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf7e9ed5f007452073f3d5981ed3c59b">&#9670;&#160;</a></span>runq_prev_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a9a59d792a7207bc29a804189f0ad7137">TaskControlBlock</a>* kernel::TaskControlBlock::runq_prev_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="adcd0c0f1f2a70ecd56e3cb0cc7ef52c9" name="adcd0c0f1f2a70ecd56e3cb0cc7ef52c9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adcd0c0f1f2a70ecd56e3cb0cc7ef52c9">&#9670;&#160;</a></span>signal_handlers</h2>
 
@@ -1533,7 +1608,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Optional per-task SporadicServer for aperiodic daemon budget management (vfsd, iocd). nullptr for normal tasks. Allocated from <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with multiple pool classes.">MemPool</a> in <a class="el" href="#a8957cf937750c3e05b0904815898d1b1" title="Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).">init_sporadic_server()</a>. </p>
+<p>Optional per-task SporadicServer for aperiodic daemon budget management (vfsd, iocd). nullptr for normal tasks. Allocated from <a class="el" href="classkernel_1_1_mem_pool.html" title="Fixed-size block memory allocator with 9 pool classes.">MemPool</a> in <a class="el" href="#a8f7092231f03c923b11123a8cc121e8f" title="Allocates and initialises a SporadicServer for this task (e.g. a Ring 3 daemon like vfsd / iocd).">init_sporadic_server()</a>. </p>
 
 </div>
 </div>

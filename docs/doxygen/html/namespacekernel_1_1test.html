@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacekerne
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:ClassSection" id="r_ClassSection"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_class_section.html">ClassSection</a></td></tr>
+<tr class="memitem:ExpectedCounts" id="r_ExpectedCounts"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a></td></tr>
 <tr class="memitem:Registry" id="r_Registry"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_registry.html">Registry</a></td></tr>
 <tr class="memitem:ResourceCounters" id="r_ResourceCounters"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_resource_counters.html">ResourceCounters</a></td></tr>
 <tr class="memitem:ResourceTracker" id="r_ResourceTracker"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_resource_tracker.html">ResourceTracker</a></td></tr>
@@ -139,6 +140,8 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a2116b98892188c36c2a9b053bdca9df5" id="r_a2116b98892188c36c2a9b053bdca9df5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2116b98892188c36c2a9b053bdca9df5">test_cleanup_all</a> ()</td></tr>
+<tr class="memdesc:a2116b98892188c36c2a9b053bdca9df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clean up all kernel resources created during testing without using the snapshot mechanism. Destructors are called on every resource object, tasks are dequeued, and all memory is returned to pools.  <br /></td></tr>
 <tr class="memitem:aabafa220128e328e46c2c19135411898" id="r_aabafa220128e328e46c2c19135411898"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aabafa220128e328e46c2c19135411898">parse_test_config</a> (const char *path)</td></tr>
 <tr class="memdesc:aabafa220128e328e46c2c19135411898"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse test configuration from initrd file.  <br /></td></tr>
 <tr class="memitem:adef941cb96fe1a42d92076d37649d84a" id="r_adef941cb96fe1a42d92076d37649d84a"><td class="memItemLeft">const char **&#160;</td><td class="memItemRight"><a class="el" href="#adef941cb96fe1a42d92076d37649d84a">get_test_classes</a> ()</td></tr>
@@ -147,11 +150,17 @@ Functions</h2></td></tr>
 <tr class="memdesc:a499e498dbadd7417450754e39ff8d025"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the count of test classes to run.  <br /></td></tr>
 <tr class="memitem:ac77ca03eec1fc93ea4a740b9566588d7" id="r_ac77ca03eec1fc93ea4a740b9566588d7"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac77ca03eec1fc93ea4a740b9566588d7">should_run_class</a> (const char *class_name)</td></tr>
 <tr class="memdesc:ac77ca03eec1fc93ea4a740b9566588d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a specific test class should run.  <br /></td></tr>
+<tr class="memitem:a6407505c9e51e9aafc535ceb8a0f074f" id="r_a6407505c9e51e9aafc535ceb8a0f074f"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6407505c9e51e9aafc535ceb8a0f074f">arch_count</a> (const <a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a> &amp;ec)</td></tr>
+<tr class="memitem:a22a1e73ffb69f6fd807228fc5756b380" id="r_a22a1e73ffb69f6fd807228fc5756b380"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a22a1e73ffb69f6fd807228fc5756b380">expected_for_class</a> (const char *name)</td></tr>
+<tr class="memitem:ad187fb124266bd89f9f48be1d22ba617" id="r_ad187fb124266bd89f9f48be1d22ba617"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ad187fb124266bd89f9f48be1d22ba617">validate_class_count</a> (const char *name, <a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> actual_count)</td></tr>
+<tr class="memitem:aebdef3f581d2b87696f34fa1a77a20d5" id="r_aebdef3f581d2b87696f34fa1a77a20d5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aebdef3f581d2b87696f34fa1a77a20d5">validate_all_consistency</a> ()</td></tr>
 <tr class="memitem:a5b61544ff1676d3f6d4a777c3211be31" id="r_a5b61544ff1676d3f6d4a777c3211be31"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a5b61544ff1676d3f6d4a777c3211be31">snapshot_create</a> ()</td></tr>
 <tr class="memitem:aa2a58a012f3f56d28d6e0df037fd66a6" id="r_aa2a58a012f3f56d28d6e0df037fd66a6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore</a> (const char *test_name)</td></tr>
 <tr class="memitem:ae4288686f519dcd0faacfe54ae2f1bff" id="r_ae4288686f519dcd0faacfe54ae2f1bff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae4288686f519dcd0faacfe54ae2f1bff">snapshot_destroy</a> ()</td></tr>
 <tr class="memitem:abbd641156133e294c60aa475e73dd520" id="r_abbd641156133e294c60aa475e73dd520"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abbd641156133e294c60aa475e73dd520">reload_daemon_tasks</a> ()</td></tr>
 <tr class="memdesc:abbd641156133e294c60aa475e73dd520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate old daemon tasks and reload them from initrd. Call AFTER snapshot_restore + snapshot_destroy to replace corrupted page tables with fresh ones from initrd.  <br /></td></tr>
+<tr class="memitem:ad8af3e26f5e10cffe7d3eecf79016c1d" id="r_ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad8af3e26f5e10cffe7d3eecf79016c1d">run_all_isolated_tests</a> ()</td></tr>
+<tr class="memdesc:ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all tests from the generated registry, calling setup/test/teardown in sequence with snapshot isolation between each test.  <br /></td></tr>
 <tr class="memitem:a3682848fa74834ef280e24ea7c67ff5e" id="r_a3682848fa74834ef280e24ea7c67ff5e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3682848fa74834ef280e24ea7c67ff5e">watchdog_arm</a> (uint64_t ms, const char *test_name)</td></tr>
 <tr class="memdesc:a3682848fa74834ef280e24ea7c67ff5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arm the watchdog with both TSC-based and PIT-based timers. PIT channel 1 one-shot (~55ms) + TSC deadline.  <br /></td></tr>
 <tr class="memitem:a0a6da7c5576fe1c48584026927954c24" id="r_a0a6da7c5576fe1c48584026927954c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a6da7c5576fe1c48584026927954c24">watchdog_disarm</a> ()</td></tr>
@@ -170,6 +179,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ac69baaa93109936ecff8ff06f6fb827a" id="r_ac69baaa93109936ecff8ff06f6fb827a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac69baaa93109936ecff8ff06f6fb827a">run_suite</a> (const char *suite_name)</td></tr>
 <tr class="memitem:a0fb9d643d01186cc11f1c2868176b39c" id="r_a0fb9d643d01186cc11f1c2868176b39c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0fb9d643d01186cc11f1c2868176b39c">print_report</a> (uint64_t start_ns, uint64_t end_ns)</td></tr>
 <tr class="memitem:a47ad5e6d76deb150bf2cb8bf66bd3450" id="r_a47ad5e6d76deb150bf2cb8bf66bd3450"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a47ad5e6d76deb150bf2cb8bf66bd3450">register_class</a> (const char *name)</td></tr>
+<tr class="memitem:a528c863464ccdb09e9f57510adee048d" id="r_a528c863464ccdb09e9f57510adee048d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a528c863464ccdb09e9f57510adee048d">dump_class_counts</a> ()</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -199,6 +209,85 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="a6407505c9e51e9aafc535ceb8a0f074f" name="a6407505c9e51e9aafc535ceb8a0f074f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6407505c9e51e9aafc535ceb8a0f074f">&#9670;&#160;</a></span>arch_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::test::arch_count </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>ec</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a528c863464ccdb09e9f57510adee048d" name="a528c863464ccdb09e9f57510adee048d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a528c863464ccdb09e9f57510adee048d">&#9670;&#160;</a></span>dump_class_counts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::dump_class_counts </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_a528c863464ccdb09e9f57510adee048d_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a528c863464ccdb09e9f57510adee048d_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
+
+</div>
+</div>
+<a id="a22a1e73ffb69f6fd807228fc5756b380" name="a22a1e73ffb69f6fd807228fc5756b380"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22a1e73ffb69f6fd807228fc5756b380">&#9670;&#160;</a></span>expected_for_class()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::test::expected_for_class </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_a22a1e73ffb69f6fd807228fc5756b380_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a22a1e73ffb69f6fd807228fc5756b380_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
+
+</div>
+</div>
 <a id="a499e498dbadd7417450754e39ff8d025" name="a499e498dbadd7417450754e39ff8d025"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a499e498dbadd7417450754e39ff8d025">&#9670;&#160;</a></span>get_test_class_count()</h2>
 
@@ -259,7 +348,7 @@ Variables</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aabafa220128e328e46c2c19135411898_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aabafa220128e328e46c2c19135411898_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -286,7 +375,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a0fb9d643d01186cc11f1c2868176b39c_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a0fb9d643d01186cc11f1c2868176b39c_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 3 -->
 </div>
 
 </div>
@@ -309,7 +398,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 4 -->
 </div>
 
 </div>
@@ -334,7 +423,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abbd641156133e294c60aa475e73dd520_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abbd641156133e294c60aa475e73dd520_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -391,6 +480,31 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="ad8af3e26f5e10cffe7d3eecf79016c1d" name="ad8af3e26f5e10cffe7d3eecf79016c1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8af3e26f5e10cffe7d3eecf79016c1d">&#9670;&#160;</a></span>run_all_isolated_tests()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::run_all_isolated_tests </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Run all tests from the generated registry, calling setup/test/teardown in sequence with snapshot isolation between each test. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 6 -->
+</div>
+
+</div>
+</div>
 <a id="ae1b9042f585e1bfaf6898aed96a403de" name="ae1b9042f585e1bfaf6898aed96a403de"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae1b9042f585e1bfaf6898aed96a403de">&#9670;&#160;</a></span>run_debug()</h2>
 
@@ -409,7 +523,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -436,7 +550,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -459,7 +573,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -482,7 +596,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -505,7 +619,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 11 -->
 </div>
 
 </div>
@@ -528,38 +642,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph" id="anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph">
-<area shape="rect" title=" " alt="" coords="5,240,153,267"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ae1c6719a50dda5616660226460c8fbdf" title=" " alt="" coords="201,5,344,48"/>
-<area shape="poly" title=" " alt="" coords="84,238,126,159,159,110,199,65,214,55,211,59,203,69,163,113,130,162,89,241"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a67e0bf935731e851c5130bab1b6c1861" title=" " alt="" coords="392,56,535,99"/>
-<area shape="poly" title=" " alt="" coords="85,238,102,210,127,174,160,138,199,108,242,90,288,79,334,72,379,72,374,74,334,78,289,84,244,95,202,113,163,142,131,177,106,213,90,241"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ac55cd7a631b4e76a2293edf8b8bb0bd4" title=" " alt="" coords="206,240,338,267"/>
-<area shape="poly" title=" " alt="" coords="152,251,193,252,189,255,154,256"/>
-<area shape="rect" href="namespacekernel_1_1test.html#afe67f03cec26eaf04ba601e548d6761d" title=" " alt="" coords="213,123,332,165"/>
-<area shape="poly" title=" " alt="" coords="103,237,199,182,221,172,217,175,202,186,106,241"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ad4ae5d24650cf692a9d70d545eaa1867" title=" " alt="" coords="398,189,530,232"/>
-<area shape="poly" title=" " alt="" coords="137,237,200,225,294,216,384,212,379,214,295,221,201,231,139,242"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a3706a331b1f53a82cec9a9020a1efdc4" title=" " alt="" coords="201,291,344,333"/>
-<area shape="poly" title=" " alt="" coords="125,265,188,284,183,287,126,270"/>
-<area shape="rect" href="string_8hpp.html#a14e6581584b7433c4440fdc7ecf86aea" title=" " alt="" coords="242,357,303,384"/>
-<area shape="poly" title=" " alt="" coords="95,265,142,303,202,343,229,357,224,357,199,348,139,307,95,270"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a290fced036e79169734ae8b01c424f83" title=" " alt="" coords="201,408,344,451"/>
-<area shape="poly" title=" " alt="" coords="90,265,135,326,167,362,202,394,208,400,203,399,199,398,163,365,131,329,89,270"/>
-<area shape="rect" href="classkernel_1_1Logger.html#a789c5af9e2c7393712ff3bfdae709afa" title=" " alt="" coords="203,475,342,501"/>
-<area shape="poly" title=" " alt="" coords="85,265,101,305,125,357,158,412,179,438,202,461,209,467,203,466,199,465,175,442,154,415,120,359,96,307,84,270"/>
-<area shape="rect" href="classkernel_1_1Logger.html#a12794441edd7245c8a81bfe5b9a6dd14" title=" " alt="" coords="392,365,535,392"/>
-<area shape="poly" title=" " alt="" coords="320,265,345,276,398,314,441,355,436,354,395,318,343,281,320,270"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ad2aea07eb751fad2fb738fe4123c7e7b" title=" " alt="" coords="583,340,748,367"/>
-<area shape="poly" title=" " alt="" coords="535,367,570,365,565,366,536,372"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ae7f9fd488685463ec9810c40d6f907c7" title=" " alt="" coords="583,391,748,417"/>
-<area shape="poly" title=" " alt="" coords="536,385,570,392,565,392,536,390"/>
-<area shape="poly" title=" " alt="" coords="331,121,388,103,384,106,334,126"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ad30c0be8d7ba6161c038aa562c3ac885" title=" " alt="" coords="392,123,535,165"/>
-<area shape="poly" title=" " alt="" coords="331,142,379,143,374,145,333,146"/>
-<area shape="poly" title=" " alt="" coords="332,162,389,183,384,185,333,167"/>
-<area shape="poly" title=" " alt="" coords="317,472,343,460,391,430,432,403,437,401,394,435,345,465,319,477"/>
-</map>
+<!-- MAP 12 -->
 </div>
 
 </div>
@@ -618,7 +701,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
+<!-- MAP 13 -->
 </div>
 
 </div>
@@ -641,7 +724,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1becd6394583e37ae0142fa07904cb67_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1becd6394583e37ae0142fa07904cb67_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -664,7 +747,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
+<!-- MAP 15 -->
 </div>
 
 </div>
@@ -687,7 +770,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae4288686f519dcd0faacfe54ae2f1bff_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae4288686f519dcd0faacfe54ae2f1bff_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
+<!-- MAP 16 -->
 </div>
 
 </div>
@@ -710,7 +793,99 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
+<!-- MAP 17 -->
+</div>
+
+</div>
+</div>
+<a id="a2116b98892188c36c2a9b053bdca9df5" name="a2116b98892188c36c2a9b053bdca9df5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2116b98892188c36c2a9b053bdca9df5">&#9670;&#160;</a></span>test_cleanup_all()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::test_cleanup_all </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Clean up all kernel resources created during testing without using the snapshot mechanism. Destructors are called on every resource object, tasks are dequeued, and all memory is returned to pools. </p>
+<p>After this call the kernel is in a clean post-init state (idle task only, no drivers loaded, empty dmesg, fresh daemons from initrd). </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 18 -->
+</div>
+
+</div>
+</div>
+<a id="aebdef3f581d2b87696f34fa1a77a20d5" name="aebdef3f581d2b87696f34fa1a77a20d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebdef3f581d2b87696f34fa1a77a20d5">&#9670;&#160;</a></span>validate_all_consistency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::validate_all_consistency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 19 -->
+</div>
+
+</div>
+</div>
+<a id="ad187fb124266bd89f9f48be1d22ba617" name="ad187fb124266bd89f9f48be1d22ba617"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad187fb124266bd89f9f48be1d22ba617">&#9670;&#160;</a></span>validate_class_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool kernel::test::validate_class_count </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a></td>          <td class="paramname"><span class="paramname"><em>actual_count</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 20 -->
 </div>
 
 </div>
@@ -739,7 +914,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
+<!-- MAP 21 -->
 </div>
 
 </div>
@@ -764,7 +939,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
+<!-- MAP 22 -->
 </div>
 
 </div>
@@ -804,7 +979,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
+<!-- MAP 23 -->
 </div>
 
 </div>

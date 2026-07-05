@@ -2,6 +2,7 @@ var namespaces_dup =
 [
     [ "arch", "namespacearch.html", "namespacearch" ],
     [ "crypto", "namespacecrypto.html", "namespacecrypto" ],
+    [ "hal", "namespacehal.html", "namespacehal" ],
     [ "initrd", "namespaceinitrd.html", "namespaceinitrd" ],
     [ "kernel", "namespacekernel.html", "namespacekernel" ],
     [ "mem", "namespacemem.html", [

@@ -1,13 +1,13 @@
 var test__spinlock_8cpp =
 [
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a8eb427e30e4a5ed5e9315af6f1b880cf", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a53e719fa305275591d34aee8be783e77", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a0a2b2d472040868590dfe034ae10a5c0", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a2814688a9c5a7396e38772e341dd7304", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a8ded689602bdac1c303890d86eede18d", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a604424b929dd7c5b50670f1ec3053e1e", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#ac146f41025288a55b03349e64dc863ef", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a806f21e2b209d2ef309cbcca6b76eb77", null ],
-    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a5ff5ced30f26c33f2fef6c0f0ccdf7cf", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a1f58ff0d2074c3d115e0f51e007ebf63", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#aff083c7145a014a20c43fff3c93b2cf5", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#aa7d9c8e6ad2576c74557f707c65a4220", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#ad72235181795f1976bc5a536facfc6b5", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a3188a20c0eaa3aae7c1357242f0c07d4", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#ac2666bd2f3539775e8e58e15636ddd74", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a7b44384f276bb26df51bd121f0723f63", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a230ec3c5089ab2abc95ed62751197eb1", null ],
+    [ "JARVIS_TEST", "test__spinlock_8cpp.html#a025c7ad77d477ba94280dd3916a76d65", null ],
     [ "register_spinlock_tests", "test__spinlock_8cpp.html#af5272ee0e6889e72a620623b02795e51", null ]
 ];
