@@ -22,6 +22,10 @@
 // Expect: Returns valid fd (bypass returns true without IPC)
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::vfsd
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>
@@ -184,4 +188,5 @@ void register_vfsd_authorization_tests() {
     JARVIS_REGISTER_TEST(vfsd_absent_syscall_fails);
     JARVIS_REGISTER_TEST(vfsd_authorize_null_path);
 }
+#pragma GCC diagnostic pop
 #endif

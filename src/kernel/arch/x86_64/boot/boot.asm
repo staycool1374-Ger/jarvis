@@ -14,6 +14,7 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+[DEFAULT REL]
 section .boot.text
 bits 32
 
@@ -125,7 +126,7 @@ gdt64_ptr:
     dw gdt64_ptr - gdt64 - 1
     dq gdt64
 
-section .boot.bss
+section .boot.bss nobits
 
 multiboot_magic_local:    resd 1
 multiboot_info_ptr_local:  resd 1

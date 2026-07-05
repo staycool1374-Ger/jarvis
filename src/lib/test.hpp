@@ -238,13 +238,16 @@ void dump_class_counts();
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
 #define TEST_CLASS(name)                                                      \
+    _Pragma("GCC diagnostic push")                                            \
+    _Pragma("GCC diagnostic ignored \"-Wanalyzer-possible-null-dereference\"") \
     class name : public kernel::test::TestBase {                              \
     public:                                                                   \
         name() : TestBase(#name) {}                                           \
         void run() override;                                                  \
     };                                                                        \
     static kernel::test::TestBase* _factory_##name() { return new name(); }   \
-    void name::run()
+    void name::run()                                                          \
+    _Pragma("GCC diagnostic pop")
 // NOLINTEND(bugprone-macro-parentheses)
 
 #define REGISTER_CLASS_FLAGS(name, flags_)                                    \

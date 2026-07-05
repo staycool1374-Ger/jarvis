@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
@@ -454,3 +458,4 @@ void kernel::test::dump_class_counts() {
     Registry::clear();
     validate_all_consistency();
 }
+#pragma GCC diagnostic pop

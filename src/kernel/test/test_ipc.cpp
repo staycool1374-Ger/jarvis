@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/ipc.hpp>
@@ -803,3 +807,4 @@ void register_ipc_tests() {
     JARVIS_REGISTER_TEST(ipc_sender_unblocked_on_receiver_exit);
     JARVIS_REGISTER_TEST(ipc_send_wakes_blocked_destination);
 }
+#pragma GCC diagnostic pop

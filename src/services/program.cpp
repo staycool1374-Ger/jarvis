@@ -29,7 +29,10 @@ void ProgramRegistry::init() {
 
 void ProgramRegistry::register_program(const char* name, const char* desc, void (*entry)()) {
     if (count_ >= MAX_PROGRAMS) return;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
     auto* prog = new Program{name, desc, entry};
+#pragma GCC diagnostic pop
     if (!prog) return;
     programs_[count_++] = prog;
 }

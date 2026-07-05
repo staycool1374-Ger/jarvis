@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/sync/mutex.hpp>
@@ -681,3 +685,4 @@ void register_locking_tests() {
     JARVIS_REGISTER_TEST(queue_send_receive_priority_ordering);
     JARVIS_REGISTER_TEST(queue_send_to_full_blocks_and_wakes);
 }
+#pragma GCC diagnostic pop

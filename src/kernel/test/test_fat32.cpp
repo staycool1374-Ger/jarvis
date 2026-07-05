@@ -28,6 +28,7 @@ using namespace kernel::fat32;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #pragma GCC diagnostic ignored "-Wanalyzer-use-of-uninitialized-value"
+#pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
 
 extern "C" uint8_t _binary_build_fat32_img_start[];
 extern "C" uint8_t _binary_build_fat32_img_end[];

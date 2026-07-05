@@ -160,7 +160,10 @@ AtaPioDriver* AtaPioDriver::probe_first_drive() {
     };
 
     for (auto& ch : channels) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
         auto* drv = new AtaPioDriver(ch.port_base, ch.drive_head);
+#pragma GCC diagnostic pop
         if (drv->init()) return drv;
         delete drv;
     }

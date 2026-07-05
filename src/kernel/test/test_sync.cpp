@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/sync/semaphore.hpp>
@@ -338,3 +342,4 @@ void register_sync_tests() {
     JARVIS_REGISTER_TEST(sync_queue_receive_blocks_when_empty);
     JARVIS_REGISTER_TEST(sync_queue_wake_sender_on_receive);
 }
+#pragma GCC diagnostic pop

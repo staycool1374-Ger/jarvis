@@ -1342,8 +1342,12 @@ void Shell::cmd_set(int argc, const char** argv) {
             size_t slen = 0;
             while (argv[i + 1][slen]) ++slen;
             auto* old = positional_argv_[i];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
             positional_argv_[i] = new char[slen + 1];
+            if (!positional_argv_[i]) return;
             for (size_t j = 0; j <= slen; ++j) positional_argv_[i][j] = argv[i + 1][j];
+#pragma GCC diagnostic pop
             delete[] old;
         }
     }

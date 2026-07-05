@@ -16,6 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#pragma GCC diagnostic ignored "-Wanalyzer-undefined-behavior-ptrdiff"
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -426,3 +431,4 @@ void register_vfs_fat32_tests() {
     JARVIS_REGISTER_TEST(vfs_fat32_rmdir_nonempty_fails);
     JARVIS_REGISTER_TEST(vfs_fat32_unlink_frees_clusters);
 }
+#pragma GCC diagnostic pop

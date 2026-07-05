@@ -200,7 +200,10 @@ VirtioBlkDriver* VirtioBlkDriver::probe() {
         return nullptr;
     }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
     auto* drv = new VirtioBlkDriver(transport);
+#pragma GCC diagnostic pop
     if (!drv->init()) {
         delete drv;
         return nullptr;

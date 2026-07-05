@@ -514,7 +514,10 @@ bool AhciDriver::init() {
 }
 
 AhciDriver* AhciDriver::probe() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
     auto* drv = new AhciDriver();
+#pragma GCC diagnostic pop
     if (!drv || !drv->init()) {
         delete drv;
         return nullptr;
