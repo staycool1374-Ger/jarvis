@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file buffer_pool.hpp
+/// @brief Zero-copy buffer pool — allocate, transfer, map, free buffers via handles.
+
 #pragma once
 
 #include <types.hpp>
@@ -26,12 +29,14 @@
 
 namespace kernel {
 
+/// @brief Sentinel values for linked-list head/tail.
 enum class ListSentinel : int8_t {
-    EMPTY = -1,
+    EMPTY = -1,  ///< List is empty.
 };
+/// @brief Sentinel values returned by validation functions.
 enum class BufferSentinel : int8_t {
-    INVALID_HANDLE = -2,
-    INVALID_INDEX  = -3,
+    INVALID_HANDLE = -2,  ///< Handle generation mismatch or zero.
+    INVALID_INDEX  = -3,  ///< Index out of bounds.
 };
 constexpr int64_t LIST_EMPTY = static_cast<int64_t>(ListSentinel::EMPTY);
 constexpr int64_t BUF_INVALID_HANDLE = static_cast<int64_t>(
@@ -44,14 +49,15 @@ public:
     static constexpr size_t MAX_BUFFERS = 1024;
     static constexpr size_t BUFFER_SIZE = arch::PAGE_SIZE;
 
+    /// @brief A single buffer-pool entry.
     struct Entry {
-        uint64_t phys_addr;
-        uint32_t generation;
-        uint32_t refcount;
-        uint32_t owner_task;
-        uint64_t mapped_va;
-        int32_t  list_prev;
-        int32_t  list_next;
+        uint64_t phys_addr;  ///< Physical address of the backing page (0 = free).
+        uint32_t generation; ///< Cookie incrementing on each alloc (stale-handle detection).
+        uint32_t refcount;   ///< Reference count (unused currently, reserved).
+        uint32_t owner_task; ///< Task ID of the current owner.
+        uint64_t mapped_va;  ///< Virtual address where mapped (0 = unmapped).
+        int32_t  list_prev;  ///< Previous entry in per-task linked list.
+        int32_t  list_next;  ///< Next entry in per-task linked list (or free-list).
 
         Entry()
             : phys_addr(0)
@@ -107,10 +113,12 @@ public:
     }
 
 private:
-    static constinit int32_t free_head_;
-    static constinit uint32_t next_cookie_;
+    static constinit int32_t free_head_;   ///< Head of the free-entry linked list.
+    static constinit uint32_t next_cookie_; ///< Monotonically increasing cookie counter.
 
+    /// @brief Allocate an entry from the free list.
     static int32_t alloc_entry();
+    /// @brief Return an entry to the free list.
     static void free_entry(int32_t idx);
 };
 

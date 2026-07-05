@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file buffer_pool.cpp
+/// @brief Zero-copy buffer pool implementation — page allocation, PTE manipulation, transfer.
+
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/memory/pmm.hpp>
@@ -30,6 +33,8 @@ BufferPool::Entry BufferPool::entries[MAX_BUFFERS];
 constinit int32_t BufferPool::free_head_ = LIST_EMPTY;
 constinit uint32_t BufferPool::next_cookie_ = 1;
 
+/// @brief Clear a single page-table entry for @p virt_addr in the given PML4.
+/// Handles x86_64, AArch64, and RISC-V page-table hierarchies.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
@@ -92,6 +97,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 #endif
 }
 
+/// @brief Insert a buffer entry at the head of a task's linked list.
 static void list_insert(TaskControlBlock& task, int32_t idx) {
     int32_t old_head = task.buf_list_head;
     BufferPool::entries[idx].list_prev = LIST_EMPTY;
@@ -101,6 +107,7 @@ static void list_insert(TaskControlBlock& task, int32_t idx) {
     task.buf_list_head = idx;
 }
 
+/// @brief Remove a buffer entry from a task's linked list.
 static void list_remove(TaskControlBlock& task, int32_t idx) {
     int32_t prev = BufferPool::entries[idx].list_prev;
     int32_t next = BufferPool::entries[idx].list_next;
@@ -111,6 +118,7 @@ static void list_remove(TaskControlBlock& task, int32_t idx) {
     BufferPool::entries[idx].list_next = -1;
 }
 
+/// @brief Initialise the pool — build the free list and reset state.
 void BufferPool::init() {
     free_head_ = -1;
     next_cookie_ = 1;
@@ -126,6 +134,8 @@ void BufferPool::init() {
     }
 }
 
+/// @brief Pop an entry from the free list.
+/// @return index, or BUF_INVALID_INDEX if the pool is exhausted.
 int32_t BufferPool::alloc_entry() {
     if (free_head_ == LIST_EMPTY) return BUF_INVALID_INDEX;
     int32_t idx = free_head_;
@@ -136,6 +146,7 @@ int32_t BufferPool::alloc_entry() {
     return idx;
 }
 
+/// @brief Return an entry to the free list and zero its fields.
 void BufferPool::free_entry(int32_t idx) {
     ENSURE(idx >= 0 && static_cast<size_t>(idx) < MAX_BUFFERS);
     entries[idx].phys_addr = 0;
@@ -148,6 +159,8 @@ void BufferPool::free_entry(int32_t idx) {
     kernel::test::ResourceTracker::instance().track_bufpool_free();
 }
 
+/// @brief Validate a handle (index + generation match).
+/// @return index, BUF_INVALID_HANDLE, or BUF_INVALID_INDEX.
 int32_t BufferPool::validate(uint64_t handle) {
     if (handle == 0) return BUF_INVALID_HANDLE;
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
@@ -158,6 +171,8 @@ int32_t BufferPool::validate(uint64_t handle) {
     return static_cast<int32_t>(idx);
 }
 
+/// @brief Allocate a buffer, map it at virtual address @p va in the given task's space.
+/// @return handle, or 0 on failure.
 uint64_t BufferPool::alloc(TaskControlBlock& task, uint64_t va) {
     if (!task.page_table_) return 0;
 
@@ -185,6 +200,8 @@ uint64_t BufferPool::alloc(TaskControlBlock& task, uint64_t va) {
         ) | static_cast<uint64_t>(idx);
 }
 
+/// @brief Free a buffer: unmap, free the physical page, return entry to pool.
+/// @return true on success.
 bool BufferPool::free(TaskControlBlock& task, uint64_t handle) {
     int32_t idx = validate(handle);
     if (idx < 0) return false;
@@ -202,6 +219,7 @@ bool BufferPool::free(TaskControlBlock& task, uint64_t handle) {
     return true;
 }
 
+/// @brief Map an existing (transferred) buffer at virtual address @p va.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool BufferPool::map(TaskControlBlock& task, uint64_t handle, uint64_t va) {
     int32_t idx = validate(handle);
@@ -219,6 +237,7 @@ bool BufferPool::map(TaskControlBlock& task, uint64_t handle, uint64_t va) {
     return true;
 }
 
+/// @brief Unmap a buffer (PTE clear, list remove) without freeing the page.
 bool BufferPool::unmap(TaskControlBlock& task, uint64_t handle) {
     int32_t idx = validate(handle);
     if (idx < 0) return false;
@@ -233,6 +252,7 @@ bool BufferPool::unmap(TaskControlBlock& task, uint64_t handle) {
     return true;
 }
 
+/// @brief Transfer buffer ownership from one task to another (IPC send path).
 bool BufferPool::transfer(uint64_t handle, TaskControlBlock& from,
     TaskControlBlock& to) {
     int32_t idx = validate(handle);
@@ -254,6 +274,7 @@ bool BufferPool::transfer(uint64_t handle, TaskControlBlock& from,
     return true;
 }
 
+/// @brief Snapshot pool state into a flat buffer (test isolation).
 void BufferPool::capture_state(uint8_t* dst, size_t max_bytes) {
     (void)max_bytes;
     __builtin_memcpy(dst, entries, sizeof(entries));
@@ -263,6 +284,7 @@ void BufferPool::capture_state(uint8_t* dst, size_t max_bytes) {
     __builtin_memcpy(dst, &next_cookie_, sizeof(next_cookie_));
 }
 
+/// @brief Restore pool state from a flat buffer (test isolation).
 void BufferPool::restore_state(const uint8_t* src, size_t max_bytes) {
     (void)max_bytes;
     __builtin_memcpy(entries, src, sizeof(entries));
@@ -272,6 +294,7 @@ void BufferPool::restore_state(const uint8_t* src, size_t max_bytes) {
     __builtin_memcpy(&next_cookie_, src, sizeof(next_cookie_));
 }
 
+/// @brief Unmap and free all buffers owned by a task (called from cleanup/exec).
 void BufferPool::unmap_all(TaskControlBlock& task) {
     int32_t idx = task.buf_list_head;
     while (idx != -1) {

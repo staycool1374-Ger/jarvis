@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file ipc.cpp
+/// @brief Priority-based IPC implementation — message queue, send/recv, sync send, priority inheritance.
+
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -28,6 +31,7 @@ namespace kernel {
 // MessageQueue
 // ---------------------------------------------------------------------------
 
+/// @brief Destructor — wake all blocked senders before queue memory is freed.
 MessageQueue::~MessageQueue() {
     // Wake any blocked senders before the queue memory is freed,
     // so they can fast-fail instead of blocking on a zombie destination.
@@ -44,6 +48,7 @@ MessageQueue::~MessageQueue() {
     blocked_senders_tail = nullptr;
 }
 
+/// @brief Initialise or reset the message queue to empty.
 void MessageQueue::init() {
     head = 0;
     tail = 0;
@@ -54,6 +59,8 @@ void MessageQueue::init() {
     lock_.unlock();  // Ensure SpinLock is unlocked (constructor not called on MemPool alloc)
 }
 
+/// @brief Insert a message at the tail of the queue.
+/// @return true on success, false if the queue is full.
 bool MessageQueue::push(const Message& msg) {
     SpinLockGuard<sync::SpinLock> guard(lock_);
     if (is_full()) return false;
@@ -65,6 +72,8 @@ bool MessageQueue::push(const Message& msg) {
     return true;
 }
 
+/// @brief Remove the highest-priority message (FIFO within same priority).
+/// @return true if a message was dequeued.
 bool MessageQueue::pop(Message& out) {
     SpinLockGuard<sync::SpinLock> guard(lock_);
     if (is_empty()) return false;
@@ -115,6 +124,8 @@ bool MessageQueue::pop(Message& out) {
     return true;
 }
 
+/// @brief Return the highest priority that has at least one message.
+/// @return IPC_PRIORITY_LEVELS if empty.
 size_t MessageQueue::highest_priority() const {
     if (prio_bitmap == 0) return IPC_PRIORITY_LEVELS;
     return static_cast<size_t>(__builtin_ctzll(prio_bitmap));
@@ -124,10 +135,12 @@ size_t MessageQueue::highest_priority() const {
 // IPC
 // ---------------------------------------------------------------------------
 
+/// @brief Initialise the IPC subsystem (per-task queues are set up in task creation).
 void IPC::init() {
     // Message queues are initialised per-task in create/create_user/clone.
 }
 
+/// @brief Send a message to a destination task (blocks if queue is full, unless IPC_NONBLOCK).
 bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     auto* tcb = Scheduler::find_task(dest_id);
     if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED
@@ -174,6 +187,7 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
     return ok;
 }
 
+/// @brief Receive a message from the calling task's own queue.
 bool IPC::recv(Message& msg) {
     auto* cur = Scheduler::current_task();
     if (!cur || !cur->msg_queue) return false;
@@ -185,6 +199,7 @@ bool IPC::recv(Message& msg) {
     return ok;
 }
 
+/// @brief Send and block until a reply arrives (client-side synchronous IPC).
 bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
     // Send the request message
     if (!send(dest_id, msg)) return false;
@@ -215,12 +230,14 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
     return cur->msg_queue->pop(reply);
 }
 
+/// @brief Return a reference to a task's message queue (asserts existence).
 MessageQueue& IPC::queue(uint64_t task_id) {
     auto* tcb = Scheduler::find_task(task_id);
     ENSURE(tcb != nullptr && tcb->msg_queue != nullptr);
     return *tcb->msg_queue;
 }
 
+/// @brief Block the current task on a full queue (priority inheritance if sender is more urgent).
 bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
     task.state = TaskState::BLOCKED;
     task.blocked_next = nullptr;
@@ -240,6 +257,7 @@ bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
     return true;
 }
 
+/// @brief Unblock the oldest blocked sender and restore receiver priority.
 void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
     if (!q.blocked_senders_head) return;
 

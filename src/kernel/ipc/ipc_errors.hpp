@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file ipc_errors.hpp
+/// @brief IPC error codes (X-macro table with human-readable strings).
+
 #pragma once
 
 #include <types.hpp>
@@ -35,6 +38,7 @@ namespace kernel::errors {
     X(NO_BUFFER,      8,  "No buffer available for zero-copy") \
     X(INVALID_ARGS,   9,  "Invalid arguments")
 
+/// @brief IPC subsystem error codes.
 // NOLINTNEXTLINE(performance-enum-size)
 enum IpcError : uint64_t {
 #define X(name, num, msg) IPC_ERR_##name = (num),

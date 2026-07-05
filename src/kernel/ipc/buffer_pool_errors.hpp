@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file buffer_pool_errors.hpp
+/// @brief Buffer pool error codes (X-macro table with human-readable strings).
+
 #pragma once
 
 #include <types.hpp>
@@ -34,6 +37,7 @@ namespace kernel::errors {
     X(VA_OUT_OF_RANGE, 6,  "Virtual address outside user space") \
     X(NOT_MAPPED,      7,  "Buffer is not mapped in this task")
 
+/// @brief Buffer pool error codes.
 // NOLINTNEXTLINE(performance-enum-size)
 enum BufPoolError : uint64_t {
 #define X(name, num, msg) BUF_ERR_##name = (num),
