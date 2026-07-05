@@ -47,7 +47,7 @@ inline constexpr uint64_t PAGE_SIZE_2M = 0x200000;
 
 #if defined(CONFIG_ARCH_X86_64)
 /// @brief x86-64 segment selectors.
-enum Segment : uint64_t {
+enum Segment : uint8_t {
     SEG_NULL        = 0x00,
     SEG_KERNEL_CODE = 0x08,
     SEG_KERNEL_DATA = 0x10,
@@ -56,6 +56,7 @@ enum Segment : uint64_t {
 };
 
 /// @brief RFLAGS register constants.
+// NOLINTNEXTLINE(performance-enum-size)
 enum RFlags : uint64_t {
     RFLAGS_IF       = 0x200,   ///< Interrupt Flag
     RFLAGS_DEFAULT  = 0x202,   ///< IF + reserved bit 1 (task start value)
@@ -119,7 +120,7 @@ inline constexpr size_t   HEAP_SIZE    = 1_MiB;
 // ---------------------------------------------------------------------------
 // Common error codes for POSIX-style kernel functions
 // ---------------------------------------------------------------------------
-enum Error : int64_t {
+enum Error : int8_t {
     ERR_OK      = 0,
     ERR_FAILURE = -1,
 };

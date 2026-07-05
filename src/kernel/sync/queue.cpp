@@ -184,6 +184,7 @@ bool Queue::receive(uint8_t* buf, size_t* size) {
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::SyncError Queue::receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
@@ -230,6 +231,7 @@ bool Queue::try_receive(uint8_t* buf, size_t* size) {
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::SyncError Queue::try_receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (is_empty()) return errors::SYNC_ERR_QUEUE_EMPTY;

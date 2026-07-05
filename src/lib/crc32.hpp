@@ -33,8 +33,8 @@ public:
 
 private:
     static constexpr uint32_t POLY = 0xEDB88320;
-    static uint32_t table_[256];
-    static bool initialized_;
+    static constinit uint32_t table_[256];
+    static constinit bool initialized_;
 };
 
 }

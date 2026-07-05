@@ -27,15 +27,16 @@
 
 namespace kernel {
 
-uint64_t PMM::total_pages_ = 0;
-uint64_t PMM::free_pages_ = 0;
-uint64_t PMM::bitmap_ = 0;
-uint64_t PMM::bitmap_size_ = 0;
-uint64_t PMM::owner_bitmap_ = 0;
-uint64_t PMM::page_table_pool_start_ = 0;
-uint64_t PMM::page_table_pool_end_ = 0;
-PMM::OOMHandler PMM::oom_handler_ = nullptr;
+constinit uint64_t PMM::total_pages_ = 0;
+constinit uint64_t PMM::free_pages_ = 0;
+constinit uint64_t PMM::bitmap_ = 0;
+constinit uint64_t PMM::bitmap_size_ = 0;
+constinit uint64_t PMM::owner_bitmap_ = 0;
+constinit uint64_t PMM::page_table_pool_start_ = 0;
+constinit uint64_t PMM::page_table_pool_end_ = 0;
+constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     total_pages_ = mem_size / PAGE_SIZE;
     free_pages_ = total_pages_;
@@ -46,7 +47,9 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     bitmap_ = arch::HHDM_OFFSET + bitmap_phys;
     owner_bitmap_ = arch::HHDM_OFFSET + owner_bitmap_phys;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     for (uint64_t i = 0; i < bitmap_size_; ++i) {
         bitmap[i] = 0;
@@ -228,40 +231,47 @@ bool PMM::is_user_page(uint64_t phys_addr) {
 
 void PMM::bitmap_set(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     bitmap[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
 void PMM::bitmap_clear(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     bitmap[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
 bool PMM::bitmap_test(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
     return (bitmap[index / 8] >> (index % 8)) & 1;
 }
 
 void PMM::owner_set_user(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     owner[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
 void PMM::owner_set_kernel(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     owner[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
 bool PMM::owner_test(size_t index) {
     ENSURE(index < total_pages_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     return (owner[index / 8] >> (index % 8)) & 1;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
     uint64_t kernel_end) {
     total_pages_ = mem_size / PAGE_SIZE;
@@ -273,7 +283,9 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
     bitmap_ = arch::HHDM_OFFSET + bitmap_phys;
     owner_bitmap_ = arch::HHDM_OFFSET + owner_bitmap_phys;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* bitmap = reinterpret_cast<uint8_t*>(bitmap_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* owner = reinterpret_cast<uint8_t*>(owner_bitmap_);
     for (uint64_t i = 0; i < bitmap_size_; ++i) {
         bitmap[i] = 0;

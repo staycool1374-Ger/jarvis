@@ -29,7 +29,7 @@ static constexpr size_t MAX_MOUNTS = CONFIG_MAX_MOUNTS;
 static constexpr size_t MAX_PATH = CONFIG_VFS_MAX_PATH;
 static constexpr size_t MAX_PATH_DEPTH = 16;
 
-enum OpenFlags : uint64_t {
+enum OpenFlags : uint16_t {
     O_RDONLY   = 0,
     O_WRONLY   = 1,
     O_RDWR     = 2,
@@ -37,13 +37,13 @@ enum OpenFlags : uint64_t {
     O_CREAT    = 0x200,
 };
 
-enum SeekWhence : int64_t {
+enum SeekWhence : int8_t {
     SEEK_SET = 0,
     SEEK_CUR = 1,
     SEEK_END = 2,
 };
 
-enum class VfsSentinel : int64_t {
+enum class VfsSentinel : int8_t {
     INVALID_FD = -4,
 };
 constexpr int64_t VFS_INVALID = static_cast<int64_t>(VfsSentinel::INVALID_FD);

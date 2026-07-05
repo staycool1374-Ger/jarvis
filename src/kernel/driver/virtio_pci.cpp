@@ -33,6 +33,7 @@ static uint64_t page_align_up(uint64_t x) {
     return (x + 0xFFF) & ~0xFFFULL;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool virtio_map_mmio(uint8_t bar, uint32_t offset, uint32_t length,
                      VirtioMmio& mmio_out, PciBdf bdf) {
     PciDeviceInfo info = pci_read_device_info(bdf);
@@ -167,9 +168,11 @@ bool virtio_negotiate_features(VirtioTransport& t, uint64_t driver_features) {
     return true;
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
                         uint16_t queue_size, uint64_t desc_phys,
                         uint64_t avail_phys, uint64_t used_phys) {
+// NOLINTEND(bugprone-easily-swappable-parameters)
     virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SEL, queue_idx);
     kernel::atomic_fence();
     uint16_t size = virtio_read_common16(t, VIRTIO_COMMON_QUEUE_SIZE);

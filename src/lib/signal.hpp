@@ -23,10 +23,11 @@
 
 #include <types.hpp>
 
+// NOLINTBEGIN(performance-no-int-to-ptr,bugprone-branch-clone)
 namespace kernel {
 
 /// @brief Standard POSIX-like signal numbers.
-enum class Signal : uint64_t {
+enum class Signal : uint8_t {
     SIG_NONE    = 0,
     SIGHUP      = 1,
     SIGINT      = 2,
@@ -76,16 +77,10 @@ static inline ExceptionSignalMap exception_to_signal(uint64_t vector) {
         case 4:  return {Signal::SIGILL,  SignalAction::TERMINATE, "SIGILL"};   // #OF
         case 5:  return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #BR
         case 6:  return {Signal::SIGILL,  SignalAction::TERMINATE, "SIGILL"};   // #UD
-        case 7:  return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #NM
-        case 8:  return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #DF
-        case 10: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #TS
-        case 11: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #NP
-        case 12: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #SS
-        case 13: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #GP
-        case 14: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #PF
-        case 16: return {Signal::SIGFPE,  SignalAction::TERMINATE, "SIGFPE"};   // #MF
-        case 17: return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};  // #AC
-        case 19: return {Signal::SIGFPE,  SignalAction::TERMINATE, "SIGFPE"};   // #XF
+        case 7: case 8: case 10: case 11: case 12: case 13: case 14: case 17:
+            return {Signal::SIGSEGV, SignalAction::TERMINATE, "SIGSEGV"};       // #NM..#AC
+        case 16: case 19:
+            return {Signal::SIGFPE,  SignalAction::TERMINATE, "SIGFPE"};         // #MF, #XF
         default: return {Signal::SIGSYS,  SignalAction::TERMINATE, "SIGSYS"};
     }
 }
@@ -96,7 +91,7 @@ static constexpr size_t MAX_SIGNAL_HANDLERS = CONFIG_MAX_SIGNAL_HANDLERS;
 /// @brief Global recovery IP for safe user memory access.
 ///        Non-zero means we are in a user memory access recovery zone.
 ///        If a fault occurs and this is set, execution is redirected here.
-extern "C" uint64_t g_user_access_recover_ip;
+extern "C" constinit uint64_t g_user_access_recover_ip;
 
 /// @brief Signal frame placed on the user stack when delivering a signal.
 ///        The handler returns via SYS_SIGRETURN which restores this frame.
@@ -134,3 +129,4 @@ static inline SignalAction default_signal_action(uint64_t sig) {
 }
 
 } // namespace kernel
+// NOLINTEND(performance-no-int-to-ptr)

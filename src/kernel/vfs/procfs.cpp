@@ -35,7 +35,7 @@ static void uint64_to_str(char* buffer, uint64_t n) {
     int pos = 32;
     tmp[--pos] = '\0';
     if (n == 0) tmp[--pos] = '0';
-    else while (n) { tmp[--pos] = '0' + (n % 10); n /= 10; }
+    else while (n) { tmp[--pos] = static_cast<char>('0' + (n % 10)); n /= 10; }
     size_t i = 0;
     while (tmp[pos]) buffer[i++] = tmp[pos++];
     buffer[i] = '\0';
@@ -64,6 +64,7 @@ static int64_t meminfo_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
 static int meminfo_open(Vnode&, uint64_t) { return 0; }
 static void meminfo_close(Vnode&) {}
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t meminfo_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     auto* mi = static_cast<MemInfoVnode*>(self.private_data);
@@ -126,6 +127,7 @@ static int64_t pci_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
 static int pci_open(Vnode&, uint64_t) { return 0; }
 static void pci_close(Vnode&) {}
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t pci_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     auto* pi = static_cast<PciVnode*>(self.private_data);
@@ -219,9 +221,11 @@ static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count,
 
     size_t len = 0;
     const char* state_str = "?";
+    // NOLINTBEGIN(bugprone-branch-clone)
     switch (ps->task->state) {
     case TaskState::READY:     state_str = "R"; break;
     case TaskState::RUNNING:   state_str = "R"; break;
+    // NOLINTEND(bugprone-branch-clone)
     case TaskState::BLOCKED:   state_str = "B"; break;
     case TaskState::WAITING:   state_str = "W"; break;
     case TaskState::TERMINATED: state_str = "T"; break;
@@ -255,6 +259,7 @@ static int64_t pid_stat_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
 static int pid_stat_open(Vnode&, uint64_t) { return 0; }
 static void pid_stat_close(Vnode&) {}
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t pid_stat_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     (void)self;

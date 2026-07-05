@@ -31,6 +31,7 @@ MockBlockDevice::MockBlockDevice(uint64_t sector_count_)
     uint64_t pages = (bytes + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
     uint64_t phys = PMM::alloc_contiguous(pages);
     if (phys) {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         data_ = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
         memset(data_, 0, bytes);
     }

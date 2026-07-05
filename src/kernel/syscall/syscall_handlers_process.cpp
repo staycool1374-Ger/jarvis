@@ -43,6 +43,7 @@ uint64_t Syscall::sys_fork(uint64_t, uint64_t, uint64_t, uint64_t,
 uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
     uint64_t target_pid = arg0;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto status = checked(reinterpret_cast<uint64_t*>(arg1));
     auto* status_ptr = (!syscall_is_user_task() || status.valid()) ?
         status.unsafe_ptr() : nullptr;
@@ -101,12 +102,15 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
     vfs::Vnode* vn = nullptr;
     char path_buf[SYSCALL_MAX_PATH];
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     if (!strncpy_from_user(path_buf, reinterpret_cast<const char*>(arg0),
         SYSCALL_MAX_PATH))
         return static_cast<uint64_t>(-1);
     vn = vfs::resolve(path_buf);
     if (!vn) return static_cast<uint64_t>(-1);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* argv = reinterpret_cast<const char* const*>(arg1);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* envp = reinterpret_cast<const char* const*>(arg2);
     if (!validate_argv_envp(argv, true)) return static_cast<uint64_t>(-1);
     if (!validate_argv_envp(envp, true)) return static_cast<uint64_t>(-1);
@@ -114,6 +118,7 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     size_t file_pages = (static_cast<size_t>(vn->size) + 4095) / 4096;
     uint64_t file_phys = PMM::alloc_contiguous(file_pages);
     if (!file_phys) return static_cast<uint64_t>(-1);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint8_t* file_buf = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + file_phys
         );
     int64_t r = vn->ops->read(*vn, file_buf, vn->size, 0);
@@ -164,6 +169,7 @@ uint64_t Syscall::sys_signal(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     if (signal_is_fatal(sig)) return static_cast<uint64_t>(-1);
     // SIG_NONE cannot be caught or ignored
     if (sig == static_cast<uint64_t>(kernel::Signal::SIG_NONE)) return 0;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto handler = reinterpret_cast<sighandler_t>(arg1);
     t->set_signal_handler(sig, handler);
     return 0;
@@ -174,7 +180,9 @@ uint64_t Syscall::sys_sigreturn(uint64_t, uint64_t, uint64_t, uint64_t,
     auto* t = syscall_task();
     if (!t || !regs) return static_cast<uint64_t>(-1);
     uint64_t user_rsp = regs[20];
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* frame = reinterpret_cast<const SignalFrame*>(
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         reinterpret_cast<uint64_t*>(user_rsp));
     auto chk = checked(frame, 1);
     if (!chk.valid()) return static_cast<uint64_t>(-1);

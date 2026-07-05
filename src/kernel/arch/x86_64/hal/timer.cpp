@@ -24,8 +24,8 @@
 
 namespace arch {
 
-volatile uint64_t Timer::ticks_ = 0;
-uint64_t Timer::tsc_freq_hz_ = 0;
+constinit volatile uint64_t Timer::ticks_ = 0;
+constinit uint64_t Timer::tsc_freq_hz_ = 0;
 
 void Timer::init(uint32_t frequency_hz) {
     set_frequency(frequency_hz);

@@ -71,6 +71,7 @@ public:
 };
 
 constexpr size_t DMESG_CAPACITY = CONFIG_DMESG_CAPACITY;
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
 #define dmesg_push(subsys, err, msg, ctx) \

@@ -23,8 +23,8 @@ public:
 private:
     static void calibrate_tsc(uint32_t frequency_hz);
     static constexpr uint32_t PIT_BASE_FREQ = 1193182;
-    static volatile uint64_t ticks_;
-    static uint64_t tsc_freq_hz_;
+    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t tsc_freq_hz_;
 };
 
 #elif defined(CONFIG_ARCH_AARCH64)
@@ -43,8 +43,8 @@ public:
     static uint64_t remaining();
 
 private:
-    static volatile uint64_t ticks_;
-    static uint64_t counter_freq_hz_;
+    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t counter_freq_hz_;
 };
 
 #elif defined(CONFIG_ARCH_RISCV64)
@@ -63,8 +63,8 @@ public:
     static uint64_t remaining();
 
 private:
-    static volatile uint64_t ticks_;
-    static uint64_t timer_freq_hz_;
+    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t timer_freq_hz_;
 };
 
 #else

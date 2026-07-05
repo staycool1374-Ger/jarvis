@@ -26,7 +26,7 @@ void Serial::putchar(char c) {
 
 char Serial::getchar() {
     while ((inb(arch::COM1 + 5) & 0x01) == 0);
-    return inb(arch::COM1);
+    return static_cast<char>(inb(arch::COM1));
 }
 
 void Serial::puts(const char* s) {

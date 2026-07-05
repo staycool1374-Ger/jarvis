@@ -82,8 +82,10 @@ public:
     static bool available() { return initialized_; }
 
 private:
+    // NOLINTBEGIN(bugprone-dynamic-static-initializers)
     static FramebufferInfo info_;
     static bool initialized_;
+    // NOLINTEND(bugprone-dynamic-static-initializers)
 
     /// @brief Writes a pixel value directly to the framebuffer memory.
     /// @param x     X coordinate.

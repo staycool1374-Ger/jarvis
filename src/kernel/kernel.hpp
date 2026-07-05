@@ -24,6 +24,7 @@
 #include <types.hpp>
 #include <kernel/boot/bootinfo.hpp>
 
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern BootInfo g_boot_info;
 
 extern "C" {
@@ -44,4 +45,5 @@ void panic(const char* msg) __attribute__((noreturn));
 }
 
 /// @brief Kernel stack base (bottom address).
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint8_t kernel_stack[];

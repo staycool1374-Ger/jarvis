@@ -24,11 +24,12 @@ private:
     static constexpr size_t RING_SIZE = 256;
     static constexpr uint16_t DATA_PORT = 0x60;
     static constexpr uint16_t STATUS_PORT = 0x64;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static SPSCRing<char, RING_SIZE> ring_;
-    static bool shift_;
-    static bool ctrl_;
-    static bool alt_;
-    static bool caps_;
+    static constinit bool shift_;
+    static constinit bool ctrl_;
+    static constinit bool alt_;
+    static constinit bool caps_;
     static bool push_ring(char c);
     static void update_modifiers(uint8_t scancode, bool pressed);
 };

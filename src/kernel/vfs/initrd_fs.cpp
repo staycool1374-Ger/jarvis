@@ -64,6 +64,7 @@ static void initrd_file_close(Vnode& self) {
     kernel::MemPool::free(&self);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);

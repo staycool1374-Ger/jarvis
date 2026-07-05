@@ -38,6 +38,7 @@ uint64_t Syscall::sys_send(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     msg.sender_id = cur ? cur->id : 0;
     msg.type = arg2;
     msg.data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto data = checked(reinterpret_cast<const uint8_t*>(arg1), msg.data_size);
     if (!data.valid()) return static_cast<uint64_t>(-1);
     for (size_t i = 0; i < msg.data_size; ++i) {
@@ -49,6 +50,7 @@ uint64_t Syscall::sys_send(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
                               uint64_t, uint64_t*) {
     uint64_t max_size = arg2;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto buf = checked(reinterpret_cast<uint8_t*>(arg1), max_size);
     if (!buf.valid()) return static_cast<uint64_t>(-1);
     uint8_t* raw_buf = buf.unsafe_ptr();
@@ -87,8 +89,10 @@ uint64_t Syscall::sys_send_sync(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t dest_id = arg0;
     uint64_t type = arg2;
     uint64_t data_size = arg3 < IPC_MAX_MSG_SIZE ? arg3 : IPC_MAX_MSG_SIZE;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto data = checked(reinterpret_cast<const uint8_t*>(arg1), data_size);
     if (!data.valid()) return static_cast<uint64_t>(-1);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto data_rw = checked(reinterpret_cast<uint8_t*>(arg1), data_size);
     Message msg{};
     auto* cur = syscall_task();

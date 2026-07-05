@@ -23,6 +23,7 @@
 namespace kernel {
 namespace vfs {
 
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern Filesystem tmpfs_fs;
 void tmpfs_reset_root();
 

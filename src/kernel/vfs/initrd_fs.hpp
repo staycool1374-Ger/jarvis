@@ -23,6 +23,7 @@
 namespace kernel {
 namespace vfs {
 
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern Filesystem initrd_fs;
 
 } // namespace vfs

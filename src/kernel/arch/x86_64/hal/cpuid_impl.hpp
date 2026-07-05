@@ -2,6 +2,7 @@
 
 #include <types.hpp>
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 namespace arch {
 
 struct CpuIdResult {
@@ -37,3 +38,4 @@ inline bool has_rdrand() { return (cpuid(1).ecx & CPUID_ECX1_RDRAND) != 0; }
 inline bool has_rdseed() { return (cpuid(7, 0).ebx & CPUID_EBX7_RDSEED) != 0; }
 
 } // namespace arch
+// NOLINTEND(bugprone-easily-swappable-parameters)

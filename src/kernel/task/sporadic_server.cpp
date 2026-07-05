@@ -26,6 +26,7 @@ namespace task {
 
 static constexpr uint64_t SPRIO_INVALID = ~0ULL;
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void SporadicServer::init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,
                           uint64_t budget_granularity) noexcept {
     budget_c_              = budget_c;
@@ -150,6 +151,7 @@ void SporadicServer::process_replenishments(uint64_t now) noexcept {
 
 // ---- Private helpers ----
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool SporadicServer::schedule_replenishment(uint64_t time, uint64_t amount) noexcept {
     if (replenishment_count_ == MAX_REPLENISHMENTS)
         return false;

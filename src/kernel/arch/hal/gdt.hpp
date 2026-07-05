@@ -48,12 +48,15 @@ public:
 
 private:
     static constexpr size_t NUM_ENTRIES = 7;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static GDTEntry entries_[NUM_ENTRIES];
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static TSS tss_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static GDTDescriptor desc_;
 };
 
-enum {
+enum : uint8_t {
     GDT_NULL  = 0x00,
     GDT_CODE  = 0x08,
     GDT_DATA  = 0x10,

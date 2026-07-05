@@ -34,8 +34,8 @@ static const uint32_t palette[16] = {
 };
 
 static int mandelbrot_iter(int px, int py) {
-    int x0 = (px * 35 - 25 * W) / 10;
-    int y0 = (py * 20 - 10 * H) / 10;
+    int x0 = static_cast<int>((px * 35 - 25 * W) / 10);
+    int y0 = static_cast<int>((py * 20 - 10 * H) / 10);
 
     int x = 0, y = 0;
     int iter = 0;
@@ -56,7 +56,7 @@ void draw_mandelbrot() {
 
     for (uint32_t py = 0; py < H; py += 2) {
         for (uint32_t px = 0; px < W; px += 2) {
-            int iter = mandelbrot_iter(px, py);
+            int iter = mandelbrot_iter(static_cast<int>(px), static_cast<int>(py));
             uint32_t color = palette[iter % 16];
             service::Framebuffer::draw_pixel(px, py, color);
             service::Framebuffer::draw_pixel(px + 1, py, color);
@@ -87,6 +87,7 @@ void draw_spinning_rect() {
             case 0: cos_val = 100; sin_val = 0; break;
             case 1: cos_val = 71;  sin_val = 71; break;
             case 2: cos_val = 0;   sin_val = 100; break;
+            default: break;
             case 3: cos_val = -71; sin_val = 71; break;
             case 4: cos_val = -100; sin_val = 0; break;
             case 5: cos_val = -71; sin_val = -71; break;

@@ -41,8 +41,9 @@ namespace kernel::errors {
     X(MOUNT_POINT_BUSY, 14, "Mount point busy") \
     X(NO_SUCH_FS,       15, "Filesystem type not found")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum VfsError : uint64_t {
-#define X(name, num, msg) VFS_ERR_##name = num,
+#define X(name, num, msg) VFS_ERR_##name = (num),
     VFS_ERROR_CODES
 #undef X
 };

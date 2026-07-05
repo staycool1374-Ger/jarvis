@@ -33,6 +33,7 @@ struct PciBdf {
 
 #include <kernel/arch/hal/io.hpp>
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters,performance-no-int-to-ptr)
 namespace arch {
 
 constexpr uint16_t PCI_CONFIG_ADDR = 0xCF8;
@@ -83,11 +84,13 @@ inline void pci_config_writeb(uint64_t addr, uint8_t val) {
 }
 
 } // namespace arch
+// NOLINTEND(bugprone-easily-swappable-parameters,performance-no-int-to-ptr)
 
 #elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 
 #include <kernel/arch/hal/io.hpp>
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters,performance-no-int-to-ptr)
 namespace arch {
 
 #ifndef CONFIG_PCI_ECAM_BASE
@@ -140,6 +143,7 @@ inline void pci_config_writeb(uint64_t addr, uint8_t val) {
 }
 
 } // namespace arch
+// NOLINTEND(bugprone-easily-swappable-parameters,performance-no-int-to-ptr)
 
 #else
 #error "pci.hpp: unsupported architecture"

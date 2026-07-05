@@ -25,7 +25,7 @@
 namespace kernel {
 
 MemPool::Pool MemPool::pools_[POOL_COUNT] = {};
-bool MemPool::ready_ = false;
+constinit bool MemPool::ready_ = false;
 
 void MemPool::init() {
     static const size_t sizes[POOL_COUNT] = {
@@ -47,10 +47,12 @@ void MemPool::init() {
         uint64_t phys = PMM::alloc_contiguous(pages);
         ENSURE(phys != 0);
 
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         pool.data = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
 
         pool.first_free = 0;
         for (size_t j = 0; j < pool.block_count; ++j) {
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             size_t* next = reinterpret_cast<size_t*>(
                 pool.data + j * pool.block_size);
             *next = j + 1;

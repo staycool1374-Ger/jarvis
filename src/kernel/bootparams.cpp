@@ -107,6 +107,7 @@ void BootParams::parse_multiboot_cmdline() {
         uint32_t size;
         char     cmdline[];
     };
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* tag = reinterpret_cast<CmdlineTag*>(tag_addr);
     parse_cstr(tag->cmdline);
 #endif

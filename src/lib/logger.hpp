@@ -23,11 +23,14 @@
 
 #include <types.hpp>
 
+// NOLINTBEGIN(bugprone-reserved-identifier)
 using __va_list = __builtin_va_list;
+// NOLINTEND(bugprone-reserved-identifier)
 #define va_start(ap, last) __builtin_va_start(ap, last)
 #define va_end(ap)         __builtin_va_end(ap)
 #define va_arg(ap, type)   __builtin_va_arg(ap, type)
 
+// NOLINTBEGIN(bugprone-narrowing-conversions)
 namespace kernel {
 
 enum class LogLevel : uint8_t {
@@ -57,8 +60,8 @@ public:
     static void print_dec(uint64_t v);
 
 private:
-    static LogLevel current_level_;
-    static bool initialized_;
+    static constinit LogLevel current_level_;
+    static constinit bool initialized_;
 
     static void putchar(char c);
     static void puts(const char* s);
@@ -67,3 +70,4 @@ private:
 };
 
 } // namespace kernel
+// NOLINTEND(bugprone-narrowing-conversions)

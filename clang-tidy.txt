@@ -1,0 +1,641 @@
+  TIDY    clang-tidy (bugprone,concurrency,performance)...
+[1/73] Processing file /Users/arnold/jarvis/src/initrd/initrd.cpp.
+[2/73] Processing file /Users/arnold/jarvis/src/programs/demo/demo.cpp.
+[3/73] Processing file /Users/arnold/jarvis/src/lib/version.cpp.
+[4/73] Processing file /Users/arnold/jarvis/src/lib/crc32.cpp.
+[5/73] Processing file /Users/arnold/jarvis/src/lib/fdt/fdt_ro.cpp.
+[6/73] Processing file /Users/arnold/jarvis/src/lib/fdt/fdt_strerror.cpp.
+[7/73] Processing file /Users/arnold/jarvis/src/lib/logger.cpp.
+[8/73] Processing file /Users/arnold/jarvis/src/lib/chacha.cpp.
+[9/73] Processing file /Users/arnold/jarvis/src/services/program.cpp.
+[10/73] Processing file /Users/arnold/jarvis/src/services/terminal/framebuffer.cpp.
+[11/73] Processing file /Users/arnold/jarvis/src/services/terminal/terminal.cpp.
+[12/73] Processing file /Users/arnold/jarvis/src/services/shell.cpp.
+Error while processing /Users/arnold/jarvis/src/services/shell.cpp.
+[13/73] Processing file /Users/arnold/jarvis/src/kernel/gcov/gcov_handler.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/gcov/gcov_handler.cpp.
+[14/73] Processing file /Users/arnold/jarvis/src/kernel/bootparams.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/bootparams.cpp.
+[15/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/vfsd.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/vfsd.cpp.
+[16/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/pipe.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/pipe.cpp.
+[17/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/devfs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/devfs.cpp.
+[18/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/initrd_fs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/initrd_fs.cpp.
+[19/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/fat32.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/fat32.cpp.
+[20/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/procfs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/procfs.cpp.
+[21/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/tmpfs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/tmpfs.cpp.
+[22/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/vfs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/vfs.cpp.
+[23/73] Processing file /Users/arnold/jarvis/src/kernel/vfs/fat32_fs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/vfs/fat32_fs.cpp.
+[24/73] Processing file /Users/arnold/jarvis/src/kernel/net/arp.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/net/arp.cpp.
+[25/73] Processing file /Users/arnold/jarvis/src/kernel/net/net.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/net/net.cpp.
+[26/73] Processing file /Users/arnold/jarvis/src/kernel/kernel.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/kernel.cpp.
+[27/73] Processing file /Users/arnold/jarvis/src/kernel/memory/mempool.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/memory/mempool.cpp.
+[28/73] Processing file /Users/arnold/jarvis/src/kernel/memory/vmm.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/memory/vmm.cpp.
+[29/73] Processing file /Users/arnold/jarvis/src/kernel/memory/integrity.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/memory/integrity.cpp.
+[30/73] Processing file /Users/arnold/jarvis/src/kernel/memory/pmm.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/memory/pmm.cpp.
+[31/73] Processing file /Users/arnold/jarvis/src/kernel/memory/markers.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/memory/markers.cpp.
+[32/73] Processing file /Users/arnold/jarvis/src/kernel/driver/ahci.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/ahci.cpp.
+[33/73] Processing file /Users/arnold/jarvis/src/kernel/driver/virtio_pci.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/virtio_pci.cpp.
+[34/73] Processing file /Users/arnold/jarvis/src/kernel/driver/dma.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/dma.cpp.
+[35/73] Processing file /Users/arnold/jarvis/src/kernel/driver/virtio_blk.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/virtio_blk.cpp.
+[36/73] Processing file /Users/arnold/jarvis/src/kernel/driver/driver.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/driver.cpp.
+[37/73] Processing file /Users/arnold/jarvis/src/kernel/driver/ata_pio.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/ata_pio.cpp.
+[38/73] Processing file /Users/arnold/jarvis/src/kernel/driver/block_device.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/block_device.cpp.
+[39/73] Processing file /Users/arnold/jarvis/src/kernel/driver/virtio_net.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/virtio_net.cpp.
+[40/73] Processing file /Users/arnold/jarvis/src/kernel/driver/iocd.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/driver/iocd.cpp.
+[41/73] Processing file /Users/arnold/jarvis/src/kernel/random.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/random.cpp.
+[42/73] Processing file /Users/arnold/jarvis/src/kernel/daemon/daemon_mgr.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/daemon/daemon_mgr.cpp.
+[43/73] Processing file /Users/arnold/jarvis/src/kernel/task/taskdefs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/taskdefs.cpp.
+[44/73] Processing file /Users/arnold/jarvis/src/kernel/task/dmesg_task.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/dmesg_task.cpp.
+[45/73] Processing file /Users/arnold/jarvis/src/kernel/task/sporadic_server.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/sporadic_server.cpp.
+[46/73] Processing file /Users/arnold/jarvis/src/kernel/task/scheduler.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/scheduler.cpp.
+[47/73] Processing file /Users/arnold/jarvis/src/kernel/task/task.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/task.cpp.
+[48/73] Processing file /Users/arnold/jarvis/src/kernel/task/ready_queue_manager.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/ready_queue_manager.cpp.
+[49/73] Processing file /Users/arnold/jarvis/src/kernel/task/task_queue.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/task/task_queue.cpp.
+[50/73] Processing file /Users/arnold/jarvis/src/kernel/log/ring_buffer.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/log/ring_buffer.cpp.
+[51/73] Processing file /Users/arnold/jarvis/src/kernel/log/dmesg.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/log/dmesg.cpp.
+[52/73] Processing file /Users/arnold/jarvis/src/kernel/ipc/buffer_pool.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/ipc/buffer_pool.cpp.
+[53/73] Processing file /Users/arnold/jarvis/src/kernel/ipc/ipc.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/ipc/ipc.cpp.
+[54/73] Processing file /Users/arnold/jarvis/src/kernel/sync/mutex.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/mutex.cpp.
+[55/73] Processing file /Users/arnold/jarvis/src/kernel/sync/eventgroup.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/eventgroup.cpp.
+[56/73] Processing file /Users/arnold/jarvis/src/kernel/sync/sync.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/sync.cpp.
+[57/73] Processing file /Users/arnold/jarvis/src/kernel/sync/notify.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/notify.cpp.
+[58/73] Processing file /Users/arnold/jarvis/src/kernel/sync/queue.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/queue.cpp.
+[59/73] Processing file /Users/arnold/jarvis/src/kernel/sync/semaphore.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/sync/semaphore.cpp.
+[60/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_process.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_process.cpp.
+[61/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall.cpp.
+[62/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_sync.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_sync.cpp.
+[63/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_ipc.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_ipc.cpp.
+[64/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_fs.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_fs.cpp.
+[65/73] Processing file /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_misc.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/syscall/syscall_handlers_misc.cpp.
+[66/73] Processing file /Users/arnold/jarvis/src/kernel/elf/elf.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/elf/elf.cpp.
+[67/73] Processing file /Users/arnold/jarvis/src/kernel/debug/dump.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/debug/dump.cpp.
+[68/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/idt.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/idt.cpp.
+[69/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/timer.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/timer.cpp.
+[70/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/gdt.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/hal/gdt.cpp.
+[71/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/serial.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/serial.cpp.
+[72/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/rtc.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/rtc.cpp.
+[73/73] Processing file /Users/arnold/jarvis/src/kernel/arch/x86_64/keyboard.cpp.
+Error while processing /Users/arnold/jarvis/src/kernel/arch/x86_64/keyboard.cpp.
+src/kernel/arch/hal/gdt.hpp:51:21: warning: static variable 'entries_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   51 |     static GDTEntry entries_[NUM_ENTRIES];
+      |                     ^
+src/kernel/arch/hal/gdt.hpp:52:16: warning: static variable 'tss_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   52 |     static TSS tss_;
+      |                ^
+src/kernel/arch/hal/gdt.hpp:53:26: warning: static variable 'desc_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   53 |     static GDTDescriptor desc_;
+      |                          ^
+src/kernel/arch/hal/gdt.hpp:56:1: warning: enum '(unnamed enum at src/kernel/arch/hal/gdt.hpp:56:1)' uses a larger base type ('unsigned int', size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   56 | enum {
+      | ^
+src/kernel/arch/hal/idt.hpp:65:21: warning: static variable 'entries_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   65 |     static IDTEntry entries_[NUM_ENTRIES];
+      |                     ^
+src/kernel/arch/hal/idt.hpp:66:26: warning: static variable 'desc_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   66 |     static IDTDescriptor desc_;
+      |                          ^
+src/kernel/arch/hal/idt.hpp:67:23: warning: static variable 'handlers_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   67 |     static ISRHandler handlers_[NUM_ENTRIES];
+      |                       ^
+src/kernel/arch/hal/keyboard.hpp:27:38: warning: static variable 'ring_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   27 |     static SPSCRing<char, RING_SIZE> ring_;
+      |                                      ^
+src/kernel/arch/hal/keyboard.hpp:28:17: warning: static variable 'shift_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   28 |     static bool shift_;
+      |                 ^
+src/kernel/arch/hal/keyboard.hpp:29:17: warning: static variable 'ctrl_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   29 |     static bool ctrl_;
+      |                 ^
+src/kernel/arch/hal/keyboard.hpp:30:17: warning: static variable 'alt_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   30 |     static bool alt_;
+      |                 ^
+src/kernel/arch/hal/keyboard.hpp:31:17: warning: static variable 'caps_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   31 |     static bool caps_;
+      |                 ^
+src/kernel/arch/hal/timer.hpp:26:30: warning: static variable 'ticks_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 |     static volatile uint64_t ticks_;
+      |                              ^
+src/kernel/arch/hal/timer.hpp:27:21: warning: static variable 'tsc_freq_hz_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   27 |     static uint64_t tsc_freq_hz_;
+      |                     ^
+src/kernel/arch/pci.hpp:58:6: warning: enum 'PciStatus' uses a larger base type ('uint16_t' (aka 'unsigned short'), size: 2 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   58 | enum PciStatus : uint16_t {
+      |      ^
+src/kernel/arch/pci.hpp:63:6: warning: enum 'PciCommand' uses a larger base type ('uint16_t' (aka 'unsigned short'), size: 2 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   63 | enum PciCommand : uint16_t {
+      |      ^
+src/kernel/arch/pci_errors.hpp:36:6: warning: enum 'PciError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   36 | enum PciError : uint64_t {
+      |      ^
+src/kernel/arch/pci_errors.hpp:37:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   37 | #define X(name, num, msg) PCI_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/arch/virtio.hpp:74:6: warning: enum 'VirtioDescFlags' uses a larger base type ('uint16_t' (aka 'unsigned short'), size: 2 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   74 | enum VirtioDescFlags : uint16_t {
+      |      ^
+src/kernel/arch/virtio.hpp:116:6: warning: enum 'VirtioCommonReg' uses a larger base type ('uint16_t' (aka 'unsigned short'), size: 2 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+  116 | enum VirtioCommonReg : uint16_t {
+      |      ^
+src/kernel/driver/driver.hpp:104:20: warning: static variable 'drivers_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  104 |     static Driver* drivers_[MAX_DRIVERS];
+      |                    ^
+src/kernel/driver/driver.hpp:105:19: warning: static variable 'count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  105 |     static size_t count_;
+      |                   ^
+src/kernel/driver/virtio_blk.hpp:31:6: warning: enum 'VirtioBlkReqType' uses a larger base type ('uint32_t' (aka 'unsigned int'), size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   31 | enum VirtioBlkReqType : uint32_t {
+      |      ^
+src/kernel/elf/elf.hpp:57:1: warning: enum '(unnamed enum at src/kernel/elf/elf.hpp:57:1)' uses a larger base type ('uint32_t' (aka 'unsigned int'), size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   57 | enum : uint32_t {
+      | ^
+src/kernel/elf/elf.hpp:66:1: warning: enum '(unnamed enum at src/kernel/elf/elf.hpp:66:1)' uses a larger base type ('uint32_t' (aka 'unsigned int'), size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   66 | enum : uint32_t {
+      | ^
+src/kernel/elf/elf.hpp:72:1: warning: enum '(unnamed enum at src/kernel/elf/elf.hpp:72:1)' uses a larger base type ('uint16_t' (aka 'unsigned short'), size: 2 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   72 | enum : uint16_t {
+      | ^
+src/kernel/ipc/buffer_pool.hpp:29:12: warning: enum 'ListSentinel' uses a larger base type ('int64_t' (aka 'long long'), size: 8 bytes) than necessary for its value set, consider using 'std::int8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   29 | enum class ListSentinel : int64_t {
+      |            ^
+src/kernel/ipc/buffer_pool.hpp:32:12: warning: enum 'BufferSentinel' uses a larger base type ('int64_t' (aka 'long long'), size: 8 bytes) than necessary for its value set, consider using 'std::int8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   32 | enum class BufferSentinel : int64_t {
+      |            ^
+src/kernel/ipc/buffer_pool.hpp:96:18: warning: static variable 'entries' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   96 |     static Entry entries[MAX_BUFFERS];
+      |                  ^
+src/kernel/ipc/buffer_pool.hpp:109:20: warning: static variable 'free_head_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  109 |     static int32_t free_head_;
+      |                    ^
+src/kernel/ipc/buffer_pool.hpp:110:21: warning: static variable 'next_cookie_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  110 |     static uint32_t next_cookie_;
+      |                     ^
+src/kernel/ipc/buffer_pool_errors.hpp:37:6: warning: enum 'BufPoolError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   37 | enum BufPoolError : uint64_t {
+      |      ^
+src/kernel/ipc/buffer_pool_errors.hpp:38:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   38 | #define X(name, num, msg) BUF_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/ipc/ipc.hpp:32:6: warning: enum 'IpcFlags' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   32 | enum IpcFlags : uint64_t {
+      |      ^
+src/kernel/ipc/ipc_errors.hpp:38:6: warning: enum 'IpcError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   38 | enum IpcError : uint64_t {
+      |      ^
+src/kernel/ipc/ipc_errors.hpp:39:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   39 | #define X(name, num, msg) IPC_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/kernel.hpp:27:17: warning: static variable 'g_boot_info' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   27 | extern BootInfo g_boot_info;
+      |                 ^
+src/kernel/kernel.hpp:47:16: warning: static variable 'kernel_stack' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   47 | extern uint8_t kernel_stack[];
+      |                ^
+src/kernel/log/dmesg.hpp:74:36: warning: static variable 'g_dmesg' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   74 | extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
+      |                                    ^
+src/kernel/log/ring_buffer.hpp:74:19: warning: static variable 'g_klog' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   74 | extern RingBuffer g_klog;
+      |                   ^
+src/kernel/memory/checked_ptr.hpp:32:21: warning: static variable 'g_user_access_recover_ip' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   32 | extern "C" uint64_t g_user_access_recover_ip;
+      |                     ^
+src/kernel/memory/integrity.hpp:26:23: warning: static variable '_m_text_start' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 | extern const uint64_t _m_text_start;
+      |                       ^
+src/kernel/memory/integrity.hpp:27:23: warning: static variable '_m_text_end' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   27 | extern const uint64_t _m_text_end;
+      |                       ^
+src/kernel/memory/integrity.hpp:28:23: warning: static variable '_m_rodata_start' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   28 | extern const uint64_t _m_rodata_start;
+      |                       ^
+src/kernel/memory/integrity.hpp:29:23: warning: static variable '_m_rodata_end' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   29 | extern const uint64_t _m_rodata_end;
+      |                       ^
+src/kernel/memory/integrity.hpp:30:23: warning: static variable '_m_data_start' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   30 | extern const uint64_t _m_data_start;
+      |                       ^
+src/kernel/memory/integrity.hpp:31:23: warning: static variable '_m_data_end' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   31 | extern const uint64_t _m_data_end;
+      |                       ^
+src/kernel/memory/integrity.hpp:32:23: warning: static variable '_m_bss_start' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   32 | extern const uint64_t _m_bss_start;
+      |                       ^
+src/kernel/memory/integrity.hpp:33:23: warning: static variable '_m_bss_end' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   33 | extern const uint64_t _m_bss_end;
+      |                       ^
+src/kernel/memory/integrity.hpp:34:23: warning: static variable '_m_stack_before' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   34 | extern const uint64_t _m_stack_before;
+      |                       ^
+src/kernel/memory/integrity.hpp:35:23: warning: static variable '_m_stack_after' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   35 | extern const uint64_t _m_stack_after;
+      |                       ^
+src/kernel/memory/integrity.hpp:38:21: warning: static variable '_text_start' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   38 |     extern uint64_t _text_start[];
+      |                     ^
+src/kernel/memory/integrity.hpp:39:21: warning: static variable '_text_end' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   39 |     extern uint64_t _text_end[];
+      |                     ^
+src/kernel/memory/integrity.hpp:40:21: warning: static variable '_expected_code_crc' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   40 |     extern uint64_t _expected_code_crc[];
+      |                     ^
+src/kernel/memory/mempool.hpp:142:17: warning: static variable 'pools_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  142 |     static Pool pools_[POOL_COUNT];
+      |                 ^
+src/kernel/memory/mempool.hpp:143:17: warning: static variable 'ready_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  143 |     static bool ready_;
+      |                 ^
+src/kernel/memory/mempool_errors.hpp:36:6: warning: enum 'MemPoolError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   36 | enum MemPoolError : uint64_t {
+      |      ^
+src/kernel/memory/mempool_errors.hpp:37:48: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   37 | #define X(name, num, msg) MEMPOOL_ERR_##name = num,
+      |                                                ^  
+      |                                                (  )
+src/kernel/memory/pmm.hpp:129:21: warning: static variable 'total_pages_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  129 |     static uint64_t total_pages_;
+      |                     ^
+src/kernel/memory/pmm.hpp:130:21: warning: static variable 'free_pages_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  130 |     static uint64_t free_pages_;
+      |                     ^
+src/kernel/memory/pmm.hpp:131:21: warning: static variable 'bitmap_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  131 |     static uint64_t bitmap_;
+      |                     ^
+src/kernel/memory/pmm.hpp:132:21: warning: static variable 'bitmap_size_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  132 |     static uint64_t bitmap_size_;
+      |                     ^
+src/kernel/memory/pmm.hpp:133:21: warning: static variable 'owner_bitmap_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  133 |     static uint64_t owner_bitmap_;
+      |                     ^
+src/kernel/memory/pmm.hpp:134:21: warning: static variable 'page_table_pool_start_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  134 |     static uint64_t page_table_pool_start_;
+      |                     ^
+src/kernel/memory/pmm.hpp:135:21: warning: static variable 'page_table_pool_end_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  135 |     static uint64_t page_table_pool_end_;
+      |                     ^
+src/kernel/memory/pmm.hpp:136:23: warning: static variable 'oom_handler_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  136 |     static OOMHandler oom_handler_;
+      |                       ^
+src/kernel/memory/pmm_errors.hpp:36:6: warning: enum 'PmmError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   36 | enum PmmError : uint64_t {
+      |      ^
+src/kernel/memory/pmm_errors.hpp:37:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   37 | #define X(name, num, msg) PMM_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/memory/vmm.hpp:215:21: warning: static variable 'kernel_pml4_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  215 |     static uint64_t kernel_pml4_;
+      |                     ^
+src/kernel/memory/vmm_errors.hpp:36:6: warning: enum 'VmmError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   36 | enum VmmError : uint64_t {
+      |      ^
+src/kernel/memory/vmm_errors.hpp:37:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   37 | #define X(name, num, msg) VMM_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/multiboot2.hpp:69:21: warning: static variable 'multiboot_magic' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   69 |     extern uint64_t multiboot_magic;
+      |                     ^
+src/kernel/multiboot2.hpp:71:21: warning: static variable 'multiboot_info_ptr' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   71 |     extern uint64_t multiboot_info_ptr;
+      |                     ^
+src/kernel/net/net.hpp:79:13: warning: static variable 'g_nic' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   79 | extern Nic* g_nic;
+      |             ^
+src/kernel/sync/sync_errors.hpp:43:6: warning: enum 'SyncError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   43 | enum SyncError : uint64_t {
+      |      ^
+src/kernel/sync/sync_errors.hpp:44:45: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   44 | #define X(name, num, msg) SYNC_ERR_##name = num,
+      |                                             ^  
+      |                                             (  )
+src/kernel/syscall/syscall.hpp:29:12: warning: enum 'SyscallNumber' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   29 | enum class SyscallNumber : uint64_t {
+      |            ^
+src/kernel/syscall/syscall_errors.hpp:120:6: warning: enum 'SyscallError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint16_t' (2 bytes) as the base type to reduce its size [performance-enum-size]
+  120 | enum SyscallError : uint64_t {
+      |      ^
+src/kernel/syscall/syscall_errors.hpp:121:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+  121 | #define X(name, num, msg) SYS_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/kernel/task/scheduler.hpp:264:36: warning: static variable 'ID_TOMBSTONE' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  264 |     static TaskControlBlock* const ID_TOMBSTONE;
+      |                                    ^
+src/kernel/task/scheduler.hpp:266:30: warning: static variable 'tasks_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  266 |     static TaskControlBlock* tasks_[MAX_TASKS];
+      |                              ^
+src/kernel/task/scheduler.hpp:267:30: warning: static variable 'id_table_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  267 |     static TaskControlBlock* id_table_[ID_TABLE_SIZE];
+      |                              ^
+src/kernel/task/scheduler.hpp:268:21: warning: static variable 'task_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  268 |     static uint64_t task_count_;
+      |                     ^
+src/kernel/task/scheduler.hpp:269:21: warning: static variable 'current_index_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  269 |     static uint64_t current_index_;
+      |                     ^
+src/kernel/task/scheduler.hpp:270:21: warning: static variable 'next_task_id_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  270 |     static uint64_t next_task_id_;
+      |                     ^
+src/kernel/task/scheduler.hpp:271:21: warning: static variable 'sporadic_task_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  271 |     static uint64_t sporadic_task_count_;
+      |                     ^
+src/kernel/task/scheduler.hpp:272:17: warning: static variable 'preempt_enabled_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  272 |     static bool preempt_enabled_;
+      |                 ^
+src/kernel/task/scheduler.hpp:274:27: warning: static variable 'scheduler_lock_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  274 |     static sync::SpinLock scheduler_lock_;
+      |                           ^
+src/kernel/task/scheduler.hpp:275:30: warning: static variable 'ready_queue_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  275 |     static ReadyQueueManager ready_queue_;
+      |                              ^
+src/kernel/task/scheduler.hpp:276:30: warning: static variable 'idle_task_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  276 |     static TaskControlBlock* idle_task_;
+      |                              ^
+src/kernel/task/scheduler.hpp:277:30: warning: static variable 'shell_task_ptr_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  277 |     static TaskControlBlock* shell_task_ptr_;
+      |                              ^
+src/kernel/task/scheduler.hpp:292:22: warning: static variable 'scheduler_save_rsp_to' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  292 |     extern uint64_t* scheduler_save_rsp_to;
+      |                      ^
+src/kernel/task/scheduler.hpp:294:21: warning: static variable 'scheduler_load_rsp_from' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  294 |     extern uint64_t scheduler_load_rsp_from;
+      |                     ^
+src/kernel/task/scheduler.hpp:296:21: warning: static variable 'scheduler_load_cr3_from' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  296 |     extern uint64_t scheduler_load_cr3_from;
+      |                     ^
+src/kernel/task/scheduler.hpp:298:21: warning: static variable 'scheduler_next_task_id' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  298 |     extern uint64_t scheduler_next_task_id;
+      |                     ^
+src/kernel/task/scheduler.hpp:302:21: warning: static variable 'isr_nesting_depth' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  302 |     extern uint64_t isr_nesting_depth;
+      |                     ^
+src/kernel/task/scheduler.hpp:307:21: warning: static variable 'scheduler_dummy_save_rsp' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  307 |     extern uint64_t scheduler_dummy_save_rsp;
+      |                     ^
+src/kernel/task/scheduler.hpp:312:21: warning: static variable 'scheduler_corruption_count' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  312 |     extern uint64_t scheduler_corruption_count;
+      |                     ^
+src/kernel/task/scheduler.hpp:315:30: warning: static variable 'fpu_owner' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  315 |     extern TaskControlBlock* fpu_owner;
+      |                              ^
+src/kernel/task/scheduler.hpp:319:17: warning: static variable 's_reap_in_progress' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  319 |     extern bool s_reap_in_progress;
+      |                 ^
+src/kernel/task/scheduler_errors.hpp:40:6: warning: enum 'SchedulerError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   40 | enum SchedulerError : uint64_t {
+      |      ^
+src/kernel/task/scheduler_errors.hpp:41:46: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   41 | #define X(name, num, msg) SCHED_ERR_##name = num,
+      |                                              ^  
+      |                                              (  )
+src/kernel/task/task_errors.hpp:40:6: warning: enum 'TaskError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   40 | enum TaskError : uint64_t {
+      |      ^
+src/kernel/task/task_errors.hpp:41:45: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   41 | #define X(name, num, msg) TASK_ERR_##name = num,
+      |                                             ^  
+      |                                             (  )
+src/kernel/test/test_watchdog.hpp:7:17: warning: static variable 'g_watchdog_deadline_ns' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+    7 | extern uint64_t g_watchdog_deadline_ns;
+      |                 ^
+src/kernel/test/test_watchdog.hpp:8:17: warning: static variable 'g_watchdog_task_id' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+    8 | extern uint64_t g_watchdog_task_id;
+      |                 ^
+src/kernel/vfs/devfs.hpp:26:19: warning: static variable 'dev_fs' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 | extern Filesystem dev_fs;
+      |                   ^
+src/kernel/vfs/fat32_fs.hpp:28:31: warning: static variable 'fat32_partition_instance' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   28 | extern fat32::Fat32Partition* fat32_partition_instance;
+      |                               ^
+src/kernel/vfs/fat32_fs.hpp:35:19: warning: static variable 'fat32_fs' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   35 | extern Filesystem fat32_fs;
+      |                   ^
+src/kernel/vfs/initrd_fs.hpp:26:19: warning: static variable 'initrd_fs' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 | extern Filesystem initrd_fs;
+      |                   ^
+src/kernel/vfs/procfs.hpp:26:19: warning: static variable 'proc_fs' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 | extern Filesystem proc_fs;
+      |                   ^
+src/kernel/vfs/tmpfs.hpp:26:19: warning: static variable 'tmpfs_fs' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   26 | extern Filesystem tmpfs_fs;
+      |                   ^
+src/kernel/vfs/vfs.hpp:32:6: warning: enum 'OpenFlags' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint16_t' (2 bytes) as the base type to reduce its size [performance-enum-size]
+   32 | enum OpenFlags : uint64_t {
+      |      ^
+src/kernel/vfs/vfs.hpp:40:6: warning: enum 'SeekWhence' uses a larger base type ('int64_t' (aka 'long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   40 | enum SeekWhence : int64_t {
+      |      ^
+src/kernel/vfs/vfs.hpp:46:12: warning: enum 'VfsSentinel' uses a larger base type ('int64_t' (aka 'long long'), size: 8 bytes) than necessary for its value set, consider using 'std::int8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   46 | enum class VfsSentinel : int64_t {
+      |            ^
+src/kernel/vfs/vfs_errors.hpp:44:6: warning: enum 'VfsError' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   44 | enum VfsError : uint64_t {
+      |      ^
+src/kernel/vfs/vfs_errors.hpp:45:44: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+   45 | #define X(name, num, msg) VFS_ERR_##name = num,
+      |                                            ^  
+      |                                            (  )
+src/lib/constants.hpp:50:6: warning: enum 'Segment' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   50 | enum Segment : uint64_t {
+      |      ^
+src/lib/constants.hpp:59:6: warning: enum 'RFlags' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint16_t' (2 bytes) as the base type to reduce its size [performance-enum-size]
+   59 | enum RFlags : uint64_t {
+      |      ^
+src/lib/constants.hpp:122:6: warning: enum 'Error' uses a larger base type ('int64_t' (aka 'long long'), size: 8 bytes) than necessary for its value set, consider using 'std::int8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+  122 | enum Error : int64_t {
+      |      ^
+src/lib/crc32.hpp:36:21: warning: static variable 'table_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   36 |     static uint32_t table_[256];
+      |                     ^
+src/lib/crc32.hpp:37:17: warning: static variable 'initialized_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   37 |     static bool initialized_;
+      |                 ^
+src/lib/error.hpp:29:12: warning: enum 'Error' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   29 | enum class Error : uint64_t {
+      |            ^
+src/lib/logger.hpp:63:21: warning: static variable 'current_level_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   63 |     static LogLevel current_level_;
+      |                     ^
+src/lib/logger.hpp:64:17: warning: static variable 'initialized_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   64 |     static bool initialized_;
+      |                 ^
+src/lib/signal.hpp:26:4: error: unmatched 'NOLINTBEGIN' comment without a subsequent 'NOLINTEND' comment [clang-tidy-nolint]
+   26 | // NOLINTBEGIN(performance-no-int-to-ptr,bugprone-branch-clone)
+      |    ^
+src/lib/signal.hpp:30:12: warning: enum 'Signal' uses a larger base type ('uint64_t' (aka 'unsigned long long'), size: 8 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+   30 | enum class Signal : uint64_t {
+      |            ^
+src/lib/signal.hpp:94:21: warning: static variable 'g_user_access_recover_ip' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   94 | extern "C" uint64_t g_user_access_recover_ip;
+      |                     ^
+src/lib/signal.hpp:132:4: error: unmatched 'NOLINTEND' comment without a previous 'NOLINTBEGIN' comment [clang-tidy-nolint]
+  132 | // NOLINTEND(performance-no-int-to-ptr)
+      |    ^
+src/lib/test.hpp:81:21: warning: static variable 'tests_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   81 |     static TestCase tests_[MAX_TESTS];
+      |                     ^
+src/lib/test.hpp:82:19: warning: static variable 'count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   82 |     static size_t count_;
+      |                   ^
+src/lib/test.hpp:83:19: warning: static variable 'passed_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   83 |     static size_t passed_;
+      |                   ^
+src/lib/test.hpp:84:19: warning: static variable 'failed_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   84 |     static size_t failed_;
+      |                   ^
+src/lib/test.hpp:85:19: warning: static variable 'test_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   85 |     static size_t test_count_;
+      |                   ^
+src/lib/test.hpp:86:19: warning: static variable 'test_failed_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   86 |     static size_t test_failed_;
+      |                   ^
+src/lib/test.hpp:87:25: warning: static variable 'sections_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   87 |     static ClassSection sections_[MAX_CLASSES];
+      |                         ^
+src/lib/test.hpp:88:19: warning: static variable 'class_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   88 |     static size_t class_count_;
+      |                   ^
+src/lib/test.hpp:89:19: warning: static variable 'expected_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   89 |     static size_t expected_count_;
+      |                   ^
+src/lib/test.hpp:133:13: warning: static variable 'g_class_auto_shutdown' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+  133 | extern bool g_class_auto_shutdown;
+      |             ^
+src/lib/test.hpp:237:11: warning: macro argument should be enclosed in parentheses [bugprone-macro-parentheses]
+  237 |     class name : public kernel::test::TestBase {                              \
+      |           ^
+      |           (   )
+src/services/program.hpp:61:27: warning: static variable 'programs_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   61 |     static const Program* programs_[MAX_PROGRAMS];
+      |                           ^
+src/services/program.hpp:62:19: warning: static variable 'count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   62 |     static size_t count_;
+      |                   ^
+src/services/shell.hpp:60:20: warning: static variable 'commands_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   60 |     static Command commands_[MAX_COMMANDS];
+      |                    ^
+src/services/shell.hpp:61:19: warning: static variable 'num_commands_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   61 |     static size_t num_commands_;
+      |                   ^
+src/services/shell.hpp:62:17: warning: static variable 'initialized_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   62 |     static bool initialized_;
+      |                 ^
+src/services/shell.hpp:63:17: warning: static variable 'work_dir_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   63 |     static char work_dir_[BUF_SIZE];
+      |                 ^
+src/services/shell.hpp:64:17: warning: static variable 'env_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   64 |     static char env_[MAX_ENV][BUF_SIZE];
+      |                 ^
+src/services/shell.hpp:65:19: warning: static variable 'env_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   65 |     static size_t env_count_;
+      |                   ^
+src/services/shell.hpp:66:16: warning: static variable 'last_exit_code_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   66 |     static int last_exit_code_;
+      |                ^
+src/services/shell.hpp:87:23: warning: static variable 'aliases_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   87 |     static AliasEntry aliases_[MAX_ALIASES];
+      |                       ^
+src/services/shell.hpp:88:19: warning: static variable 'alias_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   88 |     static size_t alias_count_;
+      |                   ^
+src/services/shell.hpp:89:25: warning: static variable 'history_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   89 |     static HistoryEntry history_[MAX_HISTORY];
+      |                         ^
+src/services/shell.hpp:90:19: warning: static variable 'history_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   90 |     static size_t history_count_;
+      |                   ^
+src/services/shell.hpp:91:19: warning: static variable 'history_head_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   91 |     static size_t history_head_;
+      |                   ^
+src/services/shell.hpp:92:17: warning: static variable 'dir_stack_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   92 |     static char dir_stack_[MAX_DIR_STACK][BUF_SIZE];
+      |                 ^
+src/services/shell.hpp:93:19: warning: static variable 'dir_stack_count_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   93 |     static size_t dir_stack_count_;
+      |                   ^
+src/services/shell.hpp:94:16: warning: static variable 'shell_options_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   94 |     static int shell_options_;
+      |                ^
+src/services/shell.hpp:95:16: warning: static variable 'positional_argc_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   95 |     static int positional_argc_;
+      |                ^
+src/services/shell.hpp:96:18: warning: static variable 'positional_argv_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   96 |     static char* positional_argv_[32];
+      |                  ^
+src/services/shell.hpp:97:16: warning: static variable 'umask_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   97 |     static int umask_;
+      |                ^
+src/services/shell.hpp:98:22: warning: static variable 'traps_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   98 |     static TrapEntry traps_[32];
+      |                      ^
+src/services/terminal/framebuffer.hpp:85:28: warning: static variable 'info_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   85 |     static FramebufferInfo info_;
+      |                            ^
+src/services/terminal/framebuffer.hpp:86:17: warning: static variable 'initialized_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   86 |     static bool initialized_;
+      |                 ^
+src/services/terminal/terminal.hpp:97:22: warning: static variable 'instance_' may be dynamically initialized in this header file [bugprone-dynamic-static-initializers]
+   97 |     static Terminal* instance_;
+      |                      ^
+  TIDY    Done

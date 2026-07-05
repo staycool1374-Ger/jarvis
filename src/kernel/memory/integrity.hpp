@@ -23,6 +23,7 @@
 namespace kernel {
 namespace integrity {
 
+// NOLINTBEGIN(bugprone-dynamic-static-initializers)
 extern const uint64_t _m_text_start;
 extern const uint64_t _m_text_end;
 extern const uint64_t _m_rodata_start;
@@ -39,6 +40,7 @@ extern "C" {
     extern uint64_t _text_end[];
     extern uint64_t _expected_code_crc[];
 }
+// NOLINTEND(bugprone-dynamic-static-initializers)
 
 bool check_section_markers();
 void reset_crc_state();

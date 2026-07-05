@@ -55,11 +55,13 @@ enum PciRegister : uint8_t {
 };
 
 /// PCI status register bits
+// NOLINTNEXTLINE(performance-enum-size)
 enum PciStatus : uint16_t {
     PCI_STATUS_CAP_LIST = 1 << 4,
 };
 
 /// PCI command register bits
+// NOLINTNEXTLINE(performance-enum-size)
 enum PciCommand : uint16_t {
     PCI_CMD_IO_SPACE    = 1 << 0,
     PCI_CMD_MEM_SPACE   = 1 << 1,

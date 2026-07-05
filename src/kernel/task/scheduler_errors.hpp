@@ -37,8 +37,9 @@ namespace kernel::errors {
     X(NO_SHELL,        10, "Shell task not set") \
     X(INVALID_ARGS,    11, "Invalid arguments")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum SchedulerError : uint64_t {
-#define X(name, num, msg) SCHED_ERR_##name = num,
+#define X(name, num, msg) SCHED_ERR_##name = (num),
     SCHEDULER_ERROR_CODES
 #undef X
 };

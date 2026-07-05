@@ -137,7 +137,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
 {
     for (uint16_t i = 0; i < hdr->phnum; ++i) {
         auto* phdr = reinterpret_cast<const ELF64ProgramHeader*>(
-            file_data + hdr->phoff + i * hdr->phentsize);
+            file_data + hdr->phoff + static_cast<uint64_t>(i) * hdr->phentsize);
         if (!phdr || phdr->type != PT_LOAD) continue;
         if (!validate_segment(phdr)) return false;
 
@@ -156,6 +156,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
         }
 
         uint64_t offset_in_region = phdr->vaddr - vaddr_base;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         memcpy(reinterpret_cast<void*>(arch::
             HHDM_OFFSET + seg_phys + offset_in_region),
                file_data + phdr->offset, phdr->filesz);
@@ -163,6 +164,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
         if (phdr->memsz > phdr->filesz) {
             uint64_t zero_offset = arch::
                 HHDM_OFFSET + seg_phys + offset_in_region + phdr->filesz;
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             memset(reinterpret_cast<void*>(zero_offset), 0,
                 phdr->memsz - phdr->filesz);
         }
@@ -180,6 +182,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
                               true, pml4);
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + ustack_phys), 0, mem::
         STACK_SIZE);
 
@@ -192,6 +195,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
                               heap_phys + i * arch::PAGE_SIZE,
                               true, pml4);
     }
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + heap_phys), 0, INITIAL_HEAP_SIZE);
 
     if (out_ustack_phys) *out_ustack_phys = ustack_phys;
@@ -206,6 +210,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
 
     uint64_t str_total = total_string_len(argv) + total_string_len(envp);
     uint64_t stack_base = arch::HHDM_OFFSET + ustack_phys + mem::STACK_SIZE;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint8_t* stack_top = reinterpret_cast<uint8_t*>(stack_base);
 
     uint8_t* sp = stack_top;
@@ -307,6 +312,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     if (!kstack_phys) { tcb->cleanup(); MemPool::free(tcb); return nullptr; }
     tcb->stack_phys_ = kstack_phys;
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
     tcb->kernel_stack_top = kstack_virt + TaskControlBlock::STACK_SIZE;
 
@@ -331,6 +337,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     uint64_t user_rsp = setup_user_stack(ustack_phys, nullptr, nullptr);
 
 #if defined(CONFIG_ARCH_X86_64)
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
     *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;

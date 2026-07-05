@@ -25,6 +25,7 @@ struct BootInfo {
         cmdline[0] = '\0';
     }
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void add_region(uint64_t base, uint64_t size, uint32_t type) {
         if (num_mem_regions < BOOTINFO_MAX_MEM_REGIONS) {
             mem_regions[num_mem_regions].base = base;

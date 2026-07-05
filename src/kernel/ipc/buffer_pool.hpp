@@ -26,10 +26,10 @@
 
 namespace kernel {
 
-enum class ListSentinel : int64_t {
+enum class ListSentinel : int8_t {
     EMPTY = -1,
 };
-enum class BufferSentinel : int64_t {
+enum class BufferSentinel : int8_t {
     INVALID_HANDLE = -2,
     INVALID_INDEX  = -3,
 };
@@ -93,6 +93,7 @@ public:
     /// @brief Validate a handle and return its index, or -1.
     static int32_t validate(uint64_t handle);
 
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static Entry entries[MAX_BUFFERS];
 
     /// @name Test-isolation helpers (snapshot / restore)
@@ -106,8 +107,8 @@ public:
     }
 
 private:
-    static int32_t free_head_;
-    static uint32_t next_cookie_;
+    static constinit int32_t free_head_;
+    static constinit uint32_t next_cookie_;
 
     static int32_t alloc_entry();
     static void free_entry(int32_t idx);

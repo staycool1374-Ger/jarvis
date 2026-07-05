@@ -28,6 +28,7 @@ static constexpr uint64_t ATA_POLL_TIMEOUT = 100000;
 
 using namespace arch;
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 AtaPioDriver::AtaPioDriver(uint16_t port_base, uint8_t drive_head)
     : port_base_(port_base), drive_head_(drive_head) {}
 
@@ -110,8 +111,8 @@ bool AtaPioDriver::read_sector(uint64_t lba, uint8_t* buffer) {
 
     for (int i = 0; i < 256; ++i) {
         uint16_t word = inw(port_base_);
-        buffer[i * 2] = static_cast<uint8_t>(word & 0xFF);
-        buffer[i * 2 + 1] = static_cast<uint8_t>((word >> 8) & 0xFF);
+        buffer[static_cast<size_t>(i) * 2] = static_cast<uint8_t>(word & 0xFF);
+        buffer[static_cast<size_t>(i) * 2 + 1] = static_cast<uint8_t>((word >> 8) & 0xFF);
     }
 
     return true;
@@ -136,8 +137,8 @@ bool AtaPioDriver::write_sector(uint64_t lba, const uint8_t* buffer) {
     if (!wait_for_drq()) return false;
 
     for (int i = 0; i < 256; ++i) {
-        uint16_t word = static_cast<uint16_t>(buffer[i * 2]) |
-                       (static_cast<uint16_t>(buffer[i * 2 + 1]) << 8);
+        uint16_t word = static_cast<uint16_t>(buffer[static_cast<size_t>(i) * 2]) |
+                       (static_cast<uint16_t>(buffer[static_cast<size_t>(i) * 2 + 1]) << 8);
         outw(port_base_, word);
     }
 

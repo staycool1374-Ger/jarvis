@@ -94,6 +94,7 @@ public:
     static constexpr size_t LINE_BUF_SIZE = 256;
 
 private:
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static Terminal* instance_;
 
     static constexpr uint32_t DEFAULT_FG = 0xC0C0C0;

@@ -40,8 +40,9 @@ namespace kernel::errors {
     X(NO_WAITER,          13, "No waiter to notify") \
     X(INTERRUPTED,        14, "Operation interrupted by signal")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum SyncError : uint64_t {
-#define X(name, num, msg) SYNC_ERR_##name = num,
+#define X(name, num, msg) SYNC_ERR_##name = (num),
     SYNC_ERROR_CODES
 #undef X
 };

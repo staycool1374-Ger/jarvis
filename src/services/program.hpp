@@ -58,7 +58,9 @@ public:
 
 private:
     static constexpr size_t MAX_PROGRAMS = CONFIG_MAX_PROGRAMS;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static const Program* programs_[MAX_PROGRAMS];
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static size_t count_;
 };
 

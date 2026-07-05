@@ -29,6 +29,7 @@
 namespace kernel {
 
 /// @brief Flags for IPC::send().
+// NOLINTNEXTLINE(performance-enum-size)
 enum IpcFlags : uint64_t {
     IPC_NONBLOCK = 1 << 0,
 };

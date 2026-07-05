@@ -117,8 +117,9 @@ namespace kernel::errors {
     X(MEMPOOL_INVALID_POOL,  906, "Invalid pool index") \
     X(MEMPOOL_CORRUPTED,     907, "Pool corrupted")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum SyscallError : uint64_t {
-#define X(name, num, msg) SYS_ERR_##name = num,
+#define X(name, num, msg) SYS_ERR_##name = (num),
     SYSCALL_ERROR_CODES
 #undef X
 };

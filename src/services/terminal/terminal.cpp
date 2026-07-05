@@ -128,7 +128,7 @@ bool Terminal::readline(char* buf, size_t max_len) {
         while (!(arch::inb(arch::COM1_LSR) & 1)) {
             arch::pause();
         }
-        char c = arch::inb(arch::COM1);
+        char c = static_cast<char>(arch::inb(arch::COM1));
 #else
         char c;
         if (!arch::Keyboard::getchar(c)) {
@@ -177,9 +177,10 @@ void Terminal::clear() {
     if (!instance_->fb_enabled_) return;
     uint32_t pitch = Framebuffer::pitch();
     uint32_t text_h = instance_->rows_ * FONT_HEIGHT;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* fb = reinterpret_cast<uint8_t*>(
         static_cast<uint64_t>(Framebuffer::info().addr));
-    memset(fb, 0, pitch * text_h);
+    memset(fb, 0, static_cast<size_t>(pitch) * text_h);
     instance_->cursor_x_ = 0;
     instance_->cursor_y_ = 0;
 }
@@ -188,17 +189,18 @@ void Terminal::scroll() {
     if (!instance_) return;
 
     uint32_t pitch = Framebuffer::pitch();
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* fb = reinterpret_cast<uint8_t*>(
         static_cast<uint64_t>(Framebuffer::info().addr));
 
-    size_t row_size = pitch * FONT_HEIGHT;
+    size_t row_size = static_cast<size_t>(pitch) * FONT_HEIGHT;
     uint32_t text_h = instance_->rows_ * FONT_HEIGHT;
 
-    memcpy(fb, fb + row_size, pitch * (text_h - FONT_HEIGHT));
+    memcpy(fb, fb + row_size, static_cast<size_t>(pitch) * (text_h - FONT_HEIGHT));
 
     uint32_t clear_start = text_h - FONT_HEIGHT;
     for (uint32_t y = clear_start; y < text_h; ++y) {
-        size_t off = y * pitch;
+        size_t off = static_cast<size_t>(y) * pitch;
         memset(fb + off, 0, pitch);
     }
 
@@ -244,7 +246,10 @@ void Terminal::backspace() {
     }
 }
 
-void Terminal::draw_status_bar(const char* left, const char* right) {
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+void Terminal::draw_status_bar(const char* left, const char* right)
+// NOLINTEND(bugprone-easily-swappable-parameters)
+{
     if (!instance_ || !instance_->fb_enabled_) return;
     if (!Framebuffer::available()) return;
 

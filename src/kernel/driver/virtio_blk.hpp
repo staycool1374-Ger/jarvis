@@ -28,7 +28,7 @@
 namespace kernel::block {
 
 /// Virtio block I/O request types
-enum VirtioBlkReqType : uint32_t {
+enum VirtioBlkReqType : uint8_t {
     VIRTIO_BLK_T_IN    = 0,
     VIRTIO_BLK_T_OUT   = 1,
     VIRTIO_BLK_T_FLUSH = 4,

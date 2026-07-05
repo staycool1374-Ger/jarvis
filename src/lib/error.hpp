@@ -26,7 +26,7 @@
 namespace kernel {
 
 /// @brief Kernel error codes returned by various operations.
-enum class Error : uint64_t {
+enum class Error : uint8_t {
     OK = 0,
     OOM,
     INVALID_ARG,

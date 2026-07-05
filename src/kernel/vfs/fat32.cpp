@@ -271,7 +271,7 @@ bool read_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
     if (!fs.read_cluster(cluster_chain[cluster_idx], cluster_data)) return false;
 
     const auto& raw = reinterpret_cast<const DirEntryRaw&>(
-        cluster_data[entry_in_cluster * 32]);
+        cluster_data[static_cast<size_t>(entry_in_cluster) * 32]);
 
     // Skip empty, freed, and LFN entries
     if (is_end_marker(raw)) return false;
@@ -304,6 +304,7 @@ bool lookup_in_dir(Fat32Partition& fs, uint32_t dir_cluster,
 // File reading
 // -------------------------------------------------------------------
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 int64_t read_file(Fat32Partition& fs, uint32_t first_cluster,
                    uint32_t file_size, uint64_t offset, uint64_t count,
                    uint8_t* buffer) {
@@ -355,6 +356,7 @@ int64_t read_file(Fat32Partition& fs, uint32_t first_cluster,
 // Write primitives
 // -------------------------------------------------------------------
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool Fat32Partition::write_fat_entry(uint32_t cluster, uint32_t value) {
     value &= 0x0FFFFFFF;
     uint64_t fat_offset = static_cast<uint64_t>(cluster) * 4;
@@ -534,9 +536,9 @@ bool add_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
 
         for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
             auto& entry = reinterpret_cast<DirEntryRaw&>(
-                cluster_data[ei * 32]);
+                cluster_data[static_cast<size_t>(ei) * 32]);
             if (entry.name[0] == 0xE5 || entry.name[0] == 0x00) {
-                __builtin_memcpy(cluster_data + ei * 32, &raw, sizeof(raw));
+                __builtin_memcpy(cluster_data + static_cast<size_t>(ei) * 32, &raw, sizeof(raw));
                 return fs.write_cluster(cluster_chain[ci], cluster_data);
             }
         }
@@ -576,7 +578,7 @@ bool remove_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
 
         for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
             auto& entry = reinterpret_cast<DirEntryRaw&>(
-                cluster_data[ei * 32]);
+                cluster_data[static_cast<size_t>(ei) * 32]);
             if (entry.name[0] == 0xE5 || entry.name[0] == 0x00) continue;
             if (entry.attrs == ATTR_LFN) continue;
 

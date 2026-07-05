@@ -32,7 +32,7 @@ namespace net {
 static ArpCache g_arp_cache;
 static uint16_t g_ip_ident = 0;
 
-Nic* g_nic = nullptr;
+constinit Nic* g_nic = nullptr;
 
 // Last ICMP echo reply (for ping)
 static IcmpEchoReply g_icmp_reply;
@@ -41,6 +41,7 @@ void net_icmp_clear_reply() {
     g_icmp_reply.received = false;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void net_icmp_set_reply(uint16_t ident, uint16_t seq, Ipv4Addr src) {
     g_icmp_reply.received = true;
     g_icmp_reply.ident    = ident;
@@ -111,7 +112,7 @@ void net_handle_frame(const uint8_t* data, size_t len, Nic& nic) {
     } else if (type == ETH_TYPE_IPV4) {
         if (len < sizeof(EtherHeader) + sizeof(Ipv4Header)) return;
         auto* ip = reinterpret_cast<const Ipv4Header*>(data + sizeof(EtherHeader));
-        size_t ip_hdr_len = (ip->ver_ihl & 0x0F) * 4;
+        size_t ip_hdr_len = static_cast<size_t>(ip->ver_ihl & 0x0F) * 4;
         if (ip_hdr_len < IPV4_MIN_HEADER_LEN) return;
 
         if (ip->protocol == IP_PROTO_ICMP) {
@@ -238,6 +239,7 @@ bool net_poll(Nic& nic) {
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
                         const uint8_t* data, size_t data_len) {
     // Loopback / self-ping: reflect instantly

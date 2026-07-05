@@ -21,6 +21,7 @@ int fdt_check_header(const void *fdt) {
 int fdt_num_mem_rsv(const void *fdt) {
     const struct fdt_header *h = (const struct fdt_header *)fdt;
     int count = 0;
+    // NOLINTNEXTLINE(bugprone-narrowing-conversions)
     int offset = fdt32_to_cpu(h->off_mem_rsvmap);
 
     for (;;) {
@@ -35,8 +36,10 @@ int fdt_num_mem_rsv(const void *fdt) {
     return count;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 int fdt_get_mem_rsv(const void *fdt, int n, uint64_t *addr, uint64_t *size) {
     const struct fdt_header *h = (const struct fdt_header *)fdt;
+    // NOLINTNEXTLINE(bugprone-narrowing-conversions)
     int offset = fdt32_to_cpu(h->off_mem_rsvmap);
 
     for (int i = 0; i <= n; i++) {
@@ -68,6 +71,7 @@ const char *fdt_get_name(const void *fdt, int nodeoffset, int *len) {
     const char *name;
     int err;
 
+    // NOLINTNEXTLINE(bugprone-assignment-in-if-condition)
     if ((err = fdt_check_header(fdt)) != 0)
         goto fail;
 
@@ -81,6 +85,7 @@ const char *fdt_get_name(const void *fdt, int nodeoffset, int *len) {
 
     name = nh->name;
     if (len)
+        // NOLINTNEXTLINE(bugprone-narrowing-conversions)
         *len = strlen(name);
 
     return name;
@@ -212,7 +217,8 @@ const void *fdt_getprop_namelen(const void *fdt, int nodeoffset,
             uint32_t proplen = fdt32_to_cpu(*lenp_tag);
             const uint32_t *nameoffp = (const uint32_t *)fdt_offset_ptr_(fdt, offset + FDT_TAGSIZE + FDT_TAGSIZE);
             if (!nameoffp) break;
-            int nameoff = fdt32_to_cpu(*nameoffp);
+            // NOLINTNEXTLINE(bugprone-narrowing-conversions)
+        int nameoff = static_cast<int>(fdt32_to_cpu(*nameoffp));
             const char *pname = fdt_string(fdt, nameoff);
 
             if (pname && strcmp(pname, name) == 0) {
@@ -259,7 +265,7 @@ const void *fdt_getprop_by_offset(const void *fdt, int offset,
             if (lenp) *lenp = -FDT_ERR_TRUNCATED;
             return nullptr;
         }
-        int nameoff = fdt32_to_cpu(*nameoffp);
+        int nameoff = static_cast<int>(fdt32_to_cpu(*nameoffp));
 
         if (outname)
             *outname = fdt_string(fdt, nameoff);
@@ -300,7 +306,7 @@ int fdt_node_offset_by_prop_value(const void *fdt, int startoffset,
                     if ((int)plen == proplen) {
                         const uint32_t *nameoffp = (const uint32_t *)fdt_offset_ptr_(fdt, prop_offset + FDT_TAGSIZE + FDT_TAGSIZE);
                         if (!nameoffp) return -FDT_ERR_TRUNCATED;
-                        const char *pn = fdt_string(fdt, fdt32_to_cpu(*nameoffp));
+                        const char *pn = fdt_string(fdt, static_cast<int>(fdt32_to_cpu(*nameoffp)));
                         if (pn && strcmp(pn, propname) == 0) {
                             if (propval) {
                                 const void *val = fdt_offset_ptr_(fdt, prop_offset + FDT_TAGSIZE + FDT_TAGSIZE + FDT_TAGSIZE);

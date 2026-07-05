@@ -35,8 +35,9 @@ namespace kernel::errors {
     X(NO_BUFFER,      8,  "No buffer available for zero-copy") \
     X(INVALID_ARGS,   9,  "Invalid arguments")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum IpcError : uint64_t {
-#define X(name, num, msg) IPC_ERR_##name = num,
+#define X(name, num, msg) IPC_ERR_##name = (num),
     IPC_ERROR_CODES
 #undef X
 };

@@ -219,6 +219,7 @@ public:
     ///        existing task objects (matched by ID).  Called from
     ///        test_isolate's snapshot_restore after restore_state().
     static void restore_task_fields(const TaskFields* saved);
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     static void capture_state(TaskControlBlock** tasks_out,
                               TaskControlBlock** id_table_out,
                               uint64_t& task_count_out,
@@ -229,6 +230,7 @@ public:
                               uint64_t* rq_bitmap_hi = nullptr,
                               uint64_t* rq_bitmap_lo = nullptr,
                               uint64_t* sporadic_count_out = nullptr);
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     static void restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* const* id_table_in,
                               uint64_t task_count_in,
@@ -255,24 +257,27 @@ public:
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
-    static constexpr uint64_t ID_TABLE_SIZE = CONFIG_MAX_TASKS * 2;
+    static constexpr uint64_t ID_TABLE_SIZE = static_cast<uint64_t>(CONFIG_MAX_TASKS) * 2;
     static constexpr uint64_t ID_TABLE_MASK = ID_TABLE_SIZE - 1;
 
     /// @brief Sentinel value for a removed hash-table entry.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static TaskControlBlock* const ID_TOMBSTONE;
 
-    static TaskControlBlock* tasks_[MAX_TASKS];
-    static TaskControlBlock* id_table_[ID_TABLE_SIZE];
-    static uint64_t task_count_;
-    static uint64_t current_index_;
-    static uint64_t next_task_id_;
-    static uint64_t sporadic_task_count_;
-    static bool preempt_enabled_;
+    static constinit TaskControlBlock* tasks_[MAX_TASKS];
+    static constinit TaskControlBlock* id_table_[ID_TABLE_SIZE];
+    static constinit uint64_t task_count_;
+    static constinit uint64_t current_index_;
+    static constinit uint64_t next_task_id_;
+    static constinit uint64_t sporadic_task_count_;
+    static constinit bool preempt_enabled_;
 
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static sync::SpinLock scheduler_lock_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static ReadyQueueManager ready_queue_;
-    static TaskControlBlock* idle_task_;
-    static TaskControlBlock* shell_task_ptr_;
+    static constinit TaskControlBlock* idle_task_;
+    static constinit TaskControlBlock* shell_task_ptr_;
 
     /// @brief Performs rate-monotonic scheduling decision.
     static void rate_monotonic_schedule() noexcept;
@@ -287,33 +292,42 @@ private:
 extern "C" {
     /// @brief Address to save the current RSP into during context switch.
     ///        Accessed atomically from C++; read/written by isr_stubs.asm.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t* scheduler_save_rsp_to;
     /// @brief RSP value to load during context switch restore.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_load_rsp_from;
     /// @brief CR3 value to load during context switch restore (0 = don't load).
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_load_cr3_from;
     /// @brief Task ID to set as current after the context switch completes.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_next_task_id;
     /// @brief Current ISR nesting depth.  Incremented at each ISR entry,
     ///        decremented before iretq.  Checked by on_tick() to detect
     ///        nested timer interrupts and skip re-entrant scheduler ops.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t isr_nesting_depth;
     /// @brief Dummy save target for boot-stack RSP during reschedule() from
     ///        non-ISR context (test harness).  Prevents corrupting task
     ///        context.rsp with a boot-stack address while still allowing
     ///        the context switch to proceed.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_dummy_save_rsp;
     /// @brief Monotonic counter incremented on every detected scheduler corruption
     ///        (invalid TCB magic, RSP outside kernel-stack range, etc).
     ///        Reset to zero in test_isolate restore; test framework fails any test
     ///        where the counter advanced.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_corruption_count;
     /// @brief Tracks which task's FPU state is currently in the registers.
     ///        nullptr means no task has used FPU since boot.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern TaskControlBlock* fpu_owner;
     /// @brief Recursion guard for Scheduler::reap_orphans().
     ///        Reset in snapshot_restore() to prevent deadlock if a prior
     ///        test panicked mid-reap.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern bool s_reap_in_progress;
 }
 

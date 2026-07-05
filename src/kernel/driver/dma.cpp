@@ -50,6 +50,7 @@ DmaBuffer alloc_buffer(size_t size) {
         VMM::map_page(phys + i * PAGE_SIZE, phys + i * PAGE_SIZE, false);
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     memset(reinterpret_cast<void*>(buf.virt_addr), 0, buf.size);
     return buf;
 }
@@ -291,6 +292,7 @@ DmaBuffer* PingPongDma::xfer_buf() {
 }
 
 static void pingpong_completion_cb(uint64_t ctx, bool success) {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pp = reinterpret_cast<PingPongDma*>(ctx);
     pp->on_completion(0, success);
 }

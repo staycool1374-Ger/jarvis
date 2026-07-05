@@ -47,7 +47,7 @@ static int64_t tty_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
     for (uint64_t retry = 0; retry < UINT64_MAX; ++retry) {
         if (serial_has_data()) {
 #if defined(CONFIG_ARCH_X86_64)
-            char character = arch::inb(arch::COM1);
+            char character = static_cast<char>(arch::inb(arch::COM1));
             buffer[0] = (character == '\r') ? '\n' : character;
             return 1;
 #endif
@@ -72,6 +72,7 @@ static int64_t tty_write(Vnode&, const uint8_t* buf, uint64_t count, uint64_t) {
 }
 
 static int tty_open(Vnode& self, uint64_t flags) {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     self.private_data = reinterpret_cast<void*>(flags);
     return 0;
 }
@@ -110,12 +111,14 @@ static int64_t null_write(Vnode&, const uint8_t*, uint64_t count, uint64_t) {
 }
 static int null_open(Vnode&, uint64_t) { return 0; }
 static void null_close(Vnode&) {}
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t null_lseek(Vnode&, int64_t offset, int whence, uint64_t* out_pos
     ) {
     switch (whence) {
     case SEEK_SET: *out_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: *out_pos += static_cast<uint64_t>(offset); break;
     case SEEK_END: *out_pos = static_cast<uint64_t>(offset); break;
+    default: break;
     }
     return static_cast<int64_t>(*out_pos);
 }
@@ -198,6 +201,7 @@ static int64_t kbd_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 static int kbd_open(Vnode& self, uint64_t flags) {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     self.private_data = reinterpret_cast<void*>(flags);
     return 0;
 }

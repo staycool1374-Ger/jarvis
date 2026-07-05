@@ -54,7 +54,7 @@ struct ELF64ProgramHeader {
     uint64_t align;
 } __attribute__((packed));
 
-enum : uint32_t {
+enum : uint8_t {
     PT_NULL    = 0,
     PT_LOAD    = 1,
     PT_DYNAMIC = 2,
@@ -63,13 +63,13 @@ enum : uint32_t {
     PT_PHDR    = 6,
 };
 
-enum : uint32_t {
+enum : uint8_t {
     PF_X = 1,
     PF_W = 2,
     PF_R = 4,
 };
 
-enum : uint16_t {
+enum : uint8_t {
     ET_NONE = 0,
     ET_EXEC = 2,
     ET_DYN  = 3,

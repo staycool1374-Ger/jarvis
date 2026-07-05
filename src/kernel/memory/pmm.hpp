@@ -113,9 +113,11 @@ public:
     /// @name Test-isolation helpers
     /// @brief Expose internal bitmaps for snapshot/restore.
     static uint8_t* bitmap_ptr() {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         return reinterpret_cast<uint8_t*>(bitmap_);
     }
     static uint8_t* owner_bitmap_ptr() {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         return reinterpret_cast<uint8_t*>(owner_bitmap_);
     }
     static uint64_t bitmap_bytes()          { return bitmap_size_; }
@@ -124,14 +126,14 @@ public:
 private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
 
-    static uint64_t total_pages_;
-    static uint64_t free_pages_;
-    static uint64_t bitmap_;
-    static uint64_t bitmap_size_;
-    static uint64_t owner_bitmap_;
-    static uint64_t page_table_pool_start_;
-    static uint64_t page_table_pool_end_;
-    static OOMHandler oom_handler_;
+    static constinit uint64_t total_pages_;
+    static constinit uint64_t free_pages_;
+    static constinit uint64_t bitmap_;
+    static constinit uint64_t bitmap_size_;
+    static constinit uint64_t owner_bitmap_;
+    static constinit uint64_t page_table_pool_start_;
+    static constinit uint64_t page_table_pool_end_;
+    static constinit OOMHandler oom_handler_;
 
     static void bitmap_set(size_t index);
     static void bitmap_clear(size_t index);

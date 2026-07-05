@@ -62,8 +62,11 @@ public:
 
 private:
     static constexpr size_t NUM_ENTRIES = 256;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static IDTEntry entries_[NUM_ENTRIES];
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static IDTDescriptor desc_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static ISRHandler handlers_[NUM_ENTRIES];
 };
 

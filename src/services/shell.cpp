@@ -151,6 +151,7 @@ void Shell::init() {
     initialized_ = true;
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 void Shell::register_command(const char* name, const char* help, CommandFunc func) {
     if (num_commands_ >= MAX_COMMANDS) return;
     commands_[num_commands_].name = name;
@@ -158,6 +159,7 @@ void Shell::register_command(const char* name, const char* help, CommandFunc fun
     commands_[num_commands_].func = func;
     ++num_commands_;
 }
+// NOLINTEND(bugprone-easily-swappable-parameters)
 
 static int str_cmp(const char* a, const char* b) {
     while (*a && *b && *a == *b) { ++a; ++b; }
@@ -339,7 +341,7 @@ static bool readline(char* buf, size_t max_len) {
 
 #if defined(CONFIG_ARCH_X86_64)
         if (arch::inb(arch::COM1_LSR) & 1) {
-            c = arch::inb(arch::COM1);
+            c = static_cast<char>(arch::inb(arch::COM1));
             got_char = true;
         }
 #endif
@@ -378,21 +380,21 @@ static bool readline(char* buf, size_t max_len) {
 }
 
 static void append_two_digit(char*& p, uint32_t n) {
-    *p++ = '0' + (n / 10) % 10;
-    *p++ = '0' + n % 10;
+    *p++ = static_cast<char>('0' + (n / 10) % 10);
+    *p++ = static_cast<char>('0' + n % 10);
 }
 
 static void append_four_digit(char*& p, uint32_t n) {
-    *p++ = '0' + (n / 1000) % 10;
-    *p++ = '0' + (n / 100) % 10;
+    *p++ = static_cast<char>('0' + (n / 1000) % 10);
+    *p++ = static_cast<char>('0' + (n / 100) % 10);
     append_two_digit(p, n % 100);
 }
 
 static void append_size(char*& p, uint64_t bytes) {
-    uint64_t mb = bytes / (1024 * 1024);
-    if (mb >= 100) *p++ = '0' + (mb / 100) % 10;
-    if (mb >= 10) *p++ = '0' + (mb / 10) % 10;
-    *p++ = '0' + mb % 10;
+    uint64_t mb = bytes / (static_cast<uint64_t>(1024) * 1024);
+    if (mb >= 100) *p++ = static_cast<char>('0' + (mb / 100) % 10);
+    if (mb >= 10) *p++ = static_cast<char>('0' + (mb / 10) % 10);
+    *p++ = static_cast<char>('0' + mb % 10);
 }
 
 static void update_status_bar() {
@@ -452,9 +454,9 @@ static void update_status_bar() {
     for (const char* s = " | T:"; *s; ++s) *rp++ = *s;
 
     uint64_t tc = kernel::Scheduler::task_count();
-    if (tc >= 100) *rp++ = '0' + (tc / 100) % 10;
-    if (tc >= 10) *rp++ = '0' + (tc / 10) % 10;
-    *rp++ = '0' + tc % 10;
+    if (tc >= 100) *rp++ = static_cast<char>('0' + (tc / 100) % 10);
+    if (tc >= 10) *rp++ = static_cast<char>('0' + (tc / 10) % 10);
+    *rp++ = static_cast<char>('0' + tc % 10);
     *rp = '\0';
 
     Terminal::draw_status_bar(left, right);
@@ -564,8 +566,8 @@ void Shell::cmd_uptime(int, const char**) {
     secs %= 60;
 
     auto print2 = [](uint64_t n) {
-        Terminal::putchar('0' + n / 10);
-        Terminal::putchar('0' + n % 10);
+        Terminal::putchar(static_cast<char>('0' + n / 10));
+        Terminal::putchar(static_cast<char>('0' + n % 10));
     };
 
     Terminal::write("Uptime: ");
@@ -587,14 +589,14 @@ void Shell::cmd_tasks(int, const char**) {
     uint64_t n = count;
     if (n == 0) { Terminal::putchar('0'); }
     else {
-        while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; }
+        while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
         while (pos > 0) Terminal::putchar(buf[--pos]);
     }
     Terminal::write(" (aktuell: ");
     if (cur) {
         uint64_t id = cur->id;
         pos = 0;
-        while (id > 0) { buf[pos++] = '0' + (id % 10); id /= 10; }
+        while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
         while (pos > 0) Terminal::putchar(buf[--pos]);
     }
     Terminal::write(")\n");
@@ -606,8 +608,8 @@ void Shell::cmd_meminfo(int, const char**) {
     uint64_t used = total - free;
 
     auto print_size = [](uint64_t bytes) {
-        uint64_t mb = bytes / (1024 * 1024);
-        uint64_t remainder = bytes % (1024 * 1024);
+        uint64_t mb = bytes / (static_cast<uint64_t>(1024) * 1024);
+        uint64_t remainder = bytes % (static_cast<uint64_t>(1024) * 1024);
         uint64_t kb = remainder / 1024;
 
         char buf[16];
@@ -615,14 +617,14 @@ void Shell::cmd_meminfo(int, const char**) {
         if (mb == 0) { Terminal::putchar('0'); }
         else {
             uint64_t m = mb;
-            while (m > 0) { buf[pos++] = '0' + (m % 10); m /= 10; }
+            while (m > 0) { buf[pos++] = static_cast<char>('0' + (m % 10)); m /= 10; }
             while (pos > 0) Terminal::putchar(buf[--pos]);
         }
         Terminal::write(" MiB");
         if (kb > 0) {
             Terminal::write(" ");
             pos = 0;
-            while (kb > 0) { buf[pos++] = '0' + (kb % 10); kb /= 10; }
+            while (kb > 0) { buf[pos++] = static_cast<char>('0' + (kb % 10)); kb /= 10; }
             while (pos > 0) Terminal::putchar(buf[--pos]);
             Terminal::write(" KiB");
         }
@@ -658,11 +660,11 @@ void Shell::cmd_jobs(int, const char**) {
             char buf[16];
             int pos = 0;
             uint64_t id = task->id;
-            while (id > 0) { buf[pos++] = '0' + (id % 10); id /= 10; }
+            while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
             while (pos > 0) Terminal::putchar(buf[--pos]);
             Terminal::write(": priority=");
             pos = 0; uint64_t p = task->priority;
-            while (p > 0) { buf[pos++] = '0' + (p % 10); p /= 10; }
+            while (p > 0) { buf[pos++] = static_cast<char>('0' + (p % 10)); p /= 10; }
             while (pos > 0) Terminal::putchar(buf[--pos]);
             Terminal::putchar('\n');
             ++shown;
@@ -769,7 +771,7 @@ void Shell::cmd_run(int argc, const char** argv) {
             char buf[16];
             int pos = 0;
             uint64_t id = task->id;
-            while (id > 0) { buf[pos++] = '0' + (id % 10); id /= 10; }
+            while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
             while (pos > 0) Terminal::putchar(buf[--pos]);
             Terminal::write(": ");
             Terminal::write(prog->name);
@@ -930,7 +932,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
     char buf[16];
     int pos = 0;
     uint64_t id = task->id;
-    while (id > 0) { buf[pos++] = '0' + (id % 10); id /= 10; }
+    while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
     while (pos > 0) Terminal::putchar(buf[--pos]);
     Terminal::write(": ");
     Terminal::write(path);
@@ -1203,7 +1205,7 @@ void Shell::cmd_history(int, const char**) {
         char num[16];
         int pos = 0;
         size_t n = i + 1;
-        while (n > 0) { num[pos++] = '0' + (n % 10); n /= 10; }
+        while (n > 0) { num[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
         while (pos > 0) Terminal::putchar(num[--pos]);
         Terminal::write("  ");
         Terminal::write(history_[i].cmd);
@@ -1287,7 +1289,7 @@ void Shell::cmd_set(int argc, const char** argv) {
         int pos = 0;
         int n = positional_argc_;
         if (n == 0) { buf[pos++] = '0'; }
-        else { while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; } }
+        else { while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; } }
         while (pos > 0) Terminal::putchar(buf[--pos]);
         Terminal::putchar('\n');
         // Show environment
@@ -1350,7 +1352,7 @@ void Shell::cmd_read(int argc, const char** argv) {
         char c = 0;
         bool got = false;
 #if defined(CONFIG_ARCH_X86_64)
-        if (arch::inb(arch::COM1_LSR) & 1) { c = arch::inb(arch::COM1); got = true; }
+        if (arch::inb(arch::COM1_LSR) & 1) { c = static_cast<char>(arch::inb(arch::COM1)); got = true; }
 #endif
         if (!got) got = arch::Keyboard::getchar(c);
         if (!got) { arch::pause(); continue; }
@@ -1410,7 +1412,7 @@ void Shell::cmd_printf(int argc, const char** argv) {
                 if (val < 0) { Terminal::putchar('-'); val = -val; }
                 if (val == 0) { Terminal::putchar('0'); }
                 else {
-                    while (val > 0) { num[npos++] = '0' + (val % 10); val /= 10; }
+                    while (val > 0) { num[npos++] = static_cast<char>('0' + (val % 10)); val /= 10; }
                     while (npos > 0) Terminal::putchar(num[--npos]);
                 }
                 ++fmt;
@@ -1424,7 +1426,7 @@ void Shell::cmd_printf(int argc, const char** argv) {
                 int npos = 0;
                 if (val == 0) { Terminal::putchar('0'); }
                 else {
-                    while (val > 0) { num[npos++] = '0' + (val % 10); val /= 10; }
+                    while (val > 0) { num[npos++] = static_cast<char>('0' + (val % 10)); val /= 10; }
                     while (npos > 0) Terminal::putchar(num[--npos]);
                 }
                 ++fmt;
@@ -1447,7 +1449,7 @@ void Shell::cmd_printf(int argc, const char** argv) {
                 else {
                     while (val > 0) {
                         unsigned int d = val & 0xF;
-                        hex[hpos++] = d < 10 ? '0' + d : (*fmt == 'X' ? 'A' : 'a') + (d - 10);
+                        hex[hpos++] = static_cast<char>(d < 10 ? '0' + d : (*fmt == 'X' ? 'A' : 'a') + (d - 10));
                         val >>= 4;
                     }
                     while (hpos > 0) Terminal::putchar(hex[--hpos]);
@@ -1489,6 +1491,7 @@ void Shell::cmd_test(int argc, const char** argv) {
 
     bool result = false;
 
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if (end <= start) {
         result = false;
     } else if (end - start == 1) {
@@ -1540,12 +1543,12 @@ void Shell::cmd_test(int argc, const char** argv) {
             // File tests
             auto* vn = kernel::vfs::resolve(a);
             switch (op[1]) {
-            case 'e': result = vn != nullptr; break;
+            case 'e':
+            case 'r':
+            case 'w':
+            case 'x': result = vn != nullptr; break;
             case 'f': result = vn && (vn->mode & kernel::vfs::S_IFREG); break;
             case 'd': result = vn && (vn->mode & kernel::vfs::S_IFDIR); break;
-            case 'r': result = vn != nullptr; break;
-            case 'w': result = vn != nullptr; break;
-            case 'x': result = vn != nullptr; break;
             case 's': result = vn && vn->size > 0; break;
             default: result = false; break;
             }
@@ -1584,7 +1587,7 @@ void Shell::cmd_trap(int argc, const char** argv) {
                 if (n == 0) { Terminal::write("  EXIT"); }
                 else {
                     Terminal::write("  ");
-                    while (n > 0) { num[pos++] = '0' + (n % 10); n /= 10; }
+                    while (n > 0) { num[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
                     while (pos > 0) Terminal::putchar(num[--pos]);
                 }
                 Terminal::write(": ");
@@ -1656,7 +1659,7 @@ void Shell::cmd_disown(int argc, const char** argv) {
     char buf[16];
     int pos = 0;
     uint64_t n = id;
-    while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; }
+    while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
     while (pos > 0) Terminal::putchar(buf[--pos]);
     Terminal::putchar('\n');
 }
@@ -1672,7 +1675,7 @@ void Shell::cmd_umask(int argc, const char** argv) {
         int m = umask_;
         for (int i = 0; i < 3; ++i) {
             int digit = (m >> (6 - i * 3)) & 7;
-            buf[pos++] = '0' + digit;
+            buf[pos++] = static_cast<char>('0' + digit);
         }
         buf[pos] = '\0';
         Terminal::write(buf);
@@ -1697,15 +1700,15 @@ void Shell::cmd_times(int, const char**) {
     char buf[16];
     int pos = 0;
     uint64_t n = hours;
-    while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; }
+    while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
     while (pos > 0) Terminal::putchar(buf[--pos]);
     Terminal::write("h");
     pos = 0; n = mins;
-    while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; }
+    while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
     while (pos > 0) Terminal::putchar(buf[--pos]);
     Terminal::write("m");
     pos = 0; n = secs;
-    while (n > 0) { buf[pos++] = '0' + (n % 10); n /= 10; }
+    while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
     while (pos > 0) Terminal::putchar(buf[--pos]);
     Terminal::write("s\n");
 }
@@ -1813,9 +1816,9 @@ static void print_ip(net::Ipv4Addr ip) {
     for (int i = 0; i < 4; ++i) {
         if (i > 0) buf[pos++] = '.';
         uint8_t n = ip.addr[i];
-        if (n >= 100) buf[pos++] = '0' + (n / 100);
-        if (n >= 10) buf[pos++] = '0' + ((n / 10) % 10);
-        buf[pos++] = '0' + (n % 10);
+        if (n >= 100) buf[pos++] = static_cast<char>('0' + (n / 100));
+        if (n >= 10) buf[pos++] = static_cast<char>('0' + ((n / 10) % 10));
+        buf[pos++] = static_cast<char>('0' + (n % 10));
     }
     buf[pos] = '\0';
     Terminal::write(buf);
@@ -2007,12 +2010,12 @@ void Shell::cmd_ping(int argc, const char** argv) {
             int np = 0;
             uint16_t ns = seq;
             if (ns == 0) { nbuf[np++] = '0'; }
-            while (ns > 0) { nbuf[np++] = '0' + (ns % 10); ns /= 10; }
+            while (ns > 0) { nbuf[np++] = static_cast<char>('0' + (ns % 10)); ns /= 10; }
             while (np > 0) Terminal::putchar(nbuf[--np]);
             Terminal::write(" ttl=64 time=");
             np = 0;
             uint64_t r = rtt;
-            while (r > 0) { nbuf[np++] = '0' + (r % 10); r /= 10; }
+            while (r > 0) { nbuf[np++] = static_cast<char>('0' + (r % 10)); r /= 10; }
             while (np > 0) Terminal::putchar(nbuf[--np]);
             Terminal::write(" ms\n");
         }
@@ -2029,7 +2032,7 @@ void Shell::cmd_ping(int argc, const char** argv) {
     auto write_dec = [&](uint64_t v) {
         int np = 0;
         if (v == 0) { Terminal::putchar('0'); return; }
-        while (v > 0) { nbuf[np++] = '0' + (v % 10); v /= 10; }
+        while (v > 0) { nbuf[np++] = static_cast<char>('0' + (v % 10)); v /= 10; }
         while (np > 0) Terminal::putchar(nbuf[--np]);
     };
     write_dec(pkt_tx);
@@ -2135,7 +2138,7 @@ void Shell::cmd_dmesg(int argc, const char** argv) {
         uint64_t ts = e.timestamp;
         char tsbuf[24]; int tlen = 0;
         if (ts == 0) tsbuf[tlen++] = '0';
-        else { while (ts > 0 && tlen < 23) { tsbuf[tlen++] = '0' + (ts % 10); ts /= 10; } }
+        else { while (ts > 0 && tlen < 23) { tsbuf[tlen++] = static_cast<char>('0' + (ts % 10)); ts /= 10; } }
         for (int i = 0; i < tlen/2; ++i) { char c = tsbuf[i]; tsbuf[i] = tsbuf[tlen-1-i]; tsbuf[tlen-1-i] = c; }
         for (int i = 0; i < tlen && p < end; ++i) *p++ = tsbuf[i];
         *p++ = ']'; *p++ = ' ';
@@ -2145,7 +2148,7 @@ void Shell::cmd_dmesg(int argc, const char** argv) {
         uint64_t tid = e.task_id;
         char tidbuf[24]; int tidlen = 0;
         if (tid == 0) tidbuf[tidlen++] = '0';
-        else { while (tid > 0 && tidlen < 23) { tidbuf[tidlen++] = '0' + (tid % 10); tid /= 10; } }
+        else { while (tid > 0 && tidlen < 23) { tidbuf[tidlen++] = static_cast<char>('0' + (tid % 10)); tid /= 10; } }
         for (int i = 0; i < tidlen/2; ++i) { char c = tidbuf[i]; tidbuf[i] = tidbuf[tidlen-1-i]; tidbuf[tidlen-1-i] = c; }
         for (int i = 0; i < tidlen && p < end; ++i) *p++ = tidbuf[i];
         *p++ = ' ';
@@ -2165,7 +2168,7 @@ void Shell::cmd_dmesg(int argc, const char** argv) {
         *p++ = '0'; *p++ = 'x';
         for (int i = (sizeof(uintptr_t)*2)-1; i >= 0 && p < end; --i) {
             uint8_t nib = (ctx >> (i*4)) & 0xF;
-            *p++ = nib < 10 ? '0' + nib : 'a' + (nib - 10);
+            *p++ = static_cast<char>(nib < 10 ? '0' + nib : 'a' + (nib - 10));
         }
         *p++ = ':'; *p++ = ' ';
 

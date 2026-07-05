@@ -42,6 +42,7 @@ uint64_t Syscall::sys_notify_wait(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     auto* cur = syscall_task();
     if (!cur || !cur->notify) return static_cast<uint64_t>(-1);
     uint64_t value = cur->notify->wait();
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto val_ptr = checked(reinterpret_cast<uint64_t*>(arg0));
     if (syscall_is_user_task() && !val_ptr.valid()
         ) return static_cast<uint64_t>(-1);

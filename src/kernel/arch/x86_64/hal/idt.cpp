@@ -23,12 +23,14 @@
 
 namespace arch {
 
+// NOLINTNEXTLINE(bugprone-reserved-identifier)
 extern "C" uint64_t __isr_vector[];
 
 IDTEntry IDT::entries_[NUM_ENTRIES] = {};
 IDTDescriptor IDT::desc_ = {};
 ISRHandler IDT::handlers_[NUM_ENTRIES] = {};
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static IDTEntry make_entry(uint64_t handler, uint16_t selector,
     uint8_t type_attr, uint8_t ist) {
     IDTEntry e = {};

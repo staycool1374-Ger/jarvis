@@ -71,9 +71,13 @@ bool VirtioBlkDriver::init() {
         return false;
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     desc_    = reinterpret_cast<arch::VirtqDesc*>(arch::HHDM_OFFSET + desc_phys_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     avail_   = reinterpret_cast<arch::VirtqAvail*>(arch::HHDM_OFFSET + avail_phys_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     used_    = reinterpret_cast<arch::VirtqUsed*>(arch::HHDM_OFFSET + used_phys_);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     dma_buf_ = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + dma_buf_phys_);
 
     memset(desc_, 0, PAGE_SIZE);
@@ -92,14 +96,16 @@ bool VirtioBlkDriver::init() {
     arch::virtio_write_status(transport_, status | VIRTIO_STATUS_DRIVER_OK);
 
     // Read sector count from device config (at offset 0 for virtio-blk)
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* cfg = reinterpret_cast<volatile uint64_t*>(transport_.device_cfg.virt_addr);
     sector_count_ = cfg[0];
     Logger::info("virtio-blk: %d sectors (%d MB)", sector_count_,
-                 sector_count_ * BLOCK_SIZE / (1024 * 1024));
+                 static_cast<uint64_t>(sector_count_) * BLOCK_SIZE / (static_cast<uint64_t>(1024) * 1024));
 
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool VirtioBlkDriver::submit_request(uint32_t type, uint64_t sector,
                                      uint8_t* data, bool is_read) {
     if (!desc_ || !avail_ || !used_) return false;

@@ -94,6 +94,7 @@ bool crc_process_chunk() {
         return true;
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const uint8_t* data = reinterpret_cast<const uint8_t*>(start_addr + crc_offset);
     crc_accumulator = CRC32::update(crc_accumulator, data, chunk);
     crc_offset += chunk;

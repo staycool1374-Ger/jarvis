@@ -37,8 +37,9 @@ namespace kernel::errors {
     X(INVALID_ARG,   7,  "Invalid argument") \
     X(INVALID_STATE, 8,  "Invalid task state")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum TaskError : uint64_t {
-#define X(name, num, msg) TASK_ERR_##name = num,
+#define X(name, num, msg) TASK_ERR_##name = (num),
     TASK_ERROR_CODES
 #undef X
 };

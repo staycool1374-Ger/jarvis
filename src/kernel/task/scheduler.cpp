@@ -81,20 +81,21 @@ void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
 }
 
 TaskControlBlock* const Scheduler::ID_TOMBSTONE =
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));
 
-TaskControlBlock* Scheduler::tasks_[MAX_TASKS] = {};
-TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
-uint64_t Scheduler::task_count_ = 0;
-uint64_t Scheduler::current_index_ = 0;
+constinit TaskControlBlock* Scheduler::tasks_[MAX_TASKS] = {};
+constinit TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
+constinit uint64_t Scheduler::task_count_ = 0;
+constinit uint64_t Scheduler::current_index_ = 0;
 
 
-uint64_t Scheduler::next_task_id_ = 1;
-uint64_t Scheduler::sporadic_task_count_ = 0;
-bool Scheduler::preempt_enabled_ = false;
+constinit uint64_t Scheduler::next_task_id_ = 1;
+constinit uint64_t Scheduler::sporadic_task_count_ = 0;
+constinit bool Scheduler::preempt_enabled_ = false;
 ReadyQueueManager Scheduler::ready_queue_;
-TaskControlBlock* Scheduler::idle_task_ = nullptr;
-TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
+constinit TaskControlBlock* Scheduler::idle_task_ = nullptr;
+constinit TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
 sync::SpinLock Scheduler::scheduler_lock_;
 
 // Liu-Leyland Rate-Monotonic LUB bounds (scaled by 1000000)
@@ -469,6 +470,7 @@ void Scheduler::reap_orphans() noexcept {
 
         // Determine if this task can be reaped.
         bool can_reap = false;
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         if (t->parent_id == 0) {
             can_reap = true;
         } else if (init_task && t->parent_id == init_task->id &&
@@ -483,6 +485,7 @@ void Scheduler::reap_orphans() noexcept {
                 if (!p) break;
                 if (p->id == t->parent_id) {
                     parent_found = true;
+                    // NOLINTNEXTLINE(bugprone-branch-clone)
                     if (p->state == TaskState::TERMINATED) {
                         can_reap = true;
                     } else if (p->waiting_child_pid != 0 &&
@@ -680,6 +683,7 @@ void Scheduler::cleanup_zombies() noexcept {
         auto* t = tasks_[rd];
         bool keep = true;
 
+        // NOLINTNEXTLINE(bugprone-branch-clone)
         if (!t) {
             keep = false;
         } else if (t->magic != TaskControlBlock::TCB_MAGIC) {
@@ -835,6 +839,7 @@ void Scheduler::reschedule() noexcept {
 // Test-isolation helpers
 // ---------------------------------------------------------------------------
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 void Scheduler::capture_state(TaskControlBlock** tasks_out,
                               TaskControlBlock** id_table_out,
                               uint64_t& task_count_out,
@@ -845,9 +850,10 @@ void Scheduler::capture_state(TaskControlBlock** tasks_out,
                               uint64_t* rq_bitmap_hi,
                               uint64_t* rq_bitmap_lo,
                               uint64_t* sporadic_count_out) {
-    __builtin_memcpy(tasks_out, tasks_,
+// NOLINTEND(bugprone-easily-swappable-parameters)
+    __builtin_memcpy(static_cast<void*>(tasks_out), static_cast<const void*>(tasks_),
                      sizeof(TaskControlBlock*) * MAX_TASKS);
-    __builtin_memcpy(id_table_out, id_table_,
+    __builtin_memcpy(static_cast<void*>(id_table_out), static_cast<const void*>(id_table_),
                      sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
     task_count_out    = task_count_;
     current_idx_out   = current_index_;
@@ -887,6 +893,7 @@ void Scheduler::rebuild_ready_queue() noexcept {
     }
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               TaskControlBlock* const* id_table_in,
                               uint64_t task_count_in,
@@ -897,9 +904,10 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
                               uint64_t rq_bitmap_hi,
                               uint64_t rq_bitmap_lo,
                               uint64_t sporadic_count_in) {
-    __builtin_memcpy(tasks_, tasks_in,
+// NOLINTEND(bugprone-easily-swappable-parameters)
+    __builtin_memcpy(static_cast<void*>(tasks_), static_cast<const void*>(tasks_in),
                      sizeof(TaskControlBlock*) * MAX_TASKS);
-    __builtin_memcpy(id_table_, id_table_in,
+    __builtin_memcpy(static_cast<void*>(id_table_), static_cast<const void*>(id_table_in),
                      sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
     task_count_          = task_count_in;
     current_index_       = current_idx_in;

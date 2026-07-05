@@ -50,6 +50,7 @@ struct Driver {
         , irq_line(0)
         {}
 
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     Driver(const char* name_, const char* description_, bool (*init_)(), void (
         *exit_)(), DriverState state_, uint32_t irq_line_)
         : name(name_)
@@ -68,6 +69,7 @@ public:
     static void init();
 
     /// @brief Registers a driver module.
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     static void register_driver(
         const char* name,
         const char* description,
@@ -99,8 +101,8 @@ public:
 
 private:
     static constexpr size_t MAX_DRIVERS = CONFIG_MAX_DRIVERS;
-    static Driver* drivers_[MAX_DRIVERS];
-    static size_t count_;
+    static constinit Driver* drivers_[MAX_DRIVERS];
+    static constinit size_t count_;
 };
 
 } // namespace kernel

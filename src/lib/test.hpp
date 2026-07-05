@@ -78,6 +78,7 @@ public:
 private:
     static constexpr size_t MAX_TESTS = 1024;
     static constexpr size_t MAX_CLASSES = 64;
+    // NOLINTBEGIN(bugprone-dynamic-static-initializers)
     static TestCase tests_[MAX_TESTS];
     static size_t count_;
     static size_t passed_;
@@ -87,6 +88,7 @@ private:
     static ClassSection sections_[MAX_CLASSES];
     static size_t class_count_;
     static size_t expected_count_;
+    // NOLINTEND(bugprone-dynamic-static-initializers)
 };
 
 class TestBase {
@@ -130,6 +132,7 @@ void print_report(uint64_t start_ns, uint64_t end_ns);
 
 void set_kernel_entry_ns();
 void set_class_auto_shutdown(bool enabled);
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern bool g_class_auto_shutdown;
 
 struct TestClass {
@@ -233,6 +236,7 @@ void dump_class_counts();
 #define JARVIS_REGISTER_RELEASE_TEST_SUITE(suite, name)                       \
     JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, kernel::test::TF_RELEASE)
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define TEST_CLASS(name)                                                      \
     class name : public kernel::test::TestBase {                              \
     public:                                                                   \
@@ -241,6 +245,7 @@ void dump_class_counts();
     };                                                                        \
     static kernel::test::TestBase* _factory_##name() { return new name(); }   \
     void name::run()
+// NOLINTEND(bugprone-macro-parentheses)
 
 #define REGISTER_CLASS_FLAGS(name, flags_)                                    \
     do {                                                                      \

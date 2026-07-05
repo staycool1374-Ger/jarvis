@@ -22,8 +22,8 @@
 
 namespace kernel {
 
-LogLevel Logger::current_level_ = LogLevel::INFO;
-bool Logger::initialized_ = false;
+constinit LogLevel Logger::current_level_ = LogLevel::INFO;
+constinit bool Logger::initialized_ = false;
 
 void Logger::init() {
     if (initialized_) return;
@@ -69,7 +69,7 @@ void Logger::print_dec(uint64_t v) {
     buf[20] = '\0';
     if (v == 0) { putchar('0'); return; }
     while (v > 0) {
-        buf[--pos] = '0' + (v % 10);
+        buf[--pos] = static_cast<char>('0' + (v % 10));
         v /= 10;
     }
     puts(buf + pos);

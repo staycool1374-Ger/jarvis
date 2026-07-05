@@ -66,9 +66,9 @@ struct MemoryMapTag {
 };
 extern "C" {
     /// @brief Multiboot2 magic value (0x36D76289 if booted by Multiboot2).
-    extern uint64_t multiboot_magic;
+    extern constinit uint64_t multiboot_magic;
     /// @brief Physical pointer to the Multiboot2 info structure.
-    extern uint64_t multiboot_info_ptr;
+    extern constinit uint64_t multiboot_info_ptr;
 }
 
 /// @brief Finds a Multiboot2 tag by type.
@@ -77,11 +77,13 @@ extern "C" {
 inline uint64_t mb2_find_tag(uint32_t type) {
     if (multiboot_magic != 0x36D76289) return 0;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* info = reinterpret_cast<Multiboot2Info*>(
         static_cast<uint64_t>(multiboot_info_ptr));
 
     uint64_t addr = multiboot_info_ptr + 8;
     while (addr < multiboot_info_ptr + info->total_size) {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* tag = reinterpret_cast<Multiboot2Tag*>(addr);
         if (tag->type == 0) break;
         if (tag->type == type) return addr;

@@ -27,6 +27,7 @@ static uint8_t rtc_read_register(uint8_t reg) {
     return inb(RTC::CMOS_DATA);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void rtc_write_register(uint8_t reg, uint8_t value) {
     outb(RTC::CMOS_INDEX, reg | 0x80);
     io_wait();

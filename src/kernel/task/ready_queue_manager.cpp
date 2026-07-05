@@ -61,7 +61,9 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD& src) noexcept {
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
         // Restore queue head/tail from raw addresses (TCBs are in-place)
         queues_[i].set_raw(
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             reinterpret_cast<TaskControlBlock*>(src.queue_heads[i]),
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             reinterpret_cast<TaskControlBlock*>(src.queue_tails[i]),
             src.queue_counts[i]);
     }

@@ -25,6 +25,7 @@
 #include <kernel/arch/pci.hpp>
 #include <kernel/memory/vmm.hpp>
 
+// NOLINTBEGIN(performance-no-int-to-ptr,bugprone-easily-swappable-parameters)
 namespace arch {
 
 /// Virtio PCI vendor ID
@@ -70,6 +71,7 @@ constexpr uint16_t VIRTIO_NOTIFY_NEXT    = 0; // kick next descriptor
 constexpr uint16_t VIRTIO_QUEUE_SIZE_MAX = 1024;
 
 /// Virtio descriptor flags
+// NOLINTNEXTLINE(performance-enum-size)
 enum VirtioDescFlags : uint16_t {
     VIRTIO_DESC_F_NEXT     = 1,
     VIRTIO_DESC_F_WRITE    = 2,
@@ -112,6 +114,7 @@ struct VirtioMmio {
 };
 
 /// Common configuration register offsets (via VIRTIO_CFG_COMMON)
+// NOLINTNEXTLINE(performance-enum-size)
 enum VirtioCommonReg : uint16_t {
     VIRTIO_COMMON_DEVICE_FEATURE_SEL = 0x00,
     VIRTIO_COMMON_DEVICE_FEATURE     = 0x04,
@@ -253,3 +256,4 @@ inline void virtio_notify(const VirtioTransport& t, uint16_t queue_idx) {
 }
 
 } // namespace arch
+// NOLINTEND(performance-no-int-to-ptr,bugprone-easily-swappable-parameters)

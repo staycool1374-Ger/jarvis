@@ -17,6 +17,7 @@ static inline void cpu_to_fdt32(uint32_t *p, uint32_t v) {
 }
 
 /* Internal helpers */
+// NOLINTNEXTLINE(performance-no-int-to-ptr)
 static inline const void *fdt_offset_ptr_(const void *fdt, int offset) {
     const struct fdt_header *h = (const struct fdt_header *)fdt;
     return (const char *)fdt + fdt32_to_cpu(h->off_dt_struct) + offset;
@@ -42,10 +43,11 @@ static inline uint32_t fdt_next_tag_(const void *fdt, int startoffset,
     case FDT_PROP: {
         const uint32_t *lenp = (const uint32_t *)fdt_offset_ptr_(fdt, offset);
         if (!lenp) return FDT_END;
-        offset += FDT_TAGSIZE + FDT_TAGSIZE + fdt32_to_cpu(*lenp);
+        offset += FDT_TAGSIZE + FDT_TAGSIZE + static_cast<int>(fdt32_to_cpu(*lenp));
         offset = (offset + 3) & ~3;
         break;
     }
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     case FDT_END_NODE:
     case FDT_NOP:
         break;

@@ -25,6 +25,7 @@ public:
 
     /// @brief Raw restore from POD data.  TCB pointers must be valid
     ///        (TCBs restored in-place across snapshot cycles).
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void set_raw(TaskControlBlock* h, TaskControlBlock* t, uint64_t c) noexcept {
         head_ = h; tail_ = t; count_ = c;
     }

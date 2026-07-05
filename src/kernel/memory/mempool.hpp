@@ -139,8 +139,9 @@ public:
     static size_t pool_data_bytes();
 
 private:
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static Pool pools_[POOL_COUNT];
-    static bool ready_;
+    static constinit bool ready_;
 
     /// @brief Finds the smallest pool class that satisfies a given size.
     ///        Linear scan over POOL_COUNT (9) entries — O(1) with small constant.

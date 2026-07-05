@@ -229,8 +229,8 @@ extern "C" {
     uint64_t scheduler_corruption_count = 0;
     kernel::TaskControlBlock* fpu_owner = nullptr;
 #if defined(CONFIG_ARCH_X86_64)
-    uint64_t multiboot_magic = 0;
-    uint64_t multiboot_info_ptr = 0;
+    constinit uint64_t multiboot_magic = 0;
+    constinit uint64_t multiboot_info_ptr = 0;
 #endif
 }
 
@@ -261,6 +261,7 @@ static void init_pic() {
 }
 #endif
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     g_boot_info = BootInfo();
 
@@ -326,6 +327,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     {
         uint64_t tag_addr = mb2_find_tag(6);
         if (tag_addr) {
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             auto* mem_tag = reinterpret_cast<MemoryMapTag*>(tag_addr);
             uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)
                 ) / mem_tag->entry_size;
@@ -758,11 +760,13 @@ static void dump_regs(uint64_t* regs) {
     L::raw_write("  CR4: "); L::print_hex(cr4); L::raw_write("\n");
 
     L::raw_write("  Stack trace:\n");
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* rbp = reinterpret_cast<uint64_t*>(regs[6]);
     for (int i = 0; i < 8 && rbp && rbp[1]; ++i) {
         L::raw_write("    ["); L::print_dec(i); L::raw_write("] ");
         L::print_hex(rbp[1]);
         L::raw_write("\n");
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         rbp = reinterpret_cast<uint64_t*>(rbp[0]);
     }
 #elif defined(CONFIG_ARCH_AARCH64)
@@ -873,6 +877,7 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
 
         uint64_t frame_phys = kernel::VMM::virt_to_phys_in_pml4(
             user_rsp, task->page_table_);
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* frame = reinterpret_cast<kernel::SignalFrame*>(
             arch::HHDM_OFFSET + frame_phys);
         if (!frame) {

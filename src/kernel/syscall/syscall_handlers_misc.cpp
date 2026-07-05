@@ -133,6 +133,7 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
                     if (p->state != TaskState::TERMINATED) {
                         Scheduler::set_task_ready(*p);
                         if (TASK_STACK_PTR(p)) {
+                            // NOLINTNEXTLINE(performance-no-int-to-ptr)
                             auto* stack = reinterpret_cast<uint64_t*>(
                                 TASK_STACK_PTR(p));
                             stack[0] = t->id;
@@ -148,6 +149,7 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto tv_ptr = checked(reinterpret_cast<Timeval*>(arg0));
     if (syscall_is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(
         -1);
@@ -162,6 +164,7 @@ uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto uts_ptr = checked(reinterpret_cast<Utsname*>(arg0));
     if (syscall_is_user_task() && !uts_ptr.valid()
         ) return static_cast<uint64_t>(-1);
@@ -226,6 +229,7 @@ uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
             uint64_t phys = PMM::alloc_user_page();
             if (!phys) return static_cast<uint64_t>(-1);
             VMM::map_page_in_pml4(vaddr, phys, true, t->page_table_);
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
             __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + phys), 0, arch::PAGE_SIZE);
         }
     }
@@ -240,7 +244,7 @@ struct Rlimit {
     uint64_t rlim_max;
 };
 
-enum RlimitResource {
+enum RlimitResource : uint8_t {
     RLIMIT_DATA = 0,
     RLIMIT_STACK = 1,
     RLIMIT_NOFILE = 2,
@@ -268,6 +272,7 @@ uint64_t Syscall::sys_getrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
         return static_cast<uint64_t>(-1);
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto rl_ptr = checked(reinterpret_cast<Rlimit*>(arg1));
     if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
     *rl_ptr.unsafe_ptr() = rl;
@@ -278,6 +283,7 @@ uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
     auto* t = syscall_task();
     if (!t) return static_cast<uint64_t>(-1);
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto rl_ptr = checked(reinterpret_cast<const Rlimit*>(arg1));
     if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
     Rlimit rl = *rl_ptr.unsafe_ptr();
@@ -293,10 +299,12 @@ uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     if (arg1 == 0) return 0;
 
     if (syscall_is_user_task()) {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
         if (!buf.valid()) return static_cast<uint64_t>(-1);
         random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
     } else {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         random_fill(reinterpret_cast<uint8_t*>(arg0), static_cast<size_t>(arg1));
     }
     return arg1;
@@ -311,6 +319,7 @@ uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     }
     if (arg0 == 0 || arg1 == 0) return 0;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     char* user_buf = reinterpret_cast<char*>(arg0);
     size_t user_size = static_cast<size_t>(arg1);
     size_t written = 0;
@@ -333,7 +342,7 @@ uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         uint64_t ts = e.timestamp;
         char tsbuf[24]; int tlen = 0;
         if (ts == 0) tsbuf[tlen++] = '0';
-        else { while (ts > 0 && tlen < 23) { tsbuf[tlen++] = '0' + (ts % 10); ts /= 10; } }
+        else { while (ts > 0 && tlen < 23) {             tsbuf[tlen++] = static_cast<char>('0' + (ts % 10)); ts /= 10; } }
         for (int i = 0; i < tlen/2; ++i) { char c = tsbuf[i]; tsbuf[i] = tsbuf[tlen-1-i]; tsbuf[tlen-1-i] = c; }
         for (int i = 0; i < tlen && p < end; ++i) *p++ = tsbuf[i];
 
@@ -342,7 +351,7 @@ uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         uint64_t tid = e.task_id;
         char tidbuf[24]; int tidlen = 0;
         if (tid == 0) tidbuf[tidlen++] = '0';
-        else { while (tid > 0 && tidlen < 23) { tidbuf[tidlen++] = '0' + (tid % 10); tid /= 10; } }
+        else { while (tid > 0 && tidlen < 23) {             tidbuf[tidlen++] = static_cast<char>('0' + (tid % 10)); tid /= 10; } }
         for (int i = 0; i < tidlen/2; ++i) { char c = tidbuf[i]; tidbuf[i] = tidbuf[tidlen-1-i]; tidbuf[tidlen-1-i] = c; }
         for (int i = 0; i < tidlen && p < end; ++i) *p++ = tidbuf[i];
 
@@ -360,7 +369,7 @@ uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         *p++ = '0'; *p++ = 'x';
         for (int i = (sizeof(uintptr_t)*2)-1; i >= 0 && p < end; --i) {
             uint8_t nib = (ctx >> (i*4)) & 0xF;
-            *p++ = nib < 10 ? '0' + nib : 'a' + (nib - 10);
+            *p++ = static_cast<char>(nib < 10 ? '0' + nib : 'a' + (nib - 10));
         }
 
         const char* msg_str = ": ";

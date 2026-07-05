@@ -25,8 +25,8 @@
 
 namespace kernel {
 
-Driver* DriverRegistry::drivers_[MAX_DRIVERS] = {};
-size_t DriverRegistry::count_ = 0;
+constinit Driver* DriverRegistry::drivers_[MAX_DRIVERS] = {};
+constinit size_t DriverRegistry::count_ = 0;
 
 void DriverRegistry::init() {
     count_ = 0;

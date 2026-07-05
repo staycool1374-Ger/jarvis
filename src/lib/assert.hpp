@@ -32,6 +32,7 @@ extern "C" void panic(const char* msg);
 ///        Each module that defines error codes specialises this template
 ///        (e.g. <kernel/task/task_errors.hpp>).
 namespace kernel::errors {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     template<kernel::ErrorEnum E>
     inline const char* error_string(E) { return "Unknown error"; }
 }
@@ -61,4 +62,4 @@ namespace kernel::errors {
 #define ASSERT(err) ((void)0)
 #endif
 
-#define __STRINGIFY(x) #x
+#define __STRINGIFY(x) #x // NOLINT(bugprone-reserved-identifier)

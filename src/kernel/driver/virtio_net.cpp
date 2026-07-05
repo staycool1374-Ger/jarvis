@@ -58,8 +58,11 @@ static bool alloc_queue_pages(uint64_t& desc_phys, uint64_t& avail_phys,
         return false;
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     desc  = reinterpret_cast<arch::VirtqDesc*>(HHDM_OFFSET + desc_phys);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     avail = reinterpret_cast<arch::VirtqAvail*>(HHDM_OFFSET + avail_phys);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     used  = reinterpret_cast<arch::VirtqUsed*>(HHDM_OFFSET + used_phys);
 
     memset(desc, 0, desc_pages * PAGE_SIZE);
@@ -144,6 +147,7 @@ bool virtio_net_probe(Nic& nic) {
             return false;
         }
         dev->rx_bufs_phys[i] = phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         dev->rx_bufs[i] = reinterpret_cast<uint8_t*>(HHDM_OFFSET + phys);
         memset(dev->rx_bufs[i], 0, PAGE_SIZE);
 
@@ -157,6 +161,7 @@ bool virtio_net_probe(Nic& nic) {
         delete dev;
         return false;
     }
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     dev->tx_buf = reinterpret_cast<uint8_t*>(HHDM_OFFSET + dev->tx_buf_phys);
 
     // DRIVER_OK
@@ -169,6 +174,7 @@ bool virtio_net_probe(Nic& nic) {
         Logger::error("virtio-net: device cfg not mapped, using fallback MAC");
         mac = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x56}};
     } else {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* cfg = reinterpret_cast<volatile uint8_t*>(transport.device_cfg.virt_addr);
         for (int i = 0; i < 6; ++i) mac.addr[i] = cfg[i];
     }
@@ -248,7 +254,7 @@ bool virtio_net_poll(uint8_t* buf, size_t& len) {
         len = 0;
     }
 
-    add_rx_buf(dev, desc_idx);
+    add_rx_buf(dev, static_cast<int>(desc_idx));
     dev.rx_last_seen_used = static_cast<uint16_t>(dev.rx_last_seen_used + 1);
     return len > 0;
 }

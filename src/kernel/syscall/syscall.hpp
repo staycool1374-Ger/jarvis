@@ -26,7 +26,7 @@
 namespace kernel {
 
 /// @brief System call numbers recognised by the kernel.
-enum class SyscallNumber : uint64_t {
+enum class SyscallNumber : uint8_t {
     YIELD       = 0,
     SEND        = 1,
     RECEIVE     = 2,

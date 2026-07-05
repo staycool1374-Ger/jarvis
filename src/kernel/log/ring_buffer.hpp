@@ -71,6 +71,7 @@ private:
     alignas(64) volatile size_t read_pos_ = 0;
 };
 
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern RingBuffer g_klog;
 
 } // namespace log

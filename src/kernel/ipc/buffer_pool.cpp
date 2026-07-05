@@ -27,9 +27,10 @@
 namespace kernel {
 
 BufferPool::Entry BufferPool::entries[MAX_BUFFERS];
-int32_t BufferPool::free_head_ = LIST_EMPTY;
-uint32_t BufferPool::next_cookie_ = 1;
+constinit int32_t BufferPool::free_head_ = LIST_EMPTY;
+constinit uint32_t BufferPool::next_cookie_ = 1;
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
 
@@ -59,6 +60,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t PD_SHIFT = 21;
     constexpr uint64_t PT_SHIFT = 12;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
         pml4_phys & ~0xFFFULL));
     size_t pml4_idx = (virt_addr >> PML4_SHIFT) & 0x1FF;
@@ -67,9 +69,11 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     size_t pt_idx   = (virt_addr >> PT_SHIFT) & 0x1FF;
 
     if (!(pml4[pml4_idx] & PAGE_PRESENT)) return;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_idx
         ] & ~0xFFFULL));
     if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) return;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx
         ] & ~0xFFFULL));
     if (pd[pd_idx] & PAGE_PRESENT) {
@@ -80,6 +84,7 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
         if (pd[pd_idx] & (1ULL << 7))
 #endif
         { pd[pd_idx] = 0; return; } // huge page
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pd[pd_idx
             ] & ~0xFFFULL));
         pt[pt_idx] = 0;
@@ -197,6 +202,7 @@ bool BufferPool::free(TaskControlBlock& task, uint64_t handle) {
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool BufferPool::map(TaskControlBlock& task, uint64_t handle, uint64_t va) {
     int32_t idx = validate(handle);
     if (idx < 0) return false;

@@ -29,10 +29,11 @@ static constexpr uint64_t USER_SPACE_LIMIT = 0x0000800000000000ULL;
 /// @brief Recovery address for safe user memory access.
 ///        Non-zero while we are inside a user memory copy attempt.
 ///        Page fault handler checks this and redirects here on fault.
-extern "C" uint64_t g_user_access_recover_ip;
+extern "C" constinit uint64_t g_user_access_recover_ip;
 
 /// @brief Check if a memory range lies entirely within user space.
 /// @return true if the range is valid user-space memory.
+// NOLINTBEGIN(performance-no-int-to-ptr,bugprone-narrowing-conversions)
 static inline bool is_user_range(const void* user_ptr, uint64_t size) {
     if (!user_ptr) return false;
     uint64_t addr = reinterpret_cast<uint64_t>(user_ptr);
@@ -169,3 +170,4 @@ recover_to:
 }
 
 } // namespace kernel
+// NOLINTEND(performance-no-int-to-ptr,bugprone-narrowing-conversions)

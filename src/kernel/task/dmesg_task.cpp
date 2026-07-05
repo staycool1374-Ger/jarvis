@@ -27,7 +27,7 @@ void format_u64(char*& p, char* end, uint64_t v) {
         buf[len++] = '0';
     } else {
         while (v > 0 && len < 23) {
-            buf[len++] = '0' + (v % 10);
+            buf[len++] = static_cast<char>('0' + (v % 10));
             v /= 10;
         }
         for (int i = 0; i < len / 2; ++i) {
@@ -45,7 +45,7 @@ void format_hex(char*& p, char* end, uintptr_t v) {
     *p++ = 'x';
     for (int i = (sizeof(uintptr_t) * 2) - 1; i >= 0 && p < end; --i) {
         uint8_t nibble = (v >> (i * 4)) & 0xF;
-        *p++ = nibble < 10 ? '0' + nibble : 'a' + (nibble - 10);
+        *p++ = static_cast<char>(nibble < 10 ? '0' + nibble : 'a' + (nibble - 10));
     }
 }
 

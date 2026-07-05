@@ -33,8 +33,9 @@ namespace kernel::errors {
     X(INVALID_BAR,    3,  "Invalid or uninitialized BAR") \
     X(NOT_FOUND,      4,  "PCI device not found")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum PciError : uint64_t {
-#define X(name, num, msg) PCI_ERR_##name = num,
+#define X(name, num, msg) PCI_ERR_##name = (num),
     PCI_ERROR_CODES
 #undef X
 };

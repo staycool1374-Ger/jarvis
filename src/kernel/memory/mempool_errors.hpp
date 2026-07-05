@@ -33,8 +33,9 @@ namespace kernel::errors {
     X(INVALID_POOL,    6,  "Invalid pool index") \
     X(CORRUPTED,       7,  "Pool metadata corrupted")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum MemPoolError : uint64_t {
-#define X(name, num, msg) MEMPOOL_ERR_##name = num,
+#define X(name, num, msg) MEMPOOL_ERR_##name = (num),
     MEMPOOL_ERROR_CODES
 #undef X
 };

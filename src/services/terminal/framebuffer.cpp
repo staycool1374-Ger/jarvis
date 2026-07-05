@@ -35,6 +35,7 @@ bool Framebuffer::init() {
     uint64_t tag_addr = mb2_find_tag(8);
     if (!tag_addr) return false;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* tag = reinterpret_cast<FramebufferTag*>(tag_addr);
     if (tag->type_specific != 1 && tag->type_specific != 2) return false;
 
@@ -44,7 +45,7 @@ bool Framebuffer::init() {
     info_.height = tag->height;
     info_.bpp    = tag->bpp;
 
-    uint64_t fb_size = info_.pitch * info_.height;
+    uint64_t fb_size = static_cast<uint64_t>(info_.pitch) * info_.height;
     uint64_t fb_start = info_.addr & ~0xFFFULL;
     uint64_t fb_end = (info_.addr + fb_size + 0xFFF) & ~0xFFFULL;
     for (uint64_t page = fb_start; page < fb_end; page += 0x1000) {
@@ -65,6 +66,7 @@ bool Framebuffer::init() {
 void Framebuffer::clear(uint32_t color) {
     if (!initialized_) return;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* fb = reinterpret_cast<uint8_t*>(static_cast<uint64_t>(info_.addr));
     uint32_t bpp_bytes = info_.bpp / 8;
 
@@ -84,7 +86,10 @@ void Framebuffer::draw_pixel(uint32_t x, uint32_t y, uint32_t color) {
     put_pixel(x, y, color);
 }
 
-void Framebuffer::fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+void Framebuffer::fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color)
+// NOLINTEND(bugprone-easily-swappable-parameters)
+{
     for (uint32_t dy = 0; dy < h; ++dy) {
         for (uint32_t dx = 0; dx < w; ++dx) {
             draw_pixel(x + dx, y + dy, color);
@@ -92,7 +97,10 @@ void Framebuffer::fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint
     }
 }
 
-void Framebuffer::draw_char(uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg) {
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+void Framebuffer::draw_char(uint32_t x, uint32_t y, char c, uint32_t fg, uint32_t bg)
+// NOLINTEND(bugprone-easily-swappable-parameters)
+{
     if (!initialized_) return;
     if (c < 32 || c > 126) c = ' ';
 
@@ -106,7 +114,11 @@ void Framebuffer::draw_char(uint32_t x, uint32_t y, char c, uint32_t fg, uint32_
     }
 }
 
-void Framebuffer::put_pixel(uint32_t x, uint32_t y, uint32_t color) {
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+void Framebuffer::put_pixel(uint32_t x, uint32_t y, uint32_t color)
+// NOLINTEND(bugprone-easily-swappable-parameters)
+{
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* fb = reinterpret_cast<uint8_t*>(static_cast<uint64_t>(info_.addr));
     uint32_t bpp_bytes = info_.bpp / 8;
     size_t offset = y * info_.pitch + x * bpp_bytes;

@@ -24,6 +24,7 @@
 namespace kernel {
 namespace sync {
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Semaphore::init(uint64_t initial, uint64_t max) {
     count_ = initial;
     max_count_ = max;
@@ -31,6 +32,7 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
     lock_.reset();
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
     if (waiter_count_ != 0 || count_ != 0 || max_count_ != 1) {
         return errors::SYNC_ERR_ALREADY_INITIALIZED;

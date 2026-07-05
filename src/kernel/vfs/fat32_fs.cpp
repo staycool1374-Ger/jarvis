@@ -31,7 +31,7 @@ struct Fat32VnodeData {
     Vnode* parent;
 };
 
-fat32::Fat32Partition* fat32_partition_instance = nullptr;
+constinit fat32::Fat32Partition* fat32_partition_instance = nullptr;
 
 // Forward declarations
 extern Vnode fat32_root_vnode;
@@ -90,6 +90,7 @@ static void fat32_file_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t fat32_file_lseek(Vnode& self, int64_t offset, int whence,
                                  uint64_t* out_pos) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
@@ -171,6 +172,7 @@ static void fat32_dir_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t fat32_dir_lseek(Vnode& self, int64_t offset, int whence,
                                 uint64_t* out_pos) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
@@ -179,7 +181,7 @@ static int64_t fat32_dir_lseek(Vnode& self, int64_t offset, int whence,
     switch (whence) {
     case SEEK_SET: new_pos = static_cast<uint64_t>(offset); break;
     case SEEK_CUR: new_pos = *out_pos + static_cast<uint64_t>(offset); break;
-    case SEEK_END: return VFS_INVALID;
+    case SEEK_END: return VFS_INVALID; // NOLINT(bugprone-branch-clone)
     default: return VFS_INVALID;
     }
     *out_pos = new_pos;

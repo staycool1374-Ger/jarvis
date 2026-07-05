@@ -20,8 +20,8 @@
 
 namespace kernel {
 
-uint32_t CRC32::table_[256];
-bool CRC32::initialized_ = false;
+constinit uint32_t CRC32::table_[256];
+constinit bool CRC32::initialized_ = false;
 
 void CRC32::init() {
     if (initialized_) return;

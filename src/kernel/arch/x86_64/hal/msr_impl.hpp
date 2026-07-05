@@ -2,8 +2,10 @@
 
 #include <types.hpp>
 
+// NOLINTBEGIN(bugprone-narrowing-conversions,bugprone-easily-swappable-parameters)
 namespace arch {
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 inline void wrmsr(uint32_t msr, uint64_t value) {
     uint32_t msr_low = static_cast<uint32_t>(value);
     uint32_t msr_high = static_cast<uint32_t>(value >> 32);
@@ -21,3 +23,4 @@ inline constexpr uint32_t IA32_LSTAR = 0xC0000082;
 inline constexpr uint32_t IA32_FMASK = 0xC0000084;
 
 } // namespace arch
+// NOLINTEND(bugprone-narrowing-conversions)

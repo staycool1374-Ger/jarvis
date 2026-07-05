@@ -22,10 +22,10 @@
 namespace arch {
 
 SPSCRing<char, Keyboard::RING_SIZE> Keyboard::ring_;
-bool Keyboard::shift_ = false;
-bool Keyboard::ctrl_ = false;
-bool Keyboard::alt_ = false;
-bool Keyboard::caps_ = false;
+constinit bool Keyboard::shift_ = false;
+constinit bool Keyboard::ctrl_ = false;
+constinit bool Keyboard::alt_ = false;
+constinit bool Keyboard::caps_ = false;
 
 static const char scancode_lower[128] = {
     0,   0,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0,
@@ -125,6 +125,8 @@ void Keyboard::update_modifiers(uint8_t scancode, bool pressed) {
     case 0x38: alt_ = pressed; break;
     case 0x3A:
         if (pressed) caps_ = !caps_;
+        break;
+    default:
         break;
     }
 }

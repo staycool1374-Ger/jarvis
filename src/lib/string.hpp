@@ -23,6 +23,7 @@
 
 #include <types.hpp>
 
+// NOLINTBEGIN(bugprone-narrowing-conversions)
 extern "C" {
 
 /// @brief Fills a memory block with a byte value.
@@ -30,6 +31,7 @@ extern "C" {
 /// @param ch   Byte value to set (truncated to unsigned char).
 /// @param count Number of bytes to fill.
 /// @return Pointer to dest.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 inline void* memset(void* dest, int ch, size_t count) {
     auto* d = static_cast<uint8_t*>(dest);
     uint8_t val = static_cast<uint8_t>(ch);
@@ -42,6 +44,7 @@ inline void* memset(void* dest, int ch, size_t count) {
 /// @param src  Source pointer.
 /// @param count Number of bytes to copy.
 /// @return Pointer to dest.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 inline void* memcpy(void* dest, const void* src, size_t count) {
     auto* d = static_cast<uint8_t*>(dest);
     auto* s = static_cast<const uint8_t*>(src);
@@ -54,6 +57,7 @@ inline void* memcpy(void* dest, const void* src, size_t count) {
 /// @param b Second memory block.
 /// @param count Number of bytes to compare.
 /// @return 0 if equal, negative if a < b, positive if a > b.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 inline int memcmp(const void* a, const void* b, size_t count) {
     auto* pa = static_cast<const uint8_t*>(a);
     auto* pb = static_cast<const uint8_t*>(b);
@@ -103,3 +107,4 @@ inline size_t strlcpy(char* dest, const char* src, size_t n) {
 }
 
 } // extern "C"
+// NOLINTEND(bugprone-narrowing-conversions)

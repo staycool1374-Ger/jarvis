@@ -212,7 +212,7 @@ private:
     static constexpr uint64_t L2_MASK       = TABLE_MASK << L2_SHIFT;
 #endif
 
-    static uint64_t kernel_pml4_;
+    static constinit uint64_t kernel_pml4_;
 
     /// @brief Walks or creates a page-table entry at the given level.
     /// @param table Pointer to the current-level page table.

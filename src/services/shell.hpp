@@ -57,6 +57,7 @@ private:
     static constexpr size_t BUF_SIZE = 256;
     static constexpr size_t MAX_ENV = 32;
 
+    // NOLINTBEGIN(bugprone-dynamic-static-initializers)
     static Command commands_[MAX_COMMANDS];
     static size_t num_commands_;
     static bool initialized_;
@@ -96,6 +97,7 @@ private:
     static char* positional_argv_[32];
     static int umask_;
     static TrapEntry traps_[32];
+    // NOLINTEND(bugprone-dynamic-static-initializers)
 
     /// @brief Parses a command line and dispatches to the matching command.
     /// @param line Raw input line to parse.

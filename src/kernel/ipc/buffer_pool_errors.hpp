@@ -34,8 +34,9 @@ namespace kernel::errors {
     X(VA_OUT_OF_RANGE, 6,  "Virtual address outside user space") \
     X(NOT_MAPPED,      7,  "Buffer is not mapped in this task")
 
+// NOLINTNEXTLINE(performance-enum-size)
 enum BufPoolError : uint64_t {
-#define X(name, num, msg) BUF_ERR_##name = num,
+#define X(name, num, msg) BUF_ERR_##name = (num),
     BUFPOOL_ERROR_CODES
 #undef X
 };

@@ -49,6 +49,7 @@ static TmpfsEntry* find_entry(Vnode& dir, const char* name) {
     return nullptr;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t tmpfs_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t offset) {
     tmpfs_lock.lock();
     if (offset >= self.size) { tmpfs_lock.unlock(); return 0; }
@@ -56,6 +57,7 @@ static int64_t tmpfs_file_read(Vnode& self, uint8_t* buffer, uint64_t count, uin
     if (count > avail) count = avail;
     uint64_t phys = reinterpret_cast<uint64_t>(self.private_data);
     if (!phys) { tmpfs_lock.unlock(); return 0; }
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const uint8_t* src = reinterpret_cast<const uint8_t*>(arch::HHDM_OFFSET + phys) + offset;
     __builtin_memcpy(buffer, src, count);
     tmpfs_lock.unlock();
@@ -72,10 +74,13 @@ static int64_t tmpfs_file_write(Vnode& self, const uint8_t* buffer, uint64_t cou
     if (!phys) {
         phys = PMM::alloc_user_contiguous(16); // 16 pages = 64 KiB max
         if (!phys) { tmpfs_lock.unlock(); return VFS_INVALID; }
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         self.private_data = reinterpret_cast<void*>(phys);
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + phys), 0, 64_KiB);
     }
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint8_t* dst = reinterpret_cast<uint8_t*>(arch::HHDM_OFFSET + phys) + offset;
     __builtin_memcpy(dst, buffer, count);
     if (needed > self.size) self.size = needed;
@@ -92,6 +97,7 @@ static int tmpfs_fstat(Vnode& self, VfsStat& st) {
     return 0;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t tmpfs_file_lseek(Vnode& self, int64_t offset, int whence, uint64_t* out_pos) {
     (void)self;
     (void)offset;

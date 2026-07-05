@@ -129,10 +129,12 @@ void init_task_common(TaskControlBlock& tcb) {
     tcb.pending_signals = 0;
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 TaskControlBlock* TaskControlBlock::create(
     void (*entry)(),
     uint64_t priority,
     uint64_t period_ticks)
+// NOLINTEND(bugprone-easily-swappable-parameters)
 {
     Logger::raw_write("[TCB] create pool8=");
     Logger::print_dec(MemPool::pool_free_count(8));
@@ -172,10 +174,12 @@ TaskControlBlock* TaskControlBlock::create(
 
     tcb->stack_phys_ = stack_phys;
     uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_virt);
     tcb->kernel_stack_top = stack_virt + STACK_SIZE;
 
 #if defined(CONFIG_ARCH_X86_64)
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
 
     *--stack = arch::SEG_KERNEL_DATA;
@@ -230,11 +234,13 @@ TaskControlBlock* TaskControlBlock::create(
     return tcb;
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 TaskControlBlock* TaskControlBlock::create_user(
     void (*entry)(),
     uint64_t priority,
     uint64_t period_ticks,
     size_t user_stack_size)
+// NOLINTEND(bugprone-easily-swappable-parameters)
 {
     auto* tcb = static_cast<TaskControlBlock*>(MemPool::alloc(sizeof(
         TaskControlBlock)));
@@ -259,6 +265,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->stack_phys_ = kstack_phys;
 
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
     tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
 
@@ -285,6 +292,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     uint64_t user_rsp = user_stack_virt + user_stack_size;
 
 #if defined(CONFIG_ARCH_X86_64)
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
     *--stack = arch::SEG_USER_DATA;
     *--stack = user_rsp;
@@ -444,9 +452,11 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     bool is_user_task = (parent->page_table_ != 0);
     if (is_user_task) {
         uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_virt);
         tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
     } else {
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         tcb->kernel_stack = reinterpret_cast<uint8_t*>(kstack_phys);
         tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
     }
@@ -456,6 +466,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     // Layout matches isr_common push order (high to low):
     // SS, RSP, RFLAGS, CS, RIP, error, vector, r15..r8, rbp, rdi, rsi, rdx,
     // rcx, rbx, rax
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);
     *--stack = regs[21]; // SS
     *--stack = regs[20]; // RSP
@@ -511,14 +522,17 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
 // Copy user entries (0-255) from parent's PML4 — shares PDPT/PD/PT pages
         // so the child inherits code/data/heap mappings without deep-copy.
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* parent_pml4_virt = reinterpret_cast<uint64_t*>(arch::
             HHDM_OFFSET + (parent->page_table_ & ~0xFFFULL));
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* new_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
             new_pml4 & ~0xFFFULL));
         for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
             new_virt[i] = parent_pml4_virt[i];
         }
         // Copy kernel entries (256-511) from the kernel PML4
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto* kernel_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
             VMM::get_kernel_pml4() & ~0xFFFULL));
         for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
@@ -538,8 +552,10 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
             if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
                 uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
                 stack_pdpt_phys = PMM::alloc_user_page();
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
                 auto* old_pdpt = reinterpret_cast<uint64_t*>(arch::
                     HHDM_OFFSET + old_pdpt_phys);
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
                 auto* new_pdpt = reinterpret_cast<uint64_t*>(arch::
                     HHDM_OFFSET + stack_pdpt_phys);
                 memcpy(new_pdpt, old_pdpt, arch::PAGE_SIZE);
@@ -573,7 +589,9 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
             uint64_t dst_virt = arch::HHDM_OFFSET + ustack_phys + i * arch::
                 PAGE_SIZE;
             for (uint64_t j = 0; j < arch::PAGE_SIZE; ++j) {
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
                 reinterpret_cast<uint8_t*>(dst_virt)[j
+                    // NOLINTNEXTLINE(performance-no-int-to-ptr)
                     ] = reinterpret_cast<const uint8_t*>(src_virt)[j];
             }
         }
@@ -630,6 +648,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
     constexpr uint64_t PAGE_HUGE = 1ULL << 7;
     size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt_phys);
     if (!(pdpt[st_pdpt_idx] & PAGE_PRESENT))
         return;
@@ -638,6 +657,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
     if (!PMM::is_user_page(pd_phys))
         return;
 
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd_phys);
     for (int i = 0; i < 512; ++i) {
         if (!(pd[i] & PAGE_PRESENT)) continue;
@@ -775,6 +795,7 @@ namespace kernel {
  
 using namespace errors;
  
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 TaskError TaskControlBlock::create_err(
     void (*entry)(),
     uint64_t priority,
@@ -785,6 +806,7 @@ TaskError TaskControlBlock::create_err(
     return out_tcb ? TASK_ERR_OK : TASK_ERR_OOM;
 }
  
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 TaskError TaskControlBlock::create_user_err(
     void (*entry)(),
     uint64_t priority,

@@ -29,6 +29,7 @@ GDTEntry GDT::entries_[NUM_ENTRIES] = {};
 TSS GDT::tss_ = {};
 GDTDescriptor GDT::desc_ = {};
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access,
     uint8_t gran) {
     GDTEntry e = {};

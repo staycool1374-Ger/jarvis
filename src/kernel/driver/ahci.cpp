@@ -43,21 +43,25 @@ namespace kernel::block {
 // ──────────────────────────────────────────────
 
 inline uint32_t AhciDriver::hba_read(uint32_t reg) const {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return *reinterpret_cast<volatile uint32_t*>(abar_virt_ + reg);
 }
 
 inline void AhciDriver::hba_write(uint32_t reg, uint32_t val) const {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     *reinterpret_cast<volatile uint32_t*>(abar_virt_ + reg) = val;
 }
 
 inline uint32_t AhciDriver::port_read(uint8_t port, uint32_t reg) const {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     return *reinterpret_cast<volatile uint32_t*>(
-        abar_virt_ + PORT_BASE + port * PORT_STRIDE + reg);
+        abar_virt_ + PORT_BASE + static_cast<uint64_t>(port) * PORT_STRIDE + reg);
 }
 
 inline void AhciDriver::port_write(uint8_t port, uint32_t reg, uint32_t val) const {
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     *reinterpret_cast<volatile uint32_t*>(
-        abar_virt_ + PORT_BASE + port * PORT_STRIDE + reg) = val;
+        abar_virt_ + PORT_BASE + static_cast<uint64_t>(port) * PORT_STRIDE + reg) = val;
 }
 
 // ──────────────────────────────────────────────
@@ -102,6 +106,7 @@ AhciDriver::~AhciDriver() {
 //  Port Helpers
 // ──────────────────────────────────────────────
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool AhciDriver::port_wait_ready(uint8_t port, uint64_t timeout_us) {
     // Wait for port to clear BSY and DRQ
     for (uint64_t i = 0; i < timeout_us; ++i) {
@@ -156,6 +161,7 @@ bool AhciDriver::port_init(uint8_t port) {
         return false;
     }
     VMM::map_page(HHDM_OFFSET + cl_phys_[port], cl_phys_[port], false);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     cl_virt_[port] = reinterpret_cast<ahci::CmdHeader*>(
         HHDM_OFFSET + cl_phys_[port]);
     memset(cl_virt_[port], 0, sizeof(ahci::CmdHeader) * AHCI_MAX_CMDS);
@@ -169,6 +175,7 @@ bool AhciDriver::port_init(uint8_t port) {
         return false;
     }
     VMM::map_page(HHDM_OFFSET + rfis_phys_[port], rfis_phys_[port], false);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     rfis_virt_[port] = reinterpret_cast<ahci::ReceivedFis*>(
         HHDM_OFFSET + rfis_phys_[port]);
     memset(rfis_virt_[port], 0, sizeof(ahci::ReceivedFis));
@@ -186,7 +193,8 @@ bool AhciDriver::port_init(uint8_t port) {
             VMM::map_page(HHDM_OFFSET + ct_phys_[port][s] + i * PAGE_SIZE,
                           ct_phys_[port][s] + i * PAGE_SIZE, false);
         }
-        ct_virt_[port][s] = reinterpret_cast<ahci::CmdTable*>(
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    ct_virt_[port][s] = reinterpret_cast<ahci::CmdTable*>(
             HHDM_OFFSET + ct_phys_[port][s]);
         memset(ct_virt_[port][s], 0, ct_size);
 
@@ -228,6 +236,7 @@ uint8_t AhciDriver::alloc_slot(uint8_t port) {
     return 0xFF; // no free slot
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool AhciDriver::start_cmd(uint8_t port, uint8_t slot, uint8_t ata_cmd,
                            uint64_t lba, uint16_t count,
                            uint64_t data_phys, bool is_ncq, uint8_t ncq_tag) {
@@ -302,6 +311,7 @@ bool AhciDriver::start_cmd(uint8_t port, uint8_t slot, uint8_t ata_cmd,
     return true;
 }
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool AhciDriver::wait_cmd(uint8_t port, uint8_t slot, uint64_t timeout_us) {
     for (uint64_t i = 0; i < timeout_us; ++i) {
         uint32_t ci = port_read(port, PORT_CI);
@@ -357,6 +367,7 @@ bool AhciDriver::read_sector(uint64_t lba, uint8_t* buffer) {
     }
 
     // Copy from DMA buffer to caller
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     memcpy(buffer, reinterpret_cast<void*>(dbuf.virt_addr), BLOCK_SIZE);
     return true;
 }
@@ -372,6 +383,7 @@ bool AhciDriver::write_sector(uint64_t lba, const uint8_t* buffer) {
 
     auto& dbuf = data_bufs_[active_port_][slot];
     // Copy data to DMA buffer first
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
     memcpy(reinterpret_cast<void*>(dbuf.virt_addr), buffer, BLOCK_SIZE);
 
     uint8_t ata_cmd = ncq_supported_ ? ATA_CMD_WRITE_FPDMA_QUEUED
@@ -467,8 +479,9 @@ bool AhciDriver::init() {
                         // Parse IDENTIFY data to get sector count
                         // IDENTIFY data words 60-61 = 28-bit LBA sectors
                         // words 100-103 = 48-bit LBA sectors
+                        // NOLINTNEXTLINE(performance-no-int-to-ptr)
                         auto* id_data = reinterpret_cast<uint16_t*>(
-                            reinterpret_cast<void*>(dbuf.virt_addr));
+                            dbuf.virt_addr);
                         uint32_t sec_lo = id_data[60];
                         uint32_t sec_hi = id_data[61];
                         uint64_t sec_48_lo = (static_cast<uint64_t>(id_data[100])) |

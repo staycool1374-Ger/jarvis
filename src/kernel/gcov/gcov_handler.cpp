@@ -42,7 +42,7 @@ find_or_add_func(uint64_t func_addr) {
 }
 
 void __attribute__((no_instrument_function))
-__cyg_profile_func_enter(void *func, void *caller) {
+__cyg_profile_func_enter(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
     (void)caller;
     uint64_t addr = reinterpret_cast<uint64_t>(func);
     uint32_t idx = find_or_add_func(addr);
@@ -50,7 +50,7 @@ __cyg_profile_func_enter(void *func, void *caller) {
 }
 
 void __attribute__((no_instrument_function))
-__cyg_profile_func_exit(void *func, void *caller) {
+__cyg_profile_func_exit(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
     (void)func;
     (void)caller;
 }
