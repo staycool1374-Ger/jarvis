@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file gcov_handler.cpp
+/// @brief GCOV profiling support — function-entry instrumentation and serial flush.
+
 #include <types.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
@@ -28,6 +31,9 @@ static uint64_t called_functions[MAX_FUNCTIONS / 64];
 static uint64_t func_addrs[MAX_FUNCTIONS];
 static uint32_t func_count = 0;
 
+/// @brief Find or register a function address in the profiling table.
+/// @param func_addr  Address of the function being tracked.
+/// @return Index into func_addrs / called_functions arrays.
 static uint32_t __attribute__((no_instrument_function))
 find_or_add_func(uint64_t func_addr) {
     for (uint32_t i = 0; i < func_count; i++) {
@@ -41,6 +47,10 @@ find_or_add_func(uint64_t func_addr) {
     return 0;
 }
 
+/// @brief GCC instrumentation hook — called on every function entry.
+/// Marks the function as called in the called_functions bitmap.
+/// @param func   Address of the entered function.
+/// @param caller Address of the call site (unused).
 void __attribute__((no_instrument_function))
 __cyg_profile_func_enter(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
     (void)caller;
@@ -49,12 +59,18 @@ __cyg_profile_func_enter(void *func, void *caller) { // NOLINT(bugprone-reserved
     called_functions[idx / 64] |= (1ULL << (idx % 64));
 }
 
+/// @brief GCC instrumentation hook — called on every function exit (no-op).
+/// @param func   Address of the exited function (unused).
+/// @param caller Address of the call site (unused).
 void __attribute__((no_instrument_function))
 __cyg_profile_func_exit(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
     (void)func;
     (void)caller;
 }
 
+/// @brief Flush profiling data to the serial port.
+/// Sends magic header 'FUNC', function count, and (addr, called) pairs
+/// over COM1 for the host-side extract_gcda.py script to reassemble.
 void __attribute__((no_instrument_function))
 gcov_flush_to_serial() {
 #if defined(CONFIG_ARCH_X86_64)
