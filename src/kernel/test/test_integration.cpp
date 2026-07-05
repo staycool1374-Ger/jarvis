@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Run mandelbrot rendering, compute CRC32 of framebuffer
 // Expect: CRC32 matches expected hash
 // Depends: Framebuffer, mandelbrot demo
-JARVIS_TEST(mandelbrot_crc_hash) {
+JARVIS_TEST(mandelbrot_crc_hash, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

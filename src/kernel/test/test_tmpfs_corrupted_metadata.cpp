@@ -20,7 +20,7 @@
 #include <logger.hpp>
 // Runmode: kernel
 // Testidea: Stub for detecting corrupted tmpfs metadata on remount.
-JARVIS_TEST(tmpfs_corrupted_metadata) {
+JARVIS_TEST(tmpfs_corrupted_metadata, "PRE: vfsd, iocd | POST: none") {
     /*
     1. Mount tmpfs normally and create a file.
     2. Directly corrupt the in‑memory super‑block or inode structures (via a test hook).

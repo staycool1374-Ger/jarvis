@@ -17,7 +17,7 @@ using namespace kernel;
 // PriorityMap tests
 // ---------------------------------------------------------------------------
 
-JARVIS_TEST(o1_priority_map_set_get) {
+JARVIS_TEST(o1_priority_map_set_get, "PRE: none | POST: none") {
     PriorityMap pm;
     JARVIS_ASSERT(pm.empty());
     pm.set(5);
@@ -29,7 +29,7 @@ JARVIS_TEST(o1_priority_map_set_get) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_priority_map_multiple) {
+JARVIS_TEST(o1_priority_map_multiple, "PRE: none | POST: none") {
     PriorityMap pm;
     pm.set(10);
     pm.set(5);
@@ -45,7 +45,7 @@ JARVIS_TEST(o1_priority_map_multiple) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_priority_map_boundary) {
+JARVIS_TEST(o1_priority_map_boundary, "PRE: none | POST: none") {
     PriorityMap pm;
     pm.set(0);
     JARVIS_ASSERT_EQ(0ULL, pm.get_highest_priority());
@@ -59,7 +59,7 @@ JARVIS_TEST(o1_priority_map_boundary) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_priority_map_clear_nonexistent) {
+JARVIS_TEST(o1_priority_map_clear_nonexistent, "PRE: none | POST: none") {
     PriorityMap pm;
     pm.clear(42);
     JARVIS_ASSERT(pm.empty());
@@ -70,7 +70,7 @@ JARVIS_TEST(o1_priority_map_clear_nonexistent) {
 // TaskQueue tests
 // ---------------------------------------------------------------------------
 
-JARVIS_TEST(o1_task_queue_single) {
+JARVIS_TEST(o1_task_queue_single, "PRE: none | POST: none") {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 20);
     JARVIS_ASSERT(tcb != nullptr);
     TaskQueue q;
@@ -90,7 +90,7 @@ JARVIS_TEST(o1_task_queue_single) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_task_queue_multiple) {
+JARVIS_TEST(o1_task_queue_multiple, "PRE: none | POST: none") {
     auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
     auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
     auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
@@ -113,7 +113,7 @@ JARVIS_TEST(o1_task_queue_multiple) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_task_queue_remove_middle) {
+JARVIS_TEST(o1_task_queue_remove_middle, "PRE: none | POST: none") {
     auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
     auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
     auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
@@ -140,7 +140,7 @@ JARVIS_TEST(o1_task_queue_remove_middle) {
 // ReadyQueueManager tests
 // ---------------------------------------------------------------------------
 
-JARVIS_TEST(o1_ready_queue_single) {
+JARVIS_TEST(o1_ready_queue_single, "PRE: none | POST: none") {
     SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 20));
     JARVIS_ASSERT(tcb != nullptr);
     ReadyQueueManager rqm;
@@ -155,7 +155,7 @@ JARVIS_TEST(o1_ready_queue_single) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_ready_queue_highest_priority) {
+JARVIS_TEST(o1_ready_queue_highest_priority, "PRE: none | POST: none") {
     SimpleTaskPtr low(TaskControlBlock::create([]() {}, 5, 20));
     SimpleTaskPtr mid(TaskControlBlock::create([]() {}, 10, 20));
     SimpleTaskPtr high(TaskControlBlock::create([]() {}, 15, 20));
@@ -174,7 +174,7 @@ JARVIS_TEST(o1_ready_queue_highest_priority) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_ready_queue_remove) {
+JARVIS_TEST(o1_ready_queue_remove, "PRE: none | POST: none") {
     SimpleTaskPtr t1(TaskControlBlock::create([]() {}, 5, 20));
     SimpleTaskPtr t2(TaskControlBlock::create([]() {}, 10, 20));
     JARVIS_ASSERT(t1 && t2);
@@ -190,7 +190,7 @@ JARVIS_TEST(o1_ready_queue_remove) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_ready_queue_128_levels) {
+JARVIS_TEST(o1_ready_queue_128_levels, "PRE: none | POST: none") {
     ReadyQueueManager rqm;
     SimpleTaskPtr tasks[CONFIG_MAX_TASKS];
     uint64_t created = 0;
@@ -221,7 +221,7 @@ JARVIS_TEST(o1_ready_queue_128_levels) {
 // Scheduler integration tests (O(1) next_task)
 // ---------------------------------------------------------------------------
 
-JARVIS_TEST(o1_scheduler_dequeues_highest) {
+JARVIS_TEST(o1_scheduler_dequeues_highest, "PRE: none | POST: none") {
     SimpleTaskPtr low(TaskControlBlock::create([]() {}, 5, 20));
     SimpleTaskPtr high(TaskControlBlock::create([]() {}, 15, 20));
     JARVIS_ASSERT(low && high);
@@ -241,7 +241,7 @@ JARVIS_TEST(o1_scheduler_dequeues_highest) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(o1_scheduler_add_remove_ready_queue) {
+JARVIS_TEST(o1_scheduler_add_remove_ready_queue, "PRE: none | POST: none") {
     SimpleTaskPtr t1(TaskControlBlock::create([]() {}, 10, 20));
     JARVIS_ASSERT(t1);
 

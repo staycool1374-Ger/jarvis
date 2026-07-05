@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Current task priority=5, create READY task with priority=9.
 // Expect: needs_switch() returns true.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_needs_switch_higher_priority) {
+JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->base_priority = 5;
@@ -55,7 +55,7 @@ JARVIS_TEST(preemption_needs_switch_higher_priority) {
 // Input: Current task priority=5, create READY task with priority=5.
 // Expect: needs_switch() returns false.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_needs_switch_equal_priority) {
+JARVIS_TEST(preemption_needs_switch_equal_priority, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->base_priority = 5;
@@ -81,7 +81,7 @@ JARVIS_TEST(preemption_needs_switch_equal_priority) {
 // Input: Current task priority=5, create BLOCKED task with priority=9.
 // Expect: needs_switch() returns false.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_needs_switch_blocked_higher) {
+JARVIS_TEST(preemption_needs_switch_blocked_higher, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->base_priority = 5;
@@ -107,7 +107,7 @@ JARVIS_TEST(preemption_needs_switch_blocked_higher) {
 // Input: Current task preemptible=false, create READY task with priority=9.
 // Expect: needs_switch() returns false.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_disabled_blocks_switch) {
+JARVIS_TEST(preemption_disabled_blocks_switch, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->base_priority = 5;
@@ -136,7 +136,7 @@ JARVIS_TEST(preemption_disabled_blocks_switch) {
 // Input: Current task remaining_ticks=0, period_ticks=10.
 // Expect: needs_switch() returns true; after on_tick reload, remaining_ticks=10.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_quantum_exhaustion) {
+JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->remaining_ticks = 0;
@@ -158,7 +158,7 @@ JARVIS_TEST(preemption_quantum_exhaustion) {
 // Input: Loop 100 times: set_preemptible(true), set_preemptible(false).
 // Expect: No crash; is_preemptible() reflects each toggle correctly.
 // Depends: kernel::task::Scheduler
-JARVIS_TEST(preemption_interrupt_enable_disable_cycle) {
+JARVIS_TEST(preemption_interrupt_enable_disable_cycle, "PRE: none | POST: none") {
     for (uint64_t i = 0; i < 100; ++i) {
         Scheduler::set_preemptible(true);
         JARVIS_ASSERT(Scheduler::is_preemptible() == true);
@@ -175,7 +175,7 @@ JARVIS_TEST(preemption_interrupt_enable_disable_cycle) {
 // Input: Current task priority=5, create another READY task priority=5.
 // Expect: next_task() returns the other task (not current).
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_task_switch_does_not_switch_to_self) {
+JARVIS_TEST(preemption_task_switch_does_not_switch_to_self, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->priority = 5;

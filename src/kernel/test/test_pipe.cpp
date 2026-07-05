@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: Call create_pipe()
 // Expect: Returns 0, fds[0] (read) and fds[1] (write) are valid
 // Depends: kernel::vfs::create_pipe
-JARVIS_TEST(pipe_create_returns_two_fds) {
+JARVIS_TEST(pipe_create_returns_two_fds, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     int ret = vfs::create_pipe(fds);
     JARVIS_ASSERT_EQ(0, ret);
@@ -50,7 +50,7 @@ JARVIS_TEST(pipe_create_returns_two_fds) {
 // Input: N/A
 // Expect: Stub passes
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_read_from_empty_nonblock) {
+JARVIS_TEST(pipe_read_from_empty_nonblock, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -59,7 +59,7 @@ JARVIS_TEST(pipe_read_from_empty_nonblock) {
 // Input: Fill pipe buffer, attempt write that exceeds PIPE_BUF_SIZE
 // Expect: Returns number of bytes written (up to PIPE_BUF_SIZE)
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_write_to_full_blocks) {
+JARVIS_TEST(pipe_write_to_full_blocks, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
     auto* task = Scheduler::current_task();
@@ -83,7 +83,7 @@ JARVIS_TEST(pipe_write_to_full_blocks) {
 // Input: Close read_fd, write to write_fd
 // Expect: write returns VFS_INVALID (-4)
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_read_end_closed_returns_epipe) {
+JARVIS_TEST(pipe_read_end_closed_returns_epipe, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
     auto* task = Scheduler::current_task();
@@ -107,7 +107,7 @@ JARVIS_TEST(pipe_read_end_closed_returns_epipe) {
 // Input: Write "hello", read into buffer
 // Expect: Buffer contains "hello"
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_write_then_read_roundtrip) {
+JARVIS_TEST(pipe_write_then_read_roundtrip, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
     auto* task = Scheduler::current_task();
@@ -138,7 +138,7 @@ JARVIS_TEST(pipe_write_then_read_roundtrip) {
 // Input: N/A
 // Expect: Stub passes
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_multiple_writers_no_interleaving) {
+JARVIS_TEST(pipe_multiple_writers_no_interleaving, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

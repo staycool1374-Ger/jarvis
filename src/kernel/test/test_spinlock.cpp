@@ -32,7 +32,7 @@ using namespace kernel;
 // Input: SpinLock, two lock/unlock cycles with flag modification inside
 // Expect: Flag values are as expected after each cycle
 // Depends: kernel::sync::SpinLock
-JARVIS_TEST(spinlock_basic_lock_unlock) {
+JARVIS_TEST(spinlock_basic_lock_unlock, "PRE: none | POST: none") {
     sync::SpinLock lock;
     int shared = 0;
 
@@ -54,7 +54,7 @@ JARVIS_TEST(spinlock_basic_lock_unlock) {
 // Input: SpinLockGuard protecting a shared flag modification
 // Expect: Flag is written inside guard, readable outside
 // Depends: kernel::sync::SpinLock, SpinLockGuard
-JARVIS_TEST(spinlock_guard_raii) {
+JARVIS_TEST(spinlock_guard_raii, "PRE: none | POST: none") {
     sync::SpinLock lock;
     int shared = 0;
 
@@ -73,7 +73,7 @@ JARVIS_TEST(spinlock_guard_raii) {
 // Input: SpinLock, lock(), try_lock(), unlock(), try_lock()
 // Expect: try_lock returns true when lock is free, false when held
 // Depends: kernel::sync::SpinLock
-JARVIS_TEST(spinlock_try_lock) {
+JARVIS_TEST(spinlock_try_lock, "PRE: none | POST: none") {
     sync::SpinLock lock;
 
     JARVIS_ASSERT(lock.try_lock());
@@ -102,7 +102,7 @@ static void contention_worker() {
 // Input: Two kernel tasks increment shared counter under SpinLock, 50× each.
 // Expect: Final counter == 100, no data corruption.
 // Depends: SpinLock, Scheduler
-JARVIS_TEST(spinlock_contention) {
+JARVIS_TEST(spinlock_contention, "PRE: none | POST: none") {
     g_contention_counter_ = 0;
 
     auto* a = TaskControlBlock::create(contention_worker, 5, 10);
@@ -165,7 +165,7 @@ static void yield_lowpri() {
 // Input: Low-pri (5) holds SpinLock in busy-loop; high-pri (10) preempts.
 // Expect: High-pri runs at least once, proving interrupts are not disabled.
 // Depends: SpinLock, Scheduler
-JARVIS_TEST(spinlock_preemption_yield) {
+JARVIS_TEST(spinlock_preemption_yield, "PRE: none | POST: none") {
     g_yield_highpri_count_ = 0;
     g_yield_done_ = false;
 
@@ -205,7 +205,7 @@ JARVIS_TEST(spinlock_preemption_yield) {
 // Input: SpinLockGuard construction, use, destruction.
 // Expect: Compile-time static_asserts for copy/move pass; runtime usage works.
 // Depends: SpinLock, SpinLockGuard
-JARVIS_TEST(spinlock_cxx_contract) {
+JARVIS_TEST(spinlock_cxx_contract, "PRE: none | POST: none") {
     sync::SpinLock lock;
     {
         SpinLockGuard guard(lock);
@@ -220,7 +220,7 @@ JARVIS_TEST(spinlock_cxx_contract) {
 // Input: Check interrupt flag before, during, and after locked region.
 // Expect: interrupts_enabled() remains true throughout.
 // Depends: SpinLock, arch::interrupts_enabled
-JARVIS_TEST(spinlock_no_irqguard_inside) {
+JARVIS_TEST(spinlock_no_irqguard_inside, "PRE: none | POST: none") {
     sync::SpinLock lock;
     JARVIS_ASSERT(arch::interrupts_enabled());
     lock.lock();
@@ -235,7 +235,7 @@ JARVIS_TEST(spinlock_no_irqguard_inside) {
 // Input: Same task locks SpinLock twice.
 // Expect: Triggers assertion (stub — feature not yet implemented).
 // Depends: SpinLock (DEBUG)
-JARVIS_TEST(spinlock_recursive_deadlock_detect) {
+JARVIS_TEST(spinlock_recursive_deadlock_detect, "PRE: none | POST: none") {
     /* Pseudocode: SpinLock should detect recursive locking by the same task
      * in DEBUG mode and trigger an assertion. Currently SpinLock does not
      * implement this feature — lock() will spin forever on recursive entry.
@@ -253,7 +253,7 @@ JARVIS_TEST(spinlock_recursive_deadlock_detect) {
 // Input: 2 tasks contend; measure pause-loop iterations.
 // Expect: Spin iterations < 10000 per acquisition.
 // Depends: SpinLock (instrumented)
-JARVIS_TEST(spinlock_pause_count) {
+JARVIS_TEST(spinlock_pause_count, "PRE: none | POST: none") {
     /* Pseudocode: Measure the number of pause() iterations during contention.
      * When a lock is held by another task and the current task spins,
      * the spin count should be bounded (< 10000 iterations) because the

@@ -28,7 +28,7 @@ using namespace kernel;
 // Input: Shell::execute("echo test > /dev/null")
 // Expect: No crash, redirect parsing works
 // Depends: service::Shell, service::Terminal
-JARVIS_TEST(shell_redirect_to_devnull) {
+JARVIS_TEST(shell_redirect_to_devnull, "PRE: vfsd, iocd | POST: none") {
     service::Shell::execute("echo test > /dev/null");
     JARVIS_TEST_PASS();
 }
@@ -38,7 +38,7 @@ JARVIS_TEST(shell_redirect_to_devnull) {
 // Input: Shell::execute("echo test >")
 // Expect: No crash, parser handles missing target
 // Depends: service::Shell
-JARVIS_TEST(shell_redirect_no_target) {
+JARVIS_TEST(shell_redirect_no_target, "PRE: vfsd, iocd | POST: none") {
     service::Shell::execute("echo test >");
     JARVIS_TEST_PASS();
 }
@@ -48,7 +48,7 @@ JARVIS_TEST(shell_redirect_no_target) {
 // Input: Shell::execute("echo HELLO > /dev/null")
 // Expect: No crash, capture mechanism is exercised
 // Depends: service::Shell
-JARVIS_TEST(shell_redirect_capture_output) {
+JARVIS_TEST(shell_redirect_capture_output, "PRE: vfsd, iocd | POST: none") {
     service::Shell::execute("echo HELLO > /dev/null");
     JARVIS_TEST_PASS();
 }

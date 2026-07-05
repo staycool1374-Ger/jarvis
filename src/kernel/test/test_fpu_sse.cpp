@@ -30,7 +30,7 @@ using namespace kernel;
 // Runmode: kernel
 // Testidea: CPUID reports SSE and SSE2 feature flags on x86_64
 // Expect: Both bits should be set on any modern x86_64 CPU/emulator
-JARVIS_TEST(sse_cpuid_detection) {
+JARVIS_TEST(sse_cpuid_detection, "PRE: none | POST: none") {
     JARVIS_ASSERT_FMT(arch::has_sse(), "CPUID leaf 1 EDX bit 25 (SSE) not set");
     uint32_t edx = arch::cpuid(1).edx;
     JARVIS_ASSERT_FMT(edx & arch::CPUID_EDX1_SSE2,
@@ -76,7 +76,7 @@ static void sse_task_b_entry() {
 // Input: Task A sets MXCSR to 0x7F80 (round-toward-zero), yields; Task B
 //        sets MXCSR to 0x1F80 (default); switch back to A
 // Expect: Task A reads back MXCSR = 0x7F80
-JARVIS_TEST(sse_mxcsr_context_switch) {
+JARVIS_TEST(sse_mxcsr_context_switch, "PRE: none | POST: none") {
     g_mxcsr_result = 0;
     g_sse_test_a_done = 0;
     g_sse_test_b_done = 0;
@@ -157,7 +157,7 @@ static void xmm_task_b_entry() {
 // Input: Task A loads XMM0 with known 128-bit pattern, yields; Task B loads
 //        XMM0 with different pattern; switch back to A
 // Expect: Task A reads back original 128-bit pattern from XMM0
-JARVIS_TEST(sse_xmm_context_switch) {
+JARVIS_TEST(sse_xmm_context_switch, "PRE: none | POST: none") {
     g_xmm_result.d[0] = 0;
     g_xmm_result.d[1] = 0;
     g_xmm_test_a_done = 0;

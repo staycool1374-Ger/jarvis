@@ -26,7 +26,7 @@
 using namespace kernel;
 using namespace kernel::vfs;
 
-JARVIS_TEST(tmpfs_mount) {
+JARVIS_TEST(tmpfs_mount, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_mount_test");
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -37,7 +37,7 @@ JARVIS_TEST(tmpfs_mount) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_mkdir_ls) {
+JARVIS_TEST(tmpfs_mkdir_ls, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_mkdir_test");
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -69,7 +69,7 @@ JARVIS_TEST(tmpfs_mkdir_ls) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_create_file) {
+JARVIS_TEST(tmpfs_create_file, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_file_test");
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -107,7 +107,7 @@ JARVIS_TEST(tmpfs_create_file) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_unlink_file) {
+JARVIS_TEST(tmpfs_unlink_file, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_unlink_test");
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -126,7 +126,7 @@ JARVIS_TEST(tmpfs_unlink_file) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_unlink_dir) {
+JARVIS_TEST(tmpfs_unlink_dir, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_unlinkdir_test");
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -142,7 +142,7 @@ JARVIS_TEST(tmpfs_unlink_dir) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_nonempty_dir_unlink_fails) {
+JARVIS_TEST(tmpfs_nonempty_dir_unlink_fails, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_nonempty_test");
     JARVIS_ASSERT_EQ(0, ret);
 

@@ -27,7 +27,7 @@ using namespace kernel;
 /// @input Initialize IDT
 /// @expect All 256 entries point to valid handlers (no null pointers)
 /// @depends kernel::arch::IDT
-JARVIS_TEST(idt_entries_initialized) {
+JARVIS_TEST(idt_entries_initialized, "PRE: iocd | POST: none") {
     for (uint16_t vec = 0; vec < 256; ++vec) {
         JARVIS_ASSERT(arch::IDT::has_handler(static_cast<uint8_t>(vec)));
     }
@@ -37,7 +37,7 @@ JARVIS_TEST(idt_entries_initialized) {
 /// @input Initialize IDT, inspect exception vectors 0-31
 /// @expect Each vector 0-31 has a valid handler
 /// @depends kernel::arch::IDT
-JARVIS_TEST(idt_exception_handlers_mapped) {
+JARVIS_TEST(idt_exception_handlers_mapped, "PRE: iocd | POST: none") {
     for (uint8_t vec = 0; vec <= 31; ++vec) {
         JARVIS_ASSERT(arch::IDT::has_handler(vec));
     }
@@ -47,7 +47,7 @@ JARVIS_TEST(idt_exception_handlers_mapped) {
 /// @input Initialize IDT with PIC remapping
 /// @expect Vectors 0x20-0x2F point to IRQ handlers
 /// @depends kernel::arch::IDT, PIC
-JARVIS_TEST(idt_irq_remapped) {
+JARVIS_TEST(idt_irq_remapped, "PRE: iocd | POST: none") {
     for (uint8_t vec = 0x20; vec <= 0x2F; ++vec) {
         JARVIS_ASSERT(arch::IDT::has_handler(vec));
     }
@@ -57,7 +57,7 @@ JARVIS_TEST(idt_irq_remapped) {
 /// @input Initialize IDT
 /// @expect Vector 0x80 handler is syscall entry point
 /// @depends kernel::arch::IDT, syscall
-JARVIS_TEST(idt_syscall_handler_installed) {
+JARVIS_TEST(idt_syscall_handler_installed, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(arch::IDT::has_handler(0x80));
 }
 
@@ -65,7 +65,7 @@ JARVIS_TEST(idt_syscall_handler_installed) {
 /// @input Initialize IDT, inspect double fault entry (vector 8)
 /// @expect IST index set to valid IST stack
 /// @depends kernel::arch::IDT, TSS
-JARVIS_TEST(idt_double_fault_uses_ist) {
+JARVIS_TEST(idt_double_fault_uses_ist, "PRE: iocd | POST: none") {
     const auto& entry = arch::IDT::entry(8);
     JARVIS_ASSERT(entry.ist != 0);
     JARVIS_ASSERT(entry.ist <= 7);
@@ -75,7 +75,7 @@ JARVIS_TEST(idt_double_fault_uses_ist) {
 /// @input Initialize IDT, inspect reserved vectors
 /// @expect Vectors 0x30-0x7F are null or spurious handler
 /// @depends kernel::arch::IDT
-JARVIS_TEST(idt_reserved_vectors_null) {
+JARVIS_TEST(idt_reserved_vectors_null, "PRE: iocd | POST: none") {
     for (uint8_t vec = 0x30; vec <= 0x7F; ++vec) {
         const auto& e = arch::IDT::entry(vec);
         uint64_t handler = static_cast<uint64_t>(e.offset_high) << 32 |

@@ -25,7 +25,7 @@
 using namespace kernel;
 using namespace kernel::vfs;
 
-JARVIS_TEST(tmpfs_filesystem_properties) {
+JARVIS_TEST(tmpfs_filesystem_properties, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(tmpfs_fs.get_root != nullptr);
     JARVIS_ASSERT(tmpfs_fs.name != nullptr);
     JARVIS_ASSERT_EQ(0, strcmp(tmpfs_fs.name, "tmpfs"));
@@ -36,7 +36,7 @@ JARVIS_TEST(tmpfs_filesystem_properties) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_mount_at_invalid_resolve_fails) {
+JARVIS_TEST(tmpfs_mount_at_invalid_resolve_fails, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/nonexistent_tmpfs_mount");
     JARVIS_ASSERT_EQ(nullptr, vn);
     JARVIS_TEST_PASS();

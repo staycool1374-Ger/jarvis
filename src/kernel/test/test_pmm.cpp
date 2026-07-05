@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Allocate page, free it, free it again
 // Expect: No crash, second free is no-op
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_double_free_rejected) {
+JARVIS_TEST(pmm_double_free_rejected, "PRE: none | POST: none") {
     uint64_t page = PMM::alloc_page();
     JARVIS_ASSERT(page != 0);
     PMM::free_page(page);
@@ -40,7 +40,7 @@ JARVIS_TEST(pmm_double_free_rejected) {
 // Input: Call free_page with invalid address (beyond total memory)
 // Expect: No crash, silently returns
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_free_invalid_address) {
+JARVIS_TEST(pmm_free_invalid_address, "PRE: none | POST: none") {
     PMM::free_page(~0ULL);
     PMM::free_page(0xFFFFFFFFFFFFF000ULL);
     JARVIS_TEST_PASS();
@@ -51,7 +51,7 @@ JARVIS_TEST(pmm_free_invalid_address) {
 // Input: Call alloc_contiguous(0)
 // Expect: Returns 0
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_alloc_contiguous_zero) {
+JARVIS_TEST(pmm_alloc_contiguous_zero, "PRE: none | POST: none") {
     uint64_t page = PMM::alloc_contiguous(0);
     JARVIS_ASSERT_EQ(0ULL, page);
     JARVIS_TEST_PASS();
@@ -62,7 +62,7 @@ JARVIS_TEST(pmm_alloc_contiguous_zero) {
 // Input: Allocate until exhausted, then one more
 // Expect: Returns 0
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_alloc_contiguous_exhaustion) {
+JARVIS_TEST(pmm_alloc_contiguous_exhaustion, "PRE: none | POST: none") {
     uint64_t pages[64];
     size_t count = 0;
     while (count < 64) {
@@ -83,7 +83,7 @@ JARVIS_TEST(pmm_alloc_contiguous_exhaustion) {
 // Input: Exhaust memory via alloc_user_page, then one more
 // Expect: Returns 0 (same pool as kernel)
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_alloc_user_page_oob) {
+JARVIS_TEST(pmm_alloc_user_page_oob, "PRE: none | POST: none") {
     uint64_t pages[64];
     size_t count = 0;
     while (count < 64) {
@@ -104,7 +104,7 @@ JARVIS_TEST(pmm_alloc_user_page_oob) {
 // Input: Allocate page table page, check address
 // Expect: Physical address < 128 MiB (pool at 16 MiB from low mem)
 // Depends: kernel::memory::PMM
-JARVIS_TEST(pmm_page_table_alloc_from_low_mem) {
+JARVIS_TEST(pmm_page_table_alloc_from_low_mem, "PRE: none | POST: none") {
     uint64_t page = PMM::alloc_page_table();
     JARVIS_ASSERT(page != 0);
 #if defined(CONFIG_ARCH_X86_64)

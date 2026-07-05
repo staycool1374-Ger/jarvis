@@ -30,7 +30,7 @@ using namespace kernel;
 // Expect: Returned value is between year 2020 (~1577836800) and year 2200
 // (~7258118400) epoch timestamps.
 // Depends: arch::RTC
-JARVIS_TEST(rtc_read_seconds) {
+JARVIS_TEST(rtc_read_seconds, "PRE: iocd | POST: none") {
     uint64_t secs = arch::RTC::read_seconds();
     JARVIS_ASSERT(secs > 1577836800ULL);
     JARVIS_ASSERT(secs < 7258118400ULL);
@@ -43,7 +43,7 @@ JARVIS_TEST(rtc_read_seconds) {
 // Input: bcd_to_bin on 0x00, 0x09, 0x10, 0x15, 0x23, 0x59.
 // Expect: Correct binary values (0x00->0, 0x10->10, 0x59->0x3B, etc.).
 // Depends: arch::RTC
-JARVIS_TEST(rtc_bcd_conversion) {
+JARVIS_TEST(rtc_bcd_conversion, "PRE: iocd | POST: none") {
     JARVIS_ASSERT_EQ(0x00, arch::RTC::bcd_to_bin(0x00));
     JARVIS_ASSERT_EQ(0x09, arch::RTC::bcd_to_bin(0x09));
     JARVIS_ASSERT_EQ(0x0A, arch::RTC::bcd_to_bin(0x10));

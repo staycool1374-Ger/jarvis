@@ -28,7 +28,7 @@ using namespace kernel;
 // Input: MemPool::free(nullptr)
 // Expect: No crash, returns immediately
 // Depends: MemPool
-JARVIS_TEST(memory_safety_mempool_free_null) {
+JARVIS_TEST(memory_safety_mempool_free_null, "PRE: none | POST: none") {
     MemPool::free(nullptr);
     JARVIS_TEST_PASS();
 }
@@ -39,7 +39,7 @@ JARVIS_TEST(memory_safety_mempool_free_null) {
 // Input: MemPool::alloc(4481)
 // Expect: Returns nullptr
 // Depends: MemPool
-JARVIS_TEST(memory_safety_mempool_alloc_large_rejected) {
+JARVIS_TEST(memory_safety_mempool_alloc_large_rejected, "PRE: none | POST: none") {
     void* p = MemPool::alloc(4481);
     JARVIS_ASSERT(p == nullptr);
     JARVIS_TEST_PASS();
@@ -51,7 +51,7 @@ JARVIS_TEST(memory_safety_mempool_alloc_large_rejected) {
 // Input: Alloc at 16, 32, 64, 128, 256, 512, 1024, 2048, 4480 bytes
 // Expect: All return non-null pointers, free succeeds
 // Depends: MemPool
-JARVIS_TEST(memory_safety_mempool_exact_edge_sizes) {
+JARVIS_TEST(memory_safety_mempool_exact_edge_sizes, "PRE: none | POST: none") {
     static const size_t sizes[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4480};
     void* ptrs[9];
     for (size_t i = 0; i < 9; ++i) {
@@ -72,7 +72,7 @@ JARVIS_TEST(memory_safety_mempool_exact_edge_sizes) {
 // Input: PMM::free_page(0)
 // Expect: No crash or assertion
 // Depends: PMM
-JARVIS_TEST(memory_safety_pmm_free_zero) {
+JARVIS_TEST(memory_safety_pmm_free_zero, "PRE: none | POST: none") {
     PMM::free_page(0);
     JARVIS_TEST_PASS();
 }
@@ -82,7 +82,7 @@ JARVIS_TEST(memory_safety_pmm_free_zero) {
 // Input: PMM::free_page(0xFFFFFFFFFFFFF000)
 // Expect: Guards against out-of-bounds bitmap access, returns without crash
 // Depends: PMM
-JARVIS_TEST(memory_safety_pmm_free_beyond_total) {
+JARVIS_TEST(memory_safety_pmm_free_beyond_total, "PRE: none | POST: none") {
     uint64_t huge = 0xFFFFFFFFFFFFF000ULL;
     PMM::free_page(huge);
     JARVIS_TEST_PASS();

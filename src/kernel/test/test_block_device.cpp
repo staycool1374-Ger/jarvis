@@ -31,14 +31,14 @@ using namespace kernel::block;
 static constexpr uint64_t TEST_SECTORS = 64;
 static constexpr uint64_t TEST_PATTERN = 0xAB;
 
-JARVIS_TEST(block_device_create) {
+JARVIS_TEST(block_device_create, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
     JARVIS_ASSERT(dev.sector_count() == TEST_SECTORS);
     JARVIS_ASSERT(dev.sector_size() == BLOCK_SIZE);
     JARVIS_ASSERT(!dev.is_read_only());
 }
 
-JARVIS_TEST(block_device_read_write) {
+JARVIS_TEST(block_device_read_write, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
 
     uint8_t wbuf[BLOCK_SIZE];
@@ -50,20 +50,20 @@ JARVIS_TEST(block_device_read_write) {
     JARVIS_ASSERT(memcmp(wbuf, rbuf, BLOCK_SIZE) == 0);
 }
 
-JARVIS_TEST(block_device_oob_read) {
+JARVIS_TEST(block_device_oob_read, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
     uint8_t buf[BLOCK_SIZE];
     JARVIS_ASSERT(!dev.read_sector(TEST_SECTORS, buf));
     JARVIS_ASSERT(!dev.read_sector(TEST_SECTORS + 100, buf));
 }
 
-JARVIS_TEST(block_device_oob_write) {
+JARVIS_TEST(block_device_oob_write, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
     uint8_t buf[BLOCK_SIZE] = {};
     JARVIS_ASSERT(!dev.write_sector(TEST_SECTORS, buf));
 }
 
-JARVIS_TEST(block_device_multiple_sectors) {
+JARVIS_TEST(block_device_multiple_sectors, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
 
     uint8_t wbuf[BLOCK_SIZE];
@@ -82,7 +82,7 @@ JARVIS_TEST(block_device_multiple_sectors) {
     }
 }
 
-JARVIS_TEST(block_device_raw_buffer_access) {
+JARVIS_TEST(block_device_raw_buffer_access, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
     uint8_t* raw = dev.raw_buffer();
     JARVIS_ASSERT(raw != nullptr);
@@ -100,7 +100,7 @@ JARVIS_TEST(block_device_raw_buffer_access) {
 // Input: MockBlockDevice wrapped in AtaPioDriver, call identify()
 // Expect: Returns true if drive present, false otherwise
 // Depends: kernel::block::AtaPioDriver, kernel::block::MockBlockDevice
-JARVIS_TEST(ata_pio_identify) {
+JARVIS_TEST(ata_pio_identify, "PRE: none | POST: none") {
     MockBlockDevice dev(64);
     // Note: Actual ATA identify requires hardware I/O ports, so this tests
     // the MockBlockDevice integration path only
@@ -113,7 +113,7 @@ JARVIS_TEST(ata_pio_identify) {
 // Input: Write sector 10, read back, verify content
 // Expect: Write returns true, read returns true, content matches
 // Depends: kernel::block::AtaPioDriver, kernel::block::MockBlockDevice
-JARVIS_TEST(ata_pio_read_write_sector) {
+JARVIS_TEST(ata_pio_read_write_sector, "PRE: none | POST: none") {
     MockBlockDevice dev(64);
 
     uint8_t wbuf[512];
@@ -135,7 +135,7 @@ JARVIS_TEST(ata_pio_read_write_sector) {
 // Input: Check sizeof, static_assert on key structs.
 // Expect: All structs match spec sizes (no padding surprises).
 // Depends: ahci_protocol.hpp
-JARVIS_TEST(ahci_protocol_struct_sizes) {
+JARVIS_TEST(ahci_protocol_struct_sizes, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ((size_t)20, sizeof(kernel::ahci::CmdFIS));
     JARVIS_ASSERT_EQ((size_t)32, sizeof(kernel::ahci::CmdHeader));
     JARVIS_ASSERT_EQ((size_t)16, sizeof(kernel::ahci::PrdHbaEntry));
@@ -148,7 +148,7 @@ JARVIS_TEST(ahci_protocol_struct_sizes) {
 // Input: Check key register offsets and bit definitions.
 // Expect: Constants match AHCI spec.
 // Depends: ahci_protocol.hpp
-JARVIS_TEST(ahci_protocol_constants) {
+JARVIS_TEST(ahci_protocol_constants, "PRE: none | POST: none") {
     using namespace kernel::ahci;
     JARVIS_ASSERT_EQ((uint32_t)0x00, HBA_CAP);
     JARVIS_ASSERT_EQ((uint32_t)0x04, HBA_GHC);
@@ -173,7 +173,7 @@ JARVIS_TEST(ahci_protocol_constants) {
 // Input: Call AhciDriver::probe().
 // Expect: Returns nullptr or valid driver (gracefully handles no hardware).
 // Depends: AHCI PCI probe, kernel::block::AhciDriver
-JARVIS_TEST(ahci_hba_probe) {
+JARVIS_TEST(ahci_hba_probe, "PRE: iocd | POST: none") {
     auto* drv = kernel::block::AhciDriver::probe();
     // If no AHCI hardware present, probe returns nullptr gracefully
     if (drv) {

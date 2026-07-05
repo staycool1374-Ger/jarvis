@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Loop 1000 times: create task, add to scheduler, task exits
 // Expect: Scheduler task count returns to baseline, no leaks
 // Depends: Scheduler, TaskControlBlock
-JARVIS_TEST(stress_1000_tasks_create_exit) {
+JARVIS_TEST(stress_1000_tasks_create_exit, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -37,7 +37,7 @@ JARVIS_TEST(stress_1000_tasks_create_exit) {
 // Input: Two tasks, 1000 IPC round-trips
 // Expect: All messages received in order, none lost
 // Depends: IPC, Scheduler
-JARVIS_TEST(stress_ipc_blast) {
+JARVIS_TEST(stress_ipc_blast, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -47,7 +47,7 @@ JARVIS_TEST(stress_ipc_blast) {
 // Input: Loop: alloc all pages, free all pages
 // Expect: PMM state consistent after each iteration
 // Depends: PMM
-JARVIS_TEST(stress_memory_alloc_free_loop) {
+JARVIS_TEST(stress_memory_alloc_free_loop, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -56,7 +56,7 @@ JARVIS_TEST(stress_memory_alloc_free_loop) {
 // Input: Fork 10 levels deep, each child exits
 // Expect: All tasks cleaned up, no zombies
 // Depends: Task lifecycle, fork
-JARVIS_TEST(stress_recursive_fork_depth_10) {
+JARVIS_TEST(stress_recursive_fork_depth_10, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -66,7 +66,7 @@ JARVIS_TEST(stress_recursive_fork_depth_10) {
 // Input: Loop through all syscall numbers, invoke with valid args
 // Expect: All syscalls return without kernel panic
 // Depends: Syscall dispatch
-JARVIS_TEST(stress_all_syscalls_sequential) {
+JARVIS_TEST(stress_all_syscalls_sequential, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -76,7 +76,7 @@ JARVIS_TEST(stress_all_syscalls_sequential) {
 // Input: Loop: random syscall number, random args
 // Expect: Kernel handles gracefully (returns error or succeeds)
 // Depends: Syscall dispatch
-JARVIS_TEST(stress_syscall_fuzz_random) {
+JARVIS_TEST(stress_syscall_fuzz_random, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

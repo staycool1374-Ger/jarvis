@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Initialize PIC, check IDT vectors
 // Expect: IRQ vectors at 0x20-0x2F
 // Depends: kernel::arch::PIC
-JARVIS_TEST(pic_remap_vectors) {
+JARVIS_TEST(pic_remap_vectors, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -39,7 +39,7 @@ JARVIS_TEST(pic_remap_vectors) {
 // Input: Initialize PIC, read mask registers
 // Expect: Master mask = 0xFB (IRQ2 cascade enabled), Slave mask = 0xFF
 // Depends: kernel::arch::PIC
-JARVIS_TEST(pic_mask_all) {
+JARVIS_TEST(pic_mask_all, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -48,7 +48,7 @@ JARVIS_TEST(pic_mask_all) {
 // Input: Trigger IRQ, send EOI, check ISR
 // Expect: ISR bit cleared for that IRQ
 // Depends: kernel::arch::PIC
-JARVIS_TEST(pic_ocw2_end_of_interrupt) {
+JARVIS_TEST(pic_ocw2_end_of_interrupt, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

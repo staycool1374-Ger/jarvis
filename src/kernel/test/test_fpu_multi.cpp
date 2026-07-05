@@ -85,7 +85,7 @@ static void multi_task_c_entry() {
 // Testidea: 3-way FPU lazy switch preserves distinct IEEE 754 values
 // Input: Three tasks load pi, euler, sqrt2 respectively, yield, read back
 // Expect: Each task reads back its original value
-JARVIS_TEST(fpu_multi_context_switch) {
+JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
     g_multi_a_result = 0;
     g_multi_b_result = 0;
     g_multi_c_result = 0;

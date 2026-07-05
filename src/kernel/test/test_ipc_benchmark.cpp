@@ -86,7 +86,7 @@ static uint64_t bench_rdtsc_overhead() {
 // Input: Back-to-back RDTSC calls
 // Expect: Average overhead < 100 cycles
 // Depends: kernel/arch, kernel/task
-JARVIS_TEST(ipc_bench_rdtsc_overhead) {
+JARVIS_TEST(ipc_bench_rdtsc_overhead, "PRE: none | POST: none") {
     auto r = measure(bench_rdtsc_overhead);
     Logger::info("RDTSC overhead: min=%d, avg=%d, max=%d (iters=%d)",
                  r.min, r.avg, r.max, r.count);
@@ -117,7 +117,7 @@ static uint64_t bench_ipc_send_self() {
 // Input: Message sent to self via IPC::send, then drained via IPC::recv
 // Expect: Average round-trip < 10000 cycles
 // Depends: kernel/ipc, kernel/task
-JARVIS_TEST(ipc_bench_send_self) {
+JARVIS_TEST(ipc_bench_send_self, "PRE: none | POST: none") {
     Message drain;
     while (IPC::recv(drain));
 
@@ -137,7 +137,7 @@ JARVIS_TEST(ipc_bench_send_self) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/ipc, kernel/task
-JARVIS_TEST(ipc_bench_recv_self) {
+JARVIS_TEST(ipc_bench_recv_self, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -158,7 +158,7 @@ static uint64_t bench_ipc_send_only() {
 // Input: IPC_NONBLOCK send to own task without draining per iteration
 // Expect: Average send latency < 10000 cycles
 // Depends: kernel/ipc, kernel/task
-JARVIS_TEST(ipc_bench_send_only) {
+JARVIS_TEST(ipc_bench_send_only, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -194,7 +194,7 @@ static uint64_t bench_ipc_send_full() {
 // Input: Queue filled to capacity, then IPC_NONBLOCK send attempted
 // Expect: Average failure-path latency < 5000 cycles
 // Depends: kernel/ipc, kernel/task
-JARVIS_TEST(ipc_bench_send_full) {
+JARVIS_TEST(ipc_bench_send_full, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -234,7 +234,7 @@ static uint64_t bench_ipc_send_64byte() {
 // received
 // Expect: Average round-trip < 20000 cycles
 // Depends: kernel/ipc, kernel/task
-JARVIS_TEST(ipc_bench_send_64byte) {
+JARVIS_TEST(ipc_bench_send_64byte, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -268,7 +268,7 @@ static uint64_t bench_current_task() {
 // Input: Calls Scheduler::current_task() repeatedly
 // Expect: Average lookup < 500 cycles
 // Depends: kernel/task
-JARVIS_TEST(ipc_bench_current_task) {
+JARVIS_TEST(ipc_bench_current_task, "PRE: none | POST: none") {
     auto r = measure(bench_current_task);
     Logger::info("Scheduler::current_task: min=%d, avg=%d, max=%d",
                  r.min, r.avg, r.max);

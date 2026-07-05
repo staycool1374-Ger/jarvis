@@ -28,7 +28,7 @@ using namespace kernel;
 // Input: Call unmap_page on unused virtual address
 // Expect: No crash, returns success
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_unmap_already_unmapped) {
+JARVIS_TEST(vmm_unmap_already_unmapped, "PRE: none | POST: none") {
     uint64_t unused_va = 0x7FFF00000000ULL;
     VMM::unmap_page(unused_va);
     JARVIS_ASSERT(VMM::virt_to_phys(unused_va) == 0);
@@ -39,7 +39,7 @@ JARVIS_TEST(vmm_unmap_already_unmapped) {
 // Input: Map page at VA, map again at same VA
 // Expect: Fails or unmaps first
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_map_already_mapped) {
+JARVIS_TEST(vmm_map_already_mapped, "PRE: none | POST: none") {
     uint64_t va = 0x800000000000ULL;
     uint64_t phys1 = PMM::alloc_page();
     JARVIS_ASSERT(phys1 != 0);
@@ -60,7 +60,7 @@ JARVIS_TEST(vmm_map_already_mapped) {
 // Input: Call map_page with physical address 0
 // Expect: Returns error
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_map_page_null_phys) {
+JARVIS_TEST(vmm_map_page_null_phys, "PRE: none | POST: none") {
     uint64_t va = 0x800000100000ULL;
     VMM::map_page(va, 0, false);
     JARVIS_ASSERT(VMM::virt_to_phys(va) == 0);
@@ -72,7 +72,7 @@ JARVIS_TEST(vmm_map_page_null_phys) {
 // Input: Exhaust memory, call clone_kernel_pml4
 // Expect: No leaked page tables
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_clone_failure_rollback) {
+JARVIS_TEST(vmm_clone_failure_rollback, "PRE: none | POST: none") {
     // STUB: clone_kernel_pml4 doesn't implement rollback on OOM
     // Returns 0 on failure but doesn't free partially allocated page tables
     JARVIS_TEST_PASS();
@@ -84,7 +84,7 @@ JARVIS_TEST(vmm_clone_failure_rollback) {
 // Input: Fork, free child's user pages, check parent
 // Expect: Parent pages still valid
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_free_user_pages_shared) {
+JARVIS_TEST(vmm_free_user_pages_shared, "PRE: none | POST: none") {
     // Simulate fork: parent has user pages, child shares page table pages
     uint64_t parent_pml4 = PMM::alloc_page();
     JARVIS_ASSERT(parent_pml4 != 0);
@@ -160,7 +160,7 @@ JARVIS_TEST(vmm_free_user_pages_shared) {
 // Input: Split huge page at 2 MiB boundary
 // Expect: Correctly creates page table entries
 // Depends: kernel::memory::VMM
-JARVIS_TEST(vmm_huge_page_split_corner) {
+JARVIS_TEST(vmm_huge_page_split_corner, "PRE: none | POST: none") {
     uint64_t va = 0x200000; // 2 MiB boundary
     uint64_t phys = PMM::alloc_page();
     JARVIS_ASSERT(phys != 0);

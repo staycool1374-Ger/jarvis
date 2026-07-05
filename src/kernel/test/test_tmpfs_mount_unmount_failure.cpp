@@ -24,7 +24,7 @@
 using namespace kernel;
 using namespace kernel::vfs;
 
-JARVIS_TEST(tmpfs_root_ops_consistent) {
+JARVIS_TEST(tmpfs_root_ops_consistent, "PRE: vfsd, iocd | POST: none") {
     Vnode* root = tmpfs_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
 
@@ -42,7 +42,7 @@ JARVIS_TEST(tmpfs_root_ops_consistent) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_unmount_unsupported) {
+JARVIS_TEST(tmpfs_unmount_unsupported, "PRE: vfsd, iocd | POST: none") {
     // Currently VFS has no unmount API — verify mount succeeds as expected
     int ret = vfs::mount(tmpfs_fs, "/tmp_nounmount_test");
     JARVIS_ASSERT_EQ(0, ret);

@@ -20,7 +20,7 @@
 #include <logger.hpp>
 // Runmode: kernel
 // Testidea: Stub for I/O timeout handling in tmpfs operations.
-JARVIS_TEST(tmpfs_io_timeout) {
+JARVIS_TEST(tmpfs_io_timeout, "PRE: vfsd, iocd | POST: none") {
     /*
     1. Install a hook that makes PageAllocator::alloc sleep for longer than the kernel-defined I/O timeout.
     2. Perform a write to a tmpfs file that triggers the allocation.

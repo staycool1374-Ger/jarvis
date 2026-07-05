@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Boot with "debug_ipc=1" in cmdline
 // Expect: IPC debug flag is true
 // Depends: kernel::BootParams
-JARVIS_TEST(bootparams_parse_debug_flags) {
+JARVIS_TEST(bootparams_parse_debug_flags, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -35,7 +35,7 @@ JARVIS_TEST(bootparams_parse_debug_flags) {
 // Input: Boot with "debug_ipc=1 debug_vfs=1"
 // Expect: Both IPC and VFS debug flags are true
 // Depends: kernel::BootParams
-JARVIS_TEST(bootparams_parse_multiple_flags) {
+JARVIS_TEST(bootparams_parse_multiple_flags, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -44,7 +44,7 @@ JARVIS_TEST(bootparams_parse_multiple_flags) {
 // Input: Boot with empty cmdline
 // Expect: All debug flags false
 // Depends: kernel::BootParams
-JARVIS_TEST(bootparams_empty_cmdline) {
+JARVIS_TEST(bootparams_empty_cmdline, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -54,7 +54,7 @@ JARVIS_TEST(bootparams_empty_cmdline) {
 // Input: Boot with "garbage unknown_flag=1 debug_ipc=1"
 // Expect: No crash, debug_ipc=1 recognized, unknown ignored
 // Depends: kernel::BootParams
-JARVIS_TEST(bootparams_malformed_cmdline) {
+JARVIS_TEST(bootparams_malformed_cmdline, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

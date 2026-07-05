@@ -31,7 +31,7 @@ using namespace kernel;
 // progress; no task is starved indefinitely; no deadlock after 10,000 cycles.
 // Input: 8 tasks each performing 10,000 lock/unlock cycles on shared mutex.
 // Expect: All tasks complete; no deadlock; no task starved.
-JARVIS_TEST(mutex_stress_high_contention) {
+JARVIS_TEST(mutex_stress_high_contention, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -85,7 +85,7 @@ JARVIS_TEST(mutex_stress_high_contention) {
 // each message is consumed exactly once; no lost wakeups.
 // Input: Semaphore initialized to 0; 1 producer posts 100 times, 4 consumers wait.
 // Expect: Total posts == total waits == 100; no lost wakeups.
-JARVIS_TEST(semaphore_producer_consumer) {
+JARVIS_TEST(semaphore_producer_consumer, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 100);
 
@@ -150,7 +150,7 @@ JARVIS_TEST(semaphore_producer_consumer) {
 // no duplicate delivery, no crash after 5,000 messages.
 // Input: Queue shared by 4 producers (each sends 625 msgs) and 4 consumers.
 // Expect: All 2500 messages produced and consumed exactly once.
-JARVIS_TEST(queue_multi_producer_multi_consumer) {
+JARVIS_TEST(queue_multi_producer_multi_consumer, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
@@ -228,7 +228,7 @@ JARVIS_TEST(queue_multi_producer_multi_consumer) {
 // inheritance prevents inversion).
 // Input: Low (5) holds mutex, Medium (10) runs CPU-bound, High (15) waits on mutex.
 // Expect: Low boosted to >= 15, can run and release mutex despite Medium.
-JARVIS_TEST(priority_inversion_under_contention) {
+JARVIS_TEST(priority_inversion_under_contention, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -304,7 +304,7 @@ JARVIS_TEST(priority_inversion_under_contention) {
 // Input: Task locks mutex, then attempts lock again without unlocking.
 // Expect: Second lock blocks; task enters BLOCKED state; unlock from
 // first lock still works.
-JARVIS_TEST(mutex_recursive_deadlock) {
+JARVIS_TEST(mutex_recursive_deadlock, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -335,7 +335,7 @@ JARVIS_TEST(mutex_recursive_deadlock) {
 // decrement below zero.  Count must stay at 0.
 // Input: Semaphore initialized to 0; call try_wait 10 times.
 // Expect: All 10 try_wait calls return false; semaphore value stays 0.
-JARVIS_TEST(semaphore_count_underflow) {
+JARVIS_TEST(semaphore_count_underflow, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 10);
 

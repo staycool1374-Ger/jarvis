@@ -30,7 +30,7 @@ using namespace kernel;
 // Expect: is_user_range returns true for user addresses, false for kernel
 // addresses, nullptr, and overflowing ranges
 // Depends: kernel/memory
-JARVIS_TEST(checked_ptr_is_user_range) {
+JARVIS_TEST(checked_ptr_is_user_range, "PRE: none | POST: none") {
     JARVIS_ASSERT(!is_user_range(reinterpret_cast<void*>(0xFFFF800000000000ULL), 1));
 
     JARVIS_ASSERT(is_user_range(reinterpret_cast<void*>(0x400000), 1));
@@ -50,7 +50,7 @@ JARVIS_TEST(checked_ptr_is_user_range) {
 // Input: CheckedPtr wrapping a 64-byte stack buffer, CheckedPtr with nullptr
 // Expect: valid() returns true for valid buffer, false for nullptr
 // Depends: kernel/memory
-JARVIS_TEST(checked_ptr_valid) {
+JARVIS_TEST(checked_ptr_valid, "PRE: none | POST: none") {
     char buf[64] = "test data";
     CheckedPtr<char> cp(buf, sizeof(buf));
     JARVIS_ASSERT(!cp.valid());
@@ -66,7 +66,7 @@ JARVIS_TEST(checked_ptr_valid) {
 // Input: Kernel string literal, nullptr, stack-allocated buffer
 // Expect: All three inputs return false (not user strings)
 // Depends: kernel/memory
-JARVIS_TEST(checked_ptr_is_user_string) {
+JARVIS_TEST(checked_ptr_is_user_string, "PRE: none | POST: none") {
     JARVIS_ASSERT(!is_user_string("kernel string"));
 
     JARVIS_ASSERT(!is_user_string(nullptr));
@@ -83,7 +83,7 @@ JARVIS_TEST(checked_ptr_is_user_string) {
 // Expect: sizeof(SignalFrame) == 64, SIGNAL_FRAME_SIZE == 64, all field
 // values match set values
 // Depends: signal
-JARVIS_TEST(signal_frame_size) {
+JARVIS_TEST(signal_frame_size, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(64ULL, sizeof(SignalFrame));
     JARVIS_ASSERT_EQ(static_cast<size_t>(64), SIGNAL_FRAME_SIZE);
 

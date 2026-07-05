@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Task A holds lock L1, waits for L2; Task B holds L2, waits for L1
 // Expect: Deadlock detected (cycle A->B->A)
 // Depends: WFG, deadlock detector
-JARVIS_TEST(deadlock_two_task_circular_wait) {
+JARVIS_TEST(deadlock_two_task_circular_wait, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -35,7 +35,7 @@ JARVIS_TEST(deadlock_two_task_circular_wait) {
 // Input: Task A waits for B, B waits for C, C waits for A
 // Expect: Deadlock detected (cycle A->B->C->A)
 // Depends: WFG, deadlock detector
-JARVIS_TEST(deadlock_three_task_cycle) {
+JARVIS_TEST(deadlock_three_task_cycle, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -45,7 +45,7 @@ JARVIS_TEST(deadlock_three_task_cycle) {
 // another task that waits for outer
 // Expect: Deadlock detected
 // Depends: WFG, deadlock detector, kernel::sync::Mutex
-JARVIS_TEST(deadlock_nested_mutex) {
+JARVIS_TEST(deadlock_nested_mutex, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -54,7 +54,7 @@ JARVIS_TEST(deadlock_nested_mutex) {
 // Input: Multiple tasks acquire locks in consistent global order
 // Expect: No deadlock reported
 // Depends: WFG, deadlock detector
-JARVIS_TEST(deadlock_no_false_positive_valid_ordering) {
+JARVIS_TEST(deadlock_no_false_positive_valid_ordering, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -63,7 +63,7 @@ JARVIS_TEST(deadlock_no_false_positive_valid_ordering) {
 // Input: Large number of tasks and resources with complex dependencies
 // Expect: Detection completes within expected time bound
 // Depends: WFG, deadlock detector, performance measurement
-JARVIS_TEST(deadlock_detection_bounded_time) {
+JARVIS_TEST(deadlock_detection_bounded_time, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -72,7 +72,7 @@ JARVIS_TEST(deadlock_detection_bounded_time) {
 // Input: System with typical load, run deadlock detection
 // Expect: Overhead < 100 us per check
 // Depends: WFG, deadlock detector, timer
-JARVIS_TEST(deadlock_detection_overhead) {
+JARVIS_TEST(deadlock_detection_overhead, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

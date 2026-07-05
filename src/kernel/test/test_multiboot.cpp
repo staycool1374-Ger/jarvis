@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Parse multiboot info with known tags
 // Expect: find_tag_by_type returns valid pointer for each known type
 // Depends: kernel::boot::Multiboot2
-JARVIS_TEST(mb2_find_tag_by_type) {
+JARVIS_TEST(mb2_find_tag_by_type, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -36,7 +36,7 @@ JARVIS_TEST(mb2_find_tag_by_type) {
 // Input: Call find_tag_by_type with invalid type
 // Expect: Returns nullptr
 // Depends: kernel::boot::Multiboot2
-JARVIS_TEST(mb2_find_tag_nonexistent) {
+JARVIS_TEST(mb2_find_tag_nonexistent, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -46,7 +46,7 @@ JARVIS_TEST(mb2_find_tag_nonexistent) {
 // Input: Parse multiboot with framebuffer tag
 // Expect: width, height, bpp match bootloader values
 // Depends: kernel::boot::Multiboot2
-JARVIS_TEST(mb2_framebuffer_tag_fields) {
+JARVIS_TEST(mb2_framebuffer_tag_fields, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -56,7 +56,7 @@ JARVIS_TEST(mb2_framebuffer_tag_fields) {
 // Input: Parse multiboot with memory map tag
 // Expect: entry_count and entry_size match tag data
 // Depends: kernel::boot::Multiboot2
-JARVIS_TEST(mb2_memory_map_tag_entries) {
+JARVIS_TEST(mb2_memory_map_tag_entries, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -65,7 +65,7 @@ JARVIS_TEST(mb2_memory_map_tag_entries) {
 // Input: Parse multiboot with module tag
 // Expect: mod_start and mod_end are valid addresses
 // Depends: kernel::boot::Multiboot2
-JARVIS_TEST(mb2_module_tag_start_end) {
+JARVIS_TEST(mb2_module_tag_start_end, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

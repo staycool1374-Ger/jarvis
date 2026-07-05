@@ -28,7 +28,7 @@ using namespace kernel::vfs;
 // Input: vnode->ops->write on /dev/random vnode with 128-byte buffer
 // Expect: Returns 128 (write is a no-op that echoes count)
 // Depends: kernel::vfs::resolve, VnodeOps::write
-JARVIS_TEST(dev_random_write) {
+JARVIS_TEST(dev_random_write, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->ops != nullptr);
@@ -45,7 +45,7 @@ JARVIS_TEST(dev_random_write) {
 // Testidea: Writing zero bytes to /dev/random returns zero
 // Input: vnode->ops->write on /dev/random with count=0
 // Expect: Returns 0
-JARVIS_TEST(dev_random_write_zero) {
+JARVIS_TEST(dev_random_write_zero, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
 

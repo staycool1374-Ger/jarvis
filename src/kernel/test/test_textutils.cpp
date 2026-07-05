@@ -20,7 +20,7 @@
 #include <logger.hpp>
 // Runmode: kernel
 // Testidea: Stub for core text utilities tests.
-JARVIS_TEST(core_text_utilities) {
+JARVIS_TEST(core_text_utilities, "PRE: none | POST: none") {
     /*
     1. Launch /bin/less with input from a generated large text stream, verify pagination and navigation using up/down arrow keys.
     2. Send SIGINT to less during pagination, ensure graceful termination.

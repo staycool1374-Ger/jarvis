@@ -55,7 +55,7 @@ static bool serial_contains(const char* buf, const char* needle) {
     return false;
 }
 
-JARVIS_TEST(shell_loopback_manual_string) {
+JARVIS_TEST(shell_loopback_manual_string, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -75,7 +75,7 @@ JARVIS_TEST(shell_loopback_manual_string) {
 }
 
 
-JARVIS_TEST(shell_terminal_write) {
+JARVIS_TEST(shell_terminal_write, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -90,7 +90,7 @@ JARVIS_TEST(shell_terminal_write) {
     JARVIS_ASSERT(serial_contains(buf, "TESTMARKER"));
 }
 
-JARVIS_TEST(shell_simple_write) {
+JARVIS_TEST(shell_simple_write, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -105,7 +105,7 @@ JARVIS_TEST(shell_simple_write) {
     JARVIS_ASSERT(serial_contains(buf, "SIMPLE_TEST"));
 }
 
-JARVIS_TEST(shell_write_with_newline) {
+JARVIS_TEST(shell_write_with_newline, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -121,7 +121,7 @@ JARVIS_TEST(shell_write_with_newline) {
     JARVIS_ASSERT(serial_contains(buf, "LINE2"));
 }
 
-JARVIS_TEST(shell_echo_and_write) {
+JARVIS_TEST(shell_echo_and_write, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -138,7 +138,7 @@ JARVIS_TEST(shell_echo_and_write) {
     JARVIS_ASSERT(serial_contains(buf, "BETA"));
 }
 
-JARVIS_TEST(shell_heap_delete) {
+JARVIS_TEST(shell_heap_delete, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
@@ -157,7 +157,7 @@ JARVIS_TEST(shell_heap_delete) {
     JARVIS_ASSERT(serial_contains(buf, "END"));
 }
 
-JARVIS_TEST(shell_execute_serial) {
+JARVIS_TEST(shell_execute_serial, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -187,7 +187,7 @@ JARVIS_TEST(shell_execute_serial) {
     JARVIS_ASSERT(serial_contains(buf1, "Unbekannt"));
 }
 
-JARVIS_TEST(shell_help_command) {
+JARVIS_TEST(shell_help_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -217,7 +217,7 @@ JARVIS_TEST(shell_help_command) {
     JARVIS_ASSERT(serial_contains(buf1, "Verfueg"));
 }
 
-JARVIS_TEST(shell_echo_command) {
+JARVIS_TEST(shell_echo_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -247,7 +247,7 @@ JARVIS_TEST(shell_echo_command) {
     JARVIS_ASSERT(serial_contains(buf1, "Hello"));
 }
 
-JARVIS_TEST(shell_uptime_command) {
+JARVIS_TEST(shell_uptime_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -277,7 +277,7 @@ JARVIS_TEST(shell_uptime_command) {
     JARVIS_ASSERT(serial_contains(buf1, "Uptime"));
 }
 
-JARVIS_TEST(shell_pwd_command) {
+JARVIS_TEST(shell_pwd_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -307,7 +307,7 @@ JARVIS_TEST(shell_pwd_command) {
     JARVIS_ASSERT(serial_contains(buf1, "/"));
 }
 
-JARVIS_TEST(shell_which_command) {
+JARVIS_TEST(shell_which_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -338,7 +338,7 @@ JARVIS_TEST(shell_which_command) {
     JARVIS_ASSERT(serial_contains(buf1, "help"));
 }
 
-JARVIS_TEST(shell_help_shows_which) {
+JARVIS_TEST(shell_help_shows_which, "PRE: vfsd, iocd | POST: none") {
     // Verify "locate" is registered and would appear in help output.
     // Can't capture full help via serial loopback (16-byte RX FIFO limit),
     // so instead: run "locate locate" — dispatch proves registration,
@@ -373,7 +373,7 @@ JARVIS_TEST(shell_help_shows_which) {
     JARVIS_ASSERT(serial_contains(buf1, "locate"));
 }
 
-JARVIS_TEST(shell_which_notfound) {
+JARVIS_TEST(shell_which_notfound, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -404,7 +404,7 @@ JARVIS_TEST(shell_which_notfound) {
     JARVIS_ASSERT(serial_contains(buf1, "xyzzy"));
 }
 
-JARVIS_TEST(shell_env_command) {
+JARVIS_TEST(shell_env_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -433,7 +433,7 @@ JARVIS_TEST(shell_env_command) {
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
 }
 
-JARVIS_TEST(shell_export_command) {
+JARVIS_TEST(shell_export_command, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -462,7 +462,7 @@ JARVIS_TEST(shell_export_command) {
     JARVIS_ASSERT(serial_contains(buf2, "AFTER"));
 }
 
-JARVIS_TEST(shell_sleep_zero) {
+JARVIS_TEST(shell_sleep_zero, "PRE: vfsd, iocd | POST: none") {
     uint8_t orig_mcr = arch::inb(arch::COM1 + 4);
     arch::outb(arch::COM1 + 4, orig_mcr | 0x10);
     serial_flush_rx();
@@ -496,7 +496,7 @@ JARVIS_TEST(shell_sleep_zero) {
 // Input: Shell::execute("clear")
 // Expect: No crash, terminal cleared
 // Depends: service::Shell, service::Terminal
-JARVIS_TEST(shell_clear_command) {
+JARVIS_TEST(shell_clear_command, "PRE: vfsd, iocd | POST: none") {
     service::Shell::execute("clear");
     JARVIS_TEST_PASS();
 }

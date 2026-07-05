@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: Call arch::pci_scan_all()
 // Expect: Returns > 0 devices found
 // Depends: arch::PCI CF8/CFC config space access
-JARVIS_TEST(pci_scan_finds_devices) {
+JARVIS_TEST(pci_scan_finds_devices, "PRE: iocd | POST: none") {
     size_t count = arch::pci_scan_all();
     JARVIS_ASSERT(count > 0);
     Logger::info("PCI: %d devices found", count);
@@ -46,7 +46,7 @@ JARVIS_TEST(pci_scan_finds_devices) {
 // Input: Read vendor/device for 00:00.0
 // Expect: vendor_id != 0xFFFF and != 0, device_id != 0
 // Depends: arch::pci_read_vendor, arch::pci_read_device
-JARVIS_TEST(pci_read_host_bridge_ids) {
+JARVIS_TEST(pci_read_host_bridge_ids, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     uint16_t vendor = arch::pci_read_vendor(bdf);
     uint16_t device = arch::pci_read_device(bdf);
@@ -62,7 +62,7 @@ JARVIS_TEST(pci_read_host_bridge_ids) {
 // Input: arch::pci_read_device_info({0,0,0})
 // Expect: vendor_id != 0xFFFF, class_code is 0x06 (bridge), header_type = 0x00
 // Depends: arch::pci_read_device_info
-JARVIS_TEST(pci_read_host_bridge_info) {
+JARVIS_TEST(pci_read_host_bridge_info, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     arch::PciDeviceInfo info = arch::pci_read_device_info(bdf);
     JARVIS_ASSERT(info.vendor_id != 0xFFFF);
@@ -77,7 +77,7 @@ JARVIS_TEST(pci_read_host_bridge_info) {
 // Input: Call arch::pci_scan_all(), then search devices
 // Expect: At least one device is a PCI-to-ISA bridge (class=0x06, subclass=0x01)
 // Depends: arch::pci_scan_all, arch::pci_find_device
-JARVIS_TEST(pci_finds_isa_bridge) {
+JARVIS_TEST(pci_finds_isa_bridge, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     const arch::PciDeviceInfo* isa = arch::pci_find_device(0x06, 0x01);
     JARVIS_ASSERT(isa != nullptr);
@@ -93,7 +93,7 @@ JARVIS_TEST(pci_finds_isa_bridge) {
 // Input: Read vendor at BDF 255:31:7 (non-existent)
 // Expect: vendor == 0xFFFF, pci_device_exists returns false
 // Depends: arch::pci_read_vendor, arch::pci_device_exists
-JARVIS_TEST(pci_nonexistent_bdf) {
+JARVIS_TEST(pci_nonexistent_bdf, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {255, 31, 7};
     uint16_t vendor = arch::pci_read_vendor(bdf);
     JARVIS_ASSERT_EQ(0xFFFF, vendor);
@@ -107,7 +107,7 @@ JARVIS_TEST(pci_nonexistent_bdf) {
 // Input: Read command register at 00:00.0
 // Expect: command register != 0
 // Depends: arch::pci_config_readw
-JARVIS_TEST(pci_read_command_register) {
+JARVIS_TEST(pci_read_command_register, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     uint32_t addr = arch::pci_make_addr(bdf, arch::PCI_COMMAND);
     uint16_t cmd = arch::pci_config_readw(addr);
@@ -121,7 +121,7 @@ JARVIS_TEST(pci_read_command_register) {
 // Input: BDF 1:2.3, register 0x10
 // Expect: addr = 0x80000000 | (1 << 16) | (2 << 11) | (3 << 8) | 0x10
 // Depends: arch::pci_make_addr
-JARVIS_TEST(pci_make_addr_format) {
+JARVIS_TEST(pci_make_addr_format, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {1, 2, 3};
     uint32_t addr = arch::pci_make_addr(bdf, 0x10);
     JARVIS_ASSERT_HEX_EQ(0x80000000U | (1U << 16) | (2U << 11) | (3U << 8) | 0x10U, addr);
@@ -133,7 +133,7 @@ JARVIS_TEST(pci_make_addr_format) {
 // Input: arch::pci_find_device(0xFF, 0xFF)
 // Expect: Returns nullptr
 // Depends: arch::pci_scan_all, arch::pci_find_device
-JARVIS_TEST(pci_find_nonexistent_device) {
+JARVIS_TEST(pci_find_nonexistent_device, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     const arch::PciDeviceInfo* dev = arch::pci_find_device(0xFF, 0xFF);
     JARVIS_ASSERT(dev == nullptr);
@@ -146,7 +146,7 @@ JARVIS_TEST(pci_find_nonexistent_device) {
 // Input: arch::pci_find_capability(bdf, PCI_CAP_ID_MSI)
 // Expect: Returns 0 (no MSI capability)
 // Depends: arch::pci_find_capability
-JARVIS_TEST(pci_host_bridge_no_msi) {
+JARVIS_TEST(pci_host_bridge_no_msi, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     uint8_t cap = arch::pci_find_capability(bdf, arch::PCI_CAP_ID_MSI);
     JARVIS_ASSERT_EQ(0, cap);
@@ -160,7 +160,7 @@ JARVIS_TEST(pci_host_bridge_no_msi) {
 // Input: arch::pci_alloc_vector() then arch::pci_free_vector(v)
 // Expect: vector != 0, vector >= 48, vector != 0x80
 // Depends: arch::pci_alloc_vector, arch::pci_free_vector
-JARVIS_TEST(pci_alloc_free_vector) {
+JARVIS_TEST(pci_alloc_free_vector, "PRE: iocd | POST: none") {
     uint8_t v1 = arch::pci_alloc_vector();
     JARVIS_ASSERT(v1 != 0);
     JARVIS_ASSERT(v1 >= 48);
@@ -179,7 +179,7 @@ JARVIS_TEST(pci_alloc_free_vector) {
 // Input: arch::pci_enable_msi(bdf, 0)
 // Expect: Returns 0 (no MSI capability)
 // Depends: arch::pci_enable_msi
-JARVIS_TEST(pci_enable_msi_no_cap) {
+JARVIS_TEST(pci_enable_msi_no_cap, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     uint8_t vec = arch::pci_enable_msi(bdf, 0);
     JARVIS_ASSERT_EQ(0, vec);
@@ -192,7 +192,7 @@ JARVIS_TEST(pci_enable_msi_no_cap) {
 // Input: arch::pci_enable_msix(bdf, 0, 0)
 // Expect: Returns 0 (no MSI-X capability)
 // Depends: arch::pci_enable_msix
-JARVIS_TEST(pci_enable_msix_no_cap) {
+JARVIS_TEST(pci_enable_msix_no_cap, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     uint8_t vec = arch::pci_enable_msix(bdf, 0, 0);
     JARVIS_ASSERT_EQ(0, vec);
@@ -205,7 +205,7 @@ JARVIS_TEST(pci_enable_msix_no_cap) {
 // Input: arch::pci_find_capability(bdf, PCI_CAP_ID_MSI)
 // Expect: Returns 0 on devices without MSI
 // Depends: arch::pci_find_capability
-JARVIS_TEST(pci_isa_bridge_caps) {
+JARVIS_TEST(pci_isa_bridge_caps, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 1, 0};
     uint8_t cap = arch::pci_find_capability(bdf, arch::PCI_CAP_ID_MSI);
     JARVIS_ASSERT_EQ(0, cap);
@@ -220,7 +220,7 @@ JARVIS_TEST(pci_isa_bridge_caps) {
 // Input: arch::pci_scan_all(), iterate devices
 // Expect: At least one device has a BAR with address > 0 and size > 0
 // Depends: arch::pci_scan_all, arch::pci_read_device_info (pci_parse_bars)
-JARVIS_TEST(pci_bar_registers) {
+JARVIS_TEST(pci_bar_registers, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     bool found_valid_bar = false;
     for (size_t i = 0; i < arch::pci_device_count(); ++i) {
@@ -244,7 +244,7 @@ JARVIS_TEST(pci_bar_registers) {
 // Input: Find virtio-net device, call pci_find_capability for MSI and MSI-X
 // Expect: At least one MSI or MSI-X capability found (non-zero offset)
 // Depends: arch::pci_scan_all, arch::pci_find_capability
-JARVIS_TEST(pci_msi_capability_chain) {
+JARVIS_TEST(pci_msi_capability_chain, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     const arch::PciDeviceInfo* dev = nullptr;
     for (size_t i = 0; i < arch::pci_device_count(); ++i) {
@@ -284,7 +284,7 @@ JARVIS_TEST(pci_enumeration_bounded_time) {
 // Input: Call pci_print_tree() after scan
 // Expect: Output contains vendor:device ID strings, class/subclass, BAR info
 // Depends: arch::pci_scan_all, arch::pci_print_tree
-JARVIS_TEST(pci_print_tree_output) {
+JARVIS_TEST(pci_print_tree_output, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     char buf[2048];
     arch::pci_print_tree(buf, sizeof(buf));

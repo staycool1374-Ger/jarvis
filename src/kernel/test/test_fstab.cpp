@@ -46,7 +46,7 @@ static int parse_fstab_line(const char* p, const char* end,
     return 0;
 }
 
-JARVIS_TEST(fstab_parses_valid_line) {
+JARVIS_TEST(fstab_parses_valid_line, "PRE: none | POST: none") {
     const char input[] = "tmpfs /tmp\n";
     char fs[32], mp[64];
     int ret = parse_fstab_line(input, input + sizeof(input) - 1, fs, sizeof(fs), mp, sizeof(mp));
@@ -56,7 +56,7 @@ JARVIS_TEST(fstab_parses_valid_line) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(fstab_parses_with_extra_spaces) {
+JARVIS_TEST(fstab_parses_with_extra_spaces, "PRE: none | POST: none") {
     const char input[] = "  tmpfs   /mnt/extra   \n";
     char fs[32], mp[64];
     int ret = parse_fstab_line(input, input + sizeof(input) - 1, fs, sizeof(fs), mp, sizeof(mp));
@@ -66,7 +66,7 @@ JARVIS_TEST(fstab_parses_with_extra_spaces) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(fstab_skips_comment_line) {
+JARVIS_TEST(fstab_skips_comment_line, "PRE: none | POST: none") {
     const char input[] = "# this is a comment\n";
     char fs[32], mp[64];
     int ret = parse_fstab_line(input, input + sizeof(input) - 1, fs, sizeof(fs), mp, sizeof(mp));
@@ -74,7 +74,7 @@ JARVIS_TEST(fstab_skips_comment_line) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(fstab_skips_empty_line) {
+JARVIS_TEST(fstab_skips_empty_line, "PRE: none | POST: none") {
     const char input[] = "\n";
     char fs[32], mp[64];
     int ret = parse_fstab_line(input, input + sizeof(input) - 1, fs, sizeof(fs), mp, sizeof(mp));
@@ -82,7 +82,7 @@ JARVIS_TEST(fstab_skips_empty_line) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(fstab_rejects_missing_mountpoint) {
+JARVIS_TEST(fstab_rejects_missing_mountpoint, "PRE: none | POST: none") {
     const char input[] = "tmpfs\n";
     char fs[32], mp[64];
     int ret = parse_fstab_line(input, input + sizeof(input) - 1, fs, sizeof(fs), mp, sizeof(mp));

@@ -143,11 +143,11 @@ void dump_class_counts();
 } // namespace test
 } // namespace kernel
 
-#define JARVIS_TEST(name)                                                     \
+#define JARVIS_TEST(name, ...)                                                \
     void test_##name();                                                        \
     void test_##name()
 
-#define JARVIS_TEST_SUITE(suite, name)                                        \
+#define JARVIS_TEST_SUITE(suite, name, ...)                                   \
     void test_##suite##_##name();                                              \
     void test_##suite##_##name()
 

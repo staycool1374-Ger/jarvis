@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: dma::alloc_buffer(512)
 // Expect: phys_addr != 0, size >= 512, owned == true
 // Depends: PMM, VMM
-JARVIS_TEST(dma_alloc_buffer) {
+JARVIS_TEST(dma_alloc_buffer, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(512);
     JARVIS_ASSERT(buf.phys_addr != 0);
     JARVIS_ASSERT(buf.size >= 512);
@@ -50,7 +50,7 @@ JARVIS_TEST(dma_alloc_buffer) {
 // Input: Allocate buffer, write pattern, read back.
 // Expect: Data written matches data read.
 // Depends: PMM, VMM
-JARVIS_TEST(dma_buffer_write_read) {
+JARVIS_TEST(dma_buffer_write_read, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(4096);
     JARVIS_ASSERT(buf.phys_addr != 0);
     auto* ptr = reinterpret_cast<uint8_t*>(buf.virt_addr);
@@ -67,7 +67,7 @@ JARVIS_TEST(dma_buffer_write_read) {
 // Input: DMA buffer + sg_from_buffer()
 // Expect: SG list count == 1, entries match buffer
 // Depends: dma::alloc_buffer
-JARVIS_TEST(dma_sg_from_buffer) {
+JARVIS_TEST(dma_sg_from_buffer, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(2048);
     JARVIS_ASSERT(buf.phys_addr != 0);
     dma::SgList sg;
@@ -88,7 +88,7 @@ JARVIS_TEST(dma_sg_from_buffer) {
 // Input: sg_from_buffer + prd_from_sg
 // Expect: PRD count == 1, byte_count == size-1, EOT set
 // Depends: dma::alloc_buffer
-JARVIS_TEST(dma_prd_from_sg) {
+JARVIS_TEST(dma_prd_from_sg, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(4096);
     JARVIS_ASSERT(buf.phys_addr != 0);
     dma::SgList sg;
@@ -109,7 +109,7 @@ JARVIS_TEST(dma_prd_from_sg) {
 // Input: arch::PciBdf for 00:00.0, enable then disable
 // Expect: No crash, returns normally
 // Depends: arch::pci_config_readw, arch::pci_config_writel
-JARVIS_TEST(dma_bus_master_host_bridge) {
+JARVIS_TEST(dma_bus_master_host_bridge, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     // Just verify the code doesn't crash
     dma::pci_set_bus_master(bdf, true);
@@ -122,7 +122,7 @@ JARVIS_TEST(dma_bus_master_host_bridge) {
 // Input: dma::sg_reset(sg)
 // Expect: count == 0, total_length == 0
 // Depends: none
-JARVIS_TEST(dma_sg_reset) {
+JARVIS_TEST(dma_sg_reset, "PRE: iocd | POST: none") {
     dma::SgList sg;
     sg.count = 5;
     sg.total_length = 1234;
@@ -137,7 +137,7 @@ JARVIS_TEST(dma_sg_reset) {
 // Input: dma::prd_reset(prd)
 // Expect: count == 0
 // Depends: none
-JARVIS_TEST(dma_prd_reset) {
+JARVIS_TEST(dma_prd_reset, "PRE: iocd | POST: none") {
     dma::PrdTable prd;
     prd.count = 10;
     dma::prd_reset(prd);
@@ -150,7 +150,7 @@ JARVIS_TEST(dma_prd_reset) {
 // Input: dma::free_buffer({})
 // Expect: No crash
 // Depends: none
-JARVIS_TEST(dma_free_empty_buffer) {
+JARVIS_TEST(dma_free_empty_buffer, "PRE: iocd | POST: none") {
     dma::DmaBuffer buf = {};
     dma::free_buffer(buf);
     JARVIS_TEST_PASS();
@@ -161,7 +161,7 @@ JARVIS_TEST(dma_free_empty_buffer) {
 // Input: dma::alloc_buffer(0)
 // Expect: Returns DmaBuffer with phys_addr == 0 (failure, not a crash)
 // Depends: dma::alloc_buffer
-JARVIS_TEST(dma_zero_length_buffer) {
+JARVIS_TEST(dma_zero_length_buffer, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(0);
     JARVIS_ASSERT_EQ((uint64_t)0, buf.phys_addr);
     JARVIS_ASSERT(!buf.owned);
@@ -175,7 +175,7 @@ JARVIS_TEST(dma_zero_length_buffer) {
 // Input: Two dma::alloc_buffer calls, manual SG list setup, prd_from_sg
 // Expect: PRD table has 2 entries with different phys_addr ranges
 // Depends: dma::alloc_buffer, dma::sg_reset, dma::prd_from_sg
-JARVIS_TEST(dma_sg_non_contiguous_prd) {
+JARVIS_TEST(dma_sg_non_contiguous_prd, "PRE: iocd | POST: none") {
     auto buf1 = dma::alloc_buffer(4096);
     JARVIS_ASSERT(buf1.phys_addr != 0);
     auto buf2 = dma::alloc_buffer(4096);
@@ -231,7 +231,7 @@ static void pp_chain_cb(uint64_t ctx, dma::DmaBuffer* buf, bool success) {
 // Expect: start_transfer succeeds, is_busy reflects state, handle_irq
 // acknowledges and invokes callback, abort stops the engine.
 // Depends: dma::DmaEngine, dma::BmDmaChannel, dma::alloc_buffer, prd_from_sg
-JARVIS_TEST(dma_completion_interrupt) {
+JARVIS_TEST(dma_completion_interrupt, "PRE: iocd | POST: none") {
     g_dma_cb_fired = false;
     g_dma_cb_ctx = 0;
 
@@ -282,7 +282,7 @@ JARVIS_TEST(dma_completion_interrupt) {
 // Expect: Back-to-back transfers complete without data corruption,
 // buffer chaining swaps indices correctly.
 // Depends: dma::PingPongDma, dma::DmaEngine, dma::BmDmaChannel
-JARVIS_TEST(dma_double_buffered_transfer) {
+JARVIS_TEST(dma_double_buffered_transfer, "PRE: iocd | POST: none") {
     g_pp_chain_fired = false;
 
     dma::BmDmaChannel channel(0xFF00);

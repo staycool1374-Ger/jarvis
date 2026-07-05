@@ -105,7 +105,7 @@ static void preempt_lowpri_syscall() {
 // Input: Two tasks: low-pri (5) runs a long loop, high-pri (10) should preempt it.
 // Expect: High-pri task runs at least once.
 // Depends: Scheduler, context-switch atomics
-JARVIS_TEST(preemption_during_syscall) {
+JARVIS_TEST(preemption_during_syscall, "PRE: none | POST: none") {
     preempt_highpri_count = 0;
     preempt_lowpri_count = 0;
     preempt_highpri_done = false;
@@ -151,7 +151,7 @@ JARVIS_TEST(preemption_during_syscall) {
 // Input: Low-pri (5) writes to tmpfs; high-pri (10) runs concurrently.
 // Expect: High-pri runs at least once, proving preemption during VFS write.
 // Depends: tmpfs, Scheduler, VFS
-JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
+JARVIS_TEST(preempt_highpri_during_tmpfs_write, "PRE: vfsd, iocd | POST: none") {
     tp_highpri_count_ = 0;
     tp_done_ = false;
 
@@ -201,7 +201,7 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write) {
 // Input: Low-pri (5) calls sys_brk in loop; high-pri (10) runs concurrently.
 // Expect: High-pri runs at least once during brk operations.
 // Depends: Syscall::sys_brk, Scheduler
-JARVIS_TEST(preempt_highpri_during_brk) {
+JARVIS_TEST(preempt_highpri_during_brk, "PRE: none | POST: none") {
     brk_highpri_count_ = 0;
     brk_done_ = false;
 
@@ -245,7 +245,7 @@ JARVIS_TEST(preempt_highpri_during_brk) {
 // Input: Low-pri (5) loops to STARVE_TARGET; 2 high-pri (10) tasks also run.
 // Expect: Low-pri reaches STARVE_TARGET despite higher-priority competition.
 // Depends: Scheduler
-JARVIS_TEST(preempt_lowpri_not_starved) {
+JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
     starve_highpri_count_ = 0;
     starve_lowpri_progress_ = 0;
 

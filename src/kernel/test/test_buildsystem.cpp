@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: Build with ARCH=x86_64
 // Expect: x86_64-elf-gcc used, arch/x86_64/ sources compiled
 // Depends: Makefile, toolchain
-JARVIS_TEST(buildsystem_arch_x86_64_toolchain) {
+JARVIS_TEST(buildsystem_arch_x86_64_toolchain, "PRE: none | POST: none") {
     arch::CpuIdResult res = arch::cpuid(0);
     char vendor[13];
     memcpy(vendor, &res.ebx, 4);
@@ -55,7 +55,7 @@ JARVIS_TEST(buildsystem_arch_x86_64_toolchain) {
 // Input: Build with ARCH=invalid_arch
 // Expect: Make fails with descriptive error
 // Depends: Makefile
-JARVIS_TEST(buildsystem_invalid_arch_error) {
+JARVIS_TEST(buildsystem_invalid_arch_error, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
 
     arch::CpuIdResult res = arch::cpuid(0);
@@ -78,7 +78,7 @@ JARVIS_TEST(buildsystem_invalid_arch_error) {
 // Input: Build without ARCH variable
 // Expect: Defaults to x86_64, builds successfully
 // Depends: Makefile
-JARVIS_TEST(buildsystem_default_arch_x86_64) {
+JARVIS_TEST(buildsystem_default_arch_x86_64, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
 
     uint64_t cr4 = arch::read_cr4();
@@ -93,7 +93,7 @@ JARVIS_TEST(buildsystem_default_arch_x86_64) {
 // Input: Check debug build flags
 // Expect: CONFIG_DEBUG defined, debug symbols present
 // Depends: Makefile
-JARVIS_TEST(buildsystem_debug_flags) {
+JARVIS_TEST(buildsystem_debug_flags, "PRE: none | POST: none") {
 #if defined(CONFIG_DEBUG)
     bool debug_defined = true;
 #else
@@ -109,7 +109,7 @@ JARVIS_TEST(buildsystem_debug_flags) {
 // Input: Preprocessor check
 // Expect: CONFIG_ARCH_X86_64 is defined
 // Depends: Makefile, build system
-JARVIS_TEST(buildsystem_config_arch_defined) {
+JARVIS_TEST(buildsystem_config_arch_defined, "PRE: none | POST: none") {
 #if defined(CONFIG_ARCH_X86_64)
     bool arch_ok = true;
 #else

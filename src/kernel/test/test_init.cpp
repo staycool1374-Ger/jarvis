@@ -23,7 +23,7 @@
 
 using namespace kernel;
 
-JARVIS_TEST(init_task_exists) {
+JARVIS_TEST(init_task_exists, "PRE: none | POST: none") {
     auto* init = Scheduler::find_task(1);
     JARVIS_ASSERT(init != nullptr);
     JARVIS_ASSERT_EQ(1ULL, init->id);
@@ -32,14 +32,14 @@ JARVIS_TEST(init_task_exists) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(init_task_has_no_parent) {
+JARVIS_TEST(init_task_has_no_parent, "PRE: none | POST: none") {
     auto* init = Scheduler::find_task(1);
     JARVIS_ASSERT(init != nullptr);
     JARVIS_ASSERT_EQ(0ULL, init->parent_id);
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(init_task_reparents_orphans) {
+JARVIS_TEST(init_task_reparents_orphans, "PRE: none | POST: none") {
     // Create a child task, set parent to a task that will exit,
     // verify it gets reparented to init
 

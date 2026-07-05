@@ -39,7 +39,7 @@ struct BenchResult {
 // Input: Create two tasks, measure time for reschedule() cycle.
 // Expect: Average latency measured in cycles.
 // Depends: Scheduler, arch::rdtsc
-JARVIS_TEST(bench_reschedule_latency) {
+JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
     auto* a = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(a != nullptr);
     Scheduler::add_task(*a);
@@ -86,7 +86,7 @@ JARVIS_TEST(bench_reschedule_latency) {
 // Input: try_lock/unlock in a tight loop.
 // Expect: Average latency measured.
 // Depends: SpinLock, arch::rdtsc
-JARVIS_TEST(bench_spinlock_try_lock) {
+JARVIS_TEST(bench_spinlock_try_lock, "PRE: none | POST: none") {
     sync::SpinLock lock;
     BenchResult r = {~0ULL, 0, 0};
     for (size_t i = 0; i < 100; ++i) { lock.try_lock(); lock.unlock(); }

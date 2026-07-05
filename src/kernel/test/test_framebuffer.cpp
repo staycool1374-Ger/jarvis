@@ -28,7 +28,7 @@ using namespace kernel;
 // Input: Boot with framebuffer tag
 // Expect: width, height, bpp, pitch are non-zero when available
 // Depends: service::Framebuffer
-JARVIS_TEST(fb_init_from_multiboot) {
+JARVIS_TEST(fb_init_from_multiboot, "PRE: iocd | POST: none") {
     if (service::Framebuffer::available()) {
         JARVIS_ASSERT(service::Framebuffer::width() > 0);
         JARVIS_ASSERT(service::Framebuffer::height() > 0);
@@ -42,7 +42,7 @@ JARVIS_TEST(fb_init_from_multiboot) {
 // Input: draw_pixel(0, 0, white)
 // Expect: No crash, framebuffer unchanged for out-of-bounds
 // Depends: service::Framebuffer
-JARVIS_TEST(fb_putpixel_in_bounds) {
+JARVIS_TEST(fb_putpixel_in_bounds, "PRE: iocd | POST: none") {
     if (service::Framebuffer::available()) {
         service::Framebuffer::draw_pixel(0, 0, 0xFFFFFF);
         uint32_t w = service::Framebuffer::width();
@@ -58,7 +58,7 @@ JARVIS_TEST(fb_putpixel_in_bounds) {
 // Input: putpixel(-1, 0), putpixel(width, height)
 // Expect: No crash, no memory corruption
 // Depends: service::Framebuffer
-JARVIS_TEST(fb_putpixel_out_of_bounds) {
+JARVIS_TEST(fb_putpixel_out_of_bounds, "PRE: iocd | POST: none") {
     if (service::Framebuffer::available()) {
         service::Framebuffer::draw_pixel(
             static_cast<uint32_t>(-1), 0, 0xFF);
@@ -76,7 +76,7 @@ JARVIS_TEST(fb_putpixel_out_of_bounds) {
 // Input: clear_screen(black)
 // Expect: No crash
 // Depends: service::Framebuffer
-JARVIS_TEST(fb_clear_screen) {
+JARVIS_TEST(fb_clear_screen, "PRE: iocd | POST: none") {
     if (service::Framebuffer::available()) {
         service::Framebuffer::clear(0x000000);
     }
@@ -88,7 +88,7 @@ JARVIS_TEST(fb_clear_screen) {
 // Input: Write multiple lines, scroll
 // Expect: No crash, terminal state updated
 // Depends: service::Terminal
-JARVIS_TEST(fb_scroll_up) {
+JARVIS_TEST(fb_scroll_up, "PRE: iocd | POST: none") {
     service::Terminal::write("line1\nline2\nline3\n");
     JARVIS_TEST_PASS();
 }

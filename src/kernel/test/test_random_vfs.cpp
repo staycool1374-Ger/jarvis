@@ -28,7 +28,7 @@ using namespace kernel::vfs;
 // Input: vfs::resolve("/dev/random")
 // Expect: Non-null vnode with S_IFCHR mode set
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(dev_random_resolve) {
+JARVIS_TEST(dev_random_resolve, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & S_IFCHR);
@@ -40,7 +40,7 @@ JARVIS_TEST(dev_random_resolve) {
 // Input: vnode->ops->read on /dev/random vnode, 256-byte buffer
 // Expect: Returns 256 bytes, buffer not all-zero or all-FF
 // Depends: kernel::vfs::resolve, VnodeOps::read
-JARVIS_TEST(dev_random_read) {
+JARVIS_TEST(dev_random_read, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->ops != nullptr);

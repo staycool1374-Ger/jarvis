@@ -32,7 +32,7 @@ using namespace kernel;
 // Input: nullptr
 // Expect: JARVIS_ASSERT checks that !elf::validate_header(nullptr)
 // Depends: test, elf
-JARVIS_TEST(elf_validate_header_null) {
+JARVIS_TEST(elf_validate_header_null, "PRE: none | POST: none") {
     JARVIS_ASSERT(!elf::validate_header(nullptr));
     JARVIS_TEST_PASS();
 }
@@ -43,7 +43,7 @@ JARVIS_TEST(elf_validate_header_null) {
 // Input: A manually populated valid ELF64Header, then with ident[0] set to 0
 // Expect: JARVIS_ASSERT first on true, then on false for corrupted header
 // Depends: test, elf
-JARVIS_TEST(elf_validate_header_magic) {
+JARVIS_TEST(elf_validate_header_magic, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
     hdr.ident[1] = 'E';
@@ -73,7 +73,7 @@ JARVIS_TEST(elf_validate_header_magic) {
 // Input: A valid ELF64Header with machine set to 0x28
 // Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
 // Depends: test, elf
-JARVIS_TEST(elf_validate_header_bad_machine) {
+JARVIS_TEST(elf_validate_header_bad_machine, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
     hdr.ident[1] = 'E';
@@ -101,7 +101,7 @@ JARVIS_TEST(elf_validate_header_bad_machine) {
 // Input: A valid ELF64Header with phnum set to 100
 // Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
 // Depends: test, elf
-JARVIS_TEST(elf_validate_header_excessive_phnum) {
+JARVIS_TEST(elf_validate_header_excessive_phnum, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
     hdr.ident[1] = 'E';
@@ -129,7 +129,7 @@ JARVIS_TEST(elf_validate_header_excessive_phnum) {
 // Input: A valid ELF64Header with entry set to 0xFFFF800000000000
 // Expect: JARVIS_ASSERT checks that !elf::validate_header(&hdr)
 // Depends: test, elf
-JARVIS_TEST(elf_validate_header_bad_entry) {
+JARVIS_TEST(elf_validate_header_bad_entry, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     hdr.ident[0] = 0x7F;
     hdr.ident[1] = 'E';
@@ -199,7 +199,7 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
 // Expect: elf::load returns nullptr
 // Depends: test, elf
 #if !defined(CONFIG_ARCH_RISCV64)
-JARVIS_TEST(elf_load_invalid_segment) {
+JARVIS_TEST(elf_load_invalid_segment, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];
@@ -222,7 +222,7 @@ JARVIS_TEST(elf_load_invalid_segment) {
 // entries 0-2 exist, are used, and point to the tty vnode
 // Depends: test, elf, vfs
 #if !defined(CONFIG_ARCH_RISCV64)
-JARVIS_TEST(elf_load_sets_std_fds) {
+JARVIS_TEST(elf_load_sets_std_fds, "PRE: vfsd, iocd | POST: none") {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];
@@ -255,7 +255,7 @@ JARVIS_TEST(elf_load_sets_std_fds) {
 // tcb->user_stack_size_ equals mem::STACK_SIZE
 // Depends: test, elf
 #if !defined(CONFIG_ARCH_RISCV64)
-JARVIS_TEST(elf_load_creates_user_stack) {
+JARVIS_TEST(elf_load_creates_user_stack, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];
@@ -273,7 +273,7 @@ JARVIS_TEST(elf_load_creates_user_stack) {
 #endif
 
 #if !defined(CONFIG_ARCH_RISCV64)
-JARVIS_TEST(elf_load_from_hhdm_buffer) {
+JARVIS_TEST(elf_load_from_hhdm_buffer, "PRE: none | POST: none") {
     elf::ELF64Header hdr{};
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];

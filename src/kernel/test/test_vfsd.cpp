@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: None
 // Expect: vfsd::get_vfsd_pid() returns a non-zero PID
 // Depends: kernel/vfs/vfsd
-JARVIS_TEST(vfsd_boots_and_registers) {
+JARVIS_TEST(vfsd_boots_and_registers, "PRE: vfsd, iocd | POST: none") {
     uint64_t pid = vfsd::get_vfsd_pid();
     JARVIS_ASSERT(pid != 0);
     auto* task = Scheduler::find_task(pid);
@@ -47,7 +47,7 @@ JARVIS_TEST(vfsd_boots_and_registers) {
 // Input: Create kernel task, call sys_open("/dev/null")
 // Expect: Returns valid fd (bypass returns true without IPC)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_open) {
+JARVIS_TEST(vfsd_kernel_bypass_open, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
@@ -73,7 +73,7 @@ JARVIS_TEST(vfsd_kernel_bypass_open) {
 // Input: Open /dev/null, read from it as kernel task
 // Expect: read returns 0 (EOF)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_read) {
+JARVIS_TEST(vfsd_kernel_bypass_read, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
@@ -108,7 +108,7 @@ JARVIS_TEST(vfsd_kernel_bypass_read) {
 // Input: Open /dev/null, write to it as kernel task
 // Expect: write returns count (4)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_write) {
+JARVIS_TEST(vfsd_kernel_bypass_write, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->page_table_ == 0);
@@ -143,7 +143,7 @@ JARVIS_TEST(vfsd_kernel_bypass_write) {
 // Input: Create kernel task, call sys_stat("/dev/null")
 // Expect: Returns 0 (success)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_stat) {
+JARVIS_TEST(vfsd_kernel_bypass_stat, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -170,7 +170,7 @@ JARVIS_TEST(vfsd_kernel_bypass_stat) {
 // Input: Open /dev/null, call fstat on it as kernel task
 // Expect: Returns 0 (success)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_fstat) {
+JARVIS_TEST(vfsd_kernel_bypass_fstat, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -204,7 +204,7 @@ JARVIS_TEST(vfsd_kernel_bypass_fstat) {
 // Input: Create kernel task, call sys_chdir("/")
 // Expect: Returns 0 (success)
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(vfsd_kernel_bypass_chdir) {
+JARVIS_TEST(vfsd_kernel_bypass_chdir, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -229,7 +229,7 @@ JARVIS_TEST(vfsd_kernel_bypass_chdir) {
 // Input: None (stub — requires post-boot sti for userspace IPC)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_read_write) {
+JARVIS_TEST(vfsd_handle_read_write, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -238,7 +238,7 @@ JARVIS_TEST(vfsd_handle_read_write) {
 // Input: Send VFS_OPEN IPC message (requires post-boot sti)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_open) {
+JARVIS_TEST(vfsd_handle_open, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -247,7 +247,7 @@ JARVIS_TEST(vfsd_handle_open) {
 // Input: Send VFS_CLOSE IPC message (requires post-boot sti)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_close) {
+JARVIS_TEST(vfsd_handle_close, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -256,7 +256,7 @@ JARVIS_TEST(vfsd_handle_close) {
 // Input: Send VFS_STAT IPC message (requires post-boot sti)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_resolve) {
+JARVIS_TEST(vfsd_handle_resolve, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -265,7 +265,7 @@ JARVIS_TEST(vfsd_handle_resolve) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_mount_unmount) {
+JARVIS_TEST(vfsd_handle_mount_unmount, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -274,7 +274,7 @@ JARVIS_TEST(vfsd_handle_mount_unmount) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_stat_fstat) {
+JARVIS_TEST(vfsd_handle_stat_fstat, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -283,7 +283,7 @@ JARVIS_TEST(vfsd_handle_stat_fstat) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_handle_chdir_getcwd) {
+JARVIS_TEST(vfsd_handle_chdir_getcwd, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -292,7 +292,7 @@ JARVIS_TEST(vfsd_handle_chdir_getcwd) {
 // Input: Send IPC message with unknown type (requires post-boot sti)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_invalid_message_type_rejected) {
+JARVIS_TEST(vfsd_invalid_message_type_rejected, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -301,7 +301,7 @@ JARVIS_TEST(vfsd_invalid_message_type_rejected) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_malformed_message_rejected) {
+JARVIS_TEST(vfsd_malformed_message_rejected, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -310,7 +310,7 @@ JARVIS_TEST(vfsd_malformed_message_rejected) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_unauthorized_task_rejected) {
+JARVIS_TEST(vfsd_unauthorized_task_rejected, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -319,7 +319,7 @@ JARVIS_TEST(vfsd_unauthorized_task_rejected) {
 // Input: None (stub - requires post-boot sti)
 // Expect: Passes
 // Depends: kernel/task, kernel/ipc, kernel/vfsd
-JARVIS_TEST(vfsd_concurrent_requests) {
+JARVIS_TEST(vfsd_concurrent_requests, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

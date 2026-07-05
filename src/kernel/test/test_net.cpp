@@ -32,7 +32,7 @@ using namespace kernel;
 // Input: Compare various MAC addresses
 // Expect: Equality works, broadcast/null detection works
 // Depends: net::MacAddr
-JARVIS_TEST(net_mac_address_ops) {
+JARVIS_TEST(net_mac_address_ops, "PRE: none | POST: none") {
     net::MacAddr a = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x56}};
     net::MacAddr b = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x56}};
     net::MacAddr c = {{0x52, 0x54, 0x00, 0x12, 0x34, 0x57}};
@@ -50,7 +50,7 @@ JARVIS_TEST(net_mac_address_ops) {
 // Input: net::Ipv4Addr::from_u32(0xC0A80101) -> as_u32()
 // Expect: as_u32 returns 0xC0A80101
 // Depends: net::Ipv4Addr
-JARVIS_TEST(net_ipv4_addr_roundtrip) {
+JARVIS_TEST(net_ipv4_addr_roundtrip, "PRE: none | POST: none") {
     uint32_t ip = 0xC0A80101; // 192.168.1.1
     net::Ipv4Addr addr = net::Ipv4Addr::from_u32(ip);
     JARVIS_ASSERT_EQ(ip, addr.as_u32());
@@ -66,7 +66,7 @@ JARVIS_TEST(net_ipv4_addr_roundtrip) {
 // Input: net::ArpCache
 // Expect: add + lookup returns correct entry, remove removes it, clear clears all
 // Depends: net::ArpCache, net::MacAddr
-JARVIS_TEST(net_arp_cache_ops) {
+JARVIS_TEST(net_arp_cache_ops, "PRE: none | POST: none") {
     net::ArpCache cache;
     net::MacAddr mac = {{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01}};
     uint32_t ip = 0xC0A80164; // 192.168.1.100
@@ -92,7 +92,7 @@ JARVIS_TEST(net_arp_cache_ops) {
 // Input: Build a minimal IPv4 header, compute checksum
 // Expect: Checksum matches known value
 // Depends: net::ipv4_checksum
-JARVIS_TEST(net_ipv4_checksum) {
+JARVIS_TEST(net_ipv4_checksum, "PRE: none | POST: none") {
     net::Ipv4Header hdr = {};
     hdr.ver_ihl      = 0x45;
     hdr.total_length = __builtin_bswap16(20);
@@ -119,7 +119,7 @@ JARVIS_TEST(net_ipv4_checksum) {
 // Input: ETH_TYPE_IPV4 = 0x0800, ETH_TYPE_ARP = 0x0806
 // Expect: After bswap16, the values are in little-endian for x86 memory
 // Depends: __builtin_bswap16
-JARVIS_TEST(net_ether_type_swap) {
+JARVIS_TEST(net_ether_type_swap, "PRE: none | POST: none") {
     uint16_t ipv4_le = __builtin_bswap16(net::ETH_TYPE_IPV4);
     JARVIS_ASSERT_EQ((uint16_t)0x0008, ipv4_le);
     uint16_t arp_le = __builtin_bswap16(net::ETH_TYPE_ARP);

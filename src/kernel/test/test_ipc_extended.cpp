@@ -31,7 +31,7 @@ using namespace kernel;
 // Input: Call send with oversized data
 // Expect: Returns error
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_send_data_size_exceeds_max) {
+JARVIS_TEST(ipc_send_data_size_exceeds_max, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -51,7 +51,7 @@ JARVIS_TEST(ipc_send_data_size_exceeds_max) {
 // Input: Call send with zero data size
 // Expect: Succeeds
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_send_data_size_zero) {
+JARVIS_TEST(ipc_send_data_size_zero, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -78,7 +78,7 @@ JARVIS_TEST(ipc_send_data_size_zero) {
 // Input: Block multiple senders, unblock middle one
 // Expect: Correct sender unblocked, list intact
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_queue_remove_from_mid) {
+JARVIS_TEST(ipc_queue_remove_from_mid, "PRE: none | POST: none") {
     // STUB: IPC only wakes head of blocked senders list (FIFO)
     // No API to remove arbitrary sender from middle
     JARVIS_TEST_PASS();
@@ -89,7 +89,7 @@ JARVIS_TEST(ipc_queue_remove_from_mid) {
 // Input: Block 3 senders, call recv 3 times
 // Expect: Each recv wakes one sender in FIFO order
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_multiple_blocked_senders_wake_one) {
+JARVIS_TEST(ipc_multiple_blocked_senders_wake_one, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -128,7 +128,7 @@ JARVIS_TEST(ipc_multiple_blocked_senders_wake_one) {
 // Input: Send with timeout, no receiver
 // Expect: Returns timeout error after duration
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_send_sync_timeout) {
+JARVIS_TEST(ipc_send_sync_timeout, "PRE: none | POST: none") {
     // STUB: IPC::send_sync has no timeout parameter
     // Implementation always blocks indefinitely
     JARVIS_TEST_PASS();
@@ -140,7 +140,7 @@ JARVIS_TEST(ipc_send_sync_timeout) {
 // Input: Low priority holds mutex, high priority waits
 // Expect: Low priority boosted to high priority
 // Depends: kernel::ipc, Scheduler
-JARVIS_TEST(ipc_priority_inversion) {
+JARVIS_TEST(ipc_priority_inversion, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -177,7 +177,7 @@ JARVIS_TEST(ipc_priority_inversion) {
 // Input: Send 64-byte message, receive
 // Expect: Data matches exactly
 // Depends: kernel::ipc
-JARVIS_TEST(ipc_send_self_max_message_size) {
+JARVIS_TEST(ipc_send_self_max_message_size, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -217,7 +217,7 @@ JARVIS_TEST(ipc_send_self_max_message_size) {
 // Input: Sender allocs buffer, writes IPC_MAX_MSG_SIZE bytes of pattern,
 // embeds handle in Message, sends. Receiver maps at new VA, reads back.
 // Expect: All 64 bytes match. Receiver owns buffer after transfer.
-JARVIS_TEST(ipc_buf_handle_max_size) {
+JARVIS_TEST(ipc_buf_handle_max_size, "PRE: none | POST: none") {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
@@ -277,7 +277,7 @@ JARVIS_TEST(ipc_buf_handle_max_size) {
 // Input: Create high-priority sender (prio 20) waiting for response from
 // low-priority (prio 5) receiver. Fill low's queue so high blocks on send.
 // Expect: Low's priority is boosted to at least high's priority.
-JARVIS_TEST(ipc_priority_inheritance_send) {
+JARVIS_TEST(ipc_priority_inheritance_send, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 

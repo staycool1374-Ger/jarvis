@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Read Timer::ticks()
 // Expect: ticks() > 0
 // Depends: kernel::arch::Timer
-JARVIS_TEST(pit_init_sets_divisor) {
+JARVIS_TEST(pit_init_sets_divisor, "PRE: iocd | POST: none") {
     uint64_t t = arch::Timer::ticks();
     JARVIS_ASSERT_FMT(t > 0, "Timer ticks should be > 0 after boot init, got %lu", t);
     JARVIS_TEST_PASS();
@@ -40,7 +40,7 @@ JARVIS_TEST(pit_init_sets_divisor) {
 // Input: Call ticks() multiple times
 // Expect: Each call returns value >= previous call
 // Depends: kernel::arch::Timer::ticks()
-JARVIS_TEST(pit_ticks_monotonic) {
+JARVIS_TEST(pit_ticks_monotonic, "PRE: iocd | POST: none") {
     uint64_t t1 = arch::Timer::ticks();
     uint64_t t2 = arch::Timer::ticks();
     uint64_t t3 = arch::Timer::ticks();
@@ -54,7 +54,7 @@ JARVIS_TEST(pit_ticks_monotonic) {
 // Input: Set test value via set_ticks_for_test(), then call ticks()
 // Expect: Returns the test value
 // Depends: kernel::arch::Timer::set_ticks_for_test()
-JARVIS_TEST(pit_set_ticks_for_test) {
+JARVIS_TEST(pit_set_ticks_for_test, "PRE: iocd | POST: none") {
     arch::Timer::set_ticks_for_test(42);
     JARVIS_ASSERT_EQ((uint64_t)42, arch::Timer::ticks());
     arch::Timer::set_ticks_for_test(0xDEAD);
@@ -67,7 +67,7 @@ JARVIS_TEST(pit_set_ticks_for_test) {
 // Input: Trigger IRQ0 handler, check tick count before/after
 // Expect: Tick count increases by 1 per IRQ0
 // Depends: kernel::arch::Timer::handle_irq()
-JARVIS_TEST(pit_irq0_handler_increments_ticks) {
+JARVIS_TEST(pit_irq0_handler_increments_ticks, "PRE: iocd | POST: none") {
     arch::Timer::set_ticks_for_test(0);
     JARVIS_ASSERT_EQ((uint64_t)0, arch::Timer::ticks());
     arch::Timer::handle_irq();
@@ -83,7 +83,7 @@ JARVIS_TEST(pit_irq0_handler_increments_ticks) {
 // Input: Call set_frequency with various values
 // Expect: No crash, ticks() still accessible
 // Depends: kernel::arch::Timer::set_frequency()
-JARVIS_TEST(pit_set_frequency_accepts_range) {
+JARVIS_TEST(pit_set_frequency_accepts_range, "PRE: iocd | POST: none") {
     arch::Timer::set_frequency(100);
     JARVIS_ASSERT(arch::Timer::ticks() > 0);
     arch::Timer::set_frequency(500);

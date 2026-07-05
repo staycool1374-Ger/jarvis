@@ -41,7 +41,7 @@ using namespace kernel;
 // use-after-free.
 // Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue,
 // kernel::sync::Notify, kernel::sync::EventGroup
-JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
+JARVIS_TEST(task_exit_cleans_all_ipc_objects, "PRE: none | POST: none") {
     SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->msg_queue != nullptr);
@@ -69,7 +69,7 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects) {
 //        Set receiver to TERMINATED and call cleanup.
 // Expect: Sender is woken up (state becomes READY) and removed from blocked
 // list.
-JARVIS_TEST(task_exit_wakes_blocked_senders) {
+JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
@@ -133,7 +133,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders) {
 // cleanup.
 // Depends: kernel::task::TaskControlBlock, kernel::memory::PMM,
 // kernel::memory::VMM
-JARVIS_TEST(task_exit_frees_page_tables_correctly) {
+JARVIS_TEST(task_exit_frees_page_tables_correctly, "PRE: none | POST: none") {
     SimpleTaskPtr tcb(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->page_table_ != 0);
@@ -156,7 +156,7 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly) {
 // reap_orphans.
 // Expect: Child is reparented to init task, child's resources are cleaned
 // up, no leaks.
-JARVIS_TEST(task_reparent_preserves_resources) {
+JARVIS_TEST(task_reparent_preserves_resources, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -201,7 +201,7 @@ JARVIS_TEST(task_reparent_preserves_resources) {
 // Expect: find_task returns tcb before removal; returns nullptr after
 // removal+delete.
 // Depends: kernel::task::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(task_zombie_state_cleanup) {
+JARVIS_TEST(task_zombie_state_cleanup, "PRE: none | POST: none") {
     TaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
     JARVIS_ASSERT(tcb != nullptr);
     Scheduler::add_task(*tcb);
@@ -225,7 +225,7 @@ JARVIS_TEST(task_zombie_state_cleanup) {
 // waiting_child_pid). Child exits.
 // Expect: Child is NOT reaped while parent is waiting; reaped after parent
 // collects status.
-JARVIS_TEST(scheduler_reap_respects_parent_wait) {
+JARVIS_TEST(scheduler_reap_respects_parent_wait, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -277,7 +277,7 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait) {
 // event_group are initialized.
 // Expect: All three IPC objects are non-null after ELF load
 // (init_task_common was called).
-JARVIS_TEST(elf_load_init_task_common_called) {
+JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
     // Find a test ELF in initrd
     initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
     if (!f.data) f = initrd::find("test_fork.c.elf");
@@ -311,7 +311,7 @@ JARVIS_TEST(elf_load_init_task_common_called) {
 // Input: Create a kernel task, orphan it (parent_id=0), terminate, call
 // reap_orphans().
 // Expect: find_task returns nullptr after reap_orphans cleans it up.
-JARVIS_TEST(lifecycle_zombie_no_waker) {
+JARVIS_TEST(lifecycle_zombie_no_waker, "PRE: none | POST: none") {
     auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
     Scheduler::add_task(*tcb);
@@ -336,7 +336,7 @@ JARVIS_TEST(lifecycle_zombie_no_waker) {
 // Create a receiver, fill its queue so a sender blocks. Terminate receiver
 // and cleanup.
 // Expect: receiver->msg_queue is nullptr after cleanup (no leak).
-JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders) {
+JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders, "PRE: none | POST: none") {
     auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);

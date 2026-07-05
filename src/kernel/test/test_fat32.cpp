@@ -45,7 +45,7 @@ static Fat32Partition mount_fs(kernel::block::MockBlockDevice& dev) {
     return fs;
 }
 
-JARVIS_TEST(fat32_mbr_valid_signature) {
+JARVIS_TEST(fat32_mbr_valid_signature, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     uint8_t mbr[SECTOR_SIZE];
     JARVIS_ASSERT(dev.read_sector(0, mbr));
@@ -53,20 +53,20 @@ JARVIS_TEST(fat32_mbr_valid_signature) {
     JARVIS_ASSERT(mbr[511] == 0xAA);
 }
 
-JARVIS_TEST(fat32_mbr_parse_partition) {
+JARVIS_TEST(fat32_mbr_parse_partition, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     uint64_t part_lba = 0;
     JARVIS_ASSERT(find_fat32_in_mbr(dev, part_lba));
     JARVIS_ASSERT(part_lba > 0);
 }
 
-JARVIS_TEST(fat32_mbr_no_partition_table) {
+JARVIS_TEST(fat32_mbr_no_partition_table, "PRE: vfsd, iocd | POST: none") {
     auto dev = kernel::block::MockBlockDevice(1);
     uint64_t part_lba = 0;
     JARVIS_ASSERT(!find_fat32_in_mbr(dev, part_lba));
 }
 
-JARVIS_TEST(fat32_bpb_valid_signature) {
+JARVIS_TEST(fat32_bpb_valid_signature, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     uint64_t part_lba = 0;
     JARVIS_ASSERT(find_fat32_in_mbr(dev, part_lba));
@@ -76,13 +76,13 @@ JARVIS_TEST(fat32_bpb_valid_signature) {
     JARVIS_ASSERT(bpb_sector[511] == 0xAA);
 }
 
-JARVIS_TEST(fat32_bpb_bytes_per_sector) {
+JARVIS_TEST(fat32_bpb_bytes_per_sector, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().bytes_per_sector == 512);
 }
 
-JARVIS_TEST(fat32_bpb_sectors_per_cluster) {
+JARVIS_TEST(fat32_bpb_sectors_per_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     uint8_t spc = fs.bpb().sectors_per_cluster;
@@ -90,37 +90,37 @@ JARVIS_TEST(fat32_bpb_sectors_per_cluster) {
     JARVIS_ASSERT((spc & (spc - 1)) == 0);
 }
 
-JARVIS_TEST(fat32_bpb_reserved_sectors) {
+JARVIS_TEST(fat32_bpb_reserved_sectors, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().reserved_sectors > 0);
 }
 
-JARVIS_TEST(fat32_bpb_fat_count) {
+JARVIS_TEST(fat32_bpb_fat_count, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().fat_count == 2);
 }
 
-JARVIS_TEST(fat32_bpb_root_cluster) {
+JARVIS_TEST(fat32_bpb_root_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().root_cluster >= 2);
 }
 
-JARVIS_TEST(fat32_bpb_fat_size) {
+JARVIS_TEST(fat32_bpb_fat_size, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().fat_size > 0);
 }
 
-JARVIS_TEST(fat32_bpb_total_sectors) {
+JARVIS_TEST(fat32_bpb_total_sectors, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.bpb().total_sectors > 0);
 }
 
-JARVIS_TEST(fat32_fat_read_cluster) {
+JARVIS_TEST(fat32_fat_read_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     uint32_t next = 0;
@@ -128,23 +128,23 @@ JARVIS_TEST(fat32_fat_read_cluster) {
     JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-JARVIS_TEST(fat32_fat_eof_marker) {
+JARVIS_TEST(fat32_fat_eof_marker, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFF8));
     JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFFF));
     JARVIS_ASSERT(!Fat32Partition::is_eof(0x0FFFFFF7));
 }
 
-JARVIS_TEST(fat32_fat_free_cluster) {
+JARVIS_TEST(fat32_fat_free_cluster, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(Fat32Partition::is_free(0));
     JARVIS_ASSERT(!Fat32Partition::is_free(1));
 }
 
-JARVIS_TEST(fat32_fat_bad_cluster) {
+JARVIS_TEST(fat32_fat_bad_cluster, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(Fat32Partition::is_bad(0x0FFFFFF7));
     JARVIS_ASSERT(!Fat32Partition::is_bad(0x0FFFFFF8));
 }
 
-JARVIS_TEST(fat32_dir_root_entries) {
+JARVIS_TEST(fat32_dir_root_entries, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
 
@@ -163,7 +163,7 @@ JARVIS_TEST(fat32_dir_root_entries) {
     JARVIS_ASSERT(found_subdir);
 }
 
-JARVIS_TEST(fat32_dir_short_name) {
+JARVIS_TEST(fat32_dir_short_name, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -171,7 +171,7 @@ JARVIS_TEST(fat32_dir_short_name) {
     JARVIS_ASSERT(strcmp(entry.name, "MULTI.TXT") == 0);
 }
 
-JARVIS_TEST(fat32_dir_file_size) {
+JARVIS_TEST(fat32_dir_file_size, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -179,7 +179,7 @@ JARVIS_TEST(fat32_dir_file_size) {
     JARVIS_ASSERT(entry.size > 0);
 }
 
-JARVIS_TEST(fat32_dir_file_cluster) {
+JARVIS_TEST(fat32_dir_file_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -187,15 +187,15 @@ JARVIS_TEST(fat32_dir_file_cluster) {
     JARVIS_ASSERT(entry.cluster >= 2);
 }
 
-JARVIS_TEST(fat32_dir_attribute_readonly) {
+JARVIS_TEST(fat32_dir_attribute_readonly, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT((ATTR_READ_ONLY & 0x01) != 0);
 }
 
-JARVIS_TEST(fat32_dir_attribute_hidden) {
+JARVIS_TEST(fat32_dir_attribute_hidden, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT((ATTR_HIDDEN & 0x02) != 0);
 }
 
-JARVIS_TEST(fat32_dir_attribute_directory) {
+JARVIS_TEST(fat32_dir_attribute_directory, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -205,15 +205,15 @@ JARVIS_TEST(fat32_dir_attribute_directory) {
     JARVIS_ASSERT(!entry.is_directory);
 }
 
-JARVIS_TEST(fat32_dir_volume_label) {
+JARVIS_TEST(fat32_dir_volume_label, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(ATTR_VOLUME_ID == 0x08);
 }
 
-JARVIS_TEST(fat32_dir_lfn_skipped) {
+JARVIS_TEST(fat32_dir_lfn_skipped, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(ATTR_LFN == 0x0F);
 }
 
-JARVIS_TEST(fat32_chain_traverse_single) {
+JARVIS_TEST(fat32_chain_traverse_single, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -223,7 +223,7 @@ JARVIS_TEST(fat32_chain_traverse_single) {
     JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-JARVIS_TEST(fat32_chain_traverse_multi) {
+JARVIS_TEST(fat32_chain_traverse_multi, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -236,7 +236,7 @@ JARVIS_TEST(fat32_chain_traverse_multi) {
     JARVIS_ASSERT(Fat32Partition::is_eof(next));
 }
 
-JARVIS_TEST(fat32_read_file) {
+JARVIS_TEST(fat32_read_file, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry entry = {};
@@ -251,7 +251,7 @@ JARVIS_TEST(fat32_read_file) {
     JARVIS_ASSERT(memcmp(buf, "Hello, World!\n", 14) == 0);
 }
 
-JARVIS_TEST(fat32_lookup_subdir) {
+JARVIS_TEST(fat32_lookup_subdir, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_dev();
     auto fs = mount_fs(dev);
     DirEntry sub = {};
@@ -270,11 +270,11 @@ JARVIS_TEST(fat32_lookup_subdir) {
     JARVIS_ASSERT(memcmp(buf, "I am in a subdirectory.\n", 24) == 0);
 }
 
-JARVIS_TEST(fat32_chain_corrupt_loop) {
+JARVIS_TEST(fat32_chain_corrupt_loop, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(Fat32Partition::is_eof(0x0FFFFFFF));
 }
 
-JARVIS_TEST(fat32_chain_corrupt_eof_missing) {
+JARVIS_TEST(fat32_chain_corrupt_eof_missing, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(!Fat32Partition::is_eof(3));
 }
 
@@ -296,7 +296,7 @@ static kernel::block::MockBlockDevice make_writable_dev() {
 // Input: write_fat_entry(10, 0x0FFFFFF8), read_fat_entry(10)
 // Expect: read back value matches written EOF marker
 // Depends: kernel::fat32::Fat32Partition::write_fat_entry
-JARVIS_TEST(fat32_write_fat_entry) {
+JARVIS_TEST(fat32_write_fat_entry, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint32_t next = 0;
@@ -310,7 +310,7 @@ JARVIS_TEST(fat32_write_fat_entry) {
 // Input: write_cluster(3, test_data), read_cluster(3, buf)
 // Expect: read back matches written data
 // Depends: kernel::fat32::Fat32Partition::write_cluster
-JARVIS_TEST(fat32_write_cluster) {
+JARVIS_TEST(fat32_write_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint64_t cluster_bytes = static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
@@ -330,7 +330,7 @@ JARVIS_TEST(fat32_write_cluster) {
 // Input: clear_cluster(4)
 // Expect: read_cluster returns all-zero data
 // Depends: kernel::fat32::Fat32Partition::clear_cluster
-JARVIS_TEST(fat32_clear_cluster) {
+JARVIS_TEST(fat32_clear_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.clear_cluster(4));
@@ -348,7 +348,7 @@ JARVIS_TEST(fat32_clear_cluster) {
 // Input: find_free_cluster(2, out)
 // Expect: Returns a valid free cluster >= 2
 // Depends: kernel::fat32::Fat32Partition::find_free_cluster
-JARVIS_TEST(fat32_find_free_cluster) {
+JARVIS_TEST(fat32_find_free_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint32_t free_cl = 0;
@@ -365,7 +365,7 @@ JARVIS_TEST(fat32_find_free_cluster) {
 // Expect: New cluster allocated, FAT entry 2 points to new cluster,
 //         new cluster marked EOF
 // Depends: kernel::fat32::Fat32Partition::alloc_cluster
-JARVIS_TEST(fat32_alloc_cluster) {
+JARVIS_TEST(fat32_alloc_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint32_t new_cl = 0;
@@ -384,7 +384,7 @@ JARVIS_TEST(fat32_alloc_cluster) {
 // Input: alloc_cluster chain, free_cluster_chain
 // Expect: FAT entries become free (0)
 // Depends: kernel::fat32::free_cluster_chain
-JARVIS_TEST(fat32_free_cluster_chain) {
+JARVIS_TEST(fat32_free_cluster_chain, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint32_t c1 = 0, c2 = 0;
@@ -405,7 +405,7 @@ JARVIS_TEST(fat32_free_cluster_chain) {
 // Input: name_to_short_name("README.TXT", out)
 // Expect: Output matches "README TXT" padded
 // Depends: kernel::fat32::name_to_short_name
-JARVIS_TEST(fat32_name_to_short_name) {
+JARVIS_TEST(fat32_name_to_short_name, "PRE: vfsd, iocd | POST: none") {
     uint8_t sn[11];
     name_to_short_name("HELLO.TXT", sn);
     JARVIS_ASSERT(memcmp(sn, "HELLO   TXT", 11) == 0);
@@ -418,7 +418,7 @@ JARVIS_TEST(fat32_name_to_short_name) {
 // Input: add_dir_entry to root, read_dir_entry
 // Expect: New entry found with correct name and attributes
 // Depends: kernel::fat32::add_dir_entry, kernel::fat32::read_dir_entry
-JARVIS_TEST(fat32_add_dir_entry) {
+JARVIS_TEST(fat32_add_dir_entry, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     DirEntryRaw raw;
@@ -444,7 +444,7 @@ JARVIS_TEST(fat32_add_dir_entry) {
 // Input: remove_dir_entry for "HELLO.TXT", read_dir_entry
 // Expect: Entry no longer found in directory listing
 // Depends: kernel::fat32::remove_dir_entry
-JARVIS_TEST(fat32_remove_dir_entry) {
+JARVIS_TEST(fat32_remove_dir_entry, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(remove_dir_entry(fs, fs.bpb().root_cluster, "HELLO.TXT"));
@@ -466,7 +466,7 @@ JARVIS_TEST(fat32_remove_dir_entry) {
 // Input: alloc_cluster, add_dir_entry with ATTR_DIRECTORY
 // Expect: lookup_in_dir finds new directory
 // Depends: kernel::fat32::Fat32Partition, kernel::fat32::add_dir_entry
-JARVIS_TEST(fat32_mkdir_roundtrip) {
+JARVIS_TEST(fat32_mkdir_roundtrip, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     uint32_t dir_cl = 0;

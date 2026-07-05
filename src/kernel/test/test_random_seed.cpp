@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Check CPUID RDRAND/RDSEED, then generate random data
 // Expect: random_fill produces non-zero output even without hardware RNG
 // Depends: kernel::arch::has_rdrand, kernel::arch::has_rdseed, kernel::random_fill
-JARVIS_TEST(random_fallback_independent) {
+JARVIS_TEST(random_fallback_independent, "PRE: none | POST: none") {
     bool has_rr = arch::has_rdrand();
     bool has_rs = arch::has_rdseed();
     Logger::info("RNG sources: RDSEED=%s RDRAND=%s",
@@ -52,7 +52,7 @@ JARVIS_TEST(random_fallback_independent) {
 // Input: generate 256 bytes (4 ChaCha20 blocks), verify all non-zero
 // Expect: All blocks produce non-zero output
 // Depends: kernel::random_fill
-JARVIS_TEST(random_multi_block) {
+JARVIS_TEST(random_multi_block, "PRE: none | POST: none") {
     uint8_t buf[256];
     random_fill(buf, sizeof(buf));
 

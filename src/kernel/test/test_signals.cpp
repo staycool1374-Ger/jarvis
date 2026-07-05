@@ -33,7 +33,7 @@ static void test_signal_handler(int sig);
 // Expect: JARVIS_ASSERT_EQ checks exception 0 -> SIGFPE/TERMINATE, 6 ->
 // SIGILL, 13/14 -> SIGSEGV, 16 -> SIGFPE.
 // Depends: kernel::signal, kernel::exception_to_signal
-JARVIS_TEST(signal_exception_to_signal_mapping) {
+JARVIS_TEST(signal_exception_to_signal_mapping, "PRE: none | POST: none") {
     auto map0 = exception_to_signal(0);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(Signal::SIGFPE), static_cast<uint64_t>(map0.signal));
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(SignalAction::TERMINATE), static_cast<uint64_t>(map0.action));
@@ -58,7 +58,7 @@ JARVIS_TEST(signal_exception_to_signal_mapping) {
 // Input: Calls signal_is_fatal on SIGKILL, SIGSEGV, SIGFPE, SIGILL, SIGTERM.
 // Expect: JARVIS_ASSERT checks SIGKILL is fatal; others are not.
 // Depends: kernel::signal, kernel::signal_is_fatal
-JARVIS_TEST(signal_is_fatal_check) {
+JARVIS_TEST(signal_is_fatal_check, "PRE: none | POST: none") {
     JARVIS_ASSERT(signal_is_fatal(static_cast<uint64_t>(Signal::SIGKILL)));
     JARVIS_ASSERT(!signal_is_fatal(static_cast<uint64_t>(Signal::SIGSEGV)));
     JARVIS_ASSERT(!signal_is_fatal(static_cast<uint64_t>(Signal::SIGFPE)));
@@ -74,7 +74,7 @@ JARVIS_TEST(signal_is_fatal_check) {
 // Expect: JARVIS_ASSERT_EQ checks SIGSEGV -> TERMINATE, SIGCHLD -> IGNORE,
 // SIGKILL -> TERMINATE.
 // Depends: kernel::signal, kernel::default_signal_action
-JARVIS_TEST(signal_default_action) {
+JARVIS_TEST(signal_default_action, "PRE: none | POST: none") {
     auto term = default_signal_action(static_cast<uint64_t>(Signal::SIGSEGV));
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(SignalAction::TERMINATE), static_cast<uint64_t>(term));
 
@@ -94,7 +94,7 @@ JARVIS_TEST(signal_default_action) {
 // Expect: JARVIS_ASSERT and JARVIS_ASSERT_EQ verify handler registration
 // state transitions correctly.
 // Depends: kernel::task::Scheduler, kernel::signal
-JARVIS_TEST(signal_handler_tcb_registration) {
+JARVIS_TEST(signal_handler_tcb_registration, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -118,7 +118,7 @@ JARVIS_TEST(signal_handler_tcb_registration) {
 // Expect: JARVIS_ASSERT checks has_signal_handler returns false for both
 // out-of-bounds indices.
 // Depends: kernel::task::Scheduler, kernel::signal
-JARVIS_TEST(signal_handler_out_of_bounds) {
+JARVIS_TEST(signal_handler_out_of_bounds, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -137,7 +137,7 @@ JARVIS_TEST(signal_handler_out_of_bounds) {
 // Expect: JARVIS_ASSERT_EQ checks pending_signals starts at 0, has the bit
 // after set, and returns to 0 after clear.
 // Depends: kernel::task::Scheduler, kernel::signal
-JARVIS_TEST(signal_pending_bitmask) {
+JARVIS_TEST(signal_pending_bitmask, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -160,7 +160,7 @@ JARVIS_TEST(signal_pending_bitmask) {
 // pending_signals has SIGUSR1 bit set.
 // Depends: kernel::syscall::Syscall (KILL), kernel::task::Scheduler,
 // kernel::signal
-JARVIS_TEST(signal_kill_delivers) {
+JARVIS_TEST(signal_kill_delivers, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -182,7 +182,7 @@ JARVIS_TEST(signal_kill_delivers) {
 // Expect: JARVIS_ASSERT checks has_signal_handler returns true; pending bit
 // is set.
 // Depends: kernel::task::Scheduler, kernel::signal
-JARVIS_TEST(signal_handler_invoked) {
+JARVIS_TEST(signal_handler_invoked, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 

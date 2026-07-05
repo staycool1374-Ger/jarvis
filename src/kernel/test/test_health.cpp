@@ -27,7 +27,7 @@ using namespace kernel;
 // Expect: Returns health metrics struct with deadlock_count,
 // recovered_count, watchdog_firings
 // Depends: SYS_HEALTH_STATUS syscall implementation
-JARVIS_TEST(health_syscall_returns_metrics) {
+JARVIS_TEST(health_syscall_returns_metrics, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -36,7 +36,7 @@ JARVIS_TEST(health_syscall_returns_metrics) {
 // Input: Query health status
 // Expect: Struct has deadlock_count, recovered_count, watchdog_firings fields
 // Depends: Health status implementation
-JARVIS_TEST(health_metrics_fields) {
+JARVIS_TEST(health_metrics_fields, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -45,7 +45,7 @@ JARVIS_TEST(health_metrics_fields) {
 // Input: Trigger multiple deadlocks/recoveries, query health each time
 // Expect: Counters never decrease
 // Depends: Health status implementation
-JARVIS_TEST(health_counters_monotonic) {
+JARVIS_TEST(health_counters_monotonic, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -54,7 +54,7 @@ JARVIS_TEST(health_counters_monotonic) {
 // Input: Call SYS_HEALTH_STATUS from unprivileged task
 // Expect: Returns EACCES
 // Depends: SYS_HEALTH_STATUS syscall, capability check
-JARVIS_TEST(health_privileged_only) {
+JARVIS_TEST(health_privileged_only, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -63,7 +63,7 @@ JARVIS_TEST(health_privileged_only) {
 // Input: Read /proc/health
 // Expect: Human-readable output matching health metrics
 // Depends: VFS /proc filesystem, health status implementation
-JARVIS_TEST(health_proc_filesystem) {
+JARVIS_TEST(health_proc_filesystem, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

@@ -55,7 +55,7 @@ static BenchResult measure(F fn) {
 // Input: lock() then unlock() in a tight loop, measure via RDTSC.
 // Expect: Average latency measured.
 // Depends: SpinLock, arch::rdtsc
-JARVIS_TEST(bench_spinlock_acquire_release) {
+JARVIS_TEST(bench_spinlock_acquire_release, "PRE: none | POST: none") {
     sync::SpinLock lock;
     auto r = measure([&lock]() {
         SpinLockGuard<sync::SpinLock> g(lock);
@@ -71,7 +71,7 @@ JARVIS_TEST(bench_spinlock_acquire_release) {
 // Input: lock() then unlock() in a tight loop, measure via RDTSC.
 // Expect: Average latency measured (mutex includes blocking path).
 // Depends: Mutex, arch::rdtsc
-JARVIS_TEST(bench_mutex_acquire_release) {
+JARVIS_TEST(bench_mutex_acquire_release, "PRE: none | POST: none") {
     sync::Mutex mtx;
     auto r = measure([&mtx]() {
         mtx.lock();
@@ -88,7 +88,7 @@ JARVIS_TEST(bench_mutex_acquire_release) {
 // Input: try_push then try_pop in a tight loop, measure via RDTSC.
 // Expect: Average latency measured.
 // Depends: SPSCRing, arch::rdtsc
-JARVIS_TEST(bench_spsc_push_pop) {
+JARVIS_TEST(bench_spsc_push_pop, "PRE: none | POST: none") {
     SPSCRing<uint64_t, 256> ring;
     auto r = measure([&ring]() {
         ring.try_push(42);

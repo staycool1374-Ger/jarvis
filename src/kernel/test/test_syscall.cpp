@@ -53,7 +53,7 @@ struct Utsname {
 // Expect: Both calls return 0; alarm_armed transitions true then false;
 // alarm_ticks == ticks() + 1.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
-JARVIS_TEST(syscall_alarm_basic) {
+JARVIS_TEST(syscall_alarm_basic, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -76,7 +76,7 @@ JARVIS_TEST(syscall_alarm_basic) {
 // Input: GETTOD syscall with pointer to a Timeval struct.
 // Expect: Returns 0; tv_sec between year 2020 and 2200; tv_usec < 1000000.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_gettod) {
+JARVIS_TEST(syscall_gettod, "PRE: none | POST: none") {
     Timeval tv{};
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETTOD),
     reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
@@ -95,7 +95,7 @@ JARVIS_TEST(syscall_gettod) {
 // Expect: Returns 0; sysname is "Jarvis"; machine is "x86_64";
 // release/version/machine non-empty.
 // Depends: kernel::Syscall, string
-JARVIS_TEST(syscall_uname) {
+JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
     Utsname uts{};
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::UNAME),
     reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
@@ -118,7 +118,7 @@ JARVIS_TEST(syscall_uname) {
 // arch::Timer::set_ticks_for_test().
 // Expect: alarm_armed remains true at tick start+1; passes on reaching start+2.
 // Depends: kernel::Scheduler, kernel::arch::Timer
-JARVIS_TEST(alarm_fires_after_ticks) {
+JARVIS_TEST(alarm_fires_after_ticks, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -140,7 +140,7 @@ JARVIS_TEST(alarm_fires_after_ticks) {
 // Expect: Returns 0 both calls; alarm_armed true then false; alarm_ticks
 // within +/-10 of ticks() + 500.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
-JARVIS_TEST(syscall_alarm_subsecond) {
+JARVIS_TEST(syscall_alarm_subsecond, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
@@ -163,7 +163,7 @@ JARVIS_TEST(syscall_alarm_subsecond) {
 // Input: GETPID syscall.
 // Expect: Return value equals Scheduler::current_task()->id.
 // Depends: kernel::Syscall, kernel::Scheduler
-JARVIS_TEST(syscall_dispatch_getpid) {
+JARVIS_TEST(syscall_dispatch_getpid, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0,
     nullptr);
     auto* cur = Scheduler::current_task();
@@ -178,7 +178,7 @@ JARVIS_TEST(syscall_dispatch_getpid) {
 // Input: Syscall::handle with numbers MAX_SYSCALL, MAX_SYSCALL+1, and 9999.
 // Expect: All three return static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
+JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0,
     nullptr);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
@@ -198,7 +198,7 @@ JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one) {
 // Expect: Return value is non-zero or any value (assert only checks it
 // doesn't crash).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_get_ticks) {
+JARVIS_TEST(syscall_dispatch_get_ticks, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0,
     nullptr);
     JARVIS_ASSERT(ret > 0 || true);
@@ -210,7 +210,7 @@ JARVIS_TEST(syscall_dispatch_get_ticks) {
 // Input: YIELD syscall.
 // Expect: Returns 0.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_yield) {
+JARVIS_TEST(syscall_dispatch_yield, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::YIELD), 0, 0, 0, 0,
     nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
@@ -222,7 +222,7 @@ JARVIS_TEST(syscall_dispatch_yield) {
 // Input: Verify SyscallNumber::REBOOT and table entry.
 // Expect: Enum valid, table entry non-null (actual reboot skipped in test).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_reboot) {
+JARVIS_TEST(syscall_dispatch_reboot, "PRE: none | POST: none") {
     uint64_t num = static_cast<uint64_t>(SyscallNumber::REBOOT);
     JARVIS_ASSERT_EQ(49ULL, num);
     JARVIS_ASSERT(num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL));
@@ -234,7 +234,7 @@ JARVIS_TEST(syscall_dispatch_reboot) {
 // Input: Verify SyscallNumber::HALT and table entry.
 // Expect: Enum valid, table entry non-null (actual halt skipped in test).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_halt) {
+JARVIS_TEST(syscall_dispatch_halt, "PRE: none | POST: none") {
     uint64_t num = static_cast<uint64_t>(SyscallNumber::HALT);
     JARVIS_ASSERT_EQ(50ULL, num);
     JARVIS_ASSERT(num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL));
@@ -246,7 +246,7 @@ JARVIS_TEST(syscall_dispatch_halt) {
 // Input: EXIT syscall.
 // Expect: Returns 0 (kernel test framework keeps the task alive).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_exit_returns_zero) {
+JARVIS_TEST(syscall_dispatch_exit_returns_zero, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::EXIT), 0, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
     JARVIS_TEST_PASS();
@@ -257,7 +257,7 @@ JARVIS_TEST(syscall_dispatch_exit_returns_zero) {
 // Input: PRINT syscall with all zero arguments.
 // Expect: Returns 0.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_dispatch_print_noop) {
+JARVIS_TEST(syscall_dispatch_print_noop, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PRINT), 0, 0, 0, 0,
     nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
@@ -272,7 +272,7 @@ JARVIS_TEST(syscall_dispatch_print_noop) {
 // returns 0.
 // Depends: kernel::Syscall, kernel::Scheduler,
 // kernel::task::TaskControlBlock, kernel::vfs
-JARVIS_TEST(syscall_open_read_close) {
+JARVIS_TEST(syscall_open_read_close, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -310,7 +310,7 @@ JARVIS_TEST(syscall_open_read_close) {
 // returns 0.
 // Depends: kernel::Syscall, kernel::Scheduler,
 // kernel::task::TaskControlBlock, kernel::vfs
-JARVIS_TEST(syscall_write_fstat) {
+JARVIS_TEST(syscall_write_fstat, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -350,7 +350,7 @@ JARVIS_TEST(syscall_write_fstat) {
 // Input: FORK syscall.
 // Expect: Return value is 0 or positive.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_fork_returns_pid) {
+JARVIS_TEST(syscall_fork_returns_pid, "PRE: none | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::FORK), 0, 0, 0, 0, nullptr);
     JARVIS_ASSERT(ret == 0 || ret > 0);
     JARVIS_TEST_PASS();
@@ -361,7 +361,7 @@ JARVIS_TEST(syscall_fork_returns_pid) {
 // Input: EXEC with path="/nonexistent", argv={path, nullptr}, envp={nullptr}.
 // Expect: Returns static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_exec_nonexistent) {
+JARVIS_TEST(syscall_exec_nonexistent, "PRE: none | POST: none") {
     const char* path = "/nonexistent";
     const char* argv[] = {path, nullptr};
     const char* envp[] = {nullptr};
@@ -382,7 +382,7 @@ JARVIS_TEST(syscall_exec_nonexistent) {
 // Expect: PIPE returns 0 with differing non-negative fds; WRITE returns 4;
 // READ returns 4 with content matching "pipe".
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(syscall_pipe_read_write) {
+JARVIS_TEST(syscall_pipe_read_write, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -429,7 +429,7 @@ JARVIS_TEST(syscall_pipe_read_write) {
 // Expect: SIGNAL returns 0; handler is registered; SIGRETURN not tested
 // (needs populated user stack).
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(syscall_signal_sigreturn) {
+JARVIS_TEST(syscall_signal_sigreturn, "PRE: none | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -460,7 +460,7 @@ JARVIS_TEST(syscall_signal_sigreturn) {
 // afterward.
 // Depends: kernel::Syscall, kernel::Scheduler,
 // kernel::task::TaskControlBlock, kernel::ipc::MessageQueue
-JARVIS_TEST(syscall_send_recv) {
+JARVIS_TEST(syscall_send_recv, "PRE: none | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     JARVIS_ASSERT(test_task->msg_queue != nullptr);
@@ -492,7 +492,7 @@ JARVIS_TEST(syscall_send_recv) {
 // Input: CHDIR path="/"; STAT path="/" with 256-byte output buffer.
 // Expect: Both return 0.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_chdir_getcwd) {
+JARVIS_TEST(syscall_chdir_getcwd, "PRE: vfsd, iocd | POST: none") {
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::CHDIR),
                                    reinterpret_cast<uint64_t>("/"), 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
@@ -510,7 +510,7 @@ JARVIS_TEST(syscall_chdir_getcwd) {
 // Input: MKDIR "/mnt/testdir" mode 0755, then OPENDIR/READDIR to verify.
 // Expect: MKDIR returns 0; READDIR finds "testdir"; RMDIR cleans up.
 // Depends: kernel::Syscall, kernel::vfs::Fat32Partition
-JARVIS_TEST(syscall_mkdir_rmdir) {
+JARVIS_TEST(syscall_mkdir_rmdir, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -560,7 +560,7 @@ JARVIS_TEST(syscall_mkdir_rmdir) {
 // Input: MKDIR a directory, then UNLINK it.
 // Expect: UNLINK returns 0; subsequent RESOLVE fails.
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_unlink) {
+JARVIS_TEST(syscall_unlink, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
@@ -597,7 +597,7 @@ JARVIS_TEST(syscall_unlink) {
 // Input: MKDIR parent, MKDIR child, then RMDIR parent (should fail).
 // Expect: RMDIR on parent fails (non-empty).
 // Depends: kernel::Syscall
-JARVIS_TEST(syscall_rmdir_nonempty_fails) {
+JARVIS_TEST(syscall_rmdir_nonempty_fails, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);

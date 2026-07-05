@@ -31,7 +31,7 @@
 
 using namespace kernel;
 
-JARVIS_TEST(ipc_receive_was_blocked_restores_state) {
+JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -66,7 +66,7 @@ JARVIS_TEST(ipc_receive_was_blocked_restores_state) {
 // Input: Create sender and receiver tasks. Sender calls send_sync, receiver replies.
 // Expect: was_blocked flag is set during blocking, restored to READY after reply.
 // Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
-JARVIS_TEST(ipc_send_sync_was_blocked_restores_state) {
+JARVIS_TEST(ipc_send_sync_was_blocked_restores_state, "PRE: none | POST: none") {
     static uint64_t g_receiver_id = 0;
 
     auto* receiver = TaskControlBlock::create([]() {
@@ -130,7 +130,7 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state) {
 // Input: Create userspace task (page_table_ != null), send message to itself, receive.
 // Expect: sti/hlt/cli is emitted during blocking (internal to sys_receive).
 // Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
-JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli) {
+JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -177,7 +177,7 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli) {
 // Input: Create kernel task (page_table_ = null), send message to itself, receive.
 // Expect: sti/hlt/cli is NOT emitted during blocking (internal to sys_receive).
 // Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
-JARVIS_TEST(ipc_kernel_block_skips_sti) {
+JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);

@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: Create parent and child via TaskControlBlock::create()
 // Expect: parent->num_children == 1, child is in parent's child list, child->parent_id == parent->id
 // Depends: test, scheduler
-JARVIS_TEST(process_add_child) {
+JARVIS_TEST(process_add_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -57,7 +57,7 @@ JARVIS_TEST(process_add_child) {
 // Input: PID 999999 (non-existent)
 // Expect: JARVIS_ASSERT checks that find_child returns nullptr
 // Depends: test, scheduler
-JARVIS_TEST(process_find_child) {
+JARVIS_TEST(process_find_child, "PRE: none | POST: none") {
     auto* parent = Scheduler::current_task();
     JARVIS_ASSERT(parent != nullptr);
 
@@ -72,7 +72,7 @@ JARVIS_TEST(process_find_child) {
 // Input: Current task from Scheduler::current_task()
 // Expect: JARVIS_ASSERT checks parent non-null and num_children is accessible
 // Depends: test, scheduler
-JARVIS_TEST(process_num_children_count) {
+JARVIS_TEST(process_num_children_count, "PRE: none | POST: none") {
     auto* parent = Scheduler::current_task();
     JARVIS_ASSERT(parent != nullptr);
 
@@ -90,7 +90,7 @@ JARVIS_TEST(process_num_children_count) {
 // non-child.
 // Expect: num_children remains unchanged.
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_child_non_child_no_underflow) {
+JARVIS_TEST(process_remove_child_non_child_no_underflow, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -132,7 +132,7 @@ JARVIS_TEST(process_remove_child_non_child_no_underflow) {
 // Input: Parent with 3 children, search for middle child by PID
 // Expect: find_child returns correct child pointer
 // Depends: test, scheduler
-JARVIS_TEST(process_find_child_multiple) {
+JARVIS_TEST(process_find_child_multiple, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -175,7 +175,7 @@ JARVIS_TEST(process_find_child_multiple) {
 // Input: Parent with 3 children, remove the first added (which is head)
 // Expect: num_children decremented, remaining children linked correctly
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_first_child) {
+JARVIS_TEST(process_remove_first_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -219,7 +219,7 @@ JARVIS_TEST(process_remove_first_child) {
 // Input: Parent with 3 children, remove the middle one
 // Expect: num_children decremented, head and tail linked correctly
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_middle_child) {
+JARVIS_TEST(process_remove_middle_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -262,7 +262,7 @@ JARVIS_TEST(process_remove_middle_child) {
 // Input: Parent with 3 children, remove the last added (tail)
 // Expect: num_children decremented, remaining children linked correctly
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_last_child) {
+JARVIS_TEST(process_remove_last_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -304,7 +304,7 @@ JARVIS_TEST(process_remove_last_child) {
 // Input: Create user parent, set as current, clone
 // Expect: parent->num_children == 1, child is in parent's list, child->parent_id == parent->id
 // Depends: test, scheduler, task
-JARVIS_TEST(process_clone_adds_child) {
+JARVIS_TEST(process_clone_adds_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -342,7 +342,7 @@ JARVIS_TEST(process_clone_adds_child) {
 // Input: Parent with child, call cleanup() on child
 // Expect: parent->num_children == 0, parent->first_child == nullptr
 // Depends: test, scheduler, task
-JARVIS_TEST(process_cleanup_removes_from_parent) {
+JARVIS_TEST(process_cleanup_removes_from_parent, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -371,7 +371,7 @@ JARVIS_TEST(process_cleanup_removes_from_parent) {
 // Input: Parent with one child, remove it, then try to remove again
 // Expect: num_children stays at 0
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_child_twice_no_underflow) {
+JARVIS_TEST(process_remove_child_twice_no_underflow, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 
@@ -400,7 +400,7 @@ JARVIS_TEST(process_remove_child_twice_no_underflow) {
 // Input: Parent with child, remove child
 // Expect: child->parent_id == 0
 // Depends: test, scheduler
-JARVIS_TEST(process_remove_child_clears_parent_id) {
+JARVIS_TEST(process_remove_child_clears_parent_id, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
 

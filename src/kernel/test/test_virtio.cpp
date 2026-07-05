@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: arch::virtio_find_device(VIRTIO_DEVICE_BLOCK, transport)
 // Expect: Returns false (no virtio device)
 // Depends: arch::pci_scan_all, arch::virtio_find_device
-JARVIS_TEST(virtio_no_device_found) {
+JARVIS_TEST(virtio_no_device_found, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_BLOCK, transport);
     JARVIS_ASSERT(!found);
@@ -46,7 +46,7 @@ JARVIS_TEST(virtio_no_device_found) {
 // Input: arch::pci_read_device_info for 00:00.0, then check
 // Expect: virtio_is_virtio_device returns false
 // Depends: arch::pci_read_device_info, arch::virtio_is_virtio_device
-JARVIS_TEST(virtio_not_virtio_device) {
+JARVIS_TEST(virtio_not_virtio_device, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {0, 0, 0};
     arch::PciDeviceInfo info = arch::pci_read_device_info(bdf);
     JARVIS_ASSERT(!arch::virtio_is_virtio_device(info));
@@ -59,7 +59,7 @@ JARVIS_TEST(virtio_not_virtio_device) {
 // Input: kernel::block::VirtioBlkDriver::probe()
 // Expect: Returns nullptr
 // Depends: arch::pci_scan_all, arch::virtio_find_device
-JARVIS_TEST(virtio_blk_probe_no_device) {
+JARVIS_TEST(virtio_blk_probe_no_device, "PRE: iocd | POST: none") {
     auto* drv = kernel::block::VirtioBlkDriver::probe();
     JARVIS_ASSERT(drv == nullptr);
     JARVIS_TEST_PASS();
@@ -70,7 +70,7 @@ JARVIS_TEST(virtio_blk_probe_no_device) {
 // Input: BAR=6 (out of range), invalid BDF
 // Expect: Returns false
 // Depends: arch::virtio_map_mmio
-JARVIS_TEST(virtio_map_mmio_invalid) {
+JARVIS_TEST(virtio_map_mmio_invalid, "PRE: iocd | POST: none") {
     arch::VirtioMmio mmio;
     arch::PciBdf bdf = {0, 0, 0};
     bool ok = arch::virtio_map_mmio(6, 0, 4096, mmio, bdf);
@@ -84,7 +84,7 @@ JARVIS_TEST(virtio_map_mmio_invalid) {
 // Input: Default-constructed VirtioTransport
 // Expect: Returns true (harmless without real device)
 // Depends: arch::virtio_init_transport
-JARVIS_TEST(virtio_init_transport_noop) {
+JARVIS_TEST(virtio_init_transport_noop, "PRE: iocd | POST: none") {
     arch::VirtioTransport t = {};
     bool ok = arch::virtio_init_transport(t);
     JARVIS_ASSERT(ok);
@@ -97,7 +97,7 @@ JARVIS_TEST(virtio_init_transport_noop) {
 // Input: arch::virtio_find_device(VIRTIO_DEVICE_NET), virtio_write_status(RESET)
 // Expect: Device status reads back as RESET
 // Depends: arch::virtio_find_device, arch::virtio_write/read_status
-JARVIS_TEST(virtio_device_reset) {
+JARVIS_TEST(virtio_device_reset, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
     JARVIS_ASSERT(found);
@@ -115,7 +115,7 @@ JARVIS_TEST(virtio_device_reset) {
 // Expect: Feature negotiation succeeds (virtio_negotiate_features returns true)
 // Depends: arch::virtio_find_device, arch::virtio_init_transport,
 //          arch::virtio_negotiate_features
-JARVIS_TEST(virtio_feature_negotiation) {
+JARVIS_TEST(virtio_feature_negotiation, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
     JARVIS_ASSERT(found);
@@ -134,7 +134,7 @@ JARVIS_TEST(virtio_feature_negotiation) {
 // Expect: virtio_setup_queue returns true
 // Depends: arch::virtio_find_device, arch::virtio_init_transport,
 //          arch::virtio_setup_queue, PMM
-JARVIS_TEST(virtio_queue_configuration) {
+JARVIS_TEST(virtio_queue_configuration, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
     JARVIS_ASSERT(found);
@@ -168,7 +168,7 @@ JARVIS_TEST(virtio_queue_configuration) {
 //         verifies the notify path doesn't fault)
 // Depends: arch::virtio_find_device, arch::virtio_init_transport,
 //          arch::virtio_setup_queue, arch::virtio_notify
-JARVIS_TEST(virtio_guest_notify) {
+JARVIS_TEST(virtio_guest_notify, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
     JARVIS_ASSERT(found);

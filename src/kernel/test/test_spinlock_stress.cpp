@@ -48,7 +48,7 @@ static void stress_worker() {
 // Input: 4 tasks all loop 100× each, lock, increment shared counter, unlock.
 // Expect: Final counter == 400, each task made progress.
 // Depends: SpinLock, Scheduler
-JARVIS_TEST(spinlock_multi_task_contention) {
+JARVIS_TEST(spinlock_multi_task_contention, "PRE: none | POST: none") {
     stress_counter_ = 0;
     for (auto& a : stress_acquires_) a = 0;
 

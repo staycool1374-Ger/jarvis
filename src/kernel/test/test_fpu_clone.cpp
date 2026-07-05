@@ -34,7 +34,7 @@ static constexpr uint64_t FPU_PI_BITS = 0x400921F9F01B866EULL;
 // Input: Parent task uses x87 (finit + fldl pi), becomes fpu_owner; then clone
 // Expect: child->fpu_used == true, child FXSAVE tag word shows ST0 non-empty
 // Depends: TaskControlBlock::clone, kernel::Scheduler, arch::fxsave
-JARVIS_TEST(fpu_clone_copies_state) {
+JARVIS_TEST(fpu_clone_copies_state, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create_user([](){}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);

@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Open /dev/null, read into buffer
 // Expect: Returns 0 bytes read
 // Depends: kernel::vfs::DevFS
-JARVIS_TEST(devfs_read_null) {
+JARVIS_TEST(devfs_read_null, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -36,7 +36,7 @@ JARVIS_TEST(devfs_read_null) {
 // Input: Open /dev/zero, read N bytes
 // Expect: Buffer filled with N zero bytes
 // Depends: kernel::vfs::DevFS
-JARVIS_TEST(devfs_read_zero) {
+JARVIS_TEST(devfs_read_zero, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -46,7 +46,7 @@ JARVIS_TEST(devfs_read_zero) {
 // Input: Resolve /dev/tty
 // Expect: Returns valid inode
 // Depends: kernel::vfs::DevFS
-JARVIS_TEST(devfs_tty_resolves) {
+JARVIS_TEST(devfs_tty_resolves, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -55,7 +55,7 @@ JARVIS_TEST(devfs_tty_resolves) {
 // Input: Resolve /proc/self from current task
 // Expect: Returns inode for current PID
 // Depends: kernel::vfs::ProcFS
-JARVIS_TEST(procfs_self_resolves) {
+JARVIS_TEST(procfs_self_resolves, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -64,7 +64,7 @@ JARVIS_TEST(procfs_self_resolves) {
 // Input: Read /proc/meminfo
 // Expect: Contains "MemTotal:", "MemFree:", etc.
 // Depends: kernel::vfs::ProcFS
-JARVIS_TEST(procfs_meminfo_valid) {
+JARVIS_TEST(procfs_meminfo_valid, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -73,7 +73,7 @@ JARVIS_TEST(procfs_meminfo_valid) {
 // Input: List directory / on initrd
 // Expect: Entries match initrd files
 // Depends: kernel::vfs::InitrdFS
-JARVIS_TEST(initrdfs_list_root) {
+JARVIS_TEST(initrdfs_list_root, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -82,7 +82,7 @@ JARVIS_TEST(initrdfs_list_root) {
 // Input: Open known file from initrd, read content
 // Expect: Content matches expected bytes
 // Depends: kernel::vfs::InitrdFS
-JARVIS_TEST(initrdfs_read_known_file) {
+JARVIS_TEST(initrdfs_read_known_file, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -91,7 +91,7 @@ JARVIS_TEST(initrdfs_read_known_file) {
 // Input: Open /nonexistent
 // Expect: Returns ENOENT
 // Depends: kernel::vfs::InitrdFS
-JARVIS_TEST(initrdfs_open_nonexistent) {
+JARVIS_TEST(initrdfs_open_nonexistent, "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

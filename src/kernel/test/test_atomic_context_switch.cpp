@@ -34,7 +34,7 @@ extern "C" void scheduler_on_context_switch();
 //         consumed it.  load_rsp_from and load_cr3_from should be non-zero.
 //         Either way, atomic reads have consistent values.
 // Depends: Scheduler, context-switch atomics
-JARVIS_TEST(atomic_globals_set_on_reschedule) {
+JARVIS_TEST(atomic_globals_set_on_reschedule, "PRE: none | POST: none") {
     auto* task_a = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(task_a != nullptr);
     Scheduler::add_task(*task_a);
@@ -98,7 +98,7 @@ JARVIS_TEST(atomic_globals_set_on_reschedule) {
 // Input: Set fpu_owner to a task pointer, read it back.
 // Expect: Value matches what was written.
 // Depends: fpu_owner atomic
-JARVIS_TEST(atomic_fpu_owner_read_write) {
+JARVIS_TEST(atomic_fpu_owner_read_write, "PRE: none | POST: none") {
     auto* old = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_ACQUIRE);
     auto* test_ptr = reinterpret_cast<TaskControlBlock*>(uintptr_t(0xDEADBEEF));
     __atomic_store_n(&kernel::fpu_owner, test_ptr, __ATOMIC_RELEASE);
@@ -113,7 +113,7 @@ JARVIS_TEST(atomic_fpu_owner_read_write) {
 // Input: Save, store new, verify, restore.
 // Expect: Atomic operations preserve the value.
 // Depends: scheduler_next_task_id atomic
-JARVIS_TEST(atomic_next_task_id_consistency) {
+JARVIS_TEST(atomic_next_task_id_consistency, "PRE: none | POST: none") {
     uint64_t old = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     __atomic_store_n(&kernel::scheduler_next_task_id, old + 100, __ATOMIC_RELEASE);
     uint64_t val = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
@@ -127,7 +127,7 @@ JARVIS_TEST(atomic_next_task_id_consistency) {
 // Input: Reschedule, verify globals are set. Clear them atomically, verify.
 // Expect: Globals are non-zero after reschedule, zero after atomic clear.
 // Depends: Scheduler, context-switch atomics
-JARVIS_TEST(atomic_idempotent_null_handling) {
+JARVIS_TEST(atomic_idempotent_null_handling, "PRE: none | POST: none") {
     auto* task_a = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(task_a != nullptr);
     Scheduler::add_task(*task_a);
@@ -197,7 +197,7 @@ JARVIS_TEST(atomic_idempotent_null_handling) {
 // Input: Relaxed load/store on fpu_owner in #NM handler context.
 // Expect: Value written with relaxed store is readable with relaxed load.
 // Depends: fpu_owner atomic
-JARVIS_TEST(atomics_fpu_owner_relaxed) {
+JARVIS_TEST(atomics_fpu_owner_relaxed, "PRE: none | POST: none") {
     TaskControlBlock* old = __atomic_load_n(&kernel::fpu_owner, __ATOMIC_RELAXED);
 
     auto* test_ptr = reinterpret_cast<TaskControlBlock*>(uintptr_t(0xBEEF));
@@ -217,7 +217,7 @@ JARVIS_TEST(atomics_fpu_owner_relaxed) {
 // Input: Set scheduler_next_task_id, call scheduler_on_context_switch().
 // Expect: Current task updates to match the set ID; next_task_id cleared.
 // Depends: scheduler_on_context_switch, scheduler_next_task_id
-JARVIS_TEST(atomics_assembly_bridge) {
+JARVIS_TEST(atomics_assembly_bridge, "PRE: none | POST: none") {
     auto* original = Scheduler::current_task();
 
     auto* task = TaskControlBlock::create([](){}, 5, 10);

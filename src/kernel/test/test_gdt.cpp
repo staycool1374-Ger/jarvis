@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Initialize GDT
 // Expect: All entries match expected descriptor layout
 // Depends: kernel::arch::GDT
-JARVIS_TEST(gdt_entries_valid_after_init) {
+JARVIS_TEST(gdt_entries_valid_after_init, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -38,7 +38,7 @@ JARVIS_TEST(gdt_entries_valid_after_init) {
 // Input: Initialize GDT/TSS
 // Expect: IST1-IST7 are non-null, point to allocated kernel stacks
 // Depends: kernel::arch::GDT, TSS
-JARVIS_TEST(gdt_tss_ist_valid) {
+JARVIS_TEST(gdt_tss_ist_valid, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -48,7 +48,7 @@ JARVIS_TEST(gdt_tss_ist_valid) {
 // Input: Initialize TSS
 // Expect: RSP0 is non-zero, points to valid kernel stack
 // Depends: kernel::arch::TSS
-JARVIS_TEST(gdt_tss_rsp0_set) {
+JARVIS_TEST(gdt_tss_rsp0_set, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -57,7 +57,7 @@ JARVIS_TEST(gdt_tss_rsp0_set) {
 // Input: Initialize GDT, attempt to load segment selectors
 // Expect: No GP fault on loading valid selectors
 // Depends: kernel::arch::GDT
-JARVIS_TEST(gdt_code_data_segments_present) {
+JARVIS_TEST(gdt_code_data_segments_present, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -66,7 +66,7 @@ JARVIS_TEST(gdt_code_data_segments_present) {
 // Input: Initialize GDT, inspect user segment descriptors
 // Expect: DPL field == 3 for user segments
 // Depends: kernel::arch::GDT
-JARVIS_TEST(gdt_user_segments_have_ring3_dpl) {
+JARVIS_TEST(gdt_user_segments_have_ring3_dpl, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

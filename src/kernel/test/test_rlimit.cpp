@@ -34,7 +34,7 @@ enum RlimitResource {
     RLIMIT_NOFILE = 2,
 };
 
-JARVIS_TEST(sys_getrlimit_nofile) {
+JARVIS_TEST(sys_getrlimit_nofile, "PRE: none | POST: none") {
     Rlimit rl;
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRLIMIT),
         RLIMIT_NOFILE, reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
@@ -45,7 +45,7 @@ JARVIS_TEST(sys_getrlimit_nofile) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(sys_getrlimit_stack) {
+JARVIS_TEST(sys_getrlimit_stack, "PRE: none | POST: none") {
     Rlimit rl;
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRLIMIT),
         RLIMIT_STACK, reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
@@ -55,7 +55,7 @@ JARVIS_TEST(sys_getrlimit_stack) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(sys_getrlimit_data) {
+JARVIS_TEST(sys_getrlimit_data, "PRE: none | POST: none") {
     Rlimit rl;
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRLIMIT),
         RLIMIT_DATA, reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
@@ -65,7 +65,7 @@ JARVIS_TEST(sys_getrlimit_data) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(sys_getrlimit_invalid) {
+JARVIS_TEST(sys_getrlimit_invalid, "PRE: none | POST: none") {
     Rlimit rl;
     uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRLIMIT),
         99, reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
@@ -73,7 +73,7 @@ JARVIS_TEST(sys_getrlimit_invalid) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(sys_brk_query) {
+JARVIS_TEST(sys_brk_query, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 

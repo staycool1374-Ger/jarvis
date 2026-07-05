@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Check gcov handler after init
 // Expect: Handler initialized, ready for use
 // Depends: kernel::GcovHandler
-JARVIS_TEST(gcov_handler_initialized) {
+JARVIS_TEST(gcov_handler_initialized, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -35,7 +35,7 @@ JARVIS_TEST(gcov_handler_initialized) {
 // Input: Call gcov_instrument(), check bitmask
 // Expect: Corresponding bit toggled
 // Depends: kernel::GcovHandler
-JARVIS_TEST(gcov_instrument_updates_bitmask) {
+JARVIS_TEST(gcov_instrument_updates_bitmask, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -44,7 +44,7 @@ JARVIS_TEST(gcov_instrument_updates_bitmask) {
 // Input: Call gcov_flush_to_serial()
 // Expect: Serial output contains coverage data
 // Depends: kernel::GcovHandler
-JARVIS_TEST(gcov_flush_outputs_data) {
+JARVIS_TEST(gcov_flush_outputs_data, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -54,7 +54,7 @@ JARVIS_TEST(gcov_flush_outputs_data) {
 // Input: Call rdtsc() twice with small delay
 // Expect: Second value > first value
 // Depends: kernel::arch::rdtsc()
-JARVIS_TEST(rdtsc_monotonic) {
+JARVIS_TEST(rdtsc_monotonic, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

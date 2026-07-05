@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: SPSCRing<char, 4> initialized, push 'A'
 // Expect: pop returns 'A', buffer empty after
 // Depends: SPSCRing
-JARVIS_TEST(spsc_push_pop_single) {
+JARVIS_TEST(spsc_push_pop_single, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     JARVIS_ASSERT(ring.try_push('A'));
     JARVIS_ASSERT(ring.empty() == false);
@@ -42,7 +42,7 @@ JARVIS_TEST(spsc_push_pop_single) {
 // Input: SPSCRing<char, 4> initialized, push 3 items
 // Expect: 4th push fails (ring has capacity N-1 = 3)
 // Depends: SPSCRing
-JARVIS_TEST(spsc_buffer_full) {
+JARVIS_TEST(spsc_buffer_full, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     JARVIS_ASSERT(ring.try_push('a'));
     JARVIS_ASSERT(ring.try_push('b'));
@@ -55,7 +55,7 @@ JARVIS_TEST(spsc_buffer_full) {
 // Input: SPSCRing<char, 4> initialized empty
 // Expect: try_pop returns false
 // Depends: SPSCRing
-JARVIS_TEST(spsc_pop_empty) {
+JARVIS_TEST(spsc_pop_empty, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     char c;
     JARVIS_ASSERT(ring.try_pop(c) == false);
@@ -66,7 +66,7 @@ JARVIS_TEST(spsc_pop_empty) {
 // Input: Push 'x', 'y', 'z'
 // Expect: Pop 'x', 'y', 'z' in order, then empty
 // Depends: SPSCRing
-JARVIS_TEST(spsc_fifo_order) {
+JARVIS_TEST(spsc_fifo_order, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     JARVIS_ASSERT(ring.try_push('x'));
     JARVIS_ASSERT(ring.try_push('y'));
@@ -83,7 +83,7 @@ JARVIS_TEST(spsc_fifo_order) {
 // Input: Fill and drain so head wraps around
 // Expect: Correct FIFO ordering after wrap
 // Depends: SPSCRing
-JARVIS_TEST(spsc_wrap_around) {
+JARVIS_TEST(spsc_wrap_around, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     char c;
     // Fill to capacity (3 items)
@@ -108,7 +108,7 @@ JARVIS_TEST(spsc_wrap_around) {
 // Input: Push items, reset
 // Expect: empty() returns true, pop fails
 // Depends: SPSCRing
-JARVIS_TEST(spsc_reset) {
+JARVIS_TEST(spsc_reset, "PRE: none | POST: none") {
     SPSCRing<char, 4> ring;
     JARVIS_ASSERT(ring.try_push('a'));
     JARVIS_ASSERT(ring.try_push('b'));
@@ -123,7 +123,7 @@ JARVIS_TEST(spsc_reset) {
 // Input: SPSCRing<uint64_t, 4>
 // Expect: Push/pop works correctly for non-char types
 // Depends: SPSCRing
-JARVIS_TEST(spsc_integer_type) {
+JARVIS_TEST(spsc_integer_type, "PRE: none | POST: none") {
     SPSCRing<uint64_t, 4> ring;
     JARVIS_ASSERT(ring.try_push(42));
     JARVIS_ASSERT(ring.try_push(99));
@@ -137,7 +137,7 @@ JARVIS_TEST(spsc_integer_type) {
 // Input: Push 1023 items
 // Expect: All pushes succeed, all pops return correct values
 // Depends: SPSCRing
-JARVIS_TEST(spsc_large_buffer) {
+JARVIS_TEST(spsc_large_buffer, "PRE: none | POST: none") {
     SPSCRing<size_t, 1024> ring;
     for (size_t i = 0; i < 1023; ++i)
         JARVIS_ASSERT(ring.try_push(i));

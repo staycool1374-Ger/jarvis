@@ -66,13 +66,13 @@ static void setup_fat32_fs() {
     }
 }
 
-JARVIS_TEST(vfs_fat32_mount) {
+JARVIS_TEST(vfs_fat32_mount, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     JARVIS_ASSERT(fat32_partition_instance != nullptr);
     JARVIS_ASSERT(fat32_partition_instance->bpb().valid);
 }
 
-JARVIS_TEST(vfs_fat32_open_root) {
+JARVIS_TEST(vfs_fat32_open_root, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -80,7 +80,7 @@ JARVIS_TEST(vfs_fat32_open_root) {
     JARVIS_ASSERT(root->ops != nullptr);
 }
 
-JARVIS_TEST(vfs_fat32_open_file) {
+JARVIS_TEST(vfs_fat32_open_file, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -91,7 +91,7 @@ JARVIS_TEST(vfs_fat32_open_file) {
     file->ops->close(*file);
 }
 
-JARVIS_TEST(vfs_fat32_read_file) {
+JARVIS_TEST(vfs_fat32_read_file, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -107,7 +107,7 @@ JARVIS_TEST(vfs_fat32_read_file) {
     file->ops->close(*file);
 }
 
-JARVIS_TEST(vfs_fat32_fstat) {
+JARVIS_TEST(vfs_fat32_fstat, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -122,7 +122,7 @@ JARVIS_TEST(vfs_fat32_fstat) {
     file->ops->close(*file);
 }
 
-JARVIS_TEST(vfs_fat32_readdir) {
+JARVIS_TEST(vfs_fat32_readdir, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -141,7 +141,7 @@ JARVIS_TEST(vfs_fat32_readdir) {
     JARVIS_ASSERT(found_hello);
 }
 
-JARVIS_TEST(vfs_fat32_nonexistent_path) {
+JARVIS_TEST(vfs_fat32_nonexistent_path, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -150,7 +150,7 @@ JARVIS_TEST(vfs_fat32_nonexistent_path) {
     JARVIS_ASSERT(none == nullptr);
 }
 
-JARVIS_TEST(vfs_fat32_subdir) {
+JARVIS_TEST(vfs_fat32_subdir, "PRE: vfsd, iocd | POST: none") {
     setup_fat32_fs();
     Vnode* root = fat32_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
@@ -197,7 +197,7 @@ static Fat32TestFixture create_writable_partition() {
 // Input: ops->mkdir on root vnode with name "NEWDIR"
 // Expect: Returns 0, lookup finds new directory
 // Depends: kernel::vfs::VnodeOps::mkdir
-JARVIS_TEST(vfs_fat32_mkdir) {
+JARVIS_TEST(vfs_fat32_mkdir, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
@@ -226,7 +226,7 @@ JARVIS_TEST(vfs_fat32_mkdir) {
 // Input: ops->unlink on root vnode for "HELLO.TXT"
 // Expect: Returns 0, lookup no longer finds the file
 // Depends: kernel::vfs::VnodeOps::unlink
-JARVIS_TEST(vfs_fat32_unlink) {
+JARVIS_TEST(vfs_fat32_unlink, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
@@ -253,7 +253,7 @@ JARVIS_TEST(vfs_fat32_unlink) {
 // Input: mkdir "DIR2", then readdir
 // Expect: readdir includes "DIR2"
 // Depends: kernel::vfs::VnodeOps
-JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
+JARVIS_TEST(vfs_fat32_mkdir_then_readdir, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
@@ -286,7 +286,7 @@ JARVIS_TEST(vfs_fat32_mkdir_then_readdir) {
 // Input: mkdir "EMPTYDIR", then unlink "EMPTYDIR"
 // Expect: unlink returns 0, lookup fails
 // Depends: kernel::vfs::VnodeOps::unlink
-JARVIS_TEST(vfs_fat32_rmdir_empty) {
+JARVIS_TEST(vfs_fat32_rmdir_empty, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
@@ -321,7 +321,7 @@ JARVIS_TEST(vfs_fat32_rmdir_empty) {
 // Input: mkdir "PARENT", mkdir "PARENT/CHILD", unlink "PARENT"
 // Expect: unlink returns error (FAT32 enforces empty dir check)
 // Depends: kernel::vfs::VnodeOps::unlink
-JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails) {
+JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;
@@ -366,7 +366,7 @@ JARVIS_TEST(vfs_fat32_rmdir_nonempty_fails) {
 // Input: Create file via add_dir_entry + write, unlink, verify FAT chain freed
 // Expect: unlink returns 0, clusters marked free in FAT
 // Depends: kernel::fat32::add_dir_entry, kernel::fat32::unlink, kernel::fat32::Fat32Partition
-JARVIS_TEST(vfs_fat32_unlink_frees_clusters) {
+JARVIS_TEST(vfs_fat32_unlink_frees_clusters, "PRE: vfsd, iocd | POST: none") {
     auto fix = create_writable_partition();
     JARVIS_ASSERT(fix.partition->mount());
     auto* old = fat32_partition_instance;

@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: Set current task executed_ticks=0, call on_tick().
 // Expect: executed_ticks == 1.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_tick_accounting) {
+JARVIS_TEST(timer_tick_accounting, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->executed_ticks = 0;
@@ -49,7 +49,7 @@ JARVIS_TEST(timer_tick_accounting) {
 // Call on_tick() again -> remaining_ticks reloads to 10, executed_ticks resets to 0.
 // Expect: After second tick, remaining_ticks == 10, executed_ticks == 0.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_period_reload) {
+JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->remaining_ticks = 1;
@@ -73,7 +73,7 @@ JARVIS_TEST(timer_period_reload) {
 // Input: Set current task alarm_ticks=3. Call on_tick() 3 times.
 // Expect: After 3rd tick, alarm_ticks == 0 and SIGALRM pending in signal mask.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, kernel::signal
-JARVIS_TEST(timer_alarm_delivery) {
+JARVIS_TEST(timer_alarm_delivery, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->alarm_ticks = 3;
@@ -95,7 +95,7 @@ JARVIS_TEST(timer_alarm_delivery) {
 // Input: Set current task alarm_ticks=10. Call on_tick() 5 times.
 // Expect: alarm_ticks == 5, no SIGALRM pending.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_alarm_not_expired) {
+JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->alarm_ticks = 10;
@@ -119,7 +119,7 @@ JARVIS_TEST(timer_alarm_not_expired) {
 // with deadline expired. Call on_tick().
 // Expect: needs_switch() returns true after on_tick().
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_rate_monotonic_schedule_indirect) {
+JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->priority = 5;
@@ -147,7 +147,7 @@ JARVIS_TEST(timer_rate_monotonic_schedule_indirect) {
 // Call on_tick() repeatedly. Eventually reap_orphans runs.
 // Expect: task_count() decreases after sufficient ticks.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_reap_orphans_periodic) {
+JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     uint64_t cnt_before = Scheduler::task_count();
@@ -181,7 +181,7 @@ JARVIS_TEST(timer_reap_orphans_periodic) {
 // Input: Ensure only idle task is RUNNABLE. Call on_tick().
 // Expect: No crash, scheduler state consistent.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(timer_no_side_effects_on_idle) {
+JARVIS_TEST(timer_no_side_effects_on_idle, "PRE: none | POST: none") {
     auto* idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(idle != nullptr);
 
@@ -203,7 +203,7 @@ JARVIS_TEST(timer_no_side_effects_on_idle) {
 // Input: Mark a daemon task as RUNNING. Call on_tick().
 // Expect: Daemon task not marked for restart, state unchanged.
 // Depends: kernel::task::Scheduler, kernel::daemon::DaemonMgr
-JARVIS_TEST(timer_daemon_restart_not_triggered_on_active) {
+JARVIS_TEST(timer_daemon_restart_not_triggered_on_active, "PRE: none | POST: none") {
     bool found = false;
     for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);

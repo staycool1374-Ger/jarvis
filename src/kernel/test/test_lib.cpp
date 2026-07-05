@@ -30,7 +30,7 @@ using namespace kernel;
 // Input: strlen(""), strlen("hello"), strlen("Hello, World!"), strlen("x").
 // Expect: Correct lengths returned; ternary expression returns expected value.
 // Depends: string
-JARVIS_TEST(string_strlen) {
+JARVIS_TEST(string_strlen, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0, strlen(""));
     JARVIS_ASSERT_EQ(5, strlen("hello"));
     JARVIS_ASSERT_EQ(13, strlen("Hello, World!"));
@@ -46,7 +46,7 @@ JARVIS_TEST(string_strlen) {
 // Expect: 0 for exact matches, negative for less-than, positive for
 // greater-than, non-zero for different lengths.
 // Depends: string
-JARVIS_TEST(string_strcmp) {
+JARVIS_TEST(string_strcmp, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0, strcmp("", ""));
     JARVIS_ASSERT_EQ(0, strcmp("abc", "abc"));
     JARVIS_ASSERT(strcmp("abc", "abd") < 0);
@@ -64,7 +64,7 @@ JARVIS_TEST(string_strcmp) {
 // Expect: 0 when limited prefix matches, correct ordering for mismatches, 0
 // for zero-length compare.
 // Depends: string
-JARVIS_TEST(string_strncmp) {
+JARVIS_TEST(string_strncmp, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0, strncmp("abcde", "abcde", 5));
     JARVIS_ASSERT_EQ(0, strncmp("abcde", "abcxx", 3));
     JARVIS_ASSERT(strncmp("abcde", "abdde", 3) < 0);
@@ -81,7 +81,7 @@ JARVIS_TEST(string_strncmp) {
 // with 0xAA.
 // Expect: Buffer matches source string after each copy.
 // Depends: string
-JARVIS_TEST(string_strncpy) {
+JARVIS_TEST(string_strncpy, "PRE: none | POST: none") {
     char buf[32];
     memset(buf, 0xAA, sizeof(buf));
     strncpy(buf, "hello", sizeof(buf));
@@ -99,7 +99,7 @@ JARVIS_TEST(string_strncpy) {
 // Input: memcpy from a string literal to a 64-byte zeroed destination buffer.
 // Expect: Destination matches source string.
 // Depends: string
-JARVIS_TEST(string_memcpy) {
+JARVIS_TEST(string_memcpy, "PRE: none | POST: none") {
     const char src[] = "memory test data";
     char dst[64];
     memset(dst, 0, sizeof(dst));
@@ -115,7 +115,7 @@ JARVIS_TEST(string_memcpy) {
 // Expect: All 32 bytes equal 0xFF after first fill, all bytes equal 0 after
 // zero fill.
 // Depends: string
-JARVIS_TEST(string_memset) {
+JARVIS_TEST(string_memset, "PRE: none | POST: none") {
     char buf[32];
     memset(buf, 0xFF, sizeof(buf));
     for (size_t i = 0; i < sizeof(buf); ++i)
@@ -132,7 +132,7 @@ JARVIS_TEST(string_memset) {
 // Expect: 0 for matching buffers, negative/positive for lexicographic
 // ordering, 0 for empty buffers.
 // Depends: string
-JARVIS_TEST(string_memcmp) {
+JARVIS_TEST(string_memcmp, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0, memcmp("abc", "abc", 3));
     JARVIS_ASSERT(memcmp("abc", "abd", 3) < 0);
     JARVIS_ASSERT(memcmp("abd", "abc", 3) > 0);
@@ -147,7 +147,7 @@ JARVIS_TEST(string_memcmp) {
 // or 0x4.
 // Expect: Correctly rounded-up addresses.
 // Depends: utils
-JARVIS_TEST(utils_align_up) {
+JARVIS_TEST(utils_align_up, "PRE: none | POST: none") {
     JARVIS_ASSERT_HEX_EQ(0x1000, align_up(0x1, 0x1000));
     JARVIS_ASSERT_HEX_EQ(0x1000, align_up(0x1000, 0x1000));
     JARVIS_ASSERT_HEX_EQ(0x2000, align_up(0x1001, 0x1000));
@@ -165,7 +165,7 @@ JARVIS_TEST(utils_align_up) {
 // 0x1000 or 0x4.
 // Expect: Correctly rounded-down addresses.
 // Depends: utils
-JARVIS_TEST(utils_align_down) {
+JARVIS_TEST(utils_align_down, "PRE: none | POST: none") {
     JARVIS_ASSERT_HEX_EQ(0x0000, align_down(0x1, 0x1000));
     JARVIS_ASSERT_HEX_EQ(0x1000, align_down(0x1000, 0x1000));
     JARVIS_ASSERT_HEX_EQ(0x1000, align_down(0x1001, 0x1000));
@@ -181,7 +181,7 @@ JARVIS_TEST(utils_align_down) {
 // Input: Type checks on int, unsigned int, uint64_t, double.
 // Expect: Boolean trait values match expected type properties.
 // Depends: utils
-JARVIS_TEST(utils_type_traits) {
+JARVIS_TEST(utils_type_traits, "PRE: none | POST: none") {
     JARVIS_ASSERT((is_same<int, int>::value));
     JARVIS_ASSERT((!is_same<int, unsigned int>::value));
     JARVIS_ASSERT((is_same<uint64_t, unsigned long long>::value));
@@ -200,7 +200,7 @@ JARVIS_TEST(utils_type_traits) {
 // Expect: ok() returns correct state, dereference returns stored value,
 // error field matches ErrorOr<void> state.
 // Depends: error
-JARVIS_TEST(error_or_basic) {
+JARVIS_TEST(error_or_basic, "PRE: none | POST: none") {
     ErrorOr<int> e0(42);
     JARVIS_ASSERT(e0.ok());
     JARVIS_ASSERT_EQ(42, *e0);
@@ -219,7 +219,7 @@ JARVIS_TEST(error_or_basic) {
 // Error::NOT_FOUND.
 // Expect: ok() returns false, error field matches the original error code.
 // Depends: error
-JARVIS_TEST(error_or_errors) {
+JARVIS_TEST(error_or_errors, "PRE: none | POST: none") {
     ErrorOr<int> e_oom(Error::OOM);
     JARVIS_ASSERT(!e_oom.ok());
     JARVIS_ASSERT(e_oom.error == Error::OOM);
@@ -237,7 +237,7 @@ JARVIS_TEST(error_or_errors) {
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
-JARVIS_TEST(version_string_not_empty) {
+JARVIS_TEST(version_string_not_empty, "PRE: none | POST: none") {
     const char* sv = Version::string();
     JARVIS_ASSERT(sv != nullptr);
     JARVIS_ASSERT(strlen(sv) > 0);
@@ -250,7 +250,7 @@ JARVIS_TEST(version_string_not_empty) {
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
-JARVIS_TEST(version_full_string_not_empty) {
+JARVIS_TEST(version_full_string_not_empty, "PRE: none | POST: none") {
     const char* fv = Version::full_string();
     JARVIS_ASSERT(fv != nullptr);
     JARVIS_ASSERT(strlen(fv) > 0);
@@ -263,7 +263,7 @@ JARVIS_TEST(version_full_string_not_empty) {
 // Input: None (reads global version state).
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
-JARVIS_TEST(version_build_date_not_empty) {
+JARVIS_TEST(version_build_date_not_empty, "PRE: none | POST: none") {
     const char* bd = Version::build_date();
     JARVIS_ASSERT(bd != nullptr);
     JARVIS_ASSERT(strlen(bd) > 0);

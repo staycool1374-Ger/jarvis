@@ -32,7 +32,7 @@ using namespace kernel;
 // Expect: DriverRegistry::find("keyboard") returns a non-null pointer with
 // name matching "keyboard"; find("nonexistent_driver_xyz") returns nullptr
 // Depends: DriverRegistry
-JARVIS_TEST(driver_registry_find) {
+JARVIS_TEST(driver_registry_find, "PRE: iocd | POST: none") {
     auto* drv = DriverRegistry::find("keyboard");
     JARVIS_ASSERT(drv != nullptr);
     JARVIS_ASSERT_EQ(0, strcmp(drv->name, "keyboard"));
@@ -48,7 +48,7 @@ JARVIS_TEST(driver_registry_find) {
 // 0..cnt-1
 // Expect: count >= 4, has_kbd == true, has_timer == true
 // Depends: DriverRegistry
-JARVIS_TEST(driver_registry_count) {
+JARVIS_TEST(driver_registry_count, "PRE: iocd | POST: none") {
     size_t cnt = DriverRegistry::count();
     JARVIS_ASSERT(cnt >= 4);
     bool has_kbd = false, has_timer = false;
@@ -69,7 +69,7 @@ JARVIS_TEST(driver_registry_count) {
 // Input: None (stub)
 // Expect: JARVIS_TEST_PASS() (stub, no actual assertion yet)
 // Depends: IOCD server, IPC
-JARVIS_TEST(iocd_server_boots) {
+JARVIS_TEST(iocd_server_boots, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -78,7 +78,7 @@ JARVIS_TEST(iocd_server_boots) {
 // Input: None (stub)
 // Expect: JARVIS_TEST_PASS() (stub, no actual assertion yet)
 // Depends: IOCD server, keyboard driver, IPC
-JARVIS_TEST(keyboard_driver_in_iocd) {
+JARVIS_TEST(keyboard_driver_in_iocd, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -87,7 +87,7 @@ JARVIS_TEST(keyboard_driver_in_iocd) {
 // Input: None (stub)
 // Expect: JARVIS_TEST_PASS() (stub, no actual assertion yet)
 // Depends: IOCD server, serial driver, IPC
-JARVIS_TEST(serial_driver_in_iocd) {
+JARVIS_TEST(serial_driver_in_iocd, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -97,7 +97,7 @@ JARVIS_TEST(serial_driver_in_iocd) {
 // Input: None (stub)
 // Expect: JARVIS_TEST_PASS() (stub, no actual assertion yet)
 // Depends: Driver server, capability system, MMIO
-JARVIS_TEST(driver_server_mmio_via_caps) {
+JARVIS_TEST(driver_server_mmio_via_caps, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

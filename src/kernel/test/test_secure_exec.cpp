@@ -27,7 +27,7 @@
 
 using namespace kernel;
 
-JARVIS_TEST(secure_exec_valid_argv_envp) {
+JARVIS_TEST(secure_exec_valid_argv_envp, "PRE: none | POST: none") {
     uint64_t user_addr = 0x100000;
 
     JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(user_addr), 8));
@@ -45,7 +45,7 @@ JARVIS_TEST(secure_exec_valid_argv_envp) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(secure_exec_null_argv_eFault) {
+JARVIS_TEST(secure_exec_null_argv_eFault, "PRE: none | POST: none") {
     JARVIS_ASSERT(!is_user_range(nullptr, 1));
     JARVIS_ASSERT(!is_user_range(nullptr, 0));
 
@@ -57,7 +57,7 @@ JARVIS_TEST(secure_exec_null_argv_eFault) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(secure_exec_kernel_space_argv_eFault) {
+JARVIS_TEST(secure_exec_kernel_space_argv_eFault, "PRE: none | POST: none") {
     uint64_t kernel_addr = 0xFFFF800000000000ULL;
 
     JARVIS_ASSERT(!is_user_range(reinterpret_cast<const void*>(kernel_addr), 1));
@@ -74,7 +74,7 @@ JARVIS_TEST(secure_exec_kernel_space_argv_eFault) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(secure_exec_unmapped_crossing_eFault) {
+JARVIS_TEST(secure_exec_unmapped_crossing_eFault, "PRE: none | POST: none") {
     uint64_t user_limit = 0x0000800000000000ULL;
 
     JARVIS_ASSERT(is_user_range(reinterpret_cast<const void*>(user_limit - 8), 8));
@@ -93,7 +93,7 @@ JARVIS_TEST(secure_exec_unmapped_crossing_eFault) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(secure_exec_regression_audit) {
+JARVIS_TEST(secure_exec_regression_audit, "PRE: none | POST: none") {
     uint64_t user_limit = USER_SPACE_LIMIT;
     uint64_t hhdm = arch::HHDM_OFFSET;
 

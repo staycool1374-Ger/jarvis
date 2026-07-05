@@ -32,7 +32,7 @@ using namespace kernel;
 // Test 1: Basic atomic operations (single-threaded)
 // ============================================================
 
-JARVIS_TEST(atomic_load_store) {
+JARVIS_TEST(atomic_load_store, "PRE: none | POST: none") {
     uint32_t val = 42;
     kernel::atomic_store(&val, uint32_t(100));
     JARVIS_ASSERT_EQ(100U, kernel::atomic_load(&val));
@@ -41,7 +41,7 @@ JARVIS_TEST(atomic_load_store) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_exchange) {
+JARVIS_TEST(atomic_exchange, "PRE: none | POST: none") {
     uint32_t val = 42;
     uint32_t old = kernel::atomic_exchange(&val, uint32_t(99));
     JARVIS_ASSERT_EQ(42U, old);
@@ -49,7 +49,7 @@ JARVIS_TEST(atomic_exchange) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_compare_exchange) {
+JARVIS_TEST(atomic_compare_exchange, "PRE: none | POST: none") {
     uint32_t val = 42;
     uint32_t expected = 42;
     bool ok = kernel::atomic_compare_exchange(&val, &expected, uint32_t(99));
@@ -62,7 +62,7 @@ JARVIS_TEST(atomic_compare_exchange) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_fetch_add) {
+JARVIS_TEST(atomic_fetch_add, "PRE: none | POST: none") {
     uint32_t val = 10;
     uint32_t prev = kernel::atomic_fetch_add(&val, uint32_t(5));
     JARVIS_ASSERT_EQ(10U, prev);
@@ -73,7 +73,7 @@ JARVIS_TEST(atomic_fetch_add) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_fetch_sub) {
+JARVIS_TEST(atomic_fetch_sub, "PRE: none | POST: none") {
     uint32_t val = 100;
     uint32_t prev = kernel::atomic_fetch_sub(&val, uint32_t(30));
     JARVIS_ASSERT_EQ(100U, prev);
@@ -81,7 +81,7 @@ JARVIS_TEST(atomic_fetch_sub) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_fetch_and) {
+JARVIS_TEST(atomic_fetch_and, "PRE: none | POST: none") {
     uint32_t val = 0xFF;
     uint32_t prev = kernel::atomic_fetch_and(&val, uint32_t(0x0F));
     JARVIS_ASSERT_EQ(0xFFU, prev);
@@ -89,7 +89,7 @@ JARVIS_TEST(atomic_fetch_and) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_fetch_or) {
+JARVIS_TEST(atomic_fetch_or, "PRE: none | POST: none") {
     uint32_t val = 0xF0;
     uint32_t prev = kernel::atomic_fetch_or(&val, uint32_t(0x0F));
     JARVIS_ASSERT_EQ(0xF0U, prev);
@@ -97,7 +97,7 @@ JARVIS_TEST(atomic_fetch_or) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(atomic_64bit_operations) {
+JARVIS_TEST(atomic_64bit_operations, "PRE: none | POST: none") {
     uint64_t val = 0xAAAAAAAAULL;
     kernel::atomic_store(&val, uint64_t(0xBBBBBBBBBBBBBBBBULL));
     JARVIS_ASSERT_EQ(0xBBBBBBBBBBBBBBBBULL, kernel::atomic_load(&val));
@@ -137,7 +137,7 @@ static void sb_worker_b() {
     g_sb_r2 = kernel::atomic_load(const_cast<volatile uint32_t*>(g_sb_x));
 }
 
-JARVIS_TEST(atomic_sb_litmus) {
+JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
     static constexpr uint64_t SB_ITER = 100;
 
     uint64_t x_phys = PMM::alloc_page();
@@ -217,7 +217,7 @@ JARVIS_TEST(atomic_sb_litmus) {
 // Run producer → consumer inline without scheduler preemption.
 // The barriers + atomics are still exercised.
 
-JARVIS_TEST(atomic_mp_litmus) {
+JARVIS_TEST(atomic_mp_litmus, "PRE: none | POST: none") {
     uint64_t flag_phys = PMM::alloc_page();
     uint64_t data_phys = PMM::alloc_page();
     JARVIS_ASSERT(flag_phys != 0 && data_phys != 0);
@@ -255,7 +255,7 @@ JARVIS_TEST(atomic_mp_litmus) {
 // The atomicity of fetch_add is already covered by Test 2;
 // this verifies repeated operations don't corrupt.
 
-JARVIS_TEST(atomic_increment_race) {
+JARVIS_TEST(atomic_increment_race, "PRE: none | POST: none") {
     uint64_t counter_phys = PMM::alloc_page();
     JARVIS_ASSERT(counter_phys != 0);
     auto page_guard = ScopeGuard([&]() {
@@ -281,7 +281,7 @@ JARVIS_TEST(atomic_increment_race) {
 // Ping-pong a turn variable using acquire/release semantics inline.
 // No scheduler concurrency; the barriers are still exercised.
 
-JARVIS_TEST(atomic_acquire_release_pingpong) {
+JARVIS_TEST(atomic_acquire_release_pingpong, "PRE: none | POST: none") {
     uint64_t turn_phys = PMM::alloc_page();
     uint64_t data1_phys = PMM::alloc_page();
     uint64_t data2_phys = PMM::alloc_page();

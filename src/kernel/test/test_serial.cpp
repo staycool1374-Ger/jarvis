@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Initialize serial port
 // Expect: Baud rate divisor configured for 115200
 // Depends: kernel::Serial
-JARVIS_TEST(serial_init_configures_baud) {
+JARVIS_TEST(serial_init_configures_baud, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -35,7 +35,7 @@ JARVIS_TEST(serial_init_configures_baud) {
 // Input: Call putchar(), check TX register (requires mock/loopback)
 // Expect: Character appears in output buffer
 // Depends: kernel::Serial::putchar()
-JARVIS_TEST(serial_putchar_output) {
+JARVIS_TEST(serial_putchar_output, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -44,7 +44,7 @@ JARVIS_TEST(serial_putchar_output) {
 // Input: Call puts("test"), capture output
 // Expect: Output is "test\r\n"
 // Depends: kernel::Serial::puts()
-JARVIS_TEST(serial_puts_appends_crlf) {
+JARVIS_TEST(serial_puts_appends_crlf, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -53,7 +53,7 @@ JARVIS_TEST(serial_puts_appends_crlf) {
 // Input: Call puts(""), capture output
 // Expect: Output is "\r\n"
 // Depends: kernel::Serial::puts()
-JARVIS_TEST(serial_puts_empty_string) {
+JARVIS_TEST(serial_puts_empty_string, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: Map page, unmap page, verify mapping
 // Expect: map returns true, unmap returns true, page no longer mapped
 // Depends: kernel::arch::ArchPageTable
-JARVIS_TEST(hal_page_table_map_unmap) {
+JARVIS_TEST(hal_page_table_map_unmap, "PRE: iocd | POST: none") {
     uint64_t cr3 = arch::ArchPageTable::current();
     JARVIS_ASSERT_FMT(cr3 != 0, "CR3 must be non-zero, got 0x%lx", cr3);
 
@@ -54,7 +54,7 @@ JARVIS_TEST(hal_page_table_map_unmap) {
 // Input: Clone page table, modify clone, verify original unchanged
 // Expect: Clone has same mappings, modifications don't affect original
 // Depends: kernel::arch::ArchPageTable
-JARVIS_TEST(hal_page_table_clone) {
+JARVIS_TEST(hal_page_table_clone, "PRE: iocd | POST: none") {
     uint64_t cr3 = arch::read_cr3();
     JARVIS_ASSERT(cr3 != 0);
 
@@ -72,7 +72,7 @@ JARVIS_TEST(hal_page_table_clone) {
 // Input: Switch to different page table, access memory
 // Expect: Memory accesses use new page table mappings
 // Depends: kernel::arch::ArchPageTable
-JARVIS_TEST(hal_page_table_switch) {
+JARVIS_TEST(hal_page_table_switch, "PRE: iocd | POST: none") {
     uint64_t cr3 = arch::ArchPageTable::current();
     JARVIS_ASSERT(cr3 != 0);
 
@@ -91,7 +91,7 @@ JARVIS_TEST(hal_page_table_switch) {
 // Input: Save context, modify registers, restore, verify original values
 // Expect: All general-purpose registers restored correctly
 // Depends: kernel::arch::ArchContext
-JARVIS_TEST(hal_context_save_restore) {
+JARVIS_TEST(hal_context_save_restore, "PRE: iocd | POST: none") {
     arch::ArchContext ctx;
     uint64_t test_rsp = 0xDEADBEEF;
 
@@ -112,7 +112,7 @@ JARVIS_TEST(hal_context_save_restore) {
 // Depends: kernel::arch::ArchContext, kernel::task::Scheduler
 // ⚠ BUG #008: This test exercises the scheduler/ISR nesting path. May trigger
 //    GPF if isr_nesting_depth guard is incomplete. Diagnostic test.
-JARVIS_TEST(hal_context_switch_to) {
+JARVIS_TEST(hal_context_switch_to, "PRE: iocd | POST: none") {
     arch::ArchContext ctx_a;
     arch::ArchContext ctx_b;
 
@@ -147,7 +147,7 @@ JARVIS_TEST(hal_context_switch_to) {
 // Depends: kernel::arch::ArchInterruptController
 // ⚠ BUG #008: Interrupt operations may trigger timer nesting paths.
 #if defined(CONFIG_ARCH_X86_64)
-JARVIS_TEST(hal_interrupt_mask_unmask) {
+JARVIS_TEST(hal_interrupt_mask_unmask, "PRE: iocd | POST: none") {
     arch::IrqState saved = arch::ArchInterruptController::snapshot();
 
     arch::ArchInterruptController::mask(1);
@@ -170,7 +170,7 @@ JARVIS_TEST(hal_interrupt_mask_unmask) {
 // Expect: Without EOI, same priority interrupts blocked; with EOI, delivered
 // Depends: kernel::arch::ArchInterruptController
 // ⚠ BUG #008: Interrupt operations may trigger timer nesting paths.
-JARVIS_TEST(hal_interrupt_eoi) {
+JARVIS_TEST(hal_interrupt_eoi, "PRE: iocd | POST: none") {
     arch::ArchInterruptController::eoi(32);
     arch::ArchInterruptController::eoi(40);
     arch::ArchInterruptController::eoi(48);
@@ -192,7 +192,7 @@ JARVIS_TEST(hal_interrupt_eoi) {
  * 3. Advance to target, verify fired
  * 4. Advance further, verify not fired again
  */
-JARVIS_TEST(hal_timer_oneshot) {
+JARVIS_TEST(hal_timer_oneshot, "PRE: iocd | POST: none") {
     /* Pseudocode: hal_timer_oneshot.
      * Implementation plan:
      *   - Requires Timer::oneshot(uint64_t) and Timer::remaining() implementation
@@ -215,7 +215,7 @@ JARVIS_TEST(hal_timer_oneshot) {
  * 2. Advance ticks, verify fires at 50, 100, 150
  * 3. Disable timer, verify stops firing
  */
-JARVIS_TEST(hal_timer_periodic) {
+JARVIS_TEST(hal_timer_periodic, "PRE: iocd | POST: none") {
     /* Pseudocode: hal_timer_periodic.
      * Implementation plan:
      *   - Requires Timer::periodic(uint64_t) and Timer::remaining()
@@ -238,7 +238,7 @@ JARVIS_TEST(hal_timer_periodic) {
  * 3. At tick+500, remaining ≈ 500
  * 4. At tick+1000, remaining = 0 (fired)
  */
-JARVIS_TEST(hal_timer_remaining) {
+JARVIS_TEST(hal_timer_remaining, "PRE: iocd | POST: none") {
     /* Pseudocode: hal_timer_remaining.
      * Implementation plan:
      *   - Requires Timer::oneshot() and Timer::remaining()
@@ -255,7 +255,7 @@ JARVIS_TEST(hal_timer_remaining) {
 // Expect: Values written match values read
 // Depends: kernel::arch::ArchIO
 #if defined(CONFIG_ARCH_X86_64)
-JARVIS_TEST(hal_io_byte_word_long) {
+JARVIS_TEST(hal_io_byte_word_long, "PRE: iocd | POST: none") {
     // Port 0x80 (POST diagnostic) — reads may not return written values
     // on all QEMU chipset emulations.  The purpose of this test is to
     // verify the I/O instructions execute without faulting.
@@ -283,7 +283,7 @@ JARVIS_TEST(hal_io_byte_word_long) {
 // Expect: All HAL calls resolve to arch/x86_64 implementations
 // Depends: kernel::arch::*, build system
 #if defined(CONFIG_ARCH_X86_64)
-JARVIS_TEST(hal_delegates_to_x86_64) {
+JARVIS_TEST(hal_delegates_to_x86_64, "PRE: iocd | POST: none") {
     JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
 
     uint64_t cr3 = arch::read_cr3();
@@ -308,7 +308,7 @@ JARVIS_TEST(hal_delegates_to_x86_64) {
 // Expect: EDX bits 25 (SSE) and 26 (SSE2) are set
 // Depends: kernel::arch::cpuid
 #if defined(CONFIG_ARCH_X86_64)
-JARVIS_TEST(hal_cpuid_features) {
+JARVIS_TEST(hal_cpuid_features, "PRE: iocd | POST: none") {
     arch::CpuIdResult leaf1 = arch::cpuid(1);
     JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_SSE);
     JARVIS_ASSERT(leaf1.edx & arch::CPUID_EDX1_SSE2);
@@ -326,7 +326,7 @@ JARVIS_TEST(hal_cpuid_features) {
 // Expect: Snapshot captures correct masks, restore reverts to saved state
 // Depends: kernel::arch::ArchInterruptController
 #if defined(CONFIG_ARCH_X86_64)
-JARVIS_TEST(hal_interrupt_snapshot_restore_cycle) {
+JARVIS_TEST(hal_interrupt_snapshot_restore_cycle, "PRE: iocd | POST: none") {
     arch::IrqState saved = arch::ArchInterruptController::snapshot();
 
     arch::ArchInterruptController::mask(2);

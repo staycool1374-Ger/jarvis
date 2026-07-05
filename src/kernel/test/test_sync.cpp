@@ -33,7 +33,7 @@ using namespace kernel;
 // original task calls post()
 // Expect: Worker state is BLOCKED after wait, READY after post
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(semaphore_wait_post) {
+JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 1);
 
@@ -71,7 +71,7 @@ JARVIS_TEST(semaphore_wait_post) {
 // Expect: Mutex correctly tracks owner and locked state across multiple
 // lock/unlock cycles and task switches
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_double_unlock) {
+JARVIS_TEST(mutex_double_unlock, "PRE: none | POST: none") {
     sync::Mutex m;
     m.init();
     m.lock();
@@ -81,7 +81,7 @@ JARVIS_TEST(mutex_double_unlock) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(mutex_recursive_lock) {
+JARVIS_TEST(mutex_recursive_lock, "PRE: none | POST: none") {
     sync::Mutex m;
     m.init();
     m.lock();
@@ -95,7 +95,7 @@ JARVIS_TEST(mutex_recursive_lock) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(semaphore_timeout) {
+JARVIS_TEST(semaphore_timeout, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 1);
     bool ok = sem.try_wait();
@@ -103,7 +103,7 @@ JARVIS_TEST(semaphore_timeout) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(semaphore_multi_post) {
+JARVIS_TEST(semaphore_multi_post, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 3);
     sem.post();
@@ -114,7 +114,7 @@ JARVIS_TEST(semaphore_multi_post) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(mutex_lock_unlock) {
+JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -164,7 +164,7 @@ JARVIS_TEST(mutex_lock_unlock) {
 // Expect: Single send/receive succeeds, queue fills to max, overfill returns
 // false, drain reduces available count
 // Depends: kernel::sync::Queue, sync::QUEUE_MAX_MSG_COUNT
-JARVIS_TEST(queue_send_receive_block) {
+JARVIS_TEST(queue_send_receive_block, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
@@ -199,7 +199,7 @@ JARVIS_TEST(queue_send_receive_block) {
 // verify blocking behavior.
 // Expect: Sender becomes BLOCKED when queue is full; becomes READY after
 // receiver drains.
-JARVIS_TEST(sync_queue_send_blocks_when_full) {
+JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
@@ -243,7 +243,7 @@ JARVIS_TEST(sync_queue_send_blocks_when_full) {
 // verify blocking behavior.
 // Expect: Receiver becomes BLOCKED when queue is empty; becomes READY after
 // sender adds message.
-JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
+JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
     JARVIS_ASSERT(queue.available() == 0);
@@ -283,7 +283,7 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty) {
 // becomes READY.
 // Expect: Sender is BLOCKED after failed send, becomes READY after receiver
 // calls receive.
-JARVIS_TEST(sync_queue_wake_sender_on_receive) {
+JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 

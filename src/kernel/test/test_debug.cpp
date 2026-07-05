@@ -53,7 +53,7 @@ using namespace kernel;
 // Input: Call debug_write with various formats
 // Expect: Output matches expected format strings
 // Depends: kernel::debug::debug_write()
-JARVIS_TEST(debug_write_formats_correctly) {
+JARVIS_TEST(debug_write_formats_correctly, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -63,7 +63,7 @@ JARVIS_TEST(debug_write_formats_correctly) {
 // Input: Trigger task switch, capture debug log
 // Expect: Log contains "Task switch: <src> -> <dst>"
 // Depends: kernel::debug, Scheduler
-JARVIS_TEST(debug_task_switch_logs) {
+JARVIS_TEST(debug_task_switch_logs, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

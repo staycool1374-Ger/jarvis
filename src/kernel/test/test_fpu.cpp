@@ -30,7 +30,7 @@ using namespace kernel;
 // Runmode: kernel
 // Testidea: CPUID reports FPU, FXSR, and SSE feature flags on x86_64
 // Expect: All three bits should be set on any modern x86_64 CPU/emulator
-JARVIS_TEST(fpu_cpuid_detection) {
+JARVIS_TEST(fpu_cpuid_detection, "PRE: none | POST: none") {
     JARVIS_ASSERT_FMT(arch::has_fpu(), "CPUID leaf 1 EDX bit 0 (FPU) not set");
     JARVIS_ASSERT_FMT(arch::has_fxsr(), "CPUID leaf 1 EDX bit 24 (FXSR) not set");
     JARVIS_ASSERT_FMT(arch::has_sse(), "CPUID leaf 1 EDX bit 25 (SSE) not set");
@@ -40,7 +40,7 @@ JARVIS_TEST(fpu_cpuid_detection) {
 // Runmode: kernel
 // Testidea: Executing a basic x87 FPU instruction via inline asm succeeds
 // Expect: CR0.TS is cleared after the first FPU instruction; fpu_owner updated
-JARVIS_TEST(fpu_basic_instruction) {
+JARVIS_TEST(fpu_basic_instruction, "PRE: none | POST: none") {
     uint64_t cr0_before = arch::read_cr0();
     bool ts_before = (cr0_before >> 3) & 1;
 
@@ -69,7 +69,7 @@ JARVIS_TEST(fpu_basic_instruction) {
 // Input: Loads IEEE 754 1.0 (0x3FF0000000000000) into x87 ST0 via FLDL,
 //        then FXSAVEs and checks the abridged tag word
 // Expect: The saved tag byte shows ST0 as non-empty
-JARVIS_TEST(fpu_fxsave_nonzero) {
+JARVIS_TEST(fpu_fxsave_nonzero, "PRE: none | POST: none") {
     alignas(16) uint8_t buf[512];
     __builtin_memset(buf, 0, 512);
 
@@ -144,7 +144,7 @@ static void fpu_task_b_entry() {
 // Input: Creates task A (loads pi raw bits, yields), task B (loads euler),
 //        then verifies task A's pi bits survive the round-trip
 // Expect: Task A reads back the expected IEEE 754 bit pattern for 3.14159
-JARVIS_TEST(fpu_context_switch) {
+JARVIS_TEST(fpu_context_switch, "PRE: none | POST: none") {
     g_fpu_val_result = 0;
     g_fpu_test_a_done = 0;
     g_fpu_test_b_done = 0;

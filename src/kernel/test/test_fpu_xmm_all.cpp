@@ -130,7 +130,7 @@ static void xmm_all_task_b_entry() {
 // Input: Task A loads XMM0–XMM15 with unique 128-bit patterns, yields;
 //        Task B touches XMM0 (different pattern); switch back to A
 // Expect: All 16 XMM registers read back their original patterns
-JARVIS_TEST(sse_xmm_all_registers) {
+JARVIS_TEST(sse_xmm_all_registers, "PRE: none | POST: none") {
     __builtin_memset(g_xmm_all_result, 0, sizeof(g_xmm_all_result));
     g_xmm_all_a_done = 0;
     g_xmm_all_b_done = 0;

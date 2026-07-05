@@ -38,7 +38,7 @@ using namespace kernel;
 // Input: Create parent, child1 (TERMINATED), then child2 (READY).
 // Expect: Simulated second waitpid finds and reaps child1. child2 remains in
 // scheduler.
-JARVIS_TEST(waitpid_zombie_over_new_child) {
+JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -113,7 +113,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child) {
 // Input: Create parent and two children, both TERMINATED.
 // Expect: First waitpid reaps child1, second waitpid reaps child2. No
 // zombies remain.
-JARVIS_TEST(waitpid_two_children_sequential_reap) {
+JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -188,7 +188,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap) {
 // phys page.
 // Expect: After writing to VA via child's CR3 + parent CR3 switch, the parent's
 //   physical page contains the write; the child's physical page is unchanged.
-JARVIS_TEST(waitpid_cr3_switch_on_status_write) {
+JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     constexpr uint64_t TEST_VA = 0x70000000;
 
     Logger::raw_write("waitpid58: enter\n");

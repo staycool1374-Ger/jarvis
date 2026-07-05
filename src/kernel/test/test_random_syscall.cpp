@@ -27,7 +27,7 @@ using namespace kernel;
 // Testidea: SYS_GETRANDOM fills a buffer with random bytes via syscall
 // Input: Syscall::handle(GETRANDOM, buf, 64, 0, ...)
 // Expect: Returns 64; buffer not all-zero or all-FF
-JARVIS_TEST(syscall_getrandom_basic) {
+JARVIS_TEST(syscall_getrandom_basic, "PRE: none | POST: none") {
     uint8_t buf[64];
     __builtin_memset(buf, 0, sizeof(buf));
 
@@ -51,7 +51,7 @@ JARVIS_TEST(syscall_getrandom_basic) {
 // Testidea: Zero-length GETRANDOM returns 0 and leaves buffer unchanged
 // Input: Syscall::handle(GETRANDOM, buf, 0, 0, ...)
 // Expect: Returns 0; buffer unchanged
-JARVIS_TEST(syscall_getrandom_zero) {
+JARVIS_TEST(syscall_getrandom_zero, "PRE: none | POST: none") {
     uint8_t buf[4] = {0xDE, 0xAD, 0xBE, 0xEF};
     uint64_t ret = Syscall::handle(
         static_cast<uint64_t>(SyscallNumber::GETRANDOM),
@@ -65,7 +65,7 @@ JARVIS_TEST(syscall_getrandom_zero) {
 // Testidea: Large GETRANDOM (4096 bytes) succeeds without overflow
 // Input: Syscall::handle(GETRANDOM, buf, 4096, 0, ...)
 // Expect: Returns 4096; first and last bytes not zero (statistical)
-JARVIS_TEST(syscall_getrandom_large) {
+JARVIS_TEST(syscall_getrandom_large, "PRE: none | POST: none") {
     uint8_t buf[4096];
     __builtin_memset(buf, 0, sizeof(buf));
 
@@ -86,7 +86,7 @@ JARVIS_TEST(syscall_getrandom_large) {
 // Testidea: Non-zero flags to GETRANDOM returns -1 (EINVAL)
 // Input: Syscall::handle(GETRANDOM, buf, 8, 1, ...) — flags=1
 // Expect: Returns static_cast<uint64_t>(-1)
-JARVIS_TEST(syscall_getrandom_invalid_flags) {
+JARVIS_TEST(syscall_getrandom_invalid_flags, "PRE: none | POST: none") {
     uint8_t buf[8];
     uint64_t ret = Syscall::handle(
         static_cast<uint64_t>(SyscallNumber::GETRANDOM),

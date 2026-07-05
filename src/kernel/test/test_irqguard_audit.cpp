@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Hardcoded list of allowed IrqGuard include sites.
 // Expect: IrqGuard functions correctly; no production code uses it.
 // Depends: arch::IrqGuard, arch::interrupts_enabled
-JARVIS_TEST(irqguard_remaining_sites_validated) {
+JARVIS_TEST(irqguard_remaining_sites_validated, "PRE: none | POST: none") {
     /* Pseudocode: Enumerate all remaining #include <arch/irq_guard.hpp> sites.
      * Currently only 2 test files include it (verified by grep):
      *   - src/kernel/test/test_irq_guard.cpp (test coverage)

@@ -31,7 +31,7 @@ using namespace kernel::vfs;
 // Expect: JARVIS_ASSERT checks fd >= 0, the returned entry is non-null and
 // used; after free, entry is null or not used.
 // Depends: kernel::vfs::FdTable
-JARVIS_TEST(vfs_fdtable_alloc_free) {
+JARVIS_TEST(vfs_fdtable_alloc_free, "PRE: vfsd, iocd | POST: none") {
     vfs::FdTable ft;
     int fd1 = ft.alloc();
     JARVIS_ASSERT(fd1 >= 0);
@@ -49,7 +49,7 @@ JARVIS_TEST(vfs_fdtable_alloc_free) {
 // Expect: JARVIS_ASSERT checks all allocations return non-negative fd; final
 // alloc also succeeds.
 // Depends: kernel::vfs::FdTable
-JARVIS_TEST(vfs_fdtable_multiple) {
+JARVIS_TEST(vfs_fdtable_multiple, "PRE: vfsd, iocd | POST: none") {
     vfs::FdTable ft;
     int fds[5];
     for (int i = 0; i < 5; ++i) {
@@ -70,7 +70,7 @@ JARVIS_TEST(vfs_fdtable_multiple) {
 // Input: vfs::resolve("/")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_root) {
+JARVIS_TEST(vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
@@ -82,7 +82,7 @@ JARVIS_TEST(vfs_resolve_root) {
 // Input: vfs::resolve("/dev")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_dev) {
+JARVIS_TEST(vfs_resolve_dev, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/dev");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
@@ -95,7 +95,7 @@ JARVIS_TEST(vfs_resolve_dev) {
 // Input: vfs::resolve("/dev/tty")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_tty) {
+JARVIS_TEST(vfs_resolve_tty, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/dev/tty");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
@@ -108,7 +108,7 @@ JARVIS_TEST(vfs_resolve_tty) {
 // Input: vfs::resolve("/dev/null")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_null) {
+JARVIS_TEST(vfs_resolve_null, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/dev/null");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
@@ -120,7 +120,7 @@ JARVIS_TEST(vfs_resolve_null) {
 // Input: vfs::resolve("/proc")
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_proc) {
+JARVIS_TEST(vfs_resolve_proc, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/proc");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
@@ -132,7 +132,7 @@ JARVIS_TEST(vfs_resolve_proc) {
 // Input: vfs::resolve("/nonexistent_path_xyz")
 // Expect: JARVIS_ASSERT checks result is nullptr.
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_nonexistent) {
+JARVIS_TEST(vfs_resolve_nonexistent, "PRE: vfsd, iocd | POST: none") {
     auto* vn = vfs::resolve("/nonexistent_path_xyz");
     JARVIS_ASSERT(vn == nullptr);
     JARVIS_TEST_PASS();
@@ -143,7 +143,7 @@ JARVIS_TEST(vfs_resolve_nonexistent) {
 // Input: resolve("/dev/./tty"), resolve("/dev/../dev/tty")
 // Expect: Both return valid character-device vnodes
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_relative_path) {
+JARVIS_TEST(vfs_resolve_relative_path, "PRE: vfsd, iocd | POST: none") {
     Vnode* vn = vfs::resolve("/dev/./tty");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
@@ -158,7 +158,7 @@ JARVIS_TEST(vfs_resolve_relative_path) {
 // Input: resolve("/dev/..")
 // Expect: Returns the root directory vnode
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(vfs_resolve_dotdot) {
+JARVIS_TEST(vfs_resolve_dotdot, "PRE: vfsd, iocd | POST: none") {
     Vnode* dev = vfs::resolve("/dev");
     JARVIS_ASSERT(dev != nullptr);
     Vnode* root = vfs::resolve("/dev/..");
@@ -184,7 +184,7 @@ static kernel::vfs::Filesystem fake_fs = {
     .get_root = fake_get_root
 };
 
-JARVIS_TEST(vfs_mount_unmount) {
+JARVIS_TEST(vfs_mount_unmount, "PRE: vfsd, iocd | POST: none") {
     fake_root_vnode = Vnode{};
     fake_root_vnode.mode = vfs::S_IFDIR;
     fake_root_vnode.ino = 1;
@@ -205,7 +205,7 @@ JARVIS_TEST(vfs_mount_unmount) {
 // Input: vfs::mkdir("/mnt/NEWDIR_TEST", 0)
 // Expect: Returns 0, vfs::resolve finds the new directory with S_IFDIR
 // Depends: kernel::vfs::mkdir, kernel::vfs::resolve
-JARVIS_TEST(vfs_mkdir_valid) {
+JARVIS_TEST(vfs_mkdir_valid, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/tmp/VFS_MKDIR_TEST", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -224,7 +224,7 @@ JARVIS_TEST(vfs_mkdir_valid) {
 // Input: vfs::mkdir("/nonexistent/DIR", 0)
 // Expect: Returns VFS_INVALID
 // Depends: kernel::vfs::mkdir
-JARVIS_TEST(vfs_mkdir_nonexistent_parent) {
+JARVIS_TEST(vfs_mkdir_nonexistent_parent, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/nonexistent/DIR", 0);
     JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
     JARVIS_TEST_PASS();
@@ -235,7 +235,7 @@ JARVIS_TEST(vfs_mkdir_nonexistent_parent) {
 // Input: vfs::mkdir("/dev/null/DIR", 0) where null is a char device
 // Expect: Returns VFS_INVALID
 // Depends: kernel::vfs::mkdir
-JARVIS_TEST(vfs_mkdir_parent_not_dir) {
+JARVIS_TEST(vfs_mkdir_parent_not_dir, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/dev/null/DIR", 0);
     JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
     JARVIS_TEST_PASS();
@@ -246,7 +246,7 @@ JARVIS_TEST(vfs_mkdir_parent_not_dir) {
 // Input: Create /tmp/UNLINK_ME, then vfs::unlink
 // Expect: Returns 0, vfs::resolve no longer finds the path
 // Depends: kernel::vfs::unlink, kernel::vfs::resolve
-JARVIS_TEST(vfs_unlink_file) {
+JARVIS_TEST(vfs_unlink_file, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/tmp/UNLINK_ME", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
@@ -266,7 +266,7 @@ JARVIS_TEST(vfs_unlink_file) {
 // Input: vfs::unlink("/tmp/NONEXISTENT")
 // Expect: Returns VFS_INVALID
 // Depends: kernel::vfs::unlink
-JARVIS_TEST(vfs_unlink_nonexistent) {
+JARVIS_TEST(vfs_unlink_nonexistent, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::unlink("/tmp/NONEXISTENT");
     JARVIS_ASSERT_EQ(vfs::VFS_INVALID, ret);
     JARVIS_TEST_PASS();
@@ -277,7 +277,7 @@ JARVIS_TEST(vfs_unlink_nonexistent) {
 // Input: vfs::mkdir("/tmp/DIR"), create subdir inside, vfs::unlink("/tmp/DIR")
 // Expect: Returns VFS_INVALID (tmpfs enforces empty dir check)
 // Depends: kernel::vfs::unlink, kernel::vfs::mkdir
-JARVIS_TEST(vfs_unlink_nonempty_dir_fails) {
+JARVIS_TEST(vfs_unlink_nonempty_dir_fails, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/tmp/NONEMPTYDIR", 0);
     JARVIS_ASSERT_EQ(0, ret);
 

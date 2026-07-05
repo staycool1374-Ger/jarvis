@@ -42,7 +42,7 @@ using namespace kernel;
 
 #if !defined(CONFIG_ARCH_RISCV64)
 
-JARVIS_TEST(buffer_pool_basic_alloc_free) {
+JARVIS_TEST(buffer_pool_basic_alloc_free, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -63,7 +63,7 @@ JARVIS_TEST(buffer_pool_basic_alloc_free) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_multiple_alloc) {
+JARVIS_TEST(buffer_pool_multiple_alloc, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -93,7 +93,7 @@ JARVIS_TEST(buffer_pool_multiple_alloc) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_invalid_handle) {
+JARVIS_TEST(buffer_pool_invalid_handle, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -124,7 +124,7 @@ JARVIS_TEST(buffer_pool_invalid_handle) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_exhaustion) {
+JARVIS_TEST(buffer_pool_exhaustion, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -150,7 +150,7 @@ JARVIS_TEST(buffer_pool_exhaustion) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_double_free) {
+JARVIS_TEST(buffer_pool_double_free, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -165,7 +165,7 @@ JARVIS_TEST(buffer_pool_double_free) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_map_unmap) {
+JARVIS_TEST(buffer_pool_map_unmap, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -183,7 +183,7 @@ JARVIS_TEST(buffer_pool_map_unmap) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_transfer) {
+JARVIS_TEST(buffer_pool_transfer, "PRE: none | POST: none") {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
@@ -213,7 +213,7 @@ JARVIS_TEST(buffer_pool_transfer) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_unmap_all) {
+JARVIS_TEST(buffer_pool_unmap_all, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -233,7 +233,7 @@ JARVIS_TEST(buffer_pool_unmap_all) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_syscall_dispatch) {
+JARVIS_TEST(buffer_pool_syscall_dispatch, "PRE: none | POST: none") {
     TaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
     Scheduler::add_task(*task);
@@ -253,7 +253,7 @@ JARVIS_TEST(buffer_pool_syscall_dispatch) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_ipc_transfer) {
+JARVIS_TEST(buffer_pool_ipc_transfer, "PRE: none | POST: none") {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
@@ -300,7 +300,7 @@ JARVIS_TEST(buffer_pool_ipc_transfer) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
+JARVIS_TEST(buffer_pool_cleanup_frees_buffers, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -329,7 +329,7 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers) {
 // Expect: Buffer entry recycled (phys_addr == 0), old PML4 freed cleanly.
 // Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::VMM,
 // kernel::PMM
-JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers) {
+JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -381,7 +381,7 @@ JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers) {
 // Expect: Buffer appears in receiver's buf_list_head; receiver cleanup frees
 // it.
 // Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::IPC
-JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
+JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list, "PRE: none | POST: none") {
     auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
@@ -441,7 +441,7 @@ JARVIS_TEST(buffer_pool_transfer_adds_to_receiver_list) {
 // Depends: kernel::BufferPool
 // Note: Kernel does not yet implement VA conflict detection; remains stub
 // until implemented.
-JARVIS_TEST(buffer_pool_va_conflict_rejected) {
+JARVIS_TEST(buffer_pool_va_conflict_rejected, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -450,7 +450,7 @@ JARVIS_TEST(buffer_pool_va_conflict_rejected) {
 // Input: task, alloc at USER_SPACE_LIMIT and above
 // Expect: Both allocs return 0
 // Depends: kernel::BufferPool
-JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
+JARVIS_TEST(buffer_pool_va_out_of_range_rejected, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -469,7 +469,7 @@ JARVIS_TEST(buffer_pool_va_out_of_range_rejected) {
 // Depends: kernel::BufferPool
 // Note: Kernel does not yet implement VA=0 rejection; remains stub until
 // implemented.
-JARVIS_TEST(buffer_pool_zero_va_rejected) {
+JARVIS_TEST(buffer_pool_zero_va_rejected, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -478,7 +478,7 @@ JARVIS_TEST(buffer_pool_zero_va_rejected) {
 // Input: Create task with page_table_ = 0, try alloc
 // Expect: Returns 0
 // Depends: kernel::BufferPool, kernel::TaskControlBlock
-JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
+JARVIS_TEST(buffer_pool_kernel_task_alloc_fails, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
     
@@ -498,7 +498,7 @@ JARVIS_TEST(buffer_pool_kernel_task_alloc_fails) {
 // Input: alloc -> free -> use same handle (old gen), validate() returns -1
 // Expect: validate returns -1
 // Depends: kernel::BufferPool
-JARVIS_TEST(buffer_pool_forged_handle_after_free) {
+JARVIS_TEST(buffer_pool_forged_handle_after_free, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -520,7 +520,7 @@ JARVIS_TEST(buffer_pool_forged_handle_after_free) {
 // new gen
 // Expect: New handle has same idx, different (incremented) gen
 // Depends: kernel::BufferPool
-JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
+JARVIS_TEST(buffer_pool_realloc_recycles_entry, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -552,7 +552,7 @@ JARVIS_TEST(buffer_pool_realloc_recycles_entry) {
 // Input: Fill pool completely, free one, alloc again
 // Expect: New alloc succeeds and uses the freed entry index
 // Depends: kernel::BufferPool
-JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
+JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -595,7 +595,7 @@ JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free) {
 // list_prev/list_next
 // Expect: Entries 4 and 6 are correctly linked, head/tail intact
 // Depends: kernel::BufferPool
-JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
+JARVIS_TEST(buffer_pool_list_integrity_after_unlink, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -651,7 +651,7 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink) {
 // Input: Sender allocs, transfers to receiver, receiver transfers back,
 // sender transfers again. 5 cycles.
 // Expect: After each transfer, only the new owner can free.
-JARVIS_TEST(buffer_pool_transfer_race) {
+JARVIS_TEST(buffer_pool_transfer_race, "PRE: none | POST: none") {
     auto* task_a = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* task_b = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task_a != nullptr && task_b != nullptr);
@@ -692,7 +692,7 @@ JARVIS_TEST(buffer_pool_transfer_race) {
 // has an incremented generation and the old handle still rejected.
 // Input: Alloc -> free -> try old handle -> alloc -> try old handle
 // Expect: Old handle always rejected; new handle valid.
-JARVIS_TEST(buffer_pool_handle_reuse_security) {
+JARVIS_TEST(buffer_pool_handle_reuse_security, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([](){}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
@@ -720,7 +720,7 @@ JARVIS_TEST(buffer_pool_handle_reuse_security) {
 // (kernel-only), verify transfer fails gracefully.
 // Input: alloc in user task, transfer to kernel task.
 // Expect: transfer returns false.
-JARVIS_TEST(buffer_pool_transfer_to_kernel_task) {
+JARVIS_TEST(buffer_pool_transfer_to_kernel_task, "PRE: none | POST: none") {
     auto* user = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
     auto* kernel_task = TaskControlBlock::create([](){}, 5, 10);
     JARVIS_ASSERT(user != nullptr && kernel_task != nullptr);

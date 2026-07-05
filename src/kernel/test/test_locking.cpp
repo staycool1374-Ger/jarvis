@@ -32,7 +32,7 @@ using namespace kernel;
 // Input: Create unlocked mutex, call try_lock() from owner task.
 // Expect: try_lock() returns true, is_locked() true, owner() non-null.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_try_lock_success) {
+JARVIS_TEST(mutex_try_lock_success, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -60,7 +60,7 @@ JARVIS_TEST(mutex_try_lock_success) {
 // Input: Owner task locks mutex, another task attempts try_lock().
 // Expect: try_lock() returns false, original lock state unchanged.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_try_lock_failure) {
+JARVIS_TEST(mutex_try_lock_failure, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -100,7 +100,7 @@ JARVIS_TEST(mutex_try_lock_failure) {
 // Input: Owner locks mutex, locks again via try_lock().
 // Expect: try_lock() returns true; unlock count > 1; final unlock releases.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_try_lock_recursive_same_owner) {
+JARVIS_TEST(mutex_try_lock_recursive_same_owner, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -142,7 +142,7 @@ JARVIS_TEST(mutex_try_lock_recursive_same_owner) {
 // Input: Low priority task holds mutex, high priority task attempts lock.
 // Expect: Low task priority temporarily boosted, then restored.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_priority_inheritance_indirect) {
+JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -197,7 +197,7 @@ JARVIS_TEST(mutex_priority_inheritance_indirect) {
 // Input: Create chain A (holds M1), B (waits on M1), C (waits on M2 held by B).
 // Expect: Priority propagates through chain: C > B > A.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_priority_chain) {
+JARVIS_TEST(mutex_priority_chain, "PRE: none | POST: none") {
     sync::Mutex m1, m2;
     m1.init();
     m2.init();
@@ -267,7 +267,7 @@ JARVIS_TEST(mutex_priority_chain) {
 // Input: Create mutex holder (priority 5), waiters (priorities 10, 15).
 // Expect: After unlock, highest-priority waiter (15) acquires lock.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_waiter_priority_order) {
+JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -325,7 +325,7 @@ JARVIS_TEST(mutex_waiter_priority_order) {
 // Input: Owner locks mutex twice, unlocks twice.
 // Expect: No deadlock; after second unlock, mutex is unlocked.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_double_lock_same_owner) {
+JARVIS_TEST(mutex_double_lock_same_owner, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -365,7 +365,7 @@ JARVIS_TEST(mutex_double_lock_same_owner) {
 // Input: Loop 100 times: lock, unlock.
 // Expect: No crash; after loop, mutex unlocked.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(mutex_lock_acquire_release_cycle) {
+JARVIS_TEST(mutex_lock_acquire_release_cycle, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
@@ -399,7 +399,7 @@ JARVIS_TEST(mutex_lock_acquire_release_cycle) {
 // Input: Create semaphore with count=0, tasks with priorities 5, 10, 15.
 // Expect: After post(), highest-priority task (15) is READY.
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(semaphore_wait_priority_order) {
+JARVIS_TEST(semaphore_wait_priority_order, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 3);
 
@@ -454,7 +454,7 @@ JARVIS_TEST(semaphore_wait_priority_order) {
 // Input: Create semaphore with count=0, 5 waiters, post(3).
 // Expect: Exactly 3 tasks become READY, 2 remain BLOCKED.
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(semaphore_multi_waiter_partial_wake) {
+JARVIS_TEST(semaphore_multi_waiter_partial_wake, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 5);
 
@@ -514,7 +514,7 @@ JARVIS_TEST(semaphore_multi_waiter_partial_wake) {
 // Input: Create semaphore with count=0, task calls wait().
 // Expect: Task blocks immediately; after post(), task becomes READY.
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(semaphore_initial_count_zero) {
+JARVIS_TEST(semaphore_initial_count_zero, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 1);
 
@@ -549,7 +549,7 @@ JARVIS_TEST(semaphore_initial_count_zero) {
 // create blocked sender and receiver tasks.
 // Expect: When queue is drained, highest-priority waiter is woken first.
 // Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(queue_send_receive_priority_ordering) {
+JARVIS_TEST(queue_send_receive_priority_ordering, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
@@ -618,7 +618,7 @@ JARVIS_TEST(queue_send_receive_priority_ordering) {
 // Input: Fill queue to capacity, create sender task that calls send().
 // Expect: Sender blocks; after receive(), sender wakes and message is delivered.
 // Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(queue_send_to_full_blocks_and_wakes) {
+JARVIS_TEST(queue_send_to_full_blocks_and_wakes, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 

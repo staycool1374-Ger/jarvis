@@ -38,7 +38,7 @@ using namespace kernel;
 // Expect: kernel_stack, msg_queue, notify, event_group become nullptr;
 // stack_phys_ becomes 0
 // Depends: kernel::TaskControlBlock
-JARVIS_TEST(task_cleanup_frees_resources) {
+JARVIS_TEST(task_cleanup_frees_resources, "PRE: none | POST: none") {
     auto* tcb = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->kernel_stack != nullptr);
@@ -64,7 +64,7 @@ JARVIS_TEST(task_cleanup_frees_resources) {
 // Input: create_user with stack_size=32_KiB
 // Expect: page_table_ != 0, user_stack_ != 0, user_stack_size_ == 32_KiB
 // Depends: kernel::TaskControlBlock
-JARVIS_TEST(task_create_user_page_table) {
+JARVIS_TEST(task_create_user_page_table, "PRE: none | POST: none") {
     auto* tcb = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->page_table_ != 0);
@@ -83,7 +83,7 @@ JARVIS_TEST(task_create_user_page_table) {
 // Expect: child != nullptr, child->page_table_ != 0,
 // child->page_table_shared_ == true, child->user_stack_ != 0
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(task_clone_shares_page_tables) {
+JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -122,7 +122,7 @@ JARVIS_TEST(task_clone_shares_page_tables) {
 // Input: Load an ELF binary via elf::load, check that msg_queue, notify,
 // event_group are initialized.
 // Expect: All three IPC objects are non-null after ELF load.
-JARVIS_TEST(task_elf_load_inits_ipc_objects) {
+JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
     // Find a test ELF in initrd
     initrd::InitrdFile f = initrd::find("./test_fork.c.elf");
     if (!f.data) f = initrd::find("test_fork.c.elf");
@@ -160,7 +160,7 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects) {
 // address, cleanup/delete child
 // Expect: parent->page_table_ unchanged and non-null after child cleanup
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
+JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages, "PRE: none | POST: none") {
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
@@ -199,7 +199,7 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages) {
 // reduce available memory after the round-trip.
 // Input: Create user parent, clone child, cleanup+delete both.
 // Expect: Free memory count is the same after the round-trip as before.
-JARVIS_TEST(task_clone_no_page_table_leak) {
+JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     uint64_t free_before = PMM::free_memory();
 
     auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);

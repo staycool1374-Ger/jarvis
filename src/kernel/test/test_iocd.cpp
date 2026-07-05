@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: None (boot sequence)
 // Expect: iocd::get_iocd_pid() returns a non-zero PID and the task exists
 // Depends: kernel/driver/iocd
-JARVIS_TEST(iocd_boots_and_registers) {
+JARVIS_TEST(iocd_boots_and_registers, "PRE: none | POST: iocd") {
     uint64_t pid = iocd::get_iocd_pid();
     JARVIS_ASSERT(pid != 0);
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
@@ -50,7 +50,7 @@ JARVIS_TEST(iocd_boots_and_registers) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_keyboard_irq_to_event) {
+JARVIS_TEST(iocd_keyboard_irq_to_event, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -59,7 +59,7 @@ JARVIS_TEST(iocd_keyboard_irq_to_event) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_serial_irq_to_event) {
+JARVIS_TEST(iocd_serial_irq_to_event, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -68,7 +68,7 @@ JARVIS_TEST(iocd_serial_irq_to_event) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_mmio_map_via_capability) {
+JARVIS_TEST(iocd_mmio_map_via_capability, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -77,7 +77,7 @@ JARVIS_TEST(iocd_mmio_map_via_capability) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_mmio_unmap_on_exit) {
+JARVIS_TEST(iocd_mmio_unmap_on_exit, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -86,7 +86,7 @@ JARVIS_TEST(iocd_mmio_unmap_on_exit) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_unauthorized_mmio_rejected) {
+JARVIS_TEST(iocd_unauthorized_mmio_rejected, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -95,7 +95,7 @@ JARVIS_TEST(iocd_unauthorized_mmio_rejected) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_multiple_device_handlers) {
+JARVIS_TEST(iocd_multiple_device_handlers, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 
@@ -104,7 +104,7 @@ JARVIS_TEST(iocd_multiple_device_handlers) {
 // Input: None (stub test)
 // Expect: Passes (stub)
 // Depends: kernel/task, kernel/ipc, kernel/driver
-JARVIS_TEST(iocd_irq_affinity) {
+JARVIS_TEST(iocd_irq_affinity, "PRE: none | POST: iocd") {
     JARVIS_TEST_PASS();
 }
 

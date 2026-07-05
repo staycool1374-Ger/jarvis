@@ -29,7 +29,7 @@ using namespace kernel;
 // Input: Create IrqGuard scope
 // Expect: interrupts_enabled() is false inside, restored outside
 // Depends: arch::IrqGuard, arch::interrupts_enabled
-JARVIS_TEST(irq_guard_saves_and_restores) {
+JARVIS_TEST(irq_guard_saves_and_restores, "PRE: none | POST: none") {
     bool was_enabled = arch::interrupts_enabled();
     {
         arch::IrqGuard guard;
@@ -44,7 +44,7 @@ JARVIS_TEST(irq_guard_saves_and_restores) {
 // Input: Outer and inner IrqGuard scopes
 // Expect: IF remains disabled throughout, restored to original after outer
 // Depends: arch::IrqGuard
-JARVIS_TEST(irq_guard_nested) {
+JARVIS_TEST(irq_guard_nested, "PRE: none | POST: none") {
     bool was_enabled = arch::interrupts_enabled();
     {
         arch::IrqGuard outer;
@@ -64,7 +64,7 @@ JARVIS_TEST(irq_guard_nested) {
 // Input: Attempt to copy or move (compile-time)
 // Expect: Compilation succeeds for valid usage
 // Depends: arch::IrqGuard
-JARVIS_TEST(irq_guard_noncopyable) {
+JARVIS_TEST(irq_guard_noncopyable, "PRE: none | POST: none") {
     arch::IrqGuard guard;
     JARVIS_ASSERT(!arch::interrupts_enabled());
     (void)guard;

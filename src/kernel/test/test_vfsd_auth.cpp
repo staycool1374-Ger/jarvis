@@ -33,7 +33,7 @@ using namespace kernel;
 
 #if !defined(CONFIG_ARCH_RISCV64)
 
-JARVIS_TEST(vfsd_self_authorization) {
+JARVIS_TEST(vfsd_self_authorization, "PRE: vfsd, iocd | POST: none") {
     auto* vfsd_task = TaskControlBlock::create_user([]() {
         const char* path = "/dev/null";
         uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -57,7 +57,7 @@ JARVIS_TEST(vfsd_self_authorization) {
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(vfsd_self_authorization_fd_op) {
+JARVIS_TEST(vfsd_self_authorization_fd_op, "PRE: vfsd, iocd | POST: none") {
     auto* vfsd_task = TaskControlBlock::create_user([]() {
         const char* path = "/dev/null";
         uint64_t fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -91,7 +91,7 @@ JARVIS_TEST(vfsd_self_authorization_fd_op) {
 // Input: vfsd::set_vfsd_pid(0), call vfsd_authorize()
 // Expect: vfsd_authorize returns false
 // Depends: kernel::vfsd
-JARVIS_TEST(vfsd_absent_authorize_fails) {
+JARVIS_TEST(vfsd_absent_authorize_fails, "PRE: vfsd, iocd | POST: none") {
     // This test verifies the vfsd_authorize logic when vfsd PID is 0
     // Since we can't directly call vfsd_authorize (it's static in syscall_handlers_fs.cpp),
     // we test the behavior by creating a task and trying to call VFS syscalls
@@ -122,7 +122,7 @@ JARVIS_TEST(vfsd_absent_authorize_fails) {
 // Input: vfsd::set_vfsd_pid(0), call sys_open("/dev/null")
 // Expect: sys_open returns -1 (ENOENT)
 // Depends: kernel::Syscall, kernel::vfsd
-JARVIS_TEST(vfsd_absent_syscall_fails) {
+JARVIS_TEST(vfsd_absent_syscall_fails, "PRE: vfsd, iocd | POST: none") {
     auto* test_task = TaskControlBlock::create_user([]() {
         const char* path = "/dev/null";
         uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
@@ -148,7 +148,7 @@ JARVIS_TEST(vfsd_absent_syscall_fails) {
 // Input: vfsd_authorize() with null path
 // Expect: Does not crash (path copy loop handles it)
 // Depends: kernel::vfsd
-JARVIS_TEST(vfsd_authorize_null_path) {
+JARVIS_TEST(vfsd_authorize_null_path, "PRE: vfsd, iocd | POST: none") {
     // This test verifies that vfsd_authorize handles null path gracefully
     // Since we can't directly call vfsd_authorize (it's static in syscall_handlers_fs.cpp),
     // we test the behavior by creating a task and trying to call VFS syscalls

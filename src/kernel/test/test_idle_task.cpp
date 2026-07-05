@@ -33,7 +33,7 @@ using namespace kernel;
 // Input: Scheduler is initialized.
 // Expect: get_idle_task() returns non-null task at tasks_[0] with kernel
 // stack, no user stack.
-JARVIS_TEST(idle_task_created_at_boot) {
+JARVIS_TEST(idle_task_created_at_boot, "PRE: none | POST: none") {
     JARVIS_ASSERT(Scheduler::get_idle_task() != nullptr);
     JARVIS_ASSERT(Scheduler::get_idle_task()->kernel_stack != nullptr);
     JARVIS_ASSERT(Scheduler::get_idle_task()->user_stack_ == 0);
@@ -50,7 +50,7 @@ JARVIS_TEST(idle_task_created_at_boot) {
 // Expect: JARVIS_ASSERT checks page_table_ != kernel PML4 and kernel_stack
 // != nullptr.
 // Depends: kernel::task::Scheduler, kernel::memory::VMM
-JARVIS_TEST(idle_task_runs_in_ring3) {
+JARVIS_TEST(idle_task_runs_in_ring3, "PRE: none | POST: none") {
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
         auto* t = Scheduler::task_at(i);
@@ -70,7 +70,7 @@ JARVIS_TEST(idle_task_runs_in_ring3) {
 // Input: Iterates all scheduler tasks, finds one matching user-task criteria.
 // Expect: JARVIS_ASSERT_EQ checks priority == 0 and base_priority == 0.
 // Depends: kernel::task::Scheduler
-JARVIS_TEST(idle_task_priority_zero) {
+JARVIS_TEST(idle_task_priority_zero, "PRE: none | POST: none") {
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
         auto* t = Scheduler::task_at(i);
@@ -93,7 +93,7 @@ JARVIS_TEST(idle_task_priority_zero) {
 // HLT instruction.
 // Note: Cannot directly test HLT from kernel context as it would halt; test
 // validates idle task exists.
-JARVIS_TEST(idle_task_calls_pause_syscall) {
+JARVIS_TEST(idle_task_calls_pause_syscall, "PRE: none | POST: none") {
     auto* idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(idle != nullptr);
     JARVIS_ASSERT(idle->kernel_stack != nullptr);
@@ -108,7 +108,7 @@ JARVIS_TEST(idle_task_calls_pause_syscall) {
 // tasks.
 // Input: Create a higher-priority task, verify scheduler picks it over idle.
 // Expect: Scheduler::next_task() returns the higher-priority task, not idle.
-JARVIS_TEST(idle_task_yields_to_higher_priority) {
+JARVIS_TEST(idle_task_yields_to_higher_priority, "PRE: none | POST: none") {
     auto* high_prio = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(high_prio != nullptr);
     Scheduler::add_task(*high_prio);
@@ -132,7 +132,7 @@ JARVIS_TEST(idle_task_yields_to_higher_priority) {
 // Expect: JARVIS_ASSERT checks idle task is non-null, has kernel_stack,
 // user_stack_ == 0, and matches task_at(0).
 // Depends: kernel::task::Scheduler
-JARVIS_TEST(kernel_hlt_idle_still_exists) {
+JARVIS_TEST(kernel_hlt_idle_still_exists, "PRE: none | POST: none") {
     JARVIS_ASSERT(Scheduler::get_idle_task() != nullptr);
     JARVIS_ASSERT(Scheduler::get_idle_task()->kernel_stack != nullptr);
     JARVIS_ASSERT(Scheduler::get_idle_task()->user_stack_ == 0);
@@ -144,7 +144,7 @@ JARVIS_TEST(kernel_hlt_idle_still_exists) {
 // Testidea: Verifies that a crashed idle task can be respawned by reap_orphans.
 // Input: Terminate the idle task, call reap_orphans, verify new idle exists.
 // Expect: New idle task is created and placed at tasks_[0].
-JARVIS_TEST(idle_task_restartable_on_crash) {
+JARVIS_TEST(idle_task_restartable_on_crash, "PRE: none | POST: none") {
     auto* old_idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(old_idle != nullptr);
     JARVIS_ASSERT_EQ(old_idle, Scheduler::task_at(0));
@@ -173,7 +173,7 @@ JARVIS_TEST(idle_task_restartable_on_crash) {
 // one at tasks_[0]).
 // Input: Attempt to add a second task at index 0 or with idle characteristics.
 // Expect: Scheduler only has one task at index 0 (the original idle).
-JARVIS_TEST(multiple_idle_tasks_prevented) {
+JARVIS_TEST(multiple_idle_tasks_prevented, "PRE: none | POST: none") {
     // The idle task is always at index 0
     JARVIS_ASSERT_EQ(Scheduler::task_at(0), Scheduler::get_idle_task());
 
@@ -198,7 +198,7 @@ JARVIS_TEST(multiple_idle_tasks_prevented) {
 // Input: None
 // Expect: All section markers (text, rodata, data, bss, stack) read back
 // their expected values, indicating no memory corruption across boundaries.
-JARVIS_TEST(idle_task_integrity_markers) {
+JARVIS_TEST(idle_task_integrity_markers, "PRE: none | POST: none") {
     JARVIS_ASSERT(kernel::integrity::check_section_markers());
     JARVIS_TEST_PASS();
 }
@@ -210,7 +210,7 @@ JARVIS_TEST(idle_task_integrity_markers) {
 // Expect: After enough iterations, crc_process_chunk() returns true
 // (indicating CRC is complete). The CRC verification is skipped during
 // tests (expected CRC is patched at link time).
-JARVIS_TEST(idle_task_integrity_crc_incremental) {
+JARVIS_TEST(idle_task_integrity_crc_incremental, "PRE: none | POST: none") {
     kernel::integrity::reset_crc_state();
     bool done = false;
     uint64_t iterations = 0;

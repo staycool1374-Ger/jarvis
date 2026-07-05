@@ -26,7 +26,7 @@ using namespace kernel;
 // Input: Initialize keyboard driver
 // Expect: Buffer head == tail, count == 0
 // Depends: kernel::Keyboard
-JARVIS_TEST(keyboard_init_clears_buffer) {
+JARVIS_TEST(keyboard_init_clears_buffer, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -35,7 +35,7 @@ JARVIS_TEST(keyboard_init_clears_buffer) {
 // Input: Enqueue scancode 0x1E, then dequeue
 // Expect: Returns 0x1E
 // Depends: kernel::Keyboard::enqueue/dequeue
-JARVIS_TEST(keyboard_enqueue_dequeue_scancode) {
+JARVIS_TEST(keyboard_enqueue_dequeue_scancode, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -44,7 +44,7 @@ JARVIS_TEST(keyboard_enqueue_dequeue_scancode) {
 // Input: Fill buffer with 256 scancodes, add one more
 // Expect: No overflow, new scancode dropped
 // Depends: kernel::Keyboard buffer logic
-JARVIS_TEST(keyboard_buffer_full_drops) {
+JARVIS_TEST(keyboard_buffer_full_drops, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -53,7 +53,7 @@ JARVIS_TEST(keyboard_buffer_full_drops) {
 // Input: Send make code for Shift, then break code
 // Expect: Shift state bit set then cleared
 // Depends: kernel::Keyboard modifier tracking
-JARVIS_TEST(keyboard_modifier_tracking) {
+JARVIS_TEST(keyboard_modifier_tracking, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -62,7 +62,7 @@ JARVIS_TEST(keyboard_modifier_tracking) {
 // Input: Run keyboard self-test sequence
 // Expect: Controller responds with 0xAA (or appropriate ACK)
 // Depends: kernel::Keyboard initialization
-JARVIS_TEST(keyboard_self_test_sequence) {
+JARVIS_TEST(keyboard_self_test_sequence, "PRE: iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

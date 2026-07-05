@@ -49,7 +49,7 @@ static void ipc_recv_worker() {
 // Input: Kernel task sends message to self then receives; check interrupt flag.
 // Expect: Interrupts remain enabled before, during, and after receive.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
-JARVIS_TEST(ipc_recv_no_cli) {
+JARVIS_TEST(ipc_recv_no_cli, "PRE: none | POST: none") {
     arch::sti();
     JARVIS_ASSERT(arch::interrupts_enabled());
 
@@ -119,7 +119,7 @@ static void send_sync_sender() {
 // Input: Kernel sender calls send_sync to kernel receiver; check interrupt flag.
 // Expect: Interrupts remain enabled before, during, and after send_sync.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
-JARVIS_TEST(ipc_send_sync_no_cli) {
+JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
     arch::sti();
     JARVIS_ASSERT(arch::interrupts_enabled());
 
@@ -201,7 +201,7 @@ static void throughput_receiver() {
 // Input: 1000 IPC roundtrips between two kernel tasks (ping-pong).
 // Expect: All 1000 roundtrips complete; throughput measured (no regression).
 // Depends: IPC, Scheduler
-JARVIS_TEST(ipc_lock_free_throughput) {
+JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
     g_ipc_throughput_count_ = 0;
 
     ThroughputCtx ctx_a = {0, false};

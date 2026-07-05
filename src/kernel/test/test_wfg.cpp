@@ -27,7 +27,7 @@ using namespace kernel;
 // Input: Two tasks, one holding a lock, another waiting for it
 // Expect: WFG contains directed edge from waiter to holder
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, WFG implementation
-JARVIS_TEST(wfg_basic_construction) {
+JARVIS_TEST(wfg_basic_construction, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -36,7 +36,7 @@ JARVIS_TEST(wfg_basic_construction) {
 // Input: Task A waits for resource held by Task B
 // Expect: WFG has edge A->B, no reverse edge
 // Depends: WFG implementation
-JARVIS_TEST(wfg_single_dependency_edge) {
+JARVIS_TEST(wfg_single_dependency_edge, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -45,7 +45,7 @@ JARVIS_TEST(wfg_single_dependency_edge) {
 // Input: Multiple concurrent lock/unlock operations across tasks
 // Expect: WFG edges added/removed atomically, no corruption
 // Depends: WFG implementation, atomic operations
-JARVIS_TEST(wfg_atomic_update_on_lock_unlock) {
+JARVIS_TEST(wfg_atomic_update_on_lock_unlock, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
@@ -54,7 +54,7 @@ JARVIS_TEST(wfg_atomic_update_on_lock_unlock) {
 // Input: Task A waits for Task B, Task B releases lock
 // Expect: Edge A->B removed from WFG
 // Depends: WFG implementation
-JARVIS_TEST(wfg_prunes_resolved_dependencies) {
+JARVIS_TEST(wfg_prunes_resolved_dependencies, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

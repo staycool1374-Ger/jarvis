@@ -56,7 +56,7 @@ using namespace kernel;
 // Input: alloc_page + map_page_in_pml4 + virt_to_phys_in_pml4 + unmap
 // Expect: Map succeeds, virt_to_phys returns correct phys, unmap succeeds, then 0
 // Depends: kernel::PMM, kernel::VMM
-JARVIS_TEST(cross_page_table_map_unmap) {
+JARVIS_TEST(cross_page_table_map_unmap, "PRE: none | POST: none") {
     // Clone kernel page table for isolated testing
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT_FMT(pml4 != 0, "clone_kernel_pml4 returned 0");
@@ -98,7 +98,7 @@ JARVIS_TEST(cross_page_table_map_unmap) {
 // Input: Clone kernel PML4, query unmapped address
 // Expect: virt_to_phys_in_pml4 returns 0
 // Depends: kernel::VMM
-JARVIS_TEST(cross_page_table_unmapped_returns_zero) {
+JARVIS_TEST(cross_page_table_unmapped_returns_zero, "PRE: none | POST: none") {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
@@ -123,7 +123,7 @@ JARVIS_TEST(cross_page_table_unmapped_returns_zero) {
 // Input: ArchContext objects, known stack addresses
 // Expect: save records correct stack pointer, switch_to swaps, restore works
 // Depends: kernel::arch::ArchContextManager
-JARVIS_TEST(cross_context_save_restore) {
+JARVIS_TEST(cross_context_save_restore, "PRE: none | POST: none") {
     arch::ArchContext ctx_a{};
     arch::ArchContext ctx_b{};
 
@@ -182,7 +182,7 @@ JARVIS_TEST(cross_context_save_restore) {
 // Input: Stack buffer, entry function, psr, user SP
 // Expect: Stack contains entry and PSR, pointers are within range
 // Depends: kernel::arch::ArchContextManager
-JARVIS_TEST(cross_context_init_stack) {
+JARVIS_TEST(cross_context_init_stack, "PRE: none | POST: none") {
     uint64_t stack[1024] = {};
     uint64_t* stack_top = stack + 1024;
 
@@ -234,7 +234,7 @@ JARVIS_TEST(cross_context_init_stack) {
 // Input: ArchPageTable static constants
 // Expect: PAGE_SIZE=4096, ENTRIES=512 (all known CPU architectures)
 // Depends: kernel::arch::ArchPageTable
-JARVIS_TEST(cross_page_table_constants) {
+JARVIS_TEST(cross_page_table_constants, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(4096ULL, arch::ArchPageTable::PAGE_SIZE);
     JARVIS_ASSERT_EQ(512ULL, arch::ArchPageTable::ENTRIES);
     JARVIS_TEST_PASS();
@@ -249,7 +249,7 @@ JARVIS_TEST(cross_page_table_constants) {
 // Input: Repeated calls to arch::Timer::ticks()
 // Expect: All values > 0, each >= previous
 // Depends: kernel::arch::Timer
-JARVIS_TEST(cross_timer_ticks_monotonic) {
+JARVIS_TEST(cross_timer_ticks_monotonic, "PRE: iocd | POST: none") {
     // Use set_ticks_for_test to establish a known baseline
     arch::Timer::set_ticks_for_test(100);
     uint64_t t1 = arch::Timer::ticks();
@@ -271,7 +271,7 @@ JARVIS_TEST(cross_timer_ticks_monotonic) {
 // Input: Two calls to arch::Timer::ns() with a small busy loop in between
 // Expect: delta > 0 and delta < 10 seconds (sanity bound)
 // Depends: kernel::arch::Timer
-JARVIS_TEST(cross_timer_ns_delta) {
+JARVIS_TEST(cross_timer_ns_delta, "PRE: iocd | POST: none") {
     uint64_t t0 = arch::Timer::ns();
     for (int i = 0; i < 100000; ++i) { asm volatile(""); }
     uint64_t t1 = arch::Timer::ns();
@@ -293,7 +293,7 @@ JARVIS_TEST(cross_timer_ns_delta) {
 // Input: set_ticks_for_test(0) then handle_irq() then check ticks()
 // Expect: ticks() == 1
 // Depends: kernel::arch::Timer
-JARVIS_TEST(cross_timer_irq_handler) {
+JARVIS_TEST(cross_timer_irq_handler, "PRE: iocd | POST: none") {
     arch::Timer::set_ticks_for_test(0);
     JARVIS_ASSERT_EQ((uint64_t)0, arch::Timer::ticks());
     arch::Timer::handle_irq();
@@ -316,7 +316,7 @@ JARVIS_TEST(cross_timer_irq_handler) {
 // Input: init() then eoi(32) then mask(1) then unmask(1)
 // Expect: No crash, snapshot/restore restores original state
 // Depends: kernel::arch::ArchInterruptController
-JARVIS_TEST(cross_interrupt_controller_init) {
+JARVIS_TEST(cross_interrupt_controller_init, "PRE: iocd | POST: none") {
     arch::ArchInterruptController::init();
     JARVIS_TEST_PASS();
 }
@@ -326,7 +326,7 @@ JARVIS_TEST(cross_interrupt_controller_init) {
 // Input: eoi(32) and eoi(40)
 // Expect: No crash
 // Depends: kernel::arch::ArchInterruptController
-JARVIS_TEST(cross_interrupt_controller_eoi) {
+JARVIS_TEST(cross_interrupt_controller_eoi, "PRE: iocd | POST: none") {
     arch::ArchInterruptController::eoi(32);
     arch::ArchInterruptController::eoi(40);
     JARVIS_TEST_PASS();
@@ -337,7 +337,7 @@ JARVIS_TEST(cross_interrupt_controller_eoi) {
 // Input: mask(1), then unmask(1)
 // Expect: No crash
 // Depends: kernel::arch::ArchInterruptController
-JARVIS_TEST(cross_interrupt_controller_mask_unmask) {
+JARVIS_TEST(cross_interrupt_controller_mask_unmask, "PRE: iocd | POST: none") {
     arch::ArchInterruptController::mask(1);
     arch::ArchInterruptController::unmask(1);
     JARVIS_TEST_PASS();
@@ -356,7 +356,7 @@ JARVIS_TEST(cross_interrupt_controller_mask_unmask) {
 // Input: Message with known sender_id, type, priority, data_size, data
 // Expect: Pop returns matching message, queue is empty afterward
 // Depends: kernel::MessageQueue
-JARVIS_TEST(cross_ipc_queue_push_pop) {
+JARVIS_TEST(cross_ipc_queue_push_pop, "PRE: none | POST: none") {
     MessageQueue q;
     q.init();
     JARVIS_ASSERT(q.is_empty());
@@ -400,7 +400,7 @@ JARVIS_TEST(cross_ipc_queue_push_pop) {
 // Input: Three messages with priorities 2, 0, 1
 // Expect: Popped in order priority 0, 1, 2 (highest first)
 // Depends: kernel::MessageQueue
-JARVIS_TEST(cross_ipc_queue_priority_ordering) {
+JARVIS_TEST(cross_ipc_queue_priority_ordering, "PRE: none | POST: none") {
     MessageQueue q;
     q.init();
 
@@ -437,7 +437,7 @@ JARVIS_TEST(cross_ipc_queue_priority_ordering) {
 // Input: Fill queue to capacity, then push one more
 // Expect: push returns false when full; pop still works after overflow attempt
 // Depends: kernel::MessageQueue
-JARVIS_TEST(cross_ipc_queue_full_behavior) {
+JARVIS_TEST(cross_ipc_queue_full_behavior, "PRE: none | POST: none") {
     MessageQueue q;
     q.init();
 
@@ -469,7 +469,7 @@ JARVIS_TEST(cross_ipc_queue_full_behavior) {
 // Input: vfs::resolve("/")
 // Expect: Non-null vnode with S_IFDIR
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(cross_vfs_resolve_root) {
+JARVIS_TEST(cross_vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
     vfs::Vnode* vn = vfs::resolve("/");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
@@ -483,7 +483,7 @@ JARVIS_TEST(cross_vfs_resolve_root) {
 // Input: vfs::resolve("/nonexistent_path_cross_arch_test_xyz")
 // Expect: nullptr
 // Depends: kernel::vfs::resolve
-JARVIS_TEST(cross_vfs_resolve_nonexistent) {
+JARVIS_TEST(cross_vfs_resolve_nonexistent, "PRE: vfsd, iocd | POST: none") {
     vfs::Vnode* vn = vfs::resolve("/nonexistent_path_cross_arch_test_xyz");
     JARVIS_ASSERT(vn == nullptr);
     JARVIS_TEST_PASS();
