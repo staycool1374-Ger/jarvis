@@ -19,9 +19,11 @@
 /// @file test_registry.cpp
 /// @brief Test registry implementation.
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -461,4 +463,6 @@ void kernel::test::dump_class_counts() {
     Registry::clear();
     validate_all_consistency();
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

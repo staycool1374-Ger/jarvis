@@ -19,10 +19,12 @@
 /// @file test_vfs_fat32.cpp
 /// @brief VFS FAT32 filesystem operation tests.
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #pragma GCC diagnostic ignored "-Wanalyzer-undefined-behavior-ptrdiff"
+#endif
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -434,4 +436,6 @@ void register_vfs_fat32_tests() {
     JARVIS_REGISTER_TEST(vfs_fat32_rmdir_nonempty_fails);
     JARVIS_REGISTER_TEST(vfs_fat32_unlink_frees_clusters);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

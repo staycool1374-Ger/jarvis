@@ -237,16 +237,26 @@ void dump_class_counts();
     JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, kernel::test::TF_RELEASE)
 
 // NOLINTBEGIN(bugprone-macro-parentheses)
+#ifndef __clang__
+#define TEST_CLASS_DIAG_PUSH    _Pragma("GCC diagnostic push")
+#define TEST_CLASS_DIAG_IGNORE  _Pragma("GCC diagnostic ignored \"-Wanalyzer-possible-null-dereference\"")
+#define TEST_CLASS_DIAG_POP     _Pragma("GCC diagnostic pop")
+#else
+#define TEST_CLASS_DIAG_PUSH
+#define TEST_CLASS_DIAG_IGNORE
+#define TEST_CLASS_DIAG_POP
+#endif
+
 #define TEST_CLASS(name)                                                      \
     class name : public kernel::test::TestBase {                              \
     public:                                                                   \
         name() : TestBase(#name) {}                                           \
         void run() override;                                                  \
     };                                                                        \
-    _Pragma("GCC diagnostic push")                                            \
-    _Pragma("GCC diagnostic ignored \"-Wanalyzer-possible-null-dereference\"") \
+    TEST_CLASS_DIAG_PUSH                                                      \
+    TEST_CLASS_DIAG_IGNORE                                                    \
     static kernel::test::TestBase* _factory_##name() { return new name(); }   \
-    _Pragma("GCC diagnostic pop")                                             \
+    TEST_CLASS_DIAG_POP                                                       \
     void name::run()
 // NOLINTEND(bugprone-macro-parentheses)
 

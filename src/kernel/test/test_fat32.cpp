@@ -28,10 +28,12 @@
 using namespace kernel;
 using namespace kernel::fat32;
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #pragma GCC diagnostic ignored "-Wanalyzer-use-of-uninitialized-value"
 #pragma GCC diagnostic ignored "-Wanalyzer-malloc-leak"
+#endif
 
 extern "C" uint8_t _binary_build_fat32_img_start[];
 extern "C" uint8_t _binary_build_fat32_img_end[];
@@ -552,4 +554,6 @@ void register_fat32_tests() {
     JARVIS_REGISTER_TEST(fat32_remove_dir_entry);
     JARVIS_REGISTER_TEST(fat32_mkdir_roundtrip);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

@@ -19,9 +19,11 @@
 /// @file test_ipc.cpp
 /// @brief IPC (Inter-Process Communication) tests.
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -810,4 +812,6 @@ void register_ipc_tests() {
     JARVIS_REGISTER_TEST(ipc_sender_unblocked_on_receiver_exit);
     JARVIS_REGISTER_TEST(ipc_send_wakes_blocked_destination);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

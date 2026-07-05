@@ -22,8 +22,10 @@
 // loops are landing pads for undefined behaviour — if reached the system is
 // already in an unrecoverable state.  Suppress the analyzer's infinite-loop
 // diagnostic so -fanalyzer in release builds does not false-positive here.
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-infinite-loop"
+#endif
 
 extern "C" int __cxa_guard_acquire(uint64_t* g) {
     if (*g == 0) return 1;
@@ -98,4 +100,6 @@ extern "C" void* memmove(void* dest, const void* src, size_t n) {
     return dest;
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

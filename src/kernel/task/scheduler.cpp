@@ -332,14 +332,18 @@ uint64_t Scheduler::id_table_probe(uint64_t id) {
 }
 
 void Scheduler::id_table_insert(uint64_t id, TaskControlBlock* tcb) {
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-infinite-loop"
+#endif
     uint64_t idx = id_table_probe(id);
     while (id_table_[idx] != nullptr && id_table_[idx] != ID_TOMBSTONE) {
         idx = (idx + 1) & ID_TABLE_MASK;
     }
     id_table_[idx] = tcb;
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 }
 
 uint64_t Scheduler::alloc_id() noexcept {

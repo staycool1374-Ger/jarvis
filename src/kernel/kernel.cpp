@@ -440,8 +440,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         }
     }
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#endif
     kernel::PMM::set_oom_handler([]() -> bool {
         kernel::TaskControlBlock* victim = nullptr;
         uint64_t victim_priority = ~0ULL;
@@ -467,8 +469,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         kernel::Scheduler::reap_orphans();
         return true;
     });
+#ifndef __clang__
 #pragma GCC diagnostic pop
-    kernel::sync::init_all();
+#endif
     kernel::DriverRegistry::init();
     debug_write("[BOOT] Kernel init done\n");
 

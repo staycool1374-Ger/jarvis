@@ -166,9 +166,11 @@ static int str_cmp(const char* a, const char* b) {
     return static_cast<unsigned char>(*a) - static_cast<unsigned char>(*b);
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #pragma GCC diagnostic ignored "-Wanalyzer-use-of-uninitialized-value"
+#endif
 int Shell::parse_and_exec(const char* line) {
     while (*line == ' ') ++line;
     if (!*line) return 0;
@@ -313,7 +315,9 @@ int Shell::parse_and_exec(const char* line) {
     delete[] buf;
     return 1;
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 void Shell::execute(const char* cmd) {
     if (!initialized_) init();
@@ -1346,12 +1350,16 @@ void Shell::cmd_set(int argc, const char** argv) {
             size_t slen = 0;
             while (argv[i + 1][slen]) ++slen;
             auto* old = positional_argv_[i];
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
             positional_argv_[i] = new char[slen + 1];
             if (!positional_argv_[i]) return;
             for (size_t j = 0; j <= slen; ++j) positional_argv_[i][j] = argv[i + 1][j];
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
             delete[] old;
         }
     }

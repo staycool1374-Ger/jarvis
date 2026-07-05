@@ -29,8 +29,10 @@
 
 using namespace kernel;
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+#endif
 
 // Runmode: kernel
 // Testidea: N tasks (N=8) repeatedly lock/unlock a shared mutex; every task makes
@@ -363,4 +365,6 @@ void register_locking_stress_tests() {
     JARVIS_REGISTER_TEST(mutex_recursive_deadlock);
     JARVIS_REGISTER_TEST(semaphore_count_underflow);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

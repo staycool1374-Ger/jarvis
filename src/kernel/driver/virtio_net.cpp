@@ -113,10 +113,14 @@ bool virtio_net_probe(Nic& nic) {
         return false;
     }
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
     auto* dev = new VirtioNetDevice();
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
     dev->transport = transport;
     dev->queue_size = 16;
     dev->rx_avail_idx = 0;

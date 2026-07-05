@@ -19,9 +19,11 @@
 /// @file test_sync.cpp
 /// @brief Synchronisation primitive tests.
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -345,4 +347,6 @@ void register_sync_tests() {
     JARVIS_REGISTER_TEST(sync_queue_receive_blocks_when_empty);
     JARVIS_REGISTER_TEST(sync_queue_wake_sender_on_receive);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif

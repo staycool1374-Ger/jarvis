@@ -19,9 +19,11 @@
 /// @file test_locking.cpp
 /// @brief Locking primitive tests.
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#endif
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -688,4 +690,6 @@ void register_locking_tests() {
     JARVIS_REGISTER_TEST(queue_send_receive_priority_ordering);
     JARVIS_REGISTER_TEST(queue_send_to_full_blocks_and_wakes);
 }
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
