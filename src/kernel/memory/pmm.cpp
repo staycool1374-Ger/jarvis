@@ -37,6 +37,10 @@ constinit uint64_t PMM::page_table_pool_end_ = 0;
 constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Initialise the PMM bitmap and mark kernel/reserved pages as allocated.
+/// @param mem_size    Total physical memory in bytes.
+/// @param kernel_start Physical address of kernel image start.
+/// @param kernel_end   Physical address of kernel image end.
 void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     total_pages_ = mem_size / PAGE_SIZE;
     free_pages_ = total_pages_;
@@ -97,6 +101,9 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     }
 }
 
+/// @brief Linear-scan KERNEL allocation from the bitmap.
+/// @param count Number of contiguous pages.
+/// @return Physical address or 0.
 uint64_t PMM::try_alloc_kernel(size_t count) {
     for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
         bool ok = true;
@@ -115,6 +122,9 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
     return 0;
 }
 
+/// @brief Linear-scan USER allocation from the bitmap.
+/// @param count Number of contiguous pages.
+/// @return Physical address or 0.
 uint64_t PMM::try_alloc_user(size_t count) {
     for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
         bool ok = true;
@@ -133,6 +143,8 @@ uint64_t PMM::try_alloc_user(size_t count) {
     return 0;
 }
 
+/// @brief Allocate a single KERNEL page.  Invokes OOM handler on failure.
+/// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_page() {
     uint64_t result = try_alloc_kernel(1);
     if (result) {
@@ -147,6 +159,9 @@ uint64_t PMM::alloc_page() {
     return result;
 }
 
+/// @brief Allocate contiguous KERNEL pages.  Invokes OOM handler on failure.
+/// @param count Number of pages.
+/// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_contiguous(size_t count) {
     if (count == 0 || count > total_pages_) return 0;
     uint64_t result = try_alloc_kernel(count);
@@ -163,6 +178,8 @@ uint64_t PMM::alloc_contiguous(size_t count) {
     return result;
 }
 
+/// @brief Allocate a single USER page.  Invokes OOM handler on failure.
+/// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_user_page() {
     uint64_t result = try_alloc_user(1);
     if (result) {
@@ -177,6 +194,9 @@ uint64_t PMM::alloc_user_page() {
     return result;
 }
 
+/// @brief Allocate contiguous USER pages.  Invokes OOM handler on failure.
+/// @param count Number of pages.
+/// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_user_contiguous(size_t count) {
     if (count == 0 || count > total_pages_) return 0;
     uint64_t result = try_alloc_user(count);
@@ -193,6 +213,8 @@ uint64_t PMM::alloc_user_contiguous(size_t count) {
     return result;
 }
 
+/// @brief Allocate a page from the reserved page-table pool (or fall back to alloc_page).
+/// @return Physical address, or 0 (asserts on OOM).
 uint64_t PMM::alloc_page_table() {
     if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0) {
         return alloc_page();
@@ -213,6 +235,8 @@ uint64_t PMM::alloc_page_table() {
     return result;
 }
 
+/// @brief Free a physical page regardless of ownership.
+/// @param phys_addr Physical address to free.
 void PMM::free_page(uint64_t phys_addr) {
     uint64_t index = phys_addr / PAGE_SIZE;
     if (index >= total_pages_) return;
@@ -223,12 +247,17 @@ void PMM::free_page(uint64_t phys_addr) {
     }
 }
 
+/// @brief Check if a physical page was allocated as USER-owned.
+/// @param phys_addr Physical address.
+/// @return true if USER-owned.
 bool PMM::is_user_page(uint64_t phys_addr) {
     uint64_t index = phys_addr / arch::PAGE_SIZE;
     if (index >= total_pages_) return false;
     return owner_test(index);
 }
 
+/// @brief Set the allocation bit for a page index.
+/// @param index Page index.
 void PMM::bitmap_set(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -236,6 +265,8 @@ void PMM::bitmap_set(size_t index) {
     bitmap[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
+/// @brief Clear the allocation bit for a page index (mark free).
+/// @param index Page index.
 void PMM::bitmap_clear(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -243,6 +274,9 @@ void PMM::bitmap_clear(size_t index) {
     bitmap[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
+/// @brief Test the allocation bit for a page index.
+/// @param index Page index.
+/// @return true if allocated.
 bool PMM::bitmap_test(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -250,6 +284,8 @@ bool PMM::bitmap_test(size_t index) {
     return (bitmap[index / 8] >> (index % 8)) & 1;
 }
 
+/// @brief Mark a page as USER-owned in the owner bitmap.
+/// @param index Page index.
 void PMM::owner_set_user(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -257,6 +293,8 @@ void PMM::owner_set_user(size_t index) {
     owner[index / 8] |= static_cast<uint8_t>(1 << (index % 8));
 }
 
+/// @brief Mark a page as KERNEL-owned in the owner bitmap.
+/// @param index Page index.
 void PMM::owner_set_kernel(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -264,6 +302,9 @@ void PMM::owner_set_kernel(size_t index) {
     owner[index / 8] &= static_cast<uint8_t>(~(1 << (index % 8)));
 }
 
+/// @brief Test whether a page is USER-owned.
+/// @param index Page index.
+/// @return true if USER-owned, false if KERNEL-owned.
 bool PMM::owner_test(size_t index) {
     ENSURE(index < total_pages_);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -272,6 +313,11 @@ bool PMM::owner_test(size_t index) {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Initialise PMM with error-code return.
+/// @param mem_size    Total physical memory in bytes.
+/// @param kernel_start Physical address of kernel image start.
+/// @param kernel_end   Physical address of kernel image end.
+/// @return PmmError code.
 errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
     uint64_t kernel_end) {
     total_pages_ = mem_size / PAGE_SIZE;
@@ -335,6 +381,9 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Allocate a single KERNEL page with error-code return.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return PmmError code.
 errors::PmmError PMM::alloc_page_err(uint64_t& out_phys_addr) {
     uint64_t result = try_alloc_kernel(1);
     if (result) {
@@ -353,6 +402,10 @@ errors::PmmError PMM::alloc_page_err(uint64_t& out_phys_addr) {
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Allocate contiguous KERNEL pages with error-code return.
+/// @param count Number of pages.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return PmmError code.
 errors::PmmError PMM::alloc_contiguous_err(size_t count, uint64_t& out_phys_addr) {
     if (count == 0 || count > total_pages_) {
         return errors::PMM_ERR_INVALID;
@@ -374,6 +427,9 @@ errors::PmmError PMM::alloc_contiguous_err(size_t count, uint64_t& out_phys_addr
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Allocate a single USER page with error-code return.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return PmmError code.
 errors::PmmError PMM::alloc_user_page_err(uint64_t& out_phys_addr) {
     uint64_t result = try_alloc_user(1);
     if (result) {
@@ -392,6 +448,10 @@ errors::PmmError PMM::alloc_user_page_err(uint64_t& out_phys_addr) {
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Allocate contiguous USER pages with error-code return.
+/// @param count Number of pages.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return PmmError code.
 errors::PmmError PMM::alloc_user_contiguous_err(size_t count, uint64_t& out_phys_addr) {
     if (count == 0 || count > total_pages_) {
         return errors::PMM_ERR_INVALID;
@@ -413,6 +473,9 @@ errors::PmmError PMM::alloc_user_contiguous_err(size_t count, uint64_t& out_phys
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Allocate a page-table page (reserved pool, then fallback) with error-code return.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return PmmError code.
 errors::PmmError PMM::alloc_page_table_err(uint64_t& out_phys_addr) {
     if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0) {
         return alloc_page_err(out_phys_addr);
@@ -436,6 +499,9 @@ errors::PmmError PMM::alloc_page_table_err(uint64_t& out_phys_addr) {
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Free a physical page with error-code return.
+/// @param phys_addr Physical address to free.
+/// @return PmmError code.
 errors::PmmError PMM::free_page_err(uint64_t phys_addr) {
     uint64_t index = phys_addr / PAGE_SIZE;
     if (index >= total_pages_) {
@@ -449,6 +515,10 @@ errors::PmmError PMM::free_page_err(uint64_t phys_addr) {
     return errors::PMM_ERR_OK;
 }
 
+/// @brief Check USER ownership with error-code return.
+/// @param phys_addr Physical address.
+/// @param[out] out_is_user Set to true if USER-owned.
+/// @return PmmError code.
 errors::PmmError PMM::is_user_page_err(uint64_t phys_addr, bool& out_is_user) {
     uint64_t index = phys_addr / arch::PAGE_SIZE;
     if (index >= total_pages_) {

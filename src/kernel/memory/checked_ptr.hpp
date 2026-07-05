@@ -45,13 +45,21 @@ static inline bool is_user_range(const void* user_ptr, uint64_t size) {
     return true;
 }
 
+/// @brief Checked pointer for safe user-space memory access.
+/// @tparam T Element type (must be trivially copiable).
+/// @note Provides bounds-validated load/store/copy operations that return
+///       default values on failure instead of panicking.
 template <kernel::TriviallyCopiable T>
 class CheckedPtr {
     uint64_t addr_;
     uint64_t count_;
 public:
+    /// @brief Default constructor — null pointer, zero count.
     CheckedPtr() : addr_(0), count_(0) {}
 
+    /// @brief Construct from a raw user-space pointer with element count.
+    /// @param user_ptr Target user-space pointer.
+    /// @param count Number of elements (default 1).
     CheckedPtr(T* user_ptr, uint64_t count = 1)
         : addr_(reinterpret_cast<uint64_t>(user_ptr)), count_(count) {}
 
@@ -64,6 +72,8 @@ public:
             count_ * sizeof(T));
     }
 
+    /// @brief Return the raw pointer without validation.
+    /// @note Only safe when valid() has been checked beforehand.
     T* unsafe_ptr() const {
         return reinterpret_cast<T*>(addr_);
     }

@@ -33,6 +33,7 @@ namespace kernel::errors {
     X(TABLE_OOM,  3,  "Out of memory — page table pool exhausted") \
     X(INVALID,    4,  "Invalid physical address")
 
+/// @brief Error codes for the Physical Memory Manager.
 // NOLINTNEXTLINE(performance-enum-size)
 enum PmmError : uint64_t {
 #define X(name, num, msg) PMM_ERR_##name = (num),

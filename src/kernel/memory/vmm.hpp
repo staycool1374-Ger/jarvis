@@ -106,7 +106,8 @@ public:
     static errors::VmmError map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
                                  bool user, uint64_t pml4_phys);
 
-    /// @brief Returns the physical address of the kernel PML4.
+    /// @brief Return the physical address of the kernel PML4 table.
+    /// @return Physical address of the kernel page-table root.
     static uint64_t get_kernel_pml4() { return kernel_pml4_; }
 
     /// @brief Frees all user-space pages and page tables from a

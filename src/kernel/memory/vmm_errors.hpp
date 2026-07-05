@@ -33,6 +33,7 @@ namespace kernel::errors {
     X(INVALID_ADDR,   3,  "Invalid virtual address") \
     X(NOT_MAPPED,     4,  "Virtual address not mapped")
 
+/// @brief Error codes for the Virtual Memory Manager.
 // NOLINTNEXTLINE(performance-enum-size)
 enum VmmError : uint64_t {
 #define X(name, num, msg) VMM_ERR_##name = (num),

@@ -30,10 +30,15 @@ namespace kernel {
 class PhysicalAddress {
     uint64_t addr_;
 public:
+    /// @brief Default constructor — initialises to null address 0.
     constexpr PhysicalAddress() noexcept : addr_(0) {}
+    /// @brief Construct from a raw physical address.
+    /// @param addr Physical memory address.
     explicit constexpr PhysicalAddress(uint64_t addr) noexcept : addr_(addr) {}
 
+    /// @brief Return the raw physical address value.
     [[nodiscard]] constexpr uint64_t value() const noexcept { return addr_; }
+    /// @brief Check whether the address is null (zero).
     [[nodiscard]] constexpr bool is_null() const noexcept { return addr_ == 0; }
 
     constexpr PhysicalAddress& operator=(uint64_t addr) noexcept {
@@ -60,18 +65,26 @@ public:
 class VirtualAddress {
     uint64_t addr_;
 public:
+    /// @brief Default constructor — initialises to null address 0.
     constexpr VirtualAddress() noexcept : addr_(0) {}
+    /// @brief Construct from a raw virtual address.
+    /// @param addr Virtual memory address.
     explicit constexpr VirtualAddress(uint64_t addr) noexcept : addr_(addr) {}
 
+    /// @brief Return the raw virtual address value.
     [[nodiscard]] constexpr uint64_t value() const noexcept { return addr_; }
+    /// @brief Check whether the address is null (zero).
     [[nodiscard]] constexpr bool is_null() const noexcept { return addr_ == 0; }
+    /// @brief Check if the address is canonical (x86_64: bits 63-47 are sign extension of bit 47).
     [[nodiscard]] constexpr bool is_canonical() const noexcept {
         // x86_64 canonical: bits 63..47 must be sign extension of bit 47
         return (addr_ & 0xFFFF800000000000ULL) == 0 || (
             addr_ & 0xFFFF800000000000ULL) == 0xFFFF800000000000ULL;
     }
+    /// @brief Check whether the address lies in kernel-space (higher half).
     [[nodiscard]] constexpr bool is_kernel() const noexcept {
         return addr_ >= 0xFFFF800000000000ULL; }
+    /// @brief Check whether the address lies in user-space (lower half).
     [[nodiscard]] constexpr bool is_user() const noexcept {
         return addr_ < 0x0000800000000000ULL; }
 
@@ -113,14 +126,21 @@ static constexpr uint64_t HHDM_OFFSET = 0xFFFF800000000000ULL;
 /// @brief Page-aligned physical address.
 class PageAddress : public PhysicalAddress {
 public:
+    /// @brief Default constructor — initialises to null page address.
     constexpr PageAddress() noexcept = default;
+    /// @brief Construct a page-aligned address from a raw value (clears offset bits).
+    /// @param addr Raw physical address (lower 12 bits are masked off).
     explicit constexpr PageAddress(uint64_t addr) noexcept : PhysicalAddress(
         addr & ~0xFFFULL) {}
+    /// @brief Construct a page-aligned address from a PhysicalAddress.
+    /// @param phys Physical address (lower 12 bits are masked off).
     explicit constexpr PageAddress(PhysicalAddress phys) noexcept :
         PhysicalAddress(phys.value() & ~0xFFFULL) {}
 
+    /// @brief Return the page index (address / 4096).
     [[nodiscard]] constexpr size_t page_index() const noexcept { return value(
         ) / 4096; }
+    /// @brief Check whether the underlying address is already page-aligned.
     [[nodiscard]] constexpr bool is_page_aligned() const noexcept { return (
         value() & 0xFFFULL) == 0; }
 };

@@ -96,9 +96,11 @@ public:
     /// @return PmmError code.
     static errors::PmmError is_user_page_err(uint64_t phys_addr, bool& out_is_user);
 
+    /// @brief Return the amount of free physical memory in bytes.
     static uint64_t free_memory() noexcept {
         return free_pages_ * arch::PAGE_SIZE;
     }
+    /// @brief Return the total physical memory size in bytes.
     static uint64_t total_memory() noexcept {
         return total_pages_ * arch::PAGE_SIZE;
     }
@@ -107,20 +109,28 @@ public:
     /// Should try to free memory.
     /// @return true if memory may have been freed (caller should retry).
     using OOMHandler = bool (*)();
+    /// @brief Install an OOM handler that the allocator calls when pages are exhausted.
+    /// @param h Function pointer; return true if memory may have been freed.
     static void set_oom_handler(OOMHandler h) { oom_handler_ = h; }
+    /// @brief Get the currently installed OOM handler.
+    /// @return Function pointer, or nullptr if none.
     static OOMHandler get_oom_handler() { return oom_handler_; }
 
     /// @name Test-isolation helpers
     /// @brief Expose internal bitmaps for snapshot/restore.
+    /// @return Pointer to the allocation bitmap.
     static uint8_t* bitmap_ptr() {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         return reinterpret_cast<uint8_t*>(bitmap_);
     }
+    /// @brief Return pointer to the owner-tracking bitmap.
     static uint8_t* owner_bitmap_ptr() {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         return reinterpret_cast<uint8_t*>(owner_bitmap_);
     }
+    /// @brief Return size of each bitmap in bytes.
     static uint64_t bitmap_bytes()          { return bitmap_size_; }
+    /// @brief Return mutable reference to the free-page counter (for snapshot/restore).
     static uint64_t& free_pages_ref()       { return free_pages_; }
 
 private:
@@ -135,15 +145,35 @@ private:
     static constinit uint64_t page_table_pool_end_;
     static constinit OOMHandler oom_handler_;
 
+    /// @brief Mark a page as allocated in the bitmap.
+    /// @param index Page index.
     static void bitmap_set(size_t index);
+    /// @brief Mark a page as free in the bitmap.
+    /// @param index Page index.
     static void bitmap_clear(size_t index);
+    /// @brief Test whether a page is allocated.
+    /// @param index Page index.
+    /// @return true if the page is allocated.
     static bool bitmap_test(size_t index);
 
+    /// @brief Mark a page as USER-owned in the owner bitmap.
+    /// @param index Page index.
     static void owner_set_user(size_t index);
+    /// @brief Mark a page as KERNEL-owned in the owner bitmap.
+    /// @param index Page index.
     static void owner_set_kernel(size_t index);
+    /// @brief Test whether a page is USER-owned.
+    /// @param index Page index.
+    /// @return true if USER-owned (false = KERNEL-owned).
     static bool owner_test(size_t index);
 
+    /// @brief Allocate contiguous USER pages from the bitmap (linear scan).
+    /// @param count Number of consecutive pages.
+    /// @return Physical address of first page, or 0 on failure.
     static uint64_t try_alloc_user(size_t count);
+    /// @brief Allocate contiguous KERNEL pages from the bitmap (linear scan).
+    /// @param count Number of consecutive pages.
+    /// @return Physical address of first page, or 0 on failure.
     static uint64_t try_alloc_kernel(size_t count);
 };
 

@@ -51,6 +51,7 @@ public:
         size_t  first_free;
         bool    initialized;
 
+        /// @brief Default constructor — zero-initialises all fields.
         Pool()
             : block_size(0)
             , block_count(0)
@@ -60,22 +61,32 @@ public:
             , initialized(false)
             {}
 
+        /// @brief Check if a block index is marked as freed in the bitmap.
+        /// @param idx Block index.
+        /// @return true if the block is free.
         bool is_block_freed(size_t idx) const {
             return freed_bitmap[idx / 64] & (1ULL << (idx % 64));
         }
 
+        /// @brief Mark a block index as freed in the bitmap.
+        /// @param idx Block index.
         void set_block_freed(size_t idx) {
             freed_bitmap[idx / 64] |= (1ULL << (idx % 64));
         }
 
+        /// @brief Clear the freed flag for a block index (mark as allocated).
+        /// @param idx Block index.
         void clear_block_freed(size_t idx) {
             freed_bitmap[idx / 64] &= ~(1ULL << (idx % 64));
         }
 
-        /// @name Test-isolation helpers
+        /// @brief Copy the freed bitmap to an external buffer.
+        /// @param[out] dst Destination array (4 x uint64_t).
         void copy_freed_bitmap(uint64_t* dst) const {
             for (int i = 0; i < 4; ++i) dst[i] = freed_bitmap[i];
         }
+        /// @brief Overwrite the freed bitmap from an external buffer.
+        /// @param src Source array (4 x uint64_t).
         void write_freed_bitmap(const uint64_t* src) {
             for (int i = 0; i < 4; ++i) freed_bitmap[i] = src[i];
         }
@@ -113,7 +124,8 @@ public:
     /// @return true if ptr is owned by MemPool.
     static bool contains(void* ptr);
 
-    /// @brief Returns true after init() completes.
+    /// @brief Check whether the MemPool subsystem has been initialised.
+    /// @return true after init() completes successfully.
     static bool is_ready() { return ready_; }
 
     /// @name Test-isolation helpers (snapshot / restore)
@@ -125,17 +137,26 @@ public:
     };
     /// @brief Return the number of pool classes.
     static size_t pool_count() { return POOL_COUNT; }
-    /// @brief Return free count for pool at index @p idx.
+    /// @brief Return the free block count for a given pool.
+    /// @param idx Pool index (0..POOL_COUNT-1).
+    /// @return Number of free blocks in that pool.
     static size_t pool_free_count(size_t idx) { return pools_[idx].free_count; }
-    /// @brief Fill @p out with the meta of pool @p idx.
+    /// @brief Snapshot the metadata of one pool (free-list head, free count, bitmap).
+    /// @param idx  Pool index.
+    /// @param[out] out  Filled with the pool's current metadata.
     static void capture_pool_meta(size_t idx, PoolMeta& out);
-    /// @brief Restore pool @p idx from @p meta and rebuild its free list.
+    /// @brief Restore a pool's metadata from a previous snapshot and rebuild its free list.
+    /// @param idx  Pool index.
+    /// @param meta Previously captured metadata.
     static void restore_pool_meta(size_t idx, const PoolMeta& meta);
-    /// @brief Write all pool block-data into @p dst (size = pool_data_bytes()).
+    /// @brief Copy all pool block data into a contiguous external buffer.
+    /// @param[out] dst  Destination buffer (size must be >= pool_data_bytes()).
     static void capture_pool_data(uint8_t* dst);
-    /// @brief Overwrite all pool block-data from @p src.
+    /// @brief Overwrite all pool block data from a contiguous external buffer.
+    /// @param src  Source buffer previously filled by capture_pool_data().
     static void restore_pool_data(const uint8_t* src);
-    /// @brief Total bytes needed to hold all pool block-data copies.
+    /// @brief Calculate total bytes needed to hold all pool block data.
+    /// @return Sum of (block_size * block_count) over all initialised pools.
     static size_t pool_data_bytes();
 
 private:

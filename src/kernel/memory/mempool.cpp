@@ -27,6 +27,9 @@ namespace kernel {
 MemPool::Pool MemPool::pools_[POOL_COUNT] = {};
 constinit bool MemPool::ready_ = false;
 
+/// @brief Initialise all 9 pool classes from page-aligned PMM allocations.
+///        Each pool carves its region into fixed-size blocks and builds an
+///        embedded free list.
 void MemPool::init() {
     static const size_t sizes[POOL_COUNT] = {
         16, 32, 64, 128, 256, 512, 1024, 2048, 4480
@@ -69,6 +72,9 @@ void MemPool::init() {
     ready_ = true;
 }
 
+/// @brief Allocate a block from the smallest pool class that fits @p size.
+/// @param size Minimum number of bytes required.
+/// @return Pointer to the block, or nullptr on failure.
 void* MemPool::alloc(size_t size) {
     size_t idx = find_pool(size);
     if (idx >= POOL_COUNT) return nullptr;
@@ -90,6 +96,8 @@ void* MemPool::alloc(size_t size) {
     return pool.data + block * pool.block_size;
 }
 
+/// @brief Return a previously allocated block to its pool.
+/// @param block Pointer returned by a previous alloc() call (null is a no-op).
 void MemPool::free(void* block) {
     if (!block) return;
 
@@ -122,6 +130,9 @@ void MemPool::free(void* block) {
     }
 }
 
+/// @brief Check whether a pointer falls within any MemPool data region.
+/// @param ptr Pointer to test.
+/// @return true if the pointer is owned by any initialised pool.
 bool MemPool::contains(void* ptr) {
     if (!ptr) return false;
     uint8_t* p = static_cast<uint8_t*>(ptr);
@@ -135,6 +146,9 @@ bool MemPool::contains(void* ptr) {
     return false;
 }
 
+/// @brief Find the smallest initialised pool class whose block_size >= size.
+/// @param size Requested allocation size.
+/// @return Pool index, or (size_t)-1 if no pool fits.
 size_t MemPool::find_pool(size_t size) {
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         if (pools_[i].block_size >= size && pools_[i].initialized) {
@@ -148,6 +162,9 @@ size_t MemPool::find_pool(size_t size) {
 // Test-isolation helpers
 // ---------------------------------------------------------------------------
 
+/// @brief Snapshot the free-list head, free count, and freed bitmap for a pool.
+/// @param idx Pool index.
+/// @param[out] out Destination to fill with metadata.
 void MemPool::capture_pool_meta(size_t idx, PoolMeta& out) {
     auto& p = pools_[idx];
     out.first_free  = p.first_free;
@@ -156,6 +173,10 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta& out) {
     p.copy_freed_bitmap(out.freed_bitmap);
 }
 
+/// @brief Restore a pool's metadata from a snapshot and rebuild the free list.
+///        Any blocks added since the snapshot are marked free.
+/// @param idx  Pool index.
+/// @param meta Previously captured metadata.
 void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
     auto& p = pools_[idx];
     p.write_freed_bitmap(meta.freed_bitmap);
@@ -188,6 +209,8 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
     // leaves first_free == -1 (no free blocks) — correct.
 }
 
+/// @brief Copy all pool block data into a contiguous buffer.
+/// @param[out] dst Destination buffer (must be >= pool_data_bytes()).
 void MemPool::capture_pool_data(uint8_t* dst) {
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto& p = pools_[i];
@@ -198,6 +221,8 @@ void MemPool::capture_pool_data(uint8_t* dst) {
     }
 }
 
+/// @brief Restore all pool block data from a contiguous buffer.
+/// @param src Source buffer previously filled by capture_pool_data().
 void MemPool::restore_pool_data(const uint8_t* src) {
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto& p = pools_[i];
@@ -208,6 +233,8 @@ void MemPool::restore_pool_data(const uint8_t* src) {
     }
 }
 
+/// @brief Compute total bytes across all initialised pools.
+/// @return Sum of (block_count * block_size) for each pool.
 size_t MemPool::pool_data_bytes() {
     size_t total = 0;
     for (size_t i = 0; i < POOL_COUNT; ++i) {
@@ -224,11 +251,17 @@ namespace kernel {
 
 using namespace errors;
 
+/// @brief Initialise all pools and return OK.
+/// @return MEMPOOL_ERR_OK after successful init.
 MemPoolError MemPool::init_err() {
     init();
     return MEMPOOL_ERR_OK;
 }
 
+/// @brief Allocate a block with error-code return instead of nullptr.
+/// @param size Minimum bytes required.
+/// @param[out] out_ptr Set to the allocated block on success.
+/// @return MemPoolError code.
 MemPoolError MemPool::alloc_err(size_t size, void*& out_ptr) {
     size_t idx = find_pool(size);
     if (idx >= POOL_COUNT) {
@@ -255,6 +288,9 @@ MemPoolError MemPool::alloc_err(size_t size, void*& out_ptr) {
     return MEMPOOL_ERR_OK;
 }
 
+/// @brief Free a block with error-code return.
+/// @param block Pointer to free (null returns MEMPOOL_ERR_INVALID_PTR).
+/// @return MemPoolError code.
 MemPoolError MemPool::free_err(void* block) {
     if (!block) {
         return MEMPOOL_ERR_INVALID_PTR;

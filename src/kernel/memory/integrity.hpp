@@ -24,6 +24,9 @@ namespace kernel {
 namespace integrity {
 
 // NOLINTBEGIN(bugprone-dynamic-static-initializers)
+/// @name Linker section boundary markers
+/// @brief Magic constants placed at section boundaries by the linker script.
+///        Each 8-byte value encodes an ASCII tag (e.g. "TXT_STRT").
 extern const uint64_t _m_text_start;
 extern const uint64_t _m_text_end;
 extern const uint64_t _m_rodata_start;
@@ -36,15 +39,24 @@ extern const uint64_t _m_stack_before;
 extern const uint64_t _m_stack_after;
 
 extern "C" {
+    /// @brief Start address of the .text section (linker symbol).
     extern uint64_t _text_start[];
+    /// @brief End address of the .text section (linker symbol).
     extern uint64_t _text_end[];
+    /// @brief Expected CRC-32 value for the .text section (linker symbol).
     extern uint64_t _expected_code_crc[];
 }
 // NOLINTEND(bugprone-dynamic-static-initializers)
 
+/// @brief Verify that all linker section markers contain their expected magic values.
+/// @return true if all markers are intact.
 bool check_section_markers();
+/// @brief Reset the CRC computation state for the .text section integrity check.
 void reset_crc_state();
+/// @brief Process one chunk (4 KiB) of the code CRC scan.
+/// @return true when the CRC scan is complete.
 bool crc_process_chunk();
+/// @brief Idle task main — periodically verifies section markers and runs code CRC.
 void idle_task_main();
 
 }

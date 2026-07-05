@@ -40,6 +40,9 @@ extern "C" {
     extern uint64_t _expected_code_crc[];
 }
 
+/// @brief Verify section markers — compares each linker-placed magic constant
+///        against its expected ASCII tag.  Fails via Logger on mismatch.
+/// @return true if all markers match.
 bool check_section_markers() {
     if (_m_text_start      != 0x545254535F545854ULL) { Logger::error("INTEGRITY: .text start marker corrupted"); return false; }
     if (_m_text_end        != 0x5F444E455F545854ULL) { Logger::error("INTEGRITY: .text end marker corrupted");   return false; }
@@ -54,6 +57,7 @@ bool check_section_markers() {
     return true;
 }
 
+/// @brief Reset CRC accumulator, offset, and completion flags for a fresh scan.
 void reset_crc_state() {
     crc_accumulator = CRC32::INITIAL;
     crc_offset = 0;
@@ -69,6 +73,10 @@ void reset_crc_state() {
     }
 }
 
+/// @brief Process the next 4 KiB chunk of the .text CRC scan.
+///        When the scan completes, compares the computed CRC against the
+///        expected value stored by the linker.  Panics on mismatch.
+/// @return true if the CRC scan is complete (or was already checked).
 bool crc_process_chunk() {
     if (crc_complete) {
         if (!crc_checked) {
@@ -106,6 +114,8 @@ bool crc_process_chunk() {
     return crc_complete;
 }
 
+/// @brief Idle task entry point — continuously verifies section markers and
+///        processes code CRC chunks between HLT instructions.
 void idle_task_main() {
     static bool inited = false;
     if (!inited) {

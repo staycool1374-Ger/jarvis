@@ -28,6 +28,7 @@ namespace kernel {
 
 constinit uint64_t VMM::kernel_pml4_ = 0;
 
+/// @brief Initialise the VMM: capture current PML4, zero residual bootloader entries.
 void VMM::init() {
     kernel_pml4_ = arch::read_cr3();
 
@@ -101,6 +102,12 @@ void VMM::init() {
 #endif
 }
 
+/// @brief Walk or create a page-table entry at the current level.
+/// @param table     Pointer to the current-level page table.
+/// @param index     Entry index within @p table.
+/// @param create    If true, allocate a new table when missing.
+/// @param user_alloc If true, allocate USER-owned pages for the new table.
+/// @return Pointer to the next-level table, or nullptr if not present and !create.
 uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,
     bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
@@ -176,6 +183,10 @@ uint64_t* VMM::get_table(uint64_t* table, size_t index, bool create,
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Map a 4 KiB page in the kernel page table.
+/// @param virt_addr Page-aligned virtual address.
+/// @param phys_addr Page-aligned physical address.
+/// @param user      If true, mark the page as user-accessible.
 void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 #if defined(CONFIG_ARCH_RISCV64)
     // Sv39 3-level page table walk
@@ -268,6 +279,8 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 #endif
 }
 
+/// @brief Unmap a virtual page from the kernel page table.
+/// @param virt_addr Virtual address to unmap.
 void VMM::unmap_page(uint64_t virt_addr) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -306,6 +319,9 @@ void VMM::unmap_page(uint64_t virt_addr) {
 #endif
 }
 
+/// @brief Translate a virtual address to a physical address via the kernel PML4.
+/// @param virt_addr Virtual address.
+/// @return Physical address, or 0 if not mapped.
 uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -359,11 +375,18 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
 #endif
 }
 
+/// @brief Read the current PML4 physical address from CR3 (or equivalent).
+/// @return Physical address of the active PML4.
 uint64_t VMM::current_pml4() {
     return arch::read_cr3();
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Map a page into a specific (non-kernel) PML4 page table.
+/// @param virt_addr Page-aligned virtual address.
+/// @param phys_addr Page-aligned physical address.
+/// @param user      If true, mark the page as user-accessible.
+/// @param pml4_phys Physical address of the target PML4.
 void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
                             bool user, uint64_t pml4_phys)
 {
@@ -440,6 +463,8 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
 #endif
 }
 
+/// @brief Create a new PML4: zeroes user entries, copies kernel entries.
+/// @return Physical address of new PML4, or 0 on failure.
 uint64_t VMM::clone_kernel_pml4() {
     uint64_t phys = PMM::alloc_page();
     if (!phys) { ASSERT(errors::VmmError::VMM_ERR_PML4_ALLOC); return 0; }
@@ -478,6 +503,9 @@ uint64_t VMM::clone_kernel_pml4() {
 #endif
 }
 
+/// @brief Free all user-space pages and page tables owned by a user PML4.
+///        Skips kernel-owned pages and honours page_table_shared_ flag.
+/// @param pml4_phys Physical address of the user PML4 to tear down.
 void VMM::free_user_pages(uint64_t pml4_phys) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -597,6 +625,10 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Translate a virtual address using a specific PML4.
+/// @param virt_addr Virtual address.
+/// @param pml4_phys Physical address of the target PML4.
+/// @return Physical address, or 0 if not mapped.
 uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
@@ -668,11 +700,18 @@ namespace kernel {
 
 using namespace errors;
 
+/// @brief Initialise VMM with error-code return.
+/// @return VMM_ERR_OK.
 VmmError VMM::init_err() {
     init();
     return VMM_ERR_OK;
 }
 
+/// @brief Map a page in the kernel table with alignment validation and error-code return.
+/// @param virt_addr Page-aligned virtual address.
+/// @param phys_addr Page-aligned physical address.
+/// @param user      If true, mark as user-accessible.
+/// @return VmmError code.
 VmmError VMM::map_page_err(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     if ((virt_addr & 0xFFF) != 0 || (phys_addr & 0xFFF) != 0) {
         return VMM_ERR_INVALID_ADDR;
@@ -681,6 +720,9 @@ VmmError VMM::map_page_err(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     return VMM_ERR_OK;
 }
 
+/// @brief Unmap a page with alignment validation and error-code return.
+/// @param virt_addr Virtual address to unmap.
+/// @return VmmError code.
 VmmError VMM::unmap_page_err(uint64_t virt_addr) {
     if ((virt_addr & 0xFFF) != 0) {
         return VMM_ERR_INVALID_ADDR;
@@ -689,6 +731,10 @@ VmmError VMM::unmap_page_err(uint64_t virt_addr) {
     return VMM_ERR_OK;
 }
 
+/// @brief Translate virtual to physical via kernel PML4 with error-code return.
+/// @param virt_addr Virtual address.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return VmmError code.
 VmmError VMM::virt_to_phys_err(uint64_t virt_addr, uint64_t& out_phys_addr) {
     if ((virt_addr & 0xFFF) != 0) {
         return VMM_ERR_INVALID_ADDR;
@@ -697,6 +743,9 @@ VmmError VMM::virt_to_phys_err(uint64_t virt_addr, uint64_t& out_phys_addr) {
     return out_phys_addr != 0 ? VMM_ERR_OK : VMM_ERR_NOT_MAPPED;
 }
 
+/// @brief Clone kernel PML4 with error-code return.
+/// @param[out] out_pml4_phys Physical address of new PML4 on success.
+/// @return VmmError code.
 VmmError VMM::clone_kernel_pml4_err(uint64_t& out_pml4_phys) {
     uint64_t phys = clone_kernel_pml4();
     if (!phys) {
@@ -706,6 +755,12 @@ VmmError VMM::clone_kernel_pml4_err(uint64_t& out_pml4_phys) {
     return VMM_ERR_OK;
 }
 
+/// @brief Map page into a specific PML4 with alignment validation and error-code return.
+/// @param virt_addr Page-aligned virtual address.
+/// @param phys_addr Page-aligned physical address.
+/// @param user      If true, mark as user-accessible.
+/// @param pml4_phys Physical address of the target PML4.
+/// @return VmmError code.
 VmmError VMM::map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
                                    bool user, uint64_t pml4_phys) {
     if ((virt_addr & 0xFFF) != 0 || (phys_addr & 0xFFF) != 0) {
@@ -715,11 +770,19 @@ VmmError VMM::map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
     return VMM_ERR_OK;
 }
 
+/// @brief Free all user pages from a PML4 with error-code return.
+/// @param pml4_phys Physical address of the user PML4.
+/// @return VmmError code.
 VmmError VMM::free_user_pages_err(uint64_t pml4_phys) {
     free_user_pages(pml4_phys);
     return VMM_ERR_OK;
 }
 
+/// @brief Translate virtual to physical in a specific PML4 with error-code return.
+/// @param virt_addr Virtual address.
+/// @param pml4_phys Physical address of the target PML4.
+/// @param[out] out_phys_addr Physical address on success.
+/// @return VmmError code.
 VmmError VMM::virt_to_phys_in_pml4_err(uint64_t virt_addr, uint64_t pml4_phys, uint64_t& out_phys_addr) {
     if ((virt_addr & 0xFFF) != 0) {
         return VMM_ERR_INVALID_ADDR;
