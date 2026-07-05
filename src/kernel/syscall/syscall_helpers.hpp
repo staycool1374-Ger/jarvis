@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_helpers.hpp
+/// @brief Helpers used by syscall handlers — current task, path resolution, fd management.
+
 #pragma once
 
 #include <types.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_handlers_misc.cpp
+/// @brief Syscall handlers for miscellaneous operations: yield, print, get_ticks, exit, etc.
+
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/log/dmesg.hpp>

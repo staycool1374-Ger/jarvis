@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_handlers_ipc.cpp
+/// @brief Syscall handlers for IPC operations: send, receive, sync send, mailbox, notify, events.
+
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/scheduler.hpp>

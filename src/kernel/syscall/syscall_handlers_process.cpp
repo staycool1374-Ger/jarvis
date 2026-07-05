@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_handlers_process.cpp
+/// @brief Syscall handlers for process operations: exec, fork, waitpid, getpid, kill, etc.
+
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/scheduler.hpp>

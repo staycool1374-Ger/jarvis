@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_handlers_fs.cpp
+/// @brief Syscall handlers for file-system operations: open, read, write, close, stat, etc.
+
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/task.hpp>

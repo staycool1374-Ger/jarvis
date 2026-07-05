@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall_errors.hpp
+/// @brief Syscall error codes aggregated from all subsystems (X-macro table).
+
 #pragma once
 
 #include <types.hpp>
@@ -117,6 +120,7 @@ namespace kernel::errors {
     X(MEMPOOL_INVALID_POOL,  906, "Invalid pool index") \
     X(MEMPOOL_CORRUPTED,     907, "Pool corrupted")
 
+/// @brief System-call-level error codes (aggregated from all kernel subsystems).
 // NOLINTNEXTLINE(performance-enum-size)
 enum SyscallError : uint64_t {
 #define X(name, num, msg) SYS_ERR_##name = (num),
@@ -135,7 +139,7 @@ inline const char* error_string(SyscallError e) {
     return "Unknown syscall error";
 }
 
-/// @brief Convert subsystem error to SyscallError
+/// @brief Convert a task subsystem error to SyscallError (offset 100).
 inline SyscallError from_task_error(uint64_t e) {
     return static_cast<SyscallError>(100 + e);
 }

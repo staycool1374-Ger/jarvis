@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file syscall.cpp
+/// @brief System call dispatcher — init (MSR setup), handle (table dispatch), helpers.
+
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -28,6 +31,7 @@ extern "C" void syscall_entry();
 
 namespace kernel {
 
+/// @brief Initialise the syscall interface (MSR setup, syscall-table built at compile time).
 void Syscall::init() {
 #if defined(CONFIG_ARCH_X86_64)
     uint64_t star_val = (static_cast<uint64_t>(arch::SEG_KERNEL_CODE) << 32) |
@@ -42,15 +46,18 @@ void Syscall::init() {
 #endif
 }
 
+/// @brief Get the currently running task from the scheduler.
 TaskControlBlock* syscall_task() {
     return Scheduler::current_task();
 }
 
+/// @brief Check if the current task is a user-space task (has its own page table).
 bool syscall_is_user_task() {
     auto* t = syscall_task();
     return t && t->page_table_ != 0;
 }
 
+/// @brief Open a vnode as a file descriptor in the current task's fd table.
 int syscall_task_open(vfs::Vnode* vn, uint64_t flags) {
     int fd = syscall_task()->fd_table.alloc();
     if (fd < 0) return -1;
@@ -61,6 +68,7 @@ int syscall_task_open(vfs::Vnode* vn, uint64_t flags) {
     return fd;
 }
 
+/// @brief Resolve a path and open it as a file descriptor.
 int syscall_path_open(const char* path, uint64_t flags) {
     vfs::Vnode* vn = vfs::resolve(path);
     if (!vn) {
