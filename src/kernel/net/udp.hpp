@@ -25,12 +25,12 @@
 
 namespace net {
 
-/// UDP header (8 bytes)
+/// @brief UDP header (8 bytes).
 struct UdpHeader {
-    uint16_t src_port;   // big-endian
-    uint16_t dst_port;   // big-endian
-    uint16_t length;     // header + data, big-endian
-    uint16_t checksum;   // big-endian
+    uint16_t src_port; ///< Source port (big-endian).
+    uint16_t dst_port; ///< Destination port (big-endian).
+    uint16_t length;   ///< Header + data length (big-endian).
+    uint16_t checksum; ///< Optional checksum (big-endian; 0 = no checksum).
 } __attribute__((packed));
 
 } // namespace net

@@ -28,28 +28,31 @@ namespace net {
 
 constexpr size_t ARP_CACHE_SIZE = 32;
 
-/// ARP packet header (28 bytes)
+/// @brief ARP packet header (28 bytes).
 struct ArpHeader {
-    uint16_t htype;       // hardware type (1 = Ethernet)
-    uint16_t ptype;       // protocol type (0x0800 = IPv4)
-    uint8_t  hlen;        // hardware address length (6)
-    uint8_t  plen;        // protocol address length (4)
-    uint16_t oper;        // operation (1 = request, 2 = reply)
-    MacAddr  sha;         // sender hardware address
-    uint32_t spa;         // sender protocol address (IPv4, big-endian)
-    MacAddr  tha;         // target hardware address
-    uint32_t tpa;         // target protocol address (IPv4, big-endian)
+    uint16_t htype;  ///< Hardware type (1 = Ethernet).
+    uint16_t ptype;  ///< Protocol type (0x0800 = IPv4).
+    uint8_t  hlen;   ///< Hardware address length (6).
+    uint8_t  plen;   ///< Protocol address length (4).
+    uint16_t oper;   ///< Operation (1 = request, 2 = reply).
+    MacAddr  sha;    ///< Sender hardware address.
+    uint32_t spa;    ///< Sender protocol address (IPv4, big-endian).
+    MacAddr  tha;    ///< Target hardware address.
+    uint32_t tpa;    ///< Target protocol address (IPv4, big-endian).
 } __attribute__((packed));
 
+/// ARP hardware type: Ethernet.
 constexpr uint16_t ARP_HTYPE_ETHER = 1;
+/// ARP operation: request.
 constexpr uint16_t ARP_OPER_REQUEST = 1;
+/// ARP operation: reply.
 constexpr uint16_t ARP_OPER_REPLY   = 2;
 
-/// ARP cache entry
+/// @brief A single ARP cache entry.
 struct ArpCacheEntry {
-    uint32_t ip;         // IPv4 address (big-endian)
-    MacAddr  mac;
-    bool     valid;
+    uint32_t ip;    ///< IPv4 address (big-endian).
+    MacAddr  mac;   ///< Resolved MAC address.
+    bool     valid; ///< Whether this entry contains valid data.
 };
 
 /// ARP cache — resolves IP → MAC, caches results.

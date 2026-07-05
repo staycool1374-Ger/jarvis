@@ -29,9 +29,9 @@ constexpr size_t IPV4_ADDR_LEN = 4;
 constexpr size_t IPV4_MIN_HEADER_LEN = 20;
 constexpr size_t IPV4_MAX_HEADER_LEN = 60;
 
-/// IPv4 address
+/// @brief IPv4 address (4 bytes, network-byte-order).
 struct Ipv4Addr {
-    uint8_t addr[IPV4_ADDR_LEN];
+    uint8_t addr[IPV4_ADDR_LEN]; ///< Octets in network order.
 
     bool operator==(const Ipv4Addr& o) const {
         for (size_t i = 0; i < IPV4_ADDR_LEN; ++i)
@@ -56,28 +56,29 @@ struct Ipv4Addr {
     }
 } __attribute__((packed));
 
-/// IPv4 header (20 bytes, no options)
+/// @brief IPv4 header (20 bytes, no options).
 struct Ipv4Header {
-    uint8_t  ver_ihl;      // version (4) | header length (5 = 20 bytes)
-    uint8_t  dscp_ecn;     // DSCP + ECN
-    uint16_t total_length; // big-endian
-    uint16_t ident;        // big-endian
-    uint16_t flags_frag;   // flags + fragment offset, big-endian
-    uint8_t  ttl;          // time to live
-    uint8_t  protocol;     // protocol (17 = UDP, 6 = TCP, 1 = ICMP)
-    uint16_t checksum;     // header checksum, big-endian
-    Ipv4Addr src;
-    Ipv4Addr dst;
+    uint8_t  ver_ihl;      ///< Version (4) | header length (5 = 20 bytes).
+    uint8_t  dscp_ecn;     ///< DSCP + ECN.
+    uint16_t total_length; ///< Total packet length (big-endian).
+    uint16_t ident;        ///< Identification (big-endian).
+    uint16_t flags_frag;   ///< Flags + fragment offset (big-endian).
+    uint8_t  ttl;          ///< Time to live.
+    uint8_t  protocol;     ///< Protocol (1 = ICMP, 6 = TCP, 17 = UDP).
+    uint16_t checksum;     ///< Header checksum (big-endian).
+    Ipv4Addr src;          ///< Source address.
+    Ipv4Addr dst;          ///< Destination address.
 } __attribute__((packed));
 
-/// IPv4 protocol numbers
+/// @brief IPv4 protocol number constants.
 enum Ipv4Protocol : uint8_t {
-    IP_PROTO_ICMP = 1,
-    IP_PROTO_TCP  = 6,
-    IP_PROTO_UDP  = 17,
+    IP_PROTO_ICMP = 1,  ///< ICMP.
+    IP_PROTO_TCP  = 6,  ///< TCP.
+    IP_PROTO_UDP  = 17, ///< UDP.
 };
 
-/// Compute an IPv4 header checksum.
+/// @brief Compute an IPv4 header one's-complement checksum.
+/// @return Big-endian checksum value.
 inline uint16_t ipv4_checksum(const Ipv4Header* hdr) {
     uint32_t sum = 0;
     auto* words = reinterpret_cast<const uint16_t*>(hdr);

@@ -24,10 +24,13 @@
 
 namespace net {
 
+/// @brief Construct an empty ARP cache.
 ArpCache::ArpCache() {
     clear();
 }
 
+/// @brief Look up a MAC address for the given IP.
+/// @return true if found.
 bool ArpCache::lookup(uint32_t ip, MacAddr& mac) const {
     for (size_t i = 0; i < ARP_CACHE_SIZE; ++i) {
         if (entries_[i].valid && entries_[i].ip == ip) {
@@ -38,6 +41,7 @@ bool ArpCache::lookup(uint32_t ip, MacAddr& mac) const {
     return false;
 }
 
+/// @brief Update the cache with a new IP→MAC mapping.
 void ArpCache::update(uint32_t ip, MacAddr mac) {
     int idx = find(ip);
     if (idx < 0) idx = find_empty();
@@ -49,6 +53,7 @@ void ArpCache::update(uint32_t ip, MacAddr mac) {
     entries_[idx].valid = true;
 }
 
+/// @brief Remove an entry from the cache.
 void ArpCache::remove(uint32_t ip) {
     int idx = find(ip);
     if (idx >= 0) {
@@ -56,6 +61,7 @@ void ArpCache::remove(uint32_t ip) {
     }
 }
 
+/// @brief Clear all cache entries.
 void ArpCache::clear() {
     memset(entries_, 0, sizeof(entries_));
 }

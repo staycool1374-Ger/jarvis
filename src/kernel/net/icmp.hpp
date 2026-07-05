@@ -16,25 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file icmp.hpp
+/// @brief ICMP (Internet Control Message Protocol) — echo request/reply types and checksum.
+
 #pragma once
 
 #include <types.hpp>
 
 namespace net {
 
+/// ICMP Echo Reply message type.
 constexpr uint8_t ICMP_TYPE_ECHO_REPLY   = 0;
+/// ICMP Echo Request message type.
 constexpr uint8_t ICMP_TYPE_ECHO_REQUEST = 8;
 
+/// Size of the ICMP header (type + code + checksum + ident + seq).
 constexpr size_t ICMP_HEADER_LEN = 8;
 
+/// @brief ICMP echo request/reply header (8 bytes).
 struct IcmpHeader {
-    uint8_t  type;
-    uint8_t  code;
-    uint16_t checksum;
-    uint16_t ident;
-    uint16_t seq;
+    uint8_t  type;     ///< Message type (ECHO_REQUEST = 8, ECHO_REPLY = 0).
+    uint8_t  code;     ///< Code (0 for echo).
+    uint16_t checksum; ///< ICMP header + data checksum (big-endian).
+    uint16_t ident;    ///< Identifier (big-endian).
+    uint16_t seq;      ///< Sequence number (big-endian).
 } __attribute__((packed));
 
+/// @brief Compute a 16-bit one's-complement checksum over @p len bytes.
+/// Used for ICMP and IPv4 header checksums.
 inline uint16_t icmp_checksum(const uint8_t* data, size_t len) {
     uint32_t sum = 0;
     auto* words = reinterpret_cast<const uint16_t*>(data);

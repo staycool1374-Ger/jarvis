@@ -30,9 +30,9 @@ constexpr size_t ETH_HEADER_LEN = 14;
 constexpr size_t ETH_MTU = 1500;
 constexpr size_t ETH_FRAME_MAX = 1518;
 
-/// Ethernet MAC address
+/// @brief Ethernet MAC address (6 bytes).
 struct MacAddr {
-    uint8_t addr[ETH_ADDR_LEN];
+    uint8_t addr[ETH_ADDR_LEN]; ///< Octets in network order.
 
     bool operator==(const MacAddr& o) const {
         for (size_t i = 0; i < ETH_ADDR_LEN; ++i)
@@ -56,18 +56,18 @@ struct MacAddr {
 constexpr MacAddr MAC_BROADCAST = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
 constexpr MacAddr MAC_NULL     = {{0, 0, 0, 0, 0, 0}};
 
-/// Ethernet frame header
+/// @brief Ethernet frame header (14 bytes).
 struct EtherHeader {
-    MacAddr  dst;
-    MacAddr  src;
-    uint16_t type;  // big-endian EtherType
+    MacAddr  dst;  ///< Destination MAC address.
+    MacAddr  src;  ///< Source MAC address.
+    uint16_t type; ///< EtherType (big-endian).
 } __attribute__((packed));
 
-/// EtherType values (big-endian)
+/// @brief EtherType constants (big-endian wire format).
 enum EtherType : uint16_t {
-    ETH_TYPE_IPV4 = 0x0800,
-    ETH_TYPE_ARP  = 0x0806,
-    ETH_TYPE_IPV6 = 0x86DD,
+    ETH_TYPE_IPV4 = 0x0800, ///< IPv4.
+    ETH_TYPE_ARP  = 0x0806, ///< ARP.
+    ETH_TYPE_IPV6 = 0x86DD, ///< IPv6.
 };
 
 } // namespace net

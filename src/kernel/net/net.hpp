@@ -32,25 +32,24 @@ namespace net {
 
 constexpr size_t MAX_PACKET_SIZE = 2048;
 
-/// NIC (Network Interface Card) abstraction
+/// @brief NIC (Network Interface Card) abstraction exposed to the network stack.
 struct Nic {
-    const char* name;    // interface name (e.g. "eth0")
-    MacAddr mac;         // this NIC's MAC address
-    Ipv4Addr ip;         // assigned IPv4 address
-    Ipv4Addr subnet;     // subnet mask
-    Ipv4Addr gateway;    // default gateway
+    const char* name;                         ///< Interface name (e.g. "eth0").
+    MacAddr mac;                              ///< This NIC's MAC address.
+    Ipv4Addr ip;                              ///< Assigned IPv4 address.
+    Ipv4Addr subnet;                          ///< Subnet mask.
+    Ipv4Addr gateway;                         ///< Default gateway.
 
-    /// Send a raw Ethernet frame. Implemented by the NIC driver.
+    /// @brief Send a raw Ethernet frame. Implemented by the NIC driver.
     bool (*send_frame)(const uint8_t* data, size_t len);
 
-    /// Poll for a received frame. Non-blocking.
+    /// @brief Poll for a received frame. Non-blocking.
     bool (*poll_frame)(uint8_t* buf, size_t& len);
 
-    /// Called when a frame arrives — set by the stack.
+    /// @brief Called when a frame arrives — set by the stack.
     void (*on_frame)(const uint8_t* data, size_t len);
 
-    /// Driver private data
-    void* driver_data;
+    void* driver_data;                        ///< Driver private data.
 };
 
 /// Initialize the network stack for a NIC.
@@ -78,13 +77,13 @@ bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
 /// Globally registered NIC (set by the first call to net_init).
 extern constinit Nic* g_nic;
 
-/// ICMP echo reply record for ping.
+/// @brief ICMP echo reply record for ping.
 struct IcmpEchoReply {
-    bool     received;
-    uint16_t ident;
-    uint16_t seq;
-    uint64_t rx_tick;
-    Ipv4Addr src;
+    bool     received; ///< Whether a reply has been received.
+    uint16_t ident;    ///< Echo identifier (big-endian).
+    uint16_t seq;      ///< Sequence number (big-endian).
+    uint64_t rx_tick;  ///< Tick count at receipt.
+    Ipv4Addr src;      ///< Source IPv4 address.
 };
 
 /// Reset the ICMP echo reply record.

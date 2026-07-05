@@ -37,10 +37,12 @@ constinit Nic* g_nic = nullptr;
 // Last ICMP echo reply (for ping)
 static IcmpEchoReply g_icmp_reply;
 
+/// @brief Reset the ICMP echo reply record.
 void net_icmp_clear_reply() {
     g_icmp_reply.received = false;
 }
 
+/// @brief Record an ICMP echo reply.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void net_icmp_set_reply(uint16_t ident, uint16_t seq, Ipv4Addr src) {
     g_icmp_reply.received = true;
@@ -50,12 +52,15 @@ void net_icmp_set_reply(uint16_t ident, uint16_t seq, Ipv4Addr src) {
     g_icmp_reply.src      = src;
 }
 
+/// @brief Return a pointer to the last received ICMP echo reply, or nullptr.
 const IcmpEchoReply* net_icmp_last_reply() {
     return g_icmp_reply.received ? &g_icmp_reply : nullptr;
 }
 
+/// @brief Return a reference to the global ARP cache.
 ArpCache& net_arp_cache() { return g_arp_cache; }
 
+/// @brief Initialise a NIC with its MAC, IP, subnet, and gateway.
 void net_init(Nic& nic, MacAddr mac, Ipv4Addr ip, Ipv4Addr subnet, Ipv4Addr gateway) {
     nic.mac     = mac;
     nic.ip      = ip;
@@ -67,6 +72,7 @@ void net_init(Nic& nic, MacAddr mac, Ipv4Addr ip, Ipv4Addr subnet, Ipv4Addr gate
         ip.addr[0], ip.addr[1], ip.addr[2], ip.addr[3]);
 }
 
+/// @brief Handle an incoming Ethernet frame: dispatch ARP / IPv4 / ICMP.
 void net_handle_frame(const uint8_t* data, size_t len, Nic& nic) {
     if (len < sizeof(EtherHeader)) return;
     auto* eth = reinterpret_cast<const EtherHeader*>(data);
@@ -135,6 +141,7 @@ void net_handle_frame(const uint8_t* data, size_t len, Nic& nic) {
     }
 }
 
+/// @brief Resolve an IPv4 address to a MAC via ARP (with retries and cache).
 bool net_arp_resolve(Nic& nic, uint32_t target_ip, MacAddr& out_mac) {
     // Check cache first
     if (g_arp_cache.lookup(target_ip, out_mac)) return true;
@@ -172,6 +179,7 @@ bool net_arp_resolve(Nic& nic, uint32_t target_ip, MacAddr& out_mac) {
     return false;
 }
 
+/// @brief Build and send an IPv4+UDP packet.
 bool net_send_udp(Nic& nic, Ipv4Addr dst_ip, uint16_t dst_port,
                   uint16_t src_port, const uint8_t* payload, size_t payload_len) {
     // Resolve MAC via ARP
@@ -230,6 +238,7 @@ bool net_send_udp(Nic& nic, Ipv4Addr dst_ip, uint16_t dst_port,
     return nic.send_frame(buf, frame_len);
 }
 
+/// @brief Poll the NIC for an incoming frame and dispatch it (non-blocking).
 bool net_poll(Nic& nic) {
     if (!nic.poll_frame) return false;
     uint8_t buf[MAX_PACKET_SIZE];
@@ -239,6 +248,7 @@ bool net_poll(Nic& nic) {
     return true;
 }
 
+/// @brief Build and send an ICMP Echo Request (with self-ping loopback).
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool net_send_icmp_echo(Nic& nic, Ipv4Addr dst_ip, uint16_t id, uint16_t seq,
                         const uint8_t* data, size_t data_len) {
