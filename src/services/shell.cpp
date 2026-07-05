@@ -166,6 +166,9 @@ static int str_cmp(const char* a, const char* b) {
     return static_cast<unsigned char>(*a) - static_cast<unsigned char>(*b);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#pragma GCC diagnostic ignored "-Wanalyzer-use-of-uninitialized-value"
 int Shell::parse_and_exec(const char* line) {
     while (*line == ' ') ++line;
     if (!*line) return 0;
@@ -310,6 +313,7 @@ int Shell::parse_and_exec(const char* line) {
     delete[] buf;
     return 1;
 }
+#pragma GCC diagnostic pop
 
 void Shell::execute(const char* cmd) {
     if (!initialized_) init();

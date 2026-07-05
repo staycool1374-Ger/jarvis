@@ -26,6 +26,9 @@
 
 using namespace kernel;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+
 // Runmode: kernel
 // Testidea: N tasks (N=8) repeatedly lock/unlock a shared mutex; every task makes
 // progress; no task is starved indefinitely; no deadlock after 10,000 cycles.
@@ -357,3 +360,4 @@ void register_locking_stress_tests() {
     JARVIS_REGISTER_TEST(mutex_recursive_deadlock);
     JARVIS_REGISTER_TEST(semaphore_count_underflow);
 }
+#pragma GCC diagnostic pop

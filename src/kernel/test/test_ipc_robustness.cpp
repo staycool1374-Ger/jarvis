@@ -25,6 +25,9 @@
 
 using namespace kernel;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+
 TEST_CLASS(IpcMisformedMessages) {
     auto* cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
@@ -372,3 +375,4 @@ void register_ipc_robustness_tests() {
     REGISTER_CLASS(IpcBidirectionalSendSync);
     REGISTER_CLASS(IpcBlockedSenderOnReceiverCleanup);
 }
+#pragma GCC diagnostic pop

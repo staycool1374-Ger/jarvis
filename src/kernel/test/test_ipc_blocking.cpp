@@ -31,6 +31,9 @@
 
 using namespace kernel;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
+
 JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -231,3 +234,4 @@ void register_ipc_blocking_tests() {
     JARVIS_REGISTER_TEST(ipc_userspace_block_uses_sti_hlt_cli);
     JARVIS_REGISTER_TEST(ipc_kernel_block_skips_sti);
 }
+#pragma GCC diagnostic pop

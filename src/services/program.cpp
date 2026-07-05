@@ -30,6 +30,7 @@ void ProgramRegistry::init() {
 void ProgramRegistry::register_program(const char* name, const char* desc, void (*entry)()) {
     if (count_ >= MAX_PROGRAMS) return;
     auto* prog = new Program{name, desc, entry};
+    if (!prog) return;
     programs_[count_++] = prog;
 }
 

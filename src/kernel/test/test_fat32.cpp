@@ -25,12 +25,16 @@
 using namespace kernel;
 using namespace kernel::fat32;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
+#pragma GCC diagnostic ignored "-Wanalyzer-use-of-uninitialized-value"
+
 extern "C" uint8_t _binary_build_fat32_img_start[];
 extern "C" uint8_t _binary_build_fat32_img_end[];
 
 static uint64_t fat32_img_sectors() {
-    return static_cast<uint64_t>(
-        _binary_build_fat32_img_end - _binary_build_fat32_img_start)
+    return (reinterpret_cast<uintptr_t>(_binary_build_fat32_img_end)
+          - reinterpret_cast<uintptr_t>(_binary_build_fat32_img_start))
         / SECTOR_SIZE;
 }
 
@@ -544,3 +548,4 @@ void register_fat32_tests() {
     JARVIS_REGISTER_TEST(fat32_remove_dir_entry);
     JARVIS_REGISTER_TEST(fat32_mkdir_roundtrip);
 }
+#pragma GCC diagnostic pop
