@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file sync.hpp
+/// @brief Synchronisation primitives umbrella header — includes all sync types.
+
 #pragma once
 
 #include <kernel/sync/spinlock.hpp>

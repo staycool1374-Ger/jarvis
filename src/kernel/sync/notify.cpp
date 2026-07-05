@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file notify.cpp
+/// @brief One-shot notification implementation — notify, wait, try_wait.
+
 #include <kernel/sync/notify.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
@@ -23,6 +26,7 @@
 namespace kernel {
 namespace sync {
 
+/// @brief Destructor — wakes any waiter before the object is freed.
 Notify::~Notify() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_) {
@@ -33,6 +37,7 @@ Notify::~Notify() {
     initialized_ = false;
 }
 
+/// @brief Initialise the notification object.
 void Notify::init() {
     lock_.reset();
     notify_value_ = 0;
@@ -40,6 +45,7 @@ void Notify::init() {
     initialized_ = true;
 }
 
+/// @brief Initialise the notification object (error-returning overload).
 errors::SyncError Notify::init_err() {
     if (initialized_) {
         return errors::SYNC_ERR_ALREADY_INITIALIZED;
@@ -50,6 +56,7 @@ errors::SyncError Notify::init_err() {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Signal a waiter with a value, waking it.
 void Notify::notify(uint64_t value) {
     SpinLockGuard<SpinLock> guard(lock_);
     notify_value_ = value;
@@ -60,6 +67,7 @@ void Notify::notify(uint64_t value) {
     }
 }
 
+/// @brief Signal a waiter with a value (error-returning overload).
 errors::SyncError Notify::notify_err(uint64_t value) {
     SpinLockGuard<SpinLock> guard(lock_);
     notify_value_ = value;
@@ -72,6 +80,7 @@ errors::SyncError Notify::notify_err(uint64_t value) {
     return errors::SYNC_ERR_NO_WAITER;
 }
 
+/// @brief Block until notified. Returns the notifier's value.
 uint64_t Notify::wait() {
     SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
@@ -86,6 +95,7 @@ uint64_t Notify::wait() {
     return notify_value_;
 }
 
+/// @brief Block until notified (error-returning overload).
 errors::SyncError Notify::wait_err(uint64_t* out_value) {
     SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
@@ -103,6 +113,7 @@ errors::SyncError Notify::wait_err(uint64_t* out_value) {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Check if notified without blocking.
 bool Notify::try_wait(uint64_t* value) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_ == nullptr && value && notify_value_ != 0) {
@@ -113,6 +124,7 @@ bool Notify::try_wait(uint64_t* value) {
     return false;
 }
 
+/// @brief Check if notified without blocking (error-returning overload).
 errors::SyncError Notify::try_wait_err(uint64_t* value) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_ == nullptr && value && notify_value_ != 0) {

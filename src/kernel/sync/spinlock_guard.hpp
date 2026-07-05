@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file spinlock_guard.hpp
+/// @brief RAII lock guard template for any lock with lock()/unlock().
+
 #pragma once
 
 /// @brief RAII lock guard for any lock type with lock()/unlock() methods.

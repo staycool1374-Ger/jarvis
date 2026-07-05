@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file mutex.cpp
+/// @brief Mutex implementation — lock, unlock, try_lock, priority inheritance.
+
 #include <kernel/sync/mutex.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <assert.hpp>
@@ -23,6 +26,7 @@
 namespace kernel {
 namespace sync {
 
+/// @brief Initialise the mutex to unlocked state.
 void Mutex::init() {
     owner_ = nullptr;
     holder_priority_ = 0;
@@ -30,6 +34,7 @@ void Mutex::init() {
     wait_count_ = 0;
 }
 
+/// @brief Initialise the mutex (error-returning overload).
 errors::SyncError Mutex::init_err() {
     if (owner_ != nullptr || lock_count_ != 0 || wait_count_ != 0) {
         return errors::SYNC_ERR_ALREADY_INITIALIZED;
@@ -41,12 +46,15 @@ errors::SyncError Mutex::init_err() {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Add a task to the waiter array.
+/// @return false if the array is full.
 bool Mutex::add_waiter(TaskControlBlock& task) {
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_++] = &task;
     return true;
 }
 
+/// @brief Wake the highest-priority waiter.
 void Mutex::wake_one() {
     if (wait_count_ == 0) return;
 
@@ -60,6 +68,7 @@ void Mutex::wake_one() {
     waiters_[best] = waiters_[--wait_count_];
 }
 
+/// @brief Boost the owner's priority if the waiter has higher priority.
 void Mutex::inherit_priority(TaskControlBlock& waiter) {
     if (!owner_) return;
     if (waiter.priority > owner_->priority) {
@@ -68,12 +77,14 @@ void Mutex::inherit_priority(TaskControlBlock& waiter) {
     }
 }
 
+/// @brief Restore the owner's priority to its saved original value.
 void Mutex::restore_priority() {
     if (!owner_ || holder_priority_ == 0) return;
     owner_->priority = holder_priority_;
     holder_priority_ = 0;
 }
 
+/// @brief Acquire the mutex, blocking until available (supports recursion).
 void Mutex::lock() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -103,6 +114,7 @@ void Mutex::lock() {
     Scheduler::reschedule();
 }
 
+/// @brief Acquire the mutex (error-returning overload).
 errors::SyncError Mutex::lock_err() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -136,6 +148,7 @@ errors::SyncError Mutex::lock_err() {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Attempt to acquire without blocking.
 bool Mutex::try_lock() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -158,6 +171,7 @@ bool Mutex::try_lock() {
     return false;
 }
 
+/// @brief Attempt to acquire without blocking (error-returning overload).
 errors::SyncError Mutex::try_lock_err() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -180,6 +194,7 @@ errors::SyncError Mutex::try_lock_err() {
     return errors::SYNC_ERR_NOT_OWNER;
 }
 
+/// @brief Release the mutex, waking the next highest-priority waiter.
 void Mutex::unlock() {
     lock_.lock();
     auto* task = Scheduler::current_task();
@@ -203,6 +218,7 @@ void Mutex::unlock() {
     lock_.unlock();
 }
 
+/// @brief Release the mutex (error-returning overload).
 errors::SyncError Mutex::unlock_err() {
     lock_.lock();
     auto* task = Scheduler::current_task();

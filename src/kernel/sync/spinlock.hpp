@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file spinlock.hpp
+/// @brief Busy-wait spinlock using atomic exchange.
+
 #pragma once
 
 #include <kernel/arch/io.hpp>
@@ -24,6 +27,7 @@
 namespace kernel {
 namespace sync {
 
+/// @brief Simple busy-wait spinlock using atomic_test_and_set.
 class SpinLock {
 public:
     SpinLock() = default;
@@ -33,26 +37,31 @@ public:
     SpinLock(SpinLock&&)                 = delete;
     SpinLock& operator=(SpinLock&&)      = delete;
 
+    /// @brief Acquire the lock (spin until available).
     void lock() noexcept {
         while (atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE)) {
             arch::pause();
         }
     }
 
+    /// @brief Release the lock.
     void unlock() noexcept {
         atomic_store(&locked_, 0, __ATOMIC_RELEASE);
     }
 
+    /// @brief Force-unlock (used to initialise a lock after MemPool allocation).
     void reset() noexcept {
         locked_ = 0;
     }
 
+    /// @brief Attempt to acquire without blocking.
+    /// @return true if the lock was acquired.
     bool try_lock() noexcept {
         return !atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE);
     }
 
 private:
-    int locked_ = 0;
+    int locked_ = 0; ///< 0 = unlocked, 1 = locked.
 };
 
 } // namespace sync

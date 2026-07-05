@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file semaphore.hpp
+/// @brief Counting semaphore with blocking wait/post and priority-sorted waiters.
+
 #pragma once
 
 #include <types.hpp>
@@ -65,11 +68,11 @@ public:
     uint64_t value() const { return count_; }
 
 private:
-    SpinLock lock_;
-    uint64_t count_;
-    uint64_t max_count_;
-    TaskControlBlock* waiters_[MAX_WAITERS];
-    size_t waiter_count_;
+    SpinLock lock_;          ///< Protects all semaphore state.
+    uint64_t count_;         ///< Current semaphore count.
+    uint64_t max_count_;     ///< Maximum count (capped on post).
+    TaskControlBlock* waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
+    size_t waiter_count_;    ///< Number of tasks waiting on this semaphore.
 
     bool add_waiter(TaskControlBlock* task);
     void wake_one();

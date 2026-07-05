@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file notify.hpp
+/// @brief One-shot notification (signalling) primitive — single waiter, value delivery.
+
 #pragma once
 
 #include <types.hpp>
@@ -67,10 +70,10 @@ public:
     uint64_t value() const { return notify_value_; }
 
 private:
-    SpinLock lock_;
-    uint64_t notify_value_;
-    TaskControlBlock* waiter_;
-    bool initialized_;
+    SpinLock lock_;            ///< Protects all notify state.
+    uint64_t notify_value_;    ///< Value delivered to the waiter.
+    TaskControlBlock* waiter_; ///< Currently waiting task (nullptr = none).
+    bool initialized_;         ///< Whether init() has been called.
 };
 
 }

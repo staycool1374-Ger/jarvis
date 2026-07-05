@@ -16,11 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file spsc_ring.hpp
+/// @file spsc_ring.hpp
+/// @brief Lock-free single-producer single-consumer ring buffer template.
+
 #pragma once
 
 #include <types.hpp>
 #include <lib/atomic.hpp>
 
+/// @brief Lock-free single-producer single-consumer ring buffer.
+/// @tparam T  Element type.
+/// @tparam N  Capacity (must be a power of two).
 template<typename T, size_t N>
 class SPSCRing {
     static_assert(N > 0 && (N & (N - 1)) == 0, "N must be power of 2");
@@ -28,6 +35,8 @@ class SPSCRing {
     static constexpr size_t MASK = N - 1;
 
 public:
+    /// @brief Push an item (discards if full).
+    /// @return true on success.
     bool try_push(const T& item) {
         size_t h = head_;
         size_t t = kernel::atomic_load(&tail_, __ATOMIC_ACQUIRE);
@@ -39,6 +48,8 @@ public:
         return true;
     }
 
+    /// @brief Pop an item (no-op if empty).
+    /// @return true on success.
     bool try_pop(T& item) {
         size_t t = tail_;
         size_t h = kernel::atomic_load(&head_, __ATOMIC_ACQUIRE);
@@ -49,18 +60,20 @@ public:
         return true;
     }
 
+    /// @brief Check whether the buffer is empty.
     bool empty() const {
         return kernel::atomic_load(&head_, __ATOMIC_ACQUIRE) ==
                kernel::atomic_load(&tail_, __ATOMIC_ACQUIRE);
     }
 
+    /// @brief Reset to empty state.
     void reset() {
         kernel::atomic_store(&head_, size_t{0}, __ATOMIC_RELEASE);
         kernel::atomic_store(&tail_, size_t{0}, __ATOMIC_RELAXED);
     }
 
 private:
-    alignas(64) size_t head_ = 0;
-    alignas(64) size_t tail_ = 0;
-    T data_[N] = {};
+    alignas(64) size_t head_ = 0; ///< Producer index (written by producer only).
+    alignas(64) size_t tail_ = 0; ///< Consumer index (written by consumer only).
+    T data_[N] = {};              ///< Element storage.
 };

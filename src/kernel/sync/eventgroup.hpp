@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file eventgroup.hpp
+/// @brief Event group (bitmask) — wait on any/set/clear with per-waiter clear-on-exit.
+
 #pragma once
 
 #include <types.hpp>
@@ -74,15 +77,17 @@ public:
     errors::SyncError try_wait_bits_err(uint64_t bits, bool* out_result);
 
 private:
-    SpinLock lock_;
-    uint64_t bits_;
+    SpinLock lock_;        ///< Protects all event-group state.
+    uint64_t bits_;        ///< Current event bits.
+
+    /// @brief A task waiting for specific bits to become set.
     struct EventWaiter {
-        TaskControlBlock* task;
-        uint64_t wanted_bits;
-        bool clear_on_exit;
+        TaskControlBlock* task;   ///< Waiting task.
+        uint64_t wanted_bits;     ///< Bitmask this task is waiting for.
+        bool clear_on_exit;       ///< Clear matched bits on wake.
     };
-    EventWaiter waiters_[MAX_WAITERS];
-    size_t wait_count_;
+    EventWaiter waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
+    size_t wait_count_;                ///< Number of waiting tasks.
 
     bool add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear);
     void wake_matching();

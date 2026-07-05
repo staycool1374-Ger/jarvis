@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file sync_errors.hpp
+/// @brief Synchronisation error codes (X-macro table with human-readable strings).
+
 #pragma once
 
 #include <types.hpp>
@@ -40,6 +43,7 @@ namespace kernel::errors {
     X(NO_WAITER,          13, "No waiter to notify") \
     X(INTERRUPTED,        14, "Operation interrupted by signal")
 
+/// @brief Synchronisation subsystem error codes.
 // NOLINTNEXTLINE(performance-enum-size)
 enum SyncError : uint64_t {
 #define X(name, num, msg) SYNC_ERR_##name = (num),

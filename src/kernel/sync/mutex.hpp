@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file mutex.hpp
+/// @brief Mutex with priority inheritance and blocking waiters.
+
 #pragma once
 
 #include <types.hpp>
@@ -61,16 +64,20 @@ public:
     TaskControlBlock* owner() const { return owner_; }
 
 private:
-    SpinLock lock_;
-    TaskControlBlock* owner_;
-    uint64_t holder_priority_;
-    uint64_t lock_count_;
-    TaskControlBlock* waiters_[MAX_WAITERS];
-    size_t wait_count_;
+    SpinLock lock_;                   ///< Protects all mutex state.
+    TaskControlBlock* owner_;         ///< Current lock holder (nullptr = unlocked).
+    uint64_t holder_priority_;        ///< Saved original priority of owner (for PI restore).
+    uint64_t lock_count_;             ///< Recursive lock count.
+    TaskControlBlock* waiters_[MAX_WAITERS]; ///< Array of waiting tasks (priority-sorted on wake).
+    size_t wait_count_;               ///< Number of waiting tasks.
 
+    /// @brief Add a task to the waiter array.
     bool add_waiter(TaskControlBlock& task);
+    /// @brief Wake the highest-priority waiter.
     void wake_one();
+    /// @brief Boost owner priority if waiter is higher priority.
     void inherit_priority(TaskControlBlock& waiter);
+    /// @brief Restore owner priority to its original value.
     void restore_priority();
 };
 

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file semaphore.cpp
+/// @brief Counting semaphore implementation — init, wait, post, try_wait.
+
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
@@ -24,6 +27,7 @@
 namespace kernel {
 namespace sync {
 
+/// @brief Initialise the semaphore with a starting count and optional max.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void Semaphore::init(uint64_t initial, uint64_t max) {
     count_ = initial;
@@ -32,6 +36,7 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
     lock_.reset();
 }
 
+/// @brief Initialise the semaphore (error-returning overload).
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
     if (waiter_count_ != 0 || count_ != 0 || max_count_ != 1) {
@@ -44,6 +49,7 @@ errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Add a task to the waiter array (caller must hold lock_).
 bool Semaphore::add_waiter(TaskControlBlock* task) {
     // Caller must hold lock_ (wait already holds it)
     if (waiter_count_ >= MAX_WAITERS) return false;
@@ -51,6 +57,7 @@ bool Semaphore::add_waiter(TaskControlBlock* task) {
     return true;
 }
 
+/// @brief Wake the highest-priority waiter (caller must hold lock_).
 void Semaphore::wake_one() {
     // Caller must hold lock_ (post already holds it)
     if (waiter_count_ == 0) return;
@@ -70,6 +77,7 @@ void Semaphore::wake_one() {
     }
 }
 
+/// @brief Decrement the count, blocking if zero.
 void Semaphore::wait() {
     SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
@@ -87,6 +95,7 @@ void Semaphore::wait() {
     Scheduler::reschedule();
 }
 
+/// @brief Decrement the count, blocking if zero (error-returning overload).
 errors::SyncError Semaphore::wait_err() {
     SpinLockGuard<SpinLock> guard(lock_);
     auto* task = Scheduler::current_task();
@@ -108,6 +117,7 @@ errors::SyncError Semaphore::wait_err() {
     return errors::SYNC_ERR_OK;
 }
 
+/// @brief Decrement count without blocking.
 bool Semaphore::try_wait() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (count_ > 0) {
@@ -117,6 +127,7 @@ bool Semaphore::try_wait() {
     return false;
 }
 
+/// @brief Decrement count without blocking (error-returning overload).
 errors::SyncError Semaphore::try_wait_err() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (count_ > 0) {
@@ -126,6 +137,7 @@ errors::SyncError Semaphore::try_wait_err() {
     return errors::SYNC_ERR_QUEUE_EMPTY;
 }
 
+/// @brief Increment count, waking a waiter if any.
 void Semaphore::post() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {
@@ -135,6 +147,7 @@ void Semaphore::post() {
     }
 }
 
+/// @brief Increment count, waking a waiter if any (error-returning overload).
 errors::SyncError Semaphore::post_err() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {

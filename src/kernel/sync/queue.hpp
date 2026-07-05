@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file queue.hpp
+/// @brief Fixed-size message queue with blocking send/receive and priority-sorted waiters.
+
 #pragma once
 
 #include <types.hpp>
@@ -26,12 +29,15 @@
 namespace kernel {
 namespace sync {
 
+/// Maximum payload size per queue message.
 static constexpr size_t QUEUE_MAX_MSG_SIZE = 32;
+/// Maximum number of messages that can be queued.
 static constexpr size_t QUEUE_MAX_MSG_COUNT = 32;
 
+/// @brief A single message in the queue (fixed-size payload + size).
 struct QueueMessage {
-    uint8_t data[QUEUE_MAX_MSG_SIZE];
-    size_t  size;
+    uint8_t data[QUEUE_MAX_MSG_SIZE]; ///< Message payload.
+    size_t  size;                     ///< Actual payload size in bytes.
 };
 
 class Queue {
@@ -87,17 +93,17 @@ public:
     size_t available() const { return count_; }
 
 private:
-    SpinLock lock_;
-    QueueMessage msgs_[QUEUE_MAX_MSG_COUNT];
-    size_t head_;
-    size_t tail_;
-    size_t count_;
+    SpinLock lock_;                            ///< Protects all queue state.
+    QueueMessage msgs_[QUEUE_MAX_MSG_COUNT];   ///< Circular message buffer.
+    size_t head_;                              ///< Dequeue index.
+    size_t tail_;                              ///< Enqueue index.
+    size_t count_;                             ///< Number of messages in the buffer.
 
-    TaskControlBlock* send_waiters_[MAX_WAITERS];
-    size_t send_waiters_count_;
+    TaskControlBlock* send_waiters_[MAX_WAITERS]; ///< Tasks blocked on full queue.
+    size_t send_waiters_count_;                    ///< Number of blocked senders.
 
-    TaskControlBlock* recv_waiters_[MAX_WAITERS];
-    size_t recv_waiters_count_;
+    TaskControlBlock* recv_waiters_[MAX_WAITERS]; ///< Tasks blocked on empty queue.
+    size_t recv_waiters_count_;                    ///< Number of blocked receivers.
 
     bool is_full() const { return count_ >= QUEUE_MAX_MSG_COUNT; }
     bool is_empty() const { return count_ == 0; }

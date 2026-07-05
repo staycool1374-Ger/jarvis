@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file sync.cpp
+/// @brief Synchronisation subsystem initialisation.
+
 #include <kernel/sync/sync.hpp>
 
 namespace kernel {
