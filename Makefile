@@ -512,21 +512,21 @@ endif
 run-debug-mode:
 	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae))))
 	@if [ -z "$(_ARCH)" ]; then \
-	    $(MAKE) execute-test $(ARCH) debug none; \
+	    $(MAKE) execute-test $(ARCH) none BUILD=debug CLASS=none; \
 	else \
-	    $(MAKE) execute-test $(_ARCH) debug none ARCH=$(_ARCH); \
+	    $(MAKE) execute-test $(_ARCH) none BUILD=debug CLASS=none ARCH=$(_ARCH); \
 	fi
 
 run-release-mode:
 	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae))))
 	@if [ -z "$(_ARCH)" ]; then \
-	    $(MAKE) execute-test $(ARCH) release none; \
+	    $(MAKE) execute-test $(ARCH) none BUILD=release CLASS=none; \
 	else \
-	    $(MAKE) execute-test $(_ARCH) release none ARCH=$(_ARCH); \
+	    $(MAKE) execute-test $(_ARCH) none BUILD=release CLASS=none ARCH=$(_ARCH); \
 	fi
 
 execute-test:
-	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(word 2,$(_ae))) $(eval _CLASS := $(word 3,$(_ae)))
+	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(or $(BUILD),$(word 2,$(_ae)))) $(eval _CLASS := $(or $(CLASS),$(word 3,$(_ae))))
 	@if [ -z "$(_ARCH)" -o -z "$(_BUILD)" -o -z "$(_CLASS)" ]; then \
 	    echo "Usage: make execute-test <arch> <build> <class>"; \
 	    echo "  arch:  x86|x86_64|arm|aarch64|riscv|riscv64"; \
