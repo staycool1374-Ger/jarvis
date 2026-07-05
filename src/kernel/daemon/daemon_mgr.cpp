@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file daemon_mgr.cpp
+/// @brief Daemon lifecycle manager implementation.
+
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
@@ -30,9 +33,12 @@ extern "C" void debug_write_hex(uint64_t value);
 namespace kernel {
 namespace daemon {
 
+/// Registered daemon entries.
 static DaemonEntry entries_[MAX_DAEMONS] = {};
+/// Number of registered daemons.
 static uint64_t num_daemons_ = 0;
 
+/// @brief Initialize the daemon manager — clear all entries and reset count.
 void init() {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
         entries_[i].name = nullptr;
@@ -59,6 +65,7 @@ bool register_daemon(const char* name, const char* initrd_path,
     return true;
 }
 
+/// @brief Kill and re-register all daemons — resets state and clears count.
 void reset_clear_daemons() {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         entries_[i].restart_count = 0;
@@ -71,6 +78,8 @@ void reset_clear_daemons() {
     Logger::info("daemon_mgr: all daemon states reset");
 }
 
+/// @brief Notify the manager that a daemon has exited.
+/// @param pid  PID of the daemon that died.
 void notify_death(uint64_t pid) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].pid == pid) {
@@ -93,6 +102,9 @@ void notify_death(uint64_t pid) {
     }
 }
 
+/// @brief Snapshot all daemon entries for test isolation.
+/// @param[out] out_entries  Array to copy entries into (must hold MAX_DAEMONS).
+/// @param[out] num_out      Set to the current daemon count.
 void capture_state(DaemonEntry* out_entries, uint64_t& num_out) {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
         out_entries[i] = entries_[i];
@@ -100,6 +112,9 @@ void capture_state(DaemonEntry* out_entries, uint64_t& num_out) {
     num_out = num_daemons_;
 }
 
+/// @brief Restore daemon entries from a captured snapshot (test isolation).
+/// @param[in] entries_in  Array of entries to restore.
+/// @param[in] num_in      Number of entries to restore.
 void restore_state(const DaemonEntry* entries_in, uint64_t num_in) {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
         entries_[i] = entries_in[i];
@@ -107,6 +122,8 @@ void restore_state(const DaemonEntry* entries_in, uint64_t num_in) {
     num_daemons_ = num_in;
 }
 
+/// @brief Restart any daemons whose PID is 0 (crashed / never started).
+/// Respects MAX_RESTART_COUNT per daemon; logs warnings on failure.
 void restart_stale_daemons() {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].pid != 0) continue;
@@ -184,6 +201,8 @@ void restart_stale_daemons() {
     }
 }
 
+/// @brief Ensure a daemon is running — reload from initrd ELF if needed.
+/// @param name  Name of the daemon to check / restart.
 void ensure_running(const char* name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
@@ -262,6 +281,8 @@ void ensure_running(const char* name) {
                  name);
 }
 
+/// @brief Terminate a daemon by name — marks task TERMINATED and clears entry.
+/// @param name  Name of the daemon to terminate.
 void terminate(const char* name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
@@ -292,6 +313,8 @@ void terminate(const char* name) {
     Logger::warn("daemon_mgr: terminate('%s') — no daemon with that name", name);
 }
 
+/// @brief Reset a daemon's restart count and PID so it can be restarted.
+/// @param name  Name of the daemon to reset.
 void reset_restart_count(const char* name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].name && strcmp(entries_[i].name, name) == 0) {
@@ -307,6 +330,9 @@ void reset_restart_count(const char* name) {
     Logger::warn("daemon_mgr: no daemon named '%s' found", name);
 }
 
+/// @brief Return a const reference to the i-th daemon entry.
+/// @param index  Entry index (0-based).
+/// @return DaemonEntry reference (sentinel if out of range).
 const DaemonEntry& get_entry(uint64_t index) {
     if (index >= MAX_DAEMONS) {
         static DaemonEntry sentinel = {};

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file daemon_mgr.hpp
+/// @brief Daemon lifecycle manager — registration, spawning, death notification, and restart.
+
 #pragma once
 
 #include <types.hpp>
@@ -26,20 +29,22 @@ namespace daemon {
 static constexpr uint64_t MAX_DAEMONS = CONFIG_MAX_DAEMONS;
 static constexpr uint64_t MAX_RESTART_COUNT = 10;
 
+/// @brief Entry for a single managed daemon.
 struct DaemonEntry {
-    const char* name;
-    const char* initrd_path;
-    uint64_t pid;
-    uint64_t restart_count;
-    void (*set_pid_fn)(uint64_t);
-    uint64_t (*get_pid_fn)();
+    const char* name;           ///< Human-readable daemon name.
+    const char* initrd_path;    ///< Path to the ELF in the initrd.
+    uint64_t pid;               ///< Current PID (0 if not running).
+    uint64_t restart_count;     ///< Number of automatic restarts performed.
+    void (*set_pid_fn)(uint64_t);   ///< Callback to store the PID.
+    uint64_t (*get_pid_fn)();       ///< Callback to retrieve the current PID.
 };
 
 /// @brief Initialize the daemon manager and spawn registered daemons.
 void init();
-    /// @brief Kill and re-register all daemons (used during recovery).
-    /// Also resets num_daemons_ to 0 so fresh registrations work.
-    void reset_clear_daemons();
+
+/// @brief Kill and re-register all daemons (used during recovery).
+/// Also resets num_daemons_ to 0 so fresh registrations work.
+void reset_clear_daemons();
 /// @brief Register a daemon for lifecycle management.
 /// @param name Human-readable name for the daemon.
 /// @param initrd_path Path to the daemon ELF in the initrd.
