@@ -344,3 +344,114 @@ As network daemon (need).
 ### Core Data Structures
 - [ ] **TaskDef refactor:** Replace positional aggregate init with named/designated initializers or builder pattern. Adding a new parameter currently requires touching every entry in `g_task_defs[]` — easy to silently corrupt field assignment.
 - [ ] **Snapshot buffer layout:** Replace manual `sizeof` chain (`off_sched_misc_size()`, `off_daemon_entries()`, etc.) with a struct-based or generator-driven layout. Any change to buffer size shifts all downstream offsets — brittle and hard to audit.
+
+### Test Isolation — Option B: Lazy Daemon Restart via `vfs_touched` Flag
+
+**Problem:** Every `snapshot_restore()` cycle unconditionally kills and reloads the VFS and IOC daemons via `reload_daemon_tasks()`. This is correct but wasteful: ~95% of tests never touch the VFS (no file open/read/write/stat), yet pay the full daemon death+ELF-load+remount cost (~150k cycles per test). Over 700+ tests this adds significant wall-clock time and creates unnecessary serial log noise ("daemon died" messages that are actually deliberate kills).
+
+**Design (Option B):**
+
+Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that is set by VFS syscall handlers on actual filesystem operations. `snapshot_restore()` checks this flag:
+- **Flag clear (no VFS touched):** Skip `reload_daemon_tasks()` and `reset_and_remount()` entirely. The daemons continue running with their pre-snapshot state intact. `restore_rqpod()` / `rebuild_ready_queue()` still run to fix ready-queue desync. Restoration is O(ready-queue-rebuild) instead of O(daemon-kill + ELF-load + VFS-remount).
+- **Flag set (VFS touched):** Full daemon restart as today — daemons are killed, reloaded from ELF, VFS remounted, mounts re-registered.
+
+**Required changes:**
+
+1. **`vfs_touched` counter/flag** (`src/kernel/test/test_isolate.hpp` or `test_runner.hpp`):
+   - Declare `extern bool g_vfs_touched` (or counter) in the test framework.
+   - Reset to `false` at the start of each `snapshot_restore()` sequence.
+   - Expose `void mark_vfs_touched()` for syscall handlers to call.
+
+2. **VFS syscall handlers** (`src/kernel/syscall/syscall_handlers_vfs.cpp`, `syscall_handlers_fs.cpp`, etc.):
+   - Insert `mark_vfs_touched()` calls in every syscall that modifies or reads filesystem state: `SYS_OPEN`, `SYS_READ`, `SYS_WRITE`, `SYS_CLOSE`, `SYS_STAT`, `SYS_FSTAT`, `SYS_READDIR`, `SYS_MKDIR`, `SYS_RMDIR`, `SYS_UNLINK`, `SYS_MOUNT`, `SYS_UMOUNT`, `SYS_IOCTL` (if targeting VFS paths), `SYS_MMAP` (if file-backed), `SYS_EXEC` (loads ELF from VFS).
+   - Use `#ifdef CONFIG_TEST` guards so the flag is compiled out in release builds (zero overhead in production).
+
+3. **`snapshot_restore()` branching** (`src/kernel/test/test_isolate.cpp`):
+   ```cpp
+   if (g_vfs_touched) {
+       reload_daemon_tasks();
+       vfs::reset_and_remount();
+   } else {
+       // Daemon TCBs are still valid at the restored pool positions.
+       // The only risk: their in_ready_queue_/runq links were desynced
+       // by cleanup_test_tasks(). Fix that:
+       scheduler::rebuild_ready_queue();
+   }
+   g_vfs_touched = false;
+   ```
+
+4. **Daemon crash tests** (`test_vfsd.cpp`, `test_iocd.cpp`):
+   - Tests that deliberately crash daemons (`vfsd_crash_restarts`, `vfsd_exhaust_restart_limit`, `iocd_crash_restarts`) must force `g_vfs_touched = true` so that `reload_daemon_tasks()` runs even if VFS was not touched otherwise.
+
+**Safety analysis:**
+
+- **Stale daemon state concern:** If a test touches VFS, the full restart path fires, so no stale state persists. If a test does *not* touch VFS, the daemon state is exactly what it was after the snapshot save (restore_pool_data() rewinds MemPool to snapshot positions, but daemon TCBs were never restored from ELF — their heap-cached FDs, vnodes, and mount table entries remain as they were at snapshot time). This is correct because:
+  - The snapshot is taken *after* daemon initialization is complete.
+  - Tests that don't touch VFS cannot modify daemon-visible state.
+  - The only mutable daemon-visible side effect of a non-VFS test is scheduler state (ready-queue links, which `rebuild_ready_queue()` fixes) and PMM allocations (which `restore_pool_data()` undoes).
+
+- **Daemon "died" log noise:** Fully eliminated for the ~95% case. Only real daemon crashes (page faults, assertion failures) will produce `notify_death()` messages.
+
+**Estimated speedup:** ~70-80% reduction in per-test overhead for the majority of test classes. Full `all` suite runtime expected to drop from ~45s to ~15-20s (direct QEMU, no `-nographic`).
+
+**Verification:**
+
+1. Run each test class individually. Verify that non-VFS classes (selftest, scheduler, spinlock, atomic_context_switch, preemption_under_syscall) show zero "daemon died" messages and pass at the same rate.
+2. Run VFS class: must still show 143/143 PASSED with full daemon restart on every test.
+3. Run full `all` class: must still show 727/727 PASSED.
+4. Compare wall-clock time between baseline (unconditional restart) and Option B.
+
+**Future extension (Option B+):** If IPC state is also expensive to restore, add `ipc_touched` flag with the same pattern. The mechanism generalises to any subsystem whose daemon restart can be deferred.
+
+### Test Isolation — CI/CD Blockers & Infrastructure Fixes
+
+- [ ] **1. Full `all` suite completion (QEMU watchdog / signal 15):**
+  - **Problem:** Running the full `all` test class via direct QEMU invocation gets the QEMU process killed mid-run by signal 15 (SIGTERM) — likely the host tooling watchdog or a timeout mechanism. The suite never completes end-to-end.
+  - **Investigation:**
+    1. Reproduce with a minimal reproducer: `qemu-system-x86_64 -kernel build/kernel-debug.elf -nographic -no-reboot -m 512M -append "classes=all" -serial file:serial.log`
+    2. Check serial.log for the last test name before termination — identify whether tests are still passing or a hang occurs.
+    3. Add a test-progress counter (e.g. `printf("[PROGRESS] %d/%d\n", passed, total)` every N tests) to pinpoint when/where QEMU dies.
+    4. Rule out host OOM killer (`dmesg | grep oom-kill`) and host CPU throttling.
+  - **Fix options:**
+    - **Option A:** Extend the host-side timeout (if the watchdog is in the runner script or Makefile) — search for `timeout` commands or `alarm` signals in `Makefile`, `tools/`, and CI scripts.
+    - **Option B:** Reduce per-test overhead via Option B (vfs_touched flag) — the suite may complete if each test is faster and total wall time drops below the watchdog threshold.
+    - **Option C:** Split `all` into smaller batches (e.g. `all-part1`, `all-part2`) that each complete within the time limit; add a meta-runner script that concatenates results.
+  - **Verification:** `make test-qemu classes=all` exits with exit code 0 and prints 727/727 PASSED.
+
+- [ ] **2. `make execute-test` fix (Makefile / expect invocation):**
+  - **Problem:** `make execute-test [CLASSES=...]` prints the Makefile help text instead of launching QEMU. The expected `expect`-based runner path is not being reached.
+  - **Investigation:**
+    1. Trace the Makefile rule for `execute-test`: read `Makefile` and any included `.mk` files to find the conditional that decides whether to run the `expect` script or print help.
+    2. Check prerequisites: the rule likely depends on `build/kernel-debug.elf` or similar targets — verify they exist and are up to date.
+    3. Test the `expect` script directly: `expect tools/run-test.exp classes=selftest` to isolate the issue from Make.
+  - **Fix:** Add the missing prerequisite target or fix the conditional. Alternatively, if `make execute-test` is inherently broken in this env, document the direct-QEMU workaround in `CONTRIBUTING.md` or `AGENTS.md`.
+  - **Verification:** `make execute-test CLASSES=selftest` launches QEMU, runs selftest, and prints 132/132 PASSED.
+
+- [ ] **3. Healthcheck.sh pre-flight reliability:**
+  - **Problem:** The healthcheck script (`~/jarvis/healthcheck.sh`) must pass (exit 0) before any test automation starts. A failing healthcheck blocks all work. Currently its error output is opaque.
+  - **Fix:** Add per-check labels and a summary to healthcheck.sh so a failure pinpoints the exact broken component (missing tool, stale build, etc.). Consider automatic re-build on stale artifact detection.
+  - **Verification:** Intentional breakage of each check produces a clear, actionable error message.
+
+### Test Isolation — Documentation Deliverables
+
+- [ ] **4. Daemon restart documentation (test-isolation caveats for task removal/replacement):**
+  - **Original goal (abandoned):** Document the memory-subsystem files and the test-isolation architecture, focusing on the MemPool-backed TCB lifecycle during snapshot/restore.
+  - **Required deliverable:**
+    1. `docs/test_isolation.md` or equivalent — explain:
+       - How `restore_pool_data()` rewinds MemPool to snapshot positions, overwriting live daemon TCBs at runtime pool positions.
+       - Why snapshot-era TCBs at restored positions have broken page-table links (PMM freed/reallocated intermediate PD/PT pages during test execution).
+       - Why killing and recreating via `elf::load()` is the minimal-correctness approach for VFS-touching tests.
+       - Why non-VFS tests can skip daemon restart (Option B argument).
+       - The `DebugContextSwitchRing` (`TCB::debug_switch_ring[4]`) inspection technique for diagnosing desync bugs.
+    2. Cross-reference from `test_isolate.cpp`, `scheduler.cpp`, and `task.cpp` file headers to this doc.
+  - **Verification:** A new team member can read the doc and understand why daemons are killed on every snapshot restore, and when it is safe to skip the restart.
+
+- [ ] **5. Memory subsystem architecture doc:**
+  - **Original goal (abandoned):** Comprehensively document PMM, VMM, MemPool, BufferPool, and their interactions with test isolation.
+  - **Scope:** Single `docs/memory_subsystem.md` covering:
+    - PMM: physical page allocation/free, buddy-system layout, `restore_pool_data()` impact.
+    - VMM: page-table hierarchy (PML4/PDPT/PD/PT), `map_page_in_pml4`, clone-time sharing gotchas.
+    - MemPool: fixed-size slab allocator, position-based snapshot/restore, TCB lifecycle.
+    - BufferPool: pre-allocated ring buffers, zero-copy IPC data paths.
+    - Integration: how each subsystem reacts to `snapshot_save()` / `snapshot_restore()` — which state is saved, which is rebuilt, and why.
+  - **Verification:** A developer debugging a page-fault in a test can find the relevant subsystem description and snapshot/restore interaction within 30 seconds.
