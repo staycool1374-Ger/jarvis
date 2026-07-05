@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file elf.hpp
+/// @brief ELF64 binary loader — validate, load, exec.
+
 #pragma once
 
 #include <types.hpp>
@@ -24,55 +27,60 @@
 namespace kernel {
 namespace elf {
 
+/// @brief ELF64 file header (64-byte packed structure).
 struct ELF64Header {
-    uint8_t  ident[16];
-    uint16_t type;
-    uint16_t machine;
-    uint32_t version;
-    uint64_t entry;
-    uint64_t phoff;
-    uint64_t shoff;
-    uint32_t flags;
-    uint16_t ehsize;
-    uint16_t phentsize;
-    uint16_t phnum;
-    uint16_t shentsize;
-    uint16_t shnum;
-    uint16_t shstrndx;
+    uint8_t  ident[16];  ///< ELF magic + class/endian/version/OSABI/pad.
+    uint16_t type;       ///< Object file type (ET_NONE, ET_EXEC, ET_DYN).
+    uint16_t machine;    ///< Architecture (e.g. 0x3E for x86_64).
+    uint32_t version;    ///< ELF version (must be 1).
+    uint64_t entry;      ///< Virtual address of entry point.
+    uint64_t phoff;      ///< Program header table offset.
+    uint64_t shoff;      ///< Section header table offset.
+    uint32_t flags;      ///< Processor-specific flags.
+    uint16_t ehsize;     ///< ELF header size (64).
+    uint16_t phentsize;  ///< Size of one program header entry.
+    uint16_t phnum;      ///< Number of program header entries.
+    uint16_t shentsize;  ///< Size of one section header entry.
+    uint16_t shnum;      ///< Number of section header entries.
+    uint16_t shstrndx;   ///< Section header string table index.
 
     ELF64Header() = default;
 } __attribute__((packed));
 
+/// @brief ELF64 program header (segment descriptor).
 struct ELF64ProgramHeader {
-    uint32_t type;
-    uint32_t flags;
-    uint64_t offset;
-    uint64_t vaddr;
-    uint64_t paddr;
-    uint64_t filesz;
-    uint64_t memsz;
-    uint64_t align;
+    uint32_t type;   ///< Segment type (PT_NULL, PT_LOAD, PT_DYNAMIC, etc.).
+    uint32_t flags;  ///< Segment flags (PF_R, PF_W, PF_X).
+    uint64_t offset; ///< Offset in file.
+    uint64_t vaddr;  ///< Virtual address to load at.
+    uint64_t paddr;  ///< Physical address (usually same as vaddr).
+    uint64_t filesz; ///< Size in file.
+    uint64_t memsz;  ///< Size in memory (zero-padded if > filesz).
+    uint64_t align;  ///< Alignment constraint.
 } __attribute__((packed));
 
+/// Program header type constants.
 enum : uint8_t {
-    PT_NULL    = 0,
-    PT_LOAD    = 1,
-    PT_DYNAMIC = 2,
-    PT_INTERP  = 3,
-    PT_NOTE    = 4,
-    PT_PHDR    = 6,
+    PT_NULL    = 0,  ///< Unused entry.
+    PT_LOAD    = 1,  ///< Loadable segment.
+    PT_DYNAMIC = 2,  ///< Dynamic linking info.
+    PT_INTERP  = 3,  ///< Interpreter path.
+    PT_NOTE    = 4,  ///< Auxiliary info.
+    PT_PHDR    = 6,  ///< Program header table itself.
 };
 
+/// Program header flag constants.
 enum : uint8_t {
-    PF_X = 1,
-    PF_W = 2,
-    PF_R = 4,
+    PF_X = 1,  ///< Execute permission.
+    PF_W = 2,  ///< Write permission.
+    PF_R = 4,  ///< Read permission.
 };
 
+/// ELF header type constants.
 enum : uint8_t {
-    ET_NONE = 0,
-    ET_EXEC = 2,
-    ET_DYN  = 3,
+    ET_NONE = 0,  ///< No file type.
+    ET_EXEC = 2,  ///< Executable.
+    ET_DYN  = 3,  ///< Shared object / PIE.
 };
 
 /// @brief Validate an ELF64 header (magic, class, endianness, version).

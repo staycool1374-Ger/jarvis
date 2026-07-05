@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file elf.cpp
+/// @brief ELF64 loader implementation — header validation, segment loading, stack setup.
+
 #include <kernel/elf/elf.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -37,6 +40,8 @@ namespace elf {
 
 static constexpr uint64_t ELF_MAGIC = 0x00000000464C457FULL;
 
+/// @brief Validate an ELF64 header (magic, class, endianness, machine, bounds).
+/// @return true if the header is valid and safe to load.
 bool validate_header(const ELF64Header* hdr) {
     if (!hdr) return false;
     if (reinterpret_cast<const uint32_t*>(hdr->ident)[0] !=
@@ -70,6 +75,8 @@ bool validate_header(const ELF64Header* hdr) {
     return true;
 }
 
+/// @brief Validate a single program header segment.
+/// Checks bounds, permissions (W^X), size limits, and overflow safety.
 static bool validate_segment(const ELF64ProgramHeader* phdr) {
     if (phdr->type != PT_LOAD) return true;
     // Basic size sanity
@@ -96,10 +103,12 @@ static bool validate_segment(const ELF64ProgramHeader* phdr) {
     return true;
 }
 
+/// @brief Round address up to the next page boundary.
 static uint64_t page_align_up(uint64_t addr) {
     return (addr + 0xFFF) & ~0xFFFULL;
 }
 
+/// @brief Round address down to the previous page boundary.
 static uint64_t page_align_down(uint64_t addr) {
     return addr & ~0xFFFULL;
 }
@@ -107,6 +116,7 @@ static uint64_t page_align_down(uint64_t addr) {
 static constexpr size_t INITIAL_HEAP_PAGES = 4;
 static constexpr size_t INITIAL_HEAP_SIZE = INITIAL_HEAP_PAGES * arch::PAGE_SIZE;
 
+/// @brief Count strings in a null-terminated array (argc/envc helper).
 static int count_strings(const char* const* arr) {
     if (!arr) return 0;
     int n = 0;
@@ -114,6 +124,7 @@ static int count_strings(const char* const* arr) {
     return n;
 }
 
+/// @brief Sum the lengths (including null terminators) of all strings in an array.
 static uint64_t total_string_len(const char* const* arr) {
     if (!arr) return 0;
     uint64_t total = 0;
@@ -122,6 +133,7 @@ static uint64_t total_string_len(const char* const* arr) {
     return total;
 }
 
+/// @brief Copy all strings from a null-terminated array into a contiguous buffer.
 static void copy_strings(uint8_t* dest, const char* const* arr) {
     if (!arr) return;
     for (int i = 0; arr[i]; ++i) {
@@ -131,6 +143,8 @@ static void copy_strings(uint8_t* dest, const char* const* arr) {
     }
 }
 
+/// @brief Load all PT_LOAD segments and allocate user stack + initial heap.
+/// @return true on success.
 static bool load_segments_and_stack(const ELF64Header* hdr,
     const uint8_t* file_data,
                                      uint64_t pml4, uint64_t* out_ustack_phys)
@@ -202,6 +216,7 @@ static bool load_segments_and_stack(const ELF64Header* hdr,
     return true;
 }
 
+/// @brief Set up argv/envp on the user stack and return the initial RSP.
 static uint64_t setup_user_stack(uint64_t ustack_phys,
                                   const char* const* argv,
                                   const char* const* envp)
@@ -261,6 +276,7 @@ static uint64_t setup_user_stack(uint64_t ustack_phys,
     return user_rsp;
 }
 
+/// @brief Open /dev/tty as stdin/stdout/stderr for a new task.
 static void open_std_fds(TaskControlBlock& tcb) {
     vfs::Vnode* tty = vfs::resolve("/dev/tty");
     if (!tty) return;
