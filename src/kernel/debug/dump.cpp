@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file dump.cpp
+/// @brief Diagnostic dump implementation — scheduler, CPU registers, task state.
+
 #include <kernel/debug/dump.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -33,6 +36,7 @@ namespace debug {
 using L = Logger;
 using S = Scheduler;
 
+/// @brief Return a string representation of a TaskState.
 static const char* state_str(TaskState s) {
     switch (s) {
     case TaskState::READY:      return "READY";
@@ -44,34 +48,36 @@ static const char* state_str(TaskState s) {
     }
 }
 
+/// @brief Print a key-value pair in hex.
 static void pkv(const char* key, uint64_t v) {
     L::raw_write("[DUMP]   "); L::raw_write(key); L::raw_write(": "); L::print_hex(v); L::raw_write("\n");
 }
 
+/// @brief Print a key-value pair in decimal.
 static void pkd(const char* key, uint64_t v) {
     L::raw_write("[DUMP]   "); L::raw_write(key); L::raw_write(": "); L::print_dec(v); L::raw_write("\n");
 }
 
+/// @brief Print two hex key-value pairs.
 static void pkv2(const char* k1, uint64_t v1, const char* k2, uint64_t v2) {
     L::raw_write("[DUMP]   "); L::raw_write(k1); L::raw_write(": "); L::print_hex(v1);
     L::raw_write("  "); L::raw_write(k2); L::raw_write(": "); L::print_hex(v2); L::raw_write("\n");
 }
 
+/// @brief Print two decimal key-value pairs.
 static void pkd2(const char* k1, uint64_t v1, const char* k2, uint64_t v2) {
     L::raw_write("[DUMP]   "); L::raw_write(k1); L::raw_write(": "); L::print_dec(v1);
     L::raw_write("  "); L::raw_write(k2); L::raw_write(": "); L::print_dec(v2); L::raw_write("\n");
 }
 
+/// @brief Print three hex key-value pairs.
 static void pkv3(const char* k1, uint64_t v1, const char* k2, uint64_t v2, const char* k3, uint64_t v3) {
     L::raw_write("[DUMP]   "); L::raw_write(k1); L::raw_write(": "); L::print_hex(v1);
     L::raw_write("  "); L::raw_write(k2); L::raw_write(": "); L::print_hex(v2);
     L::raw_write("  "); L::raw_write(k3); L::raw_write(": "); L::print_hex(v3); L::raw_write("\n");
 }
 
-// ---------------------------------------------------------------------------
-// dump_scheduler_info
-// ---------------------------------------------------------------------------
-
+/// @brief Dump scheduler indices, counts, flags, and deferred-switch globals.
 void dump_scheduler_info() {
     arch::IrqGuard irq_guard;
 
@@ -125,10 +131,7 @@ void dump_scheduler_info() {
     L::raw_write("[DUMP] === end scheduler ===\n");
 }
 
-// ---------------------------------------------------------------------------
-// dump_cpu_regs  (x86_64)
-// ---------------------------------------------------------------------------
-
+/// @brief Dump all CPU GPRs + CR0/CR2/CR3/CR4 (x86_64); stub on other archs.
 #if defined(CONFIG_ARCH_X86_64)
 
 void dump_cpu_regs() {
@@ -208,10 +211,8 @@ void dump_cpu_regs() {
 
 #endif
 
-// ---------------------------------------------------------------------------
-// dump_task_info
-// ---------------------------------------------------------------------------
-
+/// @brief Dump all fields of a single task.
+/// @param task_id  Task ID to dump.
 void dump_task_info(uint64_t task_id) {
     arch::IrqGuard irq_guard;
 
@@ -335,10 +336,7 @@ void dump_task_info(uint64_t task_id) {
     L::raw_write(" ---\n");
 }
 
-// ---------------------------------------------------------------------------
-// dump_all_tasks
-// ---------------------------------------------------------------------------
-
+/// @brief Dump all valid tasks in the scheduler array.
 void dump_all_tasks() {
     arch::IrqGuard irq_guard;
 
