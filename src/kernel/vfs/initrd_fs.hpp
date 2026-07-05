@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file initrd_fs.hpp
+/// @brief Initial ramdisk filesystem (initrd) declaration.
+
 #pragma once
 
 #include <kernel/vfs/vfs.hpp>

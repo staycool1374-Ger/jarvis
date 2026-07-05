@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file vfsd.cpp
+/// @brief VFS daemon PID management.
+
 #include <kernel/vfs/vfsd.hpp>
 #include <kernel/task/scheduler.hpp>
 
@@ -24,14 +27,19 @@ namespace vfsd {
 
 static uint64_t g_vfsd_pid = 0;
 
+/// @brief Record the PID of the VFS daemon task.
 void set_vfsd_pid(uint64_t pid) {
     g_vfsd_pid = pid;
 }
 
+/// @brief Get the recorded VFS daemon PID.
+/// @return The PID, or 0 if not yet set.
 uint64_t get_vfsd_pid() {
     return g_vfsd_pid;
 }
 
+/// @brief Check if the current task is the VFS daemon.
+/// @return true if the current task's PID matches the daemon PID.
 bool is_vfsd_task() {
     auto* cur = Scheduler::current_task();
     return cur && cur->id == g_vfsd_pid;

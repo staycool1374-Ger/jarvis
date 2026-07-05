@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file pipe.cpp
+/// @brief Anonymous pipe implementation (ring buffer, read/write vnode ops).
+
 #include <kernel/vfs/pipe.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/task/task.hpp>
@@ -33,17 +36,19 @@ namespace vfs {
 
 static constexpr size_t PIPE_BUF_SIZE = 4096;
 
+/// @brief Ring buffer shared between the read and write ends of a pipe.
 struct PipeBuffer {
-    uint8_t data[PIPE_BUF_SIZE];
-    size_t read_pos = 0;
-    size_t write_pos = 0;
-    size_t count = 0;
-    int refcount = 2;
-    bool read_closed = false;
-    bool write_closed = false;
-    sync::Semaphore data_avail;
+    uint8_t data[PIPE_BUF_SIZE];  ///< Circular buffer.
+    size_t read_pos = 0;          ///< Read cursor position.
+    size_t write_pos = 0;         ///< Write cursor position.
+    size_t count = 0;             ///< Number of bytes currently in the buffer.
+    int refcount = 2;             ///< Number of open references (read + write).
+    bool read_closed = false;     ///< True when the read end is closed.
+    bool write_closed = false;    ///< True when the write end is closed.
+    sync::Semaphore data_avail;   ///< Semaphore signalled when data is written.
 };
 
+/// @brief Read data from the pipe.
 static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
     ) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
@@ -63,6 +68,7 @@ static int64_t pipe_read(Vnode& self, uint8_t* buffer, uint64_t count, uint64_t
     return static_cast<int64_t>(total);
 }
 
+/// @brief Write data to the pipe.
 static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count,
     uint64_t) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
@@ -81,8 +87,10 @@ static int64_t pipe_write(Vnode& self, const uint8_t* buf, uint64_t count,
     return static_cast<int64_t>(total);
 }
 
+/// @brief Open a pipe vnode.
 static int pipe_open(Vnode&, uint64_t) { return 0; }
 
+/// @brief Close the read end of a pipe.
 static void pipe_read_close(Vnode& self) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb) return;
@@ -97,6 +105,7 @@ static void pipe_read_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+/// @brief Close the write end of a pipe.
 static void pipe_write_close(Vnode& self) {
     auto* pb = static_cast<PipeBuffer*>(self.private_data);
     if (!pb) return;
@@ -112,18 +121,23 @@ static void pipe_write_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+/// @brief Seek on a pipe (not supported).
 static int64_t pipe_lseek(Vnode&, int64_t, int, uint64_t*) {
     return VFS_INVALID;
 }
+/// @brief Get pipe status.
 static int pipe_fstat(Vnode&, VfsStat& vfs_stat) {
     vfs_stat.st_size = 0;
     vfs_stat.st_mode = S_IFCHR;
     return 0;
 }
+/// @brief I/O control on pipe (not supported).
 static int pipe_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on pipe (not supported).
 static int pipe_readdir(Vnode&, uint64_t&, Dirent&) {
     return VFS_INVALID;
 }
+/// @brief Look up child in pipe (not supported).
 static Vnode* pipe_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pipe_read_ops = {
@@ -140,6 +154,8 @@ static const VnodeOps pipe_write_ops = {
     nullptr,         // create
 };
 
+/// @brief Create a pair of connected pipe file descriptors.
+/// @return 0 on success, VFS_INVALID on failure.
 int create_pipe(int fds[2]) {
     auto* pb = static_cast<PipeBuffer*>(MemPool::alloc(sizeof(PipeBuffer)));
     if (!pb) return VFS_INVALID;

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file vfsd.hpp
+/// @brief VFS daemon IPC message types and PID tracking.
+
 #pragma once
 
 #include <types.hpp>
@@ -41,19 +44,19 @@ static constexpr uint64_t VFS_UNLINK   = 111;
 static constexpr uint64_t VFS_RMDIR    = 112;
 
 struct Msg {
-    uint64_t sender_id;
-    uint64_t type;
-    uint64_t arg0;
-    uint64_t arg1;
-    char     path[32];
+    uint64_t sender_id;  ///< Task ID of the sender.
+    uint64_t type;       ///< Request type (VFS_OPEN, VFS_READ, etc.).
+    uint64_t arg0;       ///< First argument (varies by type).
+    uint64_t arg1;       ///< Second argument (varies by type).
+    char     path[32];   ///< Path buffer for path-based requests.
 };
 
 struct Reply {
-    int64_t result;
-    uint64_t data0;
-    uint64_t data1;
-    uint64_t data2;
-    uint64_t data3;
+    int64_t result;   ///< Return code (0 on success, negative on error).
+    uint64_t data0;   ///< Response data field 0.
+    uint64_t data1;   ///< Response data field 1.
+    uint64_t data2;   ///< Response data field 2.
+    uint64_t data3;   ///< Response data field 3.
 };
 
 /// @brief Record the PID of the VFS daemon task.

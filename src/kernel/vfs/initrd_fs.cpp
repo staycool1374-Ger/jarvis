@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file initrd_fs.cpp
+/// @brief Initial ramdisk filesystem implementation (read-only file vnodes).
+
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/test/resource_tracker.hpp>
@@ -26,15 +29,17 @@
 namespace kernel {
 namespace vfs {
 
+/// @brief Per-vnode private data for initrd file vnodes.
 struct InitrdFileNode {
-    const uint8_t* data;
-    uint64_t size;
-    Vnode parent;
+    const uint8_t* data;  ///< Pointer to file data in the initrd image.
+    uint64_t size;        ///< File size in bytes.
+    Vnode parent;         ///< Parent directory vnode.
 };
 
 static Vnode initrd_root = {};
 static bool root_initialized = false;
 
+/// @brief Read data from an initrd file vnode.
 static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
     uint64_t offset) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
@@ -46,14 +51,17 @@ static int64_t initrd_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
     return static_cast<int64_t>(count);
 }
 
+/// @brief Write to an initrd file (not supported, read-only).
 static int64_t initrd_file_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 
+/// @brief Open an initrd file vnode.
 static int initrd_file_open(Vnode&, uint64_t) {
     return 0;
 }
 
+/// @brief Close an initrd file vnode, freeing private data.
 static void initrd_file_close(Vnode& self) {
     if (self.private_data) {
         auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
@@ -64,6 +72,7 @@ static void initrd_file_close(Vnode& self) {
     kernel::MemPool::free(&self);
 }
 
+/// @brief Seek within an initrd file.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
@@ -81,6 +90,7 @@ static int64_t initrd_file_lseek(Vnode& self, int64_t offset, int whence,
     return static_cast<int64_t>(new_pos);
 }
 
+/// @brief Get initrd file status.
 static int initrd_file_fstat(Vnode& self, VfsStat& st) {
     auto* finfo = static_cast<InitrdFileNode*>(self.private_data);
     if (!finfo) return VFS_INVALID;
@@ -89,14 +99,17 @@ static int initrd_file_fstat(Vnode& self, VfsStat& st) {
     return 0;
 }
 
+/// @brief I/O control on initrd file (not supported).
 static int initrd_file_ioctl(Vnode&, uint64_t, void*) {
     return VFS_INVALID;
 }
 
+/// @brief Read directory on initrd file (not supported).
 static int initrd_file_readdir(Vnode&, uint64_t&, Dirent&) {
     return VFS_INVALID;
 }
 
+/// @brief Look up child in initrd file (not supported).
 static Vnode* initrd_file_lookup(Vnode&, const char*) {
     return nullptr;
 }
@@ -118,26 +131,34 @@ static const VnodeOps initrd_file_ops = {
 
 // ── root directory ──
 
+/// @brief Read from initrd root (not supported).
 static int64_t initrd_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
+/// @brief Write to initrd root (not supported).
 static int64_t initrd_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
+/// @brief Open the initrd root.
 static int initrd_root_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close the initrd root.
 static void initrd_root_close(Vnode&) {}
 
+/// @brief Seek within initrd root (delegates to file lseek).
 static int64_t initrd_root_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
     return initrd_file_lseek(self, offset, whence, out_pos);
 }
 
+/// @brief Get initrd root status.
 static int initrd_root_fstat(Vnode&, VfsStat& vfs_stat) {
     vfs_stat.st_size = 0;
     vfs_stat.st_mode = S_IFDIR;
     return 0;
 }
 
+/// @brief I/O control on initrd root (not supported).
 static int initrd_root_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
 
+/// @brief Read a directory entry from initrd root.
 static int initrd_root_readdir(Vnode&, uint64_t& pos, Dirent& dent) {
     initrd::InitrdEntry entry = {};
     if (!initrd::readdir(&pos, &entry)) return VFS_INVALID;
@@ -149,6 +170,7 @@ static int initrd_root_readdir(Vnode&, uint64_t& pos, Dirent& dent) {
     return 0;
 }
 
+/// @brief Look up a file by name in the initrd root directory.
 static Vnode* initrd_root_lookup(Vnode&, const char* name) {
     initrd::InitrdFile file = initrd::find(name);
     if (!file.data) return nullptr;
@@ -191,6 +213,7 @@ static const VnodeOps initrd_root_ops = {
     nullptr,         // create
 };
 
+/// @brief Get the initrd root vnode (lazily initialised).
 static Vnode* initrd_get_root() {
     if (!root_initialized) {
         initrd_root.ops = &initrd_root_ops;

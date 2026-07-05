@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file fat32_fs.cpp
+/// @brief FAT32 VFS filesystem implementation (file/dir vnode ops, mounting).
+
 #include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/test/resource_tracker.hpp>
@@ -24,11 +27,12 @@
 namespace kernel {
 namespace vfs {
 
+/// @brief Per-vnode private data for FAT32 vnodes.
 struct Fat32VnodeData {
-    fat32::Fat32Partition* fs;
-    uint32_t cluster;
-    uint32_t size;
-    Vnode* parent;
+    fat32::Fat32Partition* fs;  ///< Backing FAT32 partition.
+    uint32_t cluster;           ///< First cluster of the file/directory.
+    uint32_t size;              ///< File size in bytes.
+    Vnode* parent;              ///< Parent directory vnode.
 };
 
 constinit fat32::Fat32Partition* fat32_partition_instance = nullptr;
@@ -43,6 +47,7 @@ static int fat32_dir_unlink(Vnode& self, const char* name);
 // Convert a path name to the 8.3 short name format string produced by
 // format_short_name (strip trailing spaces, add '.' before extension).
 // This ensures lookups match the name actually stored on disk.
+/// @brief Convert a name to its 8.3 formatted short name string.
 static void to_short_name_str(const char* name, char* out, size_t out_size) {
     if (!name || !out || out_size < 13) return;
     uint8_t raw[11];
@@ -64,6 +69,7 @@ static void to_short_name_str(const char* name, char* out, size_t out_size) {
 // File operations
 // -------------------------------------------------------------------
 
+/// @brief Read data from a FAT32 file vnode.
 static int64_t fat32_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
                                 uint64_t offset) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
@@ -72,14 +78,17 @@ static int64_t fat32_file_read(Vnode& self, uint8_t* buffer, uint64_t count,
                              offset, count, buffer);
 }
 
+/// @brief Write to a FAT32 file (not supported, read-only).
 static int64_t fat32_file_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 
+/// @brief Open a FAT32 file vnode.
 static int fat32_file_open(Vnode&, uint64_t) {
     return 0;
 }
 
+/// @brief Close a FAT32 file vnode, freeing private data.
 static void fat32_file_close(Vnode& self) {
     if (self.private_data) {
         auto* data = static_cast<Fat32VnodeData*>(self.private_data);
@@ -90,6 +99,7 @@ static void fat32_file_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+/// @brief Seek within a FAT32 file.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t fat32_file_lseek(Vnode& self, int64_t offset, int whence,
                                  uint64_t* out_pos) {
@@ -107,6 +117,7 @@ static int64_t fat32_file_lseek(Vnode& self, int64_t offset, int whence,
     return static_cast<int64_t>(new_pos);
 }
 
+/// @brief Get FAT32 file status.
 static int fat32_file_fstat(Vnode& self, VfsStat& st) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data) return VFS_INVALID;
@@ -115,14 +126,17 @@ static int fat32_file_fstat(Vnode& self, VfsStat& st) {
     return 0;
 }
 
+/// @brief I/O control on FAT32 file (not supported).
 static int fat32_file_ioctl(Vnode&, uint64_t, void*) {
     return VFS_INVALID;
 }
 
+/// @brief Read directory on FAT32 file (not supported).
 static int fat32_file_readdir(Vnode&, uint64_t&, Dirent&) {
     return VFS_INVALID;
 }
 
+/// @brief Look up child in FAT32 file (not supported).
 static Vnode* fat32_file_lookup(Vnode&, const char*) {
     return nullptr;
 }
@@ -146,18 +160,22 @@ static const VnodeOps fat32_file_ops = {
 // Directory operations
 // -------------------------------------------------------------------
 
+/// @brief Read from a FAT32 directory (not supported).
 static int64_t fat32_dir_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 
+/// @brief Write to a FAT32 directory (not supported).
 static int64_t fat32_dir_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
 
+/// @brief Open a FAT32 directory vnode.
 static int fat32_dir_open(Vnode&, uint64_t) {
     return 0;
 }
 
+/// @brief Close a FAT32 directory vnode, freeing private data.
 static void fat32_dir_close(Vnode& self) {
     if (&self == &fat32_root_vnode) {
         self.refcount = 1;
@@ -172,6 +190,7 @@ static void fat32_dir_close(Vnode& self) {
     MemPool::free(&self);
 }
 
+/// @brief Seek within a FAT32 directory.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t fat32_dir_lseek(Vnode& self, int64_t offset, int whence,
                                 uint64_t* out_pos) {
@@ -188,16 +207,19 @@ static int64_t fat32_dir_lseek(Vnode& self, int64_t offset, int whence,
     return static_cast<int64_t>(new_pos);
 }
 
+/// @brief Get FAT32 directory status.
 static int fat32_dir_fstat(Vnode&, VfsStat& st) {
     st.st_size = 0;
     st.st_mode = S_IFDIR;
     return 0;
 }
 
+/// @brief I/O control on FAT32 directory (not supported).
 static int fat32_dir_ioctl(Vnode&, uint64_t, void*) {
     return VFS_INVALID;
 }
 
+/// @brief Read a directory entry from a FAT32 directory.
 static int fat32_dir_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return VFS_INVALID;
@@ -235,6 +257,7 @@ static const VnodeOps fat32_dir_ops = {
 // mkdir / unlink
 // -------------------------------------------------------------------
 
+/// @brief Create a subdirectory in a FAT32 directory.
 static int fat32_dir_mkdir(Vnode& self, const char* name, uint16_t) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return VFS_INVALID;
@@ -295,6 +318,7 @@ static int fat32_dir_mkdir(Vnode& self, const char* name, uint16_t) {
     return 0;
 }
 
+/// @brief Remove a file or empty directory from a FAT32 directory.
 static int fat32_dir_unlink(Vnode& self, const char* name) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return VFS_INVALID;
@@ -337,6 +361,7 @@ static int fat32_dir_unlink(Vnode& self, const char* name) {
     return 0;
 }
 
+/// @brief Look up a child entry by name in a FAT32 directory.
 static Vnode* fat32_dir_lookup(Vnode& self, const char* name) {
     auto* data = static_cast<Fat32VnodeData*>(self.private_data);
     if (!data || !data->fs) return nullptr;
@@ -380,6 +405,7 @@ Vnode fat32_root_vnode = {};
 static Fat32VnodeData fat32_root_vdata;
 static bool root_initialized = false;
 
+/// @brief Get the FAT32 root vnode (lazily initialised).
 static Vnode* fat32_get_root() {
     if (!fat32_partition_instance || !fat32_partition_instance->bpb().valid)
         return nullptr;
@@ -406,6 +432,8 @@ Filesystem fat32_fs = {
     fat32_get_root,
 };
 
+/// @brief Mount the FAT32 filesystem at the given mount point.
+/// @return 0 on success, VFS_INVALID on error.
 int mount_fat32(const char* mount_point) {
     if (!fat32_partition_instance ||
         !fat32_partition_instance->bpb().valid)

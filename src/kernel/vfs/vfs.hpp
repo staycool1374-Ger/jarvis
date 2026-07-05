@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file vfs.hpp
+/// @brief Core VFS types, structures, and public API declarations.
+
 #pragma once
 
 #include <types.hpp>
@@ -57,52 +60,52 @@ enum FileMode : uint16_t {
 };
 
 struct VfsStat {
-    uint64_t st_size;
-    uint16_t st_mode;
+    uint64_t st_size;  ///< File size in bytes.
+    uint16_t st_mode;  ///< File mode / type flags.
 };
 
 struct Dirent {
-    char d_name[64];
-    uint64_t d_ino;
+    char d_name[64];   ///< Entry name (null-terminated).
+    uint64_t d_ino;    ///< Inode number.
 };
 
 struct Vnode;
 struct VnodeOps {
     int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count,
-        uint64_t offset);
+        uint64_t offset);                                          ///< Read data from vnode.
     int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count,
-        uint64_t offset);
-    int     (*open)(Vnode& self, uint64_t flags);
-    void    (*close)(Vnode& self);
-    int64_t (*lseek)(Vnode& self, int64_t offset, int whence, uint64_t* out_pos
-        );
-    int     (*fstat)(Vnode& self, VfsStat& st);
-    int     (*ioctl)(Vnode& self, uint64_t request, void* arg);
-    int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);
-    Vnode*  (*lookup)(Vnode& self, const char* name);
-    int     (*mkdir)(Vnode& self, const char* name, uint16_t mode);
-    int     (*unlink)(Vnode& self, const char* name);
-    int     (*create)(Vnode& self, const char* name, uint16_t mode);
+        uint64_t offset);                                          ///< Write data to vnode.
+    int     (*open)(Vnode& self, uint64_t flags);                  ///< Open the vnode.
+    void    (*close)(Vnode& self);                                 ///< Close the vnode.
+    int64_t (*lseek)(Vnode& self, int64_t offset, int whence,
+                     uint64_t* out_pos);                           ///< Seek to a position.
+    int     (*fstat)(Vnode& self, VfsStat& st);                    ///< Get file status.
+    int     (*ioctl)(Vnode& self, uint64_t request, void* arg);    ///< Device I/O control.
+    int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);  ///< Read directory entry.
+    Vnode*  (*lookup)(Vnode& self, const char* name);              ///< Look up child by name.
+    int     (*mkdir)(Vnode& self, const char* name, uint16_t mode);///< Create subdirectory.
+    int     (*unlink)(Vnode& self, const char* name);              ///< Remove entry.
+    int     (*create)(Vnode& self, const char* name, uint16_t mode);///< Create file.
 };
 
 struct Vnode {
-    const VnodeOps* ops;
-    uint64_t ino;
-    uint64_t size;
-    uint16_t mode;
-    void* private_data;
-    uint64_t refcount;
+    const VnodeOps* ops;   ///< Vnode operations table.
+    uint64_t ino;          ///< Inode number.
+    uint64_t size;         ///< File size in bytes.
+    uint16_t mode;         ///< File mode / type flags.
+    void* private_data;    ///< Filesystem-specific private data.
+    uint64_t refcount;     ///< Reference count.
 };
 
 struct FileDescription {
-    Vnode* vnode;
-    uint64_t offset;
-    uint64_t flags;
-    bool used;
+    Vnode* vnode;     ///< The vnode this descriptor refers to.
+    uint64_t offset;  ///< Current read/write offset.
+    uint64_t flags;   ///< Open flags (e.g. O_NONBLOCK).
+    bool used;        ///< Whether this descriptor slot is in use.
 };
 
 struct FdTable {
-    FileDescription fds[MAX_FDS];
+    FileDescription fds[MAX_FDS];  ///< Array of file descriptor entries.
 
     /// @brief Allocate a file descriptor entry.
     /// @return The fd index, or VFS_INVALID if full.
@@ -126,15 +129,15 @@ struct FdTable {
 };
 
 struct Filesystem {
-    const char* name;
-    Vnode* (*get_root)();
+    const char* name;        ///< Filesystem driver name.
+    Vnode* (*get_root)();    ///< Get the root vnode of this filesystem.
 };
 
 struct Mount {
-    const char* mount_point;
-    Filesystem* fs;
-    Vnode* root_vnode;
-    bool used;
+    const char* mount_point;  ///< Mount path (e.g. "/", "/dev").
+    Filesystem* fs;           ///< The mounted filesystem.
+    Vnode* root_vnode;        ///< Root vnode of the mounted fs.
+    bool used;                ///< Whether this mount slot is occupied.
 };
 
 /// @brief Resolve an absolute path to a vnode.

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file fat32.hpp
+/// @brief FAT32 on-disk structures, partition class, and directory helpers.
+
 #pragma once
 
 #include <types.hpp>
@@ -28,24 +31,24 @@ static constexpr uint64_t SECTOR_SIZE = 512;
 
 /// @brief Parsed MBR partition entry.
 struct MbrPartition {
-    uint8_t  status;
-    uint8_t  partition_type;
-    uint32_t lba_start;
-    uint32_t sector_count;
-    bool     valid;
+    uint8_t  status;          ///< Partition status byte (0x80 = active).
+    uint8_t  partition_type;  ///< Partition type code.
+    uint32_t lba_start;       ///< LBA of the first sector.
+    uint32_t sector_count;    ///< Number of sectors in the partition.
+    bool     valid;           ///< Whether this entry is valid.
 };
 
 /// @brief Parsed FAT32 BPB fields.
 struct Fat32Bpb {
-    uint16_t bytes_per_sector;     // BPB_BytsPerSec
-    uint8_t  sectors_per_cluster;  // BPB_SecPerClus
-    uint16_t reserved_sectors;     // BPB_RsvdSecCnt
-    uint8_t  fat_count;            // BPB_NumFATs
-    uint32_t fat_size;             // BPB_FATSz32
-    uint32_t root_cluster;         // BPB_RootClus
-    uint32_t total_sectors;        // BPB_TotSec32
-    uint16_t fs_info_sector;       // BPB_FSInfo
-    bool     valid;
+    uint16_t bytes_per_sector;     ///< BPB_BytsPerSec
+    uint8_t  sectors_per_cluster;  ///< BPB_SecPerClus
+    uint16_t reserved_sectors;     ///< BPB_RsvdSecCnt
+    uint8_t  fat_count;            ///< BPB_NumFATs
+    uint32_t fat_size;             ///< BPB_FATSz32
+    uint32_t root_cluster;         ///< BPB_RootClus
+    uint32_t total_sectors;        ///< BPB_TotSec32
+    uint16_t fs_info_sector;       ///< BPB_FSInfo
+    bool     valid;                ///< Whether the BPB was parsed successfully.
 };
 
 /// @brief A mounted FAT32 partition, backed by a BlockDevice.
@@ -129,28 +132,28 @@ static constexpr uint8_t ATTR_LFN        = 0x0F;
 
 /// @brief Raw 32-byte FAT32 directory entry.
 struct DirEntryRaw {
-    uint8_t  name[11];
-    uint8_t  attrs;
-    uint8_t  nt_reserved;
-    uint8_t  creation_tenths;
-    uint16_t creation_time;
-    uint16_t creation_date;
-    uint16_t access_date;
-    uint16_t cluster_high;
-    uint16_t modify_time;
-    uint16_t modify_date;
-    uint16_t cluster_low;
-    uint32_t file_size;
+    uint8_t  name[11];         ///< 8.3 short name (space-padded).
+    uint8_t  attrs;            ///< File attributes.
+    uint8_t  nt_reserved;      ///< Reserved for Windows NT.
+    uint8_t  creation_tenths;  ///< Creation time, tenths of second.
+    uint16_t creation_time;    ///< Creation time.
+    uint16_t creation_date;    ///< Creation date.
+    uint16_t access_date;      ///< Last access date.
+    uint16_t cluster_high;     ///< High 16 bits of first cluster.
+    uint16_t modify_time;      ///< Last modification time.
+    uint16_t modify_date;      ///< Last modification date.
+    uint16_t cluster_low;      ///< Low 16 bits of first cluster.
+    uint32_t file_size;        ///< File size in bytes.
 } __attribute__((packed));
 
 /// @brief Parsed directory entry.
 struct DirEntry {
-    char     name[13];      // 8.3 null-terminated (8+1+3+1)
-    uint8_t  attrs;
-    uint32_t cluster;
-    uint32_t size;
-    bool     is_directory;
-    bool     valid;
+    char     name[13];      ///< 8.3 null-terminated (8+1+3+1).
+    uint8_t  attrs;         ///< File attributes.
+    uint32_t cluster;       ///< First cluster number.
+    uint32_t size;          ///< File size in bytes.
+    bool     is_directory;  ///< True if this is a directory.
+    bool     valid;         ///< Whether this entry is valid.
 };
 
 /// @brief Read directory entries from a cluster chain.

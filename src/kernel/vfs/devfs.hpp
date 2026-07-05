@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file devfs.hpp
+/// @brief Device filesystem (devfs) declaration.
+
 #pragma once
 
 #include <kernel/vfs/vfs.hpp>

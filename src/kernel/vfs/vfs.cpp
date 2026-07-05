@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file vfs.cpp
+/// @brief VFS core implementation: path resolution, mounting, file/directory ops.
+
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/tmpfs.hpp>
 #include <kernel/vfs/devfs.hpp>
@@ -38,14 +41,18 @@ static Mount mount_table[MAX_MOUNTS];
 static size_t mount_count = 0;
 static Vnode* root_vnode_global = nullptr;
 
+/// @brief Get the global root vnode.
 Vnode* get_root_vnode() {
     return root_vnode_global;
 }
 
+/// @brief Set the global root vnode.
 void set_root_vnode(Vnode& vnode) {
     root_vnode_global = &vnode;
 }
 
+/// @brief Allocate a file descriptor entry.
+/// @return The fd index, or VFS_INVALID if full.
 int FdTable::alloc() {
     for (size_t i = 0; i < MAX_FDS; ++i) {
         if (!fds[i].used) {
@@ -60,6 +67,8 @@ int FdTable::alloc() {
     return VFS_INVALID;
 }
 
+/// @brief Allocate a file descriptor entry with error code.
+/// @return VfsError code.
 VfsError FdTable::alloc_err(int& out_fd) {
     for (size_t i = 0; i < MAX_FDS; ++i) {
         if (!fds[i].used) {
@@ -75,6 +84,7 @@ VfsError FdTable::alloc_err(int& out_fd) {
     return VFS_ERR_FD_TABLE_FULL;
 }
 
+/// @brief Release a file descriptor entry.
 void FdTable::free(int file_descriptor) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
         ) return;
@@ -101,6 +111,8 @@ void FdTable::free(int file_descriptor) {
     fds[file_descriptor].flags = 0;
 }
 
+/// @brief Release a file descriptor entry with error code.
+/// @return VfsError code.
 VfsError FdTable::free_err(int file_descriptor) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
         ) return VFS_ERR_INVALID_FD;
@@ -128,6 +140,8 @@ VfsError FdTable::free_err(int file_descriptor) {
     return VFS_ERR_OK;
 }
 
+/// @brief Look up a file descriptor by index.
+/// @return Pointer to the entry, or nullptr if invalid.
 FileDescription* FdTable::get(int file_descriptor) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
         ) return nullptr;
@@ -135,6 +149,8 @@ FileDescription* FdTable::get(int file_descriptor) {
     return &fds[file_descriptor];
 }
 
+/// @brief Look up a file descriptor by index with error code.
+/// @return VfsError code.
 VfsError FdTable::get_err(int file_descriptor, FileDescription*& out_fd) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS
         ) return VFS_ERR_INVALID_FD;
@@ -143,6 +159,8 @@ VfsError FdTable::get_err(int file_descriptor, FileDescription*& out_fd) {
     return VFS_ERR_OK;
 }
 
+/// @brief Resolve an absolute or relative path to a vnode.
+/// @return The vnode, or nullptr if not found.
 Vnode* resolve(const char* path) {
     if (!path || !*path) return nullptr;
 
@@ -244,6 +262,8 @@ Vnode* resolve(const char* path) {
     return current;
 }
 
+/// @brief Mount a filesystem at a mount point.
+/// @return 0 on success, VFS_INVALID on failure.
 int mount(Filesystem& filesystem, const char* mount_point) {
     if (!filesystem.get_root || mount_count >= MAX_MOUNTS) return VFS_INVALID;
 
@@ -263,6 +283,7 @@ int mount(Filesystem& filesystem, const char* mount_point) {
     return 0;
 }
 
+/// @brief Initialize the VFS subsystem (clear mount table).
 void init() {
     mount_count = 0;
     for (size_t i = 0; i < MAX_MOUNTS; ++i) {
@@ -273,6 +294,7 @@ void init() {
     }
 }
 
+/// @brief Reset VFS globals and re-mount standard filesystems.
 void reset_and_remount() {
     // Clear stale mount-table entries and root-vnode pointers from
     // prior test execution.  The underlying MemPool blocks have been
@@ -295,6 +317,8 @@ void reset_and_remount() {
     mount(tmpfs_fs, "/tmp");
 }
 
+/// @brief Find a mounted filesystem by name.
+/// @return The filesystem, or nullptr if not found.
 Filesystem* find_fs(const char* name) {
     for (size_t i = 0; i < mount_count; ++i) {
         if (mount_table[i].fs &&
@@ -306,6 +330,8 @@ Filesystem* find_fs(const char* name) {
     return nullptr;
 }
 
+/// @brief Create a subdirectory at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
 int mkdir(const char* path, uint16_t mode) {
     // Resolve the parent directory
     const char* slash = nullptr;
@@ -335,6 +361,8 @@ int mkdir(const char* path, uint16_t mode) {
     return parent->ops->mkdir(*parent, name, mode);
 }
 
+/// @brief Remove a file or empty directory at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
 int unlink(const char* path) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {
@@ -363,6 +391,8 @@ int unlink(const char* path) {
     return parent->ops->unlink(*parent, name);
 }
 
+/// @brief Create a regular file at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
 int create(const char* path, uint16_t mode) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {
@@ -386,6 +416,8 @@ int create(const char* path, uint16_t mode) {
     return parent->ops->create(*parent, name, mode);
 }
 
+/// @brief Mount a filesystem with error code return.
+/// @return VfsError code.
 VfsError mount_err(Filesystem& filesystem, const char* mount_point) {
     if (!filesystem.get_root || mount_count >= MAX_MOUNTS) {
         return VFS_ERR_INVALID_ARGS;
@@ -409,6 +441,8 @@ VfsError mount_err(Filesystem& filesystem, const char* mount_point) {
     return VFS_ERR_OK;
 }
 
+/// @brief Initialize the VFS subsystem with error code return.
+/// @return VfsError code.
 VfsError init_err() {
     mount_count = 0;
     for (size_t i = 0; i < MAX_MOUNTS; ++i) {
@@ -421,6 +455,8 @@ VfsError init_err() {
     return VFS_ERR_OK;
 }
 
+/// @brief Find a mounted filesystem by name with error code return.
+/// @return VfsError code.
 VfsError find_fs_err(const char* name, Filesystem*& out_fs) {
     if (!name) {
         return VFS_ERR_INVALID_ARGS;
@@ -436,11 +472,15 @@ VfsError find_fs_err(const char* name, Filesystem*& out_fs) {
     return VFS_ERR_NO_SUCH_FS;
 }
 
+/// @brief Set the global root vnode with error code return.
+/// @return VfsError code.
 VfsError set_root_vnode_err(Vnode& vnode) {
     root_vnode_global = &vnode;
     return VFS_ERR_OK;
 }
 
+/// @brief Resolve an absolute path to a vnode with error code return.
+/// @return VfsError code.
 VfsError resolve_err(const char* path, Vnode*& out_vnode) {
     Vnode* result = resolve(path);
     if (!result) {
@@ -450,6 +490,8 @@ VfsError resolve_err(const char* path, Vnode*& out_vnode) {
     return VFS_ERR_OK;
 }
 
+/// @brief Create a subdirectory with error code return.
+/// @return VfsError code.
 VfsError mkdir_err(const char* path, uint16_t mode) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {
@@ -480,6 +522,8 @@ VfsError mkdir_err(const char* path, uint16_t mode) {
     return result == 0 ? VFS_ERR_OK : VFS_ERR_IO_ERROR;
 }
 
+/// @brief Create a regular file with error code return.
+/// @return VfsError code.
 VfsError create_err(const char* path, uint16_t mode) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {
@@ -505,6 +549,8 @@ VfsError create_err(const char* path, uint16_t mode) {
     return result == 0 ? VFS_ERR_OK : VFS_ERR_IO_ERROR;
 }
 
+/// @brief Remove a file or empty directory with error code return.
+/// @return VfsError code.
 VfsError unlink_err(const char* path) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {

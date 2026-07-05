@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file vfs_errors.hpp
+/// @brief VFS error code definitions and error-string conversion.
+
 #pragma once
 
 #include <types.hpp>

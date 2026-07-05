@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file fat32_fs.hpp
+/// @brief FAT32 VFS filesystem integration (mount, root vnode).
+
 #pragma once
 
 #include <kernel/vfs/vfs.hpp>

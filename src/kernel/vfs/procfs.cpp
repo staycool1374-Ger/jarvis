@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file procfs.cpp
+/// @brief Process filesystem implementation (meminfo, pci, self, pid directories).
+
 #include <kernel/vfs/procfs.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
@@ -30,6 +33,7 @@ namespace kernel {
 namespace vfs {
 
 // ── helpers ──
+/// @brief Convert a 64-bit unsigned integer to a decimal string.
 static void uint64_to_str(char* buffer, uint64_t n) {
     char tmp[32];
     int pos = 32;
@@ -42,12 +46,14 @@ static void uint64_to_str(char* buffer, uint64_t n) {
 }
 
 // ── meminfo vnode ──
+/// @brief Vnode with cached memory info content.
 struct MemInfoVnode {
-    Vnode base;
-    char content[256];
-    uint64_t content_len;
+    Vnode base;              ///< Base Vnode.
+    char content[256];       ///< Cached content string.
+    uint64_t content_len;    ///< Length of cached content.
 };
 
+/// @brief Read from /proc/meminfo.
 static int64_t meminfo_read(Vnode& self, uint8_t* buf, uint64_t count,
     uint64_t offset) {
     auto* mi = static_cast<MemInfoVnode*>(self.private_data);
@@ -59,9 +65,12 @@ static int64_t meminfo_read(Vnode& self, uint8_t* buf, uint64_t count,
     return static_cast<int64_t>(count);
 }
 
+/// @brief Write to /proc/meminfo (not supported).
 static int64_t meminfo_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
+/// @brief Open /proc/meminfo.
 static int meminfo_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close /proc/meminfo.
 static void meminfo_close(Vnode&) {}
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -82,6 +91,7 @@ static int64_t meminfo_lseek(Vnode& self, int64_t offset, int whence,
     return static_cast<int64_t>(new_pos);
 }
 
+/// @brief Get /proc/meminfo status.
 static int meminfo_fstat(Vnode& self, VfsStat& st) {
     auto* mi = static_cast<MemInfoVnode*>(self.private_data);
     if (!mi) return VFS_INVALID;
@@ -90,8 +100,11 @@ static int meminfo_fstat(Vnode& self, VfsStat& st) {
     return 0;
 }
 
+/// @brief I/O control on /proc/meminfo (not supported).
 static int meminfo_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on /proc/meminfo (not supported).
 static int meminfo_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
+/// @brief Look up child in /proc/meminfo (not supported).
 static Vnode* meminfo_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps meminfo_ops = {
@@ -105,12 +118,14 @@ static const VnodeOps meminfo_ops = {
 static MemInfoVnode meminfo_vnode = {};
 
 // ── /proc/pci vnode ──
+/// @brief Vnode with cached PCI device tree content.
 struct PciVnode {
-    Vnode base;
-    char content[2048];
-    uint64_t content_len;
+    Vnode base;              ///< Base Vnode.
+    char content[2048];      ///< Cached PCI tree string.
+    uint64_t content_len;    ///< Length of cached content.
 };
 
+/// @brief Read from /proc/pci.
 static int64_t pci_read(Vnode& self, uint8_t* buf, uint64_t count,
     uint64_t offset) {
     auto* pi = static_cast<PciVnode*>(self.private_data);
@@ -122,9 +137,12 @@ static int64_t pci_read(Vnode& self, uint8_t* buf, uint64_t count,
     return static_cast<int64_t>(count);
 }
 
+/// @brief Write to /proc/pci (not supported).
 static int64_t pci_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
+/// @brief Open /proc/pci.
 static int pci_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close /proc/pci.
 static void pci_close(Vnode&) {}
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -145,6 +163,7 @@ static int64_t pci_lseek(Vnode& self, int64_t offset, int whence,
     return static_cast<int64_t>(new_pos);
 }
 
+/// @brief Get /proc/pci status.
 static int pci_fstat(Vnode& self, VfsStat& st) {
     auto* pi = static_cast<PciVnode*>(self.private_data);
     if (!pi) return VFS_INVALID;
@@ -153,8 +172,11 @@ static int pci_fstat(Vnode& self, VfsStat& st) {
     return 0;
 }
 
+/// @brief I/O control on /proc/pci (not supported).
 static int pci_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on /proc/pci (not supported).
 static int pci_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
+/// @brief Look up child in /proc/pci (not supported).
 static Vnode* pci_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pci_ops = {
@@ -167,23 +189,31 @@ static const VnodeOps pci_ops = {
 static PciVnode pci_vnode = {};
 
 // ── /proc/self vnode ── (redirects to current pid's dir)
+/// @brief Read from /proc/self (not supported).
 static int64_t self_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Write to /proc/self (not supported).
 static int64_t self_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Open /proc/self.
 static int self_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close /proc/self.
 static void self_close(Vnode&) {}
+/// @brief Seek on /proc/self (not supported).
 static int64_t self_lseek(Vnode&, int64_t, int, uint64_t*) {
     return VFS_INVALID;
 }
+/// @brief Get /proc/self status.
 static int self_fstat(Vnode&, VfsStat& vfs_stat) {
     vfs_stat.st_size = 0;
     vfs_stat.st_mode = S_IFDIR;
     return 0;
 }
+/// @brief I/O control on /proc/self (not supported).
 static int self_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on /proc/self (not supported).
 static int self_readdir(Vnode&, uint64_t&, Dirent&) {
     return VFS_INVALID;
 }
@@ -202,12 +232,14 @@ static Vnode self_vnode = {
 };
 
 // ── pid stat vnode ──
+/// @brief Vnode representing a process's stat file.
 struct PidStatVnode {
-    Vnode base;
-    uint64_t pid;
-    TaskControlBlock* task;
+    Vnode base;          ///< Base Vnode.
+    uint64_t pid;        ///< Process ID.
+    TaskControlBlock* task;  ///< Pointer to the task's TCB.
 };
 
+/// @brief Read process stat info.
 static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count,
     uint64_t offset) {
     auto* ps = static_cast<PidStatVnode*>(self.private_data);
@@ -255,10 +287,14 @@ static int64_t pid_stat_read(Vnode& self, uint8_t* buf, uint64_t count,
     return static_cast<int64_t>(count);
 }
 
+/// @brief Write to process stat (not supported).
 static int64_t pid_stat_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID; }
+/// @brief Open process stat.
 static int pid_stat_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close process stat.
 static void pid_stat_close(Vnode&) {}
+/// @brief Seek within process stat.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int64_t pid_stat_lseek(Vnode& self, int64_t offset, int whence,
     uint64_t* out_pos) {
@@ -273,9 +309,13 @@ static int64_t pid_stat_lseek(Vnode& self, int64_t offset, int whence,
     *out_pos = new_pos;
     return static_cast<int64_t>(new_pos);
 }
+/// @brief Get process stat status.
 static int pid_stat_fstat(Vnode&, VfsStat&) { return VFS_INVALID; }
+/// @brief I/O control on process stat (not supported).
 static int pid_stat_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on process stat (not supported).
 static int pid_stat_readdir(Vnode&, uint64_t&, Dirent&) { return VFS_INVALID; }
+/// @brief Look up child in process stat (not supported).
 static Vnode* pid_stat_lookup(Vnode&, const char*) { return nullptr; }
 
 static const VnodeOps pid_stat_ops = {
@@ -287,21 +327,26 @@ static const VnodeOps pid_stat_ops = {
 };
 
 // ── pid directory vnode ──
+/// @brief Vnode representing a per-process directory in /proc.
 struct PidDirVnode {
-    Vnode base;
-    uint64_t pid;
-    TaskControlBlock* task;
-    Vnode stat_vnode;
-    PidStatVnode stat_data;
+    Vnode base;             ///< Base Vnode.
+    uint64_t pid;           ///< Process ID.
+    TaskControlBlock* task; ///< Pointer to the task's TCB.
+    Vnode stat_vnode;       ///< Embedded stat vnode.
+    PidStatVnode stat_data; ///< Embedded stat vnode data.
 };
 
+/// @brief Read from a PID directory (not supported).
 static int64_t pid_dir_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Write to a PID directory (not supported).
 static int64_t pid_dir_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Open a PID directory.
 static int pid_dir_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close a PID directory, freeing its private data.
 static void pid_dir_close(Vnode& self) {
     if (self.private_data) {
         auto* pd = static_cast<PidDirVnode*>(self.private_data);
@@ -309,15 +354,20 @@ static void pid_dir_close(Vnode& self) {
         kernel::MemPool::free(pd);
     }
 }
+/// @brief Seek on PID directory (not supported).
 static int64_t pid_dir_lseek(Vnode&, int64_t, int, uint64_t*) {
     return VFS_INVALID;
 }
+/// @brief Get PID directory status.
 static int pid_dir_fstat(Vnode&, VfsStat&) { return VFS_INVALID; }
+/// @brief I/O control on PID directory (not supported).
 static int pid_dir_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
+/// @brief Read directory on PID directory (not supported).
 static int pid_dir_readdir(Vnode&, uint64_t&, Dirent&) {
     return VFS_INVALID;
 }
 
+/// @brief Look up a child entry in a PID directory.
 static Vnode* pid_dir_lookup(Vnode& self, const char* name) {
     auto* pd = static_cast<PidDirVnode*>(self.private_data);
     if (!pd) return nullptr;
@@ -334,6 +384,7 @@ static const VnodeOps pid_dir_ops = {
 };
 
 // ── self resolution ──
+/// @brief Resolve a path component under /proc/self.
 static Vnode* self_lookup(Vnode& self, const char* name) {
     (void)self;
     TaskControlBlock* task = Scheduler::current_task();
@@ -356,24 +407,32 @@ static Vnode* self_lookup(Vnode& self, const char* name) {
 }
 
 // ── procfs root ──
+/// @brief Read from procfs root (not supported).
 static int64_t proc_root_read(Vnode&, uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Write to procfs root (not supported).
 static int64_t proc_root_write(Vnode&, const uint8_t*, uint64_t, uint64_t) {
     return VFS_INVALID;
 }
+/// @brief Open the procfs root.
 static int proc_root_open(Vnode&, uint64_t) { return 0; }
+/// @brief Close the procfs root.
 static void proc_root_close(Vnode&) {}
+/// @brief Seek on procfs root (not supported).
 static int64_t proc_root_lseek(Vnode&, int64_t, int, uint64_t*) {
     return VFS_INVALID;
 }
+/// @brief Get procfs root status.
 static int proc_root_fstat(Vnode&, VfsStat& vfs_stat) {
     vfs_stat.st_size = 0;
     vfs_stat.st_mode = S_IFDIR;
     return 0;
 }
+/// @brief I/O control on procfs root (not supported).
 static int proc_root_ioctl(Vnode&, uint64_t, void*) { return VFS_INVALID; }
 
+/// @brief Read a directory entry from procfs root.
 static int proc_root_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
     (void)self;
     uint64_t position = pos;
@@ -427,6 +486,7 @@ static int proc_root_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
     return VFS_INVALID;
 }
 
+/// @brief Look up an entry in procfs root.
 static Vnode* proc_root_lookup(Vnode& self, const char* name) {
     (void)self;
     if (strcmp(name, "meminfo") == 0) return &meminfo_vnode.base;
@@ -483,6 +543,7 @@ static Vnode proc_root_vnode = {
     &proc_root_ops, 0, 0, S_IFDIR, nullptr, 0,
 };
 
+/// @brief Get the procfs root vnode (refreshes content on each call).
 static Vnode* proc_get_root() {
     // Refresh meminfo content
     uint64_t total = PMM::total_memory();

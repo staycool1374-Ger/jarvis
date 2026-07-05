@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file fat32.cpp
+/// @brief FAT32 partition parsing, directory reading, and write primitives.
+
 #include <kernel/vfs/fat32.hpp>
 #include <string.hpp>
 #include <utils.hpp>
@@ -35,6 +38,8 @@ static constexpr int64_t  FAT_READ_ERROR   = -1;
 // MBR parsing
 // -------------------------------------------------------------------
 
+/// @brief Find the first FAT32 partition in the MBR.
+/// @return true if a FAT32 partition was found.
 bool find_fat32_in_mbr(block::BlockDevice& device,
                         uint64_t& partition_lba_out) {
     uint8_t sector[SECTOR_SIZE];
@@ -64,6 +69,8 @@ bool find_fat32_in_mbr(block::BlockDevice& device,
 // BPB parsing
 // -------------------------------------------------------------------
 
+/// @brief Parse the FAT32 BPB from a raw sector buffer.
+/// @return true if the BPB is valid.
 static bool parse_bpb_from_sector(const uint8_t* sector, Fat32Bpb& bpb) {
     if (sector[510] != BPB_SIGNATURE_LO ||
         sector[511] != BPB_SIGNATURE_HI) return false;
@@ -120,9 +127,12 @@ static bool parse_bpb_from_sector(const uint8_t* sector, Fat32Bpb& bpb) {
 // Fat32Partition
 // -------------------------------------------------------------------
 
+/// @brief Construct a Fat32Partition backed by the given block device.
 Fat32Partition::Fat32Partition(block::BlockDevice& device)
     : device_(device) {}
 
+/// @brief Mount by scanning the MBR for a FAT32 partition.
+/// @return true if a valid FAT32 partition was found.
 bool Fat32Partition::mount() {
     if (find_fat32_in_mbr(device_, partition_start_)) {
         return parse_bpb(partition_start_);
@@ -130,25 +140,33 @@ bool Fat32Partition::mount() {
     return false;
 }
 
+/// @brief Mount at a specific partition LBA.
+/// @return true if the BPB at the given LBA parsed successfully.
 bool Fat32Partition::mount_at(uint64_t partition_lba) {
     partition_start_ = partition_lba;
     return parse_bpb(partition_lba);
 }
 
+/// @brief Parse the MBR to find the partition start.
+/// @return true if a FAT32 partition was found.
 bool Fat32Partition::parse_mbr() {
     return find_fat32_in_mbr(device_, partition_start_);
 }
 
+/// @brief Parse the BPB at the given LBA.
+/// @return true if the BPB is valid.
 bool Fat32Partition::parse_bpb(uint64_t lba) {
     uint8_t sector[SECTOR_SIZE];
     if (!device_.read_sector(lba, sector)) return false;
     return parse_bpb_from_sector(sector, bpb_);
 }
 
+/// @brief Find the FAT32 partition in the MBR (private helper).
 bool Fat32Partition::find_fat32_partition() {
     return find_fat32_in_mbr(device_, partition_start_);
 }
 
+/// @brief Convert a cluster number to the first sector's LBA.
 uint64_t Fat32Partition::cluster_to_lba(uint32_t cluster) const {
     uint64_t data_start = partition_start_ +
         bpb_.reserved_sectors +
@@ -157,6 +175,8 @@ uint64_t Fat32Partition::cluster_to_lba(uint32_t cluster) const {
         bpb_.sectors_per_cluster;
 }
 
+/// @brief Read a FAT entry for a given cluster.
+/// @return true on success.
 bool Fat32Partition::read_fat_entry(uint32_t cluster,
                                      uint32_t& next_cluster) const {
     uint64_t fat_offset = static_cast<uint64_t>(cluster) * 4;
@@ -177,6 +197,8 @@ bool Fat32Partition::read_fat_entry(uint32_t cluster,
     return true;
 }
 
+/// @brief Read a full cluster's data.
+/// @return true on success.
 bool Fat32Partition::read_cluster(uint32_t cluster, uint8_t* buffer) const {
     uint64_t lba = cluster_to_lba(cluster);
     uint64_t sectors = bpb_.sectors_per_cluster;
@@ -191,6 +213,7 @@ bool Fat32Partition::read_cluster(uint32_t cluster, uint8_t* buffer) const {
 // Directory entry helpers
 // -------------------------------------------------------------------
 
+/// @brief Format a raw 8.3 directory entry name into "NAME.EXT".
 void format_short_name(const uint8_t raw_name[11], char* out,
                         size_t out_size) {
     if (!raw_name || !out || out_size < 13) return;
@@ -215,18 +238,22 @@ void format_short_name(const uint8_t raw_name[11], char* out,
     out[j] = '\0';
 }
 
+/// @brief Check if a raw entry is a Long File Name entry.
 static bool is_lfn_entry(const DirEntryRaw& raw) {
     return raw.attrs == ATTR_LFN;
 }
 
+/// @brief Check if a raw entry is the end-of-directory marker.
 static bool is_end_marker(const DirEntryRaw& raw) {
     return raw.name[0] == 0x00;
 }
 
+/// @brief Check if a raw entry is free (deleted).
 static bool is_free_entry(const DirEntryRaw& raw) {
     return raw.name[0] == 0xE5;
 }
 
+/// @brief Extract the cluster number from a raw directory entry.
 static uint32_t get_entry_cluster(const DirEntryRaw& raw) {
     return (static_cast<uint32_t>(raw.cluster_high) << 16) |
            static_cast<uint32_t>(raw.cluster_low);
@@ -236,6 +263,8 @@ static uint32_t get_entry_cluster(const DirEntryRaw& raw) {
 // Directory reading
 // -------------------------------------------------------------------
 
+/// @brief Read the next directory entry from a cluster chain.
+/// @return true if a valid entry was read.
 bool read_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
                      uint64_t& pos, DirEntry& entry) {
     entry.valid = false;
@@ -291,6 +320,8 @@ bool read_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
     return true;
 }
 
+/// @brief Look up a name in a directory cluster chain.
+/// @return true if found.
 bool lookup_in_dir(Fat32Partition& fs, uint32_t dir_cluster,
                     const char* name, DirEntry& entry) {
     uint64_t pos = 0;
@@ -305,6 +336,8 @@ bool lookup_in_dir(Fat32Partition& fs, uint32_t dir_cluster,
 // -------------------------------------------------------------------
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Read data from a file's cluster chain.
+/// @return Number of bytes read, or -1 on error.
 int64_t read_file(Fat32Partition& fs, uint32_t first_cluster,
                    uint32_t file_size, uint64_t offset, uint64_t count,
                    uint8_t* buffer) {
@@ -357,6 +390,8 @@ int64_t read_file(Fat32Partition& fs, uint32_t first_cluster,
 // -------------------------------------------------------------------
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+/// @brief Write a FAT entry, mirroring to secondary FATs.
+/// @return true on success.
 bool Fat32Partition::write_fat_entry(uint32_t cluster, uint32_t value) {
     value &= 0x0FFFFFFF;
     uint64_t fat_offset = static_cast<uint64_t>(cluster) * 4;
@@ -386,6 +421,8 @@ bool Fat32Partition::write_fat_entry(uint32_t cluster, uint32_t value) {
     return true;
 }
 
+/// @brief Write a full cluster's data.
+/// @return true on success.
 bool Fat32Partition::write_cluster(uint32_t cluster, const uint8_t* buffer) {
     uint64_t lba = cluster_to_lba(cluster);
     uint64_t sectors = bpb_.sectors_per_cluster;
@@ -397,6 +434,8 @@ bool Fat32Partition::write_cluster(uint32_t cluster, const uint8_t* buffer) {
     return true;
 }
 
+/// @brief Zero-fill a cluster.
+/// @return true on success.
 bool Fat32Partition::clear_cluster(uint32_t cluster) {
     uint64_t lba = cluster_to_lba(cluster);
     uint64_t sectors = bpb_.sectors_per_cluster;
@@ -408,6 +447,8 @@ bool Fat32Partition::clear_cluster(uint32_t cluster) {
     return true;
 }
 
+/// @brief Find a free cluster in the FAT.
+/// @return true if a free cluster was found.
 bool Fat32Partition::find_free_cluster(uint32_t start_hint,
                                         uint32_t& out_cluster) {
     uint32_t total_clusters =
@@ -431,6 +472,8 @@ bool Fat32Partition::find_free_cluster(uint32_t start_hint,
     return false;
 }
 
+/// @brief Allocate a cluster and append it to a chain.
+/// @return true on success.
 bool Fat32Partition::alloc_cluster(uint32_t prev_cluster,
                                     uint32_t& out_cluster) {
     if (!find_free_cluster(prev_cluster ? prev_cluster + 1 : 2, out_cluster))
@@ -450,6 +493,7 @@ bool Fat32Partition::alloc_cluster(uint32_t prev_cluster,
     return true;
 }
 
+/// @brief Free an entire cluster chain starting from a given cluster.
 void free_cluster_chain(Fat32Partition& fs, uint32_t first_cluster) {
     uint32_t current = first_cluster;
     while (!Fat32Partition::is_eof(current) &&
@@ -465,6 +509,7 @@ void free_cluster_chain(Fat32Partition& fs, uint32_t first_cluster) {
 // Short name conversion
 // -------------------------------------------------------------------
 
+/// @brief Convert a filename to 8.3 short name (uppercased, space-padded).
 void name_to_short_name(const char* name, uint8_t out[11]) {
     // Initialize with spaces
     for (int i = 0; i < 11; ++i) out[i] = ' ';
@@ -514,6 +559,8 @@ void name_to_short_name(const char* name, uint8_t out[11]) {
 
 static constexpr uint32_t CLUSTER_BUF_SIZE = 32 * 1024;
 
+/// @brief Add a new directory entry to a directory cluster chain.
+/// @return true on success.
 bool add_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
                     const DirEntryRaw& raw) {
     uint32_t cluster_chain[256];
@@ -553,6 +600,8 @@ bool add_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
     return fs.write_cluster(new_cluster, cluster_data);
 }
 
+/// @brief Remove a directory entry by name (mark as free).
+/// @return true if found and removed.
 bool remove_dir_entry(Fat32Partition& fs, uint32_t dir_cluster,
                        const char* name) {
     uint32_t cluster_chain[256];

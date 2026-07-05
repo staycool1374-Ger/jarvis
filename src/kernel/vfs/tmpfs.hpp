@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file tmpfs.hpp
+/// @brief In-memory temporary filesystem (tmpfs) declaration.
+
 #pragma once
 
 #include <kernel/vfs/vfs.hpp>
