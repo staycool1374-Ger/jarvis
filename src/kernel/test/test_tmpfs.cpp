@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_tmpfs.cpp
+/// @brief TMPFS (temporary in-memory filesystem) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/tmpfs.hpp>

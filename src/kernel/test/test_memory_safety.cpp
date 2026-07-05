@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_memory_safety.cpp
+/// @brief Memory safety boundary tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/memory/pmm.hpp>

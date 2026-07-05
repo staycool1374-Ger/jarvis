@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_waitpid.cpp
+/// @brief Wait/PID (waitpid) syscall tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>

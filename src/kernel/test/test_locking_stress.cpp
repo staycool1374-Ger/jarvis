@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_locking_stress.cpp
+/// @brief Locking primitive stress tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/sync/mutex.hpp>

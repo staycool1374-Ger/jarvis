@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_deadlock_detect.cpp
+/// @brief Deadlock detection algorithm tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

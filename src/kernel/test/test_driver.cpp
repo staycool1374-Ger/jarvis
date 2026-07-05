@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_driver.cpp
+/// @brief Driver framework tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>

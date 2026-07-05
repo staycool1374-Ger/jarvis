@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_deadlock_recovery.cpp
+/// @brief Deadlock recovery mechanism tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

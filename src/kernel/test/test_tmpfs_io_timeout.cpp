@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_tmpfs_io_timeout.cpp
+/// @brief TMPFS I/O timeout tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 // Runmode: kernel

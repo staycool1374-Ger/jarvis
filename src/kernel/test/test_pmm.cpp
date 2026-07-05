@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_pmm.cpp
+/// @brief Physical memory manager (PMM) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/memory/pmm.hpp>

@@ -1,3 +1,6 @@
+/// @file test_watchdog.cpp
+/// @brief Watchdog timer implementation tests.
+
 #include <kernel/test/test_watchdog.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>

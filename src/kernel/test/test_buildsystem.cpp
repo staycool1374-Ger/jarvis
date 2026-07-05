@@ -1,3 +1,6 @@
+/// @file test_buildsystem.cpp
+/// @brief Build system integration tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core

@@ -16,7 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file resource_tracker.hpp
+/// @brief Kernel resource allocation tracking for test isolation.
+
 #pragma once
+
 #include <types.hpp>
 #include <kernel/memory/mempool.hpp>
 

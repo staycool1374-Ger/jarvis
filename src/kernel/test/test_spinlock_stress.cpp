@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_spinlock_stress.cpp
+/// @brief Spinlock stress / contention tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file bench_syscall_latency.cpp
+/// @brief Benchmark — system call latency measurements.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/io.hpp>

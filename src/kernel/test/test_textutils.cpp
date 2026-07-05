@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_textutils.cpp
+/// @brief Text utility function tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 // Runmode: kernel

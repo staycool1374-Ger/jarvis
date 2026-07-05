@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_wfg.cpp
+/// @brief Wait-for-global (WFG) synchronisation tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

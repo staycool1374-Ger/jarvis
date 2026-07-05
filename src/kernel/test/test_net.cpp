@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_net.cpp
+/// @brief Networking subsystem tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/net/ether.hpp>

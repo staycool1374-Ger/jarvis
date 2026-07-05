@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_signals.cpp
+/// @brief Signal delivery and handling tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <signal.hpp>

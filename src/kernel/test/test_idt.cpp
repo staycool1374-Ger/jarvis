@@ -1,3 +1,6 @@
+/// @file test_idt.cpp
+/// @brief IDT (Interrupt Descriptor Table) tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core

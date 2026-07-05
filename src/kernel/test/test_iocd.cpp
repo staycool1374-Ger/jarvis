@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_iocd.cpp
+/// @brief I/O completion detection tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/task.hpp>

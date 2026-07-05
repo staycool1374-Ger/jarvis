@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_health.cpp
+/// @brief Health-check / smoke test suite.
+
 #include <test.hpp>
 #include <logger.hpp>
 

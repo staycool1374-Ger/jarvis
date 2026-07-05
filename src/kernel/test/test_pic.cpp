@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_pic.cpp
+/// @brief PIC (Programmable Interrupt Controller) tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 
 #include <test.hpp>

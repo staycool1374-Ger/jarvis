@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_dma.cpp
+/// @brief DMA (Direct Memory Access) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/driver/dma.hpp>

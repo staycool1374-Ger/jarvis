@@ -1,3 +1,6 @@
+/// @file test_hal_bits.cpp
+/// @brief HAL bit-manipulation utility tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/hal/bits.hpp>

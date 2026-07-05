@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_checked_ptr.cpp
+/// @brief Checked pointer safety tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <signal.hpp>

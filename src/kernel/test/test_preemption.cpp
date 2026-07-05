@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_preemption.cpp
+/// @brief Kernel preemption tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>

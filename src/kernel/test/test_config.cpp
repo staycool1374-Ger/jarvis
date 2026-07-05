@@ -1,3 +1,6 @@
+/// @file test_config.cpp
+/// @brief Test configuration implementation.
+
 #include <kernel/test/test_config.hpp>
 #include <initrd/initrd.hpp>
 #include <string.hpp>

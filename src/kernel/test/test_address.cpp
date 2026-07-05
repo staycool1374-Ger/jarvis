@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_address.cpp
+/// @brief Address type and utility tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file resource_tracker.cpp
+/// @brief Resource tracker implementation.
+
 #include <kernel/test/resource_tracker.hpp>
 #include <logger.hpp>
 #include <string.hpp>

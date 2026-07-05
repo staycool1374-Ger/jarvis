@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_ipc_blocking.cpp
+/// @brief IPC blocking send/receive tests.
+
 // Runmode: kernel
 // Testidea: Verifies that IPC::recv() restores the was_blocked flag correctly.
 // Input: Create a task, send a message to itself, receive it.

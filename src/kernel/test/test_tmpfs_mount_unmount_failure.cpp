@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_tmpfs_mount_unmount_failure.cpp
+/// @brief TMPFS mount/unmount failure tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/tmpfs.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_isolate.cpp
+/// @brief Test isolation snapshot/restore implementation.
+
 #include <kernel/test/test_isolate.hpp>
 #include <test.hpp>
 #include <kernel/memory/pmm.hpp>

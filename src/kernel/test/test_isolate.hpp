@@ -16,7 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_isolate.hpp
+/// @brief Test isolation snapshot/restore helpers.
+
 #pragma once
+
 #include <types.hpp>
 #include <kernel/test/resource_tracker.hpp>
 

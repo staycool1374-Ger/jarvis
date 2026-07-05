@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_starvation_deadlock.cpp
+/// @brief Starvation and deadlock scenario tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_microkernel_transition.cpp
+/// @brief Microkernel mode transition tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/ipc.hpp>

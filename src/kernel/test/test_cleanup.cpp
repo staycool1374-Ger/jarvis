@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_cleanup.cpp
+/// @brief Test cleanup and teardown tests.
+
 #include <kernel/test/test_cleanup.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/test/resource_tracker.hpp>

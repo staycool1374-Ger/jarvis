@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_hal.cpp
+/// @brief HAL (Hardware Abstraction Layer) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/page_table.hpp>

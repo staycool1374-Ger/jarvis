@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_ipc.cpp
+/// @brief IPC (Inter-Process Communication) tests.
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"

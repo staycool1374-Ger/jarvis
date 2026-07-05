@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_buffer_pool.cpp
+/// @brief Buffer pool allocation and lifecycle tests.
+
 // Runmode: kernel
 // Testidea: BufferPool alloc/free/map/unmap/transfer/cleanup
 // Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::Scheduler

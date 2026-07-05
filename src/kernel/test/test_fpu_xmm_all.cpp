@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_fpu_xmm_all.cpp
+/// @brief FPU full XMM register file tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>

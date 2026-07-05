@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_ipc_robustness.cpp
+/// @brief IPC robustness and error-handling tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/ipc.hpp>

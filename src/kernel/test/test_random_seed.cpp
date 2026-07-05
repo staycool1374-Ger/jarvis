@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_random_seed.cpp
+/// @brief Random seed initialisation tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/random.hpp>

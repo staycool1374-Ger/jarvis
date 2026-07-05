@@ -1,3 +1,6 @@
+/// @file test_o1_scheduler.cpp
+/// @brief O(1) scheduler tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/jarvis_config.h>

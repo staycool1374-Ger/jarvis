@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_secure_exec.cpp
+/// @brief Secure execution environment tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/memory/checked_ptr.hpp>

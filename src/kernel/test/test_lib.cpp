@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_lib.cpp
+/// @brief Kernel library utility tests.
+
 #include <test.hpp>
 #include <string.hpp>
 #include <utils.hpp>

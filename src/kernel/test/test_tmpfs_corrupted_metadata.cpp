@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_tmpfs_corrupted_metadata.cpp
+/// @brief TMPFS corrupted metadata handling tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 // Runmode: kernel

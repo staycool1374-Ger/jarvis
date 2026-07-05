@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file test_config.hpp
+/// @brief Test configuration constants.
+
 #include <types.hpp>
 
 namespace kernel::test {

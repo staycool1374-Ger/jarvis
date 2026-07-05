@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file test_expected_counts.hpp
+/// @brief Expected test-case count tables per architecture.
+
 #include <types.hpp>
 #include <logger.hpp>
 

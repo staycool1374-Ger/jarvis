@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file test_watchdog.hpp
+/// @brief Watchdog timer helpers for test timeout safety.
+
 #include <types.hpp>
 
 namespace kernel::test {

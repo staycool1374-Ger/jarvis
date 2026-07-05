@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_irqguard_audit.cpp
+/// @brief IRQ guard audit / nesting validation tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/irq_guard.hpp>

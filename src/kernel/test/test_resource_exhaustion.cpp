@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_resource_exhaustion.cpp
+/// @brief Resource exhaustion stress tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>

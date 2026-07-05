@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_syscall_fuzz.cpp
+/// @brief System call fuzz testing.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>

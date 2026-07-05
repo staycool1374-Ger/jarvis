@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_preemption_under_syscall.cpp
+/// @brief Preemption during system call tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>

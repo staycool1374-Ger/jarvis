@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_sporadic_server.cpp
+/// @brief Sporadic server scheduling tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/sporadic_server.hpp>

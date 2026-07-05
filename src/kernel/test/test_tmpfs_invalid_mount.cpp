@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_tmpfs_invalid_mount.cpp
+/// @brief TMPFS invalid mount handling tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/tmpfs.hpp>

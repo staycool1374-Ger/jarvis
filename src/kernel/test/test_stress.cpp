@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_stress.cpp
+/// @brief General stress / longevity tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

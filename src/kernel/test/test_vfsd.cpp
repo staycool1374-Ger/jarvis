@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_vfsd.cpp
+/// @brief VFS daemon tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/vfsd.hpp>

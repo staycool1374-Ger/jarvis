@@ -1,3 +1,6 @@
+/// @file test_fpu_sse.cpp
+/// @brief FPU SSE register preservation tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core

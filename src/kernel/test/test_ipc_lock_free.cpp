@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_ipc_lock_free.cpp
+/// @brief IPC lock-free queue tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/io.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_random_vfs_write.cpp
+/// @brief Random VFS write operation tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/vfs.hpp>

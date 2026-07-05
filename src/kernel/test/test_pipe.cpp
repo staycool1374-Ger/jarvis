@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_pipe.cpp
+/// @brief Pipe (kernel pipe object) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/pipe.hpp>

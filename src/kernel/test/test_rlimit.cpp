@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_rlimit.cpp
+/// @brief Resource limit (rlimit) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>

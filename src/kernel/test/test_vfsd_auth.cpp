@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_vfsd_auth.cpp
+/// @brief VFS daemon authorisation tests.
+
 // Runmode: kernel
 // Testidea: Verifies that VFS daemon task calls VFS syscall; authorization returns true without IPC.
 // Input: Create vfsd task (is_vfsd_task() returns true), call sys_open("/dev/null")

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_random_syscall.cpp
+/// @brief Random system call interface tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>

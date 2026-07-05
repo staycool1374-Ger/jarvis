@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_fat32.cpp
+/// @brief FAT32 filesystem tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/fat32.hpp>

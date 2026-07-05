@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_task.cpp
+/// @brief Task control block tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>

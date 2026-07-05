@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_registry.cpp
+/// @brief Test registry implementation.
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"

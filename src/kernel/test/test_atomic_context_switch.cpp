@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_atomic_context_switch.cpp
+/// @brief Atomic context switch tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>

@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_vfs_internal.cpp
+/// @brief VFS internal data structure tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 

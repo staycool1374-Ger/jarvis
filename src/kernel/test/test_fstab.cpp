@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_fstab.cpp
+/// @brief Filesystem table (fstab) tests.
+
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/vfs.hpp>

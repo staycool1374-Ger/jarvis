@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file test_fpu_clone.cpp
+/// @brief FPU state preservation across fork/clone tests.
+
 #if defined(CONFIG_ARCH_X86_64)
 #include <test.hpp>
 #include <logger.hpp>
