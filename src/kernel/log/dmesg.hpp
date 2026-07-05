@@ -1,7 +1,23 @@
 /*
- * Jarvis RTOS — Kernel Log (dmesg) Ring Buffer
- * Lock-free SPSC ring buffer for structured kernel logging.
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+/// @file dmesg.hpp
+/// @brief Lock-free SPSC structured kernel log (dmesg) — LogEntry, DmesgBuffer, macros, error-string helpers.
 
 #pragma once
 
@@ -19,38 +35,47 @@
 
 namespace kernel::log {
 
+/// @brief Subsystem identifier used in dmesg entries (maps to per-subsystem error_string).
 enum class ErrorSubsystem : uint8_t {
-    BASE    = 0,
-    SYNC    = 1,
-    VFS     = 2,
-    MEMPOOL = 3,
-    SCHED   = 4,
-    IPC     = 5,
-    SYSCALL = 6,
+    BASE    = 0,  ///< Generic kernel errors.
+    SYNC    = 1,  ///< Synchronisation primitives.
+    VFS     = 2,  ///< Virtual file system.
+    MEMPOOL = 3,  ///< Memory pool allocator.
+    SCHED   = 4,  ///< Scheduler.
+    IPC     = 5,  ///< Inter-process communication.
+    SYSCALL = 6,  ///< System call interface.
 };
 
+/// @brief A single dmesg log entry.
 struct LogEntry {
-    uint64_t timestamp;
-    uint64_t task_id;
-    ErrorSubsystem subsystem;
-    uint64_t error_code;
-    uintptr_t context;
-    const char* message;
+    uint64_t timestamp;  ///< Tick count at log time.
+    uint64_t task_id;    ///< ID of the task that logged the entry.
+    ErrorSubsystem subsystem; ///< Subsystem that generated the error.
+    uint64_t error_code;      ///< Subsystem-specific error code.
+    uintptr_t context;        ///< Optional context pointer (e.g. address involved).
+    const char* message;      ///< Human-readable description.
 };
 
+/// @brief Lock-free single-producer single-consumer ring buffer for structured kernel logs.
+/// @tparam Capacity  Must be a power of two.
 template<size_t Capacity>
 class DmesgBuffer {
     static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be power of 2");
     static constexpr size_t MASK = Capacity - 1;
 
-    LogEntry buffer[Capacity];
-    alignas(64) volatile size_t head{0};
-    alignas(64) volatile size_t tail{0};
+    LogEntry buffer[Capacity];           ///< Fixed-size entry array.
+    alignas(64) volatile size_t head{0}; ///< Write index (producer).
+    alignas(64) volatile size_t tail{0}; ///< Read index (consumer).
 
 public:
+    /// @brief Push an entry (overwrites oldest if full).
+    /// @return true unless an entry was overwritten.
     bool push(ErrorSubsystem subsys, uint64_t err_code, const char* msg, uintptr_t ctx = 0);
+    /// @brief Pop the oldest entry.
+    /// @return true if an entry was available.
     bool pop(LogEntry& entry);
 
+    /// @brief Iterate over all entries without removing them.
     template<typename Fn>
     void for_each(Fn&& fn) const {
         size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
@@ -62,26 +87,34 @@ public:
         }
     }
 
+    /// @brief Check whether the buffer is empty.
     bool empty() const;
+    /// @brief Return the number of entries currently in the buffer.
     size_t size() const;
+    /// @brief Discard all entries (reset tail to head).
     void clear();
 
     size_t head_index() const { return head; }
     size_t tail_index() const { return tail; }
 };
 
+/// Capacity of the global dmesg ring buffer (from Kconfig).
 constexpr size_t DMESG_CAPACITY = CONFIG_DMESG_CAPACITY;
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+/// @brief Global dmesg buffer instance.
 extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
+/// @brief Shorthand: push an entry to the global dmesg buffer.
 #define dmesg_push(subsys, err, msg, ctx) \
     kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::subsys, \
                               static_cast<uint64_t>(err), msg, ctx)
 
+/// @brief Shorthand: push a base-subsystem error to the global dmesg buffer.
 #define dmesg_push_base(err, msg, ctx) \
     kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::BASE, \
                               static_cast<uint64_t>(err), msg, ctx)
 
+/// @brief Return a human-readable string for a base kernel::Error code.
 inline const char* base_error_string(kernel::Error e) {
     switch (e) {
         case kernel::Error::OK: return "OK";
@@ -98,6 +131,7 @@ inline const char* base_error_string(kernel::Error e) {
     return "Unknown base error";
 }
 
+/// @brief Return a short name for an ErrorSubsystem.
 inline const char* subsystem_name(ErrorSubsystem s) {
     switch (s) {
         case ErrorSubsystem::BASE:    return "BASE";
@@ -111,6 +145,7 @@ inline const char* subsystem_name(ErrorSubsystem s) {
     }
 }
 
+/// @brief Dispatch an error code to the correct subsystem's error_string.
 inline const char* error_string(ErrorSubsystem subsys, uint64_t code) {
     switch (subsys) {
         case ErrorSubsystem::BASE:

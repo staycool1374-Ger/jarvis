@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file ring_buffer.hpp
+/// @brief Lock-free SPSC character ring buffer for kernel console (g_klog).
+
 #pragma once
 
 #include <types.hpp>
@@ -24,10 +27,12 @@
 namespace kernel {
 namespace log {
 
+/// @brief Lock-free single-producer single-consumer character ring buffer.
 class RingBuffer {
 public:
-    static constexpr size_t BUFFER_SIZE = 32768;
+    static constexpr size_t BUFFER_SIZE = 32768;  ///< Total capacity in bytes.
 
+    /// @brief Write a single character (discards if full).
     void putchar(char c) {
         size_t w = write_pos_;
         size_t next = (w + 1) % BUFFER_SIZE;
@@ -37,10 +42,13 @@ public:
         atomic_store(&write_pos_, next, __ATOMIC_RELEASE);
     }
 
+    /// @brief Write a null-terminated string.
     void puts(const char* s) {
         while (*s) putchar(*s++);
     }
 
+    /// @brief Read up to @p size bytes into @p dst.
+    /// @return number of bytes read.
     size_t read(char* dst, size_t size) {
         size_t r = atomic_load(&read_pos_, __ATOMIC_RELAXED);
         size_t w = atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
@@ -54,10 +62,12 @@ public:
         return written;
     }
 
+    /// @brief Discard all buffered data.
     void clear() {
         atomic_store(&read_pos_, atomic_load(&write_pos_, __ATOMIC_RELAXED), __ATOMIC_RELEASE);
     }
 
+    /// @brief Check whether the buffer contains no data.
     bool empty() const {
         return atomic_load(&read_pos_, __ATOMIC_ACQUIRE) ==
                atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
@@ -66,11 +76,12 @@ public:
     RingBuffer() : buf_{} {}
 
 private:
-    char buf_[BUFFER_SIZE];
-    alignas(64) volatile size_t write_pos_ = 0;
-    alignas(64) volatile size_t read_pos_ = 0;
+    char buf_[BUFFER_SIZE];                             ///< Data storage.
+    alignas(64) volatile size_t write_pos_ = 0;         ///< Producer index.
+    alignas(64) volatile size_t read_pos_ = 0;          ///< Consumer index.
 };
 
+/// @brief Global kernel log ring buffer.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern RingBuffer g_klog;
 

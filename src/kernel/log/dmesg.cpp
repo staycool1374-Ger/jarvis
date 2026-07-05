@@ -1,6 +1,23 @@
 /*
- * Jarvis RTOS — Kernel Log (dmesg) Ring Buffer Implementation
+ * Jarvis RTOS — Development Roadmap / Kernel Core
+ * Copyright (C) 2026 Arnold Hasshold
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+/// @file dmesg.cpp
+/// @brief DmesgBuffer member-function template instantiations.
 
 #include <kernel/log/dmesg.hpp>
 #include <kernel/arch/timer.hpp>
@@ -10,6 +27,8 @@ namespace kernel::log {
 
 DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
+/// @brief Push an entry (overwrites oldest if full).
+/// @return true unless an entry was overwritten.
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
                                   const char* msg, uintptr_t ctx) {
@@ -35,6 +54,8 @@ bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
     return !overwrote;
 }
 
+/// @brief Pop the oldest entry.
+/// @return true if an entry was available.
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::pop(LogEntry& entry) {
     size_t t = atomic_load(&tail, __ATOMIC_RELAXED);
@@ -47,12 +68,14 @@ bool DmesgBuffer<Capacity>::pop(LogEntry& entry) {
     return true;
 }
 
+/// @brief Check whether the buffer is empty.
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::empty() const {
     return atomic_load(&head, __ATOMIC_ACQUIRE) ==
            atomic_load(&tail, __ATOMIC_ACQUIRE);
 }
 
+/// @brief Return the number of entries currently in the buffer.
 template<size_t Capacity>
 size_t DmesgBuffer<Capacity>::size() const {
     size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
@@ -60,6 +83,7 @@ size_t DmesgBuffer<Capacity>::size() const {
     return (h - t) & MASK;
 }
 
+/// @brief Discard all entries (reset tail to head).
 template<size_t Capacity>
 void DmesgBuffer<Capacity>::clear() {
     size_t h = atomic_load(&head, __ATOMIC_RELAXED);

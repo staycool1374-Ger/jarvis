@@ -16,6 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file ring_buffer.cpp
+/// @brief Global kernel log ring buffer instance.
+
 #include <kernel/log/ring_buffer.hpp>
 
 namespace kernel {
