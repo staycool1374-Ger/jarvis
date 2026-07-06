@@ -46,12 +46,18 @@ namespace {
 // ── Task definition table ────────────────────────────────────────────────
 
 constexpr TaskDef g_task_defs[] = {
-    { "init",   TaskType::KERNEL,           true,  init_task_main,              nullptr,            10, 10,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       1, 10,  2,10,0, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
-    { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       1, 10,  3,10,0, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
-    { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  1, 50,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         0, 5,   0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1, 10,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // init: coordinator, large period + low prio (RMS)
+    { "init",   TaskType::KERNEL,           true,  init_task_main,              nullptr,            10, 100, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // vfsd: sporadic server, fast IPC response, 2% worst-case CPU
+    { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       80, 50,  1,50,1, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
+    // iocd: sporadic server for I/O, slightly lower prio than vfsd
+    { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       70, 50,  1,50,1, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
+    // test_fork: ordinary user process
+    { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  20, 200, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // shell: interactive, low prio, short ticks for responsiveness
+    { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         5,  20,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // dmesg: background logger, very low prio, long period
+    { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1,  500, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
 };
 
 // ── Compile-time validation ──────────────────────────────────────────────
