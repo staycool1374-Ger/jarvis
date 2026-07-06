@@ -292,12 +292,17 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     // Lazy rebuild: clear and rebuild ready queue from tasks_[]
     // Handles edge cases where tasks became READY outside the scheduler
     // (test code, race conditions) without going through set_task_ready().
+    // Skip the current task to avoid self-select when it's the only READY task.
     ready_queue_.clear_all();
-    for (uint64_t i = 0; i < task_count_; ++i) {
-        auto* task = tasks_[i];
-        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
-        if (task->state == TaskState::READY) {
-            ready_queue_.enqueue(*task, effective_priority(task));
+    {
+        auto* cur = current_task();
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* task = tasks_[i];
+            if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (task == cur) continue;
+            if (task->state == TaskState::READY) {
+                ready_queue_.enqueue(*task, effective_priority(task));
+            }
         }
     }
 
