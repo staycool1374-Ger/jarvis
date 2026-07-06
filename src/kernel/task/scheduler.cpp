@@ -172,10 +172,12 @@ void Scheduler::add_task(TaskControlBlock& task) {
     // giving 100% — the only safe upper bound without an explicit WCET).
     if (task.period_ticks > 0 && task.period_ticks <= 100) {
         uint64_t total_util = 0;
+        uint64_t real_tasks = 0;
         for (uint64_t i = 0; i < task_count_; ++i) {
             auto* t = tasks_[i];
-            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (t == idle_task_ || t->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (t->period_ticks > 0) {
+                ++real_tasks;
                 uint64_t wcet = t->wcet_ticks > 0
                                     ? t->wcet_ticks
                                     : (t->sporadic_server
@@ -186,8 +188,8 @@ void Scheduler::add_task(TaskControlBlock& task) {
             }
         }
         uint32_t bound = 0;
-        if (task_count_ <= LIU_LEYLAND_MAX_TASKS) {
-            bound = LIU_LEYLAND_BOUNDS[task_count_];
+        if (real_tasks <= LIU_LEYLAND_MAX_TASKS) {
+            bound = LIU_LEYLAND_BOUNDS[real_tasks];
         } else {
             bound = LIU_LEYLAND_LIMIT;
         }
