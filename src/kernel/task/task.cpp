@@ -413,6 +413,7 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
 
     tcb->magic = TCB_MAGIC;
     tcb->id = Scheduler::alloc_id();
+    __builtin_memcpy(tcb->name, parent->name, CONFIG_TASK_NAME_LEN);
     tcb->parent_id = parent->id;
     tcb->state = TaskState::READY;
     tcb->priority = parent->priority;

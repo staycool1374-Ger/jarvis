@@ -250,7 +250,7 @@ void init_task_main() {
             shell->name[i] = '\0';
             kernel::Scheduler::add_task(*shell);
             kernel::Scheduler::set_shell_task(shell);
-            kernel::Logger::info("init: shell task %lu created", shell->id);
+            kernel::Logger::info("init: shell task %u created", shell->id);
         } else {
             kernel::Logger::warn("init: failed to create shell task");
         }
@@ -263,10 +263,10 @@ void init_task_main() {
         kernel::Message msg;
         while (kernel::IPC::recv(msg)) {
             if (msg.type == kernel::ipc::MSG_DAEMON_READY) {
-                kernel::Logger::info("init: daemon (PID %lu) ready "
+                kernel::Logger::info("init: daemon (PID %u) ready "
                                      "(restart)", msg.sender_id);
             } else if (msg.type == kernel::ipc::MSG_DAEMON_FAILED) {
-                kernel::Logger::warn("init: daemon (PID %lu) init "
+                kernel::Logger::warn("init: daemon (PID %u) init "
                                      "failed (restart)", msg.sender_id);
             }
         }

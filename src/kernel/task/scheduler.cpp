@@ -161,7 +161,7 @@ void Scheduler::add_task(TaskControlBlock& task) {
     ready_queue_.enqueue(task, effective_priority(&task));
     kernel::test::ResourceTracker::instance().track_task_add();
 
-    Logger::info("Scheduler: task '%s' (ID=%lu, prio=%lu) started",
+    Logger::info("Scheduler: task '%s' (ID=%u, prio=%u) started",
                  task.name, task.id, task.priority);
 
     // Liu-Leyland LUB admission test: warn if total utilization exceeds
@@ -556,7 +556,7 @@ void Scheduler::reap_orphans() noexcept {
                 kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
             created->state = TaskState::READY;
             dequeue_ready(*t);
-            Logger::info("Scheduler: task '%s' (ID=%lu) terminated",
+            Logger::info("Scheduler: task '%s' (ID=%u) terminated",
                          t->name, t->id);
             t->cleanup();
             id_table_remove(t);
@@ -564,7 +564,7 @@ void Scheduler::reap_orphans() noexcept {
             tasks_[i] = nullptr;
             new_idle = created;
         } else {
-            Logger::info("Scheduler: task '%s' (ID=%lu) terminated",
+            Logger::info("Scheduler: task '%s' (ID=%u) terminated",
                          t->name, t->id);
             t->cleanup();
             id_table_remove(t);
