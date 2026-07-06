@@ -353,6 +353,10 @@ uint64_t Scheduler::alloc_id() noexcept {
     return next_task_id_++;
 }
 
+void Scheduler::reset_next_task_id(uint64_t id) noexcept {
+    next_task_id_ = id;
+}
+
 void Scheduler::id_table_remove(TaskControlBlock* task) {
     uint64_t idx = id_table_probe(task->id);
     while (id_table_[idx] != nullptr) {

@@ -254,6 +254,9 @@ public:
     ///        tasks with state == READY.  Used after restore_rqpod()
     ///        to ensure in_ready_queue_ flags match the actual queue.
     static void rebuild_ready_queue() noexcept;
+    /// @brief Reset the task-ID counter (used by reboot_from_table()
+    ///        so init gets PID 1 after the test suite finishes).
+    static void reset_next_task_id(uint64_t id) noexcept;
 
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;

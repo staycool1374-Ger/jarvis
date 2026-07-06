@@ -159,6 +159,10 @@ void reboot_from_table() {
     // 2. Reset daemon manager so fresh SPORADIC_SERVER entries can register
     daemon::reset_clear_daemons();
 
+    // Reset the task-ID counter so init gets PID 1 (daemons
+    // send MSG_DAEMON_READY to PID 1 at boot).
+    Scheduler::reset_next_task_id(1);
+
     // 3. Pre-scan: verify all enabled ELF files exist in initrd
     for (auto& def : g_task_defs) {
         if (!def.enabled) continue;
