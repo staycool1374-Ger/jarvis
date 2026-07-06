@@ -168,6 +168,22 @@ TaskControlBlock* TaskControlBlock::create(
 
     tcb->magic = TCB_MAGIC;
     tcb->id = Scheduler::alloc_id();
+    {
+        char buf[CONFIG_TASK_NAME_LEN];
+        size_t pos = 0;
+        uint64_t n = tcb->id;
+        buf[pos++] = 't';
+        buf[pos++] = 'a';
+        buf[pos++] = 's';
+        buf[pos++] = 'k';
+        buf[pos++] = '_';
+        char rev[8];
+        size_t rp = 0;
+        do { rev[rp++] = static_cast<char>('0' + (n % 10)); n /= 10; } while (n);
+        while (rp > 0 && pos < CONFIG_TASK_NAME_LEN - 1) buf[pos++] = rev[--rp];
+        buf[pos] = '\0';
+        __builtin_memcpy(tcb->name, buf, pos + 1);
+    }
     tcb->state = TaskState::READY;
     tcb->priority = priority;
     tcb->base_priority = priority;

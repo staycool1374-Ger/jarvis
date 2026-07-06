@@ -95,7 +95,7 @@ constinit uint64_t Scheduler::task_count_ = 0;
 constinit uint64_t Scheduler::current_index_ = 0;
 
 
-constinit uint64_t Scheduler::next_task_id_ = 1;
+constinit uint64_t Scheduler::next_task_id_ = 0;
 constinit uint64_t Scheduler::sporadic_task_count_ = 0;
 constinit bool Scheduler::preempt_enabled_ = false;
 ReadyQueueManager Scheduler::ready_queue_;
@@ -160,6 +160,9 @@ void Scheduler::add_task(TaskControlBlock& task) {
     task.runq_prev_ = nullptr;
     ready_queue_.enqueue(task, effective_priority(&task));
     kernel::test::ResourceTracker::instance().track_task_add();
+
+    Logger::info("Scheduler: task '%s' (ID=%lu, prio=%lu) started",
+                 task.name, task.id, task.priority);
 
     // Liu-Leyland LUB admission test: warn if total utilization exceeds
     // the rate-monotonic schedulability bound.
@@ -553,12 +556,16 @@ void Scheduler::reap_orphans() noexcept {
                 kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
             created->state = TaskState::READY;
             dequeue_ready(*t);
+            Logger::info("Scheduler: task '%s' (ID=%lu) terminated",
+                         t->name, t->id);
             t->cleanup();
             id_table_remove(t);
             MemPool::free(t);
             tasks_[i] = nullptr;
             new_idle = created;
         } else {
+            Logger::info("Scheduler: task '%s' (ID=%lu) terminated",
+                         t->name, t->id);
             t->cleanup();
             id_table_remove(t);
             dequeue_ready(*t);

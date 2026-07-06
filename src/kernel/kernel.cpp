@@ -48,6 +48,7 @@
 #include <kernel/driver/virtio_net.hpp>
 #include <kernel/net/net.hpp>
 #include <kernel/vfs/fat32_fs.hpp>
+#include <kernel/ipc/ipc_boot.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
 #include <kernel/random.hpp>
@@ -176,12 +177,103 @@ void init_task_main() {
             }
         }
     }
-    // Reap loop — block until a child exits
+
+    // ── Wait for daemon readiness ───────────────────────────────
+    struct DaemonWatch {
+        const char* name;
+        uint64_t    expected_pid;
+        bool        ready;
+    } watch[] = {
+        { "vfsd", kernel::vfsd::get_vfsd_pid(), false },
+        { "iocd", kernel::iocd::get_iocd_pid(), false },
+    };
+    size_t watch_count = sizeof(watch) / sizeof(watch[0]);
+
+    uint64_t deadline = arch::Timer::ticks() + 500;
+    bool     degraded = false;
+    auto*    self     = kernel::Scheduler::current_task();
+
+    while (!degraded) {
+        bool all_ready = true;
+        for (size_t wi = 0; wi < watch_count; ++wi) {
+            if (!watch[wi].ready) { all_ready = false; break; }
+        }
+        if (all_ready) break;
+
+        if (arch::Timer::ticks() >= deadline) {
+            kernel::Logger::warn("init: timeout waiting for daemon(s), "
+                                 "starting in degraded mode");
+            degraded = true;
+            break;
+        }
+
+        kernel::Message boot_msg;
+        while (kernel::IPC::recv(boot_msg)) {
+            if (boot_msg.type == kernel::ipc::MSG_DAEMON_READY) {
+                for (size_t wi = 0; wi < watch_count; ++wi) {
+                    if (!watch[wi].ready &&
+                        boot_msg.sender_id == watch[wi].expected_pid) {
+                        watch[wi].ready = true;
+                        kernel::Logger::info("init: daemon '%s' ready",
+                                             watch[wi].name);
+                        break;
+                    }
+                }
+            } else if (boot_msg.type == kernel::ipc::MSG_DAEMON_FAILED) {
+                for (size_t wi = 0; wi < watch_count; ++wi) {
+                    if (boot_msg.sender_id == watch[wi].expected_pid) {
+                        kernel::Logger::warn("init: daemon '%s' "
+                                             "failed to init",
+                                             watch[wi].name);
+                        break;
+                    }
+                }
+            }
+        }
+
+        self->state = kernel::TaskState::WAITING;
+        arch::hlt();
+        self->state = kernel::TaskState::READY;
+    }
+
+    // ── Create shell task ───────────────────────────────────────
+    {
+        auto* shell = kernel::TaskControlBlock::create(
+            service::Shell::shell_task_main, 5, 0);
+        if (shell) {
+            const char* src = "shell";
+            size_t i = 0;
+            while (src[i] && i < CONFIG_TASK_NAME_LEN - 1) {
+                shell->name[i] = src[i];
+                ++i;
+            }
+            shell->name[i] = '\0';
+            kernel::Scheduler::add_task(*shell);
+            kernel::Scheduler::set_shell_task(shell);
+            kernel::Logger::info("init: shell task %lu created", shell->id);
+        } else {
+            kernel::Logger::warn("init: failed to create shell task");
+        }
+    }
+
+    // ── Reap loop — block until a child exits ───────────────────
     for (;;) {
         kernel::Scheduler::reap_orphans();
-        kernel::Scheduler::current_task()->state = kernel::TaskState::WAITING;
+
+        kernel::Message msg;
+        while (kernel::IPC::recv(msg)) {
+            if (msg.type == kernel::ipc::MSG_DAEMON_READY) {
+                kernel::Logger::info("init: daemon (PID %lu) ready "
+                                     "(restart)", msg.sender_id);
+            } else if (msg.type == kernel::ipc::MSG_DAEMON_FAILED) {
+                kernel::Logger::warn("init: daemon (PID %lu) init "
+                                     "failed (restart)", msg.sender_id);
+            }
+        }
+
+        self->state = kernel::TaskState::WAITING;
         arch::hlt();
-        kernel::Scheduler::current_task()->state = kernel::TaskState::READY;
+        self->state = kernel::TaskState::READY;
     }
 }
 

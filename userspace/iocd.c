@@ -121,6 +121,10 @@ int main(void) {
     g_my_id = (uint64_t)getpid();
     printf("[iocd] I/O Controller Daemon started (PID=%llu)\n", g_my_id);
 
+    // Signal init (PID 1) that this daemon is ready
+#define MSG_DAEMON_READY 0xF0000001
+    ipc_send(1, MSG_DAEMON_READY, NULL, 0, 0);
+
     while (1) {
         struct IocdMsg msg;
         int r = ipc_recv(&msg, sizeof(msg));

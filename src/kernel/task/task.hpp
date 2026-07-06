@@ -117,6 +117,8 @@ struct TaskControlBlock {
     static constexpr uint64_t USER_SS  = 0x23;
     static constexpr uint64_t FLAGS_IF  = 0x200;
     static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
+    /// @brief Human-readable name for logging / debugging.
+    char name[CONFIG_TASK_NAME_LEN];
 
 #ifdef CONFIG_DEBUG
     /// @brief One entry in the per-TCB context-switch trace ring buffer.

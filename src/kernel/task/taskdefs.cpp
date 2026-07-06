@@ -50,7 +50,7 @@ constexpr TaskDef g_task_defs[] = {
     { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       1, 10,  2,10,0, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
     { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       1, 10,  3,10,0, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
     { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  1, 50,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    { "shell",  TaskType::KERNEL,           true,  service::Shell::shell_task_main, nullptr,         0, 5,   0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, true  },
+    { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         0, 5,   0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
     { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1, 10,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
 };
 
@@ -242,6 +242,15 @@ void reboot_from_table() {
             Logger::warn("reboot: failed to create task '%s', skipping",
                          def.name);
             continue;
+        }
+
+        {
+            size_t i = 0;
+            while (def.name[i] && i < CONFIG_TASK_NAME_LEN - 1) {
+                task->name[i] = def.name[i];
+                ++i;
+            }
+            task->name[i] = '\0';
         }
 
         Scheduler::add_task(*task);
