@@ -197,10 +197,7 @@ void init_task_main() {
         for (size_t wi = 0; wi < watch_count; ++wi) {
             if (!watch[wi].ready) { all_ready = false; break; }
         }
-        if (all_ready) {
-            kernel::Logger::raw_write(">>> init: all daemons ready, breaking\n");
-            break;
-        }
+        if (all_ready) break;
 
         if (arch::Timer::ticks() >= deadline) {
             kernel::Logger::warn("init: timeout waiting for daemon(s), "
@@ -237,13 +234,10 @@ void init_task_main() {
         // pick us up when higher-priority tasks block or finish.
         // IPC::send only wakes BLOCKED tasks (ipc.cpp:183), so WAITING
         // would deadlock — we'd never be resumed after yielding.
-        kernel::Logger::raw_write(">>> init: hlt\n");
         arch::hlt();
-        kernel::Logger::raw_write(">>> init: resumed from hlt\n");
     }
 
     // ── Create shell task ───────────────────────────────────────
-    kernel::Logger::raw_write(">>> init: creating shell task\n");
     {
         auto* shell = kernel::TaskControlBlock::create(
             service::Shell::shell_task_main, 5, 0);

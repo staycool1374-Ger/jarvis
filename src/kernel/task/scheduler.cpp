@@ -292,28 +292,6 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     // Lazy rebuild: clear and rebuild ready queue from tasks_[]
     // Handles edge cases where tasks became READY outside the scheduler
     // (test code, race conditions) without going through set_task_ready().
-    {
-        Logger::raw_write(">>> next_task LAZY: task_count=");
-        Logger::print_dec(task_count_);
-        Logger::raw_write("\n");
-        for (uint64_t i = 0; i < task_count_; ++i) {
-            auto* task = tasks_[i];
-            if (!task || task->magic != TaskControlBlock::TCB_MAGIC) continue;
-            Logger::raw_write("  [");
-            Logger::print_dec(i);
-            Logger::raw_write("] id=");
-            Logger::print_dec(task->id);
-            Logger::raw_write(" state=");
-            Logger::print_dec(static_cast<uint64_t>(task->state));
-            Logger::raw_write(" prio=");
-            Logger::print_dec(effective_priority(task));
-            Logger::raw_write(" rq=");
-            Logger::print_dec(task->in_ready_queue_ ? 1ULL : 0ULL);
-            Logger::raw_write(" name=");
-            Logger::raw_write(task->name);
-            Logger::raw_write("\n");
-        }
-    }
     ready_queue_.clear_all();
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* task = tasks_[i];
@@ -328,14 +306,8 @@ TaskControlBlock* Scheduler::next_task() noexcept {
         if (next) return next;
     }
 
-    // Nothing ready — return current or idle
-    auto* cur = current_task();
-    if (cur) {
-        Logger::raw_write(">>> next_task: no READY tasks, returning cur=");
-        Logger::print_dec(cur->id);
-        Logger::raw_write("\n");
-    }
-    return cur ? cur : tasks_[0];
+    // Nothing ready — return idle (not current, to avoid self-select spin)
+    return tasks_[0];
 }
 
 void Scheduler::set_current(TaskControlBlock& task) noexcept {
@@ -881,13 +853,6 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
-        if (current->id == 1 || next->id == 1) {
-            Logger::raw_write(">>> sched SWITCH cur=");
-            Logger::print_dec(current->id);
-            Logger::raw_write(" next=");
-            Logger::print_dec(next->id);
-            Logger::raw_write("\n");
-        }
         switch_to_task(current, next, true);
     }
 
