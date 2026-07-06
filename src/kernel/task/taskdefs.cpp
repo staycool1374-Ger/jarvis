@@ -46,18 +46,18 @@ namespace {
 // ── Task definition table ────────────────────────────────────────────────
 
 constexpr TaskDef g_task_defs[] = {
-    // init: coordinator, large period + low prio (RMS)
-    { "init",   TaskType::KERNEL,           true,  init_task_main,              nullptr,            10, 100, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // init: coordinator, large period + low prio (RMS). WCET 1 → 1% CPU
+    { "init",   TaskType::KERNEL,           true,  init_task_main,              nullptr,            10, 100, 1,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
     // vfsd: sporadic server, fast IPC response, 2% worst-case CPU
-    { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       80, 50,  1,50,1, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
+    { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       80, 50,  0,  1,50,1, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
     // iocd: sporadic server for I/O, slightly lower prio than vfsd
-    { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       70, 50,  1,50,1, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
-    // test_fork: ordinary user process
-    { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  20, 200, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       70, 50,  0,  1,50,1, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
+    // test_fork: ordinary user process, no explicit WCET → 100% pessim.
+    { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  20, 200, 0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
     // shell: interactive, low prio, short ticks for responsiveness
-    { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         5,  20,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    // dmesg: background logger, very low prio, long period
-    { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1,  500, 0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         5,  20,  0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // dmesg: background logger with very long period
+    { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1,  500, 0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
 };
 
 // ── Compile-time validation ──────────────────────────────────────────────
@@ -262,6 +262,7 @@ void reboot_from_table() {
             }
             task->name[i] = '\0';
         }
+        task->wcet_ticks = def.wcet_ticks;
 
         Scheduler::add_task(*task);
 

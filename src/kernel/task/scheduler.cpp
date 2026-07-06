@@ -176,9 +176,11 @@ void Scheduler::add_task(TaskControlBlock& task) {
             auto* t = tasks_[i];
             if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (t->period_ticks > 0) {
-                uint64_t wcet = t->sporadic_server
-                                    ? t->sporadic_server->max_budget()
-                                    : t->remaining_ticks;
+                uint64_t wcet = t->wcet_ticks > 0
+                                    ? t->wcet_ticks
+                                    : (t->sporadic_server
+                                           ? t->sporadic_server->max_budget()
+                                           : t->remaining_ticks);
                 uint64_t util = (wcet * 1000000) / t->period_ticks;
                 total_util += util;
             }

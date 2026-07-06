@@ -49,6 +49,7 @@ struct TaskDef {
 
     uint64_t       priority;
     uint64_t       period_ticks;
+    uint64_t       wcet_ticks;  ///< 0 = implicit 100% load (pessimistic), >0 = real estimate
 
     // SporadicServer params (only for SPORADIC_SERVER)
     uint64_t       ss_budget;

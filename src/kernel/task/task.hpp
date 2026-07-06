@@ -148,6 +148,7 @@ struct TaskControlBlock {
         , deadline_ticks(0)
         , executed_ticks(0)
         , remaining_ticks(0)
+        , wcet_ticks(0)
         , exit_code(0)
         , context({})
         , kernel_stack(nullptr)
@@ -198,6 +199,7 @@ struct TaskControlBlock {
     uint64_t deadline_ticks;
     uint64_t executed_ticks;
     uint64_t remaining_ticks;
+    uint64_t wcet_ticks;  ///< explicit WCET for utilisation calc; 0 = implicit 100%
     uint64_t exit_code;
 
     TaskContext context;
