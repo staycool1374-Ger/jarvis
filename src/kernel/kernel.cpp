@@ -191,7 +191,6 @@ void init_task_main() {
 
     uint64_t deadline = arch::Timer::ticks() + 500;
     bool     degraded = false;
-    auto*    self     = kernel::Scheduler::current_task();
 
     while (!degraded) {
         bool all_ready = true;
@@ -231,9 +230,11 @@ void init_task_main() {
             }
         }
 
-        self->state = kernel::TaskState::WAITING;
+        // hlt without state change: stay READY so the scheduler can
+        // pick us up when higher-priority tasks block or finish.
+        // IPC::send only wakes BLOCKED tasks (ipc.cpp:183), so WAITING
+        // would deadlock — we'd never be resumed after yielding.
         arch::hlt();
-        self->state = kernel::TaskState::READY;
     }
 
     // ── Create shell task ───────────────────────────────────────
@@ -271,9 +272,7 @@ void init_task_main() {
             }
         }
 
-        self->state = kernel::TaskState::WAITING;
         arch::hlt();
-        self->state = kernel::TaskState::READY;
     }
 }
 
