@@ -308,6 +308,11 @@ TaskControlBlock* Scheduler::next_task() noexcept {
 
     // Nothing ready — return current or idle
     auto* cur = current_task();
+    if (cur) {
+        Logger::raw_write(">>> next_task: no READY tasks, returning cur=");
+        Logger::print_dec(cur->id);
+        Logger::raw_write("\n");
+    }
     return cur ? cur : tasks_[0];
 }
 
@@ -854,6 +859,13 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
+        if (current->id == 1 || next->id == 1) {
+            Logger::raw_write(">>> sched SWITCH cur=");
+            Logger::print_dec(current->id);
+            Logger::raw_write(" next=");
+            Logger::print_dec(next->id);
+            Logger::raw_write("\n");
+        }
         switch_to_task(current, next, true);
     }
 
