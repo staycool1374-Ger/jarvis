@@ -104,6 +104,10 @@ public:
     /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
     static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
 
+    /// @brief Suppress or re-enable the "task terminated" log message.
+    ///        Used by reboot_from_table() during intentional teardown.
+    static void set_suppress_terminated_log(bool v) noexcept { suppress_terminated_log_ = v; }
+
     /// @brief Increments the sporadic server task counter (called from init_sporadic_server).
     static void inc_sporadic_count() noexcept {
         if (sporadic_task_count_ < MAX_TASKS)
@@ -274,6 +278,7 @@ private:
     static constinit uint64_t next_task_id_;
     static constinit uint64_t sporadic_task_count_;
     static constinit bool preempt_enabled_;
+    static constinit bool suppress_terminated_log_;
 
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static sync::SpinLock scheduler_lock_;

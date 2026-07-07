@@ -588,7 +588,12 @@ void snapshot_restore(const char* test_name) {
         // a context switch reaches idle, its register frame is valid.
         auto* idle = Scheduler::get_idle_task();
         if (idle && idle->magic == TaskControlBlock::TCB_MAGIC) {
-            TASK_STACK_PTR(idle) = idle->kernel_stack_top - sizeof(TaskContext);
+            // Idle's context.rsp was already restored from the snapshot
+            // (which captured it at kernel_stack_top - sizeof(TaskContext)).
+            // Do NOT reset it — the restored value is correct and the
+            // snapshot kernel-stack content at that position is valid.
+            // Resetting would only risk loading stale snapshot data that
+            // has been overwritten by test execution.
 #if defined(CONFIG_ARCH_X86_64)
             arch::GDT::set_tss_rsp0(idle->kernel_stack_top);
 #endif

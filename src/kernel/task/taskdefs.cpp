@@ -52,9 +52,9 @@ constexpr TaskDef g_task_defs[] = {
     { "vfsd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "vfsd.c.elf",       80, 50,  0,  1,50,1, "vfsd",                 vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false },
     // iocd: sporadic server for I/O, slightly lower prio than vfsd
     { "iocd",   TaskType::SPORADIC_SERVER,  true,  nullptr,                      "iocd.c.elf",       70, 50,  0,  1,50,1, "iocd",                 iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false },
-    // test_fork: ordinary user process, no explicit WCET → 100% pessim.
-    { "test_fork", TaskType::USER_ELF,     true,  nullptr,                      "test_fork.c.elf",  20, 200, 0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
-    // shell: interactive, low prio, short ticks for responsiveness
+    // user-app: generic userspace ELF placeholder (loaded via runelf / taskdef)
+    { "user-app", TaskType::USER_ELF,     true,  nullptr,                      "user-app.c.elf",  20, 200, 0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
+    // shell: interactive kernel debug shell, low prio, short ticks
     { "shell",  TaskType::KERNEL,           false, service::Shell::shell_task_main, nullptr,         5,  20,  0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
     // dmesg: background logger with very long period
     { "dmesg",  TaskType::KERNEL,           false, dmesg_task_main,              nullptr,            1,  500, 0,  0,0,0, nullptr,                 nullptr,         nullptr,        1, 0, false },
@@ -152,6 +152,12 @@ void reboot_from_table() {
 
     auto* idle = Scheduler::get_idle_task();
 
+    // Suppress [DAEMON] died and task terminated noise during teardown —
+    // old daemons and tasks are intentionally killed here, not failing.
+    daemon::set_suppress_death_msg(true);
+    Scheduler::set_suppress_terminated_log(true);
+    debug_write("[INFO]  daemon: restarting vfsd, iocd\n");
+
     // 1. Terminate every task except idle
     for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
@@ -161,6 +167,11 @@ void reboot_from_table() {
         }
     }
     Scheduler::reap_orphans();
+
+    // Re-enable death/terminated messages — cleanup is done, any from here
+    // on are real failures.
+    daemon::set_suppress_death_msg(false);
+    Scheduler::set_suppress_terminated_log(false);
 
     // 2. Reset daemon manager so fresh SPORADIC_SERVER entries can register
     daemon::reset_clear_daemons();

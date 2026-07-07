@@ -265,6 +265,7 @@ Never holds and locks any resources.
 ### 0.8.1 — Kernel Reduction (µ-kernel core)
 - [ ] Kernel retains only: scheduler, IPC primitive (ports/capabilities), page-table management, interrupt routing to user-space
 - [ ] Shell, init (PID 1), VFS, all drivers move to ring‑3 server processes
+- [ ] Remove kernel shell (created in `kernel.cpp`, runs in ring 0) — replaced by a ring-3 userspace shell ELF (`userspace/shell.c`) loaded by `reboot_from_table()`; requires syscalls for keyboard (`SYS_READ_TERMINAL`), framebuffer (`SYS_WRITE_TERMINAL`), and serial I/O
 - [ ] Userspace init spawns: driver manager → device servers → VFS server → shell
 
 ### 0.8.2 — Capability-Based Security

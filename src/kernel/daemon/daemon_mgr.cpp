@@ -38,6 +38,8 @@ namespace daemon {
 static DaemonEntry entries_[MAX_DAEMONS] = {};
 /// Number of registered daemons.
 static uint64_t num_daemons_ = 0;
+/// Suppress [DAEMON] died serial output (e.g. during reboot_from_table teardown).
+static bool suppress_death_msg_ = false;
 
 /// @brief Initialize the daemon manager — clear all entries and reset count.
 void init() {
@@ -81,16 +83,22 @@ void reset_clear_daemons() {
 
 /// @brief Notify the manager that a daemon has exited.
 /// @param pid  PID of the daemon that died.
+void set_suppress_death_msg(bool v) {
+    suppress_death_msg_ = v;
+}
+
 void notify_death(uint64_t pid, bool log_only) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].pid == pid) {
-            debug_write("[DAEMON] '");
-            debug_write(entries_[i].name);
-            debug_write("' died (PID=");
-            debug_write_hex(pid);
-            debug_write("), restart_count=");
-            debug_write_hex(entries_[i].restart_count);
-            debug_write("\n");
+            if (!suppress_death_msg_) {
+                debug_write("[DAEMON] '");
+                debug_write(entries_[i].name);
+                debug_write("' died (PID=");
+                debug_write_hex(pid);
+                debug_write("), restart_count=");
+                debug_write_hex(entries_[i].restart_count);
+                debug_write("\n");
+            }
             if (!log_only) {
                 dmesg_push_base(0xDA01, entries_[i].name, pid);
             }

@@ -57,6 +57,9 @@ bool register_daemon(const char* name, const char* initrd_path,
 /// @param pid      PID of the daemon that died.
 /// @param log_only If true, skip dmesg push (test isolation cleanup).
 void notify_death(uint64_t pid, bool log_only = false);
+/// @brief Suppress or re-enable the "[DAEMON] ... died" serial message.
+///        Used by reboot_from_table() to avoid noise during teardown.
+void set_suppress_death_msg(bool v);
 /// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 

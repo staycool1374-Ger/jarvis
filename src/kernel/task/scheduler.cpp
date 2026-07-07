@@ -98,6 +98,7 @@ constinit uint64_t Scheduler::current_index_ = 0;
 constinit uint64_t Scheduler::next_task_id_ = 0;
 constinit uint64_t Scheduler::sporadic_task_count_ = 0;
 constinit bool Scheduler::preempt_enabled_ = false;
+constinit bool Scheduler::suppress_terminated_log_ = false;
 ReadyQueueManager Scheduler::ready_queue_;
 constinit TaskControlBlock* Scheduler::idle_task_ = nullptr;
 constinit TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
@@ -568,16 +569,18 @@ void Scheduler::reap_orphans() noexcept {
                 kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
             created->state = TaskState::READY;
             dequeue_ready(*t);
-            Logger::info("Scheduler: task '%s' (ID=%u) terminated",
-                         t->name, t->id);
+            if (!suppress_terminated_log_)
+                Logger::info("Scheduler: task '%s' (ID=%u) terminated",
+                             t->name, t->id);
             t->cleanup();
             id_table_remove(t);
             MemPool::free(t);
             tasks_[i] = nullptr;
             new_idle = created;
         } else {
-            Logger::info("Scheduler: task '%s' (ID=%u) terminated",
-                         t->name, t->id);
+            if (!suppress_terminated_log_)
+                Logger::info("Scheduler: task '%s' (ID=%u) terminated",
+                             t->name, t->id);
             t->cleanup();
             id_table_remove(t);
             dequeue_ready(*t);
