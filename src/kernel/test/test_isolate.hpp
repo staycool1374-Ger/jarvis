@@ -39,4 +39,12 @@ void reload_daemon_tasks();
 ///        in sequence with snapshot isolation between each test.
 void run_all_isolated_tests();
 
+/// @brief Tracks whether any VFS syscall was invoked during the current test.
+/// snapshot_restore() checks this flag to decide whether daemon tasks need
+/// a full reload (VFS touched) or can be left running (VFS not touched).
+extern bool g_vfs_touched; // NOLINT(bugprone-dynamic-static-initializers)
+
+/// @brief Called by VFS syscall handlers to mark that VFS state was touched.
+void mark_vfs_touched();
+
 }

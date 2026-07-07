@@ -23,6 +23,7 @@
 #include <logger.hpp>
 #include <kernel/vfs/fat32.hpp>
 #include <kernel/driver/block_device.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <string.hpp>
 
 using namespace kernel;
@@ -50,6 +51,7 @@ static kernel::block::MockBlockDevice make_dev() {
 }
 
 static Fat32Partition mount_fs(kernel::block::MockBlockDevice& dev) {
+    kernel::test::mark_vfs_touched();
     Fat32Partition fs(dev);
     fs.mount();
     return fs;

@@ -28,6 +28,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/checked_ptr.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <signal.hpp>
 #include <constants.hpp>
 #include <string.hpp>
@@ -102,6 +103,7 @@ static bool validate_argv_envp(const char* const* ptr, bool is_user_task) {
 
 uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t* regs) {
+    kernel::test::mark_vfs_touched();
     if (!syscall_is_user_task()) return static_cast<uint64_t>(-1);
     vfs::Vnode* vn = nullptr;
     char path_buf[SYSCALL_MAX_PATH];

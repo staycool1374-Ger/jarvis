@@ -33,6 +33,7 @@
 #include <kernel/vfs/fat32_fs.hpp>
 #include <kernel/driver/block_device.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <string.hpp>
 
 using namespace kernel;
@@ -62,6 +63,7 @@ struct Fat32TestFixture {
 static Fat32TestFixture* g_fixture = nullptr;
 
 static void setup_fat32_fs() {
+    kernel::test::mark_vfs_touched();
     if (fat32_partition_instance) return;
 
     uint64_t bytes = static_cast<uint64_t>(

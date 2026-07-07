@@ -51,6 +51,12 @@ namespace kernel::test {
 static uint8_t* g_snapshot = nullptr;
 static size_t   g_snapshot_size = 0;
 
+bool g_vfs_touched = false;
+
+void mark_vfs_touched() {
+    g_vfs_touched = true;
+}
+
 // Maximum kernel stack entries (one per task, conservatively bounded)
 static constexpr uint64_t KSTACK_ENTRY_SIZE = sizeof(uint64_t) * 2  // kernel_stack ptr + size
                                              + ::mem::STACK_SIZE;
@@ -588,12 +594,13 @@ void snapshot_restore(const char* test_name) {
         }
     }
 
-    // ---- Reset filesystem roots ----
-    kernel::vfs::reset_and_remount();
-    kernel::vfs::tmpfs_reset_root();
-
-    // ---- Reload daemon tasks ----
-    reload_daemon_tasks();
+    // ---- Lazily reload daemon tasks (only if VFS was touched) ----
+    if (g_vfs_touched) {
+        kernel::vfs::reset_and_remount();
+        kernel::vfs::tmpfs_reset_root();
+        reload_daemon_tasks();
+    }
+    g_vfs_touched = false;
 
     // ---- Post-reload fixup ----
     // Keep idle as the boot-stack proxy task.  Idle is never returned by

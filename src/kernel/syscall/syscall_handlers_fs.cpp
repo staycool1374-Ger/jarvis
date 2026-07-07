@@ -28,6 +28,7 @@
 #include <kernel/vfs/pipe.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/memory/checked_ptr.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -120,6 +121,7 @@ static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
 
 uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
     int fd = -1;
@@ -142,6 +144,7 @@ uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_READ, cur->id, static_cast<int>(arg0)))
@@ -162,6 +165,7 @@ uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
 uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_CLOSE, cur->id, static_cast<int>(arg0)))
@@ -173,6 +177,7 @@ uint64_t Syscall::sys_close(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_FSTAT, cur->id, static_cast<int>(arg0)))
@@ -187,6 +192,7 @@ uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     if (!vfsd_authorize_fd_op(vfsd::VFS_WRITE, cur->id, static_cast<int>(arg0)))
@@ -207,6 +213,7 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
 uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
@@ -219,6 +226,7 @@ uint64_t Syscall::sys_lseek(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
 uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
@@ -231,6 +239,7 @@ uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
 uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     uint64_t, uint64_t*) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     auto* f = cur->fd_table.get(static_cast<int>(arg0));
@@ -250,6 +259,7 @@ uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2,
 
 uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
     vfs::Vnode* vn = nullptr;
@@ -276,6 +286,7 @@ uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
     ) {
+    kernel::test::mark_vfs_touched();
     auto* cur = syscall_task();
     if (!cur) return static_cast<uint64_t>(-1);
     int old_fd = static_cast<int>(arg0);
@@ -291,6 +302,7 @@ uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
 
 uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
     vfs::Vnode* vn = nullptr;
@@ -323,6 +335,7 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     int fds[2];
     int result = vfs::create_pipe(fds);
     if (result < 0) return static_cast<uint64_t>(-1);
@@ -342,6 +355,7 @@ uint64_t Syscall::sys_pipe(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     int old_fd = static_cast<int>(arg0);
     int new_fd = static_cast<int>(arg1);
     auto* t = syscall_task();
@@ -361,6 +375,7 @@ uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_mkdir(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
     if (syscall_is_user_task()) {
@@ -382,6 +397,7 @@ uint64_t Syscall::sys_mkdir(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_unlink(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
     if (syscall_is_user_task()) {
@@ -403,6 +419,7 @@ uint64_t Syscall::sys_unlink(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 
 uint64_t Syscall::sys_rmdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     uint64_t*) {
+    kernel::test::mark_vfs_touched();
     // rmdir is just unlink with directory semantics (enforced by FS)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char* user_path = reinterpret_cast<const char*>(arg0);
