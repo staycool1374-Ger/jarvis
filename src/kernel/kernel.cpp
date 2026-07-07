@@ -712,6 +712,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
+                    {
+                        size_t j = 0;
+                        const char* n = "vfsd";
+                        while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+                            vfsd_task->name[j] = n[j];
+                            ++j;
+                        }
+                        vfsd_task->name[j] = '\0';
+                    }
                     vfsd_task->init_sporadic_server(2, 10, 0, 1);
                     kernel::Scheduler::add_task(*vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
@@ -736,6 +745,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;
+                    {
+                        size_t j = 0;
+                        const char* n = "iocd";
+                        while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+                            iocd_task->name[j] = n[j];
+                            ++j;
+                        }
+                        iocd_task->name[j] = '\0';
+                    }
                     iocd_task->init_sporadic_server(3, 10, 0, 1);
                     kernel::Scheduler::add_task(*iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);

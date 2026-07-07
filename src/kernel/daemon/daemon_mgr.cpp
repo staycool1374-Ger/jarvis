@@ -179,7 +179,14 @@ void restart_stale_daemons() {
 
         task->priority = 1;
         task->period_ticks = 10;
-
+        {
+            size_t j = 0;
+            while (entries_[i].name && entries_[i].name[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+                task->name[j] = entries_[i].name[j];
+                ++j;
+            }
+            task->name[j] = '\0';
+        }
         {
             uint64_t bg = 0;
             uint64_t budget =
@@ -258,7 +265,14 @@ void ensure_running(const char* name) {
 
         task->priority = 1;
         task->period_ticks = 10;
-
+        {
+            size_t j = 0;
+            while (entries_[i].name && entries_[i].name[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+                task->name[j] = entries_[i].name[j];
+                ++j;
+            }
+            task->name[j] = '\0';
+        }
         {
             uint64_t bg = 0;
             uint64_t budget =
