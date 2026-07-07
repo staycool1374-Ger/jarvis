@@ -26,6 +26,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/rtc.hpp>
+#include <kernel/kernel.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/sync/spinlock.hpp>
@@ -472,6 +473,10 @@ static void update_status_bar() {
 
 void Shell::shell_task_main() {
     if (!initialized_) init();
+
+    // Enable dmesg recording now that the shell is interactive
+    // (release mode suppresses boot/test entries for a clean console).
+    kernel::log::g_dmesg.set_suppressed(false);
 
     Terminal::clear();
     Terminal::write("\n");
@@ -2129,21 +2134,26 @@ void Shell::cmd_less(int argc, const char** argv) {
 }
 
 void Shell::cmd_dmesg(int argc, const char** argv) {
-    if (argc >= 2 && (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "-I") == 0 || strcmp(argv[1], "--inject") == 0)) {
-        if (argc < 4) {
-            Terminal::write("usage: dmesg -i|--inject <subsys> <err> [msg]\n");
+    bool human = false;
+    if (argc >= 2) {
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--human") == 0) {
+            human = true;
+        } else if (strcmp(argv[1], "-i") == 0 || strcmp(argv[1], "-I") == 0 || strcmp(argv[1], "--inject") == 0) {
+            if (argc < 4) {
+                Terminal::write("usage: dmesg -i|--inject <subsys> <err> [msg]\n");
+                return;
+            }
+            unsigned subsys = 0; {
+                const char* s = argv[2]; while (*s) { subsys = subsys * 10 + (*s - '0'); ++s; }
+            }
+            unsigned code = 0; {
+                const char* s = argv[3]; while (*s) { code = code * 10 + (*s - '0'); ++s; }
+            }
+            const char* msg = (argc >= 5) ? argv[4] : "(no message)";
+            kernel::log::g_dmesg.push(static_cast<kernel::log::ErrorSubsystem>(subsys), code, msg, 0);
+            Terminal::write("ok\n");
             return;
         }
-        unsigned subsys = 0; {
-            const char* s = argv[2]; while (*s) { subsys = subsys * 10 + (*s - '0'); ++s; }
-        }
-        unsigned code = 0; {
-            const char* s = argv[3]; while (*s) { code = code * 10 + (*s - '0'); ++s; }
-        }
-        const char* msg = (argc >= 5) ? argv[4] : "(no message)";
-        kernel::log::g_dmesg.push(static_cast<kernel::log::ErrorSubsystem>(subsys), code, msg, 0);
-        Terminal::write("ok\n");
-        return;
     }
     size_t total = 0;
     kernel::log::g_dmesg.for_each([&](const kernel::log::LogEntry& e) {
@@ -2151,6 +2161,54 @@ void Shell::cmd_dmesg(int argc, const char** argv) {
         char* p = buf;
         char* end = buf + sizeof(buf) - 1;
 
+        if (human) {
+            // Human-readable: "YYYY-MM-DD hh:mm:ss:mmm task  ERR_NAME  msg"
+            // Convert ticks to wall-clock nanoseconds (assumes 1 tick = 1 ms = 1e6 ns)
+            uint64_t wall_ns = g_boot_epoch * 1000000000ULL + e.timestamp * 1000000ULL;
+            char dt[24];
+            format_datetime(dt, sizeof(dt), wall_ns);
+            const char* dp = dt;
+            while (*dp && p < end) *p++ = *dp++;
+            *p++ = ' ';
+
+            // Task name start position for padding
+            char* name_start = p;
+            auto* tcb = kernel::Scheduler::find_task(e.task_id);
+            if (tcb && tcb->name[0]) {
+                const char* nn = tcb->name;
+                while (*nn && p < end) *p++ = *nn++;
+            } else {
+                *p++ = 'P'; *p++ = ':';
+                uint64_t tid = e.task_id;
+                char tbuf[24]; int tl = 0;
+                if (tid == 0) tbuf[tl++] = '0';
+                else { while (tid > 0 && tl < 23) { tbuf[tl++] = static_cast<char>('0' + (tid % 10)); tid /= 10; } }
+                for (int i = 0; i < tl/2; ++i) { char c = tbuf[i]; tbuf[i] = tbuf[tl-1-i]; tbuf[tl-1-i] = c; }
+                for (int i = 0; i < tl && p < end; ++i) *p++ = tbuf[i];
+            }
+            // Left-pad name column to 14 chars minimum
+            while (p - name_start < 14 && p < end) *p++ = ' ';
+
+            // Error name
+            const char* sub = kernel::log::subsystem_name(e.subsystem);
+            while (*sub && p < end) *p++ = *sub++;
+            *p++ = ':';
+            const char* err_name = kernel::log::error_string(e.subsystem, e.error_code);
+            while (*err_name && p < end) *p++ = *err_name++;
+            *p++ = ' ';
+
+            // Message (inline context)
+            const char* msg = e.message ? e.message : "(null)";
+            while (*msg && p < end) *p++ = *msg++;
+            *p++ = '\n';
+            *p = '\0';
+
+            Terminal::write(buf);
+            total += p - buf;
+            return;
+        }
+
+        // Technical format (default)
         *p++ = '['; *p++ = 'T'; *p++ = 'S'; *p++ = '=';
         uint64_t ts = e.timestamp;
         char tsbuf[24]; int tlen = 0;

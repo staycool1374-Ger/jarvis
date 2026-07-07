@@ -43,18 +43,17 @@ extern "C" {
 /// @brief Verify section markers — compares each linker-placed magic constant
 ///        against its expected ASCII tag.  Fails via Logger on mismatch.
 /// @return true if all markers match.
-bool check_section_markers() {
-    if (_m_text_start      != 0x545254535F545854ULL) { Logger::error("INTEGRITY: .text start marker corrupted"); return false; }
-    if (_m_text_end        != 0x5F444E455F545854ULL) { Logger::error("INTEGRITY: .text end marker corrupted");   return false; }
-    if (_m_rodata_start    != 0x545254535F544452ULL) { Logger::error("INTEGRITY: .rodata start marker corrupted"); return false; }
-    if (_m_rodata_end      != 0x5F444E455F544452ULL) { Logger::error("INTEGRITY: .rodata end marker corrupted");   return false; }
-    if (_m_data_start      != 0x545254535F415444ULL) { Logger::error("INTEGRITY: .data start marker corrupted");   return false; }
-    if (_m_data_end        != 0x5F444E455F415444ULL) { Logger::error("INTEGRITY: .data end marker corrupted");     return false; }
-    if (_m_bss_start       != 0x545254535F535342ULL) { Logger::error("INTEGRITY: .bss start marker corrupted");    return false; }
-    if (_m_bss_end         != 0x5F444E455F535342ULL) { Logger::error("INTEGRITY: .bss end marker corrupted");      return false; }
-    if (_m_stack_before    != 0x5F5246425F4B5453ULL) { Logger::error("INTEGRITY: stack before marker corrupted");  return false; }
-    if (_m_stack_after     != 0x5F5446415F4B5453ULL) { Logger::error("INTEGRITY: stack after marker corrupted");   return false; }
-    return true;
+void check_section_markers() {
+    if (_m_text_start      != 0x545254535F545854ULL) { panic("INTEGRITY: .text start marker corrupted"); }
+    if (_m_text_end        != 0x5F444E455F545854ULL) { panic("INTEGRITY: .text end marker corrupted");   }
+    if (_m_rodata_start    != 0x545254535F544452ULL) { panic("INTEGRITY: .rodata start marker corrupted"); }
+    if (_m_rodata_end      != 0x5F444E455F544452ULL) { panic("INTEGRITY: .rodata end marker corrupted");   }
+    if (_m_data_start      != 0x545254535F415444ULL) { panic("INTEGRITY: .data start marker corrupted");   }
+    if (_m_data_end        != 0x5F444E455F415444ULL) { panic("INTEGRITY: .data end marker corrupted");     }
+    if (_m_bss_start       != 0x545254535F535342ULL) { panic("INTEGRITY: .bss start marker corrupted");    }
+    if (_m_bss_end         != 0x5F444E455F535342ULL) { panic("INTEGRITY: .bss end marker corrupted");      }
+    if (_m_stack_before    != 0x5F5246425F4B5453ULL) { panic("INTEGRITY: stack before marker corrupted");  }
+    if (_m_stack_after     != 0x5F5446415F4B5453ULL) { panic("INTEGRITY: stack after marker corrupted");   }
 }
 
 /// @brief Reset CRC accumulator, offset, and completion flags for a fresh scan.

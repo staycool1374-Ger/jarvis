@@ -24,8 +24,8 @@
 #include <types.hpp>
 
 /// @brief Kernel version — single source of truth.
-/// Format: "vmajor.minor.patch"
-#define KERNEL_VERSION_STRING "v0.3.2"
+/// Format: "vmajor.minor.patch-stage"
+#define KERNEL_VERSION_STRING "v0.3.2-dev"
 
 namespace kernel {
 

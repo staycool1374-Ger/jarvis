@@ -47,3 +47,15 @@ void panic(const char* msg) __attribute__((noreturn));
 /// @brief Kernel stack base (bottom address).
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint8_t kernel_stack[];
+
+/// @brief Boot-time RTC epoch (UNIX seconds) and Timer::ns() snapshot.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t g_boot_epoch;
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t g_boot_ns;
+
+/// @brief Format wall-clock nanoseconds since epoch into "YYYY-MM-DD hh:mm:ss:mmm".
+/// @param buf    Output buffer (must be >= 24 bytes).
+/// @param size   Buffer size.
+/// @param wall_ns  Nanoseconds since 1970-01-01 00:00:00 UTC.
+void format_datetime(char* buf, size_t size, uint64_t wall_ns);

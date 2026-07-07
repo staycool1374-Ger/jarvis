@@ -239,9 +239,9 @@ JARVIS_TEST(atomics_assembly_bridge, "PRE: none | POST: none") {
     auto* after = Scheduler::current_task();
     JARVIS_ASSERT_EQ(task->id, after->id);
 
-    // Verify scheduler_next_task_id was cleared to 0
+    // Verify scheduler_next_task_id was cleared to UINT64_MAX
     uint64_t cleared = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
-    JARVIS_ASSERT_EQ(0ULL, cleared);
+    JARVIS_ASSERT_EQ(UINT64_MAX, cleared);
 
     // Restore original task and next_task_id
     Scheduler::set_current(*original);

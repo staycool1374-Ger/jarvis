@@ -32,6 +32,7 @@ DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 template<size_t Capacity>
 bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
                                   const char* msg, uintptr_t ctx) {
+    if (s_suppressed_) return true;
     const uint64_t ts = arch::Timer::ticks();
     const uint64_t tid = kernel::Scheduler::current_task()
                            ? kernel::Scheduler::current_task()->id

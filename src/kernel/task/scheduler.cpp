@@ -996,7 +996,7 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     }
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_next_task_id,  (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_next_task_id,  UINT64_MAX, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to,   (uint64_t*)nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&isr_nesting_depth,       (uint64_t)0, __ATOMIC_RELEASE);
 }
@@ -1185,7 +1185,7 @@ SchedulerError Scheduler::alloc_id_err(uint64_t& out_id) {
  
 extern "C" void scheduler_on_context_switch() {
     uint64_t id = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
-    if (id == 0) return;
-    __atomic_store_n(&kernel::scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
+    if (id == UINT64_MAX) return;
+    __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
     kernel::Scheduler::set_current_by_id(id);
 }

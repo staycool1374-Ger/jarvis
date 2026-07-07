@@ -41,6 +41,7 @@
 #include <kernel/elf/elf.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/vfsd.hpp>
+#include <kernel/log/dmesg.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/driver/ata_pio.hpp>
 #include <kernel/driver/ahci.hpp>
@@ -315,7 +316,7 @@ extern "C" {
     uint64_t* scheduler_save_rsp_to = nullptr;
     uint64_t scheduler_load_rsp_from = 0;
     uint64_t scheduler_load_cr3_from = 0;
-    uint64_t scheduler_next_task_id = 0;
+    uint64_t scheduler_next_task_id = UINT64_MAX;
     uint64_t isr_nesting_depth = 0;
     uint64_t scheduler_corruption_count = 0;
     kernel::TaskControlBlock* fpu_owner = nullptr;
@@ -677,6 +678,8 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
     arch::RTC::init();
+    g_boot_epoch = arch::RTC::read_seconds();
+    g_boot_ns = arch::Timer::ns();
     kernel::random_init();
     debug_write("[BOOT] Hardware init done\n");
 
@@ -1205,6 +1208,74 @@ extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
                                         )
 {
     return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
+}
+
+// ── Boot-time clock capture ──────────────────────────────────────────────────
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+uint64_t g_boot_epoch = 0;  // RTC read_seconds() at boot
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+uint64_t g_boot_ns    = 0;  // Timer::ns() at boot
+
+// ── Epoch-to-date conversion (no libc) ──────────────────────────────────────
+static const uint16_t s_days_in_mon[12] = {
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+};
+
+static bool is_leap(uint16_t y) {
+    return (y % 4 == 0) && (y % 100 != 0 || y % 400 == 0);
+}
+
+/// @brief Convert wall-clock nanoseconds since epoch to a human-readable
+///        date-time string: "YYYY-MM-DD hh:mm:ss:mmm".
+/// @param buf    Output buffer (must be >= 24 bytes).
+/// @param size   Buffer size.
+/// @param wall_ns  Nanoseconds since 1970-01-01 00:00:00 UTC.
+void format_datetime(char* buf, size_t size, uint64_t wall_ns) {
+    if (!buf || size < 24) return;
+    uint64_t total_sec = wall_ns / 1000000000ULL;
+    uint32_t ms = static_cast<uint32_t>((wall_ns % 1000000000ULL) / 1000000ULL);
+
+    // Break total_sec into date/time components
+    // Days since epoch
+    uint64_t d = total_sec / 86400ULL;
+    uint64_t remaining_sec = total_sec % 86400ULL;
+    uint16_t hh = static_cast<uint16_t>(remaining_sec / 3600ULL);
+    uint16_t mm = static_cast<uint16_t>((remaining_sec % 3600ULL) / 60ULL);
+    uint16_t ss = static_cast<uint16_t>(remaining_sec % 60ULL);
+
+    // Year
+    uint16_t year = 1970;
+    while (true) {
+        uint16_t days_this = is_leap(year) ? 366 : 365;
+        if (d < days_this) break;
+        d -= days_this;
+        ++year;
+    }
+
+    // Month
+    uint8_t mon = 0;
+    for (; mon < 12; ++mon) {
+        uint16_t dim = s_days_in_mon[mon];
+        if (mon == 1 && is_leap(year)) dim = 29;
+        if (d < dim) break;
+        d -= dim;
+    }
+    uint16_t day = static_cast<uint16_t>(d + 1);  // 1-based
+
+    // Format
+    size_t pos = 0;
+    auto put = [&](char c) { if (pos < size - 1) buf[pos++] = c; };
+    auto putn = [&](uint64_t val, uint8_t digits) {
+        char tmp[20]; int ti = 0;
+        if (val == 0) tmp[ti++] = '0';
+        else { while (val > 0 && ti < 19) { tmp[ti++] = static_cast<char>('0' + (val % 10)); val /= 10; } }
+        while (ti < digits) tmp[ti++] = '0';
+        for (int j = ti - 1; j >= 0; --j) put(tmp[j]);
+    };
+    putn(year, 4); put('-'); putn(mon + 1, 2); put('-'); putn(day, 2);
+    put(' '); putn(hh, 2); put(':'); putn(mm, 2); put(':'); putn(ss, 2);
+    put(':'); putn(ms, 3);
+    buf[pos] = '\0';
 }
 
 uint8_t kernel_stack[16_KiB] __attribute__((section(".boot_stack")));

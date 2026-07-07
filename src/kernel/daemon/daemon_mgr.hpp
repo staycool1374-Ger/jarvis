@@ -54,7 +54,9 @@ void reset_clear_daemons();
 bool register_daemon(const char* name, const char* initrd_path,
                      void (*set_pid)(uint64_t), uint64_t (*get_pid)());
 /// @brief Notify the daemon manager that a daemon has exited.
-void notify_death(uint64_t pid);
+/// @param pid      PID of the daemon that died.
+/// @param log_only If true, skip dmesg push (test isolation cleanup).
+void notify_death(uint64_t pid, bool log_only = false);
 /// @brief Restart any daemons that have died (up to MAX_RESTART_COUNT each).
 void restart_stale_daemons();
 

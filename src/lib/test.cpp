@@ -23,6 +23,7 @@
 #include <logger.hpp>
 #include <string.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/test/test_cleanup.hpp>
@@ -403,6 +404,7 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         // (kernel-owned page table pages are not snapshot-saved, so they
         // contain test garbage after the last restore).
         kernel::test::reload_daemon_tasks();
+        kernel::daemon::restart_stale_daemons();
     } else {
         // No snapshot isolation — call proper destructor-based cleanup
         // to dequeue all tasks, free resources, unload drivers, and restart
@@ -542,6 +544,7 @@ void run_suite(const char* suite_name) {
     if (snapshot_ok) {
         kernel::test::snapshot_destroy();
         kernel::test::reload_daemon_tasks();
+        kernel::daemon::restart_stale_daemons();
     }
 
     if (run == 0) {

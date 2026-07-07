@@ -24,6 +24,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/elf/elf.hpp>
 #include <initrd/initrd.hpp>
+#include <kernel/log/dmesg.hpp>
 #include <logger.hpp>
 #include <string.hpp>
 
@@ -80,7 +81,7 @@ void reset_clear_daemons() {
 
 /// @brief Notify the manager that a daemon has exited.
 /// @param pid  PID of the daemon that died.
-void notify_death(uint64_t pid) {
+void notify_death(uint64_t pid, bool log_only) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].pid == pid) {
             debug_write("[DAEMON] '");
@@ -90,6 +91,9 @@ void notify_death(uint64_t pid) {
             debug_write("), restart_count=");
             debug_write_hex(entries_[i].restart_count);
             debug_write("\n");
+            if (!log_only) {
+                dmesg_push_base(0xDA01, entries_[i].name, pid);
+            }
 
             // Reset PID via the module's setter so all IPC
             // callers immediately fail
@@ -198,6 +202,7 @@ void restart_stale_daemons() {
         debug_write(", restart #");
         debug_write_hex(entries_[i].restart_count);
         debug_write(")\n");
+        dmesg_push_base(0xDA02, entries_[i].name, task->id);
     }
 }
 
@@ -274,6 +279,7 @@ void ensure_running(const char* name) {
         debug_write("' ensured (PID=");
         debug_write_hex(task->id);
         debug_write(")\n");
+        dmesg_push_base(0xDA03, entries_[i].name, task->id);
         return;
     }
 
@@ -307,6 +313,7 @@ void terminate(const char* name) {
         debug_write("[DAEMON] '");
         debug_write(entries_[i].name);
         debug_write("' terminated\n");
+        dmesg_push_base(0xDA04, entries_[i].name, 0);
         return;
     }
 

@@ -202,7 +202,7 @@ JARVIS_TEST(multiple_idle_tasks_prevented, "PRE: none | POST: none") {
 // Expect: All section markers (text, rodata, data, bss, stack) read back
 // their expected values, indicating no memory corruption across boundaries.
 JARVIS_TEST(idle_task_integrity_markers, "PRE: none | POST: none") {
-    JARVIS_ASSERT(kernel::integrity::check_section_markers());
+    kernel::integrity::check_section_markers();
     JARVIS_TEST_PASS();
 }
 

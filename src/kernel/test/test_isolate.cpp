@@ -28,6 +28,7 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/vfs/vfsd.hpp>
+#include <kernel/log/dmesg.hpp>
 #include <kernel/vfs/tmpfs.hpp>
 #include <kernel/driver/iocd.hpp>
 #include <kernel/arch/io.hpp>
@@ -270,7 +271,7 @@ void snapshot_restore(const char* test_name) {
     // Clear any pending context-switch state
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_next_task_id, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
 
@@ -691,31 +692,16 @@ void reload_daemon_tasks() {
     arch::IrqGuard guard;
     auto* current = Scheduler::current_task();
     auto* idle    = Scheduler::get_idle_task();
-    auto* shell   = Scheduler::get_shell_task();
 
-    // If the current task is a test-created task (not idle, not shell, not a
-    // daemon), it would survive the kill loops below because of the current
-    // skip, get recaptured into the snapshot, and cause RIP=0 on the next
-    // restore when MemPool frees its TCB.  Force current to idle before
-    // the loops so the leaked task gets terminated.
-    if (current && current != idle && current != shell) {
-        bool is_daemon = false;
-        for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
-            if (daemon::get_entry(i).pid != 0 &&
-                Scheduler::find_task(daemon::get_entry(i).pid) == current) {
-                is_daemon = true;
-                break;
-            }
-        }
-        if (!is_daemon) {
-            current = idle;
-            Scheduler::set_current_index(0);
-        }
-    }
+    // NOTE: if current_task is a daemon, it will survive the kill loops
+    // because we cannot terminate the task we are running on.  A surviving
+    // daemon will be handled by the caller (snapshot_restore reaps it when
+    // switching to the next test task, or reboot_from_table terminates it).
 
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
         const auto& entry = daemon::get_entry(i);
         if (entry.pid != 0) {
+            dmesg_push_base(0xDA05, entry.name, entry.pid);
             auto* task = Scheduler::find_task(entry.pid);
             if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
                 if (task != current) {
@@ -723,12 +709,12 @@ void reload_daemon_tasks() {
                     task->exit_code = 0;
                 }
             }
-            daemon::notify_death(entry.pid);
+            daemon::notify_death(entry.pid, true);
         }
     }
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t != current && t != idle &&
+        if (t && t != current && t != idle && t != Scheduler::get_shell_task() &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
@@ -736,7 +722,10 @@ void reload_daemon_tasks() {
     }
     Scheduler::reap_orphans();
     Scheduler::reset_ready_queue();
-    daemon::restart_stale_daemons();
+    // NOTE: daemons are NOT restarted here — only killed.
+    // Tests that need daemons call ensure_running() in their setup_func.
+    // The caller (e.g. test.cpp end-of-suite) adds restart_stale_daemons()
+    // if a full restore to boot state is required.
 }
 
 void run_all_isolated_tests() {

@@ -94,8 +94,22 @@ public:
     /// @brief Discard all entries (reset tail to head).
     void clear();
 
+    /// @brief Suppress future pushes (release mode: quiet boot).
+    static void set_suppressed(bool v) { s_suppressed_ = v; }
+    /// @brief Check whether pushes are currently suppressed.
+    static bool is_suppressed() { return s_suppressed_; }
+
     size_t head_index() const { return head; }
     size_t tail_index() const { return tail; }
+
+private:
+    static inline bool s_suppressed_ =
+#ifdef CONFIG_DEBUG
+        false
+#else
+        true
+#endif
+        ;
 };
 
 /// Capacity of the global dmesg ring buffer (from Kconfig).
@@ -114,9 +128,25 @@ extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
     kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::BASE, \
                               static_cast<uint64_t>(err), msg, ctx)
 
-/// @brief Return a human-readable string for a base kernel::Error code.
-inline const char* base_error_string(kernel::Error e) {
-    switch (e) {
+/// @brief Return a human-readable string for a base-subsystem error code.
+///        The code space is split into kernel::Error values (0–9) and
+///        a custom range for event codes:
+///          0xDA00 – 0xDAFF  daemon lifecycle events
+inline const char* base_error_string(uint64_t code) {
+    // Custom event ranges
+    if ((code & ~0xFFULL) == 0xDA00) {
+        switch (code) {
+            case 0xDA01: return "Daemon exited";
+            case 0xDA02: return "Daemon restarted";
+            case 0xDA03: return "Daemon ensured";
+            case 0xDA04: return "Daemon terminated";
+            case 0xDA05: return "Daemon restarting";
+            case 0xDA06: return "Daemon up";
+        }
+        return "Daemon event";
+    }
+    // Standard kernel::Error range (0–9)
+    switch (static_cast<kernel::Error>(code)) {
         case kernel::Error::OK: return "OK";
         case kernel::Error::OOM: return "Out of memory";
         case kernel::Error::INVALID_ARG: return "Invalid argument";
@@ -149,7 +179,7 @@ inline const char* subsystem_name(ErrorSubsystem s) {
 inline const char* error_string(ErrorSubsystem subsys, uint64_t code) {
     switch (subsys) {
         case ErrorSubsystem::BASE:
-            return base_error_string(static_cast<kernel::Error>(code));
+            return base_error_string(code);
         case ErrorSubsystem::SYNC:
             return kernel::errors::error_string(static_cast<kernel::errors::SyncError>(code));
         case ErrorSubsystem::VFS:

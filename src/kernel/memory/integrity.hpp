@@ -49,8 +49,8 @@ extern "C" {
 // NOLINTEND(bugprone-dynamic-static-initializers)
 
 /// @brief Verify that all linker section markers contain their expected magic values.
-/// @return true if all markers are intact.
-bool check_section_markers();
+///        Panics on any mismatch with the specific marker name.
+void check_section_markers();
 /// @brief Reset the CRC computation state for the .text section integrity check.
 void reset_crc_state();
 /// @brief Process one chunk (4 KiB) of the code CRC scan.

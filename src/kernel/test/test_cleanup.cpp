@@ -26,6 +26,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/driver/driver.hpp>
 #include <kernel/log/dmesg.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
 
 namespace kernel::test {
@@ -37,6 +38,7 @@ void test_cleanup_all() {
     // reload_daemon_tasks kills daemon tasks + user tasks, reaps orphans,
     // and restarts fresh daemon processes from initrd.
     reload_daemon_tasks();
+    daemon::restart_stale_daemons();
 
     // ---- 2. Clean up any remaining non-idle, non-current tasks ----
     auto* current = Scheduler::current_task();
