@@ -102,10 +102,8 @@ static size_t off_kstack_header(size_t user_page_count) {
 }
 
 static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
-    // kstack header + entries + context frame (rsp value + frame data)
     size_t kstack_area = sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
-    size_t ctx_frame = sizeof(uint64_t) + sizeof(TaskContext);
-    return off_kstack_header(user_page_count) + kstack_area + ctx_frame;
+    return off_kstack_header(user_page_count) + kstack_area;
 }
 
 bool snapshot_create() {
@@ -248,17 +246,6 @@ bool snapshot_create() {
             out += KSTACK_ENTRY_SIZE;
         }
 
-        // ---- Current task context frame (after all kstack entries) ----
-        {
-            auto* current = Scheduler::current_task();
-            uint64_t rsp = TASK_STACK_PTR(current);
-            size_t ctx_off = off_kstack_header(user_page_count)
-                           + sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
-            *reinterpret_cast<uint64_t*>(g_snapshot + ctx_off) = rsp;
-            __builtin_memcpy(g_snapshot + ctx_off + sizeof(uint64_t),
-                             reinterpret_cast<void*>(rsp),
-                             sizeof(TaskContext));
-        }
     }
 
     return true;
@@ -517,10 +504,45 @@ void snapshot_restore(const char* test_name) {
                         break;
                     }
                 }
-                // If not found, the task was likely reaped — that's OK
-                (void)found;
+                if (!found) {
+                    Logger::raw_write("[SNAP] kstack not found for addr=0x");
+                    Logger::print_hex(saved_kstack);
+                    Logger::raw_write(" (task was likely reaped)\n");
+                }
             }
             in += KSTACK_ENTRY_SIZE;
+        }
+    }
+
+    // ---- Validate per-task context.rsp ----
+    // The kstack restore may have skipped a task whose kernel_stack
+    // address changed since snapshot capture (e.g., idle was recreated
+    // by reap_orphans during a previous test).  In that case the
+    // field-restored context.rsp points to stale data on the wrong
+    // stack.  Reinitialize such tasks to the canonical initial frame
+    // position so the first context switch loads valid register state.
+    {
+        auto* cur = Scheduler::current_task();
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto* t = Scheduler::task_at(i);
+            if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (t == cur) continue;
+            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+            if (base == 0) continue;
+            uint64_t rsp = TASK_STACK_PTR(t);
+            if (rsp < base || rsp > t->kernel_stack_top) {
+                Logger::raw_write("[SNAP] fixup: task id=");
+                Logger::print_dec(t->id);
+                Logger::raw_write(" context.rsp=0x");
+                Logger::print_hex(rsp);
+                Logger::raw_write(" out of stack [0x");
+                Logger::print_hex(base);
+                Logger::raw_write("-0x");
+                Logger::print_hex(t->kernel_stack_top);
+                Logger::raw_write("] — reinit to canonical position\n");
+                TASK_STACK_PTR(t) = t->kernel_stack_top
+                                  - sizeof(TaskContext);
+            }
         }
     }
 
@@ -574,30 +596,21 @@ void snapshot_restore(const char* test_name) {
     reload_daemon_tasks();
 
     // ---- Post-reload fixup ----
-    // Keep idle as the boot-stack proxy task.  Idle's context.rsp is reset
-    // to a valid initial position below; it is never returned by next_task()
-    // (idle has the lowest priority and is RUNNING, not in the ready queue).
-    // Using idle as the proxy avoids corrupting a real task's context.rsp
-    // when the deferred switch saves boot-stack RSP into it.
+    // Keep idle as the boot-stack proxy task.  Idle is never returned by
+    // next_task() (lowest priority, RUNNING, not in ready queue).  Using
+    // idle as the proxy avoids corrupting a real task's context.rsp when
+    // the deferred switch saves boot-stack RSP into it.
     {
         auto* cur = Scheduler::current_task();
         if (!cur || cur->magic != TaskControlBlock::TCB_MAGIC) {
             Scheduler::set_current_index(0);
         }
-        // Fix idle's context.rsp to its initial position so that even if
-        // a context switch reaches idle, its register frame is valid.
+#if defined(CONFIG_ARCH_X86_64)
         auto* idle = Scheduler::get_idle_task();
         if (idle && idle->magic == TaskControlBlock::TCB_MAGIC) {
-            // Idle's context.rsp was already restored from the snapshot
-            // (which captured it at kernel_stack_top - sizeof(TaskContext)).
-            // Do NOT reset it — the restored value is correct and the
-            // snapshot kernel-stack content at that position is valid.
-            // Resetting would only risk loading stale snapshot data that
-            // has been overwritten by test execution.
-#if defined(CONFIG_ARCH_X86_64)
             arch::GDT::set_tss_rsp0(idle->kernel_stack_top);
-#endif
         }
+#endif
     }
 
     // ---- Refresh snapshot scheduler state ----
