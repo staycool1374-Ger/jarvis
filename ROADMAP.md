@@ -404,4 +404,132 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
     - MemPool: fixed-size slab allocator, position-based snapshot/restore, TCB lifecycle.
     - BufferPool: pre-allocated ring buffers, zero-copy IPC data paths.
     - Integration: how each subsystem reacts to `snapshot_save()` / `snapshot_restore()` — which state is saved, which is rebuilt, and why.
-  - **Verification:** A developer debugging a page-fault in a test can find the relevant subsystem description and snapshot/restore interaction within 30 seconds.
+   - **Verification:** A developer debugging a page-fault in a test can find the relevant subsystem description and snapshot/restore interaction within 30 seconds.
+
+### Disabled / Stub / Broken Test Remediation (v0.3.x)
+
+Full scan of all test files identified ~90+ disabled, stub, or broken tests across 15+ files. These must be triaged and addressed per-subsystem.
+
+---
+
+#### Disabled Tests (`#if 0` or registration-commented-out)
+
+| Test | File | Status | Issue |
+|------|------|--------|-------|
+| `iocd_crash_restarts` | `test_iocd.cpp:121` | `#if 0` | Deliberately kills daemon manually; daemon lifecycle left in non-standard state |
+| `vfsd_crash_restarts` | `test_vfsd.cpp:335` | `#if 0` | Same pattern — manual daemon kill breaks snapshot/restore assumptions |
+| `vfsd_exhaust_restart_limit` | `test_vfsd.cpp:376` | `#if 0` | Exhausts daemon restart budget; daemon stays permanently dead |
+| `MempoolFragmentation` class | `test_resource_exhaustion.cpp:183` | `#if 0` | Pre-existing hang at test 438 (BUGS.md#013) |
+| `pci_enumeration_bounded_time` | `test_pci.cpp:274` | `#if 0` | QEMU-dependent performance benchmark, not a correctness test |
+| `qemu_debug_exit_success` | `test_debug.cpp:81` | registration commented | Uses `qemu_debug_exit` which kills QEMU — incompatible with batch test runner |
+| `qemu_debug_exit_failure` | `test_debug.cpp:82` | registration commented | Same — kills QEMU mid-suite |
+
+- [ ] **0.3.x-DISABLED-1:** Fix `iocd_crash_restarts` / `vfsd_crash_restarts` — design a safe daemon-kill mechanism compatible with snapshot/restore (force `g_vfs_touched = true`, allow controlled crash in isolated sub-test).
+- [ ] **0.3.x-DISABLED-2:** Investigate and fix `MempoolFragmentation` hang (BUGS.md#013) or document as known limitation.
+- [ ] **0.3.x-DISABLED-3:** Fix `qemu_debug_exit` tests — gate them behind a separate test binary or `CONFIG_TEST_QEMU_EXIT` flag so they run standalone.
+
+---
+
+#### Stub Tests (body is `JARVIS_TEST_PASS()` with no real assertions)
+
+**VFS daemon stubs (9 tests, `test_vfsd.cpp:235`):** `vfsd_handle_read_write`, `vfsd_handle_open`, `vfsd_handle_close`, `vfsd_handle_resolve`, `vfsd_handle_mount_unmount`, `vfsd_handle_stat_fstat`, `vfsd_handle_chdir_getcwd`, `vfsd_invalid_message_type_rejected`, `vfsd_malformed_message_rejected`, `vfsd_unauthorized_task_rejected`, `vfsd_concurrent_requests` — all require post-boot STI for userspace IPC; blocked by test isolation architecture (daemon is killed on snapshot restore).
+
+**IOCD stubs (6 tests, `test_iocd.cpp:56`):** `iocd_keyboard_irq_to_event`, `iocd_serial_irq_to_event`, `iocd_mmio_map_via_capability`, `iocd_mmio_unmap_on_exit`, `iocd_unauthorized_mmio_rejected`, `iocd_multiple_device_handlers`, `iocd_irq_affinity` — IOCD driver infrastructure not yet fully wired in test environment.
+
+**Driver stubs (4 tests, `test_driver.cpp:75`):** `iocd_server_boots`, `keyboard_driver_in_iocd`, `serial_driver_in_iocd`, `driver_server_mmio_via_caps` — no actual assertions; placeholders for driver architecture.
+
+**Capability stubs (21 tests, `test_capability.cpp`):** `capability_create_for_mmio`, `capability_grant_to_task`, `capability_map_mmio`, `capability_revoke`, `capability_cannot_forge`, `iocd_uses_capabilities_for_keyboard`, `cap_create_mmio_valid_bounds`, `cap_create_mmio_invalid_size_zero`, `cap_create_mmio_invalid_phys_addr`, `cap_grant_to_nonexistent_task_fails`, `cap_grant_duplicate_fails`, `cap_map_mmio_success`, `cap_map_mmio_wrong_task_fails`, `cap_map_mmio_duplicate_virt_fails`, `cap_revoke_unmaps`, `cap_revoke_nonexistent_fails`, `cap_forge_random_rejected`, `cap_forge_incremented_rejected`, `cap_transfer_to_child_on_fork`, `cap_inherit_on_exec`, `cap_max_per_task_limit` — entire capability subsystem not implemented; all stubs.
+
+**Buffer pool stubs (2 tests, `test_buffer_pool.cpp`):** `buffer_pool_va_conflict_rejected`, `buffer_pool_zero_va_rejected` — kernel does not yet implement VA conflict detection or VA=0 rejection.
+
+**IPC stubs (2 tests, `test_ipc_extended.cpp`):** `ipc_queue_remove_from_mid`, `ipc_send_sync_timeout` — no API to remove arbitrary sender from middle of blocked list; `send_sync` has no timeout parameter.
+
+**Pipe stubs (2 tests, `test_pipe.cpp`):** `pipe_read_from_empty_nonblock`, `pipe_multiple_writers_no_interleaving` — pipe implementation does not support `O_NONBLOCK`; second test requires multi-task environment.
+
+**Spinlock stub (1 test, `test_spinlock.cpp:235`):** `spinlock_recursive_deadlock_detect` — SpinLock does not implement recursive locking detection; lock() spins forever on recursive entry.
+
+**VMM stub (1 test, `test_vmm.cpp:78`):** `vmm_clone_failure_rollback` — `clone_kernel_pml4` does not implement rollback on OOM; partially allocates page tables on failure.
+
+**IPC benchmark stub (1 test, `test_ipc_benchmark.cpp:143`):** `ipc_bench_recv_self` — measures IPC recv-only latency from pre-filled queue; no actual benchmark harness.
+
+**Syscall stub (1 test, `test_syscall.cpp:430`):** `syscall_signal_sigreturn` — SIGRETURN is stubbed because no signal delivery path exists to populate a user stack with SignalFrame.
+
+- [ ] **0.3.x-STUB-1:** Implement real VFS daemon stubs — requires post-boot STI in test framework or a lightweight IPC mock that bypasses daemon.
+- [ ] **0.3.x-STUB-2:** Wire IOCD driver infrastructure in test environment — implement keyboard/serial IRQ-to-event pipeline, MMIO capability mapping.
+- [ ] **0.3.x-STUB-3:** Implement capability subsystem (3-4 sprints): cap object model, grant/revoke lifecycle, MMIO mapping integration, fork/exec inheritance.
+- [ ] **0.3.x-STUB-4:** Implement buffer pool VA conflict detection and VA=0 rejection.
+- [ ] **0.3.x-STUB-5:** Add `ipc_queue_remove` API and `send_sync` timeout parameter.
+- [ ] **0.3.x-STUB-6:** Implement `O_NONBLOCK` for pipes and multi-task pipe test infrastructure.
+- [ ] **0.3.x-STUB-7:** Implement recursive lock detection in SpinLock or document as known limitation.
+- [ ] **0.3.x-STUB-8:** Implement OOM rollback in `clone_kernel_pml4`.
+- [ ] **0.3.x-STUB-9:** Implement signal delivery path for `syscall_signal_sigreturn`.
+
+---
+
+#### Entirely Stubbed Test Files (all tests trivial pass)
+
+| File | Tests | Notes |
+|------|-------|-------|
+| `test_address.cpp` | 6 tests | phys/virt identity mapping, page align, null phys |
+| `test_bootparams.cpp` | 4 tests | cmdline parsing |
+| `test_gcov.cpp` | 4 tests | gcov handler, instrument bitmask, flush, rdtsc |
+| `test_keyboard.cpp` | 5 tests | init, enqueue/dequeue, buffer full, modifiers, self-test |
+| `test_multiboot.cpp` | 5 tests | mb2 tag find, framebuffer, memory map, module tags |
+| `test_pic.cpp` | 3 tests | remap, mask, EOI |
+| `test_serial.cpp` | 4 tests | init baud, putchar, puts crlf, empty string |
+| `test_vfs_internal.cpp` | 8 tests | devfs null/zero read, tty resolve, procfs, initrdfs |
+| `test_health.cpp` | 5 tests | syscall metrics, fields, counters, privileged, proc |
+| `test_shell_redirect.cpp` | 3 tests | redirect to devnull, no target, capture |
+| `test_integration.cpp` | 1 test | mandelbrot CRC hash |
+| `test_textutils.cpp` | 1 test | core text utilities (TODO) |
+| `test_tmpfs_corrupted_metadata.cpp` | 1 test | TODO: implement when low-level VFS hooks available |
+| `test_tmpfs_io_timeout.cpp` | 1 test | TODO: implement when allocator instrumentation present |
+
+- [ ] **0.3.x-STUBFILE-1:** Triage each stubbed file — either implement real tests or remove and create tracking issues.
+- [ ] **0.3.x-STUBFILE-2:** For `test_tmpfs_*` and `test_textutils` TODOs, add blocker dependencies on the subsystems they require.
+
+---
+
+#### Disabled Starvation/Deadlock Tests (remediated in current work)
+
+| Test | File | Status | Fix |
+|------|------|--------|-----|
+| `DeadlockNestedMutexLoad` | `test_starvation_deadlock.cpp:231` | Disabled (commented out) | Real `mutex.lock()` with contention on `[](){}` tasks corrupts scheduler state; waiter array overflow at `mutex.cpp:109`. Requires test isolation redesign for blocking primitives. |
+| `DeadlockRecoveryResourceReclamation` | `test_starvation_deadlock.cpp:237` | Never implemented | No class definition exists in source. |
+
+- [ ] **0.3.x-DEADLOCK-1:** Evaluate whether `DeadlockNestedMutexLoad` can be fixed with the new `ScopedCurrentTask` + `state = BLOCKED` pattern, or if mutex waiter array needs to be hardened first.
+- [ ] **0.3.x-DEADLOCK-2:** Implement `DeadlockRecoveryResourceReclamation` if the resource reclamation mechanism exists; otherwise remove the placeholder.
+
+---
+
+#### Architecture Stub Registrations (non-x86_64)
+
+`arch/aarch64/test_stubs.cpp` and `arch/riscv64/test_stubs.cpp` contain ~32 stub registration functions that register zero tests on non-x86_64 architectures. These are compile-time placeholders for when ARM64/RISC-V64 HALs are implemented.
+
+- [ ] **0.3.x-ARCHSTUB-1:** No action until ARM64/RISC-V64 HAL work begins (target: 0.3.6). Keep stubs to satisfy linker symbols.
+
+---
+
+#### Pre-Existing Test Failures (unrelated to disabled/stub work)
+
+Current full suite reports **15 pre-existing FAILs** in:
+- `vfsd` subsystem
+- `iocd` subsystem
+- `buffer_pool` subsystem
+
+These are not disabled/stub tests but genuine failures. They must be triaged separately.
+
+- [ ] **0.3.x-FAIL-1:** Investigate the 15 pre-existing failures in vfsd/iocd/buffer_pool. Classify as flaky (intermittent) or deterministic. Fix or isolate.
+
+---
+
+#### Tracking
+
+- **Total suite size**: 725 tests (reduced from 727 — two starvation/deadlock tests removed from registration)
+- **Disabled tests** (compiled out): 7
+- **Stub tests** (trivial pass): ~55 individual tests + 1 partially stubbed
+- **TODO placeholder tests**: 3
+- **Architecture stubs**: ~32 registration functions
+- **Genuine failures**: ~15
+- **Healthy passing tests**: ~725 - 15 ≈ 710 (at time of scan)
+- **Health check**: `bash ~/jarvis/healthcheck.sh` must exit 0 before any fix attempt.
