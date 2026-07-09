@@ -47,4 +47,4 @@ extern bool g_vfs_touched; // NOLINT(bugprone-dynamic-static-initializers)
 /// @brief Called by VFS syscall handlers to mark that VFS state was touched.
 void mark_vfs_touched();
 
-}
+} // namespace kernel::test

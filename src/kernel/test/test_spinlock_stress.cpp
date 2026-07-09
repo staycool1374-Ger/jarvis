@@ -26,7 +26,6 @@
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
-#include <kernel/arch/io.hpp>
 
 using namespace kernel;
 
@@ -44,6 +43,7 @@ static void stress_worker() {
         stress_counter_ = val + 1;
         ++stress_acquires_[idx];
     }
+    if (cur) cur->state = TaskState::TERMINATED;
 }
 
 // Runmode: kernel
@@ -73,18 +73,11 @@ JARVIS_TEST(spinlock_multi_task_contention, "PRE: none | POST: none") {
         }
     });
 
-    auto* original = Scheduler::current_task();
-    for (int t = 0; t < 20; ++t) {
-        for (int i = 0; i < 4; ++i) {
-            if (workers[i] && workers[i]->state != TaskState::TERMINATED) {
-                Scheduler::set_current(*workers[i]);
-                arch::pause();
-                arch::hlt();
-            }
-        }
-        Scheduler::on_tick();
+    for (int t = 0; t < 500; ++t) {
+        Scheduler::reschedule();
+        arch::hlt();
+        if (stress_counter_ >= 400) break;
     }
-    Scheduler::set_current(*original);
 
     JARVIS_ASSERT_EQ(400ULL, stress_counter_);
     for (int i = 0; i < 4; ++i) {

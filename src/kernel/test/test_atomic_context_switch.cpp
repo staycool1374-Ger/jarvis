@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/io.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -62,8 +63,7 @@ JARVIS_TEST(atomic_globals_set_on_reschedule, "PRE: none | POST: none") {
     __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
 
-    Scheduler::set_current(*task_a);
-    Scheduler::reschedule();
+    kernel::test::yield_as(*task_a);
 
     // Let ISR drain any pending context-switch consumption
     for (int h = 0; h < 2; ++h) arch::hlt();
@@ -155,8 +155,7 @@ JARVIS_TEST(atomic_idempotent_null_handling, "PRE: none | POST: none") {
     __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
 
-    Scheduler::set_current(*task_a);
-    Scheduler::reschedule();
+    kernel::test::yield_as(*task_a);
 
     // Let ISR drain any pending context-switch consumption
     for (int h = 0; h < 2; ++h) arch::hlt();

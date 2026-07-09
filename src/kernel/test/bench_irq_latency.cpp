@@ -26,6 +26,7 @@
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -54,8 +55,7 @@ JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
     BenchResult r = {~0ULL, 0, 0};
 
     for (size_t i = 0; i < 100; ++i) {
-        Scheduler::set_current(*a);
-        Scheduler::reschedule();
+        kernel::test::yield_as(*a);
     }
 
     for (size_t i = 0; i < BENCH_ITERATIONS; ++i) {

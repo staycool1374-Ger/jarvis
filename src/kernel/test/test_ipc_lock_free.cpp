@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -227,10 +228,8 @@ JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
     auto* original = Scheduler::current_task();
 
     // Let both tasks reach ready state
-    Scheduler::set_current(*task_a);
-    Scheduler::reschedule();
-    Scheduler::set_current(*task_b);
-    Scheduler::reschedule();
+    kernel::test::yield_as(*task_a);
+    kernel::test::yield_as(*task_b);
 
     // Kick off ping-pong: task_a sends first message to task_b
     // Use on_tick to drive scheduler forward

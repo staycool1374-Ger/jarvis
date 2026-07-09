@@ -31,6 +31,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/task/task_errors.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -112,10 +113,9 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state, "PRE: none | POST: none") 
     Scheduler::add_task(*sender);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(*sender);
+    kernel::test::yield_as(*sender);
 
     // Let sender run (it will block on send_sync)
-    Scheduler::reschedule();
     Scheduler::reschedule();
 
     Scheduler::set_current(*original);
@@ -164,10 +164,9 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
     Scheduler::add_task(*user_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(*user_task);
+    kernel::test::yield_as(*user_task);
 
     // Let user task run (it will block in recv)
-    Scheduler::reschedule();
 
     Scheduler::set_current(*original);
 
@@ -211,10 +210,9 @@ JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
     Scheduler::add_task(*kernel_task);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(*kernel_task);
+    kernel::test::yield_as(*kernel_task);
 
     // Let kernel task run (it will block in recv)
-    Scheduler::reschedule();
 
     Scheduler::set_current(*original);
 

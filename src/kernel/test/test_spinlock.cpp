@@ -98,6 +98,8 @@ static void contention_worker() {
         arch::pause();
         g_contention_counter_ = tmp + 1;
     }
+    auto* self = Scheduler::current_task();
+    if (self) self->state = TaskState::TERMINATED;
 }
 
 // Runmode: kernel
@@ -125,21 +127,13 @@ JARVIS_TEST(spinlock_contention, "PRE: none | POST: none") {
         delete b;
     });
 
-    auto* original = Scheduler::current_task();
-    for (int t = 0; t < 20; ++t) {
-        if (a->state != TaskState::TERMINATED) {
-            Scheduler::set_current(*a);
-            Scheduler::reschedule();
-        }
-        if (b->state != TaskState::TERMINATED) {
-            Scheduler::set_current(*b);
-            Scheduler::reschedule();
-        }
-        Scheduler::on_tick();
+    // Yield repeatedly so the scheduler picks workers over the boot-stack
+    // proxy.  Each reschedule() + hlt() cycle gives one worker a time slice.
+    for (int h = 0; h < 100; ++h) {
+        if (g_contention_counter_ >= 100) break;
+        Scheduler::reschedule();
+        arch::hlt();
     }
-    // Yield to let timer ISR fire and run scheduled tasks
-    for (int h = 0; h < 6; ++h) arch::hlt();
-    Scheduler::set_current(*original);
 
     JARVIS_ASSERT_EQ(100ULL, g_contention_counter_);
 

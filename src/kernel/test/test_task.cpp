@@ -31,6 +31,7 @@
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/elf/elf.hpp>
 #include <initrd/initrd.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -93,8 +94,7 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent->page_table_ != 0);
     JARVIS_ASSERT(parent->user_stack_ != 0);
 
-    auto* original = Scheduler::current_task();
-    Scheduler::set_current(*parent);
+    kernel::test::ScopedCurrentTask _scoped(*parent);
 
     uint64_t regs[22] = {};
     regs[17] = 0x1000;
@@ -115,7 +115,6 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(*original);
     JARVIS_TEST_PASS();
 }
 
@@ -168,8 +167,7 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages, "PRE: none | POST: n
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto* original = Scheduler::current_task();
-    Scheduler::set_current(*parent);
+    kernel::test::ScopedCurrentTask _scoped(*parent);
     uint64_t regs[22] = {};
     regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
@@ -188,7 +186,6 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages, "PRE: none | POST: n
     Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(*original);
     JARVIS_TEST_PASS();
 }
 
@@ -209,8 +206,7 @@ JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto* original = Scheduler::current_task();
-    Scheduler::set_current(*parent);
+    kernel::test::ScopedCurrentTask _scoped(*parent);
     uint64_t regs[22] = {};
     regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
     regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
@@ -224,7 +220,6 @@ JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
-    if (original) Scheduler::set_current(*original);
 
     uint64_t free_after = PMM::free_memory();
     JARVIS_ASSERT(free_after >= free_before);

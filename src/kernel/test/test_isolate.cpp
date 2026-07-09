@@ -594,13 +594,12 @@ void snapshot_restore(const char* test_name) {
         }
     }
 
-    // ---- Lazily reload daemon tasks (only if VFS was touched) ----
-    if (g_vfs_touched) {
-        kernel::vfs::reset_and_remount();
-        kernel::vfs::tmpfs_reset_root();
-        reload_daemon_tasks();
-    }
-    g_vfs_touched = false;
+    // ---- Reset filesystem roots ----
+    kernel::vfs::reset_and_remount();
+    kernel::vfs::tmpfs_reset_root();
+
+    // ---- Reload daemon tasks ----
+    reload_daemon_tasks();
 
     // ---- Post-reload fixup ----
     // Keep idle as the boot-stack proxy task.  Idle is never returned by

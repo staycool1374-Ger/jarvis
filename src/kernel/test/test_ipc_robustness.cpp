@@ -25,6 +25,8 @@
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/irq_guard.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -162,11 +164,10 @@ TEST_CLASS(IpcConcurrentSenders) {
         Scheduler::add_task(*senders[i]);
     }
 
-    auto* original = Scheduler::current_task();
     uint64_t total_sent = 0;
 
     for (int s = 0; s < NUM_SENDERS; ++s) {
-        Scheduler::set_current(*senders[s]);
+        kernel::test::ScopedCurrentTask _sc(*senders[s]);
         for (int m = 0; m < MSGS_PER; ++m) {
             Message msg{};
             msg.sender_id = senders[s]->id;
@@ -178,11 +179,11 @@ TEST_CLASS(IpcConcurrentSenders) {
         }
     }
 
-    Scheduler::set_current(*receiver);
-    Message out;
-    while (receiver->msg_queue->pop(out)) {}
-
-    Scheduler::set_current(*original);
+    {
+        kernel::test::ScopedCurrentTask _sc(*receiver);
+        Message out;
+        while (receiver->msg_queue->pop(out)) {}
+    }
 
     CT_ASSERT(total_sent <= MSGS_PER * NUM_SENDERS);
 
@@ -205,61 +206,64 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     Scheduler::add_task(*sender);
     Scheduler::add_task(*receiver);
 
-    auto* original = Scheduler::current_task();
+    uint64_t handle = 0;
+    {
+        kernel::test::ScopedCurrentTask _sc(*sender);
+        uint64_t sva = 0x80000000;
+        handle = BufferPool::alloc(*sender, sva);
+        CT_ASSERT(handle != 0);
 
-    Scheduler::set_current(*sender);
-    uint64_t sva = 0x80000000;
-    uint64_t handle = BufferPool::alloc(*sender, sva);
-    CT_ASSERT(handle != 0);
+        uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
+        uint64_t phys = BufferPool::entries[idx].phys_addr;
+        CT_ASSERT(phys != 0);
 
-    uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
-    uint64_t phys = BufferPool::entries[idx].phys_addr;
-    CT_ASSERT(phys != 0);
+        volatile auto* buf = reinterpret_cast<volatile uint8_t*>(
+            arch::HHDM_OFFSET + phys);
+        for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
+            buf[i] = static_cast<uint8_t>(i ^ 0xA5);
+        }
 
-    volatile auto* buf = reinterpret_cast<volatile uint8_t*>(
-        arch::HHDM_OFFSET + phys);
-    for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
-        buf[i] = static_cast<uint8_t>(i ^ 0xA5);
+        Message msg{};
+        msg.buf_handle = handle;
+        msg.type = 100;
+        msg.priority = 0;
+        msg.data_size = 0;
+        bool ok = IPC::send(receiver->id, msg, 0);
+        CT_ASSERT(ok);
     }
 
-    Message msg{};
-    msg.buf_handle = handle;
-    msg.type = 100;
-    msg.priority = 0;
-    msg.data_size = 0;
-    bool ok = IPC::send(receiver->id, msg, 0);
-    CT_ASSERT(ok);
+    {
+        kernel::test::ScopedCurrentTask _sc(*receiver);
+        Message recv_msg{};
+        bool ok = IPC::recv(recv_msg);
+        CT_ASSERT(ok);
+        CT_ASSERT(recv_msg.type == 100ULL);
 
-    Scheduler::set_current(*receiver);
-    Message recv_msg{};
-    ok = IPC::recv(recv_msg);
-    CT_ASSERT(ok);
-    CT_ASSERT(recv_msg.type == 100ULL);
-    CT_ASSERT(recv_msg.buf_handle == handle);
+        uint64_t rva = 0x90000000;
+        ok = BufferPool::map(*receiver, recv_msg.buf_handle, rva);
+        CT_ASSERT(ok);
 
-    uint64_t rva = 0x90000000;
-    ok = BufferPool::map(*receiver, handle, rva);
-    CT_ASSERT(ok);
+        uint32_t idx = static_cast<uint32_t>(recv_msg.buf_handle & 0xFFFFFFFFULL);
+        CT_ASSERT(BufferPool::entries[idx].owner_task ==
+                  static_cast<uint32_t>(receiver->id));
+        uint64_t rphys = BufferPool::entries[idx].phys_addr;
+        volatile auto* rbuf = reinterpret_cast<volatile uint8_t*>(
+            arch::HHDM_OFFSET + rphys);
+        for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
+            CT_ASSERT(rbuf[i] == static_cast<uint8_t>(i ^ 0xA5));
+        }
 
-    CT_ASSERT(BufferPool::entries[idx].owner_task ==
-              static_cast<uint32_t>(receiver->id));
-    uint64_t rphys = BufferPool::entries[idx].phys_addr;
-    CT_ASSERT(rphys == phys);
-    volatile auto* rbuf = reinterpret_cast<volatile uint8_t*>(
-        arch::HHDM_OFFSET + rphys);
-    for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
-        CT_ASSERT(rbuf[i] == static_cast<uint8_t>(i ^ 0xA5));
+        bool ok_free = BufferPool::free(*receiver, recv_msg.buf_handle);
+        CT_ASSERT(ok_free);
     }
 
-    Scheduler::set_current(*sender);
-    ok = BufferPool::free(*sender, handle);
-    CT_ASSERT(!ok);
+    // Verify sender cannot free after transfer
+    {
+        kernel::test::ScopedCurrentTask _sc(*sender);
+        bool ok = BufferPool::free(*sender, handle);
+        CT_ASSERT(!ok);
+    }
 
-    Scheduler::set_current(*receiver);
-    ok = BufferPool::free(*receiver, handle);
-    CT_ASSERT(ok);
-
-    Scheduler::set_current(*original);
     Scheduler::remove_task(*sender);
     sender->cleanup(); delete sender;
     Scheduler::remove_task(*receiver);
@@ -312,15 +316,20 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     g_id_b = task_b->id;
     Scheduler::add_task(*task_b);
 
-    auto* original = Scheduler::current_task();
-    Scheduler::set_current(*task_a);
-    Scheduler::reschedule();
-    Scheduler::set_current(*task_b);
-    Scheduler::reschedule();
-    Scheduler::set_current(*task_a);
-    Scheduler::reschedule();
-
-    Scheduler::set_current(*original);
+    auto* bidir_orig = Scheduler::current_task();
+    // Wrapped in IrqGuard to restore IF=0 semantics — these reschedule()
+    // calls are no-ops that set up globals; the timer ISR must not fire
+    // to consume them (task lambdas contain unreachable assertions).
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*task_a);
+        Scheduler::reschedule();
+        Scheduler::set_current(*task_b);
+        Scheduler::reschedule();
+        Scheduler::set_current(*task_a);
+        Scheduler::reschedule();
+    }
+    if (bidir_orig) Scheduler::set_current(*bidir_orig);
 
     Scheduler::remove_task(*task_a);
     task_a->cleanup(); delete task_a;
@@ -346,11 +355,14 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
     Message msg{};
     msg.sender_id = sender->id;
     msg.type = 1; msg.priority = 0; msg.data_size = 0;
-    Scheduler::set_current(*sender);
-    bool ok = IPC::send(receiver->id, msg, 0);
-    CT_ASSERT(!ok);
-    CT_ASSERT(sender->state == TaskState::BLOCKED);
-    CT_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*sender);
+        bool ok = IPC::send(receiver->id, msg, 0);
+        CT_ASSERT(!ok);
+        CT_ASSERT(sender->state == TaskState::BLOCKED);
+        CT_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+    }
 
     receiver->state = TaskState::TERMINATED;
     receiver->exit_code = 0;
@@ -359,9 +371,6 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
     CT_ASSERT(sender->state == TaskState::READY);
     CT_ASSERT(sender->blocked_on_queue == nullptr);
     CT_ASSERT(receiver->msg_queue == nullptr);
-
-    auto* original = Scheduler::current_task();
-    Scheduler::set_current(*original);
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);

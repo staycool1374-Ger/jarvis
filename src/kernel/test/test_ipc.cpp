@@ -31,6 +31,7 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/task/scheduler.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -662,11 +663,10 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
     Scheduler::add_task(*sender);
 
     auto* original = Scheduler::current_task();
-    Scheduler::set_current(*sender);
+    kernel::test::yield_as(*sender);
 
     // Let sender run (it will block on send_sync)
     // Then receiver runs, recvs, replies
-    Scheduler::reschedule();
     Scheduler::reschedule();
 
     Scheduler::set_current(*original);

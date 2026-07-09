@@ -319,6 +319,19 @@ TaskControlBlock* Scheduler::next_task() noexcept {
 void Scheduler::set_current(TaskControlBlock& task) noexcept {
     for (uint64_t i = 0; i < task_count_; ++i) {
         if (tasks_[i] == &task) {
+            if (i == current_index_) return;
+            // Cancel any pending context switch — the ISR epilogue globals
+            // (scheduler_save_rsp_to, etc.) point to the wrong task's
+            // context.rsp after current_index_ changes.  The pending switch
+            // state (current RUNNING→READY, next READY→RUNNING) was set by
+            // a prior reschedule() call and is stale once the current task
+            // changes underneath it.  The next switch_to_task() will set up
+            // fresh globals; the leaked RUNNING state on the abandoned next
+            // task is harmless — it will be reaped by snapshot_restore or
+            // corrected by the next schedule cycle.
+            __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+            __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+            __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
             current_index_ = i;
             return;
         }

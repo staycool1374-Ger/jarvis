@@ -28,6 +28,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -180,19 +181,14 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
             delete task_b;
         });
 
-        auto* original = Scheduler::current_task();
         for (int t = 0; t < 10; ++t) {
             if (task_a->state != TaskState::TERMINATED) {
-                Scheduler::set_current(*task_a);
-                Scheduler::reschedule();
+                kernel::test::yield_as(*task_a);
             }
             if (task_b->state != TaskState::TERMINATED) {
-                Scheduler::set_current(*task_b);
-                Scheduler::reschedule();
+                kernel::test::yield_as(*task_b);
             }
-            Scheduler::on_tick();
         }
-        Scheduler::set_current(*original);
 
         if (g_sb_r1 == 0 && g_sb_r2 == 0) {
             ++forbidden_count;

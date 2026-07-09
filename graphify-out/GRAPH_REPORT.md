@@ -1,311 +1,271 @@
-# Graph Report - .  (2026-07-04)
+# Graph Report - .  (2026-07-09)
 
 ## Corpus Check
-- Large corpus: 3463 files · ~2,089,346 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
+- Large corpus: 3633 files · ~2,522,167 words. Semantic extraction will be expensive (many Claude tokens). Consider running on a subfolder.
 
 ## Summary
-- 5879 nodes · 9326 edges · 1162 communities (1139 shown, 23 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 703 edges (avg confidence: 0.79)
+- 4077 nodes · 7379 edges · 265 communities (230 shown, 35 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 570 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Atomics & FPU Tests|Atomics & FPU Tests]]
-- [[_COMMUNITY_Architecture & Daemon Init|Architecture & Daemon Init]]
-- [[_COMMUNITY_Mutex & Deadlock Tests|Mutex & Deadlock Tests]]
-- [[_COMMUNITY_CPU Context & Registers|CPU Context & Registers]]
-- [[_COMMUNITY_IPC Benchmarks|IPC Benchmarks]]
-- [[_COMMUNITY_VFS  DevFS Console|VFS / DevFS Console]]
-- [[_COMMUNITY_Python Dev Tools|Python Dev Tools]]
-- [[_COMMUNITY_Syscall Interface|Syscall Interface]]
-- [[_COMMUNITY_Shell & ELF Loader|Shell & ELF Loader]]
-- [[_COMMUNITY_PCI & Error Handling|PCI & Error Handling]]
-- [[_COMMUNITY_IPC Blocking Tests|IPC Blocking Tests]]
-- [[_COMMUNITY_Scheduler Tests|Scheduler Tests]]
-- [[_COMMUNITY_Network Stack (ARP)|Network Stack (ARP)]]
-- [[_COMMUNITY_PMM  Page Allocator|PMM / Page Allocator]]
-- [[_COMMUNITY_x86-64 HAL GDTIDT|x86-64 HAL GDT/IDT]]
-- [[_COMMUNITY_Scheduling  IPC Daemon|Scheduling / IPC Daemon]]
-- [[_COMMUNITY_Buffer Pool  MemPool|Buffer Pool / MemPool]]
-- [[_COMMUNITY_Python Kernel Tools|Python Kernel Tools]]
-- [[_COMMUNITY_Physical Memory  Heap|Physical Memory / Heap]]
-- [[_COMMUNITY_VirtIO Block Driver|VirtIO Block Driver]]
-- [[_COMMUNITY_Multitasking  Wait Queue|Multitasking / Wait Queue]]
-- [[_COMMUNITY_UART Serial Driver|UART Serial Driver]]
-- [[_COMMUNITY_Timer  PIT Tests|Timer / PIT Tests]]
-- [[_COMMUNITY_x86-64 Paging  VMM|x86-64 Paging / VMM]]
-- [[_COMMUNITY_AArch64 HAL  Boot|AArch64 HAL / Boot]]
-- [[_COMMUNITY_AArch64 Page Table|AArch64 Page Table]]
-- [[_COMMUNITY_RISC-V HAL  Boot|RISC-V HAL / Boot]]
+- [[_COMMUNITY_Hardware Abstraction Layer|Hardware Abstraction Layer]]
+- [[_COMMUNITY_Test Infrastructure  Address Space|Test Infrastructure / Address Space]]
+- [[_COMMUNITY_Scheduler  Daemon Management|Scheduler / Daemon Management]]
+- [[_COMMUNITY_Boot Integrity  Daemon Mgr|Boot Integrity / Daemon Mgr]]
+- [[_COMMUNITY_Device  VFS Core|Device / VFS Core]]
+- [[_COMMUNITY_Style Validation Tools|Style Validation Tools]]
+- [[_COMMUNITY_Shell  Terminal Services|Shell / Terminal Services]]
+- [[_COMMUNITY_Syscall Dispatch|Syscall Dispatch]]
+- [[_COMMUNITY_VFS File Operations|VFS File Operations]]
+- [[_COMMUNITY_Ready Queue  Task Priority Map|Ready Queue / Task Priority Map]]
+- [[_COMMUNITY_x86_64 Architecture|x86_64 Architecture]]
+- [[_COMMUNITY_Resource Tracker  Test Isolation|Resource Tracker / Test Isolation]]
+- [[_COMMUNITY_Terminal  Framebuffer|Terminal / Framebuffer]]
+- [[_COMMUNITY_AArch64 HAL  MMIO|AArch64 HAL / MMIO]]
+- [[_COMMUNITY_Task Context  TCB|Task Context / TCB]]
+- [[_COMMUNITY_ProcFS  PMM Stats|ProcFS / PMM Stats]]
+- [[_COMMUNITY_IPC Tests  Buffer Handle|IPC Tests / Buffer Handle]]
+- [[_COMMUNITY_Boot Params  Multiboot|Boot Params / Multiboot]]
+- [[_COMMUNITY_AArch64 HAL  Timer|AArch64 HAL / Timer]]
+- [[_COMMUNITY_GDB Debug Scripts|GDB Debug Scripts]]
+- [[_COMMUNITY_GDT  Segment Registers|GDT / Segment Registers]]
+- [[_COMMUNITY_RISC-V 64 HAL|RISC-V 64 HAL]]
+- [[_COMMUNITY_Test Registry  Report|Test Registry / Report]]
+- [[_COMMUNITY_Shell Command Parser|Shell Command Parser]]
+- [[_COMMUNITY_Sporadic Server|Sporadic Server]]
+- [[_COMMUNITY_RISC-V  AArch64 Rand|RISC-V / AArch64 Rand]]
 - [[_COMMUNITY_RISC-V Page Table|RISC-V Page Table]]
-- [[_COMMUNITY_AHCI  ATA Driver|AHCI / ATA Driver]]
-- [[_COMMUNITY_E1000 Network Driver|E1000 Network Driver]]
-- [[_COMMUNITY_Community 30|Community 30]]
-- [[_COMMUNITY_Community 31|Community 31]]
-- [[_COMMUNITY_Community 32|Community 32]]
-- [[_COMMUNITY_Community 33|Community 33]]
-- [[_COMMUNITY_Community 34|Community 34]]
-- [[_COMMUNITY_Community 35|Community 35]]
-- [[_COMMUNITY_Community 36|Community 36]]
-- [[_COMMUNITY_Community 37|Community 37]]
-- [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 39|Community 39]]
-- [[_COMMUNITY_Community 40|Community 40]]
-- [[_COMMUNITY_Community 41|Community 41]]
-- [[_COMMUNITY_Community 42|Community 42]]
-- [[_COMMUNITY_Community 43|Community 43]]
-- [[_COMMUNITY_Community 44|Community 44]]
-- [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 48|Community 48]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 50|Community 50]]
-- [[_COMMUNITY_Community 51|Community 51]]
-- [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
-- [[_COMMUNITY_Community 54|Community 54]]
-- [[_COMMUNITY_Community 55|Community 55]]
-- [[_COMMUNITY_Community 56|Community 56]]
-- [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 60|Community 60]]
-- [[_COMMUNITY_Community 61|Community 61]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
-- [[_COMMUNITY_Community 64|Community 64]]
-- [[_COMMUNITY_Community 65|Community 65]]
-- [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 69|Community 69]]
-- [[_COMMUNITY_Community 70|Community 70]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
-- [[_COMMUNITY_Community 73|Community 73]]
-- [[_COMMUNITY_Community 74|Community 74]]
-- [[_COMMUNITY_Community 75|Community 75]]
-- [[_COMMUNITY_Community 76|Community 76]]
-- [[_COMMUNITY_Community 77|Community 77]]
-- [[_COMMUNITY_Community 78|Community 78]]
-- [[_COMMUNITY_Community 79|Community 79]]
-- [[_COMMUNITY_Community 80|Community 80]]
-- [[_COMMUNITY_Community 81|Community 81]]
-- [[_COMMUNITY_Community 82|Community 82]]
-- [[_COMMUNITY_Community 83|Community 83]]
-- [[_COMMUNITY_Community 84|Community 84]]
-- [[_COMMUNITY_Community 85|Community 85]]
-- [[_COMMUNITY_Community 86|Community 86]]
-- [[_COMMUNITY_Community 87|Community 87]]
-- [[_COMMUNITY_Community 88|Community 88]]
-- [[_COMMUNITY_Community 89|Community 89]]
-- [[_COMMUNITY_Community 92|Community 92]]
-- [[_COMMUNITY_Community 93|Community 93]]
-- [[_COMMUNITY_Community 94|Community 94]]
-- [[_COMMUNITY_Community 95|Community 95]]
-- [[_COMMUNITY_Community 96|Community 96]]
-- [[_COMMUNITY_Docs  Architecture  Logo|Docs / Architecture / Logo]]
-- [[_COMMUNITY_Community 98|Community 98]]
-- [[_COMMUNITY_Community 99|Community 99]]
-- [[_COMMUNITY_Community 100|Community 100]]
-- [[_COMMUNITY_Community 101|Community 101]]
-- [[_COMMUNITY_Community 102|Community 102]]
-- [[_COMMUNITY_Community 103|Community 103]]
-- [[_COMMUNITY_Community 104|Community 104]]
-- [[_COMMUNITY_Community 106|Community 106]]
-- [[_COMMUNITY_Community 107|Community 107]]
-- [[_COMMUNITY_Community 108|Community 108]]
-- [[_COMMUNITY_Community 109|Community 109]]
-- [[_COMMUNITY_Community 110|Community 110]]
-- [[_COMMUNITY_Community 111|Community 111]]
-- [[_COMMUNITY_Community 112|Community 112]]
-- [[_COMMUNITY_Community 113|Community 113]]
-- [[_COMMUNITY_Community 114|Community 114]]
-- [[_COMMUNITY_Kernel Subsystem Audit|Kernel Subsystem Audit]]
-- [[_COMMUNITY_Community 116|Community 116]]
-- [[_COMMUNITY_Community 117|Community 117]]
-- [[_COMMUNITY_Community 118|Community 118]]
-- [[_COMMUNITY_Community 119|Community 119]]
-- [[_COMMUNITY_Community 120|Community 120]]
-- [[_COMMUNITY_Community 121|Community 121]]
-- [[_COMMUNITY_Community 122|Community 122]]
-- [[_COMMUNITY_Community 123|Community 123]]
-- [[_COMMUNITY_Community 124|Community 124]]
-- [[_COMMUNITY_Community 125|Community 125]]
-- [[_COMMUNITY_Community 126|Community 126]]
-- [[_COMMUNITY_Community 127|Community 127]]
-- [[_COMMUNITY_Community 128|Community 128]]
-- [[_COMMUNITY_Community 129|Community 129]]
-- [[_COMMUNITY_Community 130|Community 130]]
-- [[_COMMUNITY_Community 131|Community 131]]
-- [[_COMMUNITY_Community 132|Community 132]]
-- [[_COMMUNITY_Community 133|Community 133]]
-- [[_COMMUNITY_Community 134|Community 134]]
-- [[_COMMUNITY_Scheduler Design Docs|Scheduler Design Docs]]
-- [[_COMMUNITY_Community 136|Community 136]]
-- [[_COMMUNITY_Community 137|Community 137]]
-- [[_COMMUNITY_Community 138|Community 138]]
-- [[_COMMUNITY_Community 139|Community 139]]
-- [[_COMMUNITY_Community 140|Community 140]]
-- [[_COMMUNITY_Community 141|Community 141]]
-- [[_COMMUNITY_Community 142|Community 142]]
-- [[_COMMUNITY_Community 143|Community 143]]
-- [[_COMMUNITY_Community 144|Community 144]]
-- [[_COMMUNITY_Community 145|Community 145]]
-- [[_COMMUNITY_Community 146|Community 146]]
-- [[_COMMUNITY_Community 147|Community 147]]
-- [[_COMMUNITY_Community 148|Community 148]]
-- [[_COMMUNITY_Community 149|Community 149]]
-- [[_COMMUNITY_Community 150|Community 150]]
-- [[_COMMUNITY_Community 151|Community 151]]
-- [[_COMMUNITY_Community 152|Community 152]]
-- [[_COMMUNITY_Community 153|Community 153]]
-- [[_COMMUNITY_Community 154|Community 154]]
-- [[_COMMUNITY_Community 155|Community 155]]
-- [[_COMMUNITY_Community 156|Community 156]]
-- [[_COMMUNITY_Community 157|Community 157]]
-- [[_COMMUNITY_Community 158|Community 158]]
-- [[_COMMUNITY_Boot  IPC  Daemon Docs|Boot / IPC / Daemon Docs]]
-- [[_COMMUNITY_Community 160|Community 160]]
-- [[_COMMUNITY_Community 161|Community 161]]
-- [[_COMMUNITY_Community 162|Community 162]]
-- [[_COMMUNITY_Community 163|Community 163]]
-- [[_COMMUNITY_Community 164|Community 164]]
-- [[_COMMUNITY_Community 165|Community 165]]
-- [[_COMMUNITY_Community 166|Community 166]]
-- [[_COMMUNITY_Community 167|Community 167]]
-- [[_COMMUNITY_Community 168|Community 168]]
-- [[_COMMUNITY_Community 169|Community 169]]
-- [[_COMMUNITY_Community 170|Community 170]]
-- [[_COMMUNITY_Community 171|Community 171]]
-- [[_COMMUNITY_Community 172|Community 172]]
-- [[_COMMUNITY_Community 173|Community 173]]
-- [[_COMMUNITY_Community 174|Community 174]]
-- [[_COMMUNITY_Community 175|Community 175]]
-- [[_COMMUNITY_Community 176|Community 176]]
-- [[_COMMUNITY_Community 177|Community 177]]
-- [[_COMMUNITY_Community 178|Community 178]]
-- [[_COMMUNITY_Community 179|Community 179]]
-- [[_COMMUNITY_Community 181|Community 181]]
-- [[_COMMUNITY_Community 182|Community 182]]
-- [[_COMMUNITY_Community 183|Community 183]]
-- [[_COMMUNITY_Community 184|Community 184]]
-- [[_COMMUNITY_Community 185|Community 185]]
-- [[_COMMUNITY_Community 186|Community 186]]
-- [[_COMMUNITY_Community 187|Community 187]]
-- [[_COMMUNITY_Community 188|Community 188]]
-- [[_COMMUNITY_Community 189|Community 189]]
-- [[_COMMUNITY_Community 190|Community 190]]
-- [[_COMMUNITY_Community 191|Community 191]]
-- [[_COMMUNITY_Community 192|Community 192]]
-- [[_COMMUNITY_Community 193|Community 193]]
-- [[_COMMUNITY_Community 194|Community 194]]
-- [[_COMMUNITY_Community 195|Community 195]]
-- [[_COMMUNITY_Community 196|Community 196]]
-- [[_COMMUNITY_Community 197|Community 197]]
-- [[_COMMUNITY_Community 198|Community 198]]
-- [[_COMMUNITY_Community 199|Community 199]]
-- [[_COMMUNITY_Community 200|Community 200]]
-- [[_COMMUNITY_Community 201|Community 201]]
-- [[_COMMUNITY_Community 202|Community 202]]
-- [[_COMMUNITY_Community 203|Community 203]]
-- [[_COMMUNITY_Community 204|Community 204]]
-- [[_COMMUNITY_Community 205|Community 205]]
-- [[_COMMUNITY_Community 206|Community 206]]
-- [[_COMMUNITY_Community 207|Community 207]]
-- [[_COMMUNITY_Community 208|Community 208]]
-- [[_COMMUNITY_Community 209|Community 209]]
-- [[_COMMUNITY_Community 210|Community 210]]
-- [[_COMMUNITY_Community 211|Community 211]]
-- [[_COMMUNITY_Community 212|Community 212]]
-- [[_COMMUNITY_Community 213|Community 213]]
-- [[_COMMUNITY_Community 214|Community 214]]
-- [[_COMMUNITY_Community 215|Community 215]]
-- [[_COMMUNITY_Community 216|Community 216]]
-- [[_COMMUNITY_Community 217|Community 217]]
-- [[_COMMUNITY_Community 218|Community 218]]
-- [[_COMMUNITY_Community 219|Community 219]]
-- [[_COMMUNITY_Community 220|Community 220]]
-- [[_COMMUNITY_Community 222|Community 222]]
-- [[_COMMUNITY_Community 223|Community 223]]
-- [[_COMMUNITY_Community 224|Community 224]]
-- [[_COMMUNITY_Community 225|Community 225]]
-- [[_COMMUNITY_Community 226|Community 226]]
-- [[_COMMUNITY_Community 227|Community 227]]
-- [[_COMMUNITY_Community 228|Community 228]]
-- [[_COMMUNITY_Community 229|Community 229]]
-- [[_COMMUNITY_Community 230|Community 230]]
-- [[_COMMUNITY_Community 231|Community 231]]
-- [[_COMMUNITY_Community 232|Community 232]]
-- [[_COMMUNITY_Context Switch  Assembly|Context Switch / Assembly]]
-- [[_COMMUNITY_Community 234|Community 234]]
-- [[_COMMUNITY_Community 235|Community 235]]
-- [[_COMMUNITY_Community 236|Community 236]]
-- [[_COMMUNITY_Community 237|Community 237]]
-- [[_COMMUNITY_Community 238|Community 238]]
-- [[_COMMUNITY_Community 239|Community 239]]
-- [[_COMMUNITY_Community 240|Community 240]]
-- [[_COMMUNITY_Community 241|Community 241]]
-- [[_COMMUNITY_Community 242|Community 242]]
-- [[_COMMUNITY_Community 243|Community 243]]
-- [[_COMMUNITY_Benchmarks & Test Cases v3|Benchmarks & Test Cases v3]]
-- [[_COMMUNITY_Community 245|Community 245]]
-- [[_COMMUNITY_Hard Real-Time Test Cases|Hard Real-Time Test Cases]]
-- [[_COMMUNITY_Community 247|Community 247]]
-- [[_COMMUNITY_Community 248|Community 248]]
-- [[_COMMUNITY_Community 249|Community 249]]
-- [[_COMMUNITY_Community 250|Community 250]]
-- [[_COMMUNITY_Community 251|Community 251]]
-- [[_COMMUNITY_Community 252|Community 252]]
-- [[_COMMUNITY_Community 253|Community 253]]
-- [[_COMMUNITY_Community 254|Community 254]]
-- [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
-- [[_COMMUNITY_Community 257|Community 257]]
-- [[_COMMUNITY_Community 258|Community 258]]
-- [[_COMMUNITY_Community 260|Community 260]]
-- [[_COMMUNITY_CI & Test Infrastructure|CI & Test Infrastructure]]
-- [[_COMMUNITY_MemPool Audit  Bug 013|MemPool Audit / Bug 013]]
-- [[_COMMUNITY_Community 263|Community 263]]
-- [[_COMMUNITY_Community 264|Community 264]]
-- [[_COMMUNITY_Community 266|Community 266]]
-- [[_COMMUNITY_Community 268|Community 268]]
-- [[_COMMUNITY_Community 270|Community 270]]
-- [[_COMMUNITY_Community 271|Community 271]]
-- [[_COMMUNITY_Community 272|Community 272]]
-- [[_COMMUNITY_Community 273|Community 273]]
-- [[_COMMUNITY_Error Handling (Ensure)|Error Handling (Ensure)]]
-- [[_COMMUNITY_Community 275|Community 275]]
-- [[_COMMUNITY_Community 277|Community 277]]
-- [[_COMMUNITY_Community 280|Community 280]]
-- [[_COMMUNITY_Community 282|Community 282]]
-- [[_COMMUNITY_Community 284|Community 284]]
-- [[_COMMUNITY_Community 285|Community 285]]
-- [[_COMMUNITY_Community 286|Community 286]]
+- [[_COMMUNITY_Memory Diagnostics  PMM|Memory Diagnostics / PMM]]
+- [[_COMMUNITY_Project Documentation (BugsRoadmap)|Project Documentation (Bugs/Roadmap)]]
+- [[_COMMUNITY_VirtIO Transport|VirtIO Transport]]
+- [[_COMMUNITY_Sync Queue  Message Queue|Sync Queue / Message Queue]]
+- [[_COMMUNITY_Mutex  Deadlock Detection|Mutex / Deadlock Detection]]
+- [[_COMMUNITY_AArch64 Page Table|AArch64 Page Table]]
+- [[_COMMUNITY_Physical Memory Manager|Physical Memory Manager]]
+- [[_COMMUNITY_Libc Syscall  IPC Wrappers|Libc Syscall / IPC Wrappers]]
+- [[_COMMUNITY_ELF Loader|ELF Loader]]
+- [[_COMMUNITY_Initrd  CPIO Archive|Initrd / CPIO Archive]]
+- [[_COMMUNITY_Syscall File Handlers  Checked Ptr|Syscall File Handlers / Checked Ptr]]
+- [[_COMMUNITY_VMM  DMA Scatter-Gather|VMM / DMA Scatter-Gather]]
+- [[_COMMUNITY_Semaphore  Locking Tests|Semaphore / Locking Tests]]
+- [[_COMMUNITY_AArch64 IO HAL|AArch64 I/O HAL]]
+- [[_COMMUNITY_DMA  Tmpfs Tests|DMA / Tmpfs Tests]]
+- [[_COMMUNITY_Spinlock  Sync Tests|Spinlock / Sync Tests]]
+- [[_COMMUNITY_Scheduler Validation  Logger|Scheduler Validation / Logger]]
+- [[_COMMUNITY_Agent  Documentation Rules|Agent / Documentation Rules]]
+- [[_COMMUNITY_Error Types  Gcov|Error Types / Gcov]]
+- [[_COMMUNITY_Block Device Abstraction|Block Device Abstraction]]
+- [[_COMMUNITY_Dmesg Buffer|Dmesg Buffer]]
+- [[_COMMUNITY_Ring Buffer Logger|Ring Buffer Logger]]
+- [[_COMMUNITY_PRNG  Random|PRNG / Random]]
+- [[_COMMUNITY_Driver Framework|Driver Framework]]
+- [[_COMMUNITY_Buffer Pool|Buffer Pool]]
+- [[_COMMUNITY_Event Group|Event Group]]
+- [[_COMMUNITY_IPC Message Queue|IPC Message Queue]]
+- [[_COMMUNITY_Memory Allocation  TCB|Memory Allocation / TCB]]
+- [[_COMMUNITY_VFS Daemon (VFSD)|VFS Daemon (VFSD)]]
+- [[_COMMUNITY_FAT32 Directory Operations|FAT32 Directory Operations]]
+- [[_COMMUNITY_Bit Manipulation HAL|Bit Manipulation HAL]]
+- [[_COMMUNITY_VirtIO Network Driver|VirtIO Network Driver]]
+- [[_COMMUNITY_Syscall PipeReaddir  Checked Ptr|Syscall Pipe/Readdir / Checked Ptr]]
+- [[_COMMUNITY_VirtIO Block Driver|VirtIO Block Driver]]
+- [[_COMMUNITY_Initrd Filesystem|Initrd Filesystem]]
+- [[_COMMUNITY_PCI Bus HAL|PCI Bus HAL]]
+- [[_COMMUNITY_AArch64 Barrier  TLB|AArch64 Barrier / TLB]]
+- [[_COMMUNITY_Timer  Interrupt HAL|Timer / Interrupt HAL]]
+- [[_COMMUNITY_ARP  ICMP  Networking|ARP / ICMP / Networking]]
+- [[_COMMUNITY_FAT32 Partition  Cluster|FAT32 Partition / Cluster]]
+- [[_COMMUNITY_PCI Enumeration  BAR|PCI Enumeration / BAR]]
+- [[_COMMUNITY_RISC-V Boot  Context|RISC-V Boot / Context]]
+- [[_COMMUNITY_CPUID  Random Tests|CPUID / Random Tests]]
+- [[_COMMUNITY_AArch64 Boot  Exception|AArch64 Boot / Exception]]
+- [[_COMMUNITY_Memory Pool Allocator|Memory Pool Allocator]]
+- [[_COMMUNITY_Task Signals  EventGroup|Task Signals / EventGroup]]
+- [[_COMMUNITY_PS2 Keyboard HAL|PS/2 Keyboard HAL]]
+- [[_COMMUNITY_PCI Config Access|PCI Config Access]]
+- [[_COMMUNITY_AHCI Driver Core|AHCI Driver Core]]
+- [[_COMMUNITY_AHCI Protocol  FIS|AHCI Protocol / FIS]]
+- [[_COMMUNITY_Tmpfs Filesystem|Tmpfs Filesystem]]
+- [[_COMMUNITY_C++ ABI  Stack Check|C++ ABI / Stack Check]]
+- [[_COMMUNITY_Libc Stdlib  Abort|Libc Stdlib / Abort]]
+- [[_COMMUNITY_AArch64 Interrupt Controller|AArch64 Interrupt Controller]]
+- [[_COMMUNITY_AArch64 Test  Context|AArch64 Test / Context]]
+- [[_COMMUNITY_IDT  ISR Handlers|IDT / ISR Handlers]]
+- [[_COMMUNITY_PCI Enumeration|PCI Enumeration]]
+- [[_COMMUNITY_AHCI Init  Slot Alloc|AHCI Init / Slot Alloc]]
+- [[_COMMUNITY_ATA PIO Driver|ATA PIO Driver]]
+- [[_COMMUNITY_Checked Pointer|Checked Pointer]]
+- [[_COMMUNITY_Pipe  FAT32 Close|Pipe / FAT32 Close]]
+- [[_COMMUNITY_Notify Synchronization|Notify Synchronization]]
+- [[_COMMUNITY_Task Definitions|Task Definitions]]
+- [[_COMMUNITY_Userspace Cat  More|Userspace Cat / More]]
+- [[_COMMUNITY_Libc String  Memory Copy|Libc String / Memory Copy]]
+- [[_COMMUNITY_OOM  Resource Exhaustion|OOM / Resource Exhaustion]]
+- [[_COMMUNITY_Signal Handler API|Signal Handler API]]
+- [[_COMMUNITY_AArch64 PCI ECAM|AArch64 PCI ECAM]]
+- [[_COMMUNITY_Test Expected Counts|Test Expected Counts]]
+- [[_COMMUNITY_Interrupt Controller HAL|Interrupt Controller HAL]]
+- [[_COMMUNITY_IO Control Daemon (IOCD)|I/O Control Daemon (IOCD)]]
+- [[_COMMUNITY_ELF Execution  Loading|ELF Execution / Loading]]
+- [[_COMMUNITY_Network Stack Core|Network Stack Core]]
+- [[_COMMUNITY_Scheduler  ProcFS Integration|Scheduler / ProcFS Integration]]
+- [[_COMMUNITY_FAT32 Partition Mount|FAT32 Partition Mount]]
+- [[_COMMUNITY_Test Library  Error Or|Test Library / Error Or]]
+- [[_COMMUNITY_IPC  MemPool Errors|IPC / MemPool Errors]]
+- [[_COMMUNITY_Microkernel Transition Tests|Microkernel Transition Tests]]
+- [[_COMMUNITY_Daemon Manager Entry|Daemon Manager Entry]]
+- [[_COMMUNITY_AHCI Protocol Tables|AHCI Protocol Tables]]
+- [[_COMMUNITY_DMA PRD Entries|DMA PRD Entries]]
+- [[_COMMUNITY_FAT32 Directory Entry|FAT32 Directory Entry]]
+- [[_COMMUNITY_VFS Daemon Protocol|VFS Daemon Protocol]]
+- [[_COMMUNITY_Program Registry|Program Registry]]
+- [[_COMMUNITY_Unique Ptr  Delete|Unique Ptr / Delete]]
+- [[_COMMUNITY_Libc Unistd Types|Libc Unistd Types]]
+- [[_COMMUNITY_Bus Mastering DMA|Bus Mastering DMA]]
+- [[_COMMUNITY_Ping Pong DMA|Ping Pong DMA]]
+- [[_COMMUNITY_Scheduler  IPC Tests|Scheduler / IPC Tests]]
+- [[_COMMUNITY_Syscall Tests|Syscall Tests]]
+- [[_COMMUNITY_Readdir  VFS Directory|Readdir / VFS Directory]]
+- [[_COMMUNITY_Fstat  VFS Status|Fstat / VFS Status]]
+- [[_COMMUNITY_FAT32 Raw Directory Entry|FAT32 Raw Directory Entry]]
+- [[_COMMUNITY_Stdio  Va Args|Stdio / Va Args]]
+- [[_COMMUNITY_Fix Line Length Tool|Fix Line Length Tool]]
+- [[_COMMUNITY_Boot Info  Memory Regions|Boot Info / Memory Regions]]
+- [[_COMMUNITY_AArch64 IO HAL Detail|AArch64 I/O HAL Detail]]
+- [[_COMMUNITY_IRQ Guard|IRQ Guard]]
+- [[_COMMUNITY_x86_64 CPUID|x86_64 CPUID]]
+- [[_COMMUNITY_Debug Dump|Debug Dump]]
+- [[_COMMUNITY_Syscall Error Codes|Syscall Error Codes]]
+- [[_COMMUNITY_Uname  Version|Uname / Version]]
+- [[_COMMUNITY_Test Runner  Base|Test Runner / Base]]
+- [[_COMMUNITY_Test Registry Generator|Test Registry Generator]]
+- [[_COMMUNITY_FAT32 Image Tool|FAT32 Image Tool]]
+- [[_COMMUNITY_IPv4 Header|IPv4 Header]]
+- [[_COMMUNITY_Atomic  Spinlock Tests|Atomic / Spinlock Tests]]
+- [[_COMMUNITY_ProcFS PID Dir|ProcFS PID Dir]]
+- [[_COMMUNITY_Shell Readline  Source|Shell Readline / Source]]
+- [[_COMMUNITY_OpenCode Configuration|OpenCode Configuration]]
+- [[_COMMUNITY_Signal  Checked Ptr Tests|Signal / Checked Ptr Tests]]
+- [[_COMMUNITY_AArch64 CPUID|AArch64 CPUID]]
+- [[_COMMUNITY_RISC-V CPUID|RISC-V CPUID]]
+- [[_COMMUNITY_VirtIO Queue Available|VirtIO Queue Available]]
+- [[_COMMUNITY_x86_64 IDT|x86_64 IDT]]
+- [[_COMMUNITY_DMA Buffer  Callback|DMA Buffer / Callback]]
+- [[_COMMUNITY_ARP Header|ARP Header]]
+- [[_COMMUNITY_Ethernet  MAC|Ethernet / MAC]]
+- [[_COMMUNITY_SPSC Ring Buffer|SPSC Ring Buffer]]
+- [[_COMMUNITY_Task Ptr  Test Helpers|Task Ptr / Test Helpers]]
+- [[_COMMUNITY_FAT32 BPB|FAT32 BPB]]
+- [[_COMMUNITY_Atomic Primitives|Atomic Primitives]]
+- [[_COMMUNITY_DMA Direction  Transfer|DMA Direction / Transfer]]
+- [[_COMMUNITY_IDT Entry Format|IDT Entry Format]]
+- [[_COMMUNITY_VirtIO PCI Capability|VirtIO PCI Capability]]
+- [[_COMMUNITY_AHCI Command Header|AHCI Command Header]]
+- [[_COMMUNITY_DMA Engine|DMA Engine]]
+- [[_COMMUNITY_VirtIO Net Header|VirtIO Net Header]]
+- [[_COMMUNITY_ARP Cache|ARP Cache]]
+- [[_COMMUNITY_Syscall Process (ExecFork)|Syscall Process (Exec/Fork)]]
+- [[_COMMUNITY_Syscall Sync (AlarmNotify)|Syscall Sync (Alarm/Notify)]]
+- [[_COMMUNITY_Preemption Under Syscall Tests|Preemption Under Syscall Tests]]
+- [[_COMMUNITY_Pipe Buffer|Pipe Buffer]]
+- [[_COMMUNITY_Heap  Operator New|Heap / Operator New]]
+- [[_COMMUNITY_Syscall Latency Bench|Syscall Latency Bench]]
+- [[_COMMUNITY_AArch64 IDT|AArch64 IDT]]
+- [[_COMMUNITY_Page Flags HAL|Page Flags HAL]]
+- [[_COMMUNITY_RISC-V IDT|RISC-V IDT]]
+- [[_COMMUNITY_x86_64 Timer  TSC|x86_64 Timer / TSC]]
+- [[_COMMUNITY_AHCI Received FIS|AHCI Received FIS]]
+- [[_COMMUNITY_DMA Channel|DMA Channel]]
+- [[_COMMUNITY_FPU SSE Tests|FPU SSE Tests]]
+- [[_COMMUNITY_FAT32 VFS Tests|FAT32 VFS Tests]]
+- [[_COMMUNITY_Watchdog  PIT Tests|Watchdog / PIT Tests]]
+- [[_COMMUNITY_Syscall Init  Handle|Syscall Init / Handle]]
+- [[_COMMUNITY_VirtIO Used Ring|VirtIO Used Ring]]
+- [[_COMMUNITY_IOCD Protocol|IOCD Protocol]]
+- [[_COMMUNITY_ICMP Echo Reply|ICMP Echo Reply]]
+- [[_COMMUNITY_Utsname  Sys Info|Utsname / Sys Info]]
+- [[_COMMUNITY_Scheduler Errors|Scheduler Errors]]
+- [[_COMMUNITY_Test Class Section|Test Class Section]]
+- [[_COMMUNITY_Framebuffer Info|Framebuffer Info]]
+- [[_COMMUNITY_Fix Comments Tool|Fix Comments Tool]]
+- [[_COMMUNITY_Fix Long Lines Tool|Fix Long Lines Tool]]
+- [[_COMMUNITY_Testdev  Test Config Docs|Testdev / Test Config Docs]]
+- [[_COMMUNITY_IPv4 Address|IPv4 Address]]
+- [[_COMMUNITY_Debug Switch Ring|Debug Switch Ring]]
+- [[_COMMUNITY_IRQ Latency Bench|IRQ Latency Bench]]
+- [[_COMMUNITY_Scope Guard|Scope Guard]]
+- [[_COMMUNITY_Demo Program (Mandelbrot)|Demo Program (Mandelbrot)]]
+- [[_COMMUNITY_Constructor Init Generator|Constructor Init Generator]]
+- [[_COMMUNITY_Context Manager  Switch|Context Manager / Switch]]
+- [[_COMMUNITY_VirtIO Queue Descriptor|VirtIO Queue Descriptor]]
+- [[_COMMUNITY_VirtIO Block Request|VirtIO Block Request]]
+- [[_COMMUNITY_ARP Cache Entry|ARP Cache Entry]]
+- [[_COMMUNITY_Task Definition Validation|Task Definition Validation]]
+- [[_COMMUNITY_Test Config Parser|Test Config Parser]]
+- [[_COMMUNITY_FPU Multi-Task Tests|FPU Multi-Task Tests]]
+- [[_COMMUNITY_RLimit Tests|RLimit Tests]]
+- [[_COMMUNITY_Shell Interaction Tests|Shell Interaction Tests]]
+- [[_COMMUNITY_Config Check Tool|Config Check Tool]]
+- [[_COMMUNITY_PCI Tests|PCI Tests]]
+- [[_COMMUNITY_ProcFS Meminfo|ProcFS Meminfo]]
+- [[_COMMUNITY_ProcFS PCI Info|ProcFS PCI Info]]
+- [[_COMMUNITY_Audit Module Tool|Audit Module Tool]]
+- [[_COMMUNITY_AArch64 Early Init|AArch64 Early Init]]
+- [[_COMMUNITY_Keyboard IRQ  Ring|Keyboard IRQ / Ring]]
+- [[_COMMUNITY_RISC-V Early Init|RISC-V Early Init]]
+- [[_COMMUNITY_VFS Core Tests|VFS Core Tests]]
+- [[_COMMUNITY_DevFS Entry|DevFS Entry]]
+- [[_COMMUNITY_Test Case Docs (APICSMP)|Test Case Docs (APIC/SMP)]]
+- [[_COMMUNITY_Renode AArch64 Boot|Renode AArch64 Boot]]
+- [[_COMMUNITY_Renode Test Boot|Renode Test Boot]]
+- [[_COMMUNITY_Renode AArch64 Test|Renode AArch64 Test]]
+- [[_COMMUNITY_Renode RISC-V Test|Renode RISC-V Test]]
+- [[_COMMUNITY_Coding Style  Ensure Assert|Coding Style / Ensure Assert]]
+- [[_COMMUNITY_Healthcheck Script|Healthcheck Script]]
+- [[_COMMUNITY_Watchdog Test Docs|Watchdog Test Docs]]
+- [[_COMMUNITY_GPF Debug Tool|GPF Debug Tool]]
+- [[_COMMUNITY_GPF Debug Script|GPF Debug Script]]
+- [[_COMMUNITY_Release GDB Script|Release GDB Script]]
+- [[_COMMUNITY_Renode Run Script|Renode Run Script]]
+- [[_COMMUNITY_Selftest GDB Script|Selftest GDB Script]]
+- [[_COMMUNITY_Code Review  RTOS Pillars|Code Review / RTOS Pillars]]
+- [[_COMMUNITY_Jarvis Logo|Jarvis Logo]]
+- [[_COMMUNITY_Test Framework Prompt|Test Framework Prompt]]
+- [[_COMMUNITY_Test Framework Readme|Test Framework Readme]]
+- [[_COMMUNITY_Release Build Test|Release Build Test]]
+- [[_COMMUNITY_Scheduling Analysis Docs|Scheduling Analysis Docs]]
+- [[_COMMUNITY_WCET Analysis Docs|WCET Analysis Docs]]
+- [[_COMMUNITY_System Integration Docs|System Integration Docs]]
+- [[_COMMUNITY_Safety Hardening Docs|Safety Hardening Docs]]
+- [[_COMMUNITY_Userspace Libc Docs|Userspace Libc Docs]]
+- [[_COMMUNITY_Deadlock Detection Docs|Deadlock Detection Docs]]
+- [[_COMMUNITY_Idle Monitor Docs|Idle Monitor Docs]]
+- [[_COMMUNITY_Network Stack Docs|Network Stack Docs]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `Vnode` - 198 edges
-2. `Logger` - 193 edges
-3. `Scheduler` - 174 edges
-4. `info` - 140 edges
-5. `Terminal` - 91 edges
-6. `PMM` - 89 edges
-7. `Shell` - 89 edges
-8. `current_task` - 82 edges
-9. `ArchContext` - 79 edges
-10. `Syscall` - 66 edges
+2. `info` - 137 edges
+3. `Shell` - 89 edges
+4. `ArchContext` - 79 edges
+5. `Scheduler` - 70 edges
+6. `Syscall` - 56 edges
+7. `write` - 55 edges
+8. `current_task` - 54 edges
+9. `snapshot_restore()` - 53 edges
+10. `TaskContext` - 47 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `main()` --calls--> `close()`  [INFERRED]
   userspace/top.c → src/libc/unistd.c
-- `Microkernel Transition` --semantically_similar_to--> `Capability-based Microkernel Transition Plan`  [INFERRED] [semantically similar]
-  README.md → docs/privilege_audit.md
-- `Jarvis RTOS Logo` --references--> `Jarvis RTOS`  [EXTRACTED]
-  Jarvis-RTOS-logo.png → readme.html
 - `main()` --calls--> `ipc_send()`  [INFERRED]
   userspace/vfsd.c → src/libc/ipc.c
 - `main()` --calls--> `ipc_recv()`  [INFERRED]
   userspace/iocd.c → src/libc/ipc.c
+- `main()` --calls--> `ipc_recv()`  [INFERRED]
+  userspace/vfsd.c → src/libc/ipc.c
+- `main()` --calls--> `printf()`  [INFERRED]
+  userspace/iocd.c → src/libc/stdio.c
 
 ## Import Cycles
 - None detected.
@@ -313,1031 +273,823 @@
 ## Hyperedges (group relationships)
 - **O(1) Scheduler Core Pipeline** — agents_kernel_briefing_prioritymap, agents_kernel_briefing_taskqueue, agents_kernel_briefing_readyqueuemanager, agents_kernel_briefing_ratemonotonic_schedule, agents_kernel_briefing_reschedule, agents_kernel_briefing_switch_to_task, agents_kernel_briefing_deferred_context_switch, agents_kernel_briefing_context_switch_assembly [EXTRACTED 1.00]
 - **Daemon IPC Pipeline with Sporadic Budget** — agents_kernel_briefing_vfsd, agents_kernel_briefing_iocd, agents_kernel_briefing_sporadic_server, agents_kernel_briefing_ipc_system, agents_kernel_briefing_messagequeue [EXTRACTED 1.00]
-- **Jarvis RTOS Test Specification Versions** — testcases_v0_3_1_o1schedulertests, testcases_v0_3_2_schedulinganalyticstests, testcases_v0_3_3_wcetanalysistests, testcases_v0_4_1_apicsmptests, testcases_v0_4_2_percpuschedulingtests, testcases_v0_4_3_tlbshootdowntests, testcases_v0_5_1_systemintegrationtests, testcases_v0_5_2_safetyhardeningtests, testcases_v0_5_3_userspacelibctests, testcases_v0_6_1_watchdogtests, testcases_v0_6_2_taskwatchdogtests, testcases_v0_6_3_deadlockdetectiontests, testcases_v0_6_4_idlemonitortests, testcases_v0_9_1_networkstacktests [EXTRACTED 1.00]
-- **Ring-0-Required Kernel Subsystems** — docs_privilege_audit_gdt, docs_privilege_audit_idt, docs_privilege_audit_pmm, docs_privilege_audit_vmm, docs_privilege_audit_scheduler, docs_privilege_audit_elfloader [EXTRACTED 1.00]
-- **Userspace Migration Candidate Subsystems** — docs_privilege_audit_shell, docs_privilege_audit_vfs, docs_privilege_audit_vfsd, docs_privilege_audit_iocd [EXTRACTED 1.00]
+- **Phase 4 Hard Real-Time Sub-Pillars** — roadmap_md_strict_deadline_adherence, roadmap_md_priority_inheritance_protocol, roadmap_md_interrupt_latency_jitter, roadmap_md_deterministic_memory, roadmap_md_cross_arch_hard_rt_hal, roadmap_md_sporadic_server_budget [EXTRACTED 1.00]
+- **Test Infrastructure and Documentation** — prompt_testdev_md_test_class_system, prompt_testdev_md_make_execute_test, prompt_testdev_md_test_count_validation, prompt_testdev_md_resource_tracker_section, roadmap_md_vfs_touched_flag, implemented_tests_summary_md_new_test_classes [INFERRED 0.95]
+- **Fixed Kernel Bugs (#007-#014)** — bugs_md_fixed_bugs_table, bugs_md_015, readme_md_jarvis_rtos [EXTRACTED 1.00]
 
-## Communities (1162 total, 23 thin omitted)
+## Communities (265 total, 35 thin omitted)
 
-### Community 0 - "Atomics & FPU Tests"
-Cohesion: 0.04
-Nodes (96): atomic_fpu_owner_read_write, atomic_globals_set_on_reschedule, atomic_idempotent_null_handling, atomic_next_task_id_consistency, atomics_assembly_bridge, atomics_fpu_owner_relaxed, fpu_clone_copies_state, fpu_multi_context_switch (+88 more)
-
-### Community 1 - "Architecture & Daemon Init"
-Cohesion: 0.04
-Nodes (96): register_aarch64_tests(), register_riscv64_tests(), register_daemon(), reset_clear_daemons(), reset_restart_count(), init, pci_set_bus_master(), probe (+88 more)
-
-### Community 2 - "Mutex & Deadlock Tests"
-Cohesion: 0.04
-Nodes (76): DeadlockNestedMutexLoad, DeadlockRecoveryResourceReclamation, mutex_double_lock_same_owner, mutex_double_unlock, mutex_lock_acquire_release_cycle, mutex_lock_unlock, mutex_priority_chain, mutex_priority_inheritance_indirect (+68 more)
-
-### Community 3 - "CPU Context & Registers"
+### Community 0 - "Hardware Abstraction Layer"
 Cohesion: 0.03
 Nodes (76): ArchContext, cs, elr_el1, error_code, gp, r10, r11, r12 (+68 more)
 
-### Community 4 - "IPC Benchmarks"
-Cohesion: 0.05
-Nodes (62): ipc_bench_current_task, ipc_bench_rdtsc_overhead, ipc_bench_recv_self, ipc_bench_send_64byte, ipc_bench_send_full, ipc_bench_send_only, ipc_bench_send_self, ipc_buf_handle_max_size (+54 more)
+### Community 1 - "Test Infrastructure / Address Space"
+Cohesion: 0.03
+Nodes (36): register_address_tests(), register_bootparams_tests(), register_capability_tests(), register_deadlock_detect_tests(), register_deadlock_recovery_tests(), register_debug_tests(), register_fpu_clone_tests(), register_framebuffer_tests() (+28 more)
 
-### Community 5 - "VFS / DevFS Console"
+### Community 2 - "Scheduler / Daemon Management"
+Cohesion: 0.07
+Nodes (56): iocd_crash_restarts, SchedulerError, TaskControlBlock, effective_priority(), report_corruption(), Scheduler, add_task, add_task_err (+48 more)
+
+### Community 3 - "Boot Integrity / Daemon Mgr"
+Cohesion: 0.07
+Nodes (51): read_cr2(), ensure_running(), notify_death(), restart_stale_daemons(), terminate(), TaskControlBlock, debug_putchar(), debug_task_switch() (+43 more)
+
+### Community 4 - "Device / VFS Core"
 Cohesion: 0.06
-Nodes (63): console_close(), console_fstat(), console_ioctl(), console_lookup(), console_lseek(), console_open(), console_read(), console_readdir() (+55 more)
+Nodes (59): console_close(), console_fstat(), console_ioctl(), console_lookup(), console_lseek(), console_open(), console_read(), console_write() (+51 more)
 
-### Community 6 - "Python Dev Tools"
+### Community 5 - "Style Validation Tools"
 Cohesion: 0.09
 Nodes (29): Any, AssertionsChecker, Checker, collect_source_files(), config_path(), ConstCorrectnessChecker, CtorInitListChecker, DescriptiveNamesChecker (+21 more)
 
-### Community 7 - "Syscall Interface"
+### Community 6 - "Shell / Terminal Services"
+Cohesion: 0.10
+Nodes (55): parse_ip(), print_ip(), print_mac(), cmd_alias, cmd_bg, cmd_cd, cmd_dirs, cmd_disown (+47 more)
+
+### Community 7 - "Syscall Dispatch"
 Cohesion: 0.04
 Nodes (54): Syscall, sys_alarm, sys_brk, sys_buf_alloc, sys_buf_free, sys_buf_map, sys_buf_unmap, sys_chdir (+46 more)
 
-### Community 8 - "Shell & ELF Loader"
-Cohesion: 0.11
-Nodes (53): entry, background_task_wrapper(), parse_ip(), print_ip(), print_mac(), cmd_alias, cmd_bg, cmd_cd (+45 more)
+### Community 8 - "VFS File Operations"
+Cohesion: 0.06
+Nodes (50): VfsError, create(), create_err(), FdTable, alloc, alloc_err, fds, free (+42 more)
 
-### Community 9 - "PCI & Error Handling"
-Cohesion: 0.05
-Nodes (12): BufPoolError, E, PciError, error_string(), error_string(), error_string(), MemPoolError, error_string() (+4 more)
+### Community 9 - "Ready Queue / Task Priority Map"
+Cohesion: 0.06
+Nodes (28): PriorityMap, bitmap_hi_, bitmap_lo_, TaskControlBlock, ReadyQueueManager, bitmap_, capture_pod, clear_all (+20 more)
 
-### Community 10 - "IPC Blocking Tests"
+### Community 10 - "x86_64 Architecture"
 Cohesion: 0.05
 Nodes (12): ArchIO, io_wait(), qemu_debug_exit(), read_cr3(), write_cr3(), arch_page_table_activate(), arch_page_table_current(), arch_page_table_tlb_flush() (+4 more)
 
-### Community 11 - "Scheduler Tests"
+### Community 11 - "Resource Tracker / Test Isolation"
 Cohesion: 0.05
 Nodes (22): any_leak(), ResourceCounters, print_backtrace(), read_fp(), ResField, name, ResourceCounters, ResourceCounters (+14 more)
 
-### Community 12 - "Network Stack (ARP)"
+### Community 12 - "Terminal / Framebuffer"
 Cohesion: 0.08
-Nodes (45): start, sg_from_virt(), alloc_user_page, VmmError, VMM, clone_kernel_pml4_err, current_pml4, free_user_pages (+37 more)
+Nodes (38): cmd_clear, Framebuffer, clear, draw_char, draw_pixel, fill_rect, info_, init (+30 more)
 
-### Community 13 - "PMM / Page Allocator"
-Cohesion: 0.12
-Nodes (42): kernel::test::register_class(), warn, get_test_class(), print_report(), print_test_header(), Registry, class_count, class_section (+34 more)
-
-### Community 14 - "x86-64 HAL GDT/IDT"
+### Community 13 - "AArch64 HAL / MMIO"
 Cohesion: 0.06
-Nodes (14): Deleter, TaskControlBlock, SimpleTaskDeleter, TaskDeleter, Fn, ScopeGuard, active_, fn_ (+6 more)
+Nodes (20): mmio_read32(), mmio_write32(), Serial::getchar(), Serial::init(), Serial::putchar(), Serial::puts(), Serial, getchar (+12 more)
 
-### Community 15 - "Scheduling / IPC Daemon"
+### Community 14 - "Task Context / TCB"
 Cohesion: 0.04
 Nodes (46): TaskContext, cs, elr_el1, error_code, gp, r10, r11, r12 (+38 more)
 
-### Community 16 - "Buffer Pool / MemPool"
+### Community 15 - "ProcFS / PMM Stats"
 Cohesion: 0.05
-Nodes (42): meminfo_close(), meminfo_ioctl(), meminfo_lookup(), meminfo_lseek(), meminfo_open(), meminfo_read(), meminfo_write(), pci_close() (+34 more)
+Nodes (43): meminfo_close(), meminfo_ioctl(), meminfo_lookup(), meminfo_lseek(), meminfo_open(), meminfo_read(), meminfo_write(), pci_close() (+35 more)
 
-### Community 17 - "Python Kernel Tools"
+### Community 16 - "IPC Tests / Buffer Handle"
+Cohesion: 0.08
+Nodes (39): IpcBidirectionalSendSync, IpcBlockedSenderOnReceiverCleanup, IpcBufHandleTransferRoundtrip, IpcConcurrentSenders, IpcMisformedMessages, IpcQueueWraparoundEdge, MessageQueue, TaskControlBlock (+31 more)
+
+### Community 17 - "Boot Params / Multiboot"
+Cohesion: 0.05
+Nodes (40): BootParams, debug_ipc, debug_memory, debug_scheduling, max_tasks, oom_killer_enabled, parse_cstr, parse_multiboot_cmdline (+32 more)
+
+### Community 18 - "AArch64 HAL / Timer"
+Cohesion: 0.06
+Nodes (32): Register, RTC::read_time(), RTC, CMOS_DATA, CMOS_INDEX, init, make_timestamp, read_register (+24 more)
+
+### Community 19 - "GDB Debug Scripts"
 Cohesion: 0.07
 Nodes (19): jarvis_pretty_printer(), PageAddressPrinter, PanicInfoCommand, PhysicalAddressPrinter, Pml4Command, List all kernel tasks with state, priority, PID., Show detailed info for a task by index or PID., Print general-purpose + control registers with RFLAGS decode. (+11 more)
 
-### Community 18 - "Physical Memory / Heap"
-Cohesion: 0.07
-Nodes (38): error_or_basic, error_or_errors, Syscall::sys_uname(), JARVIS_TEST(), address_of(), align_down(), align_up(), T (+30 more)
+### Community 20 - "GDT / Segment Registers"
+Cohesion: 0.05
+Nodes (36): GDT, desc_, entries_, init, load, NUM_ENTRIES, set_tss_rsp0, tss_ (+28 more)
 
-### Community 19 - "VirtIO Block Driver"
+### Community 21 - "RISC-V 64 HAL"
 Cohesion: 0.05
 Nodes (7): ArchIO, read_cr3(), read_satp(), sfence_vma(), write_cr3(), write_cr3_notlbi(), write_satp()
 
-### Community 20 - "Multitasking / Wait Queue"
-Cohesion: 0.05
-Nodes (39): BootParams, debug_ipc, debug_memory, debug_scheduling, max_tasks, oom_killer_enabled, parse_cstr, parse_multiboot_cmdline (+31 more)
+### Community 22 - "Test Registry / Report"
+Cohesion: 0.13
+Nodes (36): get_test_class(), print_report(), print_test_header(), Registry, class_count, class_section, count, expected_count (+28 more)
 
-### Community 21 - "UART Serial Driver"
+### Community 23 - "Shell Command Parser"
 Cohesion: 0.06
-Nodes (15): at(), getEventsNS(), getViewportDimensions(), initMouseDetection(), initTracking(), isTouchEvent(), lt(), p() (+7 more)
+Nodes (36): AliasEntry, Command, CommandFunc, HistoryEntry, Shell, alias_count_, aliases_, BUF_SIZE (+28 more)
 
-### Community 22 - "Timer / PIT Tests"
-Cohesion: 0.05
-Nodes (41): fat32_add_dir_entry, fat32_alloc_cluster, fat32_bpb_bytes_per_sector, fat32_bpb_fat_count, fat32_bpb_fat_size, fat32_bpb_reserved_sectors, fat32_bpb_root_cluster, fat32_bpb_sectors_per_cluster (+33 more)
-
-### Community 23 - "x86-64 Paging / VMM"
-Cohesion: 0.07
-Nodes (37): copy_strings(), count_strings(), TaskControlBlock, ELF64Header, ehsize, flags, ident, machine (+29 more)
-
-### Community 24 - "AArch64 HAL / Boot"
-Cohesion: 0.09
-Nodes (37): VfsError, create(), create_err(), FdTable, alloc, alloc_err, fds, free (+29 more)
-
-### Community 25 - "AArch64 Page Table"
-Cohesion: 0.06
-Nodes (38): AliasEntry, Command, CommandFunc, HistoryEntry, Shell, alias_count_, aliases_, BUF_SIZE (+30 more)
-
-### Community 26 - "RISC-V HAL / Boot"
-Cohesion: 0.06
-Nodes (23): Keyboard, alt_, caps_, ctrl_, DATA_PORT, flush, getchar, handle_irq (+15 more)
-
-### Community 27 - "RISC-V Page Table"
-Cohesion: 0.16
-Nodes (28): POOL_COUNT, capture_rqpod, capture_task_fields, restore_task_fields, off_bufpool(), off_daemon_entries(), off_daemon_num(), off_iocd_pid() (+20 more)
-
-### Community 28 - "AHCI / ATA Driver"
+### Community 24 - "Sporadic Server"
 Cohesion: 0.07
 Nodes (26): SporadicServer, Replenishment, Replenishment, sporadic_server_deadline_handler(), SporadicServer, activation_time_, base_priority_, budget_c_ (+18 more)
 
-### Community 29 - "E1000 Network Driver"
-Cohesion: 0.11
-Nodes (26): pci_device_exists_ecam(), pci_ecam_addr(), pci_ecam_readb(), pci_ecam_readl(), pci_ecam_readw(), pci_ecam_writeb(), pci_ecam_writel(), pci_ecam_writew() (+18 more)
-
-### Community 30 - "Community 30"
+### Community 26 - "RISC-V Page Table"
 Cohesion: 0.09
 Nodes (31): arch_page_table_activate(), arch_page_table_current(), arch_page_table_tlb_flush(), arch_page_table_tlb_flush_all(), ArchPageTable, attr_from_flags, DESC_A, DESC_AF (+23 more)
 
-### Community 31 - "Community 31"
-Cohesion: 0.14
-Nodes (31): add_dir_entry(), Fat32Partition, alloc_cluster, bpb_, clear_cluster, cluster_to_lba, find_fat32_partition, find_free_cluster (+23 more)
+### Community 27 - "Memory Diagnostics / PMM"
+Cohesion: 0.18
+Nodes (28): capture_pool_data, capture_pool_meta, POOL_COUNT, capture_rqpod, off_bufpool(), off_daemon_entries(), off_daemon_num(), off_iocd_pid() (+20 more)
 
-### Community 32 - "Community 32"
-Cohesion: 0.16
-Nodes (32): OOMHandler, init, PmmError, PMM, alloc_contiguous_err, alloc_page, alloc_page_err, alloc_page_table (+24 more)
-
-### Community 33 - "Community 33"
-Cohesion: 0.11
-Nodes (32): Pool, PoolMeta, register_driver, unload, unload_all, MemPoolError, MemPool, alloc (+24 more)
-
-### Community 34 - "Community 34"
-Cohesion: 0.11
-Nodes (33): pci_device_count(), pci_devices(), virtio_is_virtio_device(), virtio_notify(), virtio_read_common(), virtio_read_common16(), virtio_read_common8(), virtio_read_status() (+25 more)
-
-### Community 35 - "Community 35"
-Cohesion: 0.09
-Nodes (21): ErrorSubsystem, DmesgBuffer<Capacity>::clear(), DmesgBuffer<Capacity>::empty(), DmesgBuffer<Capacity>::pop(), DmesgBuffer<Capacity>::push(), DmesgBuffer<Capacity>::size(), DmesgBuffer<DMESG_CAPACITY>, RingBuffer (+13 more)
-
-### Community 36 - "Community 36"
-Cohesion: 0.10
-Nodes (31): read_ttbr1_el1(), arch_page_table_current(), ArchPageTable, AP_RO, AP_RW, attr_from_flags, ATTR_IDX_DEVICE, ATTR_IDX_NORMAL (+23 more)
-
-### Community 37 - "Community 37"
-Cohesion: 0.13
-Nodes (29): SyncError, TaskControlBlock, TaskControlBlock, Queue, add_recv_waiter, add_send_waiter, count_, head_ (+21 more)
-
-### Community 38 - "Community 38"
-Cohesion: 0.14
-Nodes (30): Entry, FdTableExhaustion, MaxBuffersExhaustion, MempoolFragmentation, PmmExhaustion, BufferPool, alloc, alloc_entry (+22 more)
-
-### Community 39 - "Community 39"
-Cohesion: 0.14
-Nodes (24): mb2_find_tag(), cmd_clear, Framebuffer, clear, draw_char, draw_pixel, fill_rect, info_ (+16 more)
-
-### Community 40 - "Community 40"
-Cohesion: 0.06
-Nodes (15): buildsystem_arch_x86_64_toolchain, buildsystem_config_arch_defined, buildsystem_debug_flags, buildsystem_default_arch_x86_64, buildsystem_invalid_arch_error, debug_task_switch_logs, debug_write_formats_correctly, IrqGuard (+7 more)
-
-### Community 41 - "Community 41"
-Cohesion: 0.11
-Nodes (24): EventWaiter, Lock, SyncError, TaskControlBlock, EventGroup, add_waiter, bits_, clear_bits (+16 more)
-
-### Community 42 - "Community 42"
-Cohesion: 0.09
-Nodes (28): append_four_digit(), append_size(), append_two_digit(), readline(), cmd_selftest, cmd_source, execute, parse_and_exec (+20 more)
-
-### Community 43 - "Community 43"
+### Community 28 - "Project Documentation (Bugs/Roadmap)"
 Cohesion: 0.07
-Nodes (28): alarm_fires_after_ticks, JARVIS_TEST(), Timeval, tv_sec, tv_usec, syscall_alarm_basic, syscall_alarm_subsecond, syscall_chdir_getcwd (+20 more)
+Nodes (33): Bug #013: MempoolFragmentation test hangs at test 438, Bug #015: wait command freezes shell, Fixed Bugs (#007-#014), Kernel C++20 Compiler Flags, FPU Test Suite (clone, multi, xmm_all), SporadicServer 14-Test Suite, Starvation & Deadlock Test Suite (4 Classes), Implemented Test Files Inventory (+25 more)
 
-### Community 44 - "Community 44"
+### Community 29 - "VirtIO Transport"
+Cohesion: 0.12
+Nodes (30): virtio_notify(), virtio_read_common(), virtio_read_common16(), virtio_read_common8(), virtio_read_status(), virtio_write_common(), virtio_write_common16(), virtio_write_common8() (+22 more)
+
+### Community 30 - "Sync Queue / Message Queue"
+Cohesion: 0.13
+Nodes (28): SyncError, TaskControlBlock, TaskControlBlock, Queue, add_recv_waiter, add_send_waiter, count_, head_ (+20 more)
+
+### Community 31 - "Mutex / Deadlock Detection"
+Cohesion: 0.11
+Nodes (27): DeadlockNestedMutexLoad, DeadlockRecoveryResourceReclamation, PriorityInversionChain5, SchedulerStarvation, SyncError, TaskControlBlock, TaskControlBlock, Mutex (+19 more)
+
+### Community 32 - "AArch64 Page Table"
+Cohesion: 0.10
+Nodes (30): read_ttbr1_el1(), arch_page_table_current(), ArchPageTable, AP_RO, AP_RW, attr_from_flags, ATTR_IDX_DEVICE, ATTR_IDX_NORMAL (+22 more)
+
+### Community 33 - "Physical Memory Manager"
+Cohesion: 0.19
+Nodes (31): PmmError, PMM, alloc_contiguous_err, alloc_page, alloc_page_err, alloc_page_table, alloc_page_table_err, alloc_user_contiguous (+23 more)
+
+### Community 34 - "Libc Syscall / IPC Wrappers"
+Cohesion: 0.12
+Nodes (27): ipc_event_set(), ipc_event_wait(), ipc_notify(), ipc_notify_wait(), ipc_recv(), ipc_send_sync(), pid_t, sys_alarm() (+19 more)
+
+### Community 35 - "ELF Loader"
+Cohesion: 0.07
+Nodes (28): ELF64Header, ehsize, entry, flags, ident, machine, phentsize, phnum (+20 more)
+
+### Community 36 - "Initrd / CPIO Archive"
 Cohesion: 0.09
 Nodes (27): align4(), CpioNewcHeader, c_check, c_devmajor, c_devminor, c_filesize, c_gid, c_ino (+19 more)
 
-### Community 45 - "Community 45"
-Cohesion: 0.07
-Nodes (28): ipc_block_sender_adds_to_list, ipc_eventgroup_set_clear, ipc_eventgroup_try_wait, ipc_notify_basic, ipc_notify_try_wait, ipc_queue_empty_pop, ipc_queue_fifo_same_priority, ipc_queue_full (+20 more)
+### Community 37 - "Syscall File Handlers / Checked Ptr"
+Cohesion: 0.14
+Nodes (26): strncpy_from_user(), TaskControlBlock, Syscall::sys_chdir(), Syscall::sys_close(), Syscall::sys_dup(), Syscall::sys_dup2(), Syscall::sys_fstat(), Syscall::sys_ioctl() (+18 more)
 
-### Community 46 - "Community 46"
-Cohesion: 0.15
-Nodes (27): off_t, ipc_event_set(), ipc_event_wait(), ipc_notify(), ipc_notify_wait(), ipc_recv(), ipc_send_sync(), __syscall5() (+19 more)
+### Community 38 - "VMM / DMA Scatter-Gather"
+Cohesion: 0.13
+Nodes (28): sg_from_virt(), VmmError, VMM, clone_kernel_pml4_err, current_pml4, free_user_pages_err, get_table, init (+20 more)
 
-### Community 47 - "Community 47"
-Cohesion: 0.07
-Nodes (25): preemption_disabled_blocks_switch, preemption_interrupt_enable_disable_cycle, preemption_needs_switch_blocked_higher, preemption_needs_switch_equal_priority, preemption_needs_switch_higher_priority, preemption_quantum_exhaustion, preemption_task_switch_does_not_switch_to_self, scheduler_add_duplicate_id (+17 more)
-
-### Community 48 - "Community 48"
-Cohesion: 0.08
-Nodes (10): ArchInterruptController::restore(), ArchInterruptController::snapshot(), ArchInterruptController, IrqState, gic_mask, pic1_mask, pic2_mask, plic_threshold (+2 more)
-
-### Community 49 - "Community 49"
+### Community 39 - "Semaphore / Locking Tests"
 Cohesion: 0.10
-Nodes (22): ahci_hba_probe, ahci_protocol_constants, ahci_protocol_struct_sizes, ata_pio_identify, ata_pio_read_write_sector, block_device_create, block_device_multiple_sectors, block_device_oob_read (+14 more)
+Nodes (23): SyncError, TaskControlBlock, TaskControlBlock, Semaphore, add_waiter, count_, init, init_err (+15 more)
 
-### Community 50 - "Community 50"
+### Community 40 - "AArch64 I/O HAL"
 Cohesion: 0.08
-Nodes (26): pmm_alloc_contiguous_exhaustion, pmm_alloc_contiguous_zero, pmm_alloc_user_page_oob, pmm_double_free_rejected, pmm_free_invalid_address, pmm_page_table_alloc_from_low_mem, AhciDriver::AhciDriver(), MockBlockDevice::MockBlockDevice() (+18 more)
-
-### Community 51 - "Community 51"
-Cohesion: 0.08
-Nodes (23): VirtqAvail, flags, idx, ring, VirtioBlkDriver, avail_, avail_idx_, avail_phys_ (+15 more)
-
-### Community 52 - "Community 52"
-Cohesion: 0.07
-Nodes (28): VirtqDesc, addr, flags, len, next, VirtioNetDevice, nic, queue_size (+20 more)
-
-### Community 53 - "Community 53"
-Cohesion: 0.08
-Nodes (24): base_error_string(), DmesgBuffer, buffer, clear, empty, head, MASK, pop (+16 more)
-
-### Community 54 - "Community 54"
-Cohesion: 0.07
-Nodes (26): atomic_64bit_operations, atomic_acquire_release_pingpong, atomic_compare_exchange, atomic_exchange, atomic_fetch_add, atomic_fetch_and, atomic_fetch_or, atomic_fetch_sub (+18 more)
-
-### Community 55 - "Community 55"
-Cohesion: 0.19
-Nodes (4): Cookie, createResults(), init_search(), SearchBox()
-
-### Community 56 - "Community 56"
-Cohesion: 0.08
-Nodes (24): mempool_alloc_free, mempool_fragmentation, mempool_large_alloc, mempool_reuse, pml4_clone_clears_user_entries, pml4_clone_kernel_entries_match, pml4_dump_no_user_entries, pml4_fork_no_child_corrupt_parent (+16 more)
-
-### Community 57 - "Community 57"
-Cohesion: 0.11
-Nodes (18): random_basic_smoke, random_cpuid_detection, random_large_buffer, random_not_repeating, random_partial_fills, random_u64_not_constant, random_zero_length, prng_next_block() (+10 more)
-
-### Community 58 - "Community 58"
-Cohesion: 0.07
-Nodes (26): sporadic_server_activation, sporadic_server_budget_capped_at_C, sporadic_server_completion_no_consume, sporadic_server_completion_schedules_replenishment, sporadic_server_consume_already_exhausted, sporadic_server_consume_idle, sporadic_server_consumption_exhaustion, sporadic_server_deadline_miss (+18 more)
-
-### Community 59 - "Community 59"
-Cohesion: 0.09
 Nodes (6): read_cr3(), read_ttbr0_el1(), tlbi_alle1(), write_cr3(), write_cr3_notlbi(), write_ttbr0_el1()
 
-### Community 60 - "Community 60"
-Cohesion: 0.10
-Nodes (23): TaskControlBlock, init, MessageQueue, blocked_senders_head, blocked_senders_tail, count, head, highest_priority (+15 more)
+### Community 41 - "DMA / Tmpfs Tests"
+Cohesion: 0.07
+Nodes (10): pp_chain_cb(), register_dma_tests(), register_klog_tests(), register_pipe_tests(), register_waitpid_tests(), memcmp(), strlcpy(), strlen() (+2 more)
 
-### Community 61 - "Community 61"
-Cohesion: 0.11
-Nodes (19): driver_registry_count, driver_registry_find, driver_server_mmio_via_caps, DriverState, iocd_server_boots, keyboard_driver_in_iocd, serial_driver_in_iocd, Driver (+11 more)
-
-### Community 62 - "Community 62"
-Cohesion: 0.10
-Nodes (20): pid_t, sys_alarm(), sys_alarm_us(), sys_getrandom(), sys_getrlimit(), sys_gettod(), sys_halt(), sys_kill() (+12 more)
-
-### Community 63 - "Community 63"
-Cohesion: 0.08
-Nodes (25): buffer_pool_alloc_after_exhaustion_and_free, buffer_pool_basic_alloc_free, buffer_pool_cleanup_frees_buffers, buffer_pool_double_free, buffer_pool_exec_into_current_clears_buffers, buffer_pool_exhaustion, buffer_pool_forged_handle_after_free, buffer_pool_handle_reuse_security (+17 more)
-
-### Community 64 - "Community 64"
-Cohesion: 0.12
-Nodes (20): idle_task_calls_pause_syscall, idle_task_created_at_boot, idle_task_integrity_crc_incremental, idle_task_integrity_markers, idle_task_priority_zero, idle_task_restartable_on_crash, idle_task_runs_in_ring3, idle_task_yields_to_higher_priority (+12 more)
-
-### Community 65 - "Community 65"
-Cohesion: 0.08
-Nodes (21): address_comparison_operators, address_null_phys, address_page_align_down, address_page_offset, address_phys_to_virt_identity, address_virt_to_phys_identity, deadlock_detection_bounded_time, deadlock_detection_overhead (+13 more)
-
-### Community 66 - "Community 66"
-Cohesion: 0.10
-Nodes (13): mmio_read32(), mmio_write32(), Serial::getchar(), Serial::init(), Serial::putchar(), Serial::puts(), Serial, getchar (+5 more)
-
-### Community 67 - "Community 67"
+### Community 42 - "Spinlock / Sync Tests"
 Cohesion: 0.09
-Nodes (22): cap_create_mmio_invalid_phys_addr, cap_create_mmio_invalid_size_zero, cap_create_mmio_valid_bounds, cap_forge_incremented_rejected, cap_forge_random_rejected, cap_grant_duplicate_fails, cap_grant_to_nonexistent_task_fails, cap_inherit_on_exec (+14 more)
+Nodes (12): Lock, QueueMessage, data, size, SpinLockGuard, SpinLock, locked_, contention_worker() (+4 more)
 
-### Community 68 - "Community 68"
+### Community 43 - "Scheduler Validation / Logger"
+Cohesion: 0.20
+Nodes (26): rsp_in_stack_range(), validate_switch(), dbg_dump_pml4(), watchdog_panic(), LogLevel, __va_list, LogLevel, Logger (+18 more)
+
+### Community 44 - "Agent / Documentation Rules"
+Cohesion: 0.09
+Nodes (26): Branch Safeguard, Debugging Protocol, Kernel Boot Sequence, Context Switch Assembly (isr_stubs.asm), Deferred Context Switch, Framebuffer/Terminal, iocd (I/O Daemon), IPC System (+18 more)
+
+### Community 45 - "Error Types / Gcov"
+Cohesion: 0.09
+Nodes (13): BufPoolError, E, PciError, error_string(), __cyg_profile_func_enter(), find_or_add_func(), error_string(), error_string() (+5 more)
+
+### Community 46 - "Block Device Abstraction"
 Cohesion: 0.10
-Nodes (16): rtc_bcd_conversion, rtc_read_seconds, RTC::read_time(), read_seconds, tm, tm_hour, tm_isdst, tm_mday (+8 more)
+Nodes (18): BlockDevice, is_read_only, read_sector, sector_count, sector_size, write_sector, MockBlockDevice, data_ (+10 more)
 
-### Community 69 - "Community 69"
-Cohesion: 0.10
-Nodes (22): shell_clear_command, shell_echo_and_write, shell_echo_command, shell_env_command, shell_execute_serial, shell_export_command, shell_heap_delete, shell_help_command (+14 more)
+### Community 47 - "Dmesg Buffer"
+Cohesion: 0.09
+Nodes (21): base_error_string(), DmesgBuffer, buffer, clear, empty, head, MASK, pop (+13 more)
 
-### Community 70 - "Community 70"
+### Community 48 - "Ring Buffer Logger"
 Cohesion: 0.12
-Nodes (22): handle_gic_irq(), Timer::init(), ISRHandler, IDT, desc_, entries_, handle_interrupt, handlers_ (+14 more)
+Nodes (16): ErrorSubsystem, DmesgBuffer<Capacity>::clear(), DmesgBuffer<Capacity>::empty(), DmesgBuffer<Capacity>::pop(), DmesgBuffer<Capacity>::push(), DmesgBuffer<Capacity>::size(), DmesgBuffer<DMESG_CAPACITY>, for_each() (+8 more)
 
-### Community 71 - "Community 71"
-Cohesion: 0.13
-Nodes (17): icmp_checksum(), Ipv4Addr, addr, net_arp_resolve(), net_handle_frame(), net_icmp_last_reply(), net_icmp_set_reply(), net_poll() (+9 more)
+### Community 49 - "PRNG / Random"
+Cohesion: 0.11
+Nodes (21): prng_next_block(), PrngState, blocks_generated, buffer, counter, have_rdrand, have_rdseed, key (+13 more)
 
-### Community 72 - "Community 72"
-Cohesion: 0.14
-Nodes (21): A(), b(), be(), ce(), Ee(), f(), he(), je() (+13 more)
+### Community 50 - "Driver Framework"
+Cohesion: 0.12
+Nodes (17): DriverState, Driver, description, irq_line, name, state, DriverRegistry, drivers_ (+9 more)
 
-### Community 73 - "Community 73"
-Cohesion: 0.13
-Nodes (18): Register, RTC, CMOS_DATA, CMOS_INDEX, init, make_timestamp, read_register, read_time (+10 more)
+### Community 51 - "Buffer Pool"
+Cohesion: 0.21
+Nodes (23): Entry, BufferPool, alloc, alloc_entry, BUFFER_SIZE, capture_state, entries, free (+15 more)
 
-### Community 74 - "Community 74"
-Cohesion: 0.27
-Nodes (19): higherhalf_entry(), fdt_check_header(), fdt_first_child(), fdt_get_mem_rsv(), fdt_get_name(), fdt_getprop_by_offset(), fdt_getprop_namelen(), fdt_next_sibling() (+11 more)
-
-### Community 75 - "Community 75"
+### Community 52 - "Event Group"
 Cohesion: 0.15
-Nodes (7): PageAddress, phys_to_virt(), PhysicalAddress, addr_, virt_to_phys(), VirtualAddress, addr_
+Nodes (21): EventWaiter, SyncError, TaskControlBlock, EventGroup, add_waiter, bits_, clear_bits, clear_bits_err (+13 more)
 
-### Community 76 - "Community 76"
-Cohesion: 0.11
-Nodes (20): create_writable_partition(), Fat32TestFixture, device, partition, JARVIS_TEST(), setup_fat32_fs(), vfs_fat32_fstat, vfs_fat32_mkdir (+12 more)
-
-### Community 77 - "Community 77"
-Cohesion: 0.09
-Nodes (21): JARVIS_TEST(), vfsd_boots_and_registers, vfsd_concurrent_requests, vfsd_crash_restarts, vfsd_exhaust_restart_limit, vfsd_handle_chdir_getcwd, vfsd_handle_close, vfsd_handle_mount_unmount (+13 more)
-
-### Community 78 - "Community 78"
+### Community 53 - "IPC Message Queue"
 Cohesion: 0.10
-Nodes (21): fat32_dir_fstat(), fat32_dir_ioctl(), fat32_dir_lseek(), fat32_dir_mkdir(), fat32_dir_open(), fat32_dir_read(), fat32_dir_unlink(), fat32_dir_write() (+13 more)
+Nodes (22): TaskControlBlock, MessageQueue, blocked_senders_head, blocked_senders_tail, count, head, highest_priority, init (+14 more)
 
-### Community 79 - "Community 79"
-Cohesion: 0.23
-Nodes (20): rsp_in_stack_range(), validate_switch(), LogLevel, __va_list, debug, fatal, init, level_ansi (+12 more)
+### Community 54 - "Memory Allocation / TCB"
+Cohesion: 0.17
+Nodes (19): alloc, alloc_contiguous, alloc_user_page, map_page_in_pml4, Syscall::sys_brk(), alloc_id, TaskControlBlock, TaskError (+11 more)
 
-### Community 80 - "Community 80"
-Cohesion: 0.11
-Nodes (19): name_empty(), name_eq(), name_len(), TaskDef, daemon_name, elf_path, enabled, is_shell (+11 more)
-
-### Community 81 - "Community 81"
-Cohesion: 0.10
-Nodes (20): initrd_file_close(), initrd_file_fstat(), initrd_file_ioctl(), initrd_file_lookup(), initrd_file_lseek(), initrd_file_open(), initrd_file_read(), initrd_file_write() (+12 more)
-
-### Community 82 - "Community 82"
+### Community 55 - "VFS Daemon (VFSD)"
 Cohesion: 0.13
-Nodes (16): checked_ptr_is_user_range, checked_ptr_is_user_string, checked_ptr_valid, secure_exec_kernel_space_argv_eFault, secure_exec_null_argv_eFault, secure_exec_regression_audit, secure_exec_unmapped_crossing_eFault, secure_exec_valid_argv_envp (+8 more)
+Nodes (17): register_vfsd_authorization_tests(), register_vfsd_tests(), is_vfsd_task(), fstat(), stat(), main(), vfsd_dispatch(), vfsd_handle_chdir() (+9 more)
 
-### Community 83 - "Community 83"
-Cohesion: 0.14
-Nodes (17): Direction, BmDmaChannel, abort, bm_io_base_, handle_irq, is_busy, DmaCallback, DmaEngine (+9 more)
+### Community 56 - "FAT32 Directory Operations"
+Cohesion: 0.09
+Nodes (23): fat32_dir_fstat(), fat32_dir_ioctl(), fat32_dir_lookup(), fat32_dir_lseek(), fat32_dir_mkdir(), fat32_dir_open(), fat32_dir_read(), fat32_dir_unlink() (+15 more)
 
-### Community 84 - "Community 84"
-Cohesion: 0.26
-Nodes (18): pci_config_readb(), pci_config_readl(), pci_config_readw(), pci_config_writeb(), pci_config_writel(), pci_config_writew(), pci_make_addr(), init_vector_alloc() (+10 more)
+### Community 57 - "Bit Manipulation HAL"
+Cohesion: 0.09
+Nodes (3): TaskControlBlock, register_o1_scheduler_tests(), register_spsc_tests()
 
-### Community 85 - "Community 85"
-Cohesion: 0.22
-Nodes (19): strncpy_from_user(), Syscall::sys_chdir(), Syscall::sys_close(), Syscall::sys_dup(), Syscall::sys_dup2(), Syscall::sys_fstat(), Syscall::sys_ioctl(), Syscall::sys_lseek() (+11 more)
+### Community 58 - "VirtIO Network Driver"
+Cohesion: 0.09
+Nodes (23): VirtioNetDevice, nic, queue_size, rx_avail, rx_avail_idx, rx_avail_phys, rx_bufs, rx_bufs_phys (+15 more)
 
-### Community 86 - "Community 86"
-Cohesion: 0.16
-Nodes (17): wake_one, SyncError, TaskControlBlock, Notify, init, init_err, initialized_, lock_ (+9 more)
+### Community 59 - "Syscall Pipe/Readdir / Checked Ptr"
+Cohesion: 0.13
+Nodes (17): checked(), Syscall::sys_pipe(), Syscall::sys_readdir(), Rlimit, rlim_cur, rlim_max, Syscall::sys_getpid(), Syscall::sys_getrandom() (+9 more)
 
-### Community 87 - "Community 87"
+### Community 60 - "VirtIO Block Driver"
+Cohesion: 0.12
+Nodes (18): VirtioBlkDriver, avail_, avail_idx_, avail_phys_, desc_, desc_phys_, dma_buf_, dma_buf_phys_ (+10 more)
+
+### Community 61 - "Initrd Filesystem"
 Cohesion: 0.10
-Nodes (19): fake_get_root(), JARVIS_TEST(), vfs_fdtable_alloc_free, vfs_fdtable_multiple, vfs_mkdir_nonexistent_parent, vfs_mkdir_parent_not_dir, vfs_mkdir_valid, vfs_mount_unmount (+11 more)
+Nodes (21): initrd_file_close(), initrd_file_ioctl(), initrd_file_lookup(), initrd_file_lseek(), initrd_file_open(), initrd_file_read(), initrd_file_write(), initrd_get_root() (+13 more)
 
-### Community 88 - "Community 88"
+### Community 62 - "PCI Bus HAL"
+Cohesion: 0.19
+Nodes (15): PciBdf, bus, device, function, pci_device_exists_ecam(), pci_ecam_addr(), pci_ecam_readb(), pci_ecam_readl() (+7 more)
+
+### Community 63 - "AArch64 Barrier / TLB"
+Cohesion: 0.13
+Nodes (12): dsb_sy(), isb(), tlbi_vae1(), write_ttbr1_el1(), arch_page_table_activate(), arch_page_table_tlb_flush(), arch_page_table_tlb_flush_all(), unmap_page (+4 more)
+
+### Community 64 - "Timer / Interrupt HAL"
+Cohesion: 0.12
+Nodes (19): Timer::init(), register_handler, Timer, calibrate_tsc, counter_freq_hz_, handle_irq, init, ns (+11 more)
+
+### Community 65 - "ARP / ICMP / Networking"
+Cohesion: 0.11
+Nodes (13): icmp_checksum(), IcmpHeader, checksum, code, ident, seq, type, UdpHeader (+5 more)
+
+### Community 66 - "FAT32 Partition / Cluster"
+Cohesion: 0.19
+Nodes (16): add_dir_entry(), Fat32Partition, alloc_cluster, bpb_, clear_cluster, cluster_to_lba, find_free_cluster, partition_start_ (+8 more)
+
+### Community 67 - "PCI Enumeration / BAR"
+Cohesion: 0.11
+Nodes (19): PciBarType, pci_find_device(), PciBar, address, prefetchable, size, type, PciDeviceInfo (+11 more)
+
+### Community 68 - "RISC-V Boot / Context"
 Cohesion: 0.11
 Nodes (19): riscv64_boot_mvendorid, riscv64_context_save_restore, riscv64_context_sret_frame, riscv64_fpu_extension_detection, riscv64_medeleg_selected, riscv64_pci_ecam_read, riscv64_plic_claim_complete, riscv64_plic_init (+11 more)
 
-### Community 89 - "Community 89"
-Cohesion: 0.13
-Nodes (11): dsb_sy(), isb(), tlbi_vae1(), write_ttbr1_el1(), arch_page_table_activate(), arch_page_table_tlb_flush(), arch_page_table_tlb_flush_all(), Timer::handle_irq() (+3 more)
+### Community 69 - "CPUID / Random Tests"
+Cohesion: 0.12
+Nodes (7): register_buildsystem_tests(), register_fpu_tests(), register_fpu_xmm_all_tests(), Sse128, d, register_random_tests(), register_random_seed_tests()
 
-### Community 92 - "Community 92"
-Cohesion: 0.20
-Nodes (15): alloc_user_contiguous, alloc_id, TaskControlBlock, TaskError, init_task_common(), TaskControlBlock::add_child(), TaskControlBlock::clone(), TaskControlBlock::clone_err() (+7 more)
-
-### Community 93 - "Community 93"
-Cohesion: 0.11
-Nodes (17): pipe_fstat(), pipe_ioctl(), pipe_lookup(), pipe_lseek(), pipe_open(), pipe_read(), pipe_readdir(), pipe_write() (+9 more)
-
-### Community 94 - "Community 94"
-Cohesion: 0.18
-Nodes (14): fstat(), stat(), main(), vfsd_dispatch(), vfsd_handle_chdir(), vfsd_handle_close(), vfsd_handle_fstat(), vfsd_handle_getcwd() (+6 more)
-
-### Community 95 - "Community 95"
-Cohesion: 0.11
-Nodes (5): putchar(), puts(), strcat(), strlen(), write()
-
-### Community 96 - "Community 96"
+### Community 71 - "AArch64 Boot / Exception"
 Cohesion: 0.11
 Nodes (18): aarch64_boot_dtb_pointer, aarch64_context_init_stack, aarch64_context_save_restore, aarch64_exception_vector_installed, aarch64_fpu_neon_detection, aarch64_gic_eoi, aarch64_gic_init, aarch64_gic_mask_unmask (+10 more)
 
-### Community 97 - "Docs / Architecture / Logo"
+### Community 72 - "Memory Pool Allocator"
+Cohesion: 0.18
+Nodes (15): Pool, PoolMeta, MemPoolError, MemPool, alloc_err, contains, find_pool, free_err (+7 more)
+
+### Community 73 - "Task Signals / EventGroup"
 Cohesion: 0.12
-Nodes (18): GDB Debugging Guide, Jarvis RTOS Logo, Architectural Pillars, Call for Contributions, FreeRTOS vs Jarvis RTOS Comparison, IrqGuard, Jarvis RTOS, Phase 2: Kernel Core & Shell (+10 more)
+Nodes (16): sighandler_t, EventGroup, get_signal_handler(), MessageQueue, Notify, set_signal_handler(), SporadicServer, TaskControlBlock (+8 more)
 
-### Community 98 - "Community 98"
+### Community 74 - "PS/2 Keyboard HAL"
 Cohesion: 0.11
-Nodes (18): pci_alloc_free_vector, pci_bar_registers, pci_enable_msi_no_cap, pci_enable_msix_no_cap, pci_enumeration_bounded_time, pci_find_nonexistent_device, pci_finds_isa_bridge, pci_host_bridge_no_msi (+10 more)
+Nodes (14): Keyboard, alt_, caps_, ctrl_, DATA_PORT, flush, getchar, handle_irq (+6 more)
 
-### Community 99 - "Community 99"
-Cohesion: 0.11
-Nodes (18): PciBarType, pci_find_device(), PciBar, address, prefetchable, size, type, PciDeviceInfo (+10 more)
+### Community 75 - "PCI Config Access"
+Cohesion: 0.30
+Nodes (16): pci_config_readb(), pci_config_readl(), pci_config_readw(), pci_config_writeb(), pci_config_writel(), pci_config_writew(), pci_make_addr(), pci_device_exists() (+8 more)
 
-### Community 100 - "Community 100"
-Cohesion: 0.20
-Nodes (16): handle_kernel_exception(), read_cr2(), notify_death(), restart_stale_daemons(), TaskControlBlock, debug_putchar(), debug_task_switch(), debug_write() (+8 more)
-
-### Community 101 - "Community 101"
+### Community 76 - "AHCI Driver Core"
 Cohesion: 0.11
 Nodes (15): AhciDriver, abar_phys_, abar_virt_, active_port_, cl_phys_, cl_virt_, ct_phys_, ct_virt_ (+7 more)
 
-### Community 102 - "Community 102"
+### Community 77 - "AHCI Protocol / FIS"
 Cohesion: 0.11
 Nodes (18): CmdFIS, aux, command, control, count_hi, count_lo, device, features (+10 more)
 
-### Community 103 - "Community 103"
+### Community 78 - "Tmpfs Filesystem"
+Cohesion: 0.14
+Nodes (16): find_entry(), tmpfs_create(), tmpfs_file_close(), tmpfs_file_lseek(), tmpfs_file_open(), tmpfs_file_read(), tmpfs_file_write(), tmpfs_fstat() (+8 more)
+
+### Community 79 - "C++ ABI / Stack Check"
 Cohesion: 0.14
 Nodes (5): div128_trap(), __divti3(), __modti3(), __udivti3(), __umodti3()
 
-### Community 104 - "Community 104"
-Cohesion: 0.12
-Nodes (17): cross_context_init_stack, cross_context_save_restore, cross_interrupt_controller_eoi, cross_interrupt_controller_init, cross_interrupt_controller_mask_unmask, cross_ipc_queue_full_behavior, cross_ipc_queue_priority_ordering, cross_ipc_queue_push_pop (+9 more)
+### Community 80 - "Libc Stdlib / Abort"
+Cohesion: 0.14
+Nodes (11): atoi(), atol(), brk(), calloc(), exit(), malloc(), sbrk(), strdup() (+3 more)
 
-### Community 107 - "Community 107"
+### Community 81 - "AArch64 Interrupt Controller"
+Cohesion: 0.13
+Nodes (6): ArchInterruptController::restore(), ArchInterruptController::snapshot(), handle_gic_irq(), handle_interrupt, handle_kernel_exception(), handle_plic_trap()
+
+### Community 82 - "AArch64 Test / Context"
+Cohesion: 0.17
+Nodes (6): register_aarch64_tests(), register_riscv64_tests(), register_cross_arch_tests(), register_hal_tests(), register_idle_task_tests(), register_timer_tests()
+
+### Community 84 - "IDT / ISR Handlers"
+Cohesion: 0.12
+Nodes (14): ISRHandler, IDT, desc_, entries_, handlers_, has_handler, init, load (+6 more)
+
+### Community 85 - "PCI Enumeration"
+Cohesion: 0.22
+Nodes (15): fmt_dec(), fmt_hex(), init_vector_alloc(), pci_alloc_vector(), pci_class_name(), pci_device_count(), pci_devices(), pci_dump_tree() (+7 more)
+
+### Community 86 - "AHCI Init / Slot Alloc"
+Cohesion: 0.32
+Nodes (16): AhciDriver::AhciDriver(), alloc_slot, hba_read, hba_write, init, port_init, port_read, port_wait_ready (+8 more)
+
+### Community 87 - "ATA PIO Driver"
 Cohesion: 0.23
 Nodes (11): AtaPioDriver, drive_head_, drive_present_, identify, init, poll_status, port_base_, probe_first_drive (+3 more)
 
-### Community 108 - "Community 108"
-Cohesion: 0.15
-Nodes (7): QueueMessage, data, size, SpinLock, locked_, error_string(), SyncError
+### Community 88 - "Checked Pointer"
+Cohesion: 0.25
+Nodes (8): CheckedPtr, addr_, count_, T, is_user_range(), is_user_string(), safe_copy_from_user(), safe_copy_to_user()
 
-### Community 109 - "Community 109"
+### Community 89 - "Pipe / FAT32 Close"
+Cohesion: 0.13
+Nodes (15): free, fat32_dir_close(), fat32_file_close(), create_pipe(), pipe_fstat(), pipe_ioctl(), pipe_lookup(), pipe_lseek() (+7 more)
+
+### Community 90 - "Notify Synchronization"
+Cohesion: 0.19
+Nodes (14): SyncError, TaskControlBlock, Notify, init, init_err, initialized_, lock_, notify_err (+6 more)
+
+### Community 91 - "Task Definitions"
 Cohesion: 0.12
-Nodes (14): elf_load_init_task_common_called, init_task_exists, init_task_has_no_parent, init_task_reparents_orphans, lifecycle_zombie_no_waker, scheduler_reap_respects_parent_wait, JARVIS_TEST(), JARVIS_TEST() (+6 more)
+Nodes (16): TaskDef, daemon_name, elf_path, enabled, is_shell, name, period_ticks, priority (+8 more)
 
-### Community 110 - "Community 110"
+### Community 92 - "Userspace Cat / More"
+Cohesion: 0.21
+Nodes (13): printf(), chdir(), close(), main(), main(), main(), more_page(), execute_pipeline() (+5 more)
+
+### Community 93 - "Libc String / Memory Copy"
+Cohesion: 0.12
+Nodes (3): puts(), strcat(), strlen()
+
+### Community 94 - "OOM / Resource Exhaustion"
+Cohesion: 0.16
+Nodes (13): FdTableExhaustion, MaxBuffersExhaustion, MempoolFragmentation, OOMHandler, PmmExhaustion, MockBlockDevice::MockBlockDevice(), free_page, is_user_page (+5 more)
+
+### Community 95 - "Signal Handler API"
 Cohesion: 0.14
 Nodes (15): SignalAction, default_signal_action(), exception_to_signal(), ExceptionSignalMap, action, name, signal, SignalFrame (+7 more)
 
-### Community 111 - "Community 111"
-Cohesion: 0.12
-Nodes (16): TSS, iopb_offset, ist1, ist2, ist3, ist4, ist5, ist6 (+8 more)
+### Community 96 - "AArch64 PCI ECAM"
+Cohesion: 0.21
+Nodes (11): pci_device_exists_ecam(), pci_ecam_addr(), pci_ecam_readb(), pci_ecam_readl(), pci_ecam_readw(), pci_ecam_writeb(), pci_ecam_writel(), pci_ecam_writew() (+3 more)
 
-### Community 112 - "Community 112"
-Cohesion: 0.20
-Nodes (13): check_section_markers(), crc_process_chunk(), idle_task_main(), reset_crc_state(), CRC32, finalize, init, INITIAL (+5 more)
-
-### Community 113 - "Community 113"
+### Community 97 - "Test Expected Counts"
 Cohesion: 0.19
-Nodes (12): TaskControlBlock, Syscall::sys_buf_alloc(), Syscall::sys_buf_free(), Syscall::sys_buf_map(), Syscall::sys_buf_unmap(), Syscall::sys_receive(), Syscall::sys_send(), Syscall::sys_send_sync() (+4 more)
+Nodes (14): arch_count(), expected_for_class(), ExpectedCounts, aarch64, name, riscv64, x86_64, validate_all_consistency() (+6 more)
 
-### Community 114 - "Community 114"
-Cohesion: 0.14
-Nodes (15): dma_alloc_buffer, dma_buffer_write_read, dma_bus_master_host_bridge, dma_completion_interrupt, dma_double_buffered_transfer, dma_free_empty_buffer, dma_prd_from_sg, dma_prd_reset (+7 more)
-
-### Community 115 - "Kernel Subsystem Audit"
+### Community 98 - "Interrupt Controller HAL"
 Cohesion: 0.15
-Nodes (15): Kernel Subsystem Privilege Audit v0.2.9, Capability-based Microkernel Transition Plan, ELF Loader, GDT, IDT, IO Daemon (iocd), IPC, PMM (+7 more)
+Nodes (8): ArchInterruptController, IrqState, gic_mask, pic1_mask, pic2_mask, plic_threshold, ArchInterruptController::restore(), ArchInterruptController::snapshot()
 
-### Community 116 - "Community 116"
-Cohesion: 0.13
-Nodes (15): hal_bits_find_highest_all, hal_bits_find_highest_low_64, hal_bits_find_highest_lsb, hal_bits_find_highest_middle, hal_bits_find_highest_msb, hal_bits_find_highest_multi, hal_bits_find_highest_range, hal_bits_find_highest_zero (+7 more)
-
-### Community 117 - "Community 117"
-Cohesion: 0.13
-Nodes (15): hal_context_save_restore, hal_context_switch_to, hal_cpuid_features, hal_delegates_to_x86_64, hal_interrupt_eoi, hal_interrupt_mask_unmask, hal_interrupt_snapshot_restore_cycle, hal_io_byte_word_long (+7 more)
-
-### Community 118 - "Community 118"
-Cohesion: 0.25
-Nodes (14): net_arp_cache_ops, net_ether_type_swap, net_ipv4_addr_roundtrip, net_ipv4_checksum, net_mac_address_ops, ArpCache, ArpCache::ArpCache(), clear (+6 more)
-
-### Community 119 - "Community 119"
-Cohesion: 0.13
-Nodes (9): Rlimit, rlim_cur, rlim_max, Syscall::sys_getpid(), Syscall::sys_gettod(), Syscall::sys_setrlimit(), Timeval, tv_sec (+1 more)
-
-### Community 120 - "Community 120"
-Cohesion: 0.15
-Nodes (13): find_entry(), tmpfs_file_close(), tmpfs_file_lseek(), tmpfs_file_open(), tmpfs_file_read(), tmpfs_fstat(), tmpfs_get_root(), tmpfs_lookup() (+5 more)
-
-### Community 121 - "Community 121"
-Cohesion: 0.16
-Nodes (9): ClassSection, count, name, start, TestBase, failed_, run, TestClass (+1 more)
-
-### Community 122 - "Community 122"
-Cohesion: 0.17
-Nodes (9): atoi(), atol(), brk(), calloc(), exit(), malloc(), sbrk(), strdup() (+1 more)
-
-### Community 123 - "Community 123"
-Cohesion: 0.14
-Nodes (13): bench_reschedule_latency, bench_spinlock_try_lock, spinlock_basic_lock_unlock, spinlock_contention, spinlock_cxx_contract, spinlock_guard_raii, spinlock_no_irqguard_inside, spinlock_pause_count (+5 more)
-
-### Community 124 - "Community 124"
-Cohesion: 0.14
-Nodes (14): o1_priority_map_boundary, o1_priority_map_clear_nonexistent, o1_priority_map_multiple, o1_priority_map_set_get, o1_ready_queue_128_levels, o1_ready_queue_highest_priority, o1_ready_queue_remove, o1_ready_queue_single (+6 more)
-
-### Community 125 - "Community 125"
-Cohesion: 0.15
-Nodes (11): GDT, desc_, entries_, init, load, NUM_ENTRIES, set_tss_rsp0, tss_ (+3 more)
-
-### Community 126 - "Community 126"
-Cohesion: 0.41
-Nodes (13): alloc_slot, hba_read, hba_write, init, port_init, port_read, port_wait_ready, port_write (+5 more)
-
-### Community 127 - "Community 127"
-Cohesion: 0.15
-Nodes (13): prd_from_sg(), prd_reset(), PrdEntry, byte_count, flags, phys_addr, PrdTable, count (+5 more)
-
-### Community 128 - "Community 128"
-Cohesion: 0.24
-Nodes (10): ipc_send(), iocd_dispatch(), iocd_handle_irq_event(), iocd_handle_keyboard_read(), iocd_handle_mmio_map(), iocd_handle_mmio_unmap(), iocd_handle_register_device(), iocd_handle_serial_read() (+2 more)
-
-### Community 129 - "Community 129"
-Cohesion: 0.18
-Nodes (5): __cyg_profile_func_enter(), find_or_add_func(), init, syscall_path_open(), syscall_task_open()
-
-### Community 130 - "Community 130"
-Cohesion: 0.26
-Nodes (11): TaskControlBlock, ReadyQueueManager, bitmap_, clear_all, dequeue_highest, enqueue, move_priority, peek_highest (+3 more)
-
-### Community 131 - "Community 131"
+### Community 99 - "I/O Control Daemon (IOCD)"
 Cohesion: 0.22
-Nodes (6): TaskControlBlock, TaskControlBlock, TaskQueue, pop_front, push_back, remove
+Nodes (11): is_iocd_task(), ipc_send(), iocd_dispatch(), iocd_handle_irq_event(), iocd_handle_keyboard_read(), iocd_handle_mmio_map(), iocd_handle_mmio_unmap(), iocd_handle_register_device() (+3 more)
 
-### Community 132 - "Community 132"
+### Community 100 - "ELF Execution / Loading"
+Cohesion: 0.28
+Nodes (14): copy_strings(), count_strings(), TaskControlBlock, exec_into_current(), load(), load_segments_and_stack(), open_std_fds(), page_align_down() (+6 more)
+
+### Community 101 - "Network Stack Core"
+Cohesion: 0.22
+Nodes (13): ipv4_checksum(), net_arp_resolve(), net_handle_frame(), net_poll(), net_send_icmp_echo(), net_send_udp(), Nic, driver_data (+5 more)
+
+### Community 102 - "Scheduler / ProcFS Integration"
+Cohesion: 0.23
+Nodes (11): Syscall::sys_exit(), TaskControlBlock, reset_next_task_id, reset_ready_queue, task_at, task_count, reboot_from_table(), test_cleanup_all() (+3 more)
+
+### Community 103 - "FAT32 Partition Mount"
+Cohesion: 0.25
+Nodes (14): find_fat32_partition, mount, mount_at, parse_bpb, parse_mbr, find_fat32_in_mbr(), format_short_name(), get_entry_cluster() (+6 more)
+
+### Community 104 - "Test Library / Error Or"
+Cohesion: 0.19
+Nodes (8): Error, register_lib_tests(), ErrorOr, error, value, ErrorOr<void>, error, T
+
+### Community 105 - "IPC / MemPool Errors"
+Cohesion: 0.16
+Nodes (9): IpcError, error_string(), error_string(), MemPoolError, dmesg_task_main(), format_hex(), format_u64(), error_string() (+1 more)
+
+### Community 106 - "Microkernel Transition Tests"
+Cohesion: 0.14
+Nodes (13): IpcLatencyJitter, KernelApiPureFunctions, MinimalPrivilegedSurface, set_current, register_microkernel_transition_tests(), TEST_CLASS(), TEST_CLASS(), SyscallFuzzBounds (+5 more)
+
+### Community 107 - "Daemon Manager Entry"
 Cohesion: 0.15
-Nodes (5): memcmp(), strlcpy(), strlen(), strncmp(), main()
+Nodes (10): capture_state(), DaemonEntry, initrd_path, name, pid, restart_count, register_daemon(), reset_clear_daemons() (+2 more)
 
-### Community 133 - "Community 133"
+### Community 108 - "AHCI Protocol Tables"
+Cohesion: 0.15
+Nodes (11): CmdTable, atapi_cmd, cfis, prd, rsvd0, PrdHbaEntry, byte_count, dba (+3 more)
+
+### Community 109 - "DMA PRD Entries"
+Cohesion: 0.15
+Nodes (13): PrdEntry, byte_count, flags, phys_addr, sg_reset(), SgEntry, length, phys_addr (+5 more)
+
+### Community 110 - "FAT32 Directory Entry"
 Cohesion: 0.14
 Nodes (13): DirEntry, attrs, cluster, is_directory, name, size, valid, MbrPartition (+5 more)
 
-### Community 134 - "Community 134"
+### Community 111 - "VFS Daemon Protocol"
 Cohesion: 0.14
 Nodes (13): Msg, arg0, arg1, path, sender_id, type, Reply, data0 (+5 more)
 
-### Community 135 - "Scheduler Design Docs"
-Cohesion: 0.17
-Nodes (13): Branch Safeguard, Debugging Protocol, Liu-Leyland Bound, O(1) Bitmap Scheduler, PriorityMap, ReadyQueueManager, TaskQueue, ResourceTracker (+5 more)
+### Community 112 - "Program Registry"
+Cohesion: 0.22
+Nodes (10): Program, Program, ProgramRegistry, find, init, MAX_PROGRAMS, programs_, register_program (+2 more)
 
-### Community 136 - "Community 136"
-Cohesion: 0.15
-Nodes (13): Timer, counter_freq_hz_, handle_irq, init, ns, oneshot, periodic, PIT_BASE_FREQ (+5 more)
+### Community 113 - "Unique Ptr / Delete"
+Cohesion: 0.27
+Nodes (7): Deleter, DefaultDeleter, T, operator()(), UniquePtr, del_, ptr_
 
-### Community 137 - "Community 137"
-Cohesion: 0.17
-Nodes (10): CmdTable, atapi_cmd, cfis, prd, rsvd0, PrdHbaEntry, byte_count, dba (+2 more)
+### Community 114 - "Libc Unistd Types"
+Cohesion: 0.18
+Nodes (12): off_t, pid_t, dup(), dup2(), fork(), getpid(), lseek(), mkdir() (+4 more)
 
-### Community 138 - "Community 138"
+### Community 115 - "Bus Mastering DMA"
+Cohesion: 0.22
+Nodes (10): BmDmaChannel, abort, bm_io_base_, handle_irq, init, is_busy, free_buffer(), pci_set_bus_master() (+2 more)
+
+### Community 116 - "Ping Pong DMA"
 Cohesion: 0.17
 Nodes (11): ChainCallback, PingPongDma, active_, buf_size_, bufs_, chain_cb_, chain_ctx_, completed_ (+3 more)
 
-### Community 139 - "Community 139"
-Cohesion: 0.17
-Nodes (12): ipv4_checksum(), Ipv4Header, checksum, dscp_ecn, dst, flags_frag, ident, protocol (+4 more)
+### Community 117 - "Scheduler / IPC Tests"
+Cohesion: 0.18
+Nodes (8): register_ipc_blocking_tests(), register_ipc_tests(), TaskControlBlock, ScopedCurrentTask, guard_, saved_, yield_as(), register_task_tests()
 
-### Community 140 - "Community 140"
+### Community 118 - "Syscall Tests"
 Cohesion: 0.15
-Nodes (3): PriorityMap, bitmap_hi_, bitmap_lo_
+Nodes (11): register_syscall_tests(), Timeval, tv_sec, tv_usec, Utsname, domainname, machine, nodename (+3 more)
 
-### Community 141 - "Community 141"
+### Community 119 - "Readdir / VFS Directory"
+Cohesion: 0.15
+Nodes (13): console_readdir(), tty_readdir(), fat32_dir_readdir(), fat32_file_readdir(), initrd_file_readdir(), meminfo_readdir(), pci_readdir(), pid_dir_readdir() (+5 more)
+
+### Community 120 - "Fstat / VFS Status"
+Cohesion: 0.15
+Nodes (13): random_fstat(), tty_fstat(), fat32_file_fstat(), initrd_file_fstat(), meminfo_fstat(), pci_fstat(), pid_dir_fstat(), pid_stat_fstat() (+5 more)
+
+### Community 121 - "FAT32 Raw Directory Entry"
 Cohesion: 0.15
 Nodes (13): DirEntryRaw, access_date, attrs, cluster_high, cluster_low, creation_date, creation_tenths, creation_time (+5 more)
 
-### Community 142 - "Community 142"
-Cohesion: 0.26
-Nodes (10): Program, Program, ProgramRegistry, find, init, MAX_PROGRAMS, programs_, register_program (+2 more)
+### Community 122 - "Stdio / Va Args"
+Cohesion: 0.21
+Nodes (10): va_list, getchar(), print_dec(), print_hex(), putchar(), snprintf(), sprintf(), vsnprintf() (+2 more)
 
-### Community 143 - "Community 143"
+### Community 123 - "Fix Line Length Tool"
 Cohesion: 0.22
 Nodes (12): find_break_points(), fix_file(), get_ast_break_points(), is_in_comment_or_string(), is_in_macro_continuation(), main(), Path, Use AST to find semantic break points for long lines. (+4 more)
 
-### Community 144 - "Community 144"
-Cohesion: 0.20
-Nodes (11): bench_mutex_acquire_release, bench_spinlock_acquire_release, bench_spsc_push_pop, F, BenchResult, avg, max, min (+3 more)
-
-### Community 145 - "Community 145"
-Cohesion: 0.21
-Nodes (12): e(), fe(), ge(), H(), I(), It(), j(), l() (+4 more)
-
-### Community 146 - "Community 146"
-Cohesion: 0.18
-Nodes (11): elf_load_creates_user_stack, elf_load_from_hhdm_buffer, elf_load_invalid_segment, elf_load_sets_std_fds, elf_validate_header_bad_entry, elf_validate_header_bad_machine, elf_validate_header_excessive_phnum, elf_validate_header_magic (+3 more)
-
-### Community 147 - "Community 147"
+### Community 124 - "Boot Info / Memory Regions"
 Cohesion: 0.17
 Nodes (10): MemRegion, BootInfo, cmdline, dtb_ptr, hart_id, mem_regions, multiboot_info, multiboot_magic (+2 more)
 
-### Community 148 - "Community 148"
+### Community 126 - "IRQ Guard"
 Cohesion: 0.17
-Nodes (9): spsc_buffer_full, spsc_fifo_order, spsc_integer_type, spsc_large_buffer, spsc_pop_empty, spsc_push_pop_single, spsc_reset, spsc_wrap_around (+1 more)
+Nodes (5): IrqGuard, irq_was_, register_ipc_robustness_tests(), register_irq_guard_tests(), register_irqguard_audit_tests()
 
-### Community 150 - "Community 150"
-Cohesion: 0.18
-Nodes (9): GDTEntry, access, base_high, base_low, base_mid, granularity, limit_low, GDT::init() (+1 more)
-
-### Community 151 - "Community 151"
-Cohesion: 0.33
-Nodes (10): fmt_dec(), fmt_hex(), pci_class_name(), pci_dump_tree(), pci_print_tree(), pci_scan_all(), pci_subclass_name(), probe_bdf() (+2 more)
-
-### Community 152 - "Community 152"
+### Community 127 - "x86_64 CPUID"
 Cohesion: 0.26
 Nodes (11): cpuid(), CpuIdResult, eax, ebx, ecx, edx, has_fpu(), has_fxsr() (+3 more)
 
-### Community 153 - "Community 153"
+### Community 128 - "Debug Dump"
 Cohesion: 0.35
 Nodes (11): dump_all_tasks(), dump_cpu_regs(), dump_scheduler_info(), dump_task_info(), pkd(), pkd2(), pkv(), pkv2() (+3 more)
 
-### Community 154 - "Community 154"
+### Community 129 - "Syscall Error Codes"
 Cohesion: 0.30
 Nodes (11): error_string(), from_bufpool_error(), from_ipc_error(), from_mempool_error(), from_pmm_error(), from_sched_error(), from_sync_error(), from_task_error() (+3 more)
 
-### Community 155 - "Community 155"
-Cohesion: 0.24
-Nodes (10): arch_count(), expected_for_class(), ExpectedCounts, aarch64, name, riscv64, x86_64, validate_all_consistency() (+2 more)
-
-### Community 156 - "Community 156"
-Cohesion: 0.17
-Nodes (12): fat32_dir_readdir(), fat32_file_readdir(), initrd_file_readdir(), initrd_root_readdir(), meminfo_readdir(), pci_readdir(), pid_dir_readdir(), pid_stat_readdir() (+4 more)
-
-### Community 157 - "Community 157"
+### Community 130 - "Uname / Version"
 Cohesion: 0.23
-Nodes (7): ErrorOr, error, value, ErrorOr<void>, error, Error, T
+Nodes (10): Syscall::sys_uname(), Version, build_date, build_time, full_string, major, minor, patch (+2 more)
 
-### Community 158 - "Community 158"
+### Community 131 - "Test Runner / Base"
+Cohesion: 0.21
+Nodes (5): record_failure, record_success, TestBase, failed_, run
+
+### Community 132 - "Test Registry Generator"
+Cohesion: 0.29
+Nodes (11): gen_setup(), gen_teardown(), generate(), main(), parse_metadata(), Remove C++ single-line comments (// ...) from the text.     Multi-line comments, Remove #if 0 ... #endif blocks (including nested) from C++ source., scan_tests() (+3 more)
+
+### Community 133 - "FAT32 Image Tool"
 Cohesion: 0.24
 Nodes (10): build_bpb(), build_disk_image(), build_fsinfo(), build_mbr(), main(), make_directory_entries_8dot3(), Create a 32-byte 8.3 directory entry., Build a complete FAT32 disk image. (+2 more)
 
-### Community 159 - "Boot / IPC / Daemon Docs"
-Cohesion: 0.24
-Nodes (11): Kernel Boot Sequence, Framebuffer/Terminal, iocd (I/O Daemon), IPC System, MessageQueue, Shell Task (ksh), Sporadic Server, TaskControlBlock (+3 more)
-
-### Community 160 - "Community 160"
-Cohesion: 0.20
-Nodes (10): dmesg_prints_kernel_log, klog_clear, klog_concurrent_readers, klog_empty_read, klog_invalid_buffer_eFault, klog_read_entries, klog_read_partial, klog_ringbuffer_wrap (+2 more)
-
-### Community 161 - "Community 161"
+### Community 134 - "IPv4 Header"
 Cohesion: 0.18
-Nodes (10): iocd_boots_and_registers, iocd_crash_restarts, iocd_irq_affinity, iocd_keyboard_irq_to_event, iocd_mmio_map_via_capability, iocd_mmio_unmap_on_exit, iocd_multiple_device_handlers, iocd_serial_irq_to_event (+2 more)
+Nodes (11): Ipv4Header, checksum, dscp_ecn, dst, flags_frag, ident, protocol, src (+3 more)
 
-### Community 162 - "Community 162"
+### Community 135 - "Atomic / Spinlock Tests"
 Cohesion: 0.18
-Nodes (9): signal_default_action, signal_exception_to_signal_mapping, signal_handler_invoked, signal_handler_out_of_bounds, signal_handler_tcb_registration, signal_is_fatal_check, signal_kill_delivers, signal_pending_bitmask (+1 more)
+Nodes (4): register_atomic_context_switch_tests(), register_atomic_tests(), register_resource_exhaustion_tests(), register_starvation_deadlock_tests()
 
-### Community 163 - "Community 163"
-Cohesion: 0.20
-Nodes (6): cpuid(), CpuIdResult, eax, ebx, ecx, edx
-
-### Community 164 - "Community 164"
-Cohesion: 0.42
-Nodes (4): CheckedPtr, addr_, count_, T
-
-### Community 165 - "Community 165"
-Cohesion: 0.20
-Nodes (6): IcmpEchoReply, ident, received, rx_tick, seq, src
-
-### Community 166 - "Community 166"
-Cohesion: 0.18
-Nodes (9): JARVIS_TEST(), Rlimit, rlim_cur, rlim_max, sys_brk_query, sys_getrlimit_data, sys_getrlimit_invalid, sys_getrlimit_nofile (+1 more)
-
-### Community 167 - "Community 167"
-Cohesion: 0.18
-Nodes (11): fat32_file_fstat(), initrd_root_fstat(), meminfo_fstat(), pci_fstat(), pid_dir_fstat(), pid_stat_fstat(), proc_root_fstat(), self_fstat() (+3 more)
-
-### Community 168 - "Community 168"
+### Community 136 - "ProcFS PID Dir"
 Cohesion: 0.20
 Nodes (11): TaskControlBlock, PidDirVnode, base, pid, stat_data, stat_vnode, task, PidStatVnode (+3 more)
 
-### Community 169 - "Community 169"
-Cohesion: 0.27
-Nodes (8): printf(), main(), main(), more_page(), main(), parse_line(), print_prompt(), read_line()
-
-### Community 170 - "Community 170"
-Cohesion: 0.20
-Nodes (9): devfs_read_null, devfs_read_zero, devfs_tty_resolves, initrdfs_list_root, initrdfs_open_nonexistent, initrdfs_read_known_file, procfs_meminfo_valid, procfs_self_resolves (+1 more)
-
-### Community 171 - "Community 171"
-Cohesion: 0.24
-Nodes (7): IpcError, error_string(), dmesg_task_main(), format_hex(), format_u64(), error_string(), VfsError
-
-### Community 172 - "Community 172"
+### Community 137 - "Shell Readline / Source"
 Cohesion: 0.22
-Nodes (6): irq_guard_nested, irq_guard_noncopyable, irq_guard_saves_and_restores, irqguard_remaining_sites_validated, JARVIS_TEST(), JARVIS_TEST()
+Nodes (11): append_four_digit(), append_size(), append_two_digit(), readline(), cmd_source, execute, parse_and_exec, shell_task_main (+3 more)
 
-### Community 173 - "Community 173"
+### Community 138 - "OpenCode Configuration"
 Cohesion: 0.20
 Nodes (9): lsp, model, options, chunkTimeout, setCacheKey, timeout, provider, nvidia (+1 more)
 
-### Community 174 - "Community 174"
+### Community 139 - "Signal / Checked Ptr Tests"
+Cohesion: 0.20
+Nodes (5): Signal, register_checked_ptr_tests(), register_signals_tests(), register_syscall_fuzz_tests(), register_timing_tests()
+
+### Community 140 - "AArch64 CPUID"
 Cohesion: 0.22
 Nodes (6): cpuid(), CpuIdResult, eax, ebx, ecx, edx
 
-### Community 175 - "Community 175"
+### Community 141 - "RISC-V CPUID"
+Cohesion: 0.22
+Nodes (6): cpuid(), CpuIdResult, eax, ebx, ecx, edx
+
+### Community 142 - "VirtIO Queue Available"
+Cohesion: 0.27
+Nodes (8): VirtqAvail, flags, idx, ring, add_rx_buf(), alloc_queue_pages(), virtio_net_poll(), virtio_net_probe()
+
+### Community 143 - "x86_64 IDT"
 Cohesion: 0.24
 Nodes (6): InterruptVector, ISRHandler, IDT::init(), IDT::register_handler(), IDT::register_handler_raw(), make_entry()
 
-### Community 176 - "Community 176"
+### Community 144 - "DMA Buffer / Callback"
 Cohesion: 0.22
-Nodes (7): capture_state(), DaemonEntry, initrd_path, name, pid, restart_count, restore_state()
+Nodes (10): ChainCallback, DmaBuffer, owned, phys_addr, size, virt_addr, prepare_buf, start_next (+2 more)
 
-### Community 177 - "Community 177"
-Cohesion: 0.24
-Nodes (9): checked(), Syscall::sys_pipe(), Syscall::sys_getrlimit(), Syscall::sys_klog(), Syscall::sys_signal(), Syscall::sys_sigreturn(), Syscall::sys_waitpid(), validate_argv_envp() (+1 more)
-
-### Community 178 - "Community 178"
+### Community 145 - "ARP Header"
 Cohesion: 0.20
 Nodes (10): ArpHeader, hlen, htype, oper, plen, ptype, sha, spa (+2 more)
 
-### Community 179 - "Community 179"
+### Community 146 - "Ethernet / MAC"
+Cohesion: 0.20
+Nodes (7): EtherHeader, dst, src, type, MacAddr, addr, net_init()
+
+### Community 147 - "SPSC Ring Buffer"
+Cohesion: 0.24
+Nodes (6): T, SPSCRing, data_, head_, MASK, tail_
+
+### Community 148 - "Task Ptr / Test Helpers"
+Cohesion: 0.22
+Nodes (5): TaskControlBlock, SimpleTaskDeleter, TaskDeleter, register_buffer_pool_tests(), register_task_lifecycle_tests()
+
+### Community 149 - "FAT32 BPB"
 Cohesion: 0.20
 Nodes (10): Fat32Bpb, bytes_per_sector, fat_count, fat_size, fs_info_sector, reserved_sectors, root_cluster, sectors_per_cluster (+2 more)
 
-### Community 181 - "Community 181"
+### Community 150 - "Atomic Primitives"
 Cohesion: 0.29
-Nodes (7): va_list, getchar(), print_dec(), print_hex(), snprintf(), sprintf(), vsnprintf()
+Nodes (6): atomic_compare_exchange(), atomic_fetch_add(), atomic_fetch_and(), atomic_fetch_or(), atomic_fetch_sub(), T
 
-### Community 182 - "Community 182"
+### Community 152 - "DMA Direction / Transfer"
 Cohesion: 0.25
-Nodes (7): fstab_parses_valid_line, fstab_parses_with_extra_spaces, fstab_rejects_missing_mountpoint, fstab_skips_comment_line, fstab_skips_empty_line, JARVIS_TEST(), parse_fstab_line()
+Nodes (9): Direction, start, DmaCallback, start_transfer, prd_from_sg(), prd_reset(), PrdTable, count (+1 more)
 
-### Community 183 - "Community 183"
-Cohesion: 0.25
-Nodes (7): sighandler_t, EventGroup, get_signal_handler(), MessageQueue, Notify, set_signal_handler(), SporadicServer
-
-### Community 184 - "Community 184"
+### Community 153 - "IDT Entry Format"
 Cohesion: 0.22
 Nodes (8): IDTEntry, ist, offset_high, offset_low, offset_mid, selector, type_attr, zero
 
-### Community 185 - "Community 185"
+### Community 155 - "VirtIO PCI Capability"
 Cohesion: 0.22
 Nodes (9): VirtioPciCap, bar, cap_len, cap_next, cap_vndr, cfg_type, length, offset (+1 more)
 
-### Community 186 - "Community 186"
+### Community 156 - "AHCI Command Header"
 Cohesion: 0.22
 Nodes (9): CmdHeader, attrs, cfl, ctba, ctbau, pmp, prdbc, rsvd0 (+1 more)
 
-### Community 187 - "Community 187"
-Cohesion: 0.22
-Nodes (7): BlockDevice, is_read_only, read_sector, sector_count, sector_size, write_sector, Fat32Partition::Fat32Partition()
-
-### Community 188 - "Community 188"
+### Community 157 - "DMA Engine"
 Cohesion: 0.25
-Nodes (9): ChainCallback, start_next, xfer_buf, sg_from_buffer(), sg_reset(), SgList, count, entries (+1 more)
+Nodes (9): DmaEngine, abort, active_, callback_, callback_ctx_, handle_irq, is_busy, DmaCallback (+1 more)
 
-### Community 189 - "Community 189"
-Cohesion: 0.22
-Nodes (7): DmaBuffer, owned, phys_addr, size, virt_addr, prepare_buf, pp_chain_cb()
-
-### Community 190 - "Community 190"
+### Community 158 - "VirtIO Net Header"
 Cohesion: 0.22
 Nodes (8): VirtioNetHdr, csum_offset, csum_start, flags, gso_size, gso_type, hdr_len, num_buffers
 
-### Community 191 - "Community 191"
+### Community 159 - "ARP Cache"
+Cohesion: 0.47
+Nodes (8): ArpCache, ArpCache::ArpCache(), clear, find, find_empty, lookup, remove, update
+
+### Community 160 - "Syscall Process (Exec/Fork)"
+Cohesion: 0.28
+Nodes (8): Syscall::sys_exec(), Syscall::sys_fork(), Syscall::sys_kill(), Syscall::sys_signal(), Syscall::sys_sigreturn(), Syscall::sys_waitpid(), validate_argv_envp(), signal_is_fatal()
+
+### Community 161 - "Syscall Sync (Alarm/Notify)"
 Cohesion: 0.22
-Nodes (6): EtherHeader, dst, src, type, MacAddr, addr
+Nodes (6): Syscall::sys_alarm(), Syscall::sys_event_set(), Syscall::sys_event_wait(), Syscall::sys_notify(), Syscall::sys_notify_wait(), register_secure_exec_tests()
 
-### Community 192 - "Community 192"
+### Community 163 - "Pipe Buffer"
 Cohesion: 0.22
-Nodes (9): PrngState, blocks_generated, buffer, counter, have_rdrand, have_rdseed, key, nonce (+1 more)
+Nodes (9): PipeBuffer, count, data, data_avail, read_closed, read_pos, refcount, write_closed (+1 more)
 
-### Community 193 - "Community 193"
-Cohesion: 0.22
-Nodes (7): JARVIS_TEST(), tmpfs_create_file, tmpfs_mkdir_ls, tmpfs_mount, tmpfs_nonempty_dir_unlink_fails, tmpfs_unlink_dir, tmpfs_unlink_file
-
-### Community 194 - "Community 194"
-Cohesion: 0.39
-Nodes (7): pit0_elapsed_ns(), pit0_latch_start(), pit1_arm(), pit1_expired(), watchdog_arm(), watchdog_check_inline(), watchdog_panic()
-
-### Community 195 - "Community 195"
+### Community 164 - "Heap / Operator New"
 Cohesion: 0.33
 Nodes (8): init_heap(), mempool_ready(), operator delete(), operator new(), pmm_alloc(), pmm_free(), PmmAllocHdr, page_count
 
-### Community 196 - "Community 196"
-Cohesion: 0.25
-Nodes (7): deadlock_recovery_no_immediate_reform, deadlock_recovery_reclaims_resources, deadlock_recovery_releases_locks, deadlock_recovery_survivors_continue, deadlock_recovery_terminates_task, deadlock_recovery_unblocks_waiters, JARVIS_TEST()
+### Community 165 - "Syscall Latency Bench"
+Cohesion: 0.29
+Nodes (7): F, BenchResult, avg, max, min, measure(), register_bench_syscall_latency_tests()
 
-### Community 198 - "Community 198"
-Cohesion: 0.25
-Nodes (7): fb_clear_screen, fb_init_from_multiboot, fb_putpixel_in_bounds, fb_putpixel_out_of_bounds, fb_scroll_up, JARVIS_TEST(), register_framebuffer_tests()
-
-### Community 199 - "Community 199"
-Cohesion: 0.25
-Nodes (7): gdt_code_data_segments_present, gdt_entries_valid_after_init, gdt_tss_ist_valid, gdt_tss_rsp0_set, gdt_user_segments_have_ring3_dpl, JARVIS_TEST(), register_gdt_tests()
-
-### Community 200 - "Community 200"
-Cohesion: 0.25
-Nodes (7): health_counters_monotonic, health_metrics_fields, health_privileged_only, health_proc_filesystem, health_syscall_returns_metrics, JARVIS_TEST(), register_health_tests()
-
-### Community 201 - "Community 201"
-Cohesion: 0.25
-Nodes (7): keyboard_buffer_full_drops, keyboard_enqueue_dequeue_scancode, keyboard_init_clears_buffer, keyboard_modifier_tracking, keyboard_self_test_sequence, JARVIS_TEST(), register_keyboard_tests()
-
-### Community 202 - "Community 202"
-Cohesion: 0.25
-Nodes (7): mb2_find_tag_by_type, mb2_find_tag_nonexistent, mb2_framebuffer_tag_fields, mb2_memory_map_tag_entries, mb2_module_tag_start_end, JARVIS_TEST(), register_multiboot_tests()
-
-### Community 203 - "Community 203"
-Cohesion: 0.25
-Nodes (7): pipe_create_returns_two_fds, pipe_multiple_writers_no_interleaving, pipe_read_end_closed_returns_epipe, pipe_read_from_empty_nonblock, pipe_write_then_read_roundtrip, pipe_write_to_full_blocks, JARVIS_TEST()
-
-### Community 204 - "Community 204"
+### Community 166 - "AArch64 IDT"
 Cohesion: 0.29
 Nodes (4): InterruptVector, ISRHandler, IDT::register_handler(), IDT::register_handler_raw()
 
-### Community 205 - "Community 205"
+### Community 167 - "Page Flags HAL"
 Cohesion: 0.25
 Nodes (7): PageFlags, CACHE_DISABLED, HUGE, NX, PRESENT, USER, WRITE
 
-### Community 206 - "Community 206"
+### Community 169 - "RISC-V IDT"
 Cohesion: 0.29
 Nodes (4): InterruptVector, ISRHandler, IDT::register_handler(), IDT::register_handler_raw()
 
-### Community 207 - "Community 207"
+### Community 170 - "x86_64 Timer / TSC"
 Cohesion: 0.29
 Nodes (3): rdtsc(), Timer::calibrate_tsc(), Timer::ns()
 
-### Community 208 - "Community 208"
+### Community 171 - "AHCI Received FIS"
 Cohesion: 0.25
 Nodes (8): ReceivedFis, d2h_fis, dma_setup, pio_setup, rsvd0, rsvd1, sdb_fis, vendor
 
-### Community 209 - "Community 209"
+### Community 172 - "DMA Channel"
 Cohesion: 0.25
 Nodes (7): DmaChannel, abort, handle_irq, init, is_busy, start, DmaEngine::DmaEngine()
 
-### Community 210 - "Community 210"
+### Community 173 - "FPU SSE Tests"
 Cohesion: 0.25
-Nodes (7): handle, brk_lowpri_task(), JARVIS_TEST(), syscall_getrandom_basic, syscall_getrandom_invalid_flags, syscall_getrandom_large, syscall_getrandom_zero
+Nodes (3): register_fpu_sse_tests(), Sse128, d
 
-### Community 211 - "Community 211"
-Cohesion: 0.25
-Nodes (8): capture_pod, restore_pod, ReadyQueuePOD, bitmap_hi, bitmap_lo, queue_counts, queue_heads, queue_tails
+### Community 174 - "FAT32 VFS Tests"
+Cohesion: 0.32
+Nodes (5): create_writable_partition(), Fat32TestFixture, device, partition, register_vfs_fat32_tests()
 
-### Community 212 - "Community 212"
-Cohesion: 0.25
-Nodes (4): error_string(), SchedulerError, error_string(), TaskError
+### Community 175 - "Watchdog / PIT Tests"
+Cohesion: 0.43
+Nodes (6): pit0_elapsed_ns(), pit0_latch_start(), pit1_arm(), pit1_expired(), watchdog_arm(), watchdog_check_inline()
 
-### Community 213 - "Community 213"
-Cohesion: 0.25
-Nodes (8): TaskControlBlock, FLAGS_IF, KERNEL_CS, KERNEL_SS, STACK_SIZE, TCB_MAGIC, USER_CS, USER_SS
+### Community 176 - "Syscall Init / Handle"
+Cohesion: 0.38
+Nodes (5): handle, init, syscall_path_open(), syscall_task_open(), brk_lowpri_task()
 
-### Community 214 - "Community 214"
-Cohesion: 0.25
-Nodes (7): JARVIS_TEST(), task_cleanup_frees_resources, task_clone_no_page_table_leak, task_clone_shares_page_tables, task_create_user_page_table, task_elf_load_inits_ipc_objects, task_fork_child_cleanup_preserves_parent_pages
-
-### Community 215 - "Community 215"
-Cohesion: 0.29
-Nodes (6): bootparams_empty_cmdline, bootparams_malformed_cmdline, bootparams_parse_debug_flags, bootparams_parse_multiple_flags, JARVIS_TEST(), register_bootparams_tests()
-
-### Community 216 - "Community 216"
-Cohesion: 0.29
-Nodes (6): gcov_flush_outputs_data, gcov_handler_initialized, gcov_instrument_updates_bitmask, rdtsc_monotonic, JARVIS_TEST(), register_gcov_tests()
-
-### Community 217 - "Community 217"
-Cohesion: 0.29
-Nodes (7): idt_double_fault_uses_ist, idt_entries_initialized, idt_exception_handlers_mapped, idt_irq_remapped, idt_reserved_vectors_null, idt_syscall_handler_installed, JARVIS_TEST()
-
-### Community 218 - "Community 218"
-Cohesion: 0.29
-Nodes (6): memory_safety_mempool_alloc_large_rejected, memory_safety_mempool_exact_edge_sizes, memory_safety_mempool_free_null, memory_safety_pmm_free_beyond_total, memory_safety_pmm_free_zero, JARVIS_TEST()
-
-### Community 219 - "Community 219"
-Cohesion: 0.29
-Nodes (6): pit_init_sets_divisor, pit_irq0_handler_increments_ticks, pit_set_frequency_accepts_range, pit_set_ticks_for_test, pit_ticks_monotonic, JARVIS_TEST()
-
-### Community 220 - "Community 220"
-Cohesion: 0.29
-Nodes (6): serial_init_configures_baud, serial_putchar_output, serial_puts_appends_crlf, serial_puts_empty_string, JARVIS_TEST(), register_serial_tests()
-
-### Community 222 - "Community 222"
+### Community 177 - "VirtIO Used Ring"
 Cohesion: 0.29
 Nodes (7): VirtqUsed, flags, idx, ring, VirtqUsedElem, id, len
 
-### Community 223 - "Community 223"
+### Community 178 - "IOCD Protocol"
 Cohesion: 0.29
 Nodes (6): Msg, args, type, Reply, data, result
 
-### Community 224 - "Community 224"
+### Community 179 - "ICMP Echo Reply"
+Cohesion: 0.29
+Nodes (7): IcmpEchoReply, ident, received, rx_tick, seq, src, net_icmp_last_reply()
+
+### Community 180 - "Utsname / Sys Info"
 Cohesion: 0.29
 Nodes (7): Utsname, domainname, machine, nodename, release, sysname, version
 
-### Community 226 - "Community 226"
+### Community 181 - "Scheduler Errors"
 Cohesion: 0.29
-Nodes (7): Utsname, domainname, machine, nodename, release, sysname, version
+Nodes (4): error_string(), SchedulerError, error_string(), TaskError
 
-### Community 227 - "Community 227"
+### Community 182 - "Test Class Section"
 Cohesion: 0.29
-Nodes (6): JARVIS_TEST(), vfsd_absent_authorize_fails, vfsd_absent_syscall_fails, vfsd_authorize_null_path, vfsd_self_authorization, vfsd_self_authorization_fd_op
+Nodes (6): ClassSection, count, name, start, TestClass, name
 
-### Community 228 - "Community 228"
-Cohesion: 0.29
-Nodes (6): JARVIS_TEST(), register_wfg_tests(), wfg_atomic_update_on_lock_unlock, wfg_basic_construction, wfg_prunes_resolved_dependencies, wfg_single_dependency_edge
-
-### Community 229 - "Community 229"
-Cohesion: 0.38
-Nodes (5): chacha20_block(), chacha_init_state(), chacha_quarter_round(), ChaChaState, s
-
-### Community 230 - "Community 230"
+### Community 183 - "Framebuffer Info"
 Cohesion: 0.29
 Nodes (6): FramebufferInfo, addr, bpp, height, pitch, width
 
-### Community 231 - "Community 231"
+### Community 184 - "Fix Comments Tool"
 Cohesion: 0.43
 Nodes (6): fix_file(), main(), Path, Wrap a single comment line at WRAP_AT characters., Fix long comment lines in a file. Returns number of lines fixed., wrap_comment_line()
 
-### Community 232 - "Community 232"
+### Community 185 - "Fix Long Lines Tool"
 Cohesion: 0.43
 Nodes (6): fix_line(), main(), process_file(), Path, Break a long line at appropriate positions., Process a single file, fixing long lines.
 
-### Community 233 - "Context Switch / Assembly"
+### Community 186 - "Testdev / Test Config Docs"
 Cohesion: 0.33
-Nodes (6): Context Switch Assembly (isr_stubs.asm), Deferred Context Switch, rate_monotonic_schedule(), fork exec Crash Debugging, Nested Timer Interrupt Fix GPF cleanup_zombies, Scheduler Starvation Fix
+Nodes (6): 6 New TEST_CLASS-Based Test Files (24 Classes), make execute-test Unified Target, Test Class System (safe/all/scheduler/etc), Per-Architecture Test-Count Validation, CI/CD Blockers: Full all Suite & healthcheck, VFS Touched Flag (Test Isolation Optimization)
 
-### Community 234 - "Community 234"
+### Community 188 - "IPv4 Address"
 Cohesion: 0.33
-Nodes (5): pic_mask_all, pic_ocw2_end_of_interrupt, pic_remap_vectors, JARVIS_TEST(), register_pic_tests()
+Nodes (3): Ipv4Addr, addr, net_icmp_set_reply()
 
-### Community 235 - "Community 235"
-Cohesion: 0.33
-Nodes (5): shell_redirect_capture_output, shell_redirect_no_target, shell_redirect_to_devnull, JARVIS_TEST(), register_shell_redirect_tests()
-
-### Community 237 - "Community 237"
-Cohesion: 0.53
-Nodes (4): add_rx_buf(), alloc_queue_pages(), virtio_net_poll(), virtio_net_probe()
-
-### Community 238 - "Community 238"
-Cohesion: 0.33
-Nodes (6): IcmpHeader, checksum, code, ident, seq, type
-
-### Community 239 - "Community 239"
+### Community 189 - "Debug Switch Ring"
 Cohesion: 0.33
 Nodes (6): DebugSwitchRecord, consumed_ticks, entry_addr, exit_rip, regs, thread_id
 
-### Community 240 - "Community 240"
+### Community 190 - "IRQ Latency Bench"
+Cohesion: 0.33
+Nodes (5): BenchResult, avg, max, min, register_bench_irq_latency_tests()
+
+### Community 191 - "Scope Guard"
+Cohesion: 0.47
+Nodes (4): Fn, ScopeGuard, active_, fn_
+
+### Community 192 - "Demo Program (Mandelbrot)"
 Cohesion: 0.53
 Nodes (4): demo_main(), draw_mandelbrot(), draw_spinning_rect(), mandelbrot_iter()
 
-### Community 241 - "Community 241"
+### Community 193 - "Constructor Init Generator"
 Cohesion: 0.47
 Nodes (5): extract_members(), generate_init_list(), main(), Extract member variables from a class definition., Generate constructor initializer list.
 
-### Community 242 - "Community 242"
+### Community 195 - "VirtIO Queue Descriptor"
 Cohesion: 0.40
-Nodes (4): dev_random_read, dev_random_resolve, JARVIS_TEST(), register_random_vfs_tests()
+Nodes (5): VirtqDesc, addr, flags, len, next
 
-### Community 243 - "Community 243"
+### Community 196 - "VirtIO Block Request"
 Cohesion: 0.40
-Nodes (4): dev_random_write, dev_random_write_zero, JARVIS_TEST(), register_random_vfs_write_tests()
+Nodes (4): VirtioBlkReqHdr, reserved, sector, type
 
-### Community 244 - "Benchmarks & Test Cases v3"
-Cohesion: 0.40
-Nodes (5): Mandelbrot CPU Benchmark, O(1) Deterministic Scheduler, Test Cases v0.3.1 O(1) Deterministic Scheduler, Test Cases v0.3.2 Scheduling Analytics & Idle-Task Resource Stewardship, Test Cases v0.3.3 WCET Analysis & Tuning
-
-### Community 245 - "Community 245"
-Cohesion: 0.40
-Nodes (5): fpu_basic_instruction, fpu_context_switch, fpu_cpuid_detection, fpu_fxsave_nonzero, JARVIS_TEST()
-
-### Community 246 - "Hard Real-Time Test Cases"
-Cohesion: 0.40
-Nodes (5): Phase 5: Hard Real-Time, Test Cases v0.6.1 Hardware Watchdog, Test Cases v0.6.2 Per-Task Software Watchdog, Test Cases v0.6.3 Deadlock Detection & Recovery, Test Cases v0.6.4 Idle-Task Safety Monitors
-
-### Community 247 - "Community 247"
+### Community 197 - "ARP Cache Entry"
 Cohesion: 0.40
 Nodes (4): ArpCacheEntry, ip, mac, valid
 
-### Community 248 - "Community 248"
-Cohesion: 0.40
-Nodes (5): UdpHeader, checksum, dst_port, length, src_port
+### Community 198 - "Task Definition Validation"
+Cohesion: 0.70
+Nodes (4): name_empty(), name_eq(), name_len(), validate_all()
 
-### Community 249 - "Community 249"
+### Community 201 - "RLimit Tests"
 Cohesion: 0.40
-Nodes (3): JARVIS_TEST(), tmpfs_filesystem_properties, tmpfs_mount_at_invalid_resolve_fails
+Nodes (3): Rlimit, rlim_cur, rlim_max
 
-### Community 250 - "Community 250"
-Cohesion: 0.40
-Nodes (3): JARVIS_TEST(), tmpfs_root_ops_consistent, tmpfs_unmount_unsupported
-
-### Community 251 - "Community 251"
+### Community 203 - "Config Check Tool"
 Cohesion: 0.60
 Nodes (4): check_config(), get_int(), parse_config(), Extract #define CONFIG_* lines from the header.
 
-### Community 254 - "Community 254"
+### Community 204 - "PCI Tests"
 Cohesion: 0.50
-Nodes (3): mandelbrot_crc_hash, JARVIS_TEST(), register_integration_tests()
+Nodes (3): pci_enumeration_bounded_time, JARVIS_TEST(), register_pci_tests()
 
-### Community 257 - "Community 257"
+### Community 205 - "ProcFS Meminfo"
 Cohesion: 0.50
 Nodes (4): MemInfoVnode, base, content, content_len
 
-### Community 258 - "Community 258"
+### Community 206 - "ProcFS PCI Info"
 Cohesion: 0.50
 Nodes (4): PciVnode, base, content, content_len
 
-### Community 260 - "Community 260"
+### Community 207 - "Audit Module Tool"
 Cohesion: 0.83
 Nodes (3): main(), read_file(), run_agent()
 
-### Community 261 - "CI & Test Infrastructure"
+### Community 209 - "Keyboard IRQ / Ring"
 Cohesion: 0.67
-Nodes (3): Jarvis RTOS CI Pipeline, Test Framework And Infrastructure, 665 In Kernel Tests
+Nodes (3): push_ring, update_modifiers, Keyboard::handle_irq()
 
-### Community 262 - "MemPool Audit / Bug 013"
-Cohesion: 0.67
-Nodes (3): MemPool Finding 1 Missing PerPool SpinLock, MemPool Security Audit, Bug 013 MempoolFragmentation Hang
-
-### Community 263 - "Community 263"
-Cohesion: 0.67
-Nodes (3): random_fallback_independent, random_multi_block, JARVIS_TEST()
-
-### Community 268 - "Community 268"
+### Community 212 - "DevFS Entry"
 Cohesion: 0.67
 Nodes (3): DevEntry, name, vnode
 
+### Community 214 - "Test Case Docs (APIC/SMP)"
+Cohesion: 0.67
+Nodes (3): Test Cases v0.4.1 APIC SMP Boot & IRQ Priority, Test Cases v0.4.2 Per-CPU Scheduling & Load Balancing, Test Cases v0.4.3 TLB Shootdown Optimization
+
 ## Knowledge Gaps
-- **1123 isolated node(s):** `codefold`, `dynsection`, `codefold`, `healthcheck.sh script`, `$schema` (+1118 more)
+- **1127 isolated node(s):** `healthcheck.sh script`, `$schema`, `model`, `lsp`, `timeout` (+1122 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **35 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Scheduler` connect `Atomics & FPU Tests` to `Mutex & Deadlock Tests`, `Community 130`, `IPC Benchmarks`, `Network Stack (ARP)`, `x86-64 HAL GDT/IDT`, `x86-64 Paging / VMM`, `AArch64 HAL / Boot`, `RISC-V Page Table`, `Community 33`, `Community 161`, `Community 162`, `Community 37`, `Community 38`, `Community 166`, `Community 41`, `Community 43`, `Community 45`, `Community 47`, `Community 177`, `Community 54`, `Community 60`, `Community 63`, `Community 64`, `Community 194`, `Community 203`, `Community 77`, `Community 212`, `Community 86`, `Community 214`, `Community 92`, `Community 227`, `Community 108`, `Community 109`, `Community 113`, `Community 245`, `Community 123`, `Community 124`?**
-  _High betweenness centrality (0.074) - this node is a cross-community bridge._
-- **Why does `Logger` connect `Architecture & Daemon Init` to `Atomics & FPU Tests`, `Mutex & Deadlock Tests`, `IPC Benchmarks`, `Community 263`, `PCI & Error Handling`, `Community 138`, `Scheduler Tests`, `Network Stack (ARP)`, `PMM / Page Allocator`, `Community 144`, `Community 151`, `Community 155`, `RISC-V Page Table`, `Community 32`, `Community 34`, `Community 38`, `Community 50`, `Community 51`, `Community 56`, `Community 57`, `Community 188`, `Community 64`, `Community 194`, `Community 198`, `Community 71`, `Community 199`, `Community 200`, `Community 201`, `Community 202`, `Community 79`, `Community 84`, `Community 215`, `Community 216`, `Community 92`, `Community 220`, `Community 98`, `Community 100`, `Community 228`, `Community 234`, `Community 235`, `Community 237`, `Community 112`, `Community 114`, `Community 242`, `Community 243`, `Community 254`, `Community 123`, `Community 126`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
-- **Why does `JARVIS_TEST()` connect `Community 63` to `Community 32`, `Atomics & FPU Tests`, `IPC Benchmarks`, `Community 38`, `Syscall Interface`, `Network Stack (ARP)`, `x86-64 HAL GDT/IDT`, `Community 50`, `Community 210`, `x86-64 Paging / VMM`, `Community 56`?**
-  _High betweenness centrality (0.025) - this node is a cross-community bridge._
+- **Why does `info` connect `Test Infrastructure / Address Space` to `Scheduler / Daemon Management`, `Boot Integrity / Daemon Mgr`, `Atomic / Spinlock Tests`, `Signal / Checked Ptr Tests`, `VirtIO Queue Available`, `DMA Buffer / Callback`, `IPC Tests / Buffer Handle`, `Ethernet / MAC`, `AArch64 HAL / Timer`, `Task Ptr / Test Helpers`, `Test Registry / Report`, `DMA Direction / Transfer`, `VirtIO Transport`, `Syscall Sync (Alarm/Notify)`, `Preemption Under Syscall Tests`, `ELF Loader`, `Syscall Latency Bench`, `Semaphore / Locking Tests`, `DMA / Tmpfs Tests`, `Spinlock / Sync Tests`, `Scheduler Validation / Logger`, `FPU SSE Tests`, `Block Device Abstraction`, `Error Types / Gcov`, `FAT32 VFS Tests`, `Driver Framework`, `VFS Daemon (VFSD)`, `Bit Manipulation HAL`, `VirtIO Block Driver`, `IRQ Latency Bench`, `ARP / ICMP / Networking`, `CPUID / Random Tests`, `Test Config Parser`, `FPU Multi-Task Tests`, `Shell Interaction Tests`, `PCI Config Access`, `PCI Tests`, `AArch64 Test / Context`, `VFS Core Tests`, `IDT / ISR Handlers`, `PCI Enumeration`, `AHCI Init / Slot Alloc`, `OOM / Resource Exhaustion`, `Test Expected Counts`, `Test Library / Error Or`, `Microkernel Transition Tests`, `Daemon Manager Entry`, `AHCI Protocol Tables`, `Bus Mastering DMA`, `Ping Pong DMA`, `Scheduler / IPC Tests`, `Syscall Tests`, `IRQ Guard`?**
+  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+- **Why does `TaskContext` connect `Task Context / TCB` to `Task Signals / EventGroup`, `Debug Switch Ring`?**
+  _High betweenness centrality (0.038) - this node is a cross-community bridge._
+- **Why does `Vnode` connect `Device / VFS Core` to `Scheduler / ProcFS Integration`, `ProcFS PID Dir`, `VFS File Operations`, `ProcFS Meminfo`, `ProcFS PCI Info`, `ProcFS / PMM Stats`, `Syscall Init / Handle`, `Tmpfs Filesystem`, `VFS Core Tests`, `DevFS Entry`, `Readdir / VFS Directory`, `Fstat / VFS Status`, `Pipe / FAT32 Close`, `FAT32 Directory Operations`, `Initrd Filesystem`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `info` (e.g. with `vprint` and `init`) actually correct?**
   _`info` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `codefold`, `dynsection`, `codefold` to the rest of the system?**
-  _1158 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Atomics & FPU Tests` be split into smaller, more focused modules?**
-  _Cohesion score 0.04439301493793393 - nodes in this community are weakly interconnected._
-- **Should `Architecture & Daemon Init` be split into smaller, more focused modules?**
-  _Cohesion score 0.04078947368421053 - nodes in this community are weakly interconnected._
+- **What connects `healthcheck.sh script`, `$schema`, `model` to the rest of the system?**
+  _1164 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Hardware Abstraction Layer` be split into smaller, more focused modules?**
+  _Cohesion score 0.02631578947368421 - nodes in this community are weakly interconnected._
+- **Should `Test Infrastructure / Address Space` be split into smaller, more focused modules?**
+  _Cohesion score 0.028985507246376812 - nodes in this community are weakly interconnected._

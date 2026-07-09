@@ -80,6 +80,11 @@ extern "C" void gcov_flush_to_serial();
 
 using namespace arch;
 
+// Set by higherhalf_entry when tests are configured.  Read by init_task_main
+// to run the test suite from a proper task context (IF=1) instead of from
+// the boot context (IF=0, where reschedule()+hlt() would hang).
+static bool g_run_tests = false;
+
 // ── init_task_main ──────────────────────────────────────────────────────
 // Init task entry point for PID 1.  Mounts fstab, runs /etc/rc, then
 // blocks as reaper.  Referenced by both the manual pre-test create (below)
@@ -236,6 +241,20 @@ void init_task_main() {
         // IPC::send only wakes BLOCKED tasks (ipc.cpp:183), so WAITING
         // would deadlock — we'd never be resumed after yielding.
         arch::hlt();
+    }
+
+    // ── Run tests from init-task context (IF=1) ──────────────────
+    if (g_run_tests) {
+#ifdef CONFIG_DEBUG
+        kernel::Logger::info("[TEST] Registry tests=%u classes=%u",
+            (unsigned)kernel::test::Registry::count(),
+            (unsigned)kernel::test::Registry::class_count());
+        kernel::test::set_class_auto_shutdown(true);
+        kernel::test::run_registered(0);
+#else
+        kernel::test::set_class_auto_shutdown(false);
+        kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
+#endif
     }
 
     // ── Create shell task ───────────────────────────────────────
@@ -793,14 +812,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             kernel::test::register_class(classes[i]);
         }
 
-#ifdef CONFIG_DEBUG
-        kernel::Logger::info("[TEST] Registry tests=%u classes=%u", (unsigned)kernel::test::Registry::count(), (unsigned)kernel::test::Registry::class_count());
-        kernel::test::set_class_auto_shutdown(true);
-        kernel::test::run_registered(0);
-#else
-        kernel::test::set_class_auto_shutdown(false);
-        kernel::test::run_filtered(kernel::test::TF_RELEASE, false);
-#endif
+        g_run_tests = true;
     }
 
     if (service::Terminal::instance()) {

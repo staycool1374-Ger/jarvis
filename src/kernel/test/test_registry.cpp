@@ -422,6 +422,18 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"atomic", []() {
         register_atomic_tests();
     }},
+
+    {"spinlock", []() {
+        register_spinlock_tests();
+    }},
+
+    {"spinlock_stress", []() {
+        register_spinlock_stress_tests();
+    }},
+
+    {"preemption", []() {
+        register_preemption_under_syscall_tests();
+    }},
 };
 
 static constexpr size_t g_test_class_count =
