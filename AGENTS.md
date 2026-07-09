@@ -24,7 +24,7 @@ If the branch does not match the intended role, do not proceed.
 
 ## Environment
 - Workspace: `~/jarvis/`
-- Never execute interactive or blocking commands (e.g. `make run-qemu`, `make release`). Non-interactive automated workflows only (e.g. `make test-qemu`)
+- Never execute interactive or blocking commands (e.g. `make run-debug-mode`, `make run-release-mode`). Non-interactive automated workflows only (e.g. `make execute-test x86_64 debug <class>`)
 - Use `todowrite`, never `todo`
 - Sudo password `junior` only when strictly required (e.g. ISO generation)
 
@@ -50,6 +50,13 @@ If the branch does not match the intended role, do not proceed.
 
 ## Pre-Flight
 - Run `bash ~/jarvis/healthcheck.sh`. If exit != 0, halt, print the raw error, and stop. Do not guess a fix.
+
+## Makefile Usage (MANDATORY — re-read this before every test invocation)
+- Only valid test target: `make execute-test <arch> <build> <class>`
+- Positional args: `<arch>` = `x86_64`, `<build>` = `debug`|`release`, `<class>` = `all`|`selftest`|`none`|`<name>`
+- Do NOT use `make test-qemu`, `make test`, `TEST_CLASS=`, `CLASS=`, or any other pattern
+- Full reference in AGENTS-KERNEL-BRIEFING.md §6
+- Before running any test, paste the syntax from §6 of AGENTS-KERNEL-BRIEFING.md to verify
 
 ## QEMU Validation Circuit Breaker
 - Max **3 consecutive fix attempts** if a test fails. If still failing on the 3rd attempt, halt and await human input.

@@ -66,7 +66,7 @@ JARVIS_TEST(syscall_alarm_basic, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(cur->alarm_armed);
-    JARVIS_ASSERT(cur->alarm_ticks == arch::Timer::ticks() + 1);
+    JARVIS_ASSERT(cur->alarm_ticks == 1ULL);
 
     ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
@@ -116,24 +116,26 @@ JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Manually sets alarm_ticks to start+2 and advances the timer tick
-// count to verify alarm remains armed until the target tick is reached.
-// Input: Direct manipulation of cur->alarm_ticks and cur->alarm_armed;
-// arch::Timer::set_ticks_for_test().
-// Expect: alarm_armed remains true at tick start+1; passes on reaching start+2.
-// Depends: kernel::Scheduler, kernel::arch::Timer
+// Testidea: Verifies alarm decrements each on_tick and fires after reaching 0.
+// Input: Set alarm_ticks=2, call on_tick() twice.
+// Expect: alarm_armed true after first tick, false + SIGALRM after second.
+// Depends: kernel::Scheduler
 JARVIS_TEST(alarm_fires_after_ticks, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    uint64_t start_ticks = arch::Timer::ticks();
-    cur->alarm_ticks = start_ticks + 2;
+    cur->alarm_ticks = 2;
     cur->alarm_armed = true;
+    cur->pending_signals = 0;
 
-    arch::Timer::set_ticks_for_test(start_ticks + 1);
+    Scheduler::on_tick();
     JARVIS_ASSERT(cur->alarm_armed);
+    JARVIS_ASSERT_EQ(cur->alarm_ticks, 1ULL);
 
-    arch::Timer::set_ticks_for_test(start_ticks + 2);
+    Scheduler::on_tick();
+    JARVIS_ASSERT(!cur->alarm_armed);
+    JARVIS_ASSERT_EQ(cur->alarm_ticks, 0ULL);
+    JARVIS_ASSERT((cur->pending_signals & (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) != 0);
     JARVIS_TEST_PASS();
 }
 
@@ -153,9 +155,8 @@ JARVIS_TEST(syscall_alarm_subsecond, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, ret);
 
     JARVIS_ASSERT(cur->alarm_armed);
-    uint64_t expected_ticks = arch::Timer::ticks() + 500;
-    JARVIS_ASSERT(cur->alarm_ticks >= expected_ticks - 10);
-    JARVIS_ASSERT(cur->alarm_ticks <= expected_ticks + 10);
+    JARVIS_ASSERT(cur->alarm_ticks >= 490ULL);
+    JARVIS_ASSERT(cur->alarm_ticks <= 510ULL);
 
     ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
     JARVIS_ASSERT(!cur->alarm_armed);

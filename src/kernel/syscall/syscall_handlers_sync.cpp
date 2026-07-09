@@ -83,9 +83,8 @@ uint64_t Syscall::sys_alarm(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
         return 0;
     }
 
-    uint64_t current_tick = arch::Timer::ticks();
     uint64_t ticks = seconds * 1000 + (microseconds + 999) / 1000;
-    cur->alarm_ticks = current_tick + ticks;
+    cur->alarm_ticks = ticks;
     cur->alarm_armed = true;
     return 0;
 }

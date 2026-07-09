@@ -417,15 +417,32 @@ void Scheduler::on_tick() noexcept {
         if (task->state == TaskState::RUNNING || task->state == TaskState::READY
             ) {
             ++task->executed_ticks;
+            uint64_t prev_rem = task->remaining_ticks;
             if (task->remaining_ticks > 0) --task->remaining_ticks;
-
-            // Check for alarm expiration
-            if (task->alarm_armed && current_tick >= task->alarm_ticks) {
-                task->alarm_armed = false;
-                // Deliver SIGALRM to the task
-                task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::
-                    SIGALRM));
+            if (prev_rem == 0 && task->period_ticks > 0) {
+                task->remaining_ticks = task->period_ticks;
             }
+
+            // Check for alarm expiration (countdown ticks)
+            if (task->alarm_armed) {
+                if (task->alarm_ticks > 0) --task->alarm_ticks;
+                if (task->alarm_ticks == 0) {
+                    task->alarm_armed = false;
+                    task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::
+                        SIGALRM));
+                }
+            }
+
+#if CONFIG_DEADLINE_MISS_DETECTION
+            // Deadline miss detection (read-only observation)
+            if (!task->deadline_missed && task->deadline_ticks > 0 &&
+                arch::Timer::ticks() > task->deadline_ticks) {
+                task->deadline_missed = true;
+                ++task->deadline_miss_count;
+                deadline_miss_handler(task,
+                    arch::Timer::ticks() - task->deadline_ticks);
+            }
+#endif
         }
     }
 
@@ -1032,6 +1049,8 @@ void Scheduler::capture_task_fields(TaskFields* out) {
         out[i].base_priority      = t->base_priority;
         out[i].period_ticks       = t->period_ticks;
         out[i].deadline_ticks     = t->deadline_ticks;
+        out[i].deadline_missed    = t->deadline_missed;
+        out[i].deadline_miss_count= t->deadline_miss_count;
         out[i].executed_ticks     = t->executed_ticks;
         out[i].remaining_ticks    = t->remaining_ticks;
         out[i].exit_code          = t->exit_code;
@@ -1064,6 +1083,8 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
             t->base_priority   = saved[j].base_priority;
             t->period_ticks    = saved[j].period_ticks;
             t->deadline_ticks  = saved[j].deadline_ticks;
+            t->deadline_missed = saved[j].deadline_missed;
+            t->deadline_miss_count = saved[j].deadline_miss_count;
             t->executed_ticks  = saved[j].executed_ticks;
             t->remaining_ticks = saved[j].remaining_ticks;
             t->exit_code       = saved[j].exit_code;
@@ -1080,6 +1101,29 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
         }
     }
 }
+
+#if CONFIG_DEADLINE_MISS_DETECTION
+__attribute__((weak))
+void deadline_miss_handler(TaskControlBlock* task,
+                           uint64_t missed_by_ticks) noexcept {
+#if CONFIG_DEADLINE_ACTION == 1
+    panic("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=PANIC)",
+          task->id, task->name, missed_by_ticks);
+#elif CONFIG_DEADLINE_ACTION == 2
+    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
+                 task->id, task->name, missed_by_ticks);
+    if (task->priority > 1) task->priority >>= 1;
+#elif CONFIG_DEADLINE_ACTION == 3
+    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
+                 task->id, task->name, missed_by_ticks);
+    task->state = TaskState::TERMINATED;
+    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
+#else
+    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
+                 task->id, task->name, missed_by_ticks);
+#endif
+}
+#endif
 
 } // namespace kernel
 

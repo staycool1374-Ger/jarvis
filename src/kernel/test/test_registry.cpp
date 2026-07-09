@@ -67,6 +67,7 @@ void register_deadlock_detect_tests();
 void register_deadlock_recovery_tests();
 void register_health_tests();
 void register_timer_tests();
+void register_timing_tests();
 void register_serial_tests();
 void register_keyboard_tests();
 void register_spsc_tests();
@@ -196,6 +197,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_deadlock_recovery_tests();
         register_health_tests();
         register_timer_tests();
+        register_timing_tests();
         register_serial_tests();
         register_keyboard_tests();
         register_spsc_tests();
@@ -425,6 +427,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"spinlock", []() {
         register_spinlock_tests();
+    }},
+
+    {"timing", []() {
+        register_timing_tests();
     }},
 
     {"spinlock_stress", []() {

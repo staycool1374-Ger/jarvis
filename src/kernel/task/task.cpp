@@ -39,6 +39,7 @@
 #include <string.hpp>
 #include <constants.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/timer.hpp>
 
 namespace kernel {
 
@@ -189,7 +190,9 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->priority = priority;
     tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
-    tcb->deadline_ticks = period_ticks;
+    tcb->deadline_ticks = arch::Timer::ticks() + period_ticks;
+    tcb->deadline_missed = false;
+    tcb->deadline_miss_count = 0;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
     tcb->wcet_ticks = 0;
@@ -292,7 +295,9 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->priority = priority;
     tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
-    tcb->deadline_ticks = period_ticks;
+    tcb->deadline_ticks = arch::Timer::ticks() + period_ticks;
+    tcb->deadline_missed = false;
+    tcb->deadline_miss_count = 0;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
     tcb->wcet_ticks = 0;

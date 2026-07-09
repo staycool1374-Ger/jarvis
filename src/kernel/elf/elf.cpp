@@ -27,6 +27,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/timer.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/vfs/initrd_fs.hpp>
 #include <constants.hpp>
@@ -306,7 +307,7 @@ TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* file_data) {
     tcb->base_priority = 5;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = 20;
-    tcb->deadline_ticks = 20;
+    tcb->deadline_ticks = arch::Timer::ticks() + 20;
     tcb->page_table_ = 0;
     tcb->page_table_shared_ = false;
     tcb->stack_phys_ = 0;

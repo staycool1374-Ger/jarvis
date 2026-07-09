@@ -195,6 +195,8 @@ public:
         uint64_t base_priority;
         uint64_t period_ticks;
         uint64_t deadline_ticks;
+        bool     deadline_missed;
+        uint64_t deadline_miss_count;
         uint64_t executed_ticks;
         uint64_t remaining_ticks;
         uint64_t exit_code;
@@ -338,5 +340,13 @@ extern "C" {
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern bool s_reap_in_progress;
 }
+
+#if CONFIG_DEADLINE_MISS_DETECTION
+/// @brief Weak callback invoked when a task misses its deadline.
+/// Called from ISR context (on_tick) — must not block or allocate.
+__attribute__((weak))
+void deadline_miss_handler(TaskControlBlock* task,
+                           uint64_t missed_by_ticks) noexcept;
+#endif
 
 } // namespace kernel

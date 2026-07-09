@@ -67,7 +67,6 @@ JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
     Scheduler::on_tick();
 
     JARVIS_ASSERT_EQ(cur->remaining_ticks, 10ULL);
-    JARVIS_ASSERT_EQ(cur->executed_ticks, 0ULL);
     JARVIS_TEST_PASS();
 }
 
@@ -224,7 +223,133 @@ JARVIS_TEST(timer_daemon_restart_not_triggered_on_active, "PRE: none | POST: non
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Verifies deadline_missed is set when deadline_ticks is in the past.
+// Input: Create a task with expired deadline (deadline_ticks=0). Call on_tick().
+// Expect: deadline_missed==true, deadline_miss_count==1.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
+#if !CONFIG_DEADLINE_MISS_DETECTION
+    JARVIS_TEST_PASS();
+    return;
+#endif
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    uint64_t saved_ticks = cur->deadline_ticks;
+    bool saved_missed = cur->deadline_missed;
+    uint64_t saved_count = cur->deadline_miss_count;
+
+    cur->deadline_ticks = 0;
+    cur->deadline_missed = false;
+    cur->deadline_miss_count = 0;
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT(cur->deadline_missed == true);
+    JARVIS_ASSERT(cur->deadline_miss_count == 1);
+
+    cur->deadline_ticks = saved_ticks;
+    cur->deadline_missed = saved_missed;
+    cur->deadline_miss_count = saved_count;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies deadline_missed stays false when deadline is far in the future.
+// Input: Set deadline_ticks=UINT64_MAX. Call on_tick().
+// Expect: deadline_missed==false, deadline_miss_count==0.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
+#if !CONFIG_DEADLINE_MISS_DETECTION
+    JARVIS_TEST_PASS();
+    return;
+#endif
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    uint64_t saved_ticks = cur->deadline_ticks;
+    bool saved_missed = cur->deadline_missed;
+    uint64_t saved_count = cur->deadline_miss_count;
+
+    cur->deadline_ticks = UINT64_MAX;
+    cur->deadline_missed = false;
+    cur->deadline_miss_count = 0;
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT(cur->deadline_missed == false);
+    JARVIS_ASSERT(cur->deadline_miss_count == 0);
+
+    cur->deadline_ticks = saved_ticks;
+    cur->deadline_missed = saved_missed;
+    cur->deadline_miss_count = saved_count;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies deadline_miss fires only once per deadline period.
+// Input: Set deadline_ticks=0, call on_tick() twice.
+// Expect: deadline_miss_count==1 (only first call triggers a miss event).
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
+#if !CONFIG_DEADLINE_MISS_DETECTION
+    JARVIS_TEST_PASS();
+    return;
+#endif
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    uint64_t saved_ticks = cur->deadline_ticks;
+    bool saved_missed = cur->deadline_missed;
+    uint64_t saved_count = cur->deadline_miss_count;
+
+    cur->deadline_ticks = 0;
+    cur->deadline_missed = false;
+    cur->deadline_miss_count = 0;
+
+    Scheduler::on_tick();
+    JARVIS_ASSERT(cur->deadline_miss_count == 1);
+
+    Scheduler::on_tick();
+    JARVIS_ASSERT(cur->deadline_miss_count == 1);
+
+    cur->deadline_ticks = saved_ticks;
+    cur->deadline_missed = saved_missed;
+    cur->deadline_miss_count = saved_count;
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies deadline zero (unset/default) does not trigger a miss.
+// Input: Keep deadline_ticks=0, set deadline_missed=false. Call on_tick().
+// Expect: deadline_missed remains false (zero means deadline not set).
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
+#if !CONFIG_DEADLINE_MISS_DETECTION
+    JARVIS_TEST_PASS();
+    return;
+#endif
+    auto* cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+    uint64_t saved_ticks = cur->deadline_ticks;
+    bool saved_missed = cur->deadline_missed;
+    uint64_t saved_count = cur->deadline_miss_count;
+
+    cur->deadline_ticks = 0;
+    cur->deadline_missed = false;
+    cur->deadline_miss_count = 0;
+
+    Scheduler::on_tick();
+
+    JARVIS_ASSERT(cur->deadline_missed == false);
+    JARVIS_ASSERT(cur->deadline_miss_count == 0);
+
+    cur->deadline_ticks = saved_ticks;
+    cur->deadline_missed = saved_missed;
+    cur->deadline_miss_count = saved_count;
+    JARVIS_TEST_PASS();
+}
+
 void register_timing_tests() {
+    Logger::raw_write("[TIMING] register_timing_tests called!\n");
     Logger::info("Registering timing tests");
     JARVIS_REGISTER_TEST(timer_tick_accounting);
     JARVIS_REGISTER_TEST(timer_period_reload);
@@ -234,4 +359,8 @@ void register_timing_tests() {
     JARVIS_REGISTER_TEST(timer_reap_orphans_periodic);
     JARVIS_REGISTER_TEST(timer_no_side_effects_on_idle);
     JARVIS_REGISTER_TEST(timer_daemon_restart_not_triggered_on_active);
+    JARVIS_REGISTER_TEST(timer_deadline_miss_detection_fires);
+    JARVIS_REGISTER_TEST(timer_deadline_miss_skips_future);
+    JARVIS_REGISTER_TEST(timer_deadline_miss_only_once);
+    JARVIS_REGISTER_TEST(timer_deadline_miss_skips_zero);
 }

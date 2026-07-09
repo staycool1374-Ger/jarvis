@@ -146,6 +146,8 @@ struct TaskControlBlock {
         , base_priority(0)
         , period_ticks(0)
         , deadline_ticks(0)
+        , deadline_missed(false)
+        , deadline_miss_count(0)
         , executed_ticks(0)
         , remaining_ticks(0)
         , wcet_ticks(0)
@@ -197,6 +199,8 @@ struct TaskControlBlock {
     uint64_t base_priority;
     uint64_t period_ticks;
     uint64_t deadline_ticks;
+    bool deadline_missed;
+    uint64_t deadline_miss_count;
     uint64_t executed_ticks;
     uint64_t remaining_ticks;
     uint64_t wcet_ticks;  ///< explicit WCET for utilisation calc; 0 = implicit 100%

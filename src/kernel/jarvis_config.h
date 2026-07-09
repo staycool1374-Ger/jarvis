@@ -473,6 +473,17 @@
 #define CONFIG_SPORADIC_SERVER_DEADLINE_HOOK 1
 #endif
 
+/// Enable deadline miss detection in on_tick(). Default: 1 (enabled).
+#ifndef CONFIG_DEADLINE_MISS_DETECTION
+#define CONFIG_DEADLINE_MISS_DETECTION 1
+#endif
+
+/// Default action on deadline miss (used by default handler):
+///   0 = LOG_ONLY, 1 = PANIC, 2 = DEMOTE (priority /= 2), 3 = KILL
+#ifndef CONFIG_DEADLINE_ACTION
+#define CONFIG_DEADLINE_ACTION 0
+#endif
+
 // ---------------------------------------------------------------------------
 // Custom Assertion Macro
 // ---------------------------------------------------------------------------
