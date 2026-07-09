@@ -39,7 +39,7 @@ Notes
 
 #### Pre-Requisite: Bugfix & Stabilisation
 - [ ] **Fix 15 pre-existing FAILs** in vfsd/iocd/buffer_pool — classify as flaky or deterministic, fix or isolate
-- [ ] **Stash audit: drop superseded stashes** (`stash@{0}`, `stash@{2}`), keep `stash@{1}` for selective extraction
+- [x] **Stash audit: drop superseded stashes** (`stash@{0}`, `stash@{2}`), keep `stash@{1}` for selective extraction
 - [ ] **Re-enable `DeadlockNestedMutexLoad`** — evaluate with new `ScopedCurrentTask` + `state = BLOCKED` pattern; harden mutex waiter array if needed
 
 #### Deadline Adherence
