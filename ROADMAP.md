@@ -533,3 +533,62 @@ These are not disabled/stub tests but genuine failures. They must be triaged sep
 - **Genuine failures**: ~15
 - **Healthy passing tests**: ~725 - 15 ≈ 710 (at time of scan)
 - **Health check**: `bash ~/jarvis/healthcheck.sh` must exit 0 before any fix attempt.
+
+---
+
+### Stashed Work — Audit & Remediation (v0.3.x)
+
+Four stashes remain from prior sessions containing partially-complete or alternative-approach work. Each must be reviewed, salvaged if applicable, or discarded.
+
+---
+
+#### `stash@{0}` — Pre-Session WIP (alternative starvation fix approach)
+
+**Location:** `stash@{0}` — `pre-session WIP` on main
+
+**Contents:** Major `kernel.cpp` restructuring (daemon init reordering, boot-stack switch to idle task before `sti()` as alternative starvation fix), RSP corruption DIAG instrumentation in `on_tick()`/`switch_to_task()`, `reload_daemon_tasks()` gutted ("TEMP: skip entirely"), signal handling additions, IPC debug log removal.
+
+**Status:** Alternative approach **superseded** by final `ScopedCurrentTask` + `IrqGuard` pattern (commit `346cb51`). The boot-stack-to-idle switch was a plausible fix but risked masking the root cause. The daemon init reordering and IPC log removal were applied in other forms.
+
+- [ ] **0.3.x-STASH-0:** Drop after verifying no unique salvageable code remains. The `reload_daemon_tasks()` gutting is dangerous — do not apply.
+
+---
+
+#### `stash@{1}` — Error-Handling Refactor (branch deleted)
+
+**Location:** `stash@{1}` — `WIP on error-handling-refactor`
+
+**Contents:** Error-returning API variants for core subsystems — `PMM::init_err()`, `PMM::alloc_page_err()`, `PMM::alloc_contiguous_err()`, `VMM` error variants, `Mutex`/`Semaphore`/`Queue`/`EventGroup`/`Notify` error-returning wrappers, `VFS` error-returning wrappers (~1040 lines added). **Also deletes all 5 FPU test files** (`test_fpu.cpp`, `test_fpu_clone.cpp`, `test_fpu_multi.cpp`, `test_fpu_sse.cpp`, `test_fpu_xmm_all.cpp`).
+
+**Status:** The error-returning API pattern is architecturally valuable for hard-RT certification (ISO 26262 requires error propagation, not panics). However, the FPU test deletion is destructive — those tests provide coverage for FPU context save/restore in IPC and clone paths. Needs selective extraction.
+
+- [ ] **0.3.x-STASH-1:** Extract error-returning API additions **without** FPU test deletion. Apply to PMM (`alloc_page_err`, etc.), then VMM, then sync primitives. Full `make test-all-debug` validation after each subsystem.
+- [ ] **0.3.x-STASH-1b:** Evaluate whether the new sync primitives (`EventGroup`, `Notify`) duplicate existing IPC primitives or fill a real gap. If valuable, add separately with tests.
+
+---
+
+#### `stash@{2}` — Our-Fixes (minor bugfix audit)
+
+**Location:** `stash@{2}` — `On main: our-fixes`
+
+**Contents:** Semaphore `memset` cleanup already applied. Pipe init field-by-field fix already applied. `test_task_lifecycle` and `test_waitpid` use-after-free changes — further inspection needed.
+
+**Status:** The semaphore and pipe fixes are already in HEAD. The use-after-free "fixes" in `test_task_lifecycle` and `test_waitpid` actually *introduce* use-after-free by accessing `child1->id` after `delete child1`. **Do not apply.**
+
+- [ ] **0.3.x-STASH-2:** Drop after confirming both test files have correct ID-capture-before-delete patterns (already confirmed: `test_waitpid.cpp:89,151,169` and `test_task_lifecycle.cpp:217` capture the ID before delete).
+
+---
+
+#### `stash@{3}` — WIP on Starvation/Deadlock (ScopeGuard + new.cpp)
+
+**Location:** `stash@{3}` — `WIP on main: a9bf8a2`
+
+**Contents:** ScopeGuard cleanup pattern (already applied in final fix), MemPool `ready_`/`contains()`/`is_ready()` (already applied), test RAII fixtures (already applied), `test_vfs_fat32` fixture (already applied), `test_buffer_pool` transfer fix (already applied). **Not applied: `lib/new.cpp` rewrite.**
+
+**`lib/new.cpp` latent bug:** Current `operator new` falls back to PMM via bump-heap overflow path, but `operator delete` calls `MemPool::free()` unconditionally. If a PMM-backed allocation (too large for MemPool) is deleted, it passes a non-MemPool pointer to `MemPool::free()`, causing corruption. The stash adds:
+- `PmmAllocHdr` header before each PMM allocation tracking page count
+- `MemPool::contains()` check in `operator delete` — if pointer is not in any pool, calls `pmm_free()` which frees the PMM pages
+- Proper PMM page freeing instead of MemPool free
+
+- [ ] **0.3.x-STASH-3:** Apply `lib/new.cpp` rewrite — critical latent heap corruption bug. Stash@{3} implementation is correct. Full `make test-all-debug` required to validate.
+- [ ] **0.3.x-STASH-3b:** After applying, verify `operator delete` handles three cases: (a) MemPool-allocated → `MemPool::free`, (b) PMM-backed (bump overflow) → page-by-page PMM free via `PmmAllocHdr`, (c) `nullptr` → no-op.
