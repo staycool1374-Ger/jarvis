@@ -36,6 +36,13 @@ Notes
 - CONFIG_HARD_REAL_TIME=0 builds must remain functionally identical to v0.2.21 (Soft-RT compatibility)
 
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
+
+#### Pre-Requisite: Bugfix & Stabilisation
+- [ ] **Fix 15 pre-existing FAILs** in vfsd/iocd/buffer_pool — classify as flaky or deterministic, fix or isolate
+- [ ] **Stash audit: drop superseded stashes** (`stash@{0}`, `stash@{2}`), keep `stash@{1}` for selective extraction
+- [ ] **Re-enable `DeadlockNestedMutexLoad`** — evaluate with new `ScopedCurrentTask` + `state = BLOCKED` pattern; harden mutex waiter array if needed
+
+#### Deadline Adherence
 - [ ] Deadline Miss Detection & Handler
   - [ ] Add TaskControlBlock::deadline_ticks (absolute deadline) and deadline_missed flag
   - [ ] In Scheduler::on_tick(): check current_tick > task->deadline_ticks for RUNNING/READY tasks
@@ -54,6 +61,12 @@ Notes
 
 ### 0.3.3 — Inheritance & Ceiling
 ## Preemptive Priority-Based Scheduling + Priority Inversion Mitigation (Pillar 3)
+
+#### Pre-Requisite: Enable Starvation/Deadlock Tests
+- [ ] **`DeadlockNestedMutexLoad`:** re-enable with hardened mutex waiter array (was disabled due to overflow at `mutex.cpp:109`)
+- [ ] **`DeadlockRecoveryResourceReclamation`:** implement test class or remove placeholder
+
+#### Priority Inheritance & Ceiling
 - [ ] Priority Inheritance Protocol (PIP) — Mutex
   - [ ] Add Mutex::priority_ceiling (static ceiling = max priority of any task that may lock)
   - [ ] In Mutex::lock(): if contested, boost owner to max(owner_prio, waiter_prio) via Scheduler::boost_priority()
@@ -118,6 +131,7 @@ Notes
   - [ ] CONFIG_BUFFER_POOL_BLOCKS per size class
   - [ ] IPC messages: inline payload (no heap), buffer handle for zero-copy
 - [ ] Eliminate operator new/delete from Kernel
+  - [ ] **Apply `lib/new.cpp` rewrite (stash@{3}):** fix `operator delete` calling `MemPool::free` on PMM-backed allocations — add `PmmAllocHdr` header + `MemPool::contains()` check
   - [ ] Replace all new/delete with MemPool::alloc/free or placement new into static storage
   - [ ] Add -fno-exceptions -fno-rtti -fno-threadsafe-statics to kernel CFLAGS
   - [ ] Audit lib/stdcpp.cpp — remove ::operator new implementations
@@ -157,6 +171,21 @@ Notes
   - [ ] Validate: CONFIG_IRQ_LATENCY_MAX_NS < CONFIG_MIN_TASK_PERIOD_NS
 
 ### 0.3.8 Test & Verification Suite
+
+#### Infrastructure
+- [ ] **`vfs_touched` flag (Option B):** lazy daemon restart — skip `reload_daemon_tasks()` for non-VFS tests (~95%), reducing per-test overhead ~70-80%
+  - [ ] Add `g_vfs_touched` flag in test framework, reset on snapshot_restore
+  - [ ] Call `mark_vfs_touched()` in all VFS syscall handlers
+  - [ ] Branch in `snapshot_restore()`: skip daemon restart if flag clear
+  - [ ] Force flag in daemon crash tests
+- [ ] **Fix `make execute-test`** — trace Makefile rule, restore expect runner
+- [ ] **Fix healthcheck.sh** — add per-check labels for actionable failure output
+- [ ] **Disabled/stub test remediation:** triage ~90+ disabled/stub/broken tests
+  - [ ] Re-enable or remove disabled tests (`#if 0`, registration-commented)
+  - [ ] Implement real bodies for stub tests (capabilities, O_NONBLOCK, signal delivery, etc.)
+  - [ ] Track remaining with blocker issues
+
+#### WCET & Hard-RT Tests
 - [ ] WCET Measurement Tests
   - [ ] test_wcet_scheduler.cpp — measure next_task(), reschedule(), switch_to_task() cycles (10k iterations)
   - [ ] test_wcet_ipc.cpp — measure send/receive latency (same core, cross-core via IPI)
@@ -297,6 +326,8 @@ As network daemon (need).
 
 ### Test Isolation — Option B: Lazy Daemon Restart via `vfs_touched` Flag
 
+> **Migrated to v0.3.8 — Test & Verification Suite / Infrastructure.**
+
 **Problem:** Every `snapshot_restore()` cycle unconditionally kills and reloads the VFS and IOC daemons via `reload_daemon_tasks()`. This is correct but wasteful: ~95% of tests never touch the VFS (no file open/read/write/stat), yet pay the full daemon death+ELF-load+remount cost (~150k cycles per test). Over 700+ tests this adds significant wall-clock time and creates unnecessary serial log noise ("daemon died" messages that are actually deliberate kills).
 
 **Design (Option B):**
@@ -355,6 +386,8 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
 
 ### Test Isolation — CI/CD Blockers & Infrastructure Fixes
 
+> **Migrated to v0.3.8 — Test & Verification Suite / Infrastructure.**
+
 - [ ] **1. Full `all` suite completion (QEMU watchdog / signal 15):**
   - **Problem:** Running the full `all` test class via direct QEMU invocation gets the QEMU process killed mid-run by signal 15 (SIGTERM) — likely the host tooling watchdog or a timeout mechanism. The suite never completes end-to-end.
   - **Investigation:**
@@ -407,6 +440,9 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
    - **Verification:** A developer debugging a page-fault in a test can find the relevant subsystem description and snapshot/restore interaction within 30 seconds.
 
 ### Disabled / Stub / Broken Test Remediation (v0.3.x)
+
+> **Migrated to v0.3.8 — Test & Verification Suite / Infrastructure.**  
+> Stalled/starvation-deadlock disabled tests migrated to v0.3.2 and v0.3.3 respectively.
 
 Full scan of all test files identified ~90+ disabled, stub, or broken tests across 15+ files. These must be triaged and addressed per-subsystem.
 
@@ -492,13 +528,12 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 #### Disabled Starvation/Deadlock Tests (remediated in current work)
 
+> **`DeadlockNestedMutexLoad` → v0.3.2 (pre-requisite), `DeadlockRecoveryResourceReclamation` → v0.3.3.**
+
 | Test | File | Status | Fix |
 |------|------|--------|-----|
 | `DeadlockNestedMutexLoad` | `test_starvation_deadlock.cpp:231` | Disabled (commented out) | Real `mutex.lock()` with contention on `[](){}` tasks corrupts scheduler state; waiter array overflow at `mutex.cpp:109`. Requires test isolation redesign for blocking primitives. |
 | `DeadlockRecoveryResourceReclamation` | `test_starvation_deadlock.cpp:237` | Never implemented | No class definition exists in source. |
-
-- [ ] **0.3.x-DEADLOCK-1:** Evaluate whether `DeadlockNestedMutexLoad` can be fixed with the new `ScopedCurrentTask` + `state = BLOCKED` pattern, or if mutex waiter array needs to be hardened first.
-- [ ] **0.3.x-DEADLOCK-2:** Implement `DeadlockRecoveryResourceReclamation` if the resource reclamation mechanism exists; otherwise remove the placeholder.
 
 ---
 
@@ -512,14 +547,14 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 #### Pre-Existing Test Failures (unrelated to disabled/stub work)
 
+> **Migrated to v0.3.2 — Pre-Requisite: Bugfix & Stabilisation.**
+
 Current full suite reports **15 pre-existing FAILs** in:
 - `vfsd` subsystem
 - `iocd` subsystem
 - `buffer_pool` subsystem
 
 These are not disabled/stub tests but genuine failures. They must be triaged separately.
-
-- [ ] **0.3.x-FAIL-1:** Investigate the 15 pre-existing failures in vfsd/iocd/buffer_pool. Classify as flaky (intermittent) or deterministic. Fix or isolate.
 
 ---
 
@@ -537,6 +572,10 @@ These are not disabled/stub tests but genuine failures. They must be triaged sep
 ---
 
 ### Stashed Work — Audit & Remediation (v0.3.x)
+
+> **Stash drops (`stash@{0}`, `stash@{2}`) → v0.3.2 pre-requisite.**  
+> **`lib/new.cpp` rewrite (`stash@{3}`) → v0.3.5 (Eliminate operator new/delete).**  
+> **Error-returning API extraction (`stash@{1}`) → unassigned; keep for selective integration under v0.3.7 (Configuration & Validation) or standalone refactoring sprint.**
 
 Four stashes remain from prior sessions containing partially-complete or alternative-approach work. Each must be reviewed, salvaged if applicable, or discarded.
 
