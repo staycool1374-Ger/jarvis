@@ -23,6 +23,8 @@
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/daemon/daemon_mgr.hpp>
 #include <signal.hpp>
 
 using namespace kernel;
@@ -152,28 +154,52 @@ JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
 JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
     auto* cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    uint64_t cnt_before = Scheduler::task_count();
 
     auto* parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
+    uint64_t parent_id = parent->id;
     Scheduler::add_task(*parent);
 
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
+    uint64_t child_id = child->id;
     child->parent_id = parent->id;
+    Scheduler::add_task(*child);
+
+    // Both tasks are RUNNING and in the ready queue.
+    // Set them TERMINATED and remove from ready queue so the reaper finds them.
     child->state = TaskState::TERMINATED;
     child->exit_code = 0;
-    Scheduler::add_task(*child);
+    Scheduler::dequeue_ready(*child);
 
     parent->state = TaskState::TERMINATED;
     parent->exit_code = 0;
+    Scheduler::dequeue_ready(*parent);
 
     for (int i = 0; i < 100; ++i) {
         Scheduler::on_tick();
-        if (Scheduler::task_count() < cnt_before + 2) break;
     }
 
-    JARVIS_ASSERT(Scheduler::task_count() <= cnt_before + 1);
+    // After reaping, the terminated test tasks should be gone from the task table.
+    // Note: we do NOT assert on global task_count() here because daemon restarts
+    // (vfsd, iocd, etc.) inflate the count in the same reaper cycle.
+    JARVIS_ASSERT(Scheduler::find_task(parent_id) == nullptr);
+    JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
+
+    // Clean up any daemon tasks that were spawned by the reaper cycle, so
+    // subsequent tests in the class don't inherit leaked task resources.
+    for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
+        const auto& entry = daemon::get_entry(i);
+        if (entry.pid != 0) {
+            auto* dt = Scheduler::find_task(entry.pid);
+            if (dt) {
+                Scheduler::remove_task(*dt);
+                daemon::notify_death(entry.pid);
+                dt->cleanup();
+                delete dt;
+            }
+        }
+    }
     JARVIS_TEST_PASS();
 }
 
@@ -239,7 +265,7 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
     bool saved_missed = cur->deadline_missed;
     uint64_t saved_count = cur->deadline_miss_count;
 
-    cur->deadline_ticks = 0;
+    cur->deadline_ticks = arch::Timer::ticks() - 1;
     cur->deadline_missed = false;
     cur->deadline_miss_count = 0;
 
@@ -301,7 +327,7 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
     bool saved_missed = cur->deadline_missed;
     uint64_t saved_count = cur->deadline_miss_count;
 
-    cur->deadline_ticks = 0;
+    cur->deadline_ticks = arch::Timer::ticks() - 1;
     cur->deadline_missed = false;
     cur->deadline_miss_count = 0;
 
