@@ -188,6 +188,7 @@ static Vnode* initrd_root_lookup(Vnode&, const char* name) {
         kernel::MemPool::free(finfo);
         return nullptr;
     }
+    vnode->parent = &initrd_root;
     kernel::test::ResourceTracker::instance().track_vnode_add();
     vnode->ops = &initrd_file_ops;
     vnode->ino = 1;
@@ -221,6 +222,7 @@ static Vnode* initrd_get_root() {
         initrd_root.size = 0;
         initrd_root.mode = S_IFDIR;
         initrd_root.private_data = nullptr;
+        initrd_root.parent = nullptr;
         root_initialized = true;
     }
     return &initrd_root;

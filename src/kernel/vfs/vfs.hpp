@@ -95,6 +95,7 @@ struct Vnode {
     uint16_t mode;         ///< File mode / type flags.
     void* private_data;    ///< Filesystem-specific private data.
     uint64_t refcount;     ///< Reference count.
+    Vnode* parent;         ///< Parent directory vnode (for `..` resolution).
 };
 
 struct FileDescription {

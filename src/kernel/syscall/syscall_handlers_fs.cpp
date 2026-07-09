@@ -326,7 +326,10 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     auto* cur = syscall_task();
     if (!cur || !vn) return static_cast<uint64_t>(-1);
     if (!(vn->mode & vfs::S_IFDIR)) return static_cast<uint64_t>(-1);
+    if (cur->cwd_vnode && cur->cwd_vnode->refcount > 0)
+        --cur->cwd_vnode->refcount;
     cur->cwd_vnode = vn;
+    ++vn->refcount;
     size_t i = 0;
     while (resolved_path[i] && i < 255) { cur->cwd[i] = resolved_path[i]; ++i; }
     cur->cwd[i] = '\0';

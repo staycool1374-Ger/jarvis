@@ -81,6 +81,7 @@ void init_task_common(TaskControlBlock& tcb) {
     tcb.cwd[0] = '/';
     tcb.cwd[1] = '\0';
     tcb.cwd_vnode = vfs::get_root_vnode();
+    if (tcb.cwd_vnode) ++tcb.cwd_vnode->refcount;
 
     // Initialize IPC message queue
     auto* mq = static_cast<MessageQueue*>(MemPool::alloc(sizeof(MessageQueue)));
@@ -470,6 +471,8 @@ TaskControlBlock* TaskControlBlock::clone(uint64_t* regs) {
     while (parent->cwd[cwd_len] && cwd_len < 255) ++cwd_len;
     for (size_t i = 0; i <= cwd_len; ++i) tcb->cwd[i] = parent->cwd[i];
     tcb->cwd_vnode = parent->cwd_vnode;
+    if (tcb->cwd_vnode && tcb->cwd_vnode->refcount > 0)
+        ++tcb->cwd_vnode->refcount;
 
     // Buffer pool starts empty — buffers are NOT inherited on fork
     tcb->buf_list_head = -1;
@@ -835,6 +838,10 @@ void TaskControlBlock::cleanup() noexcept {
         Scheduler::dec_sporadic_count();
         MemPool::free(sporadic_server);
         sporadic_server = nullptr;
+    }
+    if (cwd_vnode && cwd_vnode->refcount > 0) {
+        --cwd_vnode->refcount;
+        cwd_vnode = nullptr;
     }
     kernel::test::ResourceTracker::instance().track_task_remove();
 }

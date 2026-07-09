@@ -394,6 +394,7 @@ static Vnode* fat32_dir_lookup(Vnode& self, const char* name) {
     vnode->mode = entry.is_directory ? S_IFDIR : S_IFREG;
     vnode->private_data = vdata;
     vnode->refcount = 1;
+    vnode->parent = &self;
     return vnode;
 }
 
@@ -422,6 +423,7 @@ static Vnode* fat32_get_root() {
         fat32_root_vnode.mode = S_IFDIR;
         fat32_root_vnode.private_data = &fat32_root_vdata;
         fat32_root_vnode.refcount = 1;
+        fat32_root_vnode.parent = nullptr;
         root_initialized = true;
     }
     return &fat32_root_vnode;

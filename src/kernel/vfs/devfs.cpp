@@ -115,7 +115,7 @@ static const VnodeOps tty_ops = {
 };
 
 static Vnode tty_vnode = {
-    &tty_ops, 1, 0, S_IFCHR, nullptr, 0,
+    &tty_ops, 1, 0, S_IFCHR, nullptr, 0, nullptr,
 };
 
 // ── null vnode ──
@@ -162,7 +162,7 @@ static const VnodeOps null_ops = {
 };
 
 static Vnode null_vnode = {
-    &null_ops, 2, 0, S_IFCHR, nullptr, 0,
+    &null_ops, 2, 0, S_IFCHR, nullptr, 0, nullptr,
 };
 
 // ── console vnode ──
@@ -208,7 +208,7 @@ static const VnodeOps console_ops = {
 };
 
 static Vnode console_vnode = {
-    &console_ops, 3, 0, S_IFCHR, nullptr, 0,
+    &console_ops, 3, 0, S_IFCHR, nullptr, 0, nullptr,
 };
 
 // ── kbd vnode ──
@@ -269,7 +269,7 @@ static const VnodeOps kbd_ops = {
 };
 
 static Vnode kbd_vnode = {
-    &kbd_ops, 4, 0, S_IFCHR, nullptr, 0,
+    &kbd_ops, 4, 0, S_IFCHR, nullptr, 0, nullptr,
 };
 
 // ── random vnode ──
@@ -312,7 +312,7 @@ static const VnodeOps random_ops = {
 };
 
 static Vnode random_vnode = {
-    &random_ops, 5, 0, S_IFCHR, nullptr, 0,
+    &random_ops, 5, 0, S_IFCHR, nullptr, 0, nullptr,
 };
 
 // ── devfs root ──
@@ -389,7 +389,7 @@ static const VnodeOps dev_root_ops = {
 };
 
 static Vnode dev_root_vnode = {
-    &dev_root_ops, 0, 0, S_IFDIR, nullptr, 0,
+    &dev_root_ops, 0, 0, S_IFDIR, nullptr, 0, nullptr,
 };
 
 /// @brief Get the devfs root vnode.

@@ -211,10 +211,7 @@ Vnode* resolve(const char* path) {
         if (comp[0] == '.' && comp[1] == '\0') continue;
 
         if (comp[0] == '.' && comp[1] == '.' && comp[2] == '\0') {
-            if (current->private_data) {
-                Vnode* pv = reinterpret_cast<Vnode*>(current->private_data);
-                if (pv) { current = pv; continue; }
-            }
+            if (current->parent) { current = current->parent; continue; }
             for (size_t i = 0; i < mount_count; ++i) {
                 if (!mount_table[i].used) continue;
                 if (mount_table[i].root_vnode != current) continue;
@@ -330,93 +327,67 @@ Filesystem* find_fs(const char* name) {
     return nullptr;
 }
 
-/// @brief Create a subdirectory at the given path.
-/// @return 0 on success, VFS_INVALID on failure.
-int mkdir(const char* path, uint16_t mode) {
-    // Resolve the parent directory
+/// @brief Resolve the parent vnode and leaf name from a path.
+/// Handles both absolute ("/foo/bar") and relative ("bar") paths by
+/// delegating sub-path resolution to resolve(), which already handles
+/// CWD, mount points, .., . etc.
+/// @param path  The full path to parse.
+/// @param[out] out_name  Set to the final path component (leaf name).
+/// @return The parent vnode, or nullptr if it cannot be resolved.
+static Vnode* resolve_parent(const char* path, const char*& out_name) {
     const char* slash = nullptr;
     for (const char* p = path; *p; ++p) {
         if (*p == '/') slash = p;
     }
 
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-
     if (slash) {
         size_t parent_len = static_cast<size_t>(slash - path);
+        char parent_buf[MAX_PATH];
         for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
             parent_buf[i] = path[i];
         parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
+        out_name = slash + 1;
+        if (!*out_name) return nullptr;
+        return resolve(parent_buf);
     }
 
-    if (!*name) return VFS_INVALID;
+    out_name = path;
+    if (!*out_name) return nullptr;
+    auto* task = Scheduler::current_task();
+    return (task && task->cwd_vnode) ? task->cwd_vnode : root_vnode_global;
+}
 
-    Vnode* parent = resolve(parent_path);
+/// @brief Create a subdirectory at the given path.
+/// @return 0 on success, VFS_INVALID on failure.
+int mkdir(const char* path, uint16_t mode) {
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
     if (!parent->ops || !parent->ops->mkdir) return VFS_INVALID;
-
     return parent->ops->mkdir(*parent, name, mode);
 }
 
 /// @brief Remove a file or empty directory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int unlink(const char* path) {
-    const char* slash = nullptr;
-    for (const char* p = path; *p; ++p) {
-        if (*p == '/') slash = p;
-    }
-
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-
-    if (slash) {
-        size_t parent_len = static_cast<size_t>(slash - path);
-        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
-            parent_buf[i] = path[i];
-        parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
-    }
-
-    if (!*name) return VFS_INVALID;
-
-    Vnode* parent = resolve(parent_path);
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
     if (!parent->ops || !parent->ops->unlink) return VFS_INVALID;
-
     return parent->ops->unlink(*parent, name);
 }
 
 /// @brief Create a regular file at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int create(const char* path, uint16_t mode) {
-    const char* slash = nullptr;
-    for (const char* p = path; *p; ++p) {
-        if (*p == '/') slash = p;
-    }
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-    if (slash) {
-        size_t parent_len = static_cast<size_t>(slash - path);
-        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
-            parent_buf[i] = path[i];
-        parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
-    }
-    if (!*name) return VFS_INVALID;
-    Vnode* parent = resolve(parent_path);
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
     if (!parent->ops || !parent->ops->create) return VFS_INVALID;
     return parent->ops->create(*parent, name, mode);
 }
 
-/// @brief Mount a filesystem with error code return.
+/// @brief Mount a filesystem with error handling.
 /// @return VfsError code.
 VfsError mount_err(Filesystem& filesystem, const char* mount_point) {
     if (!filesystem.get_root || mount_count >= MAX_MOUNTS) {
@@ -493,31 +464,11 @@ VfsError resolve_err(const char* path, Vnode*& out_vnode) {
 /// @brief Create a subdirectory with error code return.
 /// @return VfsError code.
 VfsError mkdir_err(const char* path, uint16_t mode) {
-    const char* slash = nullptr;
-    for (const char* p = path; *p; ++p) {
-        if (*p == '/') slash = p;
-    }
-
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-
-    if (slash) {
-        size_t parent_len = static_cast<size_t>(slash - path);
-        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
-            parent_buf[i] = path[i];
-        parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
-    }
-
-    if (!*name) return VFS_ERR_INVALID_ARGS;
-
-    Vnode* parent = resolve(parent_path);
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent) return VFS_ERR_NOT_FOUND;
     if (!(parent->mode & S_IFDIR)) return VFS_ERR_NOT_DIR;
     if (!parent->ops || !parent->ops->mkdir) return VFS_ERR_NOT_SUPPORTED;
-
     int result = parent->ops->mkdir(*parent, name, mode);
     return result == 0 ? VFS_ERR_OK : VFS_ERR_IO_ERROR;
 }
@@ -525,23 +476,8 @@ VfsError mkdir_err(const char* path, uint16_t mode) {
 /// @brief Create a regular file with error code return.
 /// @return VfsError code.
 VfsError create_err(const char* path, uint16_t mode) {
-    const char* slash = nullptr;
-    for (const char* p = path; *p; ++p) {
-        if (*p == '/') slash = p;
-    }
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-    if (slash) {
-        size_t parent_len = static_cast<size_t>(slash - path);
-        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
-            parent_buf[i] = path[i];
-        parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
-    }
-    if (!*name) return VFS_ERR_INVALID_ARGS;
-    Vnode* parent = resolve(parent_path);
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent) return VFS_ERR_NOT_FOUND;
     if (!(parent->mode & S_IFDIR)) return VFS_ERR_NOT_DIR;
     if (!parent->ops || !parent->ops->create) return VFS_ERR_NOT_SUPPORTED;
@@ -552,31 +488,11 @@ VfsError create_err(const char* path, uint16_t mode) {
 /// @brief Remove a file or empty directory with error code return.
 /// @return VfsError code.
 VfsError unlink_err(const char* path) {
-    const char* slash = nullptr;
-    for (const char* p = path; *p; ++p) {
-        if (*p == '/') slash = p;
-    }
-
-    const char* parent_path = "/";
-    const char* name = path;
-    char parent_buf[MAX_PATH];
-
-    if (slash) {
-        size_t parent_len = static_cast<size_t>(slash - path);
-        for (size_t i = 0; i < parent_len && i < MAX_PATH - 1; ++i)
-            parent_buf[i] = path[i];
-        parent_buf[parent_len] = '\0';
-        parent_path = parent_buf;
-        name = slash + 1;
-    }
-
-    if (!*name) return VFS_ERR_INVALID_ARGS;
-
-    Vnode* parent = resolve(parent_path);
+    const char* name = nullptr;
+    Vnode* parent = resolve_parent(path, name);
     if (!parent) return VFS_ERR_NOT_FOUND;
     if (!(parent->mode & S_IFDIR)) return VFS_ERR_NOT_DIR;
     if (!parent->ops || !parent->ops->unlink) return VFS_ERR_NOT_SUPPORTED;
-
     int result = parent->ops->unlink(*parent, name);
     return result == 0 ? VFS_ERR_OK : VFS_ERR_IO_ERROR;
 }

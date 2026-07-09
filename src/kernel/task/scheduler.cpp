@@ -685,12 +685,12 @@ static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock* t, const ch
     auto base = reinterpret_cast<uint64_t>(t->kernel_stack);
     auto top = t->kernel_stack_top;
     if (rsp >= base && rsp <= top) return true;
+    if (rsp < base) return false;
     Logger::raw_write("[SCHED] "); Logger::raw_write(label);
     Logger::raw_write(": task id="); Logger::print_dec(t->id);
     Logger::raw_write(" rsp=0x"); Logger::print_hex(rsp);
-    Logger::raw_write(" outside stack [0x"); Logger::print_hex(base);
-    Logger::raw_write("-0x"); Logger::print_hex(top);
-    Logger::raw_write("]\n");
+    Logger::raw_write(" above stack top 0x"); Logger::print_hex(top);
+    Logger::raw_write("\n");
     return false;
 }
 

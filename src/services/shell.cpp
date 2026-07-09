@@ -47,7 +47,39 @@
 #include <string.hpp>
 #include <constants.hpp>
 
+namespace {
+
+static constexpr uint32_t COLOR_DEFAULT  = 0xC0C0C0;
+static constexpr uint32_t COLOR_ERROR    = 0xFF4444;
+static constexpr uint32_t COLOR_WARN     = 0xCC3333;
+static constexpr uint32_t COLOR_SUCCESS  = 0x00AA00;
+static constexpr uint32_t COLOR_DIR      = 0x00AAFF;
+static constexpr uint32_t COLOR_GREEN    = 0x00FF00;
+static constexpr uint32_t COLOR_RED      = 0xFF0000;
+static constexpr uint32_t COLOR_YELLOW   = 0xFFFF00;
+
+}
+
 namespace service {
+
+static void shell_error(const char* cmd, const char* msg) {
+    Terminal::set_fg(COLOR_ERROR);
+    Terminal::write(cmd); Terminal::write(": "); Terminal::write(msg);
+    Terminal::putchar('\n');
+    Terminal::set_fg(COLOR_DEFAULT);
+}
+
+static void shell_error_path(const char* cmd, const char* path, const char* msg) {
+    Terminal::set_fg(COLOR_ERROR);
+    Terminal::write(cmd); Terminal::write(": "); Terminal::write(msg);
+    Terminal::write(": "); Terminal::write(path);
+    Terminal::putchar('\n');
+    Terminal::set_fg(COLOR_DEFAULT);
+}
+
+static void shell_vfs_error(const char* cmd, kernel::errors::VfsError err) {
+    shell_error(cmd, kernel::errors::error_string(err));
+}
 
 static void background_task_wrapper() {
     auto* task = kernel::Scheduler::current_task();
@@ -306,11 +338,11 @@ int Shell::parse_and_exec(const char* line) {
         }
     }
 
-    Terminal::set_fg(0xFF4444);
+    Terminal::set_fg(COLOR_ERROR);
     Terminal::write("Unbekannter Befehl: ");
     Terminal::write(argv[0]);
     Terminal::write("\n");
-    Terminal::set_fg(0xC0C0C0);
+    Terminal::set_fg(COLOR_DEFAULT);
     Terminal::write("Verfuegbar: help\n");
 
     delete[] buf;
@@ -480,11 +512,11 @@ void Shell::shell_task_main() {
 
     Terminal::clear();
     Terminal::write("\n");
-    Terminal::set_fg(0x00FF00);
+    Terminal::set_fg(COLOR_GREEN);
     Terminal::write("Jarvis RTOS ");
     Terminal::write(kernel::Version::string());
     Terminal::write("\n");
-    Terminal::set_fg(0xC0C0C0);
+    Terminal::set_fg(COLOR_DEFAULT);
     Terminal::write("Type 'help' for available commands\n\n");
 
     char line[BUF_SIZE];
@@ -497,18 +529,18 @@ void Shell::shell_task_main() {
 
         // Exit status indicator: green checkmark for 0, red X for non-zero
         if (last_exit_code_ == 0) {
-            Terminal::set_fg(0x00AA00);
+            Terminal::set_fg(COLOR_SUCCESS);
             Terminal::write("✓ ");
         } else {
-            Terminal::set_fg(0xCC3333);
+            Terminal::set_fg(COLOR_WARN);
             Terminal::write("✗ ");
         }
 
         // Current directory in blue
-        Terminal::set_fg(0x00AAFF);
+        Terminal::set_fg(COLOR_DIR);
         Terminal::write(cwd);
         Terminal::write(" ");
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         Terminal::write("$ ");
 
         arch::Keyboard::flush();
@@ -523,9 +555,9 @@ void Shell::cmd_help(int, const char**) {
     Terminal::write("\nVerfuegbare Befehle:\n");
     for (size_t i = 0; i < num_commands_; ++i) {
         Terminal::write("  ");
-        Terminal::set_fg(0x00AAFF);
+        Terminal::set_fg(COLOR_DIR);
         Terminal::write(commands_[i].name);
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
 
         size_t name_len = 0;
         const char* n = commands_[i].name;
@@ -628,10 +660,10 @@ void Shell::cmd_meminfo(int, const char**) {
 }
 
 void Shell::cmd_version(int, const char**) {
-    Terminal::set_fg(0x00FF00);
+    Terminal::set_fg(COLOR_GREEN);
     Terminal::write(kernel::Version::full_string());
     Terminal::write("\n");
-    Terminal::set_fg(0xC0C0C0);
+    Terminal::set_fg(COLOR_DEFAULT);
     Terminal::write("Kernel: ");
     Terminal::write(kernel::Version::string());
     Terminal::write("\nBuild:  ");
@@ -673,16 +705,12 @@ void Shell::cmd_modprobe(int argc, const char** argv) {
     if (kernel::DriverRegistry::load(argv[1])) {
         auto* drv = kernel::DriverRegistry::find(argv[1]);
         Terminal::write("Driver geladen: ");
-        Terminal::set_fg(0x00FF00);
+        Terminal::set_fg(COLOR_GREEN);
         Terminal::write(drv ? drv->name : argv[1]);
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         Terminal::putchar('\n');
     } else {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("Fehler: Treiber nicht gefunden oder Init fehlgeschlagen: ");
-        Terminal::write(argv[1]);
-        Terminal::set_fg(0xC0C0C0);
-        Terminal::putchar('\n');
+        shell_error_path("Fehler", argv[1], "Treiber nicht gefunden oder Init fehlgeschlagen");
     }
 }
 
@@ -694,20 +722,20 @@ void Shell::cmd_modlist(int, const char**) {
         auto* drv = kernel::DriverRegistry::get(i);
         if (!drv) continue;
         Terminal::write("  ");
-        Terminal::set_fg(0x00AAFF);
+        Terminal::set_fg(COLOR_DIR);
         Terminal::write(drv->name);
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         size_t nlen = 0;
         while (drv->name[nlen]) ++nlen;
         for (size_t p = nlen; p < 16; ++p) Terminal::putchar(' ');
         Terminal::write(drv->description);
         Terminal::write(" [");
         switch (drv->state) {
-        case kernel::DriverState::LOADED:   Terminal::set_fg(0x00FF00); Terminal::write("geladen"); break;
-        case kernel::DriverState::UNLOADED: Terminal::set_fg(0xFFFF00); Terminal::write("verfuegbar"); break;
-        case kernel::DriverState::ERROR:    Terminal::set_fg(0xFF0000); Terminal::write("fehler"); break;
+        case kernel::DriverState::LOADED:   Terminal::set_fg(COLOR_GREEN); Terminal::write("geladen"); break;
+        case kernel::DriverState::UNLOADED: Terminal::set_fg(COLOR_YELLOW); Terminal::write("verfuegbar"); break;
+        case kernel::DriverState::ERROR:    Terminal::set_fg(COLOR_RED); Terminal::write("fehler"); break;
         }
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         Terminal::write("]\n");
     }
 }
@@ -801,9 +829,9 @@ void Shell::cmd_listprog(int, const char**) {
         auto* prog = ProgramRegistry::get(i);
         if (prog) {
             Terminal::write("  ");
-            Terminal::set_fg(0x00AAFF);
+            Terminal::set_fg(COLOR_DIR);
             Terminal::write(prog->name);
-            Terminal::set_fg(0xC0C0C0);
+            Terminal::set_fg(COLOR_DEFAULT);
             Terminal::write(" - ");
             Terminal::write(prog->description);
             Terminal::putchar('\n');
@@ -814,30 +842,71 @@ void Shell::cmd_listprog(int, const char**) {
     }
 }
 
+/// @brief Build the canonical absolute path from a target and current cwd.
+static void build_canonical_path(const char* cwd, const char* target,
+                                 char* out, size_t out_size) {
+    char buf[256];
+    size_t pos = 0;
+    if (target[0] == '/') {
+        while (target[pos] && pos < out_size - 1) { buf[pos] = target[pos]; ++pos; }
+        buf[pos] = '\0';
+    } else {
+        size_t i = 0;
+        while (cwd[i] && i < out_size - 1) { buf[i] = cwd[i]; ++i; }
+        if (i > 1) buf[i++] = '/';
+        size_t j = 0;
+        while (target[j] && i < out_size - 1) { buf[i++] = target[j++]; }
+        buf[i] = '\0';
+    }
+    // Normalize in-place: collapse //, resolve . and ..
+    char stack[256];
+    size_t sp = 0;
+    const char* p = buf;
+    while (*p) {
+        while (*p == '/') ++p;
+        if (!*p) break;
+        const char* start = p;
+        while (*p && *p != '/') ++p;
+        size_t seg_len = static_cast<size_t>(p - start);
+        if (seg_len == 1 && start[0] == '.') continue;
+        if (seg_len == 2 && start[0] == '.' && start[1] == '.') {
+            if (sp > 1) {
+                --sp;
+                while (sp > 0 && stack[sp - 1] != '/') --sp;
+            }
+            continue;
+        }
+        if (sp > 0 && stack[sp - 1] != '/') stack[sp++] = '/';
+        for (size_t i = 0; i < seg_len; ++i) stack[sp++] = start[i];
+    }
+    if (sp == 0) { stack[sp++] = '/'; }
+    stack[sp] = '\0';
+    size_t i = 0;
+    while (stack[i] && i < out_size - 1) { out[i] = stack[i]; ++i; }
+    out[i] = '\0';
+}
+
 void Shell::cmd_cd(int argc, const char** argv) {
     const char* target = (argc < 2) ? "/" : argv[1];
     auto* vn = kernel::vfs::resolve(target);
     if (!vn) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("cd: no such directory: ");
-        Terminal::write(target);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("cd", target, "no such directory");
         return;
     }
     if (!(vn->mode & kernel::vfs::S_IFDIR)) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("cd: not a directory: ");
-        Terminal::write(target);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("cd", target, "not a directory");
         return;
     }
     auto* task = kernel::Scheduler::current_task();
     if (!task) return;
+    if (task->cwd_vnode && task->cwd_vnode->refcount > 0)
+        --task->cwd_vnode->refcount;
     task->cwd_vnode = vn;
+    ++vn->refcount;
+    char canonical[256];
+    build_canonical_path(task->cwd, target, canonical, sizeof(canonical));
     size_t i = 0;
-    while (target[i] && i < 255) { task->cwd[i] = target[i]; ++i; }
+    while (canonical[i] && i < 255) { task->cwd[i] = canonical[i]; ++i; }
     task->cwd[i] = '\0';
 }
 
@@ -853,9 +922,7 @@ void Shell::cmd_export(int argc, const char** argv) {
         if (*p == '=') { eq = p; break; }
     }
     if (!eq || eq == arg) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("export: malformed, use VAR=value\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("export", "malformed, use VAR=value");
         return;
     }
 
@@ -881,9 +948,7 @@ void Shell::cmd_export(int argc, const char** argv) {
 
     // Add new entry
     if (env_count_ >= MAX_ENV) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("export: environment full\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("export", "environment full");
         return;
     }
 
@@ -905,37 +970,25 @@ void Shell::cmd_runelf(int argc, const char** argv) {
 
     initrd::InitrdFile f = initrd::find(path);
     if (!f.data) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("runelf: file not found in initrd: ");
-        Terminal::write(path);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("runelf", path, "file not found in initrd");
         return;
     }
 
     auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
     if (!kernel::elf::validate_header(hdr)) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("runelf: invalid ELF: ");
-        Terminal::write(path);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("runelf", path, "invalid ELF");
         return;
     }
 
     auto* task = kernel::elf::load(hdr, f.data);
     if (!task) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("runelf: failed to load: ");
-        Terminal::write(path);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("runelf", path, "failed to load");
         return;
     }
 
     kernel::Scheduler::add_task(*task);
 
-    Terminal::set_fg(0x00FF00);
+    Terminal::set_fg(COLOR_GREEN);
     Terminal::write("Started task #");
     char buf[16];
     int pos = 0;
@@ -945,7 +998,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
     Terminal::write(": ");
     Terminal::write(path);
     Terminal::putchar('\n');
-    Terminal::set_fg(0xC0C0C0);
+    Terminal::set_fg(COLOR_DEFAULT);
 }
 
 void Shell::cmd_selftest(int argc, const char** argv) {
@@ -1014,9 +1067,9 @@ void Shell::cmd_selftest(int argc, const char** argv) {
 }
 
 void Shell::cmd_exit(int, const char**) {
-    Terminal::set_fg(0xFF4444);
+    Terminal::set_fg(COLOR_ERROR);
     Terminal::write("\nShutting down...\n");
-    Terminal::set_fg(0xC0C0C0);
+    Terminal::set_fg(COLOR_DEFAULT);
 
     arch::outw(arch::QEMU_ACPI_PORT, 0x2000);
     arch::outw(arch::QEMU_SHUTDOWN_PORT, 0x2000);
@@ -1088,11 +1141,9 @@ void Shell::cmd_mkdir(int argc, const char** argv) {
         Terminal::write("Usage: mkdir <path>\n");
         return;
     }
-    int r = kernel::vfs::mkdir(argv[1], 0);
-    if (r != 0) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("mkdir: failed to create directory\n");
-        Terminal::set_fg(0xC0C0C0);
+    auto r = kernel::vfs::mkdir_err(argv[1], 0);
+    if (r != kernel::errors::VFS_ERR_OK) {
+        shell_vfs_error("mkdir", r);
     }
 }
 
@@ -1101,11 +1152,9 @@ void Shell::cmd_rm(int argc, const char** argv) {
         Terminal::write("Usage: rm <path>\n");
         return;
     }
-    int r = kernel::vfs::unlink(argv[1]);
-    if (r != 0) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("rm: failed to remove file\n");
-        Terminal::set_fg(0xC0C0C0);
+    auto r = kernel::vfs::unlink_err(argv[1]);
+    if (r != kernel::errors::VFS_ERR_OK) {
+        shell_vfs_error("rm", r);
     }
 }
 
@@ -1114,11 +1163,9 @@ void Shell::cmd_rmdir(int argc, const char** argv) {
         Terminal::write("Usage: rmdir <path>\n");
         return;
     }
-    int r = kernel::vfs::unlink(argv[1]);
-    if (r != 0) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("rmdir: failed to remove directory (not empty?)\n");
-        Terminal::set_fg(0xC0C0C0);
+    auto r = kernel::vfs::unlink_err(argv[1]);
+    if (r != kernel::errors::VFS_ERR_OK) {
+        shell_vfs_error("rmdir", r);
     }
 }
 
@@ -1149,11 +1196,7 @@ void Shell::cmd_alias(int argc, const char** argv) {
                 return;
             }
         }
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("alias: not found: ");
-        Terminal::write(argv[1]);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("alias", argv[1], "not found");
         return;
     }
     size_t name_len = static_cast<size_t>(eq - argv[1]);
@@ -1174,9 +1217,7 @@ void Shell::cmd_alias(int argc, const char** argv) {
         }
     }
     if (alias_count_ >= Shell::MAX_ALIASES) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("alias: limit reached\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("alias", "limit reached");
         return;
     }
     size_t pos = 0;
@@ -1200,11 +1241,7 @@ void Shell::cmd_unalias(int argc, const char** argv) {
             return;
         }
     }
-    Terminal::set_fg(0xFF4444);
-    Terminal::write("unalias: not found: ");
-    Terminal::write(argv[1]);
-    Terminal::putchar('\n');
-    Terminal::set_fg(0xC0C0C0);
+    shell_error_path("unalias", argv[1], "not found");
 }
 
 void Shell::cmd_history(int, const char**) {
@@ -1262,11 +1299,7 @@ void Shell::cmd_source(int argc, const char** argv) {
     }
     auto* vn = kernel::vfs::resolve(argv[1]);
     if (!vn || !(vn->mode & kernel::vfs::S_IFREG)) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("source: cannot read: ");
-        Terminal::write(argv[1]);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("source", argv[1], "cannot read");
         return;
     }
     if (!vn->ops->read) return;
@@ -1316,11 +1349,11 @@ void Shell::cmd_set(int argc, const char** argv) {
             case 'e': shell_options_ |= 2; break;
             case 'u': shell_options_ |= 4; break;
             default:
-                Terminal::set_fg(0xFF4444);
+                Terminal::set_fg(COLOR_ERROR);
                 Terminal::write("set: unknown option: -");
                 Terminal::putchar(*p);
                 Terminal::putchar('\n');
-                Terminal::set_fg(0xC0C0C0);
+                Terminal::set_fg(COLOR_DEFAULT);
                 return;
             }
         }
@@ -1331,11 +1364,11 @@ void Shell::cmd_set(int argc, const char** argv) {
             case 'e': shell_options_ &= ~2; break;
             case 'u': shell_options_ &= ~4; break;
             default:
-                Terminal::set_fg(0xFF4444);
+                Terminal::set_fg(COLOR_ERROR);
                 Terminal::write("set: unknown option: +");
                 Terminal::putchar(*p);
                 Terminal::putchar('\n');
-                Terminal::set_fg(0xC0C0C0);
+                Terminal::set_fg(COLOR_DEFAULT);
                 return;
             }
         }
@@ -1758,18 +1791,12 @@ void Shell::cmd_pushd(int argc, const char** argv) {
         return;
     }
     if (dir_stack_count_ >= Shell::MAX_DIR_STACK) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("pushd: directory stack full\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("pushd", "directory stack full");
         return;
     }
     auto* vn = kernel::vfs::resolve(argv[1]);
     if (!vn || !(vn->mode & kernel::vfs::S_IFDIR)) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("pushd: not a directory: ");
-        Terminal::write(argv[1]);
-        Terminal::putchar('\n');
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("pushd", argv[1], "not a directory");
         return;
     }
     size_t pos = 0;
@@ -1781,9 +1808,7 @@ void Shell::cmd_pushd(int argc, const char** argv) {
 
 void Shell::cmd_popd(int, const char**) {
     if (dir_stack_count_ == 0) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("popd: directory stack empty\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("popd", "directory stack empty");
         return;
     }
     --dir_stack_count_;
@@ -1796,11 +1821,7 @@ void Shell::cmd_ls(int argc, const char** argv) {
     const char* path = (argc < 2) ? "." : argv[1];
     auto* vn = kernel::vfs::resolve(path);
     if (!vn) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("ls: cannot access '");
-        Terminal::write(path);
-        Terminal::write("': No such file or directory\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("ls", path, "cannot access");
         return;
     }
     if (!(vn->mode & kernel::vfs::S_IFDIR)) {
@@ -1818,15 +1839,15 @@ void Shell::cmd_ls(int argc, const char** argv) {
         auto* child = vn->ops->lookup(*vn, dent.d_name);
         if (child) {
             if (child->mode & kernel::vfs::S_IFDIR) {
-                Terminal::set_fg(0x00AAFF);
+                Terminal::set_fg(COLOR_DIR);
             } else {
-                Terminal::set_fg(0xC0C0C0);
+                Terminal::set_fg(COLOR_DEFAULT);
             }
         } else {
-            Terminal::set_fg(0xC0C0C0);
+            Terminal::set_fg(COLOR_DEFAULT);
         }
         Terminal::write(dent.d_name);
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         Terminal::putchar(' ');
     }
     Terminal::putchar('\n');
@@ -1861,9 +1882,7 @@ static void print_mac(net::MacAddr mac) {
 
 void Shell::cmd_ifconfig(int argc, const char** argv) {
     if (!net::g_nic) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("ifconfig: no network interface\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("ifconfig", "no network interface");
         return;
     }
 
@@ -1909,9 +1928,9 @@ void Shell::cmd_ifconfig(int argc, const char** argv) {
             nic.gateway = net::Ipv4Addr{{a[0], a[1], a[2], a[3]}};
         }
 
-        Terminal::set_fg(0x00FF00);
+        Terminal::set_fg(COLOR_GREEN);
         Terminal::write("ifconfig: interface configured\n");
-        Terminal::set_fg(0xC0C0C0);
+        Terminal::set_fg(COLOR_DEFAULT);
         return;
     }
 
@@ -1960,20 +1979,14 @@ void Shell::cmd_ping(int argc, const char** argv) {
 
     net::Ipv4Addr dst;
     if (parse_ip(argv[1], dst) != 0) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("ping: invalid IP address: ");
-        Terminal::write(argv[1]);
-        Terminal::write("\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("ping", argv[1], "invalid IP address");
         return;
     }
 
     bool is_loopback = (dst.as_u32() == 0x7F000001);
 
     if (!net::g_nic && !is_loopback) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("ping: no network interface\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error("ping", "no network interface");
         return;
     }
 
@@ -2076,11 +2089,7 @@ void Shell::cmd_less(int argc, const char** argv) {
 
     auto* vn = kernel::vfs::resolve(argv[1]);
     if (!vn || !(vn->mode & kernel::vfs::S_IFREG)) {
-        Terminal::set_fg(0xFF4444);
-        Terminal::write("less: ");
-        Terminal::write(argv[1]);
-        Terminal::write(": No such file\n");
-        Terminal::set_fg(0xC0C0C0);
+        shell_error_path("less", argv[1], "No such file");
         return;
     }
     if (!vn->ops->read) return;

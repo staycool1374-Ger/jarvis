@@ -189,6 +189,7 @@ static int tmpfs_mkdir(Vnode& self, const char* name, uint16_t) {
     vn->mode = S_IFDIR;
     vn->private_data = nullptr;
     vn->refcount = 0;
+    vn->parent = &self;
 
     entry->vnode = vn;
     entry->next = static_cast<TmpfsEntry*>(self.private_data);
@@ -264,6 +265,7 @@ static int tmpfs_create(Vnode& self, const char* name, uint16_t) {
     vn->mode = S_IFREG;
     vn->private_data = nullptr;
     vn->refcount = 0;
+    vn->parent = &self;
 
     entry->vnode = vn;
     entry->next = static_cast<TmpfsEntry*>(self.private_data);
@@ -296,6 +298,7 @@ static Vnode* tmpfs_get_root() {
         tmpfs_root.mode = S_IFDIR;
         tmpfs_root.private_data = nullptr;
         tmpfs_root.refcount = 0;
+        tmpfs_root.parent = nullptr;
         inited = true;
     }
     return &tmpfs_root;

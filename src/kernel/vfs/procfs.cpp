@@ -228,7 +228,7 @@ static const VnodeOps self_ops = {
 };
 
 static Vnode self_vnode = {
-    &self_ops, 1, 0, S_IFDIR, nullptr, 0,
+    &self_ops, 1, 0, S_IFDIR, nullptr, 0, nullptr,
 };
 
 // ── pid stat vnode ──
@@ -401,6 +401,7 @@ static Vnode* self_lookup(Vnode& self, const char* name) {
         cur_stat.base.size = 0;
         cur_stat.base.mode = S_IFREG;
         cur_stat.base.private_data = &cur_stat;
+        cur_stat.base.parent = &self;
         return &cur_stat.base;
     }
     return nullptr;
@@ -489,9 +490,18 @@ static int proc_root_readdir(Vnode& self, uint64_t& pos, Dirent& dent) {
 /// @brief Look up an entry in procfs root.
 static Vnode* proc_root_lookup(Vnode& self, const char* name) {
     (void)self;
-    if (strcmp(name, "meminfo") == 0) return &meminfo_vnode.base;
-    if (strcmp(name, "self") == 0) return &self_vnode;
-    if (strcmp(name, "pci") == 0) return &pci_vnode.base;
+    if (strcmp(name, "meminfo") == 0) {
+        meminfo_vnode.base.parent = &self;
+        return &meminfo_vnode.base;
+    }
+    if (strcmp(name, "self") == 0) {
+        self_vnode.parent = &self;
+        return &self_vnode;
+    }
+    if (strcmp(name, "pci") == 0) {
+        pci_vnode.base.parent = &self;
+        return &pci_vnode.base;
+    }
 
     // Parse numeric PID
     uint64_t pid = 0;
@@ -517,11 +527,13 @@ static Vnode* proc_root_lookup(Vnode& self, const char* name) {
                 pd->base.size = 0;
                 pd->base.mode = S_IFDIR;
                 pd->base.private_data = pd;
+                pd->base.parent = &self;
                 pd->stat_vnode.ops = &pid_stat_ops;
                 pd->stat_vnode.ino = pid;
                 pd->stat_vnode.size = 0;
                 pd->stat_vnode.mode = S_IFREG;
                 pd->stat_vnode.private_data = &pd->stat_data;
+                pd->stat_vnode.parent = &pd->base;
                 pd->stat_data.pid = pid;
                 pd->stat_data.task = t;
                 return &pd->base;
@@ -540,7 +552,7 @@ static const VnodeOps proc_root_ops = {
 };
 
 static Vnode proc_root_vnode = {
-    &proc_root_ops, 0, 0, S_IFDIR, nullptr, 0,
+    &proc_root_ops, 0, 0, S_IFDIR, nullptr, 0, nullptr,
 };
 
 /// @brief Get the procfs root vnode (refreshes content on each call).
@@ -571,6 +583,7 @@ static Vnode* proc_get_root() {
     meminfo_vnode.base.size = pos;
     meminfo_vnode.base.mode = S_IFREG;
     meminfo_vnode.base.private_data = &meminfo_vnode;
+    meminfo_vnode.base.parent = &proc_root_vnode;
 
     // Refresh PCI content
 #if defined(CONFIG_ARCH_X86_64)
@@ -582,6 +595,7 @@ static Vnode* proc_get_root() {
     pci_vnode.base.size = pci_vnode.content_len;
     pci_vnode.base.mode = S_IFREG;
     pci_vnode.base.private_data = &pci_vnode;
+    pci_vnode.base.parent = &proc_root_vnode;
 
     return &proc_root_vnode;
 }
