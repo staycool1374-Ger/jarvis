@@ -154,3 +154,18 @@ make execute-test x86 release selftest    # CI gate
 10. **SCHED/RSCHED prints behind CONFIG_DEBUG** → silent in release builds
 11. **Liu-Leyland bound warnings are informational** → not enforced by scheduler yet
 12. **`sti(); hlt(); cli();` in `sys_receive`** → workaround for deferred switch; may be removable after RMS fix
+
+## 13. Test Discipline for Kernel Development
+
+### Targeted class verification (MANDATORY)
+- Verify kernel code changes using the **smallest applicable test class**, NOT `all`.
+- Examples: `vfs` for VFS/IPC/daemon changes, `buffer_pool` for buffer pool changes, `timer` for timer changes, etc.
+- The `all` target runs 737+ tests and takes **minutes** — only use for full release validation.
+
+### Full-suite log capture (MANDATORY)
+- When running `make execute-test ... all`, always capture the full output:
+  ```
+  make execute-test x86_64 debug all 2>&1 | tee /tmp/jarvis-all-$(date +%Y%m%d-%H%M%S).log
+  ```
+- This preserves the complete test log for later inspection (failures, warnings, serial output).
+- Without a log file, a truncated terminal buffer forces re-runs — wasteful.

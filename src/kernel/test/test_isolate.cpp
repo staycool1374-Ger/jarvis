@@ -200,6 +200,8 @@ bool snapshot_create() {
     // ---- VFSD / IOCD PIDs ----
     *reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()) = vfsd::get_vfsd_pid();
     *reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()) = iocd::get_iocd_pid();
+    Logger::info("[SNAP:SAVE] vfsd_pid=%u iocd_pid=%u",
+                 vfsd::get_vfsd_pid(), iocd::get_iocd_pid());
 
     // ---- BufferPool ----
     BufferPool::capture_state(g_snapshot + off_bufpool(),
@@ -460,19 +462,6 @@ void snapshot_restore(const char* test_name) {
         }
     }
 
-    // ---- Daemon ----
-    {
-        auto* entries = reinterpret_cast<const daemon::DaemonEntry*>(
-                            g_snapshot + off_daemon_entries());
-        uint64_t num  = *reinterpret_cast<uint64_t*>(
-                            g_snapshot + off_daemon_num());
-        daemon::restore_state(entries, num);
-    }
-
-    // ---- VFSD / IOCD PIDs ----
-    vfsd::set_vfsd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()));
-    iocd::set_iocd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()));
-
     // ---- BufferPool ----
     BufferPool::restore_state(g_snapshot + off_bufpool(),
                               BufferPool::state_bytes());
@@ -601,6 +590,21 @@ void snapshot_restore(const char* test_name) {
     // ---- Reload daemon tasks ----
     reload_daemon_tasks();
 
+    // ---- Daemon ----
+    {
+        auto* entries = reinterpret_cast<const daemon::DaemonEntry*>(
+                            g_snapshot + off_daemon_entries());
+        uint64_t num  = *reinterpret_cast<uint64_t*>(
+                            g_snapshot + off_daemon_num());
+        daemon::restore_state(entries, num);
+    }
+
+    // ---- VFSD / IOCD PIDs ----
+    vfsd::set_vfsd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_vfsd_pid()));
+    iocd::set_iocd_pid(*reinterpret_cast<uint64_t*>(g_snapshot + off_iocd_pid()));
+    Logger::info("[SNAP:RESTORE] vfsd_pid=%u iocd_pid=%u",
+                 vfsd::get_vfsd_pid(), iocd::get_iocd_pid());
+
     // ---- Post-reload fixup ----
     // Keep idle as the boot-stack proxy task.  Idle is never returned by
     // next_task() (lowest priority, RUNNING, not in ready queue).  Using
@@ -717,28 +721,52 @@ void reload_daemon_tasks() {
     auto* current = Scheduler::current_task();
     auto* idle    = Scheduler::get_idle_task();
 
-    // NOTE: if current_task is a daemon, it will survive the kill loops
-    // because we cannot terminate the task we are running on.  A surviving
-    // daemon will be handled by the caller (snapshot_restore reaps it when
-    // switching to the next test task, or reboot_from_table terminates it).
-
+    // Collect registered daemon PIDs so we can preserve healthy ones.
+    uint64_t daemon_pids[daemon::MAX_DAEMONS];
+    uint64_t num_daemon_pids = 0;
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
-        const auto& entry = daemon::get_entry(i);
-        if (entry.pid != 0) {
-            dmesg_push_base(0xDA05, entry.name, entry.pid);
-            auto* task = Scheduler::find_task(entry.pid);
-            if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
-                if (task != current) {
-                    task->state = TaskState::TERMINATED;
-                    task->exit_code = 0;
-                }
-            }
-            daemon::notify_death(entry.pid, true);
+        if (daemon::get_entry(i).pid != 0) {
+            daemon_pids[num_daemon_pids++] = daemon::get_entry(i).pid;
         }
     }
+
+    // Kill stale or corrupted daemon tasks only; healthy ones survive.
+    for (uint64_t i = 0; i < num_daemon_pids; ++i) {
+        auto* task = Scheduler::find_task(daemon_pids[i]);
+        if (task && task->magic == TaskControlBlock::TCB_MAGIC &&
+            task->state != TaskState::TERMINATED) {
+            continue; // healthy daemon — keep it
+        }
+        // Stale PID or dead task — clean up
+        for (uint64_t j = 0; j < daemon::MAX_DAEMONS; ++j) {
+            const auto& entry = daemon::get_entry(j);
+            if (entry.pid == daemon_pids[i]) {
+                dmesg_push_base(0xDA05, entry.name, entry.pid);
+                if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
+                    if (task != current) {
+                        task->state = TaskState::TERMINATED;
+                        task->exit_code = 0;
+                    }
+                }
+                daemon::notify_death(entry.pid, true);
+                break;
+            }
+        }
+    }
+
+    // Kill test-created tasks, but skip daemon tasks
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto* t = Scheduler::task_at(i);
-        if (t && t != current && t != idle && t != Scheduler::get_shell_task() &&
+        if (!t) continue;
+        bool is_daemon = false;
+        for (uint64_t j = 0; j < num_daemon_pids; ++j) {
+            if (t->id == daemon_pids[j]) {
+                is_daemon = true;
+                break;
+            }
+        }
+        if (is_daemon) continue;
+        if (t != current && t != idle && t != Scheduler::get_shell_task() &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
@@ -746,8 +774,7 @@ void reload_daemon_tasks() {
     }
     Scheduler::reap_orphans();
     Scheduler::reset_ready_queue();
-    // NOTE: daemons are NOT restarted here — only killed.
-    // Tests that need daemons call ensure_running() in their setup_func.
+    // NOTE: daemons are NOT restarted here — only killed if stale.
     // The caller (e.g. test.cpp end-of-suite) adds restart_stale_daemons()
     // if a full restore to boot state is required.
 }

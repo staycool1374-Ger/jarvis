@@ -108,6 +108,8 @@ struct FileDescription {
 struct FdTable {
     FileDescription fds[MAX_FDS];  ///< Array of file descriptor entries.
 
+    FdTable() { __builtin_memset(fds, 0, sizeof(fds)); }
+
     /// @brief Allocate a file descriptor entry.
     /// @return The fd index, or VFS_INVALID if full.
     int alloc();

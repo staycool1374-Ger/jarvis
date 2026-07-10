@@ -28,6 +28,8 @@
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/test/test_cleanup.hpp>
 #include <kernel/test/test_watchdog.hpp>
+#include <kernel/vfs/vfsd.hpp>
+#include <kernel/driver/iocd.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/timer.hpp>
@@ -376,6 +378,8 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         kernel::test::watchdog_check_inline();
         kernel::test::watchdog_arm(30000, wd_name);
 
+        Logger::info("[RUN_PRE] vfsd_pid=%u iocd_pid=%u",
+                     kernel::vfsd::get_vfsd_pid(), kernel::iocd::get_iocd_pid());
         run_one(tc, test_class, run_count, expected);
 
         kernel::test::watchdog_disarm();

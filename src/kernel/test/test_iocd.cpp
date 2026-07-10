@@ -36,8 +36,9 @@ using namespace kernel;
 // Input: None (boot sequence)
 // Expect: iocd::get_iocd_pid() returns a non-zero PID and the task exists
 // Depends: kernel/driver/iocd
-JARVIS_TEST(iocd_boots_and_registers, "PRE: none | POST: iocd") {
+JARVIS_TEST(iocd_boots_and_registers, "PRE: vfsd, iocd | POST: iocd") {
     uint64_t pid = iocd::get_iocd_pid();
+    Logger::info("[TEST:iocd_boots_and_registers] pid=%u vfsd_pid=%u", pid, vfsd::get_vfsd_pid());
     JARVIS_ASSERT(pid != 0);
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
     JARVIS_ASSERT(vfsd_pid != 0);

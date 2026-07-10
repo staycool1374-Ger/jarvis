@@ -38,6 +38,7 @@ using namespace kernel;
 // Depends: kernel/vfs/vfsd
 JARVIS_TEST(vfsd_boots_and_registers, "PRE: vfsd, iocd | POST: none") {
     uint64_t pid = vfsd::get_vfsd_pid();
+    Logger::info("[TEST:vfsd_boots_and_registers] pid=%u", pid);
     JARVIS_ASSERT(pid != 0);
     auto* task = Scheduler::find_task(pid);
     JARVIS_ASSERT(task != nullptr);
