@@ -147,6 +147,11 @@ void register_riscv64_tests();
 // benchmarks.
 
 static constexpr kernel::test::TestClass g_test_classes[] = {
+    // -- buffer_pool: fundamental IPC primitive, run first on any failure --
+    {"buffer_pool", []() {
+        register_buffer_pool_tests();
+    }},
+
     // -- safe: curated subset with TF_RELEASE tests --
     {"safe", []() {
         register_lib_tests();
@@ -162,6 +167,9 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     // -- all: everything (debug mode) --
     {"all", []() {
+        // BufferPool is a fundamental kernel primitive (IPC, task cleanup,
+        // exec).  Test it first — if it's broken, downstream failures are noise.
+        register_buffer_pool_tests();
         register_lib_tests();
         register_memory_tests();
         register_ipc_tests();
@@ -222,7 +230,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_integration_tests();
         register_pml4_clone_tests();
         register_waitpid_tests();
-        register_buffer_pool_tests();
         register_resource_exhaustion_tests();
         register_block_device_tests();
         register_fat32_tests();
