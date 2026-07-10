@@ -611,7 +611,6 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink, "PRE: none | POST: none") {
 
     // Free middle entry (index 5)
     uint64_t freed = handles[5];
-    uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
     JARVIS_ASSERT(BufferPool::free(*task, freed));
 
     // Verify list integrity: walk list and check all remaining entries present
@@ -621,8 +620,17 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink, "PRE: none | POST: none") {
     int32_t prev = -1;
     while (idx != -1) {
         count++;
-        uint32_t uidx = static_cast<uint32_t>(idx);
-        found[uidx] = true;
+        // Match entry index back to handles[] slot (entry indices are not
+        // necessarily 0-9; the LIFO free list starts at MAX_BUFFERS-1).
+        int slot = -1;
+        for (int j = 0; j < 10; j++) {
+            if ((handles[j] & 0xFFFFFFFFULL) == static_cast<uint32_t>(idx)) {
+                slot = j;
+                break;
+            }
+        }
+        JARVIS_ASSERT(slot >= 0);
+        found[slot] = true;
         // Check prev link
         JARVIS_ASSERT(BufferPool::entries[idx].list_prev == prev);
         prev = idx;
@@ -630,13 +638,12 @@ JARVIS_TEST(buffer_pool_list_integrity_after_unlink, "PRE: none | POST: none") {
     }
     JARVIS_ASSERT_EQ(9, count);
 
-    // Verify all except index 5 are in list
+    // Verify all except the freed handle are in list
     for (int i = 0; i < 10; ++i) {
         if (i == 5) continue;
-        uint32_t uidx = static_cast<uint32_t>(handles[i] & 0xFFFFFFFFULL);
-        JARVIS_ASSERT(found[uidx]);
+        JARVIS_ASSERT(found[i]);
     }
-    JARVIS_ASSERT(!found[freed_idx]);
+    JARVIS_ASSERT(!found[5]);
 
     // Cleanup
     for (int i = 0; i < 10; ++i) {
