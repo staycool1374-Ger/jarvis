@@ -379,7 +379,7 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
 
 1. Run each test class individually. Verify that non-VFS classes (selftest, scheduler, spinlock, atomic_context_switch, preemption_under_syscall) show zero "daemon died" messages and pass at the same rate.
 2. Run VFS class: must still show 143/143 PASSED with full daemon restart on every test.
-3. Run full `all` class: must still show 727/727 PASSED.
+3. Run full `all` class: must still show 738/738 PASSED.
 4. Compare wall-clock time between baseline (unconditional restart) and Option B.
 
 **Future extension (Option B+):** If IPC state is also expensive to restore, add `ipc_touched` flag with the same pattern. The mechanism generalises to any subsystem whose daemon restart can be deferred.
@@ -565,7 +565,7 @@ These are not disabled/stub tests but genuine failures. They must be triaged sep
 - **Stub tests** (trivial pass): ~55 individual tests + 1 partially stubbed
 - **TODO placeholder tests**: 3
 - **Architecture stubs**: ~32 registration functions
-- **Genuine failures**: 0 (737/737 PASSED at baseline, tag `test-baseline`)
+- **Genuine failures**: 0 (738/738 PASSED at baseline, tag `test-baseline`)
 - **Health check**: `bash ~/jarvis/healthcheck.sh` must exit 0 before any fix attempt.
 
 ---

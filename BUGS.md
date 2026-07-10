@@ -1,9 +1,5 @@
 # Open Issues
 
-## Kernel — VFS
-
-
-
 ## Kernel — Memory
 
 ### ID: #013 — MempoolFragmentation test hangs at test 438
