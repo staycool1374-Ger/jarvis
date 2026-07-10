@@ -28,6 +28,9 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#ifdef CONFIG_TEST
+#include <kernel/test/test_isolate.hpp>
+#endif
 #include <string.hpp>
 #include <utils.hpp>
 #include <kernel/vfs/vfs_errors.hpp>
@@ -162,6 +165,9 @@ VfsError FdTable::get_err(int file_descriptor, FileDescription*& out_fd) {
 /// @brief Resolve an absolute or relative path to a vnode.
 /// @return The vnode, or nullptr if not found.
 Vnode* resolve(const char* path) {
+#ifdef CONFIG_TEST
+    kernel::test::mark_vfs_touched();
+#endif
     if (!path || !*path) return nullptr;
 
     TaskControlBlock* task = Scheduler::current_task();
@@ -262,6 +268,9 @@ Vnode* resolve(const char* path) {
 /// @brief Mount a filesystem at a mount point.
 /// @return 0 on success, VFS_INVALID on failure.
 int mount(Filesystem& filesystem, const char* mount_point) {
+#ifdef CONFIG_TEST
+    kernel::test::mark_vfs_touched();
+#endif
     if (!filesystem.get_root || mount_count >= MAX_MOUNTS) return VFS_INVALID;
 
     Vnode* root = filesystem.get_root();
@@ -293,6 +302,9 @@ void init() {
 
 /// @brief Reset VFS globals and re-mount standard filesystems.
 void reset_and_remount() {
+#ifdef CONFIG_TEST
+    kernel::test::mark_vfs_touched();
+#endif
     // Clear stale mount-table entries and root-vnode pointers from
     // prior test execution.  The underlying MemPool blocks have been
     // restored by this point, but mount_table entries still point to
@@ -360,6 +372,9 @@ static Vnode* resolve_parent(const char* path, const char*& out_name) {
 /// @brief Create a subdirectory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int mkdir(const char* path, uint16_t mode) {
+#ifdef CONFIG_TEST
+    kernel::test::mark_vfs_touched();
+#endif
     const char* name = nullptr;
     Vnode* parent = resolve_parent(path, name);
     if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;
@@ -370,6 +385,9 @@ int mkdir(const char* path, uint16_t mode) {
 /// @brief Remove a file or empty directory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
 int unlink(const char* path) {
+#ifdef CONFIG_TEST
+    kernel::test::mark_vfs_touched();
+#endif
     const char* name = nullptr;
     Vnode* parent = resolve_parent(path, name);
     if (!parent || !(parent->mode & S_IFDIR)) return VFS_INVALID;

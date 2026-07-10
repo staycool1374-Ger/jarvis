@@ -18,7 +18,8 @@ struct ExpectedCounts {
 static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
-    {"all",                 727,    0,       0      },  // every registration function
+    {"selftest",            132,    0,       0      },  // same as safe
+    {"all",                 738,    0,       0      },  // every registration function
     {"scheduler",           85,     0,       0      },  // sched + task + lifecycle + deadlock + timer
     {"memory",              45,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
@@ -33,7 +34,8 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"security",            31,     0,       0      },  // capability + secure_exec + vfsd_authorization
     {"debug",               14,     0,       0      },  // debug + gcov + klog
     {"integration",          1,     0,       0      },  // integration smoke tests
-    {"stress",              10,     0,       0      },  // stress + starvation_deadlock
+    {"starvation_deadlock",  3,     0,       0      },  // SchedulerStarvation + PriorityInversionChain5 + DeadlockNestedMutexLoad
+    {"stress",               9,     0,       0      },  // 6 stress + 3 starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
     {"bench",               17,     0,       0      },  // IPC + microkernel + syscall/IRQ latency benchmarks

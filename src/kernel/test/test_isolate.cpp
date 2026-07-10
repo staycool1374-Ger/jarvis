@@ -583,12 +583,20 @@ void snapshot_restore(const char* test_name) {
         }
     }
 
-    // ---- Reset filesystem roots ----
-    kernel::vfs::reset_and_remount();
-    kernel::vfs::tmpfs_reset_root();
-
-    // ---- Reload daemon tasks ----
-    reload_daemon_tasks();
+    // ---- Conditional daemon restart (vfs_touched flag) ----
+    // Tests that never touch VFS can skip the expensive daemon-kill + ELF-load
+    // + remount cycle (~150k cycles).  The daemon tasks continue running with
+    // their pre-snapshot state, which is correct because no VFS syscall was
+    // issued.  Only the ready queue needs rebuilding (runq links desync from
+    // cleanup_test_tasks).
+    if (g_vfs_touched) {
+        kernel::vfs::reset_and_remount();
+        kernel::vfs::tmpfs_reset_root();
+        reload_daemon_tasks();
+    } else {
+        Scheduler::rebuild_ready_queue();
+    }
+    g_vfs_touched = false;
 
     // ---- Daemon ----
     {

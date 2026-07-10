@@ -49,6 +49,9 @@ errors::SyncError Mutex::init_err() {
 /// @brief Add a task to the waiter array.
 /// @return false if the array is full.
 bool Mutex::add_waiter(TaskControlBlock& task) {
+    for (size_t i = 0; i < wait_count_; ++i) {
+        ENSURE(waiters_[i] != &task);
+    }
     if (wait_count_ >= MAX_WAITERS) return false;
     waiters_[wait_count_++] = &task;
     return true;
@@ -60,10 +63,11 @@ void Mutex::wake_one() {
 
     size_t best = 0;
     for (size_t i = 1; i < wait_count_; ++i) {
-        if (waiters_[i]->priority > waiters_[best]->priority) best = i;
+        if (waiters_[i] && (!waiters_[best] ||
+            waiters_[i]->priority > waiters_[best]->priority)) best = i;
     }
 
-    if (waiters_[best]->state != TaskState::TERMINATED)
+    if (waiters_[best] && waiters_[best]->state != TaskState::TERMINATED)
         Scheduler::set_task_ready(*waiters_[best]);
     waiters_[best] = waiters_[--wait_count_];
 }

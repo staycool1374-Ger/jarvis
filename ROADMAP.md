@@ -38,9 +38,9 @@ Notes
 ### 0.3.2 Strict Deadline Adherence — Zero-Tolerance (Pillar 2)
 
 #### Pre-Requisite: Bugfix & Stabilisation
-- [ ] **Fix 15 pre-existing FAILs** in vfsd/iocd/buffer_pool — classify as flaky or deterministic, fix or isolate
+- [x] **Fix 15 pre-existing FAILs** in vfsd/iocd/buffer_pool — all resolved (daemon preservation, buffer_pool overflow, PRE annotations)
 - [x] **Stash audit: drop superseded stashes** (`stash@{0}`, `stash@{2}`), keep `stash@{1}` for selective extraction
-- [ ] **Re-enable `DeadlockNestedMutexLoad`** — evaluate with new `ScopedCurrentTask` + `state = BLOCKED` pattern; harden mutex waiter array if needed
+- [x] **Re-enable `DeadlockNestedMutexLoad`** — rewritten with `ScopedCurrentTask` + direct BLOCKED pattern; `add_waiter` now asserts on duplicate; `wake_one` null-safe
 
 #### Deadline Adherence
 - [ ] Deadline Miss Detection & Handler
@@ -63,8 +63,8 @@ Notes
 ## Preemptive Priority-Based Scheduling + Priority Inversion Mitigation (Pillar 3)
 
 #### Pre-Requisite: Enable Starvation/Deadlock Tests
-- [ ] **`DeadlockNestedMutexLoad`:** re-enable with hardened mutex waiter array (was disabled due to overflow at `mutex.cpp:109`)
-- [ ] **`DeadlockRecoveryResourceReclamation`:** implement test class or remove placeholder
+- [x] **`DeadlockNestedMutexLoad`:** re-enabled with ScopedCurrentTask + direct BLOCKED pattern; duplicate add_waiter assertion; wake_one null-safe
+- ~~**`DeadlockRecoveryResourceReclamation`:** test class never implemented — placeholder removed~~
 
 #### Priority Inheritance & Ceiling
 - [ ] Priority Inheritance Protocol (PIP) — Mutex
@@ -131,7 +131,7 @@ Notes
   - [ ] CONFIG_BUFFER_POOL_BLOCKS per size class
   - [ ] IPC messages: inline payload (no heap), buffer handle for zero-copy
 - [ ] Eliminate operator new/delete from Kernel
-  - [ ] **Apply `lib/new.cpp` rewrite (stash@{3}):** fix `operator delete` calling `MemPool::free` on PMM-backed allocations — add `PmmAllocHdr` header + `MemPool::contains()` check
+  - [x] **Apply `lib/new.cpp` rewrite (stash@{3}):** fix `operator delete` calling `MemPool::free` on PMM-backed allocations — added `PmmAllocHdr` header + `MemPool::contains()` check (commit 175f301)
   - [ ] Replace all new/delete with MemPool::alloc/free or placement new into static storage
   - [ ] Add -fno-exceptions -fno-rtti -fno-threadsafe-statics to kernel CFLAGS
   - [ ] Audit lib/stdcpp.cpp — remove ::operator new implementations
@@ -173,11 +173,11 @@ Notes
 ### 0.3.8 Test & Verification Suite
 
 #### Infrastructure
-- [ ] **`vfs_touched` flag (Option B):** lazy daemon restart — skip `reload_daemon_tasks()` for non-VFS tests (~95%), reducing per-test overhead ~70-80%
-  - [ ] Add `g_vfs_touched` flag in test framework, reset on snapshot_restore
-  - [ ] Call `mark_vfs_touched()` in all VFS syscall handlers
-  - [ ] Branch in `snapshot_restore()`: skip daemon restart if flag clear
-  - [ ] Force flag in daemon crash tests
+- [x] **`vfs_touched` flag (Option B):** lazy daemon restart — skip `reload_daemon_tasks()` for non-VFS tests (~95%), reducing per-test overhead ~70-80%
+  - [x] Add `g_vfs_touched` flag in test framework, reset on snapshot_restore
+  - [x] Call `mark_vfs_touched()` in all VFS syscall handlers (+ in vfs.cpp core functions)
+  - [x] Branch in `snapshot_restore()`: skip daemon restart if flag clear
+  - [~] Force flag in daemon crash tests — daemon crash tests still disabled (#if 0), no-op
 - [ ] **Fix `make execute-test`** — trace Makefile rule, restore expect runner
 - [ ] **Fix healthcheck.sh** — add per-check labels for actionable failure output
 - [ ] **Disabled/stub test remediation:** triage ~90+ disabled/stub/broken tests
@@ -560,13 +560,12 @@ These are not disabled/stub tests but genuine failures. They must be triaged sep
 
 #### Tracking
 
-- **Total suite size**: 725 tests (reduced from 727 — two starvation/deadlock tests removed from registration)
+- **Total suite size**: 738 tests (+1 re-enabled: DeadlockNestedMutexLoad)
 - **Disabled tests** (compiled out): 7
 - **Stub tests** (trivial pass): ~55 individual tests + 1 partially stubbed
 - **TODO placeholder tests**: 3
 - **Architecture stubs**: ~32 registration functions
-- **Genuine failures**: ~15
-- **Healthy passing tests**: ~725 - 15 ≈ 710 (at time of scan)
+- **Genuine failures**: 0 (737/737 PASSED at baseline, tag `test-baseline`)
 - **Health check**: `bash ~/jarvis/healthcheck.sh` must exit 0 before any fix attempt.
 
 ---

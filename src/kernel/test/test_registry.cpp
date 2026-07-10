@@ -435,6 +435,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_integration_tests();
     }},
 
+    {"starvation_deadlock", []() {
+        register_starvation_deadlock_tests();
+    }},
+
     {"stress", []() {
         register_stress_tests();
         register_starvation_deadlock_tests();

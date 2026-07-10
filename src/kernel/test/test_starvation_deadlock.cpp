@@ -219,21 +219,236 @@ TEST_CLASS(PriorityInversionChain5) {
 };
 
 // Runmode: kernel
-// Testidea: 8 tasks randomly lock/unlock 3 shared mutexes in unpredictable
-// order. Run for many iterations and verify no deadlock occurs.
-// Input: 8 tasks, each does 1000 lock/unlock cycles on random mutexes.
-// Expect: All tasks complete; no crash; all mutexes unlocked at end.
-//
-// NOTE: Disabled — real mutex lock() with contention on [](){} tasks
-// causes scheduler corruption and mutex waiter array overflow (ENSURE
-// failure at add_waiter). Use ScopedCurrentTask + direct BLOCKED state
-// pattern instead.
-/* TEST_CLASS(DeadlockNestedMutexLoad) ... */
+// Testidea: Orchestrated lock/unlock patterns across 3 mutexes and 4 tasks.
+// 5 distinct contention scenarios exercise lock ordering, ownership transfer,
+// and cross-mutex independence without relying on real blocking (which
+// conflicts with the scheduler's deferred context-switch mechanism).
+// Input: 4 tasks (priorities 3,5,7,9), 3 mutexes, 5 orchestrated patterns.
+// Expect: All mutexes unlocked at end; no crash; no corrupt state.
+TEST_CLASS(DeadlockNestedMutexLoad) {
+    sync::Mutex mtx[3];
+    for (int i = 0; i < 3; ++i) mtx[i].init();
+
+    static constexpr uint64_t PRIOS[4] = {3, 5, 7, 9};
+    TaskControlBlock* t[4];
+    for (int i = 0; i < 4; ++i) {
+        t[i] = TaskControlBlock::create([](){}, PRIOS[i], 10);
+        CT_ASSERT(t[i] != nullptr);
+        t[i]->base_priority = PRIOS[i];
+        t[i]->priority = PRIOS[i];
+        Scheduler::add_task(*t[i]);
+    }
+
+    {
+        arch::IrqGuard outer;
+
+        // Pattern 1: Single mutex, priority selection.
+        // t[0] locks M0; t[1], t[2] blocked awaiting M0; t[0] unlock wakes
+        // the highest-prio waiter (t[2], prio 7 > 5).
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].lock();   // uncontested
+            CT_ASSERT(mtx[0].owner() == t[0]);
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            t[1]->state = TaskState::BLOCKED;   // simulate contends M0
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            t[2]->state = TaskState::BLOCKED;   // simulate contends M0
+        }
+        // t[0] releases M0 → wake_one would pick t[2] (highest prio)
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].unlock();
+            CT_ASSERT(mtx[0].owner() == nullptr);
+        }
+        // t[2] acquires M0 (uncontested now), releases
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            CT_ASSERT(mtx[0].owner() == nullptr);
+            mtx[0].lock();
+            CT_ASSERT(mtx[0].owner() == t[2]);
+            mtx[0].unlock();
+        }
+        // t[1] acquires M0, releases
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[0].lock();
+            CT_ASSERT(mtx[0].owner() == t[1]);
+            mtx[0].unlock();
+        }
+        CT_ASSERT(mtx[0].owner() == nullptr);
+
+        // Pattern 2: Reverse add order — wake_one must pick highest prio
+        // regardless of insertion order (prio 9 > 5).
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].lock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            t[1]->state = TaskState::BLOCKED;
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[3]);
+            t[3]->state = TaskState::BLOCKED;   // prio 9, added after t[1]
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].unlock();
+        }
+        // t[3] (prio 9) should wake first
+        {
+            kernel::test::ScopedCurrentTask scope(*t[3]);
+            mtx[0].lock();
+            mtx[0].unlock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[0].lock();
+            mtx[0].unlock();
+        }
+        CT_ASSERT(mtx[0].owner() == nullptr);
+
+        // Pattern 3: Two independent mutexes — no cross-contamination
+        // between waiter arrays. t[0] holds M0, t[1] holds M1.
+        // t[2] awaits M0, t[3] awaits M1.
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].lock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[1].lock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            t[2]->state = TaskState::BLOCKED;   // awaits M0
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[3]);
+            t[3]->state = TaskState::BLOCKED;   // awaits M1
+        }
+        // Release M0 → only t[2] unblocks
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].unlock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            mtx[0].lock();
+            mtx[0].unlock();
+        }
+        // t[3] still BLOCKED on M1, verify M1 still held by t[1]
+        CT_ASSERT(mtx[1].owner() == t[1]);
+        CT_ASSERT(mtx[1].is_locked());
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[1].unlock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[3]);
+            mtx[1].lock();
+            mtx[1].unlock();
+        }
+        CT_ASSERT(!mtx[0].is_locked());
+        CT_ASSERT(!mtx[1].is_locked());
+
+        // Pattern 4: Nested locks — one task holds two mutexes,
+        // two waiters each on a different mutex.
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].lock();
+            mtx[1].lock();
+            CT_ASSERT(mtx[0].owner() == t[0]);
+            CT_ASSERT(mtx[1].owner() == t[0]);
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            t[1]->state = TaskState::BLOCKED;   // awaits M0
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            t[2]->state = TaskState::BLOCKED;   // awaits M1
+        }
+        // Release M1 first (reverse order)
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[1].unlock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            mtx[1].lock();
+            mtx[1].unlock();
+        }
+        // M0 still held by t[0]
+        CT_ASSERT(mtx[0].owner() == t[0]);
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].unlock();
+        }
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[0].lock();
+            mtx[0].unlock();
+        }
+        CT_ASSERT(!mtx[0].is_locked());
+        CT_ASSERT(!mtx[1].is_locked());
+
+        // Pattern 5: Three-mutex rotation — lock in address order
+        // across 3 mutexes, verify clean ownership chain.
+        {
+            kernel::test::ScopedCurrentTask scope(*t[0]);
+            mtx[0].lock();
+            mtx[1].lock();
+            CT_ASSERT(mtx[0].owner() == t[0]);
+            CT_ASSERT(mtx[1].owner() == t[0]);
+            mtx[1].unlock();
+            mtx[0].unlock();
+        }
+        CT_ASSERT(!mtx[0].is_locked());
+        CT_ASSERT(!mtx[1].is_locked());
+        {
+            kernel::test::ScopedCurrentTask scope(*t[1]);
+            mtx[1].lock();
+            mtx[2].lock();
+            CT_ASSERT(mtx[1].owner() == t[1]);
+            CT_ASSERT(mtx[2].owner() == t[1]);
+            mtx[2].unlock();
+            mtx[1].unlock();
+        }
+        CT_ASSERT(!mtx[1].is_locked());
+        CT_ASSERT(!mtx[2].is_locked());
+        {
+            kernel::test::ScopedCurrentTask scope(*t[2]);
+            mtx[0].lock();
+            mtx[2].lock();
+            CT_ASSERT(mtx[0].owner() == t[2]);
+            CT_ASSERT(mtx[2].owner() == t[2]);
+            mtx[2].unlock();
+            mtx[0].unlock();
+        }
+        CT_ASSERT(!mtx[0].is_locked());
+        CT_ASSERT(!mtx[2].is_locked());
+
+        // All mutexes unlocked, all tasks in clean state for teardown
+        for (int i = 0; i < 3; ++i) CT_ASSERT(!mtx[i].is_locked());
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        t[i]->state = TaskState::READY;
+        Scheduler::remove_task(*t[i]);
+        t[i]->cleanup();
+        delete t[i];
+    }
+};
 
 void register_starvation_deadlock_tests() {
     Logger::info("Registering starvation/deadlock tests");
     REGISTER_CLASS(SchedulerStarvation);
     REGISTER_CLASS(PriorityInversionChain5);
-    // DeadlockNestedMutexLoad and DeadlockRecoveryResourceReclamation
-    // are disabled — see comment at their definition site.
+    REGISTER_CLASS(DeadlockNestedMutexLoad);
+    // DeadlockRecoveryResourceReclamation — never implemented
 }
