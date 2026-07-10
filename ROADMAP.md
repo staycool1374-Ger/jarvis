@@ -73,8 +73,8 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 **Note:** The ready queue (`ReadyQueueManager` + `PriorityMap` bitmap) is already O(1) for dispatch. The deadline scan in `on_tick()` linearly iterates `tasks_[]` — at `MAX_TASKS=64` and 1000 Hz this is ~64K checks/sec, <1M instructions/sec. No optimisation needed.
 
 **Changes vs current code:**
-- [ ] **P2a — Remove stale `state == RUNNING || state == READY` guard duplication** (solved by P1a already moving the check outside the state-filtered block)
-- [ ] **P2b — Ensure deadline check remains after P1a restructuring**
+- [x] **P2a — Remove stale `state == RUNNING || state == READY` guard duplication** (solved by P1a already moving the check outside the state-filtered block)
+- [x] **P2b — Ensure deadline check remains after P1a restructuring**
   - The check now runs on all non-TERMINATED tasks
   - No new data structures; the linear scan remains
 
