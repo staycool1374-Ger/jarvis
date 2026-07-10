@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 738,    0,       0      },  // every registration function
+    {"all",                 741,    0,       0      },  // every registration function
     {"scheduler",           85,     0,       0      },  // sched + task + lifecycle + deadlock + timer
     {"memory",              45,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
@@ -35,6 +35,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"debug",               14,     0,       0      },  // debug + gcov + klog
     {"integration",          1,     0,       0      },  // integration smoke tests
     {"starvation_deadlock",  3,     0,       0      },  // SchedulerStarvation + PriorityInversionChain5 + DeadlockNestedMutexLoad
+    {"deadline_miss",        3,     0,       0      },  // DeadlineMissWhileBlocked + DeadlineMissWhileTerminatedSkipped + DeadlineRearmOnPeriodRollover
     {"stress",               9,     0,       0      },  // 6 stress + 3 starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests

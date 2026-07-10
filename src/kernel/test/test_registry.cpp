@@ -113,6 +113,7 @@ void register_ipc_benchmark_tests();
 void register_ipc_robustness_tests();
 void register_syscall_fuzz_tests();
 void register_starvation_deadlock_tests();
+void register_deadline_miss_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
@@ -257,6 +258,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_bench_irq_latency_tests();
         register_stress_tests();
         register_starvation_deadlock_tests();
+        register_deadline_miss_tests();
         register_pic_tests();
         register_integration_tests();
         register_pml4_clone_tests();
@@ -437,6 +439,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"starvation_deadlock", []() {
         register_starvation_deadlock_tests();
+    }},
+
+    {"deadline_miss", []() {
+        register_deadline_miss_tests();
     }},
 
     {"stress", []() {

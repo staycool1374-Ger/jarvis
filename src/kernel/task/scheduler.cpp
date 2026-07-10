@@ -153,6 +153,7 @@ void Scheduler::init() {
 /// Performs Liu-Leyland utilisation-bound admission control (warn-only).
 void Scheduler::add_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    ENSURE(task.state == TaskState::READY);
     ENSURE(task_count_ < MAX_TASKS);
     tasks_[task_count_++] = &task;
     id_table_insert(task.id, &task);
@@ -409,21 +410,29 @@ void Scheduler::on_tick() noexcept {
 
     if (!preempt_enabled_) return;
 
+    // Phase 1: Deadline scan + alarm delivery.
+    // Protected by try_lock: if the scheduler lock is held (e.g. add_task
+    // mid-mutation), we skip this phase for the current tick.  At 1000 Hz,
+    // one missed tick (<1ms) is invisible to the system.  The lock hold
+    // time in add/remove_task is <1us, so try_lock almost never fails.
+    if (scheduler_lock_.try_lock()) {
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* task = tasks_[i];
+            if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (task->state == TaskState::TERMINATED) continue;
 
-
-    for (uint64_t i = 0; i < task_count_; ++i) {
-        auto* task = tasks_[i];
-        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
-        if (task->state == TaskState::RUNNING || task->state == TaskState::READY
-            ) {
-            ++task->executed_ticks;
-            uint64_t prev_rem = task->remaining_ticks;
-            if (task->remaining_ticks > 0) --task->remaining_ticks;
-            if (prev_rem == 0 && task->period_ticks > 0) {
-                task->remaining_ticks = task->period_ticks;
+            // Accounting — only RUNNING/READY accumulate ticks
+            if (task->state == TaskState::RUNNING ||
+                task->state == TaskState::READY) {
+                ++task->executed_ticks;
+                uint64_t prev_rem = task->remaining_ticks;
+                if (task->remaining_ticks > 0) --task->remaining_ticks;
+                if (prev_rem == 0 && task->period_ticks > 0) {
+                    task->remaining_ticks = task->period_ticks;
+                }
             }
 
-            // Check for alarm expiration (countdown ticks)
+            // Alarm — fires regardless of BLOCKED/WAITING
             if (task->alarm_armed) {
                 if (task->alarm_ticks > 0) --task->alarm_ticks;
                 if (task->alarm_ticks == 0) {
@@ -434,16 +443,26 @@ void Scheduler::on_tick() noexcept {
             }
 
 #if CONFIG_DEADLINE_MISS_DETECTION
-            // Deadline miss detection (read-only observation)
-            if (!task->deadline_missed && task->deadline_ticks > 0 &&
+            // Deadline miss detection — only periodic tasks (period_ticks > 0)
+            // have enforceable deadlines.  Aperiodic tasks should skip.
+            if (task->period_ticks > 0 && !task->deadline_missed &&
+                task->deadline_ticks > 0 &&
                 arch::Timer::ticks() > task->deadline_ticks) {
                 task->deadline_missed = true;
                 ++task->deadline_miss_count;
                 deadline_miss_handler(task,
                     arch::Timer::ticks() - task->deadline_ticks);
+                // Re-arm for next period (wall-clock based).
+                // Aperiodic tasks (period_ticks == 0) fire once,
+                // then deadline_missed stays latched.
+                if (task->period_ticks > 0) {
+                    task->deadline_ticks += task->period_ticks;
+                    task->deadline_missed = false;
+                }
             }
 #endif
         }
+        scheduler_lock_.unlock();
     }
 
     // Sporadic Server budget management: process replenishments for all
@@ -1119,7 +1138,7 @@ void deadline_miss_handler(TaskControlBlock* task,
     task->state = TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
 #else
-    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
+    Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
                  task->id, task->name, missed_by_ticks);
 #endif
 }

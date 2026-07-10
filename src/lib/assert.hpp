@@ -37,13 +37,19 @@ namespace kernel::errors {
     inline const char* error_string(E) { return "Unknown error"; }
 }
 
+/// @brief Helper: stringify without macro expansion (single level).
+#define STRINGIFY(x) #x
+
+/// @brief Helper: expand then stringify (two levels so __LINE__ expands first).
+#define EXPAND_AND_STRINGIFY(x) STRINGIFY(x)
+
 /// @brief Fatal invariant check — panics if the condition is false.
 ///        Use this for conditions that should *never* fail.
 #define ENSURE(cond) \
     do { \
         if (!(cond)) { \
             panic("ENSURE failed: " #cond " at " __FILE__ ":" \
-                  __STRINGIFY(__LINE__)); \
+                  EXPAND_AND_STRINGIFY(__LINE__)); \
         } \
     } while (0)
 
@@ -62,4 +68,4 @@ namespace kernel::errors {
 #define ASSERT(err) ((void)0)
 #endif
 
-#define __STRINGIFY(x) #x // NOLINT(bugprone-reserved-identifier)
+

@@ -108,6 +108,7 @@ void Logger::vprint(LogLevel level, const char* fmt, __va_list args) {
     while (*fmt) {
         if (*fmt == '%') {
             ++fmt;
+            if (*fmt == 'l') ++fmt;
             switch (*fmt) {
             case 's': {
                 const char* s = __builtin_va_arg(args, const char*);
@@ -152,6 +153,7 @@ void Logger::vprint_raw(const char* fmt, __va_list args) {
     while (*fmt) {
         if (*fmt == '%') {
             ++fmt;
+            if (*fmt == 'l') ++fmt;
             switch (*fmt) {
             case 's': {
                 const char* s = __builtin_va_arg(args, const char*);
