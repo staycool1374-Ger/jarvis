@@ -152,6 +152,37 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_buffer_pool_tests();
     }},
 
+    // -- o1_scheduler: atomic context switch + IRQ guard audit + O(1) scheduler --
+    {"o1_scheduler", []() {
+        register_atomic_context_switch_tests();
+        register_irqguard_audit_tests();
+        register_o1_scheduler_tests();
+    }},
+
+    // -- random: random-number subsystem --
+    {"random", []() {
+        register_random_tests();
+        register_random_vfs_tests();
+        register_random_syscall_tests();
+        register_random_seed_tests();
+        register_random_vfs_write_tests();
+    }},
+
+    // -- memory_safety: buffer overflow and memory safety tests --
+    {"memory_safety", []() {
+        register_memory_safety_tests();
+    }},
+
+    // -- lib: core library tests (atomics, crc32, etc.) --
+    {"lib", []() {
+        register_lib_tests();
+    }},
+
+    // -- hal_bits: HAL bit-manipulation primitives --
+    {"hal_bits", []() {
+        register_hal_bits_tests();
+    }},
+
     // -- safe: curated subset with TF_RELEASE tests --
     {"safe", []() {
         register_lib_tests();
