@@ -478,6 +478,13 @@
 #define CONFIG_DEADLINE_MISS_DETECTION 1
 #endif
 
+/// Enable WCET overrun detection in on_tick(). Default: 1 (enabled).
+/// When enabled, tasks with wcet_ticks > 0 are monitored for execution-
+/// time overrun (executed_ticks > wcet_ticks).
+#ifndef CONFIG_WCET_OVERRUN_DETECTION
+#define CONFIG_WCET_OVERRUN_DETECTION 1
+#endif
+
 /// Default action on deadline miss (used by default handler):
 ///   0 = LOG_ONLY, 1 = PANIC, 2 = DEMOTE (priority /= 2), 3 = KILL
 #ifndef CONFIG_DEADLINE_ACTION

@@ -450,9 +450,26 @@ void Scheduler::on_tick() noexcept {
                     // reset for the next period.
                     task->deadline_ticks += task->period_ticks;
                     task->deadline_missed = false;
+#if CONFIG_WCET_OVERRUN_DETECTION
+                    // Reset WCET overrun latch so it can fire again
+                    // in the next period.
+                    task->wcet_overrun_fired = false;
+#endif
 #endif
                 }
             }
+
+#if CONFIG_WCET_OVERRUN_DETECTION
+            // WCET overrun detection — fires when a RUNNING/READY task
+            // exceeds its declared worst-case execution time.  The latch
+            // prevents re-fire until the next period rollover clears it.
+            if (task->wcet_ticks > 0 && !task->wcet_overrun_fired &&
+                task->executed_ticks > task->wcet_ticks) {
+                task->wcet_overrun_fired = true;
+                wcet_overrun_handler(task,
+                    task->executed_ticks - task->wcet_ticks);
+            }
+#endif
 
             // Alarm — fires regardless of BLOCKED/WAITING
             if (task->alarm_armed) {
@@ -1143,6 +1160,15 @@ void deadline_miss_handler(TaskControlBlock* task,
     Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
                  task->id, task->name, missed_by_ticks);
 #endif
+}
+#endif
+
+#if CONFIG_WCET_OVERRUN_DETECTION
+__attribute__((weak))
+void wcet_overrun_handler(TaskControlBlock* task,
+                          uint64_t overrun_by_ticks) noexcept {
+    Logger::info("[WCET] Task %lu (%s) exceeded WCET by %lu ticks (action=LOG_ONLY)",
+                 task->id, task->name, overrun_by_ticks);
 }
 #endif
 

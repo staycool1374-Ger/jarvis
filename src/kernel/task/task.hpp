@@ -151,6 +151,7 @@ struct TaskControlBlock {
         , executed_ticks(0)
         , remaining_ticks(0)
         , wcet_ticks(0)
+        , wcet_overrun_fired(false)
         , exit_code(0)
         , context({})
         , kernel_stack(nullptr)
@@ -204,6 +205,7 @@ struct TaskControlBlock {
     uint64_t executed_ticks;
     uint64_t remaining_ticks;
     uint64_t wcet_ticks;  ///< explicit WCET for utilisation calc; 0 = implicit 100%
+    bool wcet_overrun_fired;  ///< latch to fire WCET handler once per period
     uint64_t exit_code;
 
     TaskContext context;

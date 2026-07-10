@@ -82,17 +82,17 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 **Goal:** Distinguish execution-time overrun (task consumed >WCET budget) from deadline miss (task didn't finish in time due to interference).
 
-- [ ] **P3a — Add WCET overrun detection** (`task.hpp`, `scheduler.cpp`)
+- [x] **P3a — Add WCET overrun detection** (`task.hpp`, `scheduler.cpp`)
   - `task->wcet_ticks` already exists (initialized 0 at create)
   - When `wcet_ticks > 0 && executed_ticks > wcet_ticks`, call weak `wcet_overrun_handler()` (separate from deadline handler)
-- [ ] **P3b — Add `CONFIG_WCET_OVERRUN_DETECTION`** (`jarvis_config.h`, default 0)
+- [x] **P3b — Add `CONFIG_WCET_OVERRUN_DETECTION`** (`jarvis_config.h`, default 1)
   - Separate compile-time flag so WCET tracking is optional (zero overhead when disabled)
-- [ ] **P3c — Handler signature**
+- [x] **P3c — Handler signature**
   - `__attribute__((weak)) wcet_overrun_handler(TaskControlBlock*, uint64_t overrun_by_ticks)` — same `CONFIG_DEADLINE_ACTION` configurability
 
 **Test addition:**
-- [ ] `wcet_overrun_detection_fires` — task with wcet_ticks=10, executed_ticks=11 fires overrun handler but NOT deadline handler
-- [ ] `deadline_miss_within_wcet` — task meets WCET but misses deadline (priority inversion) — deadline handler fires, overrun does NOT
+- [x] `wcet_overrun_detection_fires` — task with wcet_ticks=10, executed_ticks=11 fires overrun handler but NOT deadline handler
+- [x] `deadline_miss_within_wcet` — task meets WCET but misses deadline (priority inversion) — deadline handler fires, overrun does NOT
 
 ##### Phase 4 — SporadicServer Budget Integration (P3 — State Management)
 

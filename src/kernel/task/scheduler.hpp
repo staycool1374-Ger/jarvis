@@ -349,4 +349,12 @@ void deadline_miss_handler(TaskControlBlock* task,
                            uint64_t missed_by_ticks) noexcept;
 #endif
 
+#if CONFIG_WCET_OVERRUN_DETECTION
+/// @brief Weak callback invoked when a task exceeds its WCET.
+/// Called from ISR context (on_tick) — must not block or allocate.
+__attribute__((weak))
+void wcet_overrun_handler(TaskControlBlock* task,
+                          uint64_t overrun_by_ticks) noexcept;
+#endif
+
 } // namespace kernel
