@@ -43,21 +43,129 @@ Notes
 - [x] **Re-enable `DeadlockNestedMutexLoad`** — rewritten with `ScopedCurrentTask` + direct BLOCKED pattern; `add_waiter` now asserts on duplicate; `wake_one` null-safe
 
 #### Deadline Adherence
-- [ ] Deadline Miss Detection & Handler
-  - [ ] Add TaskControlBlock::deadline_ticks (absolute deadline) and deadline_missed flag
-  - [ ] In Scheduler::on_tick(): check current_tick > task->deadline_ticks for RUNNING/READY tasks
-  - [ ] On miss: call weak void deadline_miss_handler(TaskControlBlock*, uint64_t missed_by_ticks)
-  - [ ] Default handler: log + panic in debug; in release: CONFIG_DEADLINE_ACTION enum { PANIC, KILL_TASK, DEMOTE_PRIORITY, NOTIFY_MONITOR }
-  - [ ] Add CONFIG_DEADLINE_MONITOR_TASK — dedicated watchdog task (highest priority) that scans for misses
-- [ ] Budget Enforcement with Hard Preemption
-  - [ ] SporadicServer::consume() — when budget hits 0, immediately call Scheduler::reschedule() (not deferred)
-  - [ ] Add CONFIG_HARD_BUDGET_PREEMPTION — force context switch on budget exhaustion
-  - [ ] Integrate with SporadicServer::current_priority() — exhausted tasks run at bg_priority (configurable per server)
-- [ ] Time-Partitioning (ARINC 653 Style)
-  - [ ] Add TimePartition struct: start_tick, duration_ticks, budget_ticks, task_set[]
-  - [ ] Scheduler::partition_schedule() — major frame timer, minor frame dispatcher
-  - [ ] CONFIG_TIME_PARTITIONING — enable static schedule table (compile-time generated from config)
-  - [ ] Overrun detection: partition budget exhausted → deadline_miss_handler + partition switch
+
+The deadline miss detection infrastructure already exists in basic form (TCB fields `deadline_ticks`/`deadline_missed`/`deadline_miss_count`, weak handler with 4 config actions, `on_tick()` scan, snapshot/restore). The following phases extend it to production-hardened, ISO 26262-ready detection. Ordered by dependency — each phase builds on the prior.
+
+##### Phase 1 — Architectural Placement & Execution Context (P1)
+
+**Goal:** Fix where and how detection runs. Ensure BLOCKED/WAITING tasks are monitored, periodic deadlines re-arm, and locking is safe.
+
+- [x] **P1a — Extend detection to all non-TERMINATED states** (`scheduler.cpp:on_tick()`)
+  - Remove the `state == RUNNING || state == READY` guard on the deadline check
+  - BLOCKED and WAITING tasks must not silently blow through their deadline
+  - Keep `remaining_ticks`/`executed_ticks` accounting scoped to RUNNING/READY only (no change)
+- [x] **P1b — Re-arm `deadline_ticks` on period rollover** (`scheduler.cpp:on_tick()`)
+  - When `remaining_ticks` wraps from 0 to `period_ticks`, also: `task->deadline_ticks += task->period_ticks` and clear `task->deadline_missed`
+  - Enables periodic tasks to have per-period deadline enforcement
+- [x] **P1c — Locking audit: ISR vs scheduler_lock_ race** (`scheduler.cpp:on_tick()`)
+  - `on_tick()` runs in ISR context (IF=0) but accesses TCB fields without `scheduler_lock_`
+  - On UP: the ISR preempts any task including one inside `add_task()` which holds `scheduler_lock_`
+  - Since SpinLock does not disable IRQs, `on_tick()` could read mid-mutation
+  - **Fix:** Move deadline detection to a `scheduler_lock_.try_lock()` critical section
+
+**Test addition:**
+- [x] `deadline_miss_while_blocked` — task sets deadline, blocks (WAITING), ticks advance past deadline → handler fires
+- [x] `deadline_rearm_on_period_rollover` — periodic task re-arms `deadline_ticks += period_ticks` on wrap; `deadline_missed` cleared
+- [x] `deadline_miss_while_terminated_skipped` — TERMINATED task never triggers handler
+
+##### Phase 2 — O(N) Deadline Scan (Simplified)
+
+**Note:** The ready queue (`ReadyQueueManager` + `PriorityMap` bitmap) is already O(1) for dispatch. The deadline scan in `on_tick()` linearly iterates `tasks_[]` — at `MAX_TASKS=64` and 1000 Hz this is ~64K checks/sec, <1M instructions/sec. No optimisation needed.
+
+**Changes vs current code:**
+- [ ] **P2a — Remove stale `state == RUNNING || state == READY` guard duplication** (solved by P1a already moving the check outside the state-filtered block)
+- [ ] **P2b — Ensure deadline check remains after P1a restructuring**
+  - The check now runs on all non-TERMINATED tasks
+  - No new data structures; the linear scan remains
+
+##### Phase 3 — WCET Overrun vs Deadline Miss (P2 — Time Representation)
+
+**Goal:** Distinguish execution-time overrun (task consumed >WCET budget) from deadline miss (task didn't finish in time due to interference).
+
+- [ ] **P3a — Add WCET overrun detection** (`task.hpp`, `scheduler.cpp`)
+  - `task->wcet_ticks` already exists (initialized 0 at create)
+  - When `wcet_ticks > 0 && executed_ticks > wcet_ticks`, call weak `wcet_overrun_handler()` (separate from deadline handler)
+- [ ] **P3b — Add `CONFIG_WCET_OVERRUN_DETECTION`** (`jarvis_config.h`, default 0)
+  - Separate compile-time flag so WCET tracking is optional (zero overhead when disabled)
+- [ ] **P3c — Handler signature**
+  - `__attribute__((weak)) wcet_overrun_handler(TaskControlBlock*, uint64_t overrun_by_ticks)` — same `CONFIG_DEADLINE_ACTION` configurability
+
+**Test addition:**
+- [ ] `wcet_overrun_detection_fires` — task with wcet_ticks=10, executed_ticks=11 fires overrun handler but NOT deadline handler
+- [ ] `deadline_miss_within_wcet` — task meets WCET but misses deadline (priority inversion) — deadline handler fires, overrun does NOT
+
+##### Phase 4 — SporadicServer Budget Integration (P3 — State Management)
+
+**Goal:** For SS tasks, distinguish server budget exhaustion from a true deadline miss. Pass SS context to the handler.
+
+- [ ] **P4a — Pass SS state to handler** (`scheduler.cpp:on_tick()`)
+  - When deadline miss fires for an SS task, store `sporadic_server->state()` and `remaining_budget()` on TCB before calling handler
+- [ ] **P4b — Handler distinguishes exhaustion** (`scheduler.cpp:deadline_miss_handler()`)
+  - Default handler logs "server budget exhaustion (state=EXHAUSTED)" vs "deadline miss (budget remaining=X)"
+- [ ] **P4c — Optional exhaustion→deadline mapping** (`sporadic_server.cpp`)
+  - Add `CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE` — when set, `consume()` → budget→0 sets `task->deadline_missed = true`
+
+**Test addition:**
+- [ ] `ss_exhaustion_triggers_deadline` — SS task with C=3, T=100, runs 5 ticks → exhaustion fires handler with EXHAUSTED context
+- [ ] `ss_deadline_miss_during_replenish` — SS task misses deadline while budget=0 waiting for replenishment
+
+##### Phase 5 — Asymmetric Recovery & Safety Protocols (P4 — Deterministic Error Handling)
+
+**Goal:** Ensure recovery actions are safe and complete. Add NOTIFY_MONITOR action. Add structural isolation for ISO 26262.
+
+- [ ] **P5a — Safe KILL action** (`scheduler.cpp:deadline_miss_handler()`, action=3)
+  - Replace `task->state = TERMINATED` with: `Scheduler::remove_task()`, `task->cleanup()`, `delete task`
+  - For SS tasks: also `sporadic_server->on_completion()`
+  - Verify `scheduler_lock_` is not held at the point of the KILL action (ISR context)
+- [ ] **P5b — Add NOTIFY_MONITOR action** (`jarvis_config.h`, `scheduler.cpp`)
+  - `CONFIG_DEADLINE_ACTION == 4`: send signal or IPC to a designated monitor daemon (configurable via `CONFIG_DEADLINE_MONITOR_PID`)
+  - Handler does NOT kill or demote — just notifies supervisor
+- [ ] **P5c — Structural isolation** (`scheduler.cpp`)
+  - Add `ENSURE(task->magic == TCB_MAGIC)` before every TCB field access in the detection path
+  - Add `deadline_detection_integrity_` atomic counter — increment on each scan, error on corruption
+
+**Test addition:**
+- [ ] `deadline_action_kill_cleans_up` — action=3, verify `cleanup()` was called (ResourceTracker returns to baseline)
+- [ ] `deadline_action_notify_monitor` — action=4, monitor receives notification within 1 tick
+- [ ] `deadline_detection_magic_check` — corrupted TCB magic does not trigger handler
+- [ ] `deadline_detection_mcdc_coverage` — all 8 MC/DC conditions of `!missed && deadline>0 && ticks>deadline` toggled independently
+
+##### Phase 6 — Deadline Monitor Task (Roadmap Item)
+
+**Goal:** Decouple deadline scanning from the timer ISR via a dedicated watchdog task at highest priority.
+
+- [ ] **P6a — Add `CONFIG_DEADLINE_MONITOR_TASK`** (`jarvis_config.h`, default 0)
+  - When >0, scheduler spawns `[deadline-mon]` at priority 127 during `init()`
+  - Entry loop: wait on `s_deadline_scan_sem` semaphore → call `Scheduler::scan_deadlines()` → sleep
+- [ ] **P6b — Add `Scheduler::scan_deadlines()`** (`scheduler.cpp`)
+  - Identical deadline detection logic but runs in task context
+  - Can hold `scheduler_lock_`, can call blocking cleanup (safe KILL)
+  - Guarded by `#if CONFIG_DEADLINE_MONITOR_TASK`
+- [ ] **P6c — ISR→task handoff** (`scheduler.cpp:on_tick()`)
+  - If monitor task enabled: `on_tick()` posts semaphore instead of inline scanning
+  - If disabled: keep inline detection (Phase 1 logic)
+- [ ] **P6d — Snapshot/restore** (`test_isolate.cpp`)
+  - Monitor task is a daemon — preserve across snapshot_restore or re-spawn on restore
+  - Exclude from snapshot (like idle_task_); re-spawn on restore
+
+**Test addition:**
+- [ ] `deadline_monitor_task_spawned` — with CONFIG_DEADLINE_MONITOR_TASK=1, verify monitor present at priority 127
+- [ ] `deadline_monitor_detects_miss` — task misses deadline, monitor detects within 1 tick
+
+##### Phase 7 — Full WCET Benchmark & MC/DC Coverage
+
+**Goal:** Verify everything. Ensure detection logic has 100% MC/DC coverage and WCET benchmarks pass.
+
+- [ ] **P7a — MC/DC test suite** (`test_timing.cpp`)
+  - Cover each condition independently: `!missed`, `deadline>0`, `ticks>deadline`, `state!=TERMINATED`
+  - Handler actions: LOG, PANIC, DEMOTE, KILL, NOTIFY_MONITOR each verified
+  - Deadline queue: sorted insert, remove, pop_earliest, empty, full
+- [ ] **P7b — WCET benchmark** (`test_wcet_scheduler.cpp`, new file per ROADMAP.md §0.3.8)
+  - Measure max cycles of `deadline_list_.tick()` with 1, 10, 64 tasks over 10k iterations
+  - Record in `docs/wcet_analysis.md`
+- [ ] **P7c — Update expected counts** (`test_expected_counts.hpp`)
+  - Update `timing` class count to reflect new tests
+- [ ] **P7d — Regression: 738/738 PASS** — full `all` suite must pass before marking phase complete
 
 ### 0.3.3 — Inheritance & Ceiling
 ## Preemptive Priority-Based Scheduling + Priority Inversion Mitigation (Pillar 3)

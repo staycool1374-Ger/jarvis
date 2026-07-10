@@ -421,6 +421,20 @@ void Scheduler::on_tick() noexcept {
             if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
             if (task->state == TaskState::TERMINATED) continue;
 
+#if CONFIG_DEADLINE_MISS_DETECTION
+            // Deadline miss detection — runs before accounting so the
+            // check uses the current deadline_ticks before any period-
+            // rollover re-arm pushes it forward.
+            if (task->period_ticks > 0 && !task->deadline_missed &&
+                task->deadline_ticks > 0 &&
+                arch::Timer::ticks() > task->deadline_ticks) {
+                task->deadline_missed = true;
+                ++task->deadline_miss_count;
+                deadline_miss_handler(task,
+                    arch::Timer::ticks() - task->deadline_ticks);
+            }
+#endif
+
             // Accounting — only RUNNING/READY accumulate ticks
             if (task->state == TaskState::RUNNING ||
                 task->state == TaskState::READY) {
@@ -429,6 +443,14 @@ void Scheduler::on_tick() noexcept {
                 if (task->remaining_ticks > 0) --task->remaining_ticks;
                 if (prev_rem == 0 && task->period_ticks > 0) {
                     task->remaining_ticks = task->period_ticks;
+#if CONFIG_DEADLINE_MISS_DETECTION
+                    // P1b: Re-arm deadline_ticks on period rollover.
+                    // Ensures per-period deadline enforcement:
+                    // deadline_ticks and deadline_missed latch are
+                    // reset for the next period.
+                    task->deadline_ticks += task->period_ticks;
+                    task->deadline_missed = false;
+#endif
                 }
             }
 
@@ -441,26 +463,6 @@ void Scheduler::on_tick() noexcept {
                         SIGALRM));
                 }
             }
-
-#if CONFIG_DEADLINE_MISS_DETECTION
-            // Deadline miss detection — only periodic tasks (period_ticks > 0)
-            // have enforceable deadlines.  Aperiodic tasks should skip.
-            if (task->period_ticks > 0 && !task->deadline_missed &&
-                task->deadline_ticks > 0 &&
-                arch::Timer::ticks() > task->deadline_ticks) {
-                task->deadline_missed = true;
-                ++task->deadline_miss_count;
-                deadline_miss_handler(task,
-                    arch::Timer::ticks() - task->deadline_ticks);
-                // Re-arm for next period (wall-clock based).
-                // Aperiodic tasks (period_ticks == 0) fire once,
-                // then deadline_missed stays latched.
-                if (task->period_ticks > 0) {
-                    task->deadline_ticks += task->period_ticks;
-                    task->deadline_missed = false;
-                }
-            }
-#endif
         }
         scheduler_lock_.unlock();
     }

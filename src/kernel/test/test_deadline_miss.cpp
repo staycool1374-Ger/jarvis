@@ -127,11 +127,15 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
     bool saved_missed = cur->deadline_missed;
     uint64_t saved_period = cur->period_ticks;
     uint64_t saved_count = cur->deadline_miss_count;
+    uint64_t saved_remaining = cur->remaining_ticks;
 
+    // Trigger deadline miss + period rollover: set deadline in the past
+    // and remaining_ticks to 0 so the next tick wraps.
     cur->period_ticks = 10;
     cur->deadline_ticks = arch::Timer::ticks() - 1;
     cur->deadline_missed = false;
     cur->deadline_miss_count = 0;
+    cur->remaining_ticks = 0;
 
     uint64_t pre_ticks = cur->deadline_ticks;
 
@@ -140,19 +144,20 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
         Scheduler::on_tick();
     }
 
-    // Deadline miss fired
+    // Deadline miss fired (detected before rollover re-arm)
     CT_ASSERT(cur->deadline_miss_count >= 1);
 
-    // Re-arm: deadline advanced by period_ticks
+    // Re-arm: deadline advanced by period_ticks on rollover
     CT_ASSERT(cur->deadline_ticks == pre_ticks + 10);
 
-    // Latch cleared for next period
+    // Latch cleared for next period by rollover
     CT_ASSERT(cur->deadline_missed == false);
 
     cur->deadline_ticks = saved_ticks;
     cur->deadline_missed = saved_missed;
     cur->period_ticks = saved_period;
     cur->deadline_miss_count = saved_count;
+    cur->remaining_ticks = saved_remaining;
 };
 
 void register_deadline_miss_tests() {
