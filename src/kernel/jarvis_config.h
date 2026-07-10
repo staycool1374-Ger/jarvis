@@ -485,6 +485,12 @@
 #define CONFIG_WCET_OVERRUN_DETECTION 1
 #endif
 
+/// When set, SporadicServer budget exhaustion (consume()->budget→0) also
+/// sets task->deadline_missed = true, mapping exhaustion to a deadline miss.
+#ifndef CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE
+#define CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE 1
+#endif
+
 /// Default action on deadline miss (used by default handler):
 ///   0 = LOG_ONLY, 1 = PANIC, 2 = DEMOTE (priority /= 2), 3 = KILL
 #ifndef CONFIG_DEADLINE_ACTION

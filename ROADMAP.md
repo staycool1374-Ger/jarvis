@@ -98,16 +98,16 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 **Goal:** For SS tasks, distinguish server budget exhaustion from a true deadline miss. Pass SS context to the handler.
 
-- [ ] **P4a — Pass SS state to handler** (`scheduler.cpp:on_tick()`)
+- [x] **P4a — Pass SS state to handler** (`scheduler.cpp:on_tick()`)
   - When deadline miss fires for an SS task, store `sporadic_server->state()` and `remaining_budget()` on TCB before calling handler
-- [ ] **P4b — Handler distinguishes exhaustion** (`scheduler.cpp:deadline_miss_handler()`)
+- [x] **P4b — Handler distinguishes exhaustion** (`scheduler.cpp:deadline_miss_handler()`)
   - Default handler logs "server budget exhaustion (state=EXHAUSTED)" vs "deadline miss (budget remaining=X)"
-- [ ] **P4c — Optional exhaustion→deadline mapping** (`sporadic_server.cpp`)
-  - Add `CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE` — when set, `consume()` → budget→0 sets `task->deadline_missed = true`
+- [x] **P4c — Optional exhaustion→deadline mapping** (`scheduler.cpp:on_tick()` SS consume loop)
+  - Add `CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE` — when set, consume() return false fires handler with EXHAUSTED context
 
 **Test addition:**
-- [ ] `ss_exhaustion_triggers_deadline` — SS task with C=3, T=100, runs 5 ticks → exhaustion fires handler with EXHAUSTED context
-- [ ] `ss_deadline_miss_during_replenish` — SS task misses deadline while budget=0 waiting for replenishment
+- [x] `ss_exhaustion_triggers_deadline` — SS task with C=3, T=100, exhausted via direct SS consume + P1a deadline in past → handler fires with EXHAUSTED context
+- [x] `ss_deadline_miss_during_replenish` — SS task misses deadline while budget=0 waiting for replenishment, handler fires with EXHAUSTED context
 
 ##### Phase 5 — Asymmetric Recovery & Safety Protocols (P4 — Deterministic Error Handling)
 

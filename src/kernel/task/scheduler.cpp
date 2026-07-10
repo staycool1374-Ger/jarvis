@@ -428,6 +428,15 @@ void Scheduler::on_tick() noexcept {
             if (task->period_ticks > 0 && !task->deadline_missed &&
                 task->deadline_ticks > 0 &&
                 arch::Timer::ticks() > task->deadline_ticks) {
+                // P4a: Capture SS state before handler call so the
+                // handler can distinguish budget exhaustion from a
+                // true deadline miss.
+                if (task->sporadic_server) {
+                    task->ss_state_on_deadline_miss =
+                        static_cast<uint8_t>(task->sporadic_server->state());
+                    task->ss_budget_on_deadline_miss =
+                        task->sporadic_server->remaining_budget();
+                }
                 task->deadline_missed = true;
                 ++task->deadline_miss_count;
                 deadline_miss_handler(task,
@@ -506,6 +515,20 @@ void Scheduler::on_tick() noexcept {
                 t->sporadic_server->process_replenishments(current_tick);
                 if (t == cur && t->sporadic_server->is_active()) {
                     if (!t->sporadic_server->consume(current_tick)) {
+#if CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE
+                        // P4c: Budget exhaustion maps to a deadline miss.
+                        // Capture SS context and fire the handler so it
+                        // can distinguish exhaustion from a true deadline.
+                        if (!t->deadline_missed) {
+                            t->ss_state_on_deadline_miss =
+                                static_cast<uint8_t>(t->sporadic_server->state());
+                            t->ss_budget_on_deadline_miss =
+                                t->sporadic_server->remaining_budget();
+                            t->deadline_missed = true;
+                            ++t->deadline_miss_count;
+                            deadline_miss_handler(t, 0);
+                        }
+#endif
                         // Only reschedule if we're on a real task's kernel
                         // stack — skip when on boot stack (e.g. after
                         // snapshot_restore during test execution) to avoid
@@ -1144,21 +1167,44 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
 __attribute__((weak))
 void deadline_miss_handler(TaskControlBlock* task,
                            uint64_t missed_by_ticks) noexcept {
+    // P4b: Check if SS context was captured — distinguish budget
+    // exhaustion from a true deadline miss.
+    bool budget_exhausted = (task->sporadic_server != nullptr &&
+        static_cast<task::SporadicServer::State>(task->ss_state_on_deadline_miss)
+            == task::SporadicServer::State::EXHAUSTED);
+
 #if CONFIG_DEADLINE_ACTION == 1
-    panic("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=PANIC)",
-          task->id, task->name, missed_by_ticks);
+    if (budget_exhausted)
+        panic("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, action=PANIC)",
+              task->id, task->name);
+    else
+        panic("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=PANIC)",
+              task->id, task->name, missed_by_ticks);
 #elif CONFIG_DEADLINE_ACTION == 2
-    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
-                 task->id, task->name, missed_by_ticks);
+    if (budget_exhausted)
+        Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
+                     "action=DEMOTE)", task->id, task->name);
+    else
+        Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
+                     task->id, task->name, missed_by_ticks);
     if (task->priority > 1) task->priority >>= 1;
 #elif CONFIG_DEADLINE_ACTION == 3
-    Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
-                 task->id, task->name, missed_by_ticks);
+    if (budget_exhausted)
+        Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
+                     "action=KILL)", task->id, task->name);
+    else
+        Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
+                     task->id, task->name, missed_by_ticks);
     task->state = TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
 #else
-    Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
-                 task->id, task->name, missed_by_ticks);
+    if (budget_exhausted)
+        Logger::info("[DMD] Task %lu (%s) budget exhausted (budget=%lu, "
+                     "state=EXHAUSTED, action=LOG_ONLY)",
+                     task->id, task->name, task->ss_budget_on_deadline_miss);
+    else
+        Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
+                     task->id, task->name, missed_by_ticks);
 #endif
 }
 #endif

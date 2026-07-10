@@ -152,6 +152,8 @@ struct TaskControlBlock {
         , remaining_ticks(0)
         , wcet_ticks(0)
         , wcet_overrun_fired(false)
+        , ss_state_on_deadline_miss(0)
+        , ss_budget_on_deadline_miss(0)
         , exit_code(0)
         , context({})
         , kernel_stack(nullptr)
@@ -206,6 +208,8 @@ struct TaskControlBlock {
     uint64_t remaining_ticks;
     uint64_t wcet_ticks;  ///< explicit WCET for utilisation calc; 0 = implicit 100%
     bool wcet_overrun_fired;  ///< latch to fire WCET handler once per period
+    uint8_t ss_state_on_deadline_miss;   ///< captured SporadicServer::state() at deadline miss
+    uint64_t ss_budget_on_deadline_miss; ///< captured remaining_budget() at deadline miss
     uint64_t exit_code;
 
     TaskContext context;
