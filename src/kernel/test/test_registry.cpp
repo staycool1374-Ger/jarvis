@@ -117,6 +117,7 @@ void register_deadline_miss_tests();
 void register_wcet_overrun_tests();
 void register_ss_deadline_tests();
 void register_deadline_recovery_tests();
+void register_priority_inheritance_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
@@ -265,6 +266,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_wcet_overrun_tests();
         register_ss_deadline_tests();
         register_deadline_recovery_tests();
+        register_priority_inheritance_tests();
         register_pic_tests();
         register_integration_tests();
         register_pml4_clone_tests();
@@ -322,6 +324,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_timer_tests();
         register_wfg_tests();
         register_starvation_deadlock_tests();
+        register_priority_inheritance_tests();
         register_sporadic_server_tests();
     }},
 
@@ -461,6 +464,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"deadline_recovery", []() {
         register_deadline_recovery_tests();
+    }},
+
+    {"priority_inheritance", []() {
+        register_priority_inheritance_tests();
     }},
 
     {"stress", []() {

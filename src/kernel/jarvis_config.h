@@ -441,6 +441,36 @@
 #endif
 
 // ---------------------------------------------------------------------------
+// Priority Inheritance Protocol Configuration
+// ---------------------------------------------------------------------------
+/// Enable Priority Inheritance Protocol for Mutex.
+/// When set, a lower-priority task holding a mutex inherits the priority of
+/// a higher-priority task waiting on the same mutex. Prevents priority inversion.
+/// Set to 0 for soft-RT builds (no PI overhead).
+/// Default: 1 (enabled).
+#ifndef CONFIG_MUTEX_PIP
+#define CONFIG_MUTEX_PIP 1
+#endif
+
+/// Enable Priority Inheritance Protocol for Semaphore.
+/// When set, if a higher-priority task is blocked waiting on a semaphore and
+/// a lower-priority task currently holds/controls it, the lower-priority task
+/// inherits the higher priority. Set to 0 for soft-RT builds.
+/// Default: 1 (enabled).
+#ifndef CONFIG_SEMAPHORE_PIP
+#define CONFIG_SEMAPHORE_PIP 1
+#endif
+
+/// Enable Priority Inheritance Protocol for Queue (sync::Queue).
+/// Boosts the receiver when a high-priority sender is blocked on a full queue,
+/// and boosts the sender when a high-priority receiver is blocked on an empty queue.
+/// Set to 0 for soft-RT builds.
+/// Default: 1 (enabled).
+#ifndef CONFIG_QUEUE_PIP
+#define CONFIG_QUEUE_PIP 1
+#endif
+
+// ---------------------------------------------------------------------------
 // Hook Configuration Points
 // ---------------------------------------------------------------------------
 /// If non-zero, declares weak symbol idle_hook() called each idle iteration.

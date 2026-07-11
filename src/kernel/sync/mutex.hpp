@@ -79,6 +79,9 @@ private:
     void inherit_priority(TaskControlBlock& waiter);
     /// @brief Restore owner priority to its original value.
     void restore_priority();
+    /// @brief Re-evaluate owner priority after a waiter's priority changed.
+    ///        Used for transitive PI chain propagation.
+    void reevaluate();
 };
 
 }

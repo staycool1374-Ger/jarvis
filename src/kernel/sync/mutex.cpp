@@ -67,25 +67,74 @@ void Mutex::wake_one() {
             waiters_[i]->priority > waiters_[best]->priority)) best = i;
     }
 
-    if (waiters_[best] && waiters_[best]->state != TaskState::TERMINATED)
+    if (waiters_[best] && waiters_[best]->state != TaskState::TERMINATED) {
+        waiters_[best]->waiting_on_mutex = nullptr;
         Scheduler::set_task_ready(*waiters_[best]);
+    }
     waiters_[best] = waiters_[--wait_count_];
 }
 
 /// @brief Boost the owner's priority if the waiter has higher priority.
+///        Scans all waiters to find the max priority (handles multiple
+///        waiters at different priorities and transitive chains).
 void Mutex::inherit_priority(TaskControlBlock& waiter) {
     if (!owner_) return;
-    if (waiter.priority > owner_->priority) {
-        holder_priority_ = owner_->priority;
-        owner_->priority = waiter.priority;
+
+    uint64_t max_prio = waiter.priority;
+    for (size_t i = 0; i < wait_count_; ++i) {
+        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+    }
+
+    if (max_prio > owner_->priority) {
+        if (holder_priority_ == 0)
+            holder_priority_ = owner_->priority;
+        owner_->priority = max_prio;
+
+        // Transitive PI: if the owner is itself blocked on another mutex,
+        // propagate the boost up the chain.
+        if (owner_->waiting_on_mutex)
+            owner_->waiting_on_mutex->reevaluate();
     }
 }
 
-/// @brief Restore the owner's priority to its saved original value.
+/// @brief Restore the owner's priority to its saved original value,
+///        unless remaining waiters still need a boost.
 void Mutex::restore_priority() {
     if (!owner_ || holder_priority_ == 0) return;
-    owner_->priority = holder_priority_;
-    holder_priority_ = 0;
+
+    uint64_t max_remaining = 0;
+    for (size_t i = 0; i < wait_count_; ++i) {
+        if (waiters_[i]->priority > max_remaining)
+            max_remaining = waiters_[i]->priority;
+    }
+
+    if (max_remaining > holder_priority_) {
+        owner_->priority = max_remaining;
+    } else {
+        owner_->priority = holder_priority_;
+        holder_priority_ = 0;
+    }
+}
+
+/// @brief Re-evaluate the owner's priority based on all current waiters.
+///        Called when a waiter's priority changes (e.g. transitively boosted
+///        by another mutex further down the chain).
+void Mutex::reevaluate() {
+    if (!owner_ || wait_count_ == 0) return;
+
+    uint64_t max_prio = 0;
+    for (size_t i = 0; i < wait_count_; ++i) {
+        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+    }
+
+    if (max_prio > owner_->priority) {
+        if (holder_priority_ == 0)
+            holder_priority_ = owner_->priority;
+        owner_->priority = max_prio;
+
+        if (owner_->waiting_on_mutex)
+            owner_->waiting_on_mutex->reevaluate();
+    }
 }
 
 /// @brief Acquire the mutex, blocking until available (supports recursion).
@@ -111,6 +160,7 @@ void Mutex::lock() {
 
     bool added = add_waiter(*task);
     ENSURE(added);
+    task->waiting_on_mutex = this;
 
     lock_.unlock();
 
@@ -144,6 +194,7 @@ errors::SyncError Mutex::lock_err() {
         lock_.unlock();
         return errors::SYNC_ERR_MAX_WAITERS;
     }
+    task->waiting_on_mutex = this;
 
     lock_.unlock();
 
@@ -210,14 +261,17 @@ void Mutex::unlock() {
         return;
     }
 
-    owner_ = nullptr;
-    lock_count_ = 0;
-
-    restore_priority();
-
+    // Wake the highest-priority waiter BEFORE restoring the old
+    // owner's priority, so that the awoken waiter is no longer
+    // counted in the max-remaining-waiter calculation.
     if (wait_count_ > 0) {
         wake_one();
     }
+
+    restore_priority();
+
+    owner_ = nullptr;
+    lock_count_ = 0;
 
     lock_.unlock();
 }
@@ -236,14 +290,14 @@ errors::SyncError Mutex::unlock_err() {
         return errors::SYNC_ERR_OK;
     }
 
-    owner_ = nullptr;
-    lock_count_ = 0;
-
-    restore_priority();
-
     if (wait_count_ > 0) {
         wake_one();
     }
+
+    restore_priority();
+
+    owner_ = nullptr;
+    lock_count_ = 0;
 
     lock_.unlock();
     return errors::SYNC_ERR_OK;

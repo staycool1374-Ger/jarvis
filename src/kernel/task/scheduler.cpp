@@ -93,6 +93,13 @@ void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
     enqueue_ready(task);
 }
 
+void Scheduler::terminate(TaskControlBlock& task, uint64_t exit_code) noexcept {
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    dequeue_ready(task);
+    task.state = TaskState::TERMINATED;
+    task.exit_code = exit_code;
+}
+
 TaskControlBlock* const Scheduler::ID_TOMBSTONE =
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));

@@ -125,6 +125,10 @@ public:
     ///        Call this instead of directly setting `task.state = READY`
     ///        to keep the ready-queue bitmap in sync.
     static void set_task_ready(TaskControlBlock& task) noexcept;
+    /// @brief Transitions a task to TERMINATED state and removes it from the
+    ///        ready queue.  Call this instead of directly setting
+    ///        `task.state = TERMINATED` to keep the ready queue consistent.
+    static void terminate(TaskControlBlock& task, uint64_t exit_code) noexcept;
 
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.

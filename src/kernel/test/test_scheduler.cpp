@@ -109,9 +109,8 @@ JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
     auto* child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     child->parent_id = 999999;
-    child->state = TaskState::TERMINATED;
-    child->exit_code = 42;
     Scheduler::add_task(*child);
+    Scheduler::terminate(*child, 42);
 
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
@@ -195,9 +194,7 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred, "PRE: none | POST: none") 
     parent->waiting_child_pid = child_id;
     parent->waiting_child_status = &status;
 
-    // Terminate child
-    child->state = TaskState::TERMINATED;
-    child->exit_code = 42;
+    Scheduler::terminate(*child, 42);
 
     // Reap orphans - should NOT reap child because parent is waiting
     Scheduler::reap_orphans();

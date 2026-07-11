@@ -37,6 +37,8 @@ public:
         : count_(0)
         , max_count_(1)
         , waiter_count_(0)
+        , owner_(nullptr)
+        , holder_priority_(0)
         {}
     /// @brief Initialize semaphore with a count and optional maximum.
     /// @param initial Starting count.
@@ -73,9 +75,13 @@ private:
     uint64_t max_count_;     ///< Maximum count (capped on post).
     TaskControlBlock* waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
     size_t waiter_count_;    ///< Number of tasks waiting on this semaphore.
+    TaskControlBlock* owner_;         ///< Owner task for PIP (non-null when count < initial).
+    uint64_t holder_priority_;        ///< Saved original priority for PI restore.
 
     bool add_waiter(TaskControlBlock* task);
     void wake_one();
+    void inherit_priority(TaskControlBlock& waiter);
+    void restore_priority();
 };
 
 }

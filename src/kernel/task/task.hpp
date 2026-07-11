@@ -59,6 +59,7 @@ struct MessageQueue;
 namespace sync {
 class Notify;
 class EventGroup;
+class Mutex;
 }
 
 namespace task {
@@ -188,6 +189,7 @@ struct TaskControlBlock {
         , blocked_next(nullptr)
         , blocked_prev(nullptr)
         , blocked_on_queue(nullptr)
+        , waiting_on_mutex(nullptr)
         , first_child(nullptr)
         , next_sibling(nullptr)
         , prev_sibling(nullptr)
@@ -300,6 +302,12 @@ struct TaskControlBlock {
     /// before the TCB is freed, preventing dangling pointers in the
     /// queue's list.
     MessageQueue* blocked_on_queue;
+
+    /// @brief Pointer to the mutex this task is blocked on (as a waiter).
+    /// Used for transitive priority inheritance propagation.
+    /// Non-null only while the task is in a Mutex's waiter array.
+    /// Set in Mutex::lock(), cleared in Mutex::wake_one().
+    sync::Mutex* waiting_on_mutex;
 
     /// @brief Process hierarchy: first child, next sibling, previous sibling.
     TaskControlBlock* first_child;

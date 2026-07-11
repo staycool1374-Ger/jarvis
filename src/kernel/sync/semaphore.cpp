@@ -33,6 +33,8 @@ void Semaphore::init(uint64_t initial, uint64_t max) {
     count_ = initial;
     max_count_ = max;
     waiter_count_ = 0;
+    owner_ = nullptr;
+    holder_priority_ = 0;
     lock_.reset();
 }
 
@@ -45,6 +47,8 @@ errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
     count_ = initial;
     max_count_ = max;
     waiter_count_ = 0;
+    owner_ = nullptr;
+    holder_priority_ = 0;
     lock_.reset();
     return errors::SYNC_ERR_OK;
 }
@@ -77,6 +81,36 @@ void Semaphore::wake_one() {
     }
 }
 
+/// @brief Boost the owner if the waiter has higher priority (PIP).
+void Semaphore::inherit_priority(TaskControlBlock& waiter) {
+    if (!owner_) return;
+    uint64_t max_prio = waiter.priority;
+    for (size_t i = 0; i < waiter_count_; ++i) {
+        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+    }
+    if (max_prio > owner_->priority) {
+        if (holder_priority_ == 0)
+            holder_priority_ = owner_->priority;
+        owner_->priority = max_prio;
+    }
+}
+
+/// @brief Restore the owner's priority (PIP).
+void Semaphore::restore_priority() {
+    if (!owner_ || holder_priority_ == 0) return;
+    uint64_t max_remaining = 0;
+    for (size_t i = 0; i < waiter_count_; ++i) {
+        if (waiters_[i]->priority > max_remaining)
+            max_remaining = waiters_[i]->priority;
+    }
+    if (max_remaining >= holder_priority_) {
+        owner_->priority = max_remaining;
+    } else {
+        owner_->priority = holder_priority_;
+        holder_priority_ = 0;
+    }
+}
+
 /// @brief Decrement the count, blocking if zero.
 void Semaphore::wait() {
     SpinLockGuard<SpinLock> guard(lock_);
@@ -85,8 +119,13 @@ void Semaphore::wait() {
 
     if (count_ > 0) {
         --count_;
+        if (count_ == 0) {
+            owner_ = task;
+        }
         return;
     }
+
+    inherit_priority(*task);
 
     bool added = add_waiter(task);
     ENSURE(added);
@@ -103,12 +142,17 @@ errors::SyncError Semaphore::wait_err() {
 
     if (count_ > 0) {
         --count_;
+        if (count_ == 0) {
+            owner_ = task;
+        }
         return errors::SYNC_ERR_OK;
     }
 
     if (waiter_count_ >= MAX_WAITERS) {
         return errors::SYNC_ERR_MAX_WAITERS;
     }
+
+    inherit_priority(*task);
 
     waiters_[waiter_count_++] = task;
     task->state = TaskState::BLOCKED;
@@ -142,7 +186,9 @@ void Semaphore::post() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {
         wake_one();
+        restore_priority();
     } else if (count_ < max_count_) {
+        if (count_ == 0) owner_ = nullptr;
         ++count_;
     }
 }
@@ -152,9 +198,11 @@ errors::SyncError Semaphore::post_err() {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_count_ > 0) {
         wake_one();
+        restore_priority();
         return errors::SYNC_ERR_OK;
     }
     if (count_ < max_count_) {
+        if (count_ == 0) owner_ = nullptr;
         ++count_;
         return errors::SYNC_ERR_OK;
     }
