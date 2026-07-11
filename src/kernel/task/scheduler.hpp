@@ -264,6 +264,13 @@ public:
     ///        so init gets PID 1 after the test suite finishes).
     static void reset_next_task_id(uint64_t id) noexcept;
 
+    /// @brief Deferred-kill: add a task to the deferred kill list for
+    ///        safe cleanup outside the try_lock critical section.
+    static void defer_kill(TaskControlBlock* task) noexcept;
+    /// @brief Process all deferred kills: remove_task, cleanup, free.
+    ///        Called from on_tick() after the deadline scan lock is released.
+    static void process_deferred_kills() noexcept;
+
 private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
     static constexpr uint64_t ID_TABLE_SIZE = static_cast<uint64_t>(CONFIG_MAX_TASKS) * 2;
@@ -330,6 +337,14 @@ extern "C" {
     ///        where the counter advanced.
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     extern uint64_t scheduler_corruption_count;
+    /// @brief Monotonic counter incremented on each successful deadline-
+    ///        detection scan in on_tick().  Used by tests to verify that
+    ///        the scan completes without aborting.  If a test expects the
+    ///        scan to run (e.g. after setting up a deadline miss) but the
+    ///        counter did not advance, the try_lock was contended or a
+    ///        corruption panic aborted the scan.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+    extern uint64_t deadline_detection_integrity;
     /// @brief Tracks which task's FPU state is currently in the registers.
     ///        nullptr means no task has used FPU since boot.
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)

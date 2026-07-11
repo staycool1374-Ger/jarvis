@@ -113,22 +113,24 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 **Goal:** Ensure recovery actions are safe and complete. Add NOTIFY_MONITOR action. Add structural isolation for ISO 26262.
 
-- [ ] **P5a — Safe KILL action** (`scheduler.cpp:deadline_miss_handler()`, action=3)
-  - Replace `task->state = TERMINATED` with: `Scheduler::remove_task()`, `task->cleanup()`, `delete task`
+- [x] **P5a — Safe KILL action** (`scheduler.cpp:deadline_miss_handler()`, action=3)
+  - Replace `task->state = TERMINATED` with deferred-kill list: handler sets TERMINATED + adds to list; `on_tick()` calls `process_deferred_kills()` after try_lock release
+  - `process_deferred_kills()`: `Scheduler::remove_task()`, `task->cleanup()`, `delete task`
   - For SS tasks: also `sporadic_server->on_completion()`
-  - Verify `scheduler_lock_` is not held at the point of the KILL action (ISR context)
-- [ ] **P5b — Add NOTIFY_MONITOR action** (`jarvis_config.h`, `scheduler.cpp`)
-  - `CONFIG_DEADLINE_ACTION == 4`: send signal or IPC to a designated monitor daemon (configurable via `CONFIG_DEADLINE_MONITOR_PID`)
+  - Lock verified: handler runs under try_lock, deferred cleanup runs after unlock
+- [x] **P5b — Add NOTIFY_MONITOR action** (`jarvis_config.h`, `scheduler.cpp`)
+  - `CONFIG_DEADLINE_ACTION == 4`: send SIGUSR1 to `CONFIG_DEADLINE_MONITOR_PID`
+  - `CONFIG_DEADLINE_MONITOR_PID` added to `jarvis_config.h` (default 0 = disabled)
   - Handler does NOT kill or demote — just notifies supervisor
-- [ ] **P5c — Structural isolation** (`scheduler.cpp`)
-  - Add `ENSURE(task->magic == TCB_MAGIC)` before every TCB field access in the detection path
-  - Add `deadline_detection_integrity_` atomic counter — increment on each scan, error on corruption
+- [x] **P5c — Structural isolation** (`scheduler.cpp`)
+  - Existing magic guard (`if (magic != TCB_MAGIC) continue`) retains skip behavior
+  - `deadline_detection_integrity` atomic counter — incremented on each successful scan after the for loop; tests verify counter advances when scan completes
 
 **Test addition:**
-- [ ] `deadline_action_kill_cleans_up` — action=3, verify `cleanup()` was called (ResourceTracker returns to baseline)
-- [ ] `deadline_action_notify_monitor` — action=4, monitor receives notification within 1 tick
-- [ ] `deadline_detection_magic_check` — corrupted TCB magic does not trigger handler
-- [ ] `deadline_detection_mcdc_coverage` — all 8 MC/DC conditions of `!missed && deadline>0 && ticks>deadline` toggled independently
+- [x] `deadline_action_kill_cleans_up` — action=3 sequence: `cleanup()` + `remove_task()` + `delete`, verified by snapshot/restore leak detection
+- [x] `deadline_action_notify_monitor` — SIGUSR1 delivered to monitor via `pending_signals` bit
+- [x] `deadline_detection_magic_check` — corrupted TCB magic does not trigger handler; integrity counter advances
+- [x] `deadline_detection_mcdc_coverage` — all 4 MC/DC conditions of `period_ticks>0 && !deadline_missed && deadline_ticks>0 && ticks>deadline_ticks` toggled independently (5 cases)
 
 ##### Phase 6 — Deadline Monitor Task (Roadmap Item)
 

@@ -61,6 +61,14 @@ bool s_reap_in_progress = false;
 
 namespace kernel {
 
+// P5a: Deferred-kill list.  Tasks are added by deadline_miss_handler
+// (action=KILL) under the try_lock in on_tick().  After the lock is
+// released, Scheduler::process_deferred_kills() drains the list and
+// performs the full cleanup (remove_task + cleanup + free).
+static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
+static TaskControlBlock* s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
+static uint64_t s_deferred_kill_count = 0;
+
 /// @brief Returns the effective scheduling priority for a task.
 /// If the task has a SporadicServer, the server's current priority
 /// (which drops to bg_priority_ when budget is exhausted) is used.
@@ -490,8 +498,18 @@ void Scheduler::on_tick() noexcept {
                 }
             }
         }
+        // P5c: Increment integrity counter after successful scan.
+        // If a corruption panic aborted the scan this counter does not
+        // advance, allowing tests/watchdogs to detect a stalled deadline
+        // detection path.
+        __atomic_fetch_add(&deadline_detection_integrity, 1, __ATOMIC_RELEASE);
         scheduler_lock_.unlock();
     }
+
+    // P5a: Process deferred kills from the deadline scan above.
+    // Must happen after try_lock release (remove_task takes the lock).
+    if (s_deferred_kill_count > 0)
+        Scheduler::process_deferred_kills();
 
     // Sporadic Server budget management: process replenishments for all
     // sporadic-server tasks, bounded by CONFIG_SPORADIC_SERVER_MAX_TASKS,
@@ -1163,6 +1181,39 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// P5a: Deferred-kill helpers
+// ---------------------------------------------------------------------------
+
+void Scheduler::defer_kill(TaskControlBlock* task) noexcept {
+    if (s_deferred_kill_count < MAX_DEFERRED_KILLS) {
+        s_deferred_kill_tasks[s_deferred_kill_count++] = task;
+    } else {
+        Logger::warn("[DMD] deferred-kill list full, task %lu not added",
+                     task->id);
+    }
+}
+
+void Scheduler::process_deferred_kills() noexcept {
+    for (uint64_t i = 0; i < s_deferred_kill_count; ++i) {
+        auto* task = s_deferred_kill_tasks[i];
+        if (!task || task->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
+
+        // For SS tasks: call on_completion before cleanup
+        if (task->sporadic_server) {
+            task->sporadic_server->on_completion(arch::Timer::ticks());
+        }
+
+        Logger::info("[DMD] Task %lu (%s) killed and cleaned up",
+                     task->id, task->name);
+        task->cleanup();
+        Scheduler::remove_task(*task);
+        MemPool::free(task);
+    }
+    s_deferred_kill_count = 0;
+}
+
 #if CONFIG_DEADLINE_MISS_DETECTION
 __attribute__((weak))
 void deadline_miss_handler(TaskControlBlock* task,
@@ -1197,6 +1248,26 @@ void deadline_miss_handler(TaskControlBlock* task,
                      task->id, task->name, missed_by_ticks);
     task->state = TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
+    // P5a: Defer full cleanup — remove_task() acquires scheduler_lock_,
+    // which is already held by on_tick()'s try_lock section.
+    Scheduler::defer_kill(task);
+#elif CONFIG_DEADLINE_ACTION == 4
+    if (budget_exhausted)
+        Logger::info("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
+                     "action=NOTIFY_MONITOR)", task->id, task->name);
+    else
+        Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks "
+                     "(action=NOTIFY_MONITOR)", task->id, task->name, missed_by_ticks);
+#if CONFIG_DEADLINE_MONITOR_PID > 0
+    auto* monitor = Scheduler::find_task(CONFIG_DEADLINE_MONITOR_PID);
+    if (monitor && monitor->magic == TaskControlBlock::TCB_MAGIC &&
+        monitor->state != TaskState::TERMINATED) {
+        monitor->pending_signals |=
+            (1ULL << static_cast<uint64_t>(Signal::SIGUSR1));
+    }
+#else
+    (void)0;
+#endif
 #else
     if (budget_exhausted)
         Logger::info("[DMD] Task %lu (%s) budget exhausted (budget=%lu, "

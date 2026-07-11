@@ -492,9 +492,17 @@
 #endif
 
 /// Default action on deadline miss (used by default handler):
-///   0 = LOG_ONLY, 1 = PANIC, 2 = DEMOTE (priority /= 2), 3 = KILL
+///   0 = LOG_ONLY, 1 = PANIC, 2 = DEMOTE (priority /= 2), 3 = KILL (deferred
+///       cleanup via remove_task + cleanup + free), 4 = NOTIFY_MONITOR (send
+///       SIGUSR1 to CONFIG_DEADLINE_MONITOR_PID)
 #ifndef CONFIG_DEADLINE_ACTION
 #define CONFIG_DEADLINE_ACTION 0
+#endif
+
+/// PID of the monitor task to notify when CONFIG_DEADLINE_ACTION == 4.
+/// Set to 0 to disable notification delivery at compile time.
+#ifndef CONFIG_DEADLINE_MONITOR_PID
+#define CONFIG_DEADLINE_MONITOR_PID 0
 #endif
 
 // ---------------------------------------------------------------------------

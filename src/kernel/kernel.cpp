@@ -338,6 +338,7 @@ extern "C" {
     uint64_t scheduler_next_task_id = UINT64_MAX;
     uint64_t isr_nesting_depth = 0;
     uint64_t scheduler_corruption_count = 0;
+    uint64_t deadline_detection_integrity = 0;
     kernel::TaskControlBlock* fpu_owner = nullptr;
 #if defined(CONFIG_ARCH_X86_64)
     constinit uint64_t multiboot_magic = 0;

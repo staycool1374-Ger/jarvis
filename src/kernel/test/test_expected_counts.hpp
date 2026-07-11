@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 745,    0,       0      },  // every registration function
+    {"all",                 749,    0,       0      },  // every registration function
     {"scheduler",           85,     0,       0      },  // sched + task + lifecycle + deadlock + timer
     {"memory",              45,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
@@ -38,6 +38,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"deadline_miss",        3,     0,       0      },  // DeadlineMissWhileBlocked + DeadlineMissWhileTerminatedSkipped + DeadlineRearmOnPeriodRollover
     {"wcet_overrun",         2,     0,       0      },  // WcetOverrunDetectionFires + DeadlineMissWithinWcet
     {"ss_deadline",          2,     0,       0      },  // SsExhaustionTriggersDeadline + SsDeadlineMissDuringReplenish
+    {"deadline_recovery",    4,     0,       0      },  // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck + DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor
     {"stress",               9,     0,       0      },  // 6 stress + 3 starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
