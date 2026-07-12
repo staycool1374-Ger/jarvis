@@ -686,16 +686,6 @@ void Scheduler::on_tick() noexcept {
     }
 
     rate_monotonic_schedule();
-
-#if CONFIG_DEADLINE_MONITOR_TASK
-    // When a test is active, clear the switch globals set by
-    // rate_monotonic_schedule above.  In production the ISR epilogue
-    // consumes these globals; in test context they would cause the next
-    // timer ISR to perform an unintended context switch.
-    if (s_test_active_) {
-        clear_switch_globals();
-    }
-#endif
 }
 
 void Scheduler::reap_orphans() noexcept {
