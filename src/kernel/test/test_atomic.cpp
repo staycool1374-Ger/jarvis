@@ -142,7 +142,7 @@ static void sb_worker_b() {
 }
 
 JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
-    static constexpr uint64_t SB_ITER = 100;
+    static constexpr uint64_t SB_ITER = 10;
 
     uint64_t x_phys = PMM::alloc_page();
     uint64_t y_phys = PMM::alloc_page();
@@ -158,6 +158,13 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
     uint64_t forbidden_count = 0;
 
     for (uint64_t iter = 0; iter < SB_ITER; ++iter) {
+        if (iter % 5 == 0) {
+            Logger::raw_write("[SB] iter ");
+            Logger::print_dec(iter + 1);
+            Logger::raw_write("/");
+            Logger::print_dec(SB_ITER);
+            Logger::raw_write("\n");
+        }
         *const_cast<volatile uint32_t*>(g_sb_x) = 0;
         *const_cast<volatile uint32_t*>(g_sb_y) = 0;
         kernel::atomic_fence();

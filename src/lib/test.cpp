@@ -352,6 +352,9 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     }
 
     uint64_t start_ns = arch::Timer::ns();
+    Logger::raw_write("[TEST_START] ns=");
+    Logger::print_dec(start_ns);
+    Logger::raw_write("\n");
 
 #if CONFIG_DEADLINE_MONITOR_TASK
     Scheduler::set_test_active(true);
@@ -579,6 +582,12 @@ void print_report(uint64_t start_ns, uint64_t end_ns) {
     size_t tt = tp + tf;
     size_t exp = Registry::expected_count();
     uint64_t elapsed_ms = (end_ns > start_ns) ? ((end_ns - start_ns) / 1000000ULL) : 0;
+
+    Logger::raw_write("[TEST_END] ns=");
+    Logger::print_dec(end_ns);
+    Logger::raw_write(" elapsed_ms=");
+    Logger::print_dec(elapsed_ms);
+    Logger::raw_write("\n");
 
     Logger::raw_write("\n");
     Logger::raw_write("==============================\n");

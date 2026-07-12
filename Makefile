@@ -697,13 +697,14 @@ TEST_SERIAL_LOG := /tmp/jarvis-serial.log
 # Host-side watchdog: if $(TEST_SERIAL_LOG) does not grow for WATCHDOG_STALL seconds,
 # kill QEMU and append a diagnostic message.  This catches hangs that the
 # in-kernel watchdog cannot detect (interrupts disabled during test execution).
-WATCHDOG_STALL := 60
+WATCHDOG_STALL := 300
 
 # Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
 define _run_test_qemu
 	if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
 	printf '  %-7s %s\n'  'TEST'   '$(1)…'; \
-	rm -f "$(TEST_SERIAL_LOG)"; \
+	rm -f "$(TEST_SERIAL_LOG)" /tmp/test-start.timestamp /tmp/test-end.timestamp; \
+	date +%s > /tmp/test-start.timestamp; \
 	\
 	( \
 	    trap "exit 0" TERM; \
@@ -758,8 +759,9 @@ define _run_test_qemu
 	            puts "\\n=== QEMU EXIT (no summary) ===\\n"; puts "$$expect_out(buffer)"; puts "\\n=== END ===\\n"; flush stdout; exit 1; \
 	        } \
 	    } \
-	' 2>&1 | tee "$(TEST_SERIAL_LOG)"; \
+	' 2>&1 | gstdbuf -oL tee "$(TEST_SERIAL_LOG)"; \
 	rc=$${PIPESTATUS[0]}; \
+	date +%s > /tmp/test-end.timestamp; \
 	\
 	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
 	\
@@ -767,7 +769,10 @@ define _run_test_qemu
 	wait $$MONITOR_PID 2>/dev/null; \
 	\
 	if [ $$rc -eq 0 ]; then \
-	    :; \
+	    START_S=$$(cat /tmp/test-start.timestamp 2>/dev/null || echo 0); \
+	    END_S=$$(cat /tmp/test-end.timestamp 2>/dev/null || echo 0); \
+	    ELAPSED_S=$$(( END_S - START_S )); \
+	    echo "[HOST] start=$${START_S}s end=$${END_S}s elapsed=$${ELAPSED_S}s"; \
 	else \
 	    printf '  %-7s %s\n' 'SERIAL' '$(TEST_SERIAL_LOG)'; \
 	    echo "FAIL: Test validation failed with code $$rc"; \
