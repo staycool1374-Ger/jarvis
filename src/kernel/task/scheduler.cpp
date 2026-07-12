@@ -799,11 +799,24 @@ void Scheduler::reap_orphans() noexcept {
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated",
                              t->name, t->id);
+            auto* slot_before = tasks_[i];
             t->cleanup();
+            // cleanup → unregister_task may have compacted tasks_[]
+            // (moved the last element into slot i).  If so, tasks_[i]
+            // now points to a different (live) task — do NOT null it or
+            // we lose that task from the array.  Also adjust i so the
+            // for-loop will process the moved task on the next iteration.
+            // id_table_remove / dequeue_ready are safe no-ops if already
+            // handled by cleanup.
+            bool compacted = (tasks_[i] != slot_before);
             id_table_remove(t);
             dequeue_ready(*t);
             MemPool::free(t);
-            tasks_[i] = nullptr;
+            if (compacted) {
+                --i;  // reprocess this slot (holds task moved from end)
+            } else {
+                tasks_[i] = nullptr;
+            }
         }
     }
 

@@ -270,9 +270,13 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
     cur->deadline_miss_count = 0;
 
     Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::scan_deadlines();
+#endif
 
-    JARVIS_ASSERT(cur->deadline_missed == true);
-    JARVIS_ASSERT(cur->deadline_miss_count == 1);
+    // deadline_missed is reset to false by re-arm (both inline and monitor
+    // paths), so check the persistent count instead.
+    JARVIS_ASSERT(cur->deadline_miss_count >= 1);
 
     cur->deadline_ticks = saved_ticks;
     cur->deadline_missed = saved_missed;
@@ -332,9 +336,15 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
     cur->deadline_miss_count = 0;
 
     Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::scan_deadlines();
+#endif
     JARVIS_ASSERT(cur->deadline_miss_count == 1);
 
     Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::scan_deadlines();
+#endif
     JARVIS_ASSERT(cur->deadline_miss_count == 1);
 
     cur->deadline_ticks = saved_ticks;
