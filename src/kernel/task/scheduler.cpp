@@ -460,7 +460,8 @@ void Scheduler::reset_next_task_id(uint64_t id) noexcept {
 
 void Scheduler::id_table_remove(TaskControlBlock* task) {
     uint64_t idx = id_table_probe(task->id);
-    while (id_table_[idx] != nullptr) {
+    for (uint64_t probe = 0; probe < ID_TABLE_SIZE; ++probe) {
+        if (id_table_[idx] == nullptr) return;
         if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx] == task) {
             id_table_[idx] = ID_TOMBSTONE;
             return;
