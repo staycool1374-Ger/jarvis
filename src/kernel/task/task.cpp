@@ -198,6 +198,7 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
     tcb->wcet_ticks = 0;
+    tcb->wcet_overrun_fired = false;
     init_task_common(*tcb);
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
@@ -303,6 +304,7 @@ TaskControlBlock* TaskControlBlock::create_user(
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
     tcb->wcet_ticks = 0;
+    tcb->wcet_overrun_fired = false;
     init_task_common(*tcb);
 
     size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;

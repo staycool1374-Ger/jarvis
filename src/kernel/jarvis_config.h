@@ -512,7 +512,7 @@
 /// When enabled, tasks with wcet_ticks > 0 are monitored for execution-
 /// time overrun (executed_ticks > wcet_ticks).
 #ifndef CONFIG_WCET_OVERRUN_DETECTION
-#define CONFIG_WCET_OVERRUN_DETECTION 0
+#define CONFIG_WCET_OVERRUN_DETECTION 1
 #endif
 
 /// When set, SporadicServer budget exhaustion (consume()->budget→0) also

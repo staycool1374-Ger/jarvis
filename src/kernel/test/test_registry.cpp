@@ -335,6 +335,9 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_resource_exhaustion_tests();
     }},
 
+    {"ipc_blocking", []() {
+        register_ipc_blocking_tests();
+    }},
     {"ipc", []() {
         register_ipc_tests();
         register_ipc_blocking_tests();
@@ -510,7 +513,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_spinlock_stress_tests();
     }},
 
-    {"preemption", []() {
+    {"preemption_under_syscall", []() {
         register_preemption_under_syscall_tests();
     }},
 };
