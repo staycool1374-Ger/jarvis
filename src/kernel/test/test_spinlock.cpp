@@ -27,6 +27,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 
 using namespace kernel;
 
@@ -99,7 +100,9 @@ static void contention_worker() {
         g_contention_counter_ = tmp + 1;
     }
     auto* self = Scheduler::current_task();
-    if (self) self->state = TaskState::TERMINATED;
+    if (self) {
+        self->state = TaskState::TERMINATED;
+    }
 }
 
 // Runmode: kernel

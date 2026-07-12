@@ -62,6 +62,9 @@ TEST_CLASS(DeadlineMissWhileBlocked) {
     {
         arch::IrqGuard guard;
         Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+        Scheduler::scan_deadlines();
+#endif
     }
 
     // deadline_missed may be cleared by re-arm (P1b) — count is the stable check
@@ -142,6 +145,9 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
     {
         arch::IrqGuard guard;
         Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+        Scheduler::scan_deadlines();
+#endif
     }
 
     // Deadline miss fired (detected before rollover re-arm)
@@ -160,9 +166,65 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
     cur->remaining_ticks = saved_remaining;
 };
 
+#if CONFIG_DEADLINE_MONITOR_TASK
+// Runmode: kernel
+// Testidea: With CONFIG_DEADLINE_MONITOR_TASK=1, verify the [deadline-mon]
+// task is spawned at priority 127 and in BLOCKED state.
+// Input: (none — task created during Scheduler::init())
+// Expect: A task with priority 127 and state BLOCKED exists.
+TEST_CLASS(DeadlineMonitorTaskSpawned) {
+    bool found = false;
+    for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+        auto* t = Scheduler::task_at(i);
+        if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
+            t->priority == 127 && t->state == TaskState::BLOCKED) {
+            found = true;
+            break;
+        }
+    }
+    CT_ASSERT(found);
+};
+
+// Runmode: kernel
+// Testidea: The deadline monitor's scan_deadlines() detects a task with
+// deadline in the past.
+// Input: A helper task with period>0, deadline_ticks < current ticks,
+// deadline_missed=false.  Calls scan_deadlines().
+// Expect: deadline_missed==true, deadline_miss_count>=1.
+TEST_CLASS(DeadlineMonitorDetectsMiss) {
+    // Use the current task as the target (creates no new tasks)
+    auto* cur = Scheduler::current_task();
+    CT_ASSERT(cur != nullptr);
+
+    // Save original values
+    uint64_t saved_period = cur->period_ticks;
+    uint64_t saved_dl_ticks = cur->deadline_ticks;
+    bool saved_missed = cur->deadline_missed;
+    uint64_t saved_count = cur->deadline_miss_count;
+
+    cur->period_ticks = 10;
+    cur->deadline_ticks = arch::Timer::ticks() - 1;
+    cur->deadline_missed = false;
+    cur->deadline_miss_count = 0;
+
+    Scheduler::scan_deadlines();
+
+    CT_ASSERT(cur->deadline_miss_count >= 1);
+
+    cur->period_ticks = saved_period;
+    cur->deadline_ticks = saved_dl_ticks;
+    cur->deadline_missed = saved_missed;
+    cur->deadline_miss_count = saved_count;
+};
+#endif // CONFIG_DEADLINE_MONITOR_TASK
+
 void register_deadline_miss_tests() {
     Logger::info("Registering deadline miss detection tests");
     REGISTER_CLASS(DeadlineMissWhileBlocked);
     REGISTER_CLASS(DeadlineMissWhileTerminatedSkipped);
     REGISTER_CLASS(DeadlineRearmOnPeriodRollover);
+#if CONFIG_DEADLINE_MONITOR_TASK
+    REGISTER_CLASS(DeadlineMonitorTaskSpawned);
+    REGISTER_CLASS(DeadlineMonitorDetectsMiss);
+#endif
 }

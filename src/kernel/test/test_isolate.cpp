@@ -613,6 +613,13 @@ void snapshot_restore(const char* test_name) {
     Logger::info("[SNAP:RESTORE] vfsd_pid=%u iocd_pid=%u",
                  vfsd::get_vfsd_pid(), iocd::get_iocd_pid());
 
+    // ---- Reset monitor-task handoff flag ----
+    // The static s_scan_requested_ may be stale after restore; reset so
+    // the monitor does not spuriously scan on the next reschedule.
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::reset_scan_requested();
+#endif
+
     // ---- Post-reload fixup ----
     // Keep idle as the boot-stack proxy task.  Idle is never returned by
     // next_task() (lowest priority, RUNNING, not in ready queue).  Using
@@ -774,6 +781,10 @@ void reload_daemon_tasks() {
             }
         }
         if (is_daemon) continue;
+#if CONFIG_DEADLINE_MONITOR_TASK
+        bool is_monitor = (t == Scheduler::get_monitor_task());
+        if (is_monitor) continue;
+#endif
         if (t != current && t != idle && t != Scheduler::get_shell_task() &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             t->state = TaskState::TERMINATED;

@@ -732,7 +732,7 @@ define _run_test_qemu
 	    set timeout $(2); \
 	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT); \
 	    expect { \
-	        -re {\\r*\\n==============================\\r*\\n TEST SUMMARY\\r*\\n==============================\\r*\\n  PLANNED:\\s+(\\d+)\\r*\\n  EXECUTED:\\s+(\\d+)\\r*\\n  TIME_ELAPSED_MS:\\s+(\\d+)\\r*\\n(?:  BOOT_TIME_MS:\\s+(\\d+)\\r*\\n)?  PASSED:\\s+(\\d+)\\r*\\n  FAILED:\\s+(\\d+)\\r*\\n==============================} { \
+	        -re {[\\r\\n]+==============================[\\r\\n]+ TEST SUMMARY[\\r\\n]+==============================[\\r\\n]+  PLANNED:\\s+(\\d+)[\\r\\n]+  EXECUTED:\\s+(\\d+)[\\r\\n]+  TIME_ELAPSED_MS:\\s+(\\d+)[\\r\\n]+(?:  BOOT_TIME_MS:\\s+(\\d+)[\\r\\n]+)?  PASSED:\\s+(\\d+)[\\r\\n]+  FAILED:\\s+(\\d+)[\\r\\n]+==============================} { \
 	            puts "$$expect_out(buffer)"; flush stdout; \
 	            set test_ms $$expect_out(3,string); \
 	            set boot_ms $$expect_out(4,string); \

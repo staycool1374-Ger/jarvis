@@ -35,7 +35,11 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"debug",               14,     0,       0      },  // debug + gcov + klog
     {"integration",          1,     0,       0      },  // integration smoke tests
     {"starvation_deadlock",  3,     0,       0      },  // SchedulerStarvation + PriorityInversionChain5 + DeadlockNestedMutexLoad
+#if CONFIG_DEADLINE_MONITOR_TASK
+    {"deadline_miss",        5,     0,       0      },  // + DeadlineMonitorTaskSpawned + DeadlineMonitorDetectsMiss
+#else
     {"deadline_miss",        3,     0,       0      },  // DeadlineMissWhileBlocked + DeadlineMissWhileTerminatedSkipped + DeadlineRearmOnPeriodRollover
+#endif
     {"wcet_overrun",         2,     0,       0      },  // WcetOverrunDetectionFires + DeadlineMissWithinWcet
     {"ss_deadline",          2,     0,       0      },  // SsExhaustionTriggersDeadline + SsDeadlineMissDuringReplenish
     {"deadline_recovery",    4,     0,       0      },  // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck + DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor

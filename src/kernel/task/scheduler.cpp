@@ -23,6 +23,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/hal/irq_guard.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
@@ -114,6 +115,11 @@ constinit uint64_t Scheduler::next_task_id_ = 0;
 constinit uint64_t Scheduler::sporadic_task_count_ = 0;
 constinit bool Scheduler::preempt_enabled_ = false;
 constinit bool Scheduler::suppress_terminated_log_ = false;
+#if CONFIG_DEADLINE_MONITOR_TASK
+constinit TaskControlBlock* Scheduler::s_monitor_task_ = nullptr;
+volatile bool Scheduler::s_scan_requested_ = false;
+bool Scheduler::s_test_active_ = false;
+#endif
 ReadyQueueManager Scheduler::ready_queue_;
 constinit TaskControlBlock* Scheduler::idle_task_ = nullptr;
 constinit TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
@@ -162,6 +168,10 @@ void Scheduler::init() {
     current_index_ = 0;
     sporadic_task_count_ = 0;
     preempt_enabled_ = true;
+
+#if CONFIG_DEADLINE_MONITOR_TASK
+    ensure_monitor();
+#endif
 }
 
 /// @brief Registers a task with the scheduler and enqueues it as READY.
@@ -224,8 +234,18 @@ void Scheduler::add_task(TaskControlBlock& task) {
 /// Clears context-switch globals that may reference the removed task.
 void Scheduler::remove_task(TaskControlBlock& task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    // Idempotent: only act when the task is actually registered.  This guards
+    // against double-removal (e.g. an explicit remove_task() followed by the
+    // implicit remove_task() inside TaskControlBlock::operator delete), which
+    // would otherwise corrupt the ResourceTracker counts and leave stale
+    // tasks_[] bookkeeping.
+    bool found = false;
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i] == &task) { found = true; break; }
+    }
     id_table_remove(&task);
     dequeue_ready(task);
+    if (!found) return;
 
     // Clear any pending context-switch globals that point to this task.
     // remove_task is called during test cleanup — a prior reschedule()
@@ -250,6 +270,42 @@ void Scheduler::remove_task(TaskControlBlock& task) {
             break;
         }
     }
+}
+
+bool Scheduler::unregister_task(TaskControlBlock& task) noexcept {
+    // try_lock: if the lock is already held by the current context (e.g.
+    // reap_orphans, which unregisters manually after calling cleanup()), we
+    // must NOT spin — return false and let the caller handle it.  With IRQs
+    // disabled by the caller, the only holder is that reaper path, so a false
+    // return is always safe.  If the lock is free, we take it and remove.
+    if (!scheduler_lock_.try_lock()) {
+        return false;
+    }
+    bool found = false;
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        if (tasks_[i] == &task) { found = true; break; }
+    }
+    id_table_remove(&task);
+    dequeue_ready(task);
+    if (found) {
+        __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+        kernel::test::ResourceTracker::instance().track_task_remove();
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            if (tasks_[i] == &task) {
+                tasks_[i] = tasks_[--task_count_];
+                if (current_index_ == task_count_) {
+                    current_index_ = (i < task_count_) ? i : 0;
+                } else if (current_index_ >= task_count_) {
+                    current_index_ = 0;
+                }
+                break;
+            }
+        }
+    }
+    scheduler_lock_.unlock();
+    return true;
 }
 
 /// @brief Returns the currently executing task, or nullptr if none.
@@ -300,9 +356,16 @@ bool Scheduler::needs_switch() noexcept {
 TaskControlBlock* Scheduler::next_task() noexcept {
     if (task_count_ <= 1) return tasks_[0];
 
-    // O(1) fast path: dequeue from ready queue
+    // O(1) fast path: dequeue from ready queue.
+    // Skip any entry whose state is not RUNNING/READY — a task can be left
+    // in the queue in a non-ready state (e.g. test code setting BLOCKED, or a
+    // leaked task) and must never be selected for a context switch.
     {
         auto* next = ready_queue_.dequeue_highest();
+        while (next && next->state != TaskState::READY &&
+               next->state != TaskState::RUNNING) {
+            next = ready_queue_.dequeue_highest();
+        }
         if (next) return next;
     }
 
@@ -421,16 +484,35 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 /// Sporadic Server budgets, reaps orphaned tasks, and triggers rate-monotonic
 /// scheduling. Called from the timer ISR at every system tick.
 void Scheduler::on_tick() noexcept {
-    uint64_t current_tick = arch::Timer::ns();
+    uint64_t current_tick = arch::Timer::ticks();
 
-    if (!preempt_enabled_) return;
+    if (!preempt_enabled_) { return; }
 
-    // Phase 1: Deadline scan + alarm delivery.
+    // Phase 1: Deadline scan, accounting, WCET, and alarm delivery.
     // Protected by try_lock: if the scheduler lock is held (e.g. add_task
     // mid-mutation), we skip this phase for the current tick.  At 1000 Hz,
     // one missed tick (<1ms) is invisible to the system.  The lock hold
     // time in add/remove_task is <1us, so try_lock almost never fails.
-    if (scheduler_lock_.try_lock()) {
+    bool lock_acquired = scheduler_lock_.try_lock();
+    if (lock_acquired) {
+#if CONFIG_DEADLINE_MONITOR_TASK
+        // Monitor-task path: set handoff flag and wake the monitor instead
+        // of scanning deadlines inline.  The monitor runs scan_deadlines()
+        // in task context where it can hold the full lock and perform inline
+        // KILL cleanup.
+        //
+        // Skip if a test is active — waking the monitor during a test lets
+        // the timer ISR epilogue switch to the monitor, which loses the test
+        // context (the monitor blocks and reschedules to idle → hang).
+        if (!s_test_active_) {
+            __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
+            if (s_monitor_task_ && s_monitor_task_->state == TaskState::BLOCKED) {
+                s_monitor_task_->state = TaskState::READY;
+                enqueue_ready(*s_monitor_task_);
+            }
+        }
+#else
+        // Inline path: check deadlines directly in the ISR.
         for (uint64_t i = 0; i < task_count_; ++i) {
             auto* task = tasks_[i];
             if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
@@ -458,6 +540,14 @@ void Scheduler::on_tick() noexcept {
                     arch::Timer::ticks() - task->deadline_ticks);
             }
 #endif
+        }
+#endif // CONFIG_DEADLINE_MONITOR_TASK
+
+        // Accounting, WCET, and alarms — common to both paths.
+        for (uint64_t i = 0; i < task_count_; ++i) {
+            auto* task = tasks_[i];
+            if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (task->state == TaskState::TERMINATED) continue;
 
             // Accounting — only RUNNING/READY accumulate ticks
             if (task->state == TaskState::RUNNING ||
@@ -467,11 +557,14 @@ void Scheduler::on_tick() noexcept {
                 if (task->remaining_ticks > 0) --task->remaining_ticks;
                 if (prev_rem == 0 && task->period_ticks > 0) {
                     task->remaining_ticks = task->period_ticks;
-#if CONFIG_DEADLINE_MISS_DETECTION
+#if CONFIG_DEADLINE_MISS_DETECTION && !CONFIG_DEADLINE_MONITOR_TASK
                     // P1b: Re-arm deadline_ticks on period rollover.
                     // Ensures per-period deadline enforcement:
                     // deadline_ticks and deadline_missed latch are
                     // reset for the next period.
+                    // When the deadline-monitor task is enabled, re-arm
+                    // is deferred to scan_deadlines() so the monitor
+                    // can detect the miss before the evidence is erased.
                     task->deadline_ticks += task->period_ticks;
                     task->deadline_missed = false;
 #if CONFIG_WCET_OVERRUN_DETECTION
@@ -505,11 +598,14 @@ void Scheduler::on_tick() noexcept {
                 }
             }
         }
-        // P5c: Increment integrity counter after successful scan.
-        // If a corruption panic aborted the scan this counter does not
-        // advance, allowing tests/watchdogs to detect a stalled deadline
-        // detection path.
+        // P5c: Increment integrity counter after a successful deadline
+        // scan.  Under the deadline-monitor-task config the actual scan is
+        // performed by scan_deadlines() (which bumps this counter there),
+        // so on_tick must not double-count — only the inline path below
+        // does the scanning itself.
+#if !CONFIG_DEADLINE_MONITOR_TASK
         __atomic_fetch_add(&deadline_detection_integrity, 1, __ATOMIC_RELEASE);
+#endif
         scheduler_lock_.unlock();
     }
 
@@ -580,10 +676,26 @@ void Scheduler::on_tick() noexcept {
     ++tick_counter;
     if (tick_counter % 100 == 0) {
         reap_orphans();
-        daemon::restart_stale_daemons();
+        // restart_stale_daemons calls add_task which takes scheduler_lock_.
+        // If the lock was already held when on_tick started (try_lock failed),
+        // calling it here would spin forever on a lock held by the preempted
+        // context.  Skip the restart — it will be picked up in 100 ms.
+        if (lock_acquired) {
+            daemon::restart_stale_daemons();
+        }
     }
 
     rate_monotonic_schedule();
+
+#if CONFIG_DEADLINE_MONITOR_TASK
+    // When a test is active, clear the switch globals set by
+    // rate_monotonic_schedule above.  In production the ISR epilogue
+    // consumes these globals; in test context they would cause the next
+    // timer ISR to perform an unintended context switch.
+    if (s_test_active_) {
+        clear_switch_globals();
+    }
+#endif
 }
 
 void Scheduler::reap_orphans() noexcept {
@@ -749,8 +861,8 @@ void Scheduler::cleanup_test_tasks() noexcept {
     for (uint64_t i = 1; i < task_count_; ++i) {
         auto* t = tasks_[i];
         if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
-            t->state != TaskState::TERMINATED) {
-            t->state = TaskState::TERMINATED;
+             t->state != TaskState::TERMINATED) {
+             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
         }
     }
@@ -882,17 +994,27 @@ void Scheduler::cleanup_zombies() noexcept {
 }
 
 static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
-                           bool from_isr = false) {
-    (void)from_isr; // Boot-stack guard applies to both ISR and non-ISR paths
+                           sync::SpinLock* held_lock = nullptr) {
+    // Release the scheduler lock on EVERY exit path so it can never be
+    // leaked.  switch_to_task() never returns to its caller when it
+    // succeeds (the ISR epilogue switches the outgoing task away), so the
+    // lock must be dropped here, not in a caller-side guard.
+    auto release_lock = [&]() {
+        if (held_lock) { held_lock->unlock(); held_lock = nullptr; }
+    };
+
     if (!validate_switch(current, next, "switch")) {
         report_corruption("switch");
+        release_lock();
         return;
     }
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
         report_corruption("switch next state");
+        release_lock();
         return;
     }
     if (current == next) {
+        release_lock();
         return;
     }
 
@@ -941,22 +1063,46 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
     } else {
         __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(), __ATOMIC_RELEASE);
     }
+
+    // Ready-queue mutation: must run UNDER the lock.  Without it, the timer
+    // ISR's rate_monotonic_schedule() can mutate the same intrusive list
+    // concurrently, corrupting it (GPF in task_queue.cpp pop_front).
     if (current->state == TaskState::RUNNING) {
         current->state = TaskState::READY;
         Scheduler::enqueue_ready(*current);
     }
     next->state = TaskState::RUNNING;
-    __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
 
-    uint64_t cr0 = arch::read_cr0();
-    cr0 |= (1ULL << 3);
-    arch::write_cr0(cr0);
+    // Publish the switch globals.  This block runs under IrqGuard so the
+    // timer ISR cannot fire between releasing the lock and writing
+    // scheduler_save_rsp_to (an intervening ISR would clobber the globals).
+    // In ISR context (held_lock == nullptr) IRQs are already disabled by the
+    // hardware, so the guard is redundant but harmless.  The lock is released
+    // here (not in the caller) precisely because the outgoing task will never
+    // execute the caller's stack frame again once the ISR epilogue switches.
+    {
+        arch::IrqGuard ig;
+        release_lock();
+        __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
+
+        uint64_t cr0 = arch::read_cr0();
+        cr0 |= (1ULL << 3);
+        arch::write_cr0(cr0);
+    }
 }
 
 /// @brief Rate-monotonic scheduling tick: selects the highest-priority ready
 /// task and performs a context switch if a different task was selected.
 /// Called from the timer ISR (on_tick) and guarded by the scheduler lock.
+///
+/// Locking contract: this function acquires scheduler_lock_ via try_lock(),
+/// calls switch_to_task() (which sets the ISR epilogue switch globals), and
+/// then releases the lock.  This is safe because the caller is in ISR
+/// context — the ISR epilogue has not executed iretq yet, so the outgoing
+/// task's stack frame (including the unlock) is still alive.  Contrast
+/// with reschedule() which runs in task context and must release the lock
+/// BEFORE calling switch_to_task().
 void Scheduler::rate_monotonic_schedule() noexcept {
     if (task_count_ <= 1) return;
 
@@ -977,35 +1123,41 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     auto* next = next_task();
     if (next && next != current) {
-        switch_to_task(current, next, true);
+        switch_to_task(current, next, nullptr);
     }
 
     scheduler_lock_.unlock();
 }
 
 /// @brief Requests a voluntary context switch to the highest-priority READY task.
-/// Called from non-ISR context (e.g. yield, IPC blocking). Uses the scheduler
-/// lock and defers the actual switch to assembly-level globals.
+/// Called from non-ISR context (e.g. yield, IPC blocking).
+///
+/// The lock is passed to switch_to_task() which releases it after
+/// ready-queue mutations but before writing the switch globals.  This
+/// prevents the lock from leaking when the ISR epilogue switches away
+/// from this task.
 void Scheduler::reschedule() noexcept {
-    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    if (task_count_ <= 1) return;
+    scheduler_lock_.lock();
+    if (task_count_ <= 1) { scheduler_lock_.unlock(); return; }
 
     auto* current = tasks_[current_index_];
-    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) return;
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
+        scheduler_lock_.unlock(); return;
+    }
 
-    // Check for already-pending context switch (set by another path within
-    // the same ISR or by a previous reschedule() that the ISR hasn't consumed).
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != nullptr) {
-        return;
+        scheduler_lock_.unlock(); return;
     }
 
     auto* next = next_task();
-    if (next && next != current) {
-        if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
-            return;
-        }
-        switch_to_task(current, next);
+    if (!next || next == current) { scheduler_lock_.unlock(); return; }
+
+    if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+        scheduler_lock_.unlock(); return;
     }
+
+    // switch_to_task releases the lock after enqueue_ready
+    switch_to_task(current, next, &scheduler_lock_);
 }
 
 // ---------------------------------------------------------------------------
@@ -1120,6 +1272,12 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     __atomic_store_n(&isr_nesting_depth,       (uint64_t)0, __ATOMIC_RELEASE);
 }
 
+void Scheduler::clear_switch_globals() noexcept {
+    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to,   (uint64_t*)nullptr, __ATOMIC_RELEASE);
+}
+
 void Scheduler::capture_task_fields(TaskFields* out) {
     for (uint64_t i = 0; i < task_count_; ++i) {
         auto* t = tasks_[i];
@@ -1221,6 +1379,98 @@ void Scheduler::process_deferred_kills() noexcept {
     s_deferred_kill_count = 0;
 }
 
+// ---------------------------------------------------------------------------
+// P6b: Deadline scan — extracted for use by the monitor task or inline path
+// ---------------------------------------------------------------------------
+#if CONFIG_DEADLINE_MONITOR_TASK
+void Scheduler::scan_deadlines() noexcept {
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    for (uint64_t i = 0; i < task_count_; ++i) {
+        auto* task = tasks_[i];
+        if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
+        if (task->state == TaskState::TERMINATED) continue;
+
+#if CONFIG_DEADLINE_MISS_DETECTION
+        if (task->period_ticks > 0 && !task->deadline_missed &&
+            task->deadline_ticks > 0 &&
+            arch::Timer::ticks() > task->deadline_ticks) {
+            if (task->sporadic_server) {
+                task->ss_state_on_deadline_miss =
+                    static_cast<uint8_t>(task->sporadic_server->state());
+                task->ss_budget_on_deadline_miss =
+                    task->sporadic_server->remaining_budget();
+            }
+            task->deadline_missed = true;
+            ++task->deadline_miss_count;
+            deadline_miss_handler(task,
+                arch::Timer::ticks() - task->deadline_ticks);
+            // P1b re-arm on period rollover (monitor path).
+            // In the inline path the accounting loop in on_tick
+            // handles re-arm; the monitor path defers it here so
+            // the monitor can detect the miss before re-arming.
+            task->deadline_ticks += task->period_ticks;
+            task->deadline_missed = false;
+#if CONFIG_WCET_OVERRUN_DETECTION
+            task->wcet_overrun_fired = false;
+#endif
+        }
+#endif
+    }
+    __atomic_fetch_add(&deadline_detection_integrity, 1, __ATOMIC_RELEASE);
+}
+
+void Scheduler::monitor_task_entry() noexcept {
+    auto* me = Scheduler::current_task();
+    while (true) {
+        {
+            // The IrqGuard here is critical: the monitor dequeues itself
+            // from the ready queue and sets state=BLOCKED before releasing
+            // scheduler_lock_.  If the timer ISR fires between
+            // state=BLOCKED and scheduler_lock_.unlock(), the ISR's
+            // reschedule() sees a BLOCKED current-task and switches away —
+            // leaking the lock permanently.  IrqGuard prevents the ISR
+            // from firing during this window.
+            arch::IrqGuard guard;
+            scheduler_lock_.lock();
+            dequeue_ready(*me);
+            scheduler_lock_.unlock();
+            me->state = TaskState::BLOCKED;
+        }
+        Scheduler::reschedule();
+
+        if (__atomic_exchange_n(&s_scan_requested_, 0, __ATOMIC_ACQUIRE)) {
+            scan_deadlines();
+        }
+    }
+}
+
+void Scheduler::ensure_monitor() noexcept {
+    bool need_spawn = true;
+    if (s_monitor_task_) {
+        if (s_monitor_task_->magic == TaskControlBlock::TCB_MAGIC &&
+            s_monitor_task_->state != TaskState::TERMINATED) {
+            need_spawn = false;
+        }
+    }
+    if (!need_spawn) return;
+
+    Logger::info("[MON] Re-spawning deadline-monitor task");
+    auto* tcb = TaskControlBlock::create(monitor_task_entry, 127, 0xFFFFFFFF);
+    if (tcb) {
+        s_monitor_task_ = tcb;
+        s_scan_requested_ = false;
+        add_task(*tcb);
+        // Safe to use SpinLockGuard here: the caller (init task) is
+        // modifying the *monitor's* state, not its own.  If the ISR
+        // fires between the state change and the guard destructor,
+        // reschedule() sees init is RUNNING and keeps it on the CPU.
+        SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+        tcb->state = TaskState::BLOCKED;
+        dequeue_ready(*tcb);
+    }
+}
+#endif // CONFIG_DEADLINE_MONITOR_TASK
+
 #if CONFIG_DEADLINE_MISS_DETECTION
 __attribute__((weak))
 void deadline_miss_handler(TaskControlBlock* task,
@@ -1251,8 +1501,8 @@ void deadline_miss_handler(TaskControlBlock* task,
         Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
                      "action=KILL)", task->id, task->name);
     else
-        Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
-                     task->id, task->name, missed_by_ticks);
+         Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
+                       task->id, task->name, missed_by_ticks);
     task->state = TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
     // P5a: Defer full cleanup — remove_task() acquires scheduler_lock_,

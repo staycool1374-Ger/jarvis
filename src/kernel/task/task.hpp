@@ -395,6 +395,13 @@ struct TaskControlBlock {
     ///        Called by WAITPID after reaping a TERMINATED child.
     void cleanup() noexcept;
 
+    /// @brief Unregisters this TCB from the scheduler (tasks_[] / id_table_ /
+    ///        ready queue) and returns its memory to the MemPool.
+    ///        Mandatory before the block is reused: a TCB freed via `delete`
+    ///        without unregistration leaves a dangling tasks_[] entry that
+    ///        aliases the next allocation (use-after-free dispatch).
+    void operator delete(void* ptr) noexcept;
+
     /// @brief Allocates and initialises a SporadicServer for this task
     ///        (e.g. a Ring 3 daemon like vfsd / iocd).
     /// @param budget_c           Execution budget per period (ticks).

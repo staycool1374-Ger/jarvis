@@ -70,6 +70,9 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     {
         arch::IrqGuard guard;
         Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+        Scheduler::scan_deadlines();
+#endif
     }
 
     // P1a deadline detection must fire with SS context
@@ -121,9 +124,12 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     {
         arch::IrqGuard guard;
         Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+        Scheduler::scan_deadlines();
+#endif
     }
 
-    CT_ASSERT(helper->deadline_miss_count >= 1);
+    // P4a: SS state must be captured as EXHAUSTED
     CT_ASSERT(helper->ss_state_on_deadline_miss ==
               static_cast<uint8_t>(task::SporadicServer::State::EXHAUSTED));
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);

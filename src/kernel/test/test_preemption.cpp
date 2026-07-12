@@ -92,8 +92,12 @@ JARVIS_TEST(preemption_needs_switch_blocked_higher, "PRE: none | POST: none") {
 
     auto* high = TaskControlBlock::create([]() {}, 9, 10);
     JARVIS_ASSERT(high != nullptr);
-    high->state = TaskState::BLOCKED;
+    // add_task() requires READY (it enqueues into the ready queue); register
+    // the task first, then block it and remove it from the ready queue so it
+    // is present but not runnable — mirroring the real block lifecycle.
     Scheduler::add_task(*high);
+    high->state = TaskState::BLOCKED;
+    Scheduler::dequeue_ready(*high);
 
     bool result = Scheduler::needs_switch();
     JARVIS_ASSERT(result == false);

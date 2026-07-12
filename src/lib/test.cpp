@@ -335,6 +335,12 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     }
     Registry::set_expected_count(expected);
 
+    // Pre-condition: ensure deadline-monitor task exists before snapshot
+    // sizing, so the monitor is counted in the task count from the start.
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::ensure_monitor();
+#endif
+
     // Take a snapshot of the entire kernel state before the first test so
     // we can restore it between individual tests (full isolation).
     bool snapshot_ok = false;
@@ -346,6 +352,10 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     }
 
     uint64_t start_ns = arch::Timer::ns();
+
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::set_test_active(true);
+#endif
 
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
@@ -397,6 +407,13 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
             while (*s && pos < 126) test_buf[pos++] = *s++;
             test_buf[pos] = '\0';
             kernel::test::snapshot_restore(test_buf);
+#if CONFIG_DEADLINE_MONITOR_TASK
+            // snapshot_create() was called before set_test_active(true),
+            // so the snapshot has s_test_active_ == false.  Restore it
+            // to true to prevent the ISR from waking the deadline monitor
+            // during tests.
+            Scheduler::set_test_active(true);
+#endif
         }
     }
 
@@ -404,15 +421,9 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
 
     if (snapshot_ok) {
         kernel::test::snapshot_destroy();
-        // Reload daemon ELFs from initrd to replace corrupted page tables
-        // (kernel-owned page table pages are not snapshot-saved, so they
-        // contain test garbage after the last restore).
         kernel::test::reload_daemon_tasks();
         kernel::daemon::restart_stale_daemons();
     } else {
-        // No snapshot isolation — call proper destructor-based cleanup
-        // to dequeue all tasks, free resources, unload drivers, and restart
-        // daemons, bringing the kernel back to a clean post-init state.
         kernel::test::test_cleanup_all();
     }
 
@@ -421,6 +432,10 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     }
 
     print_report(start_ns, end_ns);
+
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::set_test_active(false);
+#endif
 
     // Drain serial TX FIFO so the full test report is flushed to the
     // expect script before QEMU exits (fixes BUGS.md #012).

@@ -106,11 +106,13 @@ TEST_CLASS(DeadlineMissWithinWcet) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
-        }
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
+}
 
         // Deadline must fire
         CT_ASSERT(helper->deadline_miss_count >= 1);
-
         // WCET must NOT fire (budget not exceeded)
         CT_ASSERT(helper->wcet_overrun_fired == false);
     }

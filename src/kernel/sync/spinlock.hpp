@@ -42,26 +42,36 @@ public:
         while (atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE)) {
             arch::pause();
         }
+        __atomic_store_n(&holder_, __builtin_return_address(0), __ATOMIC_RELAXED);
     }
 
     /// @brief Release the lock.
     void unlock() noexcept {
         atomic_store(&locked_, 0, __ATOMIC_RELEASE);
+        __atomic_store_n(&holder_, nullptr, __ATOMIC_RELAXED);
     }
 
     /// @brief Force-unlock (used to initialise a lock after MemPool allocation).
     void reset() noexcept {
         locked_ = 0;
+        holder_ = nullptr;
     }
 
     /// @brief Attempt to acquire without blocking.
     /// @return true if the lock was acquired.
     bool try_lock() noexcept {
-        return !atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE);
+        bool acquired = !atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE);
+        if (acquired) {
+            __atomic_store_n(&holder_, __builtin_return_address(0), __ATOMIC_RELAXED);
+        }
+        return acquired;
     }
+
+    const void* holder() const noexcept { return __atomic_load_n(&holder_, __ATOMIC_RELAXED); }
 
 private:
     int locked_ = 0; ///< 0 = unlocked, 1 = locked.
+    const void* holder_ = nullptr;
 };
 
 } // namespace sync

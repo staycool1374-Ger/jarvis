@@ -99,6 +99,9 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
     {
         arch::IrqGuard guard;
         Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+        Scheduler::scan_deadlines();
+#endif
     }
 
     // Integrity counter must have advanced (scan completed)
@@ -164,6 +167,9 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
         }
 
         CT_ASSERT(cur->deadline_miss_count >= 1);
@@ -179,6 +185,9 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
         }
 
         CT_ASSERT(cur->deadline_miss_count == 0);
@@ -194,6 +203,9 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
         }
 
         CT_ASSERT(cur->deadline_miss_count == 0);
@@ -209,6 +221,9 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
         }
 
         CT_ASSERT(cur->deadline_miss_count == 0);
@@ -224,6 +239,9 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         {
             arch::IrqGuard guard;
             Scheduler::on_tick();
+#if CONFIG_DEADLINE_MONITOR_TASK
+            Scheduler::scan_deadlines();
+#endif
         }
 
         CT_ASSERT(cur->deadline_miss_count == 0);

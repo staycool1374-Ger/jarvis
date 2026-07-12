@@ -16,6 +16,7 @@ These bugs have been resolved and the fixes are in the commit history:
 
 | ID | Description | Fixed In |
 |----|-------------|----------|
+| #019 | `all`-suite `add_task` ENSURE fails: `task.state == TaskState::READY` (state=4/TERMINATED) for a freshly `create()`d task whose TCB block aliases a stale `tasks_[]`/`id_table_` entry from a prior freed task (use-after-free). INTERMITTENT — only reproduces in `all` mode (accumulated scheduler state), never standalone `spinlock` class. Verified: `create()` block is NOT in `tasks_[]` at alloc time (`CREATE-UAF` check) and no `TERMINATED` writer (scheduler `terminate`/worker/`cleanup_test_tasks`/deferred-kill/kernel fault handlers/syscall/daemon) is the culprit — the 4 is written in the micro-window before `add_task`'s first read. Suspicion: dangling `current_index_` (past `task_count_`) returned by `current_task()` feeds a fault handler that terminates the aliased block; separate ready-queue GPF in `TaskQueue::pop_front` (task_queue.cpp:29) also observed. Fix candidate: `TaskControlBlock::cleanup()` → `Scheduler::unregister_task()` (try_lock + idempotent removal) so every TCB free unregisters; `remove_task` made idempotent; `operator delete` calls `remove_task`. Root cause still open as of investigation. | investigating |
 | #007 | test_idle_task output missing from serial | Older commit |
 | #008 | GPF in cleanup_zombies after selftest on continuing builds | Older commit |
 | #009 | Scheduler starves shell when daemons have same priority/period | Older commit |

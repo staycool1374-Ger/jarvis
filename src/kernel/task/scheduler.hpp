@@ -56,6 +56,18 @@ public:
     /// @brief Removes a task from the scheduler's run queue.
     /// @param task Reference to the task to remove.
     static void remove_task(TaskControlBlock& task);
+
+    /// @brief Best-effort unregister of a TCB from the scheduler's live tables.
+    /// Used by TaskControlBlock::cleanup() so that every free path (delete,
+    /// MemPool::free, reaper) unregisters — preventing dangling tasks_[]/id_table_
+    /// entries that alias a later allocation (use-after-free in add_task).
+    /// Uses try_lock: if the scheduler lock is already held by the current
+    /// context (e.g. reap_orphans, which unregisters manually), this returns
+    /// false and does nothing. Callers should disable IRQs around this so the
+    /// timer ISR (on_tick) cannot transiently hold the lock and cause a skip.
+    /// @return true if the lock was taken (and removal attempted), false if it
+    /// was already held by the current context.
+    static bool unregister_task(TaskControlBlock& task) noexcept;
     /// @brief Error-returning overload for remove_task().
     /// @return SCHED_ERR_OK on success, SCHED_ERR_NOT_FOUND if task not in table.
     static errors::SchedulerError remove_task_err(TaskControlBlock& task);
@@ -70,7 +82,7 @@ public:
     /// @param index Index into the task array.
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock* task_at(uint64_t index) noexcept;
- 
+
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
  
@@ -125,10 +137,40 @@ public:
     ///        Call this instead of directly setting `task.state = READY`
     ///        to keep the ready-queue bitmap in sync.
     static void set_task_ready(TaskControlBlock& task) noexcept;
+    /// @brief Deadline scan entry — runs in task context when the monitor
+    ///        task is enabled.  Identical deadline detection logic as the
+    ///        inline scan in on_tick() but can hold scheduler_lock_ and
+    ///        perform inline KILL cleanup.  Guarded by
+    ///        #if CONFIG_DEADLINE_MONITOR_TASK.
+    static void scan_deadlines() noexcept;
+    /// @brief Ensures the deadline-monitor task exists and is valid.
+    ///        Re-spawns it if the TCB was killed (e.g. by reload_daemon_tasks
+    ///        during snapshot restore).  Safe to call multiple times.
+    static void ensure_monitor() noexcept;
+#if CONFIG_DEADLINE_MONITOR_TASK
+    /// @brief Resets the scan-requested flag (used by snapshot_restore to
+    ///        clear stale flags).
+    static void reset_scan_requested() noexcept { s_scan_requested_ = false; }
+    /// @brief Returns the deadline-monitor task pointer, or nullptr.
+    static TaskControlBlock* get_monitor_task() noexcept { return s_monitor_task_; }
+    /// @brief Sets/clears the test-active flag.  When true, on_tick() skips
+    ///        the monitor-wake path to prevent spurious context switches.
+    static void set_test_active(bool v) noexcept { s_test_active_ = v; }
+#endif
+    /// @brief Clears assembly-level context-switch globals
+    ///        (scheduler_save_rsp_to, scheduler_load_rsp_from, etc.).
+    ///        Safe to call multiple times.  Used after on_tick() in test
+    ///        context to prevent a later timer ISR from consuming stale
+    ///        globals and performing an unintended context switch.
+    static void clear_switch_globals() noexcept;
     /// @brief Transitions a task to TERMINATED state and removes it from the
     ///        ready queue.  Call this instead of directly setting
     ///        `task.state = TERMINATED` to keep the ready queue consistent.
     static void terminate(TaskControlBlock& task, uint64_t exit_code) noexcept;
+    /// @brief Entry point for the deadline-monitor task (priority 127).
+    ///        Waits on an atomic handoff flag, calls scan_deadlines() when
+    ///        woken by on_tick().  Only compiled when CONFIG_DEADLINE_MONITOR_TASK > 0.
+    static void monitor_task_entry() noexcept;
 
     /// @brief Checks if a context switch is needed (reschedule flag).
     /// @return True if a switch is pending.
@@ -299,6 +341,18 @@ private:
     static ReadyQueueManager ready_queue_;
     static constinit TaskControlBlock* idle_task_;
     static constinit TaskControlBlock* shell_task_ptr_;
+#if CONFIG_DEADLINE_MONITOR_TASK
+    /// @brief Pointer to the deadline-monitor task (nullptr if not spawned).
+    static constinit TaskControlBlock* s_monitor_task_;
+    /// @brief Atomic handoff flag — on_tick() sets it, monitor_task_entry()
+    ///        consumes it via atomic exchange (lock-free, no spinlock needed).
+    static volatile bool s_scan_requested_;
+    /// @brief Set by the test runner before executing test functions; cleared
+    ///        afterward.  When true, on_tick() skips the monitor-wake path
+    ///        (preventing the timer ISR from switching to the monitor during
+    ///        a test, which would hang the test framework).
+    static bool s_test_active_;
+#endif
 
     /// @brief Performs rate-monotonic scheduling decision.
     static void rate_monotonic_schedule() noexcept;
@@ -362,7 +416,10 @@ extern "C" {
 
 #if CONFIG_DEADLINE_MISS_DETECTION
 /// @brief Weak callback invoked when a task misses its deadline.
-/// Called from ISR context (on_tick) — must not block or allocate.
+/// Called from ISR context (on_tick) or task context (deadline-monitor).
+/// In ISR context: must not block; KILL action defers via defer_kill().
+/// In task context (CONFIG_DEADLINE_MONITOR_TASK): may hold scheduler_lock_
+/// and perform inline cleanup.
 __attribute__((weak))
 void deadline_miss_handler(TaskControlBlock* task,
                            uint64_t missed_by_ticks) noexcept;

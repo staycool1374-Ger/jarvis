@@ -34,6 +34,7 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <assert.hpp>
 #include <kernel/task/task_errors.hpp>
 #include <string.hpp>
@@ -55,9 +56,9 @@ static void _task_trampoline(void (*entry)()) {
 /// @brief Allocates and initialises a SporadicServer for a daemon task
 ///        from the MemPool.  Idempotent (returns early if already set).
 void TaskControlBlock::init_sporadic_server(uint64_t budget_c,
-                                            uint64_t period_t,
-                                            uint64_t bg_prio,
-                                            uint64_t budget_granularity) noexcept {
+                                             uint64_t period_t,
+                                             uint64_t bg_prio,
+                                             uint64_t budget_granularity) noexcept {
     if (sporadic_server) return;
     auto* ss = static_cast<task::SporadicServer*>(
         MemPool::alloc(sizeof(task::SporadicServer)));
@@ -166,6 +167,7 @@ TaskControlBlock* TaskControlBlock::create(
         Logger::raw_write("\n");
         return nullptr;
     }
+
     memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->magic = TCB_MAGIC;
@@ -732,6 +734,20 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 /// TCB must not be used except for MemPool::free().
 void TaskControlBlock::cleanup() noexcept {
     magic = 0;
+
+    // Unregister from the scheduler's live tables so we never leave a dangling
+    // tasks_[]/id_table_ entry that aliases a later allocation (which previously
+    // caused add_task to ENSURE on a non-READY state, and a spurious LEAK count).
+    // IRQs are disabled around the unregister: with interrupts off, the only
+    // possible holder of scheduler_lock_ is the reaper (reap_orphans) running in
+    // the current context — which unregisters manually after cleanup() — so
+    // unregister_task's try_lock cleanly distinguishes "skip" from "do it", and
+    // the timer ISR (on_tick) cannot transiently hold the lock and cause a skip.
+    {
+        arch::IrqGuard irq_guard;
+        Scheduler::unregister_task(*this);
+    }
+
     // Remove self from parent's child list if we have a parent
     if (parent_id != 0) {
         auto* parent = Scheduler::find_task(parent_id);
@@ -885,5 +901,19 @@ TaskError TaskControlBlock::clone_err(uint64_t* regs, TaskControlBlock*& out_tcb
     out_tcb = clone(regs);
     return out_tcb ? TASK_ERR_OK : TASK_ERR_OOM;
 }
- 
+
+void TaskControlBlock::operator delete(void* ptr) noexcept {
+    if (!ptr) return;
+    auto* tcb = static_cast<TaskControlBlock*>(ptr);
+    // Unregister from the scheduler before the block is freed.  Without this,
+    // a freed TCB leaves a dangling tasks_[] / id_table_ entry that aliases
+    // the next allocation (use-after-free: the scheduler re-dispatches the
+    // recycled block as if it were the old, still-registered task).
+    // remove_task() is idempotent, so calling it here even when the task was
+    // already removed (e.g. via the explicit cleanup()+remove_task()+free
+    // sequence) is safe.
+    Scheduler::remove_task(*tcb);
+    MemPool::free(ptr);
+}
+
 } // namespace kernel

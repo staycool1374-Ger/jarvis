@@ -46,14 +46,17 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    // Child 1 — simulate that it ran and exited (TERMINATED)
+    // Child 1 — simulate that it ran and exited (TERMINATED).
+    // add_task() requires the task to be READY (it enqueues into the ready
+    // queue), so we register it first and only then mark it as a zombie —
+    // mirroring the real lifecycle (scheduled → runs → exits).
     auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
-    child1->state = TaskState::TERMINATED;
-    child1->exit_code = 42;
     parent->add_child(child1);
     Scheduler::add_task(*child1);
+    child1->state = TaskState::TERMINATED;
+    child1->exit_code = 42;
 
     // Simulate first waitpid: parent blocked, child1 was not reaped.
     // (This is what happened before the fix — waitpid returned -1.)
@@ -124,18 +127,18 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
-    child1->state = TaskState::TERMINATED;
-    child1->exit_code = 10;
     parent->add_child(child1);
     Scheduler::add_task(*child1);
+    child1->state = TaskState::TERMINATED;
+    child1->exit_code = 10;
 
     auto* child2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child2 != nullptr);
     child2->parent_id = parent->id;
-    child2->state = TaskState::TERMINATED;
-    child2->exit_code = 20;
     parent->add_child(child2);
     Scheduler::add_task(*child2);
+    child2->state = TaskState::TERMINATED;
+    child2->exit_code = 20;
 
     // First waitpid: find and reap child1
     TaskControlBlock* found = nullptr;

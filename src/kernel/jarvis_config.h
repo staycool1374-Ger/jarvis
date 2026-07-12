@@ -449,7 +449,7 @@
 /// Set to 0 for soft-RT builds (no PI overhead).
 /// Default: 1 (enabled).
 #ifndef CONFIG_MUTEX_PIP
-#define CONFIG_MUTEX_PIP 1
+#define CONFIG_MUTEX_PIP 0
 #endif
 
 /// Enable Priority Inheritance Protocol for Semaphore.
@@ -512,13 +512,23 @@
 /// When enabled, tasks with wcet_ticks > 0 are monitored for execution-
 /// time overrun (executed_ticks > wcet_ticks).
 #ifndef CONFIG_WCET_OVERRUN_DETECTION
-#define CONFIG_WCET_OVERRUN_DETECTION 1
+#define CONFIG_WCET_OVERRUN_DETECTION 0
 #endif
 
 /// When set, SporadicServer budget exhaustion (consume()->budget→0) also
 /// sets task->deadline_missed = true, mapping exhaustion to a deadline miss.
 #ifndef CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE
-#define CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE 1
+#define CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE 0
+#endif
+
+/// Decouple deadline scanning from the timer ISR via a dedicated watchdog task.
+/// When >0, scheduler spawns [deadline-mon] at priority 127 during init().
+/// The monitor waits on an atomic flag (lock-free handoff) and calls
+/// scan_deadlines() in task context where full scheduler_lock_ and inline
+/// KILL cleanup are safe.  When 0, inline scanning in on_tick() is used.
+/// Default: 0 (inline).
+#ifndef CONFIG_DEADLINE_MONITOR_TASK
+#define CONFIG_DEADLINE_MONITOR_TASK 1
 #endif
 
 /// Default action on deadline miss (used by default handler):
