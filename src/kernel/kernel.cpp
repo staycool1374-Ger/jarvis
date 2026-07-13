@@ -89,7 +89,9 @@ static bool g_run_tests = false;
 // Init task entry point for PID 1.  Mounts fstab, runs /etc/rc, then
 // blocks as reaper.  Referenced by both the manual pre-test create (below)
 // and the post-test task-definition table (taskdefs.cpp).
+extern "C" void debug_write(const char* msg);
 void init_task_main() {
+    debug_write("[DIAG] init_task_main entered\n");
     // Read /etc/fstab and mount entries
     {
         auto fstab = initrd::find("./etc/fstab");
@@ -198,6 +200,8 @@ void init_task_main() {
     uint64_t deadline = arch::Timer::ticks() + 500;
     bool     degraded = false;
 
+    kernel::Logger::info("[DIAG] init_task_main: starting daemon wait (g_run_tests=%u)", (unsigned)g_run_tests);
+
     while (!degraded) {
         bool all_ready = true;
         for (size_t wi = 0; wi < watch_count; ++wi) {
@@ -244,6 +248,7 @@ void init_task_main() {
     }
 
     // ── Run tests from init-task context (IF=1) ──────────────────
+    kernel::Logger::info("[DIAG] init_task_main: reached test runner g_run_tests=%u", (unsigned)g_run_tests);
     if (g_run_tests) {
 #ifdef CONFIG_DEBUG
         kernel::Logger::info("[TEST] Registry tests=%u classes=%u",

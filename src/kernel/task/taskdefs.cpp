@@ -35,6 +35,7 @@
 #include <logger.hpp>
 
 extern "C" void debug_write(const char* s);
+extern "C" void debug_write_hex(uint64_t value);
 
 // Defined in kernel.cpp — the init-task entry point.
 void init_task_main();
@@ -168,6 +169,9 @@ void reboot_from_table() {
     }
     Scheduler::reap_orphans();
 
+    // Clear stale ready queue entries from destroyed tasks
+    Scheduler::reset_ready_queue();
+
     // Re-enable death/terminated messages — cleanup is done, any from here
     // on are real failures.
     daemon::set_suppress_death_msg(false);
@@ -288,6 +292,10 @@ void reboot_from_table() {
         }
     }
 
+    debug_write("[REBOOT] after add_tasks task_count()=0x");
+    debug_write_hex(Scheduler::task_count());
+    debug_write("\n");
+
     // 5. Switch to idle-task stack and enter the idle loop
     if (idle) {
 #if defined(CONFIG_ARCH_X86_64)
@@ -311,8 +319,15 @@ void reboot_from_table() {
 #endif
     }
 
+    debug_write("[DIAG] reboot idle loop entered\n");
     arch::sti();
     for (;;) {
+        static uint64_t _idle_count = 0;
+        if (++_idle_count % 100000 == 0) {
+            debug_write("[DIAG] idle loop count=");
+            debug_write_hex(_idle_count);
+            debug_write("\n");
+        }
         arch::hlt();
     }
     __builtin_unreachable();

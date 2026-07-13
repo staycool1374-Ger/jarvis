@@ -59,7 +59,7 @@ void mark_vfs_touched() {
 
 // Maximum kernel stack entries (one per task, conservatively bounded)
 static constexpr uint64_t KSTACK_ENTRY_SIZE = sizeof(uint64_t) * 2  // kernel_stack ptr + size
-                                             + ::mem::STACK_SIZE;
+                                             + TaskControlBlock::STACK_SIZE;
 
 // --- buffer layout helpers (all offsets relative to g_snapshot) ---
 static size_t off_pmm_bitmap()   { return 0; }
@@ -111,6 +111,8 @@ static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
     size_t kstack_area = sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
     return off_kstack_header(user_page_count) + kstack_area;
 }
+
+
 
 bool snapshot_create() {
     arch::IrqGuard guard;
@@ -246,7 +248,7 @@ bool snapshot_create() {
             *reinterpret_cast<uint64_t*>(out) =
                 reinterpret_cast<uint64_t>(t->kernel_stack);
             uint64_t kstack_size = t->kernel_stack_top
-                                 - reinterpret_cast<uint64_t>(t->kernel_stack);
+                                  - reinterpret_cast<uint64_t>(t->kernel_stack);
             *reinterpret_cast<uint64_t*>(out + sizeof(uint64_t)) = kstack_size;
             __builtin_memcpy(out + sizeof(uint64_t) * 2,
                              t->kernel_stack,
@@ -368,34 +370,20 @@ void snapshot_restore(const char* test_name) {
             arch::Timer::set_ticks_for_test(saved);
         }
 
-        // Diagnose: check all tasks for boot-stack RSP before restore_task_fields
-        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-            auto* t = Scheduler::task_at(i);
-            if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
-            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
-            uint64_t rsp = TASK_STACK_PTR(t);
-            if (base > 0 && t->kernel_stack_top > base &&
-                (rsp < base || rsp > t->kernel_stack_top)) {
-                Logger::raw_write("[SNAP] PRE-FIELDS BAD-RSP: idx=");
-                Logger::print_dec(i);
-                Logger::raw_write(" id=");
-                Logger::print_dec(t->id);
-                Logger::raw_write(" rsp=0x");
-                Logger::print_hex(rsp);
-                Logger::raw_write(" kstack=[0x");
-                Logger::print_hex(base);
-                Logger::raw_write("-0x");
-                Logger::print_hex(t->kernel_stack_top);
-                Logger::raw_write("]\n");
-            }
-        }
-
         // Restore per-task plain fields (deep-copy) to fix any corrupted
         // context.rsp / state / scheduling params that accumulated during
         // test execution and survived the pointer-array-only restore.
         // This also restores runq_next_/runq_prev_/in_ready_queue_/rq_priority_
         // so the intrusive linked lists are valid after this point.
         Scheduler::restore_task_fields(task_fields);
+
+        // Rebuild AllTasksRegistry linked lists now that per-task priority
+        // fields are restored to their snapshot values.  The earlier
+        // restore_state() → all_tasks_.restore() read stale priorities from
+        // test-execution-modified TCBs, so the per-priority lists may be
+        // inconsistent.  rebuild() re-inserts tasks using the corrected
+        // priority field.
+        Scheduler::rebuild_all_tasks();
 
         // Restore the full ReadyQueueManager POD (queue heads/tails/counts,
         // priority bitmap) from the snapshot.  The per-TCB runq pointers
@@ -406,28 +394,6 @@ void snapshot_restore(const char* test_name) {
                               g_snapshot + off_sched_rqpod());
             Scheduler::restore_rqpod(*rqpod);
             Scheduler::rebuild_ready_queue();
-        }
-
-        // Diagnose: check all tasks for boot-stack RSP after restore_task_fields
-        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-            auto* t = Scheduler::task_at(i);
-            if (!t || t->magic != TaskControlBlock::TCB_MAGIC) continue;
-            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
-            uint64_t rsp = TASK_STACK_PTR(t);
-            if (base > 0 && t->kernel_stack_top > base &&
-                (rsp < base || rsp > t->kernel_stack_top)) {
-                Logger::raw_write("[SNAP] POST-FIELDS BAD-RSP: idx=");
-                Logger::print_dec(i);
-                Logger::raw_write(" id=");
-                Logger::print_dec(t->id);
-                Logger::raw_write(" rsp=0x");
-                Logger::print_hex(rsp);
-                Logger::raw_write(" kstack=[0x");
-                Logger::print_hex(base);
-                Logger::raw_write("-0x");
-                Logger::print_hex(t->kernel_stack_top);
-                Logger::raw_write("]\n");
-            }
         }
     }
 
@@ -448,9 +414,10 @@ void snapshot_restore(const char* test_name) {
             if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
                 t->kernel_stack && t->kernel_stack_top) {
                 uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
-                if (cur_rsp >= base && cur_rsp < t->kernel_stack_top) {
-                    if (i != Scheduler::current_index()) {
-                        Scheduler::set_current_index(i);
+                bool inr = (cur_rsp >= base && cur_rsp < t->kernel_stack_top);
+                if (inr) {
+                    if (t != Scheduler::current_task()) {
+                        Scheduler::set_current_task(t);
                     }
                     found = true;
                     break;
@@ -480,29 +447,33 @@ void snapshot_restore(const char* test_name) {
                                    g_snapshot + kstack_hdr_off);
         uint8_t* in = g_snapshot + kstack_hdr_off + sizeof(uint64_t);
         auto* current = Scheduler::current_task();
+        uint64_t cur_rsp;
+        asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
         for (uint64_t i = 0; i < num_kstacks; ++i) {
             uint64_t saved_kstack = *reinterpret_cast<uint64_t*>(in);
             uint64_t saved_size   = *reinterpret_cast<uint64_t*>(in + sizeof(uint64_t));
             if (saved_kstack != 0 && saved_size > 0) {
                 // Find the task with this kernel stack
-                bool found = false;
                 for (uint64_t j = 0; j < Scheduler::task_count(); ++j) {
                     auto* t = Scheduler::task_at(j);
                     if (t && reinterpret_cast<uint64_t>(t->kernel_stack) == saved_kstack) {
+                        // Skip the currently-running task: never overwrite the
+                        // live stack. Match by current_task_ptr_ AND by the live
+                        // RSP actually residing inside this task's stack (the
+                        // RSP-match in restore_state can leave current_task_ptr_
+                        // stale vs. the real running task).
+                        bool on_live_stack =
+                            (cur_rsp >= reinterpret_cast<uint64_t>(t->kernel_stack) &&
+                             cur_rsp <  reinterpret_cast<uint64_t>(t->kernel_stack_top));
+                        bool skip = (t == current) || on_live_stack;
                         // Skip current task — its stack is active
-                        if (t != current) {
+                        if (!skip) {
                             __builtin_memcpy(t->kernel_stack,
                                              in + sizeof(uint64_t) * 2,
                                              saved_size);
                         }
-                        found = true;
                         break;
                     }
-                }
-                if (!found) {
-                    Logger::raw_write("[SNAP] kstack not found for addr=0x");
-                    Logger::print_hex(saved_kstack);
-                    Logger::raw_write(" (task was likely reaped)\n");
                 }
             }
             in += KSTACK_ENTRY_SIZE;
@@ -526,15 +497,6 @@ void snapshot_restore(const char* test_name) {
             if (base == 0) continue;
             uint64_t rsp = TASK_STACK_PTR(t);
             if (rsp < base || rsp > t->kernel_stack_top) {
-                Logger::raw_write("[SNAP] fixup: task id=");
-                Logger::print_dec(t->id);
-                Logger::raw_write(" context.rsp=0x");
-                Logger::print_hex(rsp);
-                Logger::raw_write(" out of stack [0x");
-                Logger::print_hex(base);
-                Logger::raw_write("-0x");
-                Logger::print_hex(t->kernel_stack_top);
-                Logger::raw_write("] — reinit to canonical position\n");
                 TASK_STACK_PTR(t) = t->kernel_stack_top
                                   - sizeof(TaskContext);
             }
@@ -554,32 +516,6 @@ void snapshot_restore(const char* test_name) {
         }
         if (current) {
             current->state = TaskState::RUNNING;
-        }
-    }
-
-    // ---- Diagnose: dump all task kernel stack info ----
-    {
-        Logger::raw_write("[SNAP] task dump (");
-        Logger::print_dec(Scheduler::task_count());
-        Logger::raw_write(" tasks):\n");
-        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-            auto* t = Scheduler::task_at(i);
-            if (!t) { Logger::raw_write("  [null]\n"); continue; }
-            Logger::raw_write("  [");
-            Logger::print_dec(i);
-            Logger::raw_write("] id=");
-            Logger::print_dec(t->id);
-            Logger::raw_write(" kstack=0x");
-            Logger::print_hex(reinterpret_cast<uint64_t>(t->kernel_stack));
-            Logger::raw_write(" top=0x");
-            Logger::print_hex(t->kernel_stack_top);
-            Logger::raw_write(" rsp=0x");
-            Logger::print_hex(TASK_STACK_PTR(t));
-            Logger::raw_write(" state=");
-            Logger::print_dec(static_cast<uint64_t>(t->state));
-            Logger::raw_write(" magic=0x");
-            Logger::print_hex(t->magic);
-            Logger::raw_write("\n");
         }
     }
 
@@ -690,29 +626,6 @@ void snapshot_restore(const char* test_name) {
         auto* rqpod = reinterpret_cast<ReadyQueuePOD*>(
                           g_snapshot + off_sched_rqpod());
         Scheduler::capture_rqpod(*rqpod);
-    }
-
-    // ---- Post-reload diagnostic ----
-    {
-        auto* cur = Scheduler::current_task();
-        auto cidx = Scheduler::current_index();
-        Logger::raw_write("[SNAP] POST-RELOAD: idx=");
-        Logger::print_dec(cidx);
-        if (cur) {
-            Logger::raw_write(" id=");
-            Logger::print_dec(cur->id);
-            Logger::raw_write(" state=");
-            Logger::print_dec(static_cast<uint64_t>(cur->state));
-            Logger::raw_write(" rsp=0x");
-            Logger::print_hex(TASK_STACK_PTR(cur));
-            Logger::raw_write(" magic=0x");
-            Logger::print_hex(cur->magic);
-            Logger::raw_write(" ptr=0x");
-            Logger::print_hex(reinterpret_cast<uint64_t>(cur));
-        } else {
-            Logger::raw_write(" cur=NULL");
-        }
-        Logger::raw_write("\n");
     }
 
     // Belt-and-suspenders: ensure interrupts enabled before returning to

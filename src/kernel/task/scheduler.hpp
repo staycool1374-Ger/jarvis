@@ -28,6 +28,8 @@
 #include <kernel/task/scheduler_errors.hpp>
 #include <kernel/task/task_errors.hpp>
 #include <kernel/task/ready_queue_manager.hpp>
+#include <kernel/task/deadline_list.hpp>
+#include <kernel/task/all_tasks_registry.hpp>
 
 namespace kernel {
 
@@ -163,6 +165,11 @@ public:
     ///        context to prevent a later timer ISR from consuming stale
     ///        globals and performing an unintended context switch.
     static void clear_switch_globals() noexcept;
+
+    /// @brief Rebuild AllTasksRegistry per-priority linked lists using
+    ///        each task's current priority.  Called after test-isolation
+    ///        snapshot restore to fix stale priority-grouping.
+    static void rebuild_all_tasks() noexcept;
     /// @brief Transitions a task to TERMINATED state and removes it from the
     ///        ready queue.  Call this instead of directly setting
     ///        `task.state = TERMINATED` to keep the ready queue consistent.
@@ -193,9 +200,16 @@ public:
     /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if ID table is full.
     static errors::SchedulerError alloc_id_err(uint64_t& out_id);
 
-    static uint64_t current_index() noexcept { return current_index_; }
-    static void set_current_index(uint64_t idx) noexcept { current_index_ = idx; }
+    /// @brief Returns the index of the current task (computed from pointer,
+    ///         O(n) for snapshot compatibility; prefer current_task() directly).
+    static uint64_t current_index() noexcept;
+    static void set_current_index(uint64_t idx) noexcept;
+    /// @brief Set the current task directly by pointer (unambiguous; avoids
+    ///        the index-convention mismatch between current_index()/set_current_index()
+    ///        (raw AllTasksRegistry order) and task_at() (idle-reserved)).
+    static void set_current_task(TaskControlBlock* t) noexcept;
     static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
+    static const AllTasksRegistry& all_tasks() noexcept { return all_tasks_; }
     static TaskControlBlock* get_shell_task() noexcept { return shell_task_ptr_; }
 
     /// @brief Returns whether the scheduler can be preempted.
@@ -210,13 +224,23 @@ public:
     /// @brief Removes a task from the O(1) ready queue.
     static void dequeue_ready(TaskControlBlock& task) noexcept;
 
-    /// @brief Lightweight forward iterator over valid tasks in the array.
+    /// @brief Lightweight forward iterator over all tasks in the registry.
+    ///        Iterates by priority (highest to lowest), then insertion order
+    ///        within each priority.
     struct TaskIter {
         uint64_t idx;
-        explicit TaskIter(uint64_t start = 0) : idx(start) {}
+        TaskControlBlock* cur_;
+        explicit TaskIter(uint64_t start = 0) : idx(start), cur_(Scheduler::all_tasks_.first_ptr()) {
+            for (uint64_t i = 0; i < start; ++i) {
+                cur_ = Scheduler::all_tasks_.next_ptr(cur_);
+                if (!cur_) break;
+            }
+        }
         TaskControlBlock* next(TaskControlBlock* exclude = nullptr) {
-            while (idx < task_count_) {
-                auto* t = tasks_[idx++];
+            while (cur_) {
+                auto* t = cur_;
+                cur_ = Scheduler::all_tasks_.next_ptr(cur_);
+                ++idx;
                 if (t && t->magic == TaskControlBlock::TCB_MAGIC && t != exclude)
                     return t;
             }
@@ -326,10 +350,12 @@ private:
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static TaskControlBlock* const ID_TOMBSTONE;
 
-    static constinit TaskControlBlock* tasks_[MAX_TASKS];
+    /// @brief All registered tasks, grouped by priority in per-priority
+    ///        intrusive doubly-linked lists with O(1) bitmap lookup.
+    static AllTasksRegistry all_tasks_;
+    /// @brief Pointer to the currently executing task.
+    static constinit TaskControlBlock* current_task_ptr_;
     static constinit TaskControlBlock* id_table_[ID_TABLE_SIZE];
-    static constinit uint64_t task_count_;
-    static constinit uint64_t current_index_;
     static constinit uint64_t next_task_id_;
     static constinit uint64_t sporadic_task_count_;
     static constinit bool preempt_enabled_;
@@ -339,6 +365,9 @@ private:
     static sync::SpinLock scheduler_lock_;
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static ReadyQueueManager ready_queue_;
+    /// @brief Deadline-ordered intrusive list for O(1) expired-task detection.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+    static DeadlineList deadline_list_;
     static constinit TaskControlBlock* idle_task_;
     static constinit TaskControlBlock* shell_task_ptr_;
 #if CONFIG_DEADLINE_MONITOR_TASK

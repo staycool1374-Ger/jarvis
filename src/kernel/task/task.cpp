@@ -215,6 +215,14 @@ TaskControlBlock* TaskControlBlock::create(
     tcb->kernel_stack = reinterpret_cast<uint8_t*>(stack_virt);
     tcb->kernel_stack_top = stack_virt + STACK_SIZE;
 
+    // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
+    // so a stack allocated from recycled memory can retain stale poison in
+    // the region below the initial frame.  Zero the entire stack up front so
+    // every slot the task may reach — including deep call-chain return
+    // addresses — starts from a known state instead of tripping a fault on a
+    // leftover 0x0b return address.
+    __builtin_memset(tcb->kernel_stack, 0, STACK_SIZE);
+
 #if defined(CONFIG_ARCH_X86_64)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint64_t* stack = reinterpret_cast<uint64_t*>(tcb->kernel_stack_top);

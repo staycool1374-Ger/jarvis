@@ -174,6 +174,10 @@ struct TaskControlBlock {
         , cwd_vnode(nullptr)
         , runq_next_(nullptr)
         , runq_prev_(nullptr)
+        , dl_next_(nullptr)
+        , dl_prev_(nullptr)
+        , pri_next_(nullptr)
+        , pri_prev_(nullptr)
         , in_ready_queue_(false)
         , rq_priority_(0)
         , waiting_child_pid(0)
@@ -247,6 +251,16 @@ struct TaskControlBlock {
     /// @brief Intrusive linked-list pointers for O(1) ready queue.
     TaskControlBlock* runq_next_;
     TaskControlBlock* runq_prev_;
+
+    /// @brief Intrusive linked-list pointers for DeadlineList
+    /// (sorted by deadline_ticks ascending).
+    TaskControlBlock* dl_next_;
+    TaskControlBlock* dl_prev_;
+
+    /// @brief Intrusive linked-list pointers for AllTasksRegistry
+    /// (per-priority doubly-linked list of all tasks).
+    TaskControlBlock* pri_next_;
+    TaskControlBlock* pri_prev_;
     /// @brief True if this task is currently in the ready queue.
     /// Used to prevent double-enqueue.
     bool in_ready_queue_;
