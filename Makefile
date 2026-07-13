@@ -410,8 +410,21 @@ check-build-stamp:
 # Debug build
 # ------------------------------------------------------------------------------
 debug: clang-tidy
+ifneq ($(NO_LTO),1)
+# Link-time optimization: cross-TU inlining/IPO across kernel C++ TUs.
+# Scoped to CXXFLAGS (kernel .cpp only) — libc/userspace share CCFLAGS and
+# link via raw ld/gcc without the LTO plugin, so they must stay non-LTO.
+# The kernel link uses the compiler driver (see mk/rules.mk) to load the
+# LTO plugin; LDFLAGS carries -flto for that.
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer -flto
+debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
+debug: LDFLAGS  += -flto
+else
+# GDB flows (debug-test/debug-shell/rr-record) build without LTO so function
+# boundaries survive for clean single-stepping and stack unwinding.
 debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
+endif
 debug: $(TEST_REGISTRY_GEN)
 debug: check-build-stamp $(KERNEL_DEBUG)
 ifeq ($(ARCH),x86_64)
@@ -593,7 +606,7 @@ debug-test:
 	else \
 	    printf 'none\n' > initrd/tests/test-config.txt; \
 	fi; \
-	$(MAKE) $(_BUILD) ARCH=$(_ARCH)
+	$(MAKE) $(_BUILD) NO_LTO=1 ARCH=$(_ARCH)
 	@true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))
 	rm -f build/gdb-panic-captured build/gdb-serial.log; \
 	printf '  %-7s %s\n' 'QEMU' 'Starting with GDB stub (:1234)…'; \
@@ -637,6 +650,7 @@ debug-test:
 #   $(GDB) build/kernel-debug.elf -ex 'target remote :1234'
 # The deterministic -icount ensures the same instruction sequence every replay.
 # ------------------------------------------------------------------------------
+rr-record: NO_LTO := 1
 rr-record: debug
 	@printf '  %-7s %s\n' 'RR' 'Recording deterministic trace…'
 	@mkdir -p build
@@ -818,7 +832,7 @@ debug-shell:
 	fi; \
 	if [ ! -f "$(_GDB)" ]; then echo "ERROR: GDB script not found: $(_GDB)"; exit 1; fi; \
 	if [ ! -f "$(_CMDS)" ]; then echo "ERROR: shell commands file not found: $(_CMDS)"; exit 1; fi; \
-	$(MAKE) $(_BUILD) ARCH=$(_ARCH)
+	$(MAKE) $(_BUILD) NO_LTO=1 ARCH=$(_ARCH)
 	@true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))
 	printf 'none\n' > initrd/tests/test-config.txt; \
 	printf '  %-7s %s\n' 'SHELL' 'Starting debug session ($(_CMDS))…'; \
