@@ -82,11 +82,60 @@ void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
     enqueue_ready(task);
 }
 
+/// @brief Wake a parent blocked in waitpid for a child that just terminated.
+/// Mirrors the wake performed by Syscall::sys_exit, but for non-sys_exit
+/// termination paths (Scheduler::terminate, deadline miss, cleanup_test_tasks)
+/// so a parent blocked in waitpid is not left waiting forever on a child that
+/// exited via a path other than sys_exit.
+/// @param child The just-terminated child task.
+static void wake_waiting_parent(TaskControlBlock& child) {
+    if (child.parent_id == 0) return;
+    auto* p = Scheduler::find_task(child.parent_id);
+    if (!p) return;
+    if (p->waiting_child_pid != child.id) return;
+
+    // Deliver the child's exit status to a parent blocked in waitpid.
+    if (p->waiting_child_status) {
+        uint64_t old_cr3 = 0;
+        bool switched = false;
+        if (p->page_table_ && arch::read_cr3() != p->page_table_) {
+            old_cr3 = arch::read_cr3();
+            arch::write_cr3(p->page_table_);
+            switched = true;
+        }
+        *p->waiting_child_status = child.exit_code;
+        if (switched) arch::write_cr3(old_cr3);
+        p->waiting_child_status = nullptr;
+    }
+
+    // Clear the parent's wait and orphan the child for ANY waiting parent.
+    // This lets reap_orphans collect the zombie even when the parent is a
+    // manual-wait task (READY) that will never re-scan and reap it itself —
+    // otherwise the child stays deferred forever and the scheduler deadlocks.
+    // Only a BLOCKED parent is re-enqueued: a READY/WAITING parent is already
+    // on the run queue, and re-enqueueing it would corrupt the intrusive
+    // ready-queue links.
+    if (p->state == TaskState::BLOCKED) {
+        Scheduler::set_task_ready(*p);
+        if (TASK_STACK_PTR(p)) {
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            auto* stack = reinterpret_cast<uint64_t*>(TASK_STACK_PTR(p));
+            stack[0] = child.id;
+        }
+    }
+    p->waiting_child_pid = 0;
+    p->remove_child(&child);
+    child.parent_id = 0;
+}
+
 void Scheduler::terminate(TaskControlBlock& task, uint64_t exit_code) noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     dequeue_ready(task);
     task.state = TaskState::TERMINATED;
     task.exit_code = exit_code;
+    // If the parent is blocked in waitpid for this child, wake it now so it
+    // does not deadlock waiting for a child that exited without sys_exit.
+    wake_waiting_parent(task);
 }
 
 TaskControlBlock* const Scheduler::ID_TOMBSTONE =
@@ -710,6 +759,7 @@ void Scheduler::cleanup_test_tasks() noexcept {
             t->state != TaskState::TERMINATED) {
             t->state = TaskState::TERMINATED;
             t->exit_code = 0;
+            wake_waiting_parent(*t);
         }
     }
     reap_orphans();
@@ -1017,7 +1067,11 @@ void Scheduler::rebuild_ready_queue() noexcept {
     for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
         if (t->state == TaskState::READY) {
-            t->in_ready_queue_ = true;
+            // Clear the flag first: enqueue() (TaskQueue::push_back) refuses to
+            // re-add a node whose flag is already set, which would otherwise
+            // leave the task out of the physical queue while the flag wrongly
+            // claims membership.
+            t->in_ready_queue_ = false;
             ready_queue_.enqueue(*t, effective_priority(t));
         } else {
             t->in_ready_queue_ = false;
@@ -1284,6 +1338,7 @@ void deadline_miss_handler(TaskControlBlock* task,
                        task->id, task->name, missed_by_ticks);
     task->state = TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
+    wake_waiting_parent(*task);
     Scheduler::defer_kill(task);
 #elif CONFIG_DEADLINE_ACTION == 4
     if (budget_exhausted)

@@ -7,9 +7,14 @@
 namespace kernel {
 
 void ReadyQueueManager::enqueue(TaskControlBlock& tcb, uint64_t priority) noexcept {
+    // Guard against double-enqueue: re-enqueueing an already-queued TCB
+    // corrupts the intrusive runq_next_/runq_prev_ links and can deadlock the
+    // scheduler (next_task() loops, reschedule() spins holding scheduler_lock_).
+    if (tcb.in_ready_queue_) return;
     queues_[priority].push_back(tcb);
     bitmap_.set(priority);
     tcb.rq_priority_ = priority;
+    tcb.in_ready_queue_ = true;
 }
 
 TaskControlBlock* ReadyQueueManager::dequeue_highest() noexcept {
@@ -41,6 +46,7 @@ void ReadyQueueManager::remove(TaskControlBlock& tcb, uint64_t priority) noexcep
         bitmap_.clear(actual);
     }
     tcb.rq_priority_ = 0;
+    tcb.in_ready_queue_ = false;
 }
 
 void ReadyQueueManager::move_priority(TaskControlBlock& tcb, uint64_t old_prio, uint64_t new_prio) noexcept {
@@ -69,6 +75,14 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD& src) noexcept {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
             reinterpret_cast<TaskControlBlock*>(src.queue_tails[i]),
             src.queue_counts[i]);
+        // Keep in_ready_queue_ consistent with the restored queues so the
+        // double-enqueue guard in enqueue() stays correct after a snapshot
+        // restore (otherwise a restored-queue TCB keeps a stale
+        // in_ready_queue_=false and a later set_task_ready re-enqueues it,
+        // corrupting the intrusive links).
+        for (auto* t = queues_[i].head(); t; t = t->runq_next_) {
+            t->in_ready_queue_ = true;
+        }
     }
 }
 

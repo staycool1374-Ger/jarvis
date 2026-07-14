@@ -21,7 +21,11 @@ void TaskQueue::push_back(TaskControlBlock& tcb) noexcept {
 }
 
 TaskControlBlock* TaskQueue::pop_front() noexcept {
-    if (!head_) return nullptr;
+    // If the head pointer is non-null but the count is zero the list is
+    // corrupted (e.g. a cycle produced by a stray double-enqueue).  Returning
+    // early here prevents pop_front from spinning until count_ underflows and
+    // hanging the scheduler inside reschedule()/next_task().
+    if (!head_ || count_ == 0) return nullptr;
     auto* tcb = head_;
     tcb->in_ready_queue_ = false;
     head_ = tcb->runq_next_;

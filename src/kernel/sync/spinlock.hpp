@@ -69,7 +69,7 @@ public:
 
     const void* holder() const noexcept { return __atomic_load_n(&holder_, __ATOMIC_RELAXED); }
 
-private:
+ private:
     int locked_ = 0; ///< 0 = unlocked, 1 = locked.
     const void* holder_ = nullptr;
 };

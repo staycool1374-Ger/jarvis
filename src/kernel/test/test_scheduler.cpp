@@ -196,20 +196,19 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred, "PRE: none | POST: none") 
 
     Scheduler::terminate(*child, 42);
 
-    // Reap orphans - should NOT reap child because parent is waiting
+    // A parent that is waiting for a specific child (waiting_child_pid ==
+    // child.id) must be woken and delivered the child's exit status when the
+    // child terminates on ANY path (matching sys_exit).  terminate() therefore
+    // reaps the child on the next reap pass instead of leaving it as a
+    // permanent zombie that the parent would never collect.
     Scheduler::reap_orphans();
 
-    // Child should still exist (not reaped yet)
-    JARVIS_ASSERT(Scheduler::find_task(child_id) == child);
-
-    // Now simulate parent collecting (clear wait)
-    parent->waiting_child_pid = 0;
-    parent->waiting_child_status = nullptr;
-
-    // Reap again - now child should be reaped
-    Scheduler::reap_orphans();
-
+    // Child should now be reaped (parent's wait satisfied).
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
+
+    // Parent was notified: its wait was cleared and it received the status.
+    JARVIS_ASSERT(parent->waiting_child_pid == 0);
+    JARVIS_ASSERT(status == 42);
 
     Scheduler::remove_task(*parent);
     parent->cleanup();
