@@ -105,7 +105,8 @@ JARVIS_TEST(atomic_64bit_operations, "PRE: none | POST: none") {
     uint64_t val = 0xAAAAAAAAULL;
     kernel::atomic_store(&val, uint64_t(0xBBBBBBBBBBBBBBBBULL));
     JARVIS_ASSERT_EQ(0xBBBBBBBBBBBBBBBBULL, kernel::atomic_load(&val));
-    uint64_t old = kernel::atomic_exchange(&val, uint64_t(0xCCCCCCCCCCCCCCCCULL));
+    uint64_t old =
+        kernel::atomic_exchange(&val, uint64_t(0xCCCCCCCCCCCCCCCCULL));
     JARVIS_ASSERT_EQ(0xBBBBBBBBBBBBBBBBULL, old);
     JARVIS_ASSERT_EQ(0xCCCCCCCCCCCCCCCCULL, kernel::atomic_load(&val));
     old = kernel::atomic_fetch_add(&val, uint64_t(1));
@@ -124,21 +125,21 @@ JARVIS_TEST(atomic_64bit_operations, "PRE: none | POST: none") {
 //   Task 2: y = 1; fence; r2 = x;
 // Forbidden: r1 == 0 && r2 == 0
 
-static volatile uint32_t* g_sb_x;
-static volatile uint32_t* g_sb_y;
+static volatile uint32_t *g_sb_x;
+static volatile uint32_t *g_sb_y;
 static uint32_t g_sb_r1;
 static uint32_t g_sb_r2;
 
 static void sb_worker_a() {
-    kernel::atomic_store(const_cast<volatile uint32_t*>(g_sb_x), uint32_t(1));
+    kernel::atomic_store(const_cast<volatile uint32_t *>(g_sb_x), uint32_t(1));
     kernel::atomic_fence();
-    g_sb_r1 = kernel::atomic_load(const_cast<volatile uint32_t*>(g_sb_y));
+    g_sb_r1 = kernel::atomic_load(const_cast<volatile uint32_t *>(g_sb_y));
 }
 
 static void sb_worker_b() {
-    kernel::atomic_store(const_cast<volatile uint32_t*>(g_sb_y), uint32_t(1));
+    kernel::atomic_store(const_cast<volatile uint32_t *>(g_sb_y), uint32_t(1));
     kernel::atomic_fence();
-    g_sb_r2 = kernel::atomic_load(const_cast<volatile uint32_t*>(g_sb_x));
+    g_sb_r2 = kernel::atomic_load(const_cast<volatile uint32_t *>(g_sb_x));
 }
 
 JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
@@ -152,8 +153,8 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
         PMM::free_page(y_phys);
     });
 
-    g_sb_x = reinterpret_cast<volatile uint32_t*>(arch::HHDM_OFFSET + x_phys);
-    g_sb_y = reinterpret_cast<volatile uint32_t*>(arch::HHDM_OFFSET + y_phys);
+    g_sb_x = reinterpret_cast<volatile uint32_t *>(arch::HHDM_OFFSET + x_phys);
+    g_sb_y = reinterpret_cast<volatile uint32_t *>(arch::HHDM_OFFSET + y_phys);
 
     uint64_t forbidden_count = 0;
 
@@ -165,17 +166,17 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
             Logger::print_dec(SB_ITER);
             Logger::raw_write("\n");
         }
-        *const_cast<volatile uint32_t*>(g_sb_x) = 0;
-        *const_cast<volatile uint32_t*>(g_sb_y) = 0;
+        *const_cast<volatile uint32_t *>(g_sb_x) = 0;
+        *const_cast<volatile uint32_t *>(g_sb_y) = 0;
         kernel::atomic_fence();
         g_sb_r1 = 99;
         g_sb_r2 = 99;
 
-        auto* task_a = TaskControlBlock::create(sb_worker_a, 5, 10);
+        auto *task_a = TaskControlBlock::create(sb_worker_a, 5, 10);
         JARVIS_ASSERT(task_a != nullptr);
         Scheduler::add_task(*task_a);
 
-        auto* task_b = TaskControlBlock::create(sb_worker_b, 5, 10);
+        auto *task_b = TaskControlBlock::create(sb_worker_b, 5, 10);
         JARVIS_ASSERT(task_b != nullptr);
         Scheduler::add_task(*task_b);
 
@@ -210,7 +211,8 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
         delete task_b;
     }
 
-    JARVIS_ASSERT_FMT(forbidden_count == 0,
+    JARVIS_ASSERT_FMT(
+        forbidden_count == 0,
         "SB litmus: forbidden (r1==0 && r2==0) occurred %lu/%lu times",
         forbidden_count, SB_ITER);
     JARVIS_TEST_PASS();
@@ -233,19 +235,21 @@ JARVIS_TEST(atomic_mp_litmus, "PRE: none | POST: none") {
         PMM::free_page(data_phys);
     });
 
-    auto* flag = reinterpret_cast<volatile uint64_t*>(arch::HHDM_OFFSET + flag_phys);
-    auto* data = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + data_phys);
-    *const_cast<volatile uint64_t*>(flag) = 0;
+    auto *flag =
+        reinterpret_cast<volatile uint64_t *>(arch::HHDM_OFFSET + flag_phys);
+    auto *data = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + data_phys);
+    *const_cast<volatile uint64_t *>(flag) = 0;
     *data = 0;
     kernel::atomic_fence();
 
     // producer
     kernel::atomic_store(data, uint64_t(42));
     kernel::atomic_fence();
-    kernel::atomic_store(const_cast<volatile uint64_t*>(flag), uint64_t(1));
+    kernel::atomic_store(const_cast<volatile uint64_t *>(flag), uint64_t(1));
 
     // consumer
-    JARVIS_ASSERT(kernel::atomic_load(const_cast<volatile uint64_t*>(flag)) == 1);
+    JARVIS_ASSERT(kernel::atomic_load(const_cast<volatile uint64_t *>(flag)) ==
+                  1);
     kernel::atomic_fence();
     uint64_t observed = kernel::atomic_load(data);
 
@@ -264,11 +268,10 @@ JARVIS_TEST(atomic_mp_litmus, "PRE: none | POST: none") {
 JARVIS_TEST(atomic_increment_race, "PRE: none | POST: none") {
     uint64_t counter_phys = PMM::alloc_page();
     JARVIS_ASSERT(counter_phys != 0);
-    auto page_guard = ScopeGuard([&]() {
-        PMM::free_page(counter_phys);
-    });
+    auto page_guard = ScopeGuard([&]() { PMM::free_page(counter_phys); });
 
-    auto* inc_counter = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + counter_phys);
+    auto *inc_counter =
+        reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + counter_phys);
     *inc_counter = 0;
     kernel::atomic_fence();
 
@@ -299,9 +302,9 @@ JARVIS_TEST(atomic_acquire_release_pingpong, "PRE: none | POST: none") {
         PMM::free_page(data2_phys);
     });
 
-    auto* turn = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + turn_phys);
-    auto* data1 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + data1_phys);
-    auto* data2 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + data2_phys);
+    auto *turn = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + turn_phys);
+    auto *data1 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + data1_phys);
+    auto *data2 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + data2_phys);
     *turn = 0;
     *data1 = 0;
     *data2 = 0;

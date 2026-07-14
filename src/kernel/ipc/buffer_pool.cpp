@@ -17,7 +17,8 @@
  */
 
 /// @file buffer_pool.cpp
-/// @brief Zero-copy buffer pool implementation — page allocation, PTE manipulation, transfer.
+/// @brief Zero-copy buffer pool implementation — page allocation, PTE
+/// manipulation, transfer.
 
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -43,20 +44,27 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t L0_SHIFT = 30;
     constexpr uint64_t L1_SHIFT = 21;
     constexpr uint64_t L2_SHIFT = 12;
-    constexpr uint64_t PAGE_READ  = 1ULL << 1;
+    constexpr uint64_t PAGE_READ = 1ULL << 1;
     constexpr uint64_t PAGE_WRITE = 1ULL << 2;
-    constexpr uint64_t PAGE_EXEC  = 1ULL << 3;
+    constexpr uint64_t PAGE_EXEC = 1ULL << 3;
     constexpr uint64_t RWX = PAGE_READ | PAGE_WRITE | PAGE_EXEC;
 
-    auto* l0 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
-        pml4_phys & ~0xFFFULL));
+    auto *l0 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (pml4_phys & ~0xFFFULL));
     size_t l0_idx = (virt_addr >> L0_SHIFT) & 0x1FF;
-    if (!(l0[l0_idx] & PAGE_PRESENT)) return;
-    auto* l1 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (l0[l0_idx] & ~0xFFFULL));
+    if (!(l0[l0_idx] & PAGE_PRESENT))
+        return;
+    auto *l1 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (l0[l0_idx] & ~0xFFFULL));
     size_t l1_idx = (virt_addr >> L1_SHIFT) & 0x1FF;
-    if (!(l1[l1_idx] & PAGE_PRESENT)) return;
-    if (l1[l1_idx] & RWX) { l1[l1_idx] = 0; return; } // 2MB block
-    auto* l2 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (l1[l1_idx] & ~0xFFFULL));
+    if (!(l1[l1_idx] & PAGE_PRESENT))
+        return;
+    if (l1[l1_idx] & RWX) {
+        l1[l1_idx] = 0;
+        return;
+    } // 2MB block
+    auto *l2 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (l1[l1_idx] & ~0xFFFULL));
     size_t l2_idx = (virt_addr >> L2_SHIFT) & 0x1FF;
     l2[l2_idx] = 0;
 #else
@@ -66,21 +74,23 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     constexpr uint64_t PT_SHIFT = 12;
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (
-        pml4_phys & ~0xFFFULL));
+    auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (pml4_phys & ~0xFFFULL));
     size_t pml4_idx = (virt_addr >> PML4_SHIFT) & 0x1FF;
     size_t pdpt_idx = (virt_addr >> PDPT_SHIFT) & 0x1FF;
-    size_t pd_idx   = (virt_addr >> PD_SHIFT) & 0x1FF;
-    size_t pt_idx   = (virt_addr >> PT_SHIFT) & 0x1FF;
+    size_t pd_idx = (virt_addr >> PD_SHIFT) & 0x1FF;
+    size_t pt_idx = (virt_addr >> PT_SHIFT) & 0x1FF;
 
-    if (!(pml4[pml4_idx] & PAGE_PRESENT)) return;
+    if (!(pml4[pml4_idx] & PAGE_PRESENT))
+        return;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_idx
-        ] & ~0xFFFULL));
-    if (!(pdpt[pdpt_idx] & PAGE_PRESENT)) return;
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (pml4[pml4_idx] & ~0xFFFULL));
+    if (!(pdpt[pdpt_idx] & PAGE_PRESENT))
+        return;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx
-        ] & ~0xFFFULL));
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (pdpt[pdpt_idx] & ~0xFFFULL));
     if (pd[pd_idx] & PAGE_PRESENT) {
 #if defined(CONFIG_ARCH_AARCH64)
         constexpr uint64_t PAGE_TABLE = 1ULL << 1;
@@ -88,17 +98,20 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 #else
         if (pd[pd_idx] & (1ULL << 7))
 #endif
-        { pd[pd_idx] = 0; return; } // huge page
+        {
+            pd[pd_idx] = 0;
+            return;
+        } // huge page
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pd[pd_idx
-            ] & ~0xFFFULL));
+        auto *pt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                (pd[pd_idx] & ~0xFFFULL));
         pt[pt_idx] = 0;
     }
 #endif
 }
 
 /// @brief Insert a buffer entry at the head of a task's linked list.
-static void list_insert(TaskControlBlock& task, int32_t idx) {
+static void list_insert(TaskControlBlock &task, int32_t idx) {
     int32_t old_head = task.buf_list_head;
     BufferPool::entries[idx].list_prev = LIST_EMPTY;
     BufferPool::entries[idx].list_next = old_head;
@@ -108,12 +121,15 @@ static void list_insert(TaskControlBlock& task, int32_t idx) {
 }
 
 /// @brief Remove a buffer entry from a task's linked list.
-static void list_remove(TaskControlBlock& task, int32_t idx) {
+static void list_remove(TaskControlBlock &task, int32_t idx) {
     int32_t prev = BufferPool::entries[idx].list_prev;
     int32_t next = BufferPool::entries[idx].list_next;
-    if (prev != -1) BufferPool::entries[prev].list_next = next;
-    else task.buf_list_head = next;
-    if (next != -1) BufferPool::entries[next].list_prev = prev;
+    if (prev != -1)
+        BufferPool::entries[prev].list_next = next;
+    else
+        task.buf_list_head = next;
+    if (next != -1)
+        BufferPool::entries[next].list_prev = prev;
     BufferPool::entries[idx].list_prev = -1;
     BufferPool::entries[idx].list_next = -1;
 }
@@ -137,7 +153,8 @@ void BufferPool::init() {
 /// @brief Pop an entry from the free list.
 /// @return index, or BUF_INVALID_INDEX if the pool is exhausted.
 int32_t BufferPool::alloc_entry() {
-    if (free_head_ == LIST_EMPTY) return BUF_INVALID_INDEX;
+    if (free_head_ == LIST_EMPTY)
+        return BUF_INVALID_INDEX;
     int32_t idx = free_head_;
     free_head_ = static_cast<int32_t>(entries[idx].list_next);
     ENSURE(entries[idx].phys_addr == 0);
@@ -162,24 +179,32 @@ void BufferPool::free_entry(int32_t idx) {
 /// @brief Validate a handle (index + generation match).
 /// @return index, BUF_INVALID_HANDLE, or BUF_INVALID_INDEX.
 int32_t BufferPool::validate(uint64_t handle) {
-    if (handle == 0) return BUF_INVALID_HANDLE;
+    if (handle == 0)
+        return BUF_INVALID_HANDLE;
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     uint32_t gen = static_cast<uint32_t>(handle >> 32);
-    if (idx >= MAX_BUFFERS) return BUF_INVALID_INDEX;
-    if (entries[idx].phys_addr == 0) return BUF_INVALID_HANDLE;
-    if (entries[idx].generation != gen) return BUF_INVALID_HANDLE;
+    if (idx >= MAX_BUFFERS)
+        return BUF_INVALID_INDEX;
+    if (entries[idx].phys_addr == 0)
+        return BUF_INVALID_HANDLE;
+    if (entries[idx].generation != gen)
+        return BUF_INVALID_HANDLE;
     return static_cast<int32_t>(idx);
 }
 
-/// @brief Allocate a buffer, map it at virtual address @p va in the given task's space.
+/// @brief Allocate a buffer, map it at virtual address @p va in the given
+/// task's space.
 /// @return handle, or 0 on failure.
-uint64_t BufferPool::alloc(TaskControlBlock& task, uint64_t va) {
-    if (!task.page_table_) return 0;
+uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
+    if (!task.page_table_)
+        return 0;
 
-    if (va >= USER_SPACE_LIMIT) return 0;
+    if (va >= USER_SPACE_LIMIT)
+        return 0;
 
     int32_t idx = alloc_entry();
-    if (idx < 0) return 0;
+    if (idx < 0)
+        return 0;
 
     uint64_t phys = PMM::alloc_page();
     if (!phys) {
@@ -196,15 +221,16 @@ uint64_t BufferPool::alloc(TaskControlBlock& task, uint64_t va) {
 
     list_insert(task, idx);
 
-    return (static_cast<uint64_t>(entries[idx].generation) << 32
-        ) | static_cast<uint64_t>(idx);
+    return (static_cast<uint64_t>(entries[idx].generation) << 32) |
+           static_cast<uint64_t>(idx);
 }
 
 /// @brief Free a buffer: unmap, free the physical page, return entry to pool.
 /// @return true on success.
-bool BufferPool::free(TaskControlBlock& task, uint64_t handle) {
+bool BufferPool::free(TaskControlBlock &task, uint64_t handle) {
     int32_t idx = validate(handle);
-    if (idx < 0) return false;
+    if (idx < 0)
+        return false;
     if (entries[idx].owner_task != static_cast<uint32_t>(task.id))
         return false;
 
@@ -221,10 +247,12 @@ bool BufferPool::free(TaskControlBlock& task, uint64_t handle) {
 
 /// @brief Map an existing (transferred) buffer at virtual address @p va.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-bool BufferPool::map(TaskControlBlock& task, uint64_t handle, uint64_t va) {
+bool BufferPool::map(TaskControlBlock &task, uint64_t handle, uint64_t va) {
     int32_t idx = validate(handle);
-    if (idx < 0) return false;
-    if (va >= USER_SPACE_LIMIT) return false;
+    if (idx < 0)
+        return false;
+    if (va >= USER_SPACE_LIMIT)
+        return false;
 
     VMM::map_page_in_pml4(va, entries[idx].phys_addr, true, task.page_table_);
 
@@ -238,12 +266,14 @@ bool BufferPool::map(TaskControlBlock& task, uint64_t handle, uint64_t va) {
 }
 
 /// @brief Unmap a buffer (PTE clear, list remove) without freeing the page.
-bool BufferPool::unmap(TaskControlBlock& task, uint64_t handle) {
+bool BufferPool::unmap(TaskControlBlock &task, uint64_t handle) {
     int32_t idx = validate(handle);
-    if (idx < 0) return false;
+    if (idx < 0)
+        return false;
     if (entries[idx].owner_task != static_cast<uint32_t>(task.id))
         return false;
-    if (!entries[idx].mapped_va) return false;
+    if (!entries[idx].mapped_va)
+        return false;
 
     clear_pte_in_pml4(entries[idx].mapped_va, task.page_table_);
     entries[idx].mapped_va = 0;
@@ -253,10 +283,11 @@ bool BufferPool::unmap(TaskControlBlock& task, uint64_t handle) {
 }
 
 /// @brief Transfer buffer ownership from one task to another (IPC send path).
-bool BufferPool::transfer(uint64_t handle, TaskControlBlock& from,
-    TaskControlBlock& to) {
+bool BufferPool::transfer(uint64_t handle, TaskControlBlock &from,
+                          TaskControlBlock &to) {
     int32_t idx = validate(handle);
-    if (idx < 0) return false;
+    if (idx < 0)
+        return false;
     if (entries[idx].owner_task != static_cast<uint32_t>(from.id))
         return false;
 
@@ -275,7 +306,7 @@ bool BufferPool::transfer(uint64_t handle, TaskControlBlock& from,
 }
 
 /// @brief Snapshot pool state into a flat buffer (test isolation).
-void BufferPool::capture_state(uint8_t* dst, size_t max_bytes) {
+void BufferPool::capture_state(uint8_t *dst, size_t max_bytes) {
     (void)max_bytes;
     __builtin_memcpy(dst, entries, sizeof(entries));
     dst += sizeof(entries);
@@ -285,7 +316,7 @@ void BufferPool::capture_state(uint8_t* dst, size_t max_bytes) {
 }
 
 /// @brief Restore pool state from a flat buffer (test isolation).
-void BufferPool::restore_state(const uint8_t* src, size_t max_bytes) {
+void BufferPool::restore_state(const uint8_t *src, size_t max_bytes) {
     (void)max_bytes;
     __builtin_memcpy(entries, src, sizeof(entries));
     src += sizeof(entries);
@@ -294,8 +325,9 @@ void BufferPool::restore_state(const uint8_t* src, size_t max_bytes) {
     __builtin_memcpy(&next_cookie_, src, sizeof(next_cookie_));
 }
 
-/// @brief Unmap and free all buffers owned by a task (called from cleanup/exec).
-void BufferPool::unmap_all(TaskControlBlock& task) {
+/// @brief Unmap and free all buffers owned by a task (called from
+/// cleanup/exec).
+void BufferPool::unmap_all(TaskControlBlock &task) {
     int32_t idx = task.buf_list_head;
     while (idx != -1) {
         int32_t next = entries[idx].list_next;

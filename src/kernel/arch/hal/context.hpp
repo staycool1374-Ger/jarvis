@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file context.hpp
-/// @brief Architecture-specific CPU context (register save area) and context switching.
+/// @brief Architecture-specific CPU context (register save area) and context
+/// switching.
 
 #pragma once
 
@@ -44,7 +47,7 @@ struct ArchContext {
 
 /// @brief Manages x86-64 CPU context save/restore and stack initialisation.
 class ArchContextManager {
-public:
+  public:
     /// @brief Initialise a stack frame for a new task (x86-64).
     /// @param[in,out] stack_top Top of the stack (grows downward).
     /// @param entry Entry point function.
@@ -52,9 +55,9 @@ public:
     /// @param ss Stack segment selector.
     /// @param rflags Initial RFLAGS value.
     /// @param user_rsp Initial user-mode RSP.
-    static inline void init_stack(uint64_t* stack_top, void (*entry)(),
-                                  uint64_t cs, uint64_t ss,
-                                  uint64_t rflags, uint64_t user_rsp) {
+    static inline void init_stack(uint64_t *stack_top, void (*entry)(),
+                                  uint64_t cs, uint64_t ss, uint64_t rflags,
+                                  uint64_t user_rsp) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
         *--stack_top = ss;
@@ -64,21 +67,22 @@ public:
         *--stack_top = reinterpret_cast<uint64_t>(entry);
         *--stack_top = 0;
         *--stack_top = 0;
-        for (int i = 0; i < 15; ++i) *--stack_top = 0;
+        for (int i = 0; i < 15; ++i)
+            *--stack_top = 0;
 #pragma GCC diagnostic pop
     }
 
     /// @brief Save the current stack pointer into a context block.
     /// @param[out] ctx Destination context.
     /// @param rsp Current stack pointer value.
-    static inline void save(ArchContext& ctx, uint64_t rsp) {
+    static inline void save(ArchContext &ctx, uint64_t rsp) {
         ctx.rsp = rsp;
     }
 
     /// @brief Restore a stack pointer from a context block.
     /// @param ctx Source context.
     /// @param[out] rsp Output stack pointer.
-    static inline void restore(const ArchContext& ctx, uint64_t& rsp) {
+    static inline void restore(const ArchContext &ctx, uint64_t &rsp) {
         rsp = ctx.rsp;
     }
 
@@ -86,8 +90,8 @@ public:
     /// @param[out] from Current context to save into.
     /// @param to Target context to restore.
     /// @param[out] rsp Output stack pointer set to target's RSP.
-    static inline void switch_to(ArchContext& from, const ArchContext& to,
-                                  uint64_t& rsp) {
+    static inline void switch_to(ArchContext &from, const ArchContext &to,
+                                 uint64_t &rsp) {
         from.rsp = rsp;
         rsp = to.rsp;
     }
@@ -110,13 +114,13 @@ struct ArchContext {
 
 /// @brief Manages AArch64 CPU context save/restore and stack initialisation.
 class ArchContextManager {
-public:
+  public:
     /// @brief Initialise a stack frame for a new task (AArch64).
     /// @param[in,out] stack_top Top of the stack (grows downward).
     /// @param entry Entry point function.
     /// @param psr Saved Processor State Register (SPSR).
     /// @param user_rsp Initial user-mode SP_EL0.
-    static inline void init_stack(uint64_t* stack_top, void (*entry)(),
+    static inline void init_stack(uint64_t *stack_top, void (*entry)(),
                                   uint64_t /*cs*/, uint64_t /*ss*/,
                                   uint64_t psr, uint64_t user_rsp) {
         *--stack_top = 0;
@@ -124,20 +128,21 @@ public:
         *--stack_top = psr;
         *--stack_top = reinterpret_cast<uint64_t>(entry);
         *--stack_top = user_rsp;
-        for (int i = 0; i < 31; ++i) *--stack_top = 0;
+        for (int i = 0; i < 31; ++i)
+            *--stack_top = 0;
     }
 
     /// @brief Save the current stack pointer into a context block.
     /// @param[out] ctx Destination context.
     /// @param rsp Current stack pointer value.
-    static inline void save(ArchContext& ctx, uint64_t rsp) {
+    static inline void save(ArchContext &ctx, uint64_t rsp) {
         ctx.sp_el0 = rsp;
     }
 
     /// @brief Restore a stack pointer from a context block.
     /// @param ctx Source context.
     /// @param[out] rsp Output stack pointer.
-    static inline void restore(const ArchContext& ctx, uint64_t& rsp) {
+    static inline void restore(const ArchContext &ctx, uint64_t &rsp) {
         rsp = ctx.sp_el0;
     }
 
@@ -145,8 +150,8 @@ public:
     /// @param[out] from Current context to save into.
     /// @param to Target context to restore.
     /// @param[out] rsp Output stack pointer set to target's SP_EL0.
-    static inline void switch_to(ArchContext& from, const ArchContext& to,
-                                  uint64_t& rsp) {
+    static inline void switch_to(ArchContext &from, const ArchContext &to,
+                                 uint64_t &rsp) {
         from.sp_el0 = rsp;
         rsp = to.sp_el0;
     }
@@ -167,33 +172,35 @@ struct ArchContext {
 
 /// @brief Manages RISC-V 64 CPU context save/restore and stack initialisation.
 class ArchContextManager {
-public:
+  public:
     /// @brief Initialise a stack frame for a new task (RISC-V 64).
     /// @param[in,out] stack_top Top of the stack (grows downward).
     /// @param entry Entry point function.
     /// @param psr Initial SSTATUS value.
     /// @param user_rsp Initial user-mode SP.
-    static inline void init_stack(uint64_t* stack_top, void (*entry)(),
+    static inline void init_stack(uint64_t *stack_top, void (*entry)(),
                                   uint64_t /*cs*/, uint64_t /*ss*/,
                                   uint64_t psr, uint64_t user_rsp) {
         *--stack_top = 0;
-        *--stack_top = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(entry));
+        *--stack_top =
+            static_cast<uint64_t>(reinterpret_cast<uintptr_t>(entry));
         *--stack_top = user_rsp;
         *--stack_top = psr;
-        for (int i = 0; i < 16; ++i) *--stack_top = 0;
+        for (int i = 0; i < 16; ++i)
+            *--stack_top = 0;
     }
 
     /// @brief Save the current stack pointer into a context block.
     /// @param[out] ctx Destination context.
     /// @param rsp Current stack pointer value.
-    static inline void save(ArchContext& ctx, uint64_t rsp) {
+    static inline void save(ArchContext &ctx, uint64_t rsp) {
         ctx.sp = rsp;
     }
 
     /// @brief Restore a stack pointer from a context block.
     /// @param ctx Source context.
     /// @param[out] rsp Output stack pointer.
-    static inline void restore(const ArchContext& ctx, uint64_t& rsp) {
+    static inline void restore(const ArchContext &ctx, uint64_t &rsp) {
         rsp = ctx.sp;
     }
 
@@ -201,8 +208,8 @@ public:
     /// @param[out] from Current context to save into.
     /// @param to Target context to restore.
     /// @param[out] rsp Output stack pointer set to target's SP.
-    static inline void switch_to(ArchContext& from, const ArchContext& to,
-                                  uint64_t& rsp) {
+    static inline void switch_to(ArchContext &from, const ArchContext &to,
+                                 uint64_t &rsp) {
         from.sp = rsp;
         rsp = to.sp;
     }
@@ -210,7 +217,7 @@ public:
 
 /// @cond
 #else
-#  error "HAL: no context implementation for this architecture"
+#error "HAL: no context implementation for this architecture"
 #endif
 /// @endcond
 

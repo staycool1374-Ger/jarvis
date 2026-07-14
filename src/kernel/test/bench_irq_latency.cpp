@@ -39,19 +39,19 @@ struct BenchResult {
 };
 
 // Runmode: kernel
-// Testidea: Simulate reschedule() overhead (core of ISR-triggered context switch).
-// Input: Create two tasks, measure time for reschedule() cycle.
+// Testidea: Simulate reschedule() overhead (core of ISR-triggered context
+// switch). Input: Create two tasks, measure time for reschedule() cycle.
 // Expect: Average latency measured in cycles.
 // Depends: Scheduler, arch::rdtsc
 JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
-    auto* a = TaskControlBlock::create([](){}, 5, 10);
+    auto *a = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(a != nullptr);
     Scheduler::add_task(*a);
-    auto* b = TaskControlBlock::create([](){}, 5, 10);
+    auto *b = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(b != nullptr);
     Scheduler::add_task(*b);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     BenchResult r = {~0ULL, 0, 0};
 
     for (size_t i = 0; i < 100; ++i) {
@@ -63,8 +63,10 @@ JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
         uint64_t t0 = arch::rdtsc();
         Scheduler::reschedule();
         uint64_t elapsed = arch::rdtsc() - t0;
-        if (elapsed < r.min) r.min = elapsed;
-        if (elapsed > r.max) r.max = elapsed;
+        if (elapsed < r.min)
+            r.min = elapsed;
+        if (elapsed > r.max)
+            r.max = elapsed;
         r.avg += elapsed;
     }
     r.avg /= BENCH_ITERATIONS;
@@ -92,19 +94,24 @@ JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
 JARVIS_TEST(bench_spinlock_try_lock, "PRE: none | POST: none") {
     sync::SpinLock lock;
     BenchResult r = {~0ULL, 0, 0};
-    for (size_t i = 0; i < 100; ++i) { lock.try_lock(); lock.unlock(); }
+    for (size_t i = 0; i < 100; ++i) {
+        lock.try_lock();
+        lock.unlock();
+    }
     for (size_t i = 0; i < BENCH_ITERATIONS; ++i) {
         uint64_t t0 = arch::rdtsc();
         lock.try_lock();
         lock.unlock();
         uint64_t elapsed = arch::rdtsc() - t0;
-        if (elapsed < r.min) r.min = elapsed;
-        if (elapsed > r.max) r.max = elapsed;
+        if (elapsed < r.min)
+            r.min = elapsed;
+        if (elapsed > r.max)
+            r.max = elapsed;
         r.avg += elapsed;
     }
     r.avg /= BENCH_ITERATIONS;
-    Logger::info("spinlock_try_lock: min=%lu, avg=%lu, max=%lu",
-                 r.min, r.avg, r.max);
+    Logger::info("spinlock_try_lock: min=%lu, avg=%lu, max=%lu", r.min, r.avg,
+                 r.max);
     JARVIS_ASSERT(r.avg > 0);
     JARVIS_TEST_PASS();
 }

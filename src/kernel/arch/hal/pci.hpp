@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file pci.hpp
-/// @brief PCI config space access — CF8/CFC port I/O (x86_64) and ECAM (AArch64, RISC-V).
+/// @brief PCI config space access — CF8/CFC port I/O (x86_64) and ECAM
+/// (AArch64, RISC-V).
 
 #pragma once
 
@@ -31,10 +34,12 @@ struct PciBdf {
     uint8_t device;   ///< Device number on the bus.
     uint8_t function; ///< Function number within the device.
 
-    bool operator==(const PciBdf& o) const {
+    bool operator==(const PciBdf &o) const {
         return bus == o.bus && device == o.device && function == o.function;
     }
-    bool operator!=(const PciBdf& o) const { return !(*this == o); }
+    bool operator!=(const PciBdf &o) const {
+        return !(*this == o);
+    }
 };
 
 } // namespace arch
@@ -62,16 +67,15 @@ constexpr uint16_t PCI_CONFIG_ADDR = 0xCF8;
 /// @brief PCI configuration data port (0xCFC).
 constexpr uint16_t PCI_CONFIG_DATA = 0xCFC;
 
-/// @brief Build a PCI configuration address from BDF and register offset (x86 CF8 format).
+/// @brief Build a PCI configuration address from BDF and register offset (x86
+/// CF8 format).
 /// @param bdf Bus:Device.Function address.
 /// @param reg Register offset.
 /// @return Encoded address for use with pci_config_{read,write}*.
 inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
-    return 0x80000000U
-         | (static_cast<uint32_t>(bdf.bus)      << 16)
-         | (static_cast<uint32_t>(bdf.device)    << 11)
-         | (static_cast<uint32_t>(bdf.function)  << 8)
-         | reg;
+    return 0x80000000U | (static_cast<uint32_t>(bdf.bus) << 16) |
+           (static_cast<uint32_t>(bdf.device) << 11) |
+           (static_cast<uint32_t>(bdf.function) << 8) | reg;
 }
 
 /// @brief Read a 32-bit dword from PCI config space (x86 port-I/O).
@@ -106,25 +110,27 @@ inline void pci_config_writel(uint64_t addr, uint32_t val) {
     outl(PCI_CONFIG_DATA, val);
 }
 
-/// @brief Write a 16-bit word to PCI config space (x86 port-I/O, read-modify-write).
+/// @brief Write a 16-bit word to PCI config space (x86 port-I/O,
+/// read-modify-write).
 /// @param addr Address built by pci_make_addr.
 /// @param val Value to write.
 inline void pci_config_writew(uint64_t addr, uint16_t val) {
     uint32_t old = pci_config_readl(addr);
     uint32_t shift = (addr & 2) * 8;
-    uint32_t new_val = (old & ~(0xFFFF << shift))
-                     | (static_cast<uint32_t>(val) << shift);
+    uint32_t new_val =
+        (old & ~(0xFFFF << shift)) | (static_cast<uint32_t>(val) << shift);
     pci_config_writel(addr, new_val);
 }
 
-/// @brief Write an 8-bit byte to PCI config space (x86 port-I/O, read-modify-write).
+/// @brief Write an 8-bit byte to PCI config space (x86 port-I/O,
+/// read-modify-write).
 /// @param addr Address built by pci_make_addr.
 /// @param val Value to write.
 inline void pci_config_writeb(uint64_t addr, uint8_t val) {
     uint32_t old = pci_config_readl(addr);
     uint32_t shift = (addr & 3) * 8;
-    uint32_t new_val = (old & ~(0xFF << shift))
-                     | (static_cast<uint32_t>(val) << shift);
+    uint32_t new_val =
+        (old & ~(0xFF << shift)) | (static_cast<uint32_t>(val) << shift);
     pci_config_writel(addr, new_val);
 }
 
@@ -144,23 +150,23 @@ namespace arch {
 /// @brief ECAM base address for memory-mapped PCI config space.
 constexpr uint64_t PCI_ECAM_BASE = CONFIG_PCI_ECAM_BASE;
 
-/// @brief Build a PCI configuration address from BDF and register offset (ECAM format).
+/// @brief Build a PCI configuration address from BDF and register offset (ECAM
+/// format).
 /// @param bdf Bus:Device.Function address.
 /// @param reg Register offset.
 /// @return Memory-mapped address for use with pci_config_{read,write}*.
 inline uint64_t pci_make_addr(PciBdf bdf, uint8_t reg) {
-    return PCI_ECAM_BASE
-         | (static_cast<uint64_t>(bdf.bus)      << 20)
-         | (static_cast<uint64_t>(bdf.device)    << 15)
-         | (static_cast<uint64_t>(bdf.function)  << 12)
-         | reg;
+    return PCI_ECAM_BASE | (static_cast<uint64_t>(bdf.bus) << 20) |
+           (static_cast<uint64_t>(bdf.device) << 15) |
+           (static_cast<uint64_t>(bdf.function) << 12) | reg;
 }
 
 /// @brief Read a 32-bit dword from PCI config space (ECAM memory-mapped).
 /// @param addr Address built by pci_make_addr.
 /// @return The dword value.
 inline uint32_t pci_config_readl(uint64_t addr) {
-    volatile uint32_t* ptr = reinterpret_cast<volatile uint32_t*>(addr & ~3ULL);
+    volatile uint32_t *ptr =
+        reinterpret_cast<volatile uint32_t *>(addr & ~3ULL);
     return *ptr;
 }
 
@@ -184,29 +190,32 @@ inline uint16_t pci_config_readw(uint64_t addr) {
 /// @param addr Address built by pci_make_addr.
 /// @param val Value to write.
 inline void pci_config_writel(uint64_t addr, uint32_t val) {
-    volatile uint32_t* ptr = reinterpret_cast<volatile uint32_t*>(addr & ~3ULL);
+    volatile uint32_t *ptr =
+        reinterpret_cast<volatile uint32_t *>(addr & ~3ULL);
     *ptr = val;
 }
 
-/// @brief Write a 16-bit word to PCI config space (ECAM memory-mapped, read-modify-write).
+/// @brief Write a 16-bit word to PCI config space (ECAM memory-mapped,
+/// read-modify-write).
 /// @param addr Address built by pci_make_addr.
 /// @param val Value to write.
 inline void pci_config_writew(uint64_t addr, uint16_t val) {
     uint32_t old = pci_config_readl(addr);
     uint32_t shift = (addr & 2) * 8;
-    uint32_t new_val = (old & ~(0xFFFF << shift))
-                     | (static_cast<uint32_t>(val) << shift);
+    uint32_t new_val =
+        (old & ~(0xFFFF << shift)) | (static_cast<uint32_t>(val) << shift);
     pci_config_writel(addr, new_val);
 }
 
-/// @brief Write an 8-bit byte to PCI config space (ECAM memory-mapped, read-modify-write).
+/// @brief Write an 8-bit byte to PCI config space (ECAM memory-mapped,
+/// read-modify-write).
 /// @param addr Address built by pci_make_addr.
 /// @param val Value to write.
 inline void pci_config_writeb(uint64_t addr, uint8_t val) {
     uint32_t old = pci_config_readl(addr);
     uint32_t shift = (addr & 3) * 8;
-    uint32_t new_val = (old & ~(0xFF << shift))
-                     | (static_cast<uint32_t>(val) << shift);
+    uint32_t new_val =
+        (old & ~(0xFF << shift)) | (static_cast<uint32_t>(val) << shift);
     pci_config_writel(addr, new_val);
 }
 

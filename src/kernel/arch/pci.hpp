@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file pci.hpp
-/// @brief PCI enumeration — arch-independent interface using HAL config space access.
+/// @brief PCI enumeration — arch-independent interface using HAL config space
+/// access.
 
 #pragma once
 
@@ -29,29 +32,29 @@
 namespace arch {
 
 /// Max devices per bus
-constexpr uint8_t  PCI_MAX_DEVICES   = 32;
-constexpr uint8_t  PCI_MAX_FUNCTIONS = 8;
-constexpr uint16_t PCI_MAX_BUSES     = 256;
+constexpr uint8_t PCI_MAX_DEVICES = 32;
+constexpr uint8_t PCI_MAX_FUNCTIONS = 8;
+constexpr uint16_t PCI_MAX_BUSES = 256;
 
 /// Standard PCI config space register offsets
 enum PciRegister : uint8_t {
-    PCI_VENDOR_ID       = 0x00,
-    PCI_DEVICE_ID       = 0x02,
-    PCI_COMMAND         = 0x04,
-    PCI_STATUS          = 0x06,
-    PCI_REVISION        = 0x08,
-    PCI_PROG_IF         = 0x09,
-    PCI_SUBCLASS        = 0x0A,
-    PCI_CLASS           = 0x0B,
-    PCI_HEADER_TYPE     = 0x0E,
-    PCI_BIST            = 0x0F,
-    PCI_BAR0            = 0x10,
-    PCI_BAR1            = 0x14,
-    PCI_BAR2            = 0x18,
-    PCI_BAR3            = 0x1C,
-    PCI_BAR4            = 0x20,
-    PCI_BAR5            = 0x24,
-    PCI_SECONDARY_BUS   = 0x19,
+    PCI_VENDOR_ID = 0x00,
+    PCI_DEVICE_ID = 0x02,
+    PCI_COMMAND = 0x04,
+    PCI_STATUS = 0x06,
+    PCI_REVISION = 0x08,
+    PCI_PROG_IF = 0x09,
+    PCI_SUBCLASS = 0x0A,
+    PCI_CLASS = 0x0B,
+    PCI_HEADER_TYPE = 0x0E,
+    PCI_BIST = 0x0F,
+    PCI_BAR0 = 0x10,
+    PCI_BAR1 = 0x14,
+    PCI_BAR2 = 0x18,
+    PCI_BAR3 = 0x1C,
+    PCI_BAR4 = 0x20,
+    PCI_BAR5 = 0x24,
+    PCI_SECONDARY_BUS = 0x19,
 };
 
 /// PCI status register bits
@@ -63,33 +66,33 @@ enum PciStatus : uint16_t {
 /// PCI command register bits
 // NOLINTNEXTLINE(performance-enum-size)
 enum PciCommand : uint16_t {
-    PCI_CMD_IO_SPACE    = 1 << 0,
-    PCI_CMD_MEM_SPACE   = 1 << 1,
-    PCI_CMD_BUS_MASTER  = 1 << 2,
+    PCI_CMD_IO_SPACE = 1 << 0,
+    PCI_CMD_MEM_SPACE = 1 << 1,
+    PCI_CMD_BUS_MASTER = 1 << 2,
 };
 
 /// PCI header type flags
-constexpr uint8_t PCI_HEADER_TYPE_DEVICE  = 0x00;
-constexpr uint8_t PCI_HEADER_TYPE_BRIDGE  = 0x01;
-constexpr uint8_t PCI_HEADER_TYPE_MULTI   = 0x80;
+constexpr uint8_t PCI_HEADER_TYPE_DEVICE = 0x00;
+constexpr uint8_t PCI_HEADER_TYPE_BRIDGE = 0x01;
+constexpr uint8_t PCI_HEADER_TYPE_MULTI = 0x80;
 
 /// Capability pointer offset (for header type 0)
-constexpr uint8_t PCI_CAP_PTR         = 0x34;
+constexpr uint8_t PCI_CAP_PTR = 0x34;
 
 /// Capability IDs
-constexpr uint8_t PCI_CAP_ID_MSI      = 0x05;
-constexpr uint8_t PCI_CAP_ID_MSIX     = 0x11;
+constexpr uint8_t PCI_CAP_ID_MSI = 0x05;
+constexpr uint8_t PCI_CAP_ID_MSIX = 0x11;
 
 /// MSI Message Control register bits
-constexpr uint16_t PCI_MSI_CTRL_ENABLE     = 1 << 0;
-constexpr uint16_t PCI_MSI_CTRL_MMC_MASK   = 0x0E;  // bits 3:1
-constexpr uint16_t PCI_MSI_CTRL_MME_MASK   = 0x70;  // bits 6:4
-constexpr uint16_t PCI_MSI_CTRL_64BIT      = 1 << 7;
-constexpr uint16_t PCI_MSI_CTRL_PVM        = 1 << 8;
+constexpr uint16_t PCI_MSI_CTRL_ENABLE = 1 << 0;
+constexpr uint16_t PCI_MSI_CTRL_MMC_MASK = 0x0E; // bits 3:1
+constexpr uint16_t PCI_MSI_CTRL_MME_MASK = 0x70; // bits 6:4
+constexpr uint16_t PCI_MSI_CTRL_64BIT = 1 << 7;
+constexpr uint16_t PCI_MSI_CTRL_PVM = 1 << 8;
 
 /// MSI-X Message Control register bits
-constexpr uint16_t PCI_MSIX_CTRL_ENABLE    = 1 << 15;
-constexpr uint16_t PCI_MSIX_CTRL_FUNCMASK  = 1 << 14;
+constexpr uint16_t PCI_MSIX_CTRL_ENABLE = 1 << 15;
+constexpr uint16_t PCI_MSIX_CTRL_FUNCMASK = 1 << 14;
 constexpr uint16_t PCI_MSIX_CTRL_TSIZE_MASK = 0x7FF;
 
 /// MSI address: xAPIC base (must be written to device's Message Address reg)
@@ -101,30 +104,30 @@ constexpr uint16_t PCI_MSI_DATA_FIXED = 0x0000;
 /// BAR type
 enum class PciBarType : uint8_t {
     MEMORY_32 = 0,
-    IO        = 1,
+    IO = 1,
     MEMORY_64 = 2,
 };
 
 /// Parsed BAR descriptor
 struct PciBar {
-    uint64_t    address;
-    uint64_t    size;
-    PciBarType  type;
-    bool        prefetchable;
+    uint64_t address;
+    uint64_t size;
+    PciBarType type;
+    bool prefetchable;
 };
 
 /// Discovered device info
 struct PciDeviceInfo {
-    PciBdf  bdf;
+    PciBdf bdf;
     uint16_t vendor_id;
     uint16_t device_id;
-    uint8_t  class_code;
-    uint8_t  subclass;
-    uint8_t  prog_if;
-    uint8_t  revision;
-    uint8_t  header_type;
-    PciBar   bars[6];
-    uint8_t  bar_count;
+    uint8_t class_code;
+    uint8_t subclass;
+    uint8_t prog_if;
+    uint8_t revision;
+    uint8_t header_type;
+    PciBar bars[6];
+    uint8_t bar_count;
 };
 
 // --- Unified (arch-independent) config space access wrappers ---
@@ -149,14 +152,14 @@ inline bool pci_device_exists(PciBdf bdf) {
 constexpr size_t PCI_MAX_DEVICES_FOUND = 128;
 
 size_t pci_scan_all();
-const PciDeviceInfo* pci_devices();
+const PciDeviceInfo *pci_devices();
 size_t pci_device_count();
-const PciDeviceInfo* pci_find_device(uint8_t class_code, uint8_t subclass);
-void pci_parse_bars(PciDeviceInfo& info);
+const PciDeviceInfo *pci_find_device(uint8_t class_code, uint8_t subclass);
+void pci_parse_bars(PciDeviceInfo &info);
 PciDeviceInfo pci_read_device_info(PciBdf bdf);
 
 void pci_dump_tree();
-void pci_print_tree(char* buffer, size_t size);
+void pci_print_tree(char *buffer, size_t size);
 
 // --- Capabilities & MSI/MSI-X ---
 

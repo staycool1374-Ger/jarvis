@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -33,17 +35,18 @@ constexpr size_t IPV4_MAX_HEADER_LEN = 60;
 struct Ipv4Addr {
     uint8_t addr[IPV4_ADDR_LEN]; ///< Octets in network order.
 
-    bool operator==(const Ipv4Addr& o) const {
+    bool operator==(const Ipv4Addr &o) const {
         for (size_t i = 0; i < IPV4_ADDR_LEN; ++i)
-            if (addr[i] != o.addr[i]) return false;
+            if (addr[i] != o.addr[i])
+                return false;
         return true;
     }
 
     uint32_t as_u32() const {
-        return (static_cast<uint32_t>(addr[0]) << 24)
-             | (static_cast<uint32_t>(addr[1]) << 16)
-             | (static_cast<uint32_t>(addr[2]) << 8)
-             | static_cast<uint32_t>(addr[3]);
+        return (static_cast<uint32_t>(addr[0]) << 24) |
+               (static_cast<uint32_t>(addr[1]) << 16) |
+               (static_cast<uint32_t>(addr[2]) << 8) |
+               static_cast<uint32_t>(addr[3]);
     }
 
     static Ipv4Addr from_u32(uint32_t v) {
@@ -58,13 +61,13 @@ struct Ipv4Addr {
 
 /// @brief IPv4 header (20 bytes, no options).
 struct Ipv4Header {
-    uint8_t  ver_ihl;      ///< Version (4) | header length (5 = 20 bytes).
-    uint8_t  dscp_ecn;     ///< DSCP + ECN.
+    uint8_t ver_ihl;       ///< Version (4) | header length (5 = 20 bytes).
+    uint8_t dscp_ecn;      ///< DSCP + ECN.
     uint16_t total_length; ///< Total packet length (big-endian).
     uint16_t ident;        ///< Identification (big-endian).
     uint16_t flags_frag;   ///< Flags + fragment offset (big-endian).
-    uint8_t  ttl;          ///< Time to live.
-    uint8_t  protocol;     ///< Protocol (1 = ICMP, 6 = TCP, 17 = UDP).
+    uint8_t ttl;           ///< Time to live.
+    uint8_t protocol;      ///< Protocol (1 = ICMP, 6 = TCP, 17 = UDP).
     uint16_t checksum;     ///< Header checksum (big-endian).
     Ipv4Addr src;          ///< Source address.
     Ipv4Addr dst;          ///< Destination address.
@@ -72,20 +75,21 @@ struct Ipv4Header {
 
 /// @brief IPv4 protocol number constants.
 enum Ipv4Protocol : uint8_t {
-    IP_PROTO_ICMP = 1,  ///< ICMP.
-    IP_PROTO_TCP  = 6,  ///< TCP.
-    IP_PROTO_UDP  = 17, ///< UDP.
+    IP_PROTO_ICMP = 1, ///< ICMP.
+    IP_PROTO_TCP = 6,  ///< TCP.
+    IP_PROTO_UDP = 17, ///< UDP.
 };
 
 /// @brief Compute an IPv4 header one's-complement checksum.
 /// @return Big-endian checksum value.
-inline uint16_t ipv4_checksum(const Ipv4Header* hdr) {
+inline uint16_t ipv4_checksum(const Ipv4Header *hdr) {
     uint32_t sum = 0;
-    auto* words = reinterpret_cast<const uint16_t*>(hdr);
+    auto *words = reinterpret_cast<const uint16_t *>(hdr);
     for (int i = 0; i < 10; ++i) { // first 20 bytes = 10 half-words
         sum += words[i];
     }
-    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+    while (sum >> 16)
+        sum = (sum & 0xFFFF) + (sum >> 16);
     return static_cast<uint16_t>(~sum & 0xFFFF);
 }
 

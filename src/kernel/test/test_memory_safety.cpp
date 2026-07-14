@@ -42,8 +42,9 @@ JARVIS_TEST(memory_safety_mempool_free_null, "PRE: none | POST: none") {
 // Input: MemPool::alloc(4481)
 // Expect: Returns nullptr
 // Depends: MemPool
-JARVIS_TEST(memory_safety_mempool_alloc_large_rejected, "PRE: none | POST: none") {
-    void* p = MemPool::alloc(4481);
+JARVIS_TEST(memory_safety_mempool_alloc_large_rejected,
+            "PRE: none | POST: none") {
+    void *p = MemPool::alloc(4481);
     JARVIS_ASSERT(p == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -56,11 +57,11 @@ JARVIS_TEST(memory_safety_mempool_alloc_large_rejected, "PRE: none | POST: none"
 // Depends: MemPool
 JARVIS_TEST(memory_safety_mempool_exact_edge_sizes, "PRE: none | POST: none") {
     static const size_t sizes[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4480};
-    void* ptrs[9];
+    void *ptrs[9];
     for (size_t i = 0; i < 9; ++i) {
         ptrs[i] = MemPool::alloc(sizes[i]);
-        JARVIS_ASSERT_FMT(ptrs[i] != nullptr,
-            "MemPool::alloc(%zu) failed", sizes[i]);
+        JARVIS_ASSERT_FMT(ptrs[i] != nullptr, "MemPool::alloc(%zu) failed",
+                          sizes[i]);
     }
     for (size_t i = 0; i < 9; ++i) {
         MemPool::free(ptrs[i]);

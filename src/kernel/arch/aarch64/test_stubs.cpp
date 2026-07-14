@@ -17,7 +17,8 @@
  */
 
 /// @file test_stubs.cpp
-/// @brief Stub implementations for x86_64-specific test registrations on non-x86_64 architectures.
+/// @brief Stub implementations for x86_64-specific test registrations on
+/// non-x86_64 architectures.
 
 #if !defined(CONFIG_ARCH_X86_64)
 
@@ -25,82 +26,103 @@
 
 /// @brief Stub — PCI tests are not supported on non-x86_64 architectures.
 void register_pci_tests() {
-    kernel::Logger::info("Skipped: register_pci_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_pci_tests (not supported on this arch)");
 }
 
 /// @brief Stub — VirtIO tests are not supported on non-x86_64 architectures.
 void register_virtio_tests() {
-    kernel::Logger::info("Skipped: register_virtio_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_virtio_tests (not supported on this arch)");
 }
 
 /// @brief Stub — FPU tests are not supported on non-x86_64 architectures.
 void register_fpu_tests() {
-    kernel::Logger::info("Skipped: register_fpu_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_fpu_tests (not supported on this arch)");
 }
 
 /// @brief Stub — FPU/SSE tests are not supported on non-x86_64 architectures.
 void register_fpu_sse_tests() {
-    kernel::Logger::info("Skipped: register_fpu_sse_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_fpu_sse_tests (not supported on this arch)");
 }
 
 /// @brief Stub — FPU clone tests are not supported on non-x86_64 architectures.
 void register_fpu_clone_tests() {
-    kernel::Logger::info("Skipped: register_fpu_clone_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_fpu_clone_tests (not supported on this arch)");
 }
 
-/// @brief Stub — FPU multi-tasking tests are not supported on non-x86_64 architectures.
+/// @brief Stub — FPU multi-tasking tests are not supported on non-x86_64
+/// architectures.
 void register_fpu_multi_tests() {
-    kernel::Logger::info("Skipped: register_fpu_multi_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_fpu_multi_tests (not supported on this arch)");
 }
 
-/// @brief Stub — FPU XMM register tests are not supported on non-x86_64 architectures.
+/// @brief Stub — FPU XMM register tests are not supported on non-x86_64
+/// architectures.
 void register_fpu_xmm_all_tests() {
-    kernel::Logger::info("Skipped: register_fpu_xmm_all_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_fpu_xmm_all_tests (not supported on this arch)");
 }
 
 /// @brief Stub — Task tests are not supported on non-x86_64 architectures.
 void register_task_tests() {
-    kernel::Logger::info("Skipped: register_task_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_task_tests (not supported on this arch)");
 }
 
 /// @brief Stub — Process tests are not supported on non-x86_64 architectures.
 void register_process_tests() {
-    kernel::Logger::info("Skipped: register_process_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_process_tests (not supported on this arch)");
 }
 
 /// @brief Stub — GDT tests are not supported on non-x86_64 architectures.
 void register_gdt_tests() {
-    kernel::Logger::info("Skipped: register_gdt_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_gdt_tests (not supported on this arch)");
 }
 
 /// @brief Stub — IDT tests are not supported on non-x86_64 architectures.
 void register_idt_tests() {
-    kernel::Logger::info("Skipped: register_idt_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_idt_tests (not supported on this arch)");
 }
 
 /// @brief Stub — PIC tests are not supported on non-x86_64 architectures.
 void register_pic_tests() {
-    kernel::Logger::info("Skipped: register_pic_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_pic_tests (not supported on this arch)");
 }
 
 /// @brief Stub — RTC tests are not supported on non-x86_64 architectures.
 void register_rtc_tests() {
-    kernel::Logger::info("Skipped: register_rtc_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_rtc_tests (not supported on this arch)");
 }
 
-/// @brief Stub — Shell interaction tests are not supported on non-x86_64 architectures.
+/// @brief Stub — Shell interaction tests are not supported on non-x86_64
+/// architectures.
 void register_shell_interaction_tests() {
-    kernel::Logger::info("Skipped: register_shell_interaction_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_shell_interaction_tests (not supported on this arch)");
 }
 
-/// @brief Stub — Build-system tests are not supported on non-x86_64 architectures.
+/// @brief Stub — Build-system tests are not supported on non-x86_64
+/// architectures.
 void register_buildsystem_tests() {
-    kernel::Logger::info("Skipped: register_buildsystem_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_buildsystem_tests (not supported on this arch)");
 }
 
-/// @brief Stub — Block device tests are not supported on non-x86_64 architectures.
+/// @brief Stub — Block device tests are not supported on non-x86_64
+/// architectures.
 void register_block_device_tests() {
-    kernel::Logger::info("Skipped: register_block_device_tests (not supported on this arch)");
+    kernel::Logger::info(
+        "Skipped: register_block_device_tests (not supported on this arch)");
 }
 
 #endif // !defined(CONFIG_ARCH_X86_64)

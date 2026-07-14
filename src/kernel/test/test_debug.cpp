@@ -77,9 +77,9 @@ JARVIS_TEST(debug_task_switch_logs, "PRE: none | POST: none") {
 // Depends: kernel test framework
 void register_debug_tests() {
     Logger::info("Registering debug tests");
-// Temporarily disabled: these tests use qemu_debug_exit which kills QEMU
-// JARVIS_REGISTER_TEST(qemu_debug_exit_success);
-// JARVIS_REGISTER_TEST(qemu_debug_exit_failure);
+    // Temporarily disabled: these tests use qemu_debug_exit which kills QEMU
+    // JARVIS_REGISTER_TEST(qemu_debug_exit_success);
+    // JARVIS_REGISTER_TEST(qemu_debug_exit_failure);
     JARVIS_REGISTER_TEST(debug_write_formats_correctly);
     JARVIS_REGISTER_TEST(debug_task_switch_logs);
 }

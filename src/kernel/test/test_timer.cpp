@@ -34,7 +34,8 @@ using namespace kernel;
 // Depends: kernel::arch::Timer
 JARVIS_TEST(pit_init_sets_divisor, "PRE: iocd | POST: none") {
     uint64_t t = arch::Timer::ticks();
-    JARVIS_ASSERT_FMT(t > 0, "Timer ticks should be > 0 after boot init, got %lu", t);
+    JARVIS_ASSERT_FMT(t > 0,
+                      "Timer ticks should be > 0 after boot init, got %lu", t);
     JARVIS_TEST_PASS();
 }
 

@@ -43,37 +43,43 @@ using namespace kernel;
 JARVIS_TEST(riscv64_sv39_3level_walk) {
     uint64_t root_pa = arch::read_cr3();
     JARVIS_ASSERT_FMT(root_pa != 0, "SATP PA is 0");
-    JARVIS_ASSERT_FMT((root_pa & 0xFFF) == 0, "SATP PA not page-aligned: 0x%lx", root_pa);
+    JARVIS_ASSERT_FMT((root_pa & 0xFFF) == 0, "SATP PA not page-aligned: 0x%lx",
+                      root_pa);
 
     constexpr uint64_t VA = 0xFFFFFFC080207000ULL;
     constexpr uint64_t L0_SHIFT = 30, L1_SHIFT = 21, L2_SHIFT = 12;
     constexpr uint64_t TABLE_MASK = 0x1FF;
-    constexpr uint64_t V = 1ULL << 0, R = 1ULL << 1, W = 1ULL << 2, X = 1ULL << 3;
+    constexpr uint64_t V = 1ULL << 0, R = 1ULL << 1, W = 1ULL << 2,
+                       X = 1ULL << 3;
     constexpr uint64_t A = 1ULL << 6;
     constexpr uint64_t LEAF = R | W | X;
 
-    uint64_t* l0 = reinterpret_cast<uint64_t*>(root_pa);
+    uint64_t *l0 = reinterpret_cast<uint64_t *>(root_pa);
     size_t l0_idx = (VA >> L0_SHIFT) & TABLE_MASK;
     uint64_t l0e = l0[l0_idx];
     JARVIS_ASSERT_FMT(l0e & V, "L0 entry %zu invalid: 0x%lx", l0_idx, l0e);
-    JARVIS_ASSERT_FMT((l0e & LEAF) == 0, "L0 entry %zu has leaf bits: 0x%lx", l0_idx, l0e);
+    JARVIS_ASSERT_FMT((l0e & LEAF) == 0, "L0 entry %zu has leaf bits: 0x%lx",
+                      l0_idx, l0e);
 
     uint64_t l1_pa = (l0e & ~0xFFFULL) >> 10 << 12;
-    uint64_t* l1 = reinterpret_cast<uint64_t*>(l1_pa);
+    uint64_t *l1 = reinterpret_cast<uint64_t *>(l1_pa);
     size_t l1_idx = (VA >> L1_SHIFT) & TABLE_MASK;
     uint64_t l1e = l1[l1_idx];
     JARVIS_ASSERT_FMT(l1e & V, "L1 entry %zu invalid: 0x%lx", l1_idx, l1e);
 
     if ((l1e & LEAF) == 0) {
         uint64_t l2_pa = (l1e & ~0xFFFULL) >> 10 << 12;
-        uint64_t* l2 = reinterpret_cast<uint64_t*>(l2_pa);
+        uint64_t *l2 = reinterpret_cast<uint64_t *>(l2_pa);
         size_t l2_idx = (VA >> L2_SHIFT) & TABLE_MASK;
         uint64_t l2e = l2[l2_idx];
         JARVIS_ASSERT_FMT(l2e & V, "L2 entry %zu invalid: 0x%lx", l2_idx, l2e);
-        JARVIS_ASSERT_FMT((l2e & LEAF) != 0, "L2 entry %zu not leaf: 0x%lx", l2_idx, l2e);
-        JARVIS_ASSERT_FMT(l2e & A, "L2 entry %zu A bit not set: 0x%lx", l2_idx, l2e);
+        JARVIS_ASSERT_FMT((l2e & LEAF) != 0, "L2 entry %zu not leaf: 0x%lx",
+                          l2_idx, l2e);
+        JARVIS_ASSERT_FMT(l2e & A, "L2 entry %zu A bit not set: 0x%lx", l2_idx,
+                          l2e);
     } else {
-        JARVIS_ASSERT_FMT(l1e & A, "L1 block entry %zu A bit not set: 0x%lx", l1_idx, l1e);
+        JARVIS_ASSERT_FMT(l1e & A, "L1 block entry %zu A bit not set: 0x%lx",
+                          l1_idx, l1e);
     }
 
     JARVIS_TEST_PASS();
@@ -172,9 +178,13 @@ JARVIS_TEST(riscv64_context_save_restore) {
 ///        (sepc, user_sp, sstatus, and aligned padding).
 JARVIS_TEST(riscv64_context_sret_frame) {
     uint64_t stack[1024];
-    uint64_t* stack_top = stack + 1024;
+    uint64_t *stack_top = stack + 1024;
 
-    auto entry = []() { while (1) {} };
+    auto entry = []() {
+        while (1) {
+            arch::pause();
+        }
+    };
     constexpr uint64_t SSTATUS_SPIE = 1ULL << 5;
     uint64_t psr = SSTATUS_SPIE;
     uint64_t user_sp = 0xFFFFFFC030000000ULL;
@@ -184,7 +194,7 @@ JARVIS_TEST(riscv64_context_sret_frame) {
     JARVIS_ASSERT(stack_top < stack + 1024);
     JARVIS_ASSERT(stack_top > stack);
 
-    uint64_t* frame = stack_top;
+    uint64_t *frame = stack_top;
     uint64_t sepc_val = reinterpret_cast<uint64_t>(+entry);
     JARVIS_ASSERT_EQ(frame[19], 0ULL);
     JARVIS_ASSERT_EQ(frame[18], sepc_val);
@@ -200,11 +210,14 @@ JARVIS_TEST(riscv64_context_sret_frame) {
 JARVIS_TEST(riscv64_plic_init) {
     arch::ArchInterruptController::init();
 
-    volatile uint32_t* threshold = reinterpret_cast<volatile uint32_t*>(0x0C200000ULL);
+    volatile uint32_t *threshold =
+        reinterpret_cast<volatile uint32_t *>(0x0C200000ULL);
     uint32_t thresh_val = *threshold;
-    JARVIS_ASSERT_FMT(thresh_val == 0, "PLIC threshold not 0: 0x%x", thresh_val);
+    JARVIS_ASSERT_FMT(thresh_val == 0, "PLIC threshold not 0: 0x%x",
+                      thresh_val);
 
-    volatile uint32_t* enable = reinterpret_cast<volatile uint32_t*>(0x0C002000ULL);
+    volatile uint32_t *enable =
+        reinterpret_cast<volatile uint32_t *>(0x0C002000ULL);
     uint32_t enable_val = enable[0];
     JARVIS_ASSERT_FMT(enable_val != 0, "No PLIC interrupt sources enabled");
 
@@ -215,13 +228,16 @@ JARVIS_TEST(riscv64_plic_init) {
 JARVIS_TEST(riscv64_plic_mask_unmask) {
     arch::ArchInterruptController::mask(10);
 
-    volatile uint32_t* enable = reinterpret_cast<volatile uint32_t*>(0x0C002000ULL);
+    volatile uint32_t *enable =
+        reinterpret_cast<volatile uint32_t *>(0x0C002000ULL);
     uint32_t en = enable[0];
-    JARVIS_ASSERT_FMT((en & (1U << 10)) == 0, "IRQ 10 not masked: enable=0x%x", en);
+    JARVIS_ASSERT_FMT((en & (1U << 10)) == 0, "IRQ 10 not masked: enable=0x%x",
+                      en);
 
     arch::ArchInterruptController::unmask(10);
     en = enable[0];
-    JARVIS_ASSERT_FMT((en & (1U << 10)) != 0, "IRQ 10 not unmasked: enable=0x%x", en);
+    JARVIS_ASSERT_FMT((en & (1U << 10)) != 0,
+                      "IRQ 10 not unmasked: enable=0x%x", en);
 
     JARVIS_TEST_PASS();
 }
@@ -230,30 +246,37 @@ JARVIS_TEST(riscv64_plic_mask_unmask) {
 JARVIS_TEST(riscv64_plic_claim_complete) {
     arch::ArchInterruptController::eoi(10);
 
-    volatile uint32_t* claim = reinterpret_cast<volatile uint32_t*>(0x0C200004ULL);
+    volatile uint32_t *claim =
+        reinterpret_cast<volatile uint32_t *>(0x0C200004ULL);
     uint32_t pending = *claim;
-    JARVIS_ASSERT_FMT(pending == 0, "PLIC claim non-zero after EOI: %u", pending);
+    JARVIS_ASSERT_FMT(pending == 0, "PLIC claim non-zero after EOI: %u",
+                      pending);
 
     arch::ArchInterruptController::eoi(1);
     pending = *claim;
-    JARVIS_ASSERT_FMT(pending == 0, "PLIC claim non-zero after EOI (IRQ1): %u", pending);
+    JARVIS_ASSERT_FMT(pending == 0, "PLIC claim non-zero after EOI (IRQ1): %u",
+                      pending);
 
     JARVIS_TEST_PASS();
 }
 
 /// @brief Set a future timer via SBI ecall and verify mtime is monotonic.
 JARVIS_TEST(riscv64_sbi_timer_set_stime) {
-    uint64_t mtime;
+    uint64_t mtime{};
     asm volatile("csrr %0, time" : "=r"(mtime));
 
     uint64_t future = mtime + 100000;
-    uint64_t ret;
-    asm volatile("mv a0, %1; li a7, 0; ecall; mv %0, a0" : "=r"(ret) : "r"(future) : "a0", "a7", "memory");
+    uint64_t ret{};
+    asm volatile("mv a0, %1; li a7, 0; ecall; mv %0, a0"
+                 : "=r"(ret)
+                 : "r"(future)
+                 : "a0", "a7", "memory");
     JARVIS_ASSERT_EQ(ret, 0ULL);
 
-    uint64_t mtime2;
+    uint64_t mtime2{};
     asm volatile("csrr %0, time" : "=r"(mtime2));
-    JARVIS_ASSERT_FMT(mtime2 >= mtime, "mtime not monotonic: %lu -> %lu", mtime, mtime2);
+    JARVIS_ASSERT_FMT(mtime2 >= mtime, "mtime not monotonic: %lu -> %lu", mtime,
+                      mtime2);
 
     JARVIS_TEST_PASS();
 }
@@ -263,9 +286,13 @@ JARVIS_TEST(riscv64_timer_ticks_monotonic) {
     uint64_t prev = arch::Timer::ticks();
     for (int i = 0; i < 10; ++i) {
         uint64_t curr = arch::Timer::ticks();
-        JARVIS_ASSERT_FMT(curr >= prev, "ticks not monotonic: prev=%lu, curr=%lu", prev, curr);
+        JARVIS_ASSERT_FMT(curr >= prev,
+                          "ticks not monotonic: prev=%lu, curr=%lu", prev,
+                          curr);
         prev = curr;
-        for (int j = 0; j < 1000; ++j) { asm volatile(""); }
+        for (int j = 0; j < 1000; ++j) {
+            asm volatile("");
+        }
     }
 
     JARVIS_TEST_PASS();
@@ -275,25 +302,30 @@ JARVIS_TEST(riscv64_timer_ticks_monotonic) {
 ///        within reasonable bounds.
 JARVIS_TEST(riscv64_timer_ns_conversion) {
     uint64_t t0 = arch::Timer::ns();
-    for (int i = 0; i < 1000000; ++i) { asm volatile(""); }
+    for (int i = 0; i < 1000000; ++i) {
+        asm volatile("");
+    }
     uint64_t t1 = arch::Timer::ns();
 
     uint64_t delta = t1 - t0;
     JARVIS_ASSERT_FMT(delta > 0, "Timer delta <= 0: %lu", delta);
-    JARVIS_ASSERT_FMT(delta < 10000000000ULL, "Timer delta too large: %lu ns", delta);
+    JARVIS_ASSERT_FMT(delta < 10000000000ULL, "Timer delta too large: %lu ns",
+                      delta);
 
     JARVIS_TEST_PASS();
 }
 
 /// @brief Check MISA for F and D extensions and verify arch::has_fpu().
 JARVIS_TEST(riscv64_fpu_extension_detection) {
-    uint64_t misa;
+    uint64_t misa{};
     asm volatile("csrr %0, misa" : "=r"(misa));
 
     bool has_f = (misa & (1ULL << ('F' - 'A'))) != 0;
     bool has_d = (misa & (1ULL << ('D' - 'A'))) != 0;
-    JARVIS_ASSERT_FMT(has_f, "MISA F extension (bit %u) not set: 0x%lx", (unsigned)('F' - 'A'), misa);
-    JARVIS_ASSERT_FMT(has_d, "MISA D extension (bit %u) not set: 0x%lx", (unsigned)('D' - 'A'), misa);
+    JARVIS_ASSERT_FMT(has_f, "MISA F extension (bit %u) not set: 0x%lx",
+                      (unsigned)('F' - 'A'), misa);
+    JARVIS_ASSERT_FMT(has_d, "MISA D extension (bit %u) not set: 0x%lx",
+                      (unsigned)('D' - 'A'), misa);
 
     arch::CpuIdResult cpuid_result = arch::cpuid(0);
     (void)cpuid_result;
@@ -308,27 +340,31 @@ JARVIS_TEST(riscv64_fpu_extension_detection) {
 JARVIS_TEST(riscv64_sbi_console_putchar) {
     arch::Serial::putchar('R');
 
-    volatile uint8_t* lsr = reinterpret_cast<volatile uint8_t*>(0x10000005ULL);
+    volatile uint8_t *lsr = reinterpret_cast<volatile uint8_t *>(0x10000005ULL);
     uint8_t lsr_val = *lsr;
-    JARVIS_ASSERT_FMT(lsr_val & (1 << 6), "TEMT not set after putchar: LSR=0x%x", lsr_val);
+    JARVIS_ASSERT_FMT(lsr_val & (1 << 6),
+                      "TEMT not set after putchar: LSR=0x%x", lsr_val);
 
     for (char c = 0x20; c <= 0x7E; ++c) {
         arch::Serial::putchar(c);
     }
 
     lsr_val = *lsr;
-    JARVIS_ASSERT_FMT(lsr_val & (1 << 6), "TEMT not set after bulk puts: LSR=0x%x", lsr_val);
+    JARVIS_ASSERT_FMT(lsr_val & (1 << 6),
+                      "TEMT not set after bulk puts: LSR=0x%x", lsr_val);
 
     JARVIS_TEST_PASS();
 }
 
-/// @brief Read vendor and device ID from PCI bus 0 device 0 function 0 via ECAM.
+/// @brief Read vendor and device ID from PCI bus 0 device 0 function 0 via
+/// ECAM.
 JARVIS_TEST(riscv64_pci_ecam_read) {
     arch::PciBdf bdf{0, 0, 0};
     uint16_t vendor = arch::pci_read_vendor(bdf);
     uint16_t device = arch::pci_read_device(bdf);
 
-    JARVIS_ASSERT_FMT(vendor != 0xFFFF, "PCI Vendor ID 0xFFFF (no device at 0:0:0)");
+    JARVIS_ASSERT_FMT(vendor != 0xFFFF,
+                      "PCI Vendor ID 0xFFFF (no device at 0:0:0)");
     JARVIS_ASSERT_FMT(device != 0x0000, "PCI Device ID 0x0000 at 0:0:0");
 
     JARVIS_TEST_PASS();
@@ -343,15 +379,19 @@ JARVIS_TEST(riscv64_rtc_mtime_read) {
     arch::RTC::read_time(&t1);
 
     uint16_t year1 = t1.tm_year + 1900;
-    JARVIS_ASSERT_FMT(year1 >= 2025 && year1 <= 2035, "RTC year out of range: %u", year1);
+    JARVIS_ASSERT_FMT(year1 >= 2025 && year1 <= 2035,
+                      "RTC year out of range: %u", year1);
 
-    for (int i = 0; i < 100000; ++i) { asm volatile(""); }
+    for (int i = 0; i < 100000; ++i) {
+        asm volatile("");
+    }
 
     arch::tm t2{};
     arch::RTC::read_time(&t2);
     uint64_t secs1 = t1.tm_hour * 3600 + t1.tm_min * 60 + t1.tm_sec;
     uint64_t secs2 = t2.tm_hour * 3600 + t2.tm_min * 60 + t2.tm_sec;
-    JARVIS_ASSERT_FMT(secs2 >= secs1, "RTC time regressed: %lu -> %lu", secs1, secs2);
+    JARVIS_ASSERT_FMT(secs2 >= secs1, "RTC time regressed: %lu -> %lu", secs1,
+                      secs2);
 
     JARVIS_TEST_PASS();
 }
@@ -360,9 +400,10 @@ JARVIS_TEST(riscv64_rtc_mtime_read) {
 JARVIS_TEST(riscv64_satp_csr) {
     uint64_t satp_pa = arch::read_cr3();
     JARVIS_ASSERT_FMT(satp_pa != 0, "SATP PA is 0");
-    JARVIS_ASSERT_FMT((satp_pa & 0xFFF) == 0, "SATP PA not page-aligned: 0x%lx", satp_pa);
+    JARVIS_ASSERT_FMT((satp_pa & 0xFFF) == 0, "SATP PA not page-aligned: 0x%lx",
+                      satp_pa);
 
-    uint64_t satp;
+    uint64_t satp{};
     asm volatile("csrr %0, satp" : "=r"(satp));
     uint64_t mode = (satp >> 60) & 0xF;
     JARVIS_ASSERT_FMT(mode == 8, "SATP MODE not Sv39: %lu (expected 8)", mode);
@@ -379,14 +420,14 @@ JARVIS_TEST(riscv64_satp_csr) {
 /// @brief Read vendor ID, arch ID, and implementation ID CSRs — verify
 ///        marchid is non-zero.
 JARVIS_TEST(riscv64_boot_mvendorid) {
-    uint64_t mvendorid;
+    uint64_t mvendorid{};
     asm volatile("csrr %0, mvendorid" : "=r"(mvendorid));
 
-    uint64_t marchid;
+    uint64_t marchid{};
     asm volatile("csrr %0, marchid" : "=r"(marchid));
     JARVIS_ASSERT_FMT(marchid != 0, "marchid is 0");
 
-    uint64_t mimpid;
+    uint64_t mimpid{};
     asm volatile("csrr %0, mimpid" : "=r"(mimpid));
 
     (void)mvendorid;
@@ -398,13 +439,15 @@ JARVIS_TEST(riscv64_boot_mvendorid) {
 /// @brief Verify that U-mode ecall (bit 8) and timer interrupts (bit 5)
 ///        are delegated to S-mode via medeleg/mideleg.
 JARVIS_TEST(riscv64_medeleg_selected) {
-    uint64_t medeleg;
+    uint64_t medeleg{};
     asm volatile("csrr %0, medeleg" : "=r"(medeleg));
-    JARVIS_ASSERT_FMT(medeleg & (1ULL << 8), "medeleg[8] (ecall U-mode) not set: 0x%lx", medeleg);
+    JARVIS_ASSERT_FMT(medeleg & (1ULL << 8),
+                      "medeleg[8] (ecall U-mode) not set: 0x%lx", medeleg);
 
-    uint64_t mideleg;
+    uint64_t mideleg{};
     asm volatile("csrr %0, mideleg" : "=r"(mideleg));
-    JARVIS_ASSERT_FMT(mideleg & (1ULL << 5), "mideleg[5] (timer) not set: 0x%lx", mideleg);
+    JARVIS_ASSERT_FMT(mideleg & (1ULL << 5),
+                      "mideleg[5] (timer) not set: 0x%lx", mideleg);
 
     JARVIS_TEST_PASS();
 }

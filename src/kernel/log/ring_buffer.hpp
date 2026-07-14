@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,8 +31,8 @@ namespace log {
 
 /// @brief Lock-free single-producer single-consumer character ring buffer.
 class RingBuffer {
-public:
-    static constexpr size_t BUFFER_SIZE = 32768;  ///< Total capacity in bytes.
+  public:
+    static constexpr size_t BUFFER_SIZE = 32768; ///< Total capacity in bytes.
 
     /// @brief Write a single character (discards if full).
     void putchar(char c) {
@@ -43,13 +45,14 @@ public:
     }
 
     /// @brief Write a null-terminated string.
-    void puts(const char* s) {
-        while (*s) putchar(*s++);
+    void puts(const char *s) {
+        while (*s)
+            putchar(*s++);
     }
 
     /// @brief Read up to @p size bytes into @p dst.
     /// @return number of bytes read.
-    size_t read(char* dst, size_t size) {
+    size_t read(char *dst, size_t size) {
         size_t r = atomic_load(&read_pos_, __ATOMIC_RELAXED);
         size_t w = atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
         size_t written = 0;
@@ -64,7 +67,8 @@ public:
 
     /// @brief Discard all buffered data.
     void clear() {
-        atomic_store(&read_pos_, atomic_load(&write_pos_, __ATOMIC_RELAXED), __ATOMIC_RELEASE);
+        atomic_store(&read_pos_, atomic_load(&write_pos_, __ATOMIC_RELAXED),
+                     __ATOMIC_RELEASE);
     }
 
     /// @brief Check whether the buffer contains no data.
@@ -73,12 +77,13 @@ public:
                atomic_load(&write_pos_, __ATOMIC_ACQUIRE);
     }
 
-    RingBuffer() : buf_{} {}
+    RingBuffer() : buf_{} {
+    }
 
-private:
-    char buf_[BUFFER_SIZE];                             ///< Data storage.
-    alignas(64) volatile size_t write_pos_ = 0;         ///< Producer index.
-    alignas(64) volatile size_t read_pos_ = 0;          ///< Consumer index.
+  private:
+    char buf_[BUFFER_SIZE];                     ///< Data storage.
+    alignas(64) volatile size_t write_pos_ = 0; ///< Producer index.
+    alignas(64) volatile size_t read_pos_ = 0;  ///< Consumer index.
 };
 
 /// @brief Global kernel log ring buffer.

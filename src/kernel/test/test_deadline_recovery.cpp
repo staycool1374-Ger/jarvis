@@ -39,7 +39,7 @@ using namespace kernel;
 // Input: Helper task created, then killed via the manual KILL sequence.
 // Expect: cleanup() and remove_task() complete without crash/assert.
 TEST_CLASS(DeadlineActionKillCleansUp) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -58,7 +58,7 @@ TEST_CLASS(DeadlineActionKillCleansUp) {
 //        with deadline in the past.  on_tick() fires.
 // Expect: Only the valid task has deadline_miss_count advanced.
 TEST_CLASS(DeadlineDetectionMagicCheck) {
-    auto* valid = TaskControlBlock::create([](){}, 10, 10);
+    auto *valid = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(valid != nullptr);
     valid->base_priority = 10;
     valid->priority = 10;
@@ -70,7 +70,7 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
         valid->state = TaskState::BLOCKED;
     }
 
-    auto* corrupt = TaskControlBlock::create([](){}, 10, 10);
+    auto *corrupt = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(corrupt != nullptr);
     corrupt->base_priority = 10;
     corrupt->priority = 10;
@@ -148,7 +148,7 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
 // Input: Current task's deadline/period fields manipulated, then on_tick().
 // Expect: deadline_miss_count advances only in case 1.
 TEST_CLASS(DeadlineDetectionMcdcCoverage) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
     // Save original fields for restore at end
@@ -261,7 +261,7 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
 //        to simulate the action=4 notification path.
 // Expect: monitor->pending_signals has SIGUSR1 set.
 TEST_CLASS(DeadlineActionNotifyMonitor) {
-    auto* monitor = TaskControlBlock::create([](){}, 10, 10);
+    auto *monitor = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(monitor != nullptr);
     monitor->base_priority = 10;
     monitor->priority = 10;
@@ -269,13 +269,12 @@ TEST_CLASS(DeadlineActionNotifyMonitor) {
 
     // Simulate the action=4 notification path: find and signal the monitor
     uint64_t monitor_pid = monitor->id;
-    auto* found = Scheduler::find_task(monitor_pid);
+    auto *found = Scheduler::find_task(monitor_pid);
     CT_ASSERT(found == monitor);
     CT_ASSERT(found->magic == TaskControlBlock::TCB_MAGIC);
     CT_ASSERT(found->state != TaskState::TERMINATED);
 
-    found->pending_signals |=
-        (1ULL << static_cast<uint64_t>(Signal::SIGUSR1));
+    found->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::SIGUSR1));
 
     // Verify signal was delivered
     CT_ASSERT(found->pending_signals &

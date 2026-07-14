@@ -63,7 +63,7 @@ JARVIS_TEST(virtio_not_virtio_device, "PRE: iocd | POST: none") {
 // Expect: Returns nullptr
 // Depends: arch::pci_scan_all, arch::virtio_find_device
 JARVIS_TEST(virtio_blk_probe_no_device, "PRE: iocd | POST: none") {
-    auto* drv = kernel::block::VirtioBlkDriver::probe();
+    auto *drv = kernel::block::VirtioBlkDriver::probe();
     JARVIS_ASSERT(drv == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -96,10 +96,10 @@ JARVIS_TEST(virtio_init_transport_noop, "PRE: iocd | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies a virtio-net device can be reset via the status register.
-// Finds the virtio-net device, writes RESET status, confirms device acknowledges.
-// Input: arch::virtio_find_device(VIRTIO_DEVICE_NET), virtio_write_status(RESET)
-// Expect: Device status reads back as RESET
-// Depends: arch::virtio_find_device, arch::virtio_write/read_status
+// Finds the virtio-net device, writes RESET status, confirms device
+// acknowledges. Input: arch::virtio_find_device(VIRTIO_DEVICE_NET),
+// virtio_write_status(RESET) Expect: Device status reads back as RESET Depends:
+// arch::virtio_find_device, arch::virtio_write/read_status
 JARVIS_TEST(virtio_device_reset, "PRE: iocd | POST: none") {
     arch::VirtioTransport transport;
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
@@ -123,7 +123,8 @@ JARVIS_TEST(virtio_feature_negotiation, "PRE: iocd | POST: none") {
     bool found = arch::virtio_find_device(arch::VIRTIO_DEVICE_NET, transport);
     JARVIS_ASSERT(found);
     arch::virtio_init_transport(transport);
-    bool ok = arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
+    bool ok =
+        arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
     JARVIS_ASSERT(ok);
     arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
     JARVIS_TEST_PASS();
@@ -143,18 +144,24 @@ JARVIS_TEST(virtio_queue_configuration, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(found);
     arch::virtio_init_transport(transport);
     arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
-    // Allocate physically contiguous pages for descriptor, avail, and used rings
+    // Allocate physically contiguous pages for descriptor, avail, and used
+    // rings
     constexpr uint16_t QSIZE = 256;
     uint64_t desc_phys = PMM::alloc_contiguous(
-        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(desc_phys != 0);
     uint64_t avail_phys = PMM::alloc_contiguous(
-        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(avail_phys != 0);
     uint64_t used_phys = PMM::alloc_contiguous(
-        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) +
+         arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(used_phys != 0);
-    bool ok = arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys, avail_phys, used_phys);
+    bool ok = arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys,
+                                       avail_phys, used_phys);
     JARVIS_ASSERT(ok);
     arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
     PMM::free_page(desc_phys);
@@ -179,15 +186,20 @@ JARVIS_TEST(virtio_guest_notify, "PRE: iocd | POST: none") {
     arch::virtio_negotiate_features(transport, arch::VIRTIO_F_VERSION_1);
     constexpr uint16_t QSIZE = 64;
     uint64_t desc_phys = PMM::alloc_contiguous(
-        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (QSIZE * sizeof(arch::VirtqDesc) + arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(desc_phys != 0);
     uint64_t avail_phys = PMM::alloc_contiguous(
-        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (sizeof(arch::VirtqAvail) + QSIZE * 2 + arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(avail_phys != 0);
     uint64_t used_phys = PMM::alloc_contiguous(
-        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE);
+        (sizeof(arch::VirtqUsed) + QSIZE * sizeof(arch::VirtqUsedElem) +
+         arch::PAGE_SIZE - 1) /
+        arch::PAGE_SIZE);
     JARVIS_ASSERT(used_phys != 0);
-    arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys, avail_phys, used_phys);
+    arch::virtio_setup_queue(transport, 0, QSIZE, desc_phys, avail_phys,
+                             used_phys);
     arch::virtio_notify(transport, 0);
     arch::virtio_write_status(transport, arch::VIRTIO_STATUS_RESET);
     PMM::free_page(desc_phys);

@@ -28,18 +28,20 @@ namespace arch {
 /// @return Seconds since 1970-01-01 (Unix epoch), or 0 if frequency is unknown.
 /// @note Uses CNTPCT_EL0 for the counter and CNTFRQ_EL0 for the tick rate.
 uint64_t RTC::read_seconds() {
-    uint64_t cnt;
+    uint64_t cnt{};
     asm volatile("mrs %0, cntpct_el0" : "=r"(cnt));
-    uint64_t freq;
+    uint64_t freq{};
     asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
-    if (freq == 0) return 0;
+    if (freq == 0)
+        return 0;
     return cnt / freq;
 }
 
 /// @brief Read and decompose the current time into a tm structure.
 /// @param[out] out Pointer to tm struct to fill. If null, returns immediately.
-void RTC::read_time(tm* out) {
-    if (!out) return;
+void RTC::read_time(tm *out) {
+    if (!out)
+        return;
     uint64_t secs = read_seconds();
 
     uint64_t days = secs / 86400;
@@ -58,13 +60,16 @@ void RTC::read_time(tm* out) {
     }
     out->tm_year = y - 1900;
 
-    static const uint8_t mdays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+    static const uint8_t mdays[12] = {31, 28, 31, 30, 31, 30,
+                                      31, 31, 30, 31, 30, 31};
     bool leap = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0));
     int m = 0;
     for (; m < 12; ++m) {
         uint8_t d = mdays[m];
-        if (m == 1 && leap) d = 29;
-        if (days < d) break;
+        if (m == 1 && leap)
+            d = 29;
+        if (days < d)
+            break;
         days -= d;
     }
     out->tm_mon = m;

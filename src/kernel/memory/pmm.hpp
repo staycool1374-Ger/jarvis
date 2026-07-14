@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file pmm.hpp
-/// @brief Physical Memory Manager — bitmap-based page allocator with owner tracking.
+/// @brief Physical Memory Manager — bitmap-based page allocator with owner
+/// tracking.
 
 #pragma once
 
@@ -31,39 +34,41 @@ namespace kernel {
 /// @note All physical page allocation and deallocation goes through PMM.
 ///       Tracks USER vs KERNEL page ownership for safety in free_user_pages.
 class PMM {
-public:
+  public:
     /// @brief Initialize the physical memory manager with a bitmap.
     /// @param mem_size Total physical memory size in bytes.
     /// @param kernel_start Start of kernel image in physical memory.
     /// @param kernel_end End of kernel image in physical memory.
     static void init(uint64_t mem_size, uint64_t kernel_start,
-        uint64_t kernel_end);
+                     uint64_t kernel_end);
     /// @brief Initialize with error code.
     /// @return PmmError code.
     static errors::PmmError init_err(uint64_t mem_size, uint64_t kernel_start,
-        uint64_t kernel_end);
+                                     uint64_t kernel_end);
 
     /// @brief Allocates a single 4 KiB page (KERNEL ownership).
     static uint64_t alloc_page();
     /// @brief Allocates a single 4 KiB page (KERNEL ownership) with error code.
     /// @param[out] out_phys_addr Physical address of allocated page.
     /// @return PmmError code.
-    static errors::PmmError alloc_page_err(uint64_t& out_phys_addr);
+    static errors::PmmError alloc_page_err(uint64_t &out_phys_addr);
 
     /// @brief Allocates a contiguous block of pages (KERNEL ownership).
     static uint64_t alloc_contiguous(size_t count);
-    /// @brief Allocates a contiguous block of pages (KERNEL ownership) with error code.
+    /// @brief Allocates a contiguous block of pages (KERNEL ownership) with
+    /// error code.
     /// @param count Number of contiguous pages to allocate.
     /// @param[out] out_phys_addr Physical address of first page.
     /// @return PmmError code.
-    static errors::PmmError alloc_contiguous_err(size_t count, uint64_t& out_phys_addr);
+    static errors::PmmError alloc_contiguous_err(size_t count,
+                                                 uint64_t &out_phys_addr);
 
     /// @brief Allocates a single 4 KiB page (USER ownership).
     static uint64_t alloc_user_page();
     /// @brief Allocates a single 4 KiB page (USER ownership) with error code.
     /// @param[out] out_phys_addr Physical address of allocated page.
     /// @return PmmError code.
-    static errors::PmmError alloc_user_page_err(uint64_t& out_phys_addr);
+    static errors::PmmError alloc_user_page_err(uint64_t &out_phys_addr);
 
     /// @brief Allocates contiguous pages (USER ownership).
     static uint64_t alloc_user_contiguous(size_t count);
@@ -71,7 +76,8 @@ public:
     /// @param count Number of contiguous pages to allocate.
     /// @param[out] out_phys_addr Physical address of first page.
     /// @return PmmError code.
-    static errors::PmmError alloc_user_contiguous_err(size_t count, uint64_t& out_phys_addr);
+    static errors::PmmError alloc_user_contiguous_err(size_t count,
+                                                      uint64_t &out_phys_addr);
 
     /// @brief Allocates a single 4 KiB page for page tables (KERNEL
     /// ownership, from reserved low-memory pool).
@@ -79,7 +85,7 @@ public:
     /// @brief Allocates a single 4 KiB page for page tables with error code.
     /// @param[out] out_phys_addr Physical address of allocated page table page.
     /// @return PmmError code.
-    static errors::PmmError alloc_page_table_err(uint64_t& out_phys_addr);
+    static errors::PmmError alloc_page_table_err(uint64_t &out_phys_addr);
 
     /// @brief Frees a page regardless of ownership.
     static void free_page(uint64_t phys_addr);
@@ -90,11 +96,13 @@ public:
 
     /// @brief Returns true if the page was allocated as USER ownership.
     static bool is_user_page(uint64_t phys_addr);
-    /// @brief Returns true if the page was allocated as USER ownership with error code.
+    /// @brief Returns true if the page was allocated as USER ownership with
+    /// error code.
     /// @param phys_addr Physical address to check.
     /// @param[out] out_is_user Output: true if user page.
     /// @return PmmError code.
-    static errors::PmmError is_user_page_err(uint64_t phys_addr, bool& out_is_user);
+    static errors::PmmError is_user_page_err(uint64_t phys_addr,
+                                             bool &out_is_user);
 
     /// @brief Return the amount of free physical memory in bytes.
     static uint64_t free_memory() noexcept {
@@ -109,31 +117,41 @@ public:
     /// Should try to free memory.
     /// @return true if memory may have been freed (caller should retry).
     using OOMHandler = bool (*)();
-    /// @brief Install an OOM handler that the allocator calls when pages are exhausted.
+    /// @brief Install an OOM handler that the allocator calls when pages are
+    /// exhausted.
     /// @param h Function pointer; return true if memory may have been freed.
-    static void set_oom_handler(OOMHandler h) { oom_handler_ = h; }
+    static void set_oom_handler(OOMHandler h) {
+        oom_handler_ = h;
+    }
     /// @brief Get the currently installed OOM handler.
     /// @return Function pointer, or nullptr if none.
-    static OOMHandler get_oom_handler() { return oom_handler_; }
+    static OOMHandler get_oom_handler() {
+        return oom_handler_;
+    }
 
     /// @name Test-isolation helpers
     /// @brief Expose internal bitmaps for snapshot/restore.
     /// @return Pointer to the allocation bitmap.
-    static uint8_t* bitmap_ptr() {
+    static uint8_t *bitmap_ptr() {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        return reinterpret_cast<uint8_t*>(bitmap_);
+        return reinterpret_cast<uint8_t *>(bitmap_);
     }
     /// @brief Return pointer to the owner-tracking bitmap.
-    static uint8_t* owner_bitmap_ptr() {
+    static uint8_t *owner_bitmap_ptr() {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        return reinterpret_cast<uint8_t*>(owner_bitmap_);
+        return reinterpret_cast<uint8_t *>(owner_bitmap_);
     }
     /// @brief Return size of each bitmap in bytes.
-    static uint64_t bitmap_bytes()          { return bitmap_size_; }
-    /// @brief Return mutable reference to the free-page counter (for snapshot/restore).
-    static uint64_t& free_pages_ref()       { return free_pages_; }
+    static uint64_t bitmap_bytes() {
+        return bitmap_size_;
+    }
+    /// @brief Return mutable reference to the free-page counter (for
+    /// snapshot/restore).
+    static uint64_t &free_pages_ref() {
+        return free_pages_;
+    }
 
-private:
+  private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
 
     static constinit uint64_t total_pages_;

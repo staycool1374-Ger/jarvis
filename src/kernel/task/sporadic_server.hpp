@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -40,32 +42,36 @@ namespace task {
 ///
 /// All times are in integer ticks.  No libc, no FP, no dynamic allocation.
 class SporadicServer {
-public:
+  public:
     /// @brief Maximum number of simultaneously pending replenishments.
-    /// Sufficient for all practical cases: at most one replenishment per period,
-    /// and the queue drains in T ticks.
+    /// Sufficient for all practical cases: at most one replenishment per
+    /// period, and the queue drains in T ticks.
     static constexpr uint64_t MAX_REPLENISHMENTS = 8;
 
     /// @brief A single scheduled replenishment event.
     struct Replenishment {
-        uint64_t time;    ///< System tick when this replenishment fires.
-        uint64_t amount;  ///< Budget (ticks) to restore.
+        uint64_t time;   ///< System tick when this replenishment fires.
+        uint64_t amount; ///< Budget (ticks) to restore.
     };
 
     /// @brief Server execution state.
     enum State : uint8_t {
-        IDLE      = 0,   ///< No pending work; budget is fully available.
-        ACTIVE    = 1,   ///< Currently executing aperiodic work.
-        EXHAUSTED = 2,   ///< Budget hit zero; server runs at background priority.
+        IDLE = 0,      ///< No pending work; budget is fully available.
+        ACTIVE = 1,    ///< Currently executing aperiodic work.
+        EXHAUSTED = 2, ///< Budget hit zero; server runs at background priority.
     };
 
     /// @brief Initialises the server parameters.
     /// @param budget_c           Execution budget C (in ticks).
-    /// @param period_t           Replenishment period T (in ticks, must be > 0).
-    /// @param bg_prio            Priority level when budget is exhausted (lower = less urgent).
-    /// @param budget_granularity Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
+    /// @param period_t           Replenishment period T (in ticks, must be >
+    /// 0).
+    /// @param bg_prio            Priority level when budget is exhausted (lower
+    /// = less urgent).
+    /// @param budget_granularity Ticks per budget unit (default:
+    /// CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
     void init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,
-              uint64_t budget_granularity = CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
+              uint64_t budget_granularity =
+                  CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
 
     // ---- Event interface ----
 
@@ -91,65 +97,84 @@ public:
 
     /// @brief Processes all due replenishments at the given tick.
     /// @param now  Current system tick.
-    /// Restores budget for every Replenishment whose time <= now and transitions
-    /// the server back to ACTIVE if budget becomes positive.
+    /// Restores budget for every Replenishment whose time <= now and
+    /// transitions the server back to ACTIVE if budget becomes positive.
     void process_replenishments(uint64_t now) noexcept;
 
     // ---- Queries ----
 
     /// @return true if the server has any remaining budget (> 0).
-    bool has_budget() const noexcept { return budget_remaining_ > 0; }
+    bool has_budget() const noexcept {
+        return budget_remaining_ > 0;
+    }
 
-    /// @return Current effective priority (background if exhausted, normal otherwise).
+    /// @return Current effective priority (background if exhausted, normal
+    /// otherwise).
     uint64_t current_priority() const noexcept {
         return (state_ == EXHAUSTED) ? bg_priority_ : base_priority_;
     }
 
     /// @return Remaining execution budget in ticks.
-    uint64_t remaining_budget() const noexcept { return budget_remaining_; }
+    uint64_t remaining_budget() const noexcept {
+        return budget_remaining_;
+    }
 
     /// @return C (maximum budget per period).
-    uint64_t max_budget() const noexcept { return budget_c_; }
+    uint64_t max_budget() const noexcept {
+        return budget_c_;
+    }
 
     /// @return T (replenishment period).
-    uint64_t period() const noexcept { return period_t_; }
+    uint64_t period() const noexcept {
+        return period_t_;
+    }
 
     /// @return Current server state.
-    State state() const noexcept { return state_; }
+    State state() const noexcept {
+        return state_;
+    }
 
     /// @return true if server is currently executing aperiodic work.
-    bool is_active() const noexcept { return state_ == ACTIVE; }
+    bool is_active() const noexcept {
+        return state_ == ACTIVE;
+    }
 
     /// @return Number of pending replenishment events.
-    uint64_t pending_count() const noexcept { return replenishment_count_; }
+    uint64_t pending_count() const noexcept {
+        return replenishment_count_;
+    }
 
     /// @brief Sets the normal scheduling priority for this server.
     /// Call this after init() to assign the server's base priority level.
-    void set_base_priority(uint64_t prio) noexcept { base_priority_ = prio; }
+    void set_base_priority(uint64_t prio) noexcept {
+        base_priority_ = prio;
+    }
 
     /// @brief Returns the configured background priority.
-    uint64_t bg_priority() const noexcept { return bg_priority_; }
+    uint64_t bg_priority() const noexcept {
+        return bg_priority_;
+    }
 
-private:
+  private:
     // ---- Configuration ----
-    uint64_t budget_c_;               /// C  (maximum budget per period, ticks)
-    uint64_t period_t_;               /// T  (replenishment period, ticks)
-    uint64_t base_priority_;          ///  Normal scheduling priority.
-    uint64_t bg_priority_;            ///  Background priority when exhausted.
-    uint64_t budget_granularity_;     ///  Ticks per budget unit.
+    uint64_t budget_c_;           /// C  (maximum budget per period, ticks)
+    uint64_t period_t_;           /// T  (replenishment period, ticks)
+    uint64_t base_priority_;      ///  Normal scheduling priority.
+    uint64_t bg_priority_;        ///  Background priority when exhausted.
+    uint64_t budget_granularity_; ///  Ticks per budget unit.
 
     // ---- Dynamic state ----
-    uint64_t budget_remaining_;       ///< Remaining budget for current period.
-    uint64_t consumed_since_active_;  ///< Budget consumed since last activation.
-    uint64_t activation_time_;        ///< Tick of most recent idle->active transition.
-    uint64_t consume_counter_;        ///< Tick counter for granularity skip.
+    uint64_t budget_remaining_;      ///< Remaining budget for current period.
+    uint64_t consumed_since_active_; ///< Budget consumed since last activation.
+    uint64_t activation_time_; ///< Tick of most recent idle->active transition.
+    uint64_t consume_counter_; ///< Tick counter for granularity skip.
     State state_;
 
     // ---- Replenishment queue (circular buffer) ----
     Replenishment replenishments_[MAX_REPLENISHMENTS];
-    uint64_t replenishment_head_;     ///< Dequeue from head.
-    uint64_t replenishment_tail_;     ///< Enqueue at tail.
-    uint64_t replenishment_count_;    ///< Number of valid entries.
+    uint64_t replenishment_head_;  ///< Dequeue from head.
+    uint64_t replenishment_tail_;  ///< Enqueue at tail.
+    uint64_t replenishment_count_; ///< Number of valid entries.
 
     /// @brief Inserts a replenishment event into the queue.
     /// @param time   Tick at which to replenish.
@@ -172,9 +197,8 @@ static_assert(sizeof(SporadicServer::Replenishment) <= 16,
 ///               exhaustion in process_replenishments().
 /// The default implementation is a no-op. Override to implement deadline-miss
 /// logging, task demotion, or panic. Called from ISR context — must not block.
-__attribute__((weak))
-void sporadic_server_deadline_handler(SporadicServer* ss,
-                                      uint64_t reason) noexcept;
+__attribute__((weak)) void
+sporadic_server_deadline_handler(SporadicServer *ss, uint64_t reason) noexcept;
 #endif
 
 } // namespace task

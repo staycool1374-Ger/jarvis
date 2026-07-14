@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -34,7 +36,7 @@ namespace kernel {
 // Forward declaration for init_task_common
 struct TaskControlBlock;
 /// @brief Initialize common task fields after allocation.
-void init_task_common(TaskControlBlock& tcb);
+void init_task_common(TaskControlBlock &tcb);
 
 /// @brief Maximum payload size in bytes for an IPC message.
 static constexpr size_t IPC_MAX_MSG_SIZE = CONFIG_IPC_MAX_MSG_SIZE;
@@ -48,8 +50,8 @@ struct Message {
     uint64_t sender_id;
     uint64_t type;
     uint64_t priority;
-    uint8_t  data[IPC_MAX_MSG_SIZE];
-    size_t   data_size;
+    uint8_t data[IPC_MAX_MSG_SIZE];
+    size_t data_size;
     uint64_t buf_handle = 0;
 };
 
@@ -60,14 +62,12 @@ namespace sync {
 class Notify;
 class EventGroup;
 class Mutex;
-}
+} // namespace sync
 
 namespace task {
 class SporadicServer;
 void dmesg_task_main();
-}
-
-
+} // namespace task
 
 /// @brief States a task can be in during its lifecycle.
 enum class TaskState : uint8_t {
@@ -89,22 +89,22 @@ struct TaskContext {
 };
 #elif defined(CONFIG_ARCH_AARCH64)
 struct TaskContext {
-    uint64_t x[31];          // X0-X30
-    uint64_t sp_el0;         // SP_EL0 (user stack pointer)
-    uint64_t elr_el1;        // ELR_EL1 (return address)
-    uint64_t spsr_el1;       // SPSR_EL1 (processor state)
-    uint64_t vector;         // exception vector number
-    uint64_t error_code;     // exception error code
+    uint64_t x[31];      // X0-X30
+    uint64_t sp_el0;     // SP_EL0 (user stack pointer)
+    uint64_t elr_el1;    // ELR_EL1 (return address)
+    uint64_t spsr_el1;   // SPSR_EL1 (processor state)
+    uint64_t vector;     // exception vector number
+    uint64_t error_code; // exception error code
 };
 #elif defined(CONFIG_ARCH_RISCV64)
 struct TaskContext {
     uint64_t ra, sp, gp, tp;
     uint64_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
-    uint64_t sepc;           // exception return address
-    uint64_t sstatus;        // supervisor status register
-    uint64_t stvec;          // trap vector base
-    uint64_t vector;         // exception vector number
-    uint64_t error_code;     // exception error code
+    uint64_t sepc;       // exception return address
+    uint64_t sstatus;    // supervisor status register
+    uint64_t stvec;      // trap vector base
+    uint64_t vector;     // exception vector number
+    uint64_t error_code; // exception error code
 };
 #endif
 
@@ -114,9 +114,9 @@ struct TaskControlBlock {
     static constexpr size_t STACK_SIZE = CONFIG_STACK_SIZE;
     static constexpr uint64_t KERNEL_CS = 0x08;
     static constexpr uint64_t KERNEL_SS = 0x10;
-    static constexpr uint64_t USER_CS  = 0x1B;
-    static constexpr uint64_t USER_SS  = 0x23;
-    static constexpr uint64_t FLAGS_IF  = 0x200;
+    static constexpr uint64_t USER_CS = 0x1B;
+    static constexpr uint64_t USER_SS = 0x23;
+    static constexpr uint64_t FLAGS_IF = 0x200;
     static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
     /// @brief Human-readable name for logging / debugging.
     char name[CONFIG_TASK_NAME_LEN];
@@ -124,11 +124,12 @@ struct TaskControlBlock {
 #ifdef CONFIG_DEBUG
     /// @brief One entry in the per-TCB context-switch trace ring buffer.
     struct DebugSwitchRecord {
-        uint64_t    entry_addr;       ///< return address at switch_to_task() call site
-        uint64_t    exit_rip;         ///< saved RIP from context (where task was last interrupted)
-        TaskContext regs;             ///< saved register set from context
-        uint64_t    thread_id;        ///< this task's ID
-        uint64_t    consumed_ticks;   ///< executed_ticks at switch-out
+        uint64_t entry_addr; ///< return address at switch_to_task() call site
+        uint64_t exit_rip;   ///< saved RIP from context (where task was last
+                             ///< interrupted)
+        TaskContext regs;    ///< saved register set from context
+        uint64_t thread_id;  ///< this task's ID
+        uint64_t consumed_ticks; ///< executed_ticks at switch-out
     };
     static constexpr size_t DEBUG_SWITCH_RING_SIZE = 4;
     DebugSwitchRecord debug_switch_ring[DEBUG_SWITCH_RING_SIZE];
@@ -136,69 +137,31 @@ struct TaskControlBlock {
 #endif
 
     TaskControlBlock()
-        : 
+        :
 #ifdef CONFIG_DEBUG
-        debug_switch_idx(0),
+          debug_switch_idx(0),
 #endif
-        id(0)
-        , parent_id(0)
-        , state(TaskState::READY)
-        , priority(0)
-        , base_priority(0)
-        , period_ticks(0)
-        , deadline_ticks(0)
-        , deadline_missed(false)
-        , deadline_miss_count(0)
-        , executed_ticks(0)
-        , remaining_ticks(0)
-        , wcet_ticks(0)
-        , wcet_overrun_fired(false)
-        , ss_state_on_deadline_miss(0)
-        , ss_budget_on_deadline_miss(0)
-        , exit_code(0)
-        , context({})
-        , kernel_stack(nullptr)
-        , kernel_stack_top(0)
-        , stack_phys_(0)
-        , page_table_(0)
-        , page_table_shared_(false)
-        , stack_pdpt_phys_(0)
-        , user_stack_(0)
-        , user_stack_size_(0)
-        , user_data(nullptr)
-        , fpu_used(false)
-        , fpu_state{}
-        , program_break(0)
-        , program_break_start(0)
-        , fd_table({})
-        , cwd_vnode(nullptr)
-        , runq_next_(nullptr)
-        , runq_prev_(nullptr)
-        , dl_next_(nullptr)
-        , dl_prev_(nullptr)
-        , pri_next_(nullptr)
-        , pri_prev_(nullptr)
-        , in_ready_queue_(false)
-        , rq_priority_(0)
-        , waiting_child_pid(0)
-        , waiting_child_status(nullptr)
-        , pending_signals(0)
-        , alarm_ticks(0)
-        , alarm_armed(false)
-        , msg_queue(nullptr)
-        , notify(nullptr)
-        , event_group(nullptr)
-        , sporadic_server(nullptr)
-        , buf_list_head(0)
-        , blocked_next(nullptr)
-        , blocked_prev(nullptr)
-        , blocked_on_queue(nullptr)
-        , waiting_on_mutex(nullptr)
-        , first_child(nullptr)
-        , next_sibling(nullptr)
-        , prev_sibling(nullptr)
-        , num_children(0)
-        {}
+          id(0), parent_id(0), state(TaskState::READY), priority(0),
+          base_priority(0), period_ticks(0), deadline_ticks(0),
+          deadline_missed(false), deadline_miss_count(0), executed_ticks(0),
+          remaining_ticks(0), wcet_ticks(0), wcet_overrun_fired(false),
+          ss_state_on_deadline_miss(0), ss_budget_on_deadline_miss(0),
+          exit_code(0), context({}), kernel_stack(nullptr), kernel_stack_top(0),
+          stack_phys_(0), page_table_(0), page_table_shared_(false),
+          stack_pdpt_phys_(0), user_stack_(0), user_stack_size_(0),
+          user_data(nullptr), fpu_used(false), fpu_state{}, program_break(0),
+          program_break_start(0), fd_table({}), cwd_vnode(nullptr),
+          runq_next_(nullptr), runq_prev_(nullptr), dl_next_(nullptr),
+          dl_prev_(nullptr), pri_next_(nullptr), pri_prev_(nullptr),
+          in_ready_queue_(false), rq_priority_(0), waiting_child_pid(0),
+          waiting_child_status(nullptr), pending_signals(0), alarm_ticks(0),
+          alarm_armed(false), msg_queue(nullptr), notify(nullptr),
+          event_group(nullptr), sporadic_server(nullptr), buf_list_head(0),
+          blocked_next(nullptr), blocked_prev(nullptr),
+          blocked_on_queue(nullptr), waiting_on_mutex(nullptr),
+          first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
+          num_children(0) {
+    }
 
     uint64_t magic;
     uint64_t id;
@@ -212,14 +175,17 @@ struct TaskControlBlock {
     uint64_t deadline_miss_count;
     uint64_t executed_ticks;
     uint64_t remaining_ticks;
-    uint64_t wcet_ticks;  ///< explicit WCET for utilisation calc; 0 = implicit 100%
-    bool wcet_overrun_fired;  ///< latch to fire WCET handler once per period
-    uint8_t ss_state_on_deadline_miss;   ///< captured SporadicServer::state() at deadline miss
-    uint64_t ss_budget_on_deadline_miss; ///< captured remaining_budget() at deadline miss
+    uint64_t
+        wcet_ticks; ///< explicit WCET for utilisation calc; 0 = implicit 100%
+    bool wcet_overrun_fired; ///< latch to fire WCET handler once per period
+    uint8_t ss_state_on_deadline_miss; ///< captured SporadicServer::state() at
+                                       ///< deadline miss
+    uint64_t ss_budget_on_deadline_miss; ///< captured remaining_budget() at
+                                         ///< deadline miss
     uint64_t exit_code;
 
     TaskContext context;
-    uint8_t* kernel_stack;
+    uint8_t *kernel_stack;
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
     uint64_t page_table_;
@@ -234,7 +200,7 @@ struct TaskControlBlock {
     uint64_t stack_pdpt_phys_;
     uint64_t user_stack_;
     uint64_t user_stack_size_;
-    void* user_data;
+    void *user_data;
 
     /// @brief FPU/SSE save area (FXSAVE/FXRSTOR — 512 bytes, 16-byte aligned).
     ///        Zeroed on task creation; populated lazily via #NM handler.
@@ -246,21 +212,21 @@ struct TaskControlBlock {
 
     vfs::FdTable fd_table;
     char cwd[CONFIG_VFS_MAX_PATH];
-    vfs::Vnode* cwd_vnode;
+    vfs::Vnode *cwd_vnode;
 
     /// @brief Intrusive linked-list pointers for O(1) ready queue.
-    TaskControlBlock* runq_next_;
-    TaskControlBlock* runq_prev_;
+    TaskControlBlock *runq_next_;
+    TaskControlBlock *runq_prev_;
 
     /// @brief Intrusive linked-list pointers for DeadlineList
     /// (sorted by deadline_ticks ascending).
-    TaskControlBlock* dl_next_;
-    TaskControlBlock* dl_prev_;
+    TaskControlBlock *dl_next_;
+    TaskControlBlock *dl_prev_;
 
     /// @brief Intrusive linked-list pointers for AllTasksRegistry
     /// (per-priority doubly-linked list of all tasks).
-    TaskControlBlock* pri_next_;
-    TaskControlBlock* pri_prev_;
+    TaskControlBlock *pri_next_;
+    TaskControlBlock *pri_prev_;
     /// @brief True if this task is currently in the ready queue.
     /// Used to prevent double-enqueue.
     bool in_ready_queue_;
@@ -268,7 +234,7 @@ struct TaskControlBlock {
     uint64_t rq_priority_;
 
     uint64_t waiting_child_pid;
-    uint64_t* waiting_child_status;
+    uint64_t *waiting_child_status;
 
     /// @brief Signal handler table — one handler per signal number (max 32).
     ///        nullptr means default action (terminate on fatal signals).
@@ -285,20 +251,20 @@ struct TaskControlBlock {
 
     /// @brief Pointer to the task's message queue (allocated and
     /// owned by IPC layer).
-    MessageQueue* msg_queue;
+    MessageQueue *msg_queue;
 
     /// @brief Per-task notification object (allocated in
     /// init_task_common).
-    sync::Notify* notify;
+    sync::Notify *notify;
 
     /// @brief Per-task event-group object (allocated in
     /// init_task_common).
-    sync::EventGroup* event_group;
+    sync::EventGroup *event_group;
 
     /// @brief Optional per-task SporadicServer for aperiodic
     /// daemon budget management (vfsd, iocd).  nullptr for normal tasks.
     /// Allocated from MemPool in init_sporadic_server().
-    task::SporadicServer* sporadic_server;
+    task::SporadicServer *sporadic_server;
 
     /// @brief Head of doubly-linked list of buffer handles owned by
     /// this task. -1 means the list is empty. Used by the BufferPool
@@ -307,26 +273,26 @@ struct TaskControlBlock {
 
     /// @brief Linked-list pointers for the blocked-sender chain
     /// (singly linked via next).
-    TaskControlBlock* blocked_next;
-    TaskControlBlock* blocked_prev;
+    TaskControlBlock *blocked_next;
+    TaskControlBlock *blocked_prev;
 
     /// @brief Pointer to the message queue this task is blocked on
     /// (as a sender).  Non-null only while the task is in another
     /// task's blocked_senders list.  Used by cleanup() to detach
     /// before the TCB is freed, preventing dangling pointers in the
     /// queue's list.
-    MessageQueue* blocked_on_queue;
+    MessageQueue *blocked_on_queue;
 
     /// @brief Pointer to the mutex this task is blocked on (as a waiter).
     /// Used for transitive priority inheritance propagation.
     /// Non-null only while the task is in a Mutex's waiter array.
     /// Set in Mutex::lock(), cleared in Mutex::wake_one().
-    sync::Mutex* waiting_on_mutex;
+    sync::Mutex *waiting_on_mutex;
 
     /// @brief Process hierarchy: first child, next sibling, previous sibling.
-    TaskControlBlock* first_child;
-    TaskControlBlock* next_sibling;
-    TaskControlBlock* prev_sibling;
+    TaskControlBlock *first_child;
+    TaskControlBlock *next_sibling;
+    TaskControlBlock *prev_sibling;
 
     /// @brief Number of live child processes.
     uint64_t num_children;
@@ -338,7 +304,8 @@ struct TaskControlBlock {
 
     /// @brief Registers a signal handler for the given signal.
     void set_signal_handler(uint64_t sig, sighandler_t handler) {
-        if (sig < MAX_SIGNAL_HANDLERS) signal_handlers[sig] = handler;
+        if (sig < MAX_SIGNAL_HANDLERS)
+            signal_handlers[sig] = handler;
     }
 
     /// @brief Returns the registered handler for the signal, or nullptr.
@@ -348,29 +315,23 @@ struct TaskControlBlock {
 
     /// @brief Creates a new kernel task with the given entry and
     /// scheduling parameters.
-    static TaskControlBlock* create(
-        void (*entry)(),
-        uint64_t priority,
-        uint64_t period_ticks);
+    static TaskControlBlock *create(void (*entry)(), uint64_t priority,
+                                    uint64_t period_ticks);
     /// @brief Creates a new kernel task with error code.
     /// @param entry Entry function for the task.
     /// @param priority Task priority.
     /// @param period_ticks Task period in ticks.
     /// @param[out] out_tcb Pointer to the created TCB on success.
     /// @return TaskError code.
-    static errors::TaskError create_err(
-        void (*entry)(),
-        uint64_t priority,
-        uint64_t period_ticks,
-        TaskControlBlock*& out_tcb);
+    static errors::TaskError create_err(void (*entry)(), uint64_t priority,
+                                        uint64_t period_ticks,
+                                        TaskControlBlock *&out_tcb);
 
     /// @brief Creates a new user task running in ring 3 with its own
     /// page table.
-    static TaskControlBlock* create_user(
-        void (*entry)(),
-        uint64_t priority,
-        uint64_t period_ticks,
-        size_t user_stack_size = 32_KiB);
+    static TaskControlBlock *create_user(void (*entry)(), uint64_t priority,
+                                         uint64_t period_ticks,
+                                         size_t user_stack_size = 32_KiB);
     /// @brief Creates a new user task with error code.
     /// @param entry Entry function for the task.
     /// @param priority Task priority.
@@ -378,12 +339,10 @@ struct TaskControlBlock {
     /// @param user_stack_size Size of the user stack (default 32 KiB).
     /// @param[out] out_tcb Pointer to the created TCB on success.
     /// @return TaskError code.
-    static errors::TaskError create_user_err(
-        void (*entry)(),
-        uint64_t priority,
-        uint64_t period_ticks,
-        size_t user_stack_size,
-        TaskControlBlock*& out_tcb);
+    static errors::TaskError create_user_err(void (*entry)(), uint64_t priority,
+                                             uint64_t period_ticks,
+                                             size_t user_stack_size,
+                                             TaskControlBlock *&out_tcb);
 
     /// @brief Clones the current task — creates a child with copied
     /// context.
@@ -391,19 +350,20 @@ struct TaskControlBlock {
     /// RIP/RSP/regs).
     /// @return Pointer to the new child TaskControlBlock, or nullptr
     /// on failure.
-    static TaskControlBlock* clone(uint64_t* regs);
+    static TaskControlBlock *clone(uint64_t *regs);
     /// @brief Clones the current task with error code.
     /// @param regs Register save area from the interrupt.
     /// @param[out] out_tcb Pointer to the created TCB on success.
     /// @return TaskError code.
-    static errors::TaskError clone_err(uint64_t* regs, TaskControlBlock*& out_tcb);
+    static errors::TaskError clone_err(uint64_t *regs,
+                                       TaskControlBlock *&out_tcb);
 
     /// @brief Save the current register context into this TCB.
     /// @param rsp Reference to current stack pointer (updated on save).
-    void save_context(uint64_t& rsp) noexcept;
+    void save_context(uint64_t &rsp) noexcept;
     /// @brief Restore the saved register context into CPU registers.
     /// @param rsp Reference to restore the stack pointer into.
-    void restore_context(uint64_t& rsp) noexcept;
+    void restore_context(uint64_t &rsp) noexcept;
 
     /// @brief Frees all resources owned by this task (FDs, pages, page tables).
     ///        Called by WAITPID after reaping a TERMINATED child.
@@ -414,26 +374,28 @@ struct TaskControlBlock {
     ///        Mandatory before the block is reused: a TCB freed via `delete`
     ///        without unregistration leaves a dangling tasks_[] entry that
     ///        aliases the next allocation (use-after-free dispatch).
-    void operator delete(void* ptr) noexcept;
+    void operator delete(void *ptr) noexcept;
 
     /// @brief Allocates and initialises a SporadicServer for this task
     ///        (e.g. a Ring 3 daemon like vfsd / iocd).
     /// @param budget_c           Execution budget per period (ticks).
     /// @param period_t           Replenishment period (ticks).
     /// @param bg_prio            Priority level when budget exhausted.
-    /// @param budget_granularity Ticks per budget unit (default: CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
-    void init_sporadic_server(uint64_t budget_c, uint64_t period_t,
-                              uint64_t bg_prio,
-                              uint64_t budget_granularity = CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
+    /// @param budget_granularity Ticks per budget unit (default:
+    /// CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY).
+    void init_sporadic_server(
+        uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,
+        uint64_t budget_granularity =
+            CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept;
 
     /// @brief Adds a child to this task's process hierarchy.
-    void add_child(TaskControlBlock* child) noexcept;
+    void add_child(TaskControlBlock *child) noexcept;
 
     /// @brief Removes a child from this task's process hierarchy.
-    void remove_child(TaskControlBlock* child) noexcept;
+    void remove_child(TaskControlBlock *child) noexcept;
 
     /// @brief Finds a child by PID.
-    TaskControlBlock* find_child(uint64_t pid) noexcept;
+    TaskControlBlock *find_child(uint64_t pid) noexcept;
 };
 
 } // namespace kernel

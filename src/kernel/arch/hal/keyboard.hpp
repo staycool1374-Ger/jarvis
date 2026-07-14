@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -31,33 +33,41 @@ namespace arch {
 #if defined(CONFIG_ARCH_X86_64)
 /// @endcond
 
-/// @brief PS/2 keyboard driver with modifier tracking and a character ring buffer.
+/// @brief PS/2 keyboard driver with modifier tracking and a character ring
+/// buffer.
 class Keyboard {
-public:
+  public:
     Keyboard() = default;
     /// @brief Initialise the PS/2 keyboard controller.
     static void init();
-    /// @brief Handle a keyboard interrupt — read scancode and enqueue character.
+    /// @brief Handle a keyboard interrupt — read scancode and enqueue
+    /// character.
     static void handle_irq();
     /// @brief Dequeue a single character (non-blocking).
     /// @param[out] c Output character.
     /// @return true if a character was available.
-    static bool getchar(char& c);
+    static bool getchar(char &c);
     /// @brief Read multiple characters into a buffer (non-blocking).
     /// @param buf Output buffer.
     /// @param len Maximum number of characters to read.
     /// @return Number of characters actually read.
-    static size_t read(char* buf, size_t len);
+    static size_t read(char *buf, size_t len);
     /// @brief Discard all buffered characters.
     static void flush();
     /// @return true if Shift is held.
-    static bool is_shifted() { return shift_; }
+    static bool is_shifted() {
+        return shift_;
+    }
     /// @return true if Ctrl is held.
-    static bool is_ctrl() { return ctrl_; }
+    static bool is_ctrl() {
+        return ctrl_;
+    }
     /// @return true if Alt is held.
-    static bool is_alt() { return alt_; }
+    static bool is_alt() {
+        return alt_;
+    }
 
-private:
+  private:
     static constexpr size_t RING_SIZE = 256;
     static constexpr uint16_t DATA_PORT = 0x60;
     static constexpr uint16_t STATUS_PORT = 0x64;
@@ -78,19 +88,32 @@ private:
 
 /// @brief No-op keyboard stub for architectures without PS/2.
 class Keyboard {
-public:
-    static void init() {}
-    static void handle_irq() {}
-    static bool getchar(char&) { return false; }
-    static size_t read(char*, size_t) { return 0; }
-    static void flush() {}
-    static bool is_shifted() { return false; }
-    static bool is_ctrl() { return false; }
-    static bool is_alt() { return false; }
+  public:
+    static void init() {
+    }
+    static void handle_irq() {
+    }
+    static bool getchar(char &) {
+        return false;
+    }
+    static size_t read(char *, size_t) {
+        return 0;
+    }
+    static void flush() {
+    }
+    static bool is_shifted() {
+        return false;
+    }
+    static bool is_ctrl() {
+        return false;
+    }
+    static bool is_alt() {
+        return false;
+    }
 };
 
 #else
-#  error "HAL: no keyboard implementation for this architecture"
+#error "HAL: no keyboard implementation for this architecture"
 #endif
 /// @endcond
 

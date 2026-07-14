@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,19 +28,19 @@
 
 namespace kernel::errors {
 
-#define SCHEDULER_ERROR_CODES \
-    X(OK,              0,  "OK") \
-    X(TABLE_FULL,      1,  "Task table full (MAX_TASKS reached)") \
-    X(NOT_FOUND,       2,  "Task not found") \
-    X(DUPLICATE_ID,    3,  "Task ID already in use") \
-    X(INVALID_STATE,   4,  "Task in invalid state for operation") \
-    X(NO_CURRENT,      5,  "No current task context") \
-    X(NO_IDLE,         6,  "Idle task not initialized") \
-    X(PREEMPT_DISABLED, 7, "Preemption is disabled") \
-    X(ZOMBIE,          8,  "Task is a zombie (freed but not reaped)") \
-    X(INVALID_MAGIC,   9,  "Task control block magic invalid") \
-    X(NO_SHELL,        10, "Shell task not set") \
-    X(INVALID_ARGS,    11, "Invalid arguments")
+#define SCHEDULER_ERROR_CODES                                                  \
+    X(OK, 0, "OK")                                                             \
+    X(TABLE_FULL, 1, "Task table full (MAX_TASKS reached)")                    \
+    X(NOT_FOUND, 2, "Task not found")                                          \
+    X(DUPLICATE_ID, 3, "Task ID already in use")                               \
+    X(INVALID_STATE, 4, "Task in invalid state for operation")                 \
+    X(NO_CURRENT, 5, "No current task context")                                \
+    X(NO_IDLE, 6, "Idle task not initialized")                                 \
+    X(PREEMPT_DISABLED, 7, "Preemption is disabled")                           \
+    X(ZOMBIE, 8, "Task is a zombie (freed but not reaped)")                    \
+    X(INVALID_MAGIC, 9, "Task control block magic invalid")                    \
+    X(NO_SHELL, 10, "Shell task not set")                                      \
+    X(INVALID_ARGS, 11, "Invalid arguments")
 
 /// @brief Error codes returned by scheduler operations.
 // NOLINTNEXTLINE(performance-enum-size)
@@ -49,11 +51,12 @@ enum SchedulerError : uint64_t {
 };
 
 /// @brief Return a human-readable string for a scheduler error code.
-template<>
-inline const char* error_string(SchedulerError e) {
+template <> inline const char *error_string(SchedulerError e) {
     switch (e) {
-#define X(name, num, msg) case SCHED_ERR_##name: return msg;
-    SCHEDULER_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case SCHED_ERR_##name:                                                     \
+        return msg;
+        SCHEDULER_ERROR_CODES
 #undef X
     }
     return "Unknown scheduler error";

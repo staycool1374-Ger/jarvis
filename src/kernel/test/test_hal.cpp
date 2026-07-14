@@ -123,12 +123,8 @@ JARVIS_TEST(hal_context_switch_to, "PRE: iocd | POST: none") {
     uint64_t rsp_b = 0x8000;
 
     arch::ArchContextManager::init_stack(
-        reinterpret_cast<uint64_t*>(rsp_b),
-        reinterpret_cast<void(*)()>(0),
-        arch::SEG_KERNEL_CODE,
-        arch::SEG_KERNEL_DATA,
-        arch::RFLAGS_DEFAULT,
-        0);
+        reinterpret_cast<uint64_t *>(rsp_b), reinterpret_cast<void (*)()>(0),
+        arch::SEG_KERNEL_CODE, arch::SEG_KERNEL_DATA, arch::RFLAGS_DEFAULT, 0);
 
     arch::ArchContextManager::save(ctx_a, rsp_a);
     arch::ArchContextManager::save(ctx_b, rsp_b);
@@ -198,7 +194,8 @@ JARVIS_TEST(hal_interrupt_eoi, "PRE: iocd | POST: none") {
 JARVIS_TEST(hal_timer_oneshot, "PRE: iocd | POST: none") {
     /* Pseudocode: hal_timer_oneshot.
      * Implementation plan:
-     *   - Requires Timer::oneshot(uint64_t) and Timer::remaining() implementation
+     *   - Requires Timer::oneshot(uint64_t) and Timer::remaining()
+     * implementation
      *   - Once available: set oneshot(50), verify remaining > 0 && <= 50
      *   - Advance ticks, verify remaining decreases to 0
      * Blocked: Timer::oneshot/remaining not yet implemented.
@@ -281,13 +278,13 @@ JARVIS_TEST(hal_io_byte_word_long, "PRE: iocd | POST: none") {
 #endif
 
 // Runmode: kernel
-// Testidea: Verifies HAL methods delegate to correct arch/x86_64 implementation.
-// Input: Call HAL interface methods, check they call x86_64 specifics
-// Expect: All HAL calls resolve to arch/x86_64 implementations
+// Testidea: Verifies HAL methods delegate to correct arch/x86_64
+// implementation. Input: Call HAL interface methods, check they call x86_64
+// specifics Expect: All HAL calls resolve to arch/x86_64 implementations
 // Depends: kernel::arch::*, build system
 #if defined(CONFIG_ARCH_X86_64)
 JARVIS_TEST(hal_delegates_to_x86_64, "PRE: iocd | POST: none") {
-    JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
+    JARVIS_ASSERT_EQ(8ULL, sizeof(void *));
 
     uint64_t cr3 = arch::read_cr3();
     JARVIS_ASSERT(cr3 != 0);

@@ -31,15 +31,13 @@ constinit bool MemPool::ready_ = false;
 ///        Each pool carves its region into fixed-size blocks and builds an
 ///        embedded free list.
 void MemPool::init() {
-    static const size_t sizes[POOL_COUNT] = {
-        16, 32, 64, 128, 256, 512, 1024, 2048, 4480
-    };
-    static const size_t counts[POOL_COUNT] = {
-        256, 128, 64, 32, 16, 8, 16, 64, 64
-    };
+    static const size_t sizes[POOL_COUNT] = {16,  32,   64,   128, 256,
+                                             512, 1024, 2048, 4480};
+    static const size_t counts[POOL_COUNT] = {256, 128, 64, 32, 16,
+                                              8,   16,  64, 64};
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& pool = pools_[i];
+        auto &pool = pools_[i];
         pool.block_size = sizes[i];
         pool.block_count = counts[i];
         pool.free_count = counts[i];
@@ -51,19 +49,19 @@ void MemPool::init() {
         ENSURE(phys != 0);
 
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        pool.data = reinterpret_cast<uint8_t*>(phys + arch::HHDM_OFFSET);
+        pool.data = reinterpret_cast<uint8_t *>(phys + arch::HHDM_OFFSET);
 
         pool.first_free = 0;
         for (size_t j = 0; j < pool.block_count; ++j) {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            size_t* next = reinterpret_cast<size_t*>(
-                pool.data + j * pool.block_size);
+            size_t *next =
+                reinterpret_cast<size_t *>(pool.data + j * pool.block_size);
             *next = j + 1;
             pool.set_block_freed(j);
         }
         {
-            size_t* next = reinterpret_cast<size_t*>(pool.data + (
-                pool.block_count - 1) * pool.block_size);
+            size_t *next = reinterpret_cast<size_t *>(
+                pool.data + (pool.block_count - 1) * pool.block_size);
             *next = static_cast<size_t>(-1);
         }
 
@@ -75,19 +73,21 @@ void MemPool::init() {
 /// @brief Allocate a block from the smallest pool class that fits @p size.
 /// @param size Minimum number of bytes required.
 /// @return Pointer to the block, or nullptr on failure.
-void* MemPool::alloc(size_t size) {
+void *MemPool::alloc(size_t size) {
     size_t idx = find_pool(size);
-    if (idx >= POOL_COUNT) return nullptr;
+    if (idx >= POOL_COUNT)
+        return nullptr;
 
-    auto& pool = pools_[idx];
-    if (pool.free_count == 0) return nullptr;
+    auto &pool = pools_[idx];
+    if (pool.free_count == 0)
+        return nullptr;
 
     size_t block = pool.first_free;
     ENSURE(block < pool.block_count);
-    ENSURE(pool.is_block_freed(block)
-           && "free-list corruption: alloc of already-allocated block");
-    size_t* next = reinterpret_cast<size_t*>(pool.data + block * pool.block_size
-        );
+    ENSURE(pool.is_block_freed(block) &&
+           "free-list corruption: alloc of already-allocated block");
+    size_t *next =
+        reinterpret_cast<size_t *>(pool.data + block * pool.block_size);
     pool.first_free = *next;
     --pool.free_count;
     pool.clear_block_freed(block);
@@ -98,29 +98,30 @@ void* MemPool::alloc(size_t size) {
 
 /// @brief Return a previously allocated block to its pool.
 /// @param block Pointer returned by a previous alloc() call (null is a no-op).
-void MemPool::free(void* block) {
-    if (!block) return;
+void MemPool::free(void *block) {
+    if (!block)
+        return;
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& pool = pools_[i];
-        if (!pool.initialized) continue;
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
 
-        uint8_t* start = pool.data;
-        uint8_t* end = pool.data + pool.block_size * pool.block_count;
-        uint8_t* p = static_cast<uint8_t*>(block);
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        uint8_t *p = static_cast<uint8_t *>(block);
 
         if (p >= start && p < end) {
             size_t offset = static_cast<size_t>(p - start);
             size_t block_idx = offset / pool.block_size;
             ENSURE(offset % pool.block_size == 0);
             ENSURE(block_idx < pool.block_count);
-            ENSURE(!pool.is_block_freed(block_idx)
-                   && "double-free detected");
+            ENSURE(!pool.is_block_freed(block_idx) && "double-free detected");
 #ifdef CONFIG_DEBUG
             __builtin_memset(p, 0xDD, pool.block_size);
 #endif
             pool.set_block_freed(block_idx);
-            size_t* next = reinterpret_cast<size_t*>(p);
+            size_t *next = reinterpret_cast<size_t *>(p);
             *next = pool.first_free;
             pool.first_free = block_idx;
             ++pool.free_count;
@@ -133,15 +134,18 @@ void MemPool::free(void* block) {
 /// @brief Check whether a pointer falls within any MemPool data region.
 /// @param ptr Pointer to test.
 /// @return true if the pointer is owned by any initialised pool.
-bool MemPool::contains(void* ptr) {
-    if (!ptr) return false;
-    uint8_t* p = static_cast<uint8_t*>(ptr);
+bool MemPool::contains(void *ptr) {
+    if (!ptr)
+        return false;
+    uint8_t *p = static_cast<uint8_t *>(ptr);
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& pool = pools_[i];
-        if (!pool.initialized) continue;
-        uint8_t* start = pool.data;
-        uint8_t* end = pool.data + pool.block_size * pool.block_count;
-        if (p >= start && p < end) return true;
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        if (p >= start && p < end)
+            return true;
     }
     return false;
 }
@@ -165,10 +169,10 @@ size_t MemPool::find_pool(size_t size) {
 /// @brief Snapshot the free-list head, free count, and freed bitmap for a pool.
 /// @param idx Pool index.
 /// @param[out] out Destination to fill with metadata.
-void MemPool::capture_pool_meta(size_t idx, PoolMeta& out) {
-    auto& p = pools_[idx];
-    out.first_free  = p.first_free;
-    out.free_count  = p.free_count;
+void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
+    auto &p = pools_[idx];
+    out.first_free = p.first_free;
+    out.free_count = p.free_count;
     out.block_count = p.block_count;
     p.copy_freed_bitmap(out.freed_bitmap);
 }
@@ -177,8 +181,8 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta& out) {
 ///        Any blocks added since the snapshot are marked free.
 /// @param idx  Pool index.
 /// @param meta Previously captured metadata.
-void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
-    auto& p = pools_[idx];
+void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
+    auto &p = pools_[idx];
     p.write_freed_bitmap(meta.freed_bitmap);
 
     // If the pool was resized after the snapshot was taken (block_count grew),
@@ -195,12 +199,12 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
     // supposedly-allocated blocks that have now been restored to "free".
     // Build the list by prepending each freed block to the head so that
     // every freed block is reachable from first_free.
-    p.first_free  = static_cast<size_t>(-1);
-    p.free_count  = 0;
+    p.first_free = static_cast<size_t>(-1);
+    p.free_count = 0;
     for (size_t j = 0; j < p.block_count; ++j) {
-        if (!p.is_block_freed(j)) continue;          // still allocated — skip
-        auto* next = reinterpret_cast<uint64_t*>(
-            p.data + j * p.block_size);
+        if (!p.is_block_freed(j))
+            continue; // still allocated — skip
+        auto *next = reinterpret_cast<uint64_t *>(p.data + j * p.block_size);
         *next = p.first_free;
         p.first_free = j;
         ++p.free_count;
@@ -211,10 +215,11 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta& meta) {
 
 /// @brief Copy all pool block data into a contiguous buffer.
 /// @param[out] dst Destination buffer (must be >= pool_data_bytes()).
-void MemPool::capture_pool_data(uint8_t* dst) {
+void MemPool::capture_pool_data(uint8_t *dst) {
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& p = pools_[i];
-        if (!p.initialized || !p.data) continue;
+        auto &p = pools_[i];
+        if (!p.initialized || !p.data)
+            continue;
         size_t bytes = p.block_count * p.block_size;
         __builtin_memcpy(dst, p.data, bytes);
         dst += bytes;
@@ -223,10 +228,11 @@ void MemPool::capture_pool_data(uint8_t* dst) {
 
 /// @brief Restore all pool block data from a contiguous buffer.
 /// @param src Source buffer previously filled by capture_pool_data().
-void MemPool::restore_pool_data(const uint8_t* src) {
+void MemPool::restore_pool_data(const uint8_t *src) {
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& p = pools_[i];
-        if (!p.initialized || !p.data) continue;
+        auto &p = pools_[i];
+        if (!p.initialized || !p.data)
+            continue;
         size_t bytes = p.block_count * p.block_size;
         __builtin_memcpy(p.data, src, bytes);
         src += bytes;
@@ -238,7 +244,8 @@ void MemPool::restore_pool_data(const uint8_t* src) {
 size_t MemPool::pool_data_bytes() {
     size_t total = 0;
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        if (!pools_[i].initialized) continue;
+        if (!pools_[i].initialized)
+            continue;
         total += pools_[i].block_count * pools_[i].block_size;
     }
     return total;
@@ -262,23 +269,23 @@ MemPoolError MemPool::init_err() {
 /// @param size Minimum bytes required.
 /// @param[out] out_ptr Set to the allocated block on success.
 /// @return MemPoolError code.
-MemPoolError MemPool::alloc_err(size_t size, void*& out_ptr) {
+MemPoolError MemPool::alloc_err(size_t size, void *&out_ptr) {
     size_t idx = find_pool(size);
     if (idx >= POOL_COUNT) {
         return MEMPOOL_ERR_TOO_LARGE;
     }
 
-    auto& pool = pools_[idx];
+    auto &pool = pools_[idx];
     if (pool.free_count == 0) {
         return MEMPOOL_ERR_OOM;
     }
 
     size_t block = pool.first_free;
     ENSURE(block < pool.block_count);
-    ENSURE(pool.is_block_freed(block)
-           && "free-list corruption: alloc of already-allocated block");
-    size_t* next = reinterpret_cast<size_t*>(pool.data + block * pool.block_size
-        );
+    ENSURE(pool.is_block_freed(block) &&
+           "free-list corruption: alloc of already-allocated block");
+    size_t *next =
+        reinterpret_cast<size_t *>(pool.data + block * pool.block_size);
     pool.first_free = *next;
     --pool.free_count;
     pool.clear_block_freed(block);
@@ -291,31 +298,31 @@ MemPoolError MemPool::alloc_err(size_t size, void*& out_ptr) {
 /// @brief Free a block with error-code return.
 /// @param block Pointer to free (null returns MEMPOOL_ERR_INVALID_PTR).
 /// @return MemPoolError code.
-MemPoolError MemPool::free_err(void* block) {
+MemPoolError MemPool::free_err(void *block) {
     if (!block) {
         return MEMPOOL_ERR_INVALID_PTR;
     }
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
-        auto& pool = pools_[i];
-        if (!pool.initialized) continue;
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
 
-        uint8_t* start = pool.data;
-        uint8_t* end = pool.data + pool.block_size * pool.block_count;
-        uint8_t* p = static_cast<uint8_t*>(block);
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        uint8_t *p = static_cast<uint8_t *>(block);
 
         if (p >= start && p < end) {
             size_t offset = static_cast<size_t>(p - start);
             size_t block_idx = offset / pool.block_size;
             ENSURE(offset % pool.block_size == 0);
             ENSURE(block_idx < pool.block_count);
-            ENSURE(!pool.is_block_freed(block_idx)
-                   && "double-free detected");
+            ENSURE(!pool.is_block_freed(block_idx) && "double-free detected");
 #ifdef CONFIG_DEBUG
             __builtin_memset(p, 0xDD, pool.block_size);
 #endif
             pool.set_block_freed(block_idx);
-            size_t* next = reinterpret_cast<size_t*>(p);
+            size_t *next = reinterpret_cast<size_t *>(p);
             *next = pool.first_free;
             pool.first_free = block_idx;
             ++pool.free_count;

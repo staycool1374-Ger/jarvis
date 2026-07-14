@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -37,35 +39,37 @@ enum class TaskType : uint8_t {
 /// Entries are validated at compile time against jarvis_config.h bounds
 /// and at boot time for ELF-file existence.  Set enabled = false to skip.
 struct TaskDef {
-    const char*    name;              ///< for logging / debug (max CONFIG_TASK_NAME_LEN)
-    TaskType       type;
-    bool           enabled;
+    const char *name; ///< for logging / debug (max CONFIG_TASK_NAME_LEN)
+    TaskType type;
+    bool enabled;
 
     // KERNEL type
     void (*kernel_entry)();
 
     // USER_ELF / SPORADIC_SERVER
-    const char*    elf_path;
+    const char *elf_path;
 
-    uint64_t       priority;
-    uint64_t       period_ticks;
-    uint64_t       wcet_ticks;  ///< 0 = implicit 100% load (pessimistic), >0 = real estimate
+    uint64_t priority;
+    uint64_t period_ticks;
+    uint64_t wcet_ticks; ///< 0 = implicit 100% load (pessimistic), >0 = real
+                         ///< estimate
 
     // SporadicServer params (only for SPORADIC_SERVER)
-    uint64_t       ss_budget;
-    uint64_t       ss_period;
-    uint64_t       ss_bg_prio;
+    uint64_t ss_budget;
+    uint64_t ss_period;
+    uint64_t ss_bg_prio;
 
     // Daemon registration (only for SPORADIC_SERVER)
-    const char*    daemon_name;
+    const char *daemon_name;
     void (*set_pid_fn)(uint64_t);
     uint64_t (*get_pid_fn)();
 
-    uint64_t       ss_budget_granularity;  ///< for SPORADIC_SERVER (ticks per budget unit, default 1)
+    uint64_t ss_budget_granularity; ///< for SPORADIC_SERVER (ticks per budget
+                                    ///< unit, default 1)
 
-    size_t         user_stack_size;   ///< for USER_ELF (0 = default 32_KiB)
+    size_t user_stack_size; ///< for USER_ELF (0 = default 32_KiB)
 
-    bool           is_shell;          ///< call Scheduler::set_shell_task after creation
+    bool is_shell; ///< call Scheduler::set_shell_task after creation
 };
 
 /// @brief Kills all tasks (except idle), spawns the system from g_task_defs[],

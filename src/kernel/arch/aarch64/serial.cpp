@@ -26,22 +26,23 @@
 namespace arch {
 
 #include <kernel/memory/address.hpp>
-#define UART_BASE ((volatile uint32_t*)(arch::HHDM_OFFSET + 0x9000000ULL))
+#define UART_BASE ((volatile uint32_t *)(arch::HHDM_OFFSET + 0x9000000ULL))
 
-#define UART_DR     0x000
-#define UART_FR     0x018
-#define UART_IBRD   0x024
-#define UART_FBRD   0x028
-#define UART_LCR_H  0x02C
-#define UART_CR     0x030
-#define UART_IMSC   0x038
-#define UART_ICR    0x044
+#define UART_DR 0x000
+#define UART_FR 0x018
+#define UART_IBRD 0x024
+#define UART_FBRD 0x028
+#define UART_LCR_H 0x02C
+#define UART_CR 0x030
+#define UART_IMSC 0x038
+#define UART_ICR 0x044
 
 /// @brief Initialise the PL011 UART at 115200 baud (default QEMU virt config).
 /// Disables UART, clears pending interrupts, sets baud rate, enables TX/RX.
 void Serial::init() {
     mmio_write32(UART_BASE + UART_CR / 4, 0);
-    for (int i = 0; i < 100; ++i) asm volatile("nop");
+    for (int i = 0; i < 100; ++i)
+        asm volatile("nop");
     mmio_write32(UART_BASE + UART_ICR / 4, 0x7FF);
     mmio_write32(UART_BASE + UART_IBRD / 4, 26);
     mmio_write32(UART_BASE + UART_FBRD / 4, 3);
@@ -55,10 +56,12 @@ void Serial::init() {
 /// @param[in] c Character to transmit.
 void Serial::putchar(char c) {
     if (c == '\n') {
-        while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 5));
+        while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 5))
+            ;
         mmio_write32(UART_BASE + UART_DR / 4, '\r');
     }
-    while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 5));
+    while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 5))
+        ;
     mmio_write32(UART_BASE + UART_DR / 4, c);
 }
 
@@ -66,14 +69,16 @@ void Serial::putchar(char c) {
 /// Waits for RX FIFO to contain data before reading.
 /// @return The received character (lower 8 bits of data register).
 char Serial::getchar() {
-    while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 4));
+    while (mmio_read32(UART_BASE + UART_FR / 4) & (1 << 4))
+        ;
     return mmio_read32(UART_BASE + UART_DR / 4) & 0xFF;
 }
 
 /// @brief Write a null-terminated string to the serial port.
 /// @param[in] s Null-terminated string to transmit.
-void Serial::puts(const char* s) {
-    while (*s) putchar(*s++);
+void Serial::puts(const char *s) {
+    while (*s)
+        putchar(*s++);
 }
 
 } // namespace arch

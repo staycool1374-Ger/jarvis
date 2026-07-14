@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file dmesg.hpp
-/// @brief Lock-free SPSC structured kernel log (dmesg) — LogEntry, DmesgBuffer, macros, error-string helpers.
+/// @brief Lock-free SPSC structured kernel log (dmesg) — LogEntry, DmesgBuffer,
+/// macros, error-string helpers.
 
 #pragma once
 
@@ -35,49 +38,51 @@
 
 namespace kernel::log {
 
-/// @brief Subsystem identifier used in dmesg entries (maps to per-subsystem error_string).
+/// @brief Subsystem identifier used in dmesg entries (maps to per-subsystem
+/// error_string).
 enum class ErrorSubsystem : uint8_t {
-    BASE    = 0,  ///< Generic kernel errors.
-    SYNC    = 1,  ///< Synchronisation primitives.
-    VFS     = 2,  ///< Virtual file system.
-    MEMPOOL = 3,  ///< Memory pool allocator.
-    SCHED   = 4,  ///< Scheduler.
-    IPC     = 5,  ///< Inter-process communication.
-    SYSCALL = 6,  ///< System call interface.
+    BASE = 0,    ///< Generic kernel errors.
+    SYNC = 1,    ///< Synchronisation primitives.
+    VFS = 2,     ///< Virtual file system.
+    MEMPOOL = 3, ///< Memory pool allocator.
+    SCHED = 4,   ///< Scheduler.
+    IPC = 5,     ///< Inter-process communication.
+    SYSCALL = 6, ///< System call interface.
 };
 
 /// @brief A single dmesg log entry.
 struct LogEntry {
-    uint64_t timestamp;  ///< Tick count at log time.
-    uint64_t task_id;    ///< ID of the task that logged the entry.
+    uint64_t timestamp;       ///< Tick count at log time.
+    uint64_t task_id;         ///< ID of the task that logged the entry.
     ErrorSubsystem subsystem; ///< Subsystem that generated the error.
     uint64_t error_code;      ///< Subsystem-specific error code.
-    uintptr_t context;        ///< Optional context pointer (e.g. address involved).
-    const char* message;      ///< Human-readable description.
+    uintptr_t context;   ///< Optional context pointer (e.g. address involved).
+    const char *message; ///< Human-readable description.
 };
 
-/// @brief Lock-free single-producer single-consumer ring buffer for structured kernel logs.
+/// @brief Lock-free single-producer single-consumer ring buffer for structured
+/// kernel logs.
 /// @tparam Capacity  Must be a power of two.
-template<size_t Capacity>
-class DmesgBuffer {
-    static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be power of 2");
+template <size_t Capacity> class DmesgBuffer {
+    static_assert((Capacity & (Capacity - 1)) == 0,
+                  "Capacity must be power of 2");
     static constexpr size_t MASK = Capacity - 1;
 
     LogEntry buffer[Capacity];           ///< Fixed-size entry array.
     alignas(64) volatile size_t head{0}; ///< Write index (producer).
     alignas(64) volatile size_t tail{0}; ///< Read index (consumer).
 
-public:
+  public:
     /// @brief Push an entry (overwrites oldest if full).
     /// @return true unless an entry was overwritten.
-    bool push(ErrorSubsystem subsys, uint64_t err_code, const char* msg, uintptr_t ctx = 0);
+    bool push(ErrorSubsystem subsys, uint64_t err_code, const char *msg,
+              uintptr_t ctx = 0);
     /// @brief Pop the oldest entry.
     /// @return true if an entry was available.
-    bool pop(LogEntry& entry);
+    bool pop(LogEntry &entry);
 
     /// @brief Iterate over all entries without removing them.
-    template<typename Fn>
-    void for_each(Fn&& fn) const {
+    template <typename Fn> void for_each(Fn &&fn) const {
         size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
         size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
 
@@ -95,14 +100,22 @@ public:
     void clear();
 
     /// @brief Suppress future pushes (release mode: quiet boot).
-    static void set_suppressed(bool v) { s_suppressed_ = v; }
+    static void set_suppressed(bool v) {
+        s_suppressed_ = v;
+    }
     /// @brief Check whether pushes are currently suppressed.
-    static bool is_suppressed() { return s_suppressed_; }
+    static bool is_suppressed() {
+        return s_suppressed_;
+    }
 
-    size_t head_index() const { return head; }
-    size_t tail_index() const { return tail; }
+    size_t head_index() const {
+        return head;
+    }
+    size_t tail_index() const {
+        return tail;
+    }
 
-private:
+  private:
     static inline bool s_suppressed_ =
 #ifdef CONFIG_DEBUG
         false
@@ -119,81 +132,111 @@ constexpr size_t DMESG_CAPACITY = CONFIG_DMESG_CAPACITY;
 extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
 /// @brief Shorthand: push an entry to the global dmesg buffer.
-#define dmesg_push(subsys, err, msg, ctx) \
-    kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::subsys, \
+#define dmesg_push(subsys, err, msg, ctx)                                      \
+    kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::subsys,             \
                               static_cast<uint64_t>(err), msg, ctx)
 
 /// @brief Shorthand: push a base-subsystem error to the global dmesg buffer.
-#define dmesg_push_base(err, msg, ctx) \
-    kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::BASE, \
+#define dmesg_push_base(err, msg, ctx)                                         \
+    kernel::log::g_dmesg.push(kernel::log::ErrorSubsystem::BASE,               \
                               static_cast<uint64_t>(err), msg, ctx)
 
 /// @brief Return a human-readable string for a base-subsystem error code.
 ///        The code space is split into kernel::Error values (0–9) and
 ///        a custom range for event codes:
 ///          0xDA00 – 0xDAFF  daemon lifecycle events
-inline const char* base_error_string(uint64_t code) {
+inline const char *base_error_string(uint64_t code) {
     // Custom event ranges
     if ((code & ~0xFFULL) == 0xDA00) {
         switch (code) {
-            case 0xDA01: return "Daemon exited";
-            case 0xDA02: return "Daemon restarted";
-            case 0xDA03: return "Daemon ensured";
-            case 0xDA04: return "Daemon terminated";
-            case 0xDA05: return "Daemon restarting";
-            case 0xDA06: return "Daemon up";
+        case 0xDA01:
+            return "Daemon exited";
+        case 0xDA02:
+            return "Daemon restarted";
+        case 0xDA03:
+            return "Daemon ensured";
+        case 0xDA04:
+            return "Daemon terminated";
+        case 0xDA05:
+            return "Daemon restarting";
+        case 0xDA06:
+            return "Daemon up";
         }
         return "Daemon event";
     }
     // Standard kernel::Error range (0–9)
     switch (static_cast<kernel::Error>(code)) {
-        case kernel::Error::OK: return "OK";
-        case kernel::Error::OOM: return "Out of memory";
-        case kernel::Error::INVALID_ARG: return "Invalid argument";
-        case kernel::Error::NOT_FOUND: return "Not found";
-        case kernel::Error::ALREADY_EXISTS: return "Already exists";
-        case kernel::Error::TIMEOUT: return "Timeout";
-        case kernel::Error::BUSY: return "Busy";
-        case kernel::Error::NOT_IMPLEMENTED: return "Not implemented";
-        case kernel::Error::IO_ERROR: return "I/O error";
-        case kernel::Error::CORRUPTED: return "Corrupted";
+    case kernel::Error::OK:
+        return "OK";
+    case kernel::Error::OOM:
+        return "Out of memory";
+    case kernel::Error::INVALID_ARG:
+        return "Invalid argument";
+    case kernel::Error::NOT_FOUND:
+        return "Not found";
+    case kernel::Error::ALREADY_EXISTS:
+        return "Already exists";
+    case kernel::Error::TIMEOUT:
+        return "Timeout";
+    case kernel::Error::BUSY:
+        return "Busy";
+    case kernel::Error::NOT_IMPLEMENTED:
+        return "Not implemented";
+    case kernel::Error::IO_ERROR:
+        return "I/O error";
+    case kernel::Error::CORRUPTED:
+        return "Corrupted";
     }
     return "Unknown base error";
 }
 
 /// @brief Return a short name for an ErrorSubsystem.
-inline const char* subsystem_name(ErrorSubsystem s) {
+inline const char *subsystem_name(ErrorSubsystem s) {
     switch (s) {
-        case ErrorSubsystem::BASE:    return "BASE";
-        case ErrorSubsystem::SYNC:    return "SYNC";
-        case ErrorSubsystem::VFS:     return "VFS";
-        case ErrorSubsystem::MEMPOOL: return "MPOOL";
-        case ErrorSubsystem::SCHED:   return "SCHED";
-        case ErrorSubsystem::IPC:     return "IPC";
-        case ErrorSubsystem::SYSCALL: return "SYSCALL";
-        default: return "UNK";
+    case ErrorSubsystem::BASE:
+        return "BASE";
+    case ErrorSubsystem::SYNC:
+        return "SYNC";
+    case ErrorSubsystem::VFS:
+        return "VFS";
+    case ErrorSubsystem::MEMPOOL:
+        return "MPOOL";
+    case ErrorSubsystem::SCHED:
+        return "SCHED";
+    case ErrorSubsystem::IPC:
+        return "IPC";
+    case ErrorSubsystem::SYSCALL:
+        return "SYSCALL";
+    default:
+        return "UNK";
     }
 }
 
 /// @brief Dispatch an error code to the correct subsystem's error_string.
-inline const char* error_string(ErrorSubsystem subsys, uint64_t code) {
+inline const char *error_string(ErrorSubsystem subsys, uint64_t code) {
     switch (subsys) {
-        case ErrorSubsystem::BASE:
-            return base_error_string(code);
-        case ErrorSubsystem::SYNC:
-            return kernel::errors::error_string(static_cast<kernel::errors::SyncError>(code));
-        case ErrorSubsystem::VFS:
-            return kernel::errors::error_string(static_cast<kernel::errors::VfsError>(code));
-        case ErrorSubsystem::MEMPOOL:
-            return kernel::errors::error_string(static_cast<kernel::errors::MemPoolError>(code));
-        case ErrorSubsystem::SCHED:
-            return kernel::errors::error_string(static_cast<kernel::errors::SchedulerError>(code));
-        case ErrorSubsystem::IPC:
-            return kernel::errors::error_string(static_cast<kernel::errors::IpcError>(code));
-        case ErrorSubsystem::SYSCALL:
-            return kernel::errors::error_string(static_cast<kernel::errors::SyscallError>(code));
-        default:
-            return "UNKNOWN";
+    case ErrorSubsystem::BASE:
+        return base_error_string(code);
+    case ErrorSubsystem::SYNC:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::SyncError>(code));
+    case ErrorSubsystem::VFS:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::VfsError>(code));
+    case ErrorSubsystem::MEMPOOL:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::MemPoolError>(code));
+    case ErrorSubsystem::SCHED:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::SchedulerError>(code));
+    case ErrorSubsystem::IPC:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::IpcError>(code));
+    case ErrorSubsystem::SYSCALL:
+        return kernel::errors::error_string(
+            static_cast<kernel::errors::SyscallError>(code));
+    default:
+        return "UNKNOWN";
     }
 }
 

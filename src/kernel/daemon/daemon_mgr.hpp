@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file daemon_mgr.hpp
-/// @brief Daemon lifecycle manager — registration, spawning, death notification, and restart.
+/// @brief Daemon lifecycle manager — registration, spawning, death
+/// notification, and restart.
 
 #pragma once
 
@@ -31,12 +34,12 @@ static constexpr uint64_t MAX_RESTART_COUNT = 10;
 
 /// @brief Entry for a single managed daemon.
 struct DaemonEntry {
-    const char* name;           ///< Human-readable daemon name.
-    const char* initrd_path;    ///< Path to the ELF in the initrd.
-    uint64_t pid;               ///< Current PID (0 if not running).
-    uint64_t restart_count;     ///< Number of automatic restarts performed.
-    void (*set_pid_fn)(uint64_t);   ///< Callback to store the PID.
-    uint64_t (*get_pid_fn)();       ///< Callback to retrieve the current PID.
+    const char *name;             ///< Human-readable daemon name.
+    const char *initrd_path;      ///< Path to the ELF in the initrd.
+    uint64_t pid;                 ///< Current PID (0 if not running).
+    uint64_t restart_count;       ///< Number of automatic restarts performed.
+    void (*set_pid_fn)(uint64_t); ///< Callback to store the PID.
+    uint64_t (*get_pid_fn)();     ///< Callback to retrieve the current PID.
 };
 
 /// @brief Initialize the daemon manager and spawn registered daemons.
@@ -51,7 +54,7 @@ void reset_clear_daemons();
 /// @param set_pid Callback to store the PID when the daemon is spawned.
 /// @param get_pid Callback to retrieve the daemon's current PID.
 /// @return true if registered successfully.
-bool register_daemon(const char* name, const char* initrd_path,
+bool register_daemon(const char *name, const char *initrd_path,
                      void (*set_pid)(uint64_t), uint64_t (*get_pid)());
 /// @brief Notify the daemon manager that a daemon has exited.
 /// @param pid      PID of the daemon that died.
@@ -65,24 +68,24 @@ void restart_stale_daemons();
 
 /// @brief Ensure a daemon is running.  If its PID is 0 or the task is no
 ///        longer valid, reload it from the initrd ELF immediately.
-void ensure_running(const char* name);
+void ensure_running(const char *name);
 
 /// @brief Terminate a daemon by name.  Marks the task as TERMINATED and
 ///        clears the daemon entry so ensure_running will reload it.
-void terminate(const char* name);
+void terminate(const char *name);
 
 /// @brief Reset a daemon's restart count so it can be restarted again.
 ///        Sets restart_count=0, pid=0, and calls set_pid_fn(0).
-void reset_restart_count(const char* name);
+void reset_restart_count(const char *name);
 
 /// @brief Return a const reference to the i-th daemon entry.
-const DaemonEntry& get_entry(uint64_t index);
+const DaemonEntry &get_entry(uint64_t index);
 
 /// @name Test-isolation helpers
 /// @brief Copy all daemon entries and count into @p entries_out / @p num_out.
-void capture_state(DaemonEntry* out_entries, uint64_t& num_out);
+void capture_state(DaemonEntry *out_entries, uint64_t &num_out);
 /// @brief Restore daemon entries and count from @p entries_in / @p num_in.
-void restore_state(const DaemonEntry* entries_in, uint64_t num_in);
+void restore_state(const DaemonEntry *entries_in, uint64_t num_in);
 
 } // namespace daemon
 } // namespace kernel

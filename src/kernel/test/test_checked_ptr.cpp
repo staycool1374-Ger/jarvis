@@ -34,17 +34,18 @@ using namespace kernel;
 // addresses, nullptr, and overflowing ranges
 // Depends: kernel/memory
 JARVIS_TEST(checked_ptr_is_user_range, "PRE: none | POST: none") {
-    JARVIS_ASSERT(!is_user_range(reinterpret_cast<void*>(0xFFFF800000000000ULL), 1));
+    JARVIS_ASSERT(
+        !is_user_range(reinterpret_cast<void *>(0xFFFF800000000000ULL), 1));
 
-    JARVIS_ASSERT(is_user_range(reinterpret_cast<void*>(0x400000), 1));
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<void *>(0x400000), 1));
 
     JARVIS_ASSERT(!is_user_range(nullptr, 1));
 
     uint64_t limit = USER_SPACE_LIMIT;
-    JARVIS_ASSERT(!is_user_range(reinterpret_cast<void*>(limit), 1));
-    JARVIS_ASSERT(is_user_range(reinterpret_cast<void*>(limit - 1), 1));
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<void *>(limit), 1));
+    JARVIS_ASSERT(is_user_range(reinterpret_cast<void *>(limit - 1), 1));
 
-    JARVIS_ASSERT(!is_user_range(reinterpret_cast<void*>(limit - 10), 20));
+    JARVIS_ASSERT(!is_user_range(reinterpret_cast<void *>(limit - 10), 20));
     JARVIS_TEST_PASS();
 }
 

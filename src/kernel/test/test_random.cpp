@@ -28,8 +28,9 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Basic RNG smoke test — generate random bytes and check they aren't all zero
-// Expect: random_fill produces non-zero output within a reasonable sample
+// Testidea: Basic RNG smoke test — generate random bytes and check they aren't
+// all zero Expect: random_fill produces non-zero output within a reasonable
+// sample
 JARVIS_TEST(random_basic_smoke, "PRE: none | POST: none") {
     uint8_t buf[256];
     random_fill(buf, sizeof(buf));
@@ -37,12 +38,16 @@ JARVIS_TEST(random_basic_smoke, "PRE: none | POST: none") {
     bool all_zero = true;
     bool all_ff = true;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0) all_zero = false;
-        if (buf[i] != 0xFF) all_ff = false;
+        if (buf[i] != 0)
+            all_zero = false;
+        if (buf[i] != 0xFF)
+            all_ff = false;
     }
 
-    JARVIS_ASSERT_FMT(!all_zero, "random_fill returned %zu zero bytes", sizeof(buf));
-    JARVIS_ASSERT_FMT(!all_ff, "random_fill returned %zu 0xFF bytes", sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_zero, "random_fill returned %zu zero bytes",
+                      sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_ff, "random_fill returned %zu 0xFF bytes",
+                      sizeof(buf));
     JARVIS_TEST_PASS();
 }
 
@@ -57,10 +62,14 @@ JARVIS_TEST(random_not_repeating, "PRE: none | POST: none") {
 
     bool same = true;
     for (size_t i = 0; i < sizeof(a); ++i) {
-        if (a[i] != b[i]) { same = false; break; }
+        if (a[i] != b[i]) {
+            same = false;
+            break;
+        }
     }
 
-    JARVIS_ASSERT_FMT(!same, "Consecutive random_fill calls produced identical output");
+    JARVIS_ASSERT_FMT(
+        !same, "Consecutive random_fill calls produced identical output");
     JARVIS_TEST_PASS();
 }
 
@@ -73,7 +82,7 @@ JARVIS_TEST(random_u64_not_constant, "PRE: none | POST: none") {
     uint64_t c = random_u64();
 
     JARVIS_ASSERT_FMT(a != b || b != c,
-        "random_u64 produced constant value 0x%016llx", a);
+                      "random_u64 produced constant value 0x%016llx", a);
     JARVIS_TEST_PASS();
 }
 
@@ -89,9 +98,13 @@ JARVIS_TEST(random_partial_fills, "PRE: none | POST: none") {
         random_fill(buf, len);
         bool all_zero = true;
         for (size_t i = 0; i < len; ++i) {
-            if (buf[i] != 0) { all_zero = false; break; }
+            if (buf[i] != 0) {
+                all_zero = false;
+                break;
+            }
         }
-        JARVIS_ASSERT_FMT(!all_zero, "random_fill(%zu) returned all zeros", len);
+        JARVIS_ASSERT_FMT(!all_zero, "random_fill(%zu) returned all zeros",
+                          len);
     }
 
     JARVIS_TEST_PASS();
@@ -106,10 +119,14 @@ JARVIS_TEST(random_large_buffer, "PRE: none | POST: none") {
 
     bool all_zero = true;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0) { all_zero = false; break; }
+        if (buf[i] != 0) {
+            all_zero = false;
+            break;
+        }
     }
 
-    JARVIS_ASSERT_FMT(!all_zero, "random_fill(%zu) returned all zeros", sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_zero, "random_fill(%zu) returned all zeros",
+                      sizeof(buf));
     JARVIS_TEST_PASS();
 }
 
@@ -119,7 +136,8 @@ JARVIS_TEST(random_large_buffer, "PRE: none | POST: none") {
 JARVIS_TEST(random_zero_length, "PRE: none | POST: none") {
     uint8_t buf[4] = {0xAA, 0xBB, 0xCC, 0xDD};
     random_fill(buf, 0);
-    JARVIS_ASSERT(buf[0] == 0xAA && buf[1] == 0xBB && buf[2] == 0xCC && buf[3] == 0xDD);
+    JARVIS_ASSERT(buf[0] == 0xAA && buf[1] == 0xBB && buf[2] == 0xCC &&
+                  buf[3] == 0xDD);
     JARVIS_TEST_PASS();
 }
 
@@ -130,9 +148,8 @@ JARVIS_TEST(random_cpuid_detection, "PRE: none | POST: none") {
     // Just ensure the functions don't crash
     bool has_rr = arch::has_rdrand();
     bool has_rs = arch::has_rdseed();
-    Logger::info("RDRAND: %s, RDSEED: %s",
-        has_rr ? "yes" : "no",
-        has_rs ? "yes" : "no");
+    Logger::info("RDRAND: %s, RDSEED: %s", has_rr ? "yes" : "no",
+                 has_rs ? "yes" : "no");
     JARVIS_TEST_PASS();
 }
 

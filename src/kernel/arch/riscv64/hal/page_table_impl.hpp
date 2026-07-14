@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -38,7 +40,7 @@ namespace arch {
 /// @brief Read the current page-table root physical address from SATP.
 /// @return Physical address of the root page table.
 inline uint64_t arch_page_table_current() {
-    uint64_t satp;
+    uint64_t satp{};
     asm volatile("csrr %0, satp" : "=r"(satp) : : "memory");
     return (satp & 0xFFFFFFFFFFF) << 12; // PPN -> physical address
 }
@@ -66,15 +68,23 @@ inline void arch_page_table_tlb_flush_all() {
 /// @brief Sv39 page table manager — wraps arch_page_table_* free functions
 ///        and provides map/unmap/lookup operations.
 class ArchPageTable {
-public:
+  public:
     /// @brief Return the current page-table root physical address.
-    static inline uint64_t current() { return arch_page_table_current(); }
+    static inline uint64_t current() {
+        return arch_page_table_current();
+    }
     /// @brief Activate a page table by writing SATP.
-    static inline void activate(uint64_t phys) { arch_page_table_activate(phys); }
+    static inline void activate(uint64_t phys) {
+        arch_page_table_activate(phys);
+    }
     /// @brief Flush TLB for a single virtual address.
-    static inline void tlb_flush(uint64_t virt_addr) { arch_page_table_tlb_flush(virt_addr); }
+    static inline void tlb_flush(uint64_t virt_addr) {
+        arch_page_table_tlb_flush(virt_addr);
+    }
     /// @brief Flush the entire TLB.
-    static inline void tlb_flush_all() { arch_page_table_tlb_flush_all(); }
+    static inline void tlb_flush_all() {
+        arch_page_table_tlb_flush_all();
+    }
 
     /// @brief Page size in bytes (4 KB).
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
@@ -86,7 +96,8 @@ public:
     /// @param phys  Physical address to map.
     /// @param flags PageFlags bitmask (PRESENT, WRITE, USER, NX, etc.).
     /// @return ErrorOr<void> — OOM if page-table allocation fails.
-    static kernel::ErrorOr<void> map_page(uint64_t virt, uint64_t phys, uint64_t flags);
+    static kernel::ErrorOr<void> map_page(uint64_t virt, uint64_t phys,
+                                          uint64_t flags);
     /// @brief Unmap a virtual page (zeros the PTE).
     /// @param virt Virtual address to unmap.
     /// @return ErrorOr<void> — NOT_FOUND if the mapping does not exist.
@@ -96,7 +107,7 @@ public:
     /// @return Physical address, or 0 if not mapped.
     static uint64_t get_physical(uint64_t virt);
 
-private:
+  private:
     static constexpr uint64_t L0_SHIFT = 30;
     static constexpr uint64_t L1_SHIFT = 21;
     static constexpr uint64_t L2_SHIFT = 12;
@@ -131,17 +142,18 @@ private:
     /// @param index      Entry index within the table.
     /// @param create     If true and the entry is invalid, allocate a new page.
     /// @return Pointer to the next-level table, or nullptr on failure.
-    static uint64_t* get_table(uint64_t table_base, uint64_t index, bool create);
+    static uint64_t *get_table(uint64_t table_base, uint64_t index,
+                               bool create);
     /// @brief Convert PageFlags bitmask to Sv39 descriptor attributes.
     /// @param flags PageFlags bitmask.
     /// @return Sv39 descriptor attribute bits.
     static uint64_t attr_from_flags(uint64_t flags);
     /// @brief Walk L0 table (bits 38:30) and return the L1 table pointer.
-    static uint64_t* walk_l0(uint64_t l0_base, size_t l0_idx, bool create);
+    static uint64_t *walk_l0(uint64_t l0_base, size_t l0_idx, bool create);
     /// @brief Walk L1 table (bits 29:21) and return the L2 table pointer.
-    static uint64_t* walk_l1(uint64_t l1_base, size_t l1_idx, bool create);
+    static uint64_t *walk_l1(uint64_t l1_base, size_t l1_idx, bool create);
     /// @brief Walk L2 table (bits 20:12) and return the page entry.
-    static uint64_t* walk_l2(uint64_t l2_base, size_t l2_idx, bool create);
+    static uint64_t *walk_l2(uint64_t l2_base, size_t l2_idx, bool create);
 };
 
 /// @brief Get or create a page-table entry at the given index.
@@ -150,24 +162,28 @@ private:
 /// @param create     If true and the entry is invalid, allocate a zeroed page.
 /// @return Pointer to the next-level table, or nullptr if !create and invalid,
 ///         or on OOM.
-inline uint64_t* ArchPageTable::get_table(uint64_t table_base, uint64_t index, bool create) {
-    uint64_t* table = reinterpret_cast<uint64_t*>(table_base);
+inline uint64_t *ArchPageTable::get_table(uint64_t table_base, uint64_t index,
+                                          bool create) {
+    uint64_t *table = reinterpret_cast<uint64_t *>(table_base);
     uint64_t entry = table[index];
 
     if (entry & DESC_VALID) {
-        return reinterpret_cast<uint64_t*>(entry & ~0xFFF);
+        return reinterpret_cast<uint64_t *>(entry & ~0xFFF);
     }
 
-    if (!create) return nullptr;
+    if (!create)
+        return nullptr;
 
     uint64_t new_page = kernel::PMM::alloc_page_table();
-    if (!new_page) return nullptr;
+    if (!new_page)
+        return nullptr;
 
-    void* new_page_ptr = reinterpret_cast<void*>(new_page);
+    void *new_page_ptr = reinterpret_cast<void *>(new_page);
     memset(new_page_ptr, 0, PAGE_SIZE);
     // Mark as valid, readable, writable table pointer
-    table[index] = (new_page & ~0xFFF) | DESC_VALID | DESC_TABLE | DESC_R | DESC_W;
-    return reinterpret_cast<uint64_t*>(new_page);
+    table[index] =
+        (new_page & ~0xFFF) | DESC_VALID | DESC_TABLE | DESC_R | DESC_W;
+    return reinterpret_cast<uint64_t *>(new_page);
 }
 
 /// @brief Convert kernel PageFlags to Sv39 descriptor attributes.
@@ -176,12 +192,17 @@ inline uint64_t* ArchPageTable::get_table(uint64_t table_base, uint64_t index, b
 inline uint64_t ArchPageTable::attr_from_flags(uint64_t flags) {
     uint64_t attr = DESC_VALID | DESC_AF;
     (void)DESC_G;
-    if (flags & kernel::PageFlags::PRESENT) attr |= DESC_VALID;
-    if (!(flags & kernel::PageFlags::NX)) attr |= DESC_X;
-    if (flags & kernel::PageFlags::WRITE) attr |= DESC_W;
-    if (flags & kernel::PageFlags::USER) attr |= DESC_USER;
+    if (flags & kernel::PageFlags::PRESENT)
+        attr |= DESC_VALID;
+    if (!(flags & kernel::PageFlags::NX))
+        attr |= DESC_X;
+    if (flags & kernel::PageFlags::WRITE)
+        attr |= DESC_W;
+    if (flags & kernel::PageFlags::USER)
+        attr |= DESC_USER;
     // Default to readable unless explicitly no-access
-    if (flags & kernel::PageFlags::PRESENT) attr |= DESC_R;
+    if (flags & kernel::PageFlags::PRESENT)
+        attr |= DESC_R;
     return attr;
 }
 
@@ -190,7 +211,8 @@ inline uint64_t ArchPageTable::attr_from_flags(uint64_t flags) {
 /// @param l0_idx  L0 index.
 /// @param create  If true, allocate a new table if missing.
 /// @return Pointer to L1 table, or nullptr.
-inline uint64_t* ArchPageTable::walk_l0(uint64_t l0_base, size_t l0_idx, bool create) {
+inline uint64_t *ArchPageTable::walk_l0(uint64_t l0_base, size_t l0_idx,
+                                        bool create) {
     return get_table(l0_base, l0_idx, create);
 }
 
@@ -199,7 +221,8 @@ inline uint64_t* ArchPageTable::walk_l0(uint64_t l0_base, size_t l0_idx, bool cr
 /// @param l1_idx  L1 index.
 /// @param create  If true, allocate a new table if missing.
 /// @return Pointer to L2 table, or nullptr.
-inline uint64_t* ArchPageTable::walk_l1(uint64_t l1_base, size_t l1_idx, bool create) {
+inline uint64_t *ArchPageTable::walk_l1(uint64_t l1_base, size_t l1_idx,
+                                        bool create) {
     return get_table(l1_base, l1_idx, create);
 }
 
@@ -208,7 +231,8 @@ inline uint64_t* ArchPageTable::walk_l1(uint64_t l1_base, size_t l1_idx, bool cr
 /// @param l2_idx  L2 index.
 /// @param create  If true, allocate a new table if missing.
 /// @return Pointer to the L2 entry, or nullptr.
-inline uint64_t* ArchPageTable::walk_l2(uint64_t l2_base, size_t l2_idx, bool create) {
+inline uint64_t *ArchPageTable::walk_l2(uint64_t l2_base, size_t l2_idx,
+                                        bool create) {
     return get_table(l2_base, l2_idx, create);
 }
 
@@ -217,28 +241,34 @@ inline uint64_t* ArchPageTable::walk_l2(uint64_t l2_base, size_t l2_idx, bool cr
 /// @param phys  Physical address.
 /// @param flags PageFlags bitmask.
 /// @return ErrorOr<void> — OOM if page-table page allocation fails.
-inline kernel::ErrorOr<void> ArchPageTable::map_page(uint64_t virt, uint64_t phys, uint64_t flags) {
+inline kernel::ErrorOr<void>
+ArchPageTable::map_page(uint64_t virt, uint64_t phys, uint64_t flags) {
     uint64_t l0_idx = (virt >> L0_SHIFT) & TABLE_MASK;
     uint64_t l1_idx = (virt >> L1_SHIFT) & TABLE_MASK;
     uint64_t l2_idx = (virt >> L2_SHIFT) & TABLE_MASK;
 
     uint64_t l0_phys = current();
-    uint64_t* l1 = walk_l0(l0_phys, l0_idx, true);
-    if (!l1) return kernel::Error::OOM;
+    uint64_t *l1 = walk_l0(l0_phys, l0_idx, true);
+    if (!l1)
+        return kernel::Error::OOM;
 
-    uint64_t* l2 = walk_l1(reinterpret_cast<uint64_t>(l1), l1_idx, true);
-    if (!l2) return kernel::Error::OOM;
+    uint64_t *l2 = walk_l1(reinterpret_cast<uint64_t>(l1), l1_idx, true);
+    if (!l2)
+        return kernel::Error::OOM;
 
     uint64_t entry_flags = attr_from_flags(flags);
 
     // Try 2MB block mapping if aligned
-    if ((virt & ((1ULL << L1_SHIFT) - 1)) == 0 && (phys & ((1ULL << L1_SHIFT) - 1)) == 0) {
-        l2[l1_idx] = (phys & ~0x1FFFFF) | entry_flags | DESC_BLOCK | (1ULL << 6);
+    if ((virt & ((1ULL << L1_SHIFT) - 1)) == 0 &&
+        (phys & ((1ULL << L1_SHIFT) - 1)) == 0) {
+        l2[l1_idx] =
+            (phys & ~0x1FFFFF) | entry_flags | DESC_BLOCK | (1ULL << 6);
         return {};
     }
 
     // 4KB page at L2
-    l2[l2_idx] = (phys & ~0xFFF) | entry_flags | DESC_PAGE | (1ULL << 6) | (1ULL << 7);
+    l2[l2_idx] =
+        (phys & ~0xFFF) | entry_flags | DESC_PAGE | (1ULL << 6) | (1ULL << 7);
     return {};
 }
 
@@ -251,12 +281,14 @@ inline kernel::ErrorOr<void> ArchPageTable::unmap_page(uint64_t virt) {
     uint64_t l2_idx = (virt >> L2_SHIFT) & TABLE_MASK;
 
     uint64_t l0_phys = current();
-    uint64_t* l0 = reinterpret_cast<uint64_t*>(l0_phys);
+    uint64_t *l0 = reinterpret_cast<uint64_t *>(l0_phys);
 
-    if (!(l0[l0_idx] & DESC_VALID)) return kernel::Error::NOT_FOUND;
-    uint64_t* l1 = reinterpret_cast<uint64_t*>(l0[l0_idx] & ~0xFFF);
-    if (!(l1[l1_idx] & DESC_VALID)) return kernel::Error::NOT_FOUND;
-    uint64_t* l2 = reinterpret_cast<uint64_t*>(l1[l1_idx] & ~0xFFF);
+    if (!(l0[l0_idx] & DESC_VALID))
+        return kernel::Error::NOT_FOUND;
+    uint64_t *l1 = reinterpret_cast<uint64_t *>(l0[l0_idx] & ~0xFFF);
+    if (!(l1[l1_idx] & DESC_VALID))
+        return kernel::Error::NOT_FOUND;
+    uint64_t *l2 = reinterpret_cast<uint64_t *>(l1[l1_idx] & ~0xFFF);
 
     // Check for 2MB block
     if ((virt & ((1ULL << L1_SHIFT) - 1)) == 0 && !(l2[l1_idx] & DESC_TABLE)) {
@@ -264,12 +296,14 @@ inline kernel::ErrorOr<void> ArchPageTable::unmap_page(uint64_t virt) {
         return {};
     }
 
-    if (!(l2[l2_idx] & DESC_VALID)) return kernel::Error::NOT_FOUND;
+    if (!(l2[l2_idx] & DESC_VALID))
+        return kernel::Error::NOT_FOUND;
     l2[l2_idx] = 0;
     return {};
 }
 
-/// @brief Walk the page table to find the physical address for a virtual address.
+/// @brief Walk the page table to find the physical address for a virtual
+/// address.
 /// @param virt Virtual address to translate.
 /// @return Physical address, or 0 if not mapped.
 inline uint64_t ArchPageTable::get_physical(uint64_t virt) {
@@ -278,19 +312,22 @@ inline uint64_t ArchPageTable::get_physical(uint64_t virt) {
     uint64_t l2_idx = (virt >> L2_SHIFT) & TABLE_MASK;
 
     uint64_t l0_phys = current();
-    uint64_t* l0 = reinterpret_cast<uint64_t*>(l0_phys);
+    uint64_t *l0 = reinterpret_cast<uint64_t *>(l0_phys);
 
-    if (!(l0[l0_idx] & DESC_VALID)) return 0;
-    uint64_t* l1 = reinterpret_cast<uint64_t*>(l0[l0_idx] & ~0xFFF);
-    if (!(l1[l1_idx] & DESC_VALID)) return 0;
-    uint64_t* l2 = reinterpret_cast<uint64_t*>(l1[l1_idx] & ~0xFFF);
+    if (!(l0[l0_idx] & DESC_VALID))
+        return 0;
+    uint64_t *l1 = reinterpret_cast<uint64_t *>(l0[l0_idx] & ~0xFFF);
+    if (!(l1[l1_idx] & DESC_VALID))
+        return 0;
+    uint64_t *l2 = reinterpret_cast<uint64_t *>(l1[l1_idx] & ~0xFFF);
 
     // 2MB block mapping
     if ((virt & ((1ULL << L1_SHIFT) - 1)) == 0 && !(l2[l1_idx] & DESC_TABLE)) {
         return (l2[l1_idx] & ~0x1FFFFF) | (virt & 0x1FFFFF);
     }
 
-    if (!(l2[l2_idx] & DESC_VALID)) return 0;
+    if (!(l2[l2_idx] & DESC_VALID))
+        return 0;
     return (l2[l2_idx] & ~0xFFF) | (virt & 0xFFF);
 }
 

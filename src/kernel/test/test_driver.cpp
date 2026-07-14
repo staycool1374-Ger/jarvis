@@ -36,7 +36,7 @@ using namespace kernel;
 // name matching "keyboard"; find("nonexistent_driver_xyz") returns nullptr
 // Depends: DriverRegistry
 JARVIS_TEST(driver_registry_find, "PRE: iocd | POST: none") {
-    auto* drv = DriverRegistry::find("keyboard");
+    auto *drv = DriverRegistry::find("keyboard");
     JARVIS_ASSERT(drv != nullptr);
     JARVIS_ASSERT_EQ(0, strcmp(drv->name, "keyboard"));
     drv = DriverRegistry::find("nonexistent_driver_xyz");
@@ -56,10 +56,12 @@ JARVIS_TEST(driver_registry_count, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(cnt >= 4);
     bool has_kbd = false, has_timer = false;
     for (size_t i = 0; i < cnt; ++i) {
-        auto* d = DriverRegistry::get(i);
+        auto *d = DriverRegistry::get(i);
         if (d) {
-            if (strcmp(d->name, "keyboard") == 0) has_kbd = true;
-            if (strcmp(d->name, "timer") == 0) has_timer = true;
+            if (strcmp(d->name, "keyboard") == 0)
+                has_kbd = true;
+            if (strcmp(d->name, "timer") == 0)
+                has_timer = true;
         }
     }
     JARVIS_ASSERT(has_kbd);

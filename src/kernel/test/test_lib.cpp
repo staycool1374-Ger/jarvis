@@ -241,7 +241,7 @@ JARVIS_TEST(error_or_errors, "PRE: none | POST: none") {
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
 JARVIS_TEST(version_string_not_empty, "PRE: none | POST: none") {
-    const char* sv = Version::string();
+    const char *sv = Version::string();
     JARVIS_ASSERT(sv != nullptr);
     JARVIS_ASSERT(strlen(sv) > 0);
     JARVIS_TEST_PASS();
@@ -254,7 +254,7 @@ JARVIS_TEST(version_string_not_empty, "PRE: none | POST: none") {
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
 JARVIS_TEST(version_full_string_not_empty, "PRE: none | POST: none") {
-    const char* fv = Version::full_string();
+    const char *fv = Version::full_string();
     JARVIS_ASSERT(fv != nullptr);
     JARVIS_ASSERT(strlen(fv) > 0);
     JARVIS_TEST_PASS();
@@ -267,7 +267,7 @@ JARVIS_TEST(version_full_string_not_empty, "PRE: none | POST: none") {
 // Expect: Non-null pointer with strlen > 0.
 // Depends: version
 JARVIS_TEST(version_build_date_not_empty, "PRE: none | POST: none") {
-    const char* bd = Version::build_date();
+    const char *bd = Version::build_date();
     JARVIS_ASSERT(bd != nullptr);
     JARVIS_ASSERT(strlen(bd) > 0);
     JARVIS_TEST_PASS();

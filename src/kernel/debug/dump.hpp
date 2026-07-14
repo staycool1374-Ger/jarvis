@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -18,8 +20,9 @@
 
 /// @file dump.hpp
 /// @brief Diagnostic dump functions for kernel debugging.
-///        All functions use arch::IrqGuard internally to disable IRQs during output.
-///        Output goes to serial via Logger::raw_write/print_hex/print_dec.
+///        All functions use arch::IrqGuard internally to disable IRQs during
+///        output. Output goes to serial via
+///        Logger::raw_write/print_hex/print_dec.
 
 #pragma once
 
@@ -28,7 +31,8 @@
 namespace kernel {
 namespace debug {
 
-/// @brief Dump all scheduler state (indices, counts, flags, deferred-switch globals).
+/// @brief Dump all scheduler state (indices, counts, flags, deferred-switch
+/// globals).
 void dump_scheduler_info();
 
 /// @brief Dump all CPU general-purpose registers + CR0/CR2/CR3/CR4.

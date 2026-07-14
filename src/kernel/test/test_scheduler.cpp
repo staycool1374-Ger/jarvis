@@ -46,7 +46,7 @@ JARVIS_TEST(scheduler_task_count, "PRE: none | POST: none") {
 // Expect: JARVIS_ASSERT checks non-null and id > 0
 // Depends: test, scheduler
 JARVIS_TEST(scheduler_current_task, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->id > 0);
     JARVIS_TEST_PASS();
@@ -59,10 +59,10 @@ JARVIS_TEST(scheduler_current_task, "PRE: none | POST: none") {
 // Expect: JARVIS_ASSERT checks that before and after are both non-null
 // Depends: test, scheduler
 JARVIS_TEST(scheduler_reschedule_noop, "PRE: none | POST: none") {
-    auto* before = Scheduler::current_task();
+    auto *before = Scheduler::current_task();
     JARVIS_ASSERT(before != nullptr);
     Scheduler::reschedule();
-    auto* after = Scheduler::current_task();
+    auto *after = Scheduler::current_task();
     JARVIS_ASSERT(after != nullptr);
     JARVIS_TEST_PASS();
 }
@@ -75,11 +75,11 @@ JARVIS_TEST(scheduler_reschedule_noop, "PRE: none | POST: none") {
 // original after remove; current_task non-null
 // Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_remove_task, "PRE: none | POST: none") {
-    auto* before = Scheduler::current_task();
+    auto *before = Scheduler::current_task();
     JARVIS_ASSERT(before != nullptr);
     uint64_t cnt_before = Scheduler::task_count();
 
-    auto* new_task = TaskControlBlock::create([]() {}, 1, 10);
+    auto *new_task = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(new_task != nullptr);
     Scheduler::add_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
@@ -87,7 +87,7 @@ JARVIS_TEST(scheduler_remove_task, "PRE: none | POST: none") {
     Scheduler::remove_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before, Scheduler::task_count());
 
-    auto* after = Scheduler::current_task();
+    auto *after = Scheduler::current_task();
     JARVIS_ASSERT(after != nullptr);
 
     new_task->cleanup();
@@ -106,7 +106,7 @@ JARVIS_TEST(scheduler_remove_task, "PRE: none | POST: none") {
 JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
     uint64_t cnt_before = Scheduler::task_count();
 
-    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     child->parent_id = 999999;
     Scheduler::add_task(*child);
@@ -118,7 +118,7 @@ JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
 
     JARVIS_ASSERT(Scheduler::task_count() <= cnt_before + 1);
 
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
     JARVIS_TEST_PASS();
@@ -131,21 +131,23 @@ JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
 // Expect: next_task returns the high-priority task.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_preemptive_priority, "PRE: none | POST: none") {
-    auto* low = TaskControlBlock::create([](){}, 5, 5);
+    auto *low = TaskControlBlock::create([]() {}, 5, 5);
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
-    auto* high = TaskControlBlock::create([](){}, 15, 5);
+    auto *high = TaskControlBlock::create([]() {}, 15, 5);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next == high);
 
     Scheduler::remove_task(*low);
-    low->cleanup(); delete low;
+    low->cleanup();
+    delete low;
     Scheduler::remove_task(*high);
-    high->cleanup(); delete high;
+    high->cleanup();
+    delete high;
     JARVIS_TEST_PASS();
 }
 
@@ -156,17 +158,21 @@ JARVIS_TEST(scheduler_preemptive_priority, "PRE: none | POST: none") {
 // Expect: next_task returns one of the two tasks.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_quantum_exhaustion, "PRE: none | POST: none") {
-    auto* t1 = TaskControlBlock::create([](){}, 15, 5);
-    auto* t2 = TaskControlBlock::create([](){}, 15, 5);
+    auto *t1 = TaskControlBlock::create([]() {}, 15, 5);
+    auto *t2 = TaskControlBlock::create([]() {}, 15, 5);
     JARVIS_ASSERT(t1 && t2);
     Scheduler::add_task(*t1);
     Scheduler::add_task(*t2);
 
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next == t1 || next == t2);
 
-    Scheduler::remove_task(*t1); t1->cleanup(); delete t1;
-    Scheduler::remove_task(*t2); t2->cleanup(); delete t2;
+    Scheduler::remove_task(*t1);
+    t1->cleanup();
+    delete t1;
+    Scheduler::remove_task(*t2);
+    t2->cleanup();
+    delete t2;
     JARVIS_TEST_PASS();
 }
 
@@ -178,12 +184,13 @@ JARVIS_TEST(scheduler_quantum_exhaustion, "PRE: none | POST: none") {
 // Expect: Child is NOT reaped while parent waits; reaped after parent clears
 // wait.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred,
+            "PRE: none | POST: none") {
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
     child->parent_id = parent->id;
@@ -218,9 +225,8 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred, "PRE: none | POST: none") 
 }
 
 // Runmode: kernel
-// Testidea: Verifies Scheduler::alloc_id() returns monotonically increasing IDs;
-// wraps correctly from UINT64_MAX.
-// Input: Call alloc_id() multiple times.
+// Testidea: Verifies Scheduler::alloc_id() returns monotonically increasing
+// IDs; wraps correctly from UINT64_MAX. Input: Call alloc_id() multiple times.
 // Expect: Each call returns a value one greater than the previous.
 // Depends: kernel::task::Scheduler
 JARVIS_TEST(scheduler_alloc_id_sequential, "PRE: none | POST: none") {
@@ -239,15 +245,15 @@ JARVIS_TEST(scheduler_alloc_id_sequential, "PRE: none | POST: none") {
 // Expect: Correct pointer or nullptr at boundaries.
 // Depends: kernel::task::Scheduler
 JARVIS_TEST(scheduler_task_at_bounds, "PRE: none | POST: none") {
-    auto* idle = Scheduler::task_at(0);
+    auto *idle = Scheduler::task_at(0);
     JARVIS_ASSERT(idle != nullptr);
     JARVIS_ASSERT(idle == Scheduler::get_idle_task());
 
     uint64_t count = Scheduler::task_count();
-    auto* last = Scheduler::task_at(count - 1);
+    auto *last = Scheduler::task_at(count - 1);
     JARVIS_ASSERT(last != nullptr);
 
-    auto* oob = Scheduler::task_at(count);
+    auto *oob = Scheduler::task_at(count);
     JARVIS_ASSERT(oob == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -258,7 +264,7 @@ JARVIS_TEST(scheduler_task_at_bounds, "PRE: none | POST: none") {
 // Expect: Returns nullptr.
 // Depends: kernel::task::Scheduler
 JARVIS_TEST(scheduler_find_task_nonexistent, "PRE: none | POST: none") {
-    auto* result = Scheduler::find_task(999999);
+    auto *result = Scheduler::find_task(999999);
     JARVIS_ASSERT(result == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -288,20 +294,20 @@ JARVIS_TEST(scheduler_set_preemptible_toggle, "PRE: none | POST: none") {
 // Expect: current_task() returns the newly selected task.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_current_task_after_switch, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    auto* high = TaskControlBlock::create([]() {}, 15, 10);
+    auto *high = TaskControlBlock::create([]() {}, 15, 10);
     JARVIS_ASSERT(high != nullptr);
     high->state = TaskState::READY;
     Scheduler::add_task(*high);
 
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next != cur);
     JARVIS_ASSERT(next == high);
 
     Scheduler::set_current(*next);
-    auto* after = Scheduler::current_task();
+    auto *after = Scheduler::current_task();
     JARVIS_ASSERT(after == next);
 
     Scheduler::remove_task(*high);
@@ -318,12 +324,12 @@ JARVIS_TEST(scheduler_current_task_after_switch, "PRE: none | POST: none") {
 // Expect: No crash; second task not added or handled safely.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
-    auto* t1 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *t1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(t1 != nullptr);
     Scheduler::add_task(*t1);
 
     // Create second task and manually set same ID
-    auto* t2 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *t2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(t2 != nullptr);
     t2->id = t1->id;
 
@@ -332,7 +338,7 @@ JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
     Scheduler::add_task(*t2);
 
     // Verify we can still find a task with that ID
-    auto* found = Scheduler::find_task(t1->id);
+    auto *found = Scheduler::find_task(t1->id);
     JARVIS_ASSERT(found != nullptr);
 
     // Cleanup both
@@ -361,18 +367,24 @@ JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
 // Input: Two tasks with same priority (5) but different periods (5, 20).
 // Expect: next_task() returns the task with the shorter period.
 JARVIS_TEST(scheduler_shorter_period_preferred, "PRE: none | POST: none") {
-    auto* t1 = TaskControlBlock::create([](){}, 15, 5);   // priority=15, period=5
-    auto* t2 = TaskControlBlock::create([](){}, 15, 20);  // priority=15, period=20
+    auto *t1 =
+        TaskControlBlock::create([]() {}, 15, 5); // priority=15, period=5
+    auto *t2 =
+        TaskControlBlock::create([]() {}, 15, 20); // priority=15, period=20
     JARVIS_ASSERT(t1 && t2);
     Scheduler::add_task(*t1);
     Scheduler::add_task(*t2);
 
     // RM scheduling: same priority, shorter period should be preferred
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next == t1);
 
-    Scheduler::remove_task(*t1); t1->cleanup(); delete t1;
-    Scheduler::remove_task(*t2); t2->cleanup(); delete t2;
+    Scheduler::remove_task(*t1);
+    t1->cleanup();
+    delete t1;
+    Scheduler::remove_task(*t2);
+    t2->cleanup();
+    delete t2;
     JARVIS_TEST_PASS();
 }
 
@@ -382,21 +394,22 @@ JARVIS_TEST(scheduler_shorter_period_preferred, "PRE: none | POST: none") {
 // Input: Create one task, set it as current, call reschedule.
 // Expect: current_task() returns the same task.
 JARVIS_TEST(scheduler_no_spurious_switch, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    auto* single = TaskControlBlock::create([](){}, 5, 10);
+    auto *single = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(single != nullptr);
     Scheduler::add_task(*single);
 
     Scheduler::set_current(*single);
-    auto* before = Scheduler::current_task();
+    auto *before = Scheduler::current_task();
     Scheduler::reschedule();
-    auto* after = Scheduler::current_task();
+    auto *after = Scheduler::current_task();
     JARVIS_ASSERT(after == before);
 
     Scheduler::remove_task(*single);
-    single->cleanup(); delete single;
+    single->cleanup();
+    delete single;
     JARVIS_TEST_PASS();
 }
 

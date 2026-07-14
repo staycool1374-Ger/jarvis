@@ -27,7 +27,7 @@
 namespace kernel::test {
 
 bool snapshot_create();
-void snapshot_restore(const char* test_name = nullptr);
+void snapshot_restore(const char *test_name = nullptr);
 void snapshot_destroy();
 
 /// @brief Terminate old daemon tasks and reload them from initrd.
@@ -35,7 +35,8 @@ void snapshot_destroy();
 ///        corrupted page tables with fresh ones from initrd.
 void reload_daemon_tasks();
 
-/// @brief Run all tests from the generated registry, calling setup/test/teardown
+/// @brief Run all tests from the generated registry, calling
+/// setup/test/teardown
 ///        in sequence with snapshot isolation between each test.
 void run_all_isolated_tests();
 

@@ -20,10 +20,10 @@
 /// @brief VFS daemon authorisation tests.
 
 // Runmode: kernel
-// Testidea: Verifies that VFS daemon task calls VFS syscall; authorization returns true without IPC.
-// Input: Create vfsd task (is_vfsd_task() returns true), call sys_open("/dev/null")
-// Expect: Returns valid fd (bypass returns true without IPC)
-// Depends: kernel::Syscall, kernel::Scheduler, kernel::vfsd
+// Testidea: Verifies that VFS daemon task calls VFS syscall; authorization
+// returns true without IPC. Input: Create vfsd task (is_vfsd_task() returns
+// true), call sys_open("/dev/null") Expect: Returns valid fd (bypass returns
+// true without IPC) Depends: kernel::Syscall, kernel::Scheduler, kernel::vfsd
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -43,16 +43,19 @@ using namespace kernel;
 #if !defined(CONFIG_ARCH_RISCV64)
 
 JARVIS_TEST(vfsd_self_authorization, "PRE: vfsd, iocd | POST: none") {
-    auto* vfsd_task = TaskControlBlock::create_user([]() {
-        const char* path = "/dev/null";
-        uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
-                                       reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
-        JARVIS_ASSERT(static_cast<int64_t>(ret) >= 0);
-    }, 5, 10);
+    auto *vfsd_task = TaskControlBlock::create_user(
+        []() {
+            const char *path = "/dev/null";
+            uint64_t ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::OPEN),
+                reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
+            JARVIS_ASSERT(static_cast<int64_t>(ret) >= 0);
+        },
+        5, 10);
     JARVIS_ASSERT(vfsd_task != nullptr);
     Scheduler::add_task(*vfsd_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*vfsd_task);
 
     // vfsd::is_vfsd_task() should return true for this task
@@ -67,25 +70,30 @@ JARVIS_TEST(vfsd_self_authorization, "PRE: vfsd, iocd | POST: none") {
 }
 
 JARVIS_TEST(vfsd_self_authorization_fd_op, "PRE: vfsd, iocd | POST: none") {
-    auto* vfsd_task = TaskControlBlock::create_user([]() {
-        const char* path = "/dev/null";
-        uint64_t fd = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
-                                      reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
-        JARVIS_ASSERT(static_cast<int64_t>(fd) >= 0);
+    auto *vfsd_task = TaskControlBlock::create_user(
+        []() {
+            const char *path = "/dev/null";
+            uint64_t fd = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::OPEN),
+                reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
+            JARVIS_ASSERT(static_cast<int64_t>(fd) >= 0);
 
-        char buf[4];
-        uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::READ),
-                                       fd, reinterpret_cast<uint64_t>(buf), 4, 0, nullptr);
-        JARVIS_ASSERT_EQ(0ULL, ret);
+            char buf[4];
+            uint64_t ret =
+                Syscall::handle(static_cast<uint64_t>(SyscallNumber::READ), fd,
+                                reinterpret_cast<uint64_t>(buf), 4, 0, nullptr);
+            JARVIS_ASSERT_EQ(0ULL, ret);
 
-        uint64_t close_ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE),
-                                             fd, 0, 0, 0, nullptr);
-        JARVIS_ASSERT_EQ(0ULL, close_ret);
-    }, 5, 10);
+            uint64_t close_ret =
+                Syscall::handle(static_cast<uint64_t>(SyscallNumber::CLOSE), fd,
+                                0, 0, 0, nullptr);
+            JARVIS_ASSERT_EQ(0ULL, close_ret);
+        },
+        5, 10);
     JARVIS_ASSERT(vfsd_task != nullptr);
     Scheduler::add_task(*vfsd_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*vfsd_task);
 
     Scheduler::set_current(*original);
@@ -102,21 +110,26 @@ JARVIS_TEST(vfsd_self_authorization_fd_op, "PRE: vfsd, iocd | POST: none") {
 // Depends: kernel::vfsd
 JARVIS_TEST(vfsd_absent_authorize_fails, "PRE: vfsd, iocd | POST: none") {
     // This test verifies the vfsd_authorize logic when vfsd PID is 0
-    // Since we can't directly call vfsd_authorize (it's static in syscall_handlers_fs.cpp),
-    // we test the behavior by creating a task and trying to call VFS syscalls
-    // when vfsd is not present (vfsd::get_vfsd_pid() returns 0)
+    // Since we can't directly call vfsd_authorize (it's static in
+    // syscall_handlers_fs.cpp), we test the behavior by creating a task and
+    // trying to call VFS syscalls when vfsd is not present
+    // (vfsd::get_vfsd_pid() returns 0)
 
-    auto* test_task = TaskControlBlock::create_user([]() {
-        const char* path = "/dev/null";
-        // This should fail because vfsd is not present
-        (void)Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
-                              reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
-        // The exact behavior depends on the implementation, but it should not crash
-    }, 5, 10);
+    auto *test_task = TaskControlBlock::create_user(
+        []() {
+            const char *path = "/dev/null";
+            // This should fail because vfsd is not present
+            (void)Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
+                                  reinterpret_cast<uint64_t>(path), 0, 0, 0,
+                                  nullptr);
+            // The exact behavior depends on the implementation, but it should
+            // not crash
+        },
+        5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*test_task);
 
     Scheduler::set_current(*original);
@@ -132,17 +145,20 @@ JARVIS_TEST(vfsd_absent_authorize_fails, "PRE: vfsd, iocd | POST: none") {
 // Expect: sys_open returns -1 (ENOENT)
 // Depends: kernel::Syscall, kernel::vfsd
 JARVIS_TEST(vfsd_absent_syscall_fails, "PRE: vfsd, iocd | POST: none") {
-    auto* test_task = TaskControlBlock::create_user([]() {
-        const char* path = "/dev/null";
-        uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::OPEN),
-                                       reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
-        // When vfsd is absent, this should return -1
-        JARVIS_ASSERT(static_cast<int64_t>(ret) == -1);
-    }, 5, 10);
+    auto *test_task = TaskControlBlock::create_user(
+        []() {
+            const char *path = "/dev/null";
+            uint64_t ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::OPEN),
+                reinterpret_cast<uint64_t>(path), 0, 0, 0, nullptr);
+            // When vfsd is absent, this should return -1
+            JARVIS_ASSERT(static_cast<int64_t>(ret) == -1);
+        },
+        5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*test_task);
 
     Scheduler::set_current(*original);
@@ -159,18 +175,21 @@ JARVIS_TEST(vfsd_absent_syscall_fails, "PRE: vfsd, iocd | POST: none") {
 // Depends: kernel::vfsd
 JARVIS_TEST(vfsd_authorize_null_path, "PRE: vfsd, iocd | POST: none") {
     // This test verifies that vfsd_authorize handles null path gracefully
-    // Since we can't directly call vfsd_authorize (it's static in syscall_handlers_fs.cpp),
-    // we test the behavior by creating a task and trying to call VFS syscalls
-    // with a null path (which would be handled by the kernel)
+    // Since we can't directly call vfsd_authorize (it's static in
+    // syscall_handlers_fs.cpp), we test the behavior by creating a task and
+    // trying to call VFS syscalls with a null path (which would be handled by
+    // the kernel)
 
-    auto* test_task = TaskControlBlock::create_user([]() {
-        // This would be a kernel task calling vfsd_authorize with null path
-        // The test passes if it doesn't crash
-    }, 5, 10);
+    auto *test_task = TaskControlBlock::create_user(
+        []() {
+            // This would be a kernel task calling vfsd_authorize with null path
+            // The test passes if it doesn't crash
+        },
+        5, 10);
     JARVIS_ASSERT(test_task != nullptr);
     Scheduler::add_task(*test_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*test_task);
 
     Scheduler::set_current(*original);

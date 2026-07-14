@@ -35,10 +35,10 @@ using namespace kernel;
 #endif
 
 // Runmode: kernel
-// Testidea: N tasks (N=8) repeatedly lock/unlock a shared mutex; every task makes
-// progress; no task is starved indefinitely; no deadlock after 10,000 cycles.
-// Input: 8 tasks each performing 10,000 lock/unlock cycles on shared mutex.
-// Expect: All tasks complete; no deadlock; no task starved.
+// Testidea: N tasks (N=8) repeatedly lock/unlock a shared mutex; every task
+// makes progress; no task is starved indefinitely; no deadlock after 10,000
+// cycles. Input: 8 tasks each performing 10,000 lock/unlock cycles on shared
+// mutex. Expect: All tasks complete; no deadlock; no task starved.
 JARVIS_TEST(mutex_stress_high_contention, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
@@ -46,18 +46,21 @@ JARVIS_TEST(mutex_stress_high_contention, "PRE: none | POST: none") {
     static const int NUM_TASKS = 8;
     static const int CYCLES = 10000;
 
-    TaskControlBlock* tasks[NUM_TASKS];
+    TaskControlBlock *tasks[NUM_TASKS];
     int completed[NUM_TASKS] = {0};
 
     for (int i = 0; i < NUM_TASKS; ++i) {
-        tasks[i] = TaskControlBlock::create([]() {
-            // Task logic runs here - the mutex operations are done in the test body
-        }, 5 + (i % 3), 10);
+        tasks[i] = TaskControlBlock::create(
+            []() {
+                // Task logic runs here - the mutex operations are done in the
+                // test body
+            },
+            5 + (i % 3), 10);
         JARVIS_ASSERT(tasks[i] != nullptr);
         Scheduler::add_task(*tasks[i]);
     }
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Each task performs CYCLES lock/unlock operations
     for (int cycle = 0; cycle < CYCLES; ++cycle) {
@@ -89,9 +92,9 @@ JARVIS_TEST(mutex_stress_high_contention, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: One producer task posts to a semaphore; multiple consumer tasks wait;
-// each message is consumed exactly once; no lost wakeups.
-// Input: Semaphore initialized to 0; 1 producer posts 100 times, 4 consumers wait.
+// Testidea: One producer task posts to a semaphore; multiple consumer tasks
+// wait; each message is consumed exactly once; no lost wakeups. Input:
+// Semaphore initialized to 0; 1 producer posts 100 times, 4 consumers wait.
 // Expect: Total posts == total waits == 100; no lost wakeups.
 JARVIS_TEST(semaphore_producer_consumer, "PRE: none | POST: none") {
     sync::Semaphore sem;
@@ -101,26 +104,32 @@ JARVIS_TEST(semaphore_producer_consumer, "PRE: none | POST: none") {
     static const int TOTAL_POSTS = 100;
 
     // Create consumer tasks
-    TaskControlBlock* consumers[NUM_CONSUMERS];
+    TaskControlBlock *consumers[NUM_CONSUMERS];
     for (int i = 0; i < NUM_CONSUMERS; ++i) {
-        consumers[i] = TaskControlBlock::create([]() {
-            sync::Semaphore* s = reinterpret_cast<sync::Semaphore*>(Scheduler::current_task()->user_data);
-            s->wait();
-        }, 5, 10);
+        consumers[i] = TaskControlBlock::create(
+            []() {
+                sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
+                    Scheduler::current_task()->user_data);
+                s->wait();
+            },
+            5, 10);
         JARVIS_ASSERT(consumers[i] != nullptr);
         consumers[i]->user_data = &sem;
         Scheduler::add_task(*consumers[i]);
     }
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Create producer task
-    auto* producer = TaskControlBlock::create([]() {
-        sync::Semaphore* s = reinterpret_cast<sync::Semaphore*>(Scheduler::current_task()->user_data);
-        for (int i = 0; i < TOTAL_POSTS; ++i) {
-            s->post();
-        }
-    }, 5, 10);
+    auto *producer = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            for (int i = 0; i < TOTAL_POSTS; ++i) {
+                s->post();
+            }
+        },
+        5, 10);
     JARVIS_ASSERT(producer != nullptr);
     producer->user_data = &sem;
     Scheduler::add_task(*producer);
@@ -154,10 +163,10 @@ JARVIS_TEST(semaphore_producer_consumer, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: 4 producers and 4 consumers sharing a single Queue; no message lost,
-// no duplicate delivery, no crash after 5,000 messages.
-// Input: Queue shared by 4 producers (each sends 625 msgs) and 4 consumers.
-// Expect: All 2500 messages produced and consumed exactly once.
+// Testidea: 4 producers and 4 consumers sharing a single Queue; no message
+// lost, no duplicate delivery, no crash after 5,000 messages. Input: Queue
+// shared by 4 producers (each sends 625 msgs) and 4 consumers. Expect: All 2500
+// messages produced and consumed exactly once.
 JARVIS_TEST(queue_multi_producer_multi_consumer, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
@@ -167,27 +176,32 @@ JARVIS_TEST(queue_multi_producer_multi_consumer, "PRE: none | POST: none") {
     static const int MSGS_PER_PRODUCER = 625;
 
     // Create consumer tasks
-    TaskControlBlock* consumers[NUM_CONSUMERS];
+    TaskControlBlock *consumers[NUM_CONSUMERS];
     for (int i = 0; i < NUM_CONSUMERS; ++i) {
-        consumers[i] = TaskControlBlock::create([]() {
-            sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
-            uint8_t buf[32];
-            size_t size = 32;
-            q->receive(buf, &size);
-        }, 5, 10);
+        consumers[i] = TaskControlBlock::create(
+            []() {
+                sync::Queue *q = reinterpret_cast<sync::Queue *>(
+                    Scheduler::current_task()->user_data);
+                uint8_t buf[32];
+                size_t size = 32;
+                q->receive(buf, &size);
+            },
+            5, 10);
         JARVIS_ASSERT(consumers[i] != nullptr);
         consumers[i]->user_data = &queue;
         Scheduler::add_task(*consumers[i]);
     }
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Create producer tasks
-    TaskControlBlock* producers[NUM_PRODUCERS];
+    TaskControlBlock *producers[NUM_PRODUCERS];
     for (int i = 0; i < NUM_PRODUCERS; ++i) {
-        producers[i] = TaskControlBlock::create([]() {
-            // Producer logic in test body
-        }, 5, 10);
+        producers[i] = TaskControlBlock::create(
+            []() {
+                // Producer logic in test body
+            },
+            5, 10);
         JARVIS_ASSERT(producers[i] != nullptr);
         producers[i]->user_data = &queue;
         Scheduler::add_task(*producers[i]);
@@ -234,33 +248,37 @@ JARVIS_TEST(queue_multi_producer_multi_consumer, "PRE: none | POST: none") {
 // (preempting low); high-priority task contends for mutex; verify that the
 // medium task does NOT prevent low from releasing the mutex (priority
 // inheritance prevents inversion).
-// Input: Low (5) holds mutex, Medium (10) runs CPU-bound, High (15) waits on mutex.
-// Expect: Low boosted to >= 15, can run and release mutex despite Medium.
+// Input: Low (5) holds mutex, Medium (10) runs CPU-bound, High (15) waits on
+// mutex. Expect: Low boosted to >= 15, can run and release mutex despite
+// Medium.
 JARVIS_TEST(priority_inversion_under_contention, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Low priority task holds mutex
-    auto* low = TaskControlBlock::create([]() {}, 5, 10);
+    auto *low = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(low != nullptr);
     low->base_priority = 5;
     low->priority = 5;
     Scheduler::add_task(*low);
 
     // Medium priority task - CPU bound
-    auto* medium = TaskControlBlock::create([]() {
-        // Spin for a while to simulate CPU-bound work
-        for (int i = 0; i < 10000; ++i) {}
-    }, 10, 10);
+    auto *medium = TaskControlBlock::create(
+        []() {
+            // Spin for a while to simulate CPU-bound work
+            for (int i = 0; i < 10000; ++i) {
+            }
+        },
+        10, 10);
     JARVIS_ASSERT(medium != nullptr);
     medium->base_priority = 10;
     medium->priority = 10;
     Scheduler::add_task(*medium);
 
     // High priority task waits on mutex
-    auto* high = TaskControlBlock::create([]() {}, 15, 10);
+    auto *high = TaskControlBlock::create([]() {}, 15, 10);
     JARVIS_ASSERT(high != nullptr);
     high->base_priority = 15;
     high->priority = 15;
@@ -316,7 +334,7 @@ JARVIS_TEST(mutex_recursive_deadlock, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // First lock succeeds
     mutex.lock();

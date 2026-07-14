@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -28,7 +30,7 @@ namespace block {
 
 /// @brief PIO-based ATA driver for legacy IDE controllers.
 class AtaPioDriver final : public BlockDevice {
-public:
+  public:
     /// @brief Construct an AtaPioDriver on a given IDE channel.
     /// @param port_base Base I/O port (0x1F0 primary, 0x170 secondary).
     /// @param drive_head Drive/head select register value.
@@ -40,21 +42,27 @@ public:
     bool init();
 
     /// @brief Read one sector from the drive.
-    bool read_sector(uint64_t lba, uint8_t* buffer) override;
+    bool read_sector(uint64_t lba, uint8_t *buffer) override;
     /// @brief Write one sector to the drive.
-    bool write_sector(uint64_t lba, const uint8_t* buffer) override;
+    bool write_sector(uint64_t lba, const uint8_t *buffer) override;
     /// @brief Number of 512-byte sectors on the drive.
-    uint64_t sector_count() const override { return sector_count_; }
+    uint64_t sector_count() const override {
+        return sector_count_;
+    }
     /// @brief Sector size in bytes (always 512).
-    uint64_t sector_size() const override { return BLOCK_SIZE; }
+    uint64_t sector_size() const override {
+        return BLOCK_SIZE;
+    }
     /// @brief Whether the device is read-only (false for ATA PIO).
-    bool is_read_only() const override { return false; }
+    bool is_read_only() const override {
+        return false;
+    }
 
     /// @brief Iterate all IDE channels and return the first responsive drive.
     /// @return A new AtaPioDriver instance, or nullptr if no drive found.
-    static AtaPioDriver* probe_first_drive();
+    static AtaPioDriver *probe_first_drive();
 
-private:
+  private:
     /// @brief Poll the status register until BSY clears or ERR/DRQ is set.
     bool poll_status(bool wait_for_bsy);
     /// @brief Wait for DRQ (data request) to be set.
@@ -62,10 +70,11 @@ private:
     /// @brief Send the IDENTIFY command and parse the result.
     bool identify();
 
-    uint16_t port_base_;   ///< ATA I/O port base address.
-    uint8_t  drive_head_;  ///< Drive/head register value.
-    uint64_t sector_count_ = 0;  ///< Total sector count from IDENTIFY data.
-    bool     drive_present_ = false;  ///< Whether the drive was successfully identified.
+    uint16_t port_base_;        ///< ATA I/O port base address.
+    uint8_t drive_head_;        ///< Drive/head register value.
+    uint64_t sector_count_ = 0; ///< Total sector count from IDENTIFY data.
+    bool drive_present_ =
+        false; ///< Whether the drive was successfully identified.
 };
 
 } // namespace block

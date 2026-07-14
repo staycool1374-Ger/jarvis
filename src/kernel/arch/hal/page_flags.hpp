@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,17 +31,17 @@ namespace kernel {
 /// Used by VMM and ArchPageTable to build page table entries.
 struct PageFlags {
     /// @brief Page is present in memory.
-    static constexpr uint64_t PRESENT         = 1ULL << 0;
+    static constexpr uint64_t PRESENT = 1ULL << 0;
     /// @brief Page is writable.
-    static constexpr uint64_t WRITE           = 1ULL << 1;
+    static constexpr uint64_t WRITE = 1ULL << 1;
     /// @brief Page is user-accessible (EL0).
-    static constexpr uint64_t USER            = 1ULL << 2;
+    static constexpr uint64_t USER = 1ULL << 2;
     /// @brief No-execute — disables instruction fetch.
-    static constexpr uint64_t NX              = 1ULL << 3;
+    static constexpr uint64_t NX = 1ULL << 3;
     /// @brief Uncached / device memory attribute.
-    static constexpr uint64_t CACHE_DISABLED  = 1ULL << 4;
+    static constexpr uint64_t CACHE_DISABLED = 1ULL << 4;
     /// @brief Huge page (2 MiB or 1 GiB, detected via page-table level).
-    static constexpr uint64_t HUGE            = 1ULL << 7;
+    static constexpr uint64_t HUGE = 1ULL << 7;
 };
 
 } // namespace kernel

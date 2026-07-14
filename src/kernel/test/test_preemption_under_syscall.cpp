@@ -48,12 +48,14 @@ static void tp_highpri_task() {
 }
 
 static void tp_lowpri_write() {
-    Vnode* file = vfs::resolve("/tmp_preempt_prio/data.bin");
-    if (!file) return;
+    Vnode *file = vfs::resolve("/tmp_preempt_prio/data.bin");
+    if (!file)
+        return;
     const char buf[64] = {0};
     for (uint64_t i = 0; i < 50 && !tp_done_; ++i) {
-        file->ops->write(*file, reinterpret_cast<const uint8_t*>(buf), 64, 0);
-        for (uint64_t w = 0; w < 500; ++w) arch::pause();
+        file->ops->write(*file, reinterpret_cast<const uint8_t *>(buf), 64, 0);
+        for (uint64_t w = 0; w < 500; ++w)
+            arch::pause();
     }
 }
 
@@ -69,10 +71,10 @@ static volatile bool brk_done_ = false;
 static void brk_lowpri_task() {
     for (uint64_t i = 0; i < 20 && !brk_done_; ++i) {
         uint64_t ret = Syscall::handle(
-            static_cast<uint64_t>(SyscallNumber::BRK),
-            0, 0, 0, 0, nullptr);
+            static_cast<uint64_t>(SyscallNumber::BRK), 0, 0, 0, 0, nullptr);
         (void)ret;
-        for (uint64_t w = 0; w < 1000; ++w) arch::pause();
+        for (uint64_t w = 0; w < 1000; ++w)
+            arch::pause();
     }
 }
 
@@ -88,7 +90,8 @@ static void starve_highpri_task() {
 static void starve_lowpri_task() {
     for (uint64_t i = 0; i < STARVE_TARGET; ++i) {
         __atomic_store_n(&starve_lowpri_progress_, i + 1, __ATOMIC_RELEASE);
-        for (uint64_t w = 0; w < 200; ++w) arch::pause();
+        for (uint64_t w = 0; w < 200; ++w)
+            arch::pause();
     }
 }
 
@@ -101,27 +104,28 @@ static void preempt_lowpri_syscall() {
     for (uint64_t i = 0; i < 1000000; ++i) {
         arch::pause();
         __atomic_add_fetch(&preempt_lowpri_count, 1, __ATOMIC_RELAXED);
-        if (preempt_highpri_done) break;
+        if (preempt_highpri_done)
+            break;
     }
 }
 
 // Runmode: kernel
-// Testidea: High-priority task preempts a low-priority task inside a long syscall.
-// Input: Two tasks: low-pri (5) runs a long loop, high-pri (10) should preempt it.
-// Expect: High-pri task runs at least once.
-// Depends: Scheduler, context-switch atomics
+// Testidea: High-priority task preempts a low-priority task inside a long
+// syscall. Input: Two tasks: low-pri (5) runs a long loop, high-pri (10) should
+// preempt it. Expect: High-pri task runs at least once. Depends: Scheduler,
+// context-switch atomics
 JARVIS_TEST(preemption_during_syscall, "PRE: none | POST: none") {
     preempt_highpri_count = 0;
     preempt_lowpri_count = 0;
     preempt_highpri_done = false;
 
-    auto* high = TaskControlBlock::create(preempt_highpri_task, 10, 1);
+    auto *high = TaskControlBlock::create(preempt_highpri_task, 10, 1);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* low = TaskControlBlock::create(preempt_lowpri_syscall, 5, 10);
+    auto *low = TaskControlBlock::create(preempt_lowpri_syscall, 5, 10);
     JARVIS_ASSERT(low != nullptr);
-    low->user_data = const_cast<uint64_t*>(&preempt_highpri_count);
+    low->user_data = const_cast<uint64_t *>(&preempt_highpri_count);
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
@@ -134,10 +138,12 @@ JARVIS_TEST(preemption_during_syscall, "PRE: none | POST: none") {
     });
 
     // Let the timer ISR drive scheduling naturally — high (pri 10) preempts low
-    for (int h = 0; h < 100 && !preempt_highpri_count; ++h) arch::hlt();
+    for (int h = 0; h < 100 && !preempt_highpri_count; ++h)
+        arch::hlt();
 
     JARVIS_ASSERT_FMT(preempt_highpri_count > 0,
-                      "High-pri task ran %lu times (expected > 0)", preempt_highpri_count);
+                      "High-pri task ran %lu times (expected > 0)",
+                      preempt_highpri_count);
 
     JARVIS_TEST_PASS();
 }
@@ -147,7 +153,8 @@ JARVIS_TEST(preemption_during_syscall, "PRE: none | POST: none") {
 // Input: Low-pri (5) writes to tmpfs; high-pri (10) runs concurrently.
 // Expect: High-pri runs at least once, proving preemption during VFS write.
 // Depends: tmpfs, Scheduler, VFS
-JARVIS_TEST(preempt_highpri_during_tmpfs_write, "PRE: vfsd, iocd | POST: none") {
+JARVIS_TEST(preempt_highpri_during_tmpfs_write,
+            "PRE: vfsd, iocd | POST: none") {
     tp_highpri_count_ = 0;
     tp_done_ = false;
 
@@ -156,11 +163,11 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write, "PRE: vfsd, iocd | POST: none") 
     ret = vfs::create("/tmp_preempt_prio/data.bin", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    auto* high = TaskControlBlock::create(tp_highpri_task, 10, 1);
+    auto *high = TaskControlBlock::create(tp_highpri_task, 10, 1);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* low = TaskControlBlock::create(tp_lowpri_write, 5, 10);
+    auto *low = TaskControlBlock::create(tp_lowpri_write, 5, 10);
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
@@ -173,9 +180,11 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write, "PRE: vfsd, iocd | POST: none") 
         delete low;
     });
 
-    for (int h = 0; h < 200 && !tp_done_; ++h) arch::hlt();
+    for (int h = 0; h < 200 && !tp_done_; ++h)
+        arch::hlt();
 
-    JARVIS_ASSERT_FMT(tp_highpri_count_ > 0,
+    JARVIS_ASSERT_FMT(
+        tp_highpri_count_ > 0,
         "High-pri ran %lu times during tmpfs write (expected > 0)",
         tp_highpri_count_);
 
@@ -191,11 +200,11 @@ JARVIS_TEST(preempt_highpri_during_brk, "PRE: none | POST: none") {
     brk_highpri_count_ = 0;
     brk_done_ = false;
 
-    auto* high = TaskControlBlock::create(brk_highpri_task, 10, 1);
+    auto *high = TaskControlBlock::create(brk_highpri_task, 10, 1);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* low = TaskControlBlock::create(brk_lowpri_task, 5, 10);
+    auto *low = TaskControlBlock::create(brk_lowpri_task, 5, 10);
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
@@ -208,11 +217,12 @@ JARVIS_TEST(preempt_highpri_during_brk, "PRE: none | POST: none") {
         delete low;
     });
 
-    for (int h = 0; h < 200 && !brk_done_; ++h) arch::hlt();
+    for (int h = 0; h < 200 && !brk_done_; ++h)
+        arch::hlt();
 
     JARVIS_ASSERT_FMT(brk_highpri_count_ > 0,
-        "High-pri ran %lu times during brk (expected > 0)",
-        brk_highpri_count_);
+                      "High-pri ran %lu times during brk (expected > 0)",
+                      brk_highpri_count_);
 
     JARVIS_TEST_PASS();
 }
@@ -226,15 +236,15 @@ JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
     starve_highpri_count_ = 0;
     starve_lowpri_progress_ = 0;
 
-    auto* high_a = TaskControlBlock::create(starve_highpri_task, 10, 1);
+    auto *high_a = TaskControlBlock::create(starve_highpri_task, 10, 1);
     JARVIS_ASSERT(high_a != nullptr);
     Scheduler::add_task(*high_a);
 
-    auto* high_b = TaskControlBlock::create(starve_highpri_task, 10, 1);
+    auto *high_b = TaskControlBlock::create(starve_highpri_task, 10, 1);
     JARVIS_ASSERT(high_b != nullptr);
     Scheduler::add_task(*high_b);
 
-    auto* low = TaskControlBlock::create(starve_lowpri_task, 5, 10);
+    auto *low = TaskControlBlock::create(starve_lowpri_task, 5, 10);
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
@@ -262,8 +272,8 @@ JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
             Scheduler::on_tick();
         }
         JARVIS_ASSERT_FMT(low->executed_ticks == ticks_before + 100,
-            "Low task executed_ticks %lu (expected %lu)",
-            low->executed_ticks, ticks_before + 100);
+                          "Low task executed_ticks %lu (expected %lu)",
+                          low->executed_ticks, ticks_before + 100);
     }
 
     JARVIS_TEST_PASS();

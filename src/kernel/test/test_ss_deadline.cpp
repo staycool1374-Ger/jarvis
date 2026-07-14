@@ -41,7 +41,7 @@ using namespace kernel;
 // Expect: deadline_miss_handler fires with "budget exhausted" message,
 //         ss_state_on_deadline_miss==EXHAUSTED, deadline_miss_count>=1.
 TEST_CLASS(SsExhaustionTriggersDeadline) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -98,7 +98,7 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
 // Expect: deadline_missed==true, ss_state_on_deadline_miss==EXHAUSTED,
 //         handler logs "budget exhausted".
 TEST_CLASS(SsDeadlineMissDuringReplenish) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file irq_guard.hpp
-/// @brief RAII interrupt disable — disable IRQs on construction, restore on destruction.
+/// @brief RAII interrupt disable — disable IRQs on construction, restore on
+/// destruction.
 
 #pragma once
 
@@ -29,25 +32,24 @@ namespace arch {
 ///        the previous interrupt state on destruction.
 /// @note Use this to protect short critical sections from being interrupted.
 class [[nodiscard]] IrqGuard {
-public:
+  public:
     /// @brief Disable interrupts, saving the previous enabled state.
-    IrqGuard() noexcept
-        : irq_was_(interrupts_enabled())
-    {
+    IrqGuard() noexcept : irq_was_(interrupts_enabled()) {
         cli();
     }
 
     /// @brief Restore the interrupt state that was saved at construction.
     ~IrqGuard() noexcept {
-        if (irq_was_) sti();
+        if (irq_was_)
+            sti();
     }
 
-    IrqGuard(const IrqGuard&) = delete;
-    IrqGuard& operator=(const IrqGuard&) = delete;
-    IrqGuard(IrqGuard&&) = delete;
-    IrqGuard& operator=(IrqGuard&&) = delete;
+    IrqGuard(const IrqGuard &) = delete;
+    IrqGuard &operator=(const IrqGuard &) = delete;
+    IrqGuard(IrqGuard &&) = delete;
+    IrqGuard &operator=(IrqGuard &&) = delete;
 
-private:
+  private:
     /// @brief Saved interrupt-enabled flag from before the guard.
     bool irq_was_;
 };

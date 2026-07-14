@@ -28,7 +28,7 @@ using namespace kernel;
 using namespace kernel::vfs;
 
 JARVIS_TEST(tmpfs_root_ops_consistent, "PRE: vfsd, iocd | POST: none") {
-    Vnode* root = tmpfs_fs.get_root();
+    Vnode *root = tmpfs_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
 
     // Root should have directory ops
@@ -50,7 +50,7 @@ JARVIS_TEST(tmpfs_unmount_unsupported, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_nounmount_test");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* root = vfs::resolve("/tmp_nounmount_test");
+    Vnode *root = vfs::resolve("/tmp_nounmount_test");
     JARVIS_ASSERT(root != nullptr);
     JARVIS_ASSERT(root->mode & S_IFDIR);
     JARVIS_TEST_PASS();

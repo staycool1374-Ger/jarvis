@@ -34,19 +34,23 @@ JARVIS_TEST(syscall_getrandom_basic, "PRE: none | POST: none") {
     uint8_t buf[64];
     __builtin_memset(buf, 0, sizeof(buf));
 
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-        reinterpret_cast<uint64_t>(buf), 64, 0, 0, nullptr);
+    uint64_t ret =
+        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                        reinterpret_cast<uint64_t>(buf), 64, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(64ULL, ret);
 
     bool all_zero = true;
     bool all_ff = true;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0)  all_zero = false;
-        if (buf[i] != 0xFF) all_ff = false;
+        if (buf[i] != 0)
+            all_zero = false;
+        if (buf[i] != 0xFF)
+            all_ff = false;
     }
-    JARVIS_ASSERT_FMT(!all_zero, "GETRANDOM returned %zu zero bytes", sizeof(buf));
-    JARVIS_ASSERT_FMT(!all_ff, "GETRANDOM returned %zu 0xFF bytes", sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_zero, "GETRANDOM returned %zu zero bytes",
+                      sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_ff, "GETRANDOM returned %zu 0xFF bytes",
+                      sizeof(buf));
     JARVIS_TEST_PASS();
 }
 
@@ -56,11 +60,12 @@ JARVIS_TEST(syscall_getrandom_basic, "PRE: none | POST: none") {
 // Expect: Returns 0; buffer unchanged
 JARVIS_TEST(syscall_getrandom_zero, "PRE: none | POST: none") {
     uint8_t buf[4] = {0xDE, 0xAD, 0xBE, 0xEF};
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-        reinterpret_cast<uint64_t>(buf), 0, 0, 0, nullptr);
+    uint64_t ret =
+        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                        reinterpret_cast<uint64_t>(buf), 0, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(buf[0] == 0xDE && buf[1] == 0xAD && buf[2] == 0xBE && buf[3] == 0xEF);
+    JARVIS_ASSERT(buf[0] == 0xDE && buf[1] == 0xAD && buf[2] == 0xBE &&
+                  buf[3] == 0xEF);
     JARVIS_TEST_PASS();
 }
 
@@ -72,14 +77,17 @@ JARVIS_TEST(syscall_getrandom_large, "PRE: none | POST: none") {
     uint8_t buf[4096];
     __builtin_memset(buf, 0, sizeof(buf));
 
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-        reinterpret_cast<uint64_t>(buf), 4096, 0, 0, nullptr);
+    uint64_t ret =
+        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                        reinterpret_cast<uint64_t>(buf), 4096, 0, 0, nullptr);
     JARVIS_ASSERT_EQ(4096ULL, ret);
 
     bool any_nonzero = false;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0) { any_nonzero = true; break; }
+        if (buf[i] != 0) {
+            any_nonzero = true;
+            break;
+        }
     }
     JARVIS_ASSERT_FMT(any_nonzero, "GETRANDOM(4096) returned all zeros");
     JARVIS_TEST_PASS();
@@ -91,9 +99,9 @@ JARVIS_TEST(syscall_getrandom_large, "PRE: none | POST: none") {
 // Expect: Returns static_cast<uint64_t>(-1)
 JARVIS_TEST(syscall_getrandom_invalid_flags, "PRE: none | POST: none") {
     uint8_t buf[8];
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-        reinterpret_cast<uint64_t>(buf), 8, 1, 0, nullptr);
+    uint64_t ret =
+        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                        reinterpret_cast<uint64_t>(buf), 8, 1, 0, nullptr);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
     JARVIS_TEST_PASS();
 }

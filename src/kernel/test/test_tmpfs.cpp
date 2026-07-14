@@ -33,7 +33,7 @@ JARVIS_TEST(tmpfs_mount, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_mount_test");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* root = vfs::resolve("/tmp_mount_test");
+    Vnode *root = vfs::resolve("/tmp_mount_test");
     JARVIS_ASSERT(root != nullptr);
     JARVIS_ASSERT(root->mode & S_IFDIR);
 
@@ -44,13 +44,13 @@ JARVIS_TEST(tmpfs_mkdir_ls, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(tmpfs_fs, "/tmp_mkdir_test");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* root = vfs::resolve("/tmp_mkdir_test");
+    Vnode *root = vfs::resolve("/tmp_mkdir_test");
     JARVIS_ASSERT(root != nullptr);
 
     ret = vfs::mkdir("/tmp_mkdir_test/subdir", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* sub = vfs::resolve("/tmp_mkdir_test/subdir");
+    Vnode *sub = vfs::resolve("/tmp_mkdir_test/subdir");
     JARVIS_ASSERT(sub != nullptr);
     JARVIS_ASSERT(sub->mode & S_IFDIR);
 
@@ -79,14 +79,15 @@ JARVIS_TEST(tmpfs_create_file, "PRE: vfsd, iocd | POST: none") {
     ret = vfs::create("/tmp_file_test/test.txt", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* file = vfs::resolve("/tmp_file_test/test.txt");
+    Vnode *file = vfs::resolve("/tmp_file_test/test.txt");
     JARVIS_ASSERT(file != nullptr);
     JARVIS_ASSERT(file->mode & S_IFREG);
 
     // Write data
-    const char* data = "Hello tmpfs!";
+    const char *data = "Hello tmpfs!";
     uint64_t len = 13;
-    int64_t written = file->ops->write(*file, reinterpret_cast<const uint8_t*>(data), len, 0);
+    int64_t written = file->ops->write(
+        *file, reinterpret_cast<const uint8_t *>(data), len, 0);
     JARVIS_ASSERT_EQ(static_cast<int64_t>(len), written);
     JARVIS_ASSERT_EQ(len, file->size);
 
@@ -95,7 +96,7 @@ JARVIS_TEST(tmpfs_create_file, "PRE: vfsd, iocd | POST: none") {
     __builtin_memset(buf, 0, sizeof(buf));
     int64_t read = file->ops->read(*file, buf, sizeof(buf) - 1, 0);
     JARVIS_ASSERT_EQ(static_cast<int64_t>(len), read);
-    JARVIS_ASSERT_EQ(0, strcmp(data, reinterpret_cast<const char*>(buf)));
+    JARVIS_ASSERT_EQ(0, strcmp(data, reinterpret_cast<const char *>(buf)));
 
     // fstat
     VfsStat st;
@@ -117,7 +118,7 @@ JARVIS_TEST(tmpfs_unlink_file, "PRE: vfsd, iocd | POST: none") {
     ret = vfs::create("/tmp_unlink_test/delfile.txt", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* file = vfs::resolve("/tmp_unlink_test/delfile.txt");
+    Vnode *file = vfs::resolve("/tmp_unlink_test/delfile.txt");
     JARVIS_ASSERT(file != nullptr);
 
     ret = vfs::unlink("/tmp_unlink_test/delfile.txt");
@@ -139,7 +140,7 @@ JARVIS_TEST(tmpfs_unlink_dir, "PRE: vfsd, iocd | POST: none") {
     ret = vfs::unlink("/tmp_unlinkdir_test/subdir");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* sub = vfs::resolve("/tmp_unlinkdir_test/subdir");
+    Vnode *sub = vfs::resolve("/tmp_unlinkdir_test/subdir");
     JARVIS_ASSERT_EQ(nullptr, sub);
 
     JARVIS_TEST_PASS();

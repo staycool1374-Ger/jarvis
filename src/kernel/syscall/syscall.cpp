@@ -17,7 +17,8 @@
  */
 
 /// @file syscall.cpp
-/// @brief System call dispatcher — init (MSR setup), handle (table dispatch), helpers.
+/// @brief System call dispatcher — init (MSR setup), handle (table dispatch),
+/// helpers.
 
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
@@ -31,7 +32,8 @@ extern "C" void syscall_entry();
 
 namespace kernel {
 
-/// @brief Initialise the syscall interface (MSR setup, syscall-table built at compile time).
+/// @brief Initialise the syscall interface (MSR setup, syscall-table built at
+/// compile time).
 void Syscall::init() {
 #if defined(CONFIG_ARCH_X86_64)
     uint64_t star_val = (static_cast<uint64_t>(arch::SEG_KERNEL_CODE) << 32) |
@@ -47,43 +49,47 @@ void Syscall::init() {
 }
 
 /// @brief Get the currently running task from the scheduler.
-TaskControlBlock* syscall_task() {
+TaskControlBlock *syscall_task() {
     return Scheduler::current_task();
 }
 
-/// @brief Check if the current task is a user-space task (has its own page table).
+/// @brief Check if the current task is a user-space task (has its own page
+/// table).
 bool syscall_is_user_task() {
-    auto* t = syscall_task();
+    auto *t = syscall_task();
     return t && t->page_table_ != 0;
 }
 
 /// @brief Open a vnode as a file descriptor in the current task's fd table.
-int syscall_task_open(vfs::Vnode* vn, uint64_t flags) {
+int syscall_task_open(vfs::Vnode *vn, uint64_t flags) {
     int fd = syscall_task()->fd_table.alloc();
-    if (fd < 0) return -1;
+    if (fd < 0)
+        return -1;
     syscall_task()->fd_table.fds[fd].vnode = vn;
     syscall_task()->fd_table.fds[fd].offset = 0;
     syscall_task()->fd_table.fds[fd].flags = flags;
-    if (vn->ops->open) vn->ops->open(*vn, flags);
+    if (vn->ops->open)
+        vn->ops->open(*vn, flags);
     return fd;
 }
 
 /// @brief Resolve a path and open it as a file descriptor.
-int syscall_path_open(const char* path, uint64_t flags) {
-    vfs::Vnode* vn = vfs::resolve(path);
+int syscall_path_open(const char *path, uint64_t flags) {
+    vfs::Vnode *vn = vfs::resolve(path);
     if (!vn) {
         if (flags & vfs::O_CREAT) {
-            if (vfs::create(path, vfs::S_IFREG) != 0) return -1;
+            if (vfs::create(path, vfs::S_IFREG) != 0)
+                return -1;
             vn = vfs::resolve(path);
         }
-        if (!vn) return -1;
+        if (!vn)
+            return -1;
     }
     return syscall_task_open(vn, flags);
 }
 
 uint64_t Syscall::handle(uint64_t number, uint64_t arg0, uint64_t arg1,
-                         uint64_t arg2, uint64_t arg3, uint64_t* regs)
-{
+                         uint64_t arg2, uint64_t arg3, uint64_t *regs) {
     if (number >= static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL))
         return static_cast<uint64_t>(-1);
     return syscall_table_[number](arg0, arg1, arg2, arg3, regs);

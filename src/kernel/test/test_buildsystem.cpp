@@ -40,11 +40,10 @@ JARVIS_TEST(buildsystem_arch_x86_64_toolchain, "PRE: none | POST: none") {
     memcpy(vendor + 4, &res.edx, 4);
     memcpy(vendor + 8, &res.ecx, 4);
     vendor[12] = '\0';
-    JARVIS_ASSERT_FMT(
-        strcmp(vendor, "GenuineIntel") == 0 ||
-        strcmp(vendor, "AuthenticAMD") == 0,
-        "Toolchain targets x86_64: CPUID vendor '%s'", vendor);
-    JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
+    JARVIS_ASSERT_FMT(strcmp(vendor, "GenuineIntel") == 0 ||
+                          strcmp(vendor, "AuthenticAMD") == 0,
+                      "Toolchain targets x86_64: CPUID vendor '%s'", vendor);
+    JARVIS_ASSERT_EQ(8ULL, sizeof(void *));
 
     uint64_t cr3 = arch::read_cr3();
     JARVIS_ASSERT(cr3 != 0);
@@ -59,7 +58,7 @@ JARVIS_TEST(buildsystem_arch_x86_64_toolchain, "PRE: none | POST: none") {
 // Expect: Make fails with descriptive error
 // Depends: Makefile
 JARVIS_TEST(buildsystem_invalid_arch_error, "PRE: none | POST: none") {
-    JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
+    JARVIS_ASSERT_EQ(8ULL, sizeof(void *));
 
     arch::CpuIdResult res = arch::cpuid(0);
     char vendor[13];
@@ -67,11 +66,11 @@ JARVIS_TEST(buildsystem_invalid_arch_error, "PRE: none | POST: none") {
     memcpy(vendor + 4, &res.edx, 4);
     memcpy(vendor + 8, &res.ecx, 4);
     vendor[12] = '\0';
-    JARVIS_ASSERT_FMT(
-        strcmp(vendor, "GenuineIntel") == 0 ||
-        strcmp(vendor, "AuthenticAMD") == 0 ||
-        vendor[0] == '\0' /* KVM / hypervisor */,
-        "Only x86_64 ARCH is supported (CPUID vendor '%s')", vendor);
+    JARVIS_ASSERT_FMT(strcmp(vendor, "GenuineIntel") == 0 ||
+                          strcmp(vendor, "AuthenticAMD") == 0 ||
+                          vendor[0] == '\0' /* KVM / hypervisor */,
+                      "Only x86_64 ARCH is supported (CPUID vendor '%s')",
+                      vendor);
 
     JARVIS_TEST_PASS();
 }
@@ -82,7 +81,7 @@ JARVIS_TEST(buildsystem_invalid_arch_error, "PRE: none | POST: none") {
 // Expect: Defaults to x86_64, builds successfully
 // Depends: Makefile
 JARVIS_TEST(buildsystem_default_arch_x86_64, "PRE: none | POST: none") {
-    JARVIS_ASSERT_EQ(8ULL, sizeof(void*));
+    JARVIS_ASSERT_EQ(8ULL, sizeof(void *));
 
     uint64_t cr4 = arch::read_cr4();
     JARVIS_ASSERT(cr4 != 0);
@@ -103,7 +102,7 @@ JARVIS_TEST(buildsystem_debug_flags, "PRE: none | POST: none") {
     bool debug_defined = false;
 #endif
     JARVIS_ASSERT_FMT(debug_defined,
-        "CONFIG_DEBUG must be defined for test builds");
+                      "CONFIG_DEBUG must be defined for test builds");
     JARVIS_TEST_PASS();
 }
 
@@ -118,7 +117,8 @@ JARVIS_TEST(buildsystem_config_arch_defined, "PRE: none | POST: none") {
 #else
     bool arch_ok = false;
 #endif
-    JARVIS_ASSERT_FMT(arch_ok, "CONFIG_ARCH_X86_64 must be defined for x86-64 builds");
+    JARVIS_ASSERT_FMT(arch_ok,
+                      "CONFIG_ARCH_X86_64 must be defined for x86-64 builds");
     JARVIS_TEST_PASS();
 }
 

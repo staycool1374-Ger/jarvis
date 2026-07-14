@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -36,74 +38,77 @@ namespace kernel {
 /// @brief Preemptive, rate-monotonic scheduler managing up to MAX_TASKS tasks.
 /// @note Scheduler is tick-driven and supports periodic and aperiodic tasks.
 class Scheduler {
-public:
-/// @brief Initialises the scheduler and creates the idle task.
+  public:
+    /// @brief Initialises the scheduler and creates the idle task.
     static void init();
     /// @brief Error-returning overload for init().
     static errors::SchedulerError init_err();
- 
+
     /// @brief Finds a task by its ID (hash table, O(1) amortized).
     /// @param id Task ID to find.
     /// @return Pointer to the TaskControlBlock, or nullptr.
-    static TaskControlBlock* find_task(uint64_t id) noexcept;
- 
+    static TaskControlBlock *find_task(uint64_t id) noexcept;
+
     /// @brief Adds a task to the scheduler's run queue.
     /// @param task Reference to the task to add.
-    static void add_task(TaskControlBlock& task);
+    static void add_task(TaskControlBlock &task);
     /// @brief Error-returning overload for add_task().
-    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if task table is full,
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if task table is
+    /// full,
     ///         SCHED_ERR_DUPLICATE_ID if task ID already exists.
-    static errors::SchedulerError add_task_err(TaskControlBlock& task);
- 
+    static errors::SchedulerError add_task_err(TaskControlBlock &task);
+
     /// @brief Removes a task from the scheduler's run queue.
     /// @param task Reference to the task to remove.
-    static void remove_task(TaskControlBlock& task);
+    static void remove_task(TaskControlBlock &task);
 
     /// @brief Best-effort unregister of a TCB from the scheduler's live tables.
     /// Used by TaskControlBlock::cleanup() so that every free path (delete,
-    /// MemPool::free, reaper) unregisters — preventing dangling tasks_[]/id_table_
-    /// entries that alias a later allocation (use-after-free in add_task).
-    /// Uses try_lock: if the scheduler lock is already held by the current
-    /// context (e.g. reap_orphans, which unregisters manually), this returns
-    /// false and does nothing. Callers should disable IRQs around this so the
-    /// timer ISR (on_tick) cannot transiently hold the lock and cause a skip.
+    /// MemPool::free, reaper) unregisters — preventing dangling
+    /// tasks_[]/id_table_ entries that alias a later allocation (use-after-free
+    /// in add_task). Uses try_lock: if the scheduler lock is already held by
+    /// the current context (e.g. reap_orphans, which unregisters manually),
+    /// this returns false and does nothing. Callers should disable IRQs around
+    /// this so the timer ISR (on_tick) cannot transiently hold the lock and
+    /// cause a skip.
     /// @return true if the lock was taken (and removal attempted), false if it
     /// was already held by the current context.
-    static bool unregister_task(TaskControlBlock& task) noexcept;
+    static bool unregister_task(TaskControlBlock &task) noexcept;
     /// @brief Error-returning overload for remove_task().
-    /// @return SCHED_ERR_OK on success, SCHED_ERR_NOT_FOUND if task not in table.
-    static errors::SchedulerError remove_task_err(TaskControlBlock& task);
- 
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_NOT_FOUND if task not in
+    /// table.
+    static errors::SchedulerError remove_task_err(TaskControlBlock &task);
+
     /// @brief Returns the currently running task.
     /// @return Pointer to the current TaskControlBlock.
-    static TaskControlBlock* current_task() noexcept;
+    static TaskControlBlock *current_task() noexcept;
     /// @brief Returns the total number of managed tasks.
     /// @return Task count.
     static uint64_t task_count() noexcept;
     /// @brief Returns the task at a given index in the task array.
     /// @param index Index into the task array.
     /// @return Pointer to the TaskControlBlock, or nullptr.
-    static TaskControlBlock* task_at(uint64_t index) noexcept;
+    static TaskControlBlock *task_at(uint64_t index) noexcept;
 
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
- 
+
     /// @brief Forces a reschedule — selects the next task and sets
     /// up context switch.
     static void reschedule() noexcept;
- 
+
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
     ///        Single-pass scan: identifies all eligible tasks, destroys them
     ///        without compaction, then compacts the task array once at the end.
     ///        If the idle task is reaped it is immediately recreated and placed
     ///        at index 0 of the compacted array.
     static void reap_orphans() noexcept;
- 
+
     /// @brief Terminates and removes all non-idle tasks from the scheduler.
     ///        Called after the boot-time test suite to clean up test leftovers
     ///        before production tasks (shell, idle) are created.
     static void cleanup_test_tasks() noexcept;
- 
+
     /// @brief Removes all tasks from the scheduler that have invalid magic
     ///        (freed-and-reused TCBs) without touching the TCB memory.
     ///        Also removes tasks with valid magic that are not the idle task,
@@ -112,33 +117,43 @@ public:
     /// Iterates at most CONFIG_MAX_TASKS entries in the task array (defensive
     /// bound against a corrupted task_count_).  Tasks to keep are compacted
     /// to the front of the array; task_count_ is updated accordingly.
-    /// @param shell_task Pointer to the shell task (use set_shell_task() beforehand).
+    /// @param shell_task Pointer to the shell task (use set_shell_task()
+    /// beforehand).
     static void cleanup_zombies() noexcept;
- 
-    /// @brief Stores a pointer to the shell task so cleanup_zombies can identify it.
-    static void set_shell_task(TaskControlBlock* task) noexcept { shell_task_ptr_ = task; }
+
+    /// @brief Stores a pointer to the shell task so cleanup_zombies can
+    /// identify it.
+    static void set_shell_task(TaskControlBlock *task) noexcept {
+        shell_task_ptr_ = task;
+    }
 
     /// @brief Suppress or re-enable the "task terminated" log message.
     ///        Used by reboot_from_table() during intentional teardown.
-    static void set_suppress_terminated_log(bool v) noexcept { suppress_terminated_log_ = v; }
+    static void set_suppress_terminated_log(bool v) noexcept {
+        suppress_terminated_log_ = v;
+    }
 
-    /// @brief Increments the sporadic server task counter (called from init_sporadic_server).
+    /// @brief Increments the sporadic server task counter (called from
+    /// init_sporadic_server).
     static void inc_sporadic_count() noexcept {
         if (sporadic_task_count_ < MAX_TASKS)
             __atomic_add_fetch(&sporadic_task_count_, 1UL, __ATOMIC_RELAXED);
     }
-    /// @brief Decrements the sporadic server task counter (called from cleanup).
+    /// @brief Decrements the sporadic server task counter (called from
+    /// cleanup).
     static void dec_sporadic_count() noexcept {
         if (sporadic_task_count_ > 0)
             __atomic_sub_fetch(&sporadic_task_count_, 1UL, __ATOMIC_RELAXED);
     }
     /// @brief Returns the current sporadic server task count.
-    static uint64_t sporadic_count() noexcept { return sporadic_task_count_; }
- 
+    static uint64_t sporadic_count() noexcept {
+        return sporadic_task_count_;
+    }
+
     /// @brief Marks a task as READY and adds it to the O(1) ready queue.
     ///        Call this instead of directly setting `task.state = READY`
     ///        to keep the ready-queue bitmap in sync.
-    static void set_task_ready(TaskControlBlock& task) noexcept;
+    static void set_task_ready(TaskControlBlock &task) noexcept;
     /// @brief Deadline scan entry — runs in task context when the monitor
     ///        task is enabled.  Identical deadline detection logic as the
     ///        inline scan in on_tick() but can hold scheduler_lock_ and
@@ -152,12 +167,18 @@ public:
 #if CONFIG_DEADLINE_MONITOR_TASK
     /// @brief Resets the scan-requested flag (used by snapshot_restore to
     ///        clear stale flags).
-    static void reset_scan_requested() noexcept { s_scan_requested_ = false; }
+    static void reset_scan_requested() noexcept {
+        s_scan_requested_ = false;
+    }
     /// @brief Returns the deadline-monitor task pointer, or nullptr.
-    static TaskControlBlock* get_monitor_task() noexcept { return s_monitor_task_; }
+    static TaskControlBlock *get_monitor_task() noexcept {
+        return s_monitor_task_;
+    }
     /// @brief Sets/clears the test-active flag.  When true, on_tick() skips
     ///        the monitor-wake path to prevent spurious context switches.
-    static void set_test_active(bool v) noexcept { s_test_active_ = v; }
+    static void set_test_active(bool v) noexcept {
+        s_test_active_ = v;
+    }
 #endif
     /// @brief Clears assembly-level context-switch globals
     ///        (scheduler_save_rsp_to, scheduler_load_rsp_from, etc.).
@@ -173,10 +194,11 @@ public:
     /// @brief Transitions a task to TERMINATED state and removes it from the
     ///        ready queue.  Call this instead of directly setting
     ///        `task.state = TERMINATED` to keep the ready queue consistent.
-    static void terminate(TaskControlBlock& task, uint64_t exit_code) noexcept;
+    static void terminate(TaskControlBlock &task, uint64_t exit_code) noexcept;
     /// @brief Entry point for the deadline-monitor task (priority 127).
     ///        Waits on an atomic handoff flag, calls scan_deadlines() when
-    ///        woken by on_tick().  Only compiled when CONFIG_DEADLINE_MONITOR_TASK > 0.
+    ///        woken by on_tick().  Only compiled when
+    ///        CONFIG_DEADLINE_MONITOR_TASK > 0.
     static void monitor_task_entry() noexcept;
 
     /// @brief Checks if a context switch is needed (reschedule flag).
@@ -184,64 +206,81 @@ public:
     static bool needs_switch() noexcept;
     /// @brief Selects the next task to run according to RM policy.
     /// @return Pointer to the next TaskControlBlock.
-    static TaskControlBlock* next_task() noexcept;
+    static TaskControlBlock *next_task() noexcept;
     /// @brief Sets the current running task.
     /// @param task Reference to the task to set as current.
-    static void set_current(TaskControlBlock& task) noexcept;
+    static void set_current(TaskControlBlock &task) noexcept;
     /// @brief Sets the current running task by ID (used after context switch).
     /// @param id Task ID to set as current.
     static void set_current_by_id(uint64_t id) noexcept;
- 
+
     /// @brief Allocate a unique task ID from the ID table.
     /// @return A new task ID, or TASK_INVALID if the table is full.
     [[nodiscard]] static uint64_t alloc_id() noexcept;
     /// @brief Error-returning overload for alloc_id().
     /// @param out_id Output parameter for the allocated ID.
-    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if ID table is full.
-    static errors::SchedulerError alloc_id_err(uint64_t& out_id);
+    /// @return SCHED_ERR_OK on success, SCHED_ERR_TABLE_FULL if ID table is
+    /// full.
+    static errors::SchedulerError alloc_id_err(uint64_t &out_id);
 
     /// @brief Returns the index of the current task (computed from pointer,
-    ///         O(n) for snapshot compatibility; prefer current_task() directly).
+    ///         O(n) for snapshot compatibility; prefer current_task()
+    ///         directly).
     static uint64_t current_index() noexcept;
     static void set_current_index(uint64_t idx) noexcept;
     /// @brief Set the current task directly by pointer (unambiguous; avoids
-    ///        the index-convention mismatch between current_index()/set_current_index()
-    ///        (raw AllTasksRegistry order) and task_at() (idle-reserved)).
-    static void set_current_task(TaskControlBlock* t) noexcept;
-    static TaskControlBlock* get_idle_task() noexcept { return idle_task_; }
-    static const AllTasksRegistry& all_tasks() noexcept { return all_tasks_; }
-    static TaskControlBlock* get_shell_task() noexcept { return shell_task_ptr_; }
+    ///        the index-convention mismatch between
+    ///        current_index()/set_current_index() (raw AllTasksRegistry order)
+    ///        and task_at() (idle-reserved)).
+    static void set_current_task(TaskControlBlock *t) noexcept;
+    static TaskControlBlock *get_idle_task() noexcept {
+        return idle_task_;
+    }
+    static const AllTasksRegistry &all_tasks() noexcept {
+        return all_tasks_;
+    }
+    static TaskControlBlock *get_shell_task() noexcept {
+        return shell_task_ptr_;
+    }
 
     /// @brief Returns whether the scheduler can be preempted.
     /// @return True if preemption is enabled.
-    static bool is_preemptible() noexcept { return preempt_enabled_; }
+    static bool is_preemptible() noexcept {
+        return preempt_enabled_;
+    }
     /// @brief Enables or disables preemption.
     /// @param en True to enable preemption.
-    static void set_preemptible(bool en) noexcept { preempt_enabled_ = en; }
+    static void set_preemptible(bool en) noexcept {
+        preempt_enabled_ = en;
+    }
 
-    /// @brief Enqueues a task into the O(1) ready queue at its effective priority.
-    static void enqueue_ready(TaskControlBlock& task) noexcept;
+    /// @brief Enqueues a task into the O(1) ready queue at its effective
+    /// priority.
+    static void enqueue_ready(TaskControlBlock &task) noexcept;
     /// @brief Removes a task from the O(1) ready queue.
-    static void dequeue_ready(TaskControlBlock& task) noexcept;
+    static void dequeue_ready(TaskControlBlock &task) noexcept;
 
     /// @brief Lightweight forward iterator over all tasks in the registry.
     ///        Iterates by priority (highest to lowest), then insertion order
     ///        within each priority.
     struct TaskIter {
         uint64_t idx;
-        TaskControlBlock* cur_;
-        explicit TaskIter(uint64_t start = 0) : idx(start), cur_(Scheduler::all_tasks_.first_ptr()) {
+        TaskControlBlock *cur_;
+        explicit TaskIter(uint64_t start = 0)
+            : idx(start), cur_(Scheduler::all_tasks_.first_ptr()) {
             for (uint64_t i = 0; i < start; ++i) {
                 cur_ = Scheduler::all_tasks_.next_ptr(cur_);
-                if (!cur_) break;
+                if (!cur_)
+                    break;
             }
         }
-        TaskControlBlock* next(TaskControlBlock* exclude = nullptr) {
+        TaskControlBlock *next(TaskControlBlock *exclude = nullptr) {
             while (cur_) {
-                auto* t = cur_;
+                auto *t = cur_;
                 cur_ = Scheduler::all_tasks_.next_ptr(cur_);
                 ++idx;
-                if (t && t->magic == TaskControlBlock::TCB_MAGIC && t != exclude)
+                if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
+                    t != exclude)
                     return t;
             }
             return nullptr;
@@ -249,79 +288,80 @@ public:
     };
 
     /// @name Test-isolation helpers
-    static uint64_t snapshot_max_tasks() { return MAX_TASKS; }
-    static uint64_t snapshot_id_size()  { return ID_TABLE_SIZE; }
+    static uint64_t snapshot_max_tasks() {
+        return MAX_TASKS;
+    }
+    static uint64_t snapshot_id_size() {
+        return ID_TABLE_SIZE;
+    }
 
     /// @brief Per-task plain fields that are deep-copied into the snapshot.
     ///        Pointers to heap sub-objects (kernel_stack, page_table_,
     ///        msg_queue, etc.) are NOT included — they survive via the
     ///        pointer array restore and MemPool/PMM restoration.
     struct TaskFields {
-        uint64_t magic;              ///< TCB_MAGIC for validity check
-        uint64_t id;                 ///< Task ID for matching on restore
+        uint64_t magic; ///< TCB_MAGIC for validity check
+        uint64_t id;    ///< Task ID for matching on restore
         uint64_t parent_id;
         TaskState state;
         uint64_t priority;
         uint64_t base_priority;
         uint64_t period_ticks;
         uint64_t deadline_ticks;
-        bool     deadline_missed;
+        bool deadline_missed;
         uint64_t deadline_miss_count;
         uint64_t executed_ticks;
         uint64_t remaining_ticks;
         uint64_t exit_code;
-        TaskContext context;         ///< Full register context (critical: rsp)
-        uint64_t kernel_stack_top;   ///< For RSP-range validation
+        TaskContext context;       ///< Full register context (critical: rsp)
+        uint64_t kernel_stack_top; ///< For RSP-range validation
         uint64_t waiting_child_pid;
         uint64_t waiting_child_status;
         uint64_t pending_signals;
         uint64_t alarm_ticks;
-        bool     alarm_armed;
+        bool alarm_armed;
         /// @brief Ready-queue intrusive list pointers (POD copy).
         ///        These form doubly-linked lists; TCBs are in-place across
         ///        snapshot cycles so pointer values remain valid.
-        TaskControlBlock* runq_next;
-        TaskControlBlock* runq_prev;
+        TaskControlBlock *runq_next;
+        TaskControlBlock *runq_prev;
         bool in_ready_queue;
         uint64_t rq_priority;
     };
-    static uint64_t snapshot_task_fields_size() { return sizeof(TaskFields) * MAX_TASKS; }
+    static uint64_t snapshot_task_fields_size() {
+        return sizeof(TaskFields) * MAX_TASKS;
+    }
 
     /// @brief Capture per-task plain fields into the snapshot buffer.
     ///        Called from test_isolate's snapshot_create.
-    static void capture_task_fields(TaskFields* out);
+    static void capture_task_fields(TaskFields *out);
 
     /// @brief Restore per-task plain fields from the snapshot buffer onto
     ///        existing task objects (matched by ID).  Called from
     ///        test_isolate's snapshot_restore after restore_state().
-    static void restore_task_fields(const TaskFields* saved);
+    static void restore_task_fields(const TaskFields *saved);
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    static void capture_state(TaskControlBlock** tasks_out,
-                              TaskControlBlock** id_table_out,
-                              uint64_t& task_count_out,
-                              uint64_t& current_idx_out,
-                              uint64_t& next_id_out,
-                              TaskControlBlock*& idle_out,
-                              bool& preempt_out,
-                              uint64_t* rq_bitmap_hi = nullptr,
-                              uint64_t* rq_bitmap_lo = nullptr,
-                              uint64_t* sporadic_count_out = nullptr);
+    static void capture_state(TaskControlBlock **tasks_out,
+                              TaskControlBlock **id_table_out,
+                              uint64_t &task_count_out,
+                              uint64_t &current_idx_out, uint64_t &next_id_out,
+                              TaskControlBlock *&idle_out, bool &preempt_out,
+                              uint64_t *rq_bitmap_hi = nullptr,
+                              uint64_t *rq_bitmap_lo = nullptr,
+                              uint64_t *sporadic_count_out = nullptr);
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    static void restore_state(TaskControlBlock* const* tasks_in,
-                              TaskControlBlock* const* id_table_in,
-                              uint64_t task_count_in,
-                              uint64_t current_idx_in,
-                              uint64_t next_id_in,
-                              TaskControlBlock* idle_in,
-                              bool preempt_in,
-                              uint64_t rq_bitmap_hi = 0,
+    static void restore_state(TaskControlBlock *const *tasks_in,
+                              TaskControlBlock *const *id_table_in,
+                              uint64_t task_count_in, uint64_t current_idx_in,
+                              uint64_t next_id_in, TaskControlBlock *idle_in,
+                              bool preempt_in, uint64_t rq_bitmap_hi = 0,
                               uint64_t rq_bitmap_lo = 0,
                               uint64_t sporadic_count_in = 0);
 
     /// @brief Capture the full ReadyQueueManager POD into @p out.
-    static void capture_rqpod(ReadyQueuePOD& out) noexcept;
+    static void capture_rqpod(ReadyQueuePOD &out) noexcept;
     /// @brief Restore the full ReadyQueueManager POD from @p src.
-    static void restore_rqpod(const ReadyQueuePOD& src) noexcept;
+    static void restore_rqpod(const ReadyQueuePOD &src) noexcept;
     /// @brief Clear all ready-queue entries.  Called after reap_orphans()
     ///        in reload_daemon_tasks() to remove any stale TCB pointers
     ///        before restarting daemons.
@@ -336,26 +376,27 @@ public:
 
     /// @brief Deferred-kill: add a task to the deferred kill list for
     ///        safe cleanup outside the try_lock critical section.
-    static void defer_kill(TaskControlBlock* task) noexcept;
+    static void defer_kill(TaskControlBlock *task) noexcept;
     /// @brief Process all deferred kills: remove_task, cleanup, free.
     ///        Called from on_tick() after the deadline scan lock is released.
     static void process_deferred_kills() noexcept;
 
-private:
+  private:
     static constexpr uint64_t MAX_TASKS = CONFIG_MAX_TASKS;
-    static constexpr uint64_t ID_TABLE_SIZE = static_cast<uint64_t>(CONFIG_MAX_TASKS) * 2;
+    static constexpr uint64_t ID_TABLE_SIZE =
+        static_cast<uint64_t>(CONFIG_MAX_TASKS) * 2;
     static constexpr uint64_t ID_TABLE_MASK = ID_TABLE_SIZE - 1;
 
     /// @brief Sentinel value for a removed hash-table entry.
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    static TaskControlBlock* const ID_TOMBSTONE;
+    static TaskControlBlock *const ID_TOMBSTONE;
 
     /// @brief All registered tasks, grouped by priority in per-priority
     ///        intrusive doubly-linked lists with O(1) bitmap lookup.
     static AllTasksRegistry all_tasks_;
     /// @brief Pointer to the currently executing task.
-    static constinit TaskControlBlock* current_task_ptr_;
-    static constinit TaskControlBlock* id_table_[ID_TABLE_SIZE];
+    static constinit TaskControlBlock *current_task_ptr_;
+    static constinit TaskControlBlock *id_table_[ID_TABLE_SIZE];
     static constinit uint64_t next_task_id_;
     static constinit uint64_t sporadic_task_count_;
     static constinit bool preempt_enabled_;
@@ -368,11 +409,11 @@ private:
     /// @brief Deadline-ordered intrusive list for O(1) expired-task detection.
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static DeadlineList deadline_list_;
-    static constinit TaskControlBlock* idle_task_;
-    static constinit TaskControlBlock* shell_task_ptr_;
+    static constinit TaskControlBlock *idle_task_;
+    static constinit TaskControlBlock *shell_task_ptr_;
 #if CONFIG_DEADLINE_MONITOR_TASK
     /// @brief Pointer to the deadline-monitor task (nullptr if not spawned).
-    static constinit TaskControlBlock* s_monitor_task_;
+    static constinit TaskControlBlock *s_monitor_task_;
     /// @brief Atomic handoff flag — on_tick() sets it, monitor_task_entry()
     ///        consumes it via atomic exchange (lock-free, no spinlock needed).
     static volatile bool s_scan_requested_;
@@ -388,59 +429,59 @@ private:
 
     /// @brief Hash-table helpers for O(1) task-ID→TCB lookup.
     static uint64_t id_table_probe(uint64_t id);
-    static void     id_table_insert(uint64_t id, TaskControlBlock* tcb);
-    static void     id_table_remove(TaskControlBlock* task);
-    static TaskControlBlock* id_table_find(uint64_t id);
+    static void id_table_insert(uint64_t id, TaskControlBlock *tcb);
+    static void id_table_remove(TaskControlBlock *task);
+    static TaskControlBlock *id_table_find(uint64_t id);
 };
 
 extern "C" {
-    /// @brief Address to save the current RSP into during context switch.
-    ///        Accessed atomically from C++; read/written by isr_stubs.asm.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t* scheduler_save_rsp_to;
-    /// @brief RSP value to load during context switch restore.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t scheduler_load_rsp_from;
-    /// @brief CR3 value to load during context switch restore (0 = don't load).
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t scheduler_load_cr3_from;
-    /// @brief Task ID to set as current after the context switch completes.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t scheduler_next_task_id;
-    /// @brief Current ISR nesting depth.  Incremented at each ISR entry,
-    ///        decremented before iretq.  Checked by on_tick() to detect
-    ///        nested timer interrupts and skip re-entrant scheduler ops.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t isr_nesting_depth;
-    /// @brief Dummy save target for boot-stack RSP during reschedule() from
-    ///        non-ISR context (test harness).  Prevents corrupting task
-    ///        context.rsp with a boot-stack address while still allowing
-    ///        the context switch to proceed.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t scheduler_dummy_save_rsp;
-    /// @brief Monotonic counter incremented on every detected scheduler corruption
-    ///        (invalid TCB magic, RSP outside kernel-stack range, etc).
-    ///        Reset to zero in test_isolate restore; test framework fails any test
-    ///        where the counter advanced.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t scheduler_corruption_count;
-    /// @brief Monotonic counter incremented on each successful deadline-
-    ///        detection scan in on_tick().  Used by tests to verify that
-    ///        the scan completes without aborting.  If a test expects the
-    ///        scan to run (e.g. after setting up a deadline miss) but the
-    ///        counter did not advance, the try_lock was contended or a
-    ///        corruption panic aborted the scan.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern uint64_t deadline_detection_integrity;
-    /// @brief Tracks which task's FPU state is currently in the registers.
-    ///        nullptr means no task has used FPU since boot.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern TaskControlBlock* fpu_owner;
-    /// @brief Recursion guard for Scheduler::reap_orphans().
-    ///        Reset in snapshot_restore() to prevent deadlock if a prior
-    ///        test panicked mid-reap.
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    extern bool s_reap_in_progress;
+/// @brief Address to save the current RSP into during context switch.
+///        Accessed atomically from C++; read/written by isr_stubs.asm.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t *scheduler_save_rsp_to;
+/// @brief RSP value to load during context switch restore.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_load_rsp_from;
+/// @brief CR3 value to load during context switch restore (0 = don't load).
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_load_cr3_from;
+/// @brief Task ID to set as current after the context switch completes.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_next_task_id;
+/// @brief Current ISR nesting depth.  Incremented at each ISR entry,
+///        decremented before iretq.  Checked by on_tick() to detect
+///        nested timer interrupts and skip re-entrant scheduler ops.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t isr_nesting_depth;
+/// @brief Dummy save target for boot-stack RSP during reschedule() from
+///        non-ISR context (test harness).  Prevents corrupting task
+///        context.rsp with a boot-stack address while still allowing
+///        the context switch to proceed.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_dummy_save_rsp;
+/// @brief Monotonic counter incremented on every detected scheduler corruption
+///        (invalid TCB magic, RSP outside kernel-stack range, etc).
+///        Reset to zero in test_isolate restore; test framework fails any test
+///        where the counter advanced.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_corruption_count;
+/// @brief Monotonic counter incremented on each successful deadline-
+///        detection scan in on_tick().  Used by tests to verify that
+///        the scan completes without aborting.  If a test expects the
+///        scan to run (e.g. after setting up a deadline miss) but the
+///        counter did not advance, the try_lock was contended or a
+///        corruption panic aborted the scan.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t deadline_detection_integrity;
+/// @brief Tracks which task's FPU state is currently in the registers.
+///        nullptr means no task has used FPU since boot.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern TaskControlBlock *fpu_owner;
+/// @brief Recursion guard for Scheduler::reap_orphans().
+///        Reset in snapshot_restore() to prevent deadlock if a prior
+///        test panicked mid-reap.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern bool s_reap_in_progress;
 }
 
 #if CONFIG_DEADLINE_MISS_DETECTION
@@ -449,17 +490,17 @@ extern "C" {
 /// In ISR context: must not block; KILL action defers via defer_kill().
 /// In task context (CONFIG_DEADLINE_MONITOR_TASK): may hold scheduler_lock_
 /// and perform inline cleanup.
-__attribute__((weak))
-void deadline_miss_handler(TaskControlBlock* task,
-                           uint64_t missed_by_ticks) noexcept;
+__attribute__((weak)) void
+deadline_miss_handler(TaskControlBlock *task,
+                      uint64_t missed_by_ticks) noexcept;
 #endif
 
 #if CONFIG_WCET_OVERRUN_DETECTION
 /// @brief Weak callback invoked when a task exceeds its WCET.
 /// Called from ISR context (on_tick) — must not block or allocate.
-__attribute__((weak))
-void wcet_overrun_handler(TaskControlBlock* task,
-                          uint64_t overrun_by_ticks) noexcept;
+__attribute__((weak)) void
+wcet_overrun_handler(TaskControlBlock *task,
+                     uint64_t overrun_by_ticks) noexcept;
 #endif
 
 } // namespace kernel

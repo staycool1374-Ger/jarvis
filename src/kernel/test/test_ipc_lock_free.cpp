@@ -39,7 +39,8 @@ static void ipc_recv_worker() {
     msg.data_size = 0;
 
     bool ok = IPC::send(Scheduler::current_task()->id, msg);
-    if (!ok) return;
+    if (!ok)
+        return;
 
     Message out;
     ok = IPC::recv(out);
@@ -59,12 +60,12 @@ JARVIS_TEST(ipc_recv_no_cli, "PRE: none | POST: none") {
 
     g_ipc_recv_count_ = 0;
 
-    auto* task = TaskControlBlock::create(ipc_recv_worker, 5, 10);
+    auto *task = TaskControlBlock::create(ipc_recv_worker, 5, 10);
     JARVIS_ASSERT(task != nullptr);
     JARVIS_ASSERT(task->page_table_ == 0);
     Scheduler::add_task(*task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*task);
 
     // Receiver blocks; should not call cli() for kernel task
@@ -91,7 +92,8 @@ struct SendSyncCtx {
 static void send_sync_receiver() {
     Message msg;
     bool ok = IPC::recv(msg);
-    if (!ok) return;
+    if (!ok)
+        return;
     Message reply;
     reply.sender_id = Scheduler::current_task()->id;
     reply.type = 99;
@@ -101,9 +103,10 @@ static void send_sync_receiver() {
 }
 
 static void send_sync_sender() {
-    auto* cur = Scheduler::current_task();
-    auto* ctx = reinterpret_cast<SendSyncCtx*>(cur->user_data);
-    if (!ctx) return;
+    auto *cur = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<SendSyncCtx *>(cur->user_data);
+    if (!ctx)
+        return;
 
     Message msg;
     msg.sender_id = cur->id;
@@ -120,8 +123,8 @@ static void send_sync_sender() {
 
 // Runmode: kernel
 // Testidea: Kernel-task send_sync does not call cli().
-// Input: Kernel sender calls send_sync to kernel receiver; check interrupt flag.
-// Expect: Interrupts remain enabled before, during, and after send_sync.
+// Input: Kernel sender calls send_sync to kernel receiver; check interrupt
+// flag. Expect: Interrupts remain enabled before, during, and after send_sync.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
 JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
     arch::sti();
@@ -129,7 +132,7 @@ JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
 
     g_ipc_send_sync_reply_ = 0;
 
-    auto* receiver = TaskControlBlock::create(send_sync_receiver, 5, 10);
+    auto *receiver = TaskControlBlock::create(send_sync_receiver, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     JARVIS_ASSERT(receiver->page_table_ == 0);
     Scheduler::add_task(*receiver);
@@ -137,13 +140,13 @@ JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
     SendSyncCtx ctx;
     ctx.receiver_id = receiver->id;
 
-    auto* sender = TaskControlBlock::create(send_sync_sender, 5, 10);
+    auto *sender = TaskControlBlock::create(send_sync_sender, 5, 10);
     JARVIS_ASSERT(sender != nullptr);
     JARVIS_ASSERT(sender->page_table_ == 0);
     sender->user_data = &ctx;
     Scheduler::add_task(*sender);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*sender);
 
     JARVIS_ASSERT(arch::interrupts_enabled());
@@ -181,15 +184,17 @@ struct ThroughputCtx {
 };
 
 static void throughput_receiver() {
-    auto* cur = Scheduler::current_task();
-    auto* ctx = reinterpret_cast<ThroughputCtx*>(cur->user_data);
-    if (!ctx) return;
+    auto *cur = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<ThroughputCtx *>(cur->user_data);
+    if (!ctx)
+        return;
     ctx->ready = true;
 
     for (uint64_t i = 0; i < 1000; ++i) {
         Message msg;
         bool ok = IPC::recv(msg);
-        if (!ok) return;
+        if (!ok)
+            return;
         Message reply;
         reply.sender_id = cur->id;
         reply.type = msg.type + 1;
@@ -211,21 +216,21 @@ JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
     ThroughputCtx ctx_a = {0, false};
     ThroughputCtx ctx_b = {0, false};
 
-    auto* task_a = TaskControlBlock::create(throughput_receiver, 5, 10);
+    auto *task_a = TaskControlBlock::create(throughput_receiver, 5, 10);
     JARVIS_ASSERT(task_a != nullptr);
     task_a->user_data = &ctx_a;
     Scheduler::add_task(*task_a);
 
     ctx_a.peer_id = task_a->id;
 
-    auto* task_b = TaskControlBlock::create(throughput_receiver, 5, 10);
+    auto *task_b = TaskControlBlock::create(throughput_receiver, 5, 10);
     JARVIS_ASSERT(task_b != nullptr);
     task_b->user_data = &ctx_b;
     Scheduler::add_task(*task_b);
 
     ctx_b.peer_id = task_b->id;
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Let both tasks reach ready state
     kernel::test::yield_as(*task_a);

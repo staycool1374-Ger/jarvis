@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file syscall_helpers.hpp
-/// @brief Helpers used by syscall handlers — current task, path resolution, fd management.
+/// @brief Helpers used by syscall handlers — current task, path resolution, fd
+/// management.
 
 #pragma once
 
@@ -31,15 +34,15 @@ constexpr uint64_t SYSCALL_MAX_PATH = 256;
 
 /// @brief Get the currently running task from the scheduler.
 /// @return Pointer to the current TaskControlBlock.
-TaskControlBlock* syscall_task();
+TaskControlBlock *syscall_task();
 /// @brief Check if the current task is a user-space task.
 /// @return true if user task (has user page table).
 bool syscall_is_user_task();
 /// @brief Open a vnode as a file descriptor in the current task's fd table.
 /// @return The fd index, or VFS_INVALID on failure.
-int syscall_task_open(vfs::Vnode* vn, uint64_t flags);
+int syscall_task_open(vfs::Vnode *vn, uint64_t flags);
 /// @brief Resolve a path and open it as a file descriptor.
 /// @return The fd index, or VFS_INVALID on failure.
-int syscall_path_open(const char* path, uint64_t flags);
+int syscall_path_open(const char *path, uint64_t flags);
 
 } // namespace kernel

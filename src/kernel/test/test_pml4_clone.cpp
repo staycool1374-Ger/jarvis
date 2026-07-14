@@ -28,39 +28,47 @@
 using namespace kernel;
 
 enum : uint64_t {
-    PML4_SHIFT    = 39,
-    PDPT_SHIFT    = 30,
-    PD_SHIFT      = 21,
-    PT_SHIFT      = 12,
-    PAGE_PRESENT  = 1ULL << 0,
-    PAGE_WRITE    = 1ULL << 1,
-    PAGE_USER     = 1ULL << 2,
-    PAGE_HUGE     = 1ULL << 7,
-    PAGE_NX       = 1ULL << 63,
+    PML4_SHIFT = 39,
+    PDPT_SHIFT = 30,
+    PD_SHIFT = 21,
+    PT_SHIFT = 12,
+    PAGE_PRESENT = 1ULL << 0,
+    PAGE_WRITE = 1ULL << 1,
+    PAGE_USER = 1ULL << 2,
+    PAGE_HUGE = 1ULL << 7,
+    PAGE_NX = 1ULL << 63,
 };
 
 static void dbg_dump_pml4(uint64_t pml4_phys) {
-    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
-    Logger::raw_write("PML4 at 0x"); Logger::print_hex(pml4_phys); Logger::raw_write(":\n");
+    auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (pml4_phys & ~0xFFFULL));
+    Logger::raw_write("PML4 at 0x");
+    Logger::print_hex(pml4_phys);
+    Logger::raw_write(":\n");
 
     for (int i = 0; i < 512; ++i) {
-        if (!(pml4[i] & PAGE_PRESENT)) continue;
+        if (!(pml4[i] & PAGE_PRESENT))
+            continue;
         uint64_t phys = pml4[i] & ~0xFFFULL;
         Logger::raw_write("  [");
         Logger::print_dec(i);
         Logger::raw_write("] PDPT=0x");
         Logger::print_hex(phys);
-        if (pml4[i] & PAGE_USER) Logger::raw_write(" US");
-        if (pml4[i] & PAGE_WRITE) Logger::raw_write(" RW");
+        if (pml4[i] & PAGE_USER)
+            Logger::raw_write(" US");
+        if (pml4[i] & PAGE_WRITE)
+            Logger::raw_write(" RW");
         Logger::raw_write("\n");
 
-        if (i >= static_cast<int>(arch::PML4_USER_COUNT)) continue;
-        auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + phys);
+        if (i >= static_cast<int>(arch::PML4_USER_COUNT))
+            continue;
+        auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + phys);
         for (int j = 0; j < 512; ++j) {
-            if (!(pdpt[j] & PAGE_PRESENT)) continue;
+            if (!(pdpt[j] & PAGE_PRESENT))
+                continue;
             uint64_t pd_phys = pdpt[j] & ~0xFFFULL;
-            uint64_t va_base = (static_cast<uint64_t>(i) << PML4_SHIFT)
-                             | (static_cast<uint64_t>(j) << PDPT_SHIFT);
+            uint64_t va_base = (static_cast<uint64_t>(i) << PML4_SHIFT) |
+                               (static_cast<uint64_t>(j) << PDPT_SHIFT);
             Logger::raw_write("    [");
             Logger::print_dec(j);
             Logger::raw_write("] ");
@@ -73,14 +81,19 @@ static void dbg_dump_pml4(uint64_t pml4_phys) {
             }
             Logger::raw_write(" va=0x");
             Logger::print_hex(va_base);
-            if (pdpt[j] & PAGE_USER) Logger::raw_write(" US");
-            if (pdpt[j] & PAGE_WRITE) Logger::raw_write(" RW");
+            if (pdpt[j] & PAGE_USER)
+                Logger::raw_write(" US");
+            if (pdpt[j] & PAGE_WRITE)
+                Logger::raw_write(" RW");
             Logger::raw_write("\n");
 
-            if ((pdpt[j] & PAGE_HUGE) || !PMM::is_user_page(pd_phys)) continue;
-            auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd_phys);
+            if ((pdpt[j] & PAGE_HUGE) || !PMM::is_user_page(pd_phys))
+                continue;
+            auto *pd =
+                reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
             for (int k = 0; k < 512; ++k) {
-                if (!(pd[k] & PAGE_PRESENT)) continue;
+                if (!(pd[k] & PAGE_PRESENT))
+                    continue;
                 uint64_t pt_phys = pd[k] & ~0xFFFULL;
                 Logger::raw_write("      [");
                 Logger::print_dec(k);
@@ -92,21 +105,28 @@ static void dbg_dump_pml4(uint64_t pml4_phys) {
                     Logger::raw_write("PT=0x");
                     Logger::print_hex(pt_phys);
                 }
-                if (pd[k] & PAGE_USER) Logger::raw_write(" US");
-                if (pd[k] & PAGE_WRITE) Logger::raw_write(" RW");
+                if (pd[k] & PAGE_USER)
+                    Logger::raw_write(" US");
+                if (pd[k] & PAGE_WRITE)
+                    Logger::raw_write(" RW");
                 Logger::raw_write("\n");
 
-                if ((pd[k] & PAGE_HUGE) || !PMM::is_user_page(pt_phys)) continue;
-                auto* pt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pt_phys);
+                if ((pd[k] & PAGE_HUGE) || !PMM::is_user_page(pt_phys))
+                    continue;
+                auto *pt =
+                    reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt_phys);
                 for (int l = 0; l < 512; ++l) {
-                    if (!(pt[l] & PAGE_PRESENT)) continue;
+                    if (!(pt[l] & PAGE_PRESENT))
+                        continue;
                     uint64_t leaf = pt[l] & ~0xFFFULL;
                     Logger::raw_write("        [");
                     Logger::print_dec(l);
                     Logger::raw_write("] page=0x");
                     Logger::print_hex(leaf);
-                    if (pt[l] & PAGE_USER) Logger::raw_write(" US");
-                    if (pt[l] & PAGE_WRITE) Logger::raw_write(" RW");
+                    if (pt[l] & PAGE_USER)
+                        Logger::raw_write(" US");
+                    if (pt[l] & PAGE_WRITE)
+                        Logger::raw_write(" RW");
                     Logger::raw_write("\n");
                 }
             }
@@ -123,7 +143,8 @@ JARVIS_TEST(pml4_clone_clears_user_entries, "PRE: none | POST: none") {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
-    auto* virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
+    auto *virt =
+        reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (virt[i] != 0) {
             PMM::free_page(pml4);
@@ -146,13 +167,16 @@ JARVIS_TEST(pml4_clone_kernel_entries_match, "PRE: none | POST: none") {
     JARVIS_ASSERT(pml4 != 0);
 
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
-    auto* new_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
-    auto* kern_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
+    auto *new_virt =
+        reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
+    auto *kern_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                   (kernel_pml4 & ~0xFFFULL));
 
     for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
         if (new_virt[i] != kern_virt[i]) {
             PMM::free_page(pml4);
-            JARVIS_FAIL("MISMATCH entry %u: new=0x%x kernel=0x%x", i, new_virt[i], kern_virt[i]);
+            JARVIS_FAIL("MISMATCH entry %u: new=0x%x kernel=0x%x", i,
+                        new_virt[i], kern_virt[i]);
         }
     }
 
@@ -170,7 +194,8 @@ JARVIS_TEST(pml4_clone_kernel_entries_match, "PRE: none | POST: none") {
 JARVIS_TEST(pml4_fork_user_entries_match, "PRE: none | POST: none") {
     uint64_t parent_pml4 = PMM::alloc_page();
     JARVIS_ASSERT(parent_pml4 != 0);
-    auto* parent_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent_pml4 & ~0xFFFULL));
+    auto *parent_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                     (parent_pml4 & ~0xFFFULL));
 
     uint64_t pdpt = PMM::alloc_page_table();
     JARVIS_ASSERT(pdpt != 0);
@@ -183,29 +208,31 @@ JARVIS_TEST(pml4_fork_user_entries_match, "PRE: none | POST: none") {
     constexpr uint64_t TEST_VA = 0x400000;
     size_t pml4_idx = (TEST_VA >> PML4_SHIFT) & 0x1FF;
     size_t pdpt_idx = (TEST_VA >> PDPT_SHIFT) & 0x1FF;
-    size_t pd_idx   = (TEST_VA >> PD_SHIFT) & 0x1FF;
-    size_t pt_idx   = (TEST_VA >> PT_SHIFT) & 0x1FF;
+    size_t pd_idx = (TEST_VA >> PD_SHIFT) & 0x1FF;
+    size_t pt_idx = (TEST_VA >> PT_SHIFT) & 0x1FF;
     JARVIS_ASSERT(pml4_idx < arch::PML4_USER_COUNT);
 
     parent_virt[pml4_idx] = pdpt | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    auto* pdpt_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt);
+    auto *pdpt_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt);
     pdpt_v[pdpt_idx] = pd | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    auto* pd_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd);
+    auto *pd_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd);
     pd_v[pd_idx] = pt | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
     uint64_t user_page = PMM::alloc_user_page();
     JARVIS_ASSERT(user_page != 0);
-    auto* pt_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pt);
+    auto *pt_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt);
     pt_v[pt_idx] = user_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
     // Create child PML4 (fork-style: copy user entries from parent, kernel
     // entries from kernel)
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
-    auto* kern_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
+    auto *kern_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                   (kernel_pml4 & ~0xFFFULL));
 
     uint64_t child_pml4 = PMM::alloc_page();
     JARVIS_ASSERT(child_pml4 != 0);
-    auto* child_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (child_pml4 & ~0xFFFULL));
+    auto *child_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                    (child_pml4 & ~0xFFFULL));
 
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i)
         child_virt[i] = parent_virt[i];
@@ -215,14 +242,16 @@ JARVIS_TEST(pml4_fork_user_entries_match, "PRE: none | POST: none") {
     // Verify user entries match parent
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (child_virt[i] != parent_virt[i]) {
-            JARVIS_FAIL("USER MISMATCH entry %u: child=0x%x parent=0x%x", i, child_virt[i], parent_virt[i]);
+            JARVIS_FAIL("USER MISMATCH entry %u: child=0x%x parent=0x%x", i,
+                        child_virt[i], parent_virt[i]);
         }
     }
 
     // Verify kernel entries match kernel PML4
     for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
         if (child_virt[i] != kern_virt[i]) {
-            JARVIS_FAIL("KERN MISMATCH entry %u: child=0x%x kernel=0x%x", i, child_virt[i], kern_virt[i]);
+            JARVIS_FAIL("KERN MISMATCH entry %u: child=0x%x kernel=0x%x", i,
+                        child_virt[i], kern_virt[i]);
         }
     }
 
@@ -249,13 +278,16 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent_pml4 != 0);
 
     // Simulate fork: child copies parent's user entries
-    auto* parent_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent_pml4 & ~0xFFFULL));
+    auto *parent_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                     (parent_pml4 & ~0xFFFULL));
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
-    auto* kern_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
+    auto *kern_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                   (kernel_pml4 & ~0xFFFULL));
 
     uint64_t child_pml4 = PMM::alloc_page();
     JARVIS_ASSERT(child_pml4 != 0);
-    auto* child_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (child_pml4 & ~0xFFFULL));
+    auto *child_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                    (child_pml4 & ~0xFFFULL));
 
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i)
         child_virt[i] = parent_virt[i];
@@ -280,7 +312,8 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent, "PRE: none | POST: none") {
     // Verify parent's PML4 entries are unchanged
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (parent_virt[i] != parent_snapshot[i]) {
-            JARVIS_FAIL("PARENT CORRUPTED at entry %u: before=0x%x after=0x%x", i, parent_snapshot[i], parent_virt[i]);
+            JARVIS_FAIL("PARENT CORRUPTED at entry %u: before=0x%x after=0x%x",
+                        i, parent_snapshot[i], parent_virt[i]);
         }
     }
 
@@ -288,7 +321,8 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent, "PRE: none | POST: none") {
     uint64_t parent_t = VMM::virt_to_phys_in_pml4(child_va, parent_pml4);
     JARVIS_ASSERT(parent_t == 0);
 
-    // Free page-table pages allocated by map_page_in_pml4 before freeing the PML4
+    // Free page-table pages allocated by map_page_in_pml4 before freeing the
+    // PML4
     VMM::free_user_pages(child_pml4);
     PMM::free_page(child_phys);
     PMM::free_page(child_pml4);
@@ -305,7 +339,8 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent, "PRE: none | POST: none") {
 JARVIS_TEST(pml4_free_user_pages_shared_safe, "PRE: none | POST: none") {
     uint64_t parent_pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent_pml4 != 0);
-    auto* parent_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (parent_pml4 & ~0xFFFULL));
+    auto *parent_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                     (parent_pml4 & ~0xFFFULL));
 
     // Create a user mapping in parent (using the fresh PML4)
     uint64_t va = 0x10000000;
@@ -316,19 +351,22 @@ JARVIS_TEST(pml4_free_user_pages_shared_safe, "PRE: none | POST: none") {
     JARVIS_ASSERT(pdpt != 0 && pd != 0 && pt != 0);
 
     parent_virt[pml4_idx] = pdpt | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    auto* pdpt_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pdpt);
-    pdpt_v[(va >> PDPT_SHIFT) & 0x1FF] = pd | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
-    auto* pd_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pd);
+    auto *pdpt_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt);
+    pdpt_v[(va >> PDPT_SHIFT) & 0x1FF] =
+        pd | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    auto *pd_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd);
     pd_v[(va >> PD_SHIFT) & 0x1FF] = pt | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
     uint64_t user_page = PMM::alloc_user_page();
     JARVIS_ASSERT(user_page != 0);
-    auto* pt_v = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + pt);
-    pt_v[(va >> PT_SHIFT) & 0x1FF] = user_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
+    auto *pt_v = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt);
+    pt_v[(va >> PT_SHIFT) & 0x1FF] =
+        user_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 
     // Simulate fork child that shares parent's page tables
     uint64_t child_pml4 = PMM::alloc_page();
-    auto* child_virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (child_pml4 & ~0xFFFULL));
+    auto *child_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                    (child_pml4 & ~0xFFFULL));
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i)
         child_virt[i] = parent_virt[i];
 
@@ -377,7 +415,8 @@ JARVIS_TEST(pml4_dump_no_user_entries, "PRE: none | POST: none") {
     Logger::raw_write("  Dumping PML4 via dbg_dump_pml4:\n");
     dbg_dump_pml4(pml4);
 
-    auto* virt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
+    auto *virt =
+        reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + (pml4 & ~0xFFFULL));
     for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
         if (virt[i] & PAGE_PRESENT) {
             PMM::free_page(pml4);

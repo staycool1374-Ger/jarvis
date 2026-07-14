@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,8 +19,10 @@
  */
 
 /// @file dma.hpp
-/// @brief DMA driver — buffer management, scatter-gather, PRD table construction,
-///        and portable DMA channel abstraction for kernel and userspace drivers.
+/// @brief DMA driver — buffer management, scatter-gather, PRD table
+/// construction,
+///        and portable DMA channel abstraction for kernel and userspace
+///        drivers.
 
 #pragma once
 
@@ -34,8 +38,8 @@ constexpr size_t DMA_MAX_PRD_ENTRIES = 256;
 
 /// DMA direction
 enum class Direction : uint8_t {
-    READ  = 0,  // device reads from memory (memory → device)
-    WRITE = 1,  // device writes to memory (device → memory)
+    READ = 0,  // device reads from memory (memory → device)
+    WRITE = 1, // device writes to memory (device → memory)
 };
 
 /// A single scatter-gather entry
@@ -47,22 +51,22 @@ struct SgEntry {
 
 /// Scatter-gather list
 struct SgList {
-    SgEntry  entries[DMA_MAX_SG_ENTRIES];
-    size_t   count;
+    SgEntry entries[DMA_MAX_SG_ENTRIES];
+    size_t count;
     uint64_t total_length;
 };
 
 /// Physical Region Descriptor (ATA bus master format)
 struct PrdEntry {
     uint32_t phys_addr;
-    uint16_t byte_count;    // actual byte count - 1 (0 means 65536)
-    uint16_t flags;         // bit 15 = EOT
+    uint16_t byte_count; // actual byte count - 1 (0 means 65536)
+    uint16_t flags;      // bit 15 = EOT
 } __attribute__((packed));
 
 /// PRD table — fixed-size array of PrdEntry
 struct PrdTable {
     PrdEntry entries[DMA_MAX_PRD_ENTRIES];
-    size_t   count;
+    size_t count;
 };
 
 // --- DMA Buffer ---
@@ -71,8 +75,8 @@ struct PrdTable {
 struct DmaBuffer {
     uint64_t phys_addr;
     uint64_t virt_addr;
-    size_t   size;
-    bool     owned;  // true if we allocated it and should free on destroy
+    size_t size;
+    bool owned; // true if we allocated it and should free on destroy
 };
 
 /// Allocate a physically contiguous DMA buffer.
@@ -81,35 +85,36 @@ struct DmaBuffer {
 DmaBuffer alloc_buffer(size_t size);
 
 /// Free a previously allocated DMA buffer.
-void free_buffer(DmaBuffer& buf);
+void free_buffer(DmaBuffer &buf);
 
 // --- Scatter-Gather ---
 
 /// Build a scatter-gather list from a DMA buffer and optional offset/length.
 /// For a single physically contiguous buffer, the SG list has one entry.
-bool sg_from_buffer(SgList& sg, const DmaBuffer& buf,
-                    size_t offset = 0, size_t length = 0);
+bool sg_from_buffer(SgList &sg, const DmaBuffer &buf, size_t offset = 0,
+                    size_t length = 0);
 
 /// Build a scatter-gather list from a virtual address range (which may cross
 /// page boundaries). Translates virtual addresses to physical via VMM.
-bool sg_from_virt(SgList& sg, uint64_t virt_addr, size_t length);
+bool sg_from_virt(SgList &sg, uint64_t virt_addr, size_t length);
 
 /// Reset a scatter-gather list.
-void sg_reset(SgList& sg);
+void sg_reset(SgList &sg);
 
 // --- PRD Table ---
 
 /// Build a PRD table from a scatter-gather list.
-/// ATA bus master PRD format: 32-bit phys addr, 16-bit byte count-1, 16-bit flags.
-/// The table is suitable for programming a PCI bus master controller.
-/// @param prd   Output PRD table (must have backing memory accessible by device).
+/// ATA bus master PRD format: 32-bit phys addr, 16-bit byte count-1, 16-bit
+/// flags. The table is suitable for programming a PCI bus master controller.
+/// @param prd   Output PRD table (must have backing memory accessible by
+/// device).
 /// @param sg    Input scatter-gather list.
 /// @param eot   If true, sets the EOT flag on the last entry.
 /// @return Number of PRD entries written.
-size_t prd_from_sg(PrdTable& prd, const SgList& sg, bool eot = true);
+size_t prd_from_sg(PrdTable &prd, const SgList &sg, bool eot = true);
 
 /// Reset a PRD table.
-void prd_reset(PrdTable& prd);
+void prd_reset(PrdTable &prd);
 
 // --- PCI Bus Master ---
 
@@ -122,13 +127,13 @@ void pci_set_bus_master(arch::PciBdf bdf, bool enable);
 
 /// BMDMA command register bits.
 constexpr uint8_t BMCMD_START = 0x01;
-constexpr uint8_t BMCMD_STOP  = 0x00;
-constexpr uint8_t BMCMD_READ  = 0x08; // device → memory direction
+constexpr uint8_t BMCMD_STOP = 0x00;
+constexpr uint8_t BMCMD_READ = 0x08; // device → memory direction
 
 /// BMDMA status register bits.
 constexpr uint8_t BMSTAT_ACTIVE = 0x01;
-constexpr uint8_t BMSTAT_ERROR  = 0x02;
-constexpr uint8_t BMSTAT_INTR   = 0x04;
+constexpr uint8_t BMSTAT_ERROR = 0x02;
+constexpr uint8_t BMSTAT_INTR = 0x04;
 
 /// DMA completion callback.
 /// @param context  User-provided context value.
@@ -139,7 +144,7 @@ using DmaCallback = void (*)(uint64_t context, bool success);
 /// Implementations bridge hardware-specific DMA register access (port I/O,
 /// MMIO, or IPC-mediated). Used by DmaEngine for portable driver code.
 class DmaChannel {
-public:
+  public:
     virtual ~DmaChannel() = default;
 
     /// Initialize the channel.
@@ -150,7 +155,7 @@ public:
     /// @param prd  PRD table (must remain valid until transfer completes).
     /// @param dir  Transfer direction.
     /// @return true if the transfer was started.
-    virtual bool start(PrdTable& prd, Direction dir) = 0;
+    virtual bool start(PrdTable &prd, Direction dir) = 0;
 
     /// Poll whether the channel is busy.
     virtual bool is_busy() = 0;
@@ -167,23 +172,23 @@ public:
 /// BMDMA channel implementation via PCI port I/O (kernel mode).
 /// Accesses the BMDMA controller registers at the given I/O base.
 class BmDmaChannel final : public DmaChannel {
-public:
+  public:
     explicit BmDmaChannel(uint16_t bm_io_base);
     bool init() override;
-    bool start(PrdTable& prd, Direction dir) override;
+    bool start(PrdTable &prd, Direction dir) override;
     bool is_busy() override;
     bool handle_irq() override;
     void abort() override;
 
-private:
+  private:
     uint16_t bm_io_base_;
 };
 
 /// High-level DMA engine that manages a DmaChannel and completion callbacks.
 /// Decouples transfer orchestration from hardware register access.
 class DmaEngine {
-public:
-    explicit DmaEngine(DmaChannel& channel);
+  public:
+    explicit DmaEngine(DmaChannel &channel);
 
     /// Start a DMA transfer with optional completion callback.
     /// @param prd  PRD table describing the transfer.
@@ -191,8 +196,8 @@ public:
     /// @param cb   Optional callback invoked on completion.
     /// @param ctx  Context passed to callback.
     /// @return true if transfer started successfully.
-    bool start_transfer(PrdTable& prd, Direction dir,
-                        DmaCallback cb = nullptr, uint64_t ctx = 0);
+    bool start_transfer(PrdTable &prd, Direction dir, DmaCallback cb = nullptr,
+                        uint64_t ctx = 0);
 
     /// Check whether the engine is currently busy.
     bool is_busy();
@@ -205,11 +210,11 @@ public:
     /// Abort any in-progress transfer.
     void abort();
 
-private:
-    DmaChannel& channel_;
-    bool        active_;
+  private:
+    DmaChannel &channel_;
+    bool active_;
     DmaCallback callback_;
-    uint64_t    callback_ctx_;
+    uint64_t callback_ctx_;
 };
 
 // --- Ping-Pong Double-Buffer ---
@@ -218,27 +223,27 @@ private:
 /// Provides two alternating DMA buffers with automatic chaining:
 /// while buffer A transfers, buffer B is available for data preparation.
 class PingPongDma {
-public:
+  public:
     /// Type of the chained completion callback.
     /// @param ctx    User context.
     /// @param buf    The buffer that just completed.
     /// @param success  True if transfer completed without error.
-    using ChainCallback = void (*)(uint64_t ctx, DmaBuffer* buf, bool success);
+    using ChainCallback = void (*)(uint64_t ctx, DmaBuffer *buf, bool success);
 
     /// Construct a ping-pong manager.
     /// @param engine  DmaEngine to use for transfers.
     /// @param buf_size  Size of each DMA buffer.
-    PingPongDma(DmaEngine& engine, size_t buf_size);
+    PingPongDma(DmaEngine &engine, size_t buf_size);
 
     /// Allocate both DMA buffers.
     /// @return true if both buffers allocated.
     bool init();
 
     /// Get the buffer currently available for data preparation.
-    DmaBuffer* prepare_buf();
+    DmaBuffer *prepare_buf();
 
     /// Get the buffer currently being transferred.
-    DmaBuffer* xfer_buf();
+    DmaBuffer *xfer_buf();
 
     /// Start or chain the next transfer.
     /// Swaps buffers: the prepared buffer becomes the transfer buffer.
@@ -256,21 +261,25 @@ public:
     void shutdown();
 
     /// Check if a transfer is in progress.
-    bool busy() const { return active_; }
+    bool busy() const {
+        return active_;
+    }
 
     /// Get the number of completed transfers.
-    uint64_t completed_count() const { return completed_; }
+    uint64_t completed_count() const {
+        return completed_;
+    }
 
-private:
-    DmaEngine&    engine_;
-    DmaBuffer     bufs_[2];
-    size_t        buf_size_;
-    uint8_t       prepare_idx_;   // index of buffer being filled
-    uint8_t       xfer_idx_;      // index of buffer being transferred
-    bool          active_;
-    uint64_t      completed_;
+  private:
+    DmaEngine &engine_;
+    DmaBuffer bufs_[2];
+    size_t buf_size_;
+    uint8_t prepare_idx_; // index of buffer being filled
+    uint8_t xfer_idx_;    // index of buffer being transferred
+    bool active_;
+    uint64_t completed_;
     ChainCallback chain_cb_;
-    uint64_t      chain_ctx_;
+    uint64_t chain_ctx_;
 };
 
 } // namespace kernel::dma

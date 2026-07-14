@@ -17,7 +17,8 @@
  */
 
 /// @file gdt.cpp
-/// @brief Global Descriptor Table — sets up segmentation and Task State Segment (TSS) for privilege levels and IST.
+/// @brief Global Descriptor Table — sets up segmentation and Task State Segment
+/// (TSS) for privilege levels and IST.
 
 #include <kernel/arch/gdt.hpp>
 #include <types.hpp>
@@ -25,7 +26,8 @@
 namespace arch {
 
 /// @brief Dedicated 4 KiB stack for the double-fault handler (IST1).
-/// @note Allocated in .bss (zero-initialised). Used by the CPU when vector 8 fires.
+/// @note Allocated in .bss (zero-initialised). Used by the CPU when vector 8
+/// fires.
 static uint8_t df_stack[4096] __attribute__((aligned(16)));
 
 /// @brief GDT entry table.
@@ -43,19 +45,19 @@ GDTDescriptor GDT::desc_ = {};
 /// @return A populated GDTEntry structure.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static GDTEntry make_entry(uint32_t base, uint32_t limit, uint8_t access,
-    uint8_t gran) {
+                           uint8_t gran) {
     GDTEntry e = {};
-    e.limit_low    = limit & 0xFFFF;
-    e.base_low     = base & 0xFFFF;
-    e.base_mid     = (base >> 16) & 0xFF;
-    e.access       = access;
-    e.granularity  = gran | ((limit >> 16) & 0x0F);
-    e.base_high    = (base >> 24) & 0xFF;
+    e.limit_low = limit & 0xFFFF;
+    e.base_low = base & 0xFFFF;
+    e.base_mid = (base >> 16) & 0xFF;
+    e.access = access;
+    e.granularity = gran | ((limit >> 16) & 0x0F);
+    e.base_high = (base >> 24) & 0xFF;
     return e;
 }
 
-/// @brief Initialise the GDT with kernel code/data, user code/data, and TSS entries.
-/// Sets up IST1 for the double-fault handler stack.
+/// @brief Initialise the GDT with kernel code/data, user code/data, and TSS
+/// entries. Sets up IST1 for the double-fault handler stack.
 void GDT::init() {
     entries_[0] = {};
 
@@ -70,19 +72,19 @@ void GDT::init() {
 
     GDTEntry tss_low = {};
     tss_low.limit_low = tss_limit & 0xFFFF;
-    tss_low.base_low  = tss_base & 0xFFFF;
-    tss_low.base_mid  = (tss_base >> 16) & 0xFF;
-    tss_low.access    = 0x89;
+    tss_low.base_low = tss_base & 0xFFFF;
+    tss_low.base_mid = (tss_base >> 16) & 0xFF;
+    tss_low.access = 0x89;
     tss_low.granularity = (tss_limit >> 16) & 0x0F;
     tss_low.base_high = (tss_base >> 24) & 0xFF;
     entries_[GDT_TSS / 8] = tss_low;
 
-    uint64_t* tss_high = reinterpret_cast<uint64_t*>(&entries_[GDT_TSS / 8 + 1]
-        );
+    uint64_t *tss_high =
+        reinterpret_cast<uint64_t *>(&entries_[GDT_TSS / 8 + 1]);
     *tss_high = tss_base >> 32;
 
     desc_.limit = sizeof(entries_) - 1;
-    desc_.base  = reinterpret_cast<uint64_t>(entries_);
+    desc_.base = reinterpret_cast<uint64_t>(entries_);
 
     // Set up IST1 for double-fault handler (vector 8)
     tss_.ist1 = reinterpret_cast<uint64_t>(df_stack + sizeof(df_stack));
@@ -96,13 +98,17 @@ void GDT::load() {
                  "mov %0, %%es\n"
                  "mov %0, %%fs\n"
                  "mov %0, %%gs\n"
-                 "mov %0, %%ss\n" : : "r"((uint16_t)GDT_DATA));
+                 "mov %0, %%ss\n"
+                 :
+                 : "r"((uint16_t)GDT_DATA));
     uint16_t tss_sel = GDT_TSS;
     asm volatile("ltr %0" : : "r"(tss_sel));
 }
 
-/// @brief Set the RSP0 field in the TSS (kernel stack pointer for ring-0 entry).
-/// @param rsp The stack pointer to use when transitioning from ring-3 to ring-0.
+/// @brief Set the RSP0 field in the TSS (kernel stack pointer for ring-0
+/// entry).
+/// @param rsp The stack pointer to use when transitioning from ring-3 to
+/// ring-0.
 void GDT::set_tss_rsp0(uint64_t rsp) {
     tss_.rsp0 = rsp;
 }

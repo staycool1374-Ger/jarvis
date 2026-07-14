@@ -57,7 +57,8 @@ JARVIS_TEST(deadlock_nested_mutex, "PRE: none | POST: none") {
 // Input: Multiple tasks acquire locks in consistent global order
 // Expect: No deadlock reported
 // Depends: WFG, deadlock detector
-JARVIS_TEST(deadlock_no_false_positive_valid_ordering, "PRE: none | POST: none") {
+JARVIS_TEST(deadlock_no_false_positive_valid_ordering,
+            "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 

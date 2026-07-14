@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,16 +28,16 @@
 
 namespace kernel::errors {
 
-#define TASK_ERROR_CODES \
-    X(OK,            0,  "OK") \
-    X(OOM,           1,  "Task creation failed, out of memory") \
-    X(TABLE_FULL,    2,  "Task creation failed, maximum of MAX_TASKS reached") \
-    X(STACK_ALLOC,   3,  "Kernel stack allocation failed") \
-    X(USTACK_ALLOC,  4,  "User stack allocation failed") \
-    X(PML4_CLONE,    5,  "PML4 clone failed") \
-    X(NOT_FOUND,     6,  "Task not found") \
-    X(INVALID_ARG,   7,  "Invalid argument") \
-    X(INVALID_STATE, 8,  "Invalid task state")
+#define TASK_ERROR_CODES                                                       \
+    X(OK, 0, "OK")                                                             \
+    X(OOM, 1, "Task creation failed, out of memory")                           \
+    X(TABLE_FULL, 2, "Task creation failed, maximum of MAX_TASKS reached")     \
+    X(STACK_ALLOC, 3, "Kernel stack allocation failed")                        \
+    X(USTACK_ALLOC, 4, "User stack allocation failed")                         \
+    X(PML4_CLONE, 5, "PML4 clone failed")                                      \
+    X(NOT_FOUND, 6, "Task not found")                                          \
+    X(INVALID_ARG, 7, "Invalid argument")                                      \
+    X(INVALID_STATE, 8, "Invalid task state")
 
 // NOLINTNEXTLINE(performance-enum-size)
 enum TaskError : uint64_t {
@@ -45,11 +47,12 @@ enum TaskError : uint64_t {
 };
 
 /// @brief Return a human-readable string for a task error code.
-template<>
-inline const char* error_string(TaskError error) {
+template <> inline const char *error_string(TaskError error) {
     switch (error) {
-#define X(name, num, msg) case TASK_ERR_##name: return msg;
-    TASK_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case TASK_ERR_##name:                                                      \
+        return msg;
+        TASK_ERROR_CODES
 #undef X
     }
     return "Unknown task error";

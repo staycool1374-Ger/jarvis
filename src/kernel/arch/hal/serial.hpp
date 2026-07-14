@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -25,7 +27,7 @@ namespace arch {
 
 /// @brief Serial port (UART) driver — architecture-agnostic interface.
 class Serial {
-public:
+  public:
     /// @brief Initialise the serial port hardware.
     static void init();
     /// @brief Transmit a single character.
@@ -36,7 +38,7 @@ public:
     static char getchar();
     /// @brief Transmit a null-terminated string.
     /// @param str Null-terminated string to transmit.
-    static void puts(const char* str);
+    static void puts(const char *str);
 };
 
 } // namespace arch

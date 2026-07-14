@@ -48,23 +48,26 @@ errors::SyncError Mutex::init_err() {
 
 /// @brief Add a task to the waiter array.
 /// @return false if the array is full.
-bool Mutex::add_waiter(TaskControlBlock& task) {
+bool Mutex::add_waiter(TaskControlBlock &task) {
     for (size_t i = 0; i < wait_count_; ++i) {
         ENSURE(waiters_[i] != &task);
     }
-    if (wait_count_ >= MAX_WAITERS) return false;
+    if (wait_count_ >= MAX_WAITERS)
+        return false;
     waiters_[wait_count_++] = &task;
     return true;
 }
 
 /// @brief Wake the highest-priority waiter.
 void Mutex::wake_one() {
-    if (wait_count_ == 0) return;
+    if (wait_count_ == 0)
+        return;
 
     size_t best = 0;
     for (size_t i = 1; i < wait_count_; ++i) {
         if (waiters_[i] && (!waiters_[best] ||
-            waiters_[i]->priority > waiters_[best]->priority)) best = i;
+                            waiters_[i]->priority > waiters_[best]->priority))
+            best = i;
     }
 
     if (waiters_[best] && waiters_[best]->state != TaskState::TERMINATED) {
@@ -77,12 +80,14 @@ void Mutex::wake_one() {
 /// @brief Boost the owner's priority if the waiter has higher priority.
 ///        Scans all waiters to find the max priority (handles multiple
 ///        waiters at different priorities and transitive chains).
-void Mutex::inherit_priority(TaskControlBlock& waiter) {
-    if (!owner_) return;
+void Mutex::inherit_priority(TaskControlBlock &waiter) {
+    if (!owner_)
+        return;
 
     uint64_t max_prio = waiter.priority;
     for (size_t i = 0; i < wait_count_; ++i) {
-        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+        if (waiters_[i]->priority > max_prio)
+            max_prio = waiters_[i]->priority;
     }
 
     if (max_prio > owner_->priority) {
@@ -100,7 +105,8 @@ void Mutex::inherit_priority(TaskControlBlock& waiter) {
 /// @brief Restore the owner's priority to its saved original value,
 ///        unless remaining waiters still need a boost.
 void Mutex::restore_priority() {
-    if (!owner_ || holder_priority_ == 0) return;
+    if (!owner_ || holder_priority_ == 0)
+        return;
 
     uint64_t max_remaining = 0;
     for (size_t i = 0; i < wait_count_; ++i) {
@@ -120,11 +126,13 @@ void Mutex::restore_priority() {
 ///        Called when a waiter's priority changes (e.g. transitively boosted
 ///        by another mutex further down the chain).
 void Mutex::reevaluate() {
-    if (!owner_ || wait_count_ == 0) return;
+    if (!owner_ || wait_count_ == 0)
+        return;
 
     uint64_t max_prio = 0;
     for (size_t i = 0; i < wait_count_; ++i) {
-        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+        if (waiters_[i]->priority > max_prio)
+            max_prio = waiters_[i]->priority;
     }
 
     if (max_prio > owner_->priority) {
@@ -140,8 +148,11 @@ void Mutex::reevaluate() {
 /// @brief Acquire the mutex, blocking until available (supports recursion).
 void Mutex::lock() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task) { lock_.unlock(); return; }
+    auto *task = Scheduler::current_task();
+    if (!task) {
+        lock_.unlock();
+        return;
+    }
 
     if (owner_ == task) {
         ++lock_count_;
@@ -171,8 +182,11 @@ void Mutex::lock() {
 /// @brief Acquire the mutex (error-returning overload).
 errors::SyncError Mutex::lock_err() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
+    auto *task = Scheduler::current_task();
+    if (!task) {
+        lock_.unlock();
+        return errors::SYNC_ERR_NO_TASK;
+    }
 
     if (owner_ == task) {
         ++lock_count_;
@@ -206,8 +220,11 @@ errors::SyncError Mutex::lock_err() {
 /// @brief Attempt to acquire without blocking.
 bool Mutex::try_lock() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task) { lock_.unlock(); return false; }
+    auto *task = Scheduler::current_task();
+    if (!task) {
+        lock_.unlock();
+        return false;
+    }
 
     if (owner_ == task) {
         ++lock_count_;
@@ -229,8 +246,11 @@ bool Mutex::try_lock() {
 /// @brief Attempt to acquire without blocking (error-returning overload).
 errors::SyncError Mutex::try_lock_err() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
+    auto *task = Scheduler::current_task();
+    if (!task) {
+        lock_.unlock();
+        return errors::SYNC_ERR_NO_TASK;
+    }
 
     if (owner_ == task) {
         ++lock_count_;
@@ -252,8 +272,11 @@ errors::SyncError Mutex::try_lock_err() {
 /// @brief Release the mutex, waking the next highest-priority waiter.
 void Mutex::unlock() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task || owner_ != task) { lock_.unlock(); return; }
+    auto *task = Scheduler::current_task();
+    if (!task || owner_ != task) {
+        lock_.unlock();
+        return;
+    }
 
     if (lock_count_ > 1) {
         --lock_count_;
@@ -279,10 +302,19 @@ void Mutex::unlock() {
 /// @brief Release the mutex (error-returning overload).
 errors::SyncError Mutex::unlock_err() {
     lock_.lock();
-    auto* task = Scheduler::current_task();
-    if (!task) { lock_.unlock(); return errors::SYNC_ERR_NO_TASK; }
-    if (owner_ != task) { lock_.unlock(); return errors::SYNC_ERR_NOT_OWNER; }
-    if (lock_count_ == 0) { lock_.unlock(); return errors::SYNC_ERR_NOT_LOCKED; }
+    auto *task = Scheduler::current_task();
+    if (!task) {
+        lock_.unlock();
+        return errors::SYNC_ERR_NO_TASK;
+    }
+    if (owner_ != task) {
+        lock_.unlock();
+        return errors::SYNC_ERR_NOT_OWNER;
+    }
+    if (lock_count_ == 0) {
+        lock_.unlock();
+        return errors::SYNC_ERR_NOT_LOCKED;
+    }
 
     if (lock_count_ > 1) {
         --lock_count_;
@@ -303,5 +335,5 @@ errors::SyncError Mutex::unlock_err() {
     return errors::SYNC_ERR_OK;
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

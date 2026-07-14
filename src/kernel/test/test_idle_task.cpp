@@ -56,8 +56,9 @@ JARVIS_TEST(idle_task_created_at_boot, "PRE: none | POST: none") {
 JARVIS_TEST(idle_task_runs_in_ring3, "PRE: none | POST: none") {
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->priority == 0 && t->user_stack_ != 0 && t != Scheduler::get_idle_task()) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->priority == 0 && t->user_stack_ != 0 &&
+            t != Scheduler::get_idle_task()) {
             JARVIS_ASSERT(t->page_table_ != VMM::get_kernel_pml4());
             JARVIS_ASSERT(t->kernel_stack != nullptr);
             JARVIS_TEST_PASS();
@@ -76,8 +77,9 @@ JARVIS_TEST(idle_task_runs_in_ring3, "PRE: none | POST: none") {
 JARVIS_TEST(idle_task_priority_zero, "PRE: none | POST: none") {
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->priority == 0 && t->user_stack_ != 0 && t != Scheduler::get_idle_task()) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->priority == 0 && t->user_stack_ != 0 &&
+            t != Scheduler::get_idle_task()) {
             JARVIS_ASSERT_EQ(0ULL, t->priority);
             JARVIS_ASSERT_EQ(0ULL, t->base_priority);
             JARVIS_TEST_PASS();
@@ -97,10 +99,11 @@ JARVIS_TEST(idle_task_priority_zero, "PRE: none | POST: none") {
 // Note: Cannot directly test HLT from kernel context as it would halt; test
 // validates idle task exists.
 JARVIS_TEST(idle_task_calls_pause_syscall, "PRE: none | POST: none") {
-    auto* idle = Scheduler::get_idle_task();
+    auto *idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(idle != nullptr);
     JARVIS_ASSERT(idle->kernel_stack != nullptr);
-// Idle task runs an infinite loop with arch::hlt() - verify it's a kernel task
+    // Idle task runs an infinite loop with arch::hlt() - verify it's a kernel
+    // task
     JARVIS_ASSERT(idle->page_table_ == 0);
     JARVIS_ASSERT(idle->user_stack_ == 0);
     JARVIS_TEST_PASS();
@@ -112,12 +115,12 @@ JARVIS_TEST(idle_task_calls_pause_syscall, "PRE: none | POST: none") {
 // Input: Create a higher-priority task, verify scheduler picks it over idle.
 // Expect: Scheduler::next_task() returns the higher-priority task, not idle.
 JARVIS_TEST(idle_task_yields_to_higher_priority, "PRE: none | POST: none") {
-    auto* high_prio = TaskControlBlock::create([]() {}, 10, 10);
+    auto *high_prio = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(high_prio != nullptr);
     Scheduler::add_task(*high_prio);
 
     // Idle is at priority 0, high_prio at 10 - scheduler should pick high_prio
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next != nullptr);
     JARVIS_ASSERT(next->priority >= high_prio->priority);
 
@@ -148,7 +151,7 @@ JARVIS_TEST(kernel_hlt_idle_still_exists, "PRE: none | POST: none") {
 // Input: Terminate the idle task, call reap_orphans, verify new idle exists.
 // Expect: New idle task is created and placed at tasks_[0].
 JARVIS_TEST(idle_task_restartable_on_crash, "PRE: none | POST: none") {
-    auto* old_idle = Scheduler::get_idle_task();
+    auto *old_idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(old_idle != nullptr);
     JARVIS_ASSERT_EQ(old_idle, Scheduler::task_at(0));
 
@@ -160,7 +163,7 @@ JARVIS_TEST(idle_task_restartable_on_crash, "PRE: none | POST: none") {
     Scheduler::reap_orphans();
 
     // New idle should exist at index 0
-    auto* new_idle = Scheduler::get_idle_task();
+    auto *new_idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(new_idle != nullptr);
     JARVIS_ASSERT_EQ(new_idle, Scheduler::task_at(0));
     JARVIS_ASSERT(new_idle->kernel_stack != nullptr);
@@ -181,7 +184,7 @@ JARVIS_TEST(multiple_idle_tasks_prevented, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(Scheduler::task_at(0), Scheduler::get_idle_task());
 
     // Create another task with priority 0 (same as idle)
-    auto* another = TaskControlBlock::create([]() {}, 0, 10);
+    auto *another = TaskControlBlock::create([]() {}, 0, 10);
     JARVIS_ASSERT(another != nullptr);
     Scheduler::add_task(*another);
 

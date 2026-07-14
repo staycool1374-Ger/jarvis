@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -28,11 +30,11 @@ namespace kernel {
 namespace vfs {
 
 /// @brief The FAT32 filesystem instance.  Set `partition` before boot.
-extern constinit fat32::Fat32Partition* fat32_partition_instance;
+extern constinit fat32::Fat32Partition *fat32_partition_instance;
 
 /// @brief Mount the FAT32 filesystem at the given mount point.
 /// @return 0 on success, VFS_INVALID on error.
-int mount_fat32(const char* mount_point);
+int mount_fat32(const char *mount_point);
 
 /// @brief VFS filesystem descriptor for FAT32.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)

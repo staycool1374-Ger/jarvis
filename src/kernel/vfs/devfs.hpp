@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -31,8 +33,6 @@ extern Filesystem dev_fs;
 
 /// @brief Initialize the device filesystem, registering device nodes.
 void devfs_init();
-
-
 
 } // namespace vfs
 } // namespace kernel

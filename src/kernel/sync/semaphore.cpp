@@ -54,9 +54,10 @@ errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
 }
 
 /// @brief Add a task to the waiter array (caller must hold lock_).
-bool Semaphore::add_waiter(TaskControlBlock* task) {
+bool Semaphore::add_waiter(TaskControlBlock *task) {
     // Caller must hold lock_ (wait already holds it)
-    if (waiter_count_ >= MAX_WAITERS) return false;
+    if (waiter_count_ >= MAX_WAITERS)
+        return false;
     waiters_[waiter_count_++] = task;
     return true;
 }
@@ -64,12 +65,14 @@ bool Semaphore::add_waiter(TaskControlBlock* task) {
 /// @brief Wake the highest-priority waiter (caller must hold lock_).
 void Semaphore::wake_one() {
     // Caller must hold lock_ (post already holds it)
-    if (waiter_count_ == 0) return;
+    if (waiter_count_ == 0)
+        return;
 
     if (waiter_count_ > 1) {
         size_t best = 0;
         for (size_t i = 1; i < waiter_count_; ++i) {
-            if (waiters_[i]->priority > waiters_[best]->priority) best = i;
+            if (waiters_[i]->priority > waiters_[best]->priority)
+                best = i;
         }
         if (waiters_[best]->state != TaskState::TERMINATED)
             Scheduler::set_task_ready(*waiters_[best]);
@@ -82,11 +85,13 @@ void Semaphore::wake_one() {
 }
 
 /// @brief Boost the owner if the waiter has higher priority (PIP).
-void Semaphore::inherit_priority(TaskControlBlock& waiter) {
-    if (!owner_) return;
+void Semaphore::inherit_priority(TaskControlBlock &waiter) {
+    if (!owner_)
+        return;
     uint64_t max_prio = waiter.priority;
     for (size_t i = 0; i < waiter_count_; ++i) {
-        if (waiters_[i]->priority > max_prio) max_prio = waiters_[i]->priority;
+        if (waiters_[i]->priority > max_prio)
+            max_prio = waiters_[i]->priority;
     }
     if (max_prio > owner_->priority) {
         if (holder_priority_ == 0)
@@ -97,7 +102,8 @@ void Semaphore::inherit_priority(TaskControlBlock& waiter) {
 
 /// @brief Restore the owner's priority (PIP).
 void Semaphore::restore_priority() {
-    if (!owner_ || holder_priority_ == 0) return;
+    if (!owner_ || holder_priority_ == 0)
+        return;
     uint64_t max_remaining = 0;
     for (size_t i = 0; i < waiter_count_; ++i) {
         if (waiters_[i]->priority > max_remaining)
@@ -114,8 +120,9 @@ void Semaphore::restore_priority() {
 /// @brief Decrement the count, blocking if zero.
 void Semaphore::wait() {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return;
 
     if (count_ > 0) {
         --count_;
@@ -137,8 +144,9 @@ void Semaphore::wait() {
 /// @brief Decrement the count, blocking if zero (error-returning overload).
 errors::SyncError Semaphore::wait_err() {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return errors::SYNC_ERR_NO_TASK;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return errors::SYNC_ERR_NO_TASK;
 
     if (count_ > 0) {
         --count_;
@@ -188,7 +196,8 @@ void Semaphore::post() {
         wake_one();
         restore_priority();
     } else if (count_ < max_count_) {
-        if (count_ == 0) owner_ = nullptr;
+        if (count_ == 0)
+            owner_ = nullptr;
         ++count_;
     }
 }
@@ -202,12 +211,13 @@ errors::SyncError Semaphore::post_err() {
         return errors::SYNC_ERR_OK;
     }
     if (count_ < max_count_) {
-        if (count_ == 0) owner_ = nullptr;
+        if (count_ == 0)
+            owner_ = nullptr;
         ++count_;
         return errors::SYNC_ERR_OK;
     }
     return errors::SYNC_ERR_BUFFER_FULL;
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

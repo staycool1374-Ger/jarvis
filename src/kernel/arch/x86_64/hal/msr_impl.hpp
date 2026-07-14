@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file msr_impl.hpp
-/// @brief x86_64 Model-Specific Register (MSR) read/write — RDMSR, WRMSR, and common MSR constants.
+/// @brief x86_64 Model-Specific Register (MSR) read/write — RDMSR, WRMSR, and
+/// common MSR constants.
 
 #pragma once
 
@@ -46,7 +49,7 @@ inline uint64_t rdmsr(uint32_t msr) {
 }
 
 /// @brief IA32_STAR MSR — CS/SS selector base for SYSCALL (0xC0000081).
-inline constexpr uint32_t IA32_STAR  = 0xC0000081;
+inline constexpr uint32_t IA32_STAR = 0xC0000081;
 /// @brief IA32_LSTAR MSR — target RIP for SYSCALL (0xC0000082).
 inline constexpr uint32_t IA32_LSTAR = 0xC0000082;
 /// @brief IA32_FMASK MSR — RFLAGS mask cleared on SYSCALL entry (0xC0000084).

@@ -12,7 +12,7 @@ using namespace kernel;
 /// @brief  Deleter for a TaskControlBlock that was added to the scheduler.
 ///         Calls remove_task() + cleanup() + delete.
 struct TaskDeleter {
-    void operator()(TaskControlBlock* tcb) {
+    void operator()(TaskControlBlock *tcb) {
         if (tcb) {
             Scheduler::remove_task(*tcb);
             tcb->cleanup();
@@ -24,7 +24,7 @@ struct TaskDeleter {
 /// @brief  Deleter for a TaskControlBlock that was NOT added to the scheduler.
 ///         Calls cleanup() + delete only.
 struct SimpleTaskDeleter {
-    void operator()(TaskControlBlock* tcb) {
+    void operator()(TaskControlBlock *tcb) {
         if (tcb) {
             tcb->cleanup();
             delete tcb;

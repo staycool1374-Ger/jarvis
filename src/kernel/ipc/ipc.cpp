@@ -17,7 +17,8 @@
  */
 
 /// @file ipc.cpp
-/// @brief Priority-based IPC implementation — message queue, send/recv, sync send, priority inheritance.
+/// @brief Priority-based IPC implementation — message queue, send/recv, sync
+/// send, priority inheritance.
 
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
@@ -35,9 +36,9 @@ namespace kernel {
 MessageQueue::~MessageQueue() {
     // Wake any blocked senders before the queue memory is freed,
     // so they can fast-fail instead of blocking on a zombie destination.
-    auto* task = blocked_senders_head;
+    auto *task = blocked_senders_head;
     while (task) {
-        auto* next = task->blocked_next;
+        auto *next = task->blocked_next;
         task->blocked_next = nullptr;
         task->blocked_on_queue = nullptr;
         if (task->state != TaskState::TERMINATED)
@@ -56,14 +57,16 @@ void MessageQueue::init() {
     prio_bitmap = 0;
     blocked_senders_head = nullptr;
     blocked_senders_tail = nullptr;
-    lock_.unlock();  // Ensure SpinLock is unlocked (constructor not called on MemPool alloc)
+    lock_.unlock(); // Ensure SpinLock is unlocked (constructor not called on
+                    // MemPool alloc)
 }
 
 /// @brief Insert a message at the tail of the queue.
 /// @return true on success, false if the queue is full.
-bool MessageQueue::push(const Message& msg) {
+bool MessageQueue::push(const Message &msg) {
     SpinLockGuard<sync::SpinLock> guard(lock_);
-    if (is_full()) return false;
+    if (is_full())
+        return false;
 
     msgs[tail] = msg;
     prio_bitmap |= (1ULL << msg.priority);
@@ -74,9 +77,10 @@ bool MessageQueue::push(const Message& msg) {
 
 /// @brief Remove the highest-priority message (FIFO within same priority).
 /// @return true if a message was dequeued.
-bool MessageQueue::pop(Message& out) {
+bool MessageQueue::pop(Message &out) {
     SpinLockGuard<sync::SpinLock> guard(lock_);
-    if (is_empty()) return false;
+    if (is_empty())
+        return false;
 
     // Find message with highest priority (lowest priority number).
     // For same-priority messages, scan from head to preserve FIFO order.
@@ -87,10 +91,12 @@ bool MessageQueue::pop(Message& out) {
         if (msgs[idx].priority < best_prio) {
             best_prio = msgs[idx].priority;
             best_idx = idx;
-            if (best_prio == 0) break;
+            if (best_prio == 0)
+                break;
         }
     }
-    if (best_idx >= IPC_MAX_QUEUE_MSG) return false;
+    if (best_idx >= IPC_MAX_QUEUE_MSG)
+        return false;
 
     out = msgs[best_idx];
 
@@ -102,7 +108,8 @@ bool MessageQueue::pop(Message& out) {
         size_t pos = best_idx;
         while (true) {
             size_t next = (pos + 1) % IPC_MAX_QUEUE_MSG;
-            if (next == tail) break;
+            if (next == tail)
+                break;
             msgs[pos] = msgs[next];
             pos = next;
         }
@@ -127,7 +134,8 @@ bool MessageQueue::pop(Message& out) {
 /// @brief Return the highest priority that has at least one message.
 /// @return IPC_PRIORITY_LEVELS if empty.
 size_t MessageQueue::highest_priority() const {
-    if (prio_bitmap == 0) return IPC_PRIORITY_LEVELS;
+    if (prio_bitmap == 0)
+        return IPC_PRIORITY_LEVELS;
     return static_cast<size_t>(__builtin_ctzll(prio_bitmap));
 }
 
@@ -135,24 +143,28 @@ size_t MessageQueue::highest_priority() const {
 // IPC
 // ---------------------------------------------------------------------------
 
-/// @brief Initialise the IPC subsystem (per-task queues are set up in task creation).
+/// @brief Initialise the IPC subsystem (per-task queues are set up in task
+/// creation).
 void IPC::init() {
     // Message queues are initialised per-task in create/create_user/clone.
 }
 
-/// @brief Send a message to a destination task (blocks if queue is full, unless IPC_NONBLOCK).
-bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
-    auto* tcb = Scheduler::find_task(dest_id);
-    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED
-        ) return false;
+/// @brief Send a message to a destination task (blocks if queue is full, unless
+/// IPC_NONBLOCK).
+bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
+    auto *tcb = Scheduler::find_task(dest_id);
+    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED)
+        return false;
 
     // If the queue is already full, either return immediately (NONBLOCK)
     // or block the sender until space becomes available.
     if (tcb->msg_queue->is_full()) {
-        if (flags & IPC_NONBLOCK) return false;
+        if (flags & IPC_NONBLOCK)
+            return false;
 
-        auto* cur = Scheduler::current_task();
-        if (!cur) return false;
+        auto *cur = Scheduler::current_task();
+        if (!cur)
+            return false;
 
         block_sender(*tcb->msg_queue, *cur);
         cur->state = TaskState::BLOCKED;
@@ -165,16 +177,18 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
             return false;
 
         // Queue should have space now
-        if (tcb->msg_queue->is_full()) return false;
+        if (tcb->msg_queue->is_full())
+            return false;
     }
 
     bool ok = tcb->msg_queue->push(msg);
-    if (!ok) return false;
+    if (!ok)
+        return false;
 
     // Zero-copy buffer transfer: if the message carries a buffer handle,
     // transfer ownership from current task to the destination.
     if (msg.buf_handle != 0) {
-        auto* cur = Scheduler::current_task();
+        auto *cur = Scheduler::current_task();
         if (cur) {
             BufferPool::transfer(msg.buf_handle, *cur, *tcb);
         }
@@ -188,9 +202,10 @@ bool IPC::send(uint64_t dest_id, const Message& msg, uint64_t flags) {
 }
 
 /// @brief Receive a message from the calling task's own queue.
-bool IPC::recv(Message& msg) {
-    auto* cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue) return false;
+bool IPC::recv(Message &msg) {
+    auto *cur = Scheduler::current_task();
+    if (!cur || !cur->msg_queue)
+        return false;
 
     bool ok = cur->msg_queue->pop(msg);
     if (ok && cur->msg_queue->blocked_senders_head) {
@@ -200,19 +215,22 @@ bool IPC::recv(Message& msg) {
 }
 
 /// @brief Send and block until a reply arrives (client-side synchronous IPC).
-bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
+bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
     // Send the request message
-    if (!send(dest_id, msg)) return false;
+    if (!send(dest_id, msg))
+        return false;
 
     // Block waiting for a reply on our own queue
-    auto* cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue) return false;
+    auto *cur = Scheduler::current_task();
+    if (!cur || !cur->msg_queue)
+        return false;
 
     bool was_blocked = false;
     while (cur->msg_queue->is_empty()) {
         // If destination died while we were waiting for a reply, bail out
-        auto* dest = Scheduler::find_task(dest_id);
-        if (!dest || dest->state == TaskState::TERMINATED) return false;
+        auto *dest = Scheduler::find_task(dest_id);
+        if (!dest || dest->state == TaskState::TERMINATED)
+            return false;
 
         cur->state = TaskState::BLOCKED;
         was_blocked = true;
@@ -231,14 +249,15 @@ bool IPC::send_sync(uint64_t dest_id, const Message& msg, Message& reply) {
 }
 
 /// @brief Return a reference to a task's message queue (asserts existence).
-MessageQueue& IPC::queue(uint64_t task_id) {
-    auto* tcb = Scheduler::find_task(task_id);
+MessageQueue &IPC::queue(uint64_t task_id) {
+    auto *tcb = Scheduler::find_task(task_id);
     ENSURE(tcb != nullptr && tcb->msg_queue != nullptr);
     return *tcb->msg_queue;
 }
 
-/// @brief Block the current task on a full queue (priority inheritance if sender is more urgent).
-bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
+/// @brief Block the current task on a full queue (priority inheritance if
+/// sender is more urgent).
+bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
     task.state = TaskState::BLOCKED;
     task.blocked_next = nullptr;
     task.blocked_on_queue = &q;
@@ -258,10 +277,11 @@ bool IPC::block_sender(MessageQueue& q, TaskControlBlock& task) {
 }
 
 /// @brief Unblock the oldest blocked sender and restore receiver priority.
-void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
-    if (!q.blocked_senders_head) return;
+void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
+    if (!q.blocked_senders_head)
+        return;
 
-    auto* task = q.blocked_senders_head;
+    auto *task = q.blocked_senders_head;
     q.blocked_senders_head = task->blocked_next;
     if (!q.blocked_senders_head) {
         q.blocked_senders_tail = nullptr;
@@ -276,9 +296,10 @@ void IPC::wake_sender(MessageQueue& q, TaskControlBlock& receiver) {
     // Priority inheritance: restore receiver priority based on remaining
     // blocked senders
     uint64_t max_prio = receiver.base_priority;
-    auto* cur = q.blocked_senders_head;
+    auto *cur = q.blocked_senders_head;
     while (cur) {
-        if (cur->priority > max_prio) max_prio = cur->priority;
+        if (cur->priority > max_prio)
+            max_prio = cur->priority;
         cur = cur->blocked_next;
     }
     receiver.priority = max_prio;

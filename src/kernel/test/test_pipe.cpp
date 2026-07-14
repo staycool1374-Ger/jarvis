@@ -39,7 +39,7 @@ JARVIS_TEST(pipe_create_returns_two_fds, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT_EQ(0, ret);
     JARVIS_ASSERT(fds[0] >= 0);
     JARVIS_ASSERT(fds[1] >= 0);
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
     JARVIS_ASSERT(task != nullptr);
     JARVIS_ASSERT(task->fd_table.get(fds[0]) != nullptr);
     JARVIS_ASSERT(task->fd_table.get(fds[1]) != nullptr);
@@ -65,9 +65,9 @@ JARVIS_TEST(pipe_read_from_empty_nonblock, "PRE: vfsd, iocd | POST: none") {
 JARVIS_TEST(pipe_write_to_full_blocks, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
     JARVIS_ASSERT(task != nullptr);
-    auto* wnode = task->fd_table.get(fds[1])->vnode;
+    auto *wnode = task->fd_table.get(fds[1])->vnode;
     JARVIS_ASSERT(wnode != nullptr);
 
     uint8_t buf[5000];
@@ -86,19 +86,20 @@ JARVIS_TEST(pipe_write_to_full_blocks, "PRE: vfsd, iocd | POST: none") {
 // Input: Close read_fd, write to write_fd
 // Expect: write returns VFS_INVALID (-4)
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_read_end_closed_returns_epipe, "PRE: vfsd, iocd | POST: none") {
+JARVIS_TEST(pipe_read_end_closed_returns_epipe,
+            "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
     JARVIS_ASSERT(task != nullptr);
 
     task->fd_table.free(fds[0]);
 
-    auto* wnode = task->fd_table.get(fds[1])->vnode;
+    auto *wnode = task->fd_table.get(fds[1])->vnode;
     JARVIS_ASSERT(wnode != nullptr);
-    const char* msg = "test";
-    int64_t written = wnode->ops->write(*wnode,
-        reinterpret_cast<const uint8_t*>(msg), 4, 0);
+    const char *msg = "test";
+    int64_t written =
+        wnode->ops->write(*wnode, reinterpret_cast<const uint8_t *>(msg), 4, 0);
     JARVIS_ASSERT_EQ(static_cast<int64_t>(vfs::VFS_INVALID), written);
 
     task->fd_table.free(fds[1]);
@@ -113,16 +114,16 @@ JARVIS_TEST(pipe_read_end_closed_returns_epipe, "PRE: vfsd, iocd | POST: none") 
 JARVIS_TEST(pipe_write_then_read_roundtrip, "PRE: vfsd, iocd | POST: none") {
     int fds[2];
     JARVIS_ASSERT_EQ(0, vfs::create_pipe(fds));
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
     JARVIS_ASSERT(task != nullptr);
-    auto* rnode = task->fd_table.get(fds[0])->vnode;
-    auto* wnode = task->fd_table.get(fds[1])->vnode;
+    auto *rnode = task->fd_table.get(fds[0])->vnode;
+    auto *wnode = task->fd_table.get(fds[1])->vnode;
     JARVIS_ASSERT(rnode != nullptr);
     JARVIS_ASSERT(wnode != nullptr);
 
-    const char* msg = "hello";
-    int64_t written = wnode->ops->write(*wnode,
-        reinterpret_cast<const uint8_t*>(msg), 5, 0);
+    const char *msg = "hello";
+    int64_t written =
+        wnode->ops->write(*wnode, reinterpret_cast<const uint8_t *>(msg), 5, 0);
     JARVIS_ASSERT_EQ(5, written);
 
     uint8_t buf[64];
@@ -141,7 +142,8 @@ JARVIS_TEST(pipe_write_then_read_roundtrip, "PRE: vfsd, iocd | POST: none") {
 // Input: N/A
 // Expect: Stub passes
 // Depends: kernel::vfs::Pipe
-JARVIS_TEST(pipe_multiple_writers_no_interleaving, "PRE: vfsd, iocd | POST: none") {
+JARVIS_TEST(pipe_multiple_writers_no_interleaving,
+            "PRE: vfsd, iocd | POST: none") {
     JARVIS_TEST_PASS();
 }
 

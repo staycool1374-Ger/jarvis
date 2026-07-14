@@ -29,7 +29,8 @@
 /// The crash is observable in the serial output:
 ///   [DAEMON] 'vfsd' restarted (PID=4, restart #1)   ← created
 ///   Scheduler: task '' (ID=4) terminated              ← crashes
-///   [DAEMON] 'vfsd' died (PID=4), restart_count=1     ← notify_death in cleanup
+///   [DAEMON] 'vfsd' died (PID=4), restart_count=1     ← notify_death in
+///   cleanup
 ///
 /// The dmesg_push_base(0xDA01) in notify_death persists the event
 /// across reboot_from_table() because the dmesg buffer is never cleared.
@@ -58,9 +59,10 @@ JARVIS_TEST(daemon_restart_after_cleanup_crash, "PRE: vfsd,iocd") {
     // scheduler but will crash when the timer ISR picks them.
     // Check they are at least present in the daemon entries.
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
-        const auto& entry = daemon::get_entry(i);
-        if (entry.pid == 0) continue;
-        auto* t = Scheduler::find_task(entry.pid);
+        const auto &entry = daemon::get_entry(i);
+        if (entry.pid == 0)
+            continue;
+        auto *t = Scheduler::find_task(entry.pid);
         JARVIS_ASSERT(t != nullptr);
     }
 

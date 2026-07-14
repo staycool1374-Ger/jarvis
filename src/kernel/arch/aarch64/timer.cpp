@@ -30,21 +30,23 @@ namespace arch {
 volatile uint64_t Timer::ticks_ = 0;
 uint64_t Timer::counter_freq_hz_ = 0;
 
-/// @brief Initialise the timer with a given tick frequency and register the IRQ handler.
+/// @brief Initialise the timer with a given tick frequency and register the IRQ
+/// handler.
 /// @param[in] frequency_hz Desired timer interrupt frequency in Hz.
 void Timer::init(uint32_t frequency_hz) {
     set_frequency(frequency_hz);
-    IDT::register_handler(InterruptVector::TIMER, [](uint64_t, uint64_t, uint64_t) {
-        handle_irq();
-        kernel::Scheduler::on_tick();
-    });
+    IDT::register_handler(InterruptVector::TIMER,
+                          [](uint64_t, uint64_t, uint64_t) {
+                              handle_irq();
+                              kernel::Scheduler::on_tick();
+                          });
 }
 
 /// @brief Set the timer compare value to achieve a given frequency.
 /// Reads CNTFRQ_EL0 to calculate the interval and writes it to CNTP_TVAL_EL0.
 /// @param[in] frequency_hz Desired frequency in Hz.
 void Timer::set_frequency(uint32_t frequency_hz) {
-    uint64_t freq;
+    uint64_t freq{};
     asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
     counter_freq_hz_ = freq;
     uint64_t interval = freq / frequency_hz;
@@ -62,8 +64,9 @@ uint64_t Timer::ticks() {
 /// @brief Return elapsed time in nanoseconds since boot.
 /// @return Nanoseconds, or 0 if counter frequency is not yet known.
 uint64_t Timer::ns() {
-    if (counter_freq_hz_ == 0) return 0;
-    uint64_t cnt;
+    if (counter_freq_hz_ == 0)
+        return 0;
+    uint64_t cnt{};
     asm volatile("mrs %0, cntpct_el0" : "=r"(cnt));
     uint64_t sec = cnt / counter_freq_hz_;
     uint64_t rem = cnt % counter_freq_hz_;
@@ -88,7 +91,8 @@ void Timer::set_ticks_for_test(uint64_t value) {
 /// @param[in] ticks_from_now Number of scheduler ticks (ms) from now.
 void Timer::oneshot(uint64_t ticks_from_now) {
     uint64_t interval = ticks_from_now * (counter_freq_hz_ / 1000);
-    if (interval == 0) interval = 1;
+    if (interval == 0)
+        interval = 1;
     asm volatile("msr cntp_tval_el0, %0" : : "r"(interval));
     asm volatile("msr cntp_ctl_el0, %0" : : "r"(1UL));
     isb();
@@ -97,10 +101,11 @@ void Timer::oneshot(uint64_t ticks_from_now) {
 /// @brief Arm the timer for periodic interrupts.
 /// @param[in] period_ticks Interval in scheduler ticks (ms).
 void Timer::periodic(uint64_t period_ticks) {
-    uint64_t freq;
+    uint64_t freq{};
     asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
     uint64_t interval = freq / period_ticks;
-    if (interval == 0) interval = 1;
+    if (interval == 0)
+        interval = 1;
     asm volatile("msr cntp_tval_el0, %0" : : "r"(interval));
     asm volatile("msr cntp_ctl_el0, %0" : : "r"(1UL));
     isb();
@@ -109,7 +114,7 @@ void Timer::periodic(uint64_t period_ticks) {
 /// @brief Read the remaining time on the timer (CNTP_TVAL_EL0).
 /// @return Remaining timer value in counter ticks.
 uint64_t Timer::remaining() {
-    uint64_t val;
+    uint64_t val{};
     asm volatile("mrs %0, cntp_tval_el0" : "=r"(val));
     return val;
 }

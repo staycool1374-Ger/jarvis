@@ -29,7 +29,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
 
-extern "C" void debug_write(const char* s);
+extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
 #include <kernel/memory/integrity.hpp>
 #include <kernel/test/resource_tracker.hpp>
@@ -40,11 +40,11 @@ extern "C" void debug_write_hex(uint64_t value);
 
 // Architecture-aware stack pointer access
 #if defined(CONFIG_ARCH_X86_64)
-#  define TASK_STACK_PTR(t) ((t)->context.rsp)
+#define TASK_STACK_PTR(t) ((t)->context.rsp)
 #elif defined(CONFIG_ARCH_AARCH64)
-#  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#define TASK_STACK_PTR(t) ((t)->context.sp_el0)
 #elif defined(CONFIG_ARCH_RISCV64)
-#  define TASK_STACK_PTR(t) ((t)->context.sp)
+#define TASK_STACK_PTR(t) ((t)->context.sp)
 #endif
 #include <kernel/task/sporadic_server.hpp>
 #include <signal.hpp>
@@ -60,24 +60,24 @@ namespace kernel {
 
 // P5a: Deferred-kill list.
 static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
-static TaskControlBlock* s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
+static TaskControlBlock *s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
 static uint64_t s_deferred_kill_count = 0;
 
-static inline uint64_t effective_priority(const TaskControlBlock* t) noexcept {
+static inline uint64_t effective_priority(const TaskControlBlock *t) noexcept {
     if (t && t->sporadic_server)
         return t->sporadic_server->current_priority();
     return t ? t->priority : 0;
 }
 
-void Scheduler::enqueue_ready(TaskControlBlock& task) noexcept {
+void Scheduler::enqueue_ready(TaskControlBlock &task) noexcept {
     ready_queue_.enqueue(task, effective_priority(&task));
 }
 
-void Scheduler::dequeue_ready(TaskControlBlock& task) noexcept {
+void Scheduler::dequeue_ready(TaskControlBlock &task) noexcept {
     ready_queue_.remove(task, effective_priority(&task));
 }
 
-void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
+void Scheduler::set_task_ready(TaskControlBlock &task) noexcept {
     task.state = TaskState::READY;
     enqueue_ready(task);
 }
@@ -88,11 +88,14 @@ void Scheduler::set_task_ready(TaskControlBlock& task) noexcept {
 /// so a parent blocked in waitpid is not left waiting forever on a child that
 /// exited via a path other than sys_exit.
 /// @param child The just-terminated child task.
-static void wake_waiting_parent(TaskControlBlock& child) {
-    if (child.parent_id == 0) return;
-    auto* p = Scheduler::find_task(child.parent_id);
-    if (!p) return;
-    if (p->waiting_child_pid != child.id) return;
+static void wake_waiting_parent(TaskControlBlock &child) {
+    if (child.parent_id == 0)
+        return;
+    auto *p = Scheduler::find_task(child.parent_id);
+    if (!p)
+        return;
+    if (p->waiting_child_pid != child.id)
+        return;
 
     // Deliver the child's exit status to a parent blocked in waitpid.
     if (p->waiting_child_status) {
@@ -104,7 +107,8 @@ static void wake_waiting_parent(TaskControlBlock& child) {
             switched = true;
         }
         *p->waiting_child_status = child.exit_code;
-        if (switched) arch::write_cr3(old_cr3);
+        if (switched)
+            arch::write_cr3(old_cr3);
         p->waiting_child_status = nullptr;
     }
 
@@ -119,7 +123,7 @@ static void wake_waiting_parent(TaskControlBlock& child) {
         Scheduler::set_task_ready(*p);
         if (TASK_STACK_PTR(p)) {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            auto* stack = reinterpret_cast<uint64_t*>(TASK_STACK_PTR(p));
+            auto *stack = reinterpret_cast<uint64_t *>(TASK_STACK_PTR(p));
             stack[0] = child.id;
         }
     }
@@ -128,7 +132,7 @@ static void wake_waiting_parent(TaskControlBlock& child) {
     child.parent_id = 0;
 }
 
-void Scheduler::terminate(TaskControlBlock& task, uint64_t exit_code) noexcept {
+void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     dequeue_ready(task);
     task.state = TaskState::TERMINATED;
@@ -138,35 +142,34 @@ void Scheduler::terminate(TaskControlBlock& task, uint64_t exit_code) noexcept {
     wake_waiting_parent(task);
 }
 
-TaskControlBlock* const Scheduler::ID_TOMBSTONE =
-    reinterpret_cast<TaskControlBlock*>(static_cast<uintptr_t>(1));
+TaskControlBlock *const Scheduler::ID_TOMBSTONE =
+    reinterpret_cast<TaskControlBlock *>(static_cast<uintptr_t>(1));
 
 AllTasksRegistry Scheduler::all_tasks_;
-constinit TaskControlBlock* Scheduler::current_task_ptr_ = nullptr;
-constinit TaskControlBlock* Scheduler::id_table_[ID_TABLE_SIZE] = {};
+constinit TaskControlBlock *Scheduler::current_task_ptr_ = nullptr;
+constinit TaskControlBlock *Scheduler::id_table_[ID_TABLE_SIZE] = {};
 
 constinit uint64_t Scheduler::next_task_id_ = 0;
 constinit uint64_t Scheduler::sporadic_task_count_ = 0;
 constinit bool Scheduler::preempt_enabled_ = false;
 constinit bool Scheduler::suppress_terminated_log_ = false;
 #if CONFIG_DEADLINE_MONITOR_TASK
-constinit TaskControlBlock* Scheduler::s_monitor_task_ = nullptr;
+constinit TaskControlBlock *Scheduler::s_monitor_task_ = nullptr;
 volatile bool Scheduler::s_scan_requested_ = false;
 bool Scheduler::s_test_active_ = false;
 #endif
 ReadyQueueManager Scheduler::ready_queue_;
 DeadlineList Scheduler::deadline_list_;
-constinit TaskControlBlock* Scheduler::idle_task_ = nullptr;
-constinit TaskControlBlock* Scheduler::shell_task_ptr_ = nullptr;
+constinit TaskControlBlock *Scheduler::idle_task_ = nullptr;
+constinit TaskControlBlock *Scheduler::shell_task_ptr_ = nullptr;
 sync::SpinLock Scheduler::scheduler_lock_;
 
 // Liu-Leyland Rate-Monotonic LUB bounds (scaled by 1000000)
 static constexpr uint64_t LIU_LEYLAND_MAX_TASKS = 20;
 static constexpr uint32_t LIU_LEYLAND_BOUNDS[LIU_LEYLAND_MAX_TASKS + 1] = {
-    0, 1000000, 828427, 779763, 756828, 743491, 734772, 728626, 724061,
-    720537, 717734, 715451, 713557, 711958, 710592, 709409, 708378,
-    707472, 706669, 705952, 705298
-};
+    0,      1000000, 828427, 779763, 756828, 743491, 734772,
+    728626, 724061,  720537, 717734, 715451, 713557, 711958,
+    710592, 709409,  708378, 707472, 706669, 705952, 705298};
 static constexpr uint32_t LIU_LEYLAND_LIMIT = 693147;
 
 // ---------------------------------------------------------------------------
@@ -177,7 +180,8 @@ void Scheduler::init() {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
         id_table_[i] = nullptr;
 
-    idle_task_ = TaskControlBlock::create(kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
+    idle_task_ = TaskControlBlock::create(kernel::integrity::idle_task_main, 0,
+                                          0xFFFFFFFF);
     idle_task_->state = TaskState::READY;
 
     all_tasks_.append(idle_task_);
@@ -191,7 +195,7 @@ void Scheduler::init() {
 #endif
 }
 
-void Scheduler::add_task(TaskControlBlock& task) {
+void Scheduler::add_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task.state == TaskState::READY);
     all_tasks_.append(&task);
@@ -205,23 +209,24 @@ void Scheduler::add_task(TaskControlBlock& task) {
     ready_queue_.enqueue(task, effective_priority(&task));
     kernel::test::ResourceTracker::instance().track_task_add();
 
-    Logger::info("Scheduler: task '%s' (ID=%u, prio=%u) started",
-                 task.name, task.id, task.priority);
+    Logger::info("Scheduler: task '%s' (ID=%u, prio=%u) started", task.name,
+                 task.id, task.priority);
 
     // Liu-Leyland LUB admission test
     if (task.period_ticks > 0 && task.period_ticks <= 100) {
         uint64_t total_util = 0;
         uint64_t real_tasks = 0;
-        TaskControlBlock* t = all_tasks_.first_ptr();
+        TaskControlBlock *t = all_tasks_.first_ptr();
         for (; t; t = all_tasks_.next_ptr(t)) {
-            if (t == idle_task_ || t->magic != TaskControlBlock::TCB_MAGIC) continue;
+            if (t == idle_task_ || t->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
             if (t->period_ticks > 0) {
                 ++real_tasks;
-                uint64_t wcet = t->wcet_ticks > 0
-                                    ? t->wcet_ticks
-                                    : (t->sporadic_server
-                                           ? t->sporadic_server->max_budget()
-                                           : t->remaining_ticks);
+                uint64_t wcet =
+                    t->wcet_ticks > 0
+                        ? t->wcet_ticks
+                        : (t->sporadic_server ? t->sporadic_server->max_budget()
+                                              : t->remaining_ticks);
                 uint64_t util = (wcet * 1000000) / t->period_ticks;
                 total_util += util;
             }
@@ -232,13 +237,13 @@ void Scheduler::add_task(TaskControlBlock& task) {
         if (total_util > bound) {
             Logger::warn("Scheduler: task %d (prio=%d, period=%d) exceeds "
                          "Liu-Leyland bound (%d > %d) — overrun possible",
-                         task.id, task.priority, task.period_ticks,
-                         total_util, bound);
+                         task.id, task.priority, task.period_ticks, total_util,
+                         bound);
         }
     }
 }
 
-void Scheduler::remove_task(TaskControlBlock& task) {
+void Scheduler::remove_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     all_tasks_.remove(&task);
     deadline_list_.remove(&task);
@@ -252,7 +257,7 @@ void Scheduler::remove_task(TaskControlBlock& task) {
     kernel::test::ResourceTracker::instance().track_task_remove();
 }
 
-bool Scheduler::unregister_task(TaskControlBlock& task) noexcept {
+bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
     if (!scheduler_lock_.try_lock()) {
         return false;
     }
@@ -274,7 +279,7 @@ bool Scheduler::unregister_task(TaskControlBlock& task) noexcept {
 // Current-task / lookup
 // ---------------------------------------------------------------------------
 
-TaskControlBlock* Scheduler::current_task() noexcept {
+TaskControlBlock *Scheduler::current_task() noexcept {
     return current_task_ptr_;
 }
 
@@ -284,8 +289,9 @@ uint64_t Scheduler::task_count() noexcept {
 
 uint64_t Scheduler::current_index() noexcept {
     uint64_t i = 0;
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t == current_task_ptr_) return i;
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t == current_task_ptr_)
+            return i;
         ++i;
     }
     return 0;
@@ -293,7 +299,7 @@ uint64_t Scheduler::current_index() noexcept {
 
 void Scheduler::set_current_index(uint64_t idx) noexcept {
     uint64_t i = 0;
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         if (i++ == idx) {
             current_task_ptr_ = t;
             return;
@@ -301,37 +307,44 @@ void Scheduler::set_current_index(uint64_t idx) noexcept {
     }
 }
 
-void Scheduler::set_current_task(TaskControlBlock* t) noexcept {
+void Scheduler::set_current_task(TaskControlBlock *t) noexcept {
     if (t && t->magic == TaskControlBlock::TCB_MAGIC)
         current_task_ptr_ = t;
 }
 
-TaskControlBlock* Scheduler::task_at(uint64_t index) noexcept {
+TaskControlBlock *Scheduler::task_at(uint64_t index) noexcept {
     // Index 0 is reserved for the idle (reaper) task, the root adoptive parent.
-    // It is NOT necessarily the highest-priority bucket head in AllTasksRegistry
-    // (idle is clamped to CONFIG_PRIORITY_CEILING and shares that bucket with the
-    // deadline-monitor task), so return it explicitly rather than via first_ptr().
-    if (index == 0) return idle_task_;
+    // It is NOT necessarily the highest-priority bucket head in
+    // AllTasksRegistry (idle is clamped to CONFIG_PRIORITY_CEILING and shares
+    // that bucket with the deadline-monitor task), so return it explicitly
+    // rather than via first_ptr().
+    if (index == 0)
+        return idle_task_;
     // Indices 1..N-1 map to the remaining (non-idle) tasks, by priority then
     // insertion order, so callers iterating 0..task_count()-1 still visit every
     // task exactly once (task_count() includes idle).
     uint64_t i = 0;
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t == idle_task_) continue;
-        if (i++ == index - 1) return t;
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t == idle_task_)
+            continue;
+        if (i++ == index - 1)
+            return t;
     }
     return nullptr;
 }
 
-TaskControlBlock* Scheduler::find_task(uint64_t id) noexcept {
+TaskControlBlock *Scheduler::find_task(uint64_t id) noexcept {
     return id_table_find(id);
 }
 
 bool Scheduler::needs_switch() noexcept {
-    if (all_tasks_.size() <= 1) return false;
-    auto* current = current_task_ptr_;
-    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) return false;
-    if (current == idle_task_) return true;
+    if (all_tasks_.size() <= 1)
+        return false;
+    auto *current = current_task_ptr_;
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC)
+        return false;
+    if (current == idle_task_)
+        return true;
 
     uint64_t cur_eff = effective_priority(current);
     // O(1): check if any higher-priority task exists in the ready queue
@@ -339,11 +352,12 @@ bool Scheduler::needs_switch() noexcept {
     return highest_ready > cur_eff;
 }
 
-TaskControlBlock* Scheduler::next_task() noexcept {
-    if (all_tasks_.size() <= 1) return idle_task_;
+TaskControlBlock *Scheduler::next_task() noexcept {
+    if (all_tasks_.size() <= 1)
+        return idle_task_;
 
     {
-        auto* next = ready_queue_.dequeue_highest();
+        auto *next = ready_queue_.dequeue_highest();
         while (next && next->state != TaskState::READY &&
                next->state != TaskState::RUNNING) {
             next = ready_queue_.dequeue_highest();
@@ -356,10 +370,12 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     // Lazy rebuild
     ready_queue_.clear_all();
     {
-        auto* cur = current_task_ptr_;
-        for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
-            if (t == cur) continue;
+        auto *cur = current_task_ptr_;
+        for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+            if (t->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            if (t == cur)
+                continue;
             if (t->state == TaskState::READY) {
                 ready_queue_.enqueue(*t, effective_priority(t));
             }
@@ -367,7 +383,7 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     }
 
     {
-        auto* next = ready_queue_.dequeue_highest();
+        auto *next = ready_queue_.dequeue_highest();
         if (next) {
             return next;
         }
@@ -376,16 +392,18 @@ TaskControlBlock* Scheduler::next_task() noexcept {
     return idle_task_;
 }
 
-void Scheduler::set_current(TaskControlBlock& task) noexcept {
-    if (current_task_ptr_ == &task) return;
+void Scheduler::set_current(TaskControlBlock &task) noexcept {
+    if (current_task_ptr_ == &task)
+        return;
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                     __ATOMIC_RELEASE);
     current_task_ptr_ = &task;
 }
 
 void Scheduler::set_current_by_id(uint64_t id) noexcept {
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         if (t && t->magic == TaskControlBlock::TCB_MAGIC && t->id == id) {
             current_task_ptr_ = t;
             return;
@@ -401,7 +419,7 @@ uint64_t Scheduler::id_table_probe(uint64_t id) {
     return id & ID_TABLE_MASK;
 }
 
-void Scheduler::id_table_insert(uint64_t id, TaskControlBlock* tcb) {
+void Scheduler::id_table_insert(uint64_t id, TaskControlBlock *tcb) {
 #ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-infinite-loop"
@@ -424,10 +442,11 @@ void Scheduler::reset_next_task_id(uint64_t id) noexcept {
     next_task_id_ = id;
 }
 
-void Scheduler::id_table_remove(TaskControlBlock* task) {
+void Scheduler::id_table_remove(TaskControlBlock *task) {
     uint64_t idx = id_table_probe(task->id);
     for (uint64_t probe = 0; probe < ID_TABLE_SIZE; ++probe) {
-        if (id_table_[idx] == nullptr) return;
+        if (id_table_[idx] == nullptr)
+            return;
         if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx] == task) {
             id_table_[idx] = ID_TOMBSTONE;
             return;
@@ -436,7 +455,7 @@ void Scheduler::id_table_remove(TaskControlBlock* task) {
     }
 }
 
-TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
+TaskControlBlock *Scheduler::id_table_find(uint64_t id) {
     uint64_t idx = id_table_probe(id);
     while (id_table_[idx] != nullptr) {
         if (id_table_[idx] != ID_TOMBSTONE && id_table_[idx]->id == id) {
@@ -454,14 +473,17 @@ TaskControlBlock* Scheduler::id_table_find(uint64_t id) {
 void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ticks();
 
-    if (!preempt_enabled_) { return; }
+    if (!preempt_enabled_) {
+        return;
+    }
 
     bool lock_acquired = scheduler_lock_.try_lock();
     if (lock_acquired) {
 #if CONFIG_DEADLINE_MONITOR_TASK
         if (!s_test_active_) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
-            if (s_monitor_task_ && s_monitor_task_->state == TaskState::BLOCKED) {
+            if (s_monitor_task_ &&
+                s_monitor_task_->state == TaskState::BLOCKED) {
                 s_monitor_task_->state = TaskState::READY;
                 enqueue_ready(*s_monitor_task_);
             }
@@ -469,7 +491,7 @@ void Scheduler::on_tick() noexcept {
 #else
 #if CONFIG_DEADLINE_MISS_DETECTION
         // O(1) deadline scan via DeadlineList
-        while (auto* task = deadline_list_.pop_earliest_if_expired()) {
+        while (auto *task = deadline_list_.pop_earliest_if_expired()) {
             if (task->sporadic_server) {
                 task->ss_state_on_deadline_miss =
                     static_cast<uint8_t>(task->sporadic_server->state());
@@ -479,21 +501,25 @@ void Scheduler::on_tick() noexcept {
             task->deadline_missed = true;
             ++task->deadline_miss_count;
             deadline_miss_handler(task,
-                arch::Timer::ticks() - task->deadline_ticks);
+                                  arch::Timer::ticks() - task->deadline_ticks);
         }
 #endif
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 
         // Accounting, WCET, alarms — common to both paths
-        for (auto* task = all_tasks_.first_ptr(); task; task = all_tasks_.next_ptr(task)) {
-            if (task->magic != TaskControlBlock::TCB_MAGIC) continue;
-            if (task->state == TaskState::TERMINATED) continue;
+        for (auto *task = all_tasks_.first_ptr(); task;
+             task = all_tasks_.next_ptr(task)) {
+            if (task->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            if (task->state == TaskState::TERMINATED)
+                continue;
 
             if (task->state == TaskState::RUNNING ||
                 task->state == TaskState::READY) {
                 ++task->executed_ticks;
                 uint64_t prev_rem = task->remaining_ticks;
-                if (task->remaining_ticks > 0) --task->remaining_ticks;
+                if (task->remaining_ticks > 0)
+                    --task->remaining_ticks;
                 if (prev_rem == 0 && task->period_ticks > 0) {
                     task->remaining_ticks = task->period_ticks;
 #if CONFIG_DEADLINE_MISS_DETECTION && !CONFIG_DEADLINE_MONITOR_TASK
@@ -514,16 +540,17 @@ void Scheduler::on_tick() noexcept {
                 task->executed_ticks > task->wcet_ticks) {
                 task->wcet_overrun_fired = true;
                 wcet_overrun_handler(task,
-                    task->executed_ticks - task->wcet_ticks);
+                                     task->executed_ticks - task->wcet_ticks);
             }
 #endif
 
             if (task->alarm_armed) {
-                if (task->alarm_ticks > 0) --task->alarm_ticks;
+                if (task->alarm_ticks > 0)
+                    --task->alarm_ticks;
                 if (task->alarm_ticks == 0) {
                     task->alarm_armed = false;
-                    task->pending_signals |= (1ULL << static_cast<uint64_t>(Signal::
-                        SIGALRM));
+                    task->pending_signals |=
+                        (1ULL << static_cast<uint64_t>(Signal::SIGALRM));
                 }
             }
         }
@@ -538,14 +565,17 @@ void Scheduler::on_tick() noexcept {
 
     // Sporadic Server budget management
     {
-        auto* cur = current_task_ptr_;
+        auto *cur = current_task_ptr_;
         uint64_t found = 0;
-        for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-            if (found >= sporadic_task_count_) break;
-            if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+        for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+            if (found >= sporadic_task_count_)
+                break;
+            if (t->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
             if (t->sporadic_server) {
                 found++;
-                if (reinterpret_cast<uint64_t>(t->sporadic_server) == 0xFFFFFFFFFFFFFFFFULL) {
+                if (reinterpret_cast<uint64_t>(t->sporadic_server) ==
+                    0xFFFFFFFFFFFFFFFFULL) {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
@@ -554,8 +584,8 @@ void Scheduler::on_tick() noexcept {
                     if (!t->sporadic_server->consume(current_tick)) {
 #if CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE
                         if (!t->deadline_missed) {
-                            t->ss_state_on_deadline_miss =
-                                static_cast<uint8_t>(t->sporadic_server->state());
+                            t->ss_state_on_deadline_miss = static_cast<uint8_t>(
+                                t->sporadic_server->state());
                             t->ss_budget_on_deadline_miss =
                                 t->sporadic_server->remaining_budget();
                             t->deadline_missed = true;
@@ -563,9 +593,10 @@ void Scheduler::on_tick() noexcept {
                             deadline_miss_handler(t, 0);
                         }
 #endif
-                        uint64_t rsp;
+                        uint64_t rsp{};
                         asm volatile("mov %%rsp, %0" : "=r"(rsp));
-                        uint64_t base = reinterpret_cast<uint64_t>(cur->kernel_stack);
+                        uint64_t base =
+                            reinterpret_cast<uint64_t>(cur->kernel_stack);
                         if (cur->kernel_stack && cur->kernel_stack_top &&
                             rsp >= base && rsp < cur->kernel_stack_top) {
                             Scheduler::reschedule();
@@ -593,34 +624,40 @@ void Scheduler::on_tick() noexcept {
 // ---------------------------------------------------------------------------
 
 void Scheduler::reap_orphans() noexcept {
-    if (s_reap_in_progress) return;
+    if (s_reap_in_progress)
+        return;
     s_reap_in_progress = true;
 
-    auto* current = current_task_ptr_;
-    auto* init_task = idle_task_;
-    TaskControlBlock* new_idle = nullptr;
+    auto *current = current_task_ptr_;
+    auto *init_task = idle_task_;
+    TaskControlBlock *new_idle = nullptr;
 
     // Collect reapable tasks first (can't mutate all_tasks_ during iteration)
     static constexpr uint64_t MAX_REAP = 64;
-    TaskControlBlock* to_reap[MAX_REAP];
+    TaskControlBlock *to_reap[MAX_REAP];
     uint64_t num_to_reap = 0;
     uint64_t _diag_collected = 0;
 
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         ++_diag_collected;
-        if (num_to_reap >= MAX_REAP) break;
-        if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
-        if (t->state != TaskState::TERMINATED) continue;
-        if (t != idle_task_ && t == current) continue;
+        if (num_to_reap >= MAX_REAP)
+            break;
+        if (t->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
+        if (t->state != TaskState::TERMINATED)
+            continue;
+        if (t != idle_task_ && t == current)
+            continue;
 
         // Adopt children to init_task
         if (init_task && init_task != t) {
             if (t->first_child) {
-                auto* child = t->first_child;
+                auto *child = t->first_child;
                 t->first_child = nullptr;
-                if (t->num_children > 0) t->num_children = 0;
+                if (t->num_children > 0)
+                    t->num_children = 0;
                 while (child) {
-                    auto* next = child->next_sibling;
+                    auto *next = child->next_sibling;
                     child->prev_sibling = nullptr;
                     child->next_sibling = nullptr;
                     child->parent_id = 0;
@@ -629,12 +666,15 @@ void Scheduler::reap_orphans() noexcept {
                 }
             }
             for (TaskIter it(0);;) {
-                auto* c = it.next(t);
-                if (!c) break;
-                if (c == init_task) continue;
+                auto *c = it.next(t);
+                if (!c)
+                    break;
+                if (c == init_task)
+                    continue;
                 if (c->parent_id == t->id) {
                     c->parent_id = 0;
-                    if (t->num_children > 0) --t->num_children;
+                    if (t->num_children > 0)
+                        --t->num_children;
                     init_task->add_child(c);
                 }
             }
@@ -650,39 +690,47 @@ void Scheduler::reap_orphans() noexcept {
         } else {
             bool parent_found = false;
             for (TaskIter it(0);;) {
-                auto* p = it.next();
-                if (!p) break;
+                auto *p = it.next();
+                if (!p)
+                    break;
                 if (p->id == t->parent_id) {
                     parent_found = true;
-                    if (p->state == TaskState::TERMINATED) {
-                        can_reap = true;
-                    } else if (p->waiting_child_pid != 0 &&
-                               p->waiting_child_pid != t->id &&
-                               p->waiting_child_pid != static_cast<uint64_t>(-1)) {
-                        can_reap = true;
-                    } else if (p->waiting_child_pid == 0) {
-                        can_reap = true;
-                    }
+                    bool terminated = (p->state == TaskState::TERMINATED);
+                    bool waiting_for_this =
+                        (p->waiting_child_pid == t->id);
+                    bool waiting_for_any =
+                        (p->waiting_child_pid ==
+                         static_cast<uint64_t>(-1));
+                    // Reap unless the (live) parent is blocked specifically in
+                    // waitpid for *this* child (deferred reap) or for *any*
+                    // child (sentinel -1).
+                    can_reap =
+                        terminated || (!waiting_for_this && !waiting_for_any);
                     break;
                 }
             }
-            if (!parent_found) can_reap = true;
+            if (!parent_found)
+                can_reap = true;
         }
 
-        if (!can_reap) continue;
+        if (!can_reap)
+            continue;
 
         if (!t->page_table_shared_) {
             bool has_sharing_child = false;
             for (TaskIter it(0);;) {
-                auto* c = it.next(t);
-                if (!c) break;
-                if (c == current) continue;
+                auto *c = it.next(t);
+                if (!c)
+                    break;
+                if (c == current)
+                    continue;
                 if (c->parent_id == t->id && c->page_table_shared_) {
                     has_sharing_child = true;
                     break;
                 }
             }
-            if (has_sharing_child) continue;
+            if (has_sharing_child)
+                continue;
         }
 
         to_reap[num_to_reap++] = t;
@@ -690,25 +738,25 @@ void Scheduler::reap_orphans() noexcept {
 
     // Destroy reaped tasks
     for (uint64_t ri = 0; ri < num_to_reap; ++ri) {
-        auto* t = to_reap[ri];
+        auto *t = to_reap[ri];
         dequeue_ready(*t);
         all_tasks_.remove(t);
         id_table_remove(t);
         deadline_list_.remove(t);
         if (t == idle_task_) {
-            auto* created = TaskControlBlock::create(
+            auto *created = TaskControlBlock::create(
                 kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
             created->state = TaskState::READY;
             if (!suppress_terminated_log_)
-                Logger::info("Scheduler: task '%s' (ID=%u) terminated",
-                             t->name, t->id);
+                Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
+                             t->id);
             t->cleanup();
             MemPool::free(t);
             new_idle = created;
         } else {
             if (!suppress_terminated_log_)
-                Logger::info("Scheduler: task '%s' (ID=%u) terminated",
-                             t->name, t->id);
+                Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
+                             t->id);
             t->cleanup();
             MemPool::free(t);
         }
@@ -726,7 +774,8 @@ void Scheduler::reap_orphans() noexcept {
         current_task_ptr_ = new_idle;
     } else {
         // Verify current_task_ptr_ is still valid
-        if (current_task_ptr_ && current_task_ptr_->magic != TaskControlBlock::TCB_MAGIC) {
+        if (current_task_ptr_ &&
+            current_task_ptr_->magic != TaskControlBlock::TCB_MAGIC) {
             current_task_ptr_ = all_tasks_.first_ptr();
         }
     }
@@ -751,10 +800,11 @@ void Scheduler::cleanup_test_tasks() noexcept {
     // stack we are executing on — a use-after-free that corrupts the return
     // path with poison and faults. reap_orphans() already skips t == current;
     // mirror that guard here.
-    TaskControlBlock* const running = current_task_ptr_;
+    TaskControlBlock *const running = current_task_ptr_;
 
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t == idle_task_ || t == running) continue;
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t == idle_task_ || t == running)
+            continue;
         if (t->magic == TaskControlBlock::TCB_MAGIC &&
             t->state != TaskState::TERMINATED) {
             t->state = TaskState::TERMINATED;
@@ -766,22 +816,25 @@ void Scheduler::cleanup_test_tasks() noexcept {
 
     // Remove remaining non-idle tasks
     static constexpr uint64_t MAX_CLEANUP = 64;
-    TaskControlBlock* to_remove[MAX_CLEANUP];
+    TaskControlBlock *to_remove[MAX_CLEANUP];
     uint64_t num = 0;
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (num >= MAX_CLEANUP) break;
-        if (t == idle_task_ || t == running) continue;
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (num >= MAX_CLEANUP)
+            break;
+        if (t == idle_task_ || t == running)
+            continue;
         if (t->magic == TaskControlBlock::TCB_MAGIC) {
             to_remove[num++] = t;
         }
     }
     for (uint64_t i = 0; i < num; ++i) {
-        auto* t = to_remove[i];
+        auto *t = to_remove[i];
         t->cleanup();
         MemPool::free(t);
     }
 
-    for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) id_table_[i] = nullptr;
+    for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
+        id_table_[i] = nullptr;
     all_tasks_.clear();
     all_tasks_.append(idle_task_);
     id_table_insert(idle_task_->id, idle_task_);
@@ -799,7 +852,7 @@ void Scheduler::cleanup_test_tasks() noexcept {
 // Corruption / validation helpers
 // ---------------------------------------------------------------------------
 
-static void report_corruption(const char* label) {
+static void report_corruption(const char *label) {
     (void)label;
     __atomic_fetch_add(&scheduler_corruption_count, 1, __ATOMIC_RELEASE);
 #ifdef CONFIG_DEBUG
@@ -807,39 +860,92 @@ static void report_corruption(const char* label) {
 #endif
 }
 
-static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock* t, const char* label) {
+static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock *t,
+                               const char *label) {
     auto base = reinterpret_cast<uint64_t>(t->kernel_stack);
     auto top = t->kernel_stack_top;
-    if (rsp >= base && rsp <= top) return true;
-    if (rsp < base) return false;
-    Logger::raw_write("[SCHED] "); Logger::raw_write(label);
-    Logger::raw_write(": task id="); Logger::print_dec(t->id);
-    Logger::raw_write(" rsp=0x"); Logger::print_hex(rsp);
-    Logger::raw_write(" above stack top 0x"); Logger::print_hex(top);
+    if (rsp >= base && rsp <= top)
+        return true;
+    if (rsp < base)
+        return false;
+    Logger::raw_write("[SCHED] ");
+    Logger::raw_write(label);
+    Logger::raw_write(": task id=");
+    Logger::print_dec(t->id);
+    Logger::raw_write(" rsp=0x");
+    Logger::print_hex(rsp);
+    Logger::raw_write(" above stack top 0x");
+    Logger::print_hex(top);
     Logger::raw_write("\n");
     return false;
 }
 
-static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, const char* label) {
-    if (!current) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current=null\n"); return false; }
-    if (!next)   { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next=null\n"); return false; }
+static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
+                            const char *label) {
+    if (!current) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": current=null\n");
+        return false;
+    }
+    if (!next) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": next=null\n");
+        return false;
+    }
     auto caddr = reinterpret_cast<uint64_t>(current);
     auto naddr = reinterpret_cast<uint64_t>(next);
-    if (caddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current low 0x"); Logger::print_hex(caddr); Logger::raw_write("\n"); return false; }
-    if (naddr < 0xFFFF800000000000ULL) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next low 0x"); Logger::print_hex(naddr); Logger::raw_write("\n"); return false; }
-    if (current->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": current magic=0x"); Logger::print_hex(current->magic); Logger::raw_write("\n"); return false; }
-    if (next->magic != TaskControlBlock::TCB_MAGIC) { Logger::raw_write("[SCHED] "); Logger::raw_write(label); Logger::raw_write(": next magic=0x"); Logger::print_hex(next->magic); Logger::raw_write("\n"); return false; }
+    if (caddr < 0xFFFF800000000000ULL) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": current low 0x");
+        Logger::print_hex(caddr);
+        Logger::raw_write("\n");
+        return false;
+    }
+    if (naddr < 0xFFFF800000000000ULL) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": next low 0x");
+        Logger::print_hex(naddr);
+        Logger::raw_write("\n");
+        return false;
+    }
+    if (current->magic != TaskControlBlock::TCB_MAGIC) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": current magic=0x");
+        Logger::print_hex(current->magic);
+        Logger::raw_write("\n");
+        return false;
+    }
+    if (next->magic != TaskControlBlock::TCB_MAGIC) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": next magic=0x");
+        Logger::print_hex(next->magic);
+        Logger::raw_write("\n");
+        return false;
+    }
     if (next != Scheduler::get_idle_task() &&
         !rsp_in_stack_range(TASK_STACK_PTR(next), next, label)) {
-        if (TASK_STACK_PTR(next) < reinterpret_cast<uint64_t>(next->kernel_stack)) {
+        if (TASK_STACK_PTR(next) <
+            reinterpret_cast<uint64_t>(next->kernel_stack)) {
             return true;
         }
-        Logger::raw_write("[SCHED] "); Logger::raw_write(label);
-        Logger::raw_write(": current id="); Logger::print_dec(current->id);
-        Logger::raw_write(" rsp=0x"); Logger::print_hex(TASK_STACK_PTR(current));
-        Logger::raw_write(" state="); Logger::print_dec(static_cast<uint64_t>(current->state));
-        Logger::raw_write(" kstack=[0x"); Logger::print_hex(reinterpret_cast<uint64_t>(current->kernel_stack));
-        Logger::raw_write("-0x"); Logger::print_hex(current->kernel_stack_top);
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": current id=");
+        Logger::print_dec(current->id);
+        Logger::raw_write(" rsp=0x");
+        Logger::print_hex(TASK_STACK_PTR(current));
+        Logger::raw_write(" state=");
+        Logger::print_dec(static_cast<uint64_t>(current->state));
+        Logger::raw_write(" kstack=[0x");
+        Logger::print_hex(reinterpret_cast<uint64_t>(current->kernel_stack));
+        Logger::raw_write("-0x");
+        Logger::print_hex(current->kernel_stack_top);
         Logger::raw_write("]\n");
         return false;
     }
@@ -851,10 +957,12 @@ static bool validate_switch(TaskControlBlock* current, TaskControlBlock* next, c
 // ---------------------------------------------------------------------------
 
 void Scheduler::cleanup_zombies() noexcept {
-    if (s_reap_in_progress) return;
-    auto* shell = shell_task_ptr_;
+    if (s_reap_in_progress)
+        return;
+    auto *shell = shell_task_ptr_;
     if (!shell ||
-        (reinterpret_cast<uint64_t>(shell) & 0xFFFF800000000000ULL) != 0xFFFF800000000000ULL ||
+        (reinterpret_cast<uint64_t>(shell) & 0xFFFF800000000000ULL) !=
+            0xFFFF800000000000ULL ||
         shell->magic != TaskControlBlock::TCB_MAGIC) {
         shell = current_task_ptr_;
     }
@@ -862,22 +970,26 @@ void Scheduler::cleanup_zombies() noexcept {
     uint64_t iocd_pid = iocd::get_iocd_pid();
 
     static constexpr uint64_t MAX_ZOMBIES = 64;
-    TaskControlBlock* zombies[MAX_ZOMBIES];
+    TaskControlBlock *zombies[MAX_ZOMBIES];
     uint64_t num_zombies = 0;
-    for (auto* t = all_tasks_.first_ptr(); t && num_zombies < MAX_ZOMBIES; t = all_tasks_.next_ptr(t)) {
-        if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
-        if (t == idle_task_ || t == shell ||
-            t->id == vfsd_pid || t->id == iocd_pid) {
+    for (auto *t = all_tasks_.first_ptr(); t && num_zombies < MAX_ZOMBIES;
+         t = all_tasks_.next_ptr(t)) {
+        if (t->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
+        if (t == idle_task_ || t == shell || t->id == vfsd_pid ||
+            t->id == iocd_pid) {
             continue;
         }
-        // Only consider tasks that are already terminated – otherwise they will be
-        // handled later by reap_orphans(). This prevents double‑removal and underflow.
-        if (t->state != TaskState::TERMINATED) continue;
+        // Only consider tasks that are already terminated – otherwise they will
+        // be handled later by reap_orphans(). This prevents double‑removal and
+        // underflow.
+        if (t->state != TaskState::TERMINATED)
+            continue;
         zombies[num_zombies++] = t;
     }
 
     for (uint64_t i = 0; i < num_zombies; ++i) {
-        auto* t = zombies[i];
+        auto *t = zombies[i];
         if (t->state == TaskState::READY) {
             Scheduler::dequeue_ready(*t);
         }
@@ -893,10 +1005,13 @@ void Scheduler::cleanup_zombies() noexcept {
 // switch_to_task
 // ---------------------------------------------------------------------------
 
-static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
-                           sync::SpinLock* held_lock = nullptr) {
+static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
+                           sync::SpinLock *held_lock = nullptr) {
     auto release_lock = [&]() {
-        if (held_lock) { held_lock->unlock(); held_lock = nullptr; }
+        if (held_lock) {
+            held_lock->unlock();
+            held_lock = nullptr;
+        }
     };
 
     if (!validate_switch(current, next, "switch")) {
@@ -914,9 +1029,9 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
         return;
     }
 
-    uint64_t* save_target = &TASK_STACK_PTR(current);
+    uint64_t *save_target = &TASK_STACK_PTR(current);
     {
-        uint64_t cur_rsp;
+        uint64_t cur_rsp{};
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
         uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
         if (!current->kernel_stack || !current->kernel_stack_top ||
@@ -927,29 +1042,33 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
 
 #ifdef CONFIG_DEBUG
     {
-        auto& ring = current->debug_switch_ring;
-        auto& idx  = current->debug_switch_idx;
-        auto& rec  = ring[idx % TaskControlBlock::DEBUG_SWITCH_RING_SIZE];
-        rec.entry_addr     = reinterpret_cast<uint64_t>(__builtin_return_address(0));
+        auto &ring = current->debug_switch_ring;
+        auto &idx = current->debug_switch_idx;
+        auto &rec = ring[idx % TaskControlBlock::DEBUG_SWITCH_RING_SIZE];
+        rec.entry_addr =
+            reinterpret_cast<uint64_t>(__builtin_return_address(0));
 #if defined(CONFIG_ARCH_X86_64)
         rec.exit_rip = current->context.rip;
 #elif defined(CONFIG_ARCH_AARCH64)
         rec.exit_rip = current->context.elr_el1;
 #endif
-        rec.regs           = current->context;
-        rec.thread_id      = current->id;
+        rec.regs = current->context;
+        rec.thread_id = current->id;
         rec.consumed_ticks = current->executed_ticks;
         ++idx;
     }
 #endif
-    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next), __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
+                     __ATOMIC_RELEASE);
     if (next->page_table_) {
-        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
+                         __ATOMIC_RELEASE);
 #if defined(CONFIG_ARCH_X86_64)
         arch::GDT::set_tss_rsp0(next->kernel_stack_top);
 #endif
     } else {
-        __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(), __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
+                         __ATOMIC_RELEASE);
     }
 
     if (current->state == TaskState::RUNNING) {
@@ -959,7 +1078,7 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
     next->state = TaskState::RUNNING;
 
     {
-        arch::IrqGuard ig;
+        arch::IrqGuard ig{};
         release_lock();
         __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
@@ -975,7 +1094,8 @@ static void switch_to_task(TaskControlBlock* current, TaskControlBlock* next,
 // ---------------------------------------------------------------------------
 
 void Scheduler::rate_monotonic_schedule() noexcept {
-    if (all_tasks_.size() <= 1) return;
+    if (all_tasks_.size() <= 1)
+        return;
 
     if (!scheduler_lock_.try_lock()) {
         return;
@@ -986,13 +1106,13 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
-    auto* current = current_task_ptr_;
+    auto *current = current_task_ptr_;
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
         scheduler_lock_.unlock();
         return;
     }
 
-    auto* next = next_task();
+    auto *next = next_task();
     if (next && next != current) {
         switch_to_task(current, next, nullptr);
     }
@@ -1002,22 +1122,31 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
 void Scheduler::reschedule() noexcept {
     scheduler_lock_.lock();
-    if (all_tasks_.size() <= 1) { scheduler_lock_.unlock(); return; }
+    if (all_tasks_.size() <= 1) {
+        scheduler_lock_.unlock();
+        return;
+    }
 
-    auto* current = current_task_ptr_;
+    auto *current = current_task_ptr_;
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
-        scheduler_lock_.unlock(); return;
+        scheduler_lock_.unlock();
+        return;
     }
 
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != nullptr) {
-        scheduler_lock_.unlock(); return;
+        scheduler_lock_.unlock();
+        return;
     }
 
-    auto* next = next_task();
-    if (!next || next == current) { scheduler_lock_.unlock(); return; }
+    auto *next = next_task();
+    if (!next || next == current) {
+        scheduler_lock_.unlock();
+        return;
+    }
 
     if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
-        scheduler_lock_.unlock(); return;
+        scheduler_lock_.unlock();
+        return;
     }
 
     switch_to_task(current, next, &scheduler_lock_);
@@ -1027,34 +1156,35 @@ void Scheduler::reschedule() noexcept {
 // Test-isolation helpers
 // ---------------------------------------------------------------------------
 
-void Scheduler::capture_state(TaskControlBlock** tasks_out,
-                              TaskControlBlock** id_table_out,
-                              uint64_t& task_count_out,
-                              uint64_t& current_idx_out,
-                              uint64_t& next_id_out,
-                              TaskControlBlock*& idle_out,
-                              bool& preempt_out,
-                              uint64_t* rq_bitmap_hi,
-                              uint64_t* rq_bitmap_lo,
-                              uint64_t* sporadic_count_out) {
+void Scheduler::capture_state(TaskControlBlock **tasks_out,
+                              TaskControlBlock **id_table_out,
+                              uint64_t &task_count_out,
+                              uint64_t &current_idx_out, uint64_t &next_id_out,
+                              TaskControlBlock *&idle_out, bool &preempt_out,
+                              uint64_t *rq_bitmap_hi, uint64_t *rq_bitmap_lo,
+                              uint64_t *sporadic_count_out) {
     all_tasks_.capture(tasks_out, MAX_TASKS);
-    __builtin_memcpy(static_cast<void*>(id_table_out), static_cast<const void*>(id_table_),
-                     sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
-    task_count_out    = all_tasks_.size();
-    current_idx_out   = current_index();
-    next_id_out       = next_task_id_;
-    idle_out          = idle_task_;
-    preempt_out       = preempt_enabled_;
-    if (rq_bitmap_hi)  *rq_bitmap_hi  = ready_queue_.bitmap().raw_hi();
-    if (rq_bitmap_lo)  *rq_bitmap_lo  = ready_queue_.bitmap().raw_lo();
-    if (sporadic_count_out) *sporadic_count_out = sporadic_task_count_;
+    __builtin_memcpy(static_cast<void *>(id_table_out),
+                     static_cast<const void *>(id_table_),
+                     sizeof(TaskControlBlock *) * ID_TABLE_SIZE);
+    task_count_out = all_tasks_.size();
+    current_idx_out = current_index();
+    next_id_out = next_task_id_;
+    idle_out = idle_task_;
+    preempt_out = preempt_enabled_;
+    if (rq_bitmap_hi)
+        *rq_bitmap_hi = ready_queue_.bitmap().raw_hi();
+    if (rq_bitmap_lo)
+        *rq_bitmap_lo = ready_queue_.bitmap().raw_lo();
+    if (sporadic_count_out)
+        *sporadic_count_out = sporadic_task_count_;
 }
 
-void Scheduler::capture_rqpod(ReadyQueuePOD& out) noexcept {
+void Scheduler::capture_rqpod(ReadyQueuePOD &out) noexcept {
     ready_queue_.capture_pod(out);
 }
 
-void Scheduler::restore_rqpod(const ReadyQueuePOD& src) noexcept {
+void Scheduler::restore_rqpod(const ReadyQueuePOD &src) noexcept {
     ready_queue_.restore_pod(src);
 }
 
@@ -1064,8 +1194,9 @@ void Scheduler::reset_ready_queue() noexcept {
 
 void Scheduler::rebuild_ready_queue() noexcept {
     ready_queue_.reset();
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
         if (t->state == TaskState::READY) {
             // Clear the flag first: enqueue() (TaskQueue::push_back) refuses to
             // re-add a node whose flag is already set, which would otherwise
@@ -1081,23 +1212,21 @@ void Scheduler::rebuild_ready_queue() noexcept {
     }
 }
 
-void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
-                              TaskControlBlock* const* id_table_in,
-                              uint64_t task_count_in,
-                              uint64_t current_idx_in,
-                              uint64_t next_id_in,
-                              TaskControlBlock* idle_in,
-                              bool preempt_in,
-                              uint64_t rq_bitmap_hi,
+void Scheduler::restore_state(TaskControlBlock *const *tasks_in,
+                              TaskControlBlock *const *id_table_in,
+                              uint64_t task_count_in, uint64_t current_idx_in,
+                              uint64_t next_id_in, TaskControlBlock *idle_in,
+                              bool preempt_in, uint64_t rq_bitmap_hi,
                               uint64_t rq_bitmap_lo,
                               uint64_t sporadic_count_in) {
     all_tasks_.restore(tasks_in, task_count_in);
-    __builtin_memcpy(static_cast<void*>(id_table_), static_cast<const void*>(id_table_in),
-                     sizeof(TaskControlBlock*) * ID_TABLE_SIZE);
-    next_task_id_          = next_id_in;
-    idle_task_             = idle_in;
-    preempt_enabled_       = preempt_in;
-    sporadic_task_count_   = sporadic_count_in;
+    __builtin_memcpy(static_cast<void *>(id_table_),
+                     static_cast<const void *>(id_table_in),
+                     sizeof(TaskControlBlock *) * ID_TABLE_SIZE);
+    next_task_id_ = next_id_in;
+    idle_task_ = idle_in;
+    preempt_enabled_ = preempt_in;
+    sporadic_task_count_ = sporadic_count_in;
 
     // Restore current_task_ptr_ from index
     set_current_index(current_idx_in);
@@ -1113,85 +1242,93 @@ void Scheduler::restore_state(TaskControlBlock* const* tasks_in,
     }
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_next_task_id,  UINT64_MAX, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to,   (uint64_t*)nullptr, __ATOMIC_RELEASE);
-    __atomic_store_n(&isr_nesting_depth,       (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
 }
 
 void Scheduler::clear_switch_globals() noexcept {
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_save_rsp_to,   (uint64_t*)nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                     __ATOMIC_RELEASE);
 }
 
 void Scheduler::rebuild_all_tasks() noexcept {
     all_tasks_.rebuild();
 }
 
-void Scheduler::capture_task_fields(TaskFields* out) {
+void Scheduler::capture_task_fields(TaskFields *out) {
     uint64_t idx = 0;
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         if (t->magic != TaskControlBlock::TCB_MAGIC) {
-            if (idx < MAX_TASKS) out[idx].magic = 0;
+            if (idx < MAX_TASKS)
+                out[idx].magic = 0;
             ++idx;
             continue;
         }
-        if (idx >= MAX_TASKS) break;
-        out[idx].magic              = t->magic;
-        out[idx].id                 = t->id;
-        out[idx].parent_id          = t->parent_id;
-        out[idx].state              = t->state;
-        out[idx].priority           = t->priority;
-        out[idx].base_priority      = t->base_priority;
-        out[idx].period_ticks       = t->period_ticks;
-        out[idx].deadline_ticks     = t->deadline_ticks;
-        out[idx].deadline_missed    = t->deadline_missed;
-        out[idx].deadline_miss_count= t->deadline_miss_count;
-        out[idx].executed_ticks     = t->executed_ticks;
-        out[idx].remaining_ticks    = t->remaining_ticks;
-        out[idx].exit_code          = t->exit_code;
-        out[idx].context            = t->context;
-        out[idx].kernel_stack_top   = t->kernel_stack_top;
-        out[idx].waiting_child_pid  = t->waiting_child_pid;
+        if (idx >= MAX_TASKS)
+            break;
+        out[idx].magic = t->magic;
+        out[idx].id = t->id;
+        out[idx].parent_id = t->parent_id;
+        out[idx].state = t->state;
+        out[idx].priority = t->priority;
+        out[idx].base_priority = t->base_priority;
+        out[idx].period_ticks = t->period_ticks;
+        out[idx].deadline_ticks = t->deadline_ticks;
+        out[idx].deadline_missed = t->deadline_missed;
+        out[idx].deadline_miss_count = t->deadline_miss_count;
+        out[idx].executed_ticks = t->executed_ticks;
+        out[idx].remaining_ticks = t->remaining_ticks;
+        out[idx].exit_code = t->exit_code;
+        out[idx].context = t->context;
+        out[idx].kernel_stack_top = t->kernel_stack_top;
+        out[idx].waiting_child_pid = t->waiting_child_pid;
         out[idx].waiting_child_status =
             reinterpret_cast<uint64_t>(t->waiting_child_status);
-        out[idx].pending_signals    = t->pending_signals;
-        out[idx].alarm_ticks        = t->alarm_ticks;
-        out[idx].alarm_armed        = t->alarm_armed;
-        out[idx].runq_next          = t->runq_next_;
-        out[idx].runq_prev          = t->runq_prev_;
-        out[idx].in_ready_queue     = t->in_ready_queue_;
-        out[idx].rq_priority        = t->rq_priority_;
+        out[idx].pending_signals = t->pending_signals;
+        out[idx].alarm_ticks = t->alarm_ticks;
+        out[idx].alarm_armed = t->alarm_armed;
+        out[idx].runq_next = t->runq_next_;
+        out[idx].runq_prev = t->runq_prev_;
+        out[idx].in_ready_queue = t->in_ready_queue_;
+        out[idx].rq_priority = t->rq_priority_;
         ++idx;
     }
-    while (idx < MAX_TASKS) out[idx++].magic = 0;
+    while (idx < MAX_TASKS)
+        out[idx++].magic = 0;
 }
 
-void Scheduler::restore_task_fields(const TaskFields* saved) {
-    for (auto* t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+void Scheduler::restore_task_fields(const TaskFields *saved) {
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
         for (uint64_t j = 0; j < MAX_TASKS; ++j) {
-            if (saved[j].magic != TaskControlBlock::TCB_MAGIC) continue;
-            if (saved[j].id != t->id) continue;
-            t->state           = saved[j].state;
-            t->priority        = saved[j].priority;
-            t->base_priority   = saved[j].base_priority;
-            t->period_ticks    = saved[j].period_ticks;
-            t->deadline_ticks  = saved[j].deadline_ticks;
+            if (saved[j].magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            if (saved[j].id != t->id)
+                continue;
+            t->state = saved[j].state;
+            t->priority = saved[j].priority;
+            t->base_priority = saved[j].base_priority;
+            t->period_ticks = saved[j].period_ticks;
+            t->deadline_ticks = saved[j].deadline_ticks;
             t->deadline_missed = saved[j].deadline_missed;
             t->deadline_miss_count = saved[j].deadline_miss_count;
-            t->executed_ticks  = saved[j].executed_ticks;
+            t->executed_ticks = saved[j].executed_ticks;
             t->remaining_ticks = saved[j].remaining_ticks;
-            t->exit_code       = saved[j].exit_code;
-            t->context         = saved[j].context;
+            t->exit_code = saved[j].exit_code;
+            t->context = saved[j].context;
             t->kernel_stack_top = saved[j].kernel_stack_top;
-            t->pending_signals   = saved[j].pending_signals;
-            t->alarm_ticks       = saved[j].alarm_ticks;
-            t->alarm_armed       = saved[j].alarm_armed;
-            t->runq_next_        = saved[j].runq_next;
-            t->runq_prev_        = saved[j].runq_prev;
-            t->in_ready_queue_   = saved[j].in_ready_queue;
-            t->rq_priority_      = saved[j].rq_priority;
+            t->pending_signals = saved[j].pending_signals;
+            t->alarm_ticks = saved[j].alarm_ticks;
+            t->alarm_armed = saved[j].alarm_armed;
+            t->runq_next_ = saved[j].runq_next;
+            t->runq_prev_ = saved[j].runq_prev;
+            t->in_ready_queue_ = saved[j].in_ready_queue;
+            t->rq_priority_ = saved[j].rq_priority;
             break;
         }
     }
@@ -1201,7 +1338,7 @@ void Scheduler::restore_task_fields(const TaskFields* saved) {
 // P5a: Deferred-kill helpers
 // ---------------------------------------------------------------------------
 
-void Scheduler::defer_kill(TaskControlBlock* task) noexcept {
+void Scheduler::defer_kill(TaskControlBlock *task) noexcept {
     if (s_deferred_kill_count < MAX_DEFERRED_KILLS) {
         s_deferred_kill_tasks[s_deferred_kill_count++] = task;
     } else {
@@ -1212,7 +1349,7 @@ void Scheduler::defer_kill(TaskControlBlock* task) noexcept {
 
 void Scheduler::process_deferred_kills() noexcept {
     for (uint64_t i = 0; i < s_deferred_kill_count; ++i) {
-        auto* task = s_deferred_kill_tasks[i];
+        auto *task = s_deferred_kill_tasks[i];
         if (!task || task->magic != TaskControlBlock::TCB_MAGIC)
             continue;
 
@@ -1220,8 +1357,8 @@ void Scheduler::process_deferred_kills() noexcept {
             task->sporadic_server->on_completion(arch::Timer::ticks());
         }
 
-        Logger::info("[DMD] Task %lu (%s) killed and cleaned up",
-                     task->id, task->name);
+        Logger::info("[DMD] Task %lu (%s) killed and cleaned up", task->id,
+                     task->name);
         task->cleanup();
         Scheduler::remove_task(*task);
         MemPool::free(task);
@@ -1237,7 +1374,7 @@ void Scheduler::process_deferred_kills() noexcept {
 void Scheduler::scan_deadlines() noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
 #if CONFIG_DEADLINE_MISS_DETECTION
-    while (auto* task = deadline_list_.pop_earliest_if_expired()) {
+    while (auto *task = deadline_list_.pop_earliest_if_expired()) {
         if (task->sporadic_server) {
             task->ss_state_on_deadline_miss =
                 static_cast<uint8_t>(task->sporadic_server->state());
@@ -1247,7 +1384,7 @@ void Scheduler::scan_deadlines() noexcept {
         task->deadline_missed = true;
         ++task->deadline_miss_count;
         deadline_miss_handler(task,
-            arch::Timer::ticks() - task->deadline_ticks);
+                              arch::Timer::ticks() - task->deadline_ticks);
         task->deadline_ticks += task->period_ticks;
         task->deadline_missed = false;
         if (task->deadline_ticks > 0) {
@@ -1262,10 +1399,11 @@ void Scheduler::scan_deadlines() noexcept {
 }
 
 void Scheduler::monitor_task_entry() noexcept {
-    auto* me = Scheduler::current_task();
+    auto *me = Scheduler::current_task();
     while (true) {
+        arch::pause();
         {
-            arch::IrqGuard guard;
+            arch::IrqGuard guard{};
             scheduler_lock_.lock();
             dequeue_ready(*me);
             scheduler_lock_.unlock();
@@ -1287,10 +1425,11 @@ void Scheduler::ensure_monitor() noexcept {
             need_spawn = false;
         }
     }
-    if (!need_spawn) return;
+    if (!need_spawn)
+        return;
 
     Logger::info("[MON] Re-spawning deadline-monitor task");
-    auto* tcb = TaskControlBlock::create(monitor_task_entry, 127, 0xFFFFFFFF);
+    auto *tcb = TaskControlBlock::create(monitor_task_entry, 127, 0xFFFFFFFF);
     if (tcb) {
         s_monitor_task_ = tcb;
         s_scan_requested_ = false;
@@ -1307,48 +1446,58 @@ void Scheduler::ensure_monitor() noexcept {
 // ---------------------------------------------------------------------------
 
 #if CONFIG_DEADLINE_MISS_DETECTION
-__attribute__((weak))
-void deadline_miss_handler(TaskControlBlock* task,
-                           uint64_t missed_by_ticks) noexcept {
+__attribute__((weak)) void
+deadline_miss_handler(TaskControlBlock *task,
+                      uint64_t missed_by_ticks) noexcept {
     bool budget_exhausted = (task->sporadic_server != nullptr &&
-        static_cast<task::SporadicServer::State>(task->ss_state_on_deadline_miss)
-            == task::SporadicServer::State::EXHAUSTED);
+                             static_cast<task::SporadicServer::State>(
+                                 task->ss_state_on_deadline_miss) ==
+                                 task::SporadicServer::State::EXHAUSTED);
 
 #if CONFIG_DEADLINE_ACTION == 1
     if (budget_exhausted)
-        panic("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, action=PANIC)",
-              task->id, task->name);
+        panic(
+            "[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, action=PANIC)",
+            task->id, task->name);
     else
         panic("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=PANIC)",
               task->id, task->name, missed_by_ticks);
 #elif CONFIG_DEADLINE_ACTION == 2
     if (budget_exhausted)
         Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
-                     "action=DEMOTE)", task->id, task->name);
+                     "action=DEMOTE)",
+                     task->id, task->name);
     else
-        Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
-                     task->id, task->name, missed_by_ticks);
-    if (task->priority > 1) task->priority >>= 1;
+        Logger::warn(
+            "[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
+            task->id, task->name, missed_by_ticks);
+    if (task->priority > 1)
+        task->priority >>= 1;
 #elif CONFIG_DEADLINE_ACTION == 3
     if (budget_exhausted)
         Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
-                     "action=KILL)", task->id, task->name);
+                     "action=KILL)",
+                     task->id, task->name);
     else
-         Logger::warn("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
-                       task->id, task->name, missed_by_ticks);
+        Logger::warn(
+            "[DMD] Task %lu (%s) missed deadline by %lu ticks (action=KILL)",
+            task->id, task->name, missed_by_ticks);
     task->state = TaskState::TERMINATED;
-    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
+    task->exit_code =
+        static_cast<uint64_t>(-static_cast<int64_t>(Signal::SIGKILL));
     wake_waiting_parent(*task);
     Scheduler::defer_kill(task);
 #elif CONFIG_DEADLINE_ACTION == 4
     if (budget_exhausted)
         Logger::info("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
-                     "action=NOTIFY_MONITOR)", task->id, task->name);
+                     "action=NOTIFY_MONITOR)",
+                     task->id, task->name);
     else
         Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks "
-                     "(action=NOTIFY_MONITOR)", task->id, task->name, missed_by_ticks);
+                     "(action=NOTIFY_MONITOR)",
+                     task->id, task->name, missed_by_ticks);
 #if CONFIG_DEADLINE_MONITOR_PID > 0
-    auto* monitor = Scheduler::find_task(CONFIG_DEADLINE_MONITOR_PID);
+    auto *monitor = Scheduler::find_task(CONFIG_DEADLINE_MONITOR_PID);
     if (monitor && monitor->magic == TaskControlBlock::TCB_MAGIC &&
         monitor->state != TaskState::TERMINATED) {
         monitor->pending_signals |=
@@ -1363,18 +1512,20 @@ void deadline_miss_handler(TaskControlBlock* task,
                      "state=EXHAUSTED, action=LOG_ONLY)",
                      task->id, task->name, task->ss_budget_on_deadline_miss);
     else
-        Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
-                     task->id, task->name, missed_by_ticks);
+        Logger::info(
+            "[DMD] Task %lu (%s) missed deadline by %lu ticks (action=LOG_ONLY)",
+            task->id, task->name, missed_by_ticks);
 #endif
 }
 #endif
 
 #if CONFIG_WCET_OVERRUN_DETECTION
-__attribute__((weak))
-void wcet_overrun_handler(TaskControlBlock* task,
-                          uint64_t overrun_by_ticks) noexcept {
-    Logger::info("[WCET] Task %lu (%s) exceeded WCET by %lu ticks (action=LOG_ONLY)",
-                 task->id, task->name, overrun_by_ticks);
+__attribute__((weak)) void
+wcet_overrun_handler(TaskControlBlock *task,
+                     uint64_t overrun_by_ticks) noexcept {
+    Logger::info(
+        "[WCET] Task %lu (%s) exceeded WCET by %lu ticks (action=LOG_ONLY)",
+        task->id, task->name, overrun_by_ticks);
 }
 #endif
 
@@ -1382,9 +1533,9 @@ void wcet_overrun_handler(TaskControlBlock* task,
 
 extern "C" void scheduler_diag_pre_save() {
 #ifdef CONFIG_DEBUG
-    uint64_t rsp;
+    uint64_t rsp{};
     asm volatile("mov %%rsp, %0" : "=r"(rsp));
-    auto* cur = kernel::Scheduler::current_task();
+    auto *cur = kernel::Scheduler::current_task();
     auto cidx = kernel::Scheduler::current_index();
     if (cur && cur->magic == kernel::TaskControlBlock::TCB_MAGIC) {
         auto base = reinterpret_cast<uint64_t>(cur->kernel_stack);
@@ -1432,10 +1583,12 @@ SchedulerError Scheduler::init_err() {
     return SCHED_ERR_OK;
 }
 
-SchedulerError Scheduler::add_task_err(TaskControlBlock& task) {
+SchedulerError Scheduler::add_task_err(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    if (all_tasks_.size() >= MAX_TASKS) return SCHED_ERR_TABLE_FULL;
-    if (id_table_find(task.id) != nullptr) return SCHED_ERR_DUPLICATE_ID;
+    if (all_tasks_.size() >= MAX_TASKS)
+        return SCHED_ERR_TABLE_FULL;
+    if (id_table_find(task.id) != nullptr)
+        return SCHED_ERR_DUPLICATE_ID;
     all_tasks_.append(&task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
@@ -1446,9 +1599,10 @@ SchedulerError Scheduler::add_task_err(TaskControlBlock& task) {
     return SCHED_ERR_OK;
 }
 
-SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
+SchedulerError Scheduler::remove_task_err(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    if (id_table_find(task.id) == nullptr) return SCHED_ERR_NOT_FOUND;
+    if (id_table_find(task.id) == nullptr)
+        return SCHED_ERR_NOT_FOUND;
     all_tasks_.remove(&task);
     deadline_list_.remove(&task);
     id_table_remove(&task);
@@ -1462,7 +1616,7 @@ SchedulerError Scheduler::remove_task_err(TaskControlBlock& task) {
     return SCHED_ERR_OK;
 }
 
-SchedulerError Scheduler::alloc_id_err(uint64_t& out_id) {
+SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
     out_id = next_task_id_++;
     return SCHED_ERR_OK;
 }
@@ -1470,8 +1624,11 @@ SchedulerError Scheduler::alloc_id_err(uint64_t& out_id) {
 } // namespace kernel
 
 extern "C" void scheduler_on_context_switch() {
-    uint64_t id = __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
-    if (id == UINT64_MAX) return;
-    __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
+    uint64_t id =
+        __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    if (id == UINT64_MAX)
+        return;
+    __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX,
+                     __ATOMIC_RELEASE);
     kernel::Scheduler::set_current_by_id(id);
 }

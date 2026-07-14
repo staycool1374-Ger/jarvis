@@ -22,6 +22,7 @@
 
 /// @brief Dummy placeholder struct to prevent "no translation unit" warnings.
 struct EarlyInitStub {
-    EarlyInitStub() {}
+    EarlyInitStub() {
+    }
 };
-static EarlyInitStub stub;
+static EarlyInitStub stub{};

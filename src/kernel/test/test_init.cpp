@@ -27,7 +27,7 @@
 using namespace kernel;
 
 JARVIS_TEST(init_task_exists, "PRE: none | POST: none") {
-    auto* init = Scheduler::find_task(1);
+    auto *init = Scheduler::find_task(1);
     JARVIS_ASSERT(init != nullptr);
     JARVIS_ASSERT_EQ(1ULL, init->id);
     JARVIS_ASSERT(init->state == TaskState::READY ||
@@ -36,7 +36,7 @@ JARVIS_TEST(init_task_exists, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(init_task_has_no_parent, "PRE: none | POST: none") {
-    auto* init = Scheduler::find_task(1);
+    auto *init = Scheduler::find_task(1);
     JARVIS_ASSERT(init != nullptr);
     JARVIS_ASSERT_EQ(0ULL, init->parent_id);
     JARVIS_TEST_PASS();
@@ -47,11 +47,11 @@ JARVIS_TEST(init_task_reparents_orphans, "PRE: none | POST: none") {
     // verify it gets reparented to init
 
     // Get init task ref
-    auto* init = Scheduler::find_task(1);
+    auto *init = Scheduler::find_task(1);
     JARVIS_ASSERT(init != nullptr);
 
     // Get current task
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
     // Verify there are at least 2 tasks (init + current)

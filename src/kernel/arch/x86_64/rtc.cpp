@@ -17,7 +17,8 @@
  */
 
 /// @file rtc.cpp
-/// @brief CMOS Real-Time Clock driver — reads and configures the RTC for timekeeping.
+/// @brief CMOS Real-Time Clock driver — reads and configures the RTC for
+/// timekeeping.
 
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
@@ -28,7 +29,7 @@ namespace arch {
 /// @param reg Register index to read (with NMI disable bit set).
 /// @return The 8-bit value stored in the register.
 static uint8_t rtc_read_register(uint8_t reg) {
-    outb(RTC::CMOS_INDEX, reg | 0x80);  // Set NMI disable bit (bit 7)
+    outb(RTC::CMOS_INDEX, reg | 0x80); // Set NMI disable bit (bit 7)
     io_wait();
     return inb(RTC::CMOS_DATA);
 }
@@ -53,8 +54,8 @@ void RTC::init() {
 
     // Set 24-hour mode (bit 1 = 1), binary mode (bit 2 = 1), disable
     // periodic interrupt (bit 6 = 0)
-    status_b |= 0x06;   // 24-hour + binary
-    status_b &= ~0x40;  // disable periodic interrupt
+    status_b |= 0x06;  // 24-hour + binary
+    status_b &= ~0x40; // disable periodic interrupt
     rtc_write_register(REG_STATUS_B, status_b);
 
     // Read Status Register A
@@ -93,8 +94,8 @@ void RTC::wait_for_update() {
 }
 
 /// @brief Read the current time from the RTC with rollover detection.
-/// Reads all time fields twice and detects if a rollover occurred between reads.
-/// Converts from BCD to binary if the RTC is in BCD mode.
+/// Reads all time fields twice and detects if a rollover occurred between
+/// reads. Converts from BCD to binary if the RTC is in BCD mode.
 /// @param[out] sec Seconds.
 /// @param[out] min Minutes.
 /// @param[out] hour Hours.
@@ -102,8 +103,8 @@ void RTC::wait_for_update() {
 /// @param[out] month Month (1–12).
 /// @param[out] year Full year (e.g. 2026).
 /// @return true on success.
-bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
-                        uint8_t& day, uint8_t& month, uint16_t& year) {
+bool RTC::read_time_raw(uint8_t &sec, uint8_t &min, uint8_t &hour, uint8_t &day,
+                        uint8_t &month, uint16_t &year) {
     wait_for_update();
 
     uint8_t sec1 = rtc_read_register(REG_SECONDS);
@@ -126,8 +127,8 @@ bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
 
     // If values changed during read, retry (simple approach:
     // just use second read)
-    if (sec1 != sec2 || min1 != min2 || hour1 != hour2 ||
-        day1 != day2 || month1 != month2 || year1 != year2) {
+    if (sec1 != sec2 || min1 != min2 || hour1 != hour2 || day1 != day2 ||
+        month1 != month2 || year1 != year2) {
         sec = sec2;
         min = min2;
         hour = hour2;
@@ -146,7 +147,7 @@ bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
 
     // Convert from BCD if RTC is in BCD mode (check Status B bit 2)
     uint8_t status_b = rtc_read_register(REG_STATUS_B);
-    if (!(status_b & 0x04)) {  // Bit 2 = 0 means BCD mode
+    if (!(status_b & 0x04)) { // Bit 2 = 0 means BCD mode
         sec = bcd_to_bin(sec);
         min = bcd_to_bin(min);
         hour = bcd_to_bin(hour);
@@ -165,13 +166,13 @@ bool RTC::read_time_raw(uint8_t& sec, uint8_t& min, uint8_t& hour,
 /// @param hour Hours (0–23).
 /// @param min Minutes (0–59).
 /// @param sec Seconds (0–59).
-/// @return Unix timestamp (seconds since 1970-01-01 00:00:00 UTC), or 0 on invalid input.
+/// @return Unix timestamp (seconds since 1970-01-01 00:00:00 UTC), or 0 on
+/// invalid input.
 uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
                              uint8_t hour, uint8_t min, uint8_t sec) {
     // Days in each month (non-leap year)
-    static const uint16_t days_in_month[12] = {
-        31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-    };
+    static const uint16_t days_in_month[12] = {31, 28, 31, 30, 31, 30,
+                                               31, 31, 30, 31, 30, 31};
 
     // Validate inputs
     if (year < 1970 || month == 0 || month > 12 || day == 0 || day > 31 ||
@@ -183,9 +184,11 @@ uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
     uint16_t dim = days_in_month[month - 1];
     if (month == 2) {
         bool leap = (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
-        if (leap) dim = 29;
+        if (leap)
+            dim = 29;
     }
-    if (day > dim) return 0;
+    if (day > dim)
+        return 0;
 
     // Count days since 1970-01-01
     uint64_t days = 0;
@@ -203,7 +206,8 @@ uint64_t RTC::make_timestamp(uint16_t year, uint8_t month, uint8_t day,
         days += days_in_month[month_idx - 1];
         if (month_idx == 2) {
             bool leap = (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
-            if (leap) days += 1;
+            if (leap)
+                days += 1;
         }
     }
 
@@ -230,9 +234,11 @@ uint64_t RTC::read_seconds() {
 }
 
 /// @brief Read the current RTC time into a standard tm structure.
-/// @param[out] out Pointer to a tm struct to populate. On failure the struct is zeroed.
-void RTC::read_time(struct tm* out) {
-    if (!out) return;
+/// @param[out] out Pointer to a tm struct to populate. On failure the struct is
+/// zeroed.
+void RTC::read_time(struct tm *out) {
+    if (!out)
+        return;
 
     uint8_t sec, min, hour, day, month;
     uint16_t year = 0;
@@ -249,11 +255,11 @@ void RTC::read_time(struct tm* out) {
     out->tm_min = min;
     out->tm_hour = hour;
     out->tm_mday = day;
-    out->tm_mon = month - 1;   // tm_mon is 0-11
+    out->tm_mon = month - 1;    // tm_mon is 0-11
     out->tm_year = year - 1900; // tm_year is years since 1900
-    out->tm_wday = 0; // Not tracked
-    out->tm_yday = 0; // Not computed
-    out->tm_isdst = 0; // UTC, no DST
+    out->tm_wday = 0;           // Not tracked
+    out->tm_yday = 0;           // Not computed
+    out->tm_isdst = 0;          // UTC, no DST
 }
 
 } // namespace arch

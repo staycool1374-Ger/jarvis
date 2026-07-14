@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -35,5 +37,5 @@ namespace sync {
 /// @brief Initialize all kernel synchronization primitives.
 void init_all();
 
-}
-}
+} // namespace sync
+} // namespace kernel

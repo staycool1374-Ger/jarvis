@@ -26,7 +26,8 @@
 
 using namespace kernel;
 
-/// @brief Verifies all 256 IDT entries have non-null handler addresses after init.
+/// @brief Verifies all 256 IDT entries have non-null handler addresses after
+/// init.
 /// @input Initialize IDT
 /// @expect All 256 entries point to valid handlers (no null pointers)
 /// @depends kernel::arch::IDT
@@ -69,18 +70,19 @@ JARVIS_TEST(idt_syscall_handler_installed, "PRE: iocd | POST: none") {
 /// @expect IST index set to valid IST stack
 /// @depends kernel::arch::IDT, TSS
 JARVIS_TEST(idt_double_fault_uses_ist, "PRE: iocd | POST: none") {
-    const auto& entry = arch::IDT::entry(8);
+    const auto &entry = arch::IDT::entry(8);
     JARVIS_ASSERT(entry.ist != 0);
     JARVIS_ASSERT(entry.ist <= 7);
 }
 
-/// @brief Verifies vectors 0x30-0x7F are not set (or point to spurious handler).
+/// @brief Verifies vectors 0x30-0x7F are not set (or point to spurious
+/// handler).
 /// @input Initialize IDT, inspect reserved vectors
 /// @expect Vectors 0x30-0x7F are null or spurious handler
 /// @depends kernel::arch::IDT
 JARVIS_TEST(idt_reserved_vectors_null, "PRE: iocd | POST: none") {
     for (uint8_t vec = 0x30; vec <= 0x7F; ++vec) {
-        const auto& e = arch::IDT::entry(vec);
+        const auto &e = arch::IDT::entry(vec);
         uint64_t handler = static_cast<uint64_t>(e.offset_high) << 32 |
                            static_cast<uint64_t>(e.offset_mid) << 16 |
                            e.offset_low;

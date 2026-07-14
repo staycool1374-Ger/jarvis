@@ -36,7 +36,7 @@ using namespace kernel;
 #endif
 
 TEST_CLASS(IpcMisformedMessages) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
     CT_ASSERT(cur->msg_queue != nullptr);
 
@@ -47,7 +47,8 @@ TEST_CLASS(IpcMisformedMessages) {
     msg.sender_id = 1;
     msg.type = 99;
     msg.data_size = 4;
-    msg.data[0] = 0xDE; msg.data[1] = 0xAD;
+    msg.data[0] = 0xDE;
+    msg.data[1] = 0xAD;
 
     msg.priority = 32;
     bool ok = q.push(msg);
@@ -138,25 +139,29 @@ TEST_CLASS(IpcQueueWraparoundEdge) {
     CT_ASSERT(q.count == IPC_MAX_QUEUE_MSG - 1);
 
     size_t count = 0;
-    while (q.pop(out)) ++count;
+    while (q.pop(out))
+        ++count;
     CT_ASSERT(count == IPC_MAX_QUEUE_MSG - 1);
 };
 
 TEST_CLASS(IpcConcurrentSenders) {
-    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
     uint64_t recv_id = receiver->id;
 
     Message fill{};
-    fill.sender_id = 0; fill.type = 0; fill.priority = 0; fill.data_size = 0;
+    fill.sender_id = 0;
+    fill.type = 0;
+    fill.priority = 0;
+    fill.data_size = 0;
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG / 2; ++i) {
         receiver->msg_queue->push(fill);
     }
 
     static const int NUM_SENDERS = 4;
     static const int MSGS_PER = 5;
-    TaskControlBlock* senders[NUM_SENDERS];
+    TaskControlBlock *senders[NUM_SENDERS];
 
     for (int i = 0; i < NUM_SENDERS; ++i) {
         senders[i] = TaskControlBlock::create([]() {}, 5, 10);
@@ -175,14 +180,16 @@ TEST_CLASS(IpcConcurrentSenders) {
             msg.priority = 0;
             msg.data_size = 0;
             bool ok = IPC::send(recv_id, msg, IPC_NONBLOCK);
-            if (ok) ++total_sent;
+            if (ok)
+                ++total_sent;
         }
     }
 
     {
         kernel::test::ScopedCurrentTask _sc(*receiver);
         Message out;
-        while (receiver->msg_queue->pop(out)) {}
+        while (receiver->msg_queue->pop(out)) {
+        }
     }
 
     CT_ASSERT(total_sent <= MSGS_PER * NUM_SENDERS);
@@ -199,8 +206,8 @@ TEST_CLASS(IpcConcurrentSenders) {
 
 #if !defined(CONFIG_ARCH_RISCV64)
 TEST_CLASS(IpcBufHandleTransferRoundtrip) {
-    auto* sender = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
-    auto* receiver = TaskControlBlock::create_user([](){}, 5, 10, 32_KiB);
+    auto *sender = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
+    auto *receiver = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     CT_ASSERT(sender != nullptr);
     CT_ASSERT(receiver != nullptr);
     Scheduler::add_task(*sender);
@@ -217,8 +224,8 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
         uint64_t phys = BufferPool::entries[idx].phys_addr;
         CT_ASSERT(phys != 0);
 
-        volatile auto* buf = reinterpret_cast<volatile uint8_t*>(
-            arch::HHDM_OFFSET + phys);
+        volatile auto *buf =
+            reinterpret_cast<volatile uint8_t *>(arch::HHDM_OFFSET + phys);
         for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
             buf[i] = static_cast<uint8_t>(i ^ 0xA5);
         }
@@ -243,12 +250,13 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
         ok = BufferPool::map(*receiver, recv_msg.buf_handle, rva);
         CT_ASSERT(ok);
 
-        uint32_t idx = static_cast<uint32_t>(recv_msg.buf_handle & 0xFFFFFFFFULL);
+        uint32_t idx =
+            static_cast<uint32_t>(recv_msg.buf_handle & 0xFFFFFFFFULL);
         CT_ASSERT(BufferPool::entries[idx].owner_task ==
                   static_cast<uint32_t>(receiver->id));
         uint64_t rphys = BufferPool::entries[idx].phys_addr;
-        volatile auto* rbuf = reinterpret_cast<volatile uint8_t*>(
-            arch::HHDM_OFFSET + rphys);
+        volatile auto *rbuf =
+            reinterpret_cast<volatile uint8_t *>(arch::HHDM_OFFSET + rphys);
         for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
             CT_ASSERT(rbuf[i] == static_cast<uint8_t>(i ^ 0xA5));
         }
@@ -265,9 +273,11 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     }
 
     Scheduler::remove_task(*sender);
-    sender->cleanup(); delete sender;
+    sender->cleanup();
+    delete sender;
     Scheduler::remove_task(*receiver);
-    receiver->cleanup(); delete receiver;
+    receiver->cleanup();
+    delete receiver;
 };
 #endif
 
@@ -275,48 +285,52 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     static volatile uint64_t g_id_a = 0;
     static volatile uint64_t g_id_b = 0;
 
-    auto* task_a = TaskControlBlock::create([]() {
-        uint64_t b_id = g_id_b;
-        Message req{}, reply{};
-        req.sender_id = g_id_a;
-        req.type = 10;
-        req.priority = 0;
-        req.data_size = 0;
-        bool ok = IPC::send_sync(b_id, req, reply);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT(reply.type == 20ULL);
-    }, 5, 10);
+    auto *task_a = TaskControlBlock::create(
+        []() {
+            uint64_t b_id = g_id_b;
+            Message req{}, reply{};
+            req.sender_id = g_id_a;
+            req.type = 10;
+            req.priority = 0;
+            req.data_size = 0;
+            bool ok = IPC::send_sync(b_id, req, reply);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT(reply.type == 20ULL);
+        },
+        5, 10);
     CT_ASSERT(task_a != nullptr);
     g_id_a = task_a->id;
     Scheduler::add_task(*task_a);
 
-    auto* task_b = TaskControlBlock::create([]() {
-        uint64_t a_id = g_id_a;
-        Message msg{}, reply{};
-        bool ok = IPC::recv(msg);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT(msg.type == 10ULL);
-        reply.sender_id = g_id_b;
-        reply.type = 20;
-        reply.priority = 0;
-        reply.data_size = 0;
-        ok = IPC::send(msg.sender_id, reply);
-        JARVIS_ASSERT(ok);
+    auto *task_b = TaskControlBlock::create(
+        []() {
+            uint64_t a_id = g_id_a;
+            Message msg{}, reply{};
+            bool ok = IPC::recv(msg);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT(msg.type == 10ULL);
+            reply.sender_id = g_id_b;
+            reply.type = 20;
+            reply.priority = 0;
+            reply.data_size = 0;
+            ok = IPC::send(msg.sender_id, reply);
+            JARVIS_ASSERT(ok);
 
-        Message req{};
-        req.sender_id = g_id_b;
-        req.type = 30;
-        req.priority = 0;
-        req.data_size = 0;
-        ok = IPC::send_sync(a_id, req, reply);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT(reply.type == 40ULL);
-    }, 5, 10);
+            Message req{};
+            req.sender_id = g_id_b;
+            req.type = 30;
+            req.priority = 0;
+            req.data_size = 0;
+            ok = IPC::send_sync(a_id, req, reply);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT(reply.type == 40ULL);
+        },
+        5, 10);
     CT_ASSERT(task_b != nullptr);
     g_id_b = task_b->id;
     Scheduler::add_task(*task_b);
 
-    auto* bidir_orig = Scheduler::current_task();
+    auto *bidir_orig = Scheduler::current_task();
     // Wrapped in IrqGuard to restore IF=0 semantics — these reschedule()
     // calls are no-ops that set up globals; the timer ISR must not fire
     // to consume them (task lambdas contain unreachable assertions).
@@ -329,32 +343,40 @@ TEST_CLASS(IpcBidirectionalSendSync) {
         Scheduler::set_current(*task_a);
         Scheduler::reschedule();
     }
-    if (bidir_orig) Scheduler::set_current(*bidir_orig);
+    if (bidir_orig)
+        Scheduler::set_current(*bidir_orig);
 
     Scheduler::remove_task(*task_a);
-    task_a->cleanup(); delete task_a;
+    task_a->cleanup();
+    delete task_a;
     Scheduler::remove_task(*task_b);
-    task_b->cleanup(); delete task_b;
+    task_b->cleanup();
+    delete task_b;
 };
 
 TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
-    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
 
-    auto* sender = TaskControlBlock::create([]() {}, 6, 10);
+    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
     CT_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
     Message fill{};
-    fill.sender_id = 0; fill.type = 99; fill.priority = 0; fill.data_size = 0;
+    fill.sender_id = 0;
+    fill.type = 99;
+    fill.priority = 0;
+    fill.data_size = 0;
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         receiver->msg_queue->push(fill);
     }
 
     Message msg{};
     msg.sender_id = sender->id;
-    msg.type = 1; msg.priority = 0; msg.data_size = 0;
+    msg.type = 1;
+    msg.priority = 0;
+    msg.data_size = 0;
     {
         arch::IrqGuard guard;
         Scheduler::set_current(*sender);
@@ -374,7 +396,8 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);
-    sender->cleanup(); delete sender;
+    sender->cleanup();
+    delete sender;
     delete receiver;
 };
 

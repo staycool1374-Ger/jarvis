@@ -6,8 +6,9 @@
 
 namespace kernel {
 
-void TaskQueue::push_back(TaskControlBlock& tcb) noexcept {
-    if (tcb.in_ready_queue_) return;
+void TaskQueue::push_back(TaskControlBlock &tcb) noexcept {
+    if (tcb.in_ready_queue_)
+        return;
     tcb.in_ready_queue_ = true;
     tcb.runq_next_ = nullptr;
     tcb.runq_prev_ = tail_;
@@ -20,13 +21,14 @@ void TaskQueue::push_back(TaskControlBlock& tcb) noexcept {
     ++count_;
 }
 
-TaskControlBlock* TaskQueue::pop_front() noexcept {
+TaskControlBlock *TaskQueue::pop_front() noexcept {
     // If the head pointer is non-null but the count is zero the list is
     // corrupted (e.g. a cycle produced by a stray double-enqueue).  Returning
     // early here prevents pop_front from spinning until count_ underflows and
     // hanging the scheduler inside reschedule()/next_task().
-    if (!head_ || count_ == 0) return nullptr;
-    auto* tcb = head_;
+    if (!head_ || count_ == 0)
+        return nullptr;
+    auto *tcb = head_;
     tcb->in_ready_queue_ = false;
     head_ = tcb->runq_next_;
     if (head_) {
@@ -40,8 +42,9 @@ TaskControlBlock* TaskQueue::pop_front() noexcept {
     return tcb;
 }
 
-void TaskQueue::remove(TaskControlBlock& tcb) noexcept {
-    if (!tcb.in_ready_queue_) return;
+void TaskQueue::remove(TaskControlBlock &tcb) noexcept {
+    if (!tcb.in_ready_queue_)
+        return;
     tcb.in_ready_queue_ = false;
     if (tcb.runq_prev_) {
         tcb.runq_prev_->runq_next_ = tcb.runq_next_;

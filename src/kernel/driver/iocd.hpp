@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -27,23 +29,23 @@ namespace kernel {
 namespace iocd {
 
 static constexpr uint64_t IOCD_REGISTER_DEVICE = 200;
-static constexpr uint64_t IOCD_IRQ_EVENT       = 201;
-static constexpr uint64_t IOCD_MMIO_MAP        = 202;
-static constexpr uint64_t IOCD_MMIO_UNMAP      = 203;
-static constexpr uint64_t IOCD_KEYBOARD_READ   = 204;
-static constexpr uint64_t IOCD_SERIAL_READ     = 205;
-static constexpr uint64_t IOCD_SERIAL_WRITE    = 206;
+static constexpr uint64_t IOCD_IRQ_EVENT = 201;
+static constexpr uint64_t IOCD_MMIO_MAP = 202;
+static constexpr uint64_t IOCD_MMIO_UNMAP = 203;
+static constexpr uint64_t IOCD_KEYBOARD_READ = 204;
+static constexpr uint64_t IOCD_SERIAL_READ = 205;
+static constexpr uint64_t IOCD_SERIAL_WRITE = 206;
 
 /// @brief IOCD IPC request message.
 struct Msg {
-    uint64_t type;      ///< Message type (IOCD_REGISTER_DEVICE, etc.).
-    uint64_t args[7];   ///< Type-specific arguments.
+    uint64_t type;    ///< Message type (IOCD_REGISTER_DEVICE, etc.).
+    uint64_t args[7]; ///< Type-specific arguments.
 };
 
 /// @brief IOCD IPC reply message.
 struct Reply {
-    int64_t  result;    ///< Return code (negative on error).
-    uint64_t data[4];   ///< Type-specific result data.
+    int64_t result;   ///< Return code (negative on error).
+    uint64_t data[4]; ///< Type-specific result data.
 };
 
 /// @brief Record the PID of the IOCD (I/O Controller Daemon) task.

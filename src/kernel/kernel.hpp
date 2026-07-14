@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -34,14 +36,14 @@ extern "C" {
 void higherhalf_entry(uint64_t magic, uint64_t mb_info);
 /// @brief Kernel panic handler (noreturn).
 /// @param msg Panic message string.
-void panic(const char* msg) __attribute__((noreturn));
+void panic(const char *msg) __attribute__((noreturn));
 /// @brief C-level interrupt handler dispatcher.
 /// @param vector     Interrupt vector number.
 /// @param error_code CPU error code (0 if none).
-    /// @param rip        Instruction pointer at time of interrupt.
-    /// @param regs       Pointer to saved register array (GPRs).
-    void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
-        uint64_t* regs);
+/// @param rip        Instruction pointer at time of interrupt.
+/// @param regs       Pointer to saved register array (GPRs).
+void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
+                        uint64_t *regs);
 }
 
 /// @brief Kernel stack base (bottom address).
@@ -54,8 +56,9 @@ extern uint64_t g_boot_epoch;
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint64_t g_boot_ns;
 
-/// @brief Format wall-clock nanoseconds since epoch into "YYYY-MM-DD hh:mm:ss:mmm".
+/// @brief Format wall-clock nanoseconds since epoch into "YYYY-MM-DD
+/// hh:mm:ss:mmm".
 /// @param buf    Output buffer (must be >= 24 bytes).
 /// @param size   Buffer size.
 /// @param wall_ns  Nanoseconds since 1970-01-01 00:00:00 UTC.
-void format_datetime(char* buf, size_t size, uint64_t wall_ns);
+void format_datetime(char *buf, size_t size, uint64_t wall_ns);

@@ -65,8 +65,10 @@ static BenchResult measure(uint64_t (*fn)()) {
         uint64_t tsc = arch::rdtsc();
         fn();
         uint64_t elapsed = arch::rdtsc() - tsc;
-        if (elapsed < r.min) r.min = elapsed;
-        if (elapsed > r.max) r.max = elapsed;
+        if (elapsed < r.min)
+            r.min = elapsed;
+        if (elapsed > r.max)
+            r.max = elapsed;
         r.avg += elapsed;
         ++r.count;
     }
@@ -91,8 +93,8 @@ static uint64_t bench_rdtsc_overhead() {
 // Depends: kernel/arch, kernel/task
 JARVIS_TEST(ipc_bench_rdtsc_overhead, "PRE: none | POST: none") {
     auto r = measure(bench_rdtsc_overhead);
-    Logger::info("RDTSC overhead: min=%d, avg=%d, max=%d (iters=%d)",
-                 r.min, r.avg, r.max, r.count);
+    Logger::info("RDTSC overhead: min=%d, avg=%d, max=%d (iters=%d)", r.min,
+                 r.avg, r.max, r.count);
     JARVIS_ASSERT(r.avg < 100);
     JARVIS_TEST_PASS();
 }
@@ -102,8 +104,9 @@ JARVIS_TEST(ipc_bench_rdtsc_overhead, "PRE: none | POST: none") {
 // ---------------------------------------------------------------------------
 
 static uint64_t bench_ipc_send_self() {
-    auto* cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue) return ~0ULL;
+    auto *cur = Scheduler::current_task();
+    if (!cur || !cur->msg_queue)
+        return ~0ULL;
     Message msg{};
     msg.sender_id = cur->id;
     msg.type = 0;
@@ -122,11 +125,12 @@ static uint64_t bench_ipc_send_self() {
 // Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_self, "PRE: none | POST: none") {
     Message drain;
-    while (IPC::recv(drain));
+    while (IPC::recv(drain))
+        ;
 
     auto r = measure(bench_ipc_send_self);
-    Logger::info("IPC send+recv self: min=%d, avg=%d, max=%d (iters=%d)",
-                 r.min, r.avg, r.max, r.count);
+    Logger::info("IPC send+recv self: min=%d, avg=%d, max=%d (iters=%d)", r.min,
+                 r.avg, r.max, r.count);
     JARVIS_ASSERT(r.avg < 10000);
     JARVIS_TEST_PASS();
 }
@@ -152,7 +156,8 @@ static uint64_t bench_ipc_send_only_task_id_;
 static Message bench_ipc_send_only_msg_;
 
 static uint64_t bench_ipc_send_only() {
-    IPC::send(bench_ipc_send_only_task_id_, bench_ipc_send_only_msg_, IPC_NONBLOCK);
+    IPC::send(bench_ipc_send_only_task_id_, bench_ipc_send_only_msg_,
+              IPC_NONBLOCK);
     return 0;
 }
 
@@ -162,7 +167,7 @@ static uint64_t bench_ipc_send_only() {
 // Expect: Average send latency < 10000 cycles
 // Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_only, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
     bench_ipc_send_only_task_id_ = cur->id;
@@ -170,11 +175,12 @@ JARVIS_TEST(ipc_bench_send_only, "PRE: none | POST: none") {
     bench_ipc_send_only_msg_.sender_id = cur->id;
 
     auto r = measure(bench_ipc_send_only);
-    Logger::info("IPC send only (non-block): min=%d, avg=%d, max=%d",
-                 r.min, r.avg, r.max);
+    Logger::info("IPC send only (non-block): min=%d, avg=%d, max=%d", r.min,
+                 r.avg, r.max);
 
     Message out;
-    while (IPC::recv(out));
+    while (IPC::recv(out))
+        ;
     JARVIS_ASSERT(r.avg < 10000);
     JARVIS_TEST_PASS();
 }
@@ -198,7 +204,7 @@ static uint64_t bench_ipc_send_full() {
 // Expect: Average failure-path latency < 5000 cycles
 // Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_full, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
     bench_ipc_send_full_id_ = cur->id;
@@ -213,7 +219,8 @@ JARVIS_TEST(ipc_bench_send_full, "PRE: none | POST: none") {
                  r.min, r.avg, r.max);
     JARVIS_ASSERT(r.avg < 5000);
 
-    while (IPC::recv(filler));
+    while (IPC::recv(filler))
+        ;
     JARVIS_TEST_PASS();
 }
 
@@ -238,7 +245,7 @@ static uint64_t bench_ipc_send_64byte() {
 // Expect: Average round-trip < 20000 cycles
 // Depends: kernel/ipc, kernel/task
 JARVIS_TEST(ipc_bench_send_64byte, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
     bench_ipc_64byte_id_ = cur->id;
@@ -250,8 +257,8 @@ JARVIS_TEST(ipc_bench_send_64byte, "PRE: none | POST: none") {
     }
 
     auto r = measure(bench_ipc_send_64byte);
-    Logger::info("IPC send+recv 64B payload: min=%d, avg=%d, max=%d",
-                 r.min, r.avg, r.max);
+    Logger::info("IPC send+recv 64B payload: min=%d, avg=%d, max=%d", r.min,
+                 r.avg, r.max);
     JARVIS_ASSERT(r.avg < 20000);
     JARVIS_TEST_PASS();
 }
@@ -273,8 +280,8 @@ static uint64_t bench_current_task() {
 // Depends: kernel/task
 JARVIS_TEST(ipc_bench_current_task, "PRE: none | POST: none") {
     auto r = measure(bench_current_task);
-    Logger::info("Scheduler::current_task: min=%d, avg=%d, max=%d",
-                 r.min, r.avg, r.max);
+    Logger::info("Scheduler::current_task: min=%d, avg=%d, max=%d", r.min,
+                 r.avg, r.max);
     JARVIS_ASSERT(r.avg < 500);
     JARVIS_TEST_PASS();
 }

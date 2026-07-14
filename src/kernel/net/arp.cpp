@@ -31,7 +31,7 @@ ArpCache::ArpCache() {
 
 /// @brief Look up a MAC address for the given IP.
 /// @return true if found.
-bool ArpCache::lookup(uint32_t ip, MacAddr& mac) const {
+bool ArpCache::lookup(uint32_t ip, MacAddr &mac) const {
     for (size_t i = 0; i < ARP_CACHE_SIZE; ++i) {
         if (entries_[i].valid && entries_[i].ip == ip) {
             mac = entries_[i].mac;
@@ -44,12 +44,13 @@ bool ArpCache::lookup(uint32_t ip, MacAddr& mac) const {
 /// @brief Update the cache with a new IP→MAC mapping.
 void ArpCache::update(uint32_t ip, MacAddr mac) {
     int idx = find(ip);
-    if (idx < 0) idx = find_empty();
+    if (idx < 0)
+        idx = find_empty();
     if (idx < 0) {
         idx = 0;
     }
-    entries_[idx].ip    = ip;
-    entries_[idx].mac   = mac;
+    entries_[idx].ip = ip;
+    entries_[idx].mac = mac;
     entries_[idx].valid = true;
 }
 
@@ -68,14 +69,16 @@ void ArpCache::clear() {
 
 int ArpCache::find(uint32_t ip) const {
     for (size_t i = 0; i < ARP_CACHE_SIZE; ++i) {
-        if (entries_[i].valid && entries_[i].ip == ip) return static_cast<int>(i);
+        if (entries_[i].valid && entries_[i].ip == ip)
+            return static_cast<int>(i);
     }
     return -1;
 }
 
 int ArpCache::find_empty() const {
     for (size_t i = 0; i < ARP_CACHE_SIZE; ++i) {
-        if (!entries_[i].valid) return static_cast<int>(i);
+        if (!entries_[i].valid)
+            return static_cast<int>(i);
     }
     return -1;
 }

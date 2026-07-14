@@ -63,13 +63,10 @@ JARVIS_TEST(fb_putpixel_in_bounds, "PRE: iocd | POST: none") {
 // Depends: service::Framebuffer
 JARVIS_TEST(fb_putpixel_out_of_bounds, "PRE: iocd | POST: none") {
     if (service::Framebuffer::available()) {
-        service::Framebuffer::draw_pixel(
-            static_cast<uint32_t>(-1), 0, 0xFF);
-        service::Framebuffer::draw_pixel(
-            0, static_cast<uint32_t>(-1), 0xFF);
-        service::Framebuffer::draw_pixel(
-            service::Framebuffer::width(),
-            service::Framebuffer::height(), 0xFF);
+        service::Framebuffer::draw_pixel(static_cast<uint32_t>(-1), 0, 0xFF);
+        service::Framebuffer::draw_pixel(0, static_cast<uint32_t>(-1), 0xFF);
+        service::Framebuffer::draw_pixel(service::Framebuffer::width(),
+                                         service::Framebuffer::height(), 0xFF);
     }
     JARVIS_TEST_PASS();
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -34,39 +36,44 @@ constexpr size_t ETH_FRAME_MAX = 1518;
 struct MacAddr {
     uint8_t addr[ETH_ADDR_LEN]; ///< Octets in network order.
 
-    bool operator==(const MacAddr& o) const {
+    bool operator==(const MacAddr &o) const {
         for (size_t i = 0; i < ETH_ADDR_LEN; ++i)
-            if (addr[i] != o.addr[i]) return false;
+            if (addr[i] != o.addr[i])
+                return false;
         return true;
     }
-    bool operator!=(const MacAddr& o) const { return !(*this == o); }
+    bool operator!=(const MacAddr &o) const {
+        return !(*this == o);
+    }
 
     bool is_broadcast() const {
         for (size_t i = 0; i < ETH_ADDR_LEN; ++i)
-            if (addr[i] != 0xFF) return false;
+            if (addr[i] != 0xFF)
+                return false;
         return true;
     }
     bool is_null() const {
         for (size_t i = 0; i < ETH_ADDR_LEN; ++i)
-            if (addr[i] != 0) return false;
+            if (addr[i] != 0)
+                return false;
         return true;
     }
 } __attribute__((packed));
 
 constexpr MacAddr MAC_BROADCAST = {{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}};
-constexpr MacAddr MAC_NULL     = {{0, 0, 0, 0, 0, 0}};
+constexpr MacAddr MAC_NULL = {{0, 0, 0, 0, 0, 0}};
 
 /// @brief Ethernet frame header (14 bytes).
 struct EtherHeader {
-    MacAddr  dst;  ///< Destination MAC address.
-    MacAddr  src;  ///< Source MAC address.
+    MacAddr dst;   ///< Destination MAC address.
+    MacAddr src;   ///< Source MAC address.
     uint16_t type; ///< EtherType (big-endian).
 } __attribute__((packed));
 
 /// @brief EtherType constants (big-endian wire format).
 enum EtherType : uint16_t {
     ETH_TYPE_IPV4 = 0x0800, ///< IPv4.
-    ETH_TYPE_ARP  = 0x0806, ///< ARP.
+    ETH_TYPE_ARP = 0x0806,  ///< ARP.
     ETH_TYPE_IPV6 = 0x86DD, ///< IPv6.
 };
 

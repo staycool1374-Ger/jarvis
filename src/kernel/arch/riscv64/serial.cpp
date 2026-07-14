@@ -35,7 +35,10 @@ void Serial::putchar(char c) {
         asm volatile("li a0, 13; li a7, 1; ecall" : : : "a0", "a7", "memory");
     }
     uint64_t ch = (unsigned char)c;
-    asm volatile("mv a0, %0; li a7, 1; ecall" : : "r"(ch) : "a0", "a7", "memory");
+    asm volatile("mv a0, %0; li a7, 1; ecall"
+                 :
+                 : "r"(ch)
+                 : "a0", "a7", "memory");
 }
 
 /// @brief Read a character from serial (stub — always returns NUL).
@@ -46,8 +49,9 @@ char Serial::getchar() {
 
 /// @brief Write a null-terminated string via SBI ecall.
 /// @param s Null-terminated string to output.
-void Serial::puts(const char* s) {
-    while (*s) putchar(*s++);
+void Serial::puts(const char *s) {
+    while (*s)
+        putchar(*s++);
 }
 
 } // namespace arch

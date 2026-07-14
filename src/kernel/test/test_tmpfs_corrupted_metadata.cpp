@@ -26,9 +26,11 @@
 JARVIS_TEST(tmpfs_corrupted_metadata, "PRE: vfsd, iocd | POST: none") {
     /*
     1. Mount tmpfs normally and create a file.
-    2. Directly corrupt the in‑memory super‑block or inode structures (via a test hook).
+    2. Directly corrupt the in‑memory super‑block or inode structures (via a
+    test hook).
     3. Unmount and remount the same tmpfs instance.
-    4. Expect the mount operation to fail with an error indicating metadata corruption.
+    4. Expect the mount operation to fail with an error indicating metadata
+    corruption.
     5. Ensure ResourceTracker reports no leaks.
     */
     // TODO: implement when low‑level VFS hooks are available

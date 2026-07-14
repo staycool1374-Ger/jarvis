@@ -17,7 +17,8 @@
  */
 
 /// @file syscall_handlers_misc.cpp
-/// @brief Syscall handlers for miscellaneous operations: yield, print, get_ticks, exit, etc.
+/// @brief Syscall handlers for miscellaneous operations: yield, print,
+/// get_ticks, exit, etc.
 
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/syscall/syscall_helpers.hpp>
@@ -29,11 +30,11 @@
 #include <string.hpp>
 
 #if defined(CONFIG_ARCH_X86_64)
-#  define TASK_STACK_PTR(t) ((t)->context.rsp)
+#define TASK_STACK_PTR(t) ((t)->context.rsp)
 #elif defined(CONFIG_ARCH_AARCH64)
-#  define TASK_STACK_PTR(t) ((t)->context.sp_el0)
+#define TASK_STACK_PTR(t) ((t)->context.sp_el0)
 #elif defined(CONFIG_ARCH_RISCV64)
-#  define TASK_STACK_PTR(t) ((t)->context.sp)
+#define TASK_STACK_PTR(t) ((t)->context.sp)
 #endif
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/rtc.hpp>
@@ -62,40 +63,42 @@ struct Utsname {
     char domainname[65];
 };
 
-uint64_t Syscall::sys_yield(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_yield(uint64_t, uint64_t, uint64_t, uint64_t,
+                            uint64_t *) {
     arch::io_wait();
     Scheduler::reschedule();
     return 0;
 }
 
-uint64_t Syscall::sys_print(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_print(uint64_t, uint64_t, uint64_t, uint64_t,
+                            uint64_t *) {
     return 0;
 }
 
 uint64_t Syscall::sys_get_ticks(uint64_t, uint64_t, uint64_t, uint64_t,
-    uint64_t*) {
+                                uint64_t *) {
     return arch::Timer::ticks();
 }
 
-uint64_t Syscall::sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*
-    ) {
-    auto* t = syscall_task();
+uint64_t Syscall::sys_getpid(uint64_t, uint64_t, uint64_t, uint64_t,
+                             uint64_t *) {
+    auto *t = syscall_task();
     return t ? t->id : 0;
 }
 
 uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
-    uint64_t*) {
-    auto* t = syscall_task();
+                           uint64_t *) {
+    auto *t = syscall_task();
     if (t) {
         t->state = TaskState::TERMINATED;
         t->exit_code = arg0;
 
         if (t->first_child) {
-            TaskControlBlock* init_task = Scheduler::task_at(0);
+            TaskControlBlock *init_task = Scheduler::task_at(0);
             if (init_task) {
-                auto* child = t->first_child;
+                auto *child = t->first_child;
                 while (child) {
-                    auto* next = child->next_sibling;
+                    auto *next = child->next_sibling;
                     t->remove_child(child);
                     init_task->add_child(child);
                     child = next;
@@ -106,7 +109,7 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
         if (t->parent_id) {
             uint64_t count = Scheduler::task_count();
             for (uint64_t i = 0; i < count; ++i) {
-                auto* p = Scheduler::task_at(i);
+                auto *p = Scheduler::task_at(i);
                 if (p && p->id == t->parent_id &&
                     (p->waiting_child_pid == t->id ||
                      p->waiting_child_pid == static_cast<uint64_t>(-1))) {
@@ -123,7 +126,8 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
                             switched = true;
                         }
                         *p->waiting_child_status = t->exit_code;
-                        if (switched) arch::write_cr3(old_cr3);
+                        if (switched)
+                            arch::write_cr3(old_cr3);
                         p->waiting_child_status = nullptr;
                     }
                     p->waiting_child_pid = 0;
@@ -137,8 +141,8 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
                         Scheduler::set_task_ready(*p);
                         if (TASK_STACK_PTR(p)) {
                             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                            auto* stack = reinterpret_cast<uint64_t*>(
-                                TASK_STACK_PTR(p));
+                            auto *stack =
+                                reinterpret_cast<uint64_t *>(TASK_STACK_PTR(p));
                             stack[0] = t->id;
                         }
                     }
@@ -151,11 +155,11 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 }
 
 uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t,
-    uint64_t*) {
+                             uint64_t *) {
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto tv_ptr = checked(reinterpret_cast<Timeval*>(arg0));
-    if (syscall_is_user_task() && !tv_ptr.valid()) return static_cast<uint64_t>(
-        -1);
+    auto tv_ptr = checked(reinterpret_cast<Timeval *>(arg0));
+    if (syscall_is_user_task() && !tv_ptr.valid())
+        return static_cast<uint64_t>(-1);
 
     uint64_t secs = arch::RTC::read_seconds();
     Timeval tv = {};
@@ -166,11 +170,11 @@ uint64_t Syscall::sys_gettod(uint64_t arg0, uint64_t, uint64_t, uint64_t,
 }
 
 uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
-    uint64_t*) {
+                            uint64_t *) {
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto uts_ptr = checked(reinterpret_cast<Utsname*>(arg0));
-    if (syscall_is_user_task() && !uts_ptr.valid()
-        ) return static_cast<uint64_t>(-1);
+    auto uts_ptr = checked(reinterpret_cast<Utsname *>(arg0));
+    if (syscall_is_user_task() && !uts_ptr.valid())
+        return static_cast<uint64_t>(-1);
 
     Utsname uts{};
     strlcpy(uts.sysname, "Jarvis", sizeof(uts.sysname));
@@ -183,33 +187,42 @@ uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     return 0;
 }
 
-uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_pause(uint64_t, uint64_t, uint64_t, uint64_t,
+                            uint64_t *) {
     arch::hlt();
     return 0;
 }
 
-uint64_t Syscall::sys_reboot(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_reboot(uint64_t, uint64_t, uint64_t, uint64_t,
+                             uint64_t *) {
     // PS/2 controller CPU reset: write 0xFE to port 0x64
     arch::outb(0x64, 0xFE);
     arch::io_wait();
     // If reset fails, halt
     arch::cli();
-    for (;;) { arch::hlt(); }
+    for (;;) {
+        arch::hlt();
+    }
 }
 
-uint64_t Syscall::sys_halt(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t*) {
+uint64_t Syscall::sys_halt(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t *) {
     arch::cli();
-    for (;;) { arch::hlt(); }
+    for (;;) {
+        arch::hlt();
+    }
 }
 
-uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*) {
-    static sync::SpinLock brk_lock;
+uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t,
+                          uint64_t *) {
+    static sync::SpinLock brk_lock{};
     SpinLockGuard<sync::SpinLock> guard(brk_lock);
-    auto* t = syscall_task();
-    if (!t) return static_cast<uint64_t>(-1);
+    auto *t = syscall_task();
+    if (!t)
+        return static_cast<uint64_t>(-1);
 
     // Query mode
-    if (arg0 == 0) return t->program_break;
+    if (arg0 == 0)
+        return t->program_break;
 
     // Cannot shrink below start
     if (arg0 < t->program_break_start)
@@ -223,17 +236,22 @@ uint64_t Syscall::sys_brk(uint64_t arg0, uint64_t, uint64_t, uint64_t, uint64_t*
 
     // Expand: map new pages
     if (arg0 > old_break) {
-        uint64_t start_page = (old_break + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
-        uint64_t end_page = (arg0 + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
-        for (uint64_t vaddr = start_page; vaddr < end_page; vaddr += arch::PAGE_SIZE) {
+        uint64_t start_page =
+            (old_break + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
+        uint64_t end_page =
+            (arg0 + arch::PAGE_SIZE - 1) & ~(arch::PAGE_SIZE - 1);
+        for (uint64_t vaddr = start_page; vaddr < end_page;
+             vaddr += arch::PAGE_SIZE) {
             // Check if already mapped
             if (VMM::virt_to_phys_in_pml4(vaddr, t->page_table_) != 0)
                 continue;
             uint64_t phys = PMM::alloc_user_page();
-            if (!phys) return static_cast<uint64_t>(-1);
+            if (!phys)
+                return static_cast<uint64_t>(-1);
             VMM::map_page_in_pml4(vaddr, phys, true, t->page_table_);
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            __builtin_memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + phys), 0, arch::PAGE_SIZE);
+            __builtin_memset(reinterpret_cast<void *>(arch::HHDM_OFFSET + phys),
+                             0, arch::PAGE_SIZE);
         }
     }
 
@@ -253,9 +271,11 @@ enum RlimitResource : uint8_t {
     RLIMIT_NOFILE = 2,
 };
 
-uint64_t Syscall::sys_getrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
-    auto* t = syscall_task();
-    if (!t) return static_cast<uint64_t>(-1);
+uint64_t Syscall::sys_getrlimit(uint64_t arg0, uint64_t arg1, uint64_t,
+                                uint64_t, uint64_t *) {
+    auto *t = syscall_task();
+    if (!t)
+        return static_cast<uint64_t>(-1);
 
     Rlimit rl = {};
     switch (arg0) {
@@ -276,19 +296,23 @@ uint64_t Syscall::sys_getrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
     }
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto rl_ptr = checked(reinterpret_cast<Rlimit*>(arg1));
-    if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
+    auto rl_ptr = checked(reinterpret_cast<Rlimit *>(arg1));
+    if (syscall_is_user_task() && !rl_ptr.valid())
+        return static_cast<uint64_t>(-1);
     *rl_ptr.unsafe_ptr() = rl;
     return 0;
 }
 
-uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t, uint64_t*) {
-    auto* t = syscall_task();
-    if (!t) return static_cast<uint64_t>(-1);
+uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t,
+                                uint64_t, uint64_t *) {
+    auto *t = syscall_task();
+    if (!t)
+        return static_cast<uint64_t>(-1);
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto rl_ptr = checked(reinterpret_cast<const Rlimit*>(arg1));
-    if (syscall_is_user_task() && !rl_ptr.valid()) return static_cast<uint64_t>(-1);
+    auto rl_ptr = checked(reinterpret_cast<const Rlimit *>(arg1));
+    if (syscall_is_user_task() && !rl_ptr.valid())
+        return static_cast<uint64_t>(-1);
     Rlimit rl = *rl_ptr.unsafe_ptr();
     (void)rl;
     (void)arg0;
@@ -296,95 +320,138 @@ uint64_t Syscall::sys_setrlimit(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t
 }
 
 uint64_t Syscall::sys_getrandom(uint64_t arg0, uint64_t arg1, uint64_t arg2,
-    uint64_t, uint64_t*) {
+                                uint64_t, uint64_t *) {
     // arg0 = buffer, arg1 = length, arg2 = flags (reserved, must be 0)
-    if (arg2 != 0) return static_cast<uint64_t>(-1);
-    if (arg1 == 0) return 0;
+    if (arg2 != 0)
+        return static_cast<uint64_t>(-1);
+    if (arg1 == 0)
+        return 0;
 
     if (syscall_is_user_task()) {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        auto buf = checked(reinterpret_cast<uint8_t*>(arg0), arg1);
-        if (!buf.valid()) return static_cast<uint64_t>(-1);
+        auto buf = checked(reinterpret_cast<uint8_t *>(arg0), arg1);
+        if (!buf.valid())
+            return static_cast<uint64_t>(-1);
         random_fill(buf.unsafe_ptr(), static_cast<size_t>(arg1));
     } else {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        random_fill(reinterpret_cast<uint8_t*>(arg0), static_cast<size_t>(arg1));
+        random_fill(reinterpret_cast<uint8_t *>(arg0),
+                    static_cast<size_t>(arg1));
     }
     return arg1;
 }
 
 uint64_t Syscall::sys_klog(uint64_t arg0, uint64_t arg1, uint64_t arg2,
-    uint64_t, uint64_t*) {
+                           uint64_t, uint64_t *) {
     // arg0 = buffer, arg1 = size, arg2 = flags (0=read, 1=clear)
     if (arg2 == 1) {
         kernel::log::g_dmesg.clear();
         return 0;
     }
-    if (arg0 == 0 || arg1 == 0) return 0;
+    if (arg0 == 0 || arg1 == 0)
+        return 0;
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    char* user_buf = reinterpret_cast<char*>(arg0);
+    char *user_buf = reinterpret_cast<char *>(arg0);
     size_t user_size = static_cast<size_t>(arg1);
     size_t written = 0;
 
     if (syscall_is_user_task()) {
         auto buf = checked(user_buf, user_size);
-        if (!buf.valid()) return static_cast<uint64_t>(-1);
+        if (!buf.valid())
+            return static_cast<uint64_t>(-1);
         user_buf = buf.unsafe_ptr();
     }
 
-    kernel::log::g_dmesg.for_each([&](const kernel::log::LogEntry& e) {
-        if (written >= user_size) return;
+    kernel::log::g_dmesg.for_each([&](const kernel::log::LogEntry &e) {
+        if (written >= user_size)
+            return;
         char entry_buf[256];
-        char* p = entry_buf;
-        char* end = entry_buf + sizeof(entry_buf) - 1;
+        char *p = entry_buf;
+        char *end = entry_buf + sizeof(entry_buf) - 1;
 
-        const char* prefix = "[DMESG] TS=";
-        while (*prefix && p < end) *p++ = *prefix++;
-        
+        const char *prefix = "[DMESG] TS=";
+        while (*prefix && p < end)
+            *p++ = *prefix++;
+
         uint64_t ts = e.timestamp;
-        char tsbuf[24]; int tlen = 0;
-        if (ts == 0) tsbuf[tlen++] = '0';
-        else { while (ts > 0 && tlen < 23) {             tsbuf[tlen++] = static_cast<char>('0' + (ts % 10)); ts /= 10; } }
-        for (int i = 0; i < tlen/2; ++i) { char c = tsbuf[i]; tsbuf[i] = tsbuf[tlen-1-i]; tsbuf[tlen-1-i] = c; }
-        for (int i = 0; i < tlen && p < end; ++i) *p++ = tsbuf[i];
+        char tsbuf[24];
+        int tlen = 0;
+        if (ts == 0)
+            tsbuf[tlen++] = '0';
+        else {
+            while (ts > 0 && tlen < 23) {
+                tsbuf[tlen++] = static_cast<char>('0' + (ts % 10));
+                ts /= 10;
+            }
+        }
+        for (int i = 0; i < tlen / 2; ++i) {
+            char c = tsbuf[i];
+            tsbuf[i] = tsbuf[tlen - 1 - i];
+            tsbuf[tlen - 1 - i] = c;
+        }
+        for (int i = 0; i < tlen && p < end; ++i)
+            *p++ = tsbuf[i];
 
-        const char* task_str = " TASK=";
-        while (*task_str && p < end) *p++ = *task_str++;
+        const char *task_str = " TASK=";
+        while (*task_str && p < end)
+            *p++ = *task_str++;
         uint64_t tid = e.task_id;
-        char tidbuf[24]; int tidlen = 0;
-        if (tid == 0) tidbuf[tidlen++] = '0';
-        else { while (tid > 0 && tidlen < 23) {             tidbuf[tidlen++] = static_cast<char>('0' + (tid % 10)); tid /= 10; } }
-        for (int i = 0; i < tidlen/2; ++i) { char c = tidbuf[i]; tidbuf[i] = tidbuf[tidlen-1-i]; tidbuf[tidlen-1-i] = c; }
-        for (int i = 0; i < tidlen && p < end; ++i) *p++ = tidbuf[i];
+        char tidbuf[24];
+        int tidlen = 0;
+        if (tid == 0)
+            tidbuf[tidlen++] = '0';
+        else {
+            while (tid > 0 && tidlen < 23) {
+                tidbuf[tidlen++] = static_cast<char>('0' + (tid % 10));
+                tid /= 10;
+            }
+        }
+        for (int i = 0; i < tidlen / 2; ++i) {
+            char c = tidbuf[i];
+            tidbuf[i] = tidbuf[tidlen - 1 - i];
+            tidbuf[tidlen - 1 - i] = c;
+        }
+        for (int i = 0; i < tidlen && p < end; ++i)
+            *p++ = tidbuf[i];
 
-        const char* err_str = " ERR=";
-        while (*err_str && p < end) *p++ = *err_str++;
-        const char* sub = kernel::log::subsystem_name(e.subsystem);
-        while (*sub && p < end) *p++ = *sub++;
+        const char *err_str = " ERR=";
+        while (*err_str && p < end)
+            *p++ = *err_str++;
+        const char *sub = kernel::log::subsystem_name(e.subsystem);
+        while (*sub && p < end)
+            *p++ = *sub++;
         *p++ = ':';
-        const char* err_name = kernel::log::error_string(e.subsystem, e.error_code);
-        while (*err_name && p < end) *p++ = *err_name++;
+        const char *err_name =
+            kernel::log::error_string(e.subsystem, e.error_code);
+        while (*err_name && p < end)
+            *p++ = *err_name++;
 
-        const char* ctx_str = " CTX=";
-        while (*ctx_str && p < end) *p++ = *ctx_str++;
+        const char *ctx_str = " CTX=";
+        while (*ctx_str && p < end)
+            *p++ = *ctx_str++;
         uintptr_t ctx = e.context;
-        *p++ = '0'; *p++ = 'x';
-        for (int i = (sizeof(uintptr_t)*2)-1; i >= 0 && p < end; --i) {
-            uint8_t nib = (ctx >> (i*4)) & 0xF;
+        *p++ = '0';
+        *p++ = 'x';
+        for (int i = (sizeof(uintptr_t) * 2) - 1; i >= 0 && p < end; --i) {
+            uint8_t nib = (ctx >> (i * 4)) & 0xF;
             *p++ = static_cast<char>(nib < 10 ? '0' + nib : 'a' + (nib - 10));
         }
 
-        const char* msg_str = ": ";
-        while (*msg_str && p < end) *p++ = *msg_str++;
-        const char* msg = e.message ? e.message : "(null)";
-        while (*msg && p < end) *p++ = *msg++;
+        const char *msg_str = ": ";
+        while (*msg_str && p < end)
+            *p++ = *msg_str++;
+        const char *msg = e.message ? e.message : "(null)";
+        while (*msg && p < end)
+            *p++ = *msg++;
 
         *p++ = '\n';
         *p = '\0';
 
         size_t entry_len = p - entry_buf;
-        size_t copy_len = (written + entry_len <= user_size) ? entry_len : (user_size - written);
+        size_t copy_len = (written + entry_len <= user_size)
+                              ? entry_len
+                              : (user_size - written);
         if (copy_len > 0) {
             memcpy(user_buf + written, entry_buf, copy_len);
             written += copy_len;

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,20 +31,21 @@ namespace sync {
 
 /// @brief Simple busy-wait spinlock using atomic_test_and_set.
 class SpinLock {
-public:
+  public:
     SpinLock() = default;
 
-    SpinLock(const SpinLock&)            = delete;
-    SpinLock& operator=(const SpinLock&) = delete;
-    SpinLock(SpinLock&&)                 = delete;
-    SpinLock& operator=(SpinLock&&)      = delete;
+    SpinLock(const SpinLock &) = delete;
+    SpinLock &operator=(const SpinLock &) = delete;
+    SpinLock(SpinLock &&) = delete;
+    SpinLock &operator=(SpinLock &&) = delete;
 
     /// @brief Acquire the lock (spin until available).
     void lock() noexcept {
         while (atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE)) {
             arch::pause();
         }
-        __atomic_store_n(&holder_, __builtin_return_address(0), __ATOMIC_RELAXED);
+        __atomic_store_n(&holder_, __builtin_return_address(0),
+                         __ATOMIC_RELAXED);
     }
 
     /// @brief Release the lock.
@@ -51,7 +54,8 @@ public:
         __atomic_store_n(&holder_, nullptr, __ATOMIC_RELAXED);
     }
 
-    /// @brief Force-unlock (used to initialise a lock after MemPool allocation).
+    /// @brief Force-unlock (used to initialise a lock after MemPool
+    /// allocation).
     void reset() noexcept {
         locked_ = 0;
         holder_ = nullptr;
@@ -62,16 +66,19 @@ public:
     bool try_lock() noexcept {
         bool acquired = !atomic_exchange(&locked_, 1, __ATOMIC_ACQUIRE);
         if (acquired) {
-            __atomic_store_n(&holder_, __builtin_return_address(0), __ATOMIC_RELAXED);
+            __atomic_store_n(&holder_, __builtin_return_address(0),
+                             __ATOMIC_RELAXED);
         }
         return acquired;
     }
 
-    const void* holder() const noexcept { return __atomic_load_n(&holder_, __ATOMIC_RELAXED); }
+    const void *holder() const noexcept {
+        return __atomic_load_n(&holder_, __ATOMIC_RELAXED);
+    }
 
- private:
+  private:
     int locked_ = 0; ///< 0 = unlocked, 1 = locked.
-    const void* holder_ = nullptr;
+    const void *holder_ = nullptr;
 };
 
 } // namespace sync

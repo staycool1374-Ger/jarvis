@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Kernel Log Consumer Task
  */

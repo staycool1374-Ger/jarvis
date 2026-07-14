@@ -41,11 +41,12 @@ void test_cleanup_all() {
     daemon::restart_stale_daemons();
 
     // ---- 2. Clean up any remaining non-idle, non-current tasks ----
-    auto* current = Scheduler::current_task();
-    auto* idle = Scheduler::get_idle_task();
+    auto *current = Scheduler::current_task();
+    auto *idle = Scheduler::get_idle_task();
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (!t || t == idle || t == current) continue;
+        auto *t = Scheduler::task_at(i);
+        if (!t || t == idle || t == current)
+            continue;
         t->state = TaskState::TERMINATED;
         t->exit_code = 0;
     }
@@ -62,4 +63,4 @@ void test_cleanup_all() {
     ResourceTracker::instance().restore(zero);
 }
 
-}
+} // namespace kernel::test

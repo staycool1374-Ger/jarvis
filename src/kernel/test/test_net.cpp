@@ -67,8 +67,8 @@ JARVIS_TEST(net_ipv4_addr_roundtrip, "PRE: none | POST: none") {
 // Runmode: kernel
 // Testidea: Verifies ARP cache add, lookup, remove, and clear operations.
 // Input: net::ArpCache
-// Expect: add + lookup returns correct entry, remove removes it, clear clears all
-// Depends: net::ArpCache, net::MacAddr
+// Expect: add + lookup returns correct entry, remove removes it, clear clears
+// all Depends: net::ArpCache, net::MacAddr
 JARVIS_TEST(net_arp_cache_ops, "PRE: none | POST: none") {
     net::ArpCache cache;
     net::MacAddr mac = {{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01}};
@@ -97,12 +97,12 @@ JARVIS_TEST(net_arp_cache_ops, "PRE: none | POST: none") {
 // Depends: net::ipv4_checksum
 JARVIS_TEST(net_ipv4_checksum, "PRE: none | POST: none") {
     net::Ipv4Header hdr = {};
-    hdr.ver_ihl      = 0x45;
+    hdr.ver_ihl = 0x45;
     hdr.total_length = __builtin_bswap16(20);
-    hdr.ident        = __builtin_bswap16(1);
-    hdr.flags_frag   = __builtin_bswap16(0x4000);
-    hdr.ttl          = 64;
-    hdr.protocol     = 17;  // UDP
+    hdr.ident = __builtin_bswap16(1);
+    hdr.flags_frag = __builtin_bswap16(0x4000);
+    hdr.ttl = 64;
+    hdr.protocol = 17; // UDP
     hdr.src = net::Ipv4Addr::from_u32(0xC0A80101);
     hdr.dst = net::Ipv4Addr::from_u32(0xC0A80102);
     hdr.checksum = 0;

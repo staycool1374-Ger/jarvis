@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -28,7 +30,7 @@
 
 /// @brief QEMU virt riscv64 ECAM base address (PCIe configuration space)
 #ifndef CONFIG_PCI_ECAM_BASE
-#define CONFIG_PCI_ECAM_BASE 0x100000000ULL  // 4GB default
+#define CONFIG_PCI_ECAM_BASE 0x100000000ULL // 4GB default
 #endif
 
 /// @brief Base physical address of the PCI ECAM region.
@@ -41,11 +43,9 @@ constexpr uint64_t PCI_ECAM_SIZE = 0x100000000ULL;
 /// @param reg Register offset within the config space.
 /// @return Physical address of the register in ECAM space.
 inline uint64_t pci_ecam_addr(PciBdf bdf, uint8_t reg) {
-    return PCI_ECAM_BASE
-         | (static_cast<uint64_t>(bdf.bus)      << 20)
-         | (static_cast<uint64_t>(bdf.device)    << 15)
-         | (static_cast<uint64_t>(bdf.function)  << 12)
-         | reg;
+    return PCI_ECAM_BASE | (static_cast<uint64_t>(bdf.bus) << 20) |
+           (static_cast<uint64_t>(bdf.device) << 15) |
+           (static_cast<uint64_t>(bdf.function) << 12) | reg;
 }
 
 /// @brief Read a 32-bit value from PCI config space via ECAM.
@@ -53,7 +53,8 @@ inline uint64_t pci_ecam_addr(PciBdf bdf, uint8_t reg) {
 /// @param reg Register offset.
 /// @return 32-bit value read.
 inline uint32_t pci_ecam_readl(PciBdf bdf, uint8_t reg) {
-    volatile uint32_t* addr = reinterpret_cast<volatile uint32_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint32_t *addr =
+        reinterpret_cast<volatile uint32_t *>(pci_ecam_addr(bdf, reg));
     return *addr;
 }
 
@@ -62,7 +63,8 @@ inline uint32_t pci_ecam_readl(PciBdf bdf, uint8_t reg) {
 /// @param reg Register offset.
 /// @return 16-bit value read.
 inline uint16_t pci_ecam_readw(PciBdf bdf, uint8_t reg) {
-    volatile uint16_t* addr = reinterpret_cast<volatile uint16_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint16_t *addr =
+        reinterpret_cast<volatile uint16_t *>(pci_ecam_addr(bdf, reg));
     return *addr;
 }
 
@@ -71,7 +73,8 @@ inline uint16_t pci_ecam_readw(PciBdf bdf, uint8_t reg) {
 /// @param reg Register offset.
 /// @return 8-bit value read.
 inline uint8_t pci_ecam_readb(PciBdf bdf, uint8_t reg) {
-    volatile uint8_t* addr = reinterpret_cast<volatile uint8_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint8_t *addr =
+        reinterpret_cast<volatile uint8_t *>(pci_ecam_addr(bdf, reg));
     return *addr;
 }
 
@@ -80,7 +83,8 @@ inline uint8_t pci_ecam_readb(PciBdf bdf, uint8_t reg) {
 /// @param reg Register offset.
 /// @param val Value to write.
 inline void pci_ecam_writel(PciBdf bdf, uint8_t reg, uint32_t val) {
-    volatile uint32_t* addr = reinterpret_cast<volatile uint32_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint32_t *addr =
+        reinterpret_cast<volatile uint32_t *>(pci_ecam_addr(bdf, reg));
     *addr = val;
 }
 
@@ -89,7 +93,8 @@ inline void pci_ecam_writel(PciBdf bdf, uint8_t reg, uint32_t val) {
 /// @param reg Register offset.
 /// @param val Value to write.
 inline void pci_ecam_writew(PciBdf bdf, uint8_t reg, uint16_t val) {
-    volatile uint16_t* addr = reinterpret_cast<volatile uint16_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint16_t *addr =
+        reinterpret_cast<volatile uint16_t *>(pci_ecam_addr(bdf, reg));
     *addr = val;
 }
 
@@ -98,7 +103,8 @@ inline void pci_ecam_writew(PciBdf bdf, uint8_t reg, uint16_t val) {
 /// @param reg Register offset.
 /// @param val Value to write.
 inline void pci_ecam_writeb(PciBdf bdf, uint8_t reg, uint8_t val) {
-    volatile uint8_t* addr = reinterpret_cast<volatile uint8_t*>(pci_ecam_addr(bdf, reg));
+    volatile uint8_t *addr =
+        reinterpret_cast<volatile uint8_t *>(pci_ecam_addr(bdf, reg));
     *addr = val;
 }
 

@@ -22,8 +22,9 @@ namespace kernel::task {
 
 namespace {
 
-void format_u64(char*& p, char* end, uint64_t v) {
-    if (p >= end) return;
+void format_u64(char *&p, char *end, uint64_t v) {
+    if (p >= end)
+        return;
     char buf[24];
     int len = 0;
     if (v == 0) {
@@ -39,61 +40,75 @@ void format_u64(char*& p, char* end, uint64_t v) {
             buf[len - 1 - i] = c;
         }
     }
-    for (int i = 0; i < len && p < end; ++i) *p++ = buf[i];
+    for (int i = 0; i < len && p < end; ++i)
+        *p++ = buf[i];
 }
 
-void format_hex(char*& p, char* end, uintptr_t v) {
-    if (p + 2 >= end) return;
+void format_hex(char *&p, char *end, uintptr_t v) {
+    if (p + 2 >= end)
+        return;
     *p++ = '0';
     *p++ = 'x';
     for (int i = (sizeof(uintptr_t) * 2) - 1; i >= 0 && p < end; --i) {
         uint8_t nibble = (v >> (i * 4)) & 0xF;
-        *p++ = static_cast<char>(nibble < 10 ? '0' + nibble : 'a' + (nibble - 10));
+        *p++ =
+            static_cast<char>(nibble < 10 ? '0' + nibble : 'a' + (nibble - 10));
     }
 }
 
 } // anonymous namespace
 
 void dmesg_task_main() {
-    log::LogEntry entry;
+    log::LogEntry entry{};
     char buf[256];
 
     while (true) {
+        arch::pause();
         while (log::g_dmesg.pop(entry)) {
-            char* p = buf;
-            char* end = buf + sizeof(buf) - 1;
+            char *p = buf;
+            char *end = buf + sizeof(buf) - 1;
 
-            const char* prefix = "[DMESG] TS=";
-            while (*prefix && p < end) *p++ = *prefix++;
+            const char *prefix = "[DMESG] TS=";
+            while (*prefix && p < end)
+                *p++ = *prefix++;
             format_u64(p, end, entry.timestamp);
 
-            const char* task_str = " TASK=";
-            while (*task_str && p < end) *p++ = *task_str++;
+            const char *task_str = " TASK=";
+            while (*task_str && p < end)
+                *p++ = *task_str++;
             format_u64(p, end, entry.task_id);
 
-            const char* err_str = " ERR=";
-            while (*err_str && p < end) *p++ = *err_str++;
-            const char* sub = log::subsystem_name(entry.subsystem);
-            while (*sub && p < end) *p++ = *sub++;
+            const char *err_str = " ERR=";
+            while (*err_str && p < end)
+                *p++ = *err_str++;
+            const char *sub = log::subsystem_name(entry.subsystem);
+            while (*sub && p < end)
+                *p++ = *sub++;
             *p++ = ':';
-            const char* err_name = log::error_string(entry.subsystem, entry.error_code);
-            while (*err_name && p < end) *p++ = *err_name++;
+            const char *err_name =
+                log::error_string(entry.subsystem, entry.error_code);
+            while (*err_name && p < end)
+                *p++ = *err_name++;
 
-            const char* ctx_str = " CTX=";
-            while (*ctx_str && p < end) *p++ = *ctx_str++;
+            const char *ctx_str = " CTX=";
+            while (*ctx_str && p < end)
+                *p++ = *ctx_str++;
             format_hex(p, end, entry.context);
 
-            const char* msg_str = ": ";
-            while (*msg_str && p < end) *p++ = *msg_str++;
-            const char* msg = entry.message ? entry.message : "(null)";
-            while (*msg && p < end) *p++ = *msg++;
+            const char *msg_str = ": ";
+            while (*msg_str && p < end)
+                *p++ = *msg_str++;
+            const char *msg = entry.message ? entry.message : "(null)";
+            while (*msg && p < end)
+                *p++ = *msg++;
 
             *p++ = '\n';
             *p = '\0';
 
             arch::Serial::puts(buf);
 
-            for (int i = 0; i < 100; ++i) arch::pause();
+            for (int i = 0; i < 100; ++i)
+                arch::pause();
         }
 
         kernel::Scheduler::reschedule();

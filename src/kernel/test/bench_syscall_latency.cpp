@@ -37,16 +37,18 @@ struct BenchResult {
     uint64_t max;
 };
 
-template<typename F>
-static BenchResult measure(F fn) {
+template <typename F> static BenchResult measure(F fn) {
     BenchResult r = {~0ULL, 0, 0};
-    for (size_t i = 0; i < 100; ++i) fn();
+    for (size_t i = 0; i < 100; ++i)
+        fn();
     for (size_t i = 0; i < BENCH_ITERATIONS; ++i) {
         uint64_t t0 = arch::rdtsc();
         fn();
         uint64_t elapsed = arch::rdtsc() - t0;
-        if (elapsed < r.min) r.min = elapsed;
-        if (elapsed > r.max) r.max = elapsed;
+        if (elapsed < r.min)
+            r.min = elapsed;
+        if (elapsed > r.max)
+            r.max = elapsed;
         r.avg += elapsed;
     }
     r.avg /= BENCH_ITERATIONS;
@@ -60,11 +62,9 @@ static BenchResult measure(F fn) {
 // Depends: SpinLock, arch::rdtsc
 JARVIS_TEST(bench_spinlock_acquire_release, "PRE: none | POST: none") {
     sync::SpinLock lock;
-    auto r = measure([&lock]() {
-        SpinLockGuard<sync::SpinLock> g(lock);
-    });
-    Logger::info("spinlock_lock_unlock: min=%lu, avg=%lu, max=%lu",
-                 r.min, r.avg, r.max);
+    auto r = measure([&lock]() { SpinLockGuard<sync::SpinLock> g(lock); });
+    Logger::info("spinlock_lock_unlock: min=%lu, avg=%lu, max=%lu", r.min,
+                 r.avg, r.max);
     JARVIS_ASSERT(r.avg > 0);
     JARVIS_TEST_PASS();
 }
@@ -80,8 +80,8 @@ JARVIS_TEST(bench_mutex_acquire_release, "PRE: none | POST: none") {
         mtx.lock();
         mtx.unlock();
     });
-    Logger::info("mutex_lock_unlock: min=%lu, avg=%lu, max=%lu",
-                 r.min, r.avg, r.max);
+    Logger::info("mutex_lock_unlock: min=%lu, avg=%lu, max=%lu", r.min, r.avg,
+                 r.max);
     JARVIS_ASSERT(r.avg > 0);
     JARVIS_TEST_PASS();
 }
@@ -98,8 +98,8 @@ JARVIS_TEST(bench_spsc_push_pop, "PRE: none | POST: none") {
         uint64_t v;
         ring.try_pop(v);
     });
-    Logger::info("spsc_push_pop: min=%lu, avg=%lu, max=%lu",
-                 r.min, r.avg, r.max);
+    Logger::info("spsc_push_pop: min=%lu, avg=%lu, max=%lu", r.min, r.avg,
+                 r.max);
     JARVIS_ASSERT(r.avg > 0);
     JARVIS_TEST_PASS();
 }

@@ -43,7 +43,7 @@ using namespace kernel;
 // stack_phys_ becomes 0
 // Depends: kernel::TaskControlBlock
 JARVIS_TEST(task_cleanup_frees_resources, "PRE: none | POST: none") {
-    auto* tcb = TaskControlBlock::create([]() {}, 1, 10);
+    auto *tcb = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->kernel_stack != nullptr);
     JARVIS_ASSERT(tcb->msg_queue != nullptr);
@@ -69,7 +69,7 @@ JARVIS_TEST(task_cleanup_frees_resources, "PRE: none | POST: none") {
 // Expect: page_table_ != 0, user_stack_ != 0, user_stack_size_ == 32_KiB
 // Depends: kernel::TaskControlBlock
 JARVIS_TEST(task_create_user_page_table, "PRE: none | POST: none") {
-    auto* tcb = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    auto *tcb = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->page_table_ != 0);
     JARVIS_ASSERT(tcb->user_stack_ != 0);
@@ -88,7 +88,7 @@ JARVIS_TEST(task_create_user_page_table, "PRE: none | POST: none") {
 // child->page_table_shared_ == true, child->user_stack_ != 0
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
     JARVIS_ASSERT(parent->page_table_ != 0);
@@ -103,7 +103,7 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     regs[20] = 0x80000000;
     regs[21] = arch::SEG_USER_DATA;
 
-    auto* child = TaskControlBlock::clone(regs);
+    auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
     JARVIS_ASSERT(child->page_table_ != 0);
     JARVIS_ASSERT(child->page_table_shared_ == true);
@@ -127,20 +127,21 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
 JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
     // Find a test ELF in initrd
     initrd::InitrdFile f = initrd::find("./user-app.c.elf");
-    if (!f.data) f = initrd::find("user-app.c.elf");
+    if (!f.data)
+        f = initrd::find("user-app.c.elf");
     if (!f.data) {
         // No test ELF available, skip with pass
         JARVIS_TEST_PASS();
         return;
     }
 
-    auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+    auto *hdr = reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
     if (!kernel::elf::validate_header(hdr)) {
         JARVIS_TEST_PASS();
         return;
     }
 
-    auto* tcb = kernel::elf::load(hdr, f.data);
+    auto *tcb = kernel::elf::load(hdr, f.data);
     JARVIS_ASSERT(tcb != nullptr);
 
     // ELF load should have called init_task_common, so IPC objects should be
@@ -162,17 +163,21 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
 // address, cleanup/delete child
 // Expect: parent->page_table_ unchanged and non-null after child cleanup
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
-JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages,
+            "PRE: none | POST: none") {
+    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
     kernel::test::ScopedCurrentTask _scoped(*parent);
     uint64_t regs[22] = {};
-    regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
+    regs[17] = 0x1000;
+    regs[18] = arch::SEG_USER_CODE;
+    regs[19] = arch::RFLAGS_DEFAULT;
+    regs[20] = 0x80000000;
+    regs[21] = arch::SEG_USER_DATA;
 
-    auto* child = TaskControlBlock::clone(regs);
+    auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
     JARVIS_ASSERT(child->page_table_shared_ == true);
 
@@ -202,16 +207,19 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages, "PRE: none | POST: n
 JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     uint64_t free_before = PMM::free_memory();
 
-    auto* parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
     kernel::test::ScopedCurrentTask _scoped(*parent);
     uint64_t regs[22] = {};
-    regs[17] = 0x1000; regs[18] = arch::SEG_USER_CODE; regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000; regs[21] = arch::SEG_USER_DATA;
+    regs[17] = 0x1000;
+    regs[18] = arch::SEG_USER_CODE;
+    regs[19] = arch::RFLAGS_DEFAULT;
+    regs[20] = 0x80000000;
+    regs[21] = arch::SEG_USER_DATA;
 
-    auto* child = TaskControlBlock::clone(regs);
+    auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
 
     child->cleanup();

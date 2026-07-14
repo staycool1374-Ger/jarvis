@@ -27,5 +27,5 @@ namespace sync {
 void init_all() {
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

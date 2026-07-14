@@ -31,7 +31,8 @@ namespace sync {
 EventGroup::~EventGroup() {
     SpinLockGuard<SpinLock> guard(lock_);
     for (size_t i = 0; i < wait_count_; ++i) {
-        if (waiters_[i].task && waiters_[i].task->state != TaskState::TERMINATED)
+        if (waiters_[i].task &&
+            waiters_[i].task->state != TaskState::TERMINATED)
             Scheduler::set_task_ready(*waiters_[i].task);
     }
     wait_count_ = 0;
@@ -84,10 +85,11 @@ errors::SyncError EventGroup::clear_bits_err(uint64_t bits) {
 }
 
 /// @brief Add a task to the waiter array (caller must hold lock_).
-bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
-    ) {
+bool EventGroup::add_waiter(TaskControlBlock &task, uint64_t wanted,
+                            bool clear) {
     // Caller must hold lock_ (wait_bits already holds it)
-    if (wait_count_ >= MAX_WAITERS) return false;
+    if (wait_count_ >= MAX_WAITERS)
+        return false;
     waiters_[wait_count_].task = &task;
     waiters_[wait_count_].wanted_bits = wanted;
     waiters_[wait_count_].clear_on_exit = clear;
@@ -95,7 +97,8 @@ bool EventGroup::add_waiter(TaskControlBlock& task, uint64_t wanted, bool clear
     return true;
 }
 
-/// @brief Wake all waiters whose conditions are satisfied (caller must hold lock_).
+/// @brief Wake all waiters whose conditions are satisfied (caller must hold
+/// lock_).
 void EventGroup::wake_matching() {
     // Caller must hold lock_ (set_bits / wait_bits already hold it)
     for (size_t i = 0; i < wait_count_;) {
@@ -115,11 +118,13 @@ void EventGroup::wake_matching() {
 /// @brief Block until any of the requested bits are set.
 uint64_t EventGroup::wait_bits(uint64_t bits, bool clear_on_exit) {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return bits_;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return bits_;
 
     if ((bits_ & bits) == bits) {
-        if (clear_on_exit) bits_ &= ~bits;
+        if (clear_on_exit)
+            bits_ &= ~bits;
         return bits_;
     }
 
@@ -132,15 +137,20 @@ uint64_t EventGroup::wait_bits(uint64_t bits, bool clear_on_exit) {
     return bits_;
 }
 
-/// @brief Block until any of the requested bits are set (error-returning overload).
-errors::SyncError EventGroup::wait_bits_err(uint64_t bits, bool clear_on_exit, uint64_t* out_bits) {
+/// @brief Block until any of the requested bits are set (error-returning
+/// overload).
+errors::SyncError EventGroup::wait_bits_err(uint64_t bits, bool clear_on_exit,
+                                            uint64_t *out_bits) {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return errors::SYNC_ERR_NO_TASK;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return errors::SYNC_ERR_NO_TASK;
 
     if ((bits_ & bits) == bits) {
-        if (clear_on_exit) bits_ &= ~bits;
-        if (out_bits) *out_bits = bits_;
+        if (clear_on_exit)
+            bits_ &= ~bits;
+        if (out_bits)
+            *out_bits = bits_;
         return errors::SYNC_ERR_OK;
     }
 
@@ -156,7 +166,8 @@ errors::SyncError EventGroup::wait_bits_err(uint64_t bits, bool clear_on_exit, u
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();
 
-    if (out_bits) *out_bits = bits_;
+    if (out_bits)
+        *out_bits = bits_;
     return errors::SYNC_ERR_OK;
 }
 
@@ -166,11 +177,13 @@ bool EventGroup::try_wait_bits(uint64_t bits) {
 }
 
 /// @brief Check if bits are set without blocking (error-returning overload).
-errors::SyncError EventGroup::try_wait_bits_err(uint64_t bits, bool* out_result) {
+errors::SyncError EventGroup::try_wait_bits_err(uint64_t bits,
+                                                bool *out_result) {
     bool result = (bits_ & bits) == bits;
-    if (out_result) *out_result = result;
+    if (out_result)
+        *out_result = result;
     return errors::SYNC_ERR_OK;
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

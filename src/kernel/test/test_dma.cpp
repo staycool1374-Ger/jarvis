@@ -40,7 +40,7 @@ JARVIS_TEST(dma_alloc_buffer, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(buf.owned);
     JARVIS_ASSERT(buf.virt_addr != 0);
     // Verify zero-filled
-    auto* ptr = reinterpret_cast<volatile uint8_t*>(buf.virt_addr);
+    auto *ptr = reinterpret_cast<volatile uint8_t *>(buf.virt_addr);
     for (size_t i = 0; i < 64; ++i) {
         JARVIS_ASSERT_EQ(0, ptr[i]);
     }
@@ -56,8 +56,8 @@ JARVIS_TEST(dma_alloc_buffer, "PRE: iocd | POST: none") {
 JARVIS_TEST(dma_buffer_write_read, "PRE: iocd | POST: none") {
     auto buf = dma::alloc_buffer(4096);
     JARVIS_ASSERT(buf.phys_addr != 0);
-    auto* ptr = reinterpret_cast<uint8_t*>(buf.virt_addr);
-    const char* test_str = "DMA buffer test pattern";
+    auto *ptr = reinterpret_cast<uint8_t *>(buf.virt_addr);
+    const char *test_str = "DMA buffer test pattern";
     memcpy(ptr, test_str, 22);
     JARVIS_ASSERT_EQ(0, memcmp(ptr, test_str, 22));
     dma::free_buffer(buf);
@@ -189,10 +189,10 @@ JARVIS_TEST(dma_sg_non_contiguous_prd, "PRE: iocd | POST: none") {
     dma::sg_reset(sg);
     sg.entries[0].phys_addr = buf1.phys_addr;
     sg.entries[0].virt_addr = buf1.virt_addr;
-    sg.entries[0].length    = buf1.size;
+    sg.entries[0].length = buf1.size;
     sg.entries[1].phys_addr = buf2.phys_addr;
     sg.entries[1].virt_addr = buf2.virt_addr;
-    sg.entries[1].length    = buf2.size;
+    sg.entries[1].length = buf2.size;
     sg.count = 2;
     sg.total_length = buf1.size + buf2.size;
     dma::PrdTable prd;
@@ -215,12 +215,12 @@ static void dma_completion_cb(uint64_t ctx, bool success) {
     (void)success;
 }
 
-static void pp_chain_cb(uint64_t ctx, dma::DmaBuffer* buf, bool success) {
+static void pp_chain_cb(uint64_t ctx, dma::DmaBuffer *buf, bool success) {
     g_pp_chain_fired = true;
     // Fill the completed buffer with known pattern to simulate
     // the driver preparing it for the next cycle
     if (buf && buf->virt_addr) {
-        __builtin_memset(reinterpret_cast<void*>(buf->virt_addr), 0xCC,
+        __builtin_memset(reinterpret_cast<void *>(buf->virt_addr), 0xCC,
                          buf->size > 64 ? 64 : buf->size);
     }
     (void)ctx;
@@ -255,7 +255,7 @@ JARVIS_TEST(dma_completion_interrupt, "PRE: iocd | POST: none") {
 
     // Start transfer
     bool started = engine.start_transfer(prd, dma::Direction::READ,
-                                          dma_completion_cb, 0x42);
+                                         dma_completion_cb, 0x42);
     JARVIS_ASSERT(started);
     JARVIS_ASSERT(engine.is_busy());
 
@@ -296,10 +296,10 @@ JARVIS_TEST(dma_double_buffered_transfer, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(pp.init());
 
     // Both buffers are zero-filled from alloc; fill with patterns
-    dma::DmaBuffer* buf_a = pp.prepare_buf();
+    dma::DmaBuffer *buf_a = pp.prepare_buf();
     JARVIS_ASSERT(buf_a != nullptr);
     JARVIS_ASSERT(buf_a->phys_addr != 0);
-    __builtin_memset(reinterpret_cast<void*>(buf_a->virt_addr), 0xAA, 64);
+    __builtin_memset(reinterpret_cast<void *>(buf_a->virt_addr), 0xAA, 64);
 
     // Start first transfer (buffer A goes to DMA)
     bool started = pp.start_next(dma::Direction::READ, pp_chain_cb, 0x77);
@@ -307,13 +307,13 @@ JARVIS_TEST(dma_double_buffered_transfer, "PRE: iocd | POST: none") {
     JARVIS_ASSERT(pp.busy());
 
     // Buffer B should now be the prepare buffer
-    dma::DmaBuffer* buf_b = pp.prepare_buf();
+    dma::DmaBuffer *buf_b = pp.prepare_buf();
     JARVIS_ASSERT(buf_b != nullptr);
     JARVIS_ASSERT(buf_b->phys_addr != buf_a->phys_addr);
-    __builtin_memset(reinterpret_cast<void*>(buf_b->virt_addr), 0xBB, 64);
+    __builtin_memset(reinterpret_cast<void *>(buf_b->virt_addr), 0xBB, 64);
 
     // Verify buffer A data remains intact while B is being prepared
-    uint8_t* a_data = reinterpret_cast<uint8_t*>(buf_a->virt_addr);
+    uint8_t *a_data = reinterpret_cast<uint8_t *>(buf_a->virt_addr);
     for (int i = 0; i < 64; ++i) {
         JARVIS_ASSERT_EQ((uint8_t)0xAA, a_data[i]);
     }
@@ -332,12 +332,15 @@ JARVIS_TEST(dma_double_buffered_transfer, "PRE: iocd | POST: none") {
     // Buffer A is now the prepare buffer again — the chain callback on
     // completion writes 0xCC (simulating driver preparing for next cycle),
     // so verify the callback pattern, not the original fill.
-    dma::DmaBuffer* buf_a_again = pp.prepare_buf();
+    dma::DmaBuffer *buf_a_again = pp.prepare_buf();
     JARVIS_ASSERT(buf_a_again == buf_a);
-    uint8_t* a_data2 = reinterpret_cast<uint8_t*>(buf_a_again->virt_addr);
+    uint8_t *a_data2 = reinterpret_cast<uint8_t *>(buf_a_again->virt_addr);
     bool data_ok = true;
     for (int i = 0; i < 64; ++i) {
-        if (a_data2[i] != (uint8_t)0xCC) { data_ok = false; break; }
+        if (a_data2[i] != (uint8_t)0xCC) {
+            data_ok = false;
+            break;
+        }
     }
 
     // Simulate completion of transfer B

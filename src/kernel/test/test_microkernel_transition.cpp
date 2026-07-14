@@ -48,15 +48,17 @@ TEST_CLASS(KernelApiPureFunctions) {
     // This is expected for a kernel — but in a microkernel this
     // would be a syscall to a userspace IPC server.
     // Verify IPC::send only modifies the destination queue, nothing else.
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
-        uint64_t task_count_before = Scheduler::task_count();
+    uint64_t task_count_before = Scheduler::task_count();
 
     // IPC send to self
     Message msg{};
     msg.sender_id = cur->id;
-    msg.type = 1; msg.priority = 0; msg.data_size = 0;
+    msg.type = 1;
+    msg.priority = 0;
+    msg.data_size = 0;
     bool ok = IPC::send(cur->id, msg);
     CT_ASSERT(ok);
 
@@ -105,16 +107,16 @@ TEST_CLASS(MinimalPrivilegedSurface) {
 // integrity after.
 // Expect: Scheduler state remains consistent; other tasks unaffected.
 TEST_CLASS(UserspaceDriverIsolation) {
-    auto* driver_task = TaskControlBlock::create([]() {}, 5, 10);
+    auto *driver_task = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(driver_task != nullptr);
     Scheduler::add_task(*driver_task);
 
     // Create another task that should not be affected
-    auto* health_task = TaskControlBlock::create([]() {}, 5, 10);
+    auto *health_task = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(health_task != nullptr);
     Scheduler::add_task(*health_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     // Switch to driver task (simulate pre-crash state)
     Scheduler::set_current(*driver_task);
@@ -147,13 +149,15 @@ TEST_CLASS(UserspaceDriverIsolation) {
 // Input: 1000 self-send IPC operations.
 // Expect: All succeed; latency is bounded (no outliers > 5000 ticks).
 TEST_CLASS(IpcLatencyJitter) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
     CT_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
-    msg.type = 42; msg.priority = 0; msg.data_size = 0;
+    msg.type = 42;
+    msg.priority = 0;
+    msg.data_size = 0;
 
     uint64_t min_lat = UINT64_MAX;
     uint64_t max_lat = 0;
@@ -170,14 +174,16 @@ TEST_CLASS(IpcLatencyJitter) {
         CT_ASSERT(out.type == 42ULL);
         uint64_t t1 = arch::rdtsc();
         uint64_t lat = t1 - t0;
-        if (lat < min_lat) min_lat = lat;
-        if (lat > max_lat) max_lat = lat;
+        if (lat < min_lat)
+            min_lat = lat;
+        if (lat > max_lat)
+            max_lat = lat;
         total_lat += lat;
     }
 
     uint64_t avg_lat = total_lat / SAMPLES;
-    Logger::info("IPC latency: min=%llu, max=%llu, avg=%llu ticks",
-                 min_lat, max_lat, avg_lat);
+    Logger::info("IPC latency: min=%llu, max=%llu, avg=%llu ticks", min_lat,
+                 max_lat, avg_lat);
 
     // No hard assertion on bounds — just collect data.
     // On QEMU with emulated TSC, min_lat may be 0 if consecutive rdtsc
@@ -195,7 +201,8 @@ TEST_CLASS(IpcLatencyJitter) {
 TEST_CLASS(TimerDrift) {
     uint64_t tsc_start = arch::rdtsc();
     // Busy-wait a measurable period (approx 100k TSC cycles on QEMU)
-       for (uint64_t i = 0; i < 50000ULL; ++i) {}
+    for (uint64_t i = 0; i < 50000ULL; ++i) {
+    }
     uint64_t tsc_end = arch::rdtsc();
 
     CT_ASSERT(tsc_end > tsc_start);

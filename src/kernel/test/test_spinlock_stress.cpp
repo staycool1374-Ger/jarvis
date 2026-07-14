@@ -34,7 +34,7 @@ static uint64_t stress_counter_ = 0;
 static uint64_t stress_acquires_[4] = {};
 
 static void stress_worker() {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     size_t idx = cur ? (cur->id % 4) : 0;
     for (int i = 0; i < 100; ++i) {
         SpinLockGuard<sync::SpinLock> guard(stress_lock_);
@@ -43,7 +43,8 @@ static void stress_worker() {
         stress_counter_ = val + 1;
         ++stress_acquires_[idx];
     }
-    if (cur) cur->state = TaskState::TERMINATED;
+    if (cur)
+        cur->state = TaskState::TERMINATED;
 }
 
 // Runmode: kernel
@@ -53,9 +54,10 @@ static void stress_worker() {
 // Depends: SpinLock, Scheduler
 JARVIS_TEST(spinlock_multi_task_contention, "PRE: none | POST: none") {
     stress_counter_ = 0;
-    for (auto& a : stress_acquires_) a = 0;
+    for (auto &a : stress_acquires_)
+        a = 0;
 
-    TaskControlBlock* workers[4] = {};
+    TaskControlBlock *workers[4] = {};
     for (int i = 0; i < 4; ++i) {
         workers[i] = TaskControlBlock::create(stress_worker, 5, 10);
         JARVIS_ASSERT(workers[i] != nullptr);
@@ -76,14 +78,15 @@ JARVIS_TEST(spinlock_multi_task_contention, "PRE: none | POST: none") {
     for (int t = 0; t < 500; ++t) {
         Scheduler::reschedule();
         arch::hlt();
-        if (stress_counter_ >= 400) break;
+        if (stress_counter_ >= 400)
+            break;
     }
 
     JARVIS_ASSERT_EQ(400ULL, stress_counter_);
     for (int i = 0; i < 4; ++i) {
         JARVIS_ASSERT_FMT(stress_acquires_[i] > 0,
-                          "Worker %d acquired lock %lu times (expected > 0)",
-                          i, stress_acquires_[i]);
+                          "Worker %d acquired lock %lu times (expected > 0)", i,
+                          stress_acquires_[i]);
     }
 
     guard.dismiss();

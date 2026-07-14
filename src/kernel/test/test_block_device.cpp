@@ -87,7 +87,7 @@ JARVIS_TEST(block_device_multiple_sectors, "PRE: none | POST: none") {
 
 JARVIS_TEST(block_device_raw_buffer_access, "PRE: none | POST: none") {
     MockBlockDevice dev(TEST_SECTORS);
-    uint8_t* raw = dev.raw_buffer();
+    uint8_t *raw = dev.raw_buffer();
     JARVIS_ASSERT(raw != nullptr);
 
     uint8_t wbuf[BLOCK_SIZE];
@@ -177,7 +177,7 @@ JARVIS_TEST(ahci_protocol_constants, "PRE: none | POST: none") {
 // Expect: Returns nullptr or valid driver (gracefully handles no hardware).
 // Depends: AHCI PCI probe, kernel::block::AhciDriver
 JARVIS_TEST(ahci_hba_probe, "PRE: iocd | POST: none") {
-    auto* drv = kernel::block::AhciDriver::probe();
+    auto *drv = kernel::block::AhciDriver::probe();
     // If no AHCI hardware present, probe returns nullptr gracefully
     if (drv) {
         JARVIS_ASSERT(drv->sector_count() > 0);

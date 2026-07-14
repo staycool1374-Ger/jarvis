@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file idt.hpp
-/// @brief Interrupt Descriptor Table (x86_64) / interrupt vector dispatch for all architectures.
+/// @brief Interrupt Descriptor Table (x86_64) / interrupt vector dispatch for
+/// all architectures.
 
 #pragma once
 
@@ -32,46 +35,46 @@ namespace arch {
 
 /// @brief x86-64 IDT entry (16-byte packed interrupt gate descriptor).
 struct IDTEntry {
-    uint16_t offset_low;   ///< Bits 0–15 of handler address.
-    uint16_t selector;     ///< Code segment selector.
-    uint8_t  ist;          ///< Interrupt Stack Table index.
-    uint8_t  type_attr;    ///< Gate type and attributes.
-    uint16_t offset_mid;   ///< Bits 16–31 of handler address.
-    uint32_t offset_high;  ///< Bits 32–63 of handler address.
-    uint32_t zero;         ///< Reserved (must be zero).
+    uint16_t offset_low;  ///< Bits 0–15 of handler address.
+    uint16_t selector;    ///< Code segment selector.
+    uint8_t ist;          ///< Interrupt Stack Table index.
+    uint8_t type_attr;    ///< Gate type and attributes.
+    uint16_t offset_mid;  ///< Bits 16–31 of handler address.
+    uint32_t offset_high; ///< Bits 32–63 of handler address.
+    uint32_t zero;        ///< Reserved (must be zero).
     IDTEntry() = default;
 } __attribute__((packed));
 
 /// @brief x86-64 IDT descriptor (10-byte packed, used with LIDT).
 struct IDTDescriptor {
-    uint16_t limit;  ///< Size of the IDT minus one.
-    uint64_t base;   ///< Linear address of the IDT.
+    uint16_t limit; ///< Size of the IDT minus one.
+    uint64_t base;  ///< Linear address of the IDT.
 } __attribute__((packed));
 
 /// @brief Named interrupt vectors for x86-64.
 enum class InterruptVector : uint8_t {
-    DIV_ZERO       = 0,   ///< Divide-by-zero fault (#DE).
-    DEBUG          = 1,   ///< Debug trap (#DB).
-    NMI            = 2,   ///< Non-maskable interrupt.
-    BREAKPOINT     = 3,   ///< Breakpoint trap (#BP).
-    OVERFLOW       = 4,   ///< Overflow trap (#OF).
-    BOUND_RANGE    = 5,   ///< Bound-range exceeded (#BR).
+    DIV_ZERO = 0,         ///< Divide-by-zero fault (#DE).
+    DEBUG = 1,            ///< Debug trap (#DB).
+    NMI = 2,              ///< Non-maskable interrupt.
+    BREAKPOINT = 3,       ///< Breakpoint trap (#BP).
+    OVERFLOW = 4,         ///< Overflow trap (#OF).
+    BOUND_RANGE = 5,      ///< Bound-range exceeded (#BR).
     INVALID_OPCODE = 6,   ///< Invalid opcode (#UD).
-    DEVICE_NA      = 7,   ///< Device not available (#NM).
-    DOUBLE_FAULT   = 8,   ///< Double fault (#DF).
-    INVALID_TSS    = 10,  ///< Invalid TSS (#TS).
-    SEGMENT_NP     = 11,  ///< Segment not present (#NP).
+    DEVICE_NA = 7,        ///< Device not available (#NM).
+    DOUBLE_FAULT = 8,     ///< Double fault (#DF).
+    INVALID_TSS = 10,     ///< Invalid TSS (#TS).
+    SEGMENT_NP = 11,      ///< Segment not present (#NP).
     STACK_SEG_FAULT = 12, ///< Stack-segment fault (#SS).
-    GP_FAULT       = 13,  ///< General-protection fault (#GP).
-    PAGE_FAULT     = 14,  ///< Page fault (#PF).
-    FPU_ERROR      = 16,  ///< x87 FPU error (#MF).
-    ALIGN_CHECK    = 17,  ///< Alignment check (#AC).
-    MACHINE_CHECK  = 18,  ///< Machine check (#MC).
-    SIMD_ERROR     = 19,  ///< SIMD floating-point error (#XM).
-    VIRT_ERROR     = 20,  ///< Virtualisation error (#VE).
-    TIMER          = 32,  ///< PIT/HPET timer interrupt.
-    KEYBOARD       = 33,  ///< PS/2 keyboard interrupt.
-    SYSCALL        = 0x80,///< System-call software interrupt.
+    GP_FAULT = 13,        ///< General-protection fault (#GP).
+    PAGE_FAULT = 14,      ///< Page fault (#PF).
+    FPU_ERROR = 16,       ///< x87 FPU error (#MF).
+    ALIGN_CHECK = 17,     ///< Alignment check (#AC).
+    MACHINE_CHECK = 18,   ///< Machine check (#MC).
+    SIMD_ERROR = 19,      ///< SIMD floating-point error (#XM).
+    VIRT_ERROR = 20,      ///< Virtualisation error (#VE).
+    TIMER = 32,           ///< PIT/HPET timer interrupt.
+    KEYBOARD = 33,        ///< PS/2 keyboard interrupt.
+    SYSCALL = 0x80,       ///< System-call software interrupt.
 };
 
 /// @brief Interrupt Service Routine function signature.
@@ -82,7 +85,7 @@ using ISRHandler = void (*)(uint64_t vector, uint64_t error_code, uint64_t rip);
 
 /// @brief x86-64 Interrupt Descriptor Table manager.
 class IDT {
-public:
+  public:
     /// @brief Initialise the IDT with default gate descriptors.
     static void init();
     /// @brief Load the IDT via the LIDT instruction.
@@ -99,17 +102,18 @@ public:
     /// @param vector Interrupt vector.
     /// @param error_code CPU-pushed error code.
     /// @param rip Faulting instruction address.
-    static void handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip);
+    static void handle_interrupt(uint64_t vector, uint64_t error_code,
+                                 uint64_t rip);
     /// @brief Get a const reference to an IDT entry.
     /// @param vec Vector index.
     /// @return Const reference to the IDT entry.
-    static const IDTEntry& entry(uint8_t vec);
+    static const IDTEntry &entry(uint8_t vec);
     /// @brief Check whether a handler is registered for a vector.
     /// @param vec Vector index.
     /// @return true if a handler exists.
     static bool has_handler(size_t vec);
 
-private:
+  private:
     static constexpr size_t NUM_ENTRIES = 256;
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static IDTEntry entries_[NUM_ENTRIES];
@@ -127,9 +131,9 @@ extern "C" void isr_entry();
 
 /// @brief Named interrupt vectors for AArch64/RISC-V.
 enum class InterruptVector : uint8_t {
-    TIMER          = 0,  ///< Timer interrupt.
-    KEYBOARD       = 1,  ///< Keyboard interrupt.
-    SYSCALL        = 2,  ///< System-call exception.
+    TIMER = 0,    ///< Timer interrupt.
+    KEYBOARD = 1, ///< Keyboard interrupt.
+    SYSCALL = 2,  ///< System-call exception.
 };
 
 /// @brief Interrupt Service Routine function signature.
@@ -137,20 +141,21 @@ using ISRHandler = void (*)(uint64_t vector, uint64_t error_code, uint64_t rip);
 
 /// @brief Generic interrupt dispatch manager for AArch64/RISC-V.
 class IDT {
-public:
+  public:
     static void init();
     static void load();
     static void register_handler(InterruptVector vec, ISRHandler handler);
     static void register_handler_raw(uint8_t vec, ISRHandler handler);
-    static void handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip);
+    static void handle_interrupt(uint64_t vector, uint64_t error_code,
+                                 uint64_t rip);
 
-private:
+  private:
     static constexpr size_t NUM_ENTRIES = 64;
     static ISRHandler handlers_[NUM_ENTRIES];
 };
 
 #else
-#  error "HAL: no idt implementation for this architecture"
+#error "HAL: no idt implementation for this architecture"
 #endif
 /// @endcond
 

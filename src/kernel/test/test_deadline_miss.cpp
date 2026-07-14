@@ -40,7 +40,7 @@ using namespace kernel;
 //        Deadline set to past.  on_tick() fires.
 // Expect: deadline_missed==true, deadline_miss_count>=1.
 TEST_CLASS(DeadlineMissWhileBlocked) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -67,7 +67,8 @@ TEST_CLASS(DeadlineMissWhileBlocked) {
 #endif
     }
 
-    // deadline_missed may be cleared by re-arm (P1b) — count is the stable check
+    // deadline_missed may be cleared by re-arm (P1b) — count is the stable
+    // check
     CT_ASSERT(helper->deadline_miss_count >= 1);
 
     Scheduler::set_task_ready(*helper);
@@ -83,7 +84,7 @@ TEST_CLASS(DeadlineMissWhileBlocked) {
 //        Deadline set to past.  on_tick() fires.
 // Expect: deadline_missed stays false, deadline_miss_count stays 0.
 TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -123,7 +124,7 @@ TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
 //        on_tick() fires, then checks re-arm.
 // Expect: deadline_ticks advanced by period_ticks, deadline_missed cleared.
 TEST_CLASS(DeadlineRearmOnPeriodRollover) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
     uint64_t saved_ticks = cur->deadline_ticks;
@@ -175,7 +176,7 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
 TEST_CLASS(DeadlineMonitorTaskSpawned) {
     bool found = false;
     for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-        auto* t = Scheduler::task_at(i);
+        auto *t = Scheduler::task_at(i);
         if (t && t->magic == TaskControlBlock::TCB_MAGIC &&
             t->priority == 127 && t->state == TaskState::BLOCKED) {
             found = true;
@@ -193,7 +194,7 @@ TEST_CLASS(DeadlineMonitorTaskSpawned) {
 // Expect: deadline_missed==true, deadline_miss_count>=1.
 TEST_CLASS(DeadlineMonitorDetectsMiss) {
     // Use the current task as the target (creates no new tasks)
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
     // Save original values

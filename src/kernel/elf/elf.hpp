@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,20 +31,20 @@ namespace elf {
 
 /// @brief ELF64 file header (64-byte packed structure).
 struct ELF64Header {
-    uint8_t  ident[16];  ///< ELF magic + class/endian/version/OSABI/pad.
-    uint16_t type;       ///< Object file type (ET_NONE, ET_EXEC, ET_DYN).
-    uint16_t machine;    ///< Architecture (e.g. 0x3E for x86_64).
-    uint32_t version;    ///< ELF version (must be 1).
-    uint64_t entry;      ///< Virtual address of entry point.
-    uint64_t phoff;      ///< Program header table offset.
-    uint64_t shoff;      ///< Section header table offset.
-    uint32_t flags;      ///< Processor-specific flags.
-    uint16_t ehsize;     ///< ELF header size (64).
-    uint16_t phentsize;  ///< Size of one program header entry.
-    uint16_t phnum;      ///< Number of program header entries.
-    uint16_t shentsize;  ///< Size of one section header entry.
-    uint16_t shnum;      ///< Number of section header entries.
-    uint16_t shstrndx;   ///< Section header string table index.
+    uint8_t ident[16];  ///< ELF magic + class/endian/version/OSABI/pad.
+    uint16_t type;      ///< Object file type (ET_NONE, ET_EXEC, ET_DYN).
+    uint16_t machine;   ///< Architecture (e.g. 0x3E for x86_64).
+    uint32_t version;   ///< ELF version (must be 1).
+    uint64_t entry;     ///< Virtual address of entry point.
+    uint64_t phoff;     ///< Program header table offset.
+    uint64_t shoff;     ///< Section header table offset.
+    uint32_t flags;     ///< Processor-specific flags.
+    uint16_t ehsize;    ///< ELF header size (64).
+    uint16_t phentsize; ///< Size of one program header entry.
+    uint16_t phnum;     ///< Number of program header entries.
+    uint16_t shentsize; ///< Size of one section header entry.
+    uint16_t shnum;     ///< Number of section header entries.
+    uint16_t shstrndx;  ///< Section header string table index.
 
     ELF64Header() = default;
 } __attribute__((packed));
@@ -61,43 +63,43 @@ struct ELF64ProgramHeader {
 
 /// Program header type constants.
 enum : uint8_t {
-    PT_NULL    = 0,  ///< Unused entry.
-    PT_LOAD    = 1,  ///< Loadable segment.
-    PT_DYNAMIC = 2,  ///< Dynamic linking info.
-    PT_INTERP  = 3,  ///< Interpreter path.
-    PT_NOTE    = 4,  ///< Auxiliary info.
-    PT_PHDR    = 6,  ///< Program header table itself.
+    PT_NULL = 0,    ///< Unused entry.
+    PT_LOAD = 1,    ///< Loadable segment.
+    PT_DYNAMIC = 2, ///< Dynamic linking info.
+    PT_INTERP = 3,  ///< Interpreter path.
+    PT_NOTE = 4,    ///< Auxiliary info.
+    PT_PHDR = 6,    ///< Program header table itself.
 };
 
 /// Program header flag constants.
 enum : uint8_t {
-    PF_X = 1,  ///< Execute permission.
-    PF_W = 2,  ///< Write permission.
-    PF_R = 4,  ///< Read permission.
+    PF_X = 1, ///< Execute permission.
+    PF_W = 2, ///< Write permission.
+    PF_R = 4, ///< Read permission.
 };
 
 /// ELF header type constants.
 enum : uint8_t {
-    ET_NONE = 0,  ///< No file type.
-    ET_EXEC = 2,  ///< Executable.
-    ET_DYN  = 3,  ///< Shared object / PIE.
+    ET_NONE = 0, ///< No file type.
+    ET_EXEC = 2, ///< Executable.
+    ET_DYN = 3,  ///< Shared object / PIE.
 };
 
 /// @brief Validate an ELF64 header (magic, class, endianness, version).
 /// @return true if the header is valid.
-bool validate_header(const ELF64Header* hdr);
+bool validate_header(const ELF64Header *hdr);
 /// @brief Load an ELF binary into a new task.
 /// @param hdr Pointer to the ELF header.
 /// @param data Raw ELF file data.
 /// @return New TaskControlBlock, or nullptr on failure.
-TaskControlBlock* load(const ELF64Header* hdr, const uint8_t* data);
+TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *data);
 
 /// @brief Replace the current task's address space with an ELF binary (exec).
 /// @param regs Register state to update with new entry point and stack.
 /// @return true on success.
-bool exec_into_current(const ELF64Header* hdr, const uint8_t* data,
-                       const char* const* argv, const char* const* envp,
-                       uint64_t* regs);
+bool exec_into_current(const ELF64Header *hdr, const uint8_t *data,
+                       const char *const *argv, const char *const *envp,
+                       uint64_t *regs);
 
 } // namespace elf
 } // namespace kernel

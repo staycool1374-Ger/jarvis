@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,34 +31,34 @@ struct TaskControlBlock;
 
 namespace vfsd {
 
-static constexpr uint64_t VFS_OPEN     = 100;
-static constexpr uint64_t VFS_CLOSE    = 101;
-static constexpr uint64_t VFS_READ     = 102;
-static constexpr uint64_t VFS_WRITE    = 103;
-static constexpr uint64_t VFS_STAT     = 104;
-static constexpr uint64_t VFS_FSTAT    = 105;
-static constexpr uint64_t VFS_MOUNT    = 106;
-static constexpr uint64_t VFS_CHDIR    = 107;
-static constexpr uint64_t VFS_GETCWD   = 108;
-static constexpr uint64_t VFS_READDIR  = 109;
-static constexpr uint64_t VFS_MKDIR    = 110;
-static constexpr uint64_t VFS_UNLINK   = 111;
-static constexpr uint64_t VFS_RMDIR    = 112;
+static constexpr uint64_t VFS_OPEN = 100;
+static constexpr uint64_t VFS_CLOSE = 101;
+static constexpr uint64_t VFS_READ = 102;
+static constexpr uint64_t VFS_WRITE = 103;
+static constexpr uint64_t VFS_STAT = 104;
+static constexpr uint64_t VFS_FSTAT = 105;
+static constexpr uint64_t VFS_MOUNT = 106;
+static constexpr uint64_t VFS_CHDIR = 107;
+static constexpr uint64_t VFS_GETCWD = 108;
+static constexpr uint64_t VFS_READDIR = 109;
+static constexpr uint64_t VFS_MKDIR = 110;
+static constexpr uint64_t VFS_UNLINK = 111;
+static constexpr uint64_t VFS_RMDIR = 112;
 
 struct Msg {
-    uint64_t sender_id;  ///< Task ID of the sender.
-    uint64_t type;       ///< Request type (VFS_OPEN, VFS_READ, etc.).
-    uint64_t arg0;       ///< First argument (varies by type).
-    uint64_t arg1;       ///< Second argument (varies by type).
-    char     path[32];   ///< Path buffer for path-based requests.
+    uint64_t sender_id; ///< Task ID of the sender.
+    uint64_t type;      ///< Request type (VFS_OPEN, VFS_READ, etc.).
+    uint64_t arg0;      ///< First argument (varies by type).
+    uint64_t arg1;      ///< Second argument (varies by type).
+    char path[32];      ///< Path buffer for path-based requests.
 };
 
 struct Reply {
-    int64_t result;   ///< Return code (0 on success, negative on error).
-    uint64_t data0;   ///< Response data field 0.
-    uint64_t data1;   ///< Response data field 1.
-    uint64_t data2;   ///< Response data field 2.
-    uint64_t data3;   ///< Response data field 3.
+    int64_t result; ///< Return code (0 on success, negative on error).
+    uint64_t data0; ///< Response data field 0.
+    uint64_t data1; ///< Response data field 1.
+    uint64_t data2; ///< Response data field 2.
+    uint64_t data3; ///< Response data field 3.
 };
 
 /// @brief Record the PID of the VFS daemon task.

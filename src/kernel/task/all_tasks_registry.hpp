@@ -13,18 +13,20 @@ namespace kernel {
 class AllTasksRegistry {
     static constexpr uint64_t NUM_PRIORITIES = CONFIG_PRIORITY_CEILING + 1;
 
-public:
-    AllTasksRegistry() : heads_{}, tails_{}, total_(0) {}
+  public:
+    AllTasksRegistry() : heads_{}, tails_{}, total_(0) {
+    }
 
     /// @brief Append a task to its priority-level list. O(1).
-    void append(TaskControlBlock* t) noexcept;
+    void append(TaskControlBlock *t) noexcept;
 
     /// @brief Remove a task from its priority-level list. O(1).
-    void remove(TaskControlBlock* t) noexcept;
+    void remove(TaskControlBlock *t) noexcept;
 
     /// @brief Returns the head of the list for a given priority, or nullptr.
-    TaskControlBlock* head(uint64_t prio) const noexcept {
-        if (prio > CONFIG_PRIORITY_CEILING) return nullptr;
+    TaskControlBlock *head(uint64_t prio) const noexcept {
+        if (prio > CONFIG_PRIORITY_CEILING)
+            return nullptr;
         return heads_[prio];
     }
 
@@ -40,42 +42,51 @@ public:
     }
 
     /// @brief Total number of registered tasks.
-    uint64_t size() const noexcept { return total_; }
+    uint64_t size() const noexcept {
+        return total_;
+    }
 
     /// @brief True if no tasks are registered.
-    bool empty() const noexcept { return total_ == 0; }
+    bool empty() const noexcept {
+        return total_ == 0;
+    }
 
-    /// @brief Iterate to the first task (highest priority, then insertion order).
+    /// @brief Iterate to the first task (highest priority, then insertion
+    /// order).
     ///        Returns false if empty (out is unchanged).
-    bool first(TaskControlBlock*& out) const noexcept;
+    bool first(TaskControlBlock *&out) const noexcept;
 
-    /// @brief Advance to the next task after @p t (same priority then next lower).
+    /// @brief Advance to the next task after @p t (same priority then next
+    /// lower).
     ///        Returns false if @p t was the last task (t is unchanged).
-    bool next(TaskControlBlock*& t) const noexcept;
+    bool next(TaskControlBlock *&t) const noexcept;
 
     /// @brief Pointer-returning first() — returns nullptr if empty.
-    TaskControlBlock* first_ptr() const noexcept;
+    TaskControlBlock *first_ptr() const noexcept;
 
     /// @brief Pointer-returning next() — returns nullptr if none follow @p t.
-    TaskControlBlock* next_ptr(TaskControlBlock* t) const noexcept;
+    TaskControlBlock *next_ptr(TaskControlBlock *t) const noexcept;
 
-    /// @brief Fill an output array with all task pointers (for snapshot capture).
-    void capture(TaskControlBlock** out, uint64_t max) const noexcept;
+    /// @brief Fill an output array with all task pointers (for snapshot
+    /// capture).
+    void capture(TaskControlBlock **out, uint64_t max) const noexcept;
 
     /// @brief Rebuild from an array of task pointers (for snapshot restore).
-    void restore(TaskControlBlock* const* in, uint64_t count) noexcept;
+    void restore(TaskControlBlock *const *in, uint64_t count) noexcept;
 
     /// @brief Remove all entries without freeing them.
     void clear() noexcept;
 
-    /// @brief Rebuild per-priority linked lists using each task's current priority.
-    ///        Must be called after restoring per-task priority fields from a snapshot,
-    ///        because restore() reads stale priority values at insertion time.
+    /// @brief Rebuild per-priority linked lists using each task's current
+    /// priority.
+    ///        Must be called after restoring per-task priority fields from a
+    ///        snapshot, because restore() reads stale priority values at
+    ///        insertion time.
     void rebuild() noexcept;
 
-private:
-    TaskControlBlock* heads_[NUM_PRIORITIES]{};
-    TaskControlBlock* tails_[NUM_PRIORITIES]{};
+  private:
+    TaskControlBlock *heads_[NUM_PRIORITIES]{};
+    TaskControlBlock *tails_[NUM_PRIORITIES]{};
     PriorityMap bitmap_;
     uint64_t total_ = 0;
 };

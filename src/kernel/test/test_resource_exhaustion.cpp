@@ -37,7 +37,7 @@ using namespace kernel;
 // Input: Simulate opening 32 FDs (via fd_table allocation), try 33rd.
 // Expect: 33rd fails; after close, reopen succeeds.
 TEST_CLASS(FdTableExhaustion) {
-    auto* task = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
+    auto *task = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     CT_ASSERT(task != nullptr);
 
     // Fill fdtable to capacity
@@ -90,11 +90,12 @@ TEST_CLASS(TaskLimitReached) {
     uint64_t baseline = Scheduler::task_count();
 
     // Create up to limit
-    TaskControlBlock* tasks[64];
+    TaskControlBlock *tasks[64];
     uint64_t created = 0;
     for (uint64_t i = 0; i < 64; ++i) {
-        auto* t = TaskControlBlock::create([]() {}, 5, 10);
-        if (!t) break;
+        auto *t = TaskControlBlock::create([]() {}, 5, 10);
+        if (!t)
+            break;
         Scheduler::add_task(*t);
         tasks[created++] = t;
     }
@@ -103,13 +104,14 @@ TEST_CLASS(TaskLimitReached) {
     CT_ASSERT(after_fill >= baseline + created);
 
     // Attempt one more — should fail or exceed MAX_TASKS
-    auto* extra = TaskControlBlock::create([]() {}, 5, 10);
+    auto *extra = TaskControlBlock::create([]() {}, 5, 10);
     if (extra) {
         Scheduler::add_task(*extra);
         // May or may not be added depending on capacity
         CT_ASSERT(Scheduler::task_count() <= 64);
         Scheduler::remove_task(*extra);
-        extra->cleanup(); delete extra;
+        extra->cleanup();
+        delete extra;
     }
 
     // Cleanup all created
@@ -128,7 +130,7 @@ TEST_CLASS(TaskLimitReached) {
 // Input: Alloc MAX_BUFFERS in a user task.
 // Expect: Alloc MAX_BUFFERS+1 returns 0; free + realloc recycles idx.
 TEST_CLASS(MaxBuffersExhaustion) {
-    auto* task = TaskControlBlock::create_user([]() {}, 5, 10, 64_KiB);
+    auto *task = TaskControlBlock::create_user([]() {}, 5, 10, 64_KiB);
     CT_ASSERT(task != nullptr);
 
     uint64_t handles[BufferPool::MAX_BUFFERS];
@@ -137,14 +139,15 @@ TEST_CLASS(MaxBuffersExhaustion) {
     int alloc_count = 0;
     for (size_t i = 0; i < BufferPool::MAX_BUFFERS + 5; ++i) {
         uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
-        if (h == 0) break;
+        if (h == 0)
+            break;
         handles[alloc_count++] = h;
     }
     CT_ASSERT(alloc_count <= static_cast<int>(BufferPool::MAX_BUFFERS));
 
     // Should have gotten exactly MAX_BUFFERS
-    bool all_allocated = (static_cast<size_t>(alloc_count) ==
-                          BufferPool::MAX_BUFFERS);
+    bool all_allocated =
+        (static_cast<size_t>(alloc_count) == BufferPool::MAX_BUFFERS);
     CT_ASSERT(all_allocated);
 
     // Free one from middle
@@ -161,7 +164,8 @@ TEST_CLASS(MaxBuffersExhaustion) {
 
     // Cleanup all remaining
     for (int i = 0; i < alloc_count; ++i) {
-        if (i == 512) continue;
+        if (i == 512)
+            continue;
         if (handles[i] != 0) {
             BufferPool::free(*task, handles[i]);
         }
@@ -232,13 +236,12 @@ TEST_CLASS(PmmExhaustion) {
 
     PMM::OOMHandler saved_oom = PMM::get_oom_handler();
     PMM::set_oom_handler(nullptr);
-    auto restore = ScopeGuard([&]() {
-        PMM::set_oom_handler(saved_oom);
-    });
+    auto restore = ScopeGuard([&]() { PMM::set_oom_handler(saved_oom); });
 
     for (int i = 0; i < MAX_ALLOCS; ++i) {
         uint64_t p = PMM::alloc_page();
-        if (!p) break;
+        if (!p)
+            break;
         pages[count++] = p;
         if ((count % 1000) == 0) {
             Logger::info("PmmExhaustion: allocated %u pages", count);
@@ -260,6 +263,7 @@ void register_resource_exhaustion_tests() {
     REGISTER_CLASS(FdTableExhaustion);
     REGISTER_CLASS(TaskLimitReached);
     REGISTER_CLASS(MaxBuffersExhaustion);
-    // REGISTER_CLASS(MempoolFragmentation); // disabled: hang at test 438 (pre-existing)
+    // REGISTER_CLASS(MempoolFragmentation); // disabled: hang at test 438
+    // (pre-existing)
     REGISTER_CLASS(PmmExhaustion);
 }

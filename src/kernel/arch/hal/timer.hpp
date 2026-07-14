@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file timer.hpp
-/// @brief Timer abstraction — PIT+TSC (x86_64), generic timer (AArch64), timer (RISC-V).
+/// @brief Timer abstraction — PIT+TSC (x86_64), generic timer (AArch64), timer
+/// (RISC-V).
 
 #pragma once
 
@@ -30,9 +33,10 @@ namespace arch {
 #if defined(CONFIG_ARCH_X86_64)
 /// @endcond
 
-/// @brief x86-64 timer driver — PIT + TSC calibration for tick and nanosecond timing.
+/// @brief x86-64 timer driver — PIT + TSC calibration for tick and nanosecond
+/// timing.
 class Timer {
-public:
+  public:
     /// @brief Initialise the timer with a target tick frequency.
     /// @param frequency_hz Desired tick rate in Hz.
     static void init(uint32_t frequency_hz);
@@ -61,7 +65,7 @@ public:
     /// @return Remaining ticks.
     static uint64_t remaining();
 
-private:
+  private:
     /// @brief Calibrate the TSC frequency using the PIT.
     /// @param frequency_hz Target PIT frequency.
     static void calibrate_tsc(uint32_t frequency_hz);
@@ -77,7 +81,7 @@ private:
 
 /// @brief AArch64 timer driver — generic system timer.
 class Timer {
-public:
+  public:
     /// @brief Initialise the timer with a target tick frequency.
     static void init(uint32_t frequency_hz);
     /// @brief Get the current tick count.
@@ -98,7 +102,7 @@ public:
     /// @brief Get the remaining ticks on the current timer.
     static uint64_t remaining();
 
-private:
+  private:
     static constinit volatile uint64_t ticks_;
     static constinit uint64_t counter_freq_hz_;
 };
@@ -109,7 +113,7 @@ private:
 
 /// @brief RISC-V 64 timer driver — machine/supervisor timer (mtime).
 class Timer {
-public:
+  public:
     /// @brief Initialise the timer with a target tick frequency.
     static void init(uint32_t frequency_hz);
     /// @brief Get the current tick count.
@@ -130,14 +134,14 @@ public:
     /// @brief Get the remaining ticks on the current timer.
     static uint64_t remaining();
 
-private:
+  private:
     static constinit volatile uint64_t ticks_;
     static constinit uint64_t timer_freq_hz_;
 };
 
 /// @cond
 #else
-#  error "HAL: no timer implementation for this architecture"
+#error "HAL: no timer implementation for this architecture"
 #endif
 /// @endcond
 

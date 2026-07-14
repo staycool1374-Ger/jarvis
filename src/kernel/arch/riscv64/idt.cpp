@@ -46,7 +46,8 @@ void IDT::load() {
 /// @param handler Function pointer to invoke on this vector.
 void IDT::register_handler(InterruptVector vec, ISRHandler handler) {
     int idx = static_cast<int>(vec);
-    if (idx < 0 || static_cast<size_t>(idx) >= NUM_ENTRIES) return;
+    if (idx < 0 || static_cast<size_t>(idx) >= NUM_ENTRIES)
+        return;
     handlers_[idx] = handler;
 }
 
@@ -54,7 +55,8 @@ void IDT::register_handler(InterruptVector vec, ISRHandler handler) {
 /// @param vec     Vector index (0–NUM_ENTRIES-1).
 /// @param handler Function pointer to invoke on this vector.
 void IDT::register_handler_raw(uint8_t vec, ISRHandler handler) {
-    if (static_cast<size_t>(vec) >= NUM_ENTRIES) return;
+    if (static_cast<size_t>(vec) >= NUM_ENTRIES)
+        return;
     handlers_[vec] = handler;
 }
 
@@ -63,7 +65,8 @@ void IDT::register_handler_raw(uint8_t vec, ISRHandler handler) {
 /// @param error_code Error code (zero on RISC-V; included for x86 compat).
 /// @param pc         Program counter at time of interrupt.
 void IDT::handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t pc) {
-    if (vector >= NUM_ENTRIES) return;
+    if (vector >= NUM_ENTRIES)
+        return;
     auto handler = handlers_[vector];
     if (handler) {
         handler(vector, error_code, pc);

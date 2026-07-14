@@ -52,8 +52,9 @@ static void print_backtrace() {
     uint64_t fp = read_fp();
     Logger::warn("[RESOURCE]   Call stack:");
     for (int i = 0; i < 5 && fp; ++i) {
-        if (fp < arch::HHDM_OFFSET) break;
-        uint64_t ret = *reinterpret_cast<uint64_t*>(fp + 8);
+        if (fp < arch::HHDM_OFFSET)
+            break;
+        uint64_t ret = *reinterpret_cast<uint64_t *>(fp + 8);
         char buf[20];
         int p = 18;
         buf[18] = '\0';
@@ -61,62 +62,95 @@ static void print_backtrace() {
             int nibble = static_cast<int>((ret >> (4 * j)) & 0xF);
             buf[--p] = nibble < 10 ? ('0' + nibble) : ('a' + nibble - 10);
         }
-        buf[0] = '0'; buf[1] = 'x';
+        buf[0] = '0';
+        buf[1] = 'x';
         Logger::warn("[RESOURCE]     #%d  %s", i, buf);
-        fp = *reinterpret_cast<uint64_t*>(fp);
+        fp = *reinterpret_cast<uint64_t *>(fp);
     }
 }
 
 struct ResField {
-    const char* name;
+    const char *name;
     size_t ResourceCounters::*field;
 };
 
-static bool any_leak(const ResourceCounters& baseline,
-                     const ResourceCounters& current) {
+static bool any_leak(const ResourceCounters &baseline,
+                     const ResourceCounters &current) {
     for (size_t i = 0; i < MemPool::POOL_COUNT; ++i)
-        if (current.mempool_used[i] > baseline.mempool_used[i]) return true;
-    if (current.pmm_pages_used  > baseline.pmm_pages_used)  return true;
-    if (current.tasks           > baseline.tasks)            return true;
-    if (current.bufpool_entries > baseline.bufpool_entries)  return true;
-    if (current.msg_queues      > baseline.msg_queues)       return true;
-    if (current.notifies        > baseline.notifies)         return true;
-    if (current.event_groups    > baseline.event_groups)     return true;
-    if (current.drivers         > baseline.drivers)          return true;
-    if (current.pipe_buffers    > baseline.pipe_buffers)     return true;
-    if (current.vnodes          > baseline.vnodes)           return true;
-    if (current.open_fds        > baseline.open_fds)         return true;
+        if (current.mempool_used[i] > baseline.mempool_used[i])
+            return true;
+    if (current.pmm_pages_used > baseline.pmm_pages_used)
+        return true;
+    if (current.tasks > baseline.tasks)
+        return true;
+    if (current.bufpool_entries > baseline.bufpool_entries)
+        return true;
+    if (current.msg_queues > baseline.msg_queues)
+        return true;
+    if (current.notifies > baseline.notifies)
+        return true;
+    if (current.event_groups > baseline.event_groups)
+        return true;
+    if (current.drivers > baseline.drivers)
+        return true;
+    if (current.pipe_buffers > baseline.pipe_buffers)
+        return true;
+    if (current.vnodes > baseline.vnodes)
+        return true;
+    if (current.open_fds > baseline.open_fds)
+        return true;
     return false;
 }
 
-bool ResourceTracker::check(const ResourceCounters& baseline,
-                            const char* test_name) {
-    if (!any_leak(baseline, counters_)) return true;
+bool ResourceTracker::check(const ResourceCounters &baseline,
+                            const char *test_name) {
+    if (!any_leak(baseline, counters_))
+        return true;
 
-    auto print_row = [&](const char* label, size_t base, size_t cur) {
-        if (cur <= base) return;
+    auto print_row = [&](const char *label, size_t base, size_t cur) {
+        if (cur <= base)
+            return;
         char buf[64];
         int p = 0;
-        const char* s = label;
-        while (*s && p < 19) buf[p++] = *s++;
-        while (p < 20) buf[p++] = ' ';
+        const char *s = label;
+        while (*s && p < 19)
+            buf[p++] = *s++;
+        while (p < 20)
+            buf[p++] = ' ';
         buf[p] = '\0';
-        auto fmt = [](char* dst, size_t v) {
+        auto fmt = [](char *dst, size_t v) {
             char rev[20];
             int r = 0;
-            if (v == 0) { rev[r++] = '0'; }
-            else { while (v > 0) { rev[r++] = '0' + (v % 10); v /= 10; } }
+            if (v == 0) {
+                rev[r++] = '0';
+            } else {
+                while (v > 0) {
+                    rev[r++] = '0' + (v % 10);
+                    v /= 10;
+                }
+            }
             int d = 0;
-            while (r > 0) dst[d++] = rev[--r];
+            while (r > 0)
+                dst[d++] = rev[--r];
             dst[d] = '\0';
         };
         char base_s[20], cur_s[20];
         fmt(base_s, base);
         fmt(cur_s, cur);
-        int base_w = 0; while (base_s[base_w]) ++base_w;
-        int cur_w = 0; while (cur_s[cur_w]) ++cur_w;
-        while (base_w < 6) { base_s[base_w++] = ' '; } base_s[base_w] = '\0';
-        while (cur_w < 6) { cur_s[cur_w++] = ' '; } cur_s[cur_w] = '\0';
+        int base_w = 0;
+        while (base_s[base_w])
+            ++base_w;
+        int cur_w = 0;
+        while (cur_s[cur_w])
+            ++cur_w;
+        while (base_w < 6) {
+            base_s[base_w++] = ' ';
+        }
+        base_s[base_w] = '\0';
+        while (cur_w < 6) {
+            cur_s[cur_w++] = ' ';
+        }
+        cur_s[cur_w] = '\0';
         Logger::warn("[RESOURCE] test=%s | %s | before=%s | after=%s <---",
                      test_name, buf, base_s, cur_s);
     };
@@ -126,33 +160,40 @@ bool ResourceTracker::check(const ResourceCounters& baseline,
     for (size_t i = 0; i < MemPool::POOL_COUNT; ++i) {
         char label[32];
         int pos = 0;
-        auto append = [&](const char* s) {
-            while (*s && pos < 30) label[pos++] = *s++;
+        auto append = [&](const char *s) {
+            while (*s && pos < 30)
+                label[pos++] = *s++;
         };
         append("MemPool[");
         size_t n = i;
-        if (n == 0) { label[pos++] = '0'; }
-        else {
+        if (n == 0) {
+            label[pos++] = '0';
+        } else {
             char digits[8];
             int di = 0;
-            while (n > 0) { digits[di++] = '0' + (n % 10); n /= 10; }
-            while (di > 0) label[pos++] = digits[--di];
+            while (n > 0) {
+                digits[di++] = '0' + (n % 10);
+                n /= 10;
+            }
+            while (di > 0)
+                label[pos++] = digits[--di];
         }
         label[pos++] = ']';
         label[pos] = '\0';
         print_row(label, baseline.mempool_used[i], counters_.mempool_used[i]);
     }
 
-    print_row("PMM pages",       baseline.pmm_pages_used,   counters_.pmm_pages_used);
-    print_row("Tasks",           baseline.tasks,            counters_.tasks);
-    print_row("BufPool entries", baseline.bufpool_entries,  counters_.bufpool_entries);
-    print_row("MessageQueues",   baseline.msg_queues,       counters_.msg_queues);
-    print_row("Notify objects",  baseline.notifies,         counters_.notifies);
-    print_row("EventGroups",     baseline.event_groups,     counters_.event_groups);
-    print_row("Drivers",         baseline.drivers,          counters_.drivers);
-    print_row("PipeBuffers",     baseline.pipe_buffers,     counters_.pipe_buffers);
-    print_row("Vnodes",          baseline.vnodes,           counters_.vnodes);
-    print_row("Open FDs",        baseline.open_fds,         counters_.open_fds);
+    print_row("PMM pages", baseline.pmm_pages_used, counters_.pmm_pages_used);
+    print_row("Tasks", baseline.tasks, counters_.tasks);
+    print_row("BufPool entries", baseline.bufpool_entries,
+              counters_.bufpool_entries);
+    print_row("MessageQueues", baseline.msg_queues, counters_.msg_queues);
+    print_row("Notify objects", baseline.notifies, counters_.notifies);
+    print_row("EventGroups", baseline.event_groups, counters_.event_groups);
+    print_row("Drivers", baseline.drivers, counters_.drivers);
+    print_row("PipeBuffers", baseline.pipe_buffers, counters_.pipe_buffers);
+    print_row("Vnodes", baseline.vnodes, counters_.vnodes);
+    print_row("Open FDs", baseline.open_fds, counters_.open_fds);
 
     print_backtrace();
     return false;

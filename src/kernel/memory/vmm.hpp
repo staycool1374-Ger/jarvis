@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -18,7 +20,8 @@
 
 /// @file vmm.hpp
 /// @brief Virtual Memory Manager — cross-arch page table management with
-///        bounded page-walk depth (4-level x86_64/aarch64, 3-level riscv64 Sv39).
+///        bounded page-walk depth (4-level x86_64/aarch64, 3-level riscv64
+///        Sv39).
 
 #pragma once
 
@@ -29,13 +32,14 @@
 namespace kernel {
 
 /// @brief Virtual memory manager — maps virtual to physical pages.
-/// @note Page-walk depth is fixed per architecture (4 levels for x86_64/aarch64,
+/// @note Page-walk depth is fixed per architecture (4 levels for
+/// x86_64/aarch64,
 ///       3 levels for riscv64 Sv39).  Huge-page split (512 iterations) occurs
 ///       at most once per 2 MB region.  Both walks are bounded, meeting hard-RT
 ///       WCET requirements for map_page / map_page_in_pml4.
 /// @note Supports user/kernel page flags, TLB flush after each mapping.
 class VMM {
-public:
+  public:
     /// @brief Initialises the VMM and sets up the kernel page tables.
     static void init();
     /// @brief Initialises the VMM with error code.
@@ -49,14 +53,14 @@ public:
     /// @note WCET is bounded: fixed-depth page walk + at most one huge-page
     ///       split (512 iterations) when the target PD entry is a 2 MB block.
     static void map_page(uint64_t virt_addr, uint64_t phys_addr,
-        bool user = false);
+                         bool user = false);
     /// @brief Maps a virtual page to a physical page with error code.
     /// @param virt_addr Virtual address (page-aligned).
     /// @param phys_addr Physical address (page-aligned).
     /// @param user      If true, sets the user-accessible flag.
     /// @return VmmError code.
     static errors::VmmError map_page_err(uint64_t virt_addr, uint64_t phys_addr,
-        bool user = false);
+                                         bool user = false);
 
     /// @brief Unmaps a virtual page.
     /// @param virt_addr Virtual address to unmap.
@@ -70,11 +74,13 @@ public:
     /// @param virt_addr Virtual address.
     /// @return Physical address, or 0 if not mapped.
     static uint64_t virt_to_phys(uint64_t virt_addr);
-    /// @brief Translates a virtual address to its physical address with error code.
+    /// @brief Translates a virtual address to its physical address with error
+    /// code.
     /// @param virt_addr Virtual address.
     /// @param[out] out_phys_addr Physical address on success.
     /// @return VmmError code.
-    static errors::VmmError virt_to_phys_err(uint64_t virt_addr, uint64_t& out_phys_addr);
+    static errors::VmmError virt_to_phys_err(uint64_t virt_addr,
+                                             uint64_t &out_phys_addr);
 
     /// @brief Returns the physical address of the current PML4 table.
     /// @return Physical address of PML4.
@@ -88,7 +94,7 @@ public:
     /// @brief Creates a fresh PML4 with error code.
     /// @param[out] out_pml4_phys Physical address of the new PML4.
     /// @return VmmError code.
-    static errors::VmmError clone_kernel_pml4_err(uint64_t& out_pml4_phys);
+    static errors::VmmError clone_kernel_pml4_err(uint64_t &out_pml4_phys);
 
     /// @brief Maps a page into a specific page table (not the kernel one).
     /// @param virt_addr Virtual address (page-aligned).
@@ -103,12 +109,15 @@ public:
     /// @param user      If true, sets user-accessible flag.
     /// @param pml4_phys Physical address of the target PML4.
     /// @return VmmError code.
-    static errors::VmmError map_page_in_pml4_err(uint64_t virt_addr, uint64_t phys_addr,
-                                 bool user, uint64_t pml4_phys);
+    static errors::VmmError map_page_in_pml4_err(uint64_t virt_addr,
+                                                 uint64_t phys_addr, bool user,
+                                                 uint64_t pml4_phys);
 
     /// @brief Return the physical address of the kernel PML4 table.
     /// @return Physical address of the kernel page-table root.
-    static uint64_t get_kernel_pml4() { return kernel_pml4_; }
+    static uint64_t get_kernel_pml4() {
+        return kernel_pml4_;
+    }
 
     /// @brief Frees all user-space pages and page tables from a
     /// user PML4. Used during exec() to clean up the old address
@@ -128,15 +137,17 @@ public:
     /// @return Physical address, or 0 if not mapped.
     static uint64_t virt_to_phys_in_pml4(uint64_t virt_addr,
                                          uint64_t pml4_phys);
-    /// @brief Translates a virtual address to a physical address using a specific PML4 with error code.
+    /// @brief Translates a virtual address to a physical address using a
+    /// specific PML4 with error code.
     /// @param virt_addr Virtual address to translate.
     /// @param pml4_phys Physical address of the target PML4.
     /// @param[out] out_phys_addr Physical address on success.
     /// @return VmmError code.
     static errors::VmmError virt_to_phys_in_pml4_err(uint64_t virt_addr,
-                                          uint64_t pml4_phys, uint64_t& out_phys_addr);
+                                                     uint64_t pml4_phys,
+                                                     uint64_t &out_phys_addr);
 
-private:
+  private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     static constexpr uint64_t PAGE_TABLE_ENTRIES = 512;
 
@@ -147,16 +158,17 @@ private:
     // AP[1:0] in bits[7:6];  00=EL1-RW/EL0-*, 01=EL1-RW/EL0-RW,
     //   10=EL1-RO/EL0-*, 11=EL1-RO/EL0-RO.
     // AF (Access Flag) must be 1 for stage-1 - bit 8 (NOT bit 10).
-    static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
-    static constexpr uint64_t PAGE_TABLE    = 1ULL << 1;
-    static constexpr uint64_t PAGE_AF       = 1ULL << 8;  // Access Flag (stage-1)
-    static constexpr uint64_t PAGE_AP_USER  = 1ULL << 6;  // AP[0] - EL0 accessible
-    static constexpr uint64_t PAGE_AP_RO    = 1ULL << 7;  // AP[1] - read-only (EL1)
+    static constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+    static constexpr uint64_t PAGE_TABLE = 1ULL << 1;
+    static constexpr uint64_t PAGE_AF = 1ULL << 8; // Access Flag (stage-1)
+    static constexpr uint64_t PAGE_AP_USER = 1ULL
+                                             << 6;    // AP[0] - EL0 accessible
+    static constexpr uint64_t PAGE_AP_RO = 1ULL << 7; // AP[1] - read-only (EL1)
 
     // Compatibility aliases (used in flag-building expressions)
-    static constexpr uint64_t PAGE_WRITE    = 0; // no-op - writable by default
-    static constexpr uint64_t PAGE_USER     = PAGE_AP_USER;
-    static constexpr uint64_t PAGE_HUGE     = 0; // not a flag; detected via level
+    static constexpr uint64_t PAGE_WRITE = 0; // no-op - writable by default
+    static constexpr uint64_t PAGE_USER = PAGE_AP_USER;
+    static constexpr uint64_t PAGE_HUGE = 0; // not a flag; detected via level
 #elif defined(CONFIG_ARCH_RISCV64)
     // RISC-V Sv39 PTE format (from privilege spec)
     // bit 0: V (Valid)
@@ -170,47 +182,48 @@ private:
     // bit 8: RSW (reserved for software)
     // bits 9-53: PPN[0..44] (physical page number)
     // bits 54-63: reserved for future use
-    static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;  // V
-    static constexpr uint64_t PAGE_READ     = 1ULL << 1;  // R
-    static constexpr uint64_t PAGE_WRITE    = 1ULL << 2;  // W
-    static constexpr uint64_t PAGE_EXEC     = 1ULL << 3;  // X
-    static constexpr uint64_t PAGE_USER     = 1ULL << 4;  // U
-    static constexpr uint64_t PAGE_GLOBAL   = 1ULL << 5;  // G
-    static constexpr uint64_t PAGE_ACCESSED = 1ULL << 6;  // A
-    static constexpr uint64_t PAGE_DIRTY    = 1ULL << 7;  // D
+    static constexpr uint64_t PAGE_PRESENT = 1ULL << 0;  // V
+    static constexpr uint64_t PAGE_READ = 1ULL << 1;     // R
+    static constexpr uint64_t PAGE_WRITE = 1ULL << 2;    // W
+    static constexpr uint64_t PAGE_EXEC = 1ULL << 3;     // X
+    static constexpr uint64_t PAGE_USER = 1ULL << 4;     // U
+    static constexpr uint64_t PAGE_GLOBAL = 1ULL << 5;   // G
+    static constexpr uint64_t PAGE_ACCESSED = 1ULL << 6; // A
+    static constexpr uint64_t PAGE_DIRTY = 1ULL << 7;    // D
     // Table entry: V=1, R=W=X=0 (points to next level)
-    static constexpr uint64_t PAGE_TABLE    = PAGE_PRESENT; // V=1, no RWX = table pointer
+    static constexpr uint64_t PAGE_TABLE =
+        PAGE_PRESENT; // V=1, no RWX = table pointer
     // Block/leaf detection: if V=1 and (R|W|X)=1 then leaf page
-    static constexpr uint64_t PAGE_HUGE     = 0; // detected via R|W|X bits
+    static constexpr uint64_t PAGE_HUGE = 0; // detected via R|W|X bits
 #else
-    static constexpr uint64_t PAGE_PRESENT  = 1ULL << 0;
-    static constexpr uint64_t PAGE_WRITE    = 1ULL << 1;
-    static constexpr uint64_t PAGE_USER     = 1ULL << 2;
-    static constexpr uint64_t PAGE_HUGE     = 1ULL << 7;
+    static constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
+    static constexpr uint64_t PAGE_WRITE = 1ULL << 1;
+    static constexpr uint64_t PAGE_USER = 1ULL << 2;
+    static constexpr uint64_t PAGE_HUGE = 1ULL << 7;
 #endif
 
-    static constexpr uint64_t PML4_SHIFT    = 39;
-    static constexpr uint64_t PDPT_SHIFT    = 30;
-    static constexpr uint64_t PD_SHIFT      = 21;
-    static constexpr uint64_t PT_SHIFT      = 12;
+    static constexpr uint64_t PML4_SHIFT = 39;
+    static constexpr uint64_t PDPT_SHIFT = 30;
+    static constexpr uint64_t PD_SHIFT = 21;
+    static constexpr uint64_t PT_SHIFT = 12;
 
-    static constexpr uint64_t PML4_MASK     = 0x1FFULL << PML4_SHIFT;
-    static constexpr uint64_t PDPT_MASK     = 0x1FFULL << PDPT_SHIFT;
-    static constexpr uint64_t PD_MASK       = 0x1FFULL << PD_SHIFT;
-    static constexpr uint64_t PT_MASK       = 0x1FFULL << PT_SHIFT;
+    static constexpr uint64_t PML4_MASK = 0x1FFULL << PML4_SHIFT;
+    static constexpr uint64_t PDPT_MASK = 0x1FFULL << PDPT_SHIFT;
+    static constexpr uint64_t PD_MASK = 0x1FFULL << PD_SHIFT;
+    static constexpr uint64_t PT_MASK = 0x1FFULL << PT_SHIFT;
 
 #if defined(CONFIG_ARCH_RISCV64)
     // Sv39: 3-level page table
     // L0 (1GB): bits 38:30
     // L1 (2MB): bits 29:21
     // L2 (4KB): bits 20:12
-    static constexpr uint64_t L0_SHIFT      = 30;
-    static constexpr uint64_t L1_SHIFT      = 21;
-    static constexpr uint64_t L2_SHIFT      = 12;
-    static constexpr uint64_t TABLE_MASK    = 0x1FFULL;
-    static constexpr uint64_t L0_MASK       = TABLE_MASK << L0_SHIFT;
-    static constexpr uint64_t L1_MASK       = TABLE_MASK << L1_SHIFT;
-    static constexpr uint64_t L2_MASK       = TABLE_MASK << L2_SHIFT;
+    static constexpr uint64_t L0_SHIFT = 30;
+    static constexpr uint64_t L1_SHIFT = 21;
+    static constexpr uint64_t L2_SHIFT = 12;
+    static constexpr uint64_t TABLE_MASK = 0x1FFULL;
+    static constexpr uint64_t L0_MASK = TABLE_MASK << L0_SHIFT;
+    static constexpr uint64_t L1_MASK = TABLE_MASK << L1_SHIFT;
+    static constexpr uint64_t L2_MASK = TABLE_MASK << L2_SHIFT;
 #endif
 
     static constinit uint64_t kernel_pml4_;
@@ -221,8 +234,8 @@ private:
     /// @param create If true, allocates a new table if missing.
     /// @param user_alloc If true, allocate page table page as USER-owned.
     /// @return Pointer to the next-level table, or nullptr.
-    static uint64_t* get_table(uint64_t* table, size_t index, bool create,
-        bool user_alloc = false);
+    static uint64_t *get_table(uint64_t *table, size_t index, bool create,
+                               bool user_alloc = false);
 };
 
 } // namespace kernel

@@ -26,31 +26,31 @@
 namespace arch {
 
 // GIC memory map (QEMU virt)
-#define GICD_BASE      (0x8000000ULL)
-#define GICC_BASE      (0x8010000ULL)   // GICv2 CPU interface
-#define GICR_RD_BASE   (0x80A0000ULL)   // GICv3 RD frame for core 0
-#define GICR_SGI_BASE  (0x80B0000ULL)   // GICv3 SGI/PPI frame for core 0
+#define GICD_BASE (0x8000000ULL)
+#define GICC_BASE (0x8010000ULL)     // GICv2 CPU interface
+#define GICR_RD_BASE (0x80A0000ULL)  // GICv3 RD frame for core 0
+#define GICR_SGI_BASE (0x80B0000ULL) // GICv3 SGI/PPI frame for core 0
 
 // Distributor (GICD) register offsets
-#define GICD_CTLR      0x0000
-#define GICD_TYPER     0x0004
-#define GICD_IGROUPR   0x0080
+#define GICD_CTLR 0x0000
+#define GICD_TYPER 0x0004
+#define GICD_IGROUPR 0x0080
 #define GICD_ISENABLER 0x0100
 #define GICD_ICENABLER 0x0180
 
 // Redistributor RD frame offsets
-#define GICR_WAKER     0x0014
+#define GICR_WAKER 0x0014
 
 // Redistributor SGI/PPI frame offsets
-#define GICR_IGROUPR0  0x0080
+#define GICR_IGROUPR0 0x0080
 #define GICR_ISENABLER0 0x0100
 #define GICR_ICENABLER0 0x0180
 
 // GICC (GICv2 CPU interface) offsets
-#define GICC_CTLR      0x0000
-#define GICC_PMR       0x0004
-#define GICC_IAR       0x000C
-#define GICC_EOIR      0x0010
+#define GICC_CTLR 0x0000
+#define GICC_PMR 0x0004
+#define GICC_IAR 0x000C
+#define GICC_EOIR 0x0010
 
 static bool gic_is_v3 = false;
 
@@ -58,8 +58,8 @@ static bool gic_is_v3 = false;
 /// Detects GICv2 vs GICv3 from GICD_TYPER. Enables Group 1 interrupts
 /// and the timer PPI (INTID 30). Performs full distributor reset sequence.
 void ArchInterruptController::init() {
-    volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
-    volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
+    volatile uint32_t *gicd = reinterpret_cast<volatile uint32_t *>(GICD_BASE);
+    volatile uint32_t *gicc = reinterpret_cast<volatile uint32_t *>(GICC_BASE);
 
     // Detect GIC version from GICD_TYPER
     uint32_t typer = gicd[GICD_TYPER / 4];
@@ -80,8 +80,10 @@ void ArchInterruptController::init() {
 
     if (gic_is_v3) {
         // === GICv3: system registers + redistributor ===
-        volatile uint32_t* gicr_rd = reinterpret_cast<volatile uint32_t*>(GICR_RD_BASE);
-        volatile uint32_t* gicr_sgi = reinterpret_cast<volatile uint32_t*>(GICR_SGI_BASE);
+        volatile uint32_t *gicr_rd =
+            reinterpret_cast<volatile uint32_t *>(GICR_RD_BASE);
+        volatile uint32_t *gicr_sgi =
+            reinterpret_cast<volatile uint32_t *>(GICR_SGI_BASE);
 
         // Wake redistributor
         uint32_t waker = gicr_rd[GICR_WAKER / 4];
@@ -98,7 +100,7 @@ void ArchInterruptController::init() {
         arch::dsb_sy();
 
         // Enable system register access for CPU interface
-        uint64_t sre;
+        uint64_t sre{};
         asm volatile("mrs %0, ICC_SRE_EL1" : "=r"(sre));
         sre |= 1;
         asm volatile("msr ICC_SRE_EL1, %0" : : "r"(sre));
@@ -147,7 +149,8 @@ void ArchInterruptController::eoi(uint8_t vector) {
     if (gic_is_v3) {
         asm volatile("msr ICC_EOIR1_EL1, %0" : : "r"((uint64_t)vector));
     } else {
-        volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
+        volatile uint32_t *gicc =
+            reinterpret_cast<volatile uint32_t *>(GICC_BASE);
         gicc[GICC_EOIR / 4] = vector;
     }
     arch::dsb_sy();
@@ -156,9 +159,10 @@ void ArchInterruptController::eoi(uint8_t vector) {
 /// @brief Mask (disable) a specific IRQ.
 /// @param[in] irq Interrupt request number.
 void ArchInterruptController::mask(uint8_t irq) {
-    volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
+    volatile uint32_t *gicd = reinterpret_cast<volatile uint32_t *>(GICD_BASE);
     if (gic_is_v3 && irq < 32) {
-        volatile uint32_t* gicr_sgi = reinterpret_cast<volatile uint32_t*>(GICR_SGI_BASE);
+        volatile uint32_t *gicr_sgi =
+            reinterpret_cast<volatile uint32_t *>(GICR_SGI_BASE);
         gicr_sgi[GICR_ICENABLER0 / 4] = (1U << irq);
     } else {
         gicd[GICD_ICENABLER / 4 + (irq / 32)] = (1U << (irq % 32));
@@ -169,9 +173,10 @@ void ArchInterruptController::mask(uint8_t irq) {
 /// @brief Unmask (enable) a specific IRQ.
 /// @param[in] irq Interrupt request number.
 void ArchInterruptController::unmask(uint8_t irq) {
-    volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
+    volatile uint32_t *gicd = reinterpret_cast<volatile uint32_t *>(GICD_BASE);
     if (gic_is_v3 && irq < 32) {
-        volatile uint32_t* gicr_sgi = reinterpret_cast<volatile uint32_t*>(GICR_SGI_BASE);
+        volatile uint32_t *gicr_sgi =
+            reinterpret_cast<volatile uint32_t *>(GICR_SGI_BASE);
         gicr_sgi[GICR_ISENABLER0 / 4] = (1U << irq);
     } else {
         gicd[GICD_ISENABLER / 4 + (irq / 32)] = (1U << (irq % 32));
@@ -183,7 +188,7 @@ void ArchInterruptController::unmask(uint8_t irq) {
 /// @return IrqState containing the combined ISENABLER mask (first 64 IRQs).
 IrqState ArchInterruptController::snapshot() {
     IrqState s = {};
-    volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
+    volatile uint32_t *gicd = reinterpret_cast<volatile uint32_t *>(GICD_BASE);
     s.gic_mask = gicd[GICD_ISENABLER / 4];
     s.gic_mask |= (uint64_t)gicd[GICD_ISENABLER / 4 + 1] << 32;
     return s;
@@ -191,8 +196,8 @@ IrqState ArchInterruptController::snapshot() {
 
 /// @brief Restore GIC enable mask from a prior snapshot.
 /// @param[in] state Previously captured IrqState.
-void ArchInterruptController::restore(const IrqState& state) {
-    volatile uint32_t* gicd = reinterpret_cast<volatile uint32_t*>(GICD_BASE);
+void ArchInterruptController::restore(const IrqState &state) {
+    volatile uint32_t *gicd = reinterpret_cast<volatile uint32_t *>(GICD_BASE);
     gicd[GICD_ICENABLER / 4] = 0xFFFFFFFF;
     gicd[GICD_ICENABLER / 4 + 1] = 0xFFFFFFFF;
     arch::dsb_sy();
@@ -206,21 +211,24 @@ void ArchInterruptController::restore(const IrqState& state) {
 /// @note Spurious interrupts (INTID >= 1023) are acknowledged and discarded.
 ///       Only the timer PPI (INTID 30) is dispatched to the IDT.
 extern "C" void handle_gic_irq(void) {
-    uint64_t intid;
+    uint64_t intid{};
 
     if (gic_is_v3) {
         asm volatile("mrs %0, ICC_IAR1_EL1" : "=r"(intid));
     } else {
-        volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
+        volatile uint32_t *gicc =
+            reinterpret_cast<volatile uint32_t *>(GICC_BASE);
         intid = gicc[GICC_IAR / 4];
     }
 
-    if (intid >= 1023) goto ack;  // spurious
+    if (intid >= 1023)
+        goto ack; // spurious
 
     if (intid == 30) {
-        uint64_t elr;
+        uint64_t elr{};
         asm volatile("mrs %0, elr_el1" : "=r"(elr));
-        IDT::handle_interrupt(static_cast<uint64_t>(InterruptVector::TIMER), 0, elr);
+        IDT::handle_interrupt(static_cast<uint64_t>(InterruptVector::TIMER), 0,
+                              elr);
     }
     // Other INTIDs are ignored for now
 
@@ -228,7 +236,8 @@ ack:
     if (gic_is_v3) {
         asm volatile("msr ICC_EOIR1_EL1, %0" : : "r"(intid));
     } else {
-        volatile uint32_t* gicc = reinterpret_cast<volatile uint32_t*>(GICC_BASE);
+        volatile uint32_t *gicc =
+            reinterpret_cast<volatile uint32_t *>(GICC_BASE);
         gicc[GICC_EOIR / 4] = static_cast<uint32_t>(intid);
     }
 }

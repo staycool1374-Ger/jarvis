@@ -17,7 +17,8 @@
  */
 
 /// @file queue.cpp
-/// @brief Message queue implementation — send, receive, try_send, try_receive with blocking waiters.
+/// @brief Message queue implementation — send, receive, try_send, try_receive
+/// with blocking waiters.
 
 #include <kernel/sync/queue.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -50,17 +51,19 @@ errors::SyncError Queue::init_err() {
 }
 
 /// @brief Add a task to the send-waiter array (caller must hold lock_).
-bool Queue::add_send_waiter(TaskControlBlock* task) {
+bool Queue::add_send_waiter(TaskControlBlock *task) {
     // Caller must hold lock_
-    if (send_waiters_count_ >= MAX_WAITERS) return false;
+    if (send_waiters_count_ >= MAX_WAITERS)
+        return false;
     send_waiters_[send_waiters_count_++] = task;
     return true;
 }
 
 /// @brief Add a task to the recv-waiter array (caller must hold lock_).
-bool Queue::add_recv_waiter(TaskControlBlock* task) {
+bool Queue::add_recv_waiter(TaskControlBlock *task) {
     // Caller must hold lock_
-    if (recv_waiters_count_ >= MAX_WAITERS) return false;
+    if (recv_waiters_count_ >= MAX_WAITERS)
+        return false;
     recv_waiters_[recv_waiters_count_++] = task;
     return true;
 }
@@ -68,11 +71,12 @@ bool Queue::add_recv_waiter(TaskControlBlock* task) {
 /// @brief Wake the highest-priority send waiter (caller must hold lock_).
 void Queue::wake_send_one() {
     // Caller must hold lock_
-    if (send_waiters_count_ == 0) return;
+    if (send_waiters_count_ == 0)
+        return;
     size_t best = 0;
     for (size_t i = 1; i < send_waiters_count_; ++i) {
-        if (send_waiters_[i]->priority > send_waiters_[best]->priority
-            ) best = i;
+        if (send_waiters_[i]->priority > send_waiters_[best]->priority)
+            best = i;
     }
     if (send_waiters_[best]->state != TaskState::TERMINATED)
         Scheduler::set_task_ready(*send_waiters_[best]);
@@ -82,11 +86,12 @@ void Queue::wake_send_one() {
 /// @brief Wake the highest-priority recv waiter (caller must hold lock_).
 void Queue::wake_recv_one() {
     // Caller must hold lock_
-    if (recv_waiters_count_ == 0) return;
+    if (recv_waiters_count_ == 0)
+        return;
     size_t best = 0;
     for (size_t i = 1; i < recv_waiters_count_; ++i) {
-        if (recv_waiters_[i]->priority > recv_waiters_[best]->priority
-            ) best = i;
+        if (recv_waiters_[i]->priority > recv_waiters_[best]->priority)
+            best = i;
     }
     if (recv_waiters_[best]->state != TaskState::TERMINATED)
         Scheduler::set_task_ready(*recv_waiters_[best]);
@@ -94,14 +99,16 @@ void Queue::wake_recv_one() {
 }
 
 /// @brief Send a message, blocking if the queue is full.
-bool Queue::send(const uint8_t* data, size_t size) {
+bool Queue::send(const uint8_t *data, size_t size) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (size > QUEUE_MAX_MSG_SIZE) return false;
+    if (size > QUEUE_MAX_MSG_SIZE)
+        return false;
 
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
 
     while (is_full()) {
-        if (!add_send_waiter(task)) return false;
+        if (!add_send_waiter(task))
+            return false;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
     }
@@ -117,15 +124,19 @@ bool Queue::send(const uint8_t* data, size_t size) {
 }
 
 /// @brief Send a message, blocking if full (error-returning overload).
-errors::SyncError Queue::send_err(const uint8_t* data, size_t size, size_t* sent_bytes) {
+errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
+                                  size_t *sent_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (size > QUEUE_MAX_MSG_SIZE) return errors::SYNC_ERR_MSG_TOO_LARGE;
+    if (size > QUEUE_MAX_MSG_SIZE)
+        return errors::SYNC_ERR_MSG_TOO_LARGE;
 
-    auto* task = Scheduler::current_task();
-    if (!task) return errors::SYNC_ERR_NO_TASK;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return errors::SYNC_ERR_NO_TASK;
 
     while (is_full()) {
-        if (send_waiters_count_ >= MAX_WAITERS) return errors::SYNC_ERR_MAX_WAITERS;
+        if (send_waiters_count_ >= MAX_WAITERS)
+            return errors::SYNC_ERR_MAX_WAITERS;
         send_waiters_[send_waiters_count_++] = task;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -138,14 +149,16 @@ errors::SyncError Queue::send_err(const uint8_t* data, size_t size, size_t* sent
 
     wake_recv_one();
 
-    if (sent_bytes) *sent_bytes = size;
+    if (sent_bytes)
+        *sent_bytes = size;
     return errors::SYNC_ERR_OK;
 }
 
 /// @brief Send a message without blocking.
-bool Queue::try_send(const uint8_t* data, size_t size) {
+bool Queue::try_send(const uint8_t *data, size_t size) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (size > QUEUE_MAX_MSG_SIZE || is_full()) return false;
+    if (size > QUEUE_MAX_MSG_SIZE || is_full())
+        return false;
 
     memcpy(msgs_[tail_].data, data, size);
     msgs_[tail_].size = size;
@@ -157,10 +170,13 @@ bool Queue::try_send(const uint8_t* data, size_t size) {
 }
 
 /// @brief Send a message without blocking (error-returning overload).
-errors::SyncError Queue::try_send_err(const uint8_t* data, size_t size, size_t* sent_bytes) {
+errors::SyncError Queue::try_send_err(const uint8_t *data, size_t size,
+                                      size_t *sent_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (size > QUEUE_MAX_MSG_SIZE) return errors::SYNC_ERR_MSG_TOO_LARGE;
-    if (is_full()) return errors::SYNC_ERR_QUEUE_FULL;
+    if (size > QUEUE_MAX_MSG_SIZE)
+        return errors::SYNC_ERR_MSG_TOO_LARGE;
+    if (is_full())
+        return errors::SYNC_ERR_QUEUE_FULL;
 
     memcpy(msgs_[tail_].data, data, size);
     msgs_[tail_].size = size;
@@ -169,24 +185,27 @@ errors::SyncError Queue::try_send_err(const uint8_t* data, size_t size, size_t* 
 
     wake_recv_one();
 
-    if (sent_bytes) *sent_bytes = size;
+    if (sent_bytes)
+        *sent_bytes = size;
     return errors::SYNC_ERR_OK;
 }
 
 /// @brief Receive a message, blocking if the queue is empty.
-bool Queue::receive(uint8_t* buf, size_t* size) {
+bool Queue::receive(uint8_t *buf, size_t *size) {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
+    auto *task = Scheduler::current_task();
 
     while (is_empty()) {
-        if (!add_recv_waiter(task)) return false;
+        if (!add_recv_waiter(task))
+            return false;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
     }
 
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
-        if (*size < copy_size) copy_size = *size;
+        if (*size < copy_size)
+            copy_size = *size;
         memcpy(buf, msgs_[head_].data, copy_size);
         *size = copy_size;
     }
@@ -200,13 +219,16 @@ bool Queue::receive(uint8_t* buf, size_t* size) {
 
 /// @brief Receive a message, blocking if empty (error-returning overload).
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-errors::SyncError Queue::receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
+errors::SyncError Queue::receive_err(uint8_t *buf, size_t *size,
+                                     size_t *received_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return errors::SYNC_ERR_NO_TASK;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return errors::SYNC_ERR_NO_TASK;
 
     while (is_empty()) {
-        if (recv_waiters_count_ >= MAX_WAITERS) return errors::SYNC_ERR_MAX_WAITERS;
+        if (recv_waiters_count_ >= MAX_WAITERS)
+            return errors::SYNC_ERR_MAX_WAITERS;
         recv_waiters_[recv_waiters_count_++] = task;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -214,7 +236,8 @@ errors::SyncError Queue::receive_err(uint8_t* buf, size_t* size, size_t* receive
 
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
-        if (*size < copy_size) copy_size = *size;
+        if (*size < copy_size)
+            copy_size = *size;
         memcpy(buf, msgs_[head_].data, copy_size);
         *size = copy_size;
     }
@@ -224,18 +247,21 @@ errors::SyncError Queue::receive_err(uint8_t* buf, size_t* size, size_t* receive
 
     wake_send_one();
 
-    if (received_bytes) *received_bytes = copy_size;
+    if (received_bytes)
+        *received_bytes = copy_size;
     return errors::SYNC_ERR_OK;
 }
 
 /// @brief Receive a message without blocking.
-bool Queue::try_receive(uint8_t* buf, size_t* size) {
+bool Queue::try_receive(uint8_t *buf, size_t *size) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (is_empty()) return false;
+    if (is_empty())
+        return false;
 
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
-        if (*size < copy_size) copy_size = *size;
+        if (*size < copy_size)
+            copy_size = *size;
         memcpy(buf, msgs_[head_].data, copy_size);
         *size = copy_size;
     }
@@ -249,13 +275,16 @@ bool Queue::try_receive(uint8_t* buf, size_t* size) {
 
 /// @brief Receive a message without blocking (error-returning overload).
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-errors::SyncError Queue::try_receive_err(uint8_t* buf, size_t* size, size_t* received_bytes) {
+errors::SyncError Queue::try_receive_err(uint8_t *buf, size_t *size,
+                                         size_t *received_bytes) {
     SpinLockGuard<SpinLock> guard(lock_);
-    if (is_empty()) return errors::SYNC_ERR_QUEUE_EMPTY;
+    if (is_empty())
+        return errors::SYNC_ERR_QUEUE_EMPTY;
 
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
-        if (*size < copy_size) copy_size = *size;
+        if (*size < copy_size)
+            copy_size = *size;
         memcpy(buf, msgs_[head_].data, copy_size);
         *size = copy_size;
     }
@@ -265,9 +294,10 @@ errors::SyncError Queue::try_receive_err(uint8_t* buf, size_t* size, size_t* rec
 
     wake_send_one();
 
-    if (received_bytes) *received_bytes = copy_size;
+    if (received_bytes)
+        *received_bytes = copy_size;
     return errors::SYNC_ERR_OK;
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

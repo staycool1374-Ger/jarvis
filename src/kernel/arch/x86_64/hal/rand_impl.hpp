@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file rand_impl.hpp
-/// @brief x86_64 RDRAND and RDSEED instructions — hardware random number generation.
+/// @brief x86_64 RDRAND and RDSEED instructions — hardware random number
+/// generation.
 
 #pragma once
 
@@ -25,24 +28,26 @@
 
 namespace arch {
 
-/// @brief Execute the RDRAND instruction to obtain a 64-bit hardware random value.
+/// @brief Execute the RDRAND instruction to obtain a 64-bit hardware random
+/// value.
 /// @param[out] value Receives the random 64-bit value.
-/// @return true if a random number was successfully generated, false if the CPU did not have
+/// @return true if a random number was successfully generated, false if the CPU
+/// did not have
 ///         enough entropy.
-inline bool rdrand64(uint64_t& value) {
-    unsigned char ok;
-    asm volatile("rdrand %0; setc %1"
-        : "=r"(value), "=qm"(ok));
+inline bool rdrand64(uint64_t &value) {
+    unsigned char ok{};
+    asm volatile("rdrand %0; setc %1" : "=r"(value), "=qm"(ok));
     return ok != 0;
 }
 
-/// @brief Execute the RDSEED instruction to obtain a 64-bit hardware seed value.
+/// @brief Execute the RDSEED instruction to obtain a 64-bit hardware seed
+/// value.
 /// @param[out] value Receives the 64-bit seed.
-/// @return true if a seed was successfully generated, false if entropy is insufficient.
-inline bool rdseed64(uint64_t& value) {
-    unsigned char ok;
-    asm volatile("rdseed %0; setc %1"
-        : "=r"(value), "=qm"(ok));
+/// @return true if a seed was successfully generated, false if entropy is
+/// insufficient.
+inline bool rdseed64(uint64_t &value) {
+    unsigned char ok{};
+    asm volatile("rdseed %0; setc %1" : "=r"(value), "=qm"(ok));
     return ok != 0;
 }
 

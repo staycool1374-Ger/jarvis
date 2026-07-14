@@ -40,17 +40,17 @@ extern "C" uint8_t _binary_build_fat32_img_start[];
 extern "C" uint8_t _binary_build_fat32_img_end[];
 
 static uint64_t fat32_img_sectors() {
-    return (reinterpret_cast<uintptr_t>(_binary_build_fat32_img_end)
-          - reinterpret_cast<uintptr_t>(_binary_build_fat32_img_start))
-        / SECTOR_SIZE;
+    return (reinterpret_cast<uintptr_t>(_binary_build_fat32_img_end) -
+            reinterpret_cast<uintptr_t>(_binary_build_fat32_img_start)) /
+           SECTOR_SIZE;
 }
 
 static kernel::block::MockBlockDevice make_dev() {
-    return kernel::block::MockBlockDevice(
-        _binary_build_fat32_img_start, fat32_img_sectors(), true);
+    return kernel::block::MockBlockDevice(_binary_build_fat32_img_start,
+                                          fat32_img_sectors(), true);
 }
 
-static Fat32Partition mount_fs(kernel::block::MockBlockDevice& dev) {
+static Fat32Partition mount_fs(kernel::block::MockBlockDevice &dev) {
     kernel::test::mark_vfs_touched();
     Fat32Partition fs(dev);
     fs.mount();
@@ -166,9 +166,12 @@ JARVIS_TEST(fat32_dir_root_entries, "PRE: vfsd, iocd | POST: none") {
     bool found_subdir = false;
 
     while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
-        if (!entry.valid) continue;
-        if (strcmp(entry.name, "MULTI.TXT") == 0) found_multi = true;
-        if (strcmp(entry.name, "SUBDIR") == 0) found_subdir = true;
+        if (!entry.valid)
+            continue;
+        if (strcmp(entry.name, "MULTI.TXT") == 0)
+            found_multi = true;
+        if (strcmp(entry.name, "SUBDIR") == 0)
+            found_subdir = true;
     }
 
     JARVIS_ASSERT(found_multi);
@@ -257,7 +260,8 @@ JARVIS_TEST(fat32_read_file, "PRE: vfsd, iocd | POST: none") {
 
     uint8_t buf[256];
     memset(buf, 0, sizeof(buf));
-    int64_t nread = read_file(fs, entry.cluster, entry.size, 0, sizeof(buf), buf);
+    int64_t nread =
+        read_file(fs, entry.cluster, entry.size, 0, sizeof(buf), buf);
     JARVIS_ASSERT(nread > 0);
     JARVIS_ASSERT(static_cast<uint64_t>(nread) == entry.size);
     JARVIS_ASSERT(memcmp(buf, "Hello, World!\n", 14) == 0);
@@ -277,7 +281,8 @@ JARVIS_TEST(fat32_lookup_subdir, "PRE: vfsd, iocd | POST: none") {
 
     uint8_t buf[128];
     memset(buf, 0, sizeof(buf));
-    int64_t nread = read_file(fs, file_in_sub.cluster, file_in_sub.size, 0, sizeof(buf), buf);
+    int64_t nread = read_file(fs, file_in_sub.cluster, file_in_sub.size, 0,
+                              sizeof(buf), buf);
     JARVIS_ASSERT(nread > 0);
     JARVIS_ASSERT(memcmp(buf, "I am in a subdirectory.\n", 24) == 0);
 }
@@ -297,7 +302,8 @@ static kernel::block::MockBlockDevice make_writable_dev() {
     for (uint64_t i = 0; i < fat32_img_sectors(); ++i) {
         uint8_t sector[SECTOR_SIZE];
         __builtin_memcpy(sector,
-            _binary_build_fat32_img_start + i * SECTOR_SIZE, SECTOR_SIZE);
+                         _binary_build_fat32_img_start + i * SECTOR_SIZE,
+                         SECTOR_SIZE);
         dev.write_sector(i, sector);
     }
     return dev;
@@ -325,11 +331,12 @@ JARVIS_TEST(fat32_write_fat_entry, "PRE: vfsd, iocd | POST: none") {
 JARVIS_TEST(fat32_write_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
-    uint64_t cluster_bytes = static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
-    uint8_t* wbuf = new uint8_t[cluster_bytes];
+    uint64_t cluster_bytes =
+        static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
+    uint8_t *wbuf = new uint8_t[cluster_bytes];
     memset(wbuf, 0x42, cluster_bytes);
     JARVIS_ASSERT(fs.write_cluster(3, wbuf));
-    uint8_t* rbuf = new uint8_t[cluster_bytes];
+    uint8_t *rbuf = new uint8_t[cluster_bytes];
     memset(rbuf, 0, cluster_bytes);
     JARVIS_ASSERT(fs.read_cluster(3, rbuf));
     JARVIS_ASSERT(memcmp(wbuf, rbuf, cluster_bytes) == 0);
@@ -346,8 +353,9 @@ JARVIS_TEST(fat32_clear_cluster, "PRE: vfsd, iocd | POST: none") {
     auto dev = make_writable_dev();
     auto fs = mount_fs(dev);
     JARVIS_ASSERT(fs.clear_cluster(4));
-    uint64_t cluster_bytes = static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
-    uint8_t* buf = new uint8_t[cluster_bytes];
+    uint64_t cluster_bytes =
+        static_cast<uint64_t>(fs.bpb().sectors_per_cluster) * SECTOR_SIZE;
+    uint8_t *buf = new uint8_t[cluster_bytes];
     memset(buf, 0xFF, cluster_bytes);
     JARVIS_ASSERT(fs.read_cluster(4, buf));
     for (uint64_t i = 0; i < cluster_bytes; ++i)
@@ -442,7 +450,8 @@ JARVIS_TEST(fat32_add_dir_entry, "PRE: vfsd, iocd | POST: none") {
     uint64_t pos = 0;
     bool found = false;
     while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
-        if (!entry.valid) continue;
+        if (!entry.valid)
+            continue;
         if (strcmp(entry.name, "NEWFILE.TXT") == 0) {
             found = true;
             break;
@@ -464,7 +473,8 @@ JARVIS_TEST(fat32_remove_dir_entry, "PRE: vfsd, iocd | POST: none") {
     uint64_t pos = 0;
     bool found = false;
     while (read_dir_entry(fs, fs.bpb().root_cluster, pos, entry)) {
-        if (!entry.valid) continue;
+        if (!entry.valid)
+            continue;
         if (strcmp(entry.name, "HELLO.TXT") == 0) {
             found = true;
             break;

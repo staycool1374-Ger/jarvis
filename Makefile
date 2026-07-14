@@ -182,7 +182,11 @@ endif
 
 # ----- clang-tidy (static analysis, debug builds) -----
 CLANG_TIDY          ?= /opt/homebrew/opt/llvm/bin/clang-tidy
-CLANG_TIDY_CHECKS   := bugprone-*,concurrency-*,performance-*
+# clang-tidy checks. The three disabled checks are false-positives for an
+# OS kernel: int->ptr casts are required for MMIO/physical addresses,
+# __cyg_profile_* reserved identifiers are mandated by the gcov ABI, and many
+# driver/VMM APIs intentionally use adjacent same-type parameters.
+CLANG_TIDY_CHECKS   := bugprone-*,concurrency-*,performance-*,-performance-no-int-to-ptr,-bugprone-reserved-identifier,-bugprone-easily-swappable-parameters
 CLANG_TIDY_NCORES   := $(shell sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 
 # ----- ccache (optional, no-op if not installed) -----

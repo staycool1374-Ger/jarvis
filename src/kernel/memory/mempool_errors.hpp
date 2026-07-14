@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -23,15 +25,15 @@
 
 namespace kernel::errors {
 
-#define MEMPOOL_ERROR_CODES \
-    X(OK,              0,  "OK") \
-    X(OOM,             1,  "Out of memory in pool") \
-    X(TOO_LARGE,       2,  "Requested size exceeds maximum pool block") \
-    X(INVALID_PTR,     3,  "Pointer not owned by any pool") \
-    X(DOUBLE_FREE,     4,  "Block already freed") \
-    X(POOL_UNINIT,     5,  "Pool not initialized") \
-    X(INVALID_POOL,    6,  "Invalid pool index") \
-    X(CORRUPTED,       7,  "Pool metadata corrupted")
+#define MEMPOOL_ERROR_CODES                                                    \
+    X(OK, 0, "OK")                                                             \
+    X(OOM, 1, "Out of memory in pool")                                         \
+    X(TOO_LARGE, 2, "Requested size exceeds maximum pool block")               \
+    X(INVALID_PTR, 3, "Pointer not owned by any pool")                         \
+    X(DOUBLE_FREE, 4, "Block already freed")                                   \
+    X(POOL_UNINIT, 5, "Pool not initialized")                                  \
+    X(INVALID_POOL, 6, "Invalid pool index")                                   \
+    X(CORRUPTED, 7, "Pool metadata corrupted")
 
 /// @brief Error codes for the MemPool allocator.
 // NOLINTNEXTLINE(performance-enum-size)
@@ -42,11 +44,12 @@ enum MemPoolError : uint64_t {
 };
 
 /// @brief Return a human-readable string for a MemPool error code.
-template<>
-inline const char* error_string(MemPoolError e) {
+template <> inline const char *error_string(MemPoolError e) {
     switch (e) {
-#define X(name, num, msg) case MEMPOOL_ERR_##name: return msg;
-    MEMPOOL_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case MEMPOOL_ERR_##name:                                                   \
+        return msg;
+        MEMPOOL_ERROR_CODES
 #undef X
     }
     return "Unknown MemPool error";

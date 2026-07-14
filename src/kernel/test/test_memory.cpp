@@ -99,7 +99,8 @@ JARVIS_TEST(pmm_total_memory, "PRE: none | POST: none") {
 // Input: Cloned kernel PML4 with one user page mapped at 0x8000000000.
 // Expect: free_user_pages completes without error.
 // Depends: PMM, VMM
-JARVIS_TEST(vmm_free_user_pages_skips_kernel_owned_entries, "PRE: none | POST: none") {
+JARVIS_TEST(vmm_free_user_pages_skips_kernel_owned_entries,
+            "PRE: none | POST: none") {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(pml4 != 0);
 
@@ -140,9 +141,9 @@ JARVIS_TEST(vmm_free_user_pages_fork_stack_scenario, "PRE: none | POST: none") {
 // Expect: Both non-null, pointers differ, free succeeds for both.
 // Depends: MemPool
 JARVIS_TEST(mempool_alloc_free, "PRE: none | POST: none") {
-    void* p1 = MemPool::alloc(16);
+    void *p1 = MemPool::alloc(16);
     JARVIS_ASSERT(p1 != nullptr);
-    void* p2 = MemPool::alloc(32);
+    void *p2 = MemPool::alloc(32);
     JARVIS_ASSERT(p2 != nullptr);
     JARVIS_ASSERT(p2 != p1);
     MemPool::free(p1);
@@ -156,7 +157,7 @@ JARVIS_TEST(mempool_alloc_free, "PRE: none | POST: none") {
 // Expect: Non-null pointer returned, free succeeds.
 // Depends: MemPool
 JARVIS_TEST(mempool_large_alloc, "PRE: none | POST: none") {
-    void* p = MemPool::alloc(1024);
+    void *p = MemPool::alloc(1024);
     JARVIS_ASSERT(p != nullptr);
     MemPool::free(p);
     JARVIS_TEST_PASS();
@@ -169,14 +170,14 @@ JARVIS_TEST(mempool_large_alloc, "PRE: none | POST: none") {
 // Expect: All allocations return non-null, final re-alloc succeeds.
 // Depends: MemPool
 JARVIS_TEST(mempool_fragmentation, "PRE: none | POST: none") {
-    void* ptrs[10];
+    void *ptrs[10];
     for (int i = 0; i < 10; ++i) {
         ptrs[i] = MemPool::alloc(64);
         JARVIS_ASSERT(ptrs[i] != nullptr);
     }
     for (int i = 0; i < 10; ++i)
         MemPool::free(ptrs[i]);
-    void* p = MemPool::alloc(64);
+    void *p = MemPool::alloc(64);
     JARVIS_ASSERT(p != nullptr);
     MemPool::free(p);
     JARVIS_TEST_PASS();
@@ -189,10 +190,10 @@ JARVIS_TEST(mempool_fragmentation, "PRE: none | POST: none") {
 // Expect: Second alloc returns the same address as the first.
 // Depends: MemPool
 JARVIS_TEST(mempool_reuse, "PRE: none | POST: none") {
-    void* p1 = MemPool::alloc(16);
+    void *p1 = MemPool::alloc(16);
     JARVIS_ASSERT(p1 != nullptr);
     MemPool::free(p1);
-    void* p2 = MemPool::alloc(16);
+    void *p2 = MemPool::alloc(16);
     JARVIS_ASSERT(p2 != nullptr);
     JARVIS_ASSERT(p1 == p2);
     MemPool::free(p2);
@@ -219,16 +220,21 @@ JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
     constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000;
     constexpr uint64_t huge_page_base = arch::HHDM_OFFSET + 0x800000;
     uint64_t const PAGE_PRESENT = 1ULL << 0;
-    uint64_t const PAGE_HUGE    = 1ULL << 7;
+    uint64_t const PAGE_HUGE = 1ULL << 7;
 
     uint64_t kernel_pml4 = arch::read_cr3();
-    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (kernel_pml4 & ~0xFFFULL));
-    size_t pml4_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 39)) >> 39);
+    auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (kernel_pml4 & ~0xFFFULL));
+    size_t pml4_idx =
+        static_cast<size_t>((test_vaddr & (0x1FFULL << 39)) >> 39);
     JARVIS_ASSERT(pml4[pml4_idx] & PAGE_PRESENT);
-    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_idx] & ~0xFFFULL));
-    size_t pdpt_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 30)) >> 30);
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (pml4[pml4_idx] & ~0xFFFULL));
+    size_t pdpt_idx =
+        static_cast<size_t>((test_vaddr & (0x1FFULL << 30)) >> 30);
     JARVIS_ASSERT(pdpt[pdpt_idx] & PAGE_PRESENT);
-    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_idx] & ~0xFFFULL));
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (pdpt[pdpt_idx] & ~0xFFFULL));
     size_t pd_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 21)) >> 21);
     JARVIS_ASSERT(pd[pd_idx] & PAGE_PRESENT);
     JARVIS_ASSERT(pd[pd_idx] & PAGE_HUGE);
@@ -269,9 +275,11 @@ JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
     VMM::map_page(test_vaddr, 0x802000, false);
     JARVIS_ASSERT(VMM::virt_to_phys(test_vaddr) == 0x802000);
 
-    // Undo the huge-page split: free the page-table page and restore the PD entry.
+    // Undo the huge-page split: free the page-table page and restore the PD
+    // entry.
     uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
-    JARVIS_ASSERT(!(pd[pd_idx] & PAGE_HUGE)); // must point to a PT now (no huge flag)
+    JARVIS_ASSERT(
+        !(pd[pd_idx] & PAGE_HUGE)); // must point to a PT now (no huge flag)
     PMM::free_page(pt_phys);
     pd[pd_idx] = saved_pd_entry;
 
@@ -285,17 +293,21 @@ JARVIS_TEST(vmm_hhdm_access_consistency, "PRE: none | POST: none") {
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
     JARVIS_ASSERT(kernel_pml4 != 0);
 
-    uint64_t kpml4_virt = VMM::virt_to_phys(reinterpret_cast<uint64_t>(&VMM::init));
+    uint64_t kpml4_virt =
+        VMM::virt_to_phys(reinterpret_cast<uint64_t>(&VMM::init));
     JARVIS_ASSERT(kpml4_virt != 0);
 
     uint64_t v = arch::HHDM_OFFSET + 0x900000;
 
     uint64_t cr3 = arch::read_cr3();
-    auto* pml4 = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
+    auto *pml4 =
+        reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
     size_t pml4_i = static_cast<size_t>((v & (0x1FFULL << 39)) >> 39);
-    auto* pdpt = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pml4[pml4_i] & ~0xFFFULL));
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                              (pml4[pml4_i] & ~0xFFFULL));
     size_t pdpt_i = static_cast<size_t>((v & (0x1FFULL << 30)) >> 30);
-    auto* pd = reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + (pdpt[pdpt_i] & ~0xFFFULL));
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                            (pdpt[pdpt_i] & ~0xFFFULL));
     size_t pd_i = static_cast<size_t>((v & (0x1FFULL << 21)) >> 21);
     JARVIS_ASSERT(pd[pd_i] & (1ULL << 7));
     uint64_t const saved_pd_entry = pd[pd_i];

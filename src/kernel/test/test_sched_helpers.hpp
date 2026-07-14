@@ -42,7 +42,7 @@ namespace kernel::test {
 ///        the two operations.  This restores the IF=0 semantics that
 ///        tests using the "set_current + reschedule" pattern were
 ///        originally designed for.
-inline void yield_as(TaskControlBlock& task) noexcept {
+inline void yield_as(TaskControlBlock &task) noexcept {
     arch::IrqGuard guard;
     Scheduler::set_current(task);
     Scheduler::reschedule();
@@ -59,12 +59,12 @@ inline void yield_as(TaskControlBlock& task) noexcept {
 ///        patterns, use raw Scheduler::set_current() with the defensive
 ///        cleanup in ~ScopedCurrentTask.
 class [[nodiscard]] ScopedCurrentTask {
-    TaskControlBlock* saved_;
+    TaskControlBlock *saved_;
     arch::IrqGuard guard_;
-public:
-    explicit ScopedCurrentTask(TaskControlBlock& task) noexcept
-        : saved_(Scheduler::current_task())
-    {
+
+  public:
+    explicit ScopedCurrentTask(TaskControlBlock &task) noexcept
+        : saved_(Scheduler::current_task()) {
         Scheduler::set_current(task);
     }
 
@@ -74,8 +74,8 @@ public:
         }
     }
 
-    ScopedCurrentTask(const ScopedCurrentTask&) = delete;
-    ScopedCurrentTask& operator=(const ScopedCurrentTask&) = delete;
+    ScopedCurrentTask(const ScopedCurrentTask &) = delete;
+    ScopedCurrentTask &operator=(const ScopedCurrentTask &) = delete;
 };
 
 } // namespace kernel::test

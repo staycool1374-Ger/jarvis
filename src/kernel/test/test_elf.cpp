@@ -110,7 +110,8 @@ JARVIS_TEST(elf_validate_header_excessive_phnum, "PRE: none | POST: none") {
     hdr.ident[1] = 'E';
     hdr.ident[2] = 'L';
     hdr.ident[3] = 'F';
-    for (int i = 7; i < 16; ++i) hdr.ident[i] = 0;
+    for (int i = 7; i < 16; ++i)
+        hdr.ident[i] = 0;
     hdr.ident[4] = 2;
     hdr.ident[5] = 1;
     hdr.ident[6] = 1;
@@ -138,7 +139,8 @@ JARVIS_TEST(elf_validate_header_bad_entry, "PRE: none | POST: none") {
     hdr.ident[1] = 'E';
     hdr.ident[2] = 'L';
     hdr.ident[3] = 'F';
-    for (int i = 7; i < 16; ++i) hdr.ident[i] = 0;
+    for (int i = 7; i < 16; ++i)
+        hdr.ident[i] = 0;
     hdr.ident[4] = 2;
     hdr.ident[5] = 1;
     hdr.ident[6] = 1;
@@ -155,7 +157,8 @@ JARVIS_TEST(elf_validate_header_bad_entry, "PRE: none | POST: none") {
 }
 
 #if !defined(CONFIG_ARCH_RISCV64)
-static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* phdr, uint8_t* data) {
+static void build_minimal_elf(elf::ELF64Header *hdr,
+                              elf::ELF64ProgramHeader *phdr, uint8_t *data) {
     hdr->ident[0] = 0x7F;
     hdr->ident[1] = 'E';
     hdr->ident[2] = 'L';
@@ -163,7 +166,8 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     hdr->ident[4] = 2;
     hdr->ident[5] = 1;
     hdr->ident[6] = 1;
-    for (int i = 7; i < 16; ++i) hdr->ident[i] = 0;
+    for (int i = 7; i < 16; ++i)
+        hdr->ident[i] = 0;
     hdr->type = elf::ET_EXEC;
     hdr->machine = 0x3E;
     hdr->version = 1;
@@ -188,7 +192,8 @@ static void build_minimal_elf(elf::ELF64Header* hdr, elf::ELF64ProgramHeader* ph
     phdr->align = 0x1000;
 
     memcpy(data + hdr->phoff, phdr, sizeof(elf::ELF64ProgramHeader));
-    uint64_t code_offset = sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader);
+    uint64_t code_offset =
+        sizeof(elf::ELF64Header) + sizeof(elf::ELF64ProgramHeader);
     for (size_t i = 0; i < 0x1000; ++i) {
         data[code_offset + i] = 0x90;
     }
@@ -207,11 +212,12 @@ JARVIS_TEST(elf_load_invalid_segment, "PRE: none | POST: none") {
     elf::ELF64ProgramHeader phdr{};
     uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
-    
-    auto* embedded_phdr = reinterpret_cast<elf::ELF64ProgramHeader*>(data + hdr.phoff);
+
+    auto *embedded_phdr =
+        reinterpret_cast<elf::ELF64ProgramHeader *>(data + hdr.phoff);
     embedded_phdr->flags = elf::PF_W | elf::PF_X;
 
-    auto* tcb = elf::load(&hdr, data);
+    auto *tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -231,14 +237,14 @@ JARVIS_TEST(elf_load_sets_std_fds, "PRE: vfsd, iocd | POST: none") {
     uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
 
-    auto* tcb = elf::load(&hdr, data);
+    auto *tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb != nullptr);
 
-    auto* tty = vfs::resolve("/dev/tty");
+    auto *tty = vfs::resolve("/dev/tty");
     JARVIS_ASSERT(tty != nullptr);
 
     for (int fd = 0; fd < 3; ++fd) {
-        auto* f = tcb->fd_table.get(fd);
+        auto *f = tcb->fd_table.get(fd);
         JARVIS_ASSERT(f != nullptr);
         JARVIS_ASSERT(f->used);
         JARVIS_ASSERT(f->vnode == tty);
@@ -264,7 +270,7 @@ JARVIS_TEST(elf_load_creates_user_stack, "PRE: none | POST: none") {
     uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
 
-    auto* tcb = elf::load(&hdr, data);
+    auto *tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->user_stack_ != 0);
     JARVIS_ASSERT_EQ(mem::STACK_SIZE, tcb->user_stack_size_);
@@ -282,7 +288,7 @@ JARVIS_TEST(elf_load_from_hhdm_buffer, "PRE: none | POST: none") {
     uint8_t data[8192];
     build_minimal_elf(&hdr, &phdr, data);
 
-    auto* tcb = elf::load(&hdr, data);
+    auto *tcb = elf::load(&hdr, data);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->user_stack_ != 0);
     JARVIS_ASSERT(tcb->page_table_ != 0);

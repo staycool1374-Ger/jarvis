@@ -78,11 +78,11 @@ JARVIS_TEST(pci_read_host_bridge_info, "PRE: iocd | POST: none") {
 // Testidea: Verifies the ISA bridge (typically 00:01.0 on QEMU's PIIX3) is
 // found and identified correctly.
 // Input: Call arch::pci_scan_all(), then search devices
-// Expect: At least one device is a PCI-to-ISA bridge (class=0x06, subclass=0x01)
-// Depends: arch::pci_scan_all, arch::pci_find_device
+// Expect: At least one device is a PCI-to-ISA bridge (class=0x06,
+// subclass=0x01) Depends: arch::pci_scan_all, arch::pci_find_device
 JARVIS_TEST(pci_finds_isa_bridge, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
-    const arch::PciDeviceInfo* isa = arch::pci_find_device(0x06, 0x01);
+    const arch::PciDeviceInfo *isa = arch::pci_find_device(0x06, 0x01);
     JARVIS_ASSERT(isa != nullptr);
     JARVIS_ASSERT(isa->bdf.bus == 0);
     JARVIS_ASSERT(isa->bdf.device == 1);
@@ -127,18 +127,18 @@ JARVIS_TEST(pci_read_command_register, "PRE: iocd | POST: none") {
 JARVIS_TEST(pci_make_addr_format, "PRE: iocd | POST: none") {
     arch::PciBdf bdf = {1, 2, 3};
     uint32_t addr = arch::pci_make_addr(bdf, 0x10);
-    JARVIS_ASSERT_HEX_EQ(0x80000000U | (1U << 16) | (2U << 11) | (3U << 8) | 0x10U, addr);
+    JARVIS_ASSERT_HEX_EQ(
+        0x80000000U | (1U << 16) | (2U << 11) | (3U << 8) | 0x10U, addr);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies pci_find_device returns nullptr for nonexistent class/subclass.
-// Input: arch::pci_find_device(0xFF, 0xFF)
-// Expect: Returns nullptr
-// Depends: arch::pci_scan_all, arch::pci_find_device
+// Testidea: Verifies pci_find_device returns nullptr for nonexistent
+// class/subclass. Input: arch::pci_find_device(0xFF, 0xFF) Expect: Returns
+// nullptr Depends: arch::pci_scan_all, arch::pci_find_device
 JARVIS_TEST(pci_find_nonexistent_device, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
-    const arch::PciDeviceInfo* dev = arch::pci_find_device(0xFF, 0xFF);
+    const arch::PciDeviceInfo *dev = arch::pci_find_device(0xFF, 0xFF);
     JARVIS_ASSERT(dev == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -227,11 +227,11 @@ JARVIS_TEST(pci_bar_registers, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
     bool found_valid_bar = false;
     for (size_t i = 0; i < arch::pci_device_count(); ++i) {
-        const auto& d = arch::pci_devices()[i];
+        const auto &d = arch::pci_devices()[i];
         for (uint8_t b = 0; b < d.bar_count; ++b) {
             JARVIS_ASSERT(d.bars[b].type == arch::PciBarType::MEMORY_32 ||
-                         d.bars[b].type == arch::PciBarType::IO ||
-                         d.bars[b].type == arch::PciBarType::MEMORY_64);
+                          d.bars[b].type == arch::PciBarType::IO ||
+                          d.bars[b].type == arch::PciBarType::MEMORY_64);
             if (d.bars[b].address > 0 && d.bars[b].size > 0) {
                 found_valid_bar = true;
             }
@@ -249,9 +249,9 @@ JARVIS_TEST(pci_bar_registers, "PRE: iocd | POST: none") {
 // Depends: arch::pci_scan_all, arch::pci_find_capability
 JARVIS_TEST(pci_msi_capability_chain, "PRE: iocd | POST: none") {
     arch::pci_scan_all();
-    const arch::PciDeviceInfo* dev = nullptr;
+    const arch::PciDeviceInfo *dev = nullptr;
     for (size_t i = 0; i < arch::pci_device_count(); ++i) {
-        const auto& d = arch::pci_devices()[i];
+        const auto &d = arch::pci_devices()[i];
         if (d.vendor_id == 0x1AF4 && d.device_id == 0x1041) {
             dev = &d;
             break;
@@ -296,9 +296,12 @@ JARVIS_TEST(pci_print_tree_output, "PRE: iocd | POST: none") {
     bool has_colon = false;
     bool has_bus = false;
     for (size_t i = 0; buf[i]; ++i) {
-        if (buf[i] == '[') has_bracket = true;
-        if (buf[i] == ':') has_colon = true;
-        if (buf[i] == 'P' && buf[i+1] == 'C' && buf[i+2] == 'I') has_bus = true;
+        if (buf[i] == '[')
+            has_bracket = true;
+        if (buf[i] == ':')
+            has_colon = true;
+        if (buf[i] == 'P' && buf[i + 1] == 'C' && buf[i + 2] == 'I')
+            has_bus = true;
     }
     JARVIS_ASSERT(has_bracket);
     JARVIS_ASSERT(has_colon);

@@ -17,14 +17,16 @@
  */
 
 /// @file test_cleanup.hpp
-/// @brief Proper destructor-based cleanup after tests (alternative to snapshot restore).
+/// @brief Proper destructor-based cleanup after tests (alternative to snapshot
+/// restore).
 
 #pragma once
 #include <types.hpp>
 
 namespace kernel::test {
 
-/// @brief Clean up all kernel resources created during testing without using the
+/// @brief Clean up all kernel resources created during testing without using
+/// the
 ///        snapshot mechanism. Destructors are called on every resource object,
 ///        tasks are dequeued, and all memory is returned to pools.
 ///
@@ -32,5 +34,4 @@ namespace kernel::test {
 /// no drivers loaded, empty dmesg, fresh daemons from initrd).
 void test_cleanup_all();
 
-}
-
+} // namespace kernel::test

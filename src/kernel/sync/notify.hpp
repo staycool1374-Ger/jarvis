@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file notify.hpp
-/// @brief One-shot notification (signalling) primitive — single waiter, value delivery.
+/// @brief One-shot notification (signalling) primitive — single waiter, value
+/// delivery.
 
 #pragma once
 
@@ -32,20 +35,23 @@ namespace sync {
 static constexpr uint64_t NOTIFY_INVALID = 0;
 
 class Notify {
-public:
-    Notify() : notify_value_(0), waiter_(nullptr), initialized_(false) {}
+  public:
+    Notify() : notify_value_(0), waiter_(nullptr), initialized_(false) {
+    }
     /// @brief Destructor — wakes any waiter before the object is freed.
     ~Notify();
     /// @brief Initialize the notification object.
     void init();
     /// @brief Initialize the notification object (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already
+    /// initialized.
     errors::SyncError init_err();
 
     /// @brief Signal a waiter with a value, waking it.
     /// @param value The value to deliver to the waiter.
     void notify(uint64_t value);
-    /// @brief Signal a waiter with a value, waking it (error-returning overload).
+    /// @brief Signal a waiter with a value, waking it (error-returning
+    /// overload).
     /// @param value The value to deliver to the waiter.
     /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_WAITER if no waiter.
     errors::SyncError notify_err(uint64_t value);
@@ -55,26 +61,30 @@ public:
     uint64_t wait();
     /// @brief Block until notified (error-returning overload).
     /// @param[out] out_value Receives the notification value.
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_ALREADY_WAITING if already has a waiter.
-    errors::SyncError wait_err(uint64_t* out_value);
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task,
+    /// SYNC_ERR_ALREADY_WAITING if already has a waiter.
+    errors::SyncError wait_err(uint64_t *out_value);
 
     /// @brief Check if notified without blocking.
     /// @param[out] value Receives the notification value if available.
     /// @return true if a notification was pending.
-    bool try_wait(uint64_t* value);
+    bool try_wait(uint64_t *value);
     /// @brief Check if notified without blocking (error-returning overload).
     /// @param[out] value Receives the notification value if available.
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_BUFFER_EMPTY if no notification pending.
-    errors::SyncError try_wait_err(uint64_t* value);
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_BUFFER_EMPTY if no notification
+    /// pending.
+    errors::SyncError try_wait_err(uint64_t *value);
 
-    uint64_t value() const { return notify_value_; }
+    uint64_t value() const {
+        return notify_value_;
+    }
 
-private:
+  private:
     SpinLock lock_;            ///< Protects all notify state.
     uint64_t notify_value_;    ///< Value delivered to the waiter.
-    TaskControlBlock* waiter_; ///< Currently waiting task (nullptr = none).
+    TaskControlBlock *waiter_; ///< Currently waiting task (nullptr = none).
     bool initialized_;         ///< Whether init() has been called.
 };
 
-}
-}
+} // namespace sync
+} // namespace kernel

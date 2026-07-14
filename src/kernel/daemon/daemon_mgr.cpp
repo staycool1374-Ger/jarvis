@@ -28,7 +28,7 @@
 #include <logger.hpp>
 #include <string.hpp>
 
-extern "C" void debug_write(const char* s);
+extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
 
 namespace kernel {
@@ -38,7 +38,8 @@ namespace daemon {
 static DaemonEntry entries_[MAX_DAEMONS] = {};
 /// Number of registered daemons.
 static uint64_t num_daemons_ = 0;
-/// Suppress [DAEMON] died serial output (e.g. during reboot_from_table teardown).
+/// Suppress [DAEMON] died serial output (e.g. during reboot_from_table
+/// teardown).
 static bool suppress_death_msg_ = false;
 
 /// @brief Initialize the daemon manager — clear all entries and reset count.
@@ -50,9 +51,10 @@ void init() {
     num_daemons_ = 0;
 }
 
-bool register_daemon(const char* name, const char* initrd_path,
+bool register_daemon(const char *name, const char *initrd_path,
                      void (*set_pid)(uint64_t), uint64_t (*get_pid)()) {
-    if (num_daemons_ >= MAX_DAEMONS) return false;
+    if (num_daemons_ >= MAX_DAEMONS)
+        return false;
 
     entries_[num_daemons_].name = name;
     entries_[num_daemons_].initrd_path = initrd_path;
@@ -62,9 +64,8 @@ bool register_daemon(const char* name, const char* initrd_path,
     entries_[num_daemons_].get_pid_fn = get_pid;
     ++num_daemons_;
 
-    Logger::info("daemon_mgr: registered '%s' at path '%s' (PID=%d)",
-                 name, initrd_path,
-                 entries_[num_daemons_ - 1].pid);
+    Logger::info("daemon_mgr: registered '%s' at path '%s' (PID=%d)", name,
+                 initrd_path, entries_[num_daemons_ - 1].pid);
     return true;
 }
 
@@ -117,7 +118,7 @@ void notify_death(uint64_t pid, bool log_only) {
 /// @brief Snapshot all daemon entries for test isolation.
 /// @param[out] out_entries  Array to copy entries into (must hold MAX_DAEMONS).
 /// @param[out] num_out      Set to the current daemon count.
-void capture_state(DaemonEntry* out_entries, uint64_t& num_out) {
+void capture_state(DaemonEntry *out_entries, uint64_t &num_out) {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
         out_entries[i] = entries_[i];
     }
@@ -127,7 +128,7 @@ void capture_state(DaemonEntry* out_entries, uint64_t& num_out) {
 /// @brief Restore daemon entries from a captured snapshot (test isolation).
 /// @param[in] entries_in  Array of entries to restore.
 /// @param[in] num_in      Number of entries to restore.
-void restore_state(const DaemonEntry* entries_in, uint64_t num_in) {
+void restore_state(const DaemonEntry *entries_in, uint64_t num_in) {
     for (uint64_t i = 0; i < MAX_DAEMONS; ++i) {
         entries_[i] = entries_in[i];
     }
@@ -138,14 +139,14 @@ void restore_state(const DaemonEntry* entries_in, uint64_t num_in) {
 /// Respects MAX_RESTART_COUNT per daemon; logs warnings on failure.
 void restart_stale_daemons() {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
-        if (entries_[i].pid != 0) continue;
+        if (entries_[i].pid != 0)
+            continue;
 
         // Check restart limit
         if (entries_[i].restart_count >= MAX_RESTART_COUNT) {
             Logger::warn(
                 "daemon_mgr: '%s' restart limit reached (%d), giving up",
-                         entries_[i].name,
-                         entries_[i].restart_count);
+                entries_[i].name, entries_[i].restart_count);
             continue;
         }
 
@@ -167,18 +168,18 @@ void restart_stale_daemons() {
         if (!f.data) {
             Logger::warn(
                 "daemon_mgr: '%s' initrd file not found, cannot restart",
-                         entries_[i].name);
+                entries_[i].name);
             continue;
         }
 
-        auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+        auto *hdr = reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
         if (!kernel::elf::validate_header(hdr)) {
             Logger::warn("daemon_mgr: '%s' invalid ELF header, cannot restart",
                          entries_[i].name);
             continue;
         }
 
-        auto* task = kernel::elf::load(hdr, f.data);
+        auto *task = kernel::elf::load(hdr, f.data);
         if (!task) {
             Logger::warn("daemon_mgr: '%s' elf::load failed, cannot restart",
                          entries_[i].name);
@@ -189,7 +190,8 @@ void restart_stale_daemons() {
         task->period_ticks = 10;
         {
             size_t j = 0;
-            while (entries_[i].name && entries_[i].name[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+            while (entries_[i].name && entries_[i].name[j] &&
+                   j < CONFIG_TASK_NAME_LEN - 1) {
                 task->name[j] = entries_[i].name[j];
                 ++j;
             }
@@ -223,14 +225,14 @@ void restart_stale_daemons() {
 
 /// @brief Ensure a daemon is running — reload from initrd ELF if needed.
 /// @param name  Name of the daemon to check / restart.
-void ensure_running(const char* name) {
+void ensure_running(const char *name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
             continue;
 
         // Already running — verify the task is still alive
         if (entries_[i].pid != 0) {
-            auto* task = Scheduler::find_task(entries_[i].pid);
+            auto *task = Scheduler::find_task(entries_[i].pid);
             if (task && task->magic == TaskControlBlock::TCB_MAGIC &&
                 task->state != TaskState::TERMINATED) {
                 return; // healthy
@@ -254,20 +256,23 @@ void ensure_running(const char* name) {
             f = initrd::find(with_dot);
         }
         if (!f.data) {
-            Logger::warn("daemon_mgr: ensure_running('%s') — initrd file not found",
+            Logger::warn(
+                "daemon_mgr: ensure_running('%s') — initrd file not found",
+                name);
+            return;
+        }
+
+        auto *hdr = reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
+        if (!kernel::elf::validate_header(hdr)) {
+            Logger::warn("daemon_mgr: ensure_running('%s') — invalid ELF",
                          name);
             return;
         }
 
-        auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
-        if (!kernel::elf::validate_header(hdr)) {
-            Logger::warn("daemon_mgr: ensure_running('%s') — invalid ELF", name);
-            return;
-        }
-
-        auto* task = kernel::elf::load(hdr, f.data);
+        auto *task = kernel::elf::load(hdr, f.data);
         if (!task) {
-            Logger::warn("daemon_mgr: ensure_running('%s') — elf::load failed", name);
+            Logger::warn("daemon_mgr: ensure_running('%s') — elf::load failed",
+                         name);
             return;
         }
 
@@ -275,7 +280,8 @@ void ensure_running(const char* name) {
         task->period_ticks = 10;
         {
             size_t j = 0;
-            while (entries_[i].name && entries_[i].name[j] && j < CONFIG_TASK_NAME_LEN - 1) {
+            while (entries_[i].name && entries_[i].name[j] &&
+                   j < CONFIG_TASK_NAME_LEN - 1) {
                 task->name[j] = entries_[i].name[j];
                 ++j;
             }
@@ -311,7 +317,7 @@ void ensure_running(const char* name) {
 
 /// @brief Terminate a daemon by name — marks task TERMINATED and clears entry.
 /// @param name  Name of the daemon to terminate.
-void terminate(const char* name) {
+void terminate(const char *name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (!entries_[i].name || strcmp(entries_[i].name, name) != 0)
             continue;
@@ -321,8 +327,8 @@ void terminate(const char* name) {
             return;
         }
 
-        auto* task = Scheduler::find_task(entries_[i].pid);
-        auto* current = Scheduler::current_task();
+        auto *task = Scheduler::find_task(entries_[i].pid);
+        auto *current = Scheduler::current_task();
         if (task && task != current &&
             task->magic == TaskControlBlock::TCB_MAGIC) {
             task->state = TaskState::TERMINATED;
@@ -339,12 +345,13 @@ void terminate(const char* name) {
         return;
     }
 
-    Logger::warn("daemon_mgr: terminate('%s') — no daemon with that name", name);
+    Logger::warn("daemon_mgr: terminate('%s') — no daemon with that name",
+                 name);
 }
 
 /// @brief Reset a daemon's restart count and PID so it can be restarted.
 /// @param name  Name of the daemon to reset.
-void reset_restart_count(const char* name) {
+void reset_restart_count(const char *name) {
     for (uint64_t i = 0; i < num_daemons_; ++i) {
         if (entries_[i].name && strcmp(entries_[i].name, name) == 0) {
             entries_[i].restart_count = 0;
@@ -362,7 +369,7 @@ void reset_restart_count(const char* name) {
 /// @brief Return a const reference to the i-th daemon entry.
 /// @param index  Entry index (0-based).
 /// @return DaemonEntry reference (sentinel if out of range).
-const DaemonEntry& get_entry(uint64_t index) {
+const DaemonEntry &get_entry(uint64_t index) {
     if (index >= MAX_DAEMONS) {
         static DaemonEntry sentinel = {};
         return sentinel;

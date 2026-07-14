@@ -27,21 +27,22 @@ namespace task {
 static constexpr uint64_t SPRIO_INVALID = ~0ULL;
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-void SporadicServer::init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,
+void SporadicServer::init(uint64_t budget_c, uint64_t period_t,
+                          uint64_t bg_prio,
                           uint64_t budget_granularity) noexcept {
-    budget_c_              = budget_c;
-    period_t_              = period_t;
-    base_priority_         = SPRIO_INVALID;   // caller should set externally
-    bg_priority_           = bg_prio;
-    budget_granularity_    = (budget_granularity > 0) ? budget_granularity : 1;
-    budget_remaining_      = budget_c;
+    budget_c_ = budget_c;
+    period_t_ = period_t;
+    base_priority_ = SPRIO_INVALID; // caller should set externally
+    bg_priority_ = bg_prio;
+    budget_granularity_ = (budget_granularity > 0) ? budget_granularity : 1;
+    budget_remaining_ = budget_c;
     consumed_since_active_ = 0;
-    activation_time_       = 0;
-    consume_counter_       = 0;
-    state_                 = IDLE;
-    replenishment_head_    = 0;
-    replenishment_tail_    = 0;
-    replenishment_count_   = 0;
+    activation_time_ = 0;
+    consume_counter_ = 0;
+    state_ = IDLE;
+    replenishment_head_ = 0;
+    replenishment_tail_ = 0;
+    replenishment_count_ = 0;
 }
 
 void SporadicServer::on_activation(uint64_t now) noexcept {
@@ -67,7 +68,8 @@ void SporadicServer::on_completion(uint64_t now) noexcept {
 
     // Server goes idle — schedule a replenishment for what was consumed.
     if (consumed_since_active_ > 0) {
-        schedule_replenishment(activation_time_ + period_t_, consumed_since_active_);
+        schedule_replenishment(activation_time_ + period_t_,
+                               consumed_since_active_);
     }
 
     // If the server completed with remaining budget, that budget is
@@ -106,7 +108,8 @@ bool SporadicServer::consume(uint64_t now) noexcept {
     if (budget_remaining_ == 0) {
         // Budget exhausted — schedule replenishment and drop to background.
         if (consumed_since_active_ > 0) {
-            schedule_replenishment(activation_time_ + period_t_, consumed_since_active_);
+            schedule_replenishment(activation_time_ + period_t_,
+                                   consumed_since_active_);
         }
         state_ = EXHAUSTED;
 #if CONFIG_SPORADIC_SERVER_DEADLINE_HOOK
@@ -152,11 +155,12 @@ void SporadicServer::process_replenishments(uint64_t now) noexcept {
 // ---- Private helpers ----
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-bool SporadicServer::schedule_replenishment(uint64_t time, uint64_t amount) noexcept {
+bool SporadicServer::schedule_replenishment(uint64_t time,
+                                            uint64_t amount) noexcept {
     if (replenishment_count_ == MAX_REPLENISHMENTS)
         return false;
 
-    replenishments_[replenishment_tail_].time   = time;
+    replenishments_[replenishment_tail_].time = time;
     replenishments_[replenishment_tail_].amount = amount;
 
     replenishment_tail_ = (replenishment_tail_ + 1) % MAX_REPLENISHMENTS;
@@ -172,9 +176,9 @@ SporadicServer::Replenishment SporadicServer::pop_replenishment() noexcept {
 }
 
 #if CONFIG_SPORADIC_SERVER_DEADLINE_HOOK
-__attribute__((weak))
-void sporadic_server_deadline_handler(SporadicServer* /*ss*/,
-                                      uint64_t /*reason*/) noexcept {
+__attribute__((weak)) void
+sporadic_server_deadline_handler(SporadicServer * /*ss*/,
+                                 uint64_t /*reason*/) noexcept {
     // default no-op — user code may override
 }
 #endif

@@ -22,8 +22,8 @@
 // Runmode: kernel
 // Testidea: Verifies that IPC::recv() restores the was_blocked flag correctly.
 // Input: Create a task, send a message to itself, receive it.
-// Expect: was_blocked flag is set during blocking, restored to READY after receive.
-// Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
+// Expect: was_blocked flag is set during blocking, restored to READY after
+// receive. Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -41,7 +41,7 @@ using namespace kernel;
 #endif
 
 JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
@@ -71,48 +71,54 @@ JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send_sync() restores the was_blocked flag correctly.
-// Input: Create sender and receiver tasks. Sender calls send_sync, receiver replies.
-// Expect: was_blocked flag is set during blocking, restored to READY after reply.
-// Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
-JARVIS_TEST(ipc_send_sync_was_blocked_restores_state, "PRE: none | POST: none") {
+// Testidea: Verifies that IPC::send_sync() restores the was_blocked flag
+// correctly. Input: Create sender and receiver tasks. Sender calls send_sync,
+// receiver replies. Expect: was_blocked flag is set during blocking, restored
+// to READY after reply. Depends: kernel::IPC, kernel::MessageQueue,
+// kernel::Scheduler
+JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
+            "PRE: none | POST: none") {
     static uint64_t g_receiver_id = 0;
 
-    auto* receiver = TaskControlBlock::create([]() {
-        Message msg;
-        // Receiver waits for message
-        bool ok = IPC::recv(msg);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT_EQ(42ULL, msg.type);
-        // Send reply
-        Message reply;
-        reply.sender_id = Scheduler::current_task()->id;
-        reply.type = 99;
-        reply.priority = 0;
-        reply.data_size = 0;
-        bool ok2 = IPC::send(msg.sender_id, reply);
-        JARVIS_ASSERT(ok2);
-    }, 5, 10);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            Message msg;
+            // Receiver waits for message
+            bool ok = IPC::recv(msg);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT_EQ(42ULL, msg.type);
+            // Send reply
+            Message reply;
+            reply.sender_id = Scheduler::current_task()->id;
+            reply.type = 99;
+            reply.priority = 0;
+            reply.data_size = 0;
+            bool ok2 = IPC::send(msg.sender_id, reply);
+            JARVIS_ASSERT(ok2);
+        },
+        5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
     Scheduler::add_task(*receiver);
 
-    auto* sender = TaskControlBlock::create([]() {
-        Message msg;
-        msg.sender_id = Scheduler::current_task()->id;
-        msg.type = 42;
-        msg.priority = 0;
-        msg.data_size = 0;
+    auto *sender = TaskControlBlock::create(
+        []() {
+            Message msg;
+            msg.sender_id = Scheduler::current_task()->id;
+            msg.type = 42;
+            msg.priority = 0;
+            msg.data_size = 0;
 
-        Message reply;
-        bool ok = IPC::send_sync(g_receiver_id, msg, reply);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT_EQ(99ULL, reply.type);
-    }, 5, 10);
+            Message reply;
+            bool ok = IPC::send_sync(g_receiver_id, msg, reply);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT_EQ(99ULL, reply.type);
+        },
+        5, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     kernel::test::yield_as(*sender);
 
     // Let sender run (it will block on send_sync)
@@ -134,36 +140,39 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state, "PRE: none | POST: none") 
 }
 
 // Runmode: kernel
-// Testidea: Verifies that userspace task blocking in recv() uses sti/hlt/cli mechanism.
-// Input: Create userspace task (page_table_ != null), send message to itself, receive.
-// Expect: sti/hlt/cli is emitted during blocking (internal to sys_receive).
-// Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
+// Testidea: Verifies that userspace task blocking in recv() uses sti/hlt/cli
+// mechanism. Input: Create userspace task (page_table_ != null), send message
+// to itself, receive. Expect: sti/hlt/cli is emitted during blocking (internal
+// to sys_receive). Depends: kernel::IPC, kernel::MessageQueue,
+// kernel::Scheduler
 JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Create a userspace task (has page_table_)
-    auto* user_task = TaskControlBlock::create_user([]() {
-        Message msg{};
-        msg.sender_id = Scheduler::current_task()->id;
-        msg.type = 1;
-        msg.priority = 0;
-        msg.data_size = 0;
+    auto *user_task = TaskControlBlock::create_user(
+        []() {
+            Message msg{};
+            msg.sender_id = Scheduler::current_task()->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
 
-        bool ok = IPC::send(Scheduler::current_task()->id, msg);
-        JARVIS_ASSERT(ok);
+            bool ok = IPC::send(Scheduler::current_task()->id, msg);
+            JARVIS_ASSERT(ok);
 
-        Message out;
-        ok = IPC::recv(out);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT_EQ(1ULL, out.type);
-    }, 5, 10);
+            Message out;
+            ok = IPC::recv(out);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT_EQ(1ULL, out.type);
+        },
+        5, 10);
     JARVIS_ASSERT(user_task != nullptr);
-    JARVIS_ASSERT(user_task->page_table_ != 0);  // userspace task
+    JARVIS_ASSERT(user_task->page_table_ != 0); // userspace task
     Scheduler::add_task(*user_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     kernel::test::yield_as(*user_task);
 
     // Let user task run (it will block in recv)
@@ -180,36 +189,39 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that kernel task blocking in recv() skips sti/hlt/cli mechanism.
-// Input: Create kernel task (page_table_ = null), send message to itself, receive.
-// Expect: sti/hlt/cli is NOT emitted during blocking (internal to sys_receive).
-// Depends: kernel::IPC, kernel::MessageQueue, kernel::Scheduler
+// Testidea: Verifies that kernel task blocking in recv() skips sti/hlt/cli
+// mechanism. Input: Create kernel task (page_table_ = null), send message to
+// itself, receive. Expect: sti/hlt/cli is NOT emitted during blocking (internal
+// to sys_receive). Depends: kernel::IPC, kernel::MessageQueue,
+// kernel::Scheduler
 JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Create a kernel task (no page_table_)
-    auto* kernel_task = TaskControlBlock::create([]() {
-        Message msg{};
-        msg.sender_id = Scheduler::current_task()->id;
-        msg.type = 1;
-        msg.priority = 0;
-        msg.data_size = 0;
+    auto *kernel_task = TaskControlBlock::create(
+        []() {
+            Message msg{};
+            msg.sender_id = Scheduler::current_task()->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
 
-        bool ok = IPC::send(Scheduler::current_task()->id, msg);
-        JARVIS_ASSERT(ok);
+            bool ok = IPC::send(Scheduler::current_task()->id, msg);
+            JARVIS_ASSERT(ok);
 
-        Message out;
-        ok = IPC::recv(out);
-        JARVIS_ASSERT(ok);
-        JARVIS_ASSERT_EQ(1ULL, out.type);
-    }, 5, 10);
+            Message out;
+            ok = IPC::recv(out);
+            JARVIS_ASSERT(ok);
+            JARVIS_ASSERT_EQ(1ULL, out.type);
+        },
+        5, 10);
     JARVIS_ASSERT(kernel_task != nullptr);
-    JARVIS_ASSERT(kernel_task->page_table_ == 0);  // kernel task
+    JARVIS_ASSERT(kernel_task->page_table_ == 0); // kernel task
     Scheduler::add_task(*kernel_task);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     kernel::test::yield_as(*kernel_task);
 
     // Let kernel task run (it will block in recv)

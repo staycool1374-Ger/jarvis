@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,12 +28,12 @@
 
 namespace kernel::errors {
 
-#define PCI_ERROR_CODES \
-    X(OK,             0,  "OK") \
-    X(NODEV,          1,  "No PCI device at this BDF") \
-    X(NOMEM,          2,  "PCI memory allocation failed") \
-    X(INVALID_BAR,    3,  "Invalid or uninitialized BAR") \
-    X(NOT_FOUND,      4,  "PCI device not found")
+#define PCI_ERROR_CODES                                                        \
+    X(OK, 0, "OK")                                                             \
+    X(NODEV, 1, "No PCI device at this BDF")                                   \
+    X(NOMEM, 2, "PCI memory allocation failed")                                \
+    X(INVALID_BAR, 3, "Invalid or uninitialized BAR")                          \
+    X(NOT_FOUND, 4, "PCI device not found")
 
 // NOLINTNEXTLINE(performance-enum-size)
 enum PciError : uint64_t {
@@ -40,11 +42,12 @@ enum PciError : uint64_t {
 #undef X
 };
 
-template<>
-inline const char* error_string(PciError e) {
+template <> inline const char *error_string(PciError e) {
     switch (e) {
-#define X(name, num, msg) case PCI_ERR_##name: return msg;
-    PCI_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case PCI_ERR_##name:                                                       \
+        return msg;
+        PCI_ERROR_CODES
 #undef X
     }
     return "Unknown PCI error";

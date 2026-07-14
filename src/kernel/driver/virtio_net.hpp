@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,15 +28,15 @@
 #include <kernel/net/net.hpp>
 
 namespace kernel::net {
-using ::net::MacAddr;
 using ::net::Ipv4Addr;
-using ::net::Nic;
+using ::net::MacAddr;
 using ::net::MAX_PACKET_SIZE;
+using ::net::Nic;
 
 /// Virtio-net header (prepended to each packet by the device)
 struct VirtioNetHdr {
-    uint8_t  flags;
-    uint8_t  gso_type;
+    uint8_t flags;
+    uint8_t gso_type;
     uint16_t hdr_len;
     uint16_t gso_size;
     uint16_t csum_start;
@@ -54,23 +56,23 @@ struct VirtioNetDevice {
     uint64_t rx_desc_phys;
     uint64_t rx_avail_phys;
     uint64_t rx_used_phys;
-    arch::VirtqDesc*  rx_desc;
-    arch::VirtqAvail* rx_avail;
-    arch::VirtqUsed*  rx_used;
+    arch::VirtqDesc *rx_desc;
+    arch::VirtqAvail *rx_avail;
+    arch::VirtqUsed *rx_used;
 
     uint64_t tx_desc_phys;
     uint64_t tx_avail_phys;
     uint64_t tx_used_phys;
-    arch::VirtqDesc*  tx_desc;
-    arch::VirtqAvail* tx_avail;
-    arch::VirtqUsed*  tx_used;
+    arch::VirtqDesc *tx_desc;
+    arch::VirtqAvail *tx_avail;
+    arch::VirtqUsed *tx_used;
 
     // DMA buffers for RX
-    uint8_t* rx_bufs[16];
+    uint8_t *rx_bufs[16];
     uint64_t rx_bufs_phys[16];
 
     // TX buffer
-    uint8_t* tx_buf;
+    uint8_t *tx_buf;
     uint64_t tx_buf_phys;
 
     uint16_t queue_size;
@@ -78,18 +80,19 @@ struct VirtioNetDevice {
     uint16_t tx_avail_idx;
     uint16_t rx_last_seen_used;
 
-    Nic* nic;          // back-pointer to the NIC abstraction
+    Nic *nic; // back-pointer to the NIC abstraction
 };
 
 /// Probe and initialize a Virtio-net device.
 /// @param nic  The NIC abstraction to populate.
 /// @return true if a Virtio-net device was found and initialized.
-bool virtio_net_probe(Nic& nic);
+bool virtio_net_probe(Nic &nic);
 
-/// Poll for a received frame.  Non-blocking — returns false if nothing available.
+/// Poll for a received frame.  Non-blocking — returns false if nothing
+/// available.
 /// @param buf  Buffer to copy the frame into.
 /// @param len  On success, set to the number of bytes written.
 /// @return true if a frame was received.
-bool virtio_net_poll(uint8_t* buf, size_t& len);
+bool virtio_net_poll(uint8_t *buf, size_t &len);
 
 } // namespace kernel::net

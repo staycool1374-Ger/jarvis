@@ -46,15 +46,18 @@ JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 1);
 
-    auto* worker = TaskControlBlock::create([]() {
-        sync::Semaphore* s = reinterpret_cast<sync::Semaphore*>(Scheduler::current_task()->user_data);
-        s->wait();
-    }, 5, 10);
+    auto *worker = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            s->wait();
+        },
+        5, 10);
     JARVIS_ASSERT(worker != nullptr);
     worker->user_data = &sem;
     Scheduler::add_task(*worker);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     (void)original;
     Scheduler::set_current(*worker);
 
@@ -127,11 +130,11 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
 
-    auto* owner = TaskControlBlock::create([]() {}, 5, 10);
+    auto *owner = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(owner != nullptr);
     Scheduler::add_task(*owner);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*owner);
     mutex.lock();
 
@@ -147,7 +150,7 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
     JARVIS_ASSERT(mutex.owner() == owner);
     mutex.unlock();
 
-    auto* waiter = TaskControlBlock::create([]() {}, 6, 10);
+    auto *waiter = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(waiter != nullptr);
     Scheduler::add_task(*waiter);
 
@@ -219,17 +222,20 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     }
     JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT);
 
-    auto* sender = TaskControlBlock::create([]() {
-        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
-        q->send((uint8_t*)"test", 4);
-    }, 5, 10);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            sync::Queue *q = reinterpret_cast<sync::Queue *>(
+                Scheduler::current_task()->user_data);
+            q->send((uint8_t *)"test", 4);
+        },
+        5, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*sender);
-    queue.send((uint8_t*)"test", 4);
+    queue.send((uint8_t *)"test", 4);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Drain one message
@@ -257,17 +263,20 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
     queue.init();
     JARVIS_ASSERT(queue.available() == 0);
 
-    auto* receiver = TaskControlBlock::create([]() {
-        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
-        uint8_t buf[32];
-        size_t size = 32;
-        q->receive(buf, &size);
-    }, 5, 10);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            sync::Queue *q = reinterpret_cast<sync::Queue *>(
+                Scheduler::current_task()->user_data);
+            uint8_t buf[32];
+            size_t size = 32;
+            q->receive(buf, &size);
+        },
+        5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     receiver->user_data = &queue;
     Scheduler::add_task(*receiver);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*receiver);
     uint8_t buf[32];
     size_t size = 32;
@@ -276,7 +285,7 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
 
     // Add a message to unblock
     Scheduler::set_current(*original);
-    JARVIS_ASSERT(queue.try_send((uint8_t*)"data", 4));
+    JARVIS_ASSERT(queue.try_send((uint8_t *)"data", 4));
     JARVIS_ASSERT(receiver->state == TaskState::READY);
 
     Scheduler::remove_task(*receiver);
@@ -302,17 +311,20 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
         JARVIS_ASSERT(queue.try_send(d, 1));
     }
 
-    auto* sender = TaskControlBlock::create([]() {
-        sync::Queue* q = reinterpret_cast<sync::Queue*>(Scheduler::current_task()->user_data);
-        q->send((uint8_t*)"wake", 4);
-    }, 5, 10);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            sync::Queue *q = reinterpret_cast<sync::Queue *>(
+                Scheduler::current_task()->user_data);
+            q->send((uint8_t *)"wake", 4);
+        },
+        5, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*sender);
-    queue.send((uint8_t*)"wake", 4);
+    queue.send((uint8_t *)"wake", 4);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Receiver drains one

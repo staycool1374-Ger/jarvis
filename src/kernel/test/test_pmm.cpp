@@ -70,7 +70,8 @@ JARVIS_TEST(pmm_alloc_contiguous_exhaustion, "PRE: none | POST: none") {
     size_t count = 0;
     while (count < 64) {
         uint64_t p = PMM::alloc_contiguous(1);
-        if (p == 0) break;
+        if (p == 0)
+            break;
         pages[count++] = p;
     }
     uint64_t extra = PMM::alloc_contiguous(1);
@@ -91,7 +92,8 @@ JARVIS_TEST(pmm_alloc_user_page_oob, "PRE: none | POST: none") {
     size_t count = 0;
     while (count < 64) {
         uint64_t p = PMM::alloc_user_page();
-        if (p == 0) break;
+        if (p == 0)
+            break;
         pages[count++] = p;
     }
     uint64_t extra = PMM::alloc_user_page();

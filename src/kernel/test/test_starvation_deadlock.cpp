@@ -42,20 +42,22 @@ static uint64_t g_starvation_counter = 0;
 TEST_CLASS(SchedulerStarvation) {
     g_starvation_counter = 0;
 
-    auto* low = TaskControlBlock::create([]() {
-        ++g_starvation_counter;
-    }, 5, 10);
+    auto *low =
+        TaskControlBlock::create([]() { ++g_starvation_counter; }, 5, 10);
     CT_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
-    auto* high = TaskControlBlock::create([]() {
-        uint64_t limit = 1000000ULL;
-        for (uint64_t i = 0; i < limit; ++i) {}
-    }, 10, 10);
+    auto *high = TaskControlBlock::create(
+        []() {
+            uint64_t limit = 1000000ULL;
+            for (uint64_t i = 0; i < limit; ++i) {
+            }
+        },
+        10, 10);
     CT_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     g_starvation_counter = 0;
 
     // Run high many times — if scheduler never schedules low, this
@@ -83,9 +85,11 @@ TEST_CLASS(SchedulerStarvation) {
     }
 
     Scheduler::remove_task(*low);
-    low->cleanup(); delete low;
+    low->cleanup();
+    delete low;
     Scheduler::remove_task(*high);
-    high->cleanup(); delete high;
+    high->cleanup();
+    delete high;
 };
 
 // Runmode: kernel
@@ -102,8 +106,11 @@ TEST_CLASS(SchedulerStarvation) {
 TEST_CLASS(PriorityInversionChain5) {
     sync::Mutex m1, m2, m3;
     sync::Semaphore s1, s2;
-    m1.init(); m2.init(); m3.init();
-    s1.init(0, 1); s2.init(0, 1);
+    m1.init();
+    m2.init();
+    m3.init();
+    s1.init(0, 1);
+    s2.init(0, 1);
 
     // Guard entire test: prevent timer ISR from dispatching test tasks
     // before we set them to BLOCKED. Without this, the ISR dispatches
@@ -111,29 +118,34 @@ TEST_CLASS(PriorityInversionChain5) {
     {
         arch::IrqGuard outer;
 
-        auto* task_e = TaskControlBlock::create([]() {}, 30, 10);
+        auto *task_e = TaskControlBlock::create([]() {}, 30, 10);
         CT_ASSERT(task_e != nullptr);
-        task_e->base_priority = 30; task_e->priority = 30;
+        task_e->base_priority = 30;
+        task_e->priority = 30;
         Scheduler::add_task(*task_e);
 
-        auto* task_d = TaskControlBlock::create([]() {}, 25, 10);
+        auto *task_d = TaskControlBlock::create([]() {}, 25, 10);
         CT_ASSERT(task_d != nullptr);
-        task_d->base_priority = 25; task_d->priority = 25;
+        task_d->base_priority = 25;
+        task_d->priority = 25;
         Scheduler::add_task(*task_d);
 
-        auto* task_c = TaskControlBlock::create([]() {}, 20, 10);
+        auto *task_c = TaskControlBlock::create([]() {}, 20, 10);
         CT_ASSERT(task_c != nullptr);
-        task_c->base_priority = 20; task_c->priority = 20;
+        task_c->base_priority = 20;
+        task_c->priority = 20;
         Scheduler::add_task(*task_c);
 
-        auto* task_b = TaskControlBlock::create([]() {}, 15, 10);
+        auto *task_b = TaskControlBlock::create([]() {}, 15, 10);
         CT_ASSERT(task_b != nullptr);
-        task_b->base_priority = 15; task_b->priority = 15;
+        task_b->base_priority = 15;
+        task_b->priority = 15;
         Scheduler::add_task(*task_b);
 
-        auto* task_a = TaskControlBlock::create([]() {}, 10, 10);
+        auto *task_a = TaskControlBlock::create([]() {}, 10, 10);
         CT_ASSERT(task_a != nullptr);
-        task_a->base_priority = 10; task_a->priority = 10;
+        task_a->base_priority = 10;
+        task_a->priority = 10;
         Scheduler::add_task(*task_a);
 
         // Step 1: A locks M1 (uncontested)
@@ -208,7 +220,8 @@ TEST_CLASS(PriorityInversionChain5) {
         CT_ASSERT(task_b->state == TaskState::BLOCKED);
 
         // Cleanup while still under IrqGuard
-        TaskControlBlock* cleanup_list[] = {task_a, task_b, task_c, task_d, task_e};
+        TaskControlBlock *cleanup_list[] = {task_a, task_b, task_c, task_d,
+                                            task_e};
         for (size_t ci = 0; ci < 5; ++ci) {
             cleanup_list[ci]->state = TaskState::READY;
             Scheduler::remove_task(*cleanup_list[ci]);
@@ -227,12 +240,13 @@ TEST_CLASS(PriorityInversionChain5) {
 // Expect: All mutexes unlocked at end; no crash; no corrupt state.
 TEST_CLASS(DeadlockNestedMutexLoad) {
     sync::Mutex mtx[3];
-    for (int i = 0; i < 3; ++i) mtx[i].init();
+    for (int i = 0; i < 3; ++i)
+        mtx[i].init();
 
     static constexpr uint64_t PRIOS[4] = {3, 5, 7, 9};
-    TaskControlBlock* t[4];
+    TaskControlBlock *t[4];
     for (int i = 0; i < 4; ++i) {
-        t[i] = TaskControlBlock::create([](){}, PRIOS[i], 10);
+        t[i] = TaskControlBlock::create([]() {}, PRIOS[i], 10);
         CT_ASSERT(t[i] != nullptr);
         t[i]->base_priority = PRIOS[i];
         t[i]->priority = PRIOS[i];
@@ -247,16 +261,16 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         // the highest-prio waiter (t[2], prio 7 > 5).
         {
             kernel::test::ScopedCurrentTask scope(*t[0]);
-            mtx[0].lock();   // uncontested
+            mtx[0].lock(); // uncontested
             CT_ASSERT(mtx[0].owner() == t[0]);
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[1]);
-            t[1]->state = TaskState::BLOCKED;   // simulate contends M0
+            t[1]->state = TaskState::BLOCKED; // simulate contends M0
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[2]);
-            t[2]->state = TaskState::BLOCKED;   // simulate contends M0
+            t[2]->state = TaskState::BLOCKED; // simulate contends M0
         }
         // t[0] releases M0 → wake_one would pick t[2] (highest prio)
         {
@@ -293,7 +307,7 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[3]);
-            t[3]->state = TaskState::BLOCKED;   // prio 9, added after t[1]
+            t[3]->state = TaskState::BLOCKED; // prio 9, added after t[1]
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[0]);
@@ -325,11 +339,11 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[2]);
-            t[2]->state = TaskState::BLOCKED;   // awaits M0
+            t[2]->state = TaskState::BLOCKED; // awaits M0
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[3]);
-            t[3]->state = TaskState::BLOCKED;   // awaits M1
+            t[3]->state = TaskState::BLOCKED; // awaits M1
         }
         // Release M0 → only t[2] unblocks
         {
@@ -367,11 +381,11 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[1]);
-            t[1]->state = TaskState::BLOCKED;   // awaits M0
+            t[1]->state = TaskState::BLOCKED; // awaits M0
         }
         {
             kernel::test::ScopedCurrentTask scope(*t[2]);
-            t[2]->state = TaskState::BLOCKED;   // awaits M1
+            t[2]->state = TaskState::BLOCKED; // awaits M1
         }
         // Release M1 first (reverse order)
         {
@@ -434,7 +448,8 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         CT_ASSERT(!mtx[2].is_locked());
 
         // All mutexes unlocked, all tasks in clean state for teardown
-        for (int i = 0; i < 3; ++i) CT_ASSERT(!mtx[i].is_locked());
+        for (int i = 0; i < 3; ++i)
+            CT_ASSERT(!mtx[i].is_locked());
     }
 
     for (int i = 0; i < 4; ++i) {

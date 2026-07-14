@@ -42,7 +42,7 @@ uint64_t get_iocd_pid() {
 /// @brief Check whether the currently running task is the IOCD.
 /// @return true if the current task PID matches the recorded IOCD PID.
 bool is_iocd_task() {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     return cur && cur->id == g_iocd_pid;
 }
 

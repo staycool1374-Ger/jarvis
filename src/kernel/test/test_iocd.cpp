@@ -38,13 +38,14 @@ using namespace kernel;
 // Depends: kernel/driver/iocd
 JARVIS_TEST(iocd_boots_and_registers, "PRE: vfsd, iocd | POST: iocd") {
     uint64_t pid = iocd::get_iocd_pid();
-    Logger::info("[TEST:iocd_boots_and_registers] pid=%u vfsd_pid=%u", pid, vfsd::get_vfsd_pid());
+    Logger::info("[TEST:iocd_boots_and_registers] pid=%u vfsd_pid=%u", pid,
+                 vfsd::get_vfsd_pid());
     JARVIS_ASSERT(pid != 0);
     uint64_t vfsd_pid = vfsd::get_vfsd_pid();
     JARVIS_ASSERT(vfsd_pid != 0);
-    auto* vfsd_task = Scheduler::find_task(vfsd_pid);
+    auto *vfsd_task = Scheduler::find_task(vfsd_pid);
     JARVIS_ASSERT(vfsd_task != nullptr);
-    auto* task = Scheduler::find_task(pid);
+    auto *task = Scheduler::find_task(pid);
     JARVIS_ASSERT(task != nullptr);
     JARVIS_TEST_PASS();
 }

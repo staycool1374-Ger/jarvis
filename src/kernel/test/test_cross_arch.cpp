@@ -52,10 +52,10 @@ using namespace kernel;
 // the arch-specific page-table walker through the generic VMM interface.
 //
 // Runmode: kernel
-// Testidea: Map a page in a cloned PML4, verify virt_to_phys, unmap, verify gone
-// Input: alloc_page + map_page_in_pml4 + virt_to_phys_in_pml4 + unmap
-// Expect: Map succeeds, virt_to_phys returns correct phys, unmap succeeds, then 0
-// Depends: kernel::PMM, kernel::VMM
+// Testidea: Map a page in a cloned PML4, verify virt_to_phys, unmap, verify
+// gone Input: alloc_page + map_page_in_pml4 + virt_to_phys_in_pml4 + unmap
+// Expect: Map succeeds, virt_to_phys returns correct phys, unmap succeeds, then
+// 0 Depends: kernel::PMM, kernel::VMM
 JARVIS_TEST(cross_page_table_map_unmap, "PRE: none | POST: none") {
     // Clone kernel page table for isolated testing
     uint64_t pml4 = VMM::clone_kernel_pml4();
@@ -74,8 +74,8 @@ JARVIS_TEST(cross_page_table_map_unmap, "PRE: none | POST: none") {
     // Verify the translation via virt_to_phys_in_pml4
     uint64_t retrieved = VMM::virt_to_phys_in_pml4(TEST_VA, pml4);
     JARVIS_ASSERT_FMT(retrieved == (phys & ~0xFFFULL),
-        "virt_to_phys_in_pml4 returned 0x%lx, expected 0x%lx",
-        retrieved, phys & ~0xFFFULL);
+                      "virt_to_phys_in_pml4 returned 0x%lx, expected 0x%lx",
+                      retrieved, phys & ~0xFFFULL);
 
     // Clean up user pages from cloned PML4
     VMM::free_user_pages(pml4);
@@ -178,46 +178,58 @@ JARVIS_TEST(cross_context_save_restore, "PRE: none | POST: none") {
 // pointer to the correct positions for the architecture.
 //
 // Runmode: kernel
-// Testidea: Create a stack frame with init_stack, verify entry and state present
-// Input: Stack buffer, entry function, psr, user SP
-// Expect: Stack contains entry and PSR, pointers are within range
-// Depends: kernel::arch::ArchContextManager
+// Testidea: Create a stack frame with init_stack, verify entry and state
+// present Input: Stack buffer, entry function, psr, user SP Expect: Stack
+// contains entry and PSR, pointers are within range Depends:
+// kernel::arch::ArchContextManager
 JARVIS_TEST(cross_context_init_stack, "PRE: none | POST: none") {
     uint64_t stack[1024] = {};
-    uint64_t* stack_top = stack + 1024;
+    uint64_t *stack_top = stack + 1024;
 
-    auto test_entry = []() { while (1) {} };
+    auto test_entry = []() {
+        while (1) {
+        }
+    };
 
 #if defined(CONFIG_ARCH_X86_64)
     uint64_t test_user_sp = arch::HHDM_OFFSET + 0x30000000ULL;
-    arch::ArchContextManager::init_stack(stack_top, test_entry,
-        arch::SEG_KERNEL_CODE, arch::SEG_KERNEL_DATA,
+    arch::ArchContextManager::init_stack(
+        stack_top, test_entry, arch::SEG_KERNEL_CODE, arch::SEG_KERNEL_DATA,
         arch::RFLAGS_DEFAULT, test_user_sp);
     // init_stack writes below the original stack_top — verify some values
     // were written (i.e. stack_top[-1] through stack_top[-22] are non-zero)
     bool written = false;
     for (int i = 1; i <= 22; ++i) {
-        if (stack_top[-i] != 0) { written = true; break; }
+        if (stack_top[-i] != 0) {
+            written = true;
+            break;
+        }
     }
     JARVIS_ASSERT_FMT(written, "init_stack did not write any values to stack");
 #elif defined(CONFIG_ARCH_AARCH64)
     uint64_t test_psr = 0;
     uint64_t test_user_sp = arch::HHDM_OFFSET + 0x30000000ULL;
-    arch::ArchContextManager::init_stack(stack_top, test_entry,
-        0, 0, test_psr, test_user_sp);
+    arch::ArchContextManager::init_stack(stack_top, test_entry, 0, 0, test_psr,
+                                         test_user_sp);
     bool written = false;
     for (int i = 1; i <= 7; ++i) {
-        if (stack_top[-i] != 0) { written = true; break; }
+        if (stack_top[-i] != 0) {
+            written = true;
+            break;
+        }
     }
     JARVIS_ASSERT_FMT(written, "init_stack did not write any values to stack");
 #elif defined(CONFIG_ARCH_RISCV64)
     uint64_t test_psr = 0;
     uint64_t test_user_sp = arch::HHDM_OFFSET + 0x30000000ULL;
-    arch::ArchContextManager::init_stack(stack_top, test_entry,
-        0, 0, test_psr, test_user_sp);
+    arch::ArchContextManager::init_stack(stack_top, test_entry, 0, 0, test_psr,
+                                         test_user_sp);
     bool written = false;
     for (int i = 1; i <= 20; ++i) {
-        if (stack_top[-i] != 0) { written = true; break; }
+        if (stack_top[-i] != 0) {
+            written = true;
+            break;
+        }
     }
     JARVIS_ASSERT_FMT(written, "init_stack did not write any values to stack");
 #endif
@@ -253,7 +265,8 @@ JARVIS_TEST(cross_timer_ticks_monotonic, "PRE: iocd | POST: none") {
     // Use set_ticks_for_test to establish a known baseline
     arch::Timer::set_ticks_for_test(100);
     uint64_t t1 = arch::Timer::ticks();
-    JARVIS_ASSERT_FMT(t1 == 100, "Timer ticks should be 100 after test set, got %lu", t1);
+    JARVIS_ASSERT_FMT(t1 == 100,
+                      "Timer ticks should be 100 after test set, got %lu", t1);
 
     uint64_t t2 = arch::Timer::ticks();
     uint64_t t3 = arch::Timer::ticks();
@@ -273,13 +286,15 @@ JARVIS_TEST(cross_timer_ticks_monotonic, "PRE: iocd | POST: none") {
 // Depends: kernel::arch::Timer
 JARVIS_TEST(cross_timer_ns_delta, "PRE: iocd | POST: none") {
     uint64_t t0 = arch::Timer::ns();
-    for (int i = 0; i < 100000; ++i) { asm volatile(""); }
+    for (int i = 0; i < 100000; ++i) {
+        asm volatile("");
+    }
     uint64_t t1 = arch::Timer::ns();
 
     uint64_t delta = t1 - t0;
     JARVIS_ASSERT_FMT(delta > 0, "Timer ns() delta <= 0: %lu", delta);
     JARVIS_ASSERT_FMT(delta < 10000000000ULL,
-        "Timer ns() delta too large: %lu ns (limit 10s)", delta);
+                      "Timer ns() delta too large: %lu ns (limit 10s)", delta);
 
     JARVIS_TEST_PASS();
 }
@@ -367,10 +382,14 @@ JARVIS_TEST(cross_ipc_queue_push_pop, "PRE: none | POST: none") {
     msg.type = 7;
     msg.priority = 0;
     msg.data_size = 8;
-    msg.data[0] = 0xCA; msg.data[1] = 0xFE;
-    msg.data[2] = 0xBA; msg.data[3] = 0xBE;
-    msg.data[4] = 0xDE; msg.data[5] = 0xAD;
-    msg.data[6] = 0xBE; msg.data[7] = 0xEF;
+    msg.data[0] = 0xCA;
+    msg.data[1] = 0xFE;
+    msg.data[2] = 0xBA;
+    msg.data[3] = 0xBE;
+    msg.data[4] = 0xDE;
+    msg.data[5] = 0xAD;
+    msg.data[6] = 0xBE;
+    msg.data[7] = 0xEF;
 
     JARVIS_ASSERT(q.push(msg));
     JARVIS_ASSERT(!q.is_empty());
@@ -405,9 +424,18 @@ JARVIS_TEST(cross_ipc_queue_priority_ordering, "PRE: none | POST: none") {
     q.init();
 
     Message m1, m2, m3;
-    m1.sender_id = 1; m1.type = 1; m1.priority = 2; m1.data_size = 0;
-    m2.sender_id = 2; m2.type = 2; m2.priority = 0; m2.data_size = 0;
-    m3.sender_id = 3; m3.type = 3; m3.priority = 1; m3.data_size = 0;
+    m1.sender_id = 1;
+    m1.type = 1;
+    m1.priority = 2;
+    m1.data_size = 0;
+    m2.sender_id = 2;
+    m2.type = 2;
+    m2.priority = 0;
+    m2.data_size = 0;
+    m3.sender_id = 3;
+    m3.type = 3;
+    m3.priority = 1;
+    m3.data_size = 0;
 
     JARVIS_ASSERT(q.push(m1));
     JARVIS_ASSERT(q.push(m2));
@@ -416,15 +444,15 @@ JARVIS_TEST(cross_ipc_queue_priority_ordering, "PRE: none | POST: none") {
 
     Message out;
     JARVIS_ASSERT(q.pop(out));
-    JARVIS_ASSERT_EQ(2ULL, out.sender_id);  // priority 0 first
+    JARVIS_ASSERT_EQ(2ULL, out.sender_id); // priority 0 first
     JARVIS_ASSERT_EQ(0ULL, out.priority);
 
     JARVIS_ASSERT(q.pop(out));
-    JARVIS_ASSERT_EQ(3ULL, out.sender_id);  // priority 1 second
+    JARVIS_ASSERT_EQ(3ULL, out.sender_id); // priority 1 second
     JARVIS_ASSERT_EQ(1ULL, out.priority);
 
     JARVIS_ASSERT(q.pop(out));
-    JARVIS_ASSERT_EQ(1ULL, out.sender_id);  // priority 2 last
+    JARVIS_ASSERT_EQ(1ULL, out.sender_id); // priority 2 last
     JARVIS_ASSERT_EQ(2ULL, out.priority);
 
     JARVIS_ASSERT(q.is_empty());
@@ -442,7 +470,10 @@ JARVIS_TEST(cross_ipc_queue_full_behavior, "PRE: none | POST: none") {
     q.init();
 
     Message fill;
-    fill.sender_id = 1; fill.type = 0; fill.priority = 0; fill.data_size = 0;
+    fill.sender_id = 1;
+    fill.type = 0;
+    fill.priority = 0;
+    fill.data_size = 0;
 
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         JARVIS_ASSERT_FMT(q.push(fill), "Push failed at index %zu", i);
@@ -470,13 +501,11 @@ JARVIS_TEST(cross_ipc_queue_full_behavior, "PRE: none | POST: none") {
 // Expect: Non-null vnode with S_IFDIR
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(cross_vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
-    vfs::Vnode* vn = vfs::resolve("/");
+    vfs::Vnode *vn = vfs::resolve("/");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
 }
-
-
 
 // Runmode: kernel
 // Testidea: Resolve a nonexistent path returns nullptr
@@ -484,12 +513,10 @@ JARVIS_TEST(cross_vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
 // Expect: nullptr
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(cross_vfs_resolve_nonexistent, "PRE: vfsd, iocd | POST: none") {
-    vfs::Vnode* vn = vfs::resolve("/nonexistent_path_cross_arch_test_xyz");
+    vfs::Vnode *vn = vfs::resolve("/nonexistent_path_cross_arch_test_xyz");
     JARVIS_ASSERT(vn == nullptr);
     JARVIS_TEST_PASS();
 }
-
-
 
 // ============================================================================
 // Registration

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,7 +31,7 @@ namespace arch {
 /// @brief Stub for x86 RDRAND — always fails on RISC-V.
 /// @param[out] out Unmodified output parameter.
 /// @return false (no hardware random number generator).
-inline bool rdrand64(uint64_t& out) {
+inline bool rdrand64(uint64_t &out) {
     (void)out;
     return false;
 }
@@ -37,7 +39,7 @@ inline bool rdrand64(uint64_t& out) {
 /// @brief Stub for x86 RDSEED — always fails on RISC-V.
 /// @param[out] out Unmodified output parameter.
 /// @return false (no hardware random number generator).
-inline bool rdseed64(uint64_t& out) {
+inline bool rdseed64(uint64_t &out) {
     (void)out;
     return false;
 }

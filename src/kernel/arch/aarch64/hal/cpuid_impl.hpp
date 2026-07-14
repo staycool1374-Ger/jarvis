@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -40,15 +42,19 @@ inline CpuIdResult cpuid(uint32_t leaf) {
 
 /// @brief Check for RDRAND support (always false on AArch64).
 /// @return false.
-inline bool has_rdrand() { return false; }
+inline bool has_rdrand() {
+    return false;
+}
 /// @brief Check for RDSEED support (always false on AArch64).
 /// @return false.
-inline bool has_rdseed() { return false; }
+inline bool has_rdseed() {
+    return false;
+}
 
 /// @brief Check for FP and Advanced SIMD support via ID_AA64PFR0_EL1.
 /// @return true if both FP and Advanced SIMD are implemented.
 inline bool has_fpu() {
-    uint64_t id_aa64pfr0;
+    uint64_t id_aa64pfr0{};
     asm volatile("mrs %0, id_aa64pfr0_el1" : "=r"(id_aa64pfr0));
     uint64_t fp = (id_aa64pfr0 >> 16) & 0xF;
     uint64_t advsimd = (id_aa64pfr0 >> 20) & 0xF;

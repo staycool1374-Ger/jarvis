@@ -33,14 +33,15 @@ JARVIS_TEST(tmpfs_filesystem_properties, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(tmpfs_fs.name != nullptr);
     JARVIS_ASSERT_EQ(0, strcmp(tmpfs_fs.name, "tmpfs"));
 
-    Vnode* root = tmpfs_fs.get_root();
+    Vnode *root = tmpfs_fs.get_root();
     JARVIS_ASSERT(root != nullptr);
     JARVIS_ASSERT(root->mode & S_IFDIR);
     JARVIS_TEST_PASS();
 }
 
-JARVIS_TEST(tmpfs_mount_at_invalid_resolve_fails, "PRE: vfsd, iocd | POST: none") {
-    Vnode* vn = vfs::resolve("/nonexistent_tmpfs_mount");
+JARVIS_TEST(tmpfs_mount_at_invalid_resolve_fails,
+            "PRE: vfsd, iocd | POST: none") {
+    Vnode *vn = vfs::resolve("/nonexistent_tmpfs_mount");
     JARVIS_ASSERT_EQ(nullptr, vn);
     JARVIS_TEST_PASS();
 }

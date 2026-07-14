@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef JARVIS_CONFIG_H
 #define JARVIS_CONFIG_H
 
@@ -34,7 +36,8 @@
 #elif defined(__riscv64)
 #define CONFIG_ARCH_RISCV64 1
 #else
-#error "Unknown architecture — define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, or CONFIG_ARCH_RISCV64"
+#error                                                                         \
+    "Unknown architecture — define CONFIG_ARCH_X86_64, CONFIG_ARCH_AARCH64, or CONFIG_ARCH_RISCV64"
 #endif
 #endif
 #endif
@@ -235,7 +238,8 @@
 #define CONFIG_TASK_NAME_LEN 16
 #endif
 
-/// Maximum number of waiters in a sync primitive (Mutex, Semaphore, Queue, etc).
+/// Maximum number of waiters in a sync primitive (Mutex, Semaphore, Queue,
+/// etc).
 #ifndef CONFIG_SYNC_MAX_WAITERS
 #define CONFIG_SYNC_MAX_WAITERS 32
 #endif
@@ -257,13 +261,13 @@
 /// Comma-separated list of block sizes per pool.
 /// Must have exactly CONFIG_MEMPOOL_NUM_POOLS entries.
 #ifndef CONFIG_MEMPOOL_BLOCK_SIZES
-#define CONFIG_MEMPOOL_BLOCK_SIZES 16,32,64,128,256,512,1024,2048,4096
+#define CONFIG_MEMPOOL_BLOCK_SIZES 16, 32, 64, 128, 256, 512, 1024, 2048, 4096
 #endif
 
 /// Comma-separated list of block counts per pool.
 /// Must have exactly CONFIG_MEMPOOL_NUM_POOLS entries.
 #ifndef CONFIG_MEMPOOL_BLOCK_COUNTS
-#define CONFIG_MEMPOOL_BLOCK_COUNTS 256,128,64,32,16,8,4,2,1
+#define CONFIG_MEMPOOL_BLOCK_COUNTS 256, 128, 64, 32, 16, 8, 4, 2, 1
 #endif
 
 // ---------------------------------------------------------------------------
@@ -377,24 +381,24 @@
 #define CONFIG_INCLUDE_SYS_HALT 1
 #endif
 /// Computed count of enabled syscalls (used for dispatch table sizing).
-#define CONFIG_SYSCALL_COUNT \
-    (CONFIG_INCLUDE_SYS_YIELD + CONFIG_INCLUDE_SYS_EXIT + \
-     CONFIG_INCLUDE_SYS_FORK + CONFIG_INCLUDE_SYS_CLONE + \
-     CONFIG_INCLUDE_SYS_EXECVE + CONFIG_INCLUDE_SYS_WAITPID + \
-     CONFIG_INCLUDE_SYS_NANOSLEEP + CONFIG_INCLUDE_SYS_GETPID + \
-     CONFIG_INCLUDE_SYS_GETPPID + CONFIG_INCLUDE_SYS_SETPRIO + \
-     CONFIG_INCLUDE_SYS_GETPRIO + CONFIG_INCLUDE_SYS_SENDSYNC + \
-     CONFIG_INCLUDE_SYS_RECV + CONFIG_INCLUDE_SYS_REPLY + \
-     CONFIG_INCLUDE_SYS_NOTIFY + CONFIG_INCLUDE_SYS_NOTIFY_WAIT + \
-     CONFIG_INCLUDE_SYS_EVENT_POST + CONFIG_INCLUDE_SYS_EVENT_WAIT + \
-     CONFIG_INCLUDE_SYS_BRK + CONFIG_INCLUDE_SYS_MMAP + \
-     CONFIG_INCLUDE_SYS_MUNMAP + CONFIG_INCLUDE_SYS_OPEN + \
-     CONFIG_INCLUDE_SYS_CLOSE + CONFIG_INCLUDE_SYS_READ + \
-     CONFIG_INCLUDE_SYS_WRITE + CONFIG_INCLUDE_SYS_SEEK + \
-     CONFIG_INCLUDE_SYS_IOCTL + CONFIG_INCLUDE_SYS_STAT + \
-     CONFIG_INCLUDE_SYS_MKDIR + CONFIG_INCLUDE_SYS_UNLINK + \
-     CONFIG_INCLUDE_SYS_RENAME + CONFIG_INCLUDE_SYS_MOUNT + \
-     CONFIG_INCLUDE_SYS_UMOUNT + CONFIG_INCLUDE_SYS_REBOOT + \
+#define CONFIG_SYSCALL_COUNT                                                   \
+    (CONFIG_INCLUDE_SYS_YIELD + CONFIG_INCLUDE_SYS_EXIT +                      \
+     CONFIG_INCLUDE_SYS_FORK + CONFIG_INCLUDE_SYS_CLONE +                      \
+     CONFIG_INCLUDE_SYS_EXECVE + CONFIG_INCLUDE_SYS_WAITPID +                  \
+     CONFIG_INCLUDE_SYS_NANOSLEEP + CONFIG_INCLUDE_SYS_GETPID +                \
+     CONFIG_INCLUDE_SYS_GETPPID + CONFIG_INCLUDE_SYS_SETPRIO +                 \
+     CONFIG_INCLUDE_SYS_GETPRIO + CONFIG_INCLUDE_SYS_SENDSYNC +                \
+     CONFIG_INCLUDE_SYS_RECV + CONFIG_INCLUDE_SYS_REPLY +                      \
+     CONFIG_INCLUDE_SYS_NOTIFY + CONFIG_INCLUDE_SYS_NOTIFY_WAIT +              \
+     CONFIG_INCLUDE_SYS_EVENT_POST + CONFIG_INCLUDE_SYS_EVENT_WAIT +           \
+     CONFIG_INCLUDE_SYS_BRK + CONFIG_INCLUDE_SYS_MMAP +                        \
+     CONFIG_INCLUDE_SYS_MUNMAP + CONFIG_INCLUDE_SYS_OPEN +                     \
+     CONFIG_INCLUDE_SYS_CLOSE + CONFIG_INCLUDE_SYS_READ +                      \
+     CONFIG_INCLUDE_SYS_WRITE + CONFIG_INCLUDE_SYS_SEEK +                      \
+     CONFIG_INCLUDE_SYS_IOCTL + CONFIG_INCLUDE_SYS_STAT +                      \
+     CONFIG_INCLUDE_SYS_MKDIR + CONFIG_INCLUDE_SYS_UNLINK +                    \
+     CONFIG_INCLUDE_SYS_RENAME + CONFIG_INCLUDE_SYS_MOUNT +                    \
+     CONFIG_INCLUDE_SYS_UMOUNT + CONFIG_INCLUDE_SYS_REBOOT +                   \
      CONFIG_INCLUDE_SYS_HALT)
 
 // ---------------------------------------------------------------------------
@@ -445,9 +449,9 @@
 // ---------------------------------------------------------------------------
 /// Enable Priority Inheritance Protocol for Mutex.
 /// When set, a lower-priority task holding a mutex inherits the priority of
-/// a higher-priority task waiting on the same mutex. Prevents priority inversion.
-/// Set to 0 for soft-RT builds (no PI overhead).
-/// Default: 1 (enabled).
+/// a higher-priority task waiting on the same mutex. Prevents priority
+/// inversion. Set to 0 for soft-RT builds (no PI overhead). Default: 1
+/// (enabled).
 #ifndef CONFIG_MUTEX_PIP
 #define CONFIG_MUTEX_PIP 0
 #endif
@@ -463,9 +467,8 @@
 
 /// Enable Priority Inheritance Protocol for Queue (sync::Queue).
 /// Boosts the receiver when a high-priority sender is blocked on a full queue,
-/// and boosts the sender when a high-priority receiver is blocked on an empty queue.
-/// Set to 0 for soft-RT builds.
-/// Default: 1 (enabled).
+/// and boosts the sender when a high-priority receiver is blocked on an empty
+/// queue. Set to 0 for soft-RT builds. Default: 1 (enabled).
 #ifndef CONFIG_QUEUE_PIP
 #define CONFIG_QUEUE_PIP 1
 #endif
@@ -550,12 +553,12 @@
 // ---------------------------------------------------------------------------
 /// Overridable assertion macro. Default calls panic on failure.
 #ifndef CONFIG_ASSERT
-extern "C" void panic(const char* msg);
-#define CONFIG_ASSERT(expr) \
-    do { \
-        if (!(expr)) { \
-            panic("CONFIG_ASSERT: " #expr " at " __FILE__); \
-        } \
+extern "C" void panic(const char *msg);
+#define CONFIG_ASSERT(expr)                                                    \
+    do {                                                                       \
+        if (!(expr)) {                                                         \
+            panic("CONFIG_ASSERT: " #expr " at " __FILE__);                    \
+        }                                                                      \
     } while (0)
 #endif
 

@@ -74,7 +74,7 @@ JARVIS_TEST(o1_priority_map_clear_nonexistent, "PRE: none | POST: none") {
 // ---------------------------------------------------------------------------
 
 JARVIS_TEST(o1_task_queue_single, "PRE: none | POST: none") {
-    auto* tcb = TaskControlBlock::create([]() {}, 5, 20);
+    auto *tcb = TaskControlBlock::create([]() {}, 5, 20);
     JARVIS_ASSERT(tcb != nullptr);
     TaskQueue q;
     JARVIS_ASSERT(q.empty());
@@ -83,7 +83,7 @@ JARVIS_TEST(o1_task_queue_single, "PRE: none | POST: none") {
     JARVIS_ASSERT(!q.empty());
     JARVIS_ASSERT_EQ(1ULL, q.count());
 
-    auto* popped = q.pop_front();
+    auto *popped = q.pop_front();
     JARVIS_ASSERT(popped == tcb);
     JARVIS_ASSERT(q.empty());
 
@@ -94,9 +94,9 @@ JARVIS_TEST(o1_task_queue_single, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(o1_task_queue_multiple, "PRE: none | POST: none") {
-    auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
-    auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
-    auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
+    auto *t1 = TaskControlBlock::create([]() {}, 5, 20);
+    auto *t2 = TaskControlBlock::create([]() {}, 6, 20);
+    auto *t3 = TaskControlBlock::create([]() {}, 7, 20);
     JARVIS_ASSERT(t1 && t2 && t3);
 
     TaskQueue q;
@@ -110,16 +110,22 @@ JARVIS_TEST(o1_task_queue_multiple, "PRE: none | POST: none") {
     JARVIS_ASSERT(q.pop_front() == t3);
     JARVIS_ASSERT(q.empty());
 
-    t1->state = TaskState::TERMINATED; t1->cleanup(); delete t1;
-    t2->state = TaskState::TERMINATED; t2->cleanup(); delete t2;
-    t3->state = TaskState::TERMINATED; t3->cleanup(); delete t3;
+    t1->state = TaskState::TERMINATED;
+    t1->cleanup();
+    delete t1;
+    t2->state = TaskState::TERMINATED;
+    t2->cleanup();
+    delete t2;
+    t3->state = TaskState::TERMINATED;
+    t3->cleanup();
+    delete t3;
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(o1_task_queue_remove_middle, "PRE: none | POST: none") {
-    auto* t1 = TaskControlBlock::create([]() {}, 5, 20);
-    auto* t2 = TaskControlBlock::create([]() {}, 6, 20);
-    auto* t3 = TaskControlBlock::create([]() {}, 7, 20);
+    auto *t1 = TaskControlBlock::create([]() {}, 5, 20);
+    auto *t2 = TaskControlBlock::create([]() {}, 6, 20);
+    auto *t3 = TaskControlBlock::create([]() {}, 7, 20);
     JARVIS_ASSERT(t1 && t2 && t3);
 
     TaskQueue q;
@@ -133,9 +139,15 @@ JARVIS_TEST(o1_task_queue_remove_middle, "PRE: none | POST: none") {
     JARVIS_ASSERT(q.pop_front() == t3);
     JARVIS_ASSERT(q.empty());
 
-    t1->state = TaskState::TERMINATED; t1->cleanup(); delete t1;
-    t2->state = TaskState::TERMINATED; t2->cleanup(); delete t2;
-    t3->state = TaskState::TERMINATED; t3->cleanup(); delete t3;
+    t1->state = TaskState::TERMINATED;
+    t1->cleanup();
+    delete t1;
+    t2->state = TaskState::TERMINATED;
+    t2->cleanup();
+    delete t2;
+    t3->state = TaskState::TERMINATED;
+    t3->cleanup();
+    delete t3;
     JARVIS_TEST_PASS();
 }
 
@@ -151,7 +163,7 @@ JARVIS_TEST(o1_ready_queue_single, "PRE: none | POST: none") {
     rqm.enqueue(*tcb, 5);
     JARVIS_ASSERT(rqm.has_ready());
 
-    auto* popped = rqm.dequeue_highest();
+    auto *popped = rqm.dequeue_highest();
     JARVIS_ASSERT(popped == tcb.get());
     JARVIS_ASSERT(!rqm.has_ready());
 
@@ -200,16 +212,18 @@ JARVIS_TEST(o1_ready_queue_128_levels, "PRE: none | POST: none") {
 
     for (uint64_t p = 0; p < CONFIG_MAX_TASKS; ++p) {
         tasks[p].reset(TaskControlBlock::create([]() {}, 1, 20));
-        if (!tasks[p]) break;
+        if (!tasks[p])
+            break;
         rqm.enqueue(*tasks[p], p);
         ++created;
     }
     JARVIS_ASSERT(created > 0);
 
-    for (uint64_t p = created - 1; ; --p) {
-        auto* t = rqm.dequeue_highest();
+    for (uint64_t p = created - 1;; --p) {
+        auto *t = rqm.dequeue_highest();
         JARVIS_ASSERT(t != nullptr);
-        if (p == 0) break;
+        if (p == 0)
+            break;
     }
     JARVIS_ASSERT(!rqm.has_ready());
 
@@ -232,11 +246,13 @@ JARVIS_TEST(o1_scheduler_dequeues_highest, "PRE: none | POST: none") {
     Scheduler::add_task(*low);
     Scheduler::add_task(*high);
     auto guard = ScopeGuard([&]() {
-        low->state = TaskState::TERMINATED; low->cleanup();
-        high->state = TaskState::TERMINATED; high->cleanup();
+        low->state = TaskState::TERMINATED;
+        low->cleanup();
+        high->state = TaskState::TERMINATED;
+        high->cleanup();
     });
 
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     // next_task should return the highest priority task (15)
     JARVIS_ASSERT(next != nullptr);
     JARVIS_ASSERT(next->priority == 15);
@@ -250,11 +266,12 @@ JARVIS_TEST(o1_scheduler_add_remove_ready_queue, "PRE: none | POST: none") {
 
     Scheduler::add_task(*t1);
     // t1 was enqueued by add_task
-    auto* next = Scheduler::next_task();
+    auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next != nullptr);
     JARVIS_ASSERT_EQ(10ULL, next->priority);
 
-    t1->state = TaskState::TERMINATED; t1->cleanup();
+    t1->state = TaskState::TERMINATED;
+    t1->cleanup();
     JARVIS_TEST_PASS();
 }
 

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file sync_errors.hpp
-/// @brief Synchronisation error codes (X-macro table with human-readable strings).
+/// @brief Synchronisation error codes (X-macro table with human-readable
+/// strings).
 
 #pragma once
 
@@ -26,22 +29,22 @@
 
 namespace kernel::errors {
 
-#define SYNC_ERROR_CODES \
-    X(OK,                 0,  "OK") \
-    X(NO_TASK,            1,  "No current task context") \
-    X(MAX_WAITERS,        2,  "Maximum waiters exceeded") \
-    X(ALREADY_INITIALIZED, 3, "Object already initialized") \
-    X(NOT_OWNER,          4,  "Not the lock/sync object owner") \
-    X(NOT_LOCKED,         5,  "Lock/sync object not held") \
-    X(QUEUE_FULL,         6,  "Message queue is full") \
-    X(QUEUE_EMPTY,        7,  "Message queue is empty") \
-    X(MSG_TOO_LARGE,      8,  "Message exceeds maximum size") \
-    X(ALREADY_WAITING,    9,  "Task already waiting on this object") \
-    X(INVALID_ARGS,       10, "Invalid arguments") \
-    X(BUFFER_FULL,        11, "Buffer is full") \
-    X(BUFFER_EMPTY,       12, "Buffer is empty") \
-    X(NO_WAITER,          13, "No waiter to notify") \
-    X(INTERRUPTED,        14, "Operation interrupted by signal")
+#define SYNC_ERROR_CODES                                                       \
+    X(OK, 0, "OK")                                                             \
+    X(NO_TASK, 1, "No current task context")                                   \
+    X(MAX_WAITERS, 2, "Maximum waiters exceeded")                              \
+    X(ALREADY_INITIALIZED, 3, "Object already initialized")                    \
+    X(NOT_OWNER, 4, "Not the lock/sync object owner")                          \
+    X(NOT_LOCKED, 5, "Lock/sync object not held")                              \
+    X(QUEUE_FULL, 6, "Message queue is full")                                  \
+    X(QUEUE_EMPTY, 7, "Message queue is empty")                                \
+    X(MSG_TOO_LARGE, 8, "Message exceeds maximum size")                        \
+    X(ALREADY_WAITING, 9, "Task already waiting on this object")               \
+    X(INVALID_ARGS, 10, "Invalid arguments")                                   \
+    X(BUFFER_FULL, 11, "Buffer is full")                                       \
+    X(BUFFER_EMPTY, 12, "Buffer is empty")                                     \
+    X(NO_WAITER, 13, "No waiter to notify")                                    \
+    X(INTERRUPTED, 14, "Operation interrupted by signal")
 
 /// @brief Synchronisation subsystem error codes.
 // NOLINTNEXTLINE(performance-enum-size)
@@ -52,11 +55,12 @@ enum SyncError : uint64_t {
 };
 
 /// @brief Return a human-readable string for a sync error code.
-template<>
-inline const char* error_string(SyncError e) {
+template <> inline const char *error_string(SyncError e) {
     switch (e) {
-#define X(name, num, msg) case SYNC_ERR_##name: return msg;
-    SYNC_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case SYNC_ERR_##name:                                                      \
+        return msg;
+        SYNC_ERROR_CODES
 #undef X
     }
     return "Unknown sync error";

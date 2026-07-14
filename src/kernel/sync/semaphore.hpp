@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file semaphore.hpp
-/// @brief Counting semaphore with blocking wait/post and priority-sorted waiters.
+/// @brief Counting semaphore with blocking wait/post and priority-sorted
+/// waiters.
 
 #pragma once
 
@@ -30,28 +33,28 @@ namespace kernel {
 namespace sync {
 
 class Semaphore {
-public:
+  public:
     static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Semaphore()
-        : count_(0)
-        , max_count_(1)
-        , waiter_count_(0)
-        , owner_(nullptr)
-        , holder_priority_(0)
-        {}
+        : count_(0), max_count_(1), waiter_count_(0), owner_(nullptr),
+          holder_priority_(0) {
+    }
     /// @brief Initialize semaphore with a count and optional maximum.
     /// @param initial Starting count.
     /// @param max Maximum count (default unlimited).
     void init(uint64_t initial, uint64_t max = 0xFFFFFFFF);
-    /// @brief Initialize semaphore with a count and optional maximum (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    /// @brief Initialize semaphore with a count and optional maximum
+    /// (error-returning overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already
+    /// initialized.
     errors::SyncError init_err(uint64_t initial, uint64_t max = 0xFFFFFFFF);
 
     /// @brief Decrement count, blocking if zero.
     void wait();
     /// @brief Decrement count, blocking if zero (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task,
+    /// SYNC_ERR_MAX_WAITERS if waiter limit reached.
     errors::SyncError wait_err();
 
     /// @brief Decrement count without blocking.
@@ -63,26 +66,31 @@ public:
 
     /// @brief Increment count, waking a waiter if any.
     void post();
-    /// @brief Increment count, waking a waiter if any (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_BUFFER_FULL if max count reached.
+    /// @brief Increment count, waking a waiter if any (error-returning
+    /// overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_BUFFER_FULL if max count
+    /// reached.
     errors::SyncError post_err();
 
-    uint64_t value() const { return count_; }
+    uint64_t value() const {
+        return count_;
+    }
 
-private:
-    SpinLock lock_;          ///< Protects all semaphore state.
-    uint64_t count_;         ///< Current semaphore count.
-    uint64_t max_count_;     ///< Maximum count (capped on post).
-    TaskControlBlock* waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
-    size_t waiter_count_;    ///< Number of tasks waiting on this semaphore.
-    TaskControlBlock* owner_;         ///< Owner task for PIP (non-null when count < initial).
-    uint64_t holder_priority_;        ///< Saved original priority for PI restore.
+  private:
+    SpinLock lock_;      ///< Protects all semaphore state.
+    uint64_t count_;     ///< Current semaphore count.
+    uint64_t max_count_; ///< Maximum count (capped on post).
+    TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
+    size_t waiter_count_; ///< Number of tasks waiting on this semaphore.
+    TaskControlBlock
+        *owner_; ///< Owner task for PIP (non-null when count < initial).
+    uint64_t holder_priority_; ///< Saved original priority for PI restore.
 
-    bool add_waiter(TaskControlBlock* task);
+    bool add_waiter(TaskControlBlock *task);
     void wake_one();
-    void inherit_priority(TaskControlBlock& waiter);
+    void inherit_priority(TaskControlBlock &waiter);
     void restore_priority();
 };
 
-}
-}
+} // namespace sync
+} // namespace kernel

@@ -31,21 +31,26 @@ using namespace kernel;
 // Testidea: Verify the CSPRNG works regardless of hardware RNG availability
 // Input: Check CPUID RDRAND/RDSEED, then generate random data
 // Expect: random_fill produces non-zero output even without hardware RNG
-// Depends: kernel::arch::has_rdrand, kernel::arch::has_rdseed, kernel::random_fill
+// Depends: kernel::arch::has_rdrand, kernel::arch::has_rdseed,
+// kernel::random_fill
 JARVIS_TEST(random_fallback_independent, "PRE: none | POST: none") {
     bool has_rr = arch::has_rdrand();
     bool has_rs = arch::has_rdseed();
-    Logger::info("RNG sources: RDSEED=%s RDRAND=%s",
-        has_rs ? "yes" : "no", has_rr ? "yes" : "no");
+    Logger::info("RNG sources: RDSEED=%s RDRAND=%s", has_rs ? "yes" : "no",
+                 has_rr ? "yes" : "no");
 
     uint8_t buf[256];
     random_fill(buf, sizeof(buf));
 
     bool any_nonzero = false;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0) { any_nonzero = true; break; }
+        if (buf[i] != 0) {
+            any_nonzero = true;
+            break;
+        }
     }
-    JARVIS_ASSERT_FMT(any_nonzero,
+    JARVIS_ASSERT_FMT(
+        any_nonzero,
         "random_fill returned all zeros (no HW RNG fallback failed)");
     JARVIS_TEST_PASS();
 }
@@ -68,8 +73,8 @@ JARVIS_TEST(random_multi_block, "PRE: none | POST: none") {
                 break;
             }
         }
-        JARVIS_ASSERT_FMT(block_nonzero,
-            "ChaCha20 block %d returned all zeros", block);
+        JARVIS_ASSERT_FMT(block_nonzero, "ChaCha20 block %d returned all zeros",
+                          block);
     }
     JARVIS_TEST_PASS();
 }

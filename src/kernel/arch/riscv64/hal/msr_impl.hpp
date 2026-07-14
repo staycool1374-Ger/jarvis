@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -29,11 +31,17 @@ namespace arch {
 /// @brief Write to an x86-style MSR (no-op on RISC-V).
 /// @param addr MSR address (ignored).
 /// @param val  Value to write (ignored).
-inline void wrmsr(uint32_t addr, uint64_t val) { (void)addr; (void)val; }
+inline void wrmsr(uint32_t addr, uint64_t val) {
+    (void)addr;
+    (void)val;
+}
 
 /// @brief Read from an x86-style MSR (stub on RISC-V).
 /// @param addr MSR address (ignored).
 /// @return Always 0.
-inline uint64_t rdmsr(uint32_t addr) { (void)addr; return 0; }
+inline uint64_t rdmsr(uint32_t addr) {
+    (void)addr;
+    return 0;
+}
 
 } // namespace arch

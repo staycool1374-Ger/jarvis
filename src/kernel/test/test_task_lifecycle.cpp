@@ -73,11 +73,11 @@ JARVIS_TEST(task_exit_cleans_all_ipc_objects, "PRE: none | POST: none") {
 // Expect: Sender is woken up (state becomes READY) and removed from blocked
 // list.
 JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
-    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
 
-    auto* sender = TaskControlBlock::create([]() {}, 6, 10);
+    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
@@ -160,12 +160,12 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly, "PRE: none | POST: none") {
 // Expect: Child is reparented to init task, child's resources are cleaned
 // up, no leaks.
 JARVIS_TEST(task_reparent_preserves_resources, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
     // Create a fake child by manually setting up hierarchy
-    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
 
@@ -188,7 +188,7 @@ JARVIS_TEST(task_reparent_preserves_resources, "PRE: none | POST: none") {
     Scheduler::reap_orphans();
 
     // Child should be reparented to init (the idle/root task)
-    auto* actual_init = Scheduler::get_idle_task();
+    auto *actual_init = Scheduler::get_idle_task();
     JARVIS_ASSERT(actual_init != nullptr);
     JARVIS_ASSERT(child->parent_id == actual_init->id);
     JARVIS_ASSERT(actual_init->num_children >= 1);
@@ -215,7 +215,7 @@ JARVIS_TEST(task_zombie_state_cleanup, "PRE: none | POST: none") {
     JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb.get());
 
     uint64_t tcb_id = tcb->id;
-    tcb.reset();  // TaskDeleter: remove_task + cleanup + delete
+    tcb.reset(); // TaskDeleter: remove_task + cleanup + delete
 
     JARVIS_ASSERT(Scheduler::find_task(tcb_id) == nullptr);
     JARVIS_TEST_PASS();
@@ -229,11 +229,11 @@ JARVIS_TEST(task_zombie_state_cleanup, "PRE: none | POST: none") {
 // Expect: Child is NOT reaped while parent is waiting; reaped after parent
 // collects status.
 JARVIS_TEST(scheduler_reap_respects_parent_wait, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
 
@@ -283,14 +283,15 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait, "PRE: none | POST: none") {
 JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
     // Find a test ELF in initrd
     initrd::InitrdFile f = initrd::find("./user-app.c.elf");
-    if (!f.data) f = initrd::find("user-app.c.elf");
+    if (!f.data)
+        f = initrd::find("user-app.c.elf");
     if (!f.data) {
         // No test ELF available, skip with pass
         JARVIS_TEST_PASS();
         return;
     }
 
-    auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+    auto *hdr = reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
     if (!kernel::elf::validate_header(hdr)) {
         JARVIS_TEST_PASS();
         return;
@@ -315,7 +316,7 @@ JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
 // reap_orphans().
 // Expect: find_task returns nullptr after reap_orphans cleans it up.
 JARVIS_TEST(lifecycle_zombie_no_waker, "PRE: none | POST: none") {
-    auto* tcb = TaskControlBlock::create([]() {}, 5, 10);
+    auto *tcb = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(tcb != nullptr);
     Scheduler::add_task(*tcb);
 
@@ -339,12 +340,13 @@ JARVIS_TEST(lifecycle_zombie_no_waker, "PRE: none | POST: none") {
 // Create a receiver, fill its queue so a sender blocks. Terminate receiver
 // and cleanup.
 // Expect: receiver->msg_queue is nullptr after cleanup (no leak).
-JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders, "PRE: none | POST: none") {
-    auto* receiver = TaskControlBlock::create([]() {}, 5, 10);
+JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
+            "PRE: none | POST: none") {
+    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
 
-    auto* sender = TaskControlBlock::create([]() {}, 6, 10);
+    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 

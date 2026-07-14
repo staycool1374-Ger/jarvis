@@ -15,12 +15,13 @@ class PriorityMap {
     static_assert(CONFIG_PRIORITY_CEILING <= 128,
                   "O(1) scheduler supports at most 128 priority levels");
 
-    uint64_t bitmap_hi_;  ///< Bitmap for priorities 64–127
-    uint64_t bitmap_lo_;  ///< Bitmap for priorities 0–63
+    uint64_t bitmap_hi_; ///< Bitmap for priorities 64–127
+    uint64_t bitmap_lo_; ///< Bitmap for priorities 0–63
 
-public:
+  public:
     /// @brief Constructs an empty PriorityMap.
-    PriorityMap() : bitmap_hi_(0), bitmap_lo_(0) {}
+    PriorityMap() : bitmap_hi_(0), bitmap_lo_(0) {
+    }
 
     /// @brief Sets the bit for a given priority level.
     void set(uint64_t prio) noexcept {
@@ -60,19 +61,31 @@ public:
     }
 
     /// @brief Returns the raw upper 64-bit word.
-    uint64_t raw_hi() const noexcept { return bitmap_hi_; }
+    uint64_t raw_hi() const noexcept {
+        return bitmap_hi_;
+    }
     /// @brief Returns the raw lower 64-bit word.
-    uint64_t raw_lo() const noexcept { return bitmap_lo_; }
+    uint64_t raw_lo() const noexcept {
+        return bitmap_lo_;
+    }
 
     /// @brief Restores bitmap state from raw words (for snapshot restore).
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    void set_raw(uint64_t hi, uint64_t lo) noexcept { bitmap_hi_ = hi; bitmap_lo_ = lo; }
+    void set_raw(uint64_t hi, uint64_t lo) noexcept {
+        bitmap_hi_ = hi;
+        bitmap_lo_ = lo;
+    }
 
     /// @brief Returns true if no priority levels are set.
-    bool empty() const noexcept { return bitmap_hi_ == 0 && bitmap_lo_ == 0; }
+    bool empty() const noexcept {
+        return bitmap_hi_ == 0 && bitmap_lo_ == 0;
+    }
 
     /// @brief Clears all priority levels.
-    void clear_all() noexcept { bitmap_hi_ = 0; bitmap_lo_ = 0; }
+    void clear_all() noexcept {
+        bitmap_hi_ = 0;
+        bitmap_lo_ = 0;
+    }
 };
 
 } // namespace kernel

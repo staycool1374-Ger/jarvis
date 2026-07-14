@@ -89,40 +89,48 @@ static bool g_run_tests = false;
 // Init task entry point for PID 1.  Mounts fstab, runs /etc/rc, then
 // blocks as reaper.  Referenced by both the manual pre-test create (below)
 // and the post-test task-definition table (taskdefs.cpp).
-extern "C" void debug_write(const char* msg);
+extern "C" void debug_write(const char *msg);
 void init_task_main() {
     debug_write("[DIAG] init_task_main entered\n");
     // Read /etc/fstab and mount entries
     {
         auto fstab = initrd::find("./etc/fstab");
         if (fstab.data) {
-            const char* p = reinterpret_cast<const char*>(fstab.data);
-            const char* end = p + fstab.size;
+            const char *p = reinterpret_cast<const char *>(fstab.data);
+            const char *end = p + fstab.size;
             while (p < end) {
-                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                while (p < end && (*p == ' ' || *p == '\t'))
+                    ++p;
                 if (p >= end || *p == '#' || *p == '\n') {
-                    while (p < end && *p != '\n') ++p;
-                    if (p < end) ++p;
+                    while (p < end && *p != '\n')
+                        ++p;
+                    if (p < end)
+                        ++p;
                     continue;
                 }
                 char fs_name[32];
                 char mp[64];
                 int n = 0;
-                while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
-                       && n < 31) fs_name[n++] = *p++;
+                while (p < end && *p != ' ' && *p != '\t' && *p != '\n' &&
+                       n < 31)
+                    fs_name[n++] = *p++;
                 fs_name[n] = '\0';
-                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                while (p < end && (*p == ' ' || *p == '\t'))
+                    ++p;
                 n = 0;
-                while (p < end && *p != ' ' && *p != '\t' && *p != '\n'
-                       && n < 63) mp[n++] = *p++;
+                while (p < end && *p != ' ' && *p != '\t' && *p != '\n' &&
+                       n < 63)
+                    mp[n++] = *p++;
                 mp[n] = '\0';
-                while (p < end && *p != '\n') ++p;
-                if (p < end) ++p;
+                while (p < end && *p != '\n')
+                    ++p;
+                if (p < end)
+                    ++p;
                 if (fs_name[0] && mp[0]) {
-                    auto* fs = kernel::vfs::find_fs(fs_name);
+                    auto *fs = kernel::vfs::find_fs(fs_name);
                     if (fs && kernel::vfs::mount(*fs, mp) == 0) {
-                        kernel::Logger::info("init: mounted %s at %s",
-                                     fs_name, mp);
+                        kernel::Logger::info("init: mounted %s at %s", fs_name,
+                                             mp);
                     }
                 }
             }
@@ -132,24 +140,30 @@ void init_task_main() {
     {
         auto rc = initrd::find("./etc/rc");
         if (rc.data) {
-            const char* p = reinterpret_cast<const char*>(rc.data);
-            const char* end = p + rc.size;
+            const char *p = reinterpret_cast<const char *>(rc.data);
+            const char *end = p + rc.size;
             while (p < end) {
-                while (p < end && (*p == ' ' || *p == '\t')) ++p;
+                while (p < end && (*p == ' ' || *p == '\t'))
+                    ++p;
                 if (p >= end || *p == '#' || *p == '\n') {
-                    while (p < end && *p != '\n') ++p;
-                    if (p < end) ++p;
+                    while (p < end && *p != '\n')
+                        ++p;
+                    if (p < end)
+                        ++p;
                     continue;
                 }
                 char line[128];
                 int n = 0;
-                while (p < end && *p != '\n' && n < 127) line[n++] = *p++;
+                while (p < end && *p != '\n' && n < 127)
+                    line[n++] = *p++;
                 line[n] = '\0';
-                if (p < end) ++p;
-                if (line[0] == '\0') continue;
+                if (p < end)
+                    ++p;
+                if (line[0] == '\0')
+                    continue;
                 char elf_path[160];
                 n = 0;
-                const char* src = line;
+                const char *src = line;
                 while (*src && *src != ' ' && *src != '\t' && n < 127)
                     elf_path[n++] = *src++;
                 elf_path[n] = '\0';
@@ -157,23 +171,32 @@ void init_task_main() {
                 int m = 0;
                 for (int i = 0; elf_path[i]; ++i)
                     elf_path1[m++] = elf_path[i];
-                elf_path1[m++] = '.'; elf_path1[m++] = 'e';
-                elf_path1[m++] = 'l'; elf_path1[m++] = 'f';
+                elf_path1[m++] = '.';
+                elf_path1[m++] = 'e';
+                elf_path1[m++] = 'l';
+                elf_path1[m++] = 'f';
                 elf_path1[m] = '\0';
                 m = 0;
                 for (int i = 0; elf_path[i]; ++i)
                     elf_path2[m++] = elf_path[i];
-                elf_path2[m++] = '.'; elf_path2[m++] = 'c';
-                elf_path2[m++] = '.'; elf_path2[m++] = 'e';
-                elf_path2[m++] = 'l'; elf_path2[m++] = 'f';
+                elf_path2[m++] = '.';
+                elf_path2[m++] = 'c';
+                elf_path2[m++] = '.';
+                elf_path2[m++] = 'e';
+                elf_path2[m++] = 'l';
+                elf_path2[m++] = 'f';
                 elf_path2[m] = '\0';
                 auto f = initrd::find(elf_path);
-                if (!f.data) f = initrd::find(elf_path1);
-                if (!f.data) f = initrd::find(elf_path2);
+                if (!f.data)
+                    f = initrd::find(elf_path1);
+                if (!f.data)
+                    f = initrd::find(elf_path2);
                 if (f.data) {
-                    auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data);
+                    auto *hdr =
+                        reinterpret_cast<const kernel::elf::ELF64Header *>(
+                            f.data);
                     if (kernel::elf::validate_header(hdr)) {
-                        auto* task = kernel::elf::load(hdr, f.data);
+                        auto *task = kernel::elf::load(hdr, f.data);
                         if (task) {
                             task->priority = 1;
                             task->period_ticks = 20;
@@ -188,26 +211,32 @@ void init_task_main() {
 
     // ── Wait for daemon readiness ───────────────────────────────
     struct DaemonWatch {
-        const char* name;
-        uint64_t    expected_pid;
-        bool        ready;
+        const char *name;
+        uint64_t expected_pid;
+        bool ready;
     } watch[] = {
-        { "vfsd", kernel::vfsd::get_vfsd_pid(), false },
-        { "iocd", kernel::iocd::get_iocd_pid(), false },
+        {"vfsd", kernel::vfsd::get_vfsd_pid(), false},
+        {"iocd", kernel::iocd::get_iocd_pid(), false},
     };
     size_t watch_count = sizeof(watch) / sizeof(watch[0]);
 
     uint64_t deadline = arch::Timer::ticks() + 500;
-    bool     degraded = false;
+    bool degraded = false;
 
-    kernel::Logger::info("[DIAG] init_task_main: starting daemon wait (g_run_tests=%u)", (unsigned)g_run_tests);
+    kernel::Logger::info(
+        "[DIAG] init_task_main: starting daemon wait (g_run_tests=%u)",
+        (unsigned)g_run_tests);
 
     while (!degraded) {
         bool all_ready = true;
         for (size_t wi = 0; wi < watch_count; ++wi) {
-            if (!watch[wi].ready) { all_ready = false; break; }
+            if (!watch[wi].ready) {
+                all_ready = false;
+                break;
+            }
         }
-        if (all_ready) break;
+        if (all_ready)
+            break;
 
         if (arch::Timer::ticks() >= deadline) {
             kernel::Logger::warn("init: timeout waiting for daemon(s), "
@@ -216,7 +245,7 @@ void init_task_main() {
             break;
         }
 
-        kernel::Message boot_msg;
+        kernel::Message boot_msg{};
         while (kernel::IPC::recv(boot_msg)) {
             if (boot_msg.type == kernel::ipc::MSG_DAEMON_READY) {
                 for (size_t wi = 0; wi < watch_count; ++wi) {
@@ -248,12 +277,14 @@ void init_task_main() {
     }
 
     // ── Run tests from init-task context (IF=1) ──────────────────
-    kernel::Logger::info("[DIAG] init_task_main: reached test runner g_run_tests=%u", (unsigned)g_run_tests);
+    kernel::Logger::info(
+        "[DIAG] init_task_main: reached test runner g_run_tests=%u",
+        (unsigned)g_run_tests);
     if (g_run_tests) {
 #ifdef CONFIG_DEBUG
         kernel::Logger::info("[TEST] Registry tests=%u classes=%u",
-            (unsigned)kernel::test::Registry::count(),
-            (unsigned)kernel::test::Registry::class_count());
+                             (unsigned)kernel::test::Registry::count(),
+                             (unsigned)kernel::test::Registry::class_count());
         kernel::test::set_class_auto_shutdown(true);
         kernel::test::run_registered(0);
 #else
@@ -264,10 +295,10 @@ void init_task_main() {
 
     // ── Create shell task ───────────────────────────────────────
     {
-        auto* shell = kernel::TaskControlBlock::create(
+        auto *shell = kernel::TaskControlBlock::create(
             service::Shell::shell_task_main, 5, 0);
         if (shell) {
-            const char* src = "shell";
+            const char *src = "shell";
             size_t i = 0;
             while (src[i] && i < CONFIG_TASK_NAME_LEN - 1) {
                 shell->name[i] = src[i];
@@ -284,16 +315,19 @@ void init_task_main() {
 
     // ── Reap loop — block until a child exits ───────────────────
     for (;;) {
+        arch::pause();
         kernel::Scheduler::reap_orphans();
 
-        kernel::Message msg;
+        kernel::Message msg{};
         while (kernel::IPC::recv(msg)) {
             if (msg.type == kernel::ipc::MSG_DAEMON_READY) {
                 kernel::Logger::info("init: daemon (PID %u) ready "
-                                     "(restart)", msg.sender_id);
+                                     "(restart)",
+                                     msg.sender_id);
             } else if (msg.type == kernel::ipc::MSG_DAEMON_FAILED) {
                 kernel::Logger::warn("init: daemon (PID %u) init "
-                                     "failed (restart)", msg.sender_id);
+                                     "failed (restart)",
+                                     msg.sender_id);
             }
         }
 
@@ -304,18 +338,21 @@ void init_task_main() {
 static void debug_putchar(char c) {
 #if defined(CONFIG_ARCH_X86_64)
     if (c == '\n') {
-        while ((inb(arch::COM1_LSR) & 0x20) == 0);
+        while ((inb(arch::COM1_LSR) & 0x20) == 0)
+            ;
         outb(arch::COM1, '\r');
     }
-    while ((inb(arch::COM1_LSR) & 0x20) == 0);
+    while ((inb(arch::COM1_LSR) & 0x20) == 0)
+        ;
     outb(arch::COM1, c);
 #else
     arch::Serial::putchar(c);
 #endif
 }
 
-extern "C" void debug_write(const char* s) {
-    while (*s) debug_putchar(*s++);
+extern "C" void debug_write(const char *s) {
+    while (*s)
+        debug_putchar(*s++);
 }
 
 extern "C" void debug_write_hex(uint64_t value) {
@@ -328,26 +365,29 @@ extern "C" void debug_write_hex(uint64_t value) {
     debug_write(hb + pos);
 }
 
-extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id, uint64_t cr3
-    ) {
-    debug_write("[SWITCH] old="); debug_write_hex(old_id);
-    debug_write(" new="); debug_write_hex(new_id);
-    debug_write(" cr3="); debug_write_hex(cr3);
+extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id,
+                                  uint64_t cr3) {
+    debug_write("[SWITCH] old=");
+    debug_write_hex(old_id);
+    debug_write(" new=");
+    debug_write_hex(new_id);
+    debug_write(" cr3=");
+    debug_write_hex(cr3);
     debug_write("\n");
 }
 
 extern "C" {
-    uint64_t* scheduler_save_rsp_to = nullptr;
-    uint64_t scheduler_load_rsp_from = 0;
-    uint64_t scheduler_load_cr3_from = 0;
-    uint64_t scheduler_next_task_id = UINT64_MAX;
-    uint64_t isr_nesting_depth = 0;
-    uint64_t scheduler_corruption_count = 0;
-    uint64_t deadline_detection_integrity = 0;
-    kernel::TaskControlBlock* fpu_owner = nullptr;
+uint64_t *scheduler_save_rsp_to = nullptr;
+uint64_t scheduler_load_rsp_from = 0;
+uint64_t scheduler_load_cr3_from = 0;
+uint64_t scheduler_next_task_id = UINT64_MAX;
+uint64_t isr_nesting_depth = 0;
+uint64_t scheduler_corruption_count = 0;
+uint64_t deadline_detection_integrity = 0;
+kernel::TaskControlBlock *fpu_owner = nullptr;
 #if defined(CONFIG_ARCH_X86_64)
-    constinit uint64_t multiboot_magic = 0;
-    constinit uint64_t multiboot_info_ptr = 0;
+constinit uint64_t multiboot_magic = 0;
+constinit uint64_t multiboot_info_ptr = 0;
 #endif
 }
 
@@ -355,11 +395,11 @@ extern char kernel_virt_end[];
 extern "C" uint8_t _binary_initrd_cpio_start[];
 extern "C" uint8_t _binary_initrd_cpio_end[];
 
-BootInfo g_boot_info;
+BootInfo g_boot_info{};
 
 #if defined(CONFIG_ARCH_AARCH64)
 extern "C" {
-void* g_dtb_ptr = nullptr;
+void *g_dtb_ptr = nullptr;
 }
 #endif
 
@@ -390,7 +430,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     g_boot_info.multiboot_magic = magic;
     g_boot_info.multiboot_info = mb_info;
 #elif defined(CONFIG_ARCH_AARCH64)
-    g_dtb_ptr = reinterpret_cast<void*>(magic);
+    g_dtb_ptr = reinterpret_cast<void *>(magic);
     g_boot_info.dtb_ptr = magic;
     (void)mb_info;
     arch::fp_enable();
@@ -420,14 +460,16 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     extern const uint64_t kernel_stack_top;
     arch::GDT::set_tss_rsp0(kernel_stack_top);
 
-    // Enable x87 FPU: clear CR0.EM (bit 2), set CR0.NE (bit 5), set CR0.MP (bit 1)
+    // Enable x87 FPU: clear CR0.EM (bit 2), set CR0.NE (bit 5), set CR0.MP (bit
+    // 1)
     uint64_t cr0 = arch::read_cr0();
     cr0 &= ~(1ULL << 2);
     cr0 |= (1ULL << 1);
     cr0 |= (1ULL << 5);
     arch::write_cr0(cr0);
 
-    // Enable FXSAVE/FXRSTOR and SSE: set CR4.OSFXSR (bit 9) and CR4.OSXMMEXCPT (bit 10)
+    // Enable FXSAVE/FXRSTOR and SSE: set CR4.OSFXSR (bit 9) and CR4.OSXMMEXCPT
+    // (bit 10)
     uint64_t cr4 = arch::read_cr4();
     cr4 |= (1ULL << 9);
     cr4 |= (1ULL << 10);
@@ -445,12 +487,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         uint64_t tag_addr = mb2_find_tag(6);
         if (tag_addr) {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            auto* mem_tag = reinterpret_cast<MemoryMapTag*>(tag_addr);
-            uint64_t entries = (mem_tag->size - sizeof(MemoryMapTag)
-                ) / mem_tag->entry_size;
+            auto *mem_tag = reinterpret_cast<MemoryMapTag *>(tag_addr);
+            uint64_t entries =
+                (mem_tag->size - sizeof(MemoryMapTag)) / mem_tag->entry_size;
             for (uint64_t i = 0; i < entries; ++i) {
-                auto& entry = mem_tag->entries[i];
-                g_boot_info.add_region(entry.base_addr, entry.length, entry.type);
+                auto &entry = mem_tag->entries[i];
+                g_boot_info.add_region(entry.base_addr, entry.length,
+                                       entry.type);
             }
         }
     }
@@ -458,29 +501,31 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
 #if defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
     {
-        void* dtb = reinterpret_cast<void*>(g_boot_info.dtb_ptr);
+        void *dtb = reinterpret_cast<void *>(g_boot_info.dtb_ptr);
         if (dtb && fdt_check_header(dtb) == 0) {
-            int offset = fdt_node_offset_by_prop_value(dtb, -1,
-                "device_type", "memory", 7);
+            int offset = fdt_node_offset_by_prop_value(dtb, -1, "device_type",
+                                                       "memory", 7);
             if (offset < 0) {
                 offset = fdt_subnode_offset_namelen(dtb, 0, "memory", 6);
             }
             if (offset >= 0) {
-                int len;
-                const uint32_t* reg = static_cast<const uint32_t*>(
+                int len{};
+                const uint32_t *reg = static_cast<const uint32_t *>(
                     fdt_getprop_namelen(dtb, offset, "reg", &len));
                 if (reg && len >= 16) {
-                    uint64_t base = (static_cast<uint64_t>(fdt32_to_cpu(reg[0])) << 32)
-                                  | fdt32_to_cpu(reg[1]);
-                    uint64_t size = (static_cast<uint64_t>(fdt32_to_cpu(reg[2])) << 32)
-                                  | fdt32_to_cpu(reg[3]);
+                    uint64_t base =
+                        (static_cast<uint64_t>(fdt32_to_cpu(reg[0])) << 32) |
+                        fdt32_to_cpu(reg[1]);
+                    uint64_t size =
+                        (static_cast<uint64_t>(fdt32_to_cpu(reg[2])) << 32) |
+                        fdt32_to_cpu(reg[3]);
                     g_boot_info.add_region(base, size, 1);
                 }
             }
             int chosen = fdt_subnode_offset_namelen(dtb, 0, "chosen", 6);
             if (chosen >= 0) {
-                int len;
-                const char* bootargs = static_cast<const char*>(
+                int len{};
+                const char *bootargs = static_cast<const char *>(
                     fdt_getprop_namelen(dtb, chosen, "bootargs", &len));
                 if (bootargs && len > 0 && len < 256) {
                     strlcpy(g_boot_info.cmdline, bootargs, 256);
@@ -490,14 +535,15 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 #endif
 
-    uint64_t kend = reinterpret_cast<uint64_t>(kernel_virt_end) - arch::
-        HHDM_OFFSET;
+    uint64_t kend =
+        reinterpret_cast<uint64_t>(kernel_virt_end) - arch::HHDM_OFFSET;
     uint64_t mem_size = 0;
     if (g_boot_info.num_mem_regions > 0) {
         for (int i = 0; i < g_boot_info.num_mem_regions; ++i) {
-            uint64_t end = g_boot_info.mem_regions[i].base
-                         + g_boot_info.mem_regions[i].size;
-            if (end > mem_size) mem_size = end;
+            uint64_t end = g_boot_info.mem_regions[i].base +
+                           g_boot_info.mem_regions[i].size;
+            if (end > mem_size)
+                mem_size = end;
         }
     } else {
 #if defined(CONFIG_ARCH_X86_64)
@@ -517,7 +563,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::BootParams::parse_multiboot_cmdline();
 #endif
     {
-        auto& bp = kernel::BootParams::instance();
+        auto &bp = kernel::BootParams::instance();
         debug_write("[BOOT] timer_hz=");
         debug_write_hex(bp.timer_hz);
         debug_write(" preempt=");
@@ -547,10 +593,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // Init task (PID 1) — mounts fstab, runs /etc/rc, then blocks as reaper.
     // Priority 10 (below shell at 2) so it doesn't starve interactive tasks.
     {
-        auto* init_task = kernel::TaskControlBlock::create(
+        auto *init_task = kernel::TaskControlBlock::create(
             init_task_main,
-            10,   // low priority (below shell at 2)
-            10);  // period_ticks
+            10,  // low priority (below shell at 2)
+            10); // period_ticks
         if (init_task) {
             kernel::Scheduler::add_task(*init_task);
             kernel::Logger::info("init: PID 1 started");
@@ -562,20 +608,24 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #endif
     kernel::PMM::set_oom_handler([]() -> bool {
-        kernel::TaskControlBlock* victim = nullptr;
+        kernel::TaskControlBlock *victim = nullptr;
         uint64_t victim_priority = ~0ULL;
         for (uint64_t i = 0; i < kernel::Scheduler::task_count(); ++i) {
-            auto* t = kernel::Scheduler::task_at(i);
-            if (!t || t == kernel::Scheduler::task_at(0)) continue;
-            if (t->state != kernel::TaskState::READY
-             && t->state != kernel::TaskState::RUNNING) continue;
-            if (!t->page_table_) continue;
+            auto *t = kernel::Scheduler::task_at(i);
+            if (!t || t == kernel::Scheduler::task_at(0))
+                continue;
+            if (t->state != kernel::TaskState::READY &&
+                t->state != kernel::TaskState::RUNNING)
+                continue;
+            if (!t->page_table_)
+                continue;
             if (t->priority < victim_priority) {
                 victim = t;
                 victim_priority = t->priority;
             }
         }
-        if (!victim) return false;
+        if (!victim)
+            return false;
         debug_write("[OOM] Killing task ");
         debug_write_hex(victim->id);
         debug_write(" priority=");
@@ -601,13 +651,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #if defined(CONFIG_ARCH_X86_64)
     init_pic();
     arch::Keyboard::init();
-    arch::IDT::register_handler(
-        arch::InterruptVector::KEYBOARD,
-        [](uint64_t, uint64_t, uint64_t) {
-            arch::Keyboard::handle_irq();
-            outb(arch::PIC1_CMD, 0x20);
-        }
-    );
+    arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
+                                [](uint64_t, uint64_t, uint64_t) {
+                                    arch::Keyboard::handle_irq();
+                                    outb(arch::PIC1_CMD, 0x20);
+                                });
 #endif
 
     kernel::vfs::devfs_init();
@@ -618,10 +666,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // Probe AHCI controller first, fall back to legacy ATA PIO
 #if defined(CONFIG_ARCH_X86_64)
     {
-        auto* ahci = kernel::block::AhciDriver::probe();
+        auto *ahci = kernel::block::AhciDriver::probe();
         if (ahci) {
             debug_write("[BOOT] AHCI drive found\n");
-            auto* part = new kernel::fat32::Fat32Partition(*ahci);
+            auto *part = new kernel::fat32::Fat32Partition(*ahci);
             if (part->mount()) {
                 debug_write("[BOOT] FAT32 partition mounted via AHCI\n");
                 kernel::vfs::fat32_partition_instance = part;
@@ -636,15 +684,16 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             }
         } else {
             debug_write("[BOOT] No AHCI drive found, trying legacy ATA PIO\n");
-            auto* ata = kernel::block::AtaPioDriver::probe_first_drive();
+            auto *ata = kernel::block::AtaPioDriver::probe_first_drive();
             if (ata) {
                 debug_write("[BOOT] ATA drive found\n");
-                auto* part = new kernel::fat32::Fat32Partition(*ata);
+                auto *part = new kernel::fat32::Fat32Partition(*ata);
                 if (part->mount()) {
                     debug_write("[BOOT] FAT32 partition mounted via PIO\n");
                     kernel::vfs::fat32_partition_instance = part;
                     if (kernel::vfs::mount_fat32("/mnt") == 0) {
-                        debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                        debug_write(
+                            "[BOOT] FAT32 filesystem mounted at /mnt\n");
                     } else {
                         debug_write("[BOOT] mount_fat32 failed\n");
                     }
@@ -662,16 +711,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 
     // Probe virtio-blk device (arch-independent, uses unified PCI HAL)
     {
-        auto* vblk = kernel::block::VirtioBlkDriver::probe();
+        auto *vblk = kernel::block::VirtioBlkDriver::probe();
         if (vblk) {
             debug_write("[BOOT] Virtio-blk drive found\n");
-            auto* part = new kernel::fat32::Fat32Partition(*vblk);
+            auto *part = new kernel::fat32::Fat32Partition(*vblk);
             if (part->mount()) {
                 debug_write("[BOOT] FAT32 partition mounted via virtio-blk\n");
                 if (!kernel::vfs::fat32_partition_instance) {
                     kernel::vfs::fat32_partition_instance = part;
                     if (kernel::vfs::mount_fat32("/mnt") == 0) {
-                        debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                        debug_write(
+                            "[BOOT] FAT32 filesystem mounted at /mnt\n");
                     } else {
                         debug_write("[BOOT] mount_fat32 failed\n");
                     }
@@ -688,7 +738,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // Probe virtio-net NIC and initialize network stack
 #if defined(CONFIG_ARCH_X86_64)
     {
-        static net::Nic g_boot_nic;
+        static net::Nic g_boot_nic{};
         if (kernel::net::virtio_net_probe(g_boot_nic)) {
             net::net_init(g_boot_nic, g_boot_nic.mac,
                           net::Ipv4Addr{{10, 0, 2, 15}},
@@ -708,38 +758,40 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::random_init();
     debug_write("[BOOT] Hardware init done\n");
 
-    kernel::DriverRegistry::register_driver(
-        "keyboard", "PS/2 Tastaturtreiber", nullptr, nullptr, 1);
-    kernel::DriverRegistry::register_driver(
-        "timer", "PIT Timer (1000 Hz)", nullptr, nullptr, 0);
+    kernel::DriverRegistry::register_driver("keyboard", "PS/2 Tastaturtreiber",
+                                            nullptr, nullptr, 1);
+    kernel::DriverRegistry::register_driver("timer", "PIT Timer (1000 Hz)",
+                                            nullptr, nullptr, 0);
     kernel::DriverRegistry::register_driver(
         "framebuffer", "Framebuffer Grafiktreiber", nullptr, nullptr, 0);
-    kernel::DriverRegistry::register_driver(
-        "pcspkr", "PC Speaker Soundtreiber", nullptr, nullptr, 0);
+    kernel::DriverRegistry::register_driver("pcspkr", "PC Speaker Soundtreiber",
+                                            nullptr, nullptr, 0);
 
     service::ProgramRegistry::init();
     service::ProgramRegistry::register_program(
-        "demo", "Mandelbrot set + spinning rectangles (framebuffer)", programs::
-            demo_main);
+        "demo", "Mandelbrot set + spinning rectangles (framebuffer)",
+        programs::demo_main);
 
     kernel::BufferPool::init();
     kernel::daemon::init();
 
-// Load vfsd userspace daemon before test suite so tests can interact with it
+    // Load vfsd userspace daemon before test suite so tests can interact with
+    // it
     {
         initrd::InitrdFile f = initrd::find("./vfsd.c.elf");
-        if (!f.data) f = initrd::find("vfsd.c.elf");
+        if (!f.data)
+            f = initrd::find("vfsd.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
+            auto *hdr =
+                reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
             if (kernel::elf::validate_header(hdr)) {
-                auto* vfsd_task = kernel::elf::load(hdr, f.data);
+                auto *vfsd_task = kernel::elf::load(hdr, f.data);
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
                     {
                         size_t j = 0;
-                        const char* n = "vfsd";
+                        const char *n = "vfsd";
                         while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
                             vfsd_task->name[j] = n[j];
                             ++j;
@@ -749,10 +801,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                     vfsd_task->init_sporadic_server(2, 10, 0, 1);
                     kernel::Scheduler::add_task(*vfsd_task);
                     kernel::vfsd::set_vfsd_pid(vfsd_task->id);
-                    kernel::daemon::register_daemon(
-                        "vfsd", "vfsd.c.elf",
-                        kernel::vfsd::set_vfsd_pid,
-                        kernel::vfsd::get_vfsd_pid);
+                    kernel::daemon::register_daemon("vfsd", "vfsd.c.elf",
+                                                    kernel::vfsd::set_vfsd_pid,
+                                                    kernel::vfsd::get_vfsd_pid);
                 }
             }
         }
@@ -761,18 +812,19 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     // Load iocd userspace daemon before test suite
     {
         initrd::InitrdFile f = initrd::find("./iocd.c.elf");
-        if (!f.data) f = initrd::find("iocd.c.elf");
+        if (!f.data)
+            f = initrd::find("iocd.c.elf");
         if (f.data) {
-            auto* hdr = reinterpret_cast<const kernel::elf::ELF64Header*>(f.data
-                );
+            auto *hdr =
+                reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
             if (kernel::elf::validate_header(hdr)) {
-                auto* iocd_task = kernel::elf::load(hdr, f.data);
+                auto *iocd_task = kernel::elf::load(hdr, f.data);
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;
                     {
                         size_t j = 0;
-                        const char* n = "iocd";
+                        const char *n = "iocd";
                         while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
                             iocd_task->name[j] = n[j];
                             ++j;
@@ -782,10 +834,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
                     iocd_task->init_sporadic_server(3, 10, 0, 1);
                     kernel::Scheduler::add_task(*iocd_task);
                     kernel::iocd::set_iocd_pid(iocd_task->id);
-                    kernel::daemon::register_daemon(
-                        "iocd", "iocd.c.elf",
-                        kernel::iocd::set_iocd_pid,
-                        kernel::iocd::get_iocd_pid);
+                    kernel::daemon::register_daemon("iocd", "iocd.c.elf",
+                                                    kernel::iocd::set_iocd_pid,
+                                                    kernel::iocd::get_iocd_pid);
                 }
             }
         }
@@ -798,7 +849,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::test::Registry::init();
     kernel::test::parse_test_config("./tests/test-config.txt");
 
-    const char** classes = kernel::test::get_test_classes();
+    const char **classes = kernel::test::get_test_classes();
     size_t class_count = kernel::test::get_test_class_count();
 
     // "none" class means interactive mode — skip the test suite entirely
@@ -832,7 +883,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::task::reboot_from_table();
 }
 
-extern "C" void panic(const char* msg) {
+extern "C" void panic(const char *msg) {
     cli();
     kernel::Logger::fatal("KERNEL PANIC: %s", msg);
     if (service::Terminal::instance()) {
@@ -848,41 +899,61 @@ extern "C" void panic(const char* msg) {
 }
 
 #if CONFIG_ARCH_X86_64
-static void dump_regs(uint64_t* regs) {
-    if (!regs) return;
+static void dump_regs(uint64_t *regs) {
+    if (!regs)
+        return;
 
     using L = kernel::Logger;
 
-    L::raw_write("  RAX: "); L::print_hex(regs[0]);
-    L::raw_write("  RBX: "); L::print_hex(regs[1]);
+    L::raw_write("  RAX: ");
+    L::print_hex(regs[0]);
+    L::raw_write("  RBX: ");
+    L::print_hex(regs[1]);
     L::raw_write("\n");
-    L::raw_write("  RCX: "); L::print_hex(regs[2]);
-    L::raw_write("  RDI: "); L::print_hex(regs[5]);
+    L::raw_write("  RCX: ");
+    L::print_hex(regs[2]);
+    L::raw_write("  RDI: ");
+    L::print_hex(regs[5]);
     L::raw_write("\n");
-    L::raw_write("  RDX: "); L::print_hex(regs[3]);
-    L::raw_write("  RSI: "); L::print_hex(regs[4]);
+    L::raw_write("  RDX: ");
+    L::print_hex(regs[3]);
+    L::raw_write("  RSI: ");
+    L::print_hex(regs[4]);
     L::raw_write("\n");
-    L::raw_write("  RBP: "); L::print_hex(regs[6]);
-    L::raw_write("  RSP: "); L::print_hex(reinterpret_cast<uint64_t>(&regs));
+    L::raw_write("  RBP: ");
+    L::print_hex(regs[6]);
+    L::raw_write("  RSP: ");
+    L::print_hex(reinterpret_cast<uint64_t>(&regs));
     L::raw_write("\n");
-    L::raw_write("  R8:  "); L::print_hex(regs[7]);
-    L::raw_write("  R9:  "); L::print_hex(regs[8]);
+    L::raw_write("  R8:  ");
+    L::print_hex(regs[7]);
+    L::raw_write("  R9:  ");
+    L::print_hex(regs[8]);
     L::raw_write("\n");
-    L::raw_write("  R10: "); L::print_hex(regs[9]);
-    L::raw_write("  R11: "); L::print_hex(regs[10]);
+    L::raw_write("  R10: ");
+    L::print_hex(regs[9]);
+    L::raw_write("  R11: ");
+    L::print_hex(regs[10]);
     L::raw_write("\n");
-    L::raw_write("  R12: "); L::print_hex(regs[11]);
-    L::raw_write("  R13: "); L::print_hex(regs[12]);
+    L::raw_write("  R12: ");
+    L::print_hex(regs[11]);
+    L::raw_write("  R13: ");
+    L::print_hex(regs[12]);
 #if defined(CONFIG_ARCH_X86_64)
     L::raw_write("\n");
-    L::raw_write("  R14: "); L::print_hex(regs[13]);
+    L::raw_write("  R14: ");
+    L::print_hex(regs[13]);
     L::raw_write("\n");
-    L::raw_write("  R15: "); L::print_hex(regs[14]);
+    L::raw_write("  R15: ");
+    L::print_hex(regs[14]);
     L::raw_write("\n");
-    L::raw_write("  RIP: "); L::print_hex(regs[17]);
-    L::raw_write("  CS:  "); L::print_hex(regs[18]);
+    L::raw_write("  RIP: ");
+    L::print_hex(regs[17]);
+    L::raw_write("  CS:  ");
+    L::print_hex(regs[18]);
     L::raw_write("\n");
-    L::raw_write("  RFL: "); L::print_hex(regs[19]);
+    L::raw_write("  RFL: ");
+    L::print_hex(regs[19]);
     L::raw_write("\n");
 
     uint64_t cr0 = read_cr0();
@@ -890,81 +961,131 @@ static void dump_regs(uint64_t* regs) {
     uint64_t cr3 = read_cr3();
     uint64_t cr4 = read_cr4();
 
-    L::raw_write("  CR0: "); L::print_hex(cr0); L::raw_write("\n");
-    L::raw_write("  CR2: "); L::print_hex(cr2);
-    L::raw_write("  CR3: "); L::print_hex(cr3); L::raw_write("\n");
-    L::raw_write("  CR4: "); L::print_hex(cr4); L::raw_write("\n");
+    L::raw_write("  CR0: ");
+    L::print_hex(cr0);
+    L::raw_write("\n");
+    L::raw_write("  CR2: ");
+    L::print_hex(cr2);
+    L::raw_write("  CR3: ");
+    L::print_hex(cr3);
+    L::raw_write("\n");
+    L::raw_write("  CR4: ");
+    L::print_hex(cr4);
+    L::raw_write("\n");
 
     L::raw_write("  Stack trace:\n");
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    uint64_t* rbp = reinterpret_cast<uint64_t*>(regs[6]);
+    uint64_t *rbp = reinterpret_cast<uint64_t *>(regs[6]);
     for (int i = 0; i < 8 && rbp && rbp[1]; ++i) {
-        L::raw_write("    ["); L::print_dec(i); L::raw_write("] ");
+        L::raw_write("    [");
+        L::print_dec(i);
+        L::raw_write("] ");
         L::print_hex(rbp[1]);
         L::raw_write("\n");
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        rbp = reinterpret_cast<uint64_t*>(rbp[0]);
+        rbp = reinterpret_cast<uint64_t *>(rbp[0]);
     }
 #elif defined(CONFIG_ARCH_AARCH64)
-    L::raw_write("  ELR: "); L::print_hex(regs[31]);
-    L::raw_write("  SPSR: "); L::print_hex(regs[32]);
+    L::raw_write("  ELR: ");
+    L::print_hex(regs[31]);
+    L::raw_write("  SPSR: ");
+    L::print_hex(regs[32]);
     L::raw_write("\n  Stack trace:\n");
-    uint64_t* fp = reinterpret_cast<uint64_t*>(regs[29]);
+    uint64_t *fp = reinterpret_cast<uint64_t *>(regs[29]);
     for (int i = 0; i < 8 && fp && fp[1]; ++i) {
-        L::raw_write("    ["); L::print_dec(i); L::raw_write("] ");
+        L::raw_write("    [");
+        L::print_dec(i);
+        L::raw_write("] ");
         L::print_hex(fp[1]);
         L::raw_write("\n");
-        fp = reinterpret_cast<uint64_t*>(fp[0]);
+        fp = reinterpret_cast<uint64_t *>(fp[0]);
     }
 #endif
 }
 
 #endif // CONFIG_ARCH_X86_64
 
-static const char* exception_name(uint64_t vector) __attribute__((unused));
-static const char* exception_name(uint64_t vector) {
+static const char *exception_name(uint64_t vector) __attribute__((unused));
+static const char *exception_name(uint64_t vector) {
 #if defined(CONFIG_ARCH_X86_64)
     switch (vector) {
-    case 0:  return "Division by Zero";
-    case 1:  return "Debug";
-    case 2:  return "NMI";
-    case 3:  return "Breakpoint";
-    case 4:  return "Overflow";
-    case 5:  return "Bound Range";
-    case 6:  return "Invalid Opcode";
-    case 7:  return "Device Not Available";
-    case 8:  return "Double Fault";
-    case 10: return "Invalid TSS";
-    case 11: return "Segment Not Present";
-    case 12: return "Stack Segment Fault";
-    case 13: return "General Protection Fault";
-    case 14: return "Page Fault";
-    case 16: return "x87 FPU Error";
-    case 17: return "Alignment Check";
-    case 18: return "Machine Check";
-    case 19: return "SIMD FP Exception";
-    case 30: return "Security Exception";
-    default: return "Reserved";
+    case 0:
+        return "Division by Zero";
+    case 1:
+        return "Debug";
+    case 2:
+        return "NMI";
+    case 3:
+        return "Breakpoint";
+    case 4:
+        return "Overflow";
+    case 5:
+        return "Bound Range";
+    case 6:
+        return "Invalid Opcode";
+    case 7:
+        return "Device Not Available";
+    case 8:
+        return "Double Fault";
+    case 10:
+        return "Invalid TSS";
+    case 11:
+        return "Segment Not Present";
+    case 12:
+        return "Stack Segment Fault";
+    case 13:
+        return "General Protection Fault";
+    case 14:
+        return "Page Fault";
+    case 16:
+        return "x87 FPU Error";
+    case 17:
+        return "Alignment Check";
+    case 18:
+        return "Machine Check";
+    case 19:
+        return "SIMD FP Exception";
+    case 30:
+        return "Security Exception";
+    default:
+        return "Reserved";
     }
 #elif defined(CONFIG_ARCH_AARCH64)
     switch (vector) {
-    case 0:  return "Synchronous EL1t";
-    case 1:  return "IRQ EL1t";
-    case 2:  return "FIQ EL1t";
-    case 3:  return "SError EL1t";
-    case 4:  return "Synchronous EL1h";
-    case 5:  return "IRQ EL1h";
-    case 6:  return "FIQ EL1h";
-    case 7:  return "SError EL1h";
-    case 8:  return "Synchronous EL0 64";
-    case 9:  return "IRQ EL0 64";
-    case 10: return "FIQ EL0 64";
-    case 11: return "SError EL0 64";
-    case 12: return "Synchronous EL0 32";
-    case 13: return "IRQ EL0 32";
-    case 14: return "FIQ EL0 32";
-    case 15: return "SError EL0 32";
-    default: return "Reserved";
+    case 0:
+        return "Synchronous EL1t";
+    case 1:
+        return "IRQ EL1t";
+    case 2:
+        return "FIQ EL1t";
+    case 3:
+        return "SError EL1t";
+    case 4:
+        return "Synchronous EL1h";
+    case 5:
+        return "IRQ EL1h";
+    case 6:
+        return "FIQ EL1h";
+    case 7:
+        return "SError EL1h";
+    case 8:
+        return "Synchronous EL0 64";
+    case 9:
+        return "IRQ EL0 64";
+    case 10:
+        return "FIQ EL0 64";
+    case 11:
+        return "SError EL0 64";
+    case 12:
+        return "Synchronous EL0 32";
+    case 13:
+        return "IRQ EL0 32";
+    case 14:
+        return "FIQ EL0 32";
+    case 15:
+        return "SError EL0 32";
+    default:
+        return "Reserved";
     }
 #else
     (void)vector;
@@ -973,24 +1094,27 @@ static const char* exception_name(uint64_t vector) {
 }
 
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
-                                    uint64_t arg1, uint64_t arg2,
-                                    uint64_t arg3, uint64_t* regs);
+                                    uint64_t arg1, uint64_t arg2, uint64_t arg3,
+                                    uint64_t *regs);
 
-/// @brief Delivers a signal to a user task by setting up a signal frame on the user stack.
-///        Modifies regs to return to the user's registered signal handler (or terminates
-///        the task if no handler is registered and the default action is to terminate).
-/// @return true if signal was delivered (handler will run), false if task was terminated.
-static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
-                                   uint64_t sig, uint64_t vector,
-                                   uint64_t error_code, uint64_t rip,
-                                   uint64_t* regs)
-{
-    if (!task || !regs) return false;
+/// @brief Delivers a signal to a user task by setting up a signal frame on the
+/// user stack.
+///        Modifies regs to return to the user's registered signal handler (or
+///        terminates the task if no handler is registered and the default
+///        action is to terminate).
+/// @return true if signal was delivered (handler will run), false if task was
+/// terminated.
+static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
+                                   uint64_t vector, uint64_t error_code,
+                                   uint64_t rip, uint64_t *regs) {
+    if (!task || !regs)
+        return false;
 
     // SIGKILL is always fatal — cannot be caught or ignored
     if (kernel::signal_is_fatal(sig)) {
         kernel::Logger::error("Task %x: SIGKILL (fatal, no handler "
-                              "allowed)", task->id);
+                              "allowed)",
+                              task->id);
         task->state = kernel::TaskState::TERMINATED;
         task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
         return false;
@@ -999,11 +1123,11 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
 #if defined(CONFIG_ARCH_X86_64)
     // If the task has a registered handler, invoke it
     if (task->has_signal_handler(sig)) {
-        kernel::Logger::info("Task %x: delivering signal %x to handler at %x",
-            task->id, sig,
-                reinterpret_cast<uint64_t>(task->get_signal_handler(sig)));
+        kernel::Logger::info(
+            "Task %x: delivering signal %x to handler at %x", task->id, sig,
+            reinterpret_cast<uint64_t>(task->get_signal_handler(sig)));
 
-        uint64_t user_rsp = regs[20];  // current user RSP
+        uint64_t user_rsp = regs[20]; // current user RSP
         // Align stack: push SignalFrame
         user_rsp -= sizeof(kernel::SignalFrame);
         // Align to 16 bytes: (RSP + 8) % 16 == 0 at handler entry
@@ -1011,10 +1135,10 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
         // RSP is 8 mod 16 (because call pushes return addr)
         user_rsp &= ~0xFULL;
 
-        uint64_t frame_phys = kernel::VMM::virt_to_phys_in_pml4(
-            user_rsp, task->page_table_);
+        uint64_t frame_phys =
+            kernel::VMM::virt_to_phys_in_pml4(user_rsp, task->page_table_);
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        auto* frame = reinterpret_cast<kernel::SignalFrame*>(
+        auto *frame = reinterpret_cast<kernel::SignalFrame *>(
             arch::HHDM_OFFSET + frame_phys);
         if (!frame) {
             // If we cannot write the signal frame (bad stack),
@@ -1027,21 +1151,19 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
             return false;
         }
 
-        *frame = kernel::SignalFrame{
-            .sig = sig,
-            .saved_rip = regs[17],
-            .saved_rsp = regs[20],
-            .saved_rflags = regs[19],
-            .saved_cs = regs[18],
-            .saved_ss = regs[21],
-            .reserved = {0, 0}
-        };
+        *frame = kernel::SignalFrame{.sig = sig,
+                                     .saved_rip = regs[17],
+                                     .saved_rsp = regs[20],
+                                     .saved_rflags = regs[19],
+                                     .saved_cs = regs[18],
+                                     .saved_ss = regs[21],
+                                     .reserved = {0, 0}};
 
         // Modify return context to go to the signal handler
-        regs[5] = sig;                   // RDI = signal number
+        regs[5] = sig; // RDI = signal number
         regs[17] = reinterpret_cast<uint64_t>(
-            task->get_signal_handler(sig));  // RIP = handler
-        regs[20] = user_rsp;             // RSP = adjusted user stack
+            task->get_signal_handler(sig)); // RIP = handler
+        regs[20] = user_rsp;                // RSP = adjusted user stack
         // Clear direction flag and RF
         regs[19] = arch::RFLAGS_DEFAULT; // RFLAGS with IF set
 
@@ -1051,9 +1173,9 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
     // No handler registered — check default action
     auto action = kernel::default_signal_action(sig);
     if (action == kernel::SignalAction::IGNORE) {
-        kernel::Logger::warn("Task %x: signal %x ignored (default)",
-                             task->id, sig);
-        return true;  // ignored, resume execution
+        kernel::Logger::warn("Task %x: signal %x ignored (default)", task->id,
+                             sig);
+        return true; // ignored, resume execution
     }
 
     // Default is to terminate
@@ -1069,14 +1191,18 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
     return false;
 #elif defined(CONFIG_ARCH_AARCH64)
-    (void)vector; (void)error_code; (void)rip;
+    (void)vector;
+    (void)error_code;
+    (void)rip;
     kernel::Logger::error("Task %x: signal %x (aarch64 stub, terminating)",
                           task->id, sig);
     task->state = kernel::TaskState::TERMINATED;
     task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
     return false;
 #elif defined(CONFIG_ARCH_RISCV64)
-    (void)vector; (void)error_code; (void)rip;
+    (void)vector;
+    (void)error_code;
+    (void)rip;
     kernel::Logger::error("Task %x: signal %x (riscv64 stub, terminating)",
                           task->id, sig);
     task->state = kernel::TaskState::TERMINATED;
@@ -1086,13 +1212,11 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock* task,
 }
 
 extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
-    uint64_t rip,
-                                   uint64_t* regs)
-{
+                                   uint64_t rip, uint64_t *regs) {
 #if defined(CONFIG_ARCH_X86_64)
     // #NM (Device Not Available, vector 7) — lazy FPU/SSE context switch
     if (vector == 7) {
-        auto* current = kernel::Scheduler::current_task();
+        auto *current = kernel::Scheduler::current_task();
         if (!current) {
             panic("#NM with no current task");
         }
@@ -1103,7 +1227,7 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         arch::write_cr0(cr0);
 
         // Save previous owner's FPU state
-        auto* prev_fpu_owner = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
+        auto *prev_fpu_owner = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
         if (prev_fpu_owner && prev_fpu_owner != current) {
             arch::fxsave(prev_fpu_owner->fpu_state);
         }
@@ -1125,14 +1249,14 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 
 #if defined(CONFIG_ARCH_X86_64)
     if (vector < 32) {
-        auto* t = kernel::Scheduler::current_task();
+        auto *t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;
-        bool from_user = (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA
-            );
+        bool from_user =
+            (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA);
 
         if (from_user && t) {
-// Check fault recovery first: if we're inside a safe_copy_from_user zone,
-            // redirect to the recovery IP instead of delivering a signal.
+            // Check fault recovery first: if we're inside a safe_copy_from_user
+            // zone, redirect to the recovery IP instead of delivering a signal.
             if (kernel::g_user_access_recover_ip) {
                 regs[17] = kernel::g_user_access_recover_ip;
                 kernel::g_user_access_recover_ip = 0;
@@ -1149,8 +1273,8 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
                 kernel::Logger::error("  CR2=%x", read_cr2());
             }
 
-            bool was_delivered = deliver_signal_to_user(t, sig, vector,
-                error_code, rip, regs);
+            bool was_delivered =
+                deliver_signal_to_user(t, sig, vector, error_code, rip, regs);
             if (!was_delivered && t->state == kernel::TaskState::TERMINATED) {
                 // If task was terminated, reschedule on return
                 kernel::Scheduler::reschedule();
@@ -1159,7 +1283,7 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         }
 
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x rip=%x)",
-            exception_name(vector), vector, error_code, rip);
+                              exception_name(vector), vector, error_code, rip);
         dump_regs(regs);
 
         // ---- Full diagnostic dump before panic ----
@@ -1181,22 +1305,22 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
     }
 #elif defined(CONFIG_ARCH_AARCH64)
     if (vector < 32) {
-        auto* t = kernel::Scheduler::current_task();
+        auto *t = kernel::Scheduler::current_task();
         (void)t;
         if (t && t->page_table_ != 0) {
             auto mapping = kernel::exception_to_signal(vector);
             uint64_t sig = static_cast<uint64_t>(mapping.signal);
-            kernel::Logger::warn("Task %x: exception vector=%x (%s)",
-                                 t->id, vector, mapping.name);
-            bool was_delivered = deliver_signal_to_user(t, sig, vector,
-                error_code, rip, regs);
+            kernel::Logger::warn("Task %x: exception vector=%x (%s)", t->id,
+                                 vector, mapping.name);
+            bool was_delivered =
+                deliver_signal_to_user(t, sig, vector, error_code, rip, regs);
             if (!was_delivered && t->state == kernel::TaskState::TERMINATED) {
                 kernel::Scheduler::reschedule();
             }
             return;
         }
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x elr=%x)",
-            exception_name(vector), vector, error_code, rip);
+                              exception_name(vector), vector, error_code, rip);
         kernel::debug::dump_all_tasks();
         kernel::debug::dump_scheduler_info();
         kernel::debug::dump_cpu_regs();
@@ -1205,17 +1329,18 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 #endif
 
     if (vector == 0x80) {
-        regs[0] = syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4],
-            regs);
-        auto* task = kernel::Scheduler::current_task();
+        regs[0] =
+            syscall_handler(regs[0], regs[1], regs[2], regs[3], regs[4], regs);
+        auto *task = kernel::Scheduler::current_task();
 
         // After syscall, check for pending signals on the current task
         if (task && task->pending_signals && task->page_table_ != 0) {
             // Find the highest-priority pending signal
             uint64_t sig = __builtin_ctzll(task->pending_signals);
-             if (sig < 32) {
-                 kernel::Logger::debug("Task %x: pending signal %x "
-                                       "after syscall", task->id, sig);
+            if (sig < 32) {
+                kernel::Logger::debug("Task %x: pending signal %x "
+                                      "after syscall",
+                                      task->id, sig);
                 deliver_signal_to_user(task, sig, 0, 0, regs[17], regs);
                 task->pending_signals &= ~(1ULL << sig);
             }
@@ -1233,29 +1358,27 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 #if defined(CONFIG_ARCH_X86_64)
     if (vector >= 32 && vector < 48) {
         outb(arch::PIC1_CMD, 0x20);
-        if (vector >= 40) outb(arch::PIC2_CMD, 0x20);
+        if (vector >= 40)
+            outb(arch::PIC2_CMD, 0x20);
     }
 #endif
 }
 
 extern "C" uint64_t syscall_handler(uint64_t number, uint64_t arg0,
-    uint64_t arg1,
-                                    uint64_t arg2, uint64_t arg3, uint64_t* regs
-                                        )
-{
+                                    uint64_t arg1, uint64_t arg2, uint64_t arg3,
+                                    uint64_t *regs) {
     return kernel::Syscall::handle(number, arg0, arg1, arg2, arg3, regs);
 }
 
 // ── Boot-time clock capture ──────────────────────────────────────────────────
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-uint64_t g_boot_epoch = 0;  // RTC read_seconds() at boot
+uint64_t g_boot_epoch = 0; // RTC read_seconds() at boot
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-uint64_t g_boot_ns    = 0;  // Timer::ns() at boot
+uint64_t g_boot_ns = 0; // Timer::ns() at boot
 
 // ── Epoch-to-date conversion (no libc) ──────────────────────────────────────
-static const uint16_t s_days_in_mon[12] = {
-    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-};
+static const uint16_t s_days_in_mon[12] = {31, 28, 31, 30, 31, 30,
+                                           31, 31, 30, 31, 30, 31};
 
 static bool is_leap(uint16_t y) {
     return (y % 4 == 0) && (y % 100 != 0 || y % 400 == 0);
@@ -1266,8 +1389,9 @@ static bool is_leap(uint16_t y) {
 /// @param buf    Output buffer (must be >= 24 bytes).
 /// @param size   Buffer size.
 /// @param wall_ns  Nanoseconds since 1970-01-01 00:00:00 UTC.
-void format_datetime(char* buf, size_t size, uint64_t wall_ns) {
-    if (!buf || size < 24) return;
+void format_datetime(char *buf, size_t size, uint64_t wall_ns) {
+    if (!buf || size < 24)
+        return;
     uint64_t total_sec = wall_ns / 1000000000ULL;
     uint32_t ms = static_cast<uint32_t>((wall_ns % 1000000000ULL) / 1000000ULL);
 
@@ -1283,7 +1407,8 @@ void format_datetime(char* buf, size_t size, uint64_t wall_ns) {
     uint16_t year = 1970;
     while (true) {
         uint16_t days_this = is_leap(year) ? 366 : 365;
-        if (d < days_this) break;
+        if (d < days_this)
+            break;
         d -= days_this;
         ++year;
     }
@@ -1292,25 +1417,49 @@ void format_datetime(char* buf, size_t size, uint64_t wall_ns) {
     uint8_t mon = 0;
     for (; mon < 12; ++mon) {
         uint16_t dim = s_days_in_mon[mon];
-        if (mon == 1 && is_leap(year)) dim = 29;
-        if (d < dim) break;
+        if (mon == 1 && is_leap(year))
+            dim = 29;
+        if (d < dim)
+            break;
         d -= dim;
     }
-    uint16_t day = static_cast<uint16_t>(d + 1);  // 1-based
+    uint16_t day = static_cast<uint16_t>(d + 1); // 1-based
 
     // Format
     size_t pos = 0;
-    auto put = [&](char c) { if (pos < size - 1) buf[pos++] = c; };
-    auto putn = [&](uint64_t val, uint8_t digits) {
-        char tmp[20]; int ti = 0;
-        if (val == 0) tmp[ti++] = '0';
-        else { while (val > 0 && ti < 19) { tmp[ti++] = static_cast<char>('0' + (val % 10)); val /= 10; } }
-        while (ti < digits) tmp[ti++] = '0';
-        for (int j = ti - 1; j >= 0; --j) put(tmp[j]);
+    auto put = [&](char c) {
+        if (pos < size - 1)
+            buf[pos++] = c;
     };
-    putn(year, 4); put('-'); putn(mon + 1, 2); put('-'); putn(day, 2);
-    put(' '); putn(hh, 2); put(':'); putn(mm, 2); put(':'); putn(ss, 2);
-    put(':'); putn(ms, 3);
+    auto putn = [&](uint64_t val, uint8_t digits) {
+        char tmp[20];
+        int ti = 0;
+        if (val == 0)
+            tmp[ti++] = '0';
+        else {
+            while (val > 0 && ti < 19) {
+                tmp[ti++] = static_cast<char>('0' + (val % 10));
+                val /= 10;
+            }
+        }
+        while (ti < digits)
+            tmp[ti++] = '0';
+        for (int j = ti - 1; j >= 0; --j)
+            put(tmp[j]);
+    };
+    putn(year, 4);
+    put('-');
+    putn(mon + 1, 2);
+    put('-');
+    putn(day, 2);
+    put(' ');
+    putn(hh, 2);
+    put(':');
+    putn(mm, 2);
+    put(':');
+    putn(ss, 2);
+    put(':');
+    putn(ms, 3);
     buf[pos] = '\0';
 }
 

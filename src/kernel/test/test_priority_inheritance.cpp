@@ -49,20 +49,20 @@ TEST_CLASS(MutexPriorityDonates) {
     sync::Mutex mutex;
     mutex.init();
 
-    auto* low = TaskControlBlock::create([]() {}, 5, 10);
+    auto *low = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(low != nullptr);
     low->base_priority = 5;
     low->priority = 5;
     Scheduler::add_task(*low);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
     Scheduler::set_current(*low);
     mutex.lock();
     CT_ASSERT(mutex.owner() == low);
     CT_ASSERT(low->priority == 5);
 
-    auto* high = TaskControlBlock::create([]() {}, 15, 10);
+    auto *high = TaskControlBlock::create([]() {}, 15, 10);
     CT_ASSERT(high != nullptr);
     high->base_priority = 15;
     high->priority = 15;
@@ -101,9 +101,9 @@ TEST_CLASS(MutexChainPropagates) {
     m1.init();
     m2.init();
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
-    auto* a = TaskControlBlock::create([]() {}, 5, 10);
+    auto *a = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(a != nullptr);
     a->base_priority = 5;
     a->priority = 5;
@@ -112,7 +112,7 @@ TEST_CLASS(MutexChainPropagates) {
     Scheduler::set_current(*a);
     m1.lock();
 
-    auto* b = TaskControlBlock::create([]() {}, 10, 10);
+    auto *b = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(b != nullptr);
     b->base_priority = 10;
     b->priority = 10;
@@ -127,7 +127,7 @@ TEST_CLASS(MutexChainPropagates) {
     // A boosted to B's priority
     CT_ASSERT(a->priority >= b->priority);
 
-    auto* c = TaskControlBlock::create([]() {}, 15, 10);
+    auto *c = TaskControlBlock::create([]() {}, 15, 10);
     CT_ASSERT(c != nullptr);
     c->base_priority = 15;
     c->priority = 15;
@@ -174,9 +174,9 @@ TEST_CLASS(MutexPriStepDown) {
     sync::Mutex mutex;
     mutex.init();
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
-    auto* holder = TaskControlBlock::create([]() {}, 5, 10);
+    auto *holder = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(holder != nullptr);
     holder->base_priority = 5;
     holder->priority = 5;
@@ -185,13 +185,13 @@ TEST_CLASS(MutexPriStepDown) {
     Scheduler::set_current(*holder);
     mutex.lock();
 
-    auto* w10 = TaskControlBlock::create([]() {}, 10, 10);
+    auto *w10 = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(w10 != nullptr);
     Scheduler::add_task(*w10);
-    auto* w15 = TaskControlBlock::create([]() {}, 15, 10);
+    auto *w15 = TaskControlBlock::create([]() {}, 15, 10);
     CT_ASSERT(w15 != nullptr);
     Scheduler::add_task(*w15);
-    auto* w20 = TaskControlBlock::create([]() {}, 20, 10);
+    auto *w20 = TaskControlBlock::create([]() {}, 20, 10);
     CT_ASSERT(w20 != nullptr);
     Scheduler::add_task(*w20);
 
@@ -234,9 +234,9 @@ TEST_CLASS(MutexNestedDrop) {
     m1.init();
     m2.init();
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
-    auto* a = TaskControlBlock::create([]() {}, 5, 10);
+    auto *a = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(a != nullptr);
     a->base_priority = 5;
     a->priority = 5;
@@ -246,10 +246,10 @@ TEST_CLASS(MutexNestedDrop) {
     m1.lock();
     m2.lock();
 
-    auto* w10 = TaskControlBlock::create([]() {}, 10, 10);
+    auto *w10 = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(w10 != nullptr);
     Scheduler::add_task(*w10);
-    auto* w20 = TaskControlBlock::create([]() {}, 20, 10);
+    auto *w20 = TaskControlBlock::create([]() {}, 20, 10);
     CT_ASSERT(w20 != nullptr);
     Scheduler::add_task(*w20);
 
@@ -290,9 +290,9 @@ TEST_CLASS(SemaphoreInherits) {
     sync::Semaphore sem;
     sem.init(1, 1);
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
 
-    auto* low = TaskControlBlock::create([]() {}, 5, 10);
+    auto *low = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(low != nullptr);
     low->base_priority = 5;
     low->priority = 5;
@@ -302,7 +302,7 @@ TEST_CLASS(SemaphoreInherits) {
     sem.wait();
     CT_ASSERT(low->priority == 5);
 
-    auto* high = TaskControlBlock::create([]() {}, 15, 10);
+    auto *high = TaskControlBlock::create([]() {}, 15, 10);
     CT_ASSERT(high != nullptr);
     high->base_priority = 15;
     high->priority = 15;

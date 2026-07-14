@@ -27,13 +27,18 @@
 
 using namespace kernel;
 
-static bool contains(const char* haystack, const char* needle) {
-    if (!haystack || !needle) return false;
+static bool contains(const char *haystack, const char *needle) {
+    if (!haystack || !needle)
+        return false;
     while (*haystack) {
-        const char* h = haystack;
-        const char* n = needle;
-        while (*h && *n && *h == *n) { ++h; ++n; }
-        if (!*n) return true;
+        const char *h = haystack;
+        const char *n = needle;
+        while (*h && *n && *h == *n) {
+            ++h;
+            ++n;
+        }
+        if (!*n)
+            return true;
         ++haystack;
     }
     return false;
@@ -52,7 +57,7 @@ static bool contains(const char* haystack, const char* needle) {
  * 5. Test with flags=1 (clear) and verify buffer emptied
  */
 JARVIS_TEST(klog_read_entries, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
 
     rb.clear();
     rb.puts("KLOG_TEST_MARKER_1\n");
@@ -72,7 +77,7 @@ JARVIS_TEST(klog_read_entries, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(klog_ringbuffer_wrap, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
 
     rb.clear();
     JARVIS_ASSERT(rb.empty());
@@ -87,14 +92,14 @@ JARVIS_TEST(klog_ringbuffer_wrap, "PRE: none | POST: none") {
     size_t n = rb.read(buf, sizeof(buf));
     JARVIS_ASSERT_FMT(n > 0, "read returned %zu bytes after wrap fill", n);
     JARVIS_ASSERT_FMT(n <= kernel::log::RingBuffer::BUFFER_SIZE,
-                      "read count %zu within buffer size %zu",
-                      n, kernel::log::RingBuffer::BUFFER_SIZE);
+                      "read count %zu within buffer size %zu", n,
+                      kernel::log::RingBuffer::BUFFER_SIZE);
 
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(klog_concurrent_readers, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
 
     rb.puts("CONCURRENT_READER_TEST\n");
 
@@ -113,25 +118,28 @@ JARVIS_TEST(klog_concurrent_readers, "PRE: none | POST: none") {
 
 JARVIS_TEST(klog_invalid_buffer_eFault, "PRE: none | POST: none") {
     {
-        auto buf = checked(reinterpret_cast<char*>(0), static_cast<size_t>(10));
+        auto buf =
+            checked(reinterpret_cast<char *>(0), static_cast<size_t>(10));
         JARVIS_ASSERT_FMT(!buf.valid(), "NULL buffer should be invalid");
     }
     {
-        auto buf = checked(reinterpret_cast<char*>(0xFFFF800000000000ULL),
+        auto buf = checked(reinterpret_cast<char *>(0xFFFF800000000000ULL),
                            static_cast<size_t>(10));
-        JARVIS_ASSERT_FMT(!buf.valid(), "kernel address buffer should be invalid");
+        JARVIS_ASSERT_FMT(!buf.valid(),
+                          "kernel address buffer should be invalid");
     }
     {
         char stack_buf[16];
         auto buf = checked(stack_buf, static_cast<size_t>(16));
-        JARVIS_ASSERT_FMT(!buf.valid(), "kernel stack buffer should be invalid");
+        JARVIS_ASSERT_FMT(!buf.valid(),
+                          "kernel stack buffer should be invalid");
     }
 
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(dmesg_prints_kernel_log, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
 
     rb.clear();
     rb.puts("DMESG_TEST_MARKER\n");
@@ -152,7 +160,7 @@ JARVIS_TEST(dmesg_prints_kernel_log, "PRE: none | POST: none") {
 // Expect: read returns 0
 // Depends: kernel::log::RingBuffer
 JARVIS_TEST(klog_empty_read, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
     rb.clear();
     JARVIS_ASSERT(rb.empty());
     char buf[64];
@@ -167,7 +175,7 @@ JARVIS_TEST(klog_empty_read, "PRE: none | POST: none") {
 // Expect: empty() returns true after clear
 // Depends: kernel::log::RingBuffer
 JARVIS_TEST(klog_clear, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
     rb.puts("SOME_DATA_TO_CLEAR\n");
     JARVIS_ASSERT(!rb.empty());
     rb.clear();
@@ -182,9 +190,10 @@ JARVIS_TEST(klog_clear, "PRE: none | POST: none") {
 // Expect: read returns exactly the small buffer size
 // Depends: kernel::log::RingBuffer
 JARVIS_TEST(klog_read_partial, "PRE: none | POST: none") {
-    auto& rb = kernel::log::g_klog;
+    auto &rb = kernel::log::g_klog;
     rb.clear();
-    for (int i = 0; i < 50; ++i) rb.putchar('B');
+    for (int i = 0; i < 50; ++i)
+        rb.putchar('B');
     char small[10];
     size_t n = rb.read(small, 5);
     JARVIS_ASSERT_EQ((size_t)5, n);

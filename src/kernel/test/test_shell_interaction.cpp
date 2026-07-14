@@ -35,7 +35,7 @@ static void serial_flush_rx() {
     }
 }
 
-static bool serial_read_all(char* buf, size_t max, int iterations) {
+static bool serial_read_all(char *buf, size_t max, int iterations) {
     size_t pos = 0;
     for (int i = 0; i < iterations && pos < max - 1; ++i) {
         if (arch::inb(arch::COM1_LSR) & 1) {
@@ -47,13 +47,15 @@ static bool serial_read_all(char* buf, size_t max, int iterations) {
     return pos > 0;
 }
 
-static bool serial_contains(const char* buf, const char* needle) {
+static bool serial_contains(const char *buf, const char *needle) {
     for (size_t i = 0; buf[i] != '\0'; ++i) {
         size_t j;
         for (j = 0; needle[j] != '\0'; ++j) {
-            if (buf[i + j] != needle[j]) break;
+            if (buf[i + j] != needle[j])
+                break;
         }
-        if (needle[j] == '\0') return true;
+        if (needle[j] == '\0')
+            return true;
     }
     return false;
 }
@@ -63,9 +65,10 @@ JARVIS_TEST(shell_loopback_manual_string, "PRE: vfsd, iocd | POST: none") {
     arch::outb(arch::COM1 + 4, mcr | 0x10);
     serial_flush_rx();
 
-    const char* test_str = "HelloWorld";
-    for (const char* p = test_str; *p; ++p) {
-        while ((arch::inb(arch::COM1_LSR) & 0x20) == 0);
+    const char *test_str = "HelloWorld";
+    for (const char *p = test_str; *p; ++p) {
+        while ((arch::inb(arch::COM1_LSR) & 0x20) == 0)
+            ;
         arch::outb(arch::COM1, *p);
     }
 
@@ -76,7 +79,6 @@ JARVIS_TEST(shell_loopback_manual_string, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(serial_contains(buf, "HelloWorld"));
 }
-
 
 JARVIS_TEST(shell_terminal_write, "PRE: vfsd, iocd | POST: none") {
     uint8_t mcr = arch::inb(arch::COM1 + 4);
@@ -147,7 +149,7 @@ JARVIS_TEST(shell_heap_delete, "PRE: vfsd, iocd | POST: none") {
     serial_flush_rx();
 
     service::Terminal::write("BEFORE");
-    char* tmp = new char[8];
+    char *tmp = new char[8];
     delete[] tmp;
     service::Terminal::write("END");
 

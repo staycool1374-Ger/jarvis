@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file msr.hpp
-/// @brief Model-Specific Register (MSR) read/write (x86_64) / no-op stubs (AArch64, RISC-V).
+/// @brief Model-Specific Register (MSR) read/write (x86_64) / no-op stubs
+/// (AArch64, RISC-V).
 
 #pragma once
 
@@ -26,7 +29,7 @@
 
 /// @cond
 #if defined(CONFIG_ARCH_X86_64)
-#  include <kernel/arch/x86_64/hal/msr_impl.hpp>
+#include <kernel/arch/x86_64/hal/msr_impl.hpp>
 /// @endcond
 #elif defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
 // AArch64/RISC-V do not have x86-style MSRs; system registers use CSR directly.
@@ -35,14 +38,17 @@ namespace arch {
 /// @brief Write to an x86 model-specific register (no-op on non-x86).
 /// @param msr The MSR index.
 /// @param val The value to write.
-inline void wrmsr(uint32_t msr, uint64_t val) {}
+inline void wrmsr(uint32_t msr, uint64_t val) {
+}
 /// @brief Read from an x86 model-specific register (no-op on non-x86).
 /// @param msr The MSR index.
 /// @return The MSR value (always 0 on non-x86).
-inline uint64_t rdmsr(uint32_t msr) { return 0; }
+inline uint64_t rdmsr(uint32_t msr) {
+    return 0;
 }
+} // namespace arch
 /// @cond
 #else
-#  error "HAL: no msr implementation for this architecture"
+#error "HAL: no msr implementation for this architecture"
 #endif
 /// @endcond

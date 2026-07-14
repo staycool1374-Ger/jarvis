@@ -17,7 +17,8 @@
  */
 
 /// @file idt.cpp
-/// @brief Interrupt Descriptor Table — populates IDT entries and dispatches interrupts to registered handlers.
+/// @brief Interrupt Descriptor Table — populates IDT entries and dispatches
+/// interrupts to registered handlers.
 
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/gdt.hpp>
@@ -26,7 +27,8 @@
 
 namespace arch {
 
-/// @brief External ISR vector table defined in the linker or assembly entry point.
+/// @brief External ISR vector table defined in the linker or assembly entry
+/// point.
 // NOLINTNEXTLINE(bugprone-reserved-identifier)
 extern "C" uint64_t __isr_vector[];
 
@@ -45,15 +47,15 @@ ISRHandler IDT::handlers_[NUM_ENTRIES] = {};
 /// @return A populated IDTEntry structure.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static IDTEntry make_entry(uint64_t handler, uint16_t selector,
-    uint8_t type_attr, uint8_t ist) {
+                           uint8_t type_attr, uint8_t ist) {
     IDTEntry e = {};
-    e.offset_low  = handler & 0xFFFF;
-    e.selector    = selector;
-    e.ist         = ist & 0x7;
-    e.type_attr   = type_attr;
-    e.offset_mid  = (handler >> 16) & 0xFFFF;
+    e.offset_low = handler & 0xFFFF;
+    e.selector = selector;
+    e.ist = ist & 0x7;
+    e.type_attr = type_attr;
+    e.offset_mid = (handler >> 16) & 0xFFFF;
     e.offset_high = (handler >> 32) & 0xFFFFFFFF;
-    e.zero        = 0;
+    e.zero = 0;
     return e;
 }
 
@@ -69,12 +71,12 @@ void IDT::init() {
                    GDT_CODE, 0xEE, 0);
 
     // Double-fault handler (vector 8) uses IST1 to switch to a dedicated stack
-    entries_[static_cast<int>(InterruptVector::DOUBLE_FAULT)] =
-        make_entry(__isr_vector[static_cast<int>(InterruptVector::DOUBLE_FAULT)],
-                   GDT_CODE, 0x8E, 1);
+    entries_[static_cast<int>(InterruptVector::DOUBLE_FAULT)] = make_entry(
+        __isr_vector[static_cast<int>(InterruptVector::DOUBLE_FAULT)], GDT_CODE,
+        0x8E, 1);
 
     desc_.limit = sizeof(entries_) - 1;
-    desc_.base  = reinterpret_cast<uint64_t>(entries_);
+    desc_.base = reinterpret_cast<uint64_t>(entries_);
 }
 
 /// @brief Load the IDT into the CPU via the LIDT instruction.
@@ -87,7 +89,8 @@ void IDT::load() {
 /// @param handler Callback to invoke when the interrupt fires.
 void IDT::register_handler(InterruptVector vec, ISRHandler handler) {
     int idx = static_cast<int>(vec);
-    if (idx < 0 || static_cast<size_t>(idx) >= NUM_ENTRIES) return;
+    if (idx < 0 || static_cast<size_t>(idx) >= NUM_ENTRIES)
+        return;
     handlers_[idx] = handler;
 }
 
@@ -95,16 +98,19 @@ void IDT::register_handler(InterruptVector vec, ISRHandler handler) {
 /// @param vec Interrupt vector number (0–255).
 /// @param handler Callback to invoke when the interrupt fires.
 void IDT::register_handler_raw(uint8_t vec, ISRHandler handler) {
-    if (static_cast<size_t>(vec) >= NUM_ENTRIES) return;
+    if (static_cast<size_t>(vec) >= NUM_ENTRIES)
+        return;
     handlers_[vec] = handler;
 }
 
 /// @brief Dispatch an interrupt to its registered handler.
 /// @param vector Interrupt vector number.
-/// @param error_code CPU-pushed error code (0 for vectors that do not push one).
+/// @param error_code CPU-pushed error code (0 for vectors that do not push
+/// one).
 /// @param rip Instruction pointer at the time of the interrupt.
 void IDT::handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip) {
-    if (vector >= NUM_ENTRIES) return;
+    if (vector >= NUM_ENTRIES)
+        return;
     auto handler = handlers_[vector];
     if (handler) {
         handler(vector, error_code, rip);
@@ -114,7 +120,7 @@ void IDT::handle_interrupt(uint64_t vector, uint64_t error_code, uint64_t rip) {
 /// @brief Get a const reference to an IDT entry.
 /// @param vec Interrupt vector number.
 /// @return Const reference to the IDTEntry.
-const IDTEntry& IDT::entry(uint8_t vec) {
+const IDTEntry &IDT::entry(uint8_t vec) {
     return entries_[vec];
 }
 
@@ -122,11 +128,11 @@ const IDTEntry& IDT::entry(uint8_t vec) {
 /// @param vec Interrupt vector number.
 /// @return true if the entry contains a valid handler address.
 bool IDT::has_handler(size_t vec) {
-    if (vec >= NUM_ENTRIES) return false;
-    const auto& e = entries_[vec];
+    if (vec >= NUM_ENTRIES)
+        return false;
+    const auto &e = entries_[vec];
     uint64_t handler = static_cast<uint64_t>(e.offset_high) << 32 |
-                       static_cast<uint64_t>(e.offset_mid) << 16 |
-                       e.offset_low;
+                       static_cast<uint64_t>(e.offset_mid) << 16 | e.offset_low;
     return handler != 0;
 }
 

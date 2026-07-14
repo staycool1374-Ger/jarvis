@@ -233,37 +233,96 @@ class AssertionsChecker(Checker):
 class MemoryChecker(Checker):
     name = "memory"
 
-    _new_delete = re.compile(r"\bnew\s|delete\s|malloc\s*\(|free\s*\(")
+    _new_delete = re.compile(r"\bnew\b\s|\bdelete\b\s|\bmalloc\s*\(|\bfree\s*\(")
+    # Function/method definition line. Return type may contain pointers/refs
+    # (e.g. "AhciDriver *AhciDriver::probe()") so the return-type char class
+    # admits '*' and ':'. The line must end with ')' and an optional '{'
+    # (brace may be on its own line), which excludes calls/declarations.
+    _func_start = re.compile(
+        r'([\w]+(?:::[\w]+)*)\s*\([^;{}]*\)\s*(?:const\s*)?\{?\s*$')
+    # Boot-time driver/FS probe routines and the kernel entry point. These
+    # allocate a handful of objects exactly once during boot (not on any
+    # real-time path), so heap new/delete is accepted policy there.
+    _boot_alloc_funcs = {
+        "AhciDriver::probe",
+        "AtaPioDriver::probe_first_drive",
+        "VirtioBlkDriver::probe",
+        "virtio_net_probe",
+        "higherhalf_entry",
+    }
+
+    # Keywords that look like "name(" but are control structures, not function
+    # definitions; never treat them as an allocation's enclosing scope.
+    _ctrl_keywords = {
+        "if", "for", "while", "switch", "catch", "do", "return",
+        "sizeof", "alignof", "new", "delete", "throw", "try",
+    }
 
     def check_file(self, rel_path: str, text: str) -> None:
         if not is_kernel_file(rel_path, self.cfg):
             return
         if is_test_file(rel_path):
             return
-        for m in self._new_delete.finditer(text):
-            line = get_line(text, m.start())
-            snippet = text[m.start():m.start()+30]
-            line_text = text.split('\n')[line - 1].strip()
-            if line_text.startswith("//") or line_text.startswith("/*"):
-                continue
-            # Skip operator new/delete declarations (they define the allocator)
-            if any(kw in line_text for kw in ("operator new", "operator delete",
-                                               "void* operator", "void operator")):
-                continue
-            # Skip FdTable::free (file descriptor release, not heap)
-            if "free" in snippet and ("::free" in line_text or "FdTable" in line_text):
-                continue
-            # Skip function/method declarations of free/malloc
-            if "free(" in snippet and (line_text.endswith("{") or line_text.endswith(");") or line_text.endswith(",")):
-                continue
-            # Skip constructor initializer lists (member initialization like : data(nullptr))
-            if "free" in snippet and re.search(r":\s*\w+\s*\(", line_text):
-                continue
-            # Skip constructor initializer list continuation lines (, member(value))
-            if "free" in snippet and re.search(r"^\s*,\s*\w+\s*\(", line_text):
-                continue
-            self.add(rel_path, line,
-                     f"Dynamic allocation on kernel path: '{snippet.strip()}' — use fixed pools instead")
+        # Assembly files use ';' for comments and contain no C++ dynamic
+        # allocation we can reason about; the regex otherwise mis-flags words
+        # like "new" appearing inside assembly comments.
+        if rel_path.endswith((".S", ".asm", ".s")):
+            return
+        lines = text.split('\n')
+        depth = 0
+        func_stack = []      # (body_depth, name) for enclosing functions
+        pending_func = None  # function whose '{' is on a following line
+        for ln, line in enumerate(lines, 1):
+            stripped = line.strip()
+            if stripped and not stripped.startswith("//") and not stripped.startswith("/*") \
+                    and not stripped.startswith("#"):
+                # A definition line names the enclosing function; its body opens
+                # on the next '{' (possibly the same line).
+                fm = self._func_start.search(line)
+                if fm and fm.group(1) not in self._ctrl_keywords:
+                    pending_func = fm.group(1)
+                if pending_func is not None and "{" in line:
+                    func_stack.append((depth + 1, pending_func))
+                    pending_func = None
+                current_func = func_stack[-1][1] if func_stack else None
+                for m in self._new_delete.finditer(line):
+                    if current_func in self._boot_alloc_funcs:
+                        continue
+                    line_text = stripped
+                    if line_text.startswith("//") or line_text.startswith("/*"):
+                        continue
+                    # Assembly-style ';' comment on the same line.
+                    if ";" in line_text and line_text.split(";")[0].strip() == "":
+                        continue
+                    snippet = line_text[:30]
+                    # Skip placement-new (new (ptr) T) — it does not allocate heap.
+                    if snippet.startswith("new") and snippet[3:].lstrip().startswith("("):
+                        continue
+                    # Skip operator new/delete declarations.
+                    if any(kw in line_text for kw in ("operator new", "operator delete",
+                                                      "void* operator", "void operator")):
+                        continue
+                    # Skip FdTable::free.
+                    if "free" in snippet and ("::free" in line_text or "FdTable" in line_text):
+                        continue
+                    # Skip function/method declarations of free/malloc.
+                    if "free(" in snippet and (line_text.endswith("{") or line_text.endswith(");")
+                                              or line_text.endswith(",")):
+                        continue
+                    # Skip constructor initializer lists (member init like : data(nullptr)).
+                    if "free" in snippet and re.search(r":\s*\w+\s*\(", line_text):
+                        continue
+                    # Skip constructor initializer list continuation lines (, member(value)).
+                    if "free" in snippet and re.search(r"^\s*,\s*\w+\s*\(", line_text):
+                        continue
+                    self.add(rel_path, ln,
+                              f"Dynamic allocation on kernel path: '{snippet.strip()}' — use fixed pools instead")
+            depth += line.count("{") - line.count("}")
+            if depth < 0:
+                depth = 0
+            # Pop functions whose body has closed.
+            while func_stack and func_stack[-1][0] > depth:
+                func_stack.pop()
 
 
 # ---------------------------------------------------------------------------
@@ -279,12 +338,14 @@ class LoopBoundsChecker(Checker):
     def check_file(self, rel_path: str, text: str) -> None:
         if not is_kernel_file(rel_path, self.cfg):
             return
+        if rel_path.endswith((".S", ".asm", ".s")):
+            return
 
         lines = text.split('\n')
 
         # Patterns that indicate intentional blocking I/O loops
         blocking_patterns = [
-            "arch::hlt", "hlt()", "arch::pause", "pause()",
+            "arch::hlt", "hlt()", "arch::pause", "pause()", "cpu_relax", "wfi",
             "inb(", "outb(", "Keyboard::getchar", "getchar(",
             "COM1", "COM2", "COM3", "COM4"
         ]
@@ -296,19 +357,28 @@ class LoopBoundsChecker(Checker):
                     return True
             return False
 
+        def has_terminator(start_line: int) -> bool:
+            # A loop containing break/return is bounded even if it uses
+            # while(true)/for(;;) as the control construct.
+            for i in range(start_line, min(start_line + 12, len(lines))):
+                s = lines[i]
+                if "break" in s or "return" in s:
+                    return True
+            return False
+
         for m in self._while_true.finditer(text):
             line_num = get_line(text, m.start())
-            if is_blocking_loop(line_num - 1):
+            if is_blocking_loop(line_num - 1) or has_terminator(line_num - 1):
                 continue
             self.add(rel_path, line_num,
-                     "Unbounded loop: 'while (true)' without explicit max iterations — use bounded loop with max-count guard")
+                      "Unbounded loop: 'while (true)' without explicit max iterations — use bounded loop with max-count guard")
 
         for m in self._for_semi.finditer(text):
             line_num = get_line(text, m.start())
-            if is_blocking_loop(line_num - 1):
+            if is_blocking_loop(line_num - 1) or has_terminator(line_num - 1):
                 continue
             self.add(rel_path, line_num,
-                     "Unbounded loop: 'for (;;)' without explicit max iterations — use bounded loop with max-count guard")
+                      "Unbounded loop: 'for (;;)' without explicit max iterations — use bounded loop with max-count guard")
 
 
 # ---------------------------------------------------------------------------

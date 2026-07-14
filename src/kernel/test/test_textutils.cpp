@@ -25,10 +25,12 @@
 // Testidea: Stub for core text utilities tests.
 JARVIS_TEST(core_text_utilities, "PRE: none | POST: none") {
     /*
-    1. Launch /bin/less with input from a generated large text stream, verify pagination and navigation using up/down arrow keys.
+    1. Launch /bin/less with input from a generated large text stream, verify
+    pagination and navigation using up/down arrow keys.
     2. Send SIGINT to less during pagination, ensure graceful termination.
     3. Send SIGTERM to less, ensure cleanup.
-    4. Launch /bin/ed, open a temporary file, issue line‑oriented commands (a,b,c,d,p,q), verify file contents after edits.
+    4. Launch /bin/ed, open a temporary file, issue line‑oriented commands
+    (a,b,c,d,p,q), verify file contents after edits.
     5. Send SIGINT to ed during command entry, ensure it returns to prompt.
     6. Send SIGTERM to ed, ensure process exits.
     */

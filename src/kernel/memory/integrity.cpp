@@ -35,25 +35,45 @@ static bool crc_complete = false;
 static bool crc_checked = false;
 
 extern "C" {
-    extern uint64_t _text_start[];
-    extern uint64_t _text_end[];
-    extern uint64_t _expected_code_crc[];
+extern uint64_t _text_start[];
+extern uint64_t _text_end[];
+extern uint64_t _expected_code_crc[];
 }
 
 /// @brief Verify section markers — compares each linker-placed magic constant
 ///        against its expected ASCII tag.  Fails via Logger on mismatch.
 /// @return true if all markers match.
 void check_section_markers() {
-    if (_m_text_start      != 0x545254535F545854ULL) { panic("INTEGRITY: .text start marker corrupted"); }
-    if (_m_text_end        != 0x5F444E455F545854ULL) { panic("INTEGRITY: .text end marker corrupted");   }
-    if (_m_rodata_start    != 0x545254535F544452ULL) { panic("INTEGRITY: .rodata start marker corrupted"); }
-    if (_m_rodata_end      != 0x5F444E455F544452ULL) { panic("INTEGRITY: .rodata end marker corrupted");   }
-    if (_m_data_start      != 0x545254535F415444ULL) { panic("INTEGRITY: .data start marker corrupted");   }
-    if (_m_data_end        != 0x5F444E455F415444ULL) { panic("INTEGRITY: .data end marker corrupted");     }
-    if (_m_bss_start       != 0x545254535F535342ULL) { panic("INTEGRITY: .bss start marker corrupted");    }
-    if (_m_bss_end         != 0x5F444E455F535342ULL) { panic("INTEGRITY: .bss end marker corrupted");      }
-    if (_m_stack_before    != 0x5F5246425F4B5453ULL) { panic("INTEGRITY: stack before marker corrupted");  }
-    if (_m_stack_after     != 0x5F5446415F4B5453ULL) { panic("INTEGRITY: stack after marker corrupted");   }
+    if (_m_text_start != 0x545254535F545854ULL) {
+        panic("INTEGRITY: .text start marker corrupted");
+    }
+    if (_m_text_end != 0x5F444E455F545854ULL) {
+        panic("INTEGRITY: .text end marker corrupted");
+    }
+    if (_m_rodata_start != 0x545254535F544452ULL) {
+        panic("INTEGRITY: .rodata start marker corrupted");
+    }
+    if (_m_rodata_end != 0x5F444E455F544452ULL) {
+        panic("INTEGRITY: .rodata end marker corrupted");
+    }
+    if (_m_data_start != 0x545254535F415444ULL) {
+        panic("INTEGRITY: .data start marker corrupted");
+    }
+    if (_m_data_end != 0x5F444E455F415444ULL) {
+        panic("INTEGRITY: .data end marker corrupted");
+    }
+    if (_m_bss_start != 0x545254535F535342ULL) {
+        panic("INTEGRITY: .bss start marker corrupted");
+    }
+    if (_m_bss_end != 0x5F444E455F535342ULL) {
+        panic("INTEGRITY: .bss end marker corrupted");
+    }
+    if (_m_stack_before != 0x5F5246425F4B5453ULL) {
+        panic("INTEGRITY: stack before marker corrupted");
+    }
+    if (_m_stack_after != 0x5F5446415F4B5453ULL) {
+        panic("INTEGRITY: stack after marker corrupted");
+    }
 }
 
 /// @brief Reset CRC accumulator, offset, and completion flags for a fresh scan.
@@ -64,7 +84,7 @@ void reset_crc_state() {
     crc_checked = false;
 
     uint64_t start_addr = reinterpret_cast<uint64_t>(_text_start) + 8;
-    uint64_t end_addr   = reinterpret_cast<uint64_t>(_text_end);
+    uint64_t end_addr = reinterpret_cast<uint64_t>(_text_end);
     if (end_addr > start_addr) {
         crc_total_len = end_addr - start_addr;
     } else {
@@ -102,7 +122,8 @@ bool crc_process_chunk() {
     }
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    const uint8_t* data = reinterpret_cast<const uint8_t*>(start_addr + crc_offset);
+    const uint8_t *data =
+        reinterpret_cast<const uint8_t *>(start_addr + crc_offset);
     crc_accumulator = CRC32::update(crc_accumulator, data, chunk);
     crc_offset += chunk;
 
@@ -129,5 +150,5 @@ void idle_task_main() {
     }
 }
 
-}
-}
+} // namespace integrity
+} // namespace kernel

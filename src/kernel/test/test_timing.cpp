@@ -30,13 +30,12 @@
 using namespace kernel;
 
 // Runmode: kernel
-// Testidea: Verifies Scheduler::on_tick() increments current_task().executed_ticks
-// by exactly 1.
-// Input: Set current task executed_ticks=0, call on_tick().
-// Expect: executed_ticks == 1.
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+// Testidea: Verifies Scheduler::on_tick() increments
+// current_task().executed_ticks by exactly 1. Input: Set current task
+// executed_ticks=0, call on_tick(). Expect: executed_ticks == 1. Depends:
+// kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_tick_accounting, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->executed_ticks = 0;
 
@@ -51,11 +50,11 @@ JARVIS_TEST(timer_tick_accounting, "PRE: none | POST: none") {
 // period_ticks and resets executed_ticks.
 // Input: current task remaining_ticks=1, period_ticks=10, executed_ticks=5.
 // Call on_tick() -> remaining_ticks becomes 0, executed_ticks becomes 6.
-// Call on_tick() again -> remaining_ticks reloads to 10, executed_ticks resets to 0.
-// Expect: After second tick, remaining_ticks == 10, executed_ticks == 0.
+// Call on_tick() again -> remaining_ticks reloads to 10, executed_ticks resets
+// to 0. Expect: After second tick, remaining_ticks == 10, executed_ticks == 0.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->remaining_ticks = 1;
     cur->period_ticks = 10;
@@ -76,9 +75,10 @@ JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
 // Testidea: Verifies alarm delivery after specified tick count.
 // Input: Set current task alarm_ticks=3. Call on_tick() 3 times.
 // Expect: After 3rd tick, alarm_ticks == 0 and SIGALRM pending in signal mask.
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, kernel::signal
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock,
+// kernel::signal
 JARVIS_TEST(timer_alarm_delivery, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->alarm_ticks = 3;
     cur->alarm_armed = true;
@@ -90,7 +90,8 @@ JARVIS_TEST(timer_alarm_delivery, "PRE: none | POST: none") {
 
     JARVIS_ASSERT_EQ(cur->alarm_ticks, 0ULL);
     JARVIS_ASSERT(cur->alarm_armed == false);
-    JARVIS_ASSERT((cur->pending_signals & (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) != 0);
+    JARVIS_ASSERT((cur->pending_signals &
+                   (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) != 0);
     JARVIS_TEST_PASS();
 }
 
@@ -100,7 +101,7 @@ JARVIS_TEST(timer_alarm_delivery, "PRE: none | POST: none") {
 // Expect: alarm_ticks == 5, no SIGALRM pending.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->alarm_ticks = 10;
     cur->alarm_armed = true;
@@ -112,7 +113,8 @@ JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
 
     JARVIS_ASSERT_EQ(cur->alarm_ticks, 5ULL);
     JARVIS_ASSERT(cur->alarm_armed == true);
-    JARVIS_ASSERT((cur->pending_signals & (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) == 0);
+    JARVIS_ASSERT((cur->pending_signals &
+                   (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) == 0);
     JARVIS_TEST_PASS();
 }
 
@@ -124,11 +126,11 @@ JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
 // Expect: needs_switch() returns true after on_tick().
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     cur->priority = 5;
 
-    auto* high = TaskControlBlock::create([]() {}, 9, 10);
+    auto *high = TaskControlBlock::create([]() {}, 9, 10);
     JARVIS_ASSERT(high != nullptr);
     high->state = TaskState::READY;
     high->deadline_ticks = 0;
@@ -152,15 +154,15 @@ JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
 // Expect: task_count() decreases after sufficient ticks.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
 
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     uint64_t parent_id = parent->id;
     Scheduler::add_task(*parent);
 
-    auto* child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child != nullptr);
     uint64_t child_id = child->id;
     child->parent_id = parent->id;
@@ -180,18 +182,18 @@ JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
         Scheduler::on_tick();
     }
 
-    // After reaping, the terminated test tasks should be gone from the task table.
-    // Note: we do NOT assert on global task_count() here because daemon restarts
-    // (vfsd, iocd, etc.) inflate the count in the same reaper cycle.
+    // After reaping, the terminated test tasks should be gone from the task
+    // table. Note: we do NOT assert on global task_count() here because daemon
+    // restarts (vfsd, iocd, etc.) inflate the count in the same reaper cycle.
     JARVIS_ASSERT(Scheduler::find_task(parent_id) == nullptr);
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
     // Clean up any daemon tasks that were spawned by the reaper cycle, so
     // subsequent tests in the class don't inherit leaked task resources.
     for (uint64_t i = 0; i < daemon::MAX_DAEMONS; ++i) {
-        const auto& entry = daemon::get_entry(i);
+        const auto &entry = daemon::get_entry(i);
         if (entry.pid != 0) {
-            auto* dt = Scheduler::find_task(entry.pid);
+            auto *dt = Scheduler::find_task(entry.pid);
             if (dt) {
                 Scheduler::remove_task(*dt);
                 daemon::notify_death(entry.pid);
@@ -210,32 +212,35 @@ JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
 // Expect: No crash, scheduler state consistent.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_no_side_effects_on_idle, "PRE: none | POST: none") {
-    auto* idle = Scheduler::get_idle_task();
+    auto *idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(idle != nullptr);
 
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t) t->state = TaskState::BLOCKED;
+        auto *t = Scheduler::task_at(i);
+        if (t)
+            t->state = TaskState::BLOCKED;
     }
 
     Scheduler::on_tick();
 
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(Scheduler::task_count() >= 1);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies daemon tasks in RUNNING state are not restarted by on_tick().
-// Input: Mark a daemon task as RUNNING. Call on_tick().
-// Expect: Daemon task not marked for restart, state unchanged.
-// Depends: kernel::task::Scheduler, kernel::daemon::DaemonMgr
-JARVIS_TEST(timer_daemon_restart_not_triggered_on_active, "PRE: none | POST: none") {
+// Testidea: Verifies daemon tasks in RUNNING state are not restarted by
+// on_tick(). Input: Mark a daemon task as RUNNING. Call on_tick(). Expect:
+// Daemon task not marked for restart, state unchanged. Depends:
+// kernel::task::Scheduler, kernel::daemon::DaemonMgr
+JARVIS_TEST(timer_daemon_restart_not_triggered_on_active,
+            "PRE: none | POST: none") {
     bool found = false;
     for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->state == TaskState::RUNNING && t != Scheduler::get_idle_task()) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->state == TaskState::RUNNING &&
+            t != Scheduler::get_idle_task()) {
             t->state = TaskState::RUNNING;
             found = true;
             break;
@@ -251,15 +256,16 @@ JARVIS_TEST(timer_daemon_restart_not_triggered_on_active, "PRE: none | POST: non
 
 // Runmode: kernel
 // Testidea: Verifies deadline_missed is set when deadline_ticks is in the past.
-// Input: Create a task with expired deadline (deadline_ticks=0). Call on_tick().
-// Expect: deadline_missed==true, deadline_miss_count==1.
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+// Input: Create a task with expired deadline (deadline_ticks=0). Call
+// on_tick(). Expect: deadline_missed==true, deadline_miss_count==1. Depends:
+// kernel::task::Scheduler, kernel::task::TaskControlBlock,
+// CONFIG_DEADLINE_MISS_DETECTION
 JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
 #if !CONFIG_DEADLINE_MISS_DETECTION
     JARVIS_TEST_PASS();
     return;
 #endif
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     uint64_t saved_ticks = cur->deadline_ticks;
     bool saved_missed = cur->deadline_missed;
@@ -285,16 +291,17 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies deadline_missed stays false when deadline is far in the future.
-// Input: Set deadline_ticks=UINT64_MAX. Call on_tick().
-// Expect: deadline_missed==false, deadline_miss_count==0.
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+// Testidea: Verifies deadline_missed stays false when deadline is far in the
+// future. Input: Set deadline_ticks=UINT64_MAX. Call on_tick(). Expect:
+// deadline_missed==false, deadline_miss_count==0. Depends:
+// kernel::task::Scheduler, kernel::task::TaskControlBlock,
+// CONFIG_DEADLINE_MISS_DETECTION
 JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
 #if !CONFIG_DEADLINE_MISS_DETECTION
     JARVIS_TEST_PASS();
     return;
 #endif
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     uint64_t saved_ticks = cur->deadline_ticks;
     bool saved_missed = cur->deadline_missed;
@@ -319,13 +326,14 @@ JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
 // Testidea: Verifies deadline_miss fires only once per deadline period.
 // Input: Set deadline_ticks=0, call on_tick() twice.
 // Expect: deadline_miss_count==1 (only first call triggers a miss event).
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock,
+// CONFIG_DEADLINE_MISS_DETECTION
 JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
 #if !CONFIG_DEADLINE_MISS_DETECTION
     JARVIS_TEST_PASS();
     return;
 #endif
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     uint64_t saved_ticks = cur->deadline_ticks;
     bool saved_missed = cur->deadline_missed;
@@ -357,13 +365,14 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
 // Testidea: Verifies deadline zero (unset/default) does not trigger a miss.
 // Input: Keep deadline_ticks=0, set deadline_missed=false. Call on_tick().
 // Expect: deadline_missed remains false (zero means deadline not set).
-// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock, CONFIG_DEADLINE_MISS_DETECTION
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock,
+// CONFIG_DEADLINE_MISS_DETECTION
 JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
 #if !CONFIG_DEADLINE_MISS_DETECTION
     JARVIS_TEST_PASS();
     return;
 #endif
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     uint64_t saved_ticks = cur->deadline_ticks;
     bool saved_missed = cur->deadline_missed;

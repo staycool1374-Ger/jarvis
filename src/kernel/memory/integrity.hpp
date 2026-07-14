@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -39,25 +41,28 @@ extern const uint64_t _m_stack_before;
 extern const uint64_t _m_stack_after;
 
 extern "C" {
-    /// @brief Start address of the .text section (linker symbol).
-    extern uint64_t _text_start[];
-    /// @brief End address of the .text section (linker symbol).
-    extern uint64_t _text_end[];
-    /// @brief Expected CRC-32 value for the .text section (linker symbol).
-    extern uint64_t _expected_code_crc[];
+/// @brief Start address of the .text section (linker symbol).
+extern uint64_t _text_start[];
+/// @brief End address of the .text section (linker symbol).
+extern uint64_t _text_end[];
+/// @brief Expected CRC-32 value for the .text section (linker symbol).
+extern uint64_t _expected_code_crc[];
 }
 // NOLINTEND(bugprone-dynamic-static-initializers)
 
-/// @brief Verify that all linker section markers contain their expected magic values.
+/// @brief Verify that all linker section markers contain their expected magic
+/// values.
 ///        Panics on any mismatch with the specific marker name.
 void check_section_markers();
-/// @brief Reset the CRC computation state for the .text section integrity check.
+/// @brief Reset the CRC computation state for the .text section integrity
+/// check.
 void reset_crc_state();
 /// @brief Process one chunk (4 KiB) of the code CRC scan.
 /// @return true when the CRC scan is complete.
 bool crc_process_chunk();
-/// @brief Idle task main — periodically verifies section markers and runs code CRC.
+/// @brief Idle task main — periodically verifies section markers and runs code
+/// CRC.
 void idle_task_main();
 
-}
-}
+} // namespace integrity
+} // namespace kernel

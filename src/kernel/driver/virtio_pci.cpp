@@ -28,23 +28,26 @@ using namespace kernel;
 
 namespace arch {
 
-static uint64_t page_align_down(uint64_t x) { return x & ~0xFFFULL; }
+static uint64_t page_align_down(uint64_t x) {
+    return x & ~0xFFFULL;
+}
 static uint64_t page_align_up(uint64_t x) {
     return (x + 0xFFF) & ~0xFFFULL;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool virtio_map_mmio(uint8_t bar, uint32_t offset, uint32_t length,
-                     VirtioMmio& mmio_out, PciBdf bdf) {
+                     VirtioMmio &mmio_out, PciBdf bdf) {
     PciDeviceInfo info = pci_read_device_info(bdf);
-    if (bar >= 6 || info.bars[bar].address == 0) return false;
+    if (bar >= 6 || info.bars[bar].address == 0)
+        return false;
 
     uint64_t bar_phys = info.bars[bar].address;
     uint64_t region_start = bar_phys + offset;
-    uint64_t region_end   = region_start + length;
+    uint64_t region_end = region_start + length;
 
     uint64_t map_start = page_align_down(region_start);
-    uint64_t map_end   = page_align_up(region_end);
+    uint64_t map_end = page_align_up(region_end);
 
     for (uint64_t page = map_start; page < map_end; page += PAGE_SIZE) {
         VMM::map_page(HHDM_OFFSET + page, page, false);
@@ -52,50 +55,57 @@ bool virtio_map_mmio(uint8_t bar, uint32_t offset, uint32_t length,
 
     mmio_out.phys_addr = region_start;
     mmio_out.virt_addr = HHDM_OFFSET + region_start;
-    mmio_out.length    = length;
+    mmio_out.length = length;
     return true;
 }
 
-static bool parse_virtio_cap(PciBdf bdf, uint8_t cap_offset, VirtioPciCap& cap) {
-    cap.cap_vndr  = pci_config_readb(pci_make_addr(bdf, cap_offset));
-    cap.cap_next  = pci_config_readb(pci_make_addr(bdf, cap_offset + 1));
-    cap.cap_len   = pci_config_readb(pci_make_addr(bdf, cap_offset + 2));
-    cap.cfg_type  = pci_config_readb(pci_make_addr(bdf, cap_offset + 3));
-    cap.bar       = pci_config_readb(pci_make_addr(bdf, cap_offset + 4));
+static bool parse_virtio_cap(PciBdf bdf, uint8_t cap_offset,
+                             VirtioPciCap &cap) {
+    cap.cap_vndr = pci_config_readb(pci_make_addr(bdf, cap_offset));
+    cap.cap_next = pci_config_readb(pci_make_addr(bdf, cap_offset + 1));
+    cap.cap_len = pci_config_readb(pci_make_addr(bdf, cap_offset + 2));
+    cap.cfg_type = pci_config_readb(pci_make_addr(bdf, cap_offset + 3));
+    cap.bar = pci_config_readb(pci_make_addr(bdf, cap_offset + 4));
     cap.padding[0] = pci_config_readb(pci_make_addr(bdf, cap_offset + 5));
     cap.padding[1] = pci_config_readb(pci_make_addr(bdf, cap_offset + 6));
     cap.padding[2] = pci_config_readb(pci_make_addr(bdf, cap_offset + 7));
-    cap.offset    = pci_config_readl(pci_make_addr(bdf, cap_offset + 8));
-    cap.length    = pci_config_readl(pci_make_addr(bdf, cap_offset + 12));
+    cap.offset = pci_config_readl(pci_make_addr(bdf, cap_offset + 8));
+    cap.length = pci_config_readl(pci_make_addr(bdf, cap_offset + 12));
     return true;
 }
 
-static VirtioMmio* virtio_cfg_target(VirtioTransport& t, uint8_t cfg_type) {
+static VirtioMmio *virtio_cfg_target(VirtioTransport &t, uint8_t cfg_type) {
     switch (cfg_type) {
-        case VIRTIO_CFG_COMMON: return &t.common_cfg;
-        case VIRTIO_CFG_NOTIFY: return &t.notify_cfg;
-        case VIRTIO_CFG_ISR:    return &t.isr_cfg;
-        case VIRTIO_CFG_DEVICE: return &t.device_cfg;
-        default:                return nullptr;
+    case VIRTIO_CFG_COMMON:
+        return &t.common_cfg;
+    case VIRTIO_CFG_NOTIFY:
+        return &t.notify_cfg;
+    case VIRTIO_CFG_ISR:
+        return &t.isr_cfg;
+    case VIRTIO_CFG_DEVICE:
+        return &t.device_cfg;
+    default:
+        return nullptr;
     }
 }
 
-bool virtio_find_device(uint16_t device_id, VirtioTransport& transport) {
+bool virtio_find_device(uint16_t device_id, VirtioTransport &transport) {
     pci_scan_all();
-    const PciDeviceInfo* dev = nullptr;
+    const PciDeviceInfo *dev = nullptr;
     size_t count = pci_device_count();
     for (size_t i = 0; i < count; ++i) {
-        const auto& d = pci_devices()[i];
+        const auto &d = pci_devices()[i];
         if (d.vendor_id == VIRTIO_PCI_VENDOR && d.device_id == device_id) {
             dev = &d;
             break;
         }
     }
-    if (!dev) return false;
+    if (!dev)
+        return false;
 
-    transport.bdf       = dev->bdf;
+    transport.bdf = dev->bdf;
     transport.device_id = dev->device_id;
-    transport.modern    = (dev->device_id & 0xFFF0) == 0x1040;
+    transport.modern = (dev->device_id & 0xFFF0) == 0x1040;
     transport.notify_off_multiplier = 0;
 
     PciBdf bdf = dev->bdf;
@@ -103,34 +113,38 @@ bool virtio_find_device(uint16_t device_id, VirtioTransport& transport) {
     // Walk Virtio-specific capabilities
     uint8_t cap_offset = pci_find_capability(bdf, 0x09);
     while (cap_offset != 0) {
-        VirtioPciCap cap;
+        VirtioPciCap cap{};
         parse_virtio_cap(bdf, cap_offset, cap);
 
-        if (cap.cfg_type >= VIRTIO_CFG_COMMON && cap.cfg_type <= VIRTIO_CFG_DEVICE) {
-            VirtioMmio* target = virtio_cfg_target(transport, cap.cfg_type);
-            if (target && !virtio_map_mmio(cap.bar, cap.offset, cap.length, *target, bdf)) {
-                Logger::error("virtio: failed to map cfg type %d at bar %d + 0x%x",
+        if (cap.cfg_type >= VIRTIO_CFG_COMMON &&
+            cap.cfg_type <= VIRTIO_CFG_DEVICE) {
+            VirtioMmio *target = virtio_cfg_target(transport, cap.cfg_type);
+            if (target && !virtio_map_mmio(cap.bar, cap.offset, cap.length,
+                                           *target, bdf)) {
+                Logger::error(
+                    "virtio: failed to map cfg type %d at bar %d + 0x%x",
                     cap.cfg_type, cap.bar, cap.offset);
             }
         }
 
         if (cap.cfg_type == VIRTIO_CFG_NOTIFY) {
-            transport.notify_off_multiplier = pci_config_readl(
-                pci_make_addr(bdf, cap_offset + 16));
+            transport.notify_off_multiplier =
+                pci_config_readl(pci_make_addr(bdf, cap_offset + 16));
         }
 
         cap_offset = cap.cap_next;
     }
 
-    Logger::info("virtio: found device %x at %d:%d.%d (modern=%d)",
-        device_id, bdf.bus, bdf.device, bdf.function, transport.modern);
+    Logger::info("virtio: found device %x at %d:%d.%d (modern=%d)", device_id,
+                 bdf.bus, bdf.device, bdf.function, transport.modern);
     return true;
 }
 
-bool virtio_init_transport(VirtioTransport& transport) {
+bool virtio_init_transport(VirtioTransport &transport) {
     virtio_write_status(transport, VIRTIO_STATUS_RESET);
     for (int i = 0; i < 100; ++i) {
-        if (virtio_read_status(transport) == VIRTIO_STATUS_RESET) break;
+        if (virtio_read_status(transport) == VIRTIO_STATUS_RESET)
+            break;
         io_wait();
     }
 
@@ -139,12 +153,15 @@ bool virtio_init_transport(VirtioTransport& transport) {
     return true;
 }
 
-bool virtio_negotiate_features(VirtioTransport& t, uint64_t driver_features) {
+bool virtio_negotiate_features(VirtioTransport &t, uint64_t driver_features) {
     virtio_write_common(t, VIRTIO_COMMON_DEVICE_FEATURE_SEL, 0);
-    uint32_t dev_features_lo = virtio_read_common(t, VIRTIO_COMMON_DEVICE_FEATURE);
+    uint32_t dev_features_lo =
+        virtio_read_common(t, VIRTIO_COMMON_DEVICE_FEATURE);
     virtio_write_common(t, VIRTIO_COMMON_DEVICE_FEATURE_SEL, 1);
-    uint32_t dev_features_hi = virtio_read_common(t, VIRTIO_COMMON_DEVICE_FEATURE);
-    uint64_t dev_features = (static_cast<uint64_t>(dev_features_hi) << 32) | dev_features_lo;
+    uint32_t dev_features_hi =
+        virtio_read_common(t, VIRTIO_COMMON_DEVICE_FEATURE);
+    uint64_t dev_features =
+        (static_cast<uint64_t>(dev_features_hi) << 32) | dev_features_lo;
 
     uint64_t accepted = driver_features & dev_features;
 
@@ -169,10 +186,10 @@ bool virtio_negotiate_features(VirtioTransport& t, uint64_t driver_features) {
 }
 
 // NOLINTBEGIN(bugprone-easily-swappable-parameters)
-bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
+bool virtio_setup_queue(VirtioTransport &t, uint16_t queue_idx,
                         uint16_t queue_size, uint64_t desc_phys,
                         uint64_t avail_phys, uint64_t used_phys) {
-// NOLINTEND(bugprone-easily-swappable-parameters)
+    // NOLINTEND(bugprone-easily-swappable-parameters)
     virtio_write_common16(t, VIRTIO_COMMON_QUEUE_SEL, queue_idx);
     kernel::atomic_fence();
     uint16_t size = virtio_read_common16(t, VIRTIO_COMMON_QUEUE_SIZE);
@@ -180,7 +197,8 @@ bool virtio_setup_queue(VirtioTransport& t, uint16_t queue_idx,
         Logger::error("virtio: queue %d not available", queue_idx);
         return false;
     }
-    if (queue_size > size) queue_size = size;
+    if (queue_size > size)
+        queue_size = size;
 
     virtio_write_common(t, VIRTIO_COMMON_QUEUE_DESC_LO,
                         static_cast<uint32_t>(desc_phys & 0xFFFFFFFF));

@@ -29,14 +29,15 @@ DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
 /// @brief Push an entry (overwrites oldest if full).
 /// @return true unless an entry was overwritten.
-template<size_t Capacity>
+template <size_t Capacity>
 bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
-                                  const char* msg, uintptr_t ctx) {
-    if (s_suppressed_) return true;
+                                 const char *msg, uintptr_t ctx) {
+    if (s_suppressed_)
+        return true;
     const uint64_t ts = arch::Timer::ticks();
     const uint64_t tid = kernel::Scheduler::current_task()
-                           ? kernel::Scheduler::current_task()->id
-                           : 0;
+                             ? kernel::Scheduler::current_task()->id
+                             : 0;
 
     size_t h = atomic_load(&head, __ATOMIC_RELAXED);
     size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
@@ -57,12 +58,12 @@ bool DmesgBuffer<Capacity>::push(ErrorSubsystem subsys, uint64_t err_code,
 
 /// @brief Pop the oldest entry.
 /// @return true if an entry was available.
-template<size_t Capacity>
-bool DmesgBuffer<Capacity>::pop(LogEntry& entry) {
+template <size_t Capacity> bool DmesgBuffer<Capacity>::pop(LogEntry &entry) {
     size_t t = atomic_load(&tail, __ATOMIC_RELAXED);
     size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
 
-    if (t == h) return false;
+    if (t == h)
+        return false;
 
     entry = buffer[t];
     atomic_store(&tail, (t + 1) & MASK, __ATOMIC_RELEASE);
@@ -70,23 +71,20 @@ bool DmesgBuffer<Capacity>::pop(LogEntry& entry) {
 }
 
 /// @brief Check whether the buffer is empty.
-template<size_t Capacity>
-bool DmesgBuffer<Capacity>::empty() const {
+template <size_t Capacity> bool DmesgBuffer<Capacity>::empty() const {
     return atomic_load(&head, __ATOMIC_ACQUIRE) ==
            atomic_load(&tail, __ATOMIC_ACQUIRE);
 }
 
 /// @brief Return the number of entries currently in the buffer.
-template<size_t Capacity>
-size_t DmesgBuffer<Capacity>::size() const {
+template <size_t Capacity> size_t DmesgBuffer<Capacity>::size() const {
     size_t h = atomic_load(&head, __ATOMIC_ACQUIRE);
     size_t t = atomic_load(&tail, __ATOMIC_ACQUIRE);
     return (h - t) & MASK;
 }
 
 /// @brief Discard all entries (reset tail to head).
-template<size_t Capacity>
-void DmesgBuffer<Capacity>::clear() {
+template <size_t Capacity> void DmesgBuffer<Capacity>::clear() {
     size_t h = atomic_load(&head, __ATOMIC_RELAXED);
     atomic_store(&tail, h, __ATOMIC_RELEASE);
 }

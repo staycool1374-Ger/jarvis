@@ -99,7 +99,7 @@ static void contention_worker() {
         arch::pause();
         g_contention_counter_ = tmp + 1;
     }
-    auto* self = Scheduler::current_task();
+    auto *self = Scheduler::current_task();
     if (self) {
         self->state = TaskState::TERMINATED;
     }
@@ -113,11 +113,11 @@ static void contention_worker() {
 JARVIS_TEST(spinlock_contention, "PRE: none | POST: none") {
     g_contention_counter_ = 0;
 
-    auto* a = TaskControlBlock::create(contention_worker, 5, 10);
+    auto *a = TaskControlBlock::create(contention_worker, 5, 10);
     JARVIS_ASSERT(a != nullptr);
     Scheduler::add_task(*a);
 
-    auto* b = TaskControlBlock::create(contention_worker, 5, 10);
+    auto *b = TaskControlBlock::create(contention_worker, 5, 10);
     JARVIS_ASSERT(b != nullptr);
     Scheduler::add_task(*b);
 
@@ -133,7 +133,8 @@ JARVIS_TEST(spinlock_contention, "PRE: none | POST: none") {
     // Yield repeatedly so the scheduler picks workers over the boot-stack
     // proxy.  Each reschedule() + hlt() cycle gives one worker a time slice.
     for (int h = 0; h < 100; ++h) {
-        if (g_contention_counter_ >= 100) break;
+        if (g_contention_counter_ >= 100)
+            break;
         Scheduler::reschedule();
         arch::hlt();
     }
@@ -161,19 +162,19 @@ static void yield_lowpri() {
 }
 
 // Runmode: kernel
-// Testidea: High-pri task preempts low-pri lock-holder (interrupts stay enabled).
-// Input: Low-pri (5) holds SpinLock in busy-loop; high-pri (10) preempts.
-// Expect: High-pri runs at least once, proving interrupts are not disabled.
-// Depends: SpinLock, Scheduler
+// Testidea: High-pri task preempts low-pri lock-holder (interrupts stay
+// enabled). Input: Low-pri (5) holds SpinLock in busy-loop; high-pri (10)
+// preempts. Expect: High-pri runs at least once, proving interrupts are not
+// disabled. Depends: SpinLock, Scheduler
 JARVIS_TEST(spinlock_preemption_yield, "PRE: none | POST: none") {
     g_yield_highpri_count_ = 0;
     g_yield_done_ = false;
 
-    auto* high = TaskControlBlock::create(yield_highpri, 10, 1);
+    auto *high = TaskControlBlock::create(yield_highpri, 10, 1);
     JARVIS_ASSERT(high != nullptr);
     Scheduler::add_task(*high);
 
-    auto* low = TaskControlBlock::create(yield_lowpri, 5, 10);
+    auto *low = TaskControlBlock::create(yield_lowpri, 5, 10);
     JARVIS_ASSERT(low != nullptr);
     Scheduler::add_task(*low);
 
@@ -184,27 +185,29 @@ JARVIS_TEST(spinlock_preemption_yield, "PRE: none | POST: none") {
         delete high;
     });
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
     for (int tick = 0; tick < 15 && !g_yield_done_; ++tick) {
         low->state = TaskState::RUNNING;
         Scheduler::on_tick();
     }
-    for (int h = 0; h < 6 && !g_yield_done_; ++h) arch::hlt();
+    for (int h = 0; h < 6 && !g_yield_done_; ++h)
+        arch::hlt();
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,
-        "High-pri ran %lu times (expected > 0)", g_yield_highpri_count_);
+                      "High-pri ran %lu times (expected > 0)",
+                      g_yield_highpri_count_);
 
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: SpinLockGuard C++ contract: [[nodiscard]], non-copyable, non-movable.
-// Input: SpinLockGuard construction, use, destruction.
-// Expect: Compile-time static_asserts for copy/move pass; runtime usage works.
-// Depends: SpinLock, SpinLockGuard
+// Testidea: SpinLockGuard C++ contract: [[nodiscard]], non-copyable,
+// non-movable. Input: SpinLockGuard construction, use, destruction. Expect:
+// Compile-time static_asserts for copy/move pass; runtime usage works. Depends:
+// SpinLock, SpinLockGuard
 JARVIS_TEST(spinlock_cxx_contract, "PRE: none | POST: none") {
     sync::SpinLock lock;
     {

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -30,53 +32,67 @@ namespace kernel {
 namespace sync {
 
 class Mutex {
-public:
+  public:
     static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
-    Mutex() : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(
-        0) {}
+    Mutex()
+        : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(0) {
+    }
     /// @brief Initialize the mutex to unlocked state.
     void init();
-    /// @brief Initialize the mutex to unlocked state (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already initialized.
+    /// @brief Initialize the mutex to unlocked state (error-returning
+    /// overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already
+    /// initialized.
     errors::SyncError init_err();
 
     /// @brief Acquire the mutex, blocking until available.
     void lock();
-    /// @brief Acquire the mutex, blocking until available (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task, SYNC_ERR_MAX_WAITERS if waiter limit reached.
+    /// @brief Acquire the mutex, blocking until available (error-returning
+    /// overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task,
+    /// SYNC_ERR_MAX_WAITERS if waiter limit reached.
     errors::SyncError lock_err();
 
     /// @brief Attempt to acquire the mutex without blocking.
     /// @return true if the lock was acquired.
     bool try_lock();
-    /// @brief Attempt to acquire the mutex without blocking (error-returning overload).
+    /// @brief Attempt to acquire the mutex without blocking (error-returning
+    /// overload).
     /// @return SYNC_ERR_OK on success, SYNC_ERR_NO_TASK if no current task.
     errors::SyncError try_lock_err();
 
     /// @brief Release the mutex, waking the next waiter if any.
     void unlock();
-    /// @brief Release the mutex, waking the next waiter if any (error-returning overload).
-    /// @return SYNC_ERR_OK on success, SYNC_ERR_NOT_OWNER if not the owner, SYNC_ERR_NOT_LOCKED if not locked.
+    /// @brief Release the mutex, waking the next waiter if any (error-returning
+    /// overload).
+    /// @return SYNC_ERR_OK on success, SYNC_ERR_NOT_OWNER if not the owner,
+    /// SYNC_ERR_NOT_LOCKED if not locked.
     errors::SyncError unlock_err();
 
-    bool is_locked() const { return owner_ != nullptr; }
-    TaskControlBlock* owner() const { return owner_; }
+    bool is_locked() const {
+        return owner_ != nullptr;
+    }
+    TaskControlBlock *owner() const {
+        return owner_;
+    }
 
-private:
-    SpinLock lock_;                   ///< Protects all mutex state.
-    TaskControlBlock* owner_;         ///< Current lock holder (nullptr = unlocked).
-    uint64_t holder_priority_;        ///< Saved original priority of owner (for PI restore).
-    uint64_t lock_count_;             ///< Recursive lock count.
-    TaskControlBlock* waiters_[MAX_WAITERS]; ///< Array of waiting tasks (priority-sorted on wake).
-    size_t wait_count_;               ///< Number of waiting tasks.
+  private:
+    SpinLock lock_;            ///< Protects all mutex state.
+    TaskControlBlock *owner_;  ///< Current lock holder (nullptr = unlocked).
+    uint64_t holder_priority_; ///< Saved original priority of owner (for PI
+                               ///< restore).
+    uint64_t lock_count_;      ///< Recursive lock count.
+    TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks
+                                             ///< (priority-sorted on wake).
+    size_t wait_count_;                      ///< Number of waiting tasks.
 
     /// @brief Add a task to the waiter array.
-    bool add_waiter(TaskControlBlock& task);
+    bool add_waiter(TaskControlBlock &task);
     /// @brief Wake the highest-priority waiter.
     void wake_one();
     /// @brief Boost owner priority if waiter is higher priority.
-    void inherit_priority(TaskControlBlock& waiter);
+    void inherit_priority(TaskControlBlock &waiter);
     /// @brief Restore owner priority to its original value.
     void restore_priority();
     /// @brief Re-evaluate owner priority after a waiter's priority changed.
@@ -84,5 +100,5 @@ private:
     void reevaluate();
 };
 
-}
-}
+} // namespace sync
+} // namespace kernel

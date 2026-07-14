@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,17 +28,17 @@
 
 namespace kernel::errors {
 
-#define IPC_ERROR_CODES \
-    X(OK,             0,  "OK") \
-    X(NO_QUEUE,       1,  "No message queue for task") \
-    X(QUEUE_FULL,     2,  "Message queue is full") \
-    X(QUEUE_EMPTY,    3,  "Message queue is empty") \
-    X(NO_DEST,        4,  "Destination task not found") \
-    X(NO_REPLY,       5,  "No reply received (send_sync)") \
-    X(TIMEOUT,        6,  "Operation timed out") \
-    X(INVALID_MSG,    7,  "Invalid message format") \
-    X(NO_BUFFER,      8,  "No buffer available for zero-copy") \
-    X(INVALID_ARGS,   9,  "Invalid arguments")
+#define IPC_ERROR_CODES                                                        \
+    X(OK, 0, "OK")                                                             \
+    X(NO_QUEUE, 1, "No message queue for task")                                \
+    X(QUEUE_FULL, 2, "Message queue is full")                                  \
+    X(QUEUE_EMPTY, 3, "Message queue is empty")                                \
+    X(NO_DEST, 4, "Destination task not found")                                \
+    X(NO_REPLY, 5, "No reply received (send_sync)")                            \
+    X(TIMEOUT, 6, "Operation timed out")                                       \
+    X(INVALID_MSG, 7, "Invalid message format")                                \
+    X(NO_BUFFER, 8, "No buffer available for zero-copy")                       \
+    X(INVALID_ARGS, 9, "Invalid arguments")
 
 /// @brief IPC subsystem error codes.
 // NOLINTNEXTLINE(performance-enum-size)
@@ -47,11 +49,12 @@ enum IpcError : uint64_t {
 };
 
 /// @brief Return a human-readable string for an IPC error code.
-template<>
-inline const char* error_string(IpcError e) {
+template <> inline const char *error_string(IpcError e) {
     switch (e) {
-#define X(name, num, msg) case IPC_ERR_##name: return msg;
-    IPC_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case IPC_ERR_##name:                                                       \
+        return msg;
+        IPC_ERROR_CODES
 #undef X
     }
     return "Unknown IPC error";

@@ -32,17 +32,17 @@ using namespace crypto;
 namespace {
 
 struct PrngState {
-    uint8_t  key[CHACHA_KEY_SIZE];
-    uint8_t  nonce[CHACHA_NONCE_SIZE];
+    uint8_t key[CHACHA_KEY_SIZE];
+    uint8_t nonce[CHACHA_NONCE_SIZE];
     uint32_t counter;
-    uint8_t  buffer[CHACHA_BLOCK_SIZE];
-    size_t   position;
+    uint8_t buffer[CHACHA_BLOCK_SIZE];
+    size_t position;
     uint64_t blocks_generated;
-    bool     have_rdrand;
-    bool     have_rdseed;
+    bool have_rdrand;
+    bool have_rdseed;
 };
 
-static PrngState g_state;
+static PrngState g_state{};
 static bool g_initialized = false;
 
 } // anonymous namespace
@@ -51,45 +51,59 @@ static bool g_initialized = false;
 
 /// @brief Fill a buffer with random bytes from RDSEED (preferred) or RDRAND.
 /// @return true if at least one good random value was obtained.
-static bool seed_from_hwrng(uint8_t* buf, size_t len) {
+static bool seed_from_hwrng(uint8_t *buf, size_t len) {
     while (len >= sizeof(uint64_t)) {
-        uint64_t val;
+        uint64_t val{};
         bool ok = false;
         if (g_state.have_rdseed) {
             // RDSEED may fail occasionally; retry a few times
             for (int retry = 0; retry < 10; ++retry) {
-                if (arch::rdseed64(val)) { ok = true; break; }
+                if (arch::rdseed64(val)) {
+                    ok = true;
+                    break;
+                }
             }
         } else if (g_state.have_rdrand) {
             for (int retry = 0; retry < 10; ++retry) {
-                if (arch::rdrand64(val)) { ok = true; break; }
+                if (arch::rdrand64(val)) {
+                    ok = true;
+                    break;
+                }
             }
         }
-        if (!ok) return false;
+        if (!ok)
+            return false;
         memcpy(buf, &val, sizeof(uint64_t));
         buf += sizeof(uint64_t);
         len -= sizeof(uint64_t);
     }
     if (len > 0) {
-        uint64_t val;
+        uint64_t val{};
         bool ok = false;
         if (g_state.have_rdseed) {
             for (int retry = 0; retry < 10; ++retry) {
-                if (arch::rdseed64(val)) { ok = true; break; }
+                if (arch::rdseed64(val)) {
+                    ok = true;
+                    break;
+                }
             }
         } else if (g_state.have_rdrand) {
             for (int retry = 0; retry < 10; ++retry) {
-                if (arch::rdrand64(val)) { ok = true; break; }
+                if (arch::rdrand64(val)) {
+                    ok = true;
+                    break;
+                }
             }
         }
-        if (!ok) return false;
+        if (!ok)
+            return false;
         memcpy(buf, &val, len);
     }
     return true;
 }
 
 /// @brief Fallback: derive seed material from RDTSC jitter.
-static void seed_from_jitter(uint8_t* key, uint8_t* nonce) {
+static void seed_from_jitter(uint8_t *key, uint8_t *nonce) {
     uint64_t seed[8] = {0};
     for (int i = 0; i < 100; ++i) {
         seed[i & 7] ^= arch::rdtsc();
@@ -98,15 +112,14 @@ static void seed_from_jitter(uint8_t* key, uint8_t* nonce) {
         }
     }
     memcpy(key, seed, CHACHA_KEY_SIZE);
-    memcpy(nonce, reinterpret_cast<uint8_t*>(&seed[4]), CHACHA_NONCE_SIZE);
+    memcpy(nonce, reinterpret_cast<uint8_t *>(&seed[4]), CHACHA_NONCE_SIZE);
 }
 
 // ── Core PRNG ──
 
 /// @brief Advance the CSPRNG by one ChaCha20 block.
 static void prng_next_block() {
-    chacha20_block(g_state.key, g_state.counter, g_state.nonce,
-        g_state.buffer);
+    chacha20_block(g_state.key, g_state.counter, g_state.nonce, g_state.buffer);
     ++g_state.counter;
     ++g_state.blocks_generated;
     g_state.position = 0;
@@ -130,8 +143,8 @@ void random_init() {
 
     bool seeded = false;
     if (g_state.have_rdseed || g_state.have_rdrand) {
-        seeded = seed_from_hwrng(g_state.key, CHACHA_KEY_SIZE)
-              && seed_from_hwrng(g_state.nonce, CHACHA_NONCE_SIZE);
+        seeded = seed_from_hwrng(g_state.key, CHACHA_KEY_SIZE) &&
+                 seed_from_hwrng(g_state.nonce, CHACHA_NONCE_SIZE);
     }
 
     if (!seeded) {
@@ -143,7 +156,7 @@ void random_init() {
     g_initialized = true;
 }
 
-void random_fill(uint8_t* buffer, size_t length) {
+void random_fill(uint8_t *buffer, size_t length) {
     if (!g_initialized) {
         // Fill with zeros if not initialized (should not happen)
         memset(buffer, 0, length);

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -26,12 +28,12 @@
 
 namespace kernel::errors {
 
-#define VMM_ERROR_CODES \
-    X(OK,             0,  "OK") \
-    X(PAGE_ALLOC,     1,  "Failed to allocate page table page") \
-    X(PML4_ALLOC,     2,  "Failed to allocate PML4 page for clone") \
-    X(INVALID_ADDR,   3,  "Invalid virtual address") \
-    X(NOT_MAPPED,     4,  "Virtual address not mapped")
+#define VMM_ERROR_CODES                                                        \
+    X(OK, 0, "OK")                                                             \
+    X(PAGE_ALLOC, 1, "Failed to allocate page table page")                     \
+    X(PML4_ALLOC, 2, "Failed to allocate PML4 page for clone")                 \
+    X(INVALID_ADDR, 3, "Invalid virtual address")                              \
+    X(NOT_MAPPED, 4, "Virtual address not mapped")
 
 /// @brief Error codes for the Virtual Memory Manager.
 // NOLINTNEXTLINE(performance-enum-size)
@@ -42,11 +44,12 @@ enum VmmError : uint64_t {
 };
 
 /// @brief Return a human-readable string for a VMM error code.
-template<>
-inline const char* error_string(VmmError e) {
+template <> inline const char *error_string(VmmError e) {
     switch (e) {
-#define X(name, num, msg) case VMM_ERR_##name: return msg;
-    VMM_ERROR_CODES
+#define X(name, num, msg)                                                      \
+    case VMM_ERR_##name:                                                       \
+        return msg;
+        VMM_ERROR_CODES
 #undef X
     }
     return "Unknown VMM error";

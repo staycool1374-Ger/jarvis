@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file rand.hpp
-/// @brief Hardware random number generation — dispatches to architecture-specific implementations.
+/// @brief Hardware random number generation — dispatches to
+/// architecture-specific implementations.
 
 #pragma once
 
@@ -26,12 +29,12 @@
 
 /// @cond
 #if defined(CONFIG_ARCH_X86_64)
-#  include <kernel/arch/x86_64/hal/rand_impl.hpp>
+#include <kernel/arch/x86_64/hal/rand_impl.hpp>
 #elif defined(CONFIG_ARCH_AARCH64)
-#  include <kernel/arch/aarch64/hal/rand_impl.hpp>
+#include <kernel/arch/aarch64/hal/rand_impl.hpp>
 #elif defined(CONFIG_ARCH_RISCV64)
-#  include <kernel/arch/riscv64/hal/rand_impl.hpp>
+#include <kernel/arch/riscv64/hal/rand_impl.hpp>
 #else
-#  error "HAL: no rand implementation for this architecture"
+#error "HAL: no rand implementation for this architecture"
 #endif
 /// @endcond

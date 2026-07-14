@@ -32,7 +32,7 @@ using namespace kernel::vfs;
 // Expect: Non-null vnode with S_IFCHR mode set
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(dev_random_resolve, "PRE: vfsd, iocd | POST: none") {
-    Vnode* vn = vfs::resolve("/dev/random");
+    Vnode *vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & S_IFCHR);
     JARVIS_TEST_PASS();
@@ -44,7 +44,7 @@ JARVIS_TEST(dev_random_resolve, "PRE: vfsd, iocd | POST: none") {
 // Expect: Returns 256 bytes, buffer not all-zero or all-FF
 // Depends: kernel::vfs::resolve, VnodeOps::read
 JARVIS_TEST(dev_random_read, "PRE: vfsd, iocd | POST: none") {
-    Vnode* vn = vfs::resolve("/dev/random");
+    Vnode *vn = vfs::resolve("/dev/random");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->ops != nullptr);
     JARVIS_ASSERT(vn->ops->read != nullptr);
@@ -56,11 +56,15 @@ JARVIS_TEST(dev_random_read, "PRE: vfsd, iocd | POST: none") {
     bool all_zero = true;
     bool all_ff = true;
     for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0)  all_zero = false;
-        if (buf[i] != 0xFF) all_ff = false;
+        if (buf[i] != 0)
+            all_zero = false;
+        if (buf[i] != 0xFF)
+            all_ff = false;
     }
-    JARVIS_ASSERT_FMT(!all_zero, "read /dev/random returned %zu zero bytes", sizeof(buf));
-    JARVIS_ASSERT_FMT(!all_ff, "read /dev/random returned %zu 0xFF bytes", sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_zero, "read /dev/random returned %zu zero bytes",
+                      sizeof(buf));
+    JARVIS_ASSERT_FMT(!all_ff, "read /dev/random returned %zu 0xFF bytes",
+                      sizeof(buf));
 
     JARVIS_TEST_PASS();
 }

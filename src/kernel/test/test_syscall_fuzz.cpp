@@ -42,36 +42,38 @@ using namespace kernel;
 // Expect: No crash; return value is either 0 or -1 (UINT64_MAX) for
 // error returns.
 TEST_CLASS(SyscallFuzzBounds) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
-    uint64_t extremal[] = {
-        0, 1, UINT64_MAX, static_cast<uint64_t>(-1LL),
-        0xFFFFFFFFULL, 0xDEADBEEFCAFEBABEULL
-    };
+    uint64_t extremal[] = {0,
+                           1,
+                           UINT64_MAX,
+                           static_cast<uint64_t>(-1LL),
+                           0xFFFFFFFFULL,
+                           0xDEADBEEFCAFEBABEULL};
 
     for (uint64_t num = 0;
          num < static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL); ++num) {
         // Only test syscalls guaranteed to return 0 or UINT64_MAX
         // with extremal args, without allocating kernel resources.
-        bool safe =
-            num == static_cast<uint64_t>(SyscallNumber::YIELD) ||
-            num == static_cast<uint64_t>(SyscallNumber::SEND) ||
-            num == static_cast<uint64_t>(SyscallNumber::PRINT);
-        if (!safe) continue;
+        bool safe = num == static_cast<uint64_t>(SyscallNumber::YIELD) ||
+                    num == static_cast<uint64_t>(SyscallNumber::SEND) ||
+                    num == static_cast<uint64_t>(SyscallNumber::PRINT);
+        if (!safe)
+            continue;
         for (size_t a = 0; a < 4; ++a) {
             // Only test the first few variations per syscall to keep
             // runtime bounded
             for (size_t v = 0; v < 2; ++v) {
                 uint64_t args[4] = {0, 0, 0, 0};
                 args[a] = extremal[v];
-                uint64_t ret = Syscall::handle(
-                    num, args[0], args[1], args[2], args[3], nullptr);
+                uint64_t ret = Syscall::handle(num, args[0], args[1], args[2],
+                                               args[3], nullptr);
                 // Accept either 0 (success) or UINT64_MAX (-1, error)
                 bool ok = (ret == 0 || ret == UINT64_MAX);
                 if (!ok) {
-                    Logger::warn("syscall %llu arg[%zu]=0x%llx ret=0x%llx",
-                                 num, a, args[a], ret);
+                    Logger::warn("syscall %llu arg[%zu]=0x%llx ret=0x%llx", num,
+                                 a, args[a], ret);
                 }
                 CT_ASSERT(ok);
             }
@@ -86,46 +88,41 @@ TEST_CLASS(SyscallFuzzBounds) {
 // Input: See each sub-test.
 // Expect: All return UINT64_MAX (error), no crash.
 TEST_CLASS(SyscallFuzzFlags) {
-    auto* cur = Scheduler::current_task();
+    auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
 
     // sys_send with invalid flags (all bits set)
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::SEND),
-        999999, // nonexistent dest
-        0,      // type
-        0,      // priority
-        0,      // (arg3 unused in current impl)
-        nullptr);
+    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::SEND),
+                                   999999, // nonexistent dest
+                                   0,      // type
+                                   0,      // priority
+                                   0,      // (arg3 unused in current impl)
+                                   nullptr);
     CT_ASSERT(ret == UINT64_MAX);
 
     // sys_send_sync to nonexistent
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::SEND_SYNC),
-        999999, 0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::SEND_SYNC), 999999, 0,
+                    0, 0, nullptr);
     CT_ASSERT(ret == UINT64_MAX);
 
     // sys_buf_alloc with VA >= USER_SPACE_LIMIT (null user task)
     // Current test task may not have page_table_, so alloc returns 0
     uint64_t va_too_high = USER_SPACE_LIMIT + 0x1000;
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::BUF_ALLOC),
-        va_too_high, 0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::BUF_ALLOC),
+                    va_too_high, 0, 0, 0, nullptr);
     CT_ASSERT(ret == 0 || ret == UINT64_MAX);
 
     // sys_kill with invalid signal number
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::KILL),
-        0, // self
-        99, // invalid signal
-        0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::KILL),
+                    0,  // self
+                    99, // invalid signal
+                    0, 0, nullptr);
     CT_ASSERT(ret == UINT64_MAX || ret == 0);
 
     // sys_alarm with 0 ticks
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::ALARM),
-        0, // 0 ticks
-        0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM),
+                    0, // 0 ticks
+                    0, 0, 0, nullptr);
     CT_ASSERT(ret == 0 || ret == UINT64_MAX);
 };
 
@@ -135,33 +132,30 @@ TEST_CLASS(SyscallFuzzFlags) {
 // Input: Create a task, mark it TERMINATED, set as current, call syscalls.
 // Expect: No crash; operations return error.
 TEST_CLASS(SyscallFuzzStates) {
-    auto* zombie = TaskControlBlock::create([]() {}, 5, 10);
+    auto *zombie = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(zombie != nullptr);
     Scheduler::add_task(*zombie);
 
     zombie->state = TaskState::TERMINATED;
     zombie->exit_code = 1;
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::set_current(*zombie);
 
     // Try various syscalls as a terminated task
 
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::SEND),
-        original->id, 0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::SEND), original->id, 0,
+                    0, 0, nullptr);
     // May return UINT64_MAX (error) or have undefined behaviour
     // if the implementation doesn't check state. Just ensure no crash.
     CT_ASSERT(Scheduler::current_task() != nullptr);
 
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GET_TICKS),
-        0, 0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0,
+                    nullptr);
     CT_ASSERT(Scheduler::current_task() != nullptr);
 
-    Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETPID),
-        0, 0, 0, 0, nullptr);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0,
+                    nullptr);
     CT_ASSERT(Scheduler::current_task() != nullptr);
 
     Scheduler::set_current(*original);
@@ -178,43 +172,39 @@ TEST_CLASS(SyscallFuzzStates) {
 // FORK, EXEC.
 // Expect: All return UINT64_MAX (or 0 for no-op) without crash.
 TEST_CLASS(SyscallFuzzPrivilege) {
-    auto* ktask = TaskControlBlock::create([]() {}, 5, 10);
+    auto *ktask = TaskControlBlock::create([]() {}, 5, 10);
     CT_ASSERT(ktask != nullptr);
     CT_ASSERT(ktask->page_table_ == 0); // kernel task
 
-    auto* original = Scheduler::current_task();
+    auto *original = Scheduler::current_task();
     Scheduler::add_task(*ktask);
     Scheduler::set_current(*ktask);
 
     uint64_t ret;
 
     // BUF_ALLOC requires user page table
-    ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::BUF_ALLOC),
-        0x80000000, 0, 0, 0, nullptr);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::BUF_ALLOC),
+                          0x80000000, 0, 0, 0, nullptr);
     CT_ASSERT(ret == 0 || ret == UINT64_MAX);
 
     // EXEC with null pointers (should fail CheckedPtr validation)
-    ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::EXEC),
-        0, // null path
-        0, // null argv
-        0, // null envp
-        0, nullptr);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::EXEC),
+                          0, // null path
+                          0, // null argv
+                          0, // null envp
+                          0, nullptr);
     CT_ASSERT(ret == UINT64_MAX);
 
     // FORK (should fail for kernel task)
-    ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::FORK),
-        0, 0, 0, 0, nullptr);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::FORK), 0, 0, 0,
+                          0, nullptr);
     CT_ASSERT(ret == UINT64_MAX);
 
     // WAITPID with no children
-    ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::WAITPID),
-        0, // any child
-        0, // null status
-        0, 0, nullptr);
+    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::WAITPID),
+                          0, // any child
+                          0, // null status
+                          0, 0, nullptr);
     CT_ASSERT(ret == UINT64_MAX || ret == 0);
 
     Scheduler::set_current(*original);

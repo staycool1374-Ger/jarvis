@@ -24,7 +24,7 @@
 namespace kernel {
 namespace log {
 
-RingBuffer g_klog;
+RingBuffer g_klog{};
 
 } // namespace log
 } // namespace kernel

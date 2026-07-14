@@ -83,10 +83,12 @@ errors::SyncError Notify::notify_err(uint64_t value) {
 /// @brief Block until notified. Returns the notifier's value.
 uint64_t Notify::wait() {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return 0;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return 0;
 
-    if (waiter_ != nullptr) return 0;
+    if (waiter_ != nullptr)
+        return 0;
 
     waiter_ = task;
     task->state = TaskState::BLOCKED;
@@ -96,10 +98,11 @@ uint64_t Notify::wait() {
 }
 
 /// @brief Block until notified (error-returning overload).
-errors::SyncError Notify::wait_err(uint64_t* out_value) {
+errors::SyncError Notify::wait_err(uint64_t *out_value) {
     SpinLockGuard<SpinLock> guard(lock_);
-    auto* task = Scheduler::current_task();
-    if (!task) return errors::SYNC_ERR_NO_TASK;
+    auto *task = Scheduler::current_task();
+    if (!task)
+        return errors::SYNC_ERR_NO_TASK;
 
     if (waiter_ != nullptr) {
         return errors::SYNC_ERR_ALREADY_WAITING;
@@ -109,12 +112,13 @@ errors::SyncError Notify::wait_err(uint64_t* out_value) {
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();
 
-    if (out_value) *out_value = notify_value_;
+    if (out_value)
+        *out_value = notify_value_;
     return errors::SYNC_ERR_OK;
 }
 
 /// @brief Check if notified without blocking.
-bool Notify::try_wait(uint64_t* value) {
+bool Notify::try_wait(uint64_t *value) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_ == nullptr && value && notify_value_ != 0) {
         *value = notify_value_;
@@ -125,7 +129,7 @@ bool Notify::try_wait(uint64_t* value) {
 }
 
 /// @brief Check if notified without blocking (error-returning overload).
-errors::SyncError Notify::try_wait_err(uint64_t* value) {
+errors::SyncError Notify::try_wait_err(uint64_t *value) {
     SpinLockGuard<SpinLock> guard(lock_);
     if (waiter_ == nullptr && value && notify_value_ != 0) {
         *value = notify_value_;
@@ -135,5 +139,5 @@ errors::SyncError Notify::try_wait_err(uint64_t* value) {
     return errors::SYNC_ERR_BUFFER_EMPTY;
 }
 
-}
-}
+} // namespace sync
+} // namespace kernel

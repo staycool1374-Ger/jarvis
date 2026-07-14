@@ -74,7 +74,7 @@ JARVIS_TEST(vfs_fdtable_multiple, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/");
+    auto *vn = vfs::resolve("/");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
@@ -86,7 +86,7 @@ JARVIS_TEST(vfs_resolve_root, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_dev, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/dev");
+    auto *vn = vfs::resolve("/dev");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
@@ -99,7 +99,7 @@ JARVIS_TEST(vfs_resolve_dev, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_tty, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/dev/tty");
+    auto *vn = vfs::resolve("/dev/tty");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
     JARVIS_TEST_PASS();
@@ -112,7 +112,7 @@ JARVIS_TEST(vfs_resolve_tty, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFCHR set.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_null, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/dev/null");
+    auto *vn = vfs::resolve("/dev/null");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
     JARVIS_TEST_PASS();
@@ -124,7 +124,7 @@ JARVIS_TEST(vfs_resolve_null, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks vnode is non-null and has S_IFDIR set.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_proc, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/proc");
+    auto *vn = vfs::resolve("/proc");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
@@ -136,7 +136,7 @@ JARVIS_TEST(vfs_resolve_proc, "PRE: vfsd, iocd | POST: none") {
 // Expect: JARVIS_ASSERT checks result is nullptr.
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_nonexistent, "PRE: vfsd, iocd | POST: none") {
-    auto* vn = vfs::resolve("/nonexistent_path_xyz");
+    auto *vn = vfs::resolve("/nonexistent_path_xyz");
     JARVIS_ASSERT(vn == nullptr);
     JARVIS_TEST_PASS();
 }
@@ -147,7 +147,7 @@ JARVIS_TEST(vfs_resolve_nonexistent, "PRE: vfsd, iocd | POST: none") {
 // Expect: Both return valid character-device vnodes
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_relative_path, "PRE: vfsd, iocd | POST: none") {
-    Vnode* vn = vfs::resolve("/dev/./tty");
+    Vnode *vn = vfs::resolve("/dev/./tty");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFCHR);
     vn = vfs::resolve("/dev/../dev/tty");
@@ -162,9 +162,9 @@ JARVIS_TEST(vfs_resolve_relative_path, "PRE: vfsd, iocd | POST: none") {
 // Expect: Returns the root directory vnode
 // Depends: kernel::vfs::resolve
 JARVIS_TEST(vfs_resolve_dotdot, "PRE: vfsd, iocd | POST: none") {
-    Vnode* dev = vfs::resolve("/dev");
+    Vnode *dev = vfs::resolve("/dev");
     JARVIS_ASSERT(dev != nullptr);
-    Vnode* root = vfs::resolve("/dev/..");
+    Vnode *root = vfs::resolve("/dev/..");
     JARVIS_ASSERT(root != nullptr);
     JARVIS_ASSERT(root->mode & vfs::S_IFDIR);
     JARVIS_TEST_PASS();
@@ -178,14 +178,12 @@ JARVIS_TEST(vfs_resolve_dotdot, "PRE: vfsd, iocd | POST: none") {
 // Depends: kernel::vfs::mount, kernel::vfs::resolve, kernel::vfs::Filesystem
 static Vnode fake_root_vnode;
 
-static Vnode* fake_get_root() {
+static Vnode *fake_get_root() {
     return &fake_root_vnode;
 }
 
-static kernel::vfs::Filesystem fake_fs = {
-    .name = "fakefs",
-    .get_root = fake_get_root
-};
+static kernel::vfs::Filesystem fake_fs = {.name = "fakefs",
+                                          .get_root = fake_get_root};
 
 JARVIS_TEST(vfs_mount_unmount, "PRE: vfsd, iocd | POST: none") {
     fake_root_vnode = Vnode{};
@@ -195,7 +193,7 @@ JARVIS_TEST(vfs_mount_unmount, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mount(fake_fs, "/mnt/testfs");
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* vn = vfs::resolve("/mnt/testfs");
+    Vnode *vn = vfs::resolve("/mnt/testfs");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
     JARVIS_ASSERT(vn == &fake_root_vnode);
@@ -212,7 +210,7 @@ JARVIS_TEST(vfs_mkdir_valid, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/tmp/VFS_MKDIR_TEST", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* vn = vfs::resolve("/tmp/VFS_MKDIR_TEST");
+    Vnode *vn = vfs::resolve("/tmp/VFS_MKDIR_TEST");
     JARVIS_ASSERT(vn != nullptr);
     JARVIS_ASSERT(vn->mode & vfs::S_IFDIR);
 
@@ -253,7 +251,7 @@ JARVIS_TEST(vfs_unlink_file, "PRE: vfsd, iocd | POST: none") {
     int ret = vfs::mkdir("/tmp/UNLINK_ME", 0);
     JARVIS_ASSERT_EQ(0, ret);
 
-    Vnode* vn = vfs::resolve("/tmp/UNLINK_ME");
+    Vnode *vn = vfs::resolve("/tmp/UNLINK_ME");
     JARVIS_ASSERT(vn != nullptr);
 
     ret = vfs::unlink("/tmp/UNLINK_ME");
@@ -297,8 +295,6 @@ JARVIS_TEST(vfs_unlink_nonempty_dir_fails, "PRE: vfsd, iocd | POST: none") {
 
     JARVIS_TEST_PASS();
 }
-
-
 
 // Runmode: kernel
 // Testidea: Registers all VFS test cases into the test framework.

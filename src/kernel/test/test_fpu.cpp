@@ -35,7 +35,8 @@ using namespace kernel;
 // Expect: All three bits should be set on any modern x86_64 CPU/emulator
 JARVIS_TEST(fpu_cpuid_detection, "PRE: none | POST: none") {
     JARVIS_ASSERT_FMT(arch::has_fpu(), "CPUID leaf 1 EDX bit 0 (FPU) not set");
-    JARVIS_ASSERT_FMT(arch::has_fxsr(), "CPUID leaf 1 EDX bit 24 (FXSR) not set");
+    JARVIS_ASSERT_FMT(arch::has_fxsr(),
+                      "CPUID leaf 1 EDX bit 24 (FXSR) not set");
     JARVIS_ASSERT_FMT(arch::has_sse(), "CPUID leaf 1 EDX bit 25 (SSE) not set");
     JARVIS_TEST_PASS();
 }
@@ -52,17 +53,17 @@ JARVIS_TEST(fpu_basic_instruction, "PRE: none | POST: none") {
     uint64_t cr0_after = arch::read_cr0();
     bool ts_after = (cr0_after >> 3) & 1;
 
-    JARVIS_ASSERT_FMT(!ts_after,
-        "CR0.TS still set after FINIT (was %d before)", ts_before);
+    JARVIS_ASSERT_FMT(!ts_after, "CR0.TS still set after FINIT (was %d before)",
+                      ts_before);
 
-    auto* current = Scheduler::current_task();
+    auto *current = Scheduler::current_task();
     JARVIS_ASSERT(current != nullptr);
-    auto* fpu_owner_val = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
+    auto *fpu_owner_val = __atomic_load_n(&fpu_owner, __ATOMIC_ACQUIRE);
     JARVIS_ASSERT_FMT(fpu_owner_val == current,
-        "fpu_owner (%p) should be current task (%p)",
-        (void*)fpu_owner_val, (void*)current);
+                      "fpu_owner (%p) should be current task (%p)",
+                      (void *)fpu_owner_val, (void *)current);
     JARVIS_ASSERT_FMT(current->fpu_used,
-        "current task fpu_used should be true after FINIT");
+                      "current task fpu_used should be true after FINIT");
 
     JARVIS_TEST_PASS();
 }
@@ -80,13 +81,16 @@ JARVIS_TEST(fpu_fxsave_nonzero, "PRE: none | POST: none") {
     uint64_t one = 0x3FF0000000000000ULL;
 
     asm volatile("finit\n"
-                 "fldl %0" : : "m"(one));
+                 "fldl %0"
+                 :
+                 : "m"(one));
 
     arch::fxsave(buf);
 
     // Abridged tag word at offset 4: bit 0 = ST0 tag (0=empty, 1=non-empty)
-    JARVIS_ASSERT_FMT(buf[4] & 1,
-        "FXSAVE tag byte (offset 4) was 0x%02x, expected bit 0 set", buf[4]);
+    JARVIS_ASSERT_FMT(
+        buf[4] & 1, "FXSAVE tag byte (offset 4) was 0x%02x, expected bit 0 set",
+        buf[4]);
 
     asm volatile("finit" ::: "memory");
     JARVIS_TEST_PASS();
@@ -95,7 +99,7 @@ JARVIS_TEST(fpu_fxsave_nonzero, "PRE: none | POST: none") {
 // ── FPU context switch test (raw bit patterns, no C++ float types) ─────────
 
 // IEEE 754 double 3.14159 ≈ 0x400921F9F01B866E
-static constexpr uint64_t FPU_PI_BITS   = 0x400921F9F01B866EULL;
+static constexpr uint64_t FPU_PI_BITS = 0x400921F9F01B866EULL;
 // IEEE 754 double 2.71828 ≈ 0x4005BF0A8B145769ULL
 static constexpr uint64_t FPU_EULER_BITS = 0x4005BF0A8B145769ULL;
 
@@ -108,15 +112,16 @@ static void fpu_task_a_entry() {
     uint64_t result = 0;
 
     asm volatile("finit\n"
-                 "fldl %0"           // pi → ST0
-                 : : "m"(pi)
+                 "fldl %0" // pi → ST0
+                 :
+                 : "m"(pi)
                  : "memory");
 
     g_fpu_test_a_done = 1;
     kernel::Scheduler::reschedule();
 
     // Read ST0 back as raw 64-bit IEEE 754 bits
-    asm volatile("fstpl %0\n"       // ST0 → result, pop
+    asm volatile("fstpl %0\n" // ST0 → result, pop
                  "finit"
                  : "=m"(result)
                  :
@@ -134,9 +139,10 @@ static void fpu_task_b_entry() {
     // Load a different constant (euler) to trigger #NM and FPU switch
     uint64_t euler = FPU_EULER_BITS;
     asm volatile("finit\n"
-                 "fldl %0\n"         // euler → ST0
-                 "finit"             // discard
-                 : : "m"(euler)
+                 "fldl %0\n" // euler → ST0
+                 "finit"     // discard
+                 :
+                 : "m"(euler)
                  : "memory");
 
     g_fpu_test_b_done = 1;
@@ -152,8 +158,8 @@ JARVIS_TEST(fpu_context_switch, "PRE: none | POST: none") {
     g_fpu_test_a_done = 0;
     g_fpu_test_b_done = 0;
 
-    auto* task_a = TaskControlBlock::create(fpu_task_a_entry, 1, 10);
-    auto* task_b = TaskControlBlock::create(fpu_task_b_entry, 2, 10);
+    auto *task_a = TaskControlBlock::create(fpu_task_a_entry, 1, 10);
+    auto *task_b = TaskControlBlock::create(fpu_task_b_entry, 2, 10);
 
     JARVIS_ASSERT(task_a != nullptr);
     JARVIS_ASSERT(task_b != nullptr);
@@ -165,24 +171,25 @@ JARVIS_TEST(fpu_context_switch, "PRE: none | POST: none") {
         Scheduler::reschedule();
     }
     JARVIS_ASSERT_FMT(g_fpu_test_b_done,
-        "Task B did not complete within 200 reschedule calls");
+                      "Task B did not complete within 200 reschedule calls");
 
     for (int i = 0; i < 200 && g_fpu_test_a_done != 2; ++i) {
         Scheduler::reschedule();
     }
     JARVIS_ASSERT_FMT(g_fpu_test_a_done == 2,
-        "Task A did not reach verification step (state=%llu)",
-        (unsigned long long)g_fpu_test_a_done);
+                      "Task A did not reach verification step (state=%llu)",
+                      (unsigned long long)g_fpu_test_a_done);
 
     uint64_t result = g_fpu_val_result;
-    JARVIS_ASSERT_FMT(result != 0,
-        "Task A FPU value was zeroed (context switch corruption)");
-    JARVIS_ASSERT_FMT(result != ~0ULL,
+    JARVIS_ASSERT_FMT(
+        result != 0, "Task A FPU value was zeroed (context switch corruption)");
+    JARVIS_ASSERT_FMT(
+        result != ~0ULL,
         "Task A FPU value was all-ones (context switch corruption)");
     JARVIS_ASSERT_FMT(result == FPU_PI_BITS,
-        "Task A FPU value 0x%016llx != expected 0x%016llx",
-        (unsigned long long)result,
-        (unsigned long long)FPU_PI_BITS);
+                      "Task A FPU value 0x%016llx != expected 0x%016llx",
+                      (unsigned long long)result,
+                      (unsigned long long)FPU_PI_BITS);
 
     Scheduler::remove_task(*task_a);
     Scheduler::remove_task(*task_b);

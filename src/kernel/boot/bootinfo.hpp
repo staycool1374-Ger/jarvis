@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -17,7 +19,8 @@
  */
 
 /// @file bootinfo.hpp
-/// @brief Boot information structure — memory regions, DTB, multiboot, command line.
+/// @brief Boot information structure — memory regions, DTB, multiboot, command
+/// line.
 
 #pragma once
 
@@ -30,22 +33,23 @@
 struct BootInfo {
     /// @brief A single physical memory region reported by the bootloader.
     struct MemRegion {
-        uint64_t base;  ///< Physical base address.
-        uint64_t size;  ///< Size in bytes.
-        uint32_t type;  ///< 1 = usable, 2 = reserved, 3 = ACPI, 4 = MMIO.
+        uint64_t base; ///< Physical base address.
+        uint64_t size; ///< Size in bytes.
+        uint32_t type; ///< 1 = usable, 2 = reserved, 3 = ACPI, 4 = MMIO.
     };
 
     MemRegion mem_regions[BOOTINFO_MAX_MEM_REGIONS]; ///< Memory region array.
-    int num_mem_regions;          ///< Number of valid entries in mem_regions.
-    uint64_t total_mem_size;      ///< Total usable RAM in bytes.
-    uint64_t dtb_ptr;             ///< Device-tree blob pointer (0 if not available).
-    uint64_t multiboot_magic;     ///< Multiboot magic value (0 if not available).
-    uint64_t multiboot_info;      ///< Multiboot info structure pointer.
-    char cmdline[256];            ///< Boot command-line string.
-    int hart_id;                  ///< Hart ID (RISC-V 64 only).
+    int num_mem_regions;     ///< Number of valid entries in mem_regions.
+    uint64_t total_mem_size; ///< Total usable RAM in bytes.
+    uint64_t dtb_ptr;        ///< Device-tree blob pointer (0 if not available).
+    uint64_t multiboot_magic; ///< Multiboot magic value (0 if not available).
+    uint64_t multiboot_info;  ///< Multiboot info structure pointer.
+    char cmdline[256];        ///< Boot command-line string.
+    int hart_id;              ///< Hart ID (RISC-V 64 only).
 
-    BootInfo() : num_mem_regions(0), total_mem_size(0), dtb_ptr(0),
-                 multiboot_magic(0), multiboot_info(0), hart_id(0) {
+    BootInfo()
+        : num_mem_regions(0), total_mem_size(0), dtb_ptr(0), multiboot_magic(0),
+          multiboot_info(0), hart_id(0) {
         cmdline[0] = '\0';
     }
 
@@ -60,7 +64,8 @@ struct BootInfo {
             mem_regions[num_mem_regions].size = size;
             mem_regions[num_mem_regions].type = type;
             num_mem_regions++;
-            if (type == 1) total_mem_size += size;
+            if (type == 1)
+                total_mem_size += size;
         }
     }
 };

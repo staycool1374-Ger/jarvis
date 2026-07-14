@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -41,16 +43,20 @@ inline CpuIdResult cpuid(uint32_t leaf) {
 
 /// @brief Check for hardware RDRAND support (always false on RISC-V).
 /// @return false.
-inline bool has_rdrand() { return false; }
+inline bool has_rdrand() {
+    return false;
+}
 
 /// @brief Check for hardware RDSEED support (always false on RISC-V).
 /// @return false.
-inline bool has_rdseed() { return false; }
+inline bool has_rdseed() {
+    return false;
+}
 
 /// @brief Detect FPU presence by checking the F extension bit in MISA.
 /// @return true if the F extension is present.
 inline bool has_fpu() {
-    uint64_t misa;
+    uint64_t misa{};
     asm volatile("csrr %0, misa" : "=r"(misa));
     return (misa & (1ULL << ('F' - 'A'))) != 0;
 }

@@ -30,16 +30,16 @@
 using namespace kernel;
 
 // IEEE 754 double constants (raw bits, no C++ float types)
-static constexpr uint64_t FPU_PI_BITS    = 0x400921F9F01B866EULL;
+static constexpr uint64_t FPU_PI_BITS = 0x400921F9F01B866EULL;
 static constexpr uint64_t FPU_EULER_BITS = 0x4005BF0A8B145769ULL;
 static constexpr uint64_t FPU_SQRT2_BITS = 0x3FF6A09E667F3BCDULL;
 
 static volatile uint64_t g_multi_a_result = 0;
 static volatile uint64_t g_multi_b_result = 0;
 static volatile uint64_t g_multi_c_result = 0;
-static volatile int      g_multi_a_done   = 0;
-static volatile int      g_multi_b_done   = 0;
-static volatile int      g_multi_c_done   = 0;
+static volatile int g_multi_a_done = 0;
+static volatile int g_multi_b_done = 0;
+static volatile int g_multi_c_done = 0;
 
 static void multi_task_a_entry() {
     uint64_t pi = FPU_PI_BITS;
@@ -55,7 +55,8 @@ static void multi_task_a_entry() {
 }
 
 static void multi_task_b_entry() {
-    while (g_multi_a_done < 1) kernel::Scheduler::reschedule();
+    while (g_multi_a_done < 1)
+        kernel::Scheduler::reschedule();
 
     uint64_t euler = FPU_EULER_BITS;
     uint64_t out = 0;
@@ -70,7 +71,8 @@ static void multi_task_b_entry() {
 }
 
 static void multi_task_c_entry() {
-    while (g_multi_b_done < 1) kernel::Scheduler::reschedule();
+    while (g_multi_b_done < 1)
+        kernel::Scheduler::reschedule();
 
     uint64_t sqrt2 = FPU_SQRT2_BITS;
     uint64_t out = 0;
@@ -96,9 +98,9 @@ JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
     g_multi_b_done = 0;
     g_multi_c_done = 0;
 
-    auto* task_a = TaskControlBlock::create(multi_task_a_entry, 1, 10);
-    auto* task_b = TaskControlBlock::create(multi_task_b_entry, 2, 10);
-    auto* task_c = TaskControlBlock::create(multi_task_c_entry, 3, 10);
+    auto *task_a = TaskControlBlock::create(multi_task_a_entry, 1, 10);
+    auto *task_b = TaskControlBlock::create(multi_task_b_entry, 2, 10);
+    auto *task_c = TaskControlBlock::create(multi_task_c_entry, 3, 10);
 
     JARVIS_ASSERT(task_a != nullptr);
     JARVIS_ASSERT(task_b != nullptr);
@@ -115,25 +117,24 @@ JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
         Scheduler::reschedule();
     }
 
-    JARVIS_ASSERT_FMT(g_multi_a_done == 2,
-        "Task A did not finish (state=%d)", g_multi_a_done);
-    JARVIS_ASSERT_FMT(g_multi_b_done == 2,
-        "Task B did not finish (state=%d)", g_multi_b_done);
-    JARVIS_ASSERT_FMT(g_multi_c_done == 2,
-        "Task C did not finish (state=%d)", g_multi_c_done);
+    JARVIS_ASSERT_FMT(g_multi_a_done == 2, "Task A did not finish (state=%d)",
+                      g_multi_a_done);
+    JARVIS_ASSERT_FMT(g_multi_b_done == 2, "Task B did not finish (state=%d)",
+                      g_multi_b_done);
+    JARVIS_ASSERT_FMT(g_multi_c_done == 2, "Task C did not finish (state=%d)",
+                      g_multi_c_done);
 
-    JARVIS_ASSERT_FMT(g_multi_a_result == FPU_PI_BITS,
-        "Task A 0x%016llx != pi 0x%016llx",
-        (unsigned long long)g_multi_a_result,
-        (unsigned long long)FPU_PI_BITS);
+    JARVIS_ASSERT_FMT(
+        g_multi_a_result == FPU_PI_BITS, "Task A 0x%016llx != pi 0x%016llx",
+        (unsigned long long)g_multi_a_result, (unsigned long long)FPU_PI_BITS);
     JARVIS_ASSERT_FMT(g_multi_b_result == FPU_EULER_BITS,
-        "Task B 0x%016llx != euler 0x%016llx",
-        (unsigned long long)g_multi_b_result,
-        (unsigned long long)FPU_EULER_BITS);
+                      "Task B 0x%016llx != euler 0x%016llx",
+                      (unsigned long long)g_multi_b_result,
+                      (unsigned long long)FPU_EULER_BITS);
     JARVIS_ASSERT_FMT(g_multi_c_result == FPU_SQRT2_BITS,
-        "Task C 0x%016llx != sqrt2 0x%016llx",
-        (unsigned long long)g_multi_c_result,
-        (unsigned long long)FPU_SQRT2_BITS);
+                      "Task C 0x%016llx != sqrt2 0x%016llx",
+                      (unsigned long long)g_multi_c_result,
+                      (unsigned long long)FPU_SQRT2_BITS);
 
     Scheduler::remove_task(*task_a);
     Scheduler::remove_task(*task_b);

@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -33,11 +35,11 @@ static constexpr size_t MAX_PATH = CONFIG_VFS_MAX_PATH;
 static constexpr size_t MAX_PATH_DEPTH = 16;
 
 enum OpenFlags : uint16_t {
-    O_RDONLY   = 0,
-    O_WRONLY   = 1,
-    O_RDWR     = 2,
+    O_RDONLY = 0,
+    O_WRONLY = 1,
+    O_RDWR = 2,
     O_NONBLOCK = 0x800,
-    O_CREAT    = 0x200,
+    O_CREAT = 0x200,
 };
 
 enum SeekWhence : int8_t {
@@ -54,61 +56,67 @@ constexpr int64_t VFS_INVALID = static_cast<int64_t>(VfsSentinel::INVALID_FD);
 using errors::VfsError;
 
 enum FileMode : uint16_t {
-    S_IFREG  = 0x8000,
-    S_IFDIR  = 0x4000,
-    S_IFCHR  = 0x2000,
+    S_IFREG = 0x8000,
+    S_IFDIR = 0x4000,
+    S_IFCHR = 0x2000,
 };
 
 struct VfsStat {
-    uint64_t st_size;  ///< File size in bytes.
-    uint16_t st_mode;  ///< File mode / type flags.
+    uint64_t st_size; ///< File size in bytes.
+    uint16_t st_mode; ///< File mode / type flags.
 };
 
 struct Dirent {
-    char d_name[64];   ///< Entry name (null-terminated).
-    uint64_t d_ino;    ///< Inode number.
+    char d_name[64]; ///< Entry name (null-terminated).
+    uint64_t d_ino;  ///< Inode number.
 };
 
 struct Vnode;
 struct VnodeOps {
-    int64_t (*read)(Vnode& self, uint8_t* buffer, uint64_t count,
-        uint64_t offset);                                          ///< Read data from vnode.
-    int64_t (*write)(Vnode& self, const uint8_t* buffer, uint64_t count,
-        uint64_t offset);                                          ///< Write data to vnode.
-    int     (*open)(Vnode& self, uint64_t flags);                  ///< Open the vnode.
-    void    (*close)(Vnode& self);                                 ///< Close the vnode.
-    int64_t (*lseek)(Vnode& self, int64_t offset, int whence,
-                     uint64_t* out_pos);                           ///< Seek to a position.
-    int     (*fstat)(Vnode& self, VfsStat& st);                    ///< Get file status.
-    int     (*ioctl)(Vnode& self, uint64_t request, void* arg);    ///< Device I/O control.
-    int     (*readdir)(Vnode& self, uint64_t& pos, Dirent& dent);  ///< Read directory entry.
-    Vnode*  (*lookup)(Vnode& self, const char* name);              ///< Look up child by name.
-    int     (*mkdir)(Vnode& self, const char* name, uint16_t mode);///< Create subdirectory.
-    int     (*unlink)(Vnode& self, const char* name);              ///< Remove entry.
-    int     (*create)(Vnode& self, const char* name, uint16_t mode);///< Create file.
+    int64_t (*read)(Vnode &self, uint8_t *buffer, uint64_t count,
+                    uint64_t offset); ///< Read data from vnode.
+    int64_t (*write)(Vnode &self, const uint8_t *buffer, uint64_t count,
+                     uint64_t offset);        ///< Write data to vnode.
+    int (*open)(Vnode &self, uint64_t flags); ///< Open the vnode.
+    void (*close)(Vnode &self);               ///< Close the vnode.
+    int64_t (*lseek)(Vnode &self, int64_t offset, int whence,
+                     uint64_t *out_pos);    ///< Seek to a position.
+    int (*fstat)(Vnode &self, VfsStat &st); ///< Get file status.
+    int (*ioctl)(Vnode &self, uint64_t request,
+                 void *arg); ///< Device I/O control.
+    int (*readdir)(Vnode &self, uint64_t &pos,
+                   Dirent &dent);                    ///< Read directory entry.
+    Vnode *(*lookup)(Vnode &self, const char *name); ///< Look up child by name.
+    int (*mkdir)(Vnode &self, const char *name,
+                 uint16_t mode);                  ///< Create subdirectory.
+    int (*unlink)(Vnode &self, const char *name); ///< Remove entry.
+    int (*create)(Vnode &self, const char *name,
+                  uint16_t mode); ///< Create file.
 };
 
 struct Vnode {
-    const VnodeOps* ops;   ///< Vnode operations table.
-    uint64_t ino;          ///< Inode number.
-    uint64_t size;         ///< File size in bytes.
-    uint16_t mode;         ///< File mode / type flags.
-    void* private_data;    ///< Filesystem-specific private data.
-    uint64_t refcount;     ///< Reference count.
-    Vnode* parent;         ///< Parent directory vnode (for `..` resolution).
+    const VnodeOps *ops; ///< Vnode operations table.
+    uint64_t ino;        ///< Inode number.
+    uint64_t size;       ///< File size in bytes.
+    uint16_t mode;       ///< File mode / type flags.
+    void *private_data;  ///< Filesystem-specific private data.
+    uint64_t refcount;   ///< Reference count.
+    Vnode *parent;       ///< Parent directory vnode (for `..` resolution).
 };
 
 struct FileDescription {
-    Vnode* vnode;     ///< The vnode this descriptor refers to.
-    uint64_t offset;  ///< Current read/write offset.
-    uint64_t flags;   ///< Open flags (e.g. O_NONBLOCK).
-    bool used;        ///< Whether this descriptor slot is in use.
+    Vnode *vnode;    ///< The vnode this descriptor refers to.
+    uint64_t offset; ///< Current read/write offset.
+    uint64_t flags;  ///< Open flags (e.g. O_NONBLOCK).
+    bool used;       ///< Whether this descriptor slot is in use.
 };
 
 struct FdTable {
-    FileDescription fds[MAX_FDS];  ///< Array of file descriptor entries.
+    FileDescription fds[MAX_FDS]; ///< Array of file descriptor entries.
 
-    FdTable() { __builtin_memset(fds, 0, sizeof(fds)); }
+    FdTable() {
+        __builtin_memset(fds, 0, sizeof(fds));
+    }
 
     /// @brief Allocate a file descriptor entry.
     /// @return The fd index, or VFS_INVALID if full.
@@ -116,7 +124,7 @@ struct FdTable {
     /// @brief Allocate a file descriptor entry with error code.
     /// @param[out] out_fd The allocated fd on success.
     /// @return VfsError code.
-    VfsError alloc_err(int& out_fd);
+    VfsError alloc_err(int &out_fd);
     /// @brief Release a file descriptor entry.
     void free(int file_descriptor);
     /// @brief Release a file descriptor entry with error code.
@@ -124,38 +132,38 @@ struct FdTable {
     VfsError free_err(int file_descriptor);
     /// @brief Look up a file descriptor by index.
     /// @return Pointer to the entry, or nullptr if invalid.
-    FileDescription* get(int file_descriptor);
+    FileDescription *get(int file_descriptor);
     /// @brief Look up a file descriptor by index with error code.
     /// @param[out] out_fd Pointer to the entry on success.
     /// @return VfsError code.
-    VfsError get_err(int file_descriptor, FileDescription*& out_fd);
+    VfsError get_err(int file_descriptor, FileDescription *&out_fd);
 };
 
 struct Filesystem {
-    const char* name;        ///< Filesystem driver name.
-    Vnode* (*get_root)();    ///< Get the root vnode of this filesystem.
+    const char *name;     ///< Filesystem driver name.
+    Vnode *(*get_root)(); ///< Get the root vnode of this filesystem.
 };
 
 struct Mount {
-    const char* mount_point;  ///< Mount path (e.g. "/", "/dev").
-    Filesystem* fs;           ///< The mounted filesystem.
-    Vnode* root_vnode;        ///< Root vnode of the mounted fs.
-    bool used;                ///< Whether this mount slot is occupied.
+    const char *mount_point; ///< Mount path (e.g. "/", "/dev").
+    Filesystem *fs;          ///< The mounted filesystem.
+    Vnode *root_vnode;       ///< Root vnode of the mounted fs.
+    bool used;               ///< Whether this mount slot is occupied.
 };
 
 /// @brief Resolve an absolute path to a vnode.
 /// @return The vnode, or nullptr if not found.
-Vnode* resolve(const char* path);
+Vnode *resolve(const char *path);
 /// @brief Resolve an absolute path to a vnode with error code.
 /// @param[out] out_vnode The resolved vnode on success.
 /// @return VfsError code.
-VfsError resolve_err(const char* path, Vnode*& out_vnode);
+VfsError resolve_err(const char *path, Vnode *&out_vnode);
 /// @brief Mount a filesystem at a given mount point.
 /// @return 0 on success, or VFS_INVALID on failure.
-int mount(Filesystem& filesystem, const char* mount_point);
+int mount(Filesystem &filesystem, const char *mount_point);
 /// @brief Mount a filesystem at a given mount point with error code.
 /// @return VfsError code.
-VfsError mount_err(Filesystem& filesystem, const char* mount_point);
+VfsError mount_err(Filesystem &filesystem, const char *mount_point);
 /// @brief Initialize the VFS subsystem (root vnode, mounts, etc.).
 void init();
 /// @brief Initialize the VFS subsystem with error code.
@@ -168,39 +176,39 @@ VfsError init_err();
 void reset_and_remount();
 /// @brief Find a registered filesystem driver by name.
 /// @return The filesystem, or nullptr if not found.
-Filesystem* find_fs(const char* name);
+Filesystem *find_fs(const char *name);
 /// @brief Find a registered filesystem driver by name with error code.
 /// @param[out] out_fs The filesystem on success.
 /// @return VfsError code.
-VfsError find_fs_err(const char* name, Filesystem*& out_fs);
+VfsError find_fs_err(const char *name, Filesystem *&out_fs);
 /// @brief Get the root vnode of the VFS tree.
-Vnode* get_root_vnode();
+Vnode *get_root_vnode();
 /// @brief Set the root vnode of the VFS tree.
-void set_root_vnode(Vnode& vnode);
+void set_root_vnode(Vnode &vnode);
 /// @brief Set the root vnode of the VFS tree with error code.
 /// @return VfsError code.
-VfsError set_root_vnode_err(Vnode& vnode);
+VfsError set_root_vnode_err(Vnode &vnode);
 
 /// @brief Create a subdirectory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
-int mkdir(const char* path, uint16_t mode);
+int mkdir(const char *path, uint16_t mode);
 /// @brief Create a subdirectory at the given path with error code.
 /// @return VfsError code.
-VfsError mkdir_err(const char* path, uint16_t mode);
+VfsError mkdir_err(const char *path, uint16_t mode);
 
 /// @brief Create a regular file at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
-int create(const char* path, uint16_t mode);
+int create(const char *path, uint16_t mode);
 /// @brief Create a regular file at the given path with error code.
 /// @return VfsError code.
-VfsError create_err(const char* path, uint16_t mode);
+VfsError create_err(const char *path, uint16_t mode);
 
 /// @brief Remove a file or empty directory at the given path.
 /// @return 0 on success, VFS_INVALID on failure.
-int unlink(const char* path);
+int unlink(const char *path);
 /// @brief Remove a file or empty directory at the given path with error code.
 /// @return VfsError code.
-VfsError unlink_err(const char* path);
+VfsError unlink_err(const char *path);
 
 } // namespace vfs
 } // namespace kernel

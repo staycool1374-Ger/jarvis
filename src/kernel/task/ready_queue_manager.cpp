@@ -6,31 +6,35 @@
 
 namespace kernel {
 
-void ReadyQueueManager::enqueue(TaskControlBlock& tcb, uint64_t priority) noexcept {
+void ReadyQueueManager::enqueue(TaskControlBlock &tcb,
+                                uint64_t priority) noexcept {
     // Guard against double-enqueue: re-enqueueing an already-queued TCB
     // corrupts the intrusive runq_next_/runq_prev_ links and can deadlock the
-    // scheduler (next_task() loops, reschedule() spins holding scheduler_lock_).
-    if (tcb.in_ready_queue_) return;
+    // scheduler (next_task() loops, reschedule() spins holding
+    // scheduler_lock_).
+    if (tcb.in_ready_queue_)
+        return;
     queues_[priority].push_back(tcb);
     bitmap_.set(priority);
     tcb.rq_priority_ = priority;
     tcb.in_ready_queue_ = true;
 }
 
-TaskControlBlock* ReadyQueueManager::dequeue_highest() noexcept {
+TaskControlBlock *ReadyQueueManager::dequeue_highest() noexcept {
     uint64_t prio = bitmap_.get_highest_priority();
     if (prio == 0 && queues_[0].empty()) {
         return nullptr;
     }
-    auto* tcb = queues_[prio].pop_front();
+    auto *tcb = queues_[prio].pop_front();
     if (queues_[prio].empty()) {
         bitmap_.clear(prio);
     }
-    if (tcb) tcb->rq_priority_ = 0;
+    if (tcb)
+        tcb->rq_priority_ = 0;
     return tcb;
 }
 
-TaskControlBlock* ReadyQueueManager::peek_highest() noexcept {
+TaskControlBlock *ReadyQueueManager::peek_highest() noexcept {
     uint64_t prio = bitmap_.get_highest_priority();
     if (prio == 0 && queues_[0].empty()) {
         return nullptr;
@@ -38,7 +42,8 @@ TaskControlBlock* ReadyQueueManager::peek_highest() noexcept {
     return queues_[prio].head();
 }
 
-void ReadyQueueManager::remove(TaskControlBlock& tcb, uint64_t priority) noexcept {
+void ReadyQueueManager::remove(TaskControlBlock &tcb,
+                               uint64_t priority) noexcept {
     (void)priority;
     uint64_t actual = tcb.rq_priority_;
     queues_[actual].remove(tcb);
@@ -49,13 +54,15 @@ void ReadyQueueManager::remove(TaskControlBlock& tcb, uint64_t priority) noexcep
     tcb.in_ready_queue_ = false;
 }
 
-void ReadyQueueManager::move_priority(TaskControlBlock& tcb, uint64_t old_prio, uint64_t new_prio) noexcept {
-    if (old_prio == new_prio) return;
+void ReadyQueueManager::move_priority(TaskControlBlock &tcb, uint64_t old_prio,
+                                      uint64_t new_prio) noexcept {
+    if (old_prio == new_prio)
+        return;
     remove(tcb, old_prio);
     enqueue(tcb, new_prio);
 }
 
-void ReadyQueueManager::capture_pod(ReadyQueuePOD& out) const noexcept {
+void ReadyQueueManager::capture_pod(ReadyQueuePOD &out) const noexcept {
     out.bitmap_hi = bitmap_.raw_hi();
     out.bitmap_lo = bitmap_.raw_lo();
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
@@ -65,22 +72,22 @@ void ReadyQueueManager::capture_pod(ReadyQueuePOD& out) const noexcept {
     }
 }
 
-void ReadyQueueManager::restore_pod(const ReadyQueuePOD& src) noexcept {
+void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
     bitmap_.set_raw(src.bitmap_hi, src.bitmap_lo);
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
         // Restore queue head/tail from raw addresses (TCBs are in-place)
         queues_[i].set_raw(
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            reinterpret_cast<TaskControlBlock*>(src.queue_heads[i]),
+            reinterpret_cast<TaskControlBlock *>(src.queue_heads[i]),
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            reinterpret_cast<TaskControlBlock*>(src.queue_tails[i]),
+            reinterpret_cast<TaskControlBlock *>(src.queue_tails[i]),
             src.queue_counts[i]);
         // Keep in_ready_queue_ consistent with the restored queues so the
         // double-enqueue guard in enqueue() stays correct after a snapshot
         // restore (otherwise a restored-queue TCB keeps a stale
         // in_ready_queue_=false and a later set_task_ready re-enqueues it,
         // corrupting the intrusive links).
-        for (auto* t = queues_[i].head(); t; t = t->runq_next_) {
+        for (auto *t = queues_[i].head(); t; t = t->runq_next_) {
             t->in_ready_queue_ = true;
         }
     }

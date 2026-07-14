@@ -42,7 +42,7 @@ using namespace kernel;
 // Expect: Simulated second waitpid finds and reaps child1. child2 remains in
 // scheduler.
 JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
@@ -50,7 +50,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     // add_task() requires the task to be READY (it enqueues into the ready
     // queue), so we register it first and only then mark it as a zombie —
     // mirroring the real lifecycle (scheduled → runs → exits).
-    auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
     parent->add_child(child1);
@@ -62,7 +62,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     // (This is what happened before the fix — waitpid returned -1.)
 
     // Now add child2 — simulating the second fork
-    auto* child2 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child2 != nullptr);
     child2->parent_id = parent->id;
     child2->state = TaskState::READY;
@@ -71,11 +71,12 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
 
     // Simulate second waitpid(-1, ...): iterate scheduler tasks looking for
     // a terminated child of this parent — exactly what sys_waitpid does.
-    TaskControlBlock* reaped = nullptr;
+    TaskControlBlock *reaped = nullptr;
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id && t->state == TaskState::TERMINATED) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->parent_id == parent->id &&
+            t->state == TaskState::TERMINATED) {
             reaped = t;
             break;
         }
@@ -120,11 +121,11 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
 // Expect: First waitpid reaps child1, second waitpid reaps child2. No
 // zombies remain.
 JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
-    auto* parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto* child1 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
     parent->add_child(child1);
@@ -132,7 +133,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     child1->state = TaskState::TERMINATED;
     child1->exit_code = 10;
 
-    auto* child2 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child2 != nullptr);
     child2->parent_id = parent->id;
     parent->add_child(child2);
@@ -141,11 +142,12 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     child2->exit_code = 20;
 
     // First waitpid: find and reap child1
-    TaskControlBlock* found = nullptr;
+    TaskControlBlock *found = nullptr;
     uint64_t count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id && t->state == TaskState::TERMINATED) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->parent_id == parent->id &&
+            t->state == TaskState::TERMINATED) {
             found = t;
             break;
         }
@@ -162,8 +164,9 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     found = nullptr;
     count = Scheduler::task_count();
     for (uint64_t i = 0; i < count; ++i) {
-        auto* t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id && t->state == TaskState::TERMINATED) {
+        auto *t = Scheduler::task_at(i);
+        if (t && t->parent_id == parent->id &&
+            t->state == TaskState::TERMINATED) {
             found = t;
             break;
         }
@@ -201,35 +204,37 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     // Allocate two different physical pages for parent and child
     uint64_t parent_page = PMM::alloc_page();
     Logger::raw_write("waitpid58: alloc parent done\n");
-    uint64_t child_page  = PMM::alloc_page();
+    uint64_t child_page = PMM::alloc_page();
     Logger::raw_write("waitpid58: alloc child done\n");
     JARVIS_ASSERT(parent_page != 0);
     JARVIS_ASSERT(child_page != 0);
     JARVIS_ASSERT(parent_page != child_page);
 
     // Zero them and write sentinel values
-    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + parent_page), 0, 4096);
-    memset(reinterpret_cast<void*>(arch::HHDM_OFFSET + child_page), 0, 4096);
-    *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + parent_page) = 0xAAAAAAAABBBBBBBBULL;
-    *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + child_page)  = 0xCCCCCCCCDDDDDDDDULL;
+    memset(reinterpret_cast<void *>(arch::HHDM_OFFSET + parent_page), 0, 4096);
+    memset(reinterpret_cast<void *>(arch::HHDM_OFFSET + child_page), 0, 4096);
+    *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + parent_page) =
+        0xAAAAAAAABBBBBBBBULL;
+    *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + child_page) =
+        0xCCCCCCCCDDDDDDDDULL;
 
     // Clone kernel PML4 twice for parent and child
     uint64_t parent_pml4 = VMM::clone_kernel_pml4();
-    uint64_t child_pml4  = VMM::clone_kernel_pml4();
+    uint64_t child_pml4 = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent_pml4 != 0);
     JARVIS_ASSERT(child_pml4 != 0);
 
     // Map parent_page at TEST_VA in parent's PML4, child_page at TEST_VA in
     // child's PML4
     VMM::map_page_in_pml4(TEST_VA, parent_page, true, parent_pml4);
-    VMM::map_page_in_pml4(TEST_VA, child_page,  true, child_pml4);
+    VMM::map_page_in_pml4(TEST_VA, child_page, true, child_pml4);
 
     // Verify the mappings are correct: each PML4 maps TEST_VA to a different
     // physical page
     uint64_t phys_in_parent = VMM::virt_to_phys_in_pml4(TEST_VA, parent_pml4);
-    uint64_t phys_in_child  = VMM::virt_to_phys_in_pml4(TEST_VA, child_pml4);
+    uint64_t phys_in_child = VMM::virt_to_phys_in_pml4(TEST_VA, child_pml4);
     JARVIS_ASSERT(phys_in_parent == parent_page);
-    JARVIS_ASSERT(phys_in_child  == child_page);
+    JARVIS_ASSERT(phys_in_child == child_page);
     JARVIS_ASSERT(phys_in_parent != phys_in_child);
 
     // Save current CR3 (kernel PML4)
@@ -243,16 +248,18 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
 
     Logger::info("waitpid_cr3: starting CR3 switch sequence");
     arch::write_cr3(parent_pml4);
-    *reinterpret_cast<uint64_t*>(TEST_VA) = 0x42;
+    *reinterpret_cast<uint64_t *>(TEST_VA) = 0x42;
     arch::write_cr3(saved_cr3);
     Logger::info("waitpid_cr3: CR3 sequence done");
 
     // Verify: parent's physical page got the write
-    uint64_t parent_val = *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + parent_page);
+    uint64_t parent_val =
+        *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + parent_page);
     JARVIS_ASSERT(parent_val == 0x42);
 
     // Verify: child's physical page is unchanged (still has its sentinel)
-    uint64_t child_val = *reinterpret_cast<uint64_t*>(arch::HHDM_OFFSET + child_page);
+    uint64_t child_val =
+        *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + child_page);
     JARVIS_ASSERT(child_val == 0xCCCCCCCCDDDDDDDDULL);
 
     // Cleanup: free page tables (USER-owned, freed by free_user_pages),

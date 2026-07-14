@@ -17,7 +17,8 @@
  */
 
 /// @file gcov_handler.cpp
-/// @brief GCOV profiling support — function-entry instrumentation and serial flush.
+/// @brief GCOV profiling support — function-entry instrumentation and serial
+/// flush.
 
 #include <types.hpp>
 #include <kernel/arch/io.hpp>
@@ -51,8 +52,9 @@ find_or_add_func(uint64_t func_addr) {
 /// Marks the function as called in the called_functions bitmap.
 /// @param func   Address of the entered function.
 /// @param caller Address of the call site (unused).
-void __attribute__((no_instrument_function))
-__cyg_profile_func_enter(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
+void __attribute__((no_instrument_function)) __cyg_profile_func_enter(
+    void *func, void *caller) { // NOLINT(bugprone-reserved-identifier,
+                                // bugprone-easily-swappable-parameters)
     (void)caller;
     uint64_t addr = reinterpret_cast<uint64_t>(func);
     uint32_t idx = find_or_add_func(addr);
@@ -63,7 +65,9 @@ __cyg_profile_func_enter(void *func, void *caller) { // NOLINT(bugprone-reserved
 /// @param func   Address of the exited function (unused).
 /// @param caller Address of the call site (unused).
 void __attribute__((no_instrument_function))
-__cyg_profile_func_exit(void *func, void *caller) { // NOLINT(bugprone-reserved-identifier, bugprone-easily-swappable-parameters)
+__cyg_profile_func_exit(void *func,
+                        void *caller) { // NOLINT(bugprone-reserved-identifier,
+                                        // bugprone-easily-swappable-parameters)
     (void)func;
     (void)caller;
 }
@@ -71,18 +75,19 @@ __cyg_profile_func_exit(void *func, void *caller) { // NOLINT(bugprone-reserved-
 /// @brief Flush profiling data to the serial port.
 /// Sends magic header 'FUNC', function count, and (addr, called) pairs
 /// over COM1 for the host-side extract_gcda.py script to reassemble.
-void __attribute__((no_instrument_function))
-gcov_flush_to_serial() {
+void __attribute__((no_instrument_function)) gcov_flush_to_serial() {
 #if defined(CONFIG_ARCH_X86_64)
     uint8_t magic[4] = {'F', 'U', 'N', 'C'};
     for (int i = 0; i < 4; ++i) {
-        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
+        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0)
+            ;
         arch::outb(arch::COM1, magic[i]);
     }
 
     uint32_t total = func_count;
     for (int i = 0; i < 4; ++i) {
-        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
+        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0)
+            ;
         arch::outb(arch::COM1, (total >> (i * 8)) & 0xFF);
     }
 
@@ -90,14 +95,18 @@ gcov_flush_to_serial() {
         uint64_t addr = func_addrs[i];
         uint32_t called = (called_functions[i / 64] >> (i % 64)) & 1;
         for (int j = 0; j < 8; ++j) {
-            while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
+            while ((arch::inb(arch::COM1 + 5) & 0x20) == 0)
+                ;
             arch::outb(arch::COM1, (addr >> (j * 8)) & 0xFF);
         }
-        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0);
+        while ((arch::inb(arch::COM1 + 5) & 0x20) == 0)
+            ;
         arch::outb(arch::COM1, called & 0xFF);
     }
 #else
-    (void)func_count; (void)func_addrs; (void)called_functions;
+    (void)func_count;
+    (void)func_addrs;
+    (void)called_functions;
 #endif
 }
 

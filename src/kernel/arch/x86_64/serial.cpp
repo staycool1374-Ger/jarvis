@@ -17,7 +17,8 @@
  */
 
 /// @file serial.cpp
-/// @brief Serial (UART 16550) driver — provides early kernel debug output over COM1.
+/// @brief Serial (UART 16550) driver — provides early kernel debug output over
+/// COM1.
 
 #include <kernel/arch/serial.hpp>
 #include <kernel/arch/hal/io.hpp>
@@ -42,24 +43,28 @@ void Serial::init() {
 /// @param c Character to transmit.
 void Serial::putchar(char c) {
     if (c == '\n') {
-        while ((inb(arch::COM1 + 5) & 0x20) == 0);
+        while ((inb(arch::COM1 + 5) & 0x20) == 0)
+            ;
         outb(arch::COM1, '\r');
     }
-    while ((inb(arch::COM1 + 5) & 0x20) == 0);
+    while ((inb(arch::COM1 + 5) & 0x20) == 0)
+        ;
     outb(arch::COM1, c);
 }
 
 /// @brief Read a single character from the serial port (blocking).
 /// @return The received character.
 char Serial::getchar() {
-    while ((inb(arch::COM1 + 5) & 0x01) == 0);
+    while ((inb(arch::COM1 + 5) & 0x01) == 0)
+        ;
     return static_cast<char>(inb(arch::COM1));
 }
 
 /// @brief Write a null-terminated string to the serial port.
 /// @param s Null-terminated string to transmit.
-void Serial::puts(const char* s) {
-    while (*s) putchar(*s++);
+void Serial::puts(const char *s) {
+    while (*s)
+        putchar(*s++);
 }
 
 } // namespace arch

@@ -36,7 +36,7 @@ using namespace kernel;
 //        wcet_ticks=10, executed_ticks=11 (exceeded), no deadline set.
 // Expect: wcet_overrun_fired==true, deadline_missed==false.
 TEST_CLASS(WcetOverrunDetectionFires) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -81,7 +81,7 @@ TEST_CLASS(WcetOverrunDetectionFires) {
 //        (within budget), executed_ticks=5, deadline_ticks in past.
 // Expect: deadline_miss_count>=1, wcet_overrun_fired==false.
 TEST_CLASS(DeadlineMissWithinWcet) {
-    auto* helper = TaskControlBlock::create([](){}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
@@ -109,7 +109,7 @@ TEST_CLASS(DeadlineMissWithinWcet) {
 #if CONFIG_DEADLINE_MONITOR_TASK
             Scheduler::scan_deadlines();
 #endif
-}
+        }
 
         // Deadline must fire
         CT_ASSERT(helper->deadline_miss_count >= 1);

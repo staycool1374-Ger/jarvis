@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  * Jarvis RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
@@ -28,16 +30,15 @@
 /// @brief Lock-free single-producer single-consumer ring buffer.
 /// @tparam T  Element type.
 /// @tparam N  Capacity (must be a power of two).
-template<typename T, size_t N>
-class SPSCRing {
+template <typename T, size_t N> class SPSCRing {
     static_assert(N > 0 && (N & (N - 1)) == 0, "N must be power of 2");
 
     static constexpr size_t MASK = N - 1;
 
-public:
+  public:
     /// @brief Push an item (discards if full).
     /// @return true on success.
-    bool try_push(const T& item) {
+    bool try_push(const T &item) {
         size_t h = head_;
         size_t t = kernel::atomic_load(&tail_, __ATOMIC_ACQUIRE);
         size_t next = (h + 1) & MASK;
@@ -50,7 +51,7 @@ public:
 
     /// @brief Pop an item (no-op if empty).
     /// @return true on success.
-    bool try_pop(T& item) {
+    bool try_pop(T &item) {
         size_t t = tail_;
         size_t h = kernel::atomic_load(&head_, __ATOMIC_ACQUIRE);
         if (t == h)
@@ -72,8 +73,10 @@ public:
         kernel::atomic_store(&tail_, size_t{0}, __ATOMIC_RELAXED);
     }
 
-private:
-    alignas(64) size_t head_ = 0; ///< Producer index (written by producer only).
-    alignas(64) size_t tail_ = 0; ///< Consumer index (written by consumer only).
-    T data_[N] = {};              ///< Element storage.
+  private:
+    alignas(64) size_t head_ =
+        0; ///< Producer index (written by producer only).
+    alignas(64) size_t tail_ =
+        0;           ///< Consumer index (written by consumer only).
+    T data_[N] = {}; ///< Element storage.
 };
