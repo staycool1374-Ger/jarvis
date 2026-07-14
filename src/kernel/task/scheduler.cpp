@@ -1365,7 +1365,25 @@ void Scheduler::process_deferred_kills() noexcept {
 void Scheduler::scan_deadlines() noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
 #if CONFIG_DEADLINE_MISS_DETECTION
-    while (auto *task = deadline_list_.pop_earliest_if_expired()) {
+    // Scan every live task rather than only deadline_list_.  A task's deadline
+    // may be (re)configured after add_task() returned, in which case it is not
+    // a member of deadline_list_ yet — walking only that list would miss its
+    // deadline and silently suppress the miss detection.  Scanning all tasks
+    // is O(n) but n is small and keeps detection correct for every periodic
+    // task regardless of when its deadline was set.
+    const uint64_t now = arch::Timer::ticks();
+    for (auto *task = all_tasks_.first_ptr(); task;
+         task = all_tasks_.next_ptr(task)) {
+        if (task->magic != TaskControlBlock::TCB_MAGIC)
+            continue;
+        if (task->state == TaskState::TERMINATED)
+            continue;
+        if (task->period_ticks == 0 || task->deadline_ticks == 0)
+            continue;
+        if (task->deadline_missed)
+            continue;
+        if (task->deadline_ticks >= now)
+            continue;
         if (task->sporadic_server) {
             task->ss_state_on_deadline_miss =
                 static_cast<uint8_t>(task->sporadic_server->state());
@@ -1374,13 +1392,9 @@ void Scheduler::scan_deadlines() noexcept {
         }
         task->deadline_missed = true;
         ++task->deadline_miss_count;
-        deadline_miss_handler(task,
-                              arch::Timer::ticks() - task->deadline_ticks);
+        deadline_miss_handler(task, now - task->deadline_ticks);
         task->deadline_ticks += task->period_ticks;
         task->deadline_missed = false;
-        if (task->deadline_ticks > 0) {
-            deadline_list_.insert(task);
-        }
 #if CONFIG_WCET_OVERRUN_DETECTION
         task->wcet_overrun_fired = false;
 #endif

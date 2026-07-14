@@ -119,11 +119,15 @@ JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies on_tick() triggers rate_monotonic_schedule() which causes
-// needs_switch() to return true when a higher-priority task is overdue.
+// Testidea: Verifies on_tick() triggers rate_monotonic_schedule() which
+// initiates a context switch to a higher-priority task when one is overdue.
 // Input: Current task priority=5. Create higher-priority task (priority=9)
 // with deadline expired. Call on_tick().
-// Expect: needs_switch() returns true after on_tick().
+// Expect: rate_monotonic_schedule() selects the higher-priority task as the
+// pending switch target (scheduler_next_task_id == high->id).  Note:
+// needs_switch() consults the ready queue, but on_tick() has already dequeued
+// and RUNNING-marked the higher-priority task via rate_monotonic_schedule(), so
+// the pending switch is observed through scheduler_next_task_id instead.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
@@ -138,7 +142,12 @@ JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
 
     Scheduler::on_tick();
 
-    bool result = Scheduler::needs_switch();
+    // rate_monotonic_schedule() must have selected the overdue higher-priority
+    // task as the next task to run.
+    bool result = (kernel::scheduler_next_task_id == high->id);
+    Logger::info("rate_monotonic: needs_switch_target=%lu high_id=%lu cur_id=%lu",
+                 (unsigned long)kernel::scheduler_next_task_id,
+                 (unsigned long)high->id, (unsigned long)cur->id);
     JARVIS_ASSERT(result == true);
 
     Scheduler::remove_task(*high);

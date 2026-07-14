@@ -47,6 +47,12 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
+    // Parent blocks in waitpid so the deferred reaper (reap_orphans) preserves
+    // child1 as a zombie until it is manually reaped below. Without this the
+    // reaper can collect the parented zombie on a stray timer tick.
+    parent->waiting_child_pid = static_cast<uint64_t>(-1);
+    parent->waiting_child_status = nullptr;
+
     // Child 1 — simulate that it ran and exited (TERMINATED).
     // add_task() requires the task to be READY (it enqueues into the ready
     // queue), so we register it first and only then mark it as a zombie —
@@ -108,6 +114,8 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     Scheduler::remove_task(*child2);
     child2->cleanup();
     delete child2;
+    parent->waiting_child_pid = 0;
+    parent->waiting_child_status = nullptr;
     Scheduler::remove_task(*parent);
     parent->cleanup();
     delete parent;
