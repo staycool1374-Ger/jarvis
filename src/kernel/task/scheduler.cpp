@@ -636,10 +636,8 @@ void Scheduler::reap_orphans() noexcept {
     static constexpr uint64_t MAX_REAP = 64;
     TaskControlBlock *to_reap[MAX_REAP];
     uint64_t num_to_reap = 0;
-    uint64_t _diag_collected = 0;
 
     for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        ++_diag_collected;
         if (num_to_reap >= MAX_REAP)
             break;
         if (t->magic != TaskControlBlock::TCB_MAGIC)
@@ -780,13 +778,6 @@ void Scheduler::reap_orphans() noexcept {
         }
     }
 
-    debug_write("[REAP] collected=");
-    debug_write_hex(_diag_collected);
-    debug_write(" to_reap=");
-    debug_write_hex(num_to_reap);
-    debug_write(" size=0x");
-    debug_write_hex(all_tasks_.size());
-    debug_write("\n");
     s_reap_in_progress = false;
 }
 

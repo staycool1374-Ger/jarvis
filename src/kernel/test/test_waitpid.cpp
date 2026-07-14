@@ -22,6 +22,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
+#include <scope_guard.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
@@ -125,63 +126,66 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
+    // Parent blocks in waitpid for any child. While the parent is waiting the
+    // deferred reaper (reap_orphans) must NOT collect a terminated child; the
+    // child stays a zombie until the parent collects it. Clearing the wait lets
+    // reap_orphans reclaim the zombie via the deferred path.
+    auto cleanup = ScopeGuard([&]() {
+        parent->waiting_child_pid = 0;
+        parent->waiting_child_status = nullptr;
+        Scheduler::remove_task(*parent);
+        parent->cleanup();
+        delete parent;
+    });
+
+    // --- Round 1: child1 ---
     auto *child1 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
     parent->add_child(child1);
     Scheduler::add_task(*child1);
+
+    uint64_t child1_id = child1->id;
+    parent->waiting_child_pid = static_cast<uint64_t>(-1);
+    parent->waiting_child_status = nullptr;
+
     child1->state = TaskState::TERMINATED;
     child1->exit_code = 10;
 
+    // Deferred reaper must preserve the zombie while the parent is waiting.
+    Scheduler::reap_orphans();
+    JARVIS_ASSERT(Scheduler::find_task(child1_id) == child1);
+
+    // Parent collects status; the deferred reaper reclaims child1.
+    parent->remove_child(child1);
+    parent->waiting_child_pid = 0;
+    parent->waiting_child_status = nullptr;
+    Scheduler::reap_orphans();
+    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
+
+    // --- Round 2: child2 ---
     auto *child2 = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(child2 != nullptr);
     child2->parent_id = parent->id;
     parent->add_child(child2);
     Scheduler::add_task(*child2);
+
+    uint64_t child2_id = child2->id;
+    parent->waiting_child_pid = static_cast<uint64_t>(-1);
+    parent->waiting_child_status = nullptr;
+
     child2->state = TaskState::TERMINATED;
     child2->exit_code = 20;
 
-    // First waitpid: find and reap child1
-    TaskControlBlock *found = nullptr;
-    uint64_t count = Scheduler::task_count();
-    for (uint64_t i = 0; i < count; ++i) {
-        auto *t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id &&
-            t->state == TaskState::TERMINATED) {
-            found = t;
-            break;
-        }
-    }
-    JARVIS_ASSERT(found == child1);
-    uint64_t child1_id = child1->id;
-    parent->remove_child(child1);
-    child1->cleanup();
-    Scheduler::remove_task(*child1);
-    delete child1;
-    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
+    Scheduler::reap_orphans();
+    JARVIS_ASSERT(Scheduler::find_task(child2_id) == child2);
 
-    // Second waitpid: find and reap child2
-    found = nullptr;
-    count = Scheduler::task_count();
-    for (uint64_t i = 0; i < count; ++i) {
-        auto *t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id &&
-            t->state == TaskState::TERMINATED) {
-            found = t;
-            break;
-        }
-    }
-    JARVIS_ASSERT(found == child2);
-    uint64_t child2_id = child2->id;
     parent->remove_child(child2);
-    child2->cleanup();
-    Scheduler::remove_task(*child2);
-    delete child2;
+    parent->waiting_child_pid = 0;
+    parent->waiting_child_status = nullptr;
+    Scheduler::reap_orphans();
     JARVIS_ASSERT(Scheduler::find_task(child2_id) == nullptr);
 
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
     JARVIS_TEST_PASS();
 }
 
