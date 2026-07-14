@@ -35,7 +35,7 @@ void MemPool::init() {
         16, 32, 64, 128, 256, 512, 1024, 2048, 4480
     };
     static const size_t counts[POOL_COUNT] = {
-        256, 128, 64, 32, 16, 8, 16, 64, 16
+        256, 128, 64, 32, 16, 8, 16, 64, 64
     };
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
