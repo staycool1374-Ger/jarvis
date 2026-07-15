@@ -31,6 +31,7 @@
 
 extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
+extern "C" void debug_write_dec(uint64_t value);
 #include <kernel/memory/integrity.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/test/test_watchdog.hpp>
@@ -132,6 +133,10 @@ static void wake_waiting_parent(TaskControlBlock &child) {
     child.parent_id = 0;
 }
 
+// Forward declaration — defined later in this translation unit.
+static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
+                           sync::SpinLock *held_lock);
+
 void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     dequeue_ready(task);
@@ -140,6 +145,19 @@ void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     // If the parent is blocked in waitpid for this child, wake it now so it
     // does not deadlock waiting for a child that exited without sys_exit.
     wake_waiting_parent(task);
+
+    // If the terminating task is the one currently on the CPU, arrange for a
+    // context switch to a valid successor on the next ISR.  Otherwise
+    // current_task_ptr_ stays parked on a TERMINATED task and the running RSP
+    // is later saved into its dead context, which can wedge the scheduler in
+    // the idle loop (observed as the `all` suite hanging at the atomic
+    // context-switch tests).
+    if (&task == current_task_ptr_) {
+        auto *next = next_task();
+        if (next && next != &task) {
+            switch_to_task(&task, next, nullptr);
+        }
+    }
 }
 
 TaskControlBlock *const Scheduler::ID_TOMBSTONE =
@@ -358,8 +376,10 @@ TaskControlBlock *Scheduler::next_task() noexcept {
 
     {
         auto *next = ready_queue_.dequeue_highest();
-        while (next && next->state != TaskState::READY &&
-               next->state != TaskState::RUNNING) {
+        while (next &&
+               (next == current_task_ptr_ ||
+                (next->state != TaskState::READY &&
+                 next->state != TaskState::RUNNING))) {
             next = ready_queue_.dequeue_highest();
         }
         if (next) {
@@ -374,11 +394,35 @@ TaskControlBlock *Scheduler::next_task() noexcept {
         for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
             if (t->magic != TaskControlBlock::TCB_MAGIC)
                 continue;
-            if (t == cur)
+            // Heal any in_ready_queue_ desync regardless of current state.  A
+            // READY task whose flag is set but which is not physically in the
+            // queue is silently dropped by enqueue() and next_task() can never
+            // find it, wedging the scheduler in the idle loop (the `all` suite
+            // hanging at the atomic context-switch tests).  The current task and
+            // the idle/harness task are running (not queued) so we only clear
+            // their flag, never re-enqueue them; every other READY or RUNNING
+            // task is force-cleared and re-enqueued.  Re-enqueuing a RUNNING
+            // (preempted) task mirrors what scheduler_on_context_switch does when
+            // it switches away from it, which is what lets the physically-
+            // executing test runner resume when current_task_ptr_ has drifted
+            // onto a different (peer) TCB.  The idle/harness task is returned by
+            // next_task() as the default when no other task is ready, so it must
+            // never sit in the ready queue (at priority 0xFFFFFFFF it would
+            // otherwise always preempt and wedge the suite).
+            if (t == cur || t == idle_task_) {
+                t->in_ready_queue_ = false;
+                t->rq_priority_ = 0;
                 continue;
-            if (t->state == TaskState::READY) {
-                ready_queue_.enqueue(*t, effective_priority(t));
             }
+            if (t->state == TaskState::READY ||
+                t->state == TaskState::RUNNING) {
+                t->in_ready_queue_ = false;
+                t->rq_priority_ = 0;
+                ready_queue_.enqueue(*t, effective_priority(t));
+                continue;
+            }
+            t->in_ready_queue_ = false;
+            t->rq_priority_ = 0;
         }
     }
 
@@ -393,8 +437,30 @@ TaskControlBlock *Scheduler::next_task() noexcept {
 }
 
 void Scheduler::set_current(TaskControlBlock &task) noexcept {
-    if (current_task_ptr_ == &task)
+    auto *old = current_task_ptr_;
+    if (old == &task) {
+        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                         __ATOMIC_RELEASE);
         return;
+    }
+    // Invariant: a task that is physically executing (current) must never sit
+    // in the ready queue, or next_task() will re-select it.  The idle/harness
+    // task runs at priority 0xFFFFFFFF, so leaving it queued makes it always
+    // preempt — wedging the `all` suite (e.g. deadlocking at
+    // ipc_send_sync_no_cli / test 536).  Remove the previous current so it is
+    // no longer eligible; it stays resumable because next_task() returns it as
+    // the idle/default task when no other task is ready.
+    if (old && old->magic == TaskControlBlock::TCB_MAGIC && old->in_ready_queue_) {
+        // remove() unlinks old from the intrusive list AND clears
+        // in_ready_queue_/rq_priority_ itself.  Clearing in_ready_queue_ here
+        // first would make TaskQueue::remove early-return (it guards on
+        // !in_ready_queue_), leaving old physically linked with a stale
+        // runq_next_/runq_prev_ — a dangling node that later corrupts the list
+        // (pop_front dereferences a freed/reused TCB → #GP) once old is freed.
+        ready_queue_.remove(*old, old->rq_priority_);
+    }
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
@@ -1027,6 +1093,39 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
         if (!current->kernel_stack || !current->kernel_stack_top ||
             cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
+            // RSP mismatch: current_task_ptr_ has drifted onto a peer TCB
+            // (e.g. the yield_as test helper) while the runner is physically
+            // executing on its own kernel stack. Saving the live CPU state into
+            // `current` would corrupt the peer TCB and desync the scheduler
+            // (the `all` suite wedging at the context-switch tests).  Find the
+            // real running task by stack ownership and save into it instead,
+            // and correct current_task_ptr_ so the preemption bookkeeping
+            // (READY/enqueue) applies to the actual running task.
+            TaskControlBlock *owner = nullptr;
+            for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
+                auto *tt = Scheduler::task_at(ti);
+                if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
+                    continue;
+                uint64_t tb = reinterpret_cast<uint64_t>(tt->kernel_stack);
+                if (tt->kernel_stack && tt->kernel_stack_top &&
+                    cur_rsp >= tb && cur_rsp < tt->kernel_stack_top) {
+                    owner = tt;
+                    break;
+                }
+            }
+            if (owner && owner != current) {
+                static bool diag_dumped = false;
+                if (!diag_dumped) {
+                    debug_write("[DIAG-SAVE] FIX cur_id=");
+                    debug_write_hex(current->id);
+                    debug_write(" owner_id=");
+                    debug_write_hex(owner->id);
+                    debug_write("\n");
+                    diag_dumped = true;
+                }
+                current = owner;
+                Scheduler::set_current(*owner);
+            }
             save_target = &TASK_STACK_PTR(current);
         }
     }
@@ -1049,6 +1148,128 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         ++idx;
     }
 #endif
+    {
+        uint64_t nsp = TASK_STACK_PTR(next);
+        uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
+        uint64_t npg = reinterpret_cast<uint64_t>(next->page_table_);
+        bool bad = (!nsp || nsp < nbase || nsp >= next->kernel_stack_top ||
+                    (npg != 0 && (npg & 0xFFF) != 0));
+        uint64_t f_rip = 0, f_cs = 0, f_ss = 0, f_rflags = 0, f_rsp = 0;
+        if (!bad) {
+            const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
+            // The iret frame sits above the saved register frame.  Two valid
+            // layouts exist: a freshly-created task (task.cpp builds rip first)
+            // and a task saved by isr_common (CPU order: ss first).  Both place
+            // rflags at +152; rip/cs/rsp/ss are swapped between the two
+            // orderings, so validate either one instead of assuming a single
+            // fixed order (the wrong order made valid RUN-task frames look
+            // corrupt and dropped their switch — wedging the `all` suite).
+            uint64_t rip_a = f[136 / 8], cs_a = f[144 / 8], rsp_a = f[160 / 8],
+                     ss_a = f[168 / 8]; // created order (rip first)
+            uint64_t rip_b = f[168 / 8], cs_b = f[160 / 8], rsp_b = f[144 / 8],
+                     ss_b = f[136 / 8]; // isr_common/CPU order (ss first)
+            f_rflags = f[152 / 8];
+            auto frame_ok = [&](uint64_t rip, uint64_t cs, uint64_t rsp,
+                               uint64_t ss) -> bool {
+                bool ring0 = (cs == 0x8);
+                bool ring3 = (cs == 0x1B);
+                if (rip == 0 || (!ring0 && !ring3))
+                    return false;
+                if ((ring0 || ring3) && (f_rflags & 0x2) == 0)
+                    return false;
+                if (ring3 && (ss != 0x23 || rsp == 0))
+                    return false;
+                return true;
+            };
+            f_rip = rip_a;
+            f_cs = cs_a;
+            f_rsp = rsp_a;
+            f_ss = ss_a;
+            if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
+                !frame_ok(rip_b, cs_b, rsp_b, ss_b))
+                bad = true;
+        }
+        if (bad) {
+            static int ndumped = 0;
+            if (ndumped < 4) {
+                ++ndumped;
+                debug_write("[DIAG-NEXT] BAD next_id=");
+                debug_write_hex(next->id);
+                debug_write(" rsp=0x");
+                debug_write_hex(nsp);
+                debug_write(" pg=0x");
+                debug_write_hex(npg);
+                debug_write(" rip=0x");
+                debug_write_hex(f_rip);
+                debug_write(" cs=0x");
+                debug_write_hex(f_cs);
+                debug_write(" rflags=0x");
+                debug_write_hex(f_rflags);
+                debug_write(" rsp=0x");
+                debug_write_hex(f_rsp);
+                debug_write(" ss=0x");
+                debug_write_hex(f_ss);
+                debug_write("\n");
+            }
+            // ---- Dispatch guard ----
+            // Never iretq into a task whose iret frame is invalid.  This can
+            // happen when `next` is the physically-running task but
+            // current_task_ptr_ has drifted onto a peer TCB (the running task
+            // was never switched out, so its stack slot at context.rsp+136 is
+            // live data, not a CPU-written iret frame).  In that case treat it
+            // as a no-op self-switch: keep the physical runner going and correct
+            // current_task_ptr_.  Otherwise skip the dispatch and let the
+            // current task continue (the bad task stays queued and is retried
+            // once it has a real iret frame).
+            uint64_t phys_rsp{};
+            asm volatile("mov %%rsp, %0" : "=r"(phys_rsp));
+            uint64_t nb = reinterpret_cast<uint64_t>(next->kernel_stack);
+            bool next_is_runner =
+                (next == current) ||
+                (next->kernel_stack && next->kernel_stack_top &&
+                 phys_rsp >= nb && phys_rsp < next->kernel_stack_top);
+            bool next_is_running = (next->state == TaskState::RUNNING);
+            {
+                static int gd = 0;
+                if (gd < 6) {
+                    ++gd;
+                    debug_write("[GUARD] next_id=");
+                    debug_write_hex(next->id);
+                    debug_write(" cur_id=");
+                    debug_write_hex(current ? current->id : 0);
+                    debug_write(" next_state=");
+                    debug_write_hex((uint64_t)next->state);
+                    debug_write(" phys_rsp=0x");
+                    debug_write_hex(phys_rsp);
+                    debug_write(" next_base=0x");
+                    debug_write_hex(nb);
+                    debug_write(" next_top=0x");
+                    debug_write_hex(next->kernel_stack_top);
+                    debug_write(" is_runner=");
+                    debug_write_hex(next_is_runner ? 1u : 0u);
+                    debug_write(" is_running=");
+                    debug_write_hex(next_is_running ? 1u : 0u);
+                    debug_write("\n");
+                }
+            }
+            if (next_is_runner || next_is_running) {
+                // `next` is the physically-running task but it was left in the
+                // ready queue (e.g. its snapshot state was READY, or current_
+                // task_ptr_ had drifted).  Promote it to the current RUNNING
+                // task and remove it from the queue so next_task() does not
+                // exclude it as `current` and then fall through to idle (which
+                // would permanently starve the live runner).  A RUNNING task has
+                // no valid iret frame (its stack slot at context.rsp+136 is live
+                // data), so we must NOT iretq into it — just keep it running.
+                Scheduler::set_current(*next);
+                next->state = TaskState::RUNNING;
+                next->in_ready_queue_ = false;
+                next->rq_priority_ = 0;
+            }
+            release_lock();
+            return; // do not set scheduler_load_rsp_from -> no switch
+        }
+    }
     __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
                      __ATOMIC_RELEASE);
     if (next->page_table_) {
@@ -1080,6 +1301,14 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
     }
 }
 
+/// @brief Corrects current_task_ptr_ to the task physically executing on the
+///        live kernel stack.  Some test helpers (e.g. yield_as) or context
+///        switches can leave current_task_ptr_ pointed at a peer TCB while the
+///        CPU is actually running on another task's stack; saving the live
+///        register state into the wrong TCB corrupts it and desyncs the
+///        scheduler (the `all` suite wedging/hanging).  Call before selecting
+///        the next task so saves land in the real running task.  The
+///        set_current() invariant (the running task is never in the ready
 // ---------------------------------------------------------------------------
 // Rate-monotonic schedule / reschedule
 // ---------------------------------------------------------------------------
@@ -1103,8 +1332,15 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
+    current = current_task_ptr_;
+
     auto *next = next_task();
-    if (next && next != current) {
+    // Never switch a live RUNNING current task to idle: that would idle-loop
+    // forever and permanently starve the live task (e.g. the test harness
+    // running the `all` suite between tests, when it is the only runnable
+    // task).  If no other task is ready, keep running current.
+    if (next && next != current &&
+        !(next == idle_task_ && current->state == TaskState::RUNNING)) {
         switch_to_task(current, next, nullptr);
     }
 
@@ -1131,6 +1367,12 @@ void Scheduler::reschedule() noexcept {
 
     auto *next = next_task();
     if (!next || next == current) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
+    // Keep a live RUNNING current task running instead of idling it.
+    if (next == idle_task_ && current->state == TaskState::RUNNING) {
         scheduler_lock_.unlock();
         return;
     }

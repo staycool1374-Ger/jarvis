@@ -370,7 +370,7 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     *--stack = user_rsp;
     *--stack = arch::RFLAGS_DEFAULT;
     *--stack = arch::SEG_USER_CODE;
-    *--stack = reinterpret_cast<uint64_t>(_task_trampoline);
+    *--stack = reinterpret_cast<uint64_t>(entry);
     *--stack = 0;
     *--stack = 0;
     // Register save frame matching isr_common push order

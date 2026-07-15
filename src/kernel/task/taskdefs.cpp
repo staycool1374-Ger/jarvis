@@ -337,6 +337,36 @@ void reboot_from_table() {
     }
 
     debug_write("[DIAG] reboot idle loop entered\n");
+    {
+        static bool dumped = false;
+        if (!dumped) {
+            dumped = true;
+            debug_write("[DIAG-TABLE] task_count=");
+            debug_write_hex(Scheduler::task_count());
+            auto *ct = Scheduler::current_task();
+            debug_write(" cur_id=");
+            debug_write_hex(ct ? ct->id : 0xFFFFFFFFu);
+            debug_write("\n");
+            for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+                auto *t = Scheduler::task_at(i);
+                if (!t)
+                    continue;
+                debug_write("[DIAG-TABLE] idx=");
+                debug_write_hex(i);
+                debug_write(" id=");
+                debug_write_hex(t->id);
+                debug_write(" magic=0x");
+                debug_write_hex(t->magic);
+                debug_write(" state=");
+                debug_write_hex(static_cast<uint8_t>(t->state));
+                debug_write(" in_rq=");
+                debug_write_hex(t->in_ready_queue_ ? 1u : 0u);
+                debug_write(" prio=");
+                debug_write_hex(t->priority);
+                debug_write("\n");
+            }
+        }
+    }
     arch::sti();
     for (;;) {
         static uint64_t _idle_count = 0;

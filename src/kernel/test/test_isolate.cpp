@@ -37,6 +37,9 @@
 #include <logger.hpp>
 #include "test_registry.gen.hpp"
 
+extern "C" void debug_write(const char *s);
+extern "C" void debug_write_hex(uint64_t value);
+
 namespace kernel::test {
 
 #ifdef __x86_64__
@@ -220,6 +223,18 @@ bool snapshot_create() {
         auto *rqpod =
             reinterpret_cast<ReadyQueuePOD *>(g_snapshot + off_sched_rqpod());
         Scheduler::capture_rqpod(*rqpod);
+    }
+
+    // ---- Pin baseline TCB memory ----
+    // The scheduler snapshot stores raw TCB pointers.  Pin every baseline
+    // task's MemPool block so it can never be recycled onto a test-allocated
+    // task; otherwise the captured pointer would alias a foreign TCB, the live
+    // task set and ResourceTracker baseline would silently drift (the "Tasks
+    // -5" corruption), and the run could hard-crash on a use-after-free.
+    for (auto *t = Scheduler::all_tasks().first_ptr(); t;
+         t = Scheduler::all_tasks().next_ptr(t)) {
+        if (t->magic == TaskControlBlock::TCB_MAGIC)
+            MemPool::pin_block(t);
     }
 
     // ---- Daemon ----
@@ -519,6 +534,33 @@ void snapshot_restore(const char *test_name) {
         }
     }
 
+    // ---- Fix up the live running task's context.rsp ----
+    // The running task's kstack is intentionally NOT overwritten by the restore
+    // above, but restore_task_fields() still re-assigned its TaskContext from the
+    // snapshot, leaving context.rsp pointing at the (shallow) snapshot-time
+    // stack instead of the live nested stack.  If the scheduler later dispatches
+    // this task via iretq it would read a garbage iret frame (the snapshot-depth
+    // stack slot, not a real interrupt frame) -> #GP.  Correct it to the live
+    // RSP and make current_task_ptr_ track the real running task.
+    {
+        uint64_t live_rsp;
+        asm volatile("mov %%rsp, %0" : "=r"(live_rsp));
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto *t = Scheduler::task_at(i);
+            if (!t || t->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+            if (base == 0)
+                continue;
+            if (live_rsp >= base &&
+                live_rsp < reinterpret_cast<uint64_t>(t->kernel_stack_top)) {
+                TASK_STACK_PTR(t) = live_rsp;
+                Scheduler::set_current(*t);
+                break;
+            }
+        }
+    }
+
     // ---- Validate per-task context.rsp ----
     // The kstack restore may have skipped a task whose kernel_stack
     // address changed since snapshot capture (e.g., idle was recreated
@@ -539,7 +581,59 @@ void snapshot_restore(const char *test_name) {
                 continue;
             uint64_t rsp = TASK_STACK_PTR(t);
             if (rsp < base || rsp > t->kernel_stack_top) {
+                static bool fixup_dumped = false;
+                if (!fixup_dumped) {
+                    debug_write("[DIAG-FIXUP] id=");
+                    debug_write_hex(t->id);
+                    debug_write(" rsp=0x");
+                    debug_write_hex(rsp);
+                    debug_write(" base=0x");
+                    debug_write_hex(base);
+                    debug_write(" top=0x");
+                    debug_write_hex(t->kernel_stack_top);
+                    debug_write("\n");
+                    fixup_dumped = true;
+                }
                 TASK_STACK_PTR(t) = t->kernel_stack_top - sizeof(TaskContext);
+            }
+        }
+    }
+
+    // ---- Post-restore frame sanity scan (diagnostic) ----
+    {
+        auto *cur = Scheduler::current_task();
+        for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+            auto *t = Scheduler::task_at(i);
+            if (!t || t->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            if (t == cur)
+                continue;
+            uint64_t rsp = TASK_STACK_PTR(t);
+            uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+            if (base == 0 || rsp < base || rsp >= t->kernel_stack_top)
+                continue;
+            uint64_t *f = reinterpret_cast<uint64_t *>(rsp);
+            uint64_t rip = f[136 / 8];
+            uint64_t cs = f[144 / 8];
+            uint64_t ss = f[168 / 8];
+            if (rip == 0 || (cs != 0x8 && cs != 0x1B)) {
+                static bool scandumped = false;
+                if (!scandumped) {
+                    debug_write("[DIAG-SCAN] ZEROFRAME id=");
+                    debug_write_hex(t->id);
+                    debug_write(" state=");
+                    debug_write_hex((uint64_t)t->state);
+                    debug_write(" rsp=0x");
+                    debug_write_hex(rsp);
+                    debug_write(" rip=0x");
+                    debug_write_hex(rip);
+                    debug_write(" cs=0x");
+                    debug_write_hex(cs);
+                    debug_write(" ss=0x");
+                    debug_write_hex(ss);
+                    debug_write("\n");
+                    scandumped = true;
+                }
             }
         }
     }

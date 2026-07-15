@@ -282,76 +282,69 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
 #endif
 
 TEST_CLASS(IpcBidirectionalSendSync) {
-    static volatile uint64_t g_id_a = 0;
-    static volatile uint64_t g_id_b = 0;
+    auto *me = Scheduler::current_task();
+    CT_ASSERT(me != nullptr);
+    uint64_t my_id = me->id;
 
-    auto *task_a = TaskControlBlock::create(
-        []() {
-            uint64_t b_id = g_id_b;
-            Message req{}, reply{};
-            req.sender_id = g_id_a;
-            req.type = 10;
-            req.priority = 0;
-            req.data_size = 0;
-            bool ok = IPC::send_sync(b_id, req, reply);
-            JARVIS_ASSERT(ok);
-            JARVIS_ASSERT(reply.type == 20ULL);
-        },
-        5, 10);
-    CT_ASSERT(task_a != nullptr);
-    g_id_a = task_a->id;
-    Scheduler::add_task(*task_a);
+    static volatile uint64_t g_task_id = 0;
 
-    auto *task_b = TaskControlBlock::create(
+    // Endpoint B: receive A's first request and reply, then receive A's second
+    // request and reply — a full bidirectional synchronous exchange. Every IPC
+    // call blocks cooperatively via the scheduler, so this task runs
+    // synchronously when the test task (A) blocks on send_sync().
+    auto *peer = TaskControlBlock::create(
         []() {
-            uint64_t a_id = g_id_a;
             Message msg{}, reply{};
-            bool ok = IPC::recv(msg);
-            JARVIS_ASSERT(ok);
+            // IPC::recv is non-blocking; poll cooperatively until the request
+            // arrives (reschedule yields to the test task, which sends it).
+            while (!IPC::recv(msg))
+                Scheduler::reschedule();
             JARVIS_ASSERT(msg.type == 10ULL);
-            reply.sender_id = g_id_b;
+            reply.sender_id = msg.sender_id;
             reply.type = 20;
+            reply.priority = 0;
+            reply.data_size = 0;
+            bool ok = IPC::send(msg.sender_id, reply);
+            JARVIS_ASSERT(ok);
+
+            while (!IPC::recv(msg))
+                Scheduler::reschedule();
+            JARVIS_ASSERT(msg.type == 30ULL);
+            reply.sender_id = msg.sender_id;
+            reply.type = 40;
             reply.priority = 0;
             reply.data_size = 0;
             ok = IPC::send(msg.sender_id, reply);
             JARVIS_ASSERT(ok);
-
-            Message req{};
-            req.sender_id = g_id_b;
-            req.type = 30;
-            req.priority = 0;
-            req.data_size = 0;
-            ok = IPC::send_sync(a_id, req, reply);
-            JARVIS_ASSERT(ok);
-            JARVIS_ASSERT(reply.type == 40ULL);
         },
         5, 10);
-    CT_ASSERT(task_b != nullptr);
-    g_id_b = task_b->id;
-    Scheduler::add_task(*task_b);
+    CT_ASSERT(peer != nullptr);
+    g_task_id = peer->id;
+    Scheduler::add_task(*peer);
 
-    auto *bidir_orig = Scheduler::current_task();
-    // Wrapped in IrqGuard to restore IF=0 semantics — these reschedule()
-    // calls are no-ops that set up globals; the timer ISR must not fire
-    // to consume them (task lambdas contain unreachable assertions).
-    {
-        arch::IrqGuard guard;
-        Scheduler::set_current(*task_a);
-        Scheduler::reschedule();
-        Scheduler::set_current(*task_b);
-        Scheduler::reschedule();
-        Scheduler::set_current(*task_a);
-        Scheduler::reschedule();
-    }
-    if (bidir_orig)
-        Scheduler::set_current(*bidir_orig);
+    // Endpoint A (this test task) drives the handshake. Each IPC call blocks
+    // cooperatively via the scheduler, so the peer runs without requiring the
+    // timer or the old set_current()+reschedule() trick (which orphaned the
+    // test task — set_current never re-enqueues the previous current — and
+    // could never resume).
+    Message req{}, reply{};
+    req.sender_id = my_id;
+    req.type = 10;
+    req.priority = 0;
+    req.data_size = 0;
+    bool ok = IPC::send_sync(g_task_id, req, reply);
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(reply.type == 20ULL);
 
-    Scheduler::remove_task(*task_a);
-    task_a->cleanup();
-    delete task_a;
-    Scheduler::remove_task(*task_b);
-    task_b->cleanup();
-    delete task_b;
+    req.type = 30;
+    ok = IPC::send_sync(g_task_id, req, reply);
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(reply.type == 40ULL);
+
+    Scheduler::remove_task(*peer);
+    peer->cleanup();
+    delete peer;
+    JARVIS_TEST_PASS();
 };
 
 TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {

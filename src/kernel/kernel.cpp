@@ -365,6 +365,20 @@ extern "C" void debug_write_hex(uint64_t value) {
     debug_write(hb + pos);
 }
 
+extern "C" void debug_write_dec(uint64_t value) {
+    char db[21] = "00000000000000000000";
+    int pos = 20;
+    if (value == 0) {
+        debug_write("0");
+        return;
+    }
+    do {
+        db[--pos] = "0123456789"[value % 10];
+        value /= 10;
+    } while (value);
+    debug_write(db + pos);
+}
+
 extern "C" void debug_task_switch(uint64_t old_id, uint64_t new_id,
                                   uint64_t cr3) {
     debug_write("[SWITCH] old=");

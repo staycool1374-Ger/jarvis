@@ -20,6 +20,7 @@
 /// @brief Resource tracker implementation.
 
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/task/scheduler.hpp>
 #include <logger.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -106,6 +107,21 @@ bool ResourceTracker::check(const ResourceCounters &baseline,
                             const char *test_name) {
     if (!any_leak(baseline, counters_))
         return true;
+
+    // Dump the live task list to locate a leaked (un-freed) task that is
+    // keeping the ready queue inconsistent across tests.
+    {
+        Logger::warn("[RESOURCE] live task list:");
+        const auto &reg = kernel::Scheduler::all_tasks();
+        for (auto *t = reg.first_ptr(); t; t = reg.next_ptr(t)) {
+            if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC)
+                continue;
+            Logger::warn("  id=%u state=%u prio=%u in_rq=%u rq_prio=%u name=%s",
+                         (unsigned)t->id, (unsigned)t->state,
+                         (unsigned)t->priority, (unsigned)t->in_ready_queue_,
+                         (unsigned)t->rq_priority_, t->name);
+        }
+    }
 
     auto print_row = [&](const char *label, size_t base, size_t cur) {
         if (cur <= base)

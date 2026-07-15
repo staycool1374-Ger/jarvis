@@ -66,6 +66,7 @@ void MemPool::init() {
         }
 
         pool.initialized = true;
+        pool.clear_pinned_bitmap();
     }
     ready_ = true;
 }
@@ -116,6 +117,11 @@ void MemPool::free(void *block) {
             size_t block_idx = offset / pool.block_size;
             ENSURE(offset % pool.block_size == 0);
             ENSURE(block_idx < pool.block_count);
+            // Pinned blocks are reserved (e.g. baseline TCBs referenced by the
+            // test-isolation snapshot).  Never return them to the free list;
+            // keep them allocated so they cannot be recycled onto test tasks.
+            if (pool.is_block_pinned(block_idx))
+                return;
             ENSURE(!pool.is_block_freed(block_idx) && "double-free detected");
 #ifdef CONFIG_DEBUG
             __builtin_memset(p, 0xDD, pool.block_size);
@@ -130,8 +136,6 @@ void MemPool::free(void *block) {
         }
     }
 }
-
-/// @brief Check whether a pointer falls within any MemPool data region.
 /// @param ptr Pointer to test.
 /// @return true if the pointer is owned by any initialised pool.
 bool MemPool::contains(void *ptr) {
@@ -202,6 +206,8 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
     p.first_free = static_cast<size_t>(-1);
     p.free_count = 0;
     for (size_t j = 0; j < p.block_count; ++j) {
+        if (p.is_block_pinned(j))
+            continue; // pinned blocks stay allocated, never in free list
         if (!p.is_block_freed(j))
             continue; // still allocated — skip
         auto *next = reinterpret_cast<uint64_t *>(p.data + j * p.block_size);
@@ -249,6 +255,65 @@ size_t MemPool::pool_data_bytes() {
         total += pools_[i].block_count * pools_[i].block_size;
     }
     return total;
+}
+
+// ---------------------------------------------------------------------------
+// Block pinning (test-isolation)
+// ---------------------------------------------------------------------------
+
+void MemPool::pin_block(void *block) {
+    uint8_t *p = static_cast<uint8_t *>(block);
+    for (size_t i = 0; i < POOL_COUNT; ++i) {
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        if (p >= start && p < end) {
+            size_t offset = static_cast<size_t>(p - start);
+            size_t block_idx = offset / pool.block_size;
+            if (offset % pool.block_size == 0 && block_idx < pool.block_count)
+                pool.set_block_pinned(block_idx);
+            return;
+        }
+    }
+}
+
+void MemPool::unpin_block(void *block) {
+    uint8_t *p = static_cast<uint8_t *>(block);
+    for (size_t i = 0; i < POOL_COUNT; ++i) {
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        if (p >= start && p < end) {
+            size_t offset = static_cast<size_t>(p - start);
+            size_t block_idx = offset / pool.block_size;
+            if (offset % pool.block_size == 0 && block_idx < pool.block_count)
+                pool.clear_block_pinned(block_idx);
+            return;
+        }
+    }
+}
+
+bool MemPool::is_block_pinned(void *block) {
+    uint8_t *p = static_cast<uint8_t *>(block);
+    for (size_t i = 0; i < POOL_COUNT; ++i) {
+        auto &pool = pools_[i];
+        if (!pool.initialized)
+            continue;
+        uint8_t *start = pool.data;
+        uint8_t *end = pool.data + pool.block_size * pool.block_count;
+        if (p >= start && p < end) {
+            size_t offset = static_cast<size_t>(p - start);
+            size_t block_idx = offset / pool.block_size;
+            if (offset % pool.block_size == 0 && block_idx < pool.block_count)
+                return pool.is_block_pinned(block_idx);
+            return false;
+        }
+    }
+    return false;
 }
 
 } // namespace kernel
@@ -317,6 +382,9 @@ MemPoolError MemPool::free_err(void *block) {
             size_t block_idx = offset / pool.block_size;
             ENSURE(offset % pool.block_size == 0);
             ENSURE(block_idx < pool.block_count);
+            // Pinned blocks stay allocated (see MemPool::free).
+            if (pool.is_block_pinned(block_idx))
+                return MEMPOOL_ERR_OK;
             ENSURE(!pool.is_block_freed(block_idx) && "double-free detected");
 #ifdef CONFIG_DEBUG
             __builtin_memset(p, 0xDD, pool.block_size);

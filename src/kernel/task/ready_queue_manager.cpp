@@ -4,6 +4,9 @@
 #include <kernel/task/ready_queue_manager.hpp>
 #include <kernel/task/task.hpp>
 
+extern "C" void debug_write(const char *s);
+extern "C" void debug_write_hex(uint64_t value);
+
 namespace kernel {
 
 void ReadyQueueManager::enqueue(TaskControlBlock &tcb,
@@ -12,8 +15,26 @@ void ReadyQueueManager::enqueue(TaskControlBlock &tcb,
     // corrupts the intrusive runq_next_/runq_prev_ links and can deadlock the
     // scheduler (next_task() loops, reschedule() spins holding
     // scheduler_lock_).
-    if (tcb.in_ready_queue_)
+    if (tcb.in_ready_queue_) {
+        static bool diag_dumped = false;
+        if (!diag_dumped) {
+            bool phys = false;
+            for (auto *n = queues_[priority].head(); n; n = n->runq_next_) {
+                if (n == &tcb) { phys = true; break; }
+            }
+            debug_write("[DIAG-ENQ] REFUSED in_rq=1 physically_in_queue=");
+            debug_write_hex(phys ? 1u : 0u);
+            debug_write(" id=");
+            debug_write_hex(tcb.id);
+            debug_write(" prio=");
+            debug_write_hex((uint64_t)priority);
+            debug_write(" state=");
+            debug_write_hex((uint64_t)tcb.state);
+            debug_write("\n");
+            diag_dumped = true;
+        }
         return;
+    }
     queues_[priority].push_back(tcb);
     bitmap_.set(priority);
     tcb.rq_priority_ = priority;
@@ -29,8 +50,17 @@ TaskControlBlock *ReadyQueueManager::dequeue_highest() noexcept {
     if (queues_[prio].empty()) {
         bitmap_.clear(prio);
     }
-    if (tcb)
+    if (tcb) {
         tcb->rq_priority_ = 0;
+        // The task is leaving the ready queue (it is being dispatched), so its
+        // membership flag must be cleared.  Otherwise it keeps in_ready_queue_
+        // true while not physically in the queue, and a later enqueue() (which
+        // refuses already-queued TCBs) silently drops it — leaving a READY
+        // task that next_task() can never find, wedging the scheduler in the
+        // idle loop (observed as the `all` suite hanging at the atomic
+        // context-switch tests).
+        tcb->in_ready_queue_ = false;
+    }
     return tcb;
 }
 
@@ -96,7 +126,11 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
 void ReadyQueueManager::clear_all() noexcept {
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
         while (!queues_[i].empty()) {
-            queues_[i].pop_front();
+            auto *t = queues_[i].pop_front();
+            if (t) {
+                t->in_ready_queue_ = false;
+                t->rq_priority_ = 0;
+            }
         }
     }
 }

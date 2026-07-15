@@ -90,9 +90,34 @@ class MemPool {
             for (int i = 0; i < 4; ++i)
                 freed_bitmap[i] = src[i];
         }
+        /// @brief Clear all pinned flags.
+        void clear_pinned_bitmap() {
+            for (int i = 0; i < 4; ++i)
+                pinned_bitmap[i] = 0;
+        }
+
+        /// @brief Check if a block index is pinned (never freed / reused).
+        /// @param idx Block index.
+        /// @return true if the block is pinned.
+        bool is_block_pinned(size_t idx) const {
+            return pinned_bitmap[idx / 64] & (1ULL << (idx % 64));
+        }
+
+        /// @brief Mark a block index as pinned.
+        /// @param idx Block index.
+        void set_block_pinned(size_t idx) {
+            pinned_bitmap[idx / 64] |= (1ULL << (idx % 64));
+        }
+
+        /// @brief Clear the pinned flag for a block index.
+        /// @param idx Block index.
+        void clear_block_pinned(size_t idx) {
+            pinned_bitmap[idx / 64] &= ~(1ULL << (idx % 64));
+        }
 
       private:
         uint64_t freed_bitmap[4]; // 256 bits — covers all pools
+        uint64_t pinned_bitmap[4]; // 256 bits — pinned (never freed/reused)
     };
 
     /// @brief Initialises all pool classes from pre-allocated memory.
@@ -166,6 +191,23 @@ class MemPool {
     /// @brief Calculate total bytes needed to hold all pool block data.
     /// @return Sum of (block_size * block_count) over all initialised pools.
     static size_t pool_data_bytes();
+
+    /// @brief Pin a block so it is never returned by alloc() and never
+    ///        released by free().  Used by the test-isolation snapshot to
+    ///        reserve the baseline task-control-block memory, which the
+    ///        scheduler snapshot references by raw pointer — if those blocks
+    ///        were recycled onto test tasks, the captured pointers would alias
+    ///        foreign TCBs and corrupt the live task set.
+    /// @param ptr Pointer inside a pool block (must be block-aligned).
+    static void pin_block(void *ptr);
+
+    /// @brief Clear the pin on a previously pinned block.
+    /// @param ptr Pointer inside a pool block.
+    static void unpin_block(void *ptr);
+
+    /// @brief True if the pointer refers to a pinned block.
+    /// @param ptr Pointer to query.
+    static bool is_block_pinned(void *ptr);
 
   private:
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)

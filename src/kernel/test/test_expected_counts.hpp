@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe", 132, 0, 0},     // curated TF_RELEASE subset
     {"selftest", 132, 0, 0}, // same as safe
-    {"all", 754, 0, 0},      // every registration function
+    {"all", 756, 0, 0},      // every registration function
     {"scheduler", 85, 0, 0}, // sched + task + lifecycle + deadlock + timer
     {"memory", 45, 0, 0},    // PMM + VMM + checked_ptr + buffer_pool
     {"ipc", 42, 0, 0},       // IPC + pipe + blocking + lock-free + robustness
