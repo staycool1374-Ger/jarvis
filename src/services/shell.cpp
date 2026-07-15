@@ -1008,6 +1008,21 @@ void Shell::cmd_selftest(int argc, const char** argv) {
     // framebuffer access could fault.  Serial (COM1) is safe.
     Terminal::set_fb_enabled(false);
 
+    // Boost the runner's priority above the realtime daemons (init = 10) so
+    // the suite is not starved after the long IRQs-disabled window inside
+    // test-isolation snapshot_create builds a scheduling backlog.  The
+    // deadline monitor (127) still preempts briefly.  This mirrors the boot
+    // path, where selftest runs on init (priority 10) and is therefore not
+    // starved by the daemons.
+    auto *self_task = kernel::Scheduler::current_task();
+    uint64_t saved_prio = 0, saved_base = 0;
+    if (self_task) {
+        saved_prio = self_task->priority;
+        saved_base = self_task->base_priority;
+        self_task->priority = 126;
+        self_task->base_priority = 126;
+    }
+
     {
         // Protect test execution from concurrent timer-ISR dispatch of
         // test-created tasks with fine-grained SpinLock.
@@ -1061,6 +1076,10 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t*)nullptr, __ATOMIC_RELEASE);
         __atomic_store_n(&kernel::isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
         }
+    }
+    if (self_task) {
+        self_task->priority = saved_prio;
+        self_task->base_priority = saved_base;
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");
