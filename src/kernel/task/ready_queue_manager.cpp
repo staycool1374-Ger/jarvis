@@ -105,20 +105,32 @@ void ReadyQueueManager::capture_pod(ReadyQueuePOD &out) const noexcept {
 void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
     bitmap_.set_raw(src.bitmap_hi, src.bitmap_lo);
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
-        // Restore queue head/tail from raw addresses (TCBs are in-place)
-        queues_[i].set_raw(
+        auto *h = reinterpret_cast<TaskControlBlock *>(src.queue_heads[i]);
+        auto *t = reinterpret_cast<TaskControlBlock *>(src.queue_tails[i]);
+        // The snapshot may reference TCBs that were later freed and recycled
+        // onto other allocations (MemPool returns freed blocks to unrelated
+        // callers).  Relinking a freed/reused pointer re-introduces a
+        // corrupted node into the ready queue and produces the flaky GPF in
+        // effective_priority()/pop_front().  Only restore queues whose head
+        // and tail are still live, valid TCBs; otherwise drop the queue to
+        // empty and let next_task()'s lazy rebuild reconstruct it from
+        // all_tasks_ (which is itself safe_tcb-guarded).
+        if ((h == nullptr || TaskControlBlock::is_valid(h)) &&
+            (t == nullptr || TaskControlBlock::is_valid(t))) {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            reinterpret_cast<TaskControlBlock *>(src.queue_heads[i]),
-            // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            reinterpret_cast<TaskControlBlock *>(src.queue_tails[i]),
-            src.queue_counts[i]);
-        // Keep in_ready_queue_ consistent with the restored queues so the
-        // double-enqueue guard in enqueue() stays correct after a snapshot
-        // restore (otherwise a restored-queue TCB keeps a stale
-        // in_ready_queue_=false and a later set_task_ready re-enqueues it,
-        // corrupting the intrusive links).
-        for (auto *t = queues_[i].head(); t; t = t->runq_next_) {
-            t->in_ready_queue_ = true;
+            queues_[i].set_raw(h, t, src.queue_counts[i]);
+            // Keep in_ready_queue_ consistent with the restored queues so the
+            // double-enqueue guard in enqueue() stays correct after a snapshot
+            // restore (otherwise a restored-queue TCB keeps a stale
+            // in_ready_queue_=false and a later set_task_ready re-enqueues it,
+            // corrupting the intrusive links).
+            for (auto *n = queues_[i].head(); n; n = n->runq_next_) {
+                if (TaskControlBlock::is_valid(n))
+                    n->in_ready_queue_ = true;
+            }
+        } else {
+            queues_[i].reset();
+            bitmap_.clear(i);
         }
     }
 }

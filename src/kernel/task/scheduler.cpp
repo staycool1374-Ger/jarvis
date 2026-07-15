@@ -175,6 +175,7 @@ constinit bool Scheduler::suppress_terminated_log_ = false;
 constinit TaskControlBlock *Scheduler::s_monitor_task_ = nullptr;
 volatile bool Scheduler::s_scan_requested_ = false;
 bool Scheduler::s_test_active_ = false;
+uint64_t g_test_deadline_monitor_pid = 0;
 #endif
 ReadyQueueManager Scheduler::ready_queue_;
 DeadlineList Scheduler::deadline_list_;
@@ -886,6 +887,15 @@ void Scheduler::cleanup_test_tasks() noexcept {
     }
     for (uint64_t i = 0; i < num; ++i) {
         auto *t = to_remove[i];
+        // Unlink from every scheduler list before freeing.  These tasks
+        // survived reap_orphans() (their parent is still alive) but may still
+        // be physically linked in the ready queue / deadline list / id table;
+        // freeing without unlinking leaves a dangling node that a later
+        // ready-queue walk dereferences → #GP.
+        Scheduler::dequeue_ready(*t);
+        deadline_list_.remove(t);
+        id_table_remove(t);
+        all_tasks_.remove(t);
         t->cleanup();
         MemPool::free(t);
     }
@@ -1047,9 +1057,15 @@ void Scheduler::cleanup_zombies() noexcept {
 
     for (uint64_t i = 0; i < num_zombies; ++i) {
         auto *t = zombies[i];
-        if (t->state == TaskState::READY) {
-            Scheduler::dequeue_ready(*t);
-        }
+        // Always unlink from the ready queue before freeing.  A task can be
+        // physically linked in the queue while in a non-READY state (e.g. a
+        // RUNNING task left linked by a current_task_ptr_ desync, or a
+        // TERMINATED task not yet reaped).  Gating the dequeue on
+        // state==READY left such a node linked, so MemPool::free() freed a
+        // still-linked TCB and the next ready-queue walk dereferenced a
+        // freed/reused node → #GP.  dequeue_ready() is a no-op when the task
+        // is not in the queue, so unlinking unconditionally is safe.
+        Scheduler::dequeue_ready(*t);
         t->cleanup();
         all_tasks_.remove(t);
         deadline_list_.remove(t);
@@ -1703,12 +1719,14 @@ deadline_miss_handler(TaskControlBlock *task,
 
 #if CONFIG_DEADLINE_ACTION == 1
     if (budget_exhausted)
-        panic(
-            "[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, action=PANIC)",
-            task->id, task->name);
+        Logger::error("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
+                      "action=PANIC)",
+                      task->id, task->name);
     else
-        panic("[DMD] Task %lu (%s) missed deadline by %lu ticks (action=PANIC)",
-              task->id, task->name, missed_by_ticks);
+        Logger::error("[DMD] Task %lu (%s) missed deadline by %lu ticks "
+                      "(action=PANIC)",
+                      task->id, task->name, missed_by_ticks);
+    panic("[DMD] deadline miss (action=PANIC)");
 #elif CONFIG_DEADLINE_ACTION == 2
     if (budget_exhausted)
         Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
@@ -1737,22 +1755,24 @@ deadline_miss_handler(TaskControlBlock *task,
 #elif CONFIG_DEADLINE_ACTION == 4
     if (budget_exhausted)
         Logger::info("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "
-                     "action=NOTIFY_MONITOR)",
-                     task->id, task->name);
+                      "action=NOTIFY_MONITOR)",
+                      task->id, task->name);
     else
         Logger::info("[DMD] Task %lu (%s) missed deadline by %lu ticks "
-                     "(action=NOTIFY_MONITOR)",
-                     task->id, task->name, missed_by_ticks);
-#if CONFIG_DEADLINE_MONITOR_PID > 0
-    auto *monitor = Scheduler::find_task(CONFIG_DEADLINE_MONITOR_PID);
+                      "(action=NOTIFY_MONITOR)",
+                      task->id, task->name, missed_by_ticks);
+    // Resolve the monitor PID: compile-time CONFIG_DEADLINE_MONITOR_PID when
+    // set, otherwise the test-only override so the config matrix can target
+    // the live [deadline-mon] task without a fixed compile-time PID.
+    uint64_t monitor_pid = (CONFIG_DEADLINE_MONITOR_PID > 0)
+                               ? static_cast<uint64_t>(CONFIG_DEADLINE_MONITOR_PID)
+                               : g_test_deadline_monitor_pid;
+    auto *monitor = Scheduler::find_task(monitor_pid);
     if (monitor && monitor->magic == TaskControlBlock::TCB_MAGIC &&
         monitor->state != TaskState::TERMINATED) {
         monitor->pending_signals |=
             (1ULL << static_cast<uint64_t>(Signal::SIGUSR1));
     }
-#else
-    (void)0;
-#endif
 #else
     if (budget_exhausted)
         Logger::info("[DMD] Task %lu (%s) budget exhausted (budget=%lu, "

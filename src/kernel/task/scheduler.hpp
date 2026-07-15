@@ -35,6 +35,14 @@
 
 namespace kernel {
 
+/// @brief Test-only override for the NOTIFY_MONITOR action target PID.
+///        When CONFIG_DEADLINE_MONITOR_PID == 0 (default), the deadline-miss
+///        handler's action=4 path delivers SIGUSR1 to the task whose id equals
+///        this value instead. Test binaries set it at runtime so the config
+///        matrix can exercise NOTIFY_MONITOR without a compile-time PID.
+///        Defined in scheduler.cpp; harmless in production (stays 0).
+extern uint64_t g_test_deadline_monitor_pid; // NOLINT(bugprone-dynamic-static-initializers)
+
 /// @brief Preemptive, rate-monotonic scheduler managing up to MAX_TASKS tasks.
 /// @note Scheduler is tick-driven and supports periodic and aperiodic tasks.
 class Scheduler {

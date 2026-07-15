@@ -118,6 +118,20 @@ struct TaskControlBlock {
     static constexpr uint64_t USER_SS = 0x23;
     static constexpr uint64_t FLAGS_IF = 0x200;
     static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
+
+    /// @brief True if `t` is a live, valid TCB.
+    ///        The address-range check MUST come first: a corrupted list
+    ///        pointer (e.g. a freed/overwritten node whose runq_/pri_ links
+    ///        hold a low poison value such as 0xDD or 0x55) would otherwise
+    ///        fault with a General-Protection Fault the moment we read
+    ///        t->magic.  MemPool::free() poisons freed blocks with 0xDD under
+    ///        CONFIG_DEBUG, so a freed/reused TCB fails this check and can be
+    ///        skipped safely instead of being dereferenced into a #GP.
+    static inline bool is_valid(const TaskControlBlock *t) noexcept {
+        if (reinterpret_cast<uint64_t>(t) < 0xFFFF800000000000ULL)
+            return false;
+        return t->magic == TCB_MAGIC;
+    }
     /// @brief Human-readable name for logging / debugging.
     char name[CONFIG_TASK_NAME_LEN];
 
