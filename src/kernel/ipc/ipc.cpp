@@ -185,6 +185,18 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
     if (!ok)
         return false;
 
+    // Wake a task blocked in send_sync() waiting for a reply on its own queue.
+    // send_sync sets reply_wait and blocks; without this, the reply would sit
+    // in the queue and the sender would hang forever (only rescued by a
+    // spurious re-dispatch).  This is the reply-delivery wakeup path.
+    if (tcb->reply_wait) {
+        tcb->reply_wait = false;
+        if (tcb->state == TaskState::BLOCKED) {
+            Scheduler::set_task_ready(*tcb);
+            tcb->remaining_ticks = tcb->period_ticks;
+        }
+    }
+
     // Zero-copy buffer transfer: if the message carries a buffer handle,
     // transfer ownership from current task to the destination.
     if (msg.buf_handle != 0) {
@@ -232,6 +244,7 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
         if (!dest || dest->state == TaskState::TERMINATED)
             return false;
 
+        cur->reply_wait = true;
         cur->state = TaskState::BLOCKED;
         was_blocked = true;
         Scheduler::reschedule();
@@ -241,6 +254,7 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
             arch::cli();
         }
     }
+    cur->reply_wait = false;
     if (was_blocked) {
         cur->remaining_ticks = cur->period_ticks;
     }

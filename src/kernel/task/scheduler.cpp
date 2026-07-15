@@ -365,6 +365,15 @@ bool Scheduler::needs_switch() noexcept {
     if (current == idle_task_)
         return true;
 
+    // If the current task is not runnable (blocked/waiting/terminated), any
+    // ready task must take over — otherwise a high-priority task that blocks
+    // (e.g. inside IPC::send_sync) would keep "winning" the priority compare
+    // against lower-priority ready peers and the scheduler would never switch
+    // to them, deadlocking the handshake (kernel hang in the test suite).
+    if (current->state != TaskState::READY &&
+        current->state != TaskState::RUNNING)
+        return true;
+
     uint64_t cur_eff = effective_priority(current);
     // O(1): check if any higher-priority task exists in the ready queue
     uint64_t highest_ready = ready_queue_.highest_ready_priority();
@@ -1130,15 +1139,6 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 }
             }
             if (owner && owner != current) {
-                static bool diag_dumped = false;
-                if (!diag_dumped) {
-                    debug_write("[DIAG-SAVE] FIX cur_id=");
-                    debug_write_hex(current->id);
-                    debug_write(" owner_id=");
-                    debug_write_hex(owner->id);
-                    debug_write("\n");
-                    diag_dumped = true;
-                }
                 current = owner;
                 Scheduler::set_current(*owner);
             }
@@ -1170,7 +1170,7 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         uint64_t npg = reinterpret_cast<uint64_t>(next->page_table_);
         bool bad = (!nsp || nsp < nbase || nsp >= next->kernel_stack_top ||
                     (npg != 0 && (npg & 0xFFF) != 0));
-        uint64_t f_rip = 0, f_cs = 0, f_ss = 0, f_rflags = 0, f_rsp = 0;
+        uint64_t f_rflags = 0;
         if (!bad) {
             const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
             // The iret frame sits above the saved register frame.  Two valid
@@ -1197,36 +1197,11 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                     return false;
                 return true;
             };
-            f_rip = rip_a;
-            f_cs = cs_a;
-            f_rsp = rsp_a;
-            f_ss = ss_a;
             if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
                 !frame_ok(rip_b, cs_b, rsp_b, ss_b))
                 bad = true;
         }
         if (bad) {
-            static int ndumped = 0;
-            if (ndumped < 4) {
-                ++ndumped;
-                debug_write("[DIAG-NEXT] BAD next_id=");
-                debug_write_hex(next->id);
-                debug_write(" rsp=0x");
-                debug_write_hex(nsp);
-                debug_write(" pg=0x");
-                debug_write_hex(npg);
-                debug_write(" rip=0x");
-                debug_write_hex(f_rip);
-                debug_write(" cs=0x");
-                debug_write_hex(f_cs);
-                debug_write(" rflags=0x");
-                debug_write_hex(f_rflags);
-                debug_write(" rsp=0x");
-                debug_write_hex(f_rsp);
-                debug_write(" ss=0x");
-                debug_write_hex(f_ss);
-                debug_write("\n");
-            }
             // ---- Dispatch guard ----
             // Never iretq into a task whose iret frame is invalid.  This can
             // happen when `next` is the physically-running task but
@@ -1245,29 +1220,6 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 (next->kernel_stack && next->kernel_stack_top &&
                  phys_rsp >= nb && phys_rsp < next->kernel_stack_top);
             bool next_is_running = (next->state == TaskState::RUNNING);
-            {
-                static int gd = 0;
-                if (gd < 6) {
-                    ++gd;
-                    debug_write("[GUARD] next_id=");
-                    debug_write_hex(next->id);
-                    debug_write(" cur_id=");
-                    debug_write_hex(current ? current->id : 0);
-                    debug_write(" next_state=");
-                    debug_write_hex((uint64_t)next->state);
-                    debug_write(" phys_rsp=0x");
-                    debug_write_hex(phys_rsp);
-                    debug_write(" next_base=0x");
-                    debug_write_hex(nb);
-                    debug_write(" next_top=0x");
-                    debug_write_hex(next->kernel_stack_top);
-                    debug_write(" is_runner=");
-                    debug_write_hex(next_is_runner ? 1u : 0u);
-                    debug_write(" is_running=");
-                    debug_write_hex(next_is_running ? 1u : 0u);
-                    debug_write("\n");
-                }
-            }
             if (next_is_runner || next_is_running) {
                 // `next` is the physically-running task but it was left in the
                 // ready queue (e.g. its snapshot state was READY, or current_

@@ -22,6 +22,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/irq_guard.hpp>
 
 using namespace kernel;
 
@@ -72,6 +73,7 @@ JARVIS_TEST(pit_set_ticks_for_test, "PRE: iocd | POST: none") {
 // Expect: Tick count increases by 1 per IRQ0
 // Depends: kernel::arch::Timer::handle_irq()
 JARVIS_TEST(pit_irq0_handler_increments_ticks, "PRE: iocd | POST: none") {
+    arch::IrqGuard guard;
     arch::Timer::set_ticks_for_test(0);
     JARVIS_ASSERT_EQ((uint64_t)0, arch::Timer::ticks());
     arch::Timer::handle_irq();

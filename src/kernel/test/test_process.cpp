@@ -23,6 +23,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <constants.hpp>
 
 using namespace kernel;
@@ -314,31 +315,34 @@ JARVIS_TEST(process_clone_adds_child, "PRE: none | POST: none") {
     Scheduler::add_task(*parent);
 
     auto *original = Scheduler::current_task();
-    Scheduler::set_current(*parent);
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*parent);
 
-    uint64_t regs[22] = {};
-    regs[17] = 0x1000;
-    regs[18] = arch::SEG_USER_CODE;
-    regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000;
-    regs[21] = arch::SEG_USER_DATA;
+        uint64_t regs[22] = {};
+        regs[17] = 0x1000;
+        regs[18] = arch::SEG_USER_CODE;
+        regs[19] = arch::RFLAGS_DEFAULT;
+        regs[20] = 0x80000000;
+        regs[21] = arch::SEG_USER_DATA;
 
-    auto *child = TaskControlBlock::clone(regs);
-    JARVIS_ASSERT(child != nullptr);
-    JARVIS_ASSERT_EQ(1ULL, parent->num_children);
+        auto *child = TaskControlBlock::clone(regs);
+        JARVIS_ASSERT(child != nullptr);
+        JARVIS_ASSERT_EQ(1ULL, parent->num_children);
 
-    auto *found = parent->find_child(child->id);
-    JARVIS_ASSERT(found == child);
-    JARVIS_ASSERT_EQ(parent->id, child->parent_id);
+        auto *found = parent->find_child(child->id);
+        JARVIS_ASSERT(found == child);
+        JARVIS_ASSERT_EQ(parent->id, child->parent_id);
 
-    child->cleanup();
-    delete child;
+        child->cleanup();
+        delete child;
 
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
-    if (original)
-        Scheduler::set_current(*original);
+        Scheduler::remove_task(*parent);
+        parent->cleanup();
+        delete parent;
+        if (original)
+            Scheduler::set_current(*original);
+    }
     JARVIS_TEST_PASS();
 }
 

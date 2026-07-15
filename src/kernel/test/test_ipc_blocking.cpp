@@ -31,6 +31,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/task/task_errors.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include "test_sched_helpers.hpp"
 
 using namespace kernel;
@@ -41,6 +42,7 @@ using namespace kernel;
 #endif
 
 JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
+    arch::IrqGuard guard;
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -83,8 +85,12 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
     auto *receiver = TaskControlBlock::create(
         []() {
             Message msg;
-            // Receiver waits for message
-            bool ok = IPC::recv(msg);
+            // Receiver waits for the sender's message.  IPC::recv is
+            // non-blocking, so retry until it arrives (the sender always
+            // delivers before blocking in send_sync).
+            bool ok = false;
+            for (int i = 0; i < 100000 && !ok; ++i)
+                ok = IPC::recv(msg);
             JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(42ULL, msg.type);
             // Send reply
@@ -96,7 +102,7 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
             bool ok2 = IPC::send(msg.sender_id, reply);
             JARVIS_ASSERT(ok2);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
     Scheduler::add_task(*receiver);
@@ -114,21 +120,36 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
             JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(99ULL, reply.type);
         },
-        5, 10);
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
     auto *original = Scheduler::current_task();
-    kernel::test::yield_as(*sender);
+    // Yield to the *receiver* (not the sender): next_task() skips whatever is
+    // current_task_ptr_, so yielding to the receiver makes next_task() return
+    // the higher-priority sender (prio 12 > 11), which runs first, sends, and
+    // blocks; the receiver then runs and replies.  Yielding to the sender would
+    // set it current and get it skipped+discarded, deadlocking the handshake.
+    kernel::test::yield_as(*receiver);
 
-    // Let sender run (it will block on send_sync)
-    Scheduler::reschedule();
+    // Drive the sender→receiver→sender handshake to completion.  reschedule()
+    // only *defers* the context switch (the actual switch + current_task_ptr_
+    // update happens in the next timer ISR).  Wait on the tasks' terminal
+    // state with an unbounded loop (the established pattern in this suite,
+    // e.g. test_fpu_multi.cpp): each reschedule() lets a timer ISR run the
+    // peer task, so the handshake always converges — a bounded loop with
+    // arch::pause() can burn its iterations before the needed ISRs fire.
+    while (sender->state != TaskState::TERMINATED ||
+           receiver->state != TaskState::TERMINATED) {
+        Scheduler::reschedule();
+    }
 
     Scheduler::set_current(*original);
 
-    // Both tasks should be in READY state after completion
-    JARVIS_ASSERT(sender->state == TaskState::READY);
-    JARVIS_ASSERT(receiver->state == TaskState::RUNNING);
+    // Both tasks should have run to completion (the sender blocked on
+    // send_sync, the receiver replied, then both exited).
+    JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
+    JARVIS_ASSERT(receiver->state == TaskState::TERMINATED);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();
@@ -167,20 +188,28 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
             JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(1ULL, out.type);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(user_task != nullptr);
     JARVIS_ASSERT(user_task->page_table_ != 0); // userspace task
     Scheduler::add_task(*user_task);
 
     auto *original = Scheduler::current_task();
-    kernel::test::yield_as(*user_task);
+    // Do NOT yield_as(*user_task): next_task() skips the current task, so that
+    // would make the only test task current and never dispatch it.  A plain
+    // reschedule() lets next_task() pick the higher-priority user task (11 > 10).
+    Scheduler::reschedule();
 
-    // Let user task run (it will block in recv)
+    // Drive the user task's self-IPC handshake to completion.  reschedule()
+    // only defers the context switch (the real switch happens in the next
+    // timer ISR), so wait (unbounded) until the task has run to completion.
+    while (user_task->state != TaskState::TERMINATED) {
+        Scheduler::reschedule();
+    }
 
     Scheduler::set_current(*original);
 
-    // User task should be in READY state after completion
-    JARVIS_ASSERT(user_task->state == TaskState::READY);
+    // User task should have run to completion (sent to itself, received).
+    JARVIS_ASSERT(user_task->state == TaskState::TERMINATED);
 
     Scheduler::remove_task(*user_task);
     user_task->cleanup();
@@ -216,24 +245,35 @@ JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
             JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(1ULL, out.type);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(kernel_task != nullptr);
     JARVIS_ASSERT(kernel_task->page_table_ == 0); // kernel task
     Scheduler::add_task(*kernel_task);
 
     auto *original = Scheduler::current_task();
-    kernel::test::yield_as(*kernel_task);
+    {
+        arch::IrqGuard guard;
+        // Do NOT yield_as(*kernel_task): next_task() skips the current task, so
+        // that would make the only test task current and never dispatch it.  A
+        // plain reschedule() picks the higher-priority kernel task (11 > 10).
+        Scheduler::reschedule();
 
-    // Let kernel task run (it will block in recv)
+        // Drive the kernel task's self-IPC handshake to completion.
+        // reschedule() only defers the switch (it happens in the next timer
+        // ISR), so wait (unbounded) until the task has run to completion.
+        while (kernel_task->state != TaskState::TERMINATED) {
+            Scheduler::reschedule();
+        }
 
-    Scheduler::set_current(*original);
+        Scheduler::set_current(*original);
 
-    // Kernel task should be in READY state after completion
-    JARVIS_ASSERT(kernel_task->state == TaskState::READY);
+        // Kernel task should have run to completion.
+        JARVIS_ASSERT(kernel_task->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*kernel_task);
-    kernel_task->cleanup();
-    delete kernel_task;
+        Scheduler::remove_task(*kernel_task);
+        kernel_task->cleanup();
+        delete kernel_task;
+    }
     JARVIS_TEST_PASS();
 }
 

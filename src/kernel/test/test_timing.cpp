@@ -21,9 +21,12 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <scope_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/hal/irq_guard.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <signal.hpp>
 
@@ -402,6 +405,191 @@ JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
+
+/// @brief Append a freshly created, add_task'd (parked + BLOCKED) task with
+///        the given absolute deadline to a DeadlineList. Returns the task (or
+///        nullptr on alloc/add failure) so the caller can clean it up. The
+///        task is parked out of the ready queue and forced BLOCKED so the
+///        scheduler never dispatches it (mirrors the existing timing tests'
+///        lifecycle). period_ticks is forced to 0 so the task is NOT inserted
+///        into the scheduler's own deadline_list_ (keeping the monitor from
+///        scanning it) while still exercising the full create/add/cleanup
+///        lifecycle for a balanced ResourceTracker. IRQs are disabled for the
+///        whole setup so no timer tick can dispatch the task in the window
+///        between add_task and the BLOCKED transition.
+static TaskControlBlock *dl_make(DeadlineList &dl, uint64_t deadline) {
+    arch::IrqGuard guard;
+    if (Scheduler::task_count() >= 58)
+        return nullptr; // headroom below MAX_TASKS
+    auto *t = TaskControlBlock::create([]() {}, 10, 10);
+    if (t == nullptr)
+        return nullptr;
+    t->base_priority = 10;
+    t->priority = 10;
+    t->period_ticks = 0; // keep out of scheduler's deadline_list_
+    t->deadline_ticks = deadline;
+    Scheduler::add_task(*t);
+    Scheduler::dequeue_ready(*t); // park so it is not dispatched
+    {
+        kernel::test::ScopedCurrentTask scope(*t);
+        t->state = TaskState::BLOCKED;
+    }
+    dl.insert(t);
+    return t;
+}
+
+/// @brief Teardown for a dl_make task — mirrors the existing timing tests
+///        (cleanup() unregisters from the scheduler; no set_task_ready, so the
+///        BLOCKED task is never dispatched out from under this teardown).
+static void dl_free(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    t->cleanup();
+    delete t;
+}
+
+// Runmode: kernel
+// Testidea: Insert tasks with shuffled future deadlines; the list must stay
+// sorted ascending and expose the earliest via peek_earliest().
+// Expect: size == 5, peek_earliest() == the minimum-deadline task.
+JARVIS_TEST(deadline_list_sorted_insert, "PRE: none | POST: none") {
+    DeadlineList dl;
+    uint64_t base = arch::Timer::ticks();
+    TaskControlBlock *tasks[5];
+    tasks[0] = dl_make(dl, base + 50);
+    tasks[1] = dl_make(dl, base + 10);
+    tasks[2] = dl_make(dl, base + 30);
+    tasks[3] = dl_make(dl, base + 20);
+    tasks[4] = dl_make(dl, base + 40);
+    JARVIS_ASSERT(tasks[0] && tasks[1] && tasks[2] && tasks[3] && tasks[4]);
+    JARVIS_ASSERT(dl.size() == 5);
+    JARVIS_ASSERT(dl.peek_earliest() == tasks[1]); // base + 10 is earliest
+    for (auto *t : tasks)
+        dl_free(t);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: pop_earliest_if_expired only returns a task whose deadline is
+// strictly in the past; future tasks yield nullptr. IRQs are disabled so the
+// clock cannot advance between arming and popping.
+// Expect: expired task popped (size 0); future-only list pops nullptr.
+JARVIS_TEST(deadline_list_pop_expired, "PRE: none | POST: none") {
+    DeadlineList dl;
+    {
+        arch::IrqGuard guard;
+        uint64_t now = arch::Timer::ticks();
+        auto *expired = dl_make(dl, now - 1);
+        JARVIS_ASSERT(expired != nullptr);
+        JARVIS_ASSERT(dl.pop_earliest_if_expired() == expired);
+        JARVIS_ASSERT(dl.empty());
+        auto *future = dl_make(dl, now + 1000);
+        JARVIS_ASSERT(future != nullptr);
+        JARVIS_ASSERT(dl.pop_earliest_if_expired() == nullptr);
+        JARVIS_ASSERT(!dl.empty());
+        dl_free(future);
+    }
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: remove() deletes an arbitrary (middle) node preserving order.
+// Expect: after removing the middle task, size drops by 1 and the new
+//         earliest is the next-smallest.
+JARVIS_TEST(deadline_list_remove_mid, "PRE: none | POST: none") {
+    DeadlineList dl;
+    uint64_t base = arch::Timer::ticks();
+    auto *a = dl_make(dl, base + 10);
+    auto *b = dl_make(dl, base + 20);
+    auto *c = dl_make(dl, base + 30);
+    JARVIS_ASSERT(a && b && c);
+    dl.remove(b); // remove middle
+    JARVIS_ASSERT(dl.size() == 2);
+    JARVIS_ASSERT(dl.peek_earliest() == a);
+    dl.remove(a);
+    dl.remove(c);
+    JARVIS_ASSERT(dl.empty());
+    dl_free(a);
+    dl_free(b);
+    dl_free(c);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: remove() on a non-member is a no-op.
+// Expect: size unchanged, list intact.
+JARVIS_TEST(deadline_list_remove_absent, "PRE: none | POST: none") {
+    DeadlineList dl;
+    uint64_t base = arch::Timer::ticks();
+    auto *a = dl_make(dl, base + 10);
+    auto *b = dl_make(dl, base + 20);
+    JARVIS_ASSERT(a && b);
+    auto *ghost = dl_make(dl, base + 999); // member, then removed as "absent"
+    JARVIS_ASSERT(ghost != nullptr);
+    dl.remove(a); // remove real member
+    dl.remove(ghost);
+    JARVIS_ASSERT(dl.size() == 1);
+    JARVIS_ASSERT(dl.peek_earliest() == b);
+    dl_free(a);
+    dl_free(b);
+    dl_free(ghost);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: clear() empties the list.
+// Expect: after clear, empty() and size()==0.
+JARVIS_TEST(deadline_list_empty_and_clear, "PRE: none | POST: none") {
+    DeadlineList dl;
+    uint64_t base = arch::Timer::ticks();
+    auto *a = dl_make(dl, base + 10);
+    auto *b = dl_make(dl, base + 20);
+    JARVIS_ASSERT(a && b);
+    JARVIS_ASSERT(!dl.empty());
+    dl.clear();
+    JARVIS_ASSERT(dl.empty());
+    JARVIS_ASSERT(dl.size() == 0);
+    dl_free(a);
+    dl_free(b);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: The list accepts many tasks (bounded by headroom below
+// MAX_TASKS) without corrupting order or size. Insertion order is reversed
+// relative to deadline order.
+// Expect: size equals the number of tasks actually created; peek_earliest is
+//         the minimum-deadline task actually inserted; removing all leaves it
+//         empty. Teardown runs via ScopeGuard so a failed assert cannot leak.
+JARVIS_TEST(deadline_list_capacity, "PRE: none | POST: none") {
+    DeadlineList dl;
+    uint64_t base = arch::Timer::ticks();
+    TaskControlBlock *made[64];
+    uint64_t count = 0;
+    uint64_t min_dl = ~0ULL;
+    auto cleanup = ScopeGuard([&]() {
+        for (uint64_t i = 0; i < count; ++i)
+            if (made[i]) {
+                dl.remove(made[i]);
+                dl_free(made[i]);
+            }
+    });
+    // Insert deadlines in reverse so insertion order != sorted order.
+    for (uint64_t i = 0; i < 32; ++i) {
+        uint64_t const dl_t = base + (32 - i) * 100; // i=0 largest .. i=31 smallest
+        auto *t = dl_make(dl, dl_t);
+        if (t == nullptr)
+            break; // scheduler near capacity — stop, still valid
+        made[count++] = t;
+        if (dl_t < min_dl)
+            min_dl = dl_t;
+    }
+    JARVIS_ASSERT(dl.size() == count);
+    JARVIS_ASSERT(dl.size() > 0);
+    JARVIS_ASSERT(dl.peek_earliest()->deadline_ticks == min_dl);
+    JARVIS_ASSERT(dl.empty() == false);
+    JARVIS_TEST_PASS();
+}
 void register_timing_tests() {
     Logger::raw_write("[TIMING] register_timing_tests called!\n");
     Logger::info("Registering timing tests");
@@ -417,4 +605,12 @@ void register_timing_tests() {
     JARVIS_REGISTER_TEST(timer_deadline_miss_skips_future);
     JARVIS_REGISTER_TEST(timer_deadline_miss_only_once);
     JARVIS_REGISTER_TEST(timer_deadline_miss_skips_zero);
+    // Phase 7 (P7a): DeadlineList (sorted deadline queue) unit coverage.
+    JARVIS_REGISTER_TEST(deadline_list_sorted_insert);
+    JARVIS_REGISTER_TEST(deadline_list_pop_expired);
+    JARVIS_REGISTER_TEST(deadline_list_remove_mid);
+    JARVIS_REGISTER_TEST(deadline_list_remove_absent);
+    JARVIS_REGISTER_TEST(deadline_list_empty_and_clear);
+    JARVIS_REGISTER_TEST(deadline_list_capacity);
 }
+

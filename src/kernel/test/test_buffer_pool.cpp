@@ -33,6 +33,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <constants.hpp>
 
@@ -247,19 +248,22 @@ JARVIS_TEST(buffer_pool_syscall_dispatch, "PRE: none | POST: none") {
     JARVIS_ASSERT(task != nullptr);
     Scheduler::add_task(*task);
     auto *original = Scheduler::current_task();
-    Scheduler::set_current(*task);
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*task);
 
-    uint64_t va = 0xB0000000;
-    uint64_t handle = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::BUF_ALLOC), va, 0, 0, 0, nullptr);
-    JARVIS_ASSERT(handle != 0);
+        uint64_t va = 0xB0000000;
+        uint64_t handle = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::BUF_ALLOC), va, 0, 0, 0, nullptr);
+        JARVIS_ASSERT(handle != 0);
 
-    uint64_t result =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::BUF_FREE), handle,
-                        0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, result);
+        uint64_t result =
+            Syscall::handle(static_cast<uint64_t>(SyscallNumber::BUF_FREE), handle,
+                             0, 0, 0, nullptr);
+        JARVIS_ASSERT_EQ(0ULL, result);
 
-    Scheduler::set_current(*original);
+        Scheduler::set_current(*original);
+    }
     JARVIS_TEST_PASS();
 }
 
@@ -280,37 +284,40 @@ JARVIS_TEST(buffer_pool_ipc_transfer, "PRE: none | POST: none") {
     });
 
     auto *original = Scheduler::current_task();
+    {
+        arch::IrqGuard guard;
 
-    // Sender allocs a buffer
-    Scheduler::set_current(*sender);
-    uint64_t va = 0xC0000000;
-    uint64_t handle = BufferPool::alloc(*sender, va);
-    JARVIS_ASSERT(handle != 0);
+        // Sender allocs a buffer
+        Scheduler::set_current(*sender);
+        uint64_t va = 0xC0000000;
+        uint64_t handle = BufferPool::alloc(*sender, va);
+        JARVIS_ASSERT(handle != 0);
 
-    // Send the buffer via IPC
-    Message msg{};
-    msg.buf_handle = handle;
-    msg.type = 42;
-    JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
+        // Send the buffer via IPC
+        Message msg{};
+        msg.buf_handle = handle;
+        msg.type = 42;
+        JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
 
-    // Receiver gets the message
-    Scheduler::set_current(*receiver);
-    Message recv_msg{};
-    JARVIS_ASSERT(IPC::recv(recv_msg));
-    JARVIS_ASSERT_EQ(42ULL, recv_msg.type);
-    JARVIS_ASSERT_EQ(handle, recv_msg.buf_handle);
+        // Receiver gets the message
+        Scheduler::set_current(*receiver);
+        Message recv_msg{};
+        JARVIS_ASSERT(IPC::recv(recv_msg));
+        JARVIS_ASSERT_EQ(42ULL, recv_msg.type);
+        JARVIS_ASSERT_EQ(handle, recv_msg.buf_handle);
 
-    // Sender can no longer free the buffer
-    Scheduler::set_current(*sender);
-    JARVIS_ASSERT(!BufferPool::free(*sender, handle));
+        // Sender can no longer free the buffer
+        Scheduler::set_current(*sender);
+        JARVIS_ASSERT(!BufferPool::free(*sender, handle));
 
-    // Receiver can map and free it
-    Scheduler::set_current(*receiver);
-    uint64_t recv_va = 0xD0000000;
-    JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
-    JARVIS_ASSERT(BufferPool::free(*receiver, handle));
+        // Receiver can map and free it
+        Scheduler::set_current(*receiver);
+        uint64_t recv_va = 0xD0000000;
+        JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
+        JARVIS_ASSERT(BufferPool::free(*receiver, handle));
 
-    Scheduler::set_current(*original);
+        Scheduler::set_current(*original);
+    }
     JARVIS_TEST_PASS();
 }
 

@@ -638,8 +638,13 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
     auto *receiver = TaskControlBlock::create(
         []() {
             Message msg;
-            // Receiver waits for message
-            JARVIS_ASSERT(IPC::recv(msg));
+            // Receiver waits for the sender's message.  IPC::recv is
+            // non-blocking, so retry until it arrives (the sender always
+            // delivers before blocking in send_sync).
+            bool ok = false;
+            for (int i = 0; i < 100000 && !ok; ++i)
+                ok = IPC::recv(msg);
+            JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(42ULL, msg.type);
             // Send reply
             Message reply;
@@ -649,7 +654,7 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
             reply.data_size = 0;
             JARVIS_ASSERT(IPC::send(msg.sender_id, reply));
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
     Scheduler::add_task(*receiver);
@@ -667,16 +672,26 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
             JARVIS_ASSERT(ok);
             JARVIS_ASSERT_EQ(99ULL, reply.type);
         },
-        5, 10);
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
     auto *original = Scheduler::current_task();
-    kernel::test::yield_as(*sender);
+    // Yield to the *receiver* (not the sender): next_task() skips the current
+    // task, so yielding to the receiver makes next_task() return the
+    // higher-priority sender (prio 12 > 11), which runs first, sends, and
+    // blocks; the receiver then runs and replies.
+    kernel::test::yield_as(*receiver);
 
-    // Let sender run (it will block on send_sync)
-    // Then receiver runs, recvs, replies
-    Scheduler::reschedule();
+    // Drive the sender→receiver→sender handshake to completion.  reschedule()
+    // only defers the context switch (the real switch happens in the next
+    // timer ISR).  Wait (unbounded) on the tasks' terminal state — the
+    // established pattern in this suite: each reschedule() lets a timer ISR
+    // run the peer task, so the handshake always converges.
+    while (sender->state != TaskState::TERMINATED ||
+           receiver->state != TaskState::TERMINATED) {
+        Scheduler::reschedule();
+    }
 
     Scheduler::set_current(*original);
 

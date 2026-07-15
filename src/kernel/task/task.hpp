@@ -172,7 +172,8 @@ struct TaskControlBlock {
           alarm_armed(false), msg_queue(nullptr), notify(nullptr),
           event_group(nullptr), sporadic_server(nullptr), buf_list_head(0),
           blocked_next(nullptr), blocked_prev(nullptr),
-          blocked_on_queue(nullptr), waiting_on_mutex(nullptr),
+          blocked_on_queue(nullptr), reply_wait(false),
+          waiting_on_mutex(nullptr),
           first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
           num_children(0) {
     }
@@ -296,6 +297,12 @@ struct TaskControlBlock {
     /// before the TCB is freed, preventing dangling pointers in the
     /// queue's list.
     MessageQueue *blocked_on_queue;
+
+    /// @brief True while a task is blocked inside IPC::send_sync waiting for a
+    /// reply on its own message queue.  Lets IPC::send wake a reply-waiter
+    /// when its reply is delivered (otherwise send_sync senders are never
+    /// unblocked and hang forever).
+    bool reply_wait;
 
     /// @brief Pointer to the mutex this task is blocked on (as a waiter).
     /// Used for transitive priority inheritance propagation.

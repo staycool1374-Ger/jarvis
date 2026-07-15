@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe", 132, 0, 0},     // curated TF_RELEASE subset
     {"selftest", 132, 0, 0}, // same as safe
-    {"all", 756, 0, 0},      // every registration function
+    {"all", 764, 0, 0},      // every registration function
     {"scheduler", 85, 0, 0}, // sched + task + lifecycle + deadlock + timer
     {"memory", 45, 0, 0},    // PMM + VMM + checked_ptr + buffer_pool
     {"ipc", 42, 0, 0},       // IPC + pipe + blocking + lock-free + robustness
@@ -56,6 +56,9 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"deadline_recovery", 4, 0,
      0}, // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck +
          // DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor
+    {"deadline_action", 1, 0,
+     0}, // single action-dispatch test per build (CONFIG_DEADLINE_ACTION)
+    {"wcet", 1, 0, 0}, // WCET benchmark for scan_deadlines (P7b)
     {"priority_inheritance", 5, 0,
      0}, // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown +
          // MutexNestedDrop + SemaphoreInherits

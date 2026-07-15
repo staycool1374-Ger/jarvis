@@ -115,6 +115,8 @@ void register_syscall_fuzz_tests();
 void register_starvation_deadlock_tests();
 void register_deadline_miss_tests();
 void register_wcet_overrun_tests();
+void register_wcet_scheduler_tests();
+void register_deadline_action_tests();
 void register_ss_deadline_tests();
 void register_deadline_recovery_tests();
 void register_priority_inheritance_tests();
@@ -264,6 +266,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_wcet_overrun_tests();
          register_ss_deadline_tests();
          register_deadline_recovery_tests();
+          register_deadline_action_tests();
+          register_wcet_scheduler_tests();
          register_priority_inheritance_tests();
          register_pic_tests();
          register_integration_tests();
@@ -458,6 +462,9 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"ss_deadline", []() { register_ss_deadline_tests(); }},
 
     {"deadline_recovery", []() { register_deadline_recovery_tests(); }},
+    {"deadline_action", []() { register_deadline_action_tests(); }},
+
+    {"wcet", []() { register_wcet_scheduler_tests(); }},
 
     {"priority_inheritance", []() { register_priority_inheritance_tests(); }},
 

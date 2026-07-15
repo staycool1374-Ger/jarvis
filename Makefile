@@ -76,13 +76,18 @@ endif
 # ------------------------------------------------------------------------------
 
 # --- Common CXXFLAGS (architecture-independent) ---
+# CONFIG_DEFS: extra -D overrides injected per build (e.g. config-matrix runs
+# such as -DCONFIG_DEADLINE_ACTION=N). Pass on the command line:
+#   make debug CONFIG_DEFS="-DCONFIG_DEADLINE_ACTION=3"
+CONFIG_DEFS ?=
 CXXFLAGS_COMMON := -std=c++20 -ffreestanding -fno-exceptions -fno-rtti \
                    -nostdlib -nostdinc -fno-builtin -fno-stack-protector \
                    -fno-threadsafe-statics \
                    -Wall -Wextra -Werror \
                    -I src -I src/lib -pipe -MMD -MP \
                    -DCONFIG_ARCH_$(ARCH_UPPER) \
-                   -ffunction-sections -fdata-sections
+                   -ffunction-sections -fdata-sections \
+                   $(CONFIG_DEFS)
 
 # 1. Cross-Compiler-Prefixe basierend auf dem Host-OS
 ifeq ($(UNAME_S),Darwin)
@@ -584,7 +589,7 @@ execute-test:
 	elif [ "$(_CLASS)" = "dump-counts" ]; then \
 	    $(call _run_dump_counts_qemu); \
 	else \
-	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$(if $(filter all,$(_CLASS)),180,120)); \
+	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$(if $(filter all,$(_CLASS)),250,120)); \
 	fi
 
 debug-test:
