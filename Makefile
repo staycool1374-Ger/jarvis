@@ -301,8 +301,14 @@ build/kernel/test/test_isolate.o: $(TEST_REGISTRY_GEN)
 
 test-registry-gen: $(TEST_REGISTRY_GEN)
 
-# Default target
-all: help
+# Default target.  Only print help when `all` is the SOLE goal — otherwise it
+# collides with the `all` test class passed positionally to `execute-test`
+# (e.g. `make execute-test x86_64 debug all`), which would also trigger this
+# help target and interleave/cut the QEMU run.
+all:
+	@if [ -z "$(MAKECMDGOALS)" ] || [ "$(MAKECMDGOALS)" = "all" ]; then \
+	    $(MAKE) help; \
+	fi
 
 # ------------------------------------------------------------------------------
 # Style / Help
@@ -547,6 +553,10 @@ run-release-mode:
 	    $(MAKE) execute-test $(_ARCH) none BUILD=release CLASS=none ARCH=$(_ARCH); \
 	fi
 
+# Public entry: parse positional <arch> <build> <class> from MAKECMDGOALS,
+# then forward to the private _do_execute_test target using NAMED variables.
+# This avoids re-parsing MAKECMDGOALS inside the worker and removes any
+# ambiguity with the %:: catch-all / default `all` goal.
 execute-test:
 	@: $(eval _ae := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))) $(eval _ARCH := $(call _map_arch,$(word 1,$(_ae)))) $(eval _BUILD := $(or $(BUILD),$(word 2,$(_ae)))) $(eval _CLASS := $(or $(CLASS),$(word 3,$(_ae))))
 	@if [ -z "$(_ARCH)" -o -z "$(_BUILD)" -o -z "$(_CLASS)" ]; then \
@@ -557,39 +567,46 @@ execute-test:
 	    exit 1; \
 	fi; \
 	case "$(_BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
-	case "$(_CLASS)" in none|selftest|all|dump-counts) ;; *) ;; esac; \
+	$(MAKE) _do_execute_test ARCH=$(_ARCH) BUILD=$(_BUILD) CLASS=$(_CLASS)
+
+# Private worker: all decisions use ARCH/BUILD/CLASS (never MAKECMDGOALS).
+_do_execute_test:
+	@if [ -z "$(ARCH)" -o -z "$(BUILD)" -o -z "$(CLASS)" ]; then \
+	    echo "ERROR: _do_execute_test requires ARCH/BUILD/CLASS"; exit 1; \
+	fi; \
+	case "$(BUILD)" in debug|release) ;; *) echo "ERROR: build must be 'debug' or 'release'"; exit 1;; esac; \
 	mkdir -p initrd/tests; \
-	_class_file=$(_CLASS); \
+	_class_file=$(CLASS); \
 	[ "$${_class_file}" = "selftest" ] && _class_file=safe; \
 	printf '%s\n' "$${_class_file}" > initrd/tests/test-config.txt; \
-	if [ "$(_CLASS)" = "none" ]; then \
-	    if [ "$(_BUILD)" = "release" ] && [ "$(_ARCH)" = "x86_64" ] && [ -f "$(RELEASE_ISO)" ]; then \
+	if [ "$(CLASS)" = "none" ]; then \
+	    if [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ] && [ -f "$(RELEASE_ISO)" ]; then \
 	        :; \
-	    elif [ "$(_BUILD)" = "release" ] && [ "$(_ARCH)" = "x86_64" ]; then \
-	        $(MAKE) release ARCH=$(_ARCH) || exit 1; \
-	    elif [ "$(_BUILD)" = "release" ]; then \
-	        $(MAKE) $(KERNEL) ARCH=$(_ARCH) || exit 1; \
-	        if [ "$(_ARCH)" = "riscv64" ]; then \
-	            $(MAKE) $(KERNEL_RISCV_BIN) ARCH=$(_ARCH) KERNEL_DEBUG=$(KERNEL) || exit 1; \
+	    elif [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ]; then \
+	        $(MAKE) release ARCH=$(ARCH) || exit 1; \
+	    elif [ "$(BUILD)" = "release" ]; then \
+	        $(MAKE) $(KERNEL) ARCH=$(ARCH) || exit 1; \
+	        if [ "$(ARCH)" = "riscv64" ]; then \
+	            $(MAKE) $(KERNEL_RISCV_BIN) ARCH=$(ARCH) KERNEL_DEBUG=$(KERNEL) || exit 1; \
 	        fi; \
 	    else \
-	        $(MAKE) debug ARCH=$(_ARCH) || exit 1; \
+	        $(MAKE) debug ARCH=$(ARCH) || exit 1; \
 	    fi; \
 	else \
-	    $(MAKE) $(_BUILD) ARCH=$(_ARCH) || exit 1; \
+	    $(MAKE) $(BUILD) ARCH=$(ARCH) || exit 1; \
 	fi; \
-	true $(if $(filter release,$(_BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))$(if $(and $(filter release,$(_BUILD)),$(filter aarch64,$(_ARCH))),$(eval QEMU_FLAGS := $(subst $(KERNEL_DEBUG),$(KERNEL),$(QEMU_FLAGS)))); \
-	if [ "$(_CLASS)" = "none" ]; then \
+	true $(if $(filter release,$(BUILD)),$(eval DEBUG_ISO := $(RELEASE_ISO)))$(if $(and $(filter release,$(BUILD)),$(filter aarch64,$(ARCH))),$(eval QEMU_FLAGS := $(subst $(KERNEL_DEBUG),$(KERNEL),$(QEMU_FLAGS)))); \
+	if [ "$(CLASS)" = "none" ]; then \
 	    if command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then \
 	        printf '  %-7s %s\n' 'QEMU' 'Starting (Ctrl+A then X to exit)…'; \
 	        $(QEMU_SYSTEM) $(QEMU_FLAGS); \
 	    else \
 	        echo "QEMU missing."; echo $(PKG_HINT); exit 1; \
 	    fi; \
-	elif [ "$(_CLASS)" = "dump-counts" ]; then \
+	elif [ "$(CLASS)" = "dump-counts" ]; then \
 	    $(call _run_dump_counts_qemu); \
 	else \
-	    $(call _run_test_qemu,Running $(_BUILD) class=$(_CLASS),$(if $(filter all,$(_CLASS)),250,120)); \
+	    $(call _run_test_qemu,Running $(BUILD) class=$(CLASS),$(if $(filter all,$(CLASS)),$(TEST_TIMEOUT_ALL),$(TEST_TIMEOUT_CLASS))); \
 	fi
 
 debug-test:
@@ -716,17 +733,35 @@ renode-test:
 # Shared expect helper for autonomous test runs.
 # Single consistent serial log path for all automated test runs.
 TEST_SERIAL_LOG := /tmp/jarvis-serial.log
+# Verdict file: the expect script writes its machine-readable verdict here so it
+# is never lost to pipe buffering. The Makefile reads it back to set the exit code.
+TEST_VERDICT_LOG := /tmp/jarvis-verdict.log
 
-# Host-side watchdog: if $(TEST_SERIAL_LOG) does not grow for WATCHDOG_STALL seconds,
-# kill QEMU and append a diagnostic message.  This catches hangs that the
-# in-kernel watchdog cannot detect (interrupts disabled during test execution).
-WATCHDOG_STALL := 300
+# Timing model (single source of truth, correctly scaled):
+#   - expect waits up to TEST_TIMEOUT_* for the kernel's TEST SUMMARY.
+#   - the host stall-watchdog fires EARLIER (WATCHDOG_STALL) so it catches a
+#     frozen-but-still-emitting serial stream before expect's coarser timeout.
+#   WATCHDOG_STALL must be strictly less than the longest expect timeout (250),
+#   else the watchdog can never fire before expect gives up. 30s margin used.
+TEST_TIMEOUT_ALL    := 250
+TEST_TIMEOUT_CLASS  := 120
+WATCHDOG_STALL      := 220
 
 # Usage: $(call _run_test_qemu,<description>,<timeout_sec>)
+# Robust design:
+#   - The expect driver (tools/run-test.exp) writes its machine-readable VERDICT
+#     to $(TEST_VERDICT_LOG); the full serial stream is teed to $(TEST_SERIAL_LOG).
+#     Writing the verdict to a dedicated file (not just stdout/pipe) guarantees it
+#     is never lost to pipe buffering or a killed tee.
+#   - After expect returns, the Makefile reads $(TEST_VERDICT_LOG) and replays it
+#     to stdout, then sets the exit code from it.
+#   - The expect logic lives in a committed .exp file (not an inline -c string) so
+#     TCL quoting/backslash-escaping is correct and maintainable.
 define _run_test_qemu
 	if ! command -v $(QEMU_SYSTEM) >/dev/null 2>&1; then echo "QEMU missing."; echo $(PKG_HINT); exit 1; fi; \
+	if ! command -v expect >/dev/null 2>&1; then echo "expect missing."; exit 1; fi; \
 	printf '  %-7s %s\n'  'TEST'   '$(1)…'; \
-	rm -f "$(TEST_SERIAL_LOG)" /tmp/test-start.timestamp /tmp/test-end.timestamp; \
+	rm -f "$(TEST_SERIAL_LOG)" "$(TEST_VERDICT_LOG)" /tmp/test-start.timestamp /tmp/test-end.timestamp; \
 	date +%s > /tmp/test-start.timestamp; \
 	\
 	( \
@@ -739,7 +774,7 @@ define _run_test_qemu
 	        if [ "$$CUR_SIZE" = "$$LAST_SIZE" ]; then \
 	            STALL=$$((STALL + 1)); \
 	            if [ $$STALL -ge $(WATCHDOG_STALL) ]; then \
-	                echo "[HOST-WATCHDOG] Tests interrupted — no serial output for $(WATCHDOG_STALL) s" >> "$(TEST_SERIAL_LOG)"; \
+	                echo "[HOST-WATCHDOG] Tests interrupted — no serial output for $(WATCHDOG_STALL) s" | tee -a "$(TEST_SERIAL_LOG)" "$(TEST_VERDICT_LOG)"; \
 	                pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null; \
 	                exit 1; \
 	            fi; \
@@ -751,56 +786,34 @@ define _run_test_qemu
 	) & \
 	MONITOR_PID=$$!; \
 	\
-	expect -c ' \
-	    fconfigure stdout -buffering none; \
-	    set timeout $(2); \
-	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT); \
-	    expect { \
-	        -re {[\\r\\n]+==============================[\\r\\n]+ TEST SUMMARY[\\r\\n]+==============================[\\r\\n]+  PLANNED:\\s+(\\d+)[\\r\\n]+  EXECUTED:\\s+(\\d+)[\\r\\n]+  TIME_ELAPSED_MS:\\s+(\\d+)[\\r\\n]+(?:  BOOT_TIME_MS:\\s+(\\d+)[\\r\\n]+)?  PASSED:\\s+(\\d+)[\\r\\n]+  FAILED:\\s+(\\d+)[\\r\\n]+==============================} { \
-	            puts "$$expect_out(buffer)"; flush stdout; \
-	            set test_ms $$expect_out(3,string); \
-	            set boot_ms $$expect_out(4,string); \
-	            if {$$expect_out(1,string) == $$expect_out(2,string) && $$expect_out(6,string) == 0} { \
-	                if {[string length $$boot_ms] > 0} { \
-	                    puts "RESULT: PASS ($$expect_out(1,string) tests, test=$$test_ms ms, boot=$$boot_ms ms)"; \
-	                } else { \
-	                    puts "RESULT: PASS ($$expect_out(1,string) tests, test=$$test_ms ms)"; \
-	                } \
-	                flush stdout; \
-	                catch {exec kill [exp_pid] 2>/dev/null}; \
-	                exit 0; \
-	            } else { \
-	                puts "RESULT: FAIL (planned=$$expect_out(1,string) executed=$$expect_out(2,string) failed=$$expect_out(6,string))"; flush stdout; \
-	                catch {exec kill [exp_pid] 2>/dev/null}; \
-	                exit 1; \
-	            } \
-	        } \
-	        timeout { \
-	            puts "\\n=== TIMEOUT ===\\n"; puts "$$expect_out(buffer)"; puts "\\n=== END ===\\n"; flush stdout; exit 1; \
-	        } \
-	        eof { \
-	            puts "\\n=== QEMU EXIT (no summary) ===\\n"; puts "$$expect_out(buffer)"; puts "\\n=== END ===\\n"; flush stdout; exit 1; \
-	        } \
-	    } \
-	' 2>&1 | gstdbuf -oL tee "$(TEST_SERIAL_LOG)"; \
-	rc=$${PIPESTATUS[0]}; \
+	expect tools/run-test.exp $(2) "$(TEST_VERDICT_LOG)" "$(TEST_SERIAL_LOG)" \
+	    $(QEMU_SYSTEM) $(QEMU_FLAGS) -display none -no-reboot $(QEMU_DEBUG_EXIT) \
+	    2>&1 | gstdbuf -oL tee "$(TEST_SERIAL_LOG)"; \
 	date +%s > /tmp/test-end.timestamp; \
 	\
 	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
-	\
 	kill $$MONITOR_PID 2>/dev/null; \
 	wait $$MONITOR_PID 2>/dev/null; \
 	\
-	if [ $$rc -eq 0 ]; then \
-	    START_S=$$(cat /tmp/test-start.timestamp 2>/dev/null || echo 0); \
-	    END_S=$$(cat /tmp/test-end.timestamp 2>/dev/null || echo 0); \
-	    ELAPSED_S=$$(( END_S - START_S )); \
-	    echo "[HOST] start=$${START_S}s end=$${END_S}s elapsed=$${ELAPSED_S}s"; \
+	if [ -f "$(TEST_VERDICT_LOG)" ]; then \
+	    VERDICT=$$(cat "$(TEST_VERDICT_LOG)"); \
 	else \
-	    printf '  %-7s %s\n' 'SERIAL' '$(TEST_SERIAL_LOG)'; \
-	    echo "FAIL: Test validation failed with code $$rc"; \
-	    exit 1; \
-	fi
+	    VERDICT="RESULT: UNKNOWN (no verdict file — expect aborted)"; \
+	fi; \
+	echo "$$VERDICT"; \
+	START_S=$$(cat /tmp/test-start.timestamp 2>/dev/null || echo 0); \
+	END_S=$$(cat /tmp/test-end.timestamp 2>/dev/null || echo 0); \
+	echo "[HOST] start=$${START_S}s end=$${END_S}s elapsed=$$(( END_S - START_S ))s"; \
+	case "$$VERDICT" in \
+	    RESULT:\ PASS*) \
+	        echo "[HOST] TESTS PASSED"; \
+	        ;; \
+	    *) \
+	        echo "[HOST] TESTS FAILED — see $(TEST_SERIAL_LOG)"; \
+	        echo "VERDICT: $$VERDICT"; \
+	        exit 1; \
+	        ;; \
+	esac
 endef
 
 # Usage: $(call _run_dump_counts_qemu)

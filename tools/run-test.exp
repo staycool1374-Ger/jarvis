@@ -1,0 +1,55 @@
+# Jarvis RTOS — autonomous test runner (expect driver)
+# Usage: expect run-test.exp <timeout_sec> <verdict_log> <serial_log> <qemu_cmd...>
+# Matches the kernel's TEST SUMMARY block, writes a machine-readable verdict
+# to <verdict_log>, and exits 0 on PASS / 1 on FAIL|TIMEOUT|QEMU_EXIT.
+#
+# Robust by design:
+#   - The verdict is written to a dedicated file (never lost to pipe buffering).
+#   - A single regex matches the summary; all paths (PASS/FAIL/TIMEOUT/EOF)
+#     write the verdict file before exiting.
+
+set timeout [lindex $argv 0]
+set verdict_log [lindex $argv 1]
+set serial_log [lindex $argv 2]
+set qemu_args [lrange $argv 3 end]
+
+fconfigure stdout -buffering none
+spawn {*}$qemu_args
+# Tcl regex is POSIX-ish: no (?s), (?:), or non-greedy *?.  Match the summary
+# block line-by-line with explicit [\r\n] breaks.  Group indices:
+#   1=PLANNED 2=EXECUTED 3=TIME_ELAPSED 4=BOOT_TIME (ignored) 5=PASSED 6=FAILED
+expect {
+    -re {[\r\n]+==============================[\r\n]+ TEST SUMMARY[\r\n]+==============================[\r\n]+  PLANNED:\s+(\d+)[\r\n]+  EXECUTED:\s+(\d+)[\r\n]+  TIME_ELAPSED_MS:\s+(\d+)([\r\n]+  BOOT_TIME_MS:\s+\d+)?[\r\n]+  PASSED:\s+(\d+)[\r\n]+  FAILED:\s+(\d+)[\r\n]+==============================} {
+        if {$expect_out(1,string) == $expect_out(2,string) && $expect_out(6,string) == 0} {
+            set verdict "RESULT: PASS ($expect_out(1,string) tests, test=$expect_out(3,string) ms, failed=$expect_out(6,string))"
+            set rc 0
+        } else {
+            set verdict "RESULT: FAIL (planned=$expect_out(1,string) executed=$expect_out(2,string) failed=$expect_out(6,string))"
+            set rc 1
+        }
+        puts $verdict
+        flush stdout
+        set fh [open $verdict_log w]
+        puts $fh $verdict
+        close $fh
+        exit $rc
+    }
+    timeout {
+        set verdict "RESULT: TIMEOUT (no TEST SUMMARY within $timeout s)"
+        puts $verdict
+        flush stdout
+        set fh [open $verdict_log w]
+        puts $fh $verdict
+        close $fh
+        exit 1
+    }
+    eof {
+        set verdict "RESULT: QEMU_EXIT (no TEST SUMMARY -- kernel crashed/hung)"
+        puts $verdict
+        flush stdout
+        set fh [open $verdict_log w]
+        puts $fh $verdict
+        close $fh
+        exit 1
+    }
+}
