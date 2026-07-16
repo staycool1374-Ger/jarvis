@@ -521,7 +521,13 @@ VfsError mkdir_err(const char *path, uint16_t mode) {
     if (!parent->ops || !parent->ops->mkdir)
         return VFS_ERR_NOT_SUPPORTED;
     int result = parent->ops->mkdir(*parent, name, mode);
-    return result == 0 ? VFS_ERR_OK : VFS_ERR_IO_ERROR;
+    if (result == 0)
+        return VFS_ERR_OK;
+    // Positive codes are specific VfsError values (e.g. VFS_ERR_EXISTS);
+    // negative sentinels (VFS_INVALID) fall back to a generic I/O error.
+    if (result > 0)
+        return static_cast<VfsError>(result);
+    return VFS_ERR_IO_ERROR;
 }
 
 /// @brief Create a regular file with error code return.

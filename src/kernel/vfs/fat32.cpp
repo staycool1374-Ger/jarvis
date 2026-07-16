@@ -20,6 +20,7 @@
 /// @brief FAT32 partition parsing, directory reading, and write primitives.
 
 #include <kernel/vfs/fat32.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <string.hpp>
 #include <utils.hpp>
 
@@ -310,18 +311,33 @@ bool read_dir_entry(Fat32Partition &fs, uint32_t dir_cluster, uint64_t &pos,
     if (cluster_idx >= chain_len)
         return false;
 
-    // Read the cluster containing the entry
-    uint8_t cluster_data[32 * 1024]; // max 64 sectors * 512 = 32K
-    if (!fs.read_cluster(cluster_chain[cluster_idx], cluster_data))
+    // Read the cluster containing the entry.  Allocate one cluster's worth of
+    // scratch from the heap (one cluster is <= 4 KiB on typical images).  The
+    // buffer MUST be freed on every return path below — read_dir_entry is
+    // called in a tight loop by lookup_in_dir/readdir and recursively when
+    // skipping free/LFN entries; a leak here exhausts the fixed-size MemPool
+    // class and makes subsequent allocations (e.g. the next mkdir) fail.
+    uint32_t rd_cluster_size =
+        fs.bpb().sectors_per_cluster * fs.bpb().bytes_per_sector;
+    uint8_t *cluster_data =
+        static_cast<uint8_t *>(MemPool::alloc(rd_cluster_size));
+    if (!cluster_data)
         return false;
+    if (!fs.read_cluster(cluster_chain[cluster_idx], cluster_data)) {
+        MemPool::free(cluster_data);
+        return false;
+    }
 
     const auto &raw = reinterpret_cast<const DirEntryRaw &>(
         cluster_data[static_cast<size_t>(entry_in_cluster) * 32]);
 
     // Skip empty, freed, and LFN entries
-    if (is_end_marker(raw))
+    if (is_end_marker(raw)) {
+        MemPool::free(cluster_data);
         return false;
+    }
     if (is_free_entry(raw) || is_lfn_entry(raw)) {
+        MemPool::free(cluster_data);
         ++pos;
         return read_dir_entry(fs, dir_cluster, pos, entry);
     }
@@ -333,6 +349,7 @@ bool read_dir_entry(Fat32Partition &fs, uint32_t dir_cluster, uint64_t &pos,
     entry.is_directory = (raw.attrs & ATTR_DIRECTORY) != 0;
     entry.valid = true;
 
+    MemPool::free(cluster_data);
     ++pos;
     return true;
 }
@@ -384,11 +401,17 @@ int64_t read_file(Fat32Partition &fs, uint32_t first_cluster,
             return FAT_READ_ERROR;
     }
 
-    // Read data
-    uint8_t cluster_data[32 * 1024];
+    // Read data.  Allocate from the heap: a 32 KiB stack buffer overflows the
+    // shell's 64 KiB kernel stack (wedging the scheduler).  Only one cluster is
+    // needed per iteration.
+    uint8_t *cluster_data = static_cast<uint8_t *>(MemPool::alloc(cluster_size));
+    if (!cluster_data)
+        return FAT_READ_ERROR;
     while (total_read < static_cast<int64_t>(count)) {
-        if (!fs.read_cluster(current, cluster_data))
+        if (!fs.read_cluster(current, cluster_data)) {
+            MemPool::free(cluster_data);
             return FAT_READ_ERROR;
+        }
 
         uint64_t cluster_off = offset - pos;
         uint64_t to_read = cluster_size - cluster_off;
@@ -403,14 +426,19 @@ int64_t read_file(Fat32Partition &fs, uint32_t first_cluster,
         if (total_read >= static_cast<int64_t>(count))
             break;
 
-        if (!fs.read_fat_entry(current, current))
+        if (!fs.read_fat_entry(current, current)) {
+            MemPool::free(cluster_data);
             return FAT_READ_ERROR;
+        }
         if (Fat32Partition::is_eof(current))
             break;
-        if (Fat32Partition::is_bad(current))
+        if (Fat32Partition::is_bad(current)) {
+            MemPool::free(cluster_data);
             return FAT_READ_ERROR;
+        }
     }
 
+    MemPool::free(cluster_data);
     return total_read;
 }
 
@@ -602,8 +630,6 @@ void name_to_short_name(const char *name, uint8_t out[11]) {
 // Directory entry manipulation
 // -------------------------------------------------------------------
 
-static constexpr uint32_t CLUSTER_BUF_SIZE = 32 * 1024;
-
 /// @brief Add a new directory entry to a directory cluster chain.
 /// @return true on success.
 bool add_dir_entry(Fat32Partition &fs, uint32_t dir_cluster,
@@ -622,11 +648,18 @@ bool add_dir_entry(Fat32Partition &fs, uint32_t dir_cluster,
     uint32_t entries_per_cluster =
         fs.bpb().sectors_per_cluster * fs.bpb().bytes_per_sector / 32;
 
-    uint8_t cluster_data[CLUSTER_BUF_SIZE];
+    uint32_t entry_cluster_size =
+        fs.bpb().sectors_per_cluster * fs.bpb().bytes_per_sector;
+    uint8_t *cluster_data =
+        static_cast<uint8_t *>(MemPool::alloc(entry_cluster_size));
+    if (!cluster_data)
+        return false;
 
     for (uint32_t ci = 0; ci < chain_len; ++ci) {
-        if (!fs.read_cluster(cluster_chain[ci], cluster_data))
+        if (!fs.read_cluster(cluster_chain[ci], cluster_data)) {
+            MemPool::free(cluster_data);
             return false;
+        }
 
         for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
             auto &entry = reinterpret_cast<DirEntryRaw &>(
@@ -634,19 +667,25 @@ bool add_dir_entry(Fat32Partition &fs, uint32_t dir_cluster,
             if (entry.name[0] == 0xE5 || entry.name[0] == 0x00) {
                 __builtin_memcpy(cluster_data + static_cast<size_t>(ei) * 32,
                                  &raw, sizeof(raw));
-                return fs.write_cluster(cluster_chain[ci], cluster_data);
+                bool ok = fs.write_cluster(cluster_chain[ci], cluster_data);
+                MemPool::free(cluster_data);
+                return ok;
             }
         }
     }
 
     uint32_t new_cluster = 0;
     uint32_t last_cluster = cluster_chain[chain_len - 1];
-    if (!fs.alloc_cluster(last_cluster, new_cluster))
+    if (!fs.alloc_cluster(last_cluster, new_cluster)) {
+        MemPool::free(cluster_data);
         return false;
+    }
 
-    __builtin_memset(cluster_data, 0, sizeof(cluster_data));
+    __builtin_memset(cluster_data, 0, entry_cluster_size);
     __builtin_memcpy(cluster_data, &raw, sizeof(raw));
-    return fs.write_cluster(new_cluster, cluster_data);
+    bool ok = fs.write_cluster(new_cluster, cluster_data);
+    MemPool::free(cluster_data);
+    return ok;
 }
 
 /// @brief Remove a directory entry by name (mark as free).
@@ -670,11 +709,18 @@ bool remove_dir_entry(Fat32Partition &fs, uint32_t dir_cluster,
     uint8_t short_name[11];
     name_to_short_name(name, short_name);
 
-    uint8_t cluster_data[CLUSTER_BUF_SIZE];
+    uint32_t rm_cluster_size =
+        fs.bpb().sectors_per_cluster * fs.bpb().bytes_per_sector;
+    uint8_t *cluster_data =
+        static_cast<uint8_t *>(MemPool::alloc(rm_cluster_size));
+    if (!cluster_data)
+        return false;
 
     for (uint32_t ci = 0; ci < chain_len; ++ci) {
-        if (!fs.read_cluster(cluster_chain[ci], cluster_data))
+        if (!fs.read_cluster(cluster_chain[ci], cluster_data)) {
+            MemPool::free(cluster_data);
             return false;
+        }
 
         for (uint32_t ei = 0; ei < entries_per_cluster; ++ei) {
             auto &entry = reinterpret_cast<DirEntryRaw &>(
@@ -695,9 +741,12 @@ bool remove_dir_entry(Fat32Partition &fs, uint32_t dir_cluster,
                 continue;
 
             entry.name[0] = 0xE5;
-            return fs.write_cluster(cluster_chain[ci], cluster_data);
+            bool ok = fs.write_cluster(cluster_chain[ci], cluster_data);
+            MemPool::free(cluster_data);
+            return ok;
         }
     }
+    MemPool::free(cluster_data);
     return false;
 }
 

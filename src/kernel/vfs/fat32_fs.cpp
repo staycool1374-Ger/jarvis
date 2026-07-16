@@ -274,7 +274,7 @@ static int fat32_dir_mkdir(Vnode &self, const char *name, uint16_t) {
     to_short_name_str(name, short_name, sizeof(short_name));
     fat32::DirEntry existing{};
     if (fat32::lookup_in_dir(*data->fs, data->cluster, short_name, existing))
-        return VFS_INVALID; // already exists
+        return errors::VFS_ERR_EXISTS; // already exists
 
     // Allocate a cluster for the new directory
     uint32_t new_cluster = 0;
@@ -300,17 +300,27 @@ static int fat32_dir_mkdir(Vnode &self, const char *name, uint16_t) {
     dotdot_entry.cluster_high =
         static_cast<uint16_t>((parent_cluster >> 16) & 0xFFFF);
 
-    // Write entries into the new directory's first data area
+    // Write entries into the new directory's first data area.
+    // Allocate the scratch buffer from the heap: a 32 KiB *stack* buffer here
+    // overflowed the shell's 64 KiB kernel stack (RSP dropped below its base
+    // during `mkdir /mnt/<name>`, wedging the scheduler). Only `cluster_size`
+    // bytes are ever used, so size the allocation to that.
     uint32_t cluster_size =
         data->fs->bpb().sectors_per_cluster * data->fs->bpb().bytes_per_sector;
-    uint8_t dir_data[32 * 1024];
+    uint8_t *dir_data = static_cast<uint8_t *>(MemPool::alloc(cluster_size));
+    if (!dir_data) {
+        fat32::free_cluster_chain(*data->fs, new_cluster);
+        return VFS_INVALID;
+    }
     __builtin_memset(dir_data, 0, cluster_size);
     __builtin_memcpy(dir_data, &dot_entry, sizeof(dot_entry));
     __builtin_memcpy(dir_data + 32, &dotdot_entry, sizeof(dotdot_entry));
     if (!data->fs->write_cluster(new_cluster, dir_data)) {
+        MemPool::free(dir_data);
         fat32::free_cluster_chain(*data->fs, new_cluster);
         return VFS_INVALID;
     }
+    MemPool::free(dir_data);
 
     // Add entry for new directory in the parent
     fat32::DirEntryRaw new_entry{};
