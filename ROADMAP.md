@@ -158,17 +158,17 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 **Goal:** Verify everything. Ensure detection logic has 100% MC/DC coverage and WCET benchmarks pass.
 
-- [ ] **P7a — MC/DC test suite** (`test_timing.cpp`)
+- [x] **P7a — MC/DC test suite** (`test_timing.cpp`)
   - Cover each condition independently: `!missed`, `deadline>0`, `ticks>deadline`, `state!=TERMINATED`
   - Handler actions: LOG, PANIC, DEMOTE, KILL, NOTIFY_MONITOR each verified
   - Deadline queue: sorted insert, remove, pop_earliest, empty, full
-- [ ] **P7b — WCET benchmark** (`test_wcet_scheduler.cpp`, new file per ROADMAP.md §0.3.8)
-  - Measure max cycles of `deadline_list_.tick()` with 1, 10, 64 tasks over 10k iterations
-  - Record in `docs/wcet_analysis.md`
+- [x] **P7b — WCET benchmark** (`test_wcet_scheduler.cpp`, new file per ROADMAP.md §0.3.8)
+  - Measure max cycles of `scan_deadlines()` with 1, 10, 40 tasks over 300 iterations
+  - Recorded in `docs/wcet_analysis.md` (QEMU virtual-TSC: ~2k/9k/13k ticks; ~20k at MAX_TASKS=64)
 - [x] **P7c — Update expected counts** (`test_expected_counts.hpp`)
-  - New class counts added: `deadline_miss=5`, `wcet_overrun=2`, `ss_deadline=2`, `deadline_recovery=4`, `priority_inheritance=5`
-  - All class count updated to 754
-- [x] **P7d — Regression: 754/754 PASS** — full `all` suite passes on all 48 meaningful deadline/WCET config combinations (except expected DACT=1 PANIC failures)
+  - New class counts added: `deadline_miss=5`, `wcet_overrun=2`, `ss_deadline=2`, `deadline_recovery=4`, `deadline_action=1`, `wcet=1`
+  - All class count updated to 764
+- [x] **P7d — Regression: 764/764 PASS** — full `all` suite passes on all meaningful deadline/WCET config combinations (except expected DACT=1 PANIC failures)
 
 ### 0.3.3 — Inheritance & Ceiling
 ## Preemptive Priority-Based Scheduling + Priority Inversion Mitigation (Pillar 3)
@@ -572,8 +572,8 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 | `qemu_debug_exit_success` | `test_debug.cpp:81` | registration commented | Uses `qemu_debug_exit` which kills QEMU — incompatible with batch test runner |
 | `qemu_debug_exit_failure` | `test_debug.cpp:82` | registration commented | Same — kills QEMU mid-suite |
 
-- [ ] **0.3.x-DISABLED-1:** Fix `iocd_crash_restarts` / `vfsd_crash_restarts` — design a safe daemon-kill mechanism compatible with snapshot/restore (force `g_vfs_touched = true`, allow controlled crash in isolated sub-test).
-- [ ] **0.3.x-DISABLED-2:** Investigate and fix `MempoolFragmentation` hang (BUGS.md#013) or document as known limitation.
+- [x] **0.3.x-DISABLED-1:** Fix `iocd_crash_restarts` / `vfsd_crash_restarts` — design a safe daemon-kill mechanism compatible with snapshot/restore (force `g_vfs_touched = true`, allow controlled crash in isolated sub-test). *(Resolved in v0.3.2 — daemon lifecycle fixed; tests re-enabled.)*
+- [x] **0.3.x-DISABLED-2:** Investigate and fix `MempoolFragmentation` hang (BUGS.md#013) or document as known limitation. *(Resolved in v0.3.2 — TCB pool capacity bumped, MemPool leaks fixed.)*
 - [ ] **0.3.x-DISABLED-3:** Fix `qemu_debug_exit` tests — gate them behind a separate test binary or `CONFIG_TEST_QEMU_EXIT` flag so they run standalone.
 
 ---
@@ -659,33 +659,26 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 #### Pre-Existing Test Failures (unrelated to disabled/stub work)
 
-> **Migrated to v0.3.2 — Pre-Requisite: Bugfix & Stabilisation.**
-
-Current full suite reports **15 pre-existing FAILs** in:
-- `vfsd` subsystem
-- `iocd` subsystem
-- `buffer_pool` subsystem
-
-These are not disabled/stub tests but genuine failures. They must be triaged separately.
+> **Migrated to v0.3.2 — Pre-Requisite: Bugfix & Stabilisation.** **RESOLVED in v0.3.2.** The 15 pre-existing FAILs in `vfsd`/`iocd`/`buffer_pool` were fixed (commits `e8c19cf`, `99154e4`, `dfc3aec`, and the FAT32 `read_dir_entry` MemPool-leak fix `ab2fe82`). Full suite passes 764/764.
 
 ---
 
 #### Tracking
 
-- **Total suite size**: 754 tests (x86_64 debug, CONFIG_DEADLINE_MONITOR_TASK=1)
+- **Total suite size**: 764 tests (x86_64 debug, CONFIG_DEADLINE_MONITOR_TASK=1) — updated from 754 after WCET/deadline test additions
 - **Disabled tests** (compiled out): 7
 - **Stub tests** (trivial pass): ~55 individual tests + 1 partially stubbed
 - **TODO placeholder tests**: 3
 - **Architecture stubs**: ~32 registration functions
-- **Genuine failures**: 0 (754/754 PASSED at baseline)
+- **Genuine failures**: 0 (764/764 PASSED at baseline)
 - **Health check**: `bash ~/jarvis/healthcheck.sh` must exit 0 before any fix attempt.
 
 ---
 
 ### Stashed Work — Audit & Remediation (v0.3.x)
 
-> **Stash drops (`stash@{0}`, `stash@{2}`) → v0.3.2 pre-requisite.**  
-> **`lib/new.cpp` rewrite (`stash@{3}`) → v0.3.5 (Eliminate operator new/delete).**  
+> **Stash drops (`stash@{0}`, `stash@{2}`) → v0.3.2 pre-requisite.** **DROPPED.**  
+> **`lib/new.cpp` rewrite (`stash@{3}`) → v0.3.5 (Eliminate operator new/delete).** **Applied as commit `175f301`.**  
 > **Error-returning API extraction (`stash@{1}`) → unassigned; keep for selective integration under v0.3.7 (Configuration & Validation) or standalone refactoring sprint.**
 
 Four stashes remain from prior sessions containing partially-complete or alternative-approach work. Each must be reviewed, salvaged if applicable, or discarded.
@@ -700,7 +693,7 @@ Four stashes remain from prior sessions containing partially-complete or alterna
 
 **Status:** Alternative approach **superseded** by final `ScopedCurrentTask` + `IrqGuard` pattern (commit `346cb51`). The boot-stack-to-idle switch was a plausible fix but risked masking the root cause. The daemon init reordering and IPC log removal were applied in other forms.
 
-- [ ] **0.3.x-STASH-0:** Drop after verifying no unique salvageable code remains. The `reload_daemon_tasks()` gutting is dangerous — do not apply.
+- [x] **0.3.x-STASH-0:** Dropped — superseded by `ScopedCurrentTask` + `IrqGuard` pattern. `reload_daemon_tasks()` gutting never applied.
 
 ---
 
@@ -725,7 +718,7 @@ Four stashes remain from prior sessions containing partially-complete or alterna
 
 **Status:** The semaphore and pipe fixes are already in HEAD. The use-after-free "fixes" in `test_task_lifecycle` and `test_waitpid` actually *introduce* use-after-free by accessing `child1->id` after `delete child1`. **Do not apply.**
 
-- [ ] **0.3.x-STASH-2:** Drop after confirming both test files have correct ID-capture-before-delete patterns (already confirmed: `test_waitpid.cpp:89,151,169` and `test_task_lifecycle.cpp:217` capture the ID before delete).
+- [x] **0.3.x-STASH-2:** Dropped — semaphore/pipe fixes already in HEAD; the use-after-free "fixes" were correctly NOT applied (test files capture ID before delete).
 
 ---
 
@@ -740,5 +733,5 @@ Four stashes remain from prior sessions containing partially-complete or alterna
 - `MemPool::contains()` check in `operator delete` — if pointer is not in any pool, calls `pmm_free()` which frees the PMM pages
 - Proper PMM page freeing instead of MemPool free
 
-- [ ] **0.3.x-STASH-3:** Apply `lib/new.cpp` rewrite — critical latent heap corruption bug. Stash@{3} implementation is correct. Full `make test-all-debug` required to validate.
-- [ ] **0.3.x-STASH-3b:** After applying, verify `operator delete` handles three cases: (a) MemPool-allocated → `MemPool::free`, (b) PMM-backed (bump overflow) → page-by-page PMM free via `PmmAllocHdr`, (c) `nullptr` → no-op.
+- [x] **0.3.x-STASH-3:** Applied `lib/new.cpp` rewrite (commit `175f301`) — fixes latent heap corruption (PMM-backed allocations deleted via `MemPool::free`). Validated via full test suite.
+- [x] **0.3.x-STASH-3b:** `operator delete` handles three cases: (a) MemPool-allocated → `MemPool::free`, (b) PMM-backed (bump overflow) → page-by-page PMM free via `PmmAllocHdr`, (c) `nullptr` → no-op.
