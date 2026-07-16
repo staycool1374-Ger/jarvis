@@ -485,6 +485,20 @@ void Scheduler::set_current_by_id(uint64_t id) noexcept {
             return;
         }
     }
+    // Fallback: the id is not in the registry (TCB may have been unlinked or
+    // current_task_ptr_ drifted).  Pin to the physically-running task by stack
+    // ownership so a stale current_task_ptr_ can never persist and desync the
+    // scheduler (which wedges the shell after `mkdir`).
+    uint64_t cur_rsp{};
+    asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
+    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
+        if (t && t->magic == TaskControlBlock::TCB_MAGIC && t->kernel_stack &&
+            t->kernel_stack_top && cur_rsp >= reinterpret_cast<uint64_t>(t->kernel_stack) &&
+            cur_rsp < t->kernel_stack_top) {
+            current_task_ptr_ = t;
+            return;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1115,18 +1129,14 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
     {
         uint64_t cur_rsp{};
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
+        TaskControlBlock *owner = nullptr;
+#ifndef CONFIG_DEBUG
         uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
+        // Release builds: only resolve the true RSP owner when the live RSP is
+        // NOT inside `current`'s own kernel stack (the rare drift case).  This
+        // keeps the common context-switch path O(1) with no per-switch task scan.
         if (!current->kernel_stack || !current->kernel_stack_top ||
             cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
-            // RSP mismatch: current_task_ptr_ has drifted onto a peer TCB
-            // (e.g. the yield_as test helper) while the runner is physically
-            // executing on its own kernel stack. Saving the live CPU state into
-            // `current` would corrupt the peer TCB and desync the scheduler
-            // (the `all` suite wedging at the context-switch tests).  Find the
-            // real running task by stack ownership and save into it instead,
-            // and correct current_task_ptr_ so the preemption bookkeeping
-            // (READY/enqueue) applies to the actual running task.
-            TaskControlBlock *owner = nullptr;
             for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
                 auto *tt = Scheduler::task_at(ti);
                 if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
@@ -1138,12 +1148,32 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                     break;
                 }
             }
-            if (owner && owner != current) {
-                current = owner;
-                Scheduler::set_current(*owner);
-            }
-            save_target = &TASK_STACK_PTR(current);
         }
+#else
+        // Debug builds: always resolve the physically-running task by stack
+        // ownership.  current_task_ptr_ can drift onto a peer TCB (context-switch
+        // bookkeeping desync) while the CPU is actually executing on another
+        // task's kernel stack; saving the live CPU state into the wrong TCB
+        // corrupts that peer's context.rsp and wedges the scheduler.  Always pin
+        // `current` to the true RSP owner so the save lands in the real runner.
+        // The unconditional O(n) scan is acceptable only under CONFIG_DEBUG.
+        for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
+            auto *tt = Scheduler::task_at(ti);
+            if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
+                continue;
+            uint64_t tb = reinterpret_cast<uint64_t>(tt->kernel_stack);
+            if (tt->kernel_stack && tt->kernel_stack_top &&
+                cur_rsp >= tb && cur_rsp < tt->kernel_stack_top) {
+                owner = tt;
+                break;
+            }
+        }
+#endif
+        if (owner && owner != current) {
+            current = owner;
+            Scheduler::set_current(*owner);
+        }
+        save_target = &TASK_STACK_PTR(current);
     }
 
 #ifdef CONFIG_DEBUG
@@ -1774,7 +1804,26 @@ extern "C" void scheduler_diag_pre_save() {
             kernel::Logger::print_hex(base);
             kernel::Logger::raw_write("-0x");
             kernel::Logger::print_hex(top);
-            kernel::Logger::raw_write("]\n");
+            kernel::Logger::raw_write("]");
+            // Scan all tasks to find the real owner of the live RSP.
+            kernel::Logger::raw_write(" owners: ");
+            for (uint64_t ti = 0; ti < kernel::Scheduler::task_count(); ++ti) {
+                auto *tt = kernel::Scheduler::task_at(ti);
+                if (!tt || tt->magic != kernel::TaskControlBlock::TCB_MAGIC)
+                    continue;
+                uint64_t tb =
+                    reinterpret_cast<uint64_t>(tt->kernel_stack);
+                if (rsp >= tb && rsp < tt->kernel_stack_top) {
+                    kernel::Logger::raw_write("T");
+                    kernel::Logger::print_dec(tt->id);
+                    kernel::Logger::raw_write("(0x");
+                    kernel::Logger::print_hex(tb);
+                    kernel::Logger::raw_write("-0x");
+                    kernel::Logger::print_hex(tt->kernel_stack_top);
+                    kernel::Logger::raw_write(") ");
+                }
+            }
+            kernel::Logger::raw_write("\n");
         }
     } else if (!cur) {
         kernel::Logger::raw_write("[DIAG] pre-save: idx=");
