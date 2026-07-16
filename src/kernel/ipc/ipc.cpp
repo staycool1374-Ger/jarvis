@@ -71,7 +71,7 @@ bool MessageQueue::push(const Message &msg) {
     msgs[tail] = msg;
     prio_bitmap |= (1ULL << msg.priority);
     tail = (tail + 1) % IPC_MAX_QUEUE_MSG;
-    ++count;
+    count = count + 1;
     return true;
 }
 
@@ -116,10 +116,10 @@ bool MessageQueue::pop(Message &out) {
         if (tail == 0) {
             tail = IPC_MAX_QUEUE_MSG - 1;
         } else {
-            --tail;
+            tail = tail - 1;
         }
     }
-    --count;
+    count = count - 1;
 
     // Rebuild priority bitmap
     prio_bitmap = 0;

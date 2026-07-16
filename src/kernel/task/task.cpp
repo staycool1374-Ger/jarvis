@@ -47,10 +47,16 @@ namespace kernel {
 
 /// @brief Trampoline wrapper for kernel task entry points.
 /// Set as RIP in the ISR save frame; RDI (first argument) is set to the
-/// actual entry function. After entry() returns, the task enters a hlt
-/// loop instead of crashing via ret-into-garbage.
+/// actual entry function. After entry() returns, the task is terminated so
+/// its state transitions to TERMINATED and any waiter (e.g. a test harness
+/// spinning on task->state) observes completion.  Previously this fell into
+/// an infinite hlt loop, leaving the task RUNNING forever and deadlocking
+/// any caller that waits for termination (ipc_blocking test hang).
 static void _task_trampoline(void (*entry)()) {
     entry();
+    auto *self = Scheduler::current_task();
+    if (self)
+        Scheduler::terminate(*self, 0);
     for (;;)
         arch::hlt();
 }

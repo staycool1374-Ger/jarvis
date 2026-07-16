@@ -1358,9 +1358,19 @@ void Scheduler::reschedule() noexcept {
         return;
     }
 
+    // A switch may already be pending (deferred) from a prior reschedule()
+    // whose timer ISR has not yet applied it (e.g. when the caller disabled
+    // IRQs via yield_as() between the previous reschedule and now).  Do NOT
+    // skip — the latest reschedule() expresses the most recent scheduling
+    // intent and must override the stale pending switch; the ISR applies
+    // whatever was written last.  Consuming the stale pending slot here lets
+    // the new switch be set up unconditionally.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != nullptr) {
-        scheduler_lock_.unlock();
-        return;
+        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
     }
 
     auto *next = next_task();

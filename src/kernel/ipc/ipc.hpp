@@ -41,9 +41,17 @@ enum IpcFlags : uint64_t {
 struct MessageQueue {
     Message msgs[IPC_MAX_QUEUE_MSG];
     uint64_t prio_bitmap; ///< Bit n set = at least one msg at priority n
-    size_t head;
-    size_t tail;
-    size_t count;
+    // NOTE: head/tail/count are accessed from a task that busy-waits on
+    // is_empty()/is_full() across reschedule() calls.  reschedule() only
+    // *defers* the context switch (the peer task's push/pop happens via an ISR
+    // context-switch, invisible to the compiler's data-flow analysis for the
+    // current function), so a plain field would be hoisted/cached by the
+    // optimizer and the waiter would never observe the peer's write — wedging
+    // IPC send_sync (ipc_blocking test hang).  std::atomic (relaxed is enough
+    // on the single kernel stack / UP) forces a fresh load on every access.
+    volatile size_t head;
+    volatile size_t tail;
+    volatile size_t count;
 
     TaskControlBlock *blocked_senders_head;
     TaskControlBlock *blocked_senders_tail;

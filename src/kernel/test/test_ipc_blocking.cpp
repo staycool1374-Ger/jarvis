@@ -251,29 +251,28 @@ JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
     Scheduler::add_task(*kernel_task);
 
     auto *original = Scheduler::current_task();
-    {
-        arch::IrqGuard guard;
-        // Do NOT yield_as(*kernel_task): next_task() skips the current task, so
-        // that would make the only test task current and never dispatch it.  A
-        // plain reschedule() picks the higher-priority kernel task (11 > 10).
+    // Do NOT yield_as(*kernel_task): next_task() skips the current task, so
+    // that would make the only test task current and never dispatch it.  A
+    // plain reschedule() picks the higher-priority kernel task (11 > 10).
+    Scheduler::reschedule();
+
+    // Drive the kernel task's self-IPC handshake to completion.
+    // reschedule() only defers the switch (it happens in the next timer
+    // ISR), so IRQs MUST stay enabled here for the timer ISR to apply the
+    // deferred context switch; an IrqGuard would starve the switch and the
+    // task would never run.  Wait (unbounded) until the task terminates.
+    while (kernel_task->state != TaskState::TERMINATED) {
         Scheduler::reschedule();
-
-        // Drive the kernel task's self-IPC handshake to completion.
-        // reschedule() only defers the switch (it happens in the next timer
-        // ISR), so wait (unbounded) until the task has run to completion.
-        while (kernel_task->state != TaskState::TERMINATED) {
-            Scheduler::reschedule();
-        }
-
-        Scheduler::set_current(*original);
-
-        // Kernel task should have run to completion.
-        JARVIS_ASSERT(kernel_task->state == TaskState::TERMINATED);
-
-        Scheduler::remove_task(*kernel_task);
-        kernel_task->cleanup();
-        delete kernel_task;
     }
+
+    Scheduler::set_current(*original);
+
+    // Kernel task should have run to completion.
+    JARVIS_ASSERT(kernel_task->state == TaskState::TERMINATED);
+
+    Scheduler::remove_task(*kernel_task);
+    kernel_task->cleanup();
+    delete kernel_task;
     JARVIS_TEST_PASS();
 }
 
