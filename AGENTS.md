@@ -34,6 +34,57 @@ If the branch does not match the intended role, do not proceed.
 - Fix test classes **one at a time, in order**. Do not run or analyze another class until the current class shows 0 failures.
 - Exception: the user explicitly tells you to skip a class or change order.
 
+### Mandatory Bugfix Sequence (ordered — do NOT skip steps)
+This sequence is the concrete operationalization of Hypothesis-First. Follow it
+top-to-bottom for EVERY bug. Do not write or edit code before Step 4 is
+evidence-backed. Do not stack changes across steps.
+
+1. **Clarify the nature of the bug** — classify it before touching anything:
+   memory corruption, stack overflow / wrong-stack, race condition /
+   reentrancy, scheduler / context-switch corruption, logic error, etc.
+   The class dictates which subsystems and which *verification tool* apply
+   (GDB watchpoints for corruption/drift, serial logging for timing/race,
+   targeted asserts for logic).
+
+2. **Read the specifications in the affected area** — gather a COMPLETE
+   picture of the actual current state before forming any opinion:
+   - scheduler / task model (`src/kernel/task/scheduler.cpp`,
+     `sporadic_server.cpp`, `task_control_block`),
+   - concurrency primitives (guards / mutex / spinlocks / atomics),
+   - memory management (`MemPool`, PMM, kernel heap, stack model),
+   - the specific subsystem implicated by the symptom.
+   Read the code as it IS, not as assumed. Record the observed facts.
+
+3. **Form a hypothesis AND a validation plan** — only after Step 2:
+   - State one specific root-cause hypothesis (not a list of maybes).
+   - State HOW you will prove/disprove it deterministically (e.g. a GDB
+     watchpoint on `current_task_ptr_`, a breakpoint at `switch_to_task`,
+     a serial trace of `pre-save` RSP vs stack base). The validation must be
+     observable evidence, not "it booted once".
+
+4. **Execute the validation plan** — gather the evidence. If the hypothesis
+   is DISPROVEN, go back to Step 2/3 (new hypothesis), do NOT edit code.
+   Only when evidence CONFIRMS the hypothesis, proceed.
+
+5. **Write a fix plan with caveats & side-conditions** — read MORE of the
+   surrounding code to enumerate what the change can break: callers, the
+   ready-queue ordering, priority/effective-priority interactions, IRQ
+   safety, ResourceTracker accounting. State the caveats explicitly.
+
+6. **Validate the fix statically** — reason through every caller and every
+   path the changed code touches; confirm no new invariant violation.
+   (Build must be clean: `make build`.)
+
+7. **Implement the bugfix and validate against a test** — write the minimal
+   targeted change, then validate against a given test class OR a newly
+   created test that reproduces the bug deterministically. Confirm 0 failures
+   and no ResourceTracker leak delta.
+
+8. **Revert discipline** — if the change does not fix the failure, REVERT it
+   (git checkout / git revert) before forming the next hypothesis. Never
+   leave a disproven change in the tree. After 3 failed attempts, HALT and
+   present the evidence to the user.
+
 ### Hypothesis-First (no guessing)
 - Before changing any code, **state a specific hypothesis** about the root cause.
 - **Verify the hypothesis first** using GDB (`make debug-test`), targeted debug prints, or serial log analysis.

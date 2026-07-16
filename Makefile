@@ -849,7 +849,10 @@ debug-shell:
 	    fconfigure stdout -buffering none; \
 	    set timeout 120; \
 	    spawn $(QEMU_SYSTEM) $(QEMU_FLAGS) -s -S -display none -no-reboot $(QEMU_DEBUG_EXIT); \
-	    after 2000; \
+	    for {set i 0} {$$i < 8} {incr i} { \
+	        if {[catch {exec nc -z localhost 1234}] == 0} { break }; \
+	        after 1000; \
+	    }; \
 	    exec $(GDB) build/kernel-debug.elf -batch -x $(_GDB) &; \
 	    expect { \
 	        -re {jarvis\$$ } { } \
