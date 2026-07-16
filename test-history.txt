@@ -1,0 +1,4 @@
+# Test Result History
+# Format: <YYYY-MM-DD HH:MM:SS> <test-class> PASSED: <n> FAILED: <n> TIME: <consumed-time> [STATUS: <abnormal>]
+2026-07-16 12:30:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: 648ms
+2026-07-16 12:35:00 all PASSED: 0 FAILED: 0 TIME: 225s STATUS: PANIC

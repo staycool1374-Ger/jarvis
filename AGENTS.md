@@ -28,6 +28,17 @@ If the branch does not match the intended role, do not proceed.
 - Use `todowrite`, never `todo`
 - Sudo password `junior` only when strictly required (e.g. ISO generation)
 
+## Test Result History (MANDATORY)
+- After EVERY test-class run (any `make execute-test x86_64 <build> <class>`, including `selftest`, `all`, `none`, or any named class), you MUST append exactly one row to `test-history.txt` in the workspace root.
+- Each row format (single line, space-separated):
+  `<YYYY-MM-DD HH:MM:SS> <test-class> PASSED: <n> FAILED: <n> TIME: <consumed-time>`
+  - `<test-class>` is the class argument passed to `make execute-test` (e.g. `ipc_blocking`, `all`, `selftest`).
+  - `<consumed-time>` is the wall-clock time the test invocation took (e.g. `1894ms` or `225s`); record the value reported by the harness if present, otherwise the measured elapsed time.
+  - If the run ends without a PASS/FAIL summary (e.g. TIMEOUT / watchdog / kernel panic), record `PASSED: 0 FAILED: 0` and `TIME: <elapsed>` and note the abnormal termination in the row (append `STATUS: <TIMEOUT|PANIC|...>`).
+- Example row:
+  `2026-07-16 14:03:22 ipc_blocking PASSED: 4 FAILED: 0 TIME: 1894ms`
+- Never skip this step. Create `test-history.txt` if it does not exist.
+
 ## Debugging Protocol (strict)
 
 ### Per-Class Fix Discipline
