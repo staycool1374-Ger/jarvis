@@ -2,3 +2,9 @@
 # Format: <YYYY-MM-DD HH:MM:SS> <test-class> PASSED: <n> FAILED: <n> TIME: <consumed-time> [STATUS: <abnormal>]
 2026-07-16 12:30:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: 648ms
 2026-07-16 12:35:00 all PASSED: 0 FAILED: 0 TIME: 225s STATUS: PANIC
+2026-07-16 13:10:00 all PASSED: 0 FAILED: 0 TIME: 253s STATUS: TIMEOUT(PANIC@259 UAF-in-ready-queue, 212 DIAG-UAF hits)
+2026-07-16 13:40:00 all PASSED: 0 FAILED: 0 TIME: 230s STATUS: TIMEOUT(GPF@413 in remove_task deref dangling block_on_queue, UAF=0)
+2026-07-16 14:05:00 all PASSED: 0 FAILED: 0 TIME: 227s STATUS: TIMEOUT(GPF@413 remove_task deref dangling block_on_queue pt2, UAF=0)
+2026-07-16 14:35:00 all PASSED: 0 FAILED: 0 TIME: 227s STATUS: TIMEOUT(hang after 79/764 IpcBidirectionalSendSync cooperative send_sync handshake; UAF=0, no panic)
+2026-07-16 15:10:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: 1339ms
+2026-07-16 15:30:00 ipc_blocking PASSED: 3 FAILED: 1 TIME: 1339ms STATUS: REGRESSION(UAF-fix attempt with is_valid guard in set_task_ready/enqueue_ready dropped a legit wakeup in test2 ipc_send_sync_was_blocked_restores_state; REVERTED scheduler.cpp UAF attempt, restored 4/4)
