@@ -36,6 +36,11 @@ class TaskQueue {
     TaskControlBlock *head() const noexcept {
         return head_;
     }
+
+    /// @brief Returns true if the given TCB is physically linked in this
+    ///        queue (walks the intrusive list).  Used by diagnostics to detect
+    ///        in_ready_queue_ flag vs physical-link desync.
+    bool contains(const TaskControlBlock &tcb) const noexcept;
     /// @brief Returns the tail of the queue (for append), or nullptr.
     TaskControlBlock *tail() const noexcept {
         return tail_;

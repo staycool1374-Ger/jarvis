@@ -85,4 +85,12 @@ void TaskQueue::remove(TaskControlBlock &tcb) noexcept {
         --count_;
 }
 
+bool TaskQueue::contains(const TaskControlBlock &tcb) const noexcept {
+    for (TaskControlBlock *p = head_; p != nullptr; p = p->runq_next_) {
+        if (p == &tcb)
+            return true;
+    }
+    return false;
+}
+
 } // namespace kernel

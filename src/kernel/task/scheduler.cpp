@@ -28,6 +28,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/debug/ipc_sched_trace.hpp>
 
 extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
@@ -51,6 +52,11 @@ extern "C" void debug_write_dec(uint64_t value);
 #include <signal.hpp>
 #include <logger.hpp>
 #include <assert.hpp>
+
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+// Wedge diagnostics for deferred-switch / ready-queue desync analysis.
+static uint64_t s_wedge_emitted_ = 0;      // throttle [WEDGE] emissions
+#endif
 
 extern "C" {
 uint64_t scheduler_dummy_save_rsp = 0;
@@ -569,6 +575,74 @@ void Scheduler::on_tick() noexcept {
 
     bool lock_acquired = scheduler_lock_.try_lock();
     if (lock_acquired) {
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+        // H2 wedge detector: scan every task for a READY/RUNNING task whose
+        // in_ready_queue_ flag says it is in the runq but which is NOT
+        // physically linked in any priority queue. Such a desync is normally
+        // healed by next_task()'s rebuild, but that rebuild is only reached
+        // when rate_monotonic_schedule is NOT gated by a stale pending switch.
+        // If the orphan persists while save_rsp_to != 0, we have the
+        // self-deadlock signature.  Throttled to avoid serial flood.
+        {
+            uint64_t phys_rsp{};
+            asm volatile("mov %%rsp, %0" : "=r"(phys_rsp));
+            const uint64_t save_to = reinterpret_cast<uint64_t>(
+                __atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE));
+            bool orphan_found = false;
+            for (auto *t = all_tasks_.first_ptr(); t;
+                 t = all_tasks_.next_ptr(t)) {
+                if (t->magic != TaskControlBlock::TCB_MAGIC)
+                    continue;
+                if (t == idle_task_ || t == current_task_ptr_)
+                    continue;
+                if (t->state != TaskState::READY &&
+                    t->state != TaskState::RUNNING)
+                    continue;
+                if (!t->in_ready_queue_)
+                    continue;
+                bool phys = false;
+                for (uint64_t p = 0;
+                     p <= CONFIG_PRIORITY_CEILING && !phys; ++p) {
+                    if (ready_queue_.queue(p).contains(*t))
+                        phys = true;
+                }
+                if (!phys) {
+                    orphan_found = true;
+                    if (s_wedge_emitted_ < 8) {
+                        IPC_SCHED_TRACE(
+                            "[WEDGE]", "orphan=", t->id, "st=",
+                            static_cast<uint64_t>(t->state), "inrq=",
+                            t->in_ready_queue_ ? 1u : 0u, "phys=", 0u);
+                    }
+                }
+            }
+            if (orphan_found && s_wedge_emitted_ < 8) {
+                ++s_wedge_emitted_;
+                char wb[128];
+                int wp = 0;
+                kernel::debug::fmt_str(wb, wp, "[WEDGE] save_to=");
+                wp = kernel::debug::fmt_u64(wb, wp, save_to);
+                kernel::debug::fmt_str(wb, wp, " stale_ticks=");
+                wp = kernel::debug::fmt_u64(wb, wp, 0u);
+                kernel::debug::fmt_str(wb, wp, " cur=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp,
+                    (current_task_ptr_
+                         ? static_cast<uint64_t>(current_task_ptr_->id)
+                         : 0u));
+                kernel::debug::fmt_str(wb, wp, " bm_lo=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp, ready_queue_.bitmap().raw_lo());
+                kernel::debug::fmt_str(wb, wp, " bm_hi=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp, ready_queue_.bitmap().raw_hi());
+                kernel::debug::fmt_str(wb, wp, " physrsp=");
+                wp = kernel::debug::fmt_u64(wb, wp, phys_rsp);
+                wb[wp] = 0;
+                kernel::debug::trace(wb);
+            }
+        }
+#endif
 #if CONFIG_DEADLINE_MONITOR_TASK
         if (!s_test_active_) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
@@ -1258,7 +1332,7 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 // exclude it as `current` and then fall through to idle (which
                 // would permanently starve the live runner).  A RUNNING task has
                 // no valid iret frame (its stack slot at context.rsp+136 is live
-                // data), so we must NOT iretq into it — just keep it running.
+                // data, so we must NOT iretq into it — just keep it running.
                 Scheduler::set_current(*next);
                 next->state = TaskState::RUNNING;
                 next->in_ready_queue_ = false;
@@ -1273,6 +1347,11 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
     if (next->page_table_) {
         __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
                          __ATOMIC_RELEASE);
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+        IPC_SCHED_TRACE("[SW]", "next=", next->id, "cr3=",
+                        next->page_table_, "rsp=", TASK_STACK_PTR(next), "x=",
+                        0u);
+#endif
 #if defined(CONFIG_ARCH_X86_64)
         arch::GDT::set_tss_rsp0(next->kernel_stack_top);
 #endif

@@ -23,6 +23,7 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/debug/ipc_sched_trace.hpp>
 #include <kernel/arch/io.hpp>
 #include <assert.hpp>
 
@@ -185,6 +186,10 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
     if (!ok)
         return false;
 
+    IPC_SCHED_TRACE("[SEND]", "to=", dest_id, "from=",
+                    (Scheduler::current_task() ? Scheduler::current_task()->id : 0),
+                    "ty=", msg.type, "q=", tcb->msg_queue->count);
+
     // Wake a task blocked in send_sync() waiting for a reply on its own queue.
     // send_sync sets reply_wait and blocks; without this, the reply would sit
     // in the queue and the sender would hang forever (only rescued by a
@@ -192,6 +197,10 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
     if (tcb->reply_wait) {
         tcb->reply_wait = false;
         if (tcb->state == TaskState::BLOCKED) {
+            IPC_SCHED_TRACE("[WAKE]", "dest=", dest_id, "st=",
+                            static_cast<uint64_t>(tcb->state), "inrq=",
+                            tcb->in_ready_queue_ ? 1u : 0u, "q=",
+                            tcb->msg_queue->count);
             Scheduler::set_task_ready(*tcb);
             tcb->remaining_ticks = tcb->period_ticks;
         }
@@ -238,11 +247,28 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
         return false;
 
     bool was_blocked = false;
+    IPC_SCHED_TRACE("[SYNC]", "cur=", cur->id, "dest=", dest_id, "ty=",
+                    msg.type, "q=", cur->msg_queue->count);
     while (cur->msg_queue->is_empty()) {
-        // If destination died while we were waiting for a reply, bail out
+        // If destination died while we were waiting for a reply, bail out.
+        // BUT: a reply may already be queued (the peer delivered its reply and
+        // then terminated normally).  In that case the IPC contract is
+        // satisfied — a reply is waiting in our own queue — so we must NOT
+        // discard it; break out and let the pop() below consume it.  Only a
+        // genuinely empty queue means the peer died before replying.
         auto *dest = Scheduler::find_task(dest_id);
-        if (!dest || dest->state == TaskState::TERMINATED)
-            return false;
+        if (!dest || dest->state == TaskState::TERMINATED) {
+            if (cur->msg_queue->is_empty()) {
+                IPC_SCHED_TRACE("[SYNC-FAIL]", "dest-gone-empty cur=", cur->id,
+                                "dest=", dest_id, "q=", cur->msg_queue->count,
+                                "x=", 0u);
+                return false;
+            }
+            IPC_SCHED_TRACE("[SYNC-FAIL]", "dest-gone-reply cur=", cur->id,
+                            "dest=", dest_id, "q=", cur->msg_queue->count,
+                            "x=", 0u);
+            break;
+        }
 
         cur->reply_wait = true;
         cur->state = TaskState::BLOCKED;

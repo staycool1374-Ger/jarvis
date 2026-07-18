@@ -8,3 +8,23 @@
 2026-07-16 14:35:00 all PASSED: 0 FAILED: 0 TIME: 227s STATUS: TIMEOUT(hang after 79/764 IpcBidirectionalSendSync cooperative send_sync handshake; UAF=0, no panic)
 2026-07-16 15:10:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: 1339ms
 2026-07-16 15:30:00 ipc_blocking PASSED: 3 FAILED: 1 TIME: 1339ms STATUS: REGRESSION(UAF-fix attempt with is_valid guard in set_task_ready/enqueue_ready dropped a legit wakeup in test2 ipc_send_sync_was_blocked_restores_state; REVERTED scheduler.cpp UAF attempt, restored 4/4)
+2026-07-18 03:00:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms STATUS: H1-REPLY-LOSS-FIX-APPLIED (ipc.cpp send_sync now pops delivered reply when peer terminated after replying; LEAK:Tasks-3 gone; diag harness enabled)
+2026-07-18 03:02:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:03:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:04:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:05:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:06:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:07:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=SIGSEGV task6 user lambda RIP=kernel-addr CR3=0x1909000 kernel-PML4, deferred-switch CR3/RSP pair race)
+2026-07-18 03:08:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:09:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:10:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:11:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:12:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=SIGSEGV)
+2026-07-18 03:13:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=SIGSEGV)
+2026-07-18 03:14:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:15:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock next=6 repeated 634k times, task6 user self-IPC never completes)
+2026-07-18 03:16:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock)
+2026-07-18 03:17:00 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~1100ms
+2026-07-18 03:18:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=SIGSEGV)
+2026-07-18 03:19:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock)
+2026-07-18 03:20:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock)
