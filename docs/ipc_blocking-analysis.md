@@ -49,16 +49,32 @@ the deferred context-switch machinery. ~45% of runs hang.
   be consumed (made it WORSE — deadlock under IRQs-off `yield_as`);
   (3) consume pending switch in the `next_is_runner` early-return.
 
-### Subtype B — live-lock (task 6 never completes)
-- `scheduler.cpp:[SW] next=6 cr3=26251264 rsp=18446603336247414608` repeats
-  **634,962 times** with an IDENTICAL constant RSP — task 6 is selected as
-  `next` every tick, switched to, runs one step, yields/reschedules back to the
-  same point, never advances. No SIGSEGV.
-- Task 6 does `IPC::send(self_id, msg)` then `IPC::recv(out)`. The self-sent
-  message should be in its own queue → `recv` pops immediately → completes. The
-  live-lock means `recv` does NOT see the message and blocks (hlt-loops) forever,
-  while `next_task()` keeps returning the blocked-but-still-"ready" task 6
-  (`in_ready_queue_` desync, INV-2).
+### Subtype B — live-lock / freeze (current_task_ptr_ lag + runq desync)
+- **Captured deterministically in ONE run** (saved as
+  `docs/ipc_blocking-c-baseline.log` via the `[STALL]` watchdog). After test 2
+  PASSES, the system freezes; `[STALL] ticks_since_switch=7561 cur=1 bm_lo=0`
+  with the full task dump:
+  ```
+    T5 st=2 inrq=0 rq=0 eff=127 pg=0          (TERMINATED)
+    T2 st=2 inrq=0 rq=0 eff=80 pg=24305664    (TERMINATED)
+    T3 st=2 inrq=0 rq=0 eff=70 pg=24494080    (TERMINATED)
+    T6 st=1 inrq=0 rq=0 eff=11 pg=26251264    (RUNNING — user task, orphaned)
+    T1 st=0 inrq=0 rq=0 eff=10 pg=0           (READY — harness = current)
+    T0 st=0 inrq=0 rq=0 eff=0 pg=0            (idle)
+  ```
+- **Root cause (C, proven):** `bm_lo=0` (ready-queue bitmap EMPTY) yet TWO tasks
+  are `RUNNING` (task 1 = harness = `current_task_ptr_`, and task 6 = the user
+  task). Task 6 is RUNNING with `inrq=0` — it is the **physically-executing**
+  task but `current_task_ptr_` points at task 1. Because `next_task()` excludes
+  `current` (task 1) and the bitmap is empty, it returns idle forever; task 6 is
+  never re-selected. This is the **`current_task_ptr_` lag** from the split-phase
+  deferred switch (the ISR updates `current_task_ptr_` only when it applies the
+  RSP swap, which never happened for task 6) combined with the runq being empty
+  while a real RUNNING task exists (INV-2 violation: a live task is not in the
+  runq and not `current`).
+- The earlier "634,962 × `[SW] next=6` constant-RSP" observation was the same
+  root manifesting as a tight live-lock (task 6 repeatedly selected) rather than
+  a full freeze; both are the `current_task_ptr_`/runq desync.
 
 ### Underlying design issue
 `create_user` (`task.cpp:379,392`) sets the user task's RIP/RDI to the

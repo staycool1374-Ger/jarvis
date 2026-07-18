@@ -56,6 +56,7 @@ extern "C" void debug_write_dec(uint64_t value);
 #if defined(CONFIG_DEBUG_IPC_SCHED)
 // Wedge diagnostics for deferred-switch / ready-queue desync analysis.
 static uint64_t s_wedge_emitted_ = 0;      // throttle [WEDGE] emissions
+static uint64_t s_last_switch_tick_ = 0;   // last tick an actual switch ran
 #endif
 
 extern "C" {
@@ -576,18 +577,128 @@ void Scheduler::on_tick() noexcept {
     bool lock_acquired = scheduler_lock_.try_lock();
     if (lock_acquired) {
 #if defined(CONFIG_DEBUG_IPC_SCHED)
-        // H2 wedge detector: scan every task for a READY/RUNNING task whose
-        // in_ready_queue_ flag says it is in the runq but which is NOT
-        // physically linked in any priority queue. Such a desync is normally
-        // healed by next_task()'s rebuild, but that rebuild is only reached
-        // when rate_monotonic_schedule is NOT gated by a stale pending switch.
-        // If the orphan persists while save_rsp_to != 0, we have the
-        // self-deadlock signature.  Throttled to avoid serial flood.
+        // Universal hang detector: if no actual context switch has occurred for
+        // STALL_LIMIT ticks while a non-idle task is still runnable, the
+        // scheduler is frozen (any of: deferred-switch CR3 race, blocked-in-runq
+        // live-lock, stale-trigger self-deadlock).  Dump full state and halt so
+        // ONE run yields complete evidence.
+        {
+            const uint64_t now = arch::Timer::ticks();
+            if (s_last_switch_tick_ == 0)
+                s_last_switch_tick_ = now; // prime on first tick
+            bool runnable = false;
+            for (auto *t = all_tasks_.first_ptr(); t && !runnable;
+                 t = all_tasks_.next_ptr(t)) {
+                if (t->magic != TaskControlBlock::TCB_MAGIC)
+                    continue;
+                if (t == idle_task_)
+                    continue;
+                if (t->state == TaskState::READY ||
+                    t->state == TaskState::RUNNING || t->in_ready_queue_)
+                    runnable = true;
+            }
+            const uint64_t since_switch =
+                (now > s_last_switch_tick_) ? (now - s_last_switch_tick_) : 0;
+            if (runnable && since_switch > 300 && s_wedge_emitted_ < 8) {
+                ++s_wedge_emitted_;
+                char wb[128];
+                int wp = 0;
+                kernel::debug::fmt_str(wb, wp, "[STALL] ticks_since_switch=");
+                wp = kernel::debug::fmt_u64(wb, wp, since_switch);
+                kernel::debug::fmt_str(wb, wp, " cur=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp,
+                    (current_task_ptr_
+                         ? static_cast<uint64_t>(current_task_ptr_->id)
+                         : 0u));
+                kernel::debug::fmt_str(wb, wp, " bm_lo=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp, ready_queue_.bitmap().raw_lo());
+                kernel::debug::fmt_str(wb, wp, " bm_hi=");
+                wp = kernel::debug::fmt_u64(
+                    wb, wp, ready_queue_.bitmap().raw_hi());
+                wb[wp] = 0;
+                kernel::debug::trace(wb);
+                for (auto *t = all_tasks_.first_ptr(); t;
+                     t = all_tasks_.next_ptr(t)) {
+                    if (t->magic != TaskControlBlock::TCB_MAGIC)
+                        continue;
+                    char tb[128];
+                    int tp = 0;
+                    kernel::debug::fmt_str(tb, tp, "  T");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->id);
+                    kernel::debug::fmt_str(tb, tp, " st=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, static_cast<uint64_t>(t->state));
+                    kernel::debug::fmt_str(tb, tp, " inrq=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, t->in_ready_queue_ ? 1u : 0u);
+                    kernel::debug::fmt_str(tb, tp, " rq=");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->rq_priority_);
+                    kernel::debug::fmt_str(tb, tp, " eff=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, effective_priority(t));
+                    kernel::debug::fmt_str(tb, tp, " pg=");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->page_table_);
+                    tb[tp] = 0;
+                    kernel::debug::trace(tb);
+                }
+                kernel::debug::trace("[STALL] HALT");
+                arch::cli();
+                for (;;)
+                    arch::hlt();
+            }
+        }
+        // H2 diagnostic detectors.  Both halt the CPU on catch so a SINGLE run
+        // freezes QEMU with the full serial evidence (no brute-forcing).
         {
             uint64_t phys_rsp{};
             asm volatile("mov %%rsp, %0" : "=r"(phys_rsp));
             const uint64_t save_to = reinterpret_cast<uint64_t>(
                 __atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE));
+
+            // --- (C) INV-2 desync: a BLOCKED/WAITING task still in the runq
+            //     (in_ready_queue_==1).  next_task() will keep selecting it,
+            //     producing the live-lock (constant RSP, next=X repeated).
+            bool blocked_in_runq = false;
+            for (auto *t = all_tasks_.first_ptr(); t;
+                 t = all_tasks_.next_ptr(t)) {
+                if (t->magic != TaskControlBlock::TCB_MAGIC)
+                    continue;
+                if (t == idle_task_)
+                    continue;
+                if (t->state == TaskState::BLOCKED ||
+                    t->state == TaskState::WAITING) {
+                    if (t->in_ready_queue_) {
+                        blocked_in_runq = true;
+                        if (s_wedge_emitted_ < 8) {
+                            char wb[128];
+                            int wp = 0;
+                            kernel::debug::fmt_str(wb, wp,
+                                                  "[WEDGE] blocked-in-runq id=");
+                            wp = kernel::debug::fmt_u64(wb, wp, t->id);
+                            kernel::debug::fmt_str(wb, wp, " st=");
+                            wp = kernel::debug::fmt_u64(
+                                wb, wp,
+                                static_cast<uint64_t>(t->state));
+                            kernel::debug::fmt_str(wb, wp, " inrq=1 phys=");
+                            bool phys = false;
+                            for (uint64_t p = 0;
+                                 p <= CONFIG_PRIORITY_CEILING && !phys; ++p) {
+                                if (ready_queue_.queue(p).contains(*t))
+                                    phys = true;
+                            }
+                            wp = kernel::debug::fmt_u64(wb, wp,
+                                                        phys ? 1u : 0u);
+                            wb[wp] = 0;
+                            kernel::debug::trace(wb);
+                        }
+                    }
+                }
+            }
+
+            // --- orphan: READY/RUNNING task flagged in_ready_queue_ but not
+            //     physically linked in any priority queue.
             bool orphan_found = false;
             for (auto *t = all_tasks_.first_ptr(); t;
                  t = all_tasks_.next_ptr(t)) {
@@ -616,14 +727,14 @@ void Scheduler::on_tick() noexcept {
                     }
                 }
             }
-            if (orphan_found && s_wedge_emitted_ < 8) {
+
+            if ((orphan_found || blocked_in_runq) && s_wedge_emitted_ < 8) {
                 ++s_wedge_emitted_;
+                // Full dump then halt so this ONE run is sufficient evidence.
                 char wb[128];
                 int wp = 0;
                 kernel::debug::fmt_str(wb, wp, "[WEDGE] save_to=");
                 wp = kernel::debug::fmt_u64(wb, wp, save_to);
-                kernel::debug::fmt_str(wb, wp, " stale_ticks=");
-                wp = kernel::debug::fmt_u64(wb, wp, 0u);
                 kernel::debug::fmt_str(wb, wp, " cur=");
                 wp = kernel::debug::fmt_u64(
                     wb, wp,
@@ -640,6 +751,35 @@ void Scheduler::on_tick() noexcept {
                 wp = kernel::debug::fmt_u64(wb, wp, phys_rsp);
                 wb[wp] = 0;
                 kernel::debug::trace(wb);
+                // Per-task summary.
+                for (auto *t = all_tasks_.first_ptr(); t;
+                     t = all_tasks_.next_ptr(t)) {
+                    if (t->magic != TaskControlBlock::TCB_MAGIC)
+                        continue;
+                    char tb[128];
+                    int tp = 0;
+                    kernel::debug::fmt_str(tb, tp, "  T");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->id);
+                    kernel::debug::fmt_str(tb, tp, " st=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, static_cast<uint64_t>(t->state));
+                    kernel::debug::fmt_str(tb, tp, " inrq=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, t->in_ready_queue_ ? 1u : 0u);
+                    kernel::debug::fmt_str(tb, tp, " rq=");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->rq_priority_);
+                    kernel::debug::fmt_str(tb, tp, " eff=");
+                    tp = kernel::debug::fmt_u64(
+                        tb, tp, effective_priority(t));
+                    kernel::debug::fmt_str(tb, tp, " pg=");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->page_table_);
+                    tb[tp] = 0;
+                    kernel::debug::trace(tb);
+                }
+                kernel::debug::trace("[WEDGE] HALT");
+                arch::cli();
+                for (;;)
+                    arch::hlt();
             }
         }
 #endif
@@ -1988,4 +2128,7 @@ extern "C" void scheduler_on_context_switch() {
     __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX,
                      __ATOMIC_RELEASE);
     kernel::Scheduler::set_current_by_id(id);
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    s_last_switch_tick_ = arch::Timer::ticks();
+#endif
 }
