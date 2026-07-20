@@ -46,6 +46,71 @@ using namespace kernel;
 
 #if !defined(CONFIG_ARCH_RISCV64)
 
+#if defined(CONFIG_ARCH_X86_64)
+// -------------------------------------------------------------------
+// BUGS.md#020 robust fix helper.
+//
+// create_user() leaves the task's saved RIP pointing at a *kernel*-address
+// lambda.  If such a task is ever added to the ready queue and dispatched, the
+// CPU tries to fetch that kernel address in user mode (CS=0x1B) -> #PF
+// (err=0x15: P=1,W=1,U=1,I=1).
+//
+// For tests that must actually enqueue/dispatch a user task (syscall dispatch,
+// IPC transfer), configure the task with a *real* user-space entrypoint: a tiny
+// user-mode stub mapped into the task's own page table that just yields
+// cooperatively forever and never touches a kernel address.
+//
+//   yield_loop:
+//       xor eax, eax    ; 31 C0   RAX = SyscallNumber::YIELD (0)
+//       syscall         ; 0F 05
+//       jmp yield_loop  ; EB FA
+// -------------------------------------------------------------------
+static constexpr uint8_t kYieldStub[] = {0x31, 0xC0, 0x0F, 0x05, 0xEB, 0xFA};
+static constexpr uint64_t kYieldStubVa = 0x40000000;
+
+// Map a user-executable page containing the yield stub into the task's page
+// table and rewrite its saved frame so RIP/RDI point at the user-mode stub.
+// After this, the task is safe to add_task() and dispatch.
+static bool configure_user_yield_entry(TaskControlBlock &task) {
+    uint64_t phys = PMM::alloc_user_page();
+    if (!phys)
+        return false;
+
+    // Copy the stub into the page via the HHDM alias of its physical frame.
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *dst = reinterpret_cast<uint8_t *>(arch::HHDM_OFFSET + phys);
+    for (size_t i = 0; i < sizeof(kYieldStub); ++i)
+        dst[i] = kYieldStub[i];
+
+    VMM::map_page_in_pml4(kYieldStubVa, phys, true, task.page_table_);
+
+    // Rewrite the placeholder kernel-address entry in the saved frame.  The
+    // frame stores the entry in two identical slots (RIP and the RDI copy);
+    // locate them by value rather than by hardcoded offsets so this survives
+    // frame-layout changes.  The placeholder entry is a kernel higher-half
+    // .text address (>= 0xFFFF800000000000); the yield stub lives at a low
+    // user VA (0x40000000).
+    constexpr uint64_t kKernelHigherHalf = 0xFFFF800000000000ULL;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *frame = reinterpret_cast<uint64_t *>(task.context.rsp);
+    size_t slots = (task.kernel_stack_top - task.context.rsp) / sizeof(uint64_t);
+
+    uint64_t original_entry = 0;
+    for (size_t i = 0; i < slots; ++i) {
+        if (frame[i] >= kKernelHigherHalf) {
+            original_entry = frame[i];
+            break;
+        }
+    }
+    if (original_entry == 0)
+        return false;
+    for (size_t i = 0; i < slots; ++i)
+        if (frame[i] == original_entry)
+            frame[i] = kYieldStubVa;
+    return true;
+}
+#endif // CONFIG_ARCH_X86_64
+
 JARVIS_TEST(buffer_pool_basic_alloc_free, "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
@@ -244,9 +309,14 @@ JARVIS_TEST(buffer_pool_unmap_all, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(buffer_pool_syscall_dispatch, "PRE: none | POST: none") {
-    TaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+    // BUGS.md#020: create_user() gives this task a kernel-address placeholder
+    // entry that must never execute.  Do NOT add_task() it — the BUF_ALLOC/FREE
+    // syscalls resolve the owning task via syscall_task() (the current task set
+    // by set_current below), not via the ready queue.  Enqueuing it READY let a
+    // timer tick dispatch it into a user-mode fetch of a kernel .text address
+    // (CS=0x1B) -> #PF.  SimpleTaskPtr = cleanup()+delete, no remove_task().
+    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
-    Scheduler::add_task(*task);
     auto *original = Scheduler::current_task();
     {
         arch::IrqGuard guard;
@@ -271,8 +341,6 @@ JARVIS_TEST(buffer_pool_ipc_transfer, "PRE: none | POST: none") {
     auto *sender = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     auto *receiver = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
-    Scheduler::add_task(*sender);
-    Scheduler::add_task(*receiver);
 
     auto cleanup = ScopeGuard([&]() {
         Scheduler::remove_task(*sender);
@@ -283,9 +351,19 @@ JARVIS_TEST(buffer_pool_ipc_transfer, "PRE: none | POST: none") {
         delete receiver;
     });
 
+    // BUGS.md#020: IPC::send(receiver->id, ...) needs both tasks registered in
+    // id_table_ via add_task(), which also enqueues them READY.  Give each a
+    // real user-mode entrypoint (a stub that yields forever) so that if a timer
+    // tick dispatches one, it runs the user stub instead of faulting on its
+    // kernel-address placeholder entry (a user-mode fetch of kernel .text).
+    JARVIS_ASSERT(configure_user_yield_entry(*sender));
+    JARVIS_ASSERT(configure_user_yield_entry(*receiver));
+
     auto *original = Scheduler::current_task();
     {
         arch::IrqGuard guard;
+        Scheduler::add_task(*sender);
+        Scheduler::add_task(*receiver);
 
         // Sender allocs a buffer
         Scheduler::set_current(*sender);
@@ -793,9 +871,9 @@ JARVIS_TEST(buffer_pool_transfer_to_kernel_task, "PRE: none | POST: none") {
 void register_buffer_pool_tests() {
     Logger::info("Registering BufferPool tests");
 
+    JARVIS_REGISTER_TEST(buffer_pool_invalid_handle);
     JARVIS_REGISTER_TEST(buffer_pool_basic_alloc_free);
     JARVIS_REGISTER_TEST(buffer_pool_multiple_alloc);
-    JARVIS_REGISTER_TEST(buffer_pool_invalid_handle);
     JARVIS_REGISTER_TEST(buffer_pool_exhaustion);
     JARVIS_REGISTER_TEST(buffer_pool_double_free);
     JARVIS_REGISTER_TEST(buffer_pool_map_unmap);

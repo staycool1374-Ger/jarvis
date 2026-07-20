@@ -1262,6 +1262,20 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 #endif
 
 #if defined(CONFIG_ARCH_X86_64)
+    // Fault recovery for safe_copy_from_user / safe_copy_to_user.  While a copy
+    // is in progress, ANY page fault — taken in user OR kernel mode — must be
+    // redirected to the recovery label so the copy returns false instead of
+    // panicking the kernel.  This is checked before the from_user signal path
+    // because the copy itself runs in kernel mode (CS=0x8), so a fault there
+    // would otherwise be misclassified as a fatal kernel exception.  BUGS.md#020
+    // root cause #3: the user-app write path dereferences a user VA that is out
+    // of range / unmapped; with recovery honored the syscall returns -EFAULT.
+    if (kernel::g_user_access_recover_ip && regs) {
+        regs[17] = kernel::g_user_access_recover_ip;
+        kernel::g_user_access_recover_ip = 0;
+        return;
+    }
+
     if (vector < 32) {
         auto *t = kernel::Scheduler::current_task();
         uint64_t cs = regs ? regs[18] : 0;
@@ -1269,14 +1283,6 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
             (cs == arch::SEG_USER_CODE || cs == arch::SEG_USER_DATA);
 
         if (from_user && t) {
-            // Check fault recovery first: if we're inside a safe_copy_from_user
-            // zone, redirect to the recovery IP instead of delivering a signal.
-            if (kernel::g_user_access_recover_ip) {
-                regs[17] = kernel::g_user_access_recover_ip;
-                kernel::g_user_access_recover_ip = 0;
-                return;
-            }
-
             auto mapping = kernel::exception_to_signal(vector);
             uint64_t sig = static_cast<uint64_t>(mapping.signal);
             kernel::Logger::warn("Task %x: exception vector=%x (%s) "

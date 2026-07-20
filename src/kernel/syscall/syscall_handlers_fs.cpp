@@ -29,6 +29,7 @@
 #include <kernel/vfs/pipe.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/memory/checked_ptr.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <string.hpp>
 
@@ -228,8 +229,27 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     auto buf = checked(reinterpret_cast<const uint8_t *>(arg1), count);
     if (syscall_is_user_task() && !buf.valid())
         return static_cast<uint64_t>(-1);
-    int64_t r =
-        f->vnode->ops->write(*f->vnode, buf.unsafe_ptr(), count, f->offset);
+
+    // BUGS.md#020 root cause #3: the user buffer is a user-space VA.  The VFS
+    // write ops (e.g. Terminal::write) dereference the pointer directly in
+    // kernel mode, so a user VA that is out of range or unmapped faults the
+    // kernel (#PF, CS=0x8).  Copy the payload into a kernel bounce buffer with
+    // fault recovery (safe_copy_from_user) and hand that to the op instead.
+    if (count == 0)
+        return 0;
+    // Bound the kernel allocation for a single write.
+    constexpr uint64_t kMaxWriteBounce = 1 << 20; // 1 MiB
+    if (count > kMaxWriteBounce)
+        return static_cast<uint64_t>(-1);
+    uint8_t *kb = static_cast<uint8_t *>(MemPool::alloc(count));
+    if (!kb)
+        return static_cast<uint64_t>(-1);
+    if (!safe_copy_from_user(kb, buf.unsafe_ptr(), count)) {
+        MemPool::free(kb);
+        return static_cast<uint64_t>(-1);
+    }
+    int64_t r = f->vnode->ops->write(*f->vnode, kb, count, f->offset);
+    MemPool::free(kb);
     if (r > 0)
         f->offset += static_cast<uint64_t>(r);
     return static_cast<uint64_t>(r >= 0 ? r : 0);
