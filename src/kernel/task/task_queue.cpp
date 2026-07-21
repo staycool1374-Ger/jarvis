@@ -100,6 +100,8 @@ void TaskQueue::remove(TaskControlBlock &tcb) noexcept {
 
 bool TaskQueue::contains(const TaskControlBlock &tcb) const noexcept {
     for (TaskControlBlock *p = head_; p != nullptr; p = p->runq_next_) {
+        if (!TaskControlBlock::is_valid(p))
+            break;
         if (p == &tcb)
             return true;
     }

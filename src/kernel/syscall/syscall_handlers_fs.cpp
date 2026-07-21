@@ -230,14 +230,22 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     if (syscall_is_user_task() && !buf.valid())
         return static_cast<uint64_t>(-1);
 
+    // Kernel tasks (no page table): buffer is already in kernel space, no
+    // bounce buffer needed (mirrors the vfsd_authorize kernel bypass pattern).
+    if (count == 0)
+        return 0;
+    if (!syscall_is_user_task()) {
+        int64_t r = f->vnode->ops->write(*f->vnode, buf.unsafe_ptr(), count,
+                                          f->offset);
+        if (r > 0)
+            f->offset += static_cast<uint64_t>(r);
+        return static_cast<uint64_t>(r >= 0 ? r : 0);
+    }
     // BUGS.md#020 root cause #3: the user buffer is a user-space VA.  The VFS
     // write ops (e.g. Terminal::write) dereference the pointer directly in
     // kernel mode, so a user VA that is out of range or unmapped faults the
     // kernel (#PF, CS=0x8).  Copy the payload into a kernel bounce buffer with
     // fault recovery (safe_copy_from_user) and hand that to the op instead.
-    if (count == 0)
-        return 0;
-    // Bound the kernel allocation for a single write.
     constexpr uint64_t kMaxWriteBounce = 1 << 20; // 1 MiB
     if (count > kMaxWriteBounce)
         return static_cast<uint64_t>(-1);

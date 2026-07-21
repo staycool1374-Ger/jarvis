@@ -245,12 +245,6 @@ JARVIS_TEST(o1_scheduler_dequeues_highest, "PRE: none | POST: none") {
 
     Scheduler::add_task(*low);
     Scheduler::add_task(*high);
-    auto guard = ScopeGuard([&]() {
-        low->state = TaskState::TERMINATED;
-        low->cleanup();
-        high->state = TaskState::TERMINATED;
-        high->cleanup();
-    });
 
     auto *next = Scheduler::next_task();
     // next_task should return the highest priority task (15)
@@ -268,10 +262,15 @@ JARVIS_TEST(o1_scheduler_add_remove_ready_queue, "PRE: none | POST: none") {
     // t1 was enqueued by add_task
     auto *next = Scheduler::next_task();
     JARVIS_ASSERT(next != nullptr);
+    if (next->priority != 10ULL) {
+        Logger::info("o1_scheduler_add_remove_ready_queue: next_task() returned id=%u prio=%llu name=%s (expected prio=10)",
+                     next->id, next->priority, next->name);
+        Logger::info("  t1 id=%u prio=%llu state=%u in_rq=%u magic=0x%llx",
+                     t1->id, t1->priority, static_cast<unsigned>(t1->state),
+                     t1->in_ready_queue_ ? 1u : 0u, t1->magic);
+    }
     JARVIS_ASSERT_EQ(10ULL, next->priority);
 
-    t1->state = TaskState::TERMINATED;
-    t1->cleanup();
     JARVIS_TEST_PASS();
 }
 

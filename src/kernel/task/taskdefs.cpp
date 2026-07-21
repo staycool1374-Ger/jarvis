@@ -318,6 +318,21 @@ void reboot_from_table() {
         }
     }
 
+    // Re-set the harness-task pointer to the new init (PID 1) created by the
+    // table loop above.  reboot_from_table() kills the original init task and
+    // spawns a fresh TCB at a different address; the old harness_task_ptr_
+    // (set during kernel_main) is now a dangling pointer.  Without this fix,
+    // harness_nonpreempt in rate_monotonic_schedule() is always false, the
+    // timer ISR calls next_task() during test execution, and dequeued test
+    // tasks are stranded in READY+not-in-queue limbo — causing intermittent
+    // failures in o1_scheduler and other test classes.
+    {
+        auto *init_task = Scheduler::find_task(1);
+        if (init_task) {
+            Scheduler::set_harness_task(init_task);
+        }
+    }
+
     debug_write("[REBOOT] after add_tasks task_count()=0x");
     debug_write_hex(Scheduler::task_count());
     debug_write("\n");

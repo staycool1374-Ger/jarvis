@@ -1671,16 +1671,6 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
-    auto *next = next_task();
-#if defined(CONFIG_DEBUG_IPC_SCHED)
-    if (all_tasks_.size() == 7) {
-        auto *r6 = Scheduler::find_task(6);
-        IPC_SCHED_TRACE("[RMS]", "cur=", current->id, "next=",
-                        next ? next->id : 0u, "t6=",
-                        r6 ? (uint64_t)r6->state : 9u, "q6=",
-                        r6 ? (uint64_t)r6->in_ready_queue_ : 9u);
-    }
-#endif
     // BUGS.md#021: during the test cycle, do NOT preemptively switch away from
     // the harness (init_task, PID 1) while it is RUNNING.  The harness runs the
     // synchronous test bodies; being preempted by lower-priority test tasks
@@ -1691,15 +1681,36 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     // yields are still honoured: reschedule() sets the harness state to BLOCKED,
     // so this guard's `state == RUNNING` check does not suppress them and child
     // test tasks still run when the harness blocks.
+    //
+    // This check must come BEFORE next_task() so a dequeued task is never
+    // stranded (dequeued from the ready queue but not switched to).  The lazy
+    // rebuild only heals this when the queue is empty and the caller retries;
+    // a non-empty queue (e.g. idle at priority 0) returns the wrong task and
+    // tests that check priority fail intermittently.
     bool harness_nonpreempt =
         (s_test_active_ && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
          current->state == TaskState::RUNNING);
+    if (harness_nonpreempt) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
+    auto *next = next_task();
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    if (all_tasks_.size() == 7) {
+        auto *r6 = Scheduler::find_task(6);
+        IPC_SCHED_TRACE("[RMS]", "cur=", current->id, "next=",
+                        next ? next->id : 0u, "t6=",
+                        r6 ? (uint64_t)r6->state : 9u, "q6=",
+                        r6 ? (uint64_t)r6->in_ready_queue_ : 9u);
+    }
+#endif
     // Never switch a live RUNNING current task to idle: that would idle-loop
     // forever and permanently starve the live task (e.g. the test harness
     // running the `all` suite between tests, when it is the only runnable
     // task).  If no other task is ready, keep running current.
-    if (next && next != current && !harness_nonpreempt &&
+    if (next && next != current &&
         !(next == idle_task_ && current->state == TaskState::RUNNING)) {
         switch_to_task(current, next, nullptr);
     }
