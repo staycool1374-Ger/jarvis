@@ -442,9 +442,9 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
-    auto *sender = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender_ptr = create_test_task(5, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
     MessageQueue &q = *cur->msg_queue;
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
@@ -456,9 +456,9 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
     JARVIS_ASSERT(q.blocked_senders_tail == sender);
     JARVIS_ASSERT(sender->blocked_next == nullptr);
 
-    auto *sender2 = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender2_ptr = create_test_task(5, 10);
+    auto *sender2 = sender2_ptr.get();
     JARVIS_ASSERT(sender2 != nullptr);
-    Scheduler::add_task(*sender2);
     IPC::block_sender(q, *sender2);
 
     JARVIS_ASSERT(q.blocked_senders_head == sender);
@@ -469,12 +469,6 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
     IPC::wake_sender(q, *cur);
     IPC::wake_sender(q, *cur);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
-    Scheduler::remove_task(*sender2);
-    sender2->cleanup();
-    delete sender2;
     JARVIS_TEST_PASS();
 }
 
@@ -491,9 +485,9 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
-    auto *sender = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender_ptr = create_test_task(5, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
     MessageQueue &q = *cur->msg_queue;
     q.blocked_senders_head = nullptr;
@@ -508,9 +502,6 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
     JARVIS_TEST_PASS();
 }
 
@@ -527,9 +518,9 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
 
-    auto *sender = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender_ptr = create_test_task(5, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
     MessageQueue &q = *cur->msg_queue;
     q.blocked_senders_head = nullptr;
@@ -543,9 +534,6 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
     JARVIS_ASSERT(q.blocked_senders_head == nullptr);
     JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
     JARVIS_TEST_PASS();
 }
 
@@ -564,9 +552,9 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
     cur->base_priority = 5;
     cur->priority = 10;
 
-    auto *sender = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender_ptr = create_test_task(5, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
     MessageQueue &q = *cur->msg_queue;
     IPC::block_sender(q, *sender);
@@ -575,9 +563,6 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
 
     JARVIS_ASSERT_EQ(5ULL, cur->priority);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
     JARVIS_TEST_PASS();
 }
 
@@ -590,7 +575,7 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
 // pops, send returns false
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler, IPC_MAX_QUEUE_MSG
-JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
+JARVIS_TEST(ipc_send_block_full, "PRE: irq_shield | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
     JARVIS_ASSERT(cur->msg_queue != nullptr);
@@ -606,23 +591,25 @@ JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
     }
     JARVIS_ASSERT(cur->msg_queue->is_full());
 
-    auto *sender = TaskControlBlock::create([]() {}, 5, 10);
+    auto sender_ptr = create_test_task(5, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
-    Scheduler::set_current(*sender);
-    bool ok = IPC::send(cur->id, msg);
-    JARVIS_ASSERT(!ok);
-    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+    // send + block + restore under IrqGuard: prevents timer ISR from switching
+    // to idle when the sender blocks (its context would be stranded otherwise).
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*sender);
+        bool ok = IPC::send(cur->id, msg);
+        JARVIS_ASSERT(!ok);
+        JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+        Scheduler::set_current(*cur);
+    }
 
-    Scheduler::set_current(*cur);
     Message out;
     JARVIS_ASSERT(IPC::recv(out));
     JARVIS_ASSERT(sender->state == TaskState::READY);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
     JARVIS_TEST_PASS();
 }
 
@@ -711,14 +698,14 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
 // send. Terminate receiver and cleanup.
 // Expect: Sender is woken up (state becomes READY) and removed from blocked
 // list.
-JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: irq_shield | POST: none") {
+    auto receiver_ptr = create_test_task(5, 10);
+    auto *receiver = receiver_ptr.get();
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
 
-    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
+    auto sender_ptr = create_test_task(6, 10);
+    auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
 
     kernel::Message msg{};
     msg.sender_id = sender->id;
@@ -736,17 +723,23 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
         receiver->msg_queue->push(fill_msg);
     }
 
-    // Now send from sender - should block
-    Scheduler::set_current(*sender);
-    (void)kernel::IPC::send(receiver->id, msg, 0);
-    // The sender should be in blocked list
-    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
-    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+    // Now send from sender - should block.
+    // Disable interrupts around the send+cleanup window so the timer ISR
+    // cannot perform a deferred context switch to idle (which would strand
+    // the test context on the 'blocked' sender's saved stack frame).
+    {
+        arch::IrqGuard guard;
+        Scheduler::set_current(*sender);
+        (void)kernel::IPC::send(receiver->id, msg, 0);
+        // The sender should be in blocked list
+        JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+        JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    // Now terminate receiver and cleanup
-    receiver->state = TaskState::TERMINATED;
-    receiver->exit_code = 0;
-    receiver->cleanup();
+        // Now terminate receiver and cleanup
+        receiver->state = TaskState::TERMINATED;
+        receiver->exit_code = 0;
+        receiver->cleanup();
+    }
 
     // Sender should be woken up and removed from the blocked list
     JARVIS_ASSERT(sender->state == TaskState::READY);
@@ -754,11 +747,6 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
     // cleanup() frees the receiver's msg_queue after clearing blocked senders
     JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
-    Scheduler::remove_task(*sender);
-    Scheduler::remove_task(*receiver);
-    sender->cleanup();
-    delete sender;
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 
@@ -776,10 +764,10 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
 // Input: Create receiver, block it on its own queue. Send it a message.
 // Expect: Receiver transitions from BLOCKED to READY after the send.
 JARVIS_TEST(ipc_send_wakes_blocked_destination, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto receiver_ptr = create_test_task(5, 10);
+    auto *receiver = receiver_ptr.get();
     JARVIS_ASSERT(receiver != nullptr);
     JARVIS_ASSERT(receiver->msg_queue != nullptr);
-    Scheduler::add_task(*receiver);
 
     // Manually block the receiver task on its own queue
     Scheduler::set_current(*receiver);
@@ -797,10 +785,6 @@ JARVIS_TEST(ipc_send_wakes_blocked_destination, "PRE: none | POST: none") {
     // Receiver should now be READY
     JARVIS_ASSERT(receiver->state == TaskState::READY);
 
-    // Cleanup
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
     JARVIS_TEST_PASS();
 }
 

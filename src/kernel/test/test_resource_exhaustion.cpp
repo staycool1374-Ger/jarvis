@@ -87,41 +87,58 @@ TEST_CLASS(FdTableExhaustion) {
 // Input: Create MAX_TASKS tasks (minus existing), attempt one more.
 // Expect: Last add fails; after cleanup, task_count returns to baseline.
 TEST_CLASS(TaskLimitReached) {
+    // Non-aborting assertion: records a failure (so the test still fails) but
+    // does NOT return, so subsequent teardown always runs.  The kernel reaper
+    // may retire tasks mid-test (the timer ISR runs the empty-bodied tasks and
+    // reaps them), so exact count assertions can legitimately vary; we must
+    // never skip teardown, or the remaining TCBs leak and offset the
+    // ResourceTracker baseline (failing test isolation).
+#define CHECK_NONFATAL(cond)                                                   \
+    do {                                                                       \
+        if (!(cond))                                                           \
+            fail(__FILE__, __LINE__, #cond);                                   \
+    } while (0)
+
     uint64_t baseline = Scheduler::task_count();
 
-    // Create up to limit
-    TaskControlBlock *tasks[64];
+    // Create up to the hard cap.  `created` counts every TCB we allocated.
+    // `add_task` always appends to all_tasks_, but the reaper may retire some
+    // before we snapshot, so we only assert the soft invariant (did not
+    // exceed the cap) and never an exact-count equality that could abort.
+    TaskControlBlock *tasks[64] = {};
     uint64_t created = 0;
     for (uint64_t i = 0; i < 64; ++i) {
-        auto *t = TaskControlBlock::create([]() {}, 5, 10);
+        auto *t = kernel::test::create_named_task([]() {}, 5, 10, "limit");
         if (!t)
             break;
-        Scheduler::add_task(*t);
         tasks[created++] = t;
+        kernel::test::add_task_named(*t, "limit");
     }
 
-    uint64_t after_fill = Scheduler::task_count();
-    CT_ASSERT(after_fill >= baseline + created);
+    CHECK_NONFATAL(created > 0);
+    CHECK_NONFATAL(Scheduler::task_count() <= 64);
 
-    // Attempt one more — should fail or exceed MAX_TASKS
-    auto *extra = TaskControlBlock::create([]() {}, 5, 10);
+    // Attempt one more — must be rejected at capacity (create returns null).
+    auto *extra = kernel::test::create_named_task([]() {}, 5, 10, "limit");
+    CHECK_NONFATAL(extra == nullptr);
     if (extra) {
-        Scheduler::add_task(*extra);
-        // May or may not be added depending on capacity
-        CT_ASSERT(Scheduler::task_count() <= 64);
         Scheduler::remove_task(*extra);
         extra->cleanup();
         delete extra;
     }
 
-    // Cleanup all created
+    // Cleanup all created (unconditional — never skip teardown).
     for (uint64_t i = 0; i < created; ++i) {
+        if (!tasks[i])
+            continue;
         Scheduler::remove_task(*tasks[i]);
         tasks[i]->cleanup();
         delete tasks[i];
+        tasks[i] = nullptr;
     }
 
-    CT_ASSERT(Scheduler::task_count() == baseline);
+    CHECK_NONFATAL(Scheduler::task_count() == baseline);
+#undef CHECK_NONFATAL
 };
 
 // Runmode: kernel

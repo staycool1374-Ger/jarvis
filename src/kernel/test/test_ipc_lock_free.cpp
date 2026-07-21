@@ -244,15 +244,22 @@ JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
 
     Scheduler::set_current(*original);
 
-    Scheduler::remove_task(*task_a);
-    task_a->cleanup();
-    delete task_a;
-    Scheduler::remove_task(*task_b);
-    task_b->cleanup();
-    delete task_b;
+    if (task_a->magic == TaskControlBlock::TCB_MAGIC) {
+        Scheduler::remove_task(*task_a);
+        task_a->cleanup();
+        delete task_a;
+    }
+    if (task_b->magic == TaskControlBlock::TCB_MAGIC) {
+        Scheduler::remove_task(*task_b);
+        task_b->cleanup();
+        delete task_b;
+    }
 
-    // The tasks are created but don't run during test execution
-    // (deferred context switch requires a real timer ISR).
+    // The tasks may have already been terminated and freed by reap_orphans()
+    // via the on_tick() loop above (throughput_receiver calls IPC::recv on an
+    // empty queue, recv returns false, the function returns, the trampoline
+    // terminates the task).  Check task->magic before manual cleanup to avoid
+    // use-after-free on the poisoned TCB.
     // This test verifies creation and leak-free cleanup.
     JARVIS_TEST_PASS();
 }

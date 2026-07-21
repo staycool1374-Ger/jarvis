@@ -46,6 +46,7 @@ size_t Registry::test_failed_ = 0;
 ClassSection Registry::sections_[MAX_CLASSES] = {};
 size_t Registry::class_count_ = 0;
 size_t Registry::expected_count_ = 0;
+const char *Registry::current_name_ = nullptr;
 bool g_class_auto_shutdown = false;
 static uint64_t g_kernel_entry_ns = 0;
 
@@ -111,6 +112,44 @@ void Registry::record_class_section(const char* name, size_t start, size_t count
     sections_[class_count_].start = start;
     sections_[class_count_].count = count;
     ++class_count_;
+}
+
+void Registry::set_current_test_name(const char* name) { current_name_ = name; }
+
+const char* Registry::current_test_name() { return current_name_; }
+
+// Tag a task's `name` with the origin test case (and optional role tag) so that
+// any leaked/orphaned task printed by the scheduler dump is traceable to the
+// test that created it.  Truncates safely to CONFIG_TASK_NAME_LEN.
+static void tag_task_name(TaskControlBlock& task, const char* tag) {
+    const char* test = Registry::current_test_name();
+    if (!test)
+        return; // no active test — leave the default "task_N" name
+    char buf[CONFIG_TASK_NAME_LEN];
+    size_t pos = 0;
+    if (tag) {
+        for (const char* p = tag; *p && pos < CONFIG_TASK_NAME_LEN - 1; ++p)
+            buf[pos++] = *p;
+        if (pos < CONFIG_TASK_NAME_LEN - 1)
+            buf[pos++] = ':';
+    }
+    for (const char* p = test; *p && pos < CONFIG_TASK_NAME_LEN - 1; ++p)
+        buf[pos++] = *p;
+    buf[pos] = '\0';
+    __builtin_memcpy(task.name, buf, pos + 1);
+}
+
+TaskControlBlock* create_named_task(void (*entry)(), uint64_t priority,
+                                     uint64_t period_ticks, const char* tag) {
+    TaskControlBlock* t = TaskControlBlock::create(entry, priority, period_ticks);
+    if (t)
+        tag_task_name(*t, tag);
+    return t;
+}
+
+void add_task_named(TaskControlBlock& task, const char* tag) {
+    tag_task_name(task, tag);
+    Scheduler::add_task(task);
 }
 
 void Registry::reset() {

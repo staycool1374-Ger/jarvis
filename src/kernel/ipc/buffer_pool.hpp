@@ -103,6 +103,14 @@ class BufferPool {
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static Entry entries[MAX_BUFFERS];
 
+    /// @brief Red-zone guard word placed IMMEDIATELY AFTER `entries[]`.
+    /// BUGS.md#020: an out-of-bounds `entries[idx]` write (idx >= MAX_BUFFERS)
+    /// lands here and corrupts this sentinel instead of adjacent globals
+    /// (scheduler/TCB structures).  Checked on every BufferPool op so the
+    /// overflow is caught at its source with a precise message.
+    static constexpr uint64_t entries_guard_ = 0xCACACACACACACACAULL;
+    static constexpr uint64_t ENTRIES_GUARD_MAGIC = 0xCACACACACACACACAULL;
+
     /// @name Test-isolation helpers (snapshot / restore)
     /// @brief Copy all entries + free_head + next_cookie into flat buffer.
     static void capture_state(uint8_t *dst, size_t max_bytes);

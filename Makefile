@@ -958,8 +958,13 @@ audit:
 	@python3 tools/audit_module.py $(HPP) $(CPP)
 
 # ------------------------------------------------------------------------------
-# Match-all rule: silently consume positional arguments for unified targets.
-# MUST be the very last rule in the file so it does not shadow real targets.
+# Match-all rule: silently consume positional arguments for unified targets
+# (e.g. `make execute-test x86_64 debug memory`).  Must be NON-TERMINAL (`%:`,
+# not `%::`): a terminal `%::` match-anything rule shadows every non-terminal
+# pattern rule (including `build/%.o: src/%.cpp`), turning C++ compiles into
+# no-ops.  As a non-terminal rule it only catches goals with no real rule
+# (the positional args) and loses to specific pattern rules for real targets.
+# Keep it last so it never precedes real targets.
 # ------------------------------------------------------------------------------
-%::
+%:
 	@true

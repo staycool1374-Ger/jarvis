@@ -23,6 +23,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/sporadic_server.hpp>
+#include <kernel/debug/dump.hpp>
 #include <logger.hpp>
 #include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -37,6 +38,43 @@
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <assert.hpp>
+
+// BUGS.md#020: ring buffer of recently-created tasks so that when a wild
+// write plants a task's `entry` (code address) into some other field, the
+// scheduler's effective_priority() guard can name WHICH task's entry was
+// copied and (by tcb address) which victim it landed in.
+namespace {
+struct RecentTask {
+    uint64_t entry;
+    uint64_t tcb;
+    uint64_t ticks;
+};
+constexpr size_t kRecentTasks = 64;
+RecentTask g_recent_tasks[kRecentTasks]{};
+size_t g_recent_tasks_idx = 0;
+} // namespace
+
+namespace kernel {
+namespace debug {
+void record_task_entry(uint64_t entry, uint64_t tcb) {
+    auto &r = g_recent_tasks[g_recent_tasks_idx % kRecentTasks];
+    r.entry = entry;
+    r.tcb = tcb;
+    r.ticks = 0;
+    g_recent_tasks_idx++;
+}
+/// @brief If `value` equals the low 32 bits or full value of a recently
+/// created task's `entry`, return that task's tcb address; else 0.
+uint64_t find_entry_owner(uint64_t value) {
+    for (size_t i = 0; i < kRecentTasks; ++i) {
+        const auto &r = g_recent_tasks[i];
+        if (r.entry == value || (r.entry & 0xFFFFFFFFULL) == (value & 0xFFFFFFFFULL))
+            return r.tcb;
+    }
+    return 0;
+}
+} // namespace debug
+} // namespace kernel
 #include <kernel/task/task_errors.hpp>
 #include <string.hpp>
 #include <constants.hpp>
@@ -149,6 +187,55 @@ void init_task_common(TaskControlBlock &tcb) {
     tcb.pending_signals = 0;
 }
 
+// BUGS.md#019/#020: after MemPool::alloc() returns a TCB block (but BEFORE it is
+// zeroed/reused), verify it is not still aliased by a live reference.  If the
+// block we just got is pointed to by current_task_ptr_, any live task's
+// child/sibling/sporadic_server/parent_id linkage, or the scheduler id_table_,
+// then the previous owner was freed while still referenced — the use-after-free
+// that later manifests as a 0xDD poison GPF / mass ctx.rip=0 corruption.  This
+// converts the silent corruption into a precise, catchable fault naming the
+// offending alias instead of corrupting random kernel state.  Called from both
+// create() and create_user() (create_user previously lacked this check, which
+// is how the buffer_pool_* tests reproduced the UAF).
+#ifdef CONFIG_DEBUG
+static void debug_check_tcb_reuse(TaskControlBlock *tcb) {
+    auto *cur = Scheduler::current_task();
+    if (cur == tcb) {
+        kernel::Logger::fatal("BUGS.md#019/#020: create reused the CURRENT "
+                              "task's TCB block %p", tcb);
+        kernel::debug::dump_scheduler_info();
+        panic("TCB reuse of current task (UAF)");
+    }
+    if (Scheduler::debug_id_table_references(tcb)) {
+        kernel::Logger::fatal("BUGS.md#019/#020: create reused TCB block %p "
+                              "still aliased by scheduler id_table_", tcb);
+        kernel::debug::dump_scheduler_info();
+        panic("TCB reuse of id_table_-aliased block (UAF)");
+    }
+    uint64_t n = Scheduler::task_count();
+    for (uint64_t i = 0; i < n; ++i) {
+        auto *t = Scheduler::task_at(i);
+        if (!t || t == tcb)
+            continue;
+        if (t->first_child == tcb || t->next_sibling == tcb ||
+            reinterpret_cast<void *>(t->sporadic_server) ==
+                reinterpret_cast<void *>(tcb) ||
+            t->runq_next_ == tcb || t->blocked_next == tcb ||
+            t->dl_next_ == tcb ||
+            static_cast<uint64_t>(t->parent_id) == tcb->id) {
+            kernel::Logger::fatal("BUGS.md#019/#020: create reused TCB block %p "
+                                  "still referenced by task %u (child=%p sib=%p "
+                                  "spor=%p par=%lu)",
+                                  tcb, t->id, t->first_child, t->next_sibling,
+                                  t->sporadic_server,
+                                  static_cast<uint64_t>(t->parent_id));
+            kernel::debug::dump_scheduler_info();
+            panic("TCB reuse of live-referenced block (UAF)");
+        }
+    }
+}
+#endif
+
 /// @brief Creates a new kernel-space TaskControlBlock.
 /// Allocates a TCB from MemPool, sets up a kernel stack with an
 /// architecture-specific initial register frame, and returns it.
@@ -176,6 +263,11 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
         Logger::raw_write("\n");
         return nullptr;
     }
+
+#ifdef CONFIG_DEBUG
+    // BUGS.md#019/#020 detector: see debug_check_tcb_reuse() above.
+    debug_check_tcb_reuse(tcb);
+#endif
 
     memset(tcb, 0, sizeof(TaskControlBlock));
 
@@ -268,6 +360,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     *--stack = 0;                                 // rax
 
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+    kernel::debug::record_task_entry(reinterpret_cast<uint64_t>(entry),
+                                     reinterpret_cast<uint64_t>(tcb));
 #elif defined(CONFIG_ARCH_AARCH64)
     uint64_t *stack = reinterpret_cast<uint64_t *>(tcb->kernel_stack_top);
     *--stack = 0;     // padding
@@ -311,6 +405,11 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
         MemPool::alloc(sizeof(TaskControlBlock)));
     if (!tcb)
         return nullptr;
+#ifdef CONFIG_DEBUG
+    // BUGS.md#019/#020 detector: create_user previously lacked this check
+    // (create() had it); the buffer_pool_* tests reproduce the UAF via this path.
+    debug_check_tcb_reuse(tcb);
+#endif
     memset(tcb, 0, sizeof(TaskControlBlock));
 
     tcb->magic = TCB_MAGIC;
@@ -396,6 +495,8 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     *--stack = 0;                                 // rbx
     *--stack = 0;                                 // rax
     tcb->context.rsp = reinterpret_cast<uint64_t>(stack);
+    kernel::debug::record_task_entry(reinterpret_cast<uint64_t>(entry),
+                                     reinterpret_cast<uint64_t>(tcb));
 #elif defined(CONFIG_ARCH_AARCH64)
     uint64_t *stack = reinterpret_cast<uint64_t *>(tcb->kernel_stack_top);
     *--stack = 0;    // padding
@@ -515,6 +616,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
     } else {
         tcb->event_group = nullptr;
     }
+
 
     // Copy fd_table
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
@@ -932,6 +1034,7 @@ void TaskControlBlock::cleanup() noexcept {
         MemPool::free(event_group);
         event_group = nullptr;
     }
+
     if (sporadic_server) {
         Scheduler::dec_sporadic_count();
         MemPool::free(sporadic_server);
@@ -978,6 +1081,14 @@ void TaskControlBlock::operator delete(void *ptr) noexcept {
     if (!ptr)
         return;
     auto *tcb = static_cast<TaskControlBlock *>(ptr);
+    // TaskControlBlock::cleanup() is the single canonical teardown point that
+    // frees bound resources (IPC triple, stacks, address space) AND notifies
+    // the ResourceTracker (track_task_remove).  Some callers delete a task
+    // without an explicit cleanup() first, so run it here, idempotently —
+    // cleanup() clears magic at its start, so a second call is a no-op and the
+    // ResourceTracker is counted exactly once per task.
+    if (tcb->magic != 0)
+        tcb->cleanup();
     // Unregister from the scheduler before the block is freed.  Without this,
     // a freed TCB leaves a dangling tasks_[] / id_table_ entry that aliases
     // the next allocation (use-after-free: the scheduler re-dispatches the

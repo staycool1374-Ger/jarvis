@@ -34,6 +34,7 @@
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include "task_ptr.hpp"
 
 namespace kernel::test {
 
@@ -79,3 +80,24 @@ class [[nodiscard]] ScopedCurrentTask {
 };
 
 } // namespace kernel::test
+
+/// @brief  Create a TCB for test use and register it with the scheduler WITHOUT
+///         making it runnable.  The task is registered in id_table_ and
+///         all_tasks_ (so IPC routing via find_task() works), and is placed in
+///         BLOCKED state to prevent the scheduler's lazy-rebuild from
+///         discovering and enqueuing it.  Tests use Scheduler::set_current()
+///         to impersonate the task.
+/// @param  ipc_priority  Priority visible to IPC (block_sender inheritance).
+/// @param  period        Task period in ticks.
+/// @return TaskPtr with RAII cleanup (remove_task + cleanup + delete).
+inline TaskPtr create_test_task(uint64_t ipc_priority = 5,
+                                uint64_t period = 10) {
+    constexpr uint64_t CREATE_PRIORITY = 20;
+    auto *tcb = TaskControlBlock::create([]() {}, CREATE_PRIORITY, period);
+    if (tcb) {
+        tcb->state = TaskState::BLOCKED;
+        Scheduler::register_task(*tcb);
+        tcb->priority = ipc_priority;
+    }
+    return TaskPtr(tcb);
+}

@@ -62,23 +62,36 @@ TaskControlBlock *TaskQueue::pop_front() noexcept {
 }
 
 void TaskQueue::remove(TaskControlBlock &tcb) noexcept {
-    if (!tcb.in_ready_queue_)
-        return;
+    // Membership is AUTHORITATIVE via the intrusive links, NOT via
+    // in_ready_queue_.  The flag can be cleared out-of-band (e.g. a ready_queue
+    // reset()/snapshot restore_pod drop nulls head_/tail_ without clearing the
+    // per-node flag), leaving a node physically linked with a stale inrq=false.
+    // Gating the unlink on the flag would then make remove() a silent no-op, so
+    // the still-linked node survives into MemPool::free -> use-after-free /
+    // SIGILL on next dispatch.  So we splice the node out by walking the actual
+    // list (links are the source of truth), regardless of the flag.  is_valid
+    // guards break the walk if a freed/recycled node's runq_next_ is dangling.
     if (!TaskControlBlock::is_valid(&tcb))
         return;
-    tcb.in_ready_queue_ = false;
     if (tcb.runq_prev_) {
-        if (TaskControlBlock::is_valid(tcb.runq_prev_))
+        if (TaskControlBlock::is_valid(tcb.runq_prev_) &&
+            tcb.runq_prev_->runq_next_ == &tcb)
             tcb.runq_prev_->runq_next_ = tcb.runq_next_;
-    } else {
+    } else if (head_ == &tcb) {
         head_ = tcb.runq_next_;
+    } else {
+        // Not the head and has no prev: this node is not physically in THIS
+        // queue.  Leave it untouched (the caller scans other queues).
+        return;
     }
     if (tcb.runq_next_) {
-        if (TaskControlBlock::is_valid(tcb.runq_next_))
+        if (TaskControlBlock::is_valid(tcb.runq_next_) &&
+            tcb.runq_next_->runq_prev_ == &tcb)
             tcb.runq_next_->runq_prev_ = tcb.runq_prev_;
-    } else {
+    } else if (tail_ == &tcb) {
         tail_ = tcb.runq_prev_;
     }
+    tcb.in_ready_queue_ = false;
     tcb.runq_next_ = nullptr;
     tcb.runq_prev_ = nullptr;
     if (count_ > 0)

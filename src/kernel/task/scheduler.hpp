@@ -57,6 +57,13 @@ class Scheduler {
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock *find_task(uint64_t id) noexcept;
 
+    /// @brief Register a task in scheduler tables without making it runnable.
+    ///        Registers in all_tasks_, deadline_list_, and id_table_ so the task
+    ///        is findable via find_task(), but does NOT enqueue in the ready
+    ///        queue.  The task's state must NOT be READY — use for test tasks
+    ///        that need setup before they can run.
+    static void register_task(TaskControlBlock &task);
+
     /// @brief Adds a task to the scheduler's run queue.
     /// @param task Reference to the task to add.
     static void add_task(TaskControlBlock &task);
@@ -87,7 +94,7 @@ class Scheduler {
     /// table.
     static errors::SchedulerError remove_task_err(TaskControlBlock &task);
 
-    /// @brief Returns the currently running task.
+    /// @brief Returns the currently running task (RSP-authoritative).
     /// @return Pointer to the current TaskControlBlock.
     static TaskControlBlock *current_task() noexcept;
     /// @brief Returns the total number of managed tasks.
@@ -97,6 +104,12 @@ class Scheduler {
     /// @param index Index into the task array.
     /// @return Pointer to the TaskControlBlock, or nullptr.
     static TaskControlBlock *task_at(uint64_t index) noexcept;
+
+    /// @brief DEBUG-only (#019/#020): returns true if the given block address
+    ///    is still referenced by the scheduler's id_table_ (a stale entry
+    ///    pointing at a freed TCB).  Used by TaskControlBlock::create() to
+    ///    catch TCB-blocks being reused while still aliased by the id table.
+    static bool debug_id_table_references(void *block) noexcept;
 
     /// @brief Called on each timer tick; updates scheduling state.
     static void on_tick() noexcept;
@@ -133,6 +146,19 @@ class Scheduler {
     /// identify it.
     static void set_shell_task(TaskControlBlock *task) noexcept {
         shell_task_ptr_ = task;
+    }
+
+    /// @brief Stores a pointer to the harness (init_task, PID 1) — the task
+    ///        that runs the test-cycling code.  Used by rate_monotonic_schedule
+    ///        to exempt the harness from preemption during the test cycle
+    ///        (BUGS.md#021), while still allowing it to yield voluntarily.
+    static void set_harness_task(TaskControlBlock *task) noexcept {
+        harness_task_ptr_ = task;
+    }
+
+    /// @brief Returns the harness (init_task) TCB, or nullptr if not set.
+    static TaskControlBlock *get_harness_task() noexcept {
+        return harness_task_ptr_;
     }
 
     /// @brief Suppress or re-enable the "task terminated" log message.
@@ -218,10 +244,17 @@ class Scheduler {
     /// @brief Sets the current running task.
     /// @param task Reference to the task to set as current.
     static void set_current(TaskControlBlock &task) noexcept;
-    /// @brief Sets the current running task by ID (used after context switch).
-    /// @param id Task ID to set as current.
-    static void set_current_by_id(uint64_t id) noexcept;
-
+    /// @brief Safely switches the CPU off a task that is being terminated while
+    ///        it is the current task, WITHOUT calling switch_to_task (which
+    ///        resolves the live RSP owner and corrupts contexts when invoked
+    ///        from ISR context, e.g. sys_exit).  Publishes the deferred-switch
+    ///        slot directly: the save target is the exiting task's own
+    ///        `context.rsp` (a dead slot — the task never resumes, so the ISR
+    ///        epilogue's `mov [save], rsp` landing there is harmless), and the
+    ///        load target is the next runnable task's `context.rsp`.  The next
+    ///        ISR epilogue applies the switch.  Caller must hold no scheduler
+    ///        lock; this takes scheduler_lock_ internally.
+    static void switch_away_from_terminating(TaskControlBlock &exiting) noexcept;
     /// @brief Allocate a unique task ID from the ID table.
     /// @return A new task ID, or TASK_INVALID if the table is full.
     [[nodiscard]] static uint64_t alloc_id() noexcept;
@@ -419,6 +452,7 @@ class Scheduler {
     static DeadlineList deadline_list_;
     static constinit TaskControlBlock *idle_task_;
     static constinit TaskControlBlock *shell_task_ptr_;
+    static constinit TaskControlBlock *harness_task_ptr_;
 #if CONFIG_DEADLINE_MONITOR_TASK
     /// @brief Pointer to the deadline-monitor task (nullptr if not spawned).
     static constinit TaskControlBlock *s_monitor_task_;
@@ -456,6 +490,15 @@ extern uint64_t scheduler_load_cr3_from;
 /// @brief Task ID to set as current after the context switch completes.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint64_t scheduler_next_task_id;
+/// @brief Reschedule request flag.  Set by task-context callers (reschedule(),
+///        terminate(), yield_as) to ask the timer ISR to (re)publish a deferred
+///        switch.  The timer ISR is the SOLE publisher of the deferred switch
+///        (see rate_monotonic_schedule), so there is exactly one writer of the
+///        switch buffer per tick — eliminating the two-publisher race where a
+///        task-context reschedule() and the timer ISR's rate_monotonic_schedule
+///        both called switch_to_task and the last writer before the epilogue
+///        won, starving the other's selection.
+extern bool scheduler_need_resched;
 /// @brief Current ISR nesting depth.  Incremented at each ISR entry,
 ///        decremented before iretq.  Checked by on_tick() to detect
 ///        nested timer interrupts and skip re-entrant scheduler ops.

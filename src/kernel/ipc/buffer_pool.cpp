@@ -110,9 +110,16 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 #endif
 }
 
+/// @brief BUGS.md#020 red-zone guard (defined in full below validate()).
+static inline void bp_check_guard();
+
 /// @brief Insert a buffer entry at the head of a task's linked list.
 static void list_insert(TaskControlBlock &task, int32_t idx) {
+    bp_check_guard();
+    ENSURE(idx >= 0 && static_cast<size_t>(idx) < BufferPool::MAX_BUFFERS);
     int32_t old_head = task.buf_list_head;
+    if (old_head != LIST_EMPTY)
+        ENSURE(static_cast<size_t>(old_head) < BufferPool::MAX_BUFFERS);
     BufferPool::entries[idx].list_prev = LIST_EMPTY;
     BufferPool::entries[idx].list_next = old_head;
     if (old_head != LIST_EMPTY)
@@ -122,14 +129,19 @@ static void list_insert(TaskControlBlock &task, int32_t idx) {
 
 /// @brief Remove a buffer entry from a task's linked list.
 static void list_remove(TaskControlBlock &task, int32_t idx) {
+    bp_check_guard();
+    ENSURE(idx >= 0 && static_cast<size_t>(idx) < BufferPool::MAX_BUFFERS);
     int32_t prev = BufferPool::entries[idx].list_prev;
     int32_t next = BufferPool::entries[idx].list_next;
-    if (prev != -1)
+    if (prev != -1) {
+        ENSURE(static_cast<size_t>(prev) < BufferPool::MAX_BUFFERS);
         BufferPool::entries[prev].list_next = next;
-    else
+    } else
         task.buf_list_head = next;
-    if (next != -1)
+    if (next != -1) {
+        ENSURE(static_cast<size_t>(next) < BufferPool::MAX_BUFFERS);
         BufferPool::entries[next].list_prev = prev;
+    }
     BufferPool::entries[idx].list_prev = -1;
     BufferPool::entries[idx].list_next = -1;
 }
@@ -153,10 +165,15 @@ void BufferPool::init() {
 /// @brief Pop an entry from the free list.
 /// @return index, or BUF_INVALID_INDEX if the pool is exhausted.
 int32_t BufferPool::alloc_entry() {
+    bp_check_guard();
     if (free_head_ == LIST_EMPTY)
         return BUF_INVALID_INDEX;
+    ENSURE(static_cast<size_t>(free_head_) < MAX_BUFFERS);
     int32_t idx = free_head_;
+    ENSURE(static_cast<size_t>(idx) < MAX_BUFFERS);
     free_head_ = static_cast<int32_t>(entries[idx].list_next);
+    if (free_head_ != LIST_EMPTY)
+        ENSURE(static_cast<size_t>(free_head_) < MAX_BUFFERS);
     ENSURE(entries[idx].phys_addr == 0);
     entries[idx].list_next = LIST_EMPTY;
     kernel::test::ResourceTracker::instance().track_bufpool_alloc();
@@ -178,11 +195,29 @@ void BufferPool::free_entry(int32_t idx) {
 
 /// @brief Validate a handle (index + generation match).
 /// @return index, BUF_INVALID_HANDLE, or BUF_INVALID_INDEX.
+/// @brief BUGS.md#020: verify the `entries[]` red-zone guard word is intact.
+/// An OOB `entries[idx]` write (idx >= MAX_BUFFERS) corrupts this sentinel,
+/// which sits immediately after the array; panic with a precise message so the
+/// overflow is caught at its source rather than later as a stray GPF.
+static inline void bp_check_guard() {
+#ifdef CONFIG_DEBUG
+    if (BufferPool::entries_guard_ != BufferPool::ENTRIES_GUARD_MAGIC) {
+        kernel::Logger::fatal("BUGS.md#020 BUFFERPOOL OOB: entries[] red-zone "
+                              "guard clobbered (0x%llx) — out-of-bounds write "
+                              "past entries[MAX_BUFFERS=%zu]",
+                              (unsigned long long)BufferPool::entries_guard_,
+                              BufferPool::MAX_BUFFERS);
+        panic("BufferPool entries[] overflow detected");
+    }
+#endif
+}
+
 int32_t BufferPool::validate(uint64_t handle) {
     if (handle == 0)
         return BUF_INVALID_HANDLE;
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     uint32_t gen = static_cast<uint32_t>(handle >> 32);
+    bp_check_guard();
     if (idx >= MAX_BUFFERS)
         return BUF_INVALID_INDEX;
     if (entries[idx].phys_addr == 0)
@@ -192,10 +227,12 @@ int32_t BufferPool::validate(uint64_t handle) {
     return static_cast<int32_t>(idx);
 }
 
+
 /// @brief Allocate a buffer, map it at virtual address @p va in the given
 /// task's space.
 /// @return handle, or 0 on failure.
 uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
+    bp_check_guard();
     if (!task.page_table_)
         return 0;
 
@@ -228,6 +265,7 @@ uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
 /// @brief Free a buffer: unmap, free the physical page, return entry to pool.
 /// @return true on success.
 bool BufferPool::free(TaskControlBlock &task, uint64_t handle) {
+    bp_check_guard();
     int32_t idx = validate(handle);
     if (idx < 0)
         return false;
@@ -248,6 +286,7 @@ bool BufferPool::free(TaskControlBlock &task, uint64_t handle) {
 /// @brief Map an existing (transferred) buffer at virtual address @p va.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 bool BufferPool::map(TaskControlBlock &task, uint64_t handle, uint64_t va) {
+    bp_check_guard();
     int32_t idx = validate(handle);
     if (idx < 0)
         return false;
@@ -267,6 +306,7 @@ bool BufferPool::map(TaskControlBlock &task, uint64_t handle, uint64_t va) {
 
 /// @brief Unmap a buffer (PTE clear, list remove) without freeing the page.
 bool BufferPool::unmap(TaskControlBlock &task, uint64_t handle) {
+    bp_check_guard();
     int32_t idx = validate(handle);
     if (idx < 0)
         return false;
@@ -285,6 +325,7 @@ bool BufferPool::unmap(TaskControlBlock &task, uint64_t handle) {
 /// @brief Transfer buffer ownership from one task to another (IPC send path).
 bool BufferPool::transfer(uint64_t handle, TaskControlBlock &from,
                           TaskControlBlock &to) {
+    bp_check_guard();
     int32_t idx = validate(handle);
     if (idx < 0)
         return false;
@@ -328,9 +369,15 @@ void BufferPool::restore_state(const uint8_t *src, size_t max_bytes) {
 /// @brief Unmap and free all buffers owned by a task (called from
 /// cleanup/exec).
 void BufferPool::unmap_all(TaskControlBlock &task) {
+    bp_check_guard();
     int32_t idx = task.buf_list_head;
+    uint32_t loop_guard = 0;
     while (idx != -1) {
+        ENSURE(static_cast<size_t>(idx) < MAX_BUFFERS);
         int32_t next = entries[idx].list_next;
+        if (next != -1)
+            ENSURE(static_cast<size_t>(next) < MAX_BUFFERS);
+        ENSURE(++loop_guard < MAX_BUFFERS); // cycle/runaway-list guard
         ENSURE(entries[idx].owner_task == static_cast<uint32_t>(task.id));
 
         if (entries[idx].mapped_va) {

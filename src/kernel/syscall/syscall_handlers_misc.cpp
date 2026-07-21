@@ -93,6 +93,20 @@ uint64_t Syscall::sys_exit(uint64_t arg0, uint64_t, uint64_t, uint64_t,
         t->state = TaskState::TERMINATED;
         t->exit_code = arg0;
 
+        // If the exiting task is the current running task (the normal case for
+        // sys_exit), we must switch the CPU off it BEFORE returning to user
+        // space, otherwise the syscall epilogue iret's back into a TERMINATED
+        // task and executes freed/garbage code (#UD -> SIGILL loop).  Use the
+        // ISR-safe switch (publishes the deferred-switch slot with the exiting
+        // task's own context.rsp as a dead save target); do NOT call
+        // Scheduler::terminate, which invokes switch_to_task and resolves the
+        // live ISR RSP as the save owner, corrupting a live task's context.
+        if (Scheduler::current_task() == t) {
+            Scheduler::switch_away_from_terminating(*t);
+        } else {
+            Scheduler::terminate(*t, arg0);
+        }
+
         if (t->first_child) {
             TaskControlBlock *init_task = Scheduler::task_at(0);
             if (init_task) {

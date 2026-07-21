@@ -28,6 +28,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/debug/dump.hpp>
 #include <kernel/debug/ipc_sched_trace.hpp>
 
 extern "C" void debug_write(const char *s);
@@ -71,9 +72,66 @@ static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
 static TaskControlBlock *s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
 static uint64_t s_deferred_kill_count = 0;
 
+// TEMP DEBUG (BUGS.md#020): detect a SporadicServer pointer that aliases a
+// freed/poisoned MemPool block (first 8 bytes == 0xDDDDDDDDDDDDDDDD).  A freed
+// server still referenced by a live TCB is the use-after-free behind the
+// intermittent GPF (sporadic_server.hpp:114) / #PF / #NM panic in the `memory`
+// class.  This converts the silent corruption into a precise, catchable fault
+// naming the offending task instead of corrupting the stack with a 0xDDDD
+// return address.
+static inline bool is_poisoned_block(const void *p) noexcept {
+#ifdef CONFIG_DEBUG
+    if (!p)
+        return false;
+    const uint64_t *q = static_cast<const uint64_t *>(p);
+    return *q == 0xDDDDDDDDDDDDDDDDULL;
+#else
+    (void)p;
+    return false;
+#endif
+}
+
 static inline uint64_t effective_priority(const TaskControlBlock *t) noexcept {
-    if (t && t->sporadic_server)
+    if (t && t->sporadic_server) {
+#ifdef CONFIG_DEBUG
+        if (is_poisoned_block(t->sporadic_server)) {
+            kernel::Logger::fatal("BUGS.md#020 UAF: task %u references FREED "
+                                  "sporadic_server %p (poison 0xDDDD)",
+                                  t->id, t->sporadic_server);
+            kernel::debug::dump_scheduler_info();
+            panic("sporadic_server use-after-free");
+        }
+        // BUGS.md#020: a sporadic_server pointer must point at a real
+        // MemPool-owned SporadicServer object.  The panic's CR2 is repeatedly a
+        // test_buffer_pool.cpp code address — i.e. a task's `entry` (lambda code
+        // addr) was planted into some TCB's sporadic_server field by a wild
+        // write / heap overflow.  The planted value can have its high 32 bits
+        // zeroed (32-bit store), so validate against the heap instead of a
+        // .text range.  Name the offending + victim tasks instead of GPFing.
+        uintptr_t ss = reinterpret_cast<uintptr_t>(t->sporadic_server);
+        if (!kernel::MemPool::contains(reinterpret_cast<void *>(ss))) {
+            uint64_t owner = kernel::debug::find_entry_owner(ss);
+            kernel::Logger::fatal(
+                "BUGS.md#020 WILD-WRITE: task %u sporadic_server=%p is NOT a "
+                "MemPool object (heap corruption). victim magic=%p id=%u "
+                "kstack_top=%p parent=%u",
+                t->id, t->sporadic_server,
+                reinterpret_cast<void *>(t->magic), t->id,
+                reinterpret_cast<void *>(t->kernel_stack_top),
+                static_cast<uint32_t>(t->parent_id));
+            if (owner)
+                kernel::Logger::fatal("  -> matches entry of task tcb=%p",
+                                      reinterpret_cast<void *>(owner));
+            else
+                kernel::Logger::fatal(
+                    "  -> value 0x%llx not in recent-task entry ring",
+                    static_cast<unsigned long long>(ss));
+            kernel::debug::dump_scheduler_info();
+            panic("sporadic_server field holds a non-heap value (wild write)");
+        }
+#endif
         return t->sporadic_server->current_priority();
+    }
     return t ? t->priority : 0;
 }
 
@@ -186,8 +244,9 @@ uint64_t g_test_deadline_monitor_pid = 0;
 #endif
 ReadyQueueManager Scheduler::ready_queue_;
 DeadlineList Scheduler::deadline_list_;
-constinit TaskControlBlock *Scheduler::idle_task_ = nullptr;
-constinit TaskControlBlock *Scheduler::shell_task_ptr_ = nullptr;
+    constinit TaskControlBlock *Scheduler::idle_task_ = nullptr;
+    constinit TaskControlBlock *Scheduler::shell_task_ptr_ = nullptr;
+    constinit TaskControlBlock *Scheduler::harness_task_ptr_ = nullptr;
 sync::SpinLock Scheduler::scheduler_lock_;
 
 // Liu-Leyland Rate-Monotonic LUB bounds (scaled by 1000000)
@@ -209,6 +268,8 @@ void Scheduler::init() {
     idle_task_ = TaskControlBlock::create(kernel::integrity::idle_task_main, 0,
                                           0xFFFFFFFF);
     idle_task_->state = TaskState::READY;
+    __builtin_strncpy(idle_task_->name, "idle", CONFIG_TASK_NAME_LEN - 1);
+    idle_task_->name[CONFIG_TASK_NAME_LEN - 1] = '\0';
 
     all_tasks_.append(idle_task_);
     id_table_insert(idle_task_->id, idle_task_);
@@ -219,6 +280,19 @@ void Scheduler::init() {
 #if CONFIG_DEADLINE_MONITOR_TASK
     ensure_monitor();
 #endif
+}
+
+void Scheduler::register_task(TaskControlBlock &task) {
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    all_tasks_.append(&task);
+    if (task.period_ticks > 0 && task.deadline_ticks > 0) {
+        deadline_list_.insert(&task);
+    }
+    id_table_insert(task.id, &task);
+    task.in_ready_queue_ = false;
+    task.runq_next_ = nullptr;
+    task.runq_prev_ = nullptr;
+    kernel::test::ResourceTracker::instance().track_task_add();
 }
 
 void Scheduler::add_task(TaskControlBlock &task) {
@@ -271,21 +345,16 @@ void Scheduler::add_task(TaskControlBlock &task) {
 
 void Scheduler::remove_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    all_tasks_.remove(&task);
-    deadline_list_.remove(&task);
-    id_table_remove(&task);
-    dequeue_ready(task);
-
-    __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
-    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-
-    kernel::test::ResourceTracker::instance().track_task_remove();
-}
-
-bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
-    if (!scheduler_lock_.try_lock()) {
-        return false;
+    // BUGS.md#019/#020: never leave current_task_ptr_ aliasing a TCB that is
+    // about to be freed.  If the removed task is the current task, redirect
+    // current_task_ptr_ to the idle task (always valid, the scheduler's safe
+    // fallback) BEFORE the block is recycled.  Otherwise a later
+    // TaskControlBlock::create() can MemPool::alloc() the same block and
+    // memset() it to zero, zeroing the live current task's context (ctx.rip=0)
+    // and corrupting the scheduler / producing 0xDD-poisoned use-after-free
+    // crashes.  The next tick's deferred switch will pick a real successor.
+    if (&task == current_task_ptr_ && idle_task_ && idle_task_ != &task) {
+        current_task_ptr_ = idle_task_;
     }
     all_tasks_.remove(&task);
     deadline_list_.remove(&task);
@@ -295,7 +364,34 @@ bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
     __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    kernel::test::ResourceTracker::instance().track_task_remove();
+
+    // NOTE: ResourceTracker::track_task_remove() is intentionally NOT called
+    // here.  Task teardown has two styles (operator delete, and the reaper's
+    // manual MemPool::free), and BOTH route through TaskControlBlock::cleanup(),
+    // which is the single canonical point that calls track_task_remove().
+    // Tracking here too would double-count every deleted task (remove_task is
+    // also invoked by operator delete) and produce a false ResourceTracker leak.
+}
+
+bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
+    if (!scheduler_lock_.try_lock()) {
+        return false;
+    }
+    // BUGS.md#019/#020: keep current_task_ptr_ off a block about to be freed.
+    if (&task == current_task_ptr_ && idle_task_ && idle_task_ != &task) {
+        current_task_ptr_ = idle_task_;
+    }
+    all_tasks_.remove(&task);
+    deadline_list_.remove(&task);
+    id_table_remove(&task);
+    dequeue_ready(task);
+
+    __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
+    // ResourceTracker::track_task_remove() is owned by TaskControlBlock::
+    // cleanup() (the single shared teardown point) — not here — to avoid
+    // double-counting tasks torn down via operator delete.  See remove_task().
 
     scheduler_lock_.unlock();
     return true;
@@ -363,6 +459,15 @@ TaskControlBlock *Scheduler::find_task(uint64_t id) noexcept {
     return id_table_find(id);
 }
 
+bool Scheduler::debug_id_table_references(void *block) noexcept {
+    auto *b = static_cast<TaskControlBlock *>(block);
+    for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i) {
+        if (id_table_[i] == b)
+            return true;
+    }
+    return false;
+}
+
 bool Scheduler::needs_switch() noexcept {
     if (all_tasks_.size() <= 1)
         return false;
@@ -370,10 +475,10 @@ bool Scheduler::needs_switch() noexcept {
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC)
         return false;
     if (current == idle_task_)
-        return true;
+        return false;
 
-    // If the current task is not runnable (blocked/waiting/terminated), any
-    // ready task must take over — otherwise a high-priority task that blocks
+    // A blocked/terminated current task must always yield to let a runnable
+    // task take over — otherwise a high-priority task that blocks
     // (e.g. inside IPC::send_sync) would keep "winning" the priority compare
     // against lower-priority ready peers and the scheduler would never switch
     // to them, deadlocking the handshake (kernel hang in the test suite).
@@ -411,21 +516,6 @@ TaskControlBlock *Scheduler::next_task() noexcept {
         for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
             if (t->magic != TaskControlBlock::TCB_MAGIC)
                 continue;
-            // Heal any in_ready_queue_ desync regardless of current state.  A
-            // READY task whose flag is set but which is not physically in the
-            // queue is silently dropped by enqueue() and next_task() can never
-            // find it, wedging the scheduler in the idle loop (the `all` suite
-            // hanging at the atomic context-switch tests).  The current task and
-            // the idle/harness task are running (not queued) so we only clear
-            // their flag, never re-enqueue them; every other READY or RUNNING
-            // task is force-cleared and re-enqueued.  Re-enqueuing a RUNNING
-            // (preempted) task mirrors what scheduler_on_context_switch does when
-            // it switches away from it, which is what lets the physically-
-            // executing test runner resume when current_task_ptr_ has drifted
-            // onto a different (peer) TCB.  The idle/harness task is returned by
-            // next_task() as the default when no other task is ready, so it must
-            // never sit in the ready queue (at priority 0xFFFFFFFF it would
-            // otherwise always preempt and wedge the suite).
             if (t == cur || t == idle_task_) {
                 t->in_ready_queue_ = false;
                 t->rq_priority_ = 0;
@@ -483,29 +573,6 @@ void Scheduler::set_current(TaskControlBlock &task) noexcept {
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                      __ATOMIC_RELEASE);
     current_task_ptr_ = &task;
-}
-
-void Scheduler::set_current_by_id(uint64_t id) noexcept {
-    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t && t->magic == TaskControlBlock::TCB_MAGIC && t->id == id) {
-            current_task_ptr_ = t;
-            return;
-        }
-    }
-    // Fallback: the id is not in the registry (TCB may have been unlinked or
-    // current_task_ptr_ drifted).  Pin to the physically-running task by stack
-    // ownership so a stale current_task_ptr_ can never persist and desync the
-    // scheduler (which wedges the shell after `mkdir`).
-    uint64_t cur_rsp{};
-    asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
-    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t && t->magic == TaskControlBlock::TCB_MAGIC && t->kernel_stack &&
-            t->kernel_stack_top && cur_rsp >= reinterpret_cast<uint64_t>(t->kernel_stack) &&
-            cur_rsp < t->kernel_stack_top) {
-            current_task_ptr_ = t;
-            return;
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -569,6 +636,15 @@ TaskControlBlock *Scheduler::id_table_find(uint64_t id) {
 
 void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ticks();
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    if (all_tasks_.size() >= 6) {
+        IPC_SCHED_TRACE("[TICK]", "t=", current_tick, "pe=",
+                        (uint64_t)preempt_enabled_, "lk=",
+                        (uint64_t)scheduler_lock_.try_lock(), "nt=",
+                        (uint64_t)all_tasks_.size());
+        scheduler_lock_.unlock();
+    }
+#endif
 
     if (!preempt_enabled_) {
         return;
@@ -586,31 +662,29 @@ void Scheduler::on_tick() noexcept {
             const uint64_t now = arch::Timer::ticks();
             if (s_last_switch_tick_ == 0)
                 s_last_switch_tick_ = now; // prime on first tick
-            bool runnable = false;
-            for (auto *t = all_tasks_.first_ptr(); t && !runnable;
-                 t = all_tasks_.next_ptr(t)) {
-                if (t->magic != TaskControlBlock::TCB_MAGIC)
-                    continue;
-                if (t == idle_task_)
-                    continue;
-                if (t->state == TaskState::READY ||
-                    t->state == TaskState::RUNNING || t->in_ready_queue_)
-                    runnable = true;
-            }
+            // A stall is only real if a context switch is actually REQUIRED
+            // (needs_switch()) but none has occurred.  The previous predicate
+            // ("any non-idle task READY/RUNNING") fired during legitimate
+            // long-running kernel tests (e.g. PmmExhaustion's 100k-iteration
+            // allocation loop) where the current RUNNING task is the highest
+            // effective priority and no preemption is due — that is correct
+            // scheduler behavior, not a freeze.  Use needs_switch() so only a
+            // genuine failure to dispatch a due task is reported.
+            bool runnable = needs_switch();
             const uint64_t since_switch =
                 (now > s_last_switch_tick_) ? (now - s_last_switch_tick_) : 0;
             if (runnable && since_switch > 300 && s_wedge_emitted_ < 8) {
                 ++s_wedge_emitted_;
                 char wb[128];
                 int wp = 0;
-                kernel::debug::fmt_str(wb, wp, "[STALL] ticks_since_switch=");
-                wp = kernel::debug::fmt_u64(wb, wp, since_switch);
-                kernel::debug::fmt_str(wb, wp, " cur=");
-                wp = kernel::debug::fmt_u64(
-                    wb, wp,
-                    (current_task_ptr_
-                         ? static_cast<uint64_t>(current_task_ptr_->id)
-                         : 0u));
+                 kernel::debug::fmt_str(wb, wp, "[STALL] ticks_since_switch=");
+                 wp = kernel::debug::fmt_u64(wb, wp, since_switch);
+                 kernel::debug::fmt_str(wb, wp, " cur=");
+                 wp = kernel::debug::fmt_u64(
+                     wb, wp,
+                     (current_task()
+                          ? static_cast<uint64_t>(current_task()->id)
+                          : 0u));
                 kernel::debug::fmt_str(wb, wp, " bm_lo=");
                 wp = kernel::debug::fmt_u64(
                     wb, wp, ready_queue_.bitmap().raw_lo());
@@ -738,8 +812,8 @@ void Scheduler::on_tick() noexcept {
                 kernel::debug::fmt_str(wb, wp, " cur=");
                 wp = kernel::debug::fmt_u64(
                     wb, wp,
-                    (current_task_ptr_
-                         ? static_cast<uint64_t>(current_task_ptr_->id)
+                    (current_task()
+                         ? static_cast<uint64_t>(current_task()->id)
                          : 0u));
                 kernel::debug::fmt_str(wb, wp, " bm_lo=");
                 wp = kernel::debug::fmt_u64(
@@ -786,6 +860,12 @@ void Scheduler::on_tick() noexcept {
 #if CONFIG_DEADLINE_MONITOR_TASK
         if (!s_test_active_) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
+            // on_tick already holds scheduler_lock_ (acquired at line 548 and
+            // released at line 839).  The monitor's block transition also takes
+            // scheduler_lock_ (around both dequeue and the BLOCKED store), so
+            // this wake's READY+enqueue is mutually exclusive with the monitor's
+            // block — no half-blocked task can be re-enqueued (the [WEDGE] INV-5
+            // violation).  Do NOT take the lock again here (non-recursive).
             if (s_monitor_task_ &&
                 s_monitor_task_->state == TaskState::BLOCKED) {
                 s_monitor_task_->state = TaskState::READY;
@@ -869,7 +949,7 @@ void Scheduler::on_tick() noexcept {
 
     // Sporadic Server budget management
     {
-        auto *cur = current_task_ptr_;
+        auto *cur = current_task();
         uint64_t found = 0;
         for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
             if (found >= sporadic_task_count_)
@@ -932,7 +1012,7 @@ void Scheduler::reap_orphans() noexcept {
         return;
     s_reap_in_progress = true;
 
-    auto *current = current_task_ptr_;
+    auto *current = current_task();
     auto *init_task = idle_task_;
     TaskControlBlock *new_idle = nullptr;
 
@@ -1289,6 +1369,14 @@ void Scheduler::cleanup_zombies() noexcept {
         // underflow.
         if (t->state != TaskState::TERMINATED)
             continue;
+        // BUGS.md#019/#020: never reap the task that is currently executing
+        // (current_task_ptr_).  Freeing it here reclaims the very kernel stack
+        // we are running on and/or leaves current_task_ptr_ aliasing a freed
+        // block that a later create() reuses and memset()s to zero — zeroing
+        // the live task's context (ctx.rip=0) and corrupting the scheduler.
+        // reap_orphans() already skips the current task; mirror that guard.
+        if (t == current_task_ptr_)
+            continue;
         zombies[num_zombies++] = t;
     }
 
@@ -1463,20 +1551,35 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 (next == current) ||
                 (next->kernel_stack && next->kernel_stack_top &&
                  phys_rsp >= nb && phys_rsp < next->kernel_stack_top);
-            bool next_is_running = (next->state == TaskState::RUNNING);
-            if (next_is_runner || next_is_running) {
-                // `next` is the physically-running task but it was left in the
-                // ready queue (e.g. its snapshot state was READY, or current_
-                // task_ptr_ had drifted).  Promote it to the current RUNNING
-                // task and remove it from the queue so next_task() does not
-                // exclude it as `current` and then fall through to idle (which
-                // would permanently starve the live runner).  A RUNNING task has
-                // no valid iret frame (its stack slot at context.rsp+136 is live
-                // data, so we must NOT iretq into it — just keep it running.
-                Scheduler::set_current(*next);
+            if (next_is_runner) {
+                // `next` IS the physically-running task (current or a task whose
+                // stack the live RSP sits on) but current_task_ptr_ has drifted
+                // onto a peer TCB.  Treat as a no-op self-switch: keep the
+                // physical runner going and clear its queue membership so
+                // next_task() does not exclude it as `current` and fall through
+                // to idle (which would permanently starve the live runner).  A
+                // RUNNING task has no valid iret frame (its stack slot at
+                // context.rsp+136 is live data), so we must NOT iretq into it —
+                // just keep it running.  The cache is NOT updated here (Rule 4):
+                // the timer ISR sets it via set_current_task after the real swap
+                // lands.
                 next->state = TaskState::RUNNING;
                 next->in_ready_queue_ = false;
                 next->rq_priority_ = 0;
+            } else {
+                // D2 fix (INV-2 / VIOL-5): next_task() already dequeued `next`
+                // from the runq.  The old comment claimed "the bad task stays
+                // queued and is retried", but it is NOT queued anymore — it was
+                // dequeued at scheduler.cpp:395.  Without re-enqueueing here it
+                // becomes READY + in_ready_queue_=false + not in any bucket and
+                // is stranded forever (the next_task() lazy rebuild only runs
+                // when dequeue_highest returns null).  Put it back so it stays
+                // eligible and is retried once it has a real iret frame.  Never
+                // re-enqueue the idle task (it is the default fallback) or the
+                // current physical runner.
+                if (next != Scheduler::get_idle_task() && next != current) {
+                    Scheduler::set_task_ready(*next);
+                }
             }
             release_lock();
             return; // do not set scheduler_load_rsp_from -> no switch
@@ -1488,9 +1591,11 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
                          __ATOMIC_RELEASE);
 #if defined(CONFIG_DEBUG_IPC_SCHED)
-        IPC_SCHED_TRACE("[SW]", "next=", next->id, "cr3=",
-                        next->page_table_, "rsp=", TASK_STACK_PTR(next), "x=",
-                        0u);
+        {
+            auto *c = Scheduler::current_task();
+            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next->id,
+                            "rsp=", (uint64_t)TASK_STACK_PTR(next), "x=", 0u);
+        }
 #endif
 #if defined(CONFIG_ARCH_X86_64)
         arch::GDT::set_tss_rsp0(next->kernel_stack_top);
@@ -1498,6 +1603,13 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
     } else {
         __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
                          __ATOMIC_RELEASE);
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+        {
+            auto *c = Scheduler::current_task();
+            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next->id,
+                            "rsp=", (uint64_t)TASK_STACK_PTR(next), "x=", 0u);
+        }
+#endif
     }
 
     if (current->state == TaskState::RUNNING) {
@@ -1538,28 +1650,63 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
+    // A deferred switch is already published and awaiting the timer ISR to
+    // apply it.  Do NOT publish a second one on top of it — that would
+    // overwrite scheduler_load_rsp_from / scheduler_load_cr3_from (set by
+    // switch_to_task as two separate stores) with a different rsp/cr3 pair
+    // while the ISR is about to apply the slot, producing a mismatched
+    // RSP/CR3 pair (e.g. user task loaded with the kernel PML4 -> #UD/#GP on
+    // the next user instruction).  The pending switch is consumed by the next
+    // ISR epilogue; this tick simply waits.  This guard was part of the
+    // original design and is required for correctness even under the
+    // "ISR is sole publisher" model.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
         scheduler_lock_.unlock();
         return;
     }
 
-    auto *current = current_task_ptr_;
+    auto *current = current_task();
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
         scheduler_lock_.unlock();
         return;
     }
 
-    current = current_task_ptr_;
-
     auto *next = next_task();
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    if (all_tasks_.size() == 7) {
+        auto *r6 = Scheduler::find_task(6);
+        IPC_SCHED_TRACE("[RMS]", "cur=", current->id, "next=",
+                        next ? next->id : 0u, "t6=",
+                        r6 ? (uint64_t)r6->state : 9u, "q6=",
+                        r6 ? (uint64_t)r6->in_ready_queue_ : 9u);
+    }
+#endif
+    // BUGS.md#021: during the test cycle, do NOT preemptively switch away from
+    // the harness (init_task, PID 1) while it is RUNNING.  The harness runs the
+    // synchronous test bodies; being preempted by lower-priority test tasks
+    // orphans it (switch_to_task re-enqueues it, but set_current dequeues it
+    // again) and — combined with tests that remove_task()+delete still-running
+    // tasks — can drop the harness from the runnable set, wedging the scheduler
+    // in the idle loop (observed as the `memory` class timing out).  Voluntary
+    // yields are still honoured: reschedule() sets the harness state to BLOCKED,
+    // so this guard's `state == RUNNING` check does not suppress them and child
+    // test tasks still run when the harness blocks.
+    bool harness_nonpreempt =
+        (s_test_active_ && harness_task_ptr_ != nullptr &&
+         current == harness_task_ptr_ &&
+         current->state == TaskState::RUNNING);
     // Never switch a live RUNNING current task to idle: that would idle-loop
     // forever and permanently starve the live task (e.g. the test harness
     // running the `all` suite between tests, when it is the only runnable
     // task).  If no other task is ready, keep running current.
-    if (next && next != current &&
+    if (next && next != current && !harness_nonpreempt &&
         !(next == idle_task_ && current->state == TaskState::RUNNING)) {
         switch_to_task(current, next, nullptr);
     }
+
+    // The sole task-context reschedule() path set this flag; we have now
+    // (re)published the deferred switch for it, so clear the request.
+    __atomic_store_n(&kernel::scheduler_need_resched, false, __ATOMIC_RELEASE);
 
     scheduler_lock_.unlock();
 }
@@ -1571,28 +1718,21 @@ void Scheduler::reschedule() noexcept {
         return;
     }
 
-    auto *current = current_task_ptr_;
+    auto *current = current_task();
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
         scheduler_lock_.unlock();
         return;
     }
 
-    // A switch may already be pending (deferred) from a prior reschedule()
-    // whose timer ISR has not yet applied it (e.g. when the caller disabled
-    // IRQs via yield_as() between the previous reschedule and now).  Do NOT
-    // skip — the latest reschedule() expresses the most recent scheduling
-    // intent and must override the stale pending switch; the ISR applies
-    // whatever was written last.  Consuming the stale pending slot here lets
-    // the new switch be set up unconditionally.
-    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != nullptr) {
-        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
-                         __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
-                         __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_next_task_id, UINT64_MAX, __ATOMIC_RELEASE);
-    }
-
     auto *next = next_task();
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    {
+        IPC_SCHED_TRACE("[RS]", "cur=", current->id, "next=",
+                        next ? next->id : 0u, "hi=",
+                        (uint64_t)ready_queue_.highest_ready_priority(),
+                        "nt=", (uint64_t)all_tasks_.size());
+    }
+#endif
     if (!next || next == current) {
         scheduler_lock_.unlock();
         return;
@@ -1609,7 +1749,118 @@ void Scheduler::reschedule() noexcept {
         return;
     }
 
-    switch_to_task(current, next, &scheduler_lock_);
+    // INV-4 (design contract, confirmed by ipc_blocking test's documented
+    // contract): task-context reschedule() does NOT switch.  It only *requests*
+    // one; the next timer tick publishes + applies it via
+    // rate_monotonic_schedule() -> switch_to_task() -> ISR epilogue (INV-2/3).
+    // The test harness spins in `while (state != TERMINATED) reschedule();` and
+    // relies on the timer ISR to actually run the peer task between iterations.
+    // Inline switching here would write the slot but the spinning caller is not
+    // preempted, so the ISR never applies it -> live-lock.  Deferring is the
+    // correct, design-compliant behavior.
+    scheduler_lock_.unlock();
+    __atomic_store_n(&kernel::scheduler_need_resched, true, __ATOMIC_RELEASE);
+}
+
+void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept {
+    scheduler_lock_.lock();
+
+    // A deferred switch is already published and awaiting the next ISR epilogue.
+    // Do NOT publish a second one on top of it (would produce a mismatched
+    // RSP/CR3 pair).  The pending switch already excludes `exiting` because
+    // next_task() skips current_task_ptr_ (still == &exiting here), so it is
+    // safe to rely on the in-flight switch.
+    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
+    TaskControlBlock *next = next_task();
+    if (!next || next == &exiting) {
+        next = idle_task_;
+    }
+    if (!next || next->magic != TaskControlBlock::TCB_MAGIC) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
+    // Validate `next`'s iret frame (mirrors switch_to_task's dispatch guard so
+    // we never iretq into a corrupt context).  On failure, fall back to idle.
+    {
+        uint64_t nsp = TASK_STACK_PTR(next);
+        uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
+        bool bad = (!nsp || nsp < nbase || nsp >= next->kernel_stack_top ||
+                    (next->page_table_ != 0 && (next->page_table_ & 0xFFF) != 0));
+        if (!bad) {
+            const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
+            uint64_t rip_a = f[136 / 8], cs_a = f[144 / 8], rsp_a = f[160 / 8],
+                      ss_a = f[168 / 8];
+            uint64_t rip_b = f[168 / 8], cs_b = f[160 / 8], rsp_b = f[144 / 8],
+                      ss_b = f[136 / 8];
+            uint64_t f_rflags = f[152 / 8];
+            auto frame_ok = [&](uint64_t rip, uint64_t cs, uint64_t rsp,
+                                uint64_t ss) -> bool {
+                bool ring0 = (cs == 0x8);
+                bool ring3 = (cs == 0x1B);
+                if (rip == 0 || (!ring0 && !ring3))
+                    return false;
+                if ((ring0 || ring3) && (f_rflags & 0x2) == 0)
+                    return false;
+                if (ring3 && (ss != 0x23 || rsp == 0))
+                    return false;
+                return true;
+            };
+            if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
+                !frame_ok(rip_b, cs_b, rsp_b, ss_b))
+                bad = true;
+        }
+        if (bad) {
+            next = idle_task_;
+        }
+    }
+    if (!next || next->magic != TaskControlBlock::TCB_MAGIC) {
+        scheduler_lock_.unlock();
+        return;
+    }
+
+    // Publish the deferred switch.  save_target is &exiting.context.rsp — a
+    // dead slot for a TERMINATED task, so the ISR epilogue's
+    // `mov [save], rsp` (which saves the ISR's own RSP) landing there is
+    // harmless.  We deliberately do NOT run switch_to_task's live-RSP owner
+    // resolution, which from ISR context would re-point save_target at a
+    // *live* task and corrupt it.  Order: load first, then save, so the
+    // epilogue sees the slot consistently (it reads save_rsp_to first).
+    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
+                     __ATOMIC_RELEASE);
+    if (next->page_table_) {
+        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
+                         __ATOMIC_RELEASE);
+    } else {
+        __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
+                         __ATOMIC_RELEASE);
+    }
+
+    if (exiting.state == TaskState::RUNNING) {
+        exiting.state = TaskState::READY;
+        Scheduler::enqueue_ready(exiting);
+    }
+    next->state = TaskState::RUNNING;
+
+    if (next->page_table_) {
+        arch::GDT::set_tss_rsp0(next->kernel_stack_top);
+    }
+
+    {
+        arch::IrqGuard ig{};
+        __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_save_rsp_to, &exiting.context.rsp,
+                         __ATOMIC_RELEASE);
+        uint64_t cr0 = arch::read_cr0();
+        cr0 |= (1ULL << 3);
+        arch::write_cr0(cr0);
+    }
+
+    scheduler_lock_.unlock();
 }
 
 // ---------------------------------------------------------------------------
@@ -1880,8 +2131,13 @@ void Scheduler::monitor_task_entry() noexcept {
             arch::IrqGuard guard{};
             scheduler_lock_.lock();
             dequeue_ready(*me);
-            scheduler_lock_.unlock();
+            // Set BLOCKED while STILL holding scheduler_lock_ so the on_tick
+            // wake path (which also takes the lock before enqueueing) cannot
+            // observe a half-blocked task and re-enqueue it -> BLOCKED+inrq
+            // (the [WEDGE] INV-5 violation).  dequeue + state change must be
+            // atomic with respect to the wake handshake.
             me->state = TaskState::BLOCKED;
+            scheduler_lock_.unlock();
         }
         Scheduler::reschedule();
 
@@ -1905,6 +2161,8 @@ void Scheduler::ensure_monitor() noexcept {
     Logger::info("[MON] Re-spawning deadline-monitor task");
     auto *tcb = TaskControlBlock::create(monitor_task_entry, 127, 0xFFFFFFFF);
     if (tcb) {
+        __builtin_strncpy(tcb->name, "monitor", CONFIG_TASK_NAME_LEN - 1);
+        tcb->name[CONFIG_TASK_NAME_LEN - 1] = '\0';
         s_monitor_task_ = tcb;
         s_scan_requested_ = false;
         add_task(*tcb);
@@ -2109,7 +2367,8 @@ SchedulerError Scheduler::remove_task_err(TaskControlBlock &task) {
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
 
-    kernel::test::ResourceTracker::instance().track_task_remove();
+    // track_task_remove() lives in TaskControlBlock::cleanup() (shared teardown
+    // point) — not here — to avoid double-counting.  See Scheduler::remove_task.
     return SCHED_ERR_OK;
 }
 
@@ -2126,8 +2385,23 @@ extern "C" void scheduler_on_context_switch() {
     if (id == UINT64_MAX)
         return;
     __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX,
-                     __ATOMIC_RELEASE);
-    kernel::Scheduler::set_current_by_id(id);
+                      __ATOMIC_RELEASE);
+    // The deferred switch's RSP/CR3 swap has just been applied by the ISR.  The
+    // physical runner is now `id`; update the current_task_ptr_ CACHE so it
+    // agrees with the hardware.  current_task() also self-heals on its next RSP
+    // scan, but writing here keeps the cache exact the instant the switch lands
+    // (no window where the cache lags the real runner).  This is the ONLY place
+    // outside current_task()/set_current() that writes the cache.
+    auto *t = kernel::Scheduler::find_task(id);
+    if (t && t->magic == kernel::TaskControlBlock::TCB_MAGIC)
+        kernel::Scheduler::set_current_task(t);
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+    {
+        auto *c = kernel::Scheduler::current_task();
+        IPC_SCHED_TRACE("[APPLY]", "id=", id, "cur=", c ? c->id : 0u,
+                        "x=", 0u, "y=", 0u);
+    }
+#endif
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     s_last_switch_tick_ = arch::Timer::ticks();
 #endif

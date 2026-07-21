@@ -73,13 +73,45 @@ TaskControlBlock *ReadyQueueManager::peek_highest() noexcept {
 }
 
 void ReadyQueueManager::remove(TaskControlBlock &tcb,
-                               uint64_t priority) noexcept {
+                                uint64_t priority) noexcept {
     (void)priority;
+    // Locate the queue that physically contains this node by walking the
+    // intrusive links (the authoritative membership), not by trusting
+    // rq_priority_ or in_ready_queue_.  A priority boost/drop can change
+    // effective_priority() without a re-enqueue, so the node may sit in a queue
+    // indexed by its stale rq_priority_; and a reset()/snapshot can leave it
+    // linked with a stale flag.  TaskQueue::remove now splices by links
+    // regardless of the flag, so once we find the right queue the unlink is
+    // definitive.  is_valid guards break the walk on a freed/recycled node.
     uint64_t actual = tcb.rq_priority_;
-    queues_[actual].remove(tcb);
-    if (queues_[actual].empty()) {
-        bitmap_.clear(actual);
+    bool found = queues_[actual].contains(tcb);
+    if (!found) {
+        for (uint64_t p = 0; p <= CONFIG_PRIORITY_CEILING; ++p) {
+            bool in = false;
+            for (auto *n = queues_[p].head(); n; n = n->runq_next_) {
+                if (!TaskControlBlock::is_valid(n))
+                    break;
+                if (n == &tcb) {
+                    in = true;
+                    break;
+                }
+            }
+            if (in) {
+                actual = p;
+                found = true;
+                break;
+            }
+        }
     }
+    if (found) {
+        queues_[actual].remove(tcb);
+        if (queues_[actual].empty()) {
+            bitmap_.clear(actual);
+        }
+    }
+    // Always force the flags consistent so a later enqueue() (guarded by
+    // in_ready_queue_) cannot refuse a legitimately-ready task, and so a later
+    // MemPool::free cannot find a stale inrq=true on a freed TCB.
     tcb.rq_priority_ = 0;
     tcb.in_ready_queue_ = false;
 }
@@ -129,6 +161,18 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
                     n->in_ready_queue_ = true;
             }
         } else {
+            // Queue dropped (head/tail invalid): clear in_ready_queue_ on its
+            // nodes so the later rebuild_ready_queue() (which sets inrq=false
+            // then re-enqueues READY tasks) does not refuse them via the
+            // double-enqueue guard.  Walk is_valid-guarded to avoid following a
+            // freed/reused node's runq_next_.
+            if (h) {
+                for (auto *n = h; n; n = n->runq_next_) {
+                    if (!TaskControlBlock::is_valid(n))
+                        break;
+                    n->in_ready_queue_ = false;
+                }
+            }
             queues_[i].reset();
             bitmap_.clear(i);
         }
@@ -148,7 +192,21 @@ void ReadyQueueManager::clear_all() noexcept {
 }
 
 void ReadyQueueManager::reset() noexcept {
+    // Empty all per-priority queues AND clear each dropped node's
+    // in_ready_queue_ flag.  TaskQueue::reset() only nulls head/tail/count and
+    // leaves every node's in_ready_queue_=true stale — which later causes
+    // enqueue()'s double-enqueue guard to REFUSE re-linking a legitimately
+    // READY task (it thinks the node is still queued), leaving the task
+    // READY + inrq=1 + not physically in any queue -> the scheduler can never
+    // dispatch it -> wedge ([WEDGE] orphan inrq=1 phys=0, bitmap empty).  Walk
+    // + clear per node (validity-guarded so a dangling runq_next_ from a
+    // freed/reused TCB stops the walk instead of dereferencing freed memory).
     for (uint64_t i = 0; i <= CONFIG_PRIORITY_CEILING; ++i) {
+        for (auto *n = queues_[i].head(); n; n = n->runq_next_) {
+            if (!TaskControlBlock::is_valid(n))
+                break;
+            n->in_ready_queue_ = false;
+        }
         queues_[i].reset();
     }
     bitmap_.clear_all();

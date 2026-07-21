@@ -28,3 +28,85 @@
 2026-07-18 03:18:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=SIGSEGV)
 2026-07-18 03:19:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock)
 2026-07-18 03:20:00 ipc_blocking PASSED: 0 FAILED: 0 TIME: 40000ms STATUS: HANG(subtype=live-lock)
+2026-07-18 10:19:30 ipc_blocking PASSED: 0 FAILED: 0 TIME: 62000ms STATUS: HANG(subtype=STALL-HALT; READY-task-T0-stranded-outside-RQ; current_task_ptr-sync-fix-applied)
+2026-07-18 10:34:50 ipc_blocking PASSED: 1 FAILED: 0 TIME: 60000ms STATUS: HANG(subtype=SYNC-FAIL-dest-gone-reply in test2; D1/D2/physical-current applied, test1 now PASSES)
+
+2026-07-18 13:22:59 ipc_blocking PASSED: 4 FAILED: 0 TIME: ~45s
+2026-07-18 13:50:05 class=arch PASS=61 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=atomic PASS=1 FAIL=0 STALL=0 WEDGE=3 HANG TIME=120s VERDICT=FAIL
+2026-07-18 13:50:05 class=cross_arch PASS=18 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=deadline_action PASS=1 FAIL=0 STALL=0 WEDGE=4 HANG TIME=120s VERDICT=FAIL
+2026-07-18 13:50:05 class=deadline_miss PASS=7 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 13:50:05 class=deadline_recovery PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=debug PASS=16 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=device PASS=35 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=hal_bits PASS=16 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 13:50:05 class=init PASS=5 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=integration PASS=3 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=ipc PASS=15 FAIL=0 STALL=0 WEDGE=3 HANG TIME=120s VERDICT=FAIL
+2026-07-18 13:50:05 class=ipc_blocking PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=lib PASS=17 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 13:50:05 class=memory PASS=42 FAIL=2 STALL=2 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 13:50:05 class=memory_safety PASS=7 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=net PASS=44 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 13:50:05 class=o1_scheduler PASS=19 FAIL=4 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=arch PASS=61 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=atomic PASS=14 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=cross_arch PASS=18 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=deadline_action PASS=3 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=deadline_miss PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=deadline_recovery PASS=3 FAIL=4 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=debug PASS=16 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=device PASS=35 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=hal_bits PASS=16 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=init PASS=1 FAIL=0 STALL=0 WEDGE=3 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=integration PASS=3 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=ipc PASS=15 FAIL=0 STALL=0 WEDGE=3 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=ipc_blocking PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=lib PASS=17 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=memory PASS=42 FAIL=2 STALL=2 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=memory_safety PASS=7 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=net PASS=44 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=o1_scheduler PASS=18 FAIL=5 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=preemption_under_syscall PASS=2 FAIL=0 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=priority_inheritance PASS=0 FAIL=4 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=process PASS=34 FAIL=1 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=random PASS=19 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=risc64 PASS=0 FAIL=0 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=scheduler PASS=22 FAIL=5 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=security PASS=33 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=shell PASS=24 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=spinlock PASS=11 FAIL=0 STALL=0 WEDGE=0  TIME=7s VERDICT=OK
+2026-07-18 14:00:12 class=spinlock_stress PASS=3 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=sporadic PASS=27 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=ss_deadline PASS=4 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=starvation_deadlock PASS=1 FAIL=5 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=stress PASS=7 FAIL=5 STALL=0 WEDGE=0 ERR2 TIME=5s VERDICT=FAIL
+2026-07-18 14:00:12 class=syscall PASS=18 FAIL=1 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=timing PASS=20 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=vfs PASS=35 FAIL=4 STALL=2 WEDGE=0 HANG TIME=120s VERDICT=FAIL
+2026-07-18 14:00:12 class=wcet PASS=3 FAIL=0 STALL=0 WEDGE=0  TIME=6s VERDICT=OK
+2026-07-18 14:00:12 class=wcet_overrun PASS=1 FAIL=0 STALL=0 WEDGE=3 HANG TIME=120s VERDICT=FAIL
+
+SUMMARY: total=37 ok=22 fail=15
+2026-07-18 15:28:04 memory PASSED: 45 FAILED: 0 TIME: 0s
+2026-07-19 14:28:41 memory PASSED: 135 FAILED: 0 TIME: ~580s STATUS: 2of5-runs-SIGILL-timeout(flaky-bug-persists)
+2026-07-19 15:20:13 memory PASSED: 0 FAILED: 1/run x5 TIME: ~600s STATUS: kernel-dispatch-bug-FIXED(SIGILL/WEDGE-gone); TaskLimitReached now fails at ResourceTracker leak (separate accounting/test issue)
+2026-07-19 18:24:42 memory PASSED: 0 FAILED: 1 TIME: ~120s STATUS: TIMEOUT/PANIC(pre-existing BUGS.md#020)
+2026-07-19 18:24:42 memory PASSED: 0 FAILED: 1 TIME: ~120s STATUS: TIMEOUT/PANIC(pre-existing BUGS.md#020)
+2026-07-19 18:24:42 memory PASSED: 0 FAILED: 1 TIME: ~120s STATUS: TIMEOUT/PANIC(pre-existing BUGS.md#020)
+2026-07-20 20:18:02 memory PASSED: 0 FAILED: 0 TIME: 120000ms STATUS: PANIC(Terminal::write #PF root cause #3: kernel derefs user VA 0x70010FA0 CS=0x8 err=0x0; buffer_pool entry fault already GONE tests 18-20 PASS no 26B00; pre-sys_write-fix)
+2026-07-20 20:19:11 memory PASSED: 44 FAILED: 1 TIME: 32000ms STATUS: sys_write safe_copy_from_user fix applied -> Terminal #PF GONE; only buffer_pool_ipc_transfer FAIL (configure_user_yield_entry assert, wrong higher-half threshold 0xFFFFFFFF80000000)
+2026-07-20 20:20:36 memory PASSED: 44 FAILED: 1 TIME: 32000ms STATUS: diagnostic Logger::info build (filtered); same helper-assert failure, no Terminal #PF
+2026-07-20 20:22:05 memory PASSED: 44 FAILED: 1 TIME: 32000ms STATUS: diagnostic Logger::error build; captured frame: f5=entry=0xFFFF80000026B00B, threshold too high -> original_entry=0
+2026-07-20 20:24:55 memory PASSED: 0 FAILED: 0 TIME: 90000ms STATUS: PANIC(regression: threshold fixed -> buffer_pool tasks dispatched; kernel derefs user VA 0x70010FA0 rip=0x217104/0x28C360 CR3=0x178C000; NOT user-app sys_write path -> new fault from dispatching configured user tasks, under investigation)
+2026-07-20 20:35:40 memory PASSED: 0 FAILED: 0 TIME: 90000ms STATUS: HANG-TIMEOUT(no panic; #PF recovery fix applied -> user-app write returns -EFAULT instead of panic; user-app placeholder spins on bad stack local at 0x70010FA0, pre-existing runelf stack-mapping hole exposed by recovery fix)
+2026-07-20 20:41:06 memory PASSED: 45 FAILED: 0 TIME: 37000ms STATUS: ALL PASS (buffer_pool entry #PF fixed via configure_user_yield_entry; Terminal::write #PF root#3 fixed via sys_write safe_copy_from_user + #PF recovery honored in kernel mode; user-app.c switched stack-local msg -> .rodata literal to avoid unmapped stack page)
+2026-07-20 20:45:55 memory PASSED: 0 FAILED: 0 TIME: 120000ms STATUS: HANG-TIMEOUT(flaky; reached test 21 clean, user-app terminated, then hang at ~test22 with no #PF/panic -> separate flaky scheduler deadlock from uncommitted scheduler rework, NOT the #PF bugs. Runs 1,2,7 passed 45/0.)
+2026-07-20 23:09:00 memory PASSED: 45 FAILED: 0 TIME: 36000ms 
+2026-07-20 23:09:37 memory PASSED: 45 FAILED: 0 TIME: 37000ms 
+2026-07-20 23:10:13 memory PASSED: 45 FAILED: 0 TIME: 36000ms 
+2026-07-20 23:12:15 memory PASSED: 0 FAILED: 0 TIME: 122000ms STATUS: HANG/#021-reproduced(timeout)
+2026-07-20 23:14:17 memory PASSED: 0 FAILED: 0 TIME: 122000ms STATUS: HANG/#021-reproduced(timeout)
+2026-07-21 17:35:22 ipc PASSED: 25 FAILED: 0 (aborted by GPF at test 25->26 boundary) TIME: ~120s STATUS: GPF
+2026-07-21 17:49:04 ipc PASSED: 38 FAILED: 0 TIME: 771ms

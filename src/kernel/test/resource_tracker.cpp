@@ -173,6 +173,14 @@ bool ResourceTracker::check(const ResourceCounters &baseline,
 
     Logger::warn("[RESOURCE] %s leaked resources:", test_name);
 
+    // Lossless lifecycle summary for leak analysis: how many tasks were created
+    // vs cleanup()'d vs delete()'d since boot.  A gap (create > cleanup, or
+    // cleanup > delete) proves tasks were torn down incompletely.  No asserts.
+    {
+        // Lossless lifecycle summary for leak analysis would be emitted here;
+        // postponed (see ROADMAP §0.3.5.x.1) — instrumentation was inconclusive.
+    }
+
     for (size_t i = 0; i < MemPool::POOL_COUNT; ++i) {
         char label[32];
         int pos = 0;

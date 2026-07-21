@@ -228,7 +228,218 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [ ] Pre-allocate ALL kernel structures at boot: TCB array, page tables, IPC buffers, driver rings
   - [ ] MemPool — replace PMM-backed growth with fixed compile-time pools (from v0.2.21 config)
   - [ ] Add MemPool::reserve(pool_idx, count) — called once at init, fails if insufficient
-- [ ] Stack Allocation — Fixed, Guarded, No Growth
+
+#### 0.3.5.x — OOM / Resource-Exhaustion RT-Safety Gap (KNOWN LIMITATION, found during scheduler re-design)
+**Context (discovered v0.3.2 scheduler re-design, `PmmExhaustion` test):** When a RUNNING task
+calls `PMM::alloc_page()` and it returns 0 (OOM), the kernel currently does **nothing** — the task
+stays `READY`/`RUNNING` and simply gets `0` back; the *caller* is responsible for checking. The
+scheduler keeps preempting via the tick and does not freeze, so the `PmmExhaustion` test ("eventually
+returns 0; no crash; free restores capacity") legitimately passes. But this is **not RT-safe**:
+
+- A high-priority task that fails to allocate yet keeps running (retry/spin loop) can **monopolize the
+  CPU** and starve lower/medium tasks → deadline misses, unbounded latency.
+- There is **no admission control**: a task is admitted and starts running even when the system cannot
+  guarantee it will obtain the memory it needs to complete.
+- OOM is a **silent `0`** the caller must remember to check; one unchecked return → null-deref /
+  corruption. RT systems are built to prevent exactly this.
+- The STALL detector was a false-positive here (it flagged "init RUNNING at highest priority, nothing to
+  preempt" as a freeze); corrected by aligning the detector predicate with `needs_switch()`. That fix
+  addresses the *detector*, not the OOM *policy*.
+
+**Required design work (future version — NOT a test fix, the test is correct):**
+- [ ] **Per-task / per-server memory budget & cap** — bound how much a task (or Sporadic Server) may
+      allocate, so one task cannot drain the pool (ties into §0.3.3 SporadicServer budgeting).
+- [ ] **Admission control** — a task needing guaranteed memory is only admitted if the budget can be
+      reserved; otherwise it is BLOCKED or rejected at spawn (link to §0.3.9 runelf admission control:
+      `is_rm_schedulable` must also check memory schedulability).
+- [ ] **Controlled OOM reaction** — define kernel policy for OOM: task BLOCKED (retry with budget),
+      KILL (deferred-kill list, §0.3.2 P5a), or monitored exception (NOTIFY_MONITOR, §0.3.2 P5b) —
+      instead of "returns 0 and hopes the caller checks". Disabling the OOM handler (as the test does)
+      must remain a test-only escape hatch, not production behavior.
+- [ ] **`vmm_clone_failure_rollback` (STUB-8)** — `clone_kernel_pml4` must roll back partial
+      page-table allocations on OOM, not leave dangling PD/PT pages.
+- [ ] **Memory-determinism test** (`test_static_pool_exhaustion.cpp`, §0.3.8) — exhaust a pool/budget
+      and verify *graceful, policy-defined* failure (task blocked/killed, capacity restored), not just
+      "returns 0".
+- [ ] **Document OOM semantics** in the scheduler redesign doc (INV-1..6 currently cover only
+      deferred-switch correctness; add an explicit liveness guarantee: "a non-yielding kernel task must
+      still be preempted by the tick; the system must not freeze under OOM").
+
+**Test verdict (`PmmExhaustion`, class `memory`):** test intent is sound (allocator unit test) and
+PASSES; no rework needed. The gap is a **design limitation** (no RT OOM policy), recorded here for a
+future version. Do NOT weaken scheduler liveness to make this test pass.
+
+#### 0.3.5.x.1 — `TaskLimitReached` (class `memory`) flaky LEAK + SIGILL PANIC — ROOT CAUSE FOUND (2026-07-19)
+
+**Symptom (TWO faces of ONE bug):**
+- (a) ResourceTracker LEAK (flaky ~3-4/15 `memory` runs): `Tasks +52, MsgQueues +58, Notify +53,
+  EventGroups +11, PMM pages +928`. The per-task IPC triple (msg_queue/notify/event_group) allocated
+  in `TaskControlBlock::create` (task.cpp:489-517) and freed in `TaskControlBlock::cleanup`
+  (task.cpp:917-933) leaks ~1 triple per leaked task.
+- (b) KERNEL PANIC (flaky, ~3/20 runs, appeared after a wedge-mask fix and now reproducible on
+  baseline-with-instrumentation): `Task 0x4: exception vector=0x6 (SIGILL) rip=0x40046B ... unhandled
+  signal ... isr_nesting: 2`. **vector=0x6 = #UD (invalid opcode), NOT #GP.** RIP `0x40046B` is in
+  **user space (~0x400000)** — task id=4 is a *user* task executing freed/invalid code, repeatedly,
+  unhandled → panic. id=4 is the SAME id the `[WEDGE]` detector flagged as `orphan inrq=1 phys=0 bm=0`.
+
+**ROOT CAUSE (evidenced, not guessed):**
+A task whose code/stack memory has been reclaimed (via `cleanup()`/`MemPool::free`) is **still in the
+scheduler's dispatch path** — still registered in `all_tasks_` and/or still in the ready queue
+(`in_ready_queue_=1`) — so the scheduler keeps dispatching it. The next dispatch executes freed/invalid
+memory → SIGILL at a fixed RIP. This is a **critical scheduler-consistency bug**: a freed task must
+NEVER be dispatchable again.
+
+Chain:
+1. Task torn down partially (memory freed) but NOT fully unregistered from the scheduler.
+2. Scheduler re-dispatches it (it's `current`/RUNNING or still in ready queue with `inrq=1`).
+3. It executes freed memory → SIGILL at 0x40046B → `unhandled signal` path (kernel.cpp:1200) →
+   `Scheduler::terminate(*task)` (kernel.cpp:1210). `terminate()` only flips state + dequeues; it does
+   NOT unregister from `all_tasks_`/`id_table_`/`deadline_list_` and does NOT free. So the task stays
+   registered + re-dispatchable → SIGILL loops → panic.
+4. The ResourceTracker leak (face a) is the **same defect seen from the accounting side**: a task that
+   is freed-but-still-registered is also the one whose `delete`/`MemPool::free` was skipped or whose
+   `cleanup()` ran but the TCB/stack free was missed → `Tasks +N`.
+
+**Why earlier "fixes" failed (and were reverted to baseline):**
+- `destroy_task` (immediate atomic teardown): correct design, but its `dequeue_ready` used the WRONG
+  queue (trusting `rq_priority_`, which was desynced from the physical queue), so the node was left
+  linked; then `MemPool::free` on a still-linked TCB → dangling `runq_next_` → SIGILL. Reverted.
+- `remove` scan-for-real-queue + `reset` clear-inrq: removed the wedge detector's trigger but MASKED the
+  symptom — the task was still dispatchable, so it became SIGILL instead of wedge. Reverted.
+- Lesson: fixing the *flag* (`in_ready_queue_`) without fixing the *dispatchability*
+  (`all_tasks_` membership + physical unlink) just moves the failure.
+
+**Required fix (single coherent change, NOT yet implemented 2026-07-19):**
+- `ReadyQueueManager::remove` must unlink from the *actual* physical queue (scan all priorities,
+  `is_valid`-guarded) when `rq_priority_` is desynced from the linked queue, and only clear
+  `in_ready_queue_`/`rq_priority_` after a real unlink.
+- A `destroy_task` primitive must, atomically under `scheduler_lock_`: (1) unlink from the real ready
+  queue, (2) remove from `all_tasks_`/`id_table_`/`deadline_list_`, (3) `cleanup()`, (4)
+  `MemPool::free` — in that order, and ONLY THEN free. For a currently-RUNNING/current task it must
+  fall back to `terminate()` (deferred) since it cannot free `current` synchronously.
+- The signal-terminate path (kernel.cpp:1210) and the reaper (`reap_orphans`) must route through this
+  full-unregister path so a torn-down task is never left dispatchable.
+- INV-5 (ready-queue coherence) is a *consequence* of this: a fully-unregistered task is never
+  `inrq=1` outside the physical queue.
+
+**Testidea/Expect (test_resource_exhaustion.cpp:84-88):** "Create tasks until MAX_TASKS reached;
+verify next create/add fails; then cleanup restores capacity; after cleanup task_count == baseline."
+Teardown IS part of the stated contract. The test body (89-125) does `remove_task`+`cleanup`+`delete`
+on every entry of `tasks[created]` plus the `extra` task — the documented synchronous teardown
+sequence (correct; `cleanup()` frees all bound resources; `delete` → `operator delete` →
+`remove_task`+`MemPool::free`). `Scheduler::terminate()` is NOT a substitute here: it only flips state
+to TERMINATED + dequeues and defers `cleanup()`+`free` to the reaper (on_tick), which would leak more
+under deferred switching with no tick.
+
+**Open questions resolved by root cause:**
+- `cleanup > delete` gap (POSTPONED note's open question) is explained: tasks `cleanup()`'d via the
+  signal-terminate/signal path (kernel.cpp:1210 → `terminate`, NOT `delete`) are cleaned but never
+  `MemPool::free`'d → `cleanup` counter rises without matching `delete`. The fix routes those through
+  full unregister + free.
+
+**SIGILL ROOT CAUSE — CONFIRMED VIA GDB (2026-07-19):**
+`make debug-test x86_64 debug memory tools/gdb/catch_sigill.gdb` breaks at `handle_interrupt_c` on
+vector 6 and dumps the faulting task. Evidence at the SIGILL:
+- fault_rip = 0x40046B (USER space), vector = 6 (#UD / SIGILL).
+- `current_task()` = task 4, **state = 4 (TERMINATED)**, magic = VALID, page_table_ = valid
+  (0x178c000), in_ready_queue_ = 0, runq_next_ = nil, rq_priority_ = 0.
+- **Deferred-switch slots all ZERO**: `scheduler_save_rsp_to = 0`,
+  `scheduler_load_rsp_from = 0`, `scheduler_load_cr3_from = 0`, `isr_nesting_depth = 0`.
+- backtrace: `handle_interrupt_c` ← `isr_common` ← (user ctx, rip 0x0).
+
+**Conclusion:** Task 4 is **TERMINATED but still `current_task_ptr_`**, and **no context switch away
+from it was ever scheduled** (all deferred-switch slots = 0). The SIGILL is task 4's own user code
+hitting an invalid opcode at 0x40046B; the actual kernel bug is that a TERMINATED task remains the
+current task and is re-entered. This is NOT a ready-queue-link / freed-TCB bug (the TCB is valid, not
+in the ready queue, not freed). The `TaskQueue::remove` rewrite was addressing the wrong layer.
+
+**Why no switch:** `Scheduler::terminate` (scheduler.cpp:147) is the ONLY path that sets the deferred
+switch (lines 162-166: `if (&task == current_task_ptr_) { next=next_task(); if(next && next!=&task)
+switch_to_task(...) }`). If task 4 reached TERMINATED via a DIFFERENT path (direct `state=TERMINATED`
+assignment in `cleanup_test_tasks`/reaper, or `terminate` ran but the switch slot was later cleared
+because `isr_nesting_depth > 2` at that instant so `isr_common` skipped applying it), the task stays
+current and is re-dispatched. The reaper (`reap_orphans`) also skips `t == current`, so a TERMINATED
+current task is never reaped/switched → infinite SIGILL → KERNEL PANIC.
+
+**Required fix (not yet implemented 2026-07-19):** ensure a task can NEVER be `current_task_ptr_`
+while TERMINATED, and that termination of the current task ALWAYS schedules a switch. Concretely:
+(1) the unhandled-signal path (kernel.cpp ~1210) must switch away even from exception context — the
+deferred-switch slot must be applied by exception ISRs too (it is, via `isr_common`, but only when
+`isr_nesting_depth <= 2`; a #UD taken inside another ISR at depth >2 would skip it); (2) any code that
+sets `state = TERMINATED` on the current task must route through `Scheduler::terminate` (which
+schedules the switch), not a raw assignment; (3) `next_task()`/rebuild must treat a TERMINATED
+`current_task_ptr_` as invalid and force a switch to idle.
+
+**FULL MECHANISM TRACED VIA GDB (2026-07-19), revised:**
+The SIGILL is NOT a ready-queue-link / freed-TCB bug (TaskQueue::remove rewrite was wrong layer).
+`make debug-test ... tools/gdb/trace_task4_terminate.gdb` (breakpoint at every kernel
+`state=TERMINATED` write, conditioned on id==4, + SIGILL catch) shows the LAST transition of task 4
+to TERMINATED is:
+```
+>>> syscall_handlers_misc.cpp:93 set task4 TERMINATED (current=0xffff80000169b180)
+#0  kernel::Syscall::sys_exit  (syscall_handlers_misc.cpp:93)
+#1  kernel::Syscall::handle
+#2  syscall_handler (kernel.cpp:1390)
+```
+So `sys_exit` does a **raw `t->state = TERMINATED`** (line 93) and `return`s. The syscall return path
+(kernel.cpp:1369) sees `state==TERMINATED` and calls `Scheduler::reschedule()` — BUT `reschedule()` is
+**defer-only** (scheduler.cpp:1633-1642: it only sets `scheduler_need_resched=true`, it does NOT set
+the deferred-switch slot `scheduler_save_rsp_to`/`load_rsp_from`). The actual switch is published only
+by the TIMER ISR via `rate_monotonic_schedule()`. So the syscall `iret`s back into task 4's user code
+BEFORE any switch → SIGILL at 0x40046B. GDB confirmed: at the SIGILL `scheduler_save_rsp_to=0`,
+`load_rsp_from=0`, `load_cr3_from=0`, `isr_nesting_depth=0` — no switch was ever scheduled.
+
+**Fix attempt + regression (2026-07-19):** routing `sys_exit` through `Scheduler::terminate` (which
+DOES set the deferred-switch slot via `switch_to_task`) was TRIED but caused a GPF. Reason:
+`terminate`→`switch_to_task` is called FROM INSIDE the syscall ISR, so it sets
+`scheduler_save_rsp_to = &task->rsp_save` and saves the ISR's RSP (not the task's user RSP) into the
+task — and loads `next`'s RSP. Applied by `isr_common` this corrupts the context → GPF on the
+switched-to task (vector 0xD/#GP at kernel RIP 0xFFFF80000026AE0B). REVERTED. The correct fix must set
+the deferred-switch slot from the syscall's SAVED USER RSP (in `regs`), replicating exactly what
+`rate_monotonic_schedule()` does in the timer ISR — NOT call `switch_to_task` from ISR context.
+
+**RESOURCE TRACKER DOUBLE-COUNT: FIXED (2026-07-19):** `track_task_remove()` now fires exactly once
+per task, in `TaskControlBlock::cleanup()` (the single shared teardown point for both delete-style and
+reaper-style frees). Removed the redundant calls from `Scheduler::remove_task`,
+`Scheduler::unregister_task`, `Scheduler::remove_task_err` (kept as comments explaining why). Verified
+no live duplicate call remains.
+
+**REMAINING TaskLimitReached LEAK IS A TEST BUG, NOT A TRACKER BUG:** line 104
+`CT_ASSERT(after_fill >= baseline + created)` fails when `add_task` rejects at capacity (init/vfsd/iocd/
+monitor already occupy slots, so <64 adds succeed but `created` counts ALL `create()`'d TCBs). `CT_ASSERT`
+does `fail(); return;` (test.hpp:277-283) → **teardown loop (lines 118-122) never runs** → the ~53
+created tasks leak (`Tasks +53, MsgQueues +53, Notifies +53` in the ResourceTracker report). The leak
+is a consequence of the test aborting, not a kernel ResourceTracker defect. Fix: make the capacity
+assertion non-aborting (or count only successfully-added tasks) so teardown always runs.
+
+**SIGILL FIX — DONE (2026-07-19, this session):** Implemented
+`Scheduler::switch_away_from_terminating(TaskControlBlock&)` (scheduler.cpp, declared scheduler.hpp)
+and routed `sys_exit` (syscall_handlers_misc.cpp:89) through it when the exiting task is `current_task()`
+(falls back to `Scheduler::terminate` for non-current). The helper publishes the deferred-switch slot
+directly with `save_target = &exiting.context.rsp` (a dead slot for a TERMINATED task, so the ISR
+epilogue's `mov [save], rsp` landing there is harmless) and `load_rsp_from = TASK_STACK_PTR(next)`,
+replicating `switch_to_task`'s store sequence WITHOUT its live-RSP owner resolution (which from ISR
+context corrupts a live task's context — the earlier GPF regression). SIGILL no longer reproduces; the
+`memory` class now reaches a real TEST SUMMARY instead of looping on #UD. Verified by GDB
+(`tools/gdb/verify_sys_exit_fix.gdb`).
+
+**NEW BLOCKER — PRE-EXISTING USE-AFTER-FREE PANIC (BUGS.md#020), filed this session:** After the SIGILL
+fix, the `memory` class still aborts with a **different** CPU EXCEPTION — a **GPF (vector 13)** on
+**task id=1** at `rip=0xFFFF80000027C9E2` (`sporadic_server.hpp:114`,
+`SporadicServer::current_priority()`) with a **`0xDDDDDDDDDDDDDDDD` return address** (the `MemPool::free`
+debug poison). Preceded by a **#NM storm (vector 7)** on user **task id=2** (user-space `rip=0x400372`)
+and a **#PF (vector 14)** on **task id=6** (`test_buffer_pool.cpp:247`). **Verified pre-existing**: with
+all scheduler/syscall/TaskQueue/ready_queue/test changes stashed and a fresh baseline ISO, the panic
+reproduces **3/3** with the identical signature. Therefore it is **NOT caused by** the SIGILL fix, the
+ResourceTracker single-site change, the `TaskQueue::remove` rewrite, or the test naming helpers. The
+`0xDDDD` return address is the hallmark of a **freed kernel stack / SporadicServer object being returned
+into** — a use-after-free, same family as the unresolved #019. This panic aborts the `memory` run and
+therefore **masks verification of the `TaskLimitReached` leak fix** (which is otherwise complete:
+non-aborting teardown + `create_named_task`/`add_task_named` provenance tagging in test.hpp/test.cpp).
+See BUGS.md#020 for the full report and GDB plan. Next: investigate #020 (watchpoint on the freed
+SporadicServer block) — tracked separately from the original SIGILL/leak task.
+
+ - [ ] Stack Allocation — Fixed, Guarded, No Growth
   - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)
   - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
   - [ ] CONFIG_STACK_OVERFLOW_HOOK — weak symbol, called from #PF handler

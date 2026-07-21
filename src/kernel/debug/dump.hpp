@@ -46,5 +46,13 @@ void dump_task_info(uint64_t task_id);
 /// @brief Dump all valid tasks in the scheduler array.
 void dump_all_tasks();
 
+/// @brief Record a task's entry (code address) + TCB address for BUGS.md#020
+/// wild-write forensics.
+void record_task_entry(uint64_t entry, uint64_t tcb);
+
+/// @brief If `value` matches a recently-created task's `entry`, return that
+/// task's TCB address; else 0.
+uint64_t find_entry_owner(uint64_t value);
+
 } // namespace debug
 } // namespace kernel

@@ -30,7 +30,10 @@ SRC_ASM_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.asm' 2>/dev/nul
 SRC_S_ARCH      := $(shell find src/kernel/arch/$(ARCH) -name '*.S' 2>/dev/null)
 
 SRC_CXX_ARCH_BASE := $(shell find src/kernel/arch -maxdepth 1 -name '*.cpp' 2>/dev/null)
-SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH_BASE) $(SRC_CXX_ARCH)
+# $(strip) is required: GNU Make's $(shell find ...) can leave a leading space
+# on the result, which would propagate into every generated object-path stem
+# (e.g. ` build/lib/logger.o`) and produce invalid rules that silently no-op.
+SRC_CXX         := $(strip $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH_BASE) $(SRC_CXX_ARCH))
 SRC_ASM         := $(SRC_ASM_GENERIC) $(SRC_ASM_ARCH)
 SRC_S           := $(SRC_S_GENERIC) $(SRC_S_ARCH)
 OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o) $(SRC_S:src/%.S=build/%.o)
@@ -58,10 +61,25 @@ FAT32_OBJ      := build/fat32/fat32_img.o
 # ------------------------------------------------------------------------------
 # Pattern rules
 # ------------------------------------------------------------------------------
-build/%.o: src/%.cpp
+# NOTE: GNU Make 3.81 cannot resolve prerequisites for `.cpp.o` / `.c.o`
+# double-extension targets via pattern rules (`build/%.o: src/%.cpp` treats
+# `kernel.cpp.o` as a `.cpp.o` suffix chain and looks for `kernel.cpp.cpp`).
+# It ALSO silently drops rules produced by `$(eval $(call …))` when the
+# stem list is derived from `$(shell …)` (a make-version quirk).  The robust
+# workaround is to emit explicit per-file rules into a generated makefile via
+# a shell loop and `-include` it.  .asm/.S objects have single-extension
+# names (`isr_stubs.o`) so their pattern rules are fine.
+GEN_CPP_RULES := mk/cpp-rules.gen.mk
+-include $(GEN_CPP_RULES)
+
+$(GEN_CPP_RULES): mk/rules.mk Makefile
 	@mkdir -p $(dir $@)
-	@printf '  %-7s %s\n' 'CC' '$@'
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	@printf '' > $@
+	@for f in $(SRC_CXX); do \
+	    stem=$${f#src/}; stem=$${stem%.cpp}; \
+	    printf 'build/%s.o: %s\n\t@mkdir -p $$(dir $$@)\n\t@printf "  %%s %%s\\n" CC $$@\n\t$$(CXX) $$(CXXFLAGS) -c -o $$@ $$<\n' "$$stem" "$$f" >> $@; \
+	done
+
 
 build/%.o: src/%.asm
 	@mkdir -p $(dir $@)

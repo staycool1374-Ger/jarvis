@@ -22,7 +22,17 @@
 #include <logger.hpp>
 
 namespace kernel {
+
+// Forward declaration of the scheduler task type, so test.hpp can reference it
+// in helper signatures without pulling in scheduler.hpp (the full definition
+// is available at call sites that include <kernel/task/scheduler.hpp>).
+class TaskControlBlock;
+
 namespace test {
+
+// Local alias so helpers below can write `TaskControlBlock` and resolve to the
+// real kernel::TaskControlBlock declared above.
+using TaskControlBlock = kernel::TaskControlBlock;
 
 enum TestFlags : uint8_t {
     TF_KERNEL   = 0,
@@ -75,6 +85,12 @@ public:
 
     static void record_class_section(const char* name, size_t start, size_t count);
 
+    // Tracks the name of the test case currently executing.  Used by
+    // add_task_named() to tag test-created tasks with their origin so leaks
+    // are traceable to a specific test.
+    static void set_current_test_name(const char* name);
+    static const char* current_test_name();
+
 private:
     static constexpr size_t MAX_TESTS = 1024;
     static constexpr size_t MAX_CLASSES = 64;
@@ -88,6 +104,7 @@ private:
     static ClassSection sections_[MAX_CLASSES];
     static size_t class_count_;
     static size_t expected_count_;
+    static const char* current_name_;
     // NOLINTEND(bugprone-dynamic-static-initializers)
 };
 
@@ -97,6 +114,7 @@ public:
     virtual ~TestBase() = default;
 
     void execute() {
+        Registry::set_current_test_name(name_);
         setUp();
         run();
         tearDown();
@@ -120,6 +138,20 @@ protected:
     const char* name_;
     bool failed_ = false;
 };
+
+/// @brief Creates a task (via the kernel's TaskControlBlock::create) and adds
+///        it to the scheduler, tagging its `name` with the calling test case so
+///        leaked/orphaned tasks are traceable to their origin.  `tag` (if
+///        non-null) is prefixed to the test name (e.g. a role like "worker").
+///        Falls back to the raw `create` name when no test is active.
+TaskControlBlock *create_named_task(void (*entry)(), uint64_t priority,
+                                     uint64_t period_ticks,
+                                     const char *tag = nullptr);
+
+/// @brief Adds an already-created task to the scheduler, tagging its `name`
+///        with the calling test case (see create_named_task).  Thin wrapper
+///        over Scheduler::add_task that records provenance.
+void add_task_named(TaskControlBlock &task, const char *tag = nullptr);
 
 void run_all();
 void run_safe();

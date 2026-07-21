@@ -395,6 +395,7 @@ uint64_t *scheduler_save_rsp_to = nullptr;
 uint64_t scheduler_load_rsp_from = 0;
 uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = UINT64_MAX;
+bool scheduler_need_resched = false;
 uint64_t isr_nesting_depth = 0;
 uint64_t scheduler_corruption_count = 0;
 uint64_t deadline_detection_integrity = 0;
@@ -612,6 +613,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             10,  // low priority (below shell at 2)
             10); // period_ticks
         if (init_task) {
+            // Self-explaining name for the test harness / coordinator task
+            // (PID 1).  Captured by the scheduler so rate_monotonic_schedule
+            // can exempt it from preemption during the test cycle (BUGS.md#021).
+            __builtin_strncpy(init_task->name, "init",
+                              sizeof(init_task->name) - 1);
+            init_task->name[sizeof(init_task->name) - 1] = '\0';
+            kernel::Scheduler::set_harness_task(init_task);
             kernel::Scheduler::add_task(*init_task);
             kernel::Logger::info("init: PID 1 started");
         }
@@ -1129,8 +1137,11 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
         kernel::Logger::error("Task %x: SIGKILL (fatal, no handler "
                               "allowed)",
                               task->id);
-        task->state = kernel::TaskState::TERMINATED;
-        task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+        // INV-5: terminate dequeues the task from the ready queue so it is
+        // never left inrq=1 outside the physical queue (which corrupts the
+        // ready-queue count_ and wedges the scheduler).
+        kernel::Scheduler::terminate(*task,
+                                     static_cast<uint64_t>(-static_cast<int64_t>(sig)));
         return false;
     }
 
@@ -1160,8 +1171,8 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
             kernel::Logger::error("Task %x: cannot write signal frame, "
                                   "terminating",
                                   task->id);
-            task->state = kernel::TaskState::TERMINATED;
-            task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+            kernel::Scheduler::terminate(
+                *task, static_cast<uint64_t>(-static_cast<int64_t>(sig)));
             return false;
         }
 
@@ -1201,8 +1212,10 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
         kernel::Logger::error("  CR2=%x", cr2_val);
     }
     dump_regs(regs);
-    task->state = kernel::TaskState::TERMINATED;
-    task->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(sig));
+    // INV-5: terminate dequeues so the task is never left inrq=1 outside the
+    // physical queue.
+    kernel::Scheduler::terminate(
+        *task, static_cast<uint64_t>(-static_cast<int64_t>(sig)));
     return false;
 #elif defined(CONFIG_ARCH_AARCH64)
     (void)vector;
