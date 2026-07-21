@@ -284,11 +284,11 @@ void Scheduler::init() {
 
 void Scheduler::register_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    id_table_insert(task.id, &task);
     all_tasks_.append(&task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
     }
-    id_table_insert(task.id, &task);
     task.in_ready_queue_ = false;
     task.runq_next_ = nullptr;
     task.runq_prev_ = nullptr;
@@ -298,11 +298,11 @@ void Scheduler::register_task(TaskControlBlock &task) {
 void Scheduler::add_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task.state == TaskState::READY);
+    id_table_insert(task.id, &task);
     all_tasks_.append(&task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
     }
-    id_table_insert(task.id, &task);
     task.in_ready_queue_ = false;
     task.runq_next_ = nullptr;
     task.runq_prev_ = nullptr;
@@ -638,11 +638,13 @@ void Scheduler::on_tick() noexcept {
     uint64_t current_tick = arch::Timer::ticks();
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     if (all_tasks_.size() >= 6) {
+        bool lk_held = scheduler_lock_.try_lock();
         IPC_SCHED_TRACE("[TICK]", "t=", current_tick, "pe=",
                         (uint64_t)preempt_enabled_, "lk=",
-                        (uint64_t)scheduler_lock_.try_lock(), "nt=",
+                        (uint64_t)lk_held, "nt=",
                         (uint64_t)all_tasks_.size());
-        scheduler_lock_.unlock();
+        if (lk_held)
+            scheduler_lock_.unlock();
     }
 #endif
 

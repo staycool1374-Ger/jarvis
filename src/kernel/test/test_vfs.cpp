@@ -22,7 +22,9 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/vfs/pipe.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 
 using namespace kernel;
 using namespace kernel::vfs;
@@ -297,6 +299,113 @@ JARVIS_TEST(vfs_unlink_nonempty_dir_fails, "PRE: vfsd, iocd | POST: none") {
 }
 
 // Runmode: kernel
+// Testidea: Opens /dev/null via vnode ops, reads 0 bytes (EOF), then closes.
+// Input: Resolve /dev/null, alloc fd, call ops->read, ops->close.
+// Expect: read returns 0; close succeeds.
+// Depends: kernel::vfs, kernel::Scheduler
+JARVIS_TEST(vfs_open_read_null, "PRE: vfsd, iocd | POST: none") {
+    auto *cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    Vnode *vn = vfs::resolve("/dev/null");
+    JARVIS_ASSERT(vn != nullptr);
+
+    int fd = cur->fd_table.alloc();
+    JARVIS_ASSERT(fd >= 0);
+
+    int ret = vn->ops->open(*vn, 0);
+    JARVIS_ASSERT_EQ(0, ret);
+    cur->fd_table.get(fd)->vnode = vn;
+    cur->fd_table.get(fd)->offset = 0;
+    cur->fd_table.get(fd)->flags = 0;
+
+    char buf[32];
+    int64_t nread = vn->ops->read(*vn, reinterpret_cast<uint8_t *>(buf), 10, 0);
+    JARVIS_ASSERT_EQ(0LL, nread);
+
+    vn->ops->close(*vn);
+    cur->fd_table.free(fd);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Opens /dev/tty via vnode ops, writes a string, retrieves stat,
+// then closes.
+// Input: Resolve /dev/tty, alloc fd, call ops->write, ops->fstat, ops->close.
+// Expect: write returns 4; fstat returns 0; close succeeds.
+// Depends: kernel::vfs, kernel::Scheduler
+JARVIS_TEST(vfs_write_fstat, "PRE: vfsd, iocd | POST: none") {
+    auto *cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    Vnode *vn = vfs::resolve("/dev/tty");
+    JARVIS_ASSERT(vn != nullptr);
+
+    int fd = cur->fd_table.alloc();
+    JARVIS_ASSERT(fd >= 0);
+    cur->fd_table.get(fd)->vnode = vn;
+    cur->fd_table.get(fd)->offset = 0;
+    cur->fd_table.get(fd)->flags = 0;
+
+    const char *msg = "test";
+    int64_t nwritten =
+        vn->ops->write(*vn, reinterpret_cast<const uint8_t *>(msg), 4, 0);
+    JARVIS_ASSERT_EQ(4LL, nwritten);
+
+    VfsStat st{};
+    int ret = vn->ops->fstat(*vn, st);
+    JARVIS_ASSERT_EQ(0, ret);
+
+    vn->ops->close(*vn);
+    cur->fd_table.free(fd);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Creates a pipe, writes data to the write end, reads it back from
+// the read end, and validates the content.
+// Input: vfs::create_pipe, vnode->ops->write/read.
+// Expect: create_pipe returns 0; write returns 4; read returns 4 with
+// matching content.
+// Depends: kernel::vfs::create_pipe, kernel::Scheduler
+JARVIS_TEST(vfs_pipe_read_write, "PRE: vfsd, iocd | POST: none") {
+    int fds[2];
+    int ret = vfs::create_pipe(fds);
+    JARVIS_ASSERT_EQ(0, ret);
+    JARVIS_ASSERT(fds[0] >= 0);
+    JARVIS_ASSERT(fds[1] >= 0);
+    JARVIS_ASSERT(fds[0] != fds[1]);
+
+    auto *cur = Scheduler::current_task();
+    JARVIS_ASSERT(cur != nullptr);
+
+    auto *rnode = cur->fd_table.get(fds[0])->vnode;
+    auto *wnode = cur->fd_table.get(fds[1])->vnode;
+    JARVIS_ASSERT(rnode != nullptr);
+    JARVIS_ASSERT(wnode != nullptr);
+
+    const char *msg = "pipe";
+    int64_t nwritten =
+        wnode->ops->write(*wnode, reinterpret_cast<const uint8_t *>(msg), 4, 0);
+    JARVIS_ASSERT_EQ(4LL, nwritten);
+
+    char buf[32];
+    int64_t nread =
+        rnode->ops->read(*rnode, reinterpret_cast<uint8_t *>(buf), 10, 0);
+    JARVIS_ASSERT_EQ(4LL, nread);
+    JARVIS_ASSERT_EQ('p', buf[0]);
+    JARVIS_ASSERT_EQ('i', buf[1]);
+    JARVIS_ASSERT_EQ('p', buf[2]);
+    JARVIS_ASSERT_EQ('e', buf[3]);
+
+    rnode->ops->close(*rnode);
+    wnode->ops->close(*wnode);
+    cur->fd_table.free(fds[0]);
+    cur->fd_table.free(fds[1]);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Registers all VFS test cases into the test framework.
 // Input: None
 // Expect: Each JARVIS_REGISTER_TEST call adds the test to the suite.
@@ -323,4 +432,8 @@ void register_vfs_tests() {
     JARVIS_REGISTER_TEST(vfs_unlink_file);
     JARVIS_REGISTER_TEST(vfs_unlink_nonexistent);
     JARVIS_REGISTER_TEST(vfs_unlink_nonempty_dir_fails);
+
+    JARVIS_REGISTER_TEST(vfs_open_read_null);
+    JARVIS_REGISTER_TEST(vfs_write_fstat);
+    JARVIS_REGISTER_TEST(vfs_pipe_read_write);
 }
