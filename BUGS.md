@@ -5,10 +5,10 @@
 ### ID: #013 — MempoolFragmentation test hangs at test 438
 - **Description:** `MempoolFragmentation` in `test_resource_exhaustion.cpp` hangs during `make test-all-debug` at test index 438. The test allocates 20 objects per MemPool size class (9 classes: 16–4096 bytes), fills them with 0xA5, then frees in reverse order. On some runs the loop over size 4096 (largest class) deadlocks or livelocks — likely a MemPool internal corruption or infinite loop in `MemPool::free()` when returning a large block to a fragmented pool.
 - **Root Cause:** Not yet determined. Suspected MemPool bitmap/free-list corruption when freeing the last block of a particular size class in reverse order. Pre-existing — confirmed in baseline.
-- **Fix:** Temporarily disabled by commenting out `REGISTER_CLASS(MempoolFragmentation)` in `test_resource_exhaustion.cpp`.
+- **Fix:** Disabled with `#if 0` wrapping the entire `TEST_CLASS(MempoolFragmentation)` block in `test_resource_exhaustion.cpp` (line 197). Registration also commented out.
 - **Severity:** Medium (blocks full test suite for release verification)
 - **Domain:** Kernel — Memory / Test Infrastructure
-- **Status:** Open (disabled)
+- **Status:** Open (disabled — deferred for later investigation)
 
 ### ID: #021 — Flaky scheduler deadlock/HANG in `memory` class at ~test 22 (no #PF, no panic)
  - **Description:** After the #020 #PF fixes (commit 2026-07-20), the `memory` class passes **45/45** on a clean run (~37 s) but **intermittently HANGS** (TIMEOUT, no TEST SUMMARY) at ~test 22 — i.e. right after `buffer_pool_exhaustion` (test 21/45). The `user-app` placeholder (ID=4) has already terminated by that point, and the hang occurs with **no #PF and no kernel panic** in the log, so this is a **scheduling deadlock / lost-wakeup**, not a memory fault. Originally observed 1/3 runs hanging.

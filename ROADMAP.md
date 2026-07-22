@@ -439,6 +439,35 @@ non-aborting teardown + `create_named_task`/`add_task_named` provenance tagging 
 See BUGS.md#020 for the full report and GDB plan. Next: investigate #020 (watchpoint on the freed
 SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
+#### 0.3.5.x.2 — Idle-Task Deferred Resource Cleanup (Incremental Free)
+
+**Problem:** The current reaper (`reap_orphans` in `on_tick()`, every 100 ticks) frees all resources of a TERMINATED task atomically in ISR context — `cleanup()` + `MemPool::free()`. For tasks with large resource footprints (page tables, large MemPool blocks, IPC buffer chains), this synchronous free can exceed the ISR's time budget and cause jitter or missed deadlines for higher-priority tasks. The reaper also runs in tick context, making its cost unpredictable for hard real-time.
+
+**Design (idle-task incremental cleanup):**
+
+- Replace the ISR-context reaper with a deferred-cleanup linked list of zombie tasks.
+- The idle task (`IdleTask::execute()`) drains this list incrementally — one task (or one sub-step) per idle invocation — so cleanup work is done only when no real-time task needs the CPU.
+- Each cleanup step is bounded to a configurable max cost (e.g., `CONFIG_CLEANUP_MAX_CYCLES_PER_STEP`), measured via `rdtsc`, preemptible at any point. If the step is not exhausted, the idle task moves to the next zombie.
+- Large resources (page-table page freeing, multi-page MemPool chains) are decomposed into per-page or per-block steps so a single interrupted cleanup never holds locks across ticks.
+- The idle task is the natural home: it already runs non-destructive background work (RAM March C- test, ALU verification, CPU utilisation tracking — §0.6.4), which is also incremental and preemptible.
+- A `Scheduler::release_zombie(TaskControlBlock*)` primitive (instead of direct `cleanup()` + `delete`) enqueues the task to the zombie list and ensures it is never dispatched again.
+
+**Safety invariants:**
+- Zombie tasks must be fully unregistered from `all_tasks_`/`id_table_`/`deadline_list_`/ready-queue before enqueue — never dispatchable again.
+- The zombie list is drained under `scheduler_lock_` in small, preemptible steps; if the lock is contended, cleanup defers to the next idle cycle.
+- Snapshot/restore (`test_isolate.cpp`) must flush the zombie list before saving state — otherwise leaked resources cause ResourceTracker false positives.
+- Configurable via `CONFIG_IDLE_CLEANUP` (default 1 in hard-RT builds, 0 for legacy ISR reaper).
+
+**Required work:**
+- [ ] Design `ZombieList` (intrusive singly-linked list anchored in scheduler; push/pop both O(1))
+- [ ] Implement `release_zombie(task)` — unregister from all scheduler structures, enqueue, never touch again
+- [ ] Refactor `Scheduler::terminate()` and all `state = TERMINATED` paths to use `release_zombie` when the task is not the current task
+- [ ] Implement `IdleTask::cleanup_step()` — pop one zombie, free one resource chunk, check cycle budget, reschedule if exhausted
+- [ ] Replace `reap_orphans()` with zombie-list handoff; keep a safety watchdog that flushes the list if idle hasn't run (starvation guard)
+- [ ] Ensure snapshot/restore drains the zombie list before save
+- [ ] Add `CONFIG_CLEANUP_MAX_CYCLES_PER_STEP` (default 1000) and a WCET benchmark for cleanup steps
+- [ ] Tests: `test_idle_cleanup_simple` — terminate a task, verify resources freed within N idle cycles; `test_idle_cleanup_no_deadline_impact` — terminate large task during RT workload, verify no deadline miss
+
  - [ ] Stack Allocation — Fixed, Guarded, No Growth
   - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)
   - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
@@ -638,6 +667,14 @@ As network daemon (need).
 ### 0.9.2 — USB Stack
 - [ ] USB driver stack (UHCI/EHCI/xHCI) for keyboard, mouse, and storage
 - [ ] Replace PS/2 with USB HID for real-hardware input
+
+### 0.9.3 — Hot-Path Secure Call Sequence Layer
+- [ ] Design a lightweight compile-time/run-time enforcer that ensures function call ordering (X → Y → Z) and rejects invalid sequences (Y → Z → X, Z → Y, etc.)
+- [ ] Suitable for hot paths: minimal overhead (static analysis or trivial runtime token-passing), no heap, no locking in the common case
+- [ ] Target uses: device init/teardown sequences, IPC send/recv handshake protocol, capability delegation lifecycle, MMIO map/unmap guard
+- [ ] Evaluate approaches: typestate pattern (Rust-style state machine encoding via templates), linear types / owned-handle protocol, or lightweight per-call-site tag/token validation
+- [ ] Must be usable as a `JARVIS_ASSERT`-equivalent in test builds and compilable to zero-overhead in production (CONFIG_SECURE_CALL_SEQUENCE)
+- [ ] Deliverable: single-header `<seqguard.hpp>` with documentation and test coverage
 
 ---
 
