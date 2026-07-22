@@ -908,6 +908,8 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 /// destroys IPC objects, and notifies the daemon manager. After this call the
 /// TCB must not be used except for MemPool::free().
 void TaskControlBlock::cleanup() noexcept {
+    if (magic != TCB_MAGIC)
+        return;
     magic = 0;
 
     // Unregister from the scheduler's live tables so we never leave a dangling
@@ -1081,23 +1083,17 @@ void TaskControlBlock::operator delete(void *ptr) noexcept {
     if (!ptr)
         return;
     auto *tcb = static_cast<TaskControlBlock *>(ptr);
-    // TaskControlBlock::cleanup() is the single canonical teardown point that
-    // frees bound resources (IPC triple, stacks, address space) AND notifies
-    // the ResourceTracker (track_task_remove).  Some callers delete a task
-    // without an explicit cleanup() first, so run it here, idempotently —
-    // cleanup() clears magic at its start, so a second call is a no-op and the
-    // ResourceTracker is counted exactly once per task.
-    if (tcb->magic != 0)
+    if (tcb->magic == TCB_MAGIC) {
         tcb->cleanup();
-    // Unregister from the scheduler before the block is freed.  Without this,
-    // a freed TCB leaves a dangling tasks_[] / id_table_ entry that aliases
-    // the next allocation (use-after-free: the scheduler re-dispatches the
-    // recycled block as if it were the old, still-registered task).
-    // remove_task() is idempotent, so calling it here even when the task was
-    // already removed (e.g. via the explicit cleanup()+remove_task()+free
-    // sequence) is safe.
-    Scheduler::remove_task(*tcb);
-    MemPool::free(ptr);
+        Scheduler::remove_task(*tcb);
+        MemPool::free(ptr);
+        return;
+    }
+    // magic == 0: cleanup() was called externally but block wasn't freed.
+    // Only free the memory; don't re-enter cleanup/remove_task.
+    if (tcb->magic == 0)
+        MemPool::free(ptr);
+    // magic == 0xDD: reaper already freed it — skip silently.
 }
 
 } // namespace kernel

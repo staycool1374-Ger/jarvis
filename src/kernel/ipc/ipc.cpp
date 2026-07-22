@@ -278,6 +278,8 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
             arch::sti();
             arch::hlt();
             arch::cli();
+        } else {
+            arch::hlt();
         }
     }
     cur->reply_wait = false;

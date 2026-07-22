@@ -295,10 +295,15 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     auto *peer = TaskControlBlock::create(
         []() {
             Message msg{}, reply{};
-            // IPC::recv is non-blocking; poll cooperatively until the request
-            // arrives (reschedule yields to the test task, which sends it).
-            while (!IPC::recv(msg))
+            // IPC::recv is non-blocking; yield and HLT cooperatively until the
+            // request arrives.  reschedule() alone is a deferred-switch request
+            // (it does NOT context-switch inline); without HLT the peer busy-
+            // polls calling next_task() which keeps dequeuing the test harness
+            // from the ready queue, preventing the timer ISR from dispatching it.
+            while (!IPC::recv(msg)) {
                 Scheduler::reschedule();
+                arch::hlt();
+            }
             JARVIS_ASSERT(msg.type == 10ULL);
             reply.sender_id = msg.sender_id;
             reply.type = 20;
@@ -307,8 +312,10 @@ TEST_CLASS(IpcBidirectionalSendSync) {
             bool ok = IPC::send(msg.sender_id, reply);
             JARVIS_ASSERT(ok);
 
-            while (!IPC::recv(msg))
+            while (!IPC::recv(msg)) {
                 Scheduler::reschedule();
+                arch::hlt();
+            }
             JARVIS_ASSERT(msg.type == 30ULL);
             reply.sender_id = msg.sender_id;
             reply.type = 40;

@@ -345,6 +345,12 @@ void Scheduler::add_task(TaskControlBlock &task) {
 
 void Scheduler::remove_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+    if (task.magic != TaskControlBlock::TCB_MAGIC) {
+        Logger::error("remove_task: TCB %p magic=0x%lx (expected 0x%lx)",
+                      &task, (uint64_t)task.magic,
+                      (uint64_t)TaskControlBlock::TCB_MAGIC);
+        return;
+    }
     // BUGS.md#019/#020: never leave current_task_ptr_ aliasing a TCB that is
     // about to be freed.  If the removed task is the current task, redirect
     // current_task_ptr_ to the idle task (always valid, the scheduler's safe
@@ -1761,14 +1767,25 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     // Allow voluntary yields from the harness (reschedule set need_resched).
     // Without this, harness_nonpreempt prevents the timer ISR from applying
     // the deferred switch that reschedule requested, stranding the peer task.
+    // Also allow preemption when a ready task has equal or higher priority
+    // (handles tests that rely on the timer ISR to schedule peer tasks at
+    // the same priority as the harness).
     bool harness_nonpreempt =
         (s_test_active_ && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
          current->state == TaskState::RUNNING);
     if (harness_nonpreempt &&
         !__atomic_load_n(&kernel::scheduler_need_resched, __ATOMIC_ACQUIRE)) {
-        scheduler_lock_.unlock();
-        return;
+        uint64_t cur_prio = effective_priority(current);
+        uint64_t highest_ready = ready_queue_.highest_ready_priority();
+        // Allow preemption if any ready task has priority >= current.
+        // After snapshot_restore, rebuild_ready_queue() only enqueues READY
+        // tasks — the harness (RUNNING) is NOT in the ready queue, so the
+        // simple count-check would miss same-priority peers.
+        if (highest_ready < cur_prio) {
+            scheduler_lock_.unlock();
+            return;
+        }
     }
 
     auto *next = next_task();

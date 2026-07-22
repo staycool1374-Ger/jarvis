@@ -663,24 +663,29 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
-    auto *original = Scheduler::current_task();
     // Yield to the *receiver* (not the sender): next_task() skips the current
     // task, so yielding to the receiver makes next_task() return the
     // higher-priority sender (prio 12 > 11), which runs first, sends, and
     // blocks; the receiver then runs and replies.
-    kernel::test::yield_as(*receiver);
+    // yield_to_task restores the harness as current and re-enqueues the
+    // receiver so the wait loop runs as PID 1 (avoiding RSP corruption)
+    // and the receiver stays schedulable.
+    kernel::test::yield_to_task(*receiver);
 
-    // Drive the sender→receiver→sender handshake to completion.  reschedule()
-    // only defers the context switch (the real switch happens in the next
-    // timer ISR).  Wait (unbounded) on the tasks' terminal state — the
-    // established pattern in this suite: each reschedule() lets a timer ISR
-    // run the peer task, so the handshake always converges.
+    // Drive the sender→receiver→sender handshake to completion.
+    // Set scheduler_need_resched and HLT to let the timer ISR dispatch
+    // the highest-priority task from the ready queue (the sender).
+    // Unlike a tight reschedule() loop, this avoids repeated dequeue +
+    // lazy-rebuild cycles that can resurrect stale READY tasks and wedge
+    // the scheduler.  The sender runs, blocks in send_sync, the receiver
+    // runs, replies, and both terminate — at which point the harness
+    // resumes from HLT and exits the loop.
+    __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
     while (sender->state != TaskState::TERMINATED ||
            receiver->state != TaskState::TERMINATED) {
-        Scheduler::reschedule();
+        arch::hlt();
+        __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
     }
-
-    Scheduler::set_current(*original);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();
@@ -724,12 +729,11 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: irq_shield | POST: none
     }
 
     // Now send from sender - should block.
-    // Disable interrupts around the send+cleanup window so the timer ISR
-    // cannot perform a deferred context switch to idle (which would strand
-    // the test context on the 'blocked' sender's saved stack frame).
+    // ScopedCurrentTask saves the harness as current, disables interrupts,
+    // and sets current=sender.  On scope exit it restores the harness and
+    // re-enables interrupts, so current_task_ptr_ never dangles.
     {
-        arch::IrqGuard guard;
-        Scheduler::set_current(*sender);
+        kernel::test::ScopedCurrentTask scoped(*sender);
         (void)kernel::IPC::send(receiver->id, msg, 0);
         // The sender should be in blocked list
         JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
