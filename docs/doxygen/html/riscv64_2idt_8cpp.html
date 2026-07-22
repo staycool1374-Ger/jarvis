@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('riscv64_2idt_8
   <div class="headertitle"><div class="title">idt.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>RISC-V64 interrupt dispatch table (stvec-based) — registers per-vector ISR handlers and dispatches via trap_vector.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="idt_8hpp_source.html">kernel/arch/idt.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
@@ -136,7 +139,9 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a4afd6f92d606a65ea8527b577fe2692d" id="r_a4afd6f92d606a65ea8527b577fe2692d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4afd6f92d606a65ea8527b577fe2692d">trap_vector</a> (void)</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>RISC-V64 interrupt dispatch table (stvec-based) — registers per-vector ISR handlers and dispatches via trap_vector. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a4afd6f92d606a65ea8527b577fe2692d" name="a4afd6f92d606a65ea8527b577fe2692d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4afd6f92d606a65ea8527b577fe2692d">&#9670;&#160;</a></span>trap_vector()</h2>
 

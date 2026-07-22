@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('procfs_8cpp.ht
   <div class="headertitle"><div class="title">procfs.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Process filesystem implementation (meminfo, pci, self, pid directories).  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="procfs_8hpp_source.html">kernel/vfs/procfs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
@@ -137,9 +140,13 @@ Include dependency graph for procfs.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3AMemInfoVnode" id="r_kernel_3A_3Avfs_3A_3AMemInfoVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_mem_info_vnode.html">kernel::vfs::MemInfoVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode with cached memory info content.  <a href="structkernel_1_1vfs_1_1_mem_info_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3APciVnode" id="r_kernel_3A_3Avfs_3A_3APciVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pci_vnode.html">kernel::vfs::PciVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode with cached PCI device tree content.  <a href="structkernel_1_1vfs_1_1_pci_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3APidStatVnode" id="r_kernel_3A_3Avfs_3A_3APidStatVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pid_stat_vnode.html">kernel::vfs::PidStatVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode representing a process's stat file.  <a href="structkernel_1_1vfs_1_1_pid_stat_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3APidDirVnode" id="r_kernel_3A_3Avfs_3A_3APidDirVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pid_dir_vnode.html">kernel::vfs::PidDirVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode representing a per-process directory in /proc.  <a href="structkernel_1_1vfs_1_1_pid_dir_vnode.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -148,9 +155,11 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a8049afbb25873d95c723f015f6c61856" id="r_a8049afbb25873d95c723f015f6c61856"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856">kernel::vfs::proc_fs</a></td></tr>
+<tr class="memitem:a8049afbb25873d95c723f015f6c61856" id="r_a8049afbb25873d95c723f015f6c61856"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856">kernel::vfs::proc_fs</a></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Process filesystem implementation (meminfo, pci, self, pid directories). </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

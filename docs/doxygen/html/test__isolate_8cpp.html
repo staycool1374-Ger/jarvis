@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__isolate_
   <div class="headertitle"><div class="title">test_isolate.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Test isolation snapshot/restore implementation.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test__isolate_8hpp_source.html">kernel/test/test_isolate.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
@@ -127,6 +130,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__isolate_
 <code>#include &lt;<a class="el" href="daemon__mgr_8hpp_source.html">kernel/daemon/daemon_mgr.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="buffer__pool_8hpp_source.html">kernel/ipc/buffer_pool.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vfsd_8hpp_source.html">kernel/vfs/vfsd.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="dmesg_8hpp_source.html">kernel/log/dmesg.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="tmpfs_8hpp_source.html">kernel/vfs/tmpfs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="iocd_8hpp_source.html">kernel/driver/iocd.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
@@ -152,6 +156,10 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a80e920b60042b6c2750fd88974610e99" id="r_a80e920b60042b6c2750fd88974610e99"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80e920b60042b6c2750fd88974610e99">debug_write</a> (const char *s)</td></tr>
+<tr class="memitem:afc833d2926e5dca3c9fbed32f7a7656a" id="r_afc833d2926e5dca3c9fbed32f7a7656a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afc833d2926e5dca3c9fbed32f7a7656a">debug_write_hex</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> value)</td></tr>
+<tr class="memitem:ac3dcbb860f4f6469142dd4dd33b78398" id="r_ac3dcbb860f4f6469142dd4dd33b78398"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ac3dcbb860f4f6469142dd4dd33b78398">kernel::test::mark_vfs_touched</a> ()</td></tr>
+<tr class="memdesc:ac3dcbb860f4f6469142dd4dd33b78398"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by VFS syscall handlers to mark that VFS state was touched.  <br /></td></tr>
 <tr class="memitem:a5b61544ff1676d3f6d4a777c3211be31" id="r_a5b61544ff1676d3f6d4a777c3211be31"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a5b61544ff1676d3f6d4a777c3211be31">kernel::test::snapshot_create</a> ()</td></tr>
 <tr class="memitem:aa2a58a012f3f56d28d6e0df037fd66a6" id="r_aa2a58a012f3f56d28d6e0df037fd66a6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#aa2a58a012f3f56d28d6e0df037fd66a6">kernel::test::snapshot_restore</a> (const char *test_name)</td></tr>
 <tr class="memitem:ae4288686f519dcd0faacfe54ae2f1bff" id="r_ae4288686f519dcd0faacfe54ae2f1bff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ae4288686f519dcd0faacfe54ae2f1bff">kernel::test::snapshot_destroy</a> ()</td></tr>
@@ -159,8 +167,15 @@ Functions</h2></td></tr>
 <tr class="memdesc:abbd641156133e294c60aa475e73dd520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate old daemon tasks and reload them from initrd. Call AFTER snapshot_restore + snapshot_destroy to replace corrupted page tables with fresh ones from initrd.  <br /></td></tr>
 <tr class="memitem:ad8af3e26f5e10cffe7d3eecf79016c1d" id="r_ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ad8af3e26f5e10cffe7d3eecf79016c1d">kernel::test::run_all_isolated_tests</a> ()</td></tr>
 <tr class="memdesc:ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all tests from the generated registry, calling setup/test/teardown in sequence with snapshot isolation between each test.  <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a8ae596b8a7161c4f9f54d704059f822e" id="r_a8ae596b8a7161c4f9f54d704059f822e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a8ae596b8a7161c4f9f54d704059f822e">kernel::test::g_vfs_touched</a> = false</td></tr>
+<tr class="memdesc:a8ae596b8a7161c4f9f54d704059f822e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tracks whether any VFS syscall was invoked during the current test. <a class="el" href="namespacekernel_1_1test.html#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore()</a> checks this flag to decide whether daemon tasks need a full reload (VFS touched) or can be left running (VFS not touched).  <br /></td></tr>
 </table>
-<a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Test isolation snapshot/restore implementation. </p>
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
 <a id="ae5c84871687f110b4d89ed96ace70a40" name="ae5c84871687f110b4d89ed96ace70a40"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae5c84871687f110b4d89ed96ace70a40">&#9670;&#160;</a></span>TASK_STACK_PTR</h2>
 
@@ -177,6 +192,41 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">((t)-&gt;context.sp)</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="a80e920b60042b6c2750fd88974610e99" name="a80e920b60042b6c2750fd88974610e99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80e920b60042b6c2750fd88974610e99">&#9670;&#160;</a></span>debug_write()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void debug_write </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>s</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afc833d2926e5dca3c9fbed32f7a7656a" name="afc833d2926e5dca3c9fbed32f7a7656a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc833d2926e5dca3c9fbed32f7a7656a">&#9670;&#160;</a></span>debug_write_hex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void debug_write_hex </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 </div><!-- contents -->

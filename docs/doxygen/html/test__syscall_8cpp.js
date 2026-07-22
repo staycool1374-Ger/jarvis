@@ -5,7 +5,6 @@ var test__syscall_8cpp =
     [ "JARVIS_TEST", "test__syscall_8cpp.html#ac87688bf09d0a64b4221007323122d24", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a37d6748bed84da667c82ac6ee630c224", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a47abfd6b62cec7eaa027a1b4ad847c76", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#aa46827cc6fb6d75f543b201f111901c4", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#afbcbee3b49696185ce85cf2540e40f78", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a67a0b7aec13112f845ba83ada7c0611e", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#abf81fb88d445a46defa4d1e0142d8d57", null ],
@@ -17,14 +16,7 @@ var test__syscall_8cpp =
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a7e9798fc1d9d60a40b91865d5503e72c", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#ac5855caf3a68034f255f0732cbf33ace", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a755db842fd01dc117d82d10c8f56b2c6", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#a1f65ae6083661300f9be7e49b5004454", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#af78487d70eb3b305d1ce19197e08d42f", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#ad1ab762c4db9446b2bdeb4e51d54c54a", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#accab24d7a64e5eaebd3636e14b694fbb", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#a9fd3be9617fbcafc1810ae878849e299", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#a00ece94990e6796bd8bbab63bf255978", null ],
     [ "JARVIS_TEST", "test__syscall_8cpp.html#ac0a7123c3eaff861e6bb94847df41261", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#af4c03fde5248a75489da2ab470d3fd20", null ],
-    [ "JARVIS_TEST", "test__syscall_8cpp.html#a67b30d19f7efecffe99f71a1b7e11208", null ],
     [ "register_syscall_tests", "test__syscall_8cpp.html#aec041e930fe1b1be252ec7112c16ccfa", null ]
 ];

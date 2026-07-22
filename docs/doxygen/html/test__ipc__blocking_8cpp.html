@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,17 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__ipc__blo
   <div class="headertitle"><div class="title">test_ipc_blocking.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>IPC blocking send/receive tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task__errors_8hpp_source.html">kernel/task/task_errors.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="irq__guard_8hpp_source.html">kernel/arch/irq_guard.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_ipc_blocking.cpp:</div>
 <div class="dyncontent">
@@ -139,7 +144,9 @@ Functions</h2></td></tr>
 <tr class="memitem:af82a9010ff27ee59d0db9b444da88df9" id="r_af82a9010ff27ee59d0db9b444da88df9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af82a9010ff27ee59d0db9b444da88df9">JARVIS_TEST</a> (ipc_kernel_block_skips_sti, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a851262f95b2f4d707d69c7b86e87aea7" id="r_a851262f95b2f4d707d69c7b86e87aea7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a851262f95b2f4d707d69c7b86e87aea7">register_ipc_blocking_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>IPC blocking send/receive tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="af82a9010ff27ee59d0db9b444da88df9" name="af82a9010ff27ee59d0db9b444da88df9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af82a9010ff27ee59d0db9b444da88df9">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/4]</span></h2>
 
@@ -158,12 +165,6 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc__blocking_8cpp_af82a9010ff27ee59d0db9b444da88df9_cgraph.png" border="0" usemap="#atest__ipc__blocking_8cpp_af82a9010ff27ee59d0db9b444da88df9_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
 
 </div>
 </div>
@@ -185,12 +186,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc__blocking_8cpp_a51bf8e9385bce6cb937775fae8957cf1_cgraph.png" border="0" usemap="#atest__ipc__blocking_8cpp_a51bf8e9385bce6cb937775fae8957cf1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -216,7 +211,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc__blocking_8cpp_a7d94b9fe6fdcc2971e26a972e9e6fd93_cgraph.png" border="0" usemap="#atest__ipc__blocking_8cpp_a7d94b9fe6fdcc2971e26a972e9e6fd93_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -239,12 +234,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc__blocking_8cpp_a73a46eb5103c7db16bedc69145872fba_cgraph.png" border="0" usemap="#atest__ipc__blocking_8cpp_a73a46eb5103c7db16bedc69145872fba_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
@@ -266,7 +255,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc__blocking_8cpp_a851262f95b2f4d707d69c7b86e87aea7_cgraph.png" border="0" usemap="#atest__ipc__blocking_8cpp_a851262f95b2f4d707d69c7b86e87aea7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 2 -->
 </div>
 
 </div>

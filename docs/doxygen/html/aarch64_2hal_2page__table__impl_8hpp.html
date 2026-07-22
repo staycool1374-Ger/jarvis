@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,37 +118,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('aarch64_2hal_2
   <div class="headertitle"><div class="title">page_table_impl.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="page__flags_8hpp_source.html">kernel/arch/hal/page_flags.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="error_8hpp_source.html">lib/error.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="string_8hpp_source.html">lib/string.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for page_table_impl.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="aarch64_2hal_2page__table__impl_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2arch_2aarch64_2hal_2page__table__impl_8hpp" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
-</div>
+
+<p>AArch64 4-level page table walk, map, unmap, and TLB management.  
+<a href="#details">More...</a></p>
+
 <p><a href="aarch64_2hal_2page__table__impl_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:arch_3A_3AArchPageTable" id="r_arch_3A_3AArchPageTable"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classarch_1_1_arch_page_table.html">arch::ArchPageTable</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:arch" id="r_arch"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html">arch</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ad1bd3651496d2b1ba81f482883b82572" id="r_ad1bd3651496d2b1ba81f482883b82572"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ad1bd3651496d2b1ba81f482883b82572">arch::arch_page_table_current</a> ()</td></tr>
-<tr class="memitem:a521927a4944ea27557bff12e6ac2ee4d" id="r_a521927a4944ea27557bff12e6ac2ee4d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a521927a4944ea27557bff12e6ac2ee4d">arch::arch_page_table_activate</a> (<a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a> ttbr1_phys)</td></tr>
-<tr class="memitem:ab6e078993894a164e0adec1d37130cbd" id="r_ab6e078993894a164e0adec1d37130cbd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab6e078993894a164e0adec1d37130cbd">arch::arch_page_table_tlb_flush</a> (<a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a> virt_addr)</td></tr>
-<tr class="memitem:abc54811c04e86d3fe207d2c3fcc0d6b3" id="r_abc54811c04e86d3fe207d2c3fcc0d6b3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#abc54811c04e86d3fe207d2c3fcc0d6b3">arch::arch_page_table_tlb_flush_all</a> ()</td></tr>
-</table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>AArch64 4-level page table walk, map, unmap, and TLB management. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

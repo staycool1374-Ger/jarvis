@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,16 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__ipc_8cpp
   <div class="headertitle"><div class="title">test_ipc.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>IPC (Inter-Process Communication) tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="notify_8hpp_source.html">kernel/sync/notify.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="eventgroup_8hpp_source.html">kernel/sync/eventgroup.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_ipc.cpp:</div>
 <div class="dyncontent">
@@ -152,13 +156,15 @@ Functions</h2></td></tr>
 <tr class="memitem:a0f667f03fe6d6088af2c7d2a988ee4fa" id="r_a0f667f03fe6d6088af2c7d2a988ee4fa"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0f667f03fe6d6088af2c7d2a988ee4fa">JARVIS_TEST</a> (ipc_wake_sender_removes_from_list, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a0cde483ad75c0ce9e7338d38f3b7857a" id="r_a0cde483ad75c0ce9e7338d38f3b7857a"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0cde483ad75c0ce9e7338d38f3b7857a">JARVIS_TEST</a> (ipc_wake_sender_terminated, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:aba7940e4e11f8740f8e9d3378c6bf123" id="r_aba7940e4e11f8740f8e9d3378c6bf123"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aba7940e4e11f8740f8e9d3378c6bf123">JARVIS_TEST</a> (ipc_wake_sender_restores_priority, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:acd96207f9736ecbf269e6db14e3d185f" id="r_acd96207f9736ecbf269e6db14e3d185f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#acd96207f9736ecbf269e6db14e3d185f">JARVIS_TEST</a> (ipc_send_block_full, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:af3698530d13f56674acf310b82af9178" id="r_af3698530d13f56674acf310b82af9178"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af3698530d13f56674acf310b82af9178">JARVIS_TEST</a> (ipc_send_block_full, &quot;PRE: irq_shield | POST: none&quot;)</td></tr>
 <tr class="memitem:a8f055014f67b18da5fb3d6474b954cb7" id="r_a8f055014f67b18da5fb3d6474b954cb7"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a8f055014f67b18da5fb3d6474b954cb7">JARVIS_TEST</a> (ipc_send_sync_roundtrip, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:a9679b7236cfef1645ce4476b48fccbb1" id="r_a9679b7236cfef1645ce4476b48fccbb1"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a9679b7236cfef1645ce4476b48fccbb1">JARVIS_TEST</a> (ipc_sender_unblocked_on_receiver_exit, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a127682d6e8b746ddbf6d3967f2aeb4bf" id="r_a127682d6e8b746ddbf6d3967f2aeb4bf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a127682d6e8b746ddbf6d3967f2aeb4bf">JARVIS_TEST</a> (ipc_sender_unblocked_on_receiver_exit, &quot;PRE: irq_shield | POST: none&quot;)</td></tr>
 <tr class="memitem:a6fbdef2dcf6e86a4c2d3be824b51b0cb" id="r_a6fbdef2dcf6e86a4c2d3be824b51b0cb"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6fbdef2dcf6e86a4c2d3be824b51b0cb">JARVIS_TEST</a> (ipc_send_wakes_blocked_destination, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:aea2cc6fcaa63ce684711707b45a0cd90" id="r_aea2cc6fcaa63ce684711707b45a0cd90"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aea2cc6fcaa63ce684711707b45a0cd90">register_ipc_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>IPC (Inter-Process Communication) tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a24026e25489b836e506f9e3aee8af626" name="a24026e25489b836e506f9e3aee8af626"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a24026e25489b836e506f9e3aee8af626">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/23]</span></h2>
 
@@ -204,12 +210,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_ac71e4694dfa0e0fbcc129a9d452da327_cgraph.png" border="0" usemap="#atest__ipc_8cpp_ac71e4694dfa0e0fbcc129a9d452da327_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -231,12 +231,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a5b05613e033fa4109aec299151fb6417_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a5b05613e033fa4109aec299151fb6417_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -258,12 +252,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_afdce5b628800aca524974a22be7bccef_cgraph.png" border="0" usemap="#atest__ipc_8cpp_afdce5b628800aca524974a22be7bccef_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
@@ -285,12 +273,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a22d63118aab58eca96ec480c251ec0f7_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a22d63118aab58eca96ec480c251ec0f7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
-</div>
 
 </div>
 </div>
@@ -312,12 +294,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a3388234e2757ea992937d14b44147917_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a3388234e2757ea992937d14b44147917_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
-</div>
 
 </div>
 </div>
@@ -339,12 +315,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a0f7e32d3aeb41b327e756184ddd45b7e_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a0f7e32d3aeb41b327e756184ddd45b7e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
-</div>
 
 </div>
 </div>
@@ -366,12 +336,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_ae2596e8d012529d942d51fb4133f7af3_cgraph.png" border="0" usemap="#atest__ipc_8cpp_ae2596e8d012529d942d51fb4133f7af3_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
-</div>
 
 </div>
 </div>
@@ -393,12 +357,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a75ecb2e376a9ad4d93c8f61561420ece_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a75ecb2e376a9ad4d93c8f61561420ece_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
-</div>
 
 </div>
 </div>
@@ -420,12 +378,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a61b79edecc26a991418ad2872c0bbf7b_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a61b79edecc26a991418ad2872c0bbf7b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
-</div>
 
 </div>
 </div>
@@ -447,12 +399,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a3549fa6579ffe7b9ac004da9794a3d94_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a3549fa6579ffe7b9ac004da9794a3d94_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
-</div>
 
 </div>
 </div>
@@ -474,12 +420,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a8f70991af5333eff09e2329a5381ac94_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a8f70991af5333eff09e2329a5381ac94_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
-</div>
 
 </div>
 </div>
@@ -501,17 +441,11 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a7ea8851d577b4a929702ac4d6f77eb22_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a7ea8851d577b4a929702ac4d6f77eb22_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
-</div>
 
 </div>
 </div>
-<a id="acd96207f9736ecbf269e6db14e3d185f" name="acd96207f9736ecbf269e6db14e3d185f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd96207f9736ecbf269e6db14e3d185f">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[14/23]</span></h2>
+<a id="af3698530d13f56674acf310b82af9178" name="af3698530d13f56674acf310b82af9178"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3698530d13f56674acf310b82af9178">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[14/23]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -524,15 +458,15 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+          <td class="paramtype">&quot;PRE: irq_shield | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_acd96207f9736ecbf269e6db14e3d185f_cgraph.png" border="0" usemap="#atest__ipc_8cpp_acd96207f9736ecbf269e6db14e3d185f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
+<div class="center"><img src="test__ipc_8cpp_af3698530d13f56674acf310b82af9178_cgraph.png" border="0" usemap="#atest__ipc_8cpp_af3698530d13f56674acf310b82af9178_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -555,12 +489,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_ab585f76cb2cdb80bd6cef42519ca0373_cgraph.png" border="0" usemap="#atest__ipc_8cpp_ab585f76cb2cdb80bd6cef42519ca0373_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
-</div>
 
 </div>
 </div>
@@ -582,12 +510,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a8b30bd4b4e3539e88d76570e8040eff7_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a8b30bd4b4e3539e88d76570e8040eff7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
-</div>
 
 </div>
 </div>
@@ -609,12 +531,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_ad63e5ec0946ebc249fa960bdeae27ce7_cgraph.png" border="0" usemap="#atest__ipc_8cpp_ad63e5ec0946ebc249fa960bdeae27ce7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
-</div>
 
 </div>
 </div>
@@ -640,7 +556,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_a8f055014f67b18da5fb3d6474b954cb7_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a8f055014f67b18da5fb3d6474b954cb7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 18 -->
+<!-- MAP 3 -->
 </div>
 
 </div>
@@ -667,13 +583,13 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_a6fbdef2dcf6e86a4c2d3be824b51b0cb_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a6fbdef2dcf6e86a4c2d3be824b51b0cb_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 19 -->
+<!-- MAP 4 -->
 </div>
 
 </div>
 </div>
-<a id="a9679b7236cfef1645ce4476b48fccbb1" name="a9679b7236cfef1645ce4476b48fccbb1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9679b7236cfef1645ce4476b48fccbb1">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[20/23]</span></h2>
+<a id="a127682d6e8b746ddbf6d3967f2aeb4bf" name="a127682d6e8b746ddbf6d3967f2aeb4bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a127682d6e8b746ddbf6d3967f2aeb4bf">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[20/23]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -686,15 +602,15 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+          <td class="paramtype">&quot;PRE: irq_shield | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="test__ipc_8cpp_a9679b7236cfef1645ce4476b48fccbb1_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a9679b7236cfef1645ce4476b48fccbb1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 20 -->
+<div class="center"><img src="test__ipc_8cpp_a127682d6e8b746ddbf6d3967f2aeb4bf_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a127682d6e8b746ddbf6d3967f2aeb4bf_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -721,7 +637,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_a0f667f03fe6d6088af2c7d2a988ee4fa_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a0f667f03fe6d6088af2c7d2a988ee4fa_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 21 -->
+<!-- MAP 6 -->
 </div>
 
 </div>
@@ -748,7 +664,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_aba7940e4e11f8740f8e9d3378c6bf123_cgraph.png" border="0" usemap="#atest__ipc_8cpp_aba7940e4e11f8740f8e9d3378c6bf123_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 22 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -775,7 +691,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_a0cde483ad75c0ce9e7338d38f3b7857a_cgraph.png" border="0" usemap="#atest__ipc_8cpp_a0cde483ad75c0ce9e7338d38f3b7857a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 23 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -798,7 +714,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc_8cpp_aea2cc6fcaa63ce684711707b45a0cd90_cgraph.png" border="0" usemap="#atest__ipc_8cpp_aea2cc6fcaa63ce684711707b45a0cd90_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 24 -->
+<!-- MAP 9 -->
 </div>
 
 </div>

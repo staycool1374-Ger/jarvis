@@ -5,20 +5,25 @@ var namespacekernel_1_1test =
     [ "Registry", "classkernel_1_1test_1_1_registry.html", null ],
     [ "ResourceCounters", "structkernel_1_1test_1_1_resource_counters.html", "structkernel_1_1test_1_1_resource_counters" ],
     [ "ResourceTracker", "classkernel_1_1test_1_1_resource_tracker.html", "classkernel_1_1test_1_1_resource_tracker" ],
+    [ "ScopedCurrentTask", "classkernel_1_1test_1_1_scoped_current_task.html", "classkernel_1_1test_1_1_scoped_current_task" ],
     [ "TestBase", "classkernel_1_1test_1_1_test_base.html", "classkernel_1_1test_1_1_test_base" ],
     [ "TestCase", "structkernel_1_1test_1_1_test_case.html", "structkernel_1_1test_1_1_test_case" ],
     [ "TestClass", "structkernel_1_1test_1_1_test_class.html", "structkernel_1_1test_1_1_test_class" ],
+    [ "TaskControlBlock", "namespacekernel_1_1test.html#af219b4b081470c65fb5140fbabdd424c", null ],
     [ "TestFlags", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924", [
       [ "TF_KERNEL", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a758901b7d4ff562bfcf86fd8d1a08252", null ],
       [ "TF_RELEASE", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8", null ],
       [ "TF_USER", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a6ef6b63d678fd3b18029892f6956a47c", null ],
       [ "TF_BENCH", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a99ab7f179010344acb627e851eae44d8", null ]
     ] ],
+    [ "add_task_named", "namespacekernel_1_1test.html#a2f2ad7408a2984ebbc8a46b37f1e6f5f", null ],
     [ "arch_count", "namespacekernel_1_1test.html#a6407505c9e51e9aafc535ceb8a0f074f", null ],
+    [ "create_named_task", "namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0", null ],
     [ "dump_class_counts", "namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d", null ],
     [ "expected_for_class", "namespacekernel_1_1test.html#a22a1e73ffb69f6fd807228fc5756b380", null ],
     [ "get_test_class_count", "namespacekernel_1_1test.html#a499e498dbadd7417450754e39ff8d025", null ],
     [ "get_test_classes", "namespacekernel_1_1test.html#adef941cb96fe1a42d92076d37649d84a", null ],
+    [ "mark_vfs_touched", "namespacekernel_1_1test.html#ac3dcbb860f4f6469142dd4dd33b78398", null ],
     [ "parse_test_config", "namespacekernel_1_1test.html#aabafa220128e328e46c2c19135411898", null ],
     [ "print_report", "namespacekernel_1_1test.html#a0fb9d643d01186cc11f1c2868176b39c", null ],
     [ "register_class", "namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450", null ],
@@ -45,7 +50,10 @@ var namespacekernel_1_1test =
     [ "watchdog_check_inline", "namespacekernel_1_1test.html#abfb7a4e797c8023392967822f5451ab1", null ],
     [ "watchdog_disarm", "namespacekernel_1_1test.html#a0a6da7c5576fe1c48584026927954c24", null ],
     [ "watchdog_panic", "namespacekernel_1_1test.html#a6dbac4eb3cd0354a626677222a8c6a35", null ],
+    [ "yield_as", "namespacekernel_1_1test.html#a5734651fc6722563ecb7a1893ea19b81", null ],
+    [ "yield_to_task", "namespacekernel_1_1test.html#a6cdcc19c8e326942d1c980c8c62894f0", null ],
     [ "g_class_auto_shutdown", "namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a", null ],
-    [ "g_watchdog_deadline_ns", "namespacekernel_1_1test.html#a74d790429154a6100e23fdf3ac51371e", null ],
-    [ "g_watchdog_task_id", "namespacekernel_1_1test.html#a5b59830418dc51c0e6381baa16153565", null ]
+    [ "g_vfs_touched", "namespacekernel_1_1test.html#a8ae596b8a7161c4f9f54d704059f822e", null ],
+    [ "g_watchdog_deadline_ns", "namespacekernel_1_1test.html#af5d0c2b75741c70c7c103e4dc2f2aac8", null ],
+    [ "g_watchdog_task_id", "namespacekernel_1_1test.html#ac868441e34e35154b50c0ef71dfc793c", null ]
 ];

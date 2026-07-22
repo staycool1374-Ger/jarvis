@@ -15,11 +15,11 @@ var dir_76e3dd4d2fa719e8d3b096e9aa563982 =
     [ "msr.hpp", "msr_8hpp.html", null ],
     [ "page_table.hpp", "page__table_8hpp.html", null ],
     [ "pci.cpp", "pci_8cpp.html", "pci_8cpp" ],
-    [ "pci.hpp", "pci_8hpp.html", "pci_8hpp" ],
-    [ "pci_errors.hpp", "pci__errors_8hpp.html", "pci__errors_8hpp" ],
+    [ "pci.hpp", "pci_8hpp.html", null ],
+    [ "pci_errors.hpp", "pci__errors_8hpp.html", null ],
     [ "rand.hpp", "rand_8hpp.html", null ],
     [ "rtc.hpp", "rtc_8hpp.html", null ],
     [ "serial.hpp", "serial_8hpp.html", null ],
     [ "timer.hpp", "timer_8hpp.html", null ],
-    [ "virtio.hpp", "virtio_8hpp.html", "virtio_8hpp" ]
+    [ "virtio.hpp", "virtio_8hpp.html", null ]
 ];

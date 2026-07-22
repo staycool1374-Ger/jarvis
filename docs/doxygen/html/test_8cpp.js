@@ -1,5 +1,7 @@
 var test_8cpp =
 [
+    [ "kernel::test::add_task_named", "namespacekernel_1_1test.html#a2f2ad7408a2984ebbc8a46b37f1e6f5f", null ],
+    [ "kernel::test::create_named_task", "namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0", null ],
     [ "kernel::test::print_report", "namespacekernel_1_1test.html#a0fb9d643d01186cc11f1c2868176b39c", null ],
     [ "kernel::test::run_all", "namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de", null ],
     [ "kernel::test::run_debug", "namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de", null ],

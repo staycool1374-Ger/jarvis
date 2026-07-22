@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['mode_5ft_0',['mode_t',['../types_8h.html#adb8322e115035a284aab704909e63d00',1,'types.h']]]
+  ['off_5ft_0',['off_t',['../types_8h.html#af83497edef361523a95b06deda0b4c2d',1,'types.h']]]
 ];

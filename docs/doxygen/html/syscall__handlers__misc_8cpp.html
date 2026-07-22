@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('syscall__handl
   <div class="headertitle"><div class="title">syscall_handlers_misc.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Syscall handlers for miscellaneous operations: yield, print, get_ticks, exit, etc.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall__helpers_8hpp_source.html">kernel/syscall/syscall_helpers.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="dmesg_8hpp_source.html">kernel/log/dmesg.hpp</a>&gt;</code><br />
@@ -154,12 +157,14 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a9b1dceb9c574529db5d462f40139ad68" id="r_a9b1dceb9c574529db5d462f40139ad68"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68">kernel::RlimitResource</a> { <a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68a5cedad6358425b5bfd888f80f1d5d9c0">kernel::RLIMIT_DATA</a> = 0
-, <a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68afa92ee44ab9e8ffac445366271d021e3">kernel::RLIMIT_STACK</a> = 1
-, <a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68a3af036df3d1c74c3a8a9b127e668495f">kernel::RLIMIT_NOFILE</a> = 2
+<tr class="memitem:a4c7abd4d7b6e60921e6661d7e6ac80af" id="r_a4c7abd4d7b6e60921e6661d7e6ac80af"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80af">kernel::RlimitResource</a> : uint8_t { <a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa5cedad6358425b5bfd888f80f1d5d9c0">kernel::RLIMIT_DATA</a> = 0
+, <a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afafa92ee44ab9e8ffac445366271d021e3">kernel::RLIMIT_STACK</a> = 1
+, <a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa3af036df3d1c74c3a8a9b127e668495f">kernel::RLIMIT_NOFILE</a> = 2
  }</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Syscall handlers for miscellaneous operations: yield, print, get_ticks, exit, etc. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

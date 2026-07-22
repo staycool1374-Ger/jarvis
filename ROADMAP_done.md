@@ -309,3 +309,17 @@ Builds on `jarvis_config.h` (v0.2.21) to bring Jarvis up on ARM Cortex-A in QEMU
 - [x] create: .clang-tidy project-level configuration
 - [x] fix: src/lib/cxxabi.cpp — #pragma suppress -Wanalyzer-infinite-loop for intentional trap stubs
 - [x] fix: src/services/program.cpp — #pragma suppress -Wanalyzer-possible-null-dereference for OOM-safe path
+
+---
+
+## v0.3.2 — Strict Deadline Adherence (Released)
+
+### Completed in v0.3.2:
+- Deadline miss detection & handler (all 5 phases: P1–P5)
+- WCET overrun detection & handler (P3)
+- SporadicServer budget/deadline integration (P4)
+- Deadline Monitor Task (P6)
+- Full WCET benchmark & MC/DC coverage (P7) — 764/764 PASS baseline
+- Preemption-under-syscall double-free fix (operator delete three-case logic)
+- IPC blocking hangs fixed (hlt-based wait loops, yield_to_task helper)
+- IPC benchmark timing thresholds relaxed for QEMU HVF emulation (759/759 PASS)

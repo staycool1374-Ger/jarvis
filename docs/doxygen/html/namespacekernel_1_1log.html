@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -119,187 +119,20 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacekerne
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:DmesgBuffer" id="r_DmesgBuffer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html">DmesgBuffer</a></td></tr>
-<tr class="memitem:LogEntry" id="r_LogEntry"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1log_1_1_log_entry.html">LogEntry</a></td></tr>
-<tr class="memitem:RingBuffer" id="r_RingBuffer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1log_1_1_ring_buffer.html">RingBuffer</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:a0a15565ea32d9d5ddb218c71e3f3c44a" id="r_a0a15565ea32d9d5ddb218c71e3f3c44a"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a> : uint8_t { <br />
-&#160;&#160;<a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef">BASE</a> = 0
-, <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3">SYNC</a> = 1
-, <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aa296c58c4afa6e6c1d159f7d0d6cc864c">VFS</a> = 2
-, <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aa9bb9239ff286274c8363021f3d82b782">MEMPOOL</a> = 3
-, <br />
-&#160;&#160;<a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aa4e6ea598d35449adb3c246bf97f5a71c">SCHED</a> = 4
-, <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aac8660c6d72e7323867ec800d6bb953df">IPC</a> = 5
-, <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b">SYSCALL</a> = 6
-<br />
- }</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ac43913f72a3a5fe3c6a6cc0ccc754165" id="r_ac43913f72a3a5fe3c6a6cc0ccc754165"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#ac43913f72a3a5fe3c6a6cc0ccc754165">base_error_string</a> (<a class="el" href="namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcd">kernel::Error</a> e)</td></tr>
-<tr class="memitem:ad82063e29ea0c8f5de69a0748c72621f" id="r_ad82063e29ea0c8f5de69a0748c72621f"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#ad82063e29ea0c8f5de69a0748c72621f">subsystem_name</a> (<a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a> s)</td></tr>
-<tr class="memitem:a3d54be80d65b536f19f6aabdb6878bd5" id="r_a3d54be80d65b536f19f6aabdb6878bd5"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#a3d54be80d65b536f19f6aabdb6878bd5">error_string</a> (<a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a> subsys, uint64_t code)</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a5ddfffb1758c3078ae879afa99b135c6" id="r_a5ddfffb1758c3078ae879afa99b135c6"><td class="memItemLeft"><a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html">DmesgBuffer</a>&lt; <a class="el" href="#a7873f3246fdc21af9b32fe43eb3e6435">DMESG_CAPACITY</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a5ddfffb1758c3078ae879afa99b135c6">g_dmesg</a></td></tr>
-<tr class="memitem:a7873f3246fdc21af9b32fe43eb3e6435" id="r_a7873f3246fdc21af9b32fe43eb3e6435"><td class="memItemLeft">constexpr <a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a7873f3246fdc21af9b32fe43eb3e6435">DMESG_CAPACITY</a> = <a class="el" href="aarch64_2serial_8cpp.html#a15f72011bdc6888b3a6aef544acc4604">CONFIG_DMESG_CAPACITY</a></td></tr>
-<tr class="memitem:a5d37b94a40a3fb0722d235be6d2b43d8" id="r_a5d37b94a40a3fb0722d235be6d2b43d8"><td class="memItemLeft"><a class="el" href="classkernel_1_1log_1_1_ring_buffer.html">RingBuffer</a>&#160;</td><td class="memItemRight"><a class="el" href="#a5d37b94a40a3fb0722d235be6d2b43d8">g_klog</a></td></tr>
+<tr class="memitem:a6c21bbcc889a65c9d1de21f46be7ae23" id="r_a6c21bbcc889a65c9d1de21f46be7ae23"><td class="memItemLeft">DmesgBuffer&lt; DMESG_CAPACITY &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a6c21bbcc889a65c9d1de21f46be7ae23">g_dmesg</a></td></tr>
+<tr class="memitem:a5d37b94a40a3fb0722d235be6d2b43d8" id="r_a5d37b94a40a3fb0722d235be6d2b43d8"><td class="memItemLeft">RingBuffer&#160;</td><td class="memItemRight"><a class="el" href="#a5d37b94a40a3fb0722d235be6d2b43d8">g_klog</a> {}</td></tr>
 </table>
-<a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
-<a id="a0a15565ea32d9d5ddb218c71e3f3c44a" name="a0a15565ea32d9d5ddb218c71e3f3c44a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a15565ea32d9d5ddb218c71e3f3c44a">&#9670;&#160;</a></span>ErrorSubsystem</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum class <a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">kernel::log::ErrorSubsystem</a> : uint8_t</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel strong">strong</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef" name="a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef"></a>BASE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3" name="a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3"></a>SYNC&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aa296c58c4afa6e6c1d159f7d0d6cc864c" name="a0a15565ea32d9d5ddb218c71e3f3c44aa296c58c4afa6e6c1d159f7d0d6cc864c"></a>VFS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aa9bb9239ff286274c8363021f3d82b782" name="a0a15565ea32d9d5ddb218c71e3f3c44aa9bb9239ff286274c8363021f3d82b782"></a>MEMPOOL&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aa4e6ea598d35449adb3c246bf97f5a71c" name="a0a15565ea32d9d5ddb218c71e3f3c44aa4e6ea598d35449adb3c246bf97f5a71c"></a>SCHED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aac8660c6d72e7323867ec800d6bb953df" name="a0a15565ea32d9d5ddb218c71e3f3c44aac8660c6d72e7323867ec800d6bb953df"></a>IPC&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b" name="a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b"></a>SYSCALL&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="ac43913f72a3a5fe3c6a6cc0ccc754165" name="ac43913f72a3a5fe3c6a6cc0ccc754165"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac43913f72a3a5fe3c6a6cc0ccc754165">&#9670;&#160;</a></span>base_error_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * kernel::log::base_error_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcd">kernel::Error</a></td>          <td class="paramname"><span class="paramname"><em>e</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a3d54be80d65b536f19f6aabdb6878bd5" name="a3d54be80d65b536f19f6aabdb6878bd5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d54be80d65b536f19f6aabdb6878bd5">&#9670;&#160;</a></span>error_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * kernel::log::error_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a></td>          <td class="paramname"><span class="paramname"><em>subsys</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>code</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1log_a3d54be80d65b536f19f6aabdb6878bd5_cgraph.png" border="0" usemap="#anamespacekernel_1_1log_a3d54be80d65b536f19f6aabdb6878bd5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
-
-</div>
-</div>
-<a id="ad82063e29ea0c8f5de69a0748c72621f" name="ad82063e29ea0c8f5de69a0748c72621f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad82063e29ea0c8f5de69a0748c72621f">&#9670;&#160;</a></span>subsystem_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * kernel::log::subsystem_name </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a></td>          <td class="paramname"><span class="paramname"><em>s</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a name="doc-var-members" id="doc-var-members"></a><h2 id="header-doc-var-members" class="groupheader">Variable Documentation</h2>
-<a id="a7873f3246fdc21af9b32fe43eb3e6435" name="a7873f3246fdc21af9b32fe43eb3e6435"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7873f3246fdc21af9b32fe43eb3e6435">&#9670;&#160;</a></span>DMESG_CAPACITY</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::log::DMESG_CAPACITY = <a class="el" href="aarch64_2serial_8cpp.html#a15f72011bdc6888b3a6aef544acc4604">CONFIG_DMESG_CAPACITY</a></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel constexpr">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a5ddfffb1758c3078ae879afa99b135c6" name="a5ddfffb1758c3078ae879afa99b135c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ddfffb1758c3078ae879afa99b135c6">&#9670;&#160;</a></span>g_dmesg</h2>
+<a id="a6c21bbcc889a65c9d1de21f46be7ae23" name="a6c21bbcc889a65c9d1de21f46be7ae23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c21bbcc889a65c9d1de21f46be7ae23">&#9670;&#160;</a></span>g_dmesg</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html">DmesgBuffer</a>&lt; <a class="el" href="#a7873f3246fdc21af9b32fe43eb3e6435">DMESG_CAPACITY</a> &gt; kernel::log::g_dmesg</td>
+          <td class="memname">DmesgBuffer&lt;DMESG_CAPACITY&gt; kernel::log::g_dmesg</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -313,7 +146,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classkernel_1_1log_1_1_ring_buffer.html">RingBuffer</a> kernel::log::g_klog</td>
+          <td class="memname">RingBuffer kernel::log::g_klog {}</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -1,11 +1,9 @@
 var searchData=
 [
-  ['o_5fcreat_0',['O_CREAT',['../namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1',1,'kernel::vfs']]],
-  ['o_5fnonblock_1',['O_NONBLOCK',['../namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d',1,'kernel::vfs']]],
-  ['o_5frdonly_2',['O_RDONLY',['../namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d',1,'kernel::vfs']]],
-  ['o_5frdwr_3',['O_RDWR',['../namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b',1,'kernel::vfs']]],
-  ['o_5fwronly_4',['O_WRONLY',['../namespacekernel_1_1vfs.html#aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e',1,'kernel::vfs']]],
-  ['ok_5',['OK',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcdae0aa021e21dddbd6d8cecec71e9cf564',1,'kernel']]],
-  ['oom_6',['OOM',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcda56a16d94e7f11cd4af1723c74c8d9291',1,'kernel']]],
-  ['open_7',['OPEN',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaa38bd5138bf35514df41a1795ebbf5c3',1,'kernel']]]
+  ['terminate_0',['TERMINATE',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749a1b52d4a7cbbcb87a81515c443453a2d5',1,'kernel']]],
+  ['tf_5fbench_1',['TF_BENCH',['../namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a99ab7f179010344acb627e851eae44d8',1,'kernel::test']]],
+  ['tf_5fkernel_2',['TF_KERNEL',['../namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a758901b7d4ff562bfcf86fd8d1a08252',1,'kernel::test']]],
+  ['tf_5frelease_3',['TF_RELEASE',['../namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8',1,'kernel::test']]],
+  ['tf_5fuser_4',['TF_USER',['../namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a6ef6b63d678fd3b18029892f6956a47c',1,'kernel::test']]],
+  ['timeout_5',['TIMEOUT',['../namespacekernel.html#a1cb7b5e6d84a69536a1605c81098f106a070a0fb40f6c308ab544b227660aadff',1,'kernel']]]
 ];

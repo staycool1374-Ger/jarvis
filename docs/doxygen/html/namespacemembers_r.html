@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -120,23 +120,11 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacemembe
 <h3 class="doxsection"><a id="index_r" name="index_r"></a>- r -</h3><ul>
 <li>random_fill()&#160;:&#160;<a class="el" href="namespacekernel.html#a3a9da091bb2229af08f856b08498fa51">kernel</a></li>
 <li>random_init()&#160;:&#160;<a class="el" href="namespacekernel.html#a03570b332ae94bd1acee2152e83dadd8">kernel</a></li>
-<li>random_u32()&#160;:&#160;<a class="el" href="namespacekernel.html#a9f9fa7ae0177f5c72bb01a32777c401a">kernel</a></li>
-<li>random_u64()&#160;:&#160;<a class="el" href="namespacekernel.html#aa15d5c476fbb7ba6087fadb6ba4c2a1b">kernel</a></li>
-<li>rdmsr()&#160;:&#160;<a class="el" href="namespacearch.html#a7d17dad67c618e2c7208af302462afe8">arch</a></li>
-<li>rdrand64()&#160;:&#160;<a class="el" href="namespacearch.html#ac88c3fe32c41a59d7f65858143bfb051">arch</a></li>
-<li>rdseed64()&#160;:&#160;<a class="el" href="namespacearch.html#af52ba3f9f9e0c61f5b87bd5c140b5700">arch</a></li>
-<li>rdtsc()&#160;:&#160;<a class="el" href="namespacearch.html#a7ef9bb4fdc54b463e4aadf75e8114d43">arch</a></li>
-<li>read_cr0()&#160;:&#160;<a class="el" href="namespacearch.html#aeb5cbc7e935cee4fcbb6badba189145f">arch</a></li>
-<li>read_cr2()&#160;:&#160;<a class="el" href="namespacearch.html#a61d74b5530b253fac22c2020cfd32dc4">arch</a></li>
-<li>read_cr3()&#160;:&#160;<a class="el" href="namespacearch.html#a705f20af9607088bbe06bf00168fb34b">arch</a></li>
-<li>read_cr4()&#160;:&#160;<a class="el" href="namespacearch.html#ac1292746ea84a2c078f7a34da4c99532">arch</a></li>
-<li>read_dir_entry()&#160;:&#160;<a class="el" href="namespacekernel_1_1fat32.html#a2cbb871393e669e6e1bd4dade3cf7b6c">kernel::fat32</a></li>
-<li>read_file()&#160;:&#160;<a class="el" href="namespacekernel_1_1fat32.html#a00334ebb671673f0d440a830c3e734f6">kernel::fat32</a></li>
-<li>read_satp()&#160;:&#160;<a class="el" href="namespacearch.html#aee92e338856149fb1d6ac04a4599fc55">arch</a></li>
-<li>read_ttbr0_el1()&#160;:&#160;<a class="el" href="namespacearch.html#a4b73f366c63341b2b90004fec0cbcb65">arch</a></li>
-<li>read_ttbr1_el1()&#160;:&#160;<a class="el" href="namespacearch.html#a6d9a0175ee1ca179d516b6efc8999551">arch</a></li>
+<li>read_dir_entry()&#160;:&#160;<a class="el" href="namespacekernel_1_1fat32.html#a26ce5bbfe1af8c3aa136fb2f57743383">kernel::fat32</a></li>
+<li>read_file()&#160;:&#160;<a class="el" href="namespacekernel_1_1fat32.html#ab2b90c3fd678120edc03be6e4d00a917">kernel::fat32</a></li>
 <li>readdir()&#160;:&#160;<a class="el" href="namespaceinitrd.html#a36c2e1ae3322f0ee5973773ba6a3f6fe">initrd</a></li>
-<li>reboot_from_table()&#160;:&#160;<a class="el" href="namespacekernel_1_1task.html#a23341a25427d54ae2f91ec33bb133c24">kernel::task</a></li>
+<li>reboot_from_table()&#160;:&#160;<a class="el" href="namespacekernel_1_1task.html#a7f227dc40c3e02534d8c4640812236c7">kernel::task</a></li>
+<li>record_task_entry()&#160;:&#160;<a class="el" href="namespacekernel_1_1debug.html#ae301850b7dcbeb7beaeb3dc92d909ddf">kernel::debug</a></li>
 <li>register_class()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450">kernel::test</a></li>
 <li>register_daemon()&#160;:&#160;<a class="el" href="namespacekernel_1_1daemon.html#a805ce70d7458d932a10b9f7aec27fde1">kernel::daemon</a></li>
 <li>reload_daemon_tasks()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#abbd641156133e294c60aa475e73dd520">kernel::test</a></li>
@@ -149,10 +137,11 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacemembe
 <li>resolve_err()&#160;:&#160;<a class="el" href="namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a">kernel::vfs</a></li>
 <li>restart_stale_daemons()&#160;:&#160;<a class="el" href="namespacekernel_1_1daemon.html#a7910dce2d3de5e1d57e8d1ac0cca68c9">kernel::daemon</a></li>
 <li>restore_state()&#160;:&#160;<a class="el" href="namespacekernel_1_1daemon.html#a813c05f435562a463683747e67315718">kernel::daemon</a></li>
-<li>RLIMIT_DATA&#160;:&#160;<a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68a5cedad6358425b5bfd888f80f1d5d9c0">kernel</a></li>
-<li>RLIMIT_NOFILE&#160;:&#160;<a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68a3af036df3d1c74c3a8a9b127e668495f">kernel</a></li>
-<li>RLIMIT_STACK&#160;:&#160;<a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68afa92ee44ab9e8ffac445366271d021e3">kernel</a></li>
-<li>RlimitResource&#160;:&#160;<a class="el" href="namespacekernel.html#a9b1dceb9c574529db5d462f40139ad68">kernel</a></li>
+<li>return&#160;:&#160;<a class="el" href="namespacekernel.html#a3bc3a31c6af358bc14fd59ca1ec1d75e">kernel</a></li>
+<li>RLIMIT_DATA&#160;:&#160;<a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa5cedad6358425b5bfd888f80f1d5d9c0">kernel</a></li>
+<li>RLIMIT_NOFILE&#160;:&#160;<a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa3af036df3d1c74c3a8a9b127e668495f">kernel</a></li>
+<li>RLIMIT_STACK&#160;:&#160;<a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afafa92ee44ab9e8ffac445366271d021e3">kernel</a></li>
+<li>RlimitResource&#160;:&#160;<a class="el" href="namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80af">kernel</a></li>
 <li>run_all()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de">kernel::test</a></li>
 <li>run_all_isolated_tests()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#ad8af3e26f5e10cffe7d3eecf79016c1d">kernel::test</a></li>
 <li>run_debug()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de">kernel::test</a></li>

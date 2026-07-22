@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('dmesg__task_8c
   <div class="headertitle"><div class="title">dmesg_task.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Dmesg consumer task: drains ring-buffer log entries to UART.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="dmesg__task_8hpp_source.html">kernel/task/dmesg_task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="dmesg_8hpp_source.html">kernel/log/dmesg.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="serial_8hpp_source.html">kernel/arch/serial.hpp</a>&gt;</code><br />
@@ -145,7 +148,9 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ae7fc9a59f78d98d18c2d3c5a25ec2193" id="r_ae7fc9a59f78d98d18c2d3c5a25ec2193"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1task.html#ae7fc9a59f78d98d18c2d3c5a25ec2193">kernel::task::dmesg_task_main</a> ()</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Dmesg consumer task: drains ring-buffer log entries to UART. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

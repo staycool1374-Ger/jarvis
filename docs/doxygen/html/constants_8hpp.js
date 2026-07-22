@@ -1,8 +1,8 @@
 var constants_8hpp =
 [
-    [ "Error", "constants_8hpp.html#a3976c868b26ddee1537907e7b200754c", [
-      [ "ERR_OK", "constants_8hpp.html#a3976c868b26ddee1537907e7b200754caa26c163b80b1f6786ca81dadc14b00fb", null ],
-      [ "ERR_FAILURE", "constants_8hpp.html#a3976c868b26ddee1537907e7b200754cafc3fcefbe5fe939745539df41ab0bd20", null ]
+    [ "Error", "constants_8hpp.html#ab55f54011a8f17279e6e814f97523a91", [
+      [ "ERR_OK", "constants_8hpp.html#ab55f54011a8f17279e6e814f97523a91aa26c163b80b1f6786ca81dadc14b00fb", null ],
+      [ "ERR_FAILURE", "constants_8hpp.html#ab55f54011a8f17279e6e814f97523a91afc3fcefbe5fe939745539df41ab0bd20", null ]
     ] ],
     [ "arch::ATA_ALT_STAT", "namespacearch.html#a1511e1f081ba7386c43b4ed471338e93", null ],
     [ "arch::ATA_CMD", "namespacearch.html#a26b86ca010ddbdab4e8f588578f2918f", null ],

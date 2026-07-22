@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -121,131 +121,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('pci_8hpp.html'
 
 <p>PCI enumeration — arch-independent interface using HAL config space access.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="pci__errors_8hpp_source.html">kernel/arch/pci_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="hal_2pci_8hpp_source.html">kernel/arch/hal/pci.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for pci.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="pci_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2arch_2pci_8hpp" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
-</div><div class="textblock"><div class="dynheader">
+<div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="pci_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2arch_2pci_8hppdep" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 0 -->
 </div>
 </div>
 <p><a href="pci_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:arch_3A_3APciBar" id="r_arch_3A_3APciBar"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_pci_bar.html">arch::PciBar</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parsed BAR descriptor.  <a href="structarch_1_1_pci_bar.html#details">More...</a><br /></td></tr>
-<tr class="memitem:arch_3A_3APciDeviceInfo" id="r_arch_3A_3APciDeviceInfo"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_pci_device_info.html">arch::PciDeviceInfo</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Discovered device info.  <a href="structarch_1_1_pci_device_info.html#details">More...</a><br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:arch" id="r_arch"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html">arch</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ab8e74819e16f973b1fe81b292df5bbea" id="r_ab8e74819e16f973b1fe81b292df5bbea"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbea">arch::PciRegister</a> : uint8_t { <br />
-&#160;&#160;<a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa6312b8fb022ece7ffcac833dfa2f6c80">arch::PCI_VENDOR_ID</a> = 0x00
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaaa3ebc1afe5fdaa2fd5688c441e500230">arch::PCI_DEVICE_ID</a> = 0x02
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa56b50cad66fd2fdde5209d812d11a2c1">arch::PCI_COMMAND</a> = 0x04
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa79cb435b778b124df703340cfe86f7b8">arch::PCI_STATUS</a> = 0x06
-, <br />
-&#160;&#160;<a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa99d286aed925353eb5956de7e15b3e0f">arch::PCI_REVISION</a> = 0x08
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa218460e4a778151afee19129775bd004">arch::PCI_PROG_IF</a> = 0x09
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaab1c4ee5870d8450eb781bb2638020d25">arch::PCI_SUBCLASS</a> = 0x0A
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaafd30864d4a49fa11dfadb510fa08574b">arch::PCI_CLASS</a> = 0x0B
-, <br />
-&#160;&#160;<a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaaa391adadb069086808b756e246046a20">arch::PCI_HEADER_TYPE</a> = 0x0E
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaadba0504bf224b50a9660f2f21bae1ed6">arch::PCI_BIST</a> = 0x0F
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaadc3d6025e62ea4313b5d19aa948110a3">arch::PCI_BAR0</a> = 0x10
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa64f425f270b968e12f84a66ecafa5ed7">arch::PCI_BAR1</a> = 0x14
-, <br />
-&#160;&#160;<a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa6e93e8c1c6fa1fd69202dd3a740578f9">arch::PCI_BAR2</a> = 0x18
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaaac21bef5ea05883d3a61c36eab7ab8bd">arch::PCI_BAR3</a> = 0x1C
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa5f36bab040aea660e1db3f108e43a87a">arch::PCI_BAR4</a> = 0x20
-, <a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa6939dc6b0f0a91d776604b05c52097b8">arch::PCI_BAR5</a> = 0x24
-, <br />
-&#160;&#160;<a class="el" href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbeaa269630a09eb5067ca2cf0c59e7ef66b4">arch::PCI_SECONDARY_BUS</a> = 0x19
-<br />
- }</td></tr>
-<tr class="memdesc:ab8e74819e16f973b1fe81b292df5bbea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard PCI config space register offsets.  <a href="namespacearch.html#ab8e74819e16f973b1fe81b292df5bbea">More...</a><br /></td></tr>
-<tr class="memitem:a2f5ef7bc2531685969408a3b19471f2a" id="r_a2f5ef7bc2531685969408a3b19471f2a"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a2f5ef7bc2531685969408a3b19471f2a">arch::PciStatus</a> : uint16_t { <a class="el" href="namespacearch.html#a2f5ef7bc2531685969408a3b19471f2aa7e05b18c385a0a640899dab5c987ff03">arch::PCI_STATUS_CAP_LIST</a> = 1 &lt;&lt; 4
- }</td></tr>
-<tr class="memdesc:a2f5ef7bc2531685969408a3b19471f2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">PCI status register bits.  <a href="namespacearch.html#a2f5ef7bc2531685969408a3b19471f2a">More...</a><br /></td></tr>
-<tr class="memitem:a9d0ae9d6b8cd8df87058b28c83ce5931" id="r_a9d0ae9d6b8cd8df87058b28c83ce5931"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a9d0ae9d6b8cd8df87058b28c83ce5931">arch::PciCommand</a> : uint16_t { <a class="el" href="namespacearch.html#a9d0ae9d6b8cd8df87058b28c83ce5931a4cde1b9c5aa76d427eb43f191cdea02a">arch::PCI_CMD_IO_SPACE</a> = 1 &lt;&lt; 0
-, <a class="el" href="namespacearch.html#a9d0ae9d6b8cd8df87058b28c83ce5931a5e25673c403ced91adda2fb8d9cfd7cc">arch::PCI_CMD_MEM_SPACE</a> = 1 &lt;&lt; 1
-, <a class="el" href="namespacearch.html#a9d0ae9d6b8cd8df87058b28c83ce5931a26177d2e752440779095d9141700a733">arch::PCI_CMD_BUS_MASTER</a> = 1 &lt;&lt; 2
- }</td></tr>
-<tr class="memdesc:a9d0ae9d6b8cd8df87058b28c83ce5931"><td class="mdescLeft">&#160;</td><td class="mdescRight">PCI command register bits.  <a href="namespacearch.html#a9d0ae9d6b8cd8df87058b28c83ce5931">More...</a><br /></td></tr>
-<tr class="memitem:ace55aa6ebb17936eac963ce91904fc17" id="r_ace55aa6ebb17936eac963ce91904fc17"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ace55aa6ebb17936eac963ce91904fc17">arch::PciBarType</a> : uint8_t { <a class="el" href="namespacearch.html#ace55aa6ebb17936eac963ce91904fc17a8ac2184bb784f3bc8ff528d088af41fd">arch::MEMORY_32</a> = 0
-, <a class="el" href="namespacearch.html#ace55aa6ebb17936eac963ce91904fc17acf3882f1c43ab22bff0bd9d82d83251b">arch::IO</a> = 1
-, <a class="el" href="namespacearch.html#ace55aa6ebb17936eac963ce91904fc17a71bfcb5bef603c42af94dc0d9a38ac89">arch::MEMORY_64</a> = 2
- }</td></tr>
-<tr class="memdesc:ace55aa6ebb17936eac963ce91904fc17"><td class="mdescLeft">&#160;</td><td class="mdescRight">BAR type.  <a href="namespacearch.html#ace55aa6ebb17936eac963ce91904fc17">More...</a><br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:a618ff63a4488522a84314c2073680fcb" id="r_a618ff63a4488522a84314c2073680fcb"><td class="memItemLeft"><a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a618ff63a4488522a84314c2073680fcb">arch::pci_read_vendor</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
-<tr class="memdesc:a618ff63a4488522a84314c2073680fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read vendor ID (return 0xFFFF if no device).  <br /></td></tr>
-<tr class="memitem:a82d6e35824ae89c5c235ebc573c957e3" id="r_a82d6e35824ae89c5c235ebc573c957e3"><td class="memItemLeft"><a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a82d6e35824ae89c5c235ebc573c957e3">arch::pci_read_device</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
-<tr class="memdesc:a82d6e35824ae89c5c235ebc573c957e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read device ID.  <br /></td></tr>
-<tr class="memitem:a89e6f2f91ea2a053b66d1be3e714b76d" id="r_a89e6f2f91ea2a053b66d1be3e714b76d"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a89e6f2f91ea2a053b66d1be3e714b76d">arch::pci_device_exists</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
-<tr class="memdesc:a89e6f2f91ea2a053b66d1be3e714b76d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a BDF has a valid device.  <br /></td></tr>
-<tr class="memitem:adf555b81d7d72b5c61d212eaf1aa1e69" id="r_adf555b81d7d72b5c61d212eaf1aa1e69"><td class="memItemLeft"><a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#adf555b81d7d72b5c61d212eaf1aa1e69">arch::pci_scan_all</a> ()</td></tr>
-<tr class="memitem:ad0eacdfd4f0fbf174271a31b0aee7bd6" id="r_ad0eacdfd4f0fbf174271a31b0aee7bd6"><td class="memItemLeft">const <a class="el" href="structarch_1_1_pci_device_info.html">PciDeviceInfo</a> *&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ad0eacdfd4f0fbf174271a31b0aee7bd6">arch::pci_devices</a> ()</td></tr>
-<tr class="memitem:a9409db147e4855832856d485ddfc9ac3" id="r_a9409db147e4855832856d485ddfc9ac3"><td class="memItemLeft"><a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a9409db147e4855832856d485ddfc9ac3">arch::pci_device_count</a> ()</td></tr>
-<tr class="memitem:ab785599b40f2cc65b1a399615cb2f65e" id="r_ab785599b40f2cc65b1a399615cb2f65e"><td class="memItemLeft">const <a class="el" href="structarch_1_1_pci_device_info.html">PciDeviceInfo</a> *&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab785599b40f2cc65b1a399615cb2f65e">arch::pci_find_device</a> (<a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> class_code, <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> subclass)</td></tr>
-<tr class="memitem:a1c32f898be8b2ffa3c00040064553d30" id="r_a1c32f898be8b2ffa3c00040064553d30"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a1c32f898be8b2ffa3c00040064553d30">arch::pci_parse_bars</a> (<a class="el" href="structarch_1_1_pci_device_info.html">PciDeviceInfo</a> &amp;info)</td></tr>
-<tr class="memitem:a8fd92f41ff58ee30a496023a66c4482f" id="r_a8fd92f41ff58ee30a496023a66c4482f"><td class="memItemLeft"><a class="el" href="structarch_1_1_pci_device_info.html">PciDeviceInfo</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a8fd92f41ff58ee30a496023a66c4482f">arch::pci_read_device_info</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf)</td></tr>
-<tr class="memitem:a11748e0603d0f9b77d1198c4e14fd224" id="r_a11748e0603d0f9b77d1198c4e14fd224"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a11748e0603d0f9b77d1198c4e14fd224">arch::pci_dump_tree</a> ()</td></tr>
-<tr class="memitem:a4191f59246c41e7a68abf50fc57f2da9" id="r_a4191f59246c41e7a68abf50fc57f2da9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a4191f59246c41e7a68abf50fc57f2da9">arch::pci_print_tree</a> (char *buffer, <a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a> size)</td></tr>
-<tr class="memitem:adc4b509b8ba2e26aae708fff98409565" id="r_adc4b509b8ba2e26aae708fff98409565"><td class="memItemLeft"><a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#adc4b509b8ba2e26aae708fff98409565">arch::pci_find_capability</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf, <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> cap_id)</td></tr>
-<tr class="memitem:af1db3b0c561e94a99c8f3f6d020093f5" id="r_af1db3b0c561e94a99c8f3f6d020093f5"><td class="memItemLeft"><a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af1db3b0c561e94a99c8f3f6d020093f5">arch::pci_enable_msi</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf, <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> apic_id)</td></tr>
-<tr class="memitem:ab8a3d0ed72e0355f607878da738a53e4" id="r_ab8a3d0ed72e0355f607878da738a53e4"><td class="memItemLeft"><a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab8a3d0ed72e0355f607878da738a53e4">arch::pci_enable_msix</a> (<a class="el" href="structarch_1_1_pci_bdf.html">PciBdf</a> bdf, <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> entry, <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> apic_id)</td></tr>
-<tr class="memitem:af42ba0c651229ba30e96c82094e72d88" id="r_af42ba0c651229ba30e96c82094e72d88"><td class="memItemLeft"><a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af42ba0c651229ba30e96c82094e72d88">arch::pci_alloc_vector</a> ()</td></tr>
-<tr class="memitem:a68057e54d9a90d6545678a5b77d8b604" id="r_a68057e54d9a90d6545678a5b77d8b604"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a68057e54d9a90d6545678a5b77d8b604">arch::pci_free_vector</a> (<a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> vec)</td></tr>
-<tr class="memdesc:a68057e54d9a90d6545678a5b77d8b604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a previously allocated interrupt vector.  <br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a045289aedf2b3e2860901bae1acceec3" id="r_a045289aedf2b3e2860901bae1acceec3"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a045289aedf2b3e2860901bae1acceec3">arch::PCI_MAX_DEVICES</a> = 32</td></tr>
-<tr class="memdesc:a045289aedf2b3e2860901bae1acceec3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Max devices per bus.  <br /></td></tr>
-<tr class="memitem:af7842e5d3d622a41d19c51606e71504a" id="r_af7842e5d3d622a41d19c51606e71504a"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af7842e5d3d622a41d19c51606e71504a">arch::PCI_MAX_FUNCTIONS</a> = 8</td></tr>
-<tr class="memitem:a3dc68e64b2ca5e49ae919a0ea54487c2" id="r_a3dc68e64b2ca5e49ae919a0ea54487c2"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a3dc68e64b2ca5e49ae919a0ea54487c2">arch::PCI_MAX_BUSES</a> = 256</td></tr>
-<tr class="memitem:ac89c3fa1d69d883452238f51c1660c8e" id="r_ac89c3fa1d69d883452238f51c1660c8e"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ac89c3fa1d69d883452238f51c1660c8e">arch::PCI_HEADER_TYPE_DEVICE</a> = 0x00</td></tr>
-<tr class="memdesc:ac89c3fa1d69d883452238f51c1660c8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">PCI header type flags.  <br /></td></tr>
-<tr class="memitem:a2430ed6316624b4897e67e249963b618" id="r_a2430ed6316624b4897e67e249963b618"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a2430ed6316624b4897e67e249963b618">arch::PCI_HEADER_TYPE_BRIDGE</a> = 0x01</td></tr>
-<tr class="memitem:acd391fc926ca438b57dcd12e5f13a671" id="r_acd391fc926ca438b57dcd12e5f13a671"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#acd391fc926ca438b57dcd12e5f13a671">arch::PCI_HEADER_TYPE_MULTI</a> = 0x80</td></tr>
-<tr class="memitem:a29730663fc792fde83b5359a33f7b2e6" id="r_a29730663fc792fde83b5359a33f7b2e6"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a29730663fc792fde83b5359a33f7b2e6">arch::PCI_CAP_PTR</a> = 0x34</td></tr>
-<tr class="memdesc:a29730663fc792fde83b5359a33f7b2e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Capability pointer offset (for header type 0).  <br /></td></tr>
-<tr class="memitem:ab21f7edfa0df18d124b1b69f5e76fd6f" id="r_ab21f7edfa0df18d124b1b69f5e76fd6f"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab21f7edfa0df18d124b1b69f5e76fd6f">arch::PCI_CAP_ID_MSI</a> = 0x05</td></tr>
-<tr class="memdesc:ab21f7edfa0df18d124b1b69f5e76fd6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Capability IDs.  <br /></td></tr>
-<tr class="memitem:a7a405fde9c1f98bc5f7fd5e7701647f0" id="r_a7a405fde9c1f98bc5f7fd5e7701647f0"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a7a405fde9c1f98bc5f7fd5e7701647f0">arch::PCI_CAP_ID_MSIX</a> = 0x11</td></tr>
-<tr class="memitem:ab4ff12691875986f3b727715507b8e5b" id="r_ab4ff12691875986f3b727715507b8e5b"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab4ff12691875986f3b727715507b8e5b">arch::PCI_MSI_CTRL_ENABLE</a> = 1 &lt;&lt; 0</td></tr>
-<tr class="memdesc:ab4ff12691875986f3b727715507b8e5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">MSI Message Control register bits.  <br /></td></tr>
-<tr class="memitem:acba8253ae0dd173ed234dbea3e51d297" id="r_acba8253ae0dd173ed234dbea3e51d297"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#acba8253ae0dd173ed234dbea3e51d297">arch::PCI_MSI_CTRL_MMC_MASK</a> = 0x0E</td></tr>
-<tr class="memitem:a0b49e102b0e8000be31a115af081901b" id="r_a0b49e102b0e8000be31a115af081901b"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a0b49e102b0e8000be31a115af081901b">arch::PCI_MSI_CTRL_MME_MASK</a> = 0x70</td></tr>
-<tr class="memitem:ae06f3667104c6144e8f79ef478b7123f" id="r_ae06f3667104c6144e8f79ef478b7123f"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ae06f3667104c6144e8f79ef478b7123f">arch::PCI_MSI_CTRL_64BIT</a> = 1 &lt;&lt; 7</td></tr>
-<tr class="memitem:a23ee56c8e4f6107289f0c1bfb5198f5e" id="r_a23ee56c8e4f6107289f0c1bfb5198f5e"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a23ee56c8e4f6107289f0c1bfb5198f5e">arch::PCI_MSI_CTRL_PVM</a> = 1 &lt;&lt; 8</td></tr>
-<tr class="memitem:a241802495c21414a78c45eba41a64c9d" id="r_a241802495c21414a78c45eba41a64c9d"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a241802495c21414a78c45eba41a64c9d">arch::PCI_MSIX_CTRL_ENABLE</a> = 1 &lt;&lt; 15</td></tr>
-<tr class="memdesc:a241802495c21414a78c45eba41a64c9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">MSI-X Message Control register bits.  <br /></td></tr>
-<tr class="memitem:a5136713cea7523e9bdca1debbcb2ea11" id="r_a5136713cea7523e9bdca1debbcb2ea11"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a5136713cea7523e9bdca1debbcb2ea11">arch::PCI_MSIX_CTRL_FUNCMASK</a> = 1 &lt;&lt; 14</td></tr>
-<tr class="memitem:a3a0d6cbb9ca96e79f2495a0898daff60" id="r_a3a0d6cbb9ca96e79f2495a0898daff60"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a3a0d6cbb9ca96e79f2495a0898daff60">arch::PCI_MSIX_CTRL_TSIZE_MASK</a> = 0x7FF</td></tr>
-<tr class="memitem:adb608dfb3135226ea71430eef42807a3" id="r_adb608dfb3135226ea71430eef42807a3"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#ab42586e970f36ee70a86a866bb1fd44a">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#adb608dfb3135226ea71430eef42807a3">arch::PCI_MSI_ADDR_BASE</a> = 0xFEE00000U</td></tr>
-<tr class="memdesc:adb608dfb3135226ea71430eef42807a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">MSI address: xAPIC base (must be written to device's Message Address reg).  <br /></td></tr>
-<tr class="memitem:a10de0ab95791954b760c6b71be4f77b2" id="r_a10de0ab95791954b760c6b71be4f77b2"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a10de0ab95791954b760c6b71be4f77b2">arch::PCI_MSI_DATA_FIXED</a> = 0x0000</td></tr>
-<tr class="memdesc:a10de0ab95791954b760c6b71be4f77b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">MSI data: fixed delivery, edge-triggered, physical destination.  <br /></td></tr>
-<tr class="memitem:a7b9b3fb39b3d73b191720c45ae15a7a5" id="r_a7b9b3fb39b3d73b191720c45ae15a7a5"><td class="memItemLeft">constexpr <a class="el" href="namespacearch.html#ab14cee44c8235473f34c47e6a358dd52">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a7b9b3fb39b3d73b191720c45ae15a7a5">arch::PCI_MAX_DEVICES_FOUND</a> = 128</td></tr>
-</table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>PCI enumeration — arch-independent interface using HAL config space access. </p>
 </div></div><!-- contents -->

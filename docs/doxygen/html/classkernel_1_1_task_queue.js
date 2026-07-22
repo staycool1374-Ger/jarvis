@@ -1,6 +1,7 @@
 var classkernel_1_1_task_queue =
 [
     [ "TaskQueue", "classkernel_1_1_task_queue.html#a8804ebfccb0b109f71875d5ea72e7999", null ],
+    [ "contains", "classkernel_1_1_task_queue.html#ae58560e9bcb13b6d7518ce0064f89a6b", null ],
     [ "count", "classkernel_1_1_task_queue.html#a11497a31721fe4d5c95973e534261b5b", null ],
     [ "empty", "classkernel_1_1_task_queue.html#a3905fd071681a0e864923ccad27d682d", null ],
     [ "head", "classkernel_1_1_task_queue.html#ac679ad082b6979eb92d7605573caa40b", null ],

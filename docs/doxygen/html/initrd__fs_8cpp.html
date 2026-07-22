@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('initrd__fs_8cp
   <div class="headertitle"><div class="title">initrd_fs.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Initial ramdisk filesystem implementation (read-only file vnodes).  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="initrd__fs_8hpp_source.html">kernel/vfs/initrd_fs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mempool_8hpp_source.html">kernel/memory/mempool.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="resource__tracker_8hpp_source.html">kernel/test/resource_tracker.hpp</a>&gt;</code><br />
@@ -134,6 +137,7 @@ Include dependency graph for initrd_fs.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3AInitrdFileNode" id="r_kernel_3A_3Avfs_3A_3AInitrdFileNode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_initrd_file_node.html">kernel::vfs::InitrdFileNode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-vnode private data for initrd file vnodes.  <a href="structkernel_1_1vfs_1_1_initrd_file_node.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -142,9 +146,11 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a7ef3281549b66c34c3500a7b5156718b" id="r_a7ef3281549b66c34c3500a7b5156718b"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a7ef3281549b66c34c3500a7b5156718b">kernel::vfs::initrd_fs</a></td></tr>
+<tr class="memitem:a7ef3281549b66c34c3500a7b5156718b" id="r_a7ef3281549b66c34c3500a7b5156718b"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a7ef3281549b66c34c3500a7b5156718b">kernel::vfs::initrd_fs</a></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Initial ramdisk filesystem implementation (read-only file vnodes). </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

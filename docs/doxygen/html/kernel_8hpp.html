@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -121,195 +121,17 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('kernel_8hpp.ht
 
 <p>Kernel entry points and global declarations.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="bootinfo_8hpp_source.html">kernel/boot/bootinfo.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for kernel.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="kernel_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2kernel_8hpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2kernel_8hpp" id="asrc_2kernel_2kernel_8hpp">
-<area shape="rect" title="Kernel entry points and global declarations." alt="" coords="5,5,148,32"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="37,80,116,107"/>
-<area shape="poly" title=" " alt="" coords="78,31,79,65,74,64,75,35"/>
-</map>
-</div>
-</div><div class="textblock"><div class="dynheader">
+<div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="kernel_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2kernel_8hppdep" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2kernel_8hppdep" id="asrc_2kernel_2kernel_8hppdep">
-<area shape="rect" title="Kernel entry points and global declarations." alt="" coords="5,5,148,32"/>
-<area shape="rect" href="kernel_8cpp.html" title=" " alt="" coords="5,80,148,107"/>
-<area shape="poly" title=" " alt="" coords="78,46,79,80,74,79,75,50"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div>
 <p><a href="kernel_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ae54e1bcf3fe5f14443fdc8ddadfbb615" id="r_ae54e1bcf3fe5f14443fdc8ddadfbb615"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae54e1bcf3fe5f14443fdc8ddadfbb615">higherhalf_entry</a> (uint64_t magic, uint64_t mb_info)</td></tr>
-<tr class="memdesc:ae54e1bcf3fe5f14443fdc8ddadfbb615"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry point after transitioning to the higher half.  <br /></td></tr>
-<tr class="memitem:a47968ee10f6b34a8111739e655a6c6c1" id="r_a47968ee10f6b34a8111739e655a6c6c1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a47968ee10f6b34a8111739e655a6c6c1">panic</a> (const char *msg) <a class="el" href="namespacearch.html#ab918c08a6f4213782962e161fa6f128c">__attribute__</a>((noreturn))</td></tr>
-<tr class="memdesc:a47968ee10f6b34a8111739e655a6c6c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel panic handler (noreturn).  <br /></td></tr>
-<tr class="memitem:a59c51dc200e018623c3a7468c91552b7" id="r_a59c51dc200e018623c3a7468c91552b7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a59c51dc200e018623c3a7468c91552b7">handle_interrupt_c</a> (uint64_t vector, uint64_t error_code, uint64_t rip, uint64_t *regs)</td></tr>
-<tr class="memdesc:a59c51dc200e018623c3a7468c91552b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">C-level interrupt handler dispatcher.  <br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a80bb39a5269fd76f151c9193535e2e9e" id="r_a80bb39a5269fd76f151c9193535e2e9e"><td class="memItemLeft"><a class="el" href="struct_boot_info.html">BootInfo</a>&#160;</td><td class="memItemRight"><a class="el" href="#a80bb39a5269fd76f151c9193535e2e9e">g_boot_info</a></td></tr>
-<tr class="memitem:af2dbba54a64ff017f6a9b4e91b3b29a8" id="r_af2dbba54a64ff017f6a9b4e91b3b29a8"><td class="memItemLeft">uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#af2dbba54a64ff017f6a9b4e91b3b29a8">kernel_stack</a> []</td></tr>
-<tr class="memdesc:af2dbba54a64ff017f6a9b4e91b3b29a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel stack base (bottom address).  <br /></td></tr>
-</table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Kernel entry points and global declarations. </p>
-</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="a59c51dc200e018623c3a7468c91552b7" name="a59c51dc200e018623c3a7468c91552b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59c51dc200e018623c3a7468c91552b7">&#9670;&#160;</a></span>handle_interrupt_c()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void handle_interrupt_c </td>
-          <td>(</td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>vector</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>error_code</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>rip</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t *</td>          <td class="paramname"><span class="paramname"><em>regs</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>C-level interrupt handler dispatcher. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">vector</td><td>Interrupt vector number. </td></tr>
-    <tr><td class="paramname">error_code</td><td>CPU error code (0 if none). </td></tr>
-    <tr><td class="paramname">rip</td><td>Instruction pointer at time of interrupt. </td></tr>
-    <tr><td class="paramname">regs</td><td>Pointer to saved register array (GPRs). </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ae54e1bcf3fe5f14443fdc8ddadfbb615" name="ae54e1bcf3fe5f14443fdc8ddadfbb615"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae54e1bcf3fe5f14443fdc8ddadfbb615">&#9670;&#160;</a></span>higherhalf_entry()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void higherhalf_entry </td>
-          <td>(</td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>magic</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>mb_info</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Entry point after transitioning to the higher half. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">magic</td><td>Multiboot2 magic value. </td></tr>
-    <tr><td class="paramname">mb_info</td><td>Multiboot2 info structure pointer. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a47968ee10f6b34a8111739e655a6c6c1" name="a47968ee10f6b34a8111739e655a6c6c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47968ee10f6b34a8111739e655a6c6c1">&#9670;&#160;</a></span>panic()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void panic </td>
-          <td>(</td>
-          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>msg</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Kernel panic handler (noreturn). </p>
-<p>Overridable assertion macro. Default calls panic on failure.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">msg</td><td>Panic message string. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a name="doc-var-members" id="doc-var-members"></a><h2 id="header-doc-var-members" class="groupheader">Variable Documentation</h2>
-<a id="a80bb39a5269fd76f151c9193535e2e9e" name="a80bb39a5269fd76f151c9193535e2e9e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80bb39a5269fd76f151c9193535e2e9e">&#9670;&#160;</a></span>g_boot_info</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="struct_boot_info.html">BootInfo</a> g_boot_info</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel extern">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af2dbba54a64ff017f6a9b4e91b3b29a8" name="af2dbba54a64ff017f6a9b4e91b3b29a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2dbba54a64ff017f6a9b4e91b3b29a8">&#9670;&#160;</a></span>kernel_stack</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint8_t kernel_stack[]</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel extern">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Kernel stack base (bottom address). </p>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

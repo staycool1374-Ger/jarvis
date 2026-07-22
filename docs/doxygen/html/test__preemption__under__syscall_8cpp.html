@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__preempti
   <div class="headertitle"><div class="title">test_preemption_under_syscall.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Preemption during system call tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scope__guard_8hpp_source.html">scope_guard.hpp</a>&gt;</code><br />
@@ -127,6 +130,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__preempti
 <code>#include &lt;<a class="el" href="vfs_8hpp_source.html">kernel/vfs/vfs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_preemption_under_syscall.cpp:</div>
 <div class="dyncontent">
@@ -142,7 +146,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a4189f42a31c655a68521f9983da51ff2" id="r_a4189f42a31c655a68521f9983da51ff2"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4189f42a31c655a68521f9983da51ff2">JARVIS_TEST</a> (preempt_lowpri_not_starved, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:ada6f8792de8a2c493439ab8a8bf56e57" id="r_ada6f8792de8a2c493439ab8a8bf56e57"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ada6f8792de8a2c493439ab8a8bf56e57">register_preemption_under_syscall_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Preemption during system call tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a15fd9318dfacd3ff5a95e81d3c659652" name="a15fd9318dfacd3ff5a95e81d3c659652"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a15fd9318dfacd3ff5a95e81d3c659652">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/4]</span></h2>
 
@@ -161,12 +167,6 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_a15fd9318dfacd3ff5a95e81d3c659652_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a15fd9318dfacd3ff5a95e81d3c659652_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
 
 </div>
 </div>
@@ -197,7 +197,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__preemption__under__syscall_8cpp_a70b288e8b87f9ae28e52a36ccc50cb81_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a70b288e8b87f9ae28e52a36ccc50cb81_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -220,12 +220,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_a4189f42a31c655a68521f9983da51ff2_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_a4189f42a31c655a68521f9983da51ff2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -247,12 +241,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__preemption__under__syscall_8cpp_aabc532685bd107bb4d790f6d3e109070_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_aabc532685bd107bb4d790f6d3e109070_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
@@ -274,7 +262,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__preemption__under__syscall_8cpp_ada6f8792de8a2c493439ab8a8bf56e57_cgraph.png" border="0" usemap="#atest__preemption__under__syscall_8cpp_ada6f8792de8a2c493439ab8a8bf56e57_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 2 -->
 </div>
 
 </div>

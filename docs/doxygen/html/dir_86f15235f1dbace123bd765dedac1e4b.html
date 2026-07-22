@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -128,15 +128,22 @@ Directory dependency graph for syscall:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-files" class="groupheader"><a id="files" name="files"></a>
 Files</h2></td></tr>
 <tr class="memitem:syscall_2Ecpp" id="r_syscall_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall_8cpp.html">syscall.cpp</a></td></tr>
+<tr class="memdesc:syscall_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">System call dispatcher — init (MSR setup), handle (table dispatch), helpers. <br /></td></tr>
 <tr class="memitem:syscall_2Ehpp" id="r_syscall_2Ehpp"><td class="memItemLeft"><a href="syscall_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="syscall_8hpp.html">syscall.hpp</a></td></tr>
 <tr class="memdesc:syscall_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">System call interface and dispatcher. <br /></td></tr>
 <tr class="memitem:syscall_5Ferrors_2Ehpp" id="r_syscall_5Ferrors_2Ehpp"><td class="memItemLeft"><a href="syscall__errors_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="syscall__errors_8hpp.html">syscall_errors.hpp</a></td></tr>
+<tr class="memdesc:syscall__errors_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syscall error codes aggregated from all subsystems (X-macro table). <br /></td></tr>
 <tr class="memitem:syscall_5Fhandlers_5Ffs_2Ecpp" id="r_syscall_5Fhandlers_5Ffs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall__handlers__fs_8cpp.html">syscall_handlers_fs.cpp</a></td></tr>
+<tr class="memdesc:syscall__handlers__fs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syscall handlers for file-system operations: open, read, write, close, stat, etc. <br /></td></tr>
 <tr class="memitem:syscall_5Fhandlers_5Fipc_2Ecpp" id="r_syscall_5Fhandlers_5Fipc_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall__handlers__ipc_8cpp.html">syscall_handlers_ipc.cpp</a></td></tr>
+<tr class="memdesc:syscall__handlers__ipc_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syscall handlers for IPC operations: send, receive, sync send, mailbox, notify, events. <br /></td></tr>
 <tr class="memitem:syscall_5Fhandlers_5Fmisc_2Ecpp" id="r_syscall_5Fhandlers_5Fmisc_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall__handlers__misc_8cpp.html">syscall_handlers_misc.cpp</a></td></tr>
+<tr class="memdesc:syscall__handlers__misc_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syscall handlers for miscellaneous operations: yield, print, get_ticks, exit, etc. <br /></td></tr>
 <tr class="memitem:syscall_5Fhandlers_5Fprocess_2Ecpp" id="r_syscall_5Fhandlers_5Fprocess_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall__handlers__process_8cpp.html">syscall_handlers_process.cpp</a></td></tr>
+<tr class="memdesc:syscall__handlers__process_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Syscall handlers for process operations: exec, fork, waitpid, getpid, kill, etc. <br /></td></tr>
 <tr class="memitem:syscall_5Fhandlers_5Fsync_2Ecpp" id="r_syscall_5Fhandlers_5Fsync_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="syscall__handlers__sync_8cpp.html">syscall_handlers_sync.cpp</a></td></tr>
 <tr class="memitem:syscall_5Fhelpers_2Ehpp" id="r_syscall_5Fhelpers_2Ehpp"><td class="memItemLeft"><a href="syscall__helpers_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="syscall__helpers_8hpp.html">syscall_helpers.hpp</a></td></tr>
+<tr class="memdesc:syscall__helpers_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helpers used by syscall handlers — current task, path resolution, fd management. <br /></td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

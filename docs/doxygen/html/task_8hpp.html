@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -121,64 +121,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('task_8hpp.html
 
 <p>Task control block and state definitions for the kernel scheduler.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="spinlock_8hpp_source.html">kernel/sync/spinlock.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="jarvis__config_8h_source.html">kernel/jarvis_config.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="task__errors_8hpp_source.html">kernel/task/task_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vfs_8hpp_source.html">kernel/vfs/vfs.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="signal_8hpp_source.html">signal.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for task.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="task_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2task_2task_8hpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2task_2task_8hpp" id="asrc_2kernel_2task_2task_8hpp">
-<area shape="rect" title="Task control block and state definitions for the kernel scheduler." alt="" coords="5,5,167,32"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="47,155,125,181"/>
-<area shape="poly" title=" " alt="" coords="59,35,35,54,14,81,11,99,18,115,33,131,51,145,46,147,29,135,14,118,6,99,9,79,31,50,62,30"/>
-<area shape="rect" href="vfs_8hpp.html" title=" " alt="" coords="23,80,149,107"/>
-<area shape="poly" title=" " alt="" coords="87,30,89,65,83,64,85,35"/>
-<area shape="rect" href="signal_8hpp.html" title="Signal definitions used by the kernel for user exception delivery." alt="" coords="172,80,253,107"/>
-<area shape="poly" title=" " alt="" coords="108,30,180,71,175,73,108,35"/>
-<area shape="poly" title=" " alt="" coords="88,105,89,140,83,138,84,109"/>
-<area shape="poly" title=" " alt="" coords="193,107,122,149,120,144,188,108"/>
-</map>
-</div>
-</div>
+
 <p><a href="task_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:kernel_3A_3AMessage" id="r_kernel_3A_3AMessage"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_message.html">kernel::Message</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A single <a class="el" href="classkernel_1_1_i_p_c.html" title="Inter-process communication manager.">IPC</a> message with sender ID, type, priority, and payload.  <a href="structkernel_1_1_message.html#details">More...</a><br /></td></tr>
-<tr class="memitem:kernel_3A_3ATaskControlBlock" id="r_kernel_3A_3ATaskControlBlock"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_task_control_block.html">kernel::TaskControlBlock</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPU register save area for context switching.  <a href="structkernel_1_1_task_control_block.html#details">More...</a><br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
-<tr class="memitem:kernel_3A_3Async" id="r_kernel_3A_3Async"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1sync.html">kernel::sync</a></td></tr>
-<tr class="memitem:kernel_3A_3Atask" id="r_kernel_3A_3Atask"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1task.html">kernel::task</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:aca8cb7bebc5bfc2d27dcb0c95fc18c3c" id="r_aca8cb7bebc5bfc2d27dcb0c95fc18c3c"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3c">kernel::TaskState</a> : uint8_t { <br />
-&#160;&#160;<a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3ca2baa69eafc7204f3bd8648eba580c489">kernel::READY</a>
-, <a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3ca43491564ebcfd38568918efbd6e840fd">kernel::RUNNING</a>
-, <a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3caeecba0068950a2df17c47e851e1eef14">kernel::BLOCKED</a>
-, <a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3ca1869d56535e8b1449a6da54ff5e11f50">kernel::WAITING</a>
-, <br />
-&#160;&#160;<a class="el" href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3ca9d725163e44a2e9cf094059c0abfdef1">kernel::TERMINATED</a>
-<br />
- }</td></tr>
-<tr class="memdesc:aca8cb7bebc5bfc2d27dcb0c95fc18c3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">States a task can be in during its lifecycle.  <a href="namespacekernel.html#aca8cb7bebc5bfc2d27dcb0c95fc18c3c">More...</a><br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:abb9b26c8d76b814b9ed2a3c78bad290e" id="r_abb9b26c8d76b814b9ed2a3c78bad290e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#abb9b26c8d76b814b9ed2a3c78bad290e">kernel::init_task_common</a> (<a class="el" href="structkernel_1_1_task_control_block.html">TaskControlBlock</a> &amp;tcb)</td></tr>
-<tr class="memdesc:abb9b26c8d76b814b9ed2a3c78bad290e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize common task fields after allocation.  <br /></td></tr>
-<tr class="memitem:ae7fc9a59f78d98d18c2d3c5a25ec2193" id="r_ae7fc9a59f78d98d18c2d3c5a25ec2193"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1task.html#ae7fc9a59f78d98d18c2d3c5a25ec2193">kernel::task::dmesg_task_main</a> ()</td></tr>
-</table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Task control block and state definitions for the kernel scheduler. </p>
 </div></div><!-- contents -->

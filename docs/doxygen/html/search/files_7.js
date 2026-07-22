@@ -19,7 +19,9 @@ var searchData=
   ['ipc_2ecpp_16',['ipc.cpp',['../ipc_8cpp.html',1,'']]],
   ['ipc_2eh_17',['ipc.h',['../ipc_8h.html',1,'']]],
   ['ipc_2ehpp_18',['ipc.hpp',['../ipc_8hpp.html',1,'']]],
-  ['ipc_5ferrors_2ehpp_19',['ipc_errors.hpp',['../ipc__errors_8hpp.html',1,'']]],
-  ['ipv4_2ehpp_20',['ipv4.hpp',['../ipv4_8hpp.html',1,'']]],
-  ['irq_5fguard_2ehpp_21',['irq_guard.hpp',['../hal_2irq__guard_8hpp.html',1,'(Global Namespace)'],['../irq__guard_8hpp.html',1,'(Global Namespace)']]]
+  ['ipc_5fboot_2ehpp_19',['ipc_boot.hpp',['../ipc__boot_8hpp.html',1,'']]],
+  ['ipc_5ferrors_2ehpp_20',['ipc_errors.hpp',['../ipc__errors_8hpp.html',1,'']]],
+  ['ipc_5fsched_5ftrace_2ehpp_21',['ipc_sched_trace.hpp',['../ipc__sched__trace_8hpp.html',1,'']]],
+  ['ipv4_2ehpp_22',['ipv4.hpp',['../ipv4_8hpp.html',1,'']]],
+  ['irq_5fguard_2ehpp_23',['irq_guard.hpp',['../hal_2irq__guard_8hpp.html',1,'(Global Namespace)'],['../irq__guard_8hpp.html',1,'(Global Namespace)']]]
 ];

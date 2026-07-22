@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('taskdefs_8cpp.
   <div class="headertitle"><div class="title">taskdefs.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Task definition table and reboot-from-table implementation.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="taskdefs_8hpp_source.html">kernel/task/taskdefs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="sporadic__server_8hpp_source.html">kernel/task/sporadic_server.hpp</a>&gt;</code><br />
@@ -147,11 +150,13 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a80e920b60042b6c2750fd88974610e99" id="r_a80e920b60042b6c2750fd88974610e99"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80e920b60042b6c2750fd88974610e99">debug_write</a> (const char *s)</td></tr>
+<tr class="memitem:afc833d2926e5dca3c9fbed32f7a7656a" id="r_afc833d2926e5dca3c9fbed32f7a7656a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afc833d2926e5dca3c9fbed32f7a7656a">debug_write_hex</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> value)</td></tr>
 <tr class="memitem:a3893cb01e13bf4e36090daef580b7426" id="r_a3893cb01e13bf4e36090daef580b7426"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3893cb01e13bf4e36090daef580b7426">init_task_main</a> ()</td></tr>
-<tr class="memitem:a23341a25427d54ae2f91ec33bb133c24" id="r_a23341a25427d54ae2f91ec33bb133c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1task.html#a23341a25427d54ae2f91ec33bb133c24">kernel::task::reboot_from_table</a> () __attribute__((noreturn))</td></tr>
-<tr class="memdesc:a23341a25427d54ae2f91ec33bb133c24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kills all tasks (except idle), spawns the system from g_task_defs[], then enters the idle loop. Never returns.  <br /></td></tr>
+<tr class="memitem:a7f227dc40c3e02534d8c4640812236c7" id="r_a7f227dc40c3e02534d8c4640812236c7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1task.html#a7f227dc40c3e02534d8c4640812236c7">kernel::task::reboot_from_table</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Task definition table and reboot-from-table implementation. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a80e920b60042b6c2750fd88974610e99" name="a80e920b60042b6c2750fd88974610e99"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a80e920b60042b6c2750fd88974610e99">&#9670;&#160;</a></span>debug_write()</h2>
 
@@ -162,6 +167,23 @@ Functions</h2></td></tr>
           <td class="memname">void debug_write </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>s</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afc833d2926e5dca3c9fbed32f7a7656a" name="afc833d2926e5dca3c9fbed32f7a7656a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc833d2926e5dca3c9fbed32f7a7656a">&#9670;&#160;</a></span>debug_write_hex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void debug_write_hex </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>

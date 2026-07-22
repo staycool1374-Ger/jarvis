@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('spinlock__guar
   <div class="headertitle"><div class="title">spinlock_guard.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>RAII lock guard template for any lock with lock()/unlock().  
+<a href="#details">More...</a></p>
 <div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
@@ -126,13 +129,9 @@ This graph shows which files directly or indirectly include this file:</div>
 </div>
 </div>
 <p><a href="spinlock__guard_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:SpinLockGuard_3C_20Lock_20_3E" id="r_SpinLockGuard_3C_20Lock_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="class_spin_lock_guard.html">SpinLockGuard&lt; Lock &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAII lock guard for any lock type with lock()/unlock() methods.  <a href="class_spin_lock_guard.html#details">More...</a><br /></td></tr>
-</table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>RAII lock guard template for any lock with lock()/unlock(). </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('structkernel_1
   <div class="headertitle"><div class="title">kernel::vfs::DevEntry Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Device directory entry linking a name to a vnode.  
+ <a href="#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for kernel::vfs::DevEntry:</div>
 <div class="dyncontent">
@@ -128,9 +131,13 @@ Collaboration diagram for kernel::vfs::DevEntry:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Data Fields</h2></td></tr>
 <tr class="memitem:a231c5c1105bd602ee8b0211a2c405ae1" id="r_a231c5c1105bd602ee8b0211a2c405ae1"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#a231c5c1105bd602ee8b0211a2c405ae1">name</a></td></tr>
-<tr class="memitem:ad92fb247a53093452dd757201dc0b229" id="r_ad92fb247a53093452dd757201dc0b229"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ad92fb247a53093452dd757201dc0b229">vnode</a></td></tr>
+<tr class="memdesc:a231c5c1105bd602ee8b0211a2c405ae1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device name.  <br /></td></tr>
+<tr class="memitem:ad92fb247a53093452dd757201dc0b229" id="r_ad92fb247a53093452dd757201dc0b229"><td class="memItemLeft">Vnode *&#160;</td><td class="memItemRight"><a class="el" href="#ad92fb247a53093452dd757201dc0b229">vnode</a></td></tr>
+<tr class="memdesc:ad92fb247a53093452dd757201dc0b229"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device vnode pointer.  <br /></td></tr>
 </table>
-<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Device directory entry linking a name to a vnode. </p>
+</div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="a231c5c1105bd602ee8b0211a2c405ae1" name="a231c5c1105bd602ee8b0211a2c405ae1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a231c5c1105bd602ee8b0211a2c405ae1">&#9670;&#160;</a></span>name</h2>
 
@@ -143,6 +150,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Device name. </p>
+
 </div>
 </div>
 <a id="ad92fb247a53093452dd757201dc0b229" name="ad92fb247a53093452dd757201dc0b229"></a>
@@ -152,10 +161,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a>* kernel::vfs::DevEntry::vnode</td>
+          <td class="memname">Vnode* kernel::vfs::DevEntry::vnode</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Device vnode pointer. </p>
 
 </div>
 </div>

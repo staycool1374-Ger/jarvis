@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('aarch64_2idt_8
   <div class="headertitle"><div class="title">idt.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>AArch64 exception vector table (VBAR_EL1) and interrupt dispatch.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="idt_8hpp_source.html">kernel/arch/idt.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
@@ -136,7 +139,9 @@ Namespaces</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a46488b8cc19b71e9d4bd3d8ea44603e4" id="r_a46488b8cc19b71e9d4bd3d8ea44603e4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a46488b8cc19b71e9d4bd3d8ea44603e4">arch::exception_entry</a> (void)</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>AArch64 exception vector table (VBAR_EL1) and interrupt dispatch. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

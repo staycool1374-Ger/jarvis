@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,162 +118,154 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('sporadic__serv
   <div class="headertitle"><div class="title">sporadic_server.hpp</div></div>
 </div><!--header-->
 <div class="contents">
-<a href="sporadic__server_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> * it under the terms of the GNU General Public License as published by</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * the Free Software Foundation, either version 3 of the License, or</span></div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment"> * (at your option) any later version.</span></div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"> * This program is distributed in the hope that it will be useful,</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment"> * but WITHOUT ANY WARRANTY; without even the implied warranty of</span></div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span></div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> * GNU General Public License for more details.</span></div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * You should have received a copy of the GNU General Public License</span></div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> * along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span></div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#pragma once</span></div>
+<a href="sporadic__server_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment"> * it under the terms of the GNU General Public License as published by</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment"> * the Free Software Foundation, either version 3 of the License, or</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"> * (at your option) any later version.</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * This program is distributed in the hope that it will be useful,</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> * but WITHOUT ANY WARRANTY; without even the implied warranty of</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * GNU General Public License for more details.</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> * You should have received a copy of the GNU General Public License</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment"> * along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;<a class="code" href="jarvis__config_8h.html">kernel/jarvis_config.h</a>&gt;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel_1_1task.html">task</a> {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span></div>
-<div class="foldopen" id="foldopen00042" data-start="{" data-end="};">
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html">   42</a></span><span class="keyword">class </span><a class="code hl_class" href="classkernel_1_1task_1_1_sporadic_server.html">SporadicServer</a> {</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a9ed027f650f166b9e31ad25ae062dd1f">   47</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> uint64_t <a class="code hl_variable" href="classkernel_1_1task_1_1_sporadic_server.html#a9ed027f650f166b9e31ad25ae062dd1f">MAX_REPLENISHMENTS</a> = 8;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span></div>
-<div class="foldopen" id="foldopen00050" data-start="{" data-end="};">
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html">   50</a></span>    <span class="keyword">struct </span><a class="code hl_struct" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html">Replenishment</a> {</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a1843710c17e0b19586d5e7df4c2ef19f">   51</a></span>        uint64_t <a class="code hl_variable" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a1843710c17e0b19586d5e7df4c2ef19f">time</a>;    </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno"><a class="line" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a9357559d3dd4707c2325a3472bbfabc4">   52</a></span>        uint64_t <a class="code hl_variable" href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a9357559d3dd4707c2325a3472bbfabc4">amount</a>;  </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    };</div>
-</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span></div>
-<div class="foldopen" id="foldopen00056" data-start="{" data-end="};">
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096">   56</a></span>    <span class="keyword">enum</span> <a class="code hl_enumeration" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096">State</a> : uint8_t {</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096ad7d7bda050383f92f545fe17afc73ff9">   57</a></span>        <a class="code hl_enumvalue" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096ad7d7bda050383f92f545fe17afc73ff9">IDLE</a>      = 0,   </div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096a29c6b8a3505b922ae871b9f0f9075989">   58</a></span>        <a class="code hl_enumvalue" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096a29c6b8a3505b922ae871b9f0f9075989">ACTIVE</a>    = 1,   </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096afec13d1204c26dd5c350c880a8ed7d49">   59</a></span>        <a class="code hl_enumvalue" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096afec13d1204c26dd5c350c880a8ed7d49">EXHAUSTED</a> = 2,   </div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    };</div>
-</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span></div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a80cbe9a6353a1e291566615739ca8f0a">init</a>(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio,</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>              uint64_t budget_granularity = <a class="code hl_define" href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a>) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">// ---- Event interface ----</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span></div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#ade5beec00850620602d7058453774810">on_activation</a>(uint64_t now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;<a class="code" href="jarvis__config_8h.html">kernel/jarvis_config.h</a>&gt;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel_1_1task.html">task</a> {</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="keyword">class </span>SporadicServer {</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> MAX_REPLENISHMENTS = 8;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    <span class="keyword">struct </span>Replenishment {</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> <a class="code hl_function" href="time_8c.html#a99ef1cb2c789827dd5db3886dccf9067">time</a>;   </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> amount; </div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    };</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keyword">enum</span> State : <a class="code hl_typedef" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> {</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        IDLE = 0,      </div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        ACTIVE = 1,    </div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        EXHAUSTED = 2, </div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    };</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">init</a>(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> budget_c, <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> period_t, <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> bg_prio,</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>              <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> budget_granularity =</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                  <a class="code hl_define" href="jarvis__config_8h.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a>) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="comment">// ---- Event interface ----</span></div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span></div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a65b0a775fc44d7053298bf50bbd8f6f6">on_completion</a>(uint64_t now) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="comment">// ---- Tick-driven interface ----</span></div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span></div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a9403aae1570e64968dbd6ccca43570bd">consume</a>(uint64_t now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordtype">void</span> on_activation(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span></div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keywordtype">void</span> on_completion(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="comment">// ---- Tick-driven interface ----</span></div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#af84fdf5fd66413625cbb631f48dd4d77">process_replenishments</a>(uint64_t now) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="comment">// ---- Queries ----</span></div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a07701533186561d0e746f8f7729f6ac6">  101</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a07701533186561d0e746f8f7729f6ac6">has_budget</a>() const noexcept { <span class="keywordflow">return</span> budget_remaining_ &gt; 0; }</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span></div>
-<div class="foldopen" id="foldopen00104" data-start="{" data-end="}">
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a563468b3df274365d89b1e9455e84a60">  104</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a563468b3df274365d89b1e9455e84a60">current_priority</a>() const noexcept {</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        <span class="keywordflow">return</span> (state_ == <a class="code hl_enumvalue" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096afec13d1204c26dd5c350c880a8ed7d49">EXHAUSTED</a>) ? bg_priority_ : base_priority_;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    }</div>
-</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#af5c851c868dac141d32a6020fbc4ca6f">  109</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#af5c851c868dac141d32a6020fbc4ca6f">remaining_budget</a>() const noexcept { <span class="keywordflow">return</span> budget_remaining_; }</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordtype">bool</span> consume(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    <span class="keywordtype">void</span> process_replenishments(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> now) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="comment">// ---- Queries ----</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keywordtype">bool</span> has_budget() const noexcept {</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="keywordflow">return</span> budget_remaining_ &gt; 0;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>    }</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span></div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a613b766f64760d57b7018e525a66f290">  112</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a613b766f64760d57b7018e525a66f290">max_budget</a>() const noexcept { <span class="keywordflow">return</span> budget_c_; }</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span></div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#ab5bd8cf9b74ab74440b935ff87f297d7">  115</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#ab5bd8cf9b74ab74440b935ff87f297d7">period</a>() const noexcept { <span class="keywordflow">return</span> period_t_; }</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> current_priority() const noexcept {</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        <span class="keywordflow">return</span> (state_ == EXHAUSTED) ? bg_priority_ : base_priority_;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    }</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span></div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#aec67df65c12d086e6ca4d9b624c161cb">  118</a></span>    <a class="code hl_enumeration" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096">State</a> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#aec67df65c12d086e6ca4d9b624c161cb">state</a>() const noexcept { <span class="keywordflow">return</span> state_; }</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#aaed6a50641d24a25fcd2319cfb04f843">  121</a></span>    <span class="keywordtype">bool</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#aaed6a50641d24a25fcd2319cfb04f843">is_active</a>() const noexcept { <span class="keywordflow">return</span> state_ == <a class="code hl_enumvalue" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096a29c6b8a3505b922ae871b9f0f9075989">ACTIVE</a>; }</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span></div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a5772a501b3eb0df8688705394b5c5e5b">  124</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a5772a501b3eb0df8688705394b5c5e5b">pending_count</a>() const noexcept { <span class="keywordflow">return</span> replenishment_count_; }</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span></div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a18ea63756803965143e8462cddcd4430">  128</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a18ea63756803965143e8462cddcd4430">set_base_priority</a>(uint64_t prio) <span class="keyword">noexcept</span> { base_priority_ = prio; }</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span></div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno"><a class="line" href="classkernel_1_1task_1_1_sporadic_server.html#a30fa508b06ba48b5635cd8967000f65a">  131</a></span>    uint64_t <a class="code hl_function" href="classkernel_1_1task_1_1_sporadic_server.html#a30fa508b06ba48b5635cd8967000f65a">bg_priority</a>() const noexcept { <span class="keywordflow">return</span> bg_priority_; }</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="comment">// ---- Configuration ----</span></div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    uint64_t budget_c_;               </div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>    uint64_t period_t_;               </div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>    uint64_t base_priority_;          </div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    uint64_t bg_priority_;            </div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>    uint64_t budget_granularity_;     </div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span> </div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>    <span class="comment">// ---- Dynamic state ----</span></div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    uint64_t budget_remaining_;       </div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    uint64_t consumed_since_active_;  </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    uint64_t activation_time_;        </div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    uint64_t consume_counter_;        </div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <a class="code hl_enumeration" href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096">State</a> state_;</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <span class="comment">// ---- Replenishment queue (circular buffer) ----</span></div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    Replenishment replenishments_[<a class="code hl_variable" href="classkernel_1_1task_1_1_sporadic_server.html#a9ed027f650f166b9e31ad25ae062dd1f">MAX_REPLENISHMENTS</a>];</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    uint64_t replenishment_head_;     </div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    uint64_t replenishment_tail_;     </div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    uint64_t replenishment_count_;    </div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    <span class="keywordtype">bool</span> schedule_replenishment(uint64_t <a class="code hl_function" href="time_8c.html#a99ef1cb2c789827dd5db3886dccf9067">time</a>, uint64_t amount) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    Replenishment pop_replenishment() noexcept;</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>};</div>
-</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>static_assert(sizeof(<a class="code hl_class" href="classkernel_1_1task_1_1_sporadic_server.html">SporadicServer</a>::Replenishment) &lt;= 16,</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>              <span class="stringliteral">&quot;SporadicServer::Replenishment must fit in 16 bytes&quot;</span>);</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span><span class="preprocessor">#if CONFIG_SPORADIC_SERVER_DEADLINE_HOOK</span></div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>__attribute__((weak))</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span><span class="keywordtype">void</span> sporadic_server_deadline_handler(<a class="code hl_class" href="classkernel_1_1task_1_1_sporadic_server.html">SporadicServer</a>* ss,</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                                      uint64_t reason) <span class="keyword">noexcept</span>;</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>} <span class="comment">// namespace task</span></div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>} <span class="comment">// namespace kernel</span></div>
-<div class="ttc" id="aaarch64_2serial_8cpp_html_a31b2fca43fed672f65115a92304475a2"><div class="ttname"><a href="aarch64_2serial_8cpp.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a></div><div class="ttdeci">#define CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html">kernel::task::SporadicServer</a></div><div class="ttdoc">Per-instance Sporadic Server controller.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:42</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a07701533186561d0e746f8f7729f6ac6"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a07701533186561d0e746f8f7729f6ac6">kernel::task::SporadicServer::has_budget</a></div><div class="ttdeci">bool has_budget() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:101</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a18ea63756803965143e8462cddcd4430"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a18ea63756803965143e8462cddcd4430">kernel::task::SporadicServer::set_base_priority</a></div><div class="ttdeci">void set_base_priority(uint64_t prio) noexcept</div><div class="ttdoc">Sets the normal scheduling priority for this server. Call this after init() to assign the server&#39;s ba...</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:128</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a30fa508b06ba48b5635cd8967000f65a"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a30fa508b06ba48b5635cd8967000f65a">kernel::task::SporadicServer::bg_priority</a></div><div class="ttdeci">uint64_t bg_priority() const noexcept</div><div class="ttdoc">Returns the configured background priority.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:131</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a563468b3df274365d89b1e9455e84a60"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a563468b3df274365d89b1e9455e84a60">kernel::task::SporadicServer::current_priority</a></div><div class="ttdeci">uint64_t current_priority() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:104</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a5772a501b3eb0df8688705394b5c5e5b"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a5772a501b3eb0df8688705394b5c5e5b">kernel::task::SporadicServer::pending_count</a></div><div class="ttdeci">uint64_t pending_count() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:124</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a613b766f64760d57b7018e525a66f290"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a613b766f64760d57b7018e525a66f290">kernel::task::SporadicServer::max_budget</a></div><div class="ttdeci">uint64_t max_budget() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:112</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a65b0a775fc44d7053298bf50bbd8f6f6"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a65b0a775fc44d7053298bf50bbd8f6f6">kernel::task::SporadicServer::on_completion</a></div><div class="ttdeci">void on_completion(uint64_t now) noexcept</div><div class="ttdoc">Signals that the server goes idle (all aperiodic work done).</div><div class="ttdef"><b>Definition</b> sporadic_server.cpp:62</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a80cbe9a6353a1e291566615739ca8f0a"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a80cbe9a6353a1e291566615739ca8f0a">kernel::task::SporadicServer::init</a></div><div class="ttdeci">void init(uint64_t budget_c, uint64_t period_t, uint64_t bg_prio, uint64_t budget_granularity=CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY) noexcept</div><div class="ttdoc">Initialises the server parameters.</div><div class="ttdef"><b>Definition</b> sporadic_server.cpp:29</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a9403aae1570e64968dbd6ccca43570bd"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a9403aae1570e64968dbd6ccca43570bd">kernel::task::SporadicServer::consume</a></div><div class="ttdeci">bool consume(uint64_t now) noexcept</div><div class="ttdoc">Consumes one tick of execution budget.</div><div class="ttdef"><b>Definition</b> sporadic_server.cpp:84</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_a9ed027f650f166b9e31ad25ae062dd1f"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#a9ed027f650f166b9e31ad25ae062dd1f">kernel::task::SporadicServer::MAX_REPLENISHMENTS</a></div><div class="ttdeci">static constexpr uint64_t MAX_REPLENISHMENTS</div><div class="ttdoc">Maximum number of simultaneously pending replenishments. Sufficient for all practical cases: at most ...</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:47</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_aaed6a50641d24a25fcd2319cfb04f843"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#aaed6a50641d24a25fcd2319cfb04f843">kernel::task::SporadicServer::is_active</a></div><div class="ttdeci">bool is_active() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:121</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ab5bd8cf9b74ab74440b935ff87f297d7"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ab5bd8cf9b74ab74440b935ff87f297d7">kernel::task::SporadicServer::period</a></div><div class="ttdeci">uint64_t period() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:115</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ac40cdbf3660bfe8f3824ad285eabf096"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096">kernel::task::SporadicServer::State</a></div><div class="ttdeci">State</div><div class="ttdoc">Server execution state.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:56</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ac40cdbf3660bfe8f3824ad285eabf096a29c6b8a3505b922ae871b9f0f9075989"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096a29c6b8a3505b922ae871b9f0f9075989">kernel::task::SporadicServer::ACTIVE</a></div><div class="ttdeci">@ ACTIVE</div><div class="ttdoc">Currently executing aperiodic work.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:58</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ac40cdbf3660bfe8f3824ad285eabf096ad7d7bda050383f92f545fe17afc73ff9"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096ad7d7bda050383f92f545fe17afc73ff9">kernel::task::SporadicServer::IDLE</a></div><div class="ttdeci">@ IDLE</div><div class="ttdoc">No pending work; budget is fully available.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:57</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ac40cdbf3660bfe8f3824ad285eabf096afec13d1204c26dd5c350c880a8ed7d49"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ac40cdbf3660bfe8f3824ad285eabf096afec13d1204c26dd5c350c880a8ed7d49">kernel::task::SporadicServer::EXHAUSTED</a></div><div class="ttdeci">@ EXHAUSTED</div><div class="ttdoc">Budget hit zero; server runs at background priority.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:59</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_ade5beec00850620602d7058453774810"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#ade5beec00850620602d7058453774810">kernel::task::SporadicServer::on_activation</a></div><div class="ttdeci">void on_activation(uint64_t now) noexcept</div><div class="ttdoc">Signals that a new aperiodic job has arrived.</div><div class="ttdef"><b>Definition</b> sporadic_server.cpp:46</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_aec67df65c12d086e6ca4d9b624c161cb"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#aec67df65c12d086e6ca4d9b624c161cb">kernel::task::SporadicServer::state</a></div><div class="ttdeci">State state() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:118</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_af5c851c868dac141d32a6020fbc4ca6f"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#af5c851c868dac141d32a6020fbc4ca6f">kernel::task::SporadicServer::remaining_budget</a></div><div class="ttdeci">uint64_t remaining_budget() const noexcept</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:109</div></div>
-<div class="ttc" id="aclasskernel_1_1task_1_1_sporadic_server_html_af84fdf5fd66413625cbb631f48dd4d77"><div class="ttname"><a href="classkernel_1_1task_1_1_sporadic_server.html#af84fdf5fd66413625cbb631f48dd4d77">kernel::task::SporadicServer::process_replenishments</a></div><div class="ttdeci">void process_replenishments(uint64_t now) noexcept</div><div class="ttdoc">Processes all due replenishments at the given tick.</div><div class="ttdef"><b>Definition</b> sporadic_server.cpp:120</div></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> remaining_budget() const noexcept {</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <span class="keywordflow">return</span> budget_remaining_;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    }</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span></div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> max_budget() const noexcept {</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordflow">return</span> budget_c_;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    }</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> period() const noexcept {</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">return</span> period_t_;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    }</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span></div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    State state() const noexcept {</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">return</span> state_;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>    }</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span></div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>    <span class="keywordtype">bool</span> is_active() const noexcept {</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        <span class="keywordflow">return</span> state_ == ACTIVE;</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>    }</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span></div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> pending_count() const noexcept {</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        <span class="keywordflow">return</span> replenishment_count_;</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    }</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span></div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    <span class="keywordtype">void</span> set_base_priority(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> prio) <span class="keyword">noexcept</span> {</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        base_priority_ = prio;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    }</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span></div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> bg_priority() const noexcept {</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="keywordflow">return</span> bg_priority_;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    }</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span> </div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    <span class="comment">// ---- Configuration ----</span></div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> budget_c_;           </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> period_t_;           </div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> base_priority_;      </div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> bg_priority_;        </div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> budget_granularity_; </div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    <span class="comment">// ---- Dynamic state ----</span></div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> budget_remaining_;      </div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> consumed_since_active_; </div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> activation_time_; </div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> consume_counter_; </div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>    State state_;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span> </div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>    <span class="comment">// ---- Replenishment queue (circular buffer) ----</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    Replenishment replenishments_[MAX_REPLENISHMENTS];</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> replenishment_head_;  </div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> replenishment_tail_;  </div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> replenishment_count_; </div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span></div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    <span class="keywordtype">bool</span> schedule_replenishment(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> <a class="code hl_function" href="time_8c.html#a99ef1cb2c789827dd5db3886dccf9067">time</a>, <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> amount) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span></div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>    Replenishment pop_replenishment() noexcept;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>};</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>static_assert(sizeof(SporadicServer::Replenishment) &lt;= 16,</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>              <span class="stringliteral">&quot;SporadicServer::Replenishment must fit in 16 bytes&quot;</span>);</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="preprocessor">#if CONFIG_SPORADIC_SERVER_DEADLINE_HOOK</span></div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><a class="code hl_function" href="namespaceinitrd.html#a00c53aee04ed1b36b1a86a010b49ef61">__attribute__</a>((weak)) <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>sporadic_server_deadline_handler(SporadicServer *ss, <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> reason) <span class="keyword">noexcept</span>;</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>} <span class="comment">// namespace task</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>} <span class="comment">// namespace kernel</span></div>
 <div class="ttc" id="ajarvis__config_8h_html"><div class="ttname"><a href="jarvis__config_8h.html">jarvis_config.h</a></div><div class="ttdoc">Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...</div></div>
-<div class="ttc" id="anamespacekernel_1_1task_html"><div class="ttname"><a href="namespacekernel_1_1task.html">kernel::task</a></div><div class="ttdef"><b>Definition</b> dmesg_task.cpp:18</div></div>
-<div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> page_flags.hpp:5</div></div>
-<div class="ttc" id="astructkernel_1_1task_1_1_sporadic_server_1_1_replenishment_html"><div class="ttname"><a href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html">kernel::task::SporadicServer::Replenishment</a></div><div class="ttdoc">A single scheduled replenishment event.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:50</div></div>
-<div class="ttc" id="astructkernel_1_1task_1_1_sporadic_server_1_1_replenishment_html_a1843710c17e0b19586d5e7df4c2ef19f"><div class="ttname"><a href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a1843710c17e0b19586d5e7df4c2ef19f">kernel::task::SporadicServer::Replenishment::time</a></div><div class="ttdeci">uint64_t time</div><div class="ttdoc">System tick when this replenishment fires.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:51</div></div>
-<div class="ttc" id="astructkernel_1_1task_1_1_sporadic_server_1_1_replenishment_html_a9357559d3dd4707c2325a3472bbfabc4"><div class="ttname"><a href="structkernel_1_1task_1_1_sporadic_server_1_1_replenishment.html#a9357559d3dd4707c2325a3472bbfabc4">kernel::task::SporadicServer::Replenishment::amount</a></div><div class="ttdeci">uint64_t amount</div><div class="ttdoc">Budget (ticks) to restore.</div><div class="ttdef"><b>Definition</b> sporadic_server.hpp:52</div></div>
+<div class="ttc" id="ajarvis__config_8h_html_a31b2fca43fed672f65115a92304475a2"><div class="ttname"><a href="jarvis__config_8h.html#a31b2fca43fed672f65115a92304475a2">CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</a></div><div class="ttdeci">#define CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY</div><div class="ttdef"><b>Definition</b> jarvis_config.h:104</div></div>
+<div class="ttc" id="anamespaceinitrd_html_a00c53aee04ed1b36b1a86a010b49ef61"><div class="ttname"><a href="namespaceinitrd.html#a00c53aee04ed1b36b1a86a010b49ef61">initrd::__attribute__</a></div><div class="ttdeci">struct initrd::CpioNewcHeader __attribute__((packed))</div></div>
+<div class="ttc" id="anamespaceinitrd_html_a7b70f1cbe142d57f40fb7691d81ce5de"><div class="ttname"><a href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">initrd::init</a></div><div class="ttdeci">void init(const uint8_t *start, const uint8_t *end)</div><div class="ttdef"><b>Definition</b> initrd.cpp:60</div></div>
+<div class="ttc" id="anamespacekernel_1_1task_html"><div class="ttname"><a href="namespacekernel_1_1task.html">kernel::task</a></div><div class="ttdef"><b>Definition</b> dmesg_task.cpp:21</div></div>
+<div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> bootparams.cpp:23</div></div>
 <div class="ttc" id="atime_8c_html_a99ef1cb2c789827dd5db3886dccf9067"><div class="ttname"><a href="time_8c.html#a99ef1cb2c789827dd5db3886dccf9067">time</a></div><div class="ttdeci">time_t time(time_t *tloc)</div><div class="ttdef"><b>Definition</b> time.c:4</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
+<div class="ttc" id="atypes_8hpp_html_a0ba18cab9bd5513695cbe748e9bb4879"><div class="ttname"><a href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a></div><div class="ttdeci">unsigned char uint8_t</div><div class="ttdef"><b>Definition</b> types.hpp:24</div></div>
+<div class="ttc" id="atypes_8hpp_html_a4fd212339282cce62b0d2700490de00f"><div class="ttname"><a href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></div><div class="ttdeci">unsigned long long uint64_t</div><div class="ttdef"><b>Definition</b> types.hpp:27</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,53 +118,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('x86__64_2hal_2
   <div class="headertitle"><div class="title">io_impl.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for io_impl.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="x86__64_2hal_2io__impl_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2arch_2x86__64_2hal_2io__impl_8hpp" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
-</div>
+
+<p>x86_64 I/O port access, control register access, and CPU instruction wrappers.  
+<a href="#details">More...</a></p>
+
 <p><a href="x86__64_2hal_2io__impl_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:arch_3A_3AArchIO" id="r_arch_3A_3AArchIO"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classarch_1_1_arch_i_o.html">arch::ArchIO</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:arch" id="r_arch"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html">arch</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:aeb5cbc7e935cee4fcbb6badba189145f" id="r_aeb5cbc7e935cee4fcbb6badba189145f"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#aeb5cbc7e935cee4fcbb6badba189145f">arch::read_cr0</a> ()</td></tr>
-<tr class="memitem:a61d74b5530b253fac22c2020cfd32dc4" id="r_a61d74b5530b253fac22c2020cfd32dc4"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a61d74b5530b253fac22c2020cfd32dc4">arch::read_cr2</a> ()</td></tr>
-<tr class="memitem:a705f20af9607088bbe06bf00168fb34b" id="r_a705f20af9607088bbe06bf00168fb34b"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a705f20af9607088bbe06bf00168fb34b">arch::read_cr3</a> ()</td></tr>
-<tr class="memitem:ac1292746ea84a2c078f7a34da4c99532" id="r_ac1292746ea84a2c078f7a34da4c99532"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ac1292746ea84a2c078f7a34da4c99532">arch::read_cr4</a> ()</td></tr>
-<tr class="memitem:af2c8cf8af0cd94cd8162d6f45b689426" id="r_af2c8cf8af0cd94cd8162d6f45b689426"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af2c8cf8af0cd94cd8162d6f45b689426">arch::write_cr3</a> (<a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a> v)</td></tr>
-<tr class="memitem:af2d3ee35897d6978ec4136f464f29bbc" id="r_af2d3ee35897d6978ec4136f464f29bbc"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af2d3ee35897d6978ec4136f464f29bbc">arch::write_cr0</a> (<a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>)</td></tr>
-<tr class="memitem:a5b93602e3a05355a23c0eaf8b2402193" id="r_a5b93602e3a05355a23c0eaf8b2402193"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a5b93602e3a05355a23c0eaf8b2402193">arch::write_cr4</a> (<a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a> v)</td></tr>
-<tr class="memitem:a20825f69aef25969b1b7d54543a5e06e" id="r_a20825f69aef25969b1b7d54543a5e06e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a20825f69aef25969b1b7d54543a5e06e">arch::fninit</a> ()</td></tr>
-<tr class="memitem:a76bd35debb20eb2092d37945fdc6b75a" id="r_a76bd35debb20eb2092d37945fdc6b75a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a76bd35debb20eb2092d37945fdc6b75a">arch::ldmxcsr</a> (<a class="el" href="namespacearch.html#ab42586e970f36ee70a86a866bb1fd44a">uint32_t</a> mxcsr)</td></tr>
-<tr class="memitem:a53f2f44ef58749f57e30384eb2a8929b" id="r_a53f2f44ef58749f57e30384eb2a8929b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a53f2f44ef58749f57e30384eb2a8929b">arch::fxsave</a> (void *buf)</td></tr>
-<tr class="memitem:a72e9ea2c398f5f8b6189a1ca91b4ac7a" id="r_a72e9ea2c398f5f8b6189a1ca91b4ac7a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a72e9ea2c398f5f8b6189a1ca91b4ac7a">arch::fxrstor</a> (const void *buf)</td></tr>
-<tr class="memitem:ab1e7d8f3b867b1b2a37b796b1c749c0a" id="r_ab1e7d8f3b867b1b2a37b796b1c749c0a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ab1e7d8f3b867b1b2a37b796b1c749c0a">arch::outb</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port, <a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> val)</td></tr>
-<tr class="memitem:addead5fdd04206009d38bb2eb805dc0c" id="r_addead5fdd04206009d38bb2eb805dc0c"><td class="memItemLeft"><a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#addead5fdd04206009d38bb2eb805dc0c">arch::inb</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port)</td></tr>
-<tr class="memitem:a0706a5f8551789efe012ea44e933477f" id="r_a0706a5f8551789efe012ea44e933477f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a0706a5f8551789efe012ea44e933477f">arch::outw</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port, <a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> val)</td></tr>
-<tr class="memitem:a8a3a309cdbb1568e630349bae0e75576" id="r_a8a3a309cdbb1568e630349bae0e75576"><td class="memItemLeft"><a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a8a3a309cdbb1568e630349bae0e75576">arch::inw</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port)</td></tr>
-<tr class="memitem:aa2c869f38ae2cdbd27020220c529dc6d" id="r_aa2c869f38ae2cdbd27020220c529dc6d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#aa2c869f38ae2cdbd27020220c529dc6d">arch::outl</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port, <a class="el" href="namespacearch.html#ab42586e970f36ee70a86a866bb1fd44a">uint32_t</a> val)</td></tr>
-<tr class="memitem:a40581e9efa591e6d18d3fb472055ee01" id="r_a40581e9efa591e6d18d3fb472055ee01"><td class="memItemLeft"><a class="el" href="namespacearch.html#ab42586e970f36ee70a86a866bb1fd44a">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a40581e9efa591e6d18d3fb472055ee01">arch::inl</a> (<a class="el" href="namespacearch.html#aa151be51b9f762a1628c2336d87ebd5d">uint16_t</a> port)</td></tr>
-<tr class="memitem:a6f8baf3132cf31d6a3859a67315a7c79" id="r_a6f8baf3132cf31d6a3859a67315a7c79"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a6f8baf3132cf31d6a3859a67315a7c79">arch::io_wait</a> ()</td></tr>
-<tr class="memitem:aa3bfd922c7eb371defc2659ada7f8192" id="r_aa3bfd922c7eb371defc2659ada7f8192"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#aa3bfd922c7eb371defc2659ada7f8192">arch::qemu_debug_exit</a> (<a class="el" href="namespacearch.html#abf2008b4b5cca56bc6c26fe0536ed955">uint8_t</a> code)</td></tr>
-<tr class="memitem:a1f7585fe9c60dbdbe1439cb2ddc6407c" id="r_a1f7585fe9c60dbdbe1439cb2ddc6407c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a1f7585fe9c60dbdbe1439cb2ddc6407c">arch::hlt</a> ()</td></tr>
-<tr class="memitem:a758a63db8fd03d589e2c7cac631fb66d" id="r_a758a63db8fd03d589e2c7cac631fb66d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a758a63db8fd03d589e2c7cac631fb66d">arch::pause</a> ()</td></tr>
-<tr class="memitem:a73ff844e6d887445b626a7d9160241c6" id="r_a73ff844e6d887445b626a7d9160241c6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a73ff844e6d887445b626a7d9160241c6">arch::cli</a> ()</td></tr>
-<tr class="memitem:a55aa88ce8e9a3ab05fdea2146ed21aeb" id="r_a55aa88ce8e9a3ab05fdea2146ed21aeb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a55aa88ce8e9a3ab05fdea2146ed21aeb">arch::sti</a> ()</td></tr>
-<tr class="memitem:a20f570f79f96b74ac738fcefa9c3e276" id="r_a20f570f79f96b74ac738fcefa9c3e276"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a20f570f79f96b74ac738fcefa9c3e276">arch::interrupts_enabled</a> ()</td></tr>
-<tr class="memitem:a7ef9bb4fdc54b463e4aadf75e8114d43" id="r_a7ef9bb4fdc54b463e4aadf75e8114d43"><td class="memItemLeft"><a class="el" href="namespacearch.html#ad530609e70d68f0070fd8dae621ff22a">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#a7ef9bb4fdc54b463e4aadf75e8114d43">arch::rdtsc</a> ()</td></tr>
-</table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>x86_64 I/O port access, control register access, and CPU instruction wrappers. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

@@ -1,21 +1,25 @@
 var dir_507c9ec95be9a201f49444d5da26e8a6 =
 [
+    [ "all_tasks_registry.cpp", "all__tasks__registry_8cpp.html", "all__tasks__registry_8cpp" ],
+    [ "all_tasks_registry.hpp", "all__tasks__registry_8hpp.html", "all__tasks__registry_8hpp" ],
+    [ "deadline_list.cpp", "deadline__list_8cpp.html", null ],
+    [ "deadline_list.hpp", "deadline__list_8hpp.html", "deadline__list_8hpp" ],
     [ "dmesg_task.cpp", "dmesg__task_8cpp.html", "dmesg__task_8cpp" ],
-    [ "dmesg_task.hpp", "dmesg__task_8hpp.html", "dmesg__task_8hpp" ],
+    [ "dmesg_task.hpp", "dmesg__task_8hpp.html", null ],
     [ "priority_map.hpp", "priority__map_8hpp.html", "priority__map_8hpp" ],
-    [ "ready_queue_manager.cpp", "ready__queue__manager_8cpp.html", null ],
+    [ "ready_queue_manager.cpp", "ready__queue__manager_8cpp.html", "ready__queue__manager_8cpp" ],
     [ "ready_queue_manager.hpp", "ready__queue__manager_8hpp.html", "ready__queue__manager_8hpp" ],
     [ "scheduler.cpp", "scheduler_8cpp.html", "scheduler_8cpp" ],
-    [ "scheduler.hpp", "scheduler_8hpp.html", "scheduler_8hpp" ],
-    [ "scheduler_errors.hpp", "scheduler__errors_8hpp.html", "scheduler__errors_8hpp" ],
+    [ "scheduler.hpp", "scheduler_8hpp.html", null ],
+    [ "scheduler_errors.hpp", "scheduler__errors_8hpp.html", null ],
     [ "sporadic_server.cpp", "sporadic__server_8cpp.html", null ],
-    [ "sporadic_server.hpp", "sporadic__server_8hpp.html", "sporadic__server_8hpp" ],
+    [ "sporadic_server.hpp", "sporadic__server_8hpp.html", null ],
     [ "task.cpp", "task_8cpp.html", "task_8cpp" ],
-    [ "task.hpp", "task_8hpp.html", "task_8hpp" ],
-    [ "task_errors.hpp", "task__errors_8hpp.html", "task__errors_8hpp" ],
+    [ "task.hpp", "task_8hpp.html", null ],
+    [ "task_errors.hpp", "task__errors_8hpp.html", null ],
     [ "task_fwd.hpp", "task__fwd_8hpp.html", null ],
     [ "task_queue.cpp", "task__queue_8cpp.html", null ],
     [ "task_queue.hpp", "task__queue_8hpp.html", "task__queue_8hpp" ],
     [ "taskdefs.cpp", "taskdefs_8cpp.html", "taskdefs_8cpp" ],
-    [ "taskdefs.hpp", "taskdefs_8hpp.html", "taskdefs_8hpp" ]
+    [ "taskdefs.hpp", "taskdefs_8hpp.html", null ]
 ];

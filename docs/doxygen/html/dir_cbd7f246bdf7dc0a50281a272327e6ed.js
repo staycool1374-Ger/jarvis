@@ -17,11 +17,11 @@ var dir_cbd7f246bdf7dc0a50281a272327e6ed =
     [ "test", "dir_6198906391a1b3439aea9d345bf1b4f0.html", "dir_6198906391a1b3439aea9d345bf1b4f0" ],
     [ "vfs", "dir_a74448e09a2c209561f74c876dd35689.html", "dir_a74448e09a2c209561f74c876dd35689" ],
     [ "bootparams.cpp", "bootparams_8cpp.html", null ],
-    [ "bootparams.hpp", "bootparams_8hpp.html", "bootparams_8hpp" ],
+    [ "bootparams.hpp", "bootparams_8hpp.html", null ],
     [ "jarvis_config.h", "jarvis__config_8h.html", "jarvis__config_8h" ],
     [ "kernel.cpp", "kernel_8cpp.html", "kernel_8cpp" ],
-    [ "kernel.hpp", "kernel_8hpp.html", "kernel_8hpp" ],
-    [ "multiboot2.hpp", "multiboot2_8hpp.html", "multiboot2_8hpp" ],
+    [ "kernel.hpp", "kernel_8hpp.html", null ],
+    [ "multiboot2.hpp", "multiboot2_8hpp.html", null ],
     [ "random.cpp", "random_8cpp.html", "random_8cpp" ],
-    [ "random.hpp", "random_8hpp.html", "random_8hpp" ]
+    [ "random.hpp", "random_8hpp.html", null ]
 ];

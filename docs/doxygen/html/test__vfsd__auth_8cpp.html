@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__vfsd__au
   <div class="headertitle"><div class="title">test_vfsd_auth.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>VFS daemon authorisation tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
@@ -139,8 +142,11 @@ Functions</h2></td></tr>
 <tr class="memitem:aead38b3debb4e71b899d7bf0b96a60a9" id="r_aead38b3debb4e71b899d7bf0b96a60a9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aead38b3debb4e71b899d7bf0b96a60a9">JARVIS_TEST</a> (vfsd_absent_syscall_fails, &quot;PRE: vfsd, <a class="el" href="namespacekernel_1_1iocd.html">iocd</a> | POST: none&quot;)</td></tr>
 <tr class="memitem:a98fa3730ce3dbbcb804c18d9687cd52b" id="r_a98fa3730ce3dbbcb804c18d9687cd52b"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a98fa3730ce3dbbcb804c18d9687cd52b">JARVIS_TEST</a> (vfsd_authorize_null_path, &quot;PRE: vfsd, <a class="el" href="namespacekernel_1_1iocd.html">iocd</a> | POST: none&quot;)</td></tr>
 <tr class="memitem:a6b203c2ce630993d8d83e48588e18b0b" id="r_a6b203c2ce630993d8d83e48588e18b0b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6b203c2ce630993d8d83e48588e18b0b">register_vfsd_authorization_tests</a> ()</td></tr>
+<tr class="memdesc:a6b203c2ce630993d8d83e48588e18b0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — not supported on non-x86 architectures.  <br /></td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>VFS daemon authorisation tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a25e5508c0633231b71d0492d7b8c06c4" name="a25e5508c0633231b71d0492d7b8c06c4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a25e5508c0633231b71d0492d7b8c06c4">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/5]</span></h2>
 
@@ -164,12 +170,6 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__vfsd__auth_8cpp_a25e5508c0633231b71d0492d7b8c06c4_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a25e5508c0633231b71d0492d7b8c06c4_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
 
 </div>
 </div>
@@ -196,12 +196,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__vfsd__auth_8cpp_aead38b3debb4e71b899d7bf0b96a60a9_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_aead38b3debb4e71b899d7bf0b96a60a9_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -228,12 +222,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__vfsd__auth_8cpp_a98fa3730ce3dbbcb804c18d9687cd52b_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a98fa3730ce3dbbcb804c18d9687cd52b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -260,12 +248,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__vfsd__auth_8cpp_ae8d2dbc91211b91671fae6c1240cb4cf_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_ae8d2dbc91211b91671fae6c1240cb4cf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
@@ -292,12 +274,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__vfsd__auth_8cpp_a7f1105c16cb72c68ab85bded186432f5_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a7f1105c16cb72c68ab85bded186432f5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
-</div>
 
 </div>
 </div>
@@ -315,11 +291,13 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — not supported on non-x86 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__vfsd__auth_8cpp_a6b203c2ce630993d8d83e48588e18b0b_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a6b203c2ce630993d8d83e48588e18b0b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 1 -->
 </div>
 
 </div>

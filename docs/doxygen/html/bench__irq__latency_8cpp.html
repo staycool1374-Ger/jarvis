@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('bench__irq__la
   <div class="headertitle"><div class="title">bench_irq_latency.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Benchmark — interrupt latency measurements.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('bench__irq__la
 <code>#include &lt;<a class="el" href="keyboard_8hpp_source.html">kernel/arch/keyboard.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for bench_irq_latency.cpp:</div>
 <div class="dyncontent">
@@ -142,7 +146,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a7479eb3c86f6f6c9d5b6b5c42dd75664" id="r_a7479eb3c86f6f6c9d5b6b5c42dd75664"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7479eb3c86f6f6c9d5b6b5c42dd75664">JARVIS_TEST</a> (bench_spinlock_try_lock, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:ace55408832580798c22c0b745a5d00e0" id="r_ace55408832580798c22c0b745a5d00e0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ace55408832580798c22c0b745a5d00e0">register_bench_irq_latency_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Benchmark — interrupt latency measurements. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a9f57cde8b79745a9fca9a9374b46b8ce" name="a9f57cde8b79745a9fca9a9374b46b8ce"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9f57cde8b79745a9fca9a9374b46b8ce">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/2]</span></h2>
 

@@ -1,20 +1,4 @@
 var searchData=
 [
-  ['taskcontrolblock_0',['TaskControlBlock',['../structkernel_1_1_task_control_block.html',1,'kernel']]],
-  ['taskdef_1',['TaskDef',['../structkernel_1_1task_1_1_task_def.html',1,'kernel::task']]],
-  ['taskdeleter_2',['TaskDeleter',['../struct_task_deleter.html',1,'']]],
-  ['taskfields_3',['TaskFields',['../structkernel_1_1_scheduler_1_1_task_fields.html',1,'kernel::Scheduler']]],
-  ['taskiter_4',['TaskIter',['../structkernel_1_1_scheduler_1_1_task_iter.html',1,'kernel::Scheduler']]],
-  ['taskqueue_5',['TaskQueue',['../classkernel_1_1_task_queue.html',1,'kernel']]],
-  ['terminal_6',['Terminal',['../classservice_1_1_terminal.html',1,'service']]],
-  ['testbase_7',['TestBase',['../classkernel_1_1test_1_1_test_base.html',1,'kernel::test']]],
-  ['testcase_8',['TestCase',['../structkernel_1_1test_1_1_test_case.html',1,'kernel::test']]],
-  ['testclass_9',['TestClass',['../structkernel_1_1test_1_1_test_class.html',1,'kernel::test']]],
-  ['testmeta_10',['TestMeta',['../struct_test_meta.html',1,'']]],
-  ['throughputctx_11',['ThroughputCtx',['../struct_throughput_ctx.html',1,'']]],
-  ['timespec_12',['timespec',['../structtimespec.html',1,'']]],
-  ['timeval_13',['Timeval',['../structkernel_1_1_timeval.html',1,'kernel::Timeval'],['../struct_timeval.html',1,'Timeval']]],
-  ['timeval_14',['timeval',['../structtimeval.html',1,'']]],
-  ['tm_15',['tm',['../structtm.html',1,'']]],
-  ['tmpfsentry_16',['TmpfsEntry',['../structkernel_1_1vfs_1_1_tmpfs_entry.html',1,'kernel::vfs']]]
+  ['version_0',['Version',['../structkernel_1_1_version.html',1,'kernel']]]
 ];

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,64 +118,53 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('bootparams_8hp
   <div class="headertitle"><div class="title">bootparams.hpp</div></div>
 </div><!--header-->
 <div class="contents">
-<a href="bootparams_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> * it under the terms of the GNU General Public License as published by</span></div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * the Free Software Foundation, either version 3 of the License, or</span></div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment"> * (at your option) any later version.</span></div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"> * This program is distributed in the hope that it will be useful,</span></div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment"> * but WITHOUT ANY WARRANTY; without even the implied warranty of</span></div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span></div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> * GNU General Public License for more details.</span></div>
-<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> *</span></div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * You should have received a copy of the GNU General Public License</span></div>
-<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> * along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span></div>
-<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span> </div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#pragma once</span></div>
+<a href="bootparams_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment"> * it under the terms of the GNU General Public License as published by</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment"> * the Free Software Foundation, either version 3 of the License, or</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"> * (at your option) any later version.</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * This program is distributed in the hope that it will be useful,</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> * but WITHOUT ANY WARRANTY; without even the implied warranty of</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * GNU General Public License for more details.</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> * You should have received a copy of the GNU General Public License</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment"> * along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment"> */</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span> </div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="foldopen" id="foldopen00025" data-start="{" data-end="};">
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html">   25</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structkernel_1_1_boot_params.html">BootParams</a> {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a15607b0268b0738ec675772c1cd3728d">   26</a></span>    uint64_t <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a15607b0268b0738ec675772c1cd3728d">timer_hz</a>;</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a5c667700f9ba399dfcd0997e0519afd5">   27</a></span>    uint64_t <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a5c667700f9ba399dfcd0997e0519afd5">max_tasks</a>;</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a28ea013aea8cced09c6605b8a9e0b2ca">   28</a></span>    uint64_t <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a28ea013aea8cced09c6605b8a9e0b2ca">scheduler_priority_ceiling</a>;</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#ae844fbaddf234142ef472613a46e40fd">   29</a></span>    <span class="keywordtype">bool</span>     <a class="code hl_variable" href="structkernel_1_1_boot_params.html#ae844fbaddf234142ef472613a46e40fd">preempt_enabled</a>;</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a1bc61f1ca02614acb23186e260f271de">   30</a></span>    <span class="keywordtype">bool</span>     <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a1bc61f1ca02614acb23186e260f271de">debug_scheduling</a>;</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#adc46688370cb939e5934ce20ca5b34ab">   31</a></span>    <span class="keywordtype">bool</span>     <a class="code hl_variable" href="structkernel_1_1_boot_params.html#adc46688370cb939e5934ce20ca5b34ab">debug_ipc</a>;</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a09cf8aba82ba76df3a42b4335735a64b">   32</a></span>    <span class="keywordtype">bool</span>     <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a09cf8aba82ba76df3a42b4335735a64b">debug_memory</a>;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="structkernel_1_1_boot_params.html#a05f9e39f65b2908e3843231f28132d75">   33</a></span>    <span class="keywordtype">bool</span>     <a class="code hl_variable" href="structkernel_1_1_boot_params.html#a05f9e39f65b2908e3843231f28132d75">oom_killer_enabled</a>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keyword">static</span> <a class="code hl_struct" href="structkernel_1_1_boot_params.html">BootParams</a>&amp; <a class="code hl_function" href="structkernel_1_1_boot_params.html#a6138baa15360d448471f0a09bb737756">instance</a>();</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="structkernel_1_1_boot_params.html#a18a875b5d2a2b8fa4b62950fe7051a10">parse_multiboot_cmdline</a>();</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span></div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="structkernel_1_1_boot_params.html#a99f74d74355b7119c2dae784f87f7ca0">parse_cstr</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* cmdline);</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>};</div>
-</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>}</div>
-<div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> page_flags.hpp:5</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html"><div class="ttname"><a href="structkernel_1_1_boot_params.html">kernel::BootParams</a></div><div class="ttdef"><b>Definition</b> bootparams.hpp:25</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a05f9e39f65b2908e3843231f28132d75"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a05f9e39f65b2908e3843231f28132d75">kernel::BootParams::oom_killer_enabled</a></div><div class="ttdeci">bool oom_killer_enabled</div><div class="ttdef"><b>Definition</b> bootparams.hpp:33</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a09cf8aba82ba76df3a42b4335735a64b"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a09cf8aba82ba76df3a42b4335735a64b">kernel::BootParams::debug_memory</a></div><div class="ttdeci">bool debug_memory</div><div class="ttdef"><b>Definition</b> bootparams.hpp:32</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a15607b0268b0738ec675772c1cd3728d"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a15607b0268b0738ec675772c1cd3728d">kernel::BootParams::timer_hz</a></div><div class="ttdeci">uint64_t timer_hz</div><div class="ttdef"><b>Definition</b> bootparams.hpp:26</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a18a875b5d2a2b8fa4b62950fe7051a10"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a18a875b5d2a2b8fa4b62950fe7051a10">kernel::BootParams::parse_multiboot_cmdline</a></div><div class="ttdeci">static void parse_multiboot_cmdline()</div><div class="ttdoc">Parse the multiboot command line string into BootParams fields.</div><div class="ttdef"><b>Definition</b> bootparams.cpp:100</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a1bc61f1ca02614acb23186e260f271de"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a1bc61f1ca02614acb23186e260f271de">kernel::BootParams::debug_scheduling</a></div><div class="ttdeci">bool debug_scheduling</div><div class="ttdef"><b>Definition</b> bootparams.hpp:30</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a28ea013aea8cced09c6605b8a9e0b2ca"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a28ea013aea8cced09c6605b8a9e0b2ca">kernel::BootParams::scheduler_priority_ceiling</a></div><div class="ttdeci">uint64_t scheduler_priority_ceiling</div><div class="ttdef"><b>Definition</b> bootparams.hpp:28</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a5c667700f9ba399dfcd0997e0519afd5"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a5c667700f9ba399dfcd0997e0519afd5">kernel::BootParams::max_tasks</a></div><div class="ttdeci">uint64_t max_tasks</div><div class="ttdef"><b>Definition</b> bootparams.hpp:27</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a6138baa15360d448471f0a09bb737756"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a6138baa15360d448471f0a09bb737756">kernel::BootParams::instance</a></div><div class="ttdeci">static BootParams &amp; instance()</div><div class="ttdoc">Get the singleton BootParams instance.</div><div class="ttdef"><b>Definition</b> bootparams.cpp:36</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_a99f74d74355b7119c2dae784f87f7ca0"><div class="ttname"><a href="structkernel_1_1_boot_params.html#a99f74d74355b7119c2dae784f87f7ca0">kernel::BootParams::parse_cstr</a></div><div class="ttdeci">static void parse_cstr(const char *cmdline)</div><div class="ttdoc">Parse a raw command-line string, setting BootParams fields.</div><div class="ttdef"><b>Definition</b> bootparams.cpp:46</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_adc46688370cb939e5934ce20ca5b34ab"><div class="ttname"><a href="structkernel_1_1_boot_params.html#adc46688370cb939e5934ce20ca5b34ab">kernel::BootParams::debug_ipc</a></div><div class="ttdeci">bool debug_ipc</div><div class="ttdef"><b>Definition</b> bootparams.hpp:31</div></div>
-<div class="ttc" id="astructkernel_1_1_boot_params_html_ae844fbaddf234142ef472613a46e40fd"><div class="ttname"><a href="structkernel_1_1_boot_params.html#ae844fbaddf234142ef472613a46e40fd">kernel::BootParams::preempt_enabled</a></div><div class="ttdeci">bool preempt_enabled</div><div class="ttdef"><b>Definition</b> bootparams.hpp:29</div></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">struct </span>BootParams {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> timer_hz;</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> max_tasks;</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_priority_ceiling;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keywordtype">bool</span> preempt_enabled;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keywordtype">bool</span> debug_scheduling;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <span class="keywordtype">bool</span> debug_ipc;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keywordtype">bool</span> debug_memory;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keywordtype">bool</span> oom_killer_enabled;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keyword">static</span> BootParams &amp;instance();</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> parse_multiboot_cmdline();</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> parse_cstr(<span class="keyword">const</span> <span class="keywordtype">char</span> *cmdline);</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>};</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>} <span class="comment">// namespace kernel</span></div>
+<div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> bootparams.cpp:23</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
+<div class="ttc" id="atypes_8hpp_html_a4fd212339282cce62b0d2700490de00f"><div class="ttname"><a href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></div><div class="ttdeci">unsigned long long uint64_t</div><div class="ttdef"><b>Definition</b> types.hpp:27</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

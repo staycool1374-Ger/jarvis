@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('fat32__fs_8cpp
   <div class="headertitle"><div class="title">fat32_fs.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>FAT32 VFS filesystem implementation (file/dir vnode ops, mounting).  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="fat32__fs_8hpp_source.html">kernel/vfs/fat32_fs.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mempool_8hpp_source.html">kernel/memory/mempool.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="resource__tracker_8hpp_source.html">kernel/test/resource_tracker.hpp</a>&gt;</code><br />
@@ -132,6 +135,7 @@ Include dependency graph for fat32_fs.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:kernel_3A_3Avfs_3A_3AFat32VnodeData" id="r_kernel_3A_3Avfs_3A_3AFat32VnodeData"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_fat32_vnode_data.html">kernel::vfs::Fat32VnodeData</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-vnode private data for FAT32 vnodes.  <a href="structkernel_1_1vfs_1_1_fat32_vnode_data.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -141,17 +145,17 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a739270d15fe1ac6f5a0e21d0c2e20123" id="r_a739270d15fe1ac6f5a0e21d0c2e20123"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a739270d15fe1ac6f5a0e21d0c2e20123">kernel::vfs::mount_fat32</a> (const char *mount_point)</td></tr>
-<tr class="memdesc:a739270d15fe1ac6f5a0e21d0c2e20123"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> the FAT32 filesystem at the given mount point.  <br /></td></tr>
+<tr class="memdesc:a739270d15fe1ac6f5a0e21d0c2e20123"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mount the FAT32 filesystem at the given mount point.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a475fe7e5e6b24b39b825fa1065ec2ab9" id="r_a475fe7e5e6b24b39b825fa1065ec2ab9"><td class="memItemLeft"><a class="el" href="classkernel_1_1fat32_1_1_fat32_partition.html">fat32::Fat32Partition</a> *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a475fe7e5e6b24b39b825fa1065ec2ab9">kernel::vfs::fat32_partition_instance</a> = nullptr</td></tr>
-<tr class="memdesc:a475fe7e5e6b24b39b825fa1065ec2ab9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The FAT32 filesystem instance. Set <span class="tt">partition</span> before boot.  <br /></td></tr>
-<tr class="memitem:a2275ccef078f68b2ae134a3340f0858a" id="r_a2275ccef078f68b2ae134a3340f0858a"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a2275ccef078f68b2ae134a3340f0858a">kernel::vfs::fat32_root_vnode</a> = {}</td></tr>
-<tr class="memitem:adb50110880ce45345185d1204eaf4fef" id="r_adb50110880ce45345185d1204eaf4fef"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#adb50110880ce45345185d1204eaf4fef">kernel::vfs::fat32_fs</a></td></tr>
-<tr class="memdesc:adb50110880ce45345185d1204eaf4fef"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS filesystem descriptor for FAT32.  <br /></td></tr>
+<tr class="memitem:ab80516fdc83a878a34cb7cf8a2baeb4f" id="r_ab80516fdc83a878a34cb7cf8a2baeb4f"><td class="memItemLeft">constinit fat32::Fat32Partition *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#ab80516fdc83a878a34cb7cf8a2baeb4f">kernel::vfs::fat32_partition_instance</a> = nullptr</td></tr>
+<tr class="memitem:a2275ccef078f68b2ae134a3340f0858a" id="r_a2275ccef078f68b2ae134a3340f0858a"><td class="memItemLeft">Vnode&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a2275ccef078f68b2ae134a3340f0858a">kernel::vfs::fat32_root_vnode</a> = {}</td></tr>
+<tr class="memitem:adb50110880ce45345185d1204eaf4fef" id="r_adb50110880ce45345185d1204eaf4fef"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#adb50110880ce45345185d1204eaf4fef">kernel::vfs::fat32_fs</a></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>FAT32 VFS filesystem implementation (file/dir vnode ops, mounting). </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

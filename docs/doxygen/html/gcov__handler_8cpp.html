@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('gcov__handler_
   <div class="headertitle"><div class="title">gcov_handler.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>GCOV profiling support — function-entry instrumentation and serial flush.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
@@ -135,10 +138,12 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a7e19dd463d2afcef730efc915d034736" id="r_a7e19dd463d2afcef730efc915d034736"><td class="memItemLeft">void void *&#160;</td><td class="memItemRight"><a class="el" href="#a7e19dd463d2afcef730efc915d034736">caller</a></td></tr>
-<tr class="memitem:a0e89cf6b9f6cd3125470b1bed2b823df" id="r_a0e89cf6b9f6cd3125470b1bed2b823df"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a> = reinterpret_cast&lt;uint64_t&gt;(func)</td></tr>
-<tr class="memitem:a1f658a7d21dc9b85b8009cedb0a1aef6" id="r_a1f658a7d21dc9b85b8009cedb0a1aef6"><td class="memItemLeft">uint32_t&#160;</td><td class="memItemRight"><a class="el" href="#a1f658a7d21dc9b85b8009cedb0a1aef6">idx</a> = find_or_add_func(<a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a>)</td></tr>
+<tr class="memitem:a0e89cf6b9f6cd3125470b1bed2b823df" id="r_a0e89cf6b9f6cd3125470b1bed2b823df"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a> = reinterpret_cast&lt;<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&gt;(func)</td></tr>
+<tr class="memitem:a1f658a7d21dc9b85b8009cedb0a1aef6" id="r_a1f658a7d21dc9b85b8009cedb0a1aef6"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1f658a7d21dc9b85b8009cedb0a1aef6">idx</a> = find_or_add_func(<a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a>)</td></tr>
 </table>
-<a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>GCOV profiling support — function-entry instrumentation and serial flush. </p>
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
 <a id="ad1654ced9bcc36245fe19075b868c1ae" name="ad1654ced9bcc36245fe19075b868c1ae"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad1654ced9bcc36245fe19075b868c1ae">&#9670;&#160;</a></span>MAX_FUNCTIONS</h2>
 
@@ -161,7 +166,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t addr = reinterpret_cast&lt;uint64_t&gt;(func)</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> addr = reinterpret_cast&lt;<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&gt;(func)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -179,9 +184,10 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<b>Initial value:</b><div class="fragment"><div class="line">{ </div>
+<div class="line">                                </div>
 <div class="line">    (void)<a class="code hl_variable" href="#a7e19dd463d2afcef730efc915d034736">caller</a></div>
-<div class="ttc" id="agcov__handler_8cpp_html_a7e19dd463d2afcef730efc915d034736"><div class="ttname"><a href="#a7e19dd463d2afcef730efc915d034736">caller</a></div><div class="ttdeci">void void * caller</div><div class="ttdef"><b>Definition</b> gcov_handler.cpp:45</div></div>
+<div class="ttc" id="agcov__handler_8cpp_html_a7e19dd463d2afcef730efc915d034736"><div class="ttname"><a href="#a7e19dd463d2afcef730efc915d034736">caller</a></div><div class="ttdeci">void void * caller</div><div class="ttdef"><b>Definition</b> gcov_handler.cpp:56</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -192,7 +198,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint32_t idx = find_or_add_func(<a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a>)</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> idx = find_or_add_func(<a class="el" href="#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a>)</td>
         </tr>
       </table>
 </div><div class="memdoc">

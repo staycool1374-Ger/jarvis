@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['ipc_5ferror_5fcodes_0',['IPC_ERROR_CODES',['../ipc__errors_8hpp.html#aae450ac95271dd8237665cad82a4c0e4',1,'ipc_errors.hpp']]],
-  ['ipc_5fnonblock_1',['IPC_NONBLOCK',['../ipc_8h.html#a02406c274ef11e7931d893a8f7e7b293',1,'ipc.h']]]
+  ['kernel_5fversion_5fstring_0',['KERNEL_VERSION_STRING',['../version_8hpp.html#abba67610a81ec56f7d1f834e9bfdbec3',1,'version.hpp']]]
 ];

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,9 +118,13 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__starvati
   <div class="headertitle"><div class="title">test_starvation_deadlock.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Starvation and deadlock scenario tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scope__guard_8hpp_source.html">scope_guard.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="mutex_8hpp_source.html">kernel/sync/mutex.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
@@ -137,10 +141,11 @@ Functions</h2></td></tr>
 <tr class="memitem:a409a2eafb0ab679b34313a853fc06fdf" id="r_a409a2eafb0ab679b34313a853fc06fdf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a409a2eafb0ab679b34313a853fc06fdf">TEST_CLASS</a> (SchedulerStarvation)</td></tr>
 <tr class="memitem:a5d5e7976fb497b89976675e5134c97cf" id="r_a5d5e7976fb497b89976675e5134c97cf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5d5e7976fb497b89976675e5134c97cf">TEST_CLASS</a> (PriorityInversionChain5)</td></tr>
 <tr class="memitem:a450bcf91bb24182075f91ad13a2f27f9" id="r_a450bcf91bb24182075f91ad13a2f27f9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a450bcf91bb24182075f91ad13a2f27f9">TEST_CLASS</a> (DeadlockNestedMutexLoad)</td></tr>
-<tr class="memitem:a787e3dbd69b1214d2fa05e1ab3074340" id="r_a787e3dbd69b1214d2fa05e1ab3074340"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a787e3dbd69b1214d2fa05e1ab3074340">TEST_CLASS</a> (DeadlockRecoveryResourceReclamation)</td></tr>
 <tr class="memitem:a80c729bcf212eaa73d84d83f215f32b4" id="r_a80c729bcf212eaa73d84d83f215f32b4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80c729bcf212eaa73d84d83f215f32b4">register_starvation_deadlock_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Starvation and deadlock scenario tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a80c729bcf212eaa73d84d83f215f32b4" name="a80c729bcf212eaa73d84d83f215f32b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a80c729bcf212eaa73d84d83f215f32b4">&#9670;&#160;</a></span>register_starvation_deadlock_tests()</h2>
 
@@ -165,7 +170,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a450bcf91bb24182075f91ad13a2f27f9" name="a450bcf91bb24182075f91ad13a2f27f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a450bcf91bb24182075f91ad13a2f27f9">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a450bcf91bb24182075f91ad13a2f27f9">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -178,40 +183,11 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__starvation__deadlock_8cpp_a450bcf91bb24182075f91ad13a2f27f9_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a450bcf91bb24182075f91ad13a2f27f9_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
-
-</div>
-</div>
-<a id="a787e3dbd69b1214d2fa05e1ab3074340" name="a787e3dbd69b1214d2fa05e1ab3074340"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a787e3dbd69b1214d2fa05e1ab3074340">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[2/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">TEST_CLASS </td>
-          <td>(</td>
-          <td class="paramtype">DeadlockRecoveryResourceReclamation</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__starvation__deadlock_8cpp_a787e3dbd69b1214d2fa05e1ab3074340_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a787e3dbd69b1214d2fa05e1ab3074340_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
 <a id="a5d5e7976fb497b89976675e5134c97cf" name="a5d5e7976fb497b89976675e5134c97cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d5e7976fb497b89976675e5134c97cf">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d5e7976fb497b89976675e5134c97cf">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -224,17 +200,11 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__starvation__deadlock_8cpp_a5d5e7976fb497b89976675e5134c97cf_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a5d5e7976fb497b89976675e5134c97cf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
 <a id="a409a2eafb0ab679b34313a853fc06fdf" name="a409a2eafb0ab679b34313a853fc06fdf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a409a2eafb0ab679b34313a853fc06fdf">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a409a2eafb0ab679b34313a853fc06fdf">&#9670;&#160;</a></span>TEST_CLASS() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -251,7 +221,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__starvation__deadlock_8cpp_a409a2eafb0ab679b34313a853fc06fdf_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a409a2eafb0ab679b34313a853fc06fdf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 2 -->
 </div>
 
 </div>

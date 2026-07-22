@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('aarch64_2inter
   <div class="headertitle"><div class="title">interrupt_controller.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>AArch64 GICv2/v3 interrupt controller driver.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="interrupt__controller_8hpp_source.html">kernel/arch/interrupt_controller.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="idt_8hpp_source.html">kernel/arch/idt.hpp</a>&gt;</code><br />
@@ -155,8 +158,11 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:af44c28e0176ac64b504464bbd30f31b2" id="r_af44c28e0176ac64b504464bbd30f31b2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af44c28e0176ac64b504464bbd30f31b2">arch::handle_gic_irq</a> (void)</td></tr>
+<tr class="memdesc:af44c28e0176ac64b504464bbd30f31b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main IRQ handler called from vectors.S IRQ entries. Handles both GICv2 (memory-mapped) and GICv3 (system register) IAR/EOIR.  <br /></td></tr>
 </table>
-<a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>AArch64 GICv2/v3 interrupt controller driver. </p>
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
 <a id="a971c4b3a9504879ce74b96226288f742" name="a971c4b3a9504879ce74b96226288f742"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a971c4b3a9504879ce74b96226288f742">&#9670;&#160;</a></span>GICC_BASE</h2>
 

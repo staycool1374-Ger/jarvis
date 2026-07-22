@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** ACTIVE — Strict Deadline Adherence.
-**Target Focus:** v0.3.2 — Strict Deadline Adherence: deadline miss detection & handler, budget enforcement with hard preemption, time-partitioning (ARINC 653).
+**Status:** ACTIVE — Priority Inheritance & Ceiling.
+**Target Focus:** v0.3.3 — Priority Inheritance & Ceiling: Priority Inheritance Protocol (PIP), Priority Ceiling Protocol (PCP), mutex/semaphore/queue inheritance, scheduler preemption points.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.

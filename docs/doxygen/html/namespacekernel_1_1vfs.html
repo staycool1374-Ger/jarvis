@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -122,204 +122,81 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacekerne
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:DevEntry" id="r_DevEntry"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_dev_entry.html">DevEntry</a></td></tr>
-<tr class="memitem:Dirent" id="r_Dirent"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_dirent.html">Dirent</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device directory entry linking a name to a vnode.  <a href="structkernel_1_1vfs_1_1_dev_entry.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Fat32VnodeData" id="r_Fat32VnodeData"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_fat32_vnode_data.html">Fat32VnodeData</a></td></tr>
-<tr class="memitem:FdTable" id="r_FdTable"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_fd_table.html">FdTable</a></td></tr>
-<tr class="memitem:FileDescription" id="r_FileDescription"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_file_description.html">FileDescription</a></td></tr>
-<tr class="memitem:Filesystem" id="r_Filesystem"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-vnode private data for FAT32 vnodes.  <a href="structkernel_1_1vfs_1_1_fat32_vnode_data.html#details">More...</a><br /></td></tr>
 <tr class="memitem:InitrdFileNode" id="r_InitrdFileNode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_initrd_file_node.html">InitrdFileNode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-vnode private data for initrd file vnodes.  <a href="structkernel_1_1vfs_1_1_initrd_file_node.html#details">More...</a><br /></td></tr>
 <tr class="memitem:MemInfoVnode" id="r_MemInfoVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_mem_info_vnode.html">MemInfoVnode</a></td></tr>
-<tr class="memitem:Mount" id="r_Mount"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode with cached memory info content.  <a href="structkernel_1_1vfs_1_1_mem_info_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PciVnode" id="r_PciVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pci_vnode.html">PciVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode with cached PCI device tree content.  <a href="structkernel_1_1vfs_1_1_pci_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PidDirVnode" id="r_PidDirVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pid_dir_vnode.html">PidDirVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode representing a per-process directory in /proc.  <a href="structkernel_1_1vfs_1_1_pid_dir_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PidStatVnode" id="r_PidStatVnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pid_stat_vnode.html">PidStatVnode</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vnode representing a process's stat file.  <a href="structkernel_1_1vfs_1_1_pid_stat_vnode.html#details">More...</a><br /></td></tr>
 <tr class="memitem:PipeBuffer" id="r_PipeBuffer"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_pipe_buffer.html">PipeBuffer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ring buffer shared between the read and write ends of a pipe.  <a href="structkernel_1_1vfs_1_1_pipe_buffer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:TmpfsEntry" id="r_TmpfsEntry"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_tmpfs_entry.html">TmpfsEntry</a></td></tr>
-<tr class="memitem:VfsStat" id="r_VfsStat"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_vfs_stat.html">VfsStat</a></td></tr>
-<tr class="memitem:Vnode" id="r_Vnode"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a></td></tr>
-<tr class="memitem:VnodeOps" id="r_VnodeOps"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1vfs_1_1_vnode_ops.html">VnodeOps</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:aab14b078d7c764d6ba93929d2ab74e04" id="r_aab14b078d7c764d6ba93929d2ab74e04"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04">OpenFlags</a> : uint64_t { <br />
-&#160;&#160;<a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d">O_RDONLY</a> = 0
-, <a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e">O_WRONLY</a> = 1
-, <a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b">O_RDWR</a> = 2
-, <a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d">O_NONBLOCK</a> = 0x800
-, <br />
-&#160;&#160;<a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1">O_CREAT</a> = 0x200
-<br />
- }</td></tr>
-<tr class="memitem:a8954ce9d4d8d2fff51e147b09edc0735" id="r_a8954ce9d4d8d2fff51e147b09edc0735"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#a8954ce9d4d8d2fff51e147b09edc0735">SeekWhence</a> : int64_t { <a class="el" href="#a8954ce9d4d8d2fff51e147b09edc0735ae6d370ab50f0dd8329a8f9618b731d29">SEEK_SET</a> = 0
-, <a class="el" href="#a8954ce9d4d8d2fff51e147b09edc0735ab8032c9fc067b9908777f138dbb494f0">SEEK_CUR</a> = 1
-, <a class="el" href="#a8954ce9d4d8d2fff51e147b09edc0735a378d8adfe1592ce55def6c86e96e2d4a">SEEK_END</a> = 2
- }</td></tr>
-<tr class="memitem:a67564326d23668700148e0b789314f87" id="r_a67564326d23668700148e0b789314f87"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#a67564326d23668700148e0b789314f87">VfsSentinel</a> : int64_t { <a class="el" href="#a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912">INVALID_FD</a> = -4
- }</td></tr>
-<tr class="memitem:a1f4942f39db1d3fc9e3ee5fdc2c4242d" id="r_a1f4942f39db1d3fc9e3ee5fdc2c4242d"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#a1f4942f39db1d3fc9e3ee5fdc2c4242d">FileMode</a> : uint16_t { <a class="el" href="#a1f4942f39db1d3fc9e3ee5fdc2c4242da4a86df648df2a5dd05162999bae6de45">S_IFREG</a> = 0x8000
-, <a class="el" href="#a1f4942f39db1d3fc9e3ee5fdc2c4242da5b1200119155cf35ac2b2e3ee53d9808">S_IFDIR</a> = 0x4000
-, <a class="el" href="#a1f4942f39db1d3fc9e3ee5fdc2c4242da28ec930c65de0e9280b7a485634ca0cc">S_IFCHR</a> = 0x2000
- }</td></tr>
-<tr class="memitem:af02af811bc63e572d34fdddbd62cdafe" id="r_af02af811bc63e572d34fdddbd62cdafe"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> </td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A directory entry in tmpfs (linked-list node).  <a href="structkernel_1_1vfs_1_1_tmpfs_entry.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:af07f68076c35369863e1297a548c9f94" id="r_af07f68076c35369863e1297a548c9f94"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af07f68076c35369863e1297a548c9f94">devfs_init</a> ()</td></tr>
-<tr class="memdesc:af07f68076c35369863e1297a548c9f94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the device filesystem, registering device nodes.  <br /></td></tr>
+<tr class="memdesc:af07f68076c35369863e1297a548c9f94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the device filesystem, flushing keyboard buffer.  <br /></td></tr>
 <tr class="memitem:a739270d15fe1ac6f5a0e21d0c2e20123" id="r_a739270d15fe1ac6f5a0e21d0c2e20123"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a739270d15fe1ac6f5a0e21d0c2e20123">mount_fat32</a> (const char *mount_point)</td></tr>
-<tr class="memdesc:a739270d15fe1ac6f5a0e21d0c2e20123"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> the FAT32 filesystem at the given mount point.  <br /></td></tr>
+<tr class="memdesc:a739270d15fe1ac6f5a0e21d0c2e20123"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mount the FAT32 filesystem at the given mount point.  <br /></td></tr>
 <tr class="memitem:a63004773b8b1cae833b25ae477c4b956" id="r_a63004773b8b1cae833b25ae477c4b956"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a63004773b8b1cae833b25ae477c4b956">create_pipe</a> (int fds[2])</td></tr>
 <tr class="memdesc:a63004773b8b1cae833b25ae477c4b956"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pair of connected pipe file descriptors.  <br /></td></tr>
 <tr class="memitem:ad97a3b4278a3acc170ad8a0f457bc350" id="r_ad97a3b4278a3acc170ad8a0f457bc350"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad97a3b4278a3acc170ad8a0f457bc350">tmpfs_reset_root</a> ()</td></tr>
-<tr class="memitem:a77a7697a28bd742b781febc6ff88efe9" id="r_a77a7697a28bd742b781febc6ff88efe9"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a77a7697a28bd742b781febc6ff88efe9">get_root_vnode</a> ()</td></tr>
-<tr class="memdesc:a77a7697a28bd742b781febc6ff88efe9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the root vnode of the VFS tree.  <br /></td></tr>
-<tr class="memitem:a83a4478d7ebf71e6b21b38dd91fb1502" id="r_a83a4478d7ebf71e6b21b38dd91fb1502"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a83a4478d7ebf71e6b21b38dd91fb1502">set_root_vnode</a> (<a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> &amp;vnode)</td></tr>
-<tr class="memdesc:a83a4478d7ebf71e6b21b38dd91fb1502"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the root vnode of the VFS tree.  <br /></td></tr>
-<tr class="memitem:a11645e6a37081ee178777f682740736d" id="r_a11645e6a37081ee178777f682740736d"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a11645e6a37081ee178777f682740736d">resolve</a> (const char *path)</td></tr>
-<tr class="memdesc:a11645e6a37081ee178777f682740736d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve an absolute path to a vnode.  <br /></td></tr>
-<tr class="memitem:aebf94bc8bbd1d4da9adf682e10e082de" id="r_aebf94bc8bbd1d4da9adf682e10e082de"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#aebf94bc8bbd1d4da9adf682e10e082de">mount</a> (<a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> &amp;filesystem, const char *mount_point)</td></tr>
-<tr class="memdesc:aebf94bc8bbd1d4da9adf682e10e082de"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point.  <br /></td></tr>
+<tr class="memdesc:ad97a3b4278a3acc170ad8a0f457bc350"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the tmpfs root directory (clear children).  <br /></td></tr>
+<tr class="memitem:a77a7697a28bd742b781febc6ff88efe9" id="r_a77a7697a28bd742b781febc6ff88efe9"><td class="memItemLeft">Vnode *&#160;</td><td class="memItemRight"><a class="el" href="#a77a7697a28bd742b781febc6ff88efe9">get_root_vnode</a> ()</td></tr>
+<tr class="memdesc:a77a7697a28bd742b781febc6ff88efe9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the global root vnode.  <br /></td></tr>
+<tr class="memitem:a83a4478d7ebf71e6b21b38dd91fb1502" id="r_a83a4478d7ebf71e6b21b38dd91fb1502"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a83a4478d7ebf71e6b21b38dd91fb1502">set_root_vnode</a> (Vnode &amp;vnode)</td></tr>
+<tr class="memdesc:a83a4478d7ebf71e6b21b38dd91fb1502"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the global root vnode.  <br /></td></tr>
+<tr class="memitem:a11645e6a37081ee178777f682740736d" id="r_a11645e6a37081ee178777f682740736d"><td class="memItemLeft">Vnode *&#160;</td><td class="memItemRight"><a class="el" href="#a11645e6a37081ee178777f682740736d">resolve</a> (const char *path)</td></tr>
+<tr class="memdesc:a11645e6a37081ee178777f682740736d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve an absolute or relative path to a vnode.  <br /></td></tr>
+<tr class="memitem:aebf94bc8bbd1d4da9adf682e10e082de" id="r_aebf94bc8bbd1d4da9adf682e10e082de"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#aebf94bc8bbd1d4da9adf682e10e082de">mount</a> (Filesystem &amp;filesystem, const char *mount_point)</td></tr>
+<tr class="memdesc:aebf94bc8bbd1d4da9adf682e10e082de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mount a filesystem at a mount point.  <br /></td></tr>
 <tr class="memitem:a509957f6e50ab1f0433a61bd4624859a" id="r_a509957f6e50ab1f0433a61bd4624859a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a509957f6e50ab1f0433a61bd4624859a">init</a> ()</td></tr>
-<tr class="memdesc:a509957f6e50ab1f0433a61bd4624859a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem (root vnode, mounts, etc.).  <br /></td></tr>
+<tr class="memdesc:a509957f6e50ab1f0433a61bd4624859a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem (clear mount table).  <br /></td></tr>
 <tr class="memitem:aaf0cf262c173f6848095480880c1cbc9" id="r_aaf0cf262c173f6848095480880c1cbc9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aaf0cf262c173f6848095480880c1cbc9">reset_and_remount</a> ()</td></tr>
-<tr class="memdesc:aaf0cf262c173f6848095480880c1cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset VFS globals and re-mount standard filesystems. Called from snapshot_restore() after MemPool/PMM restoration to clear stale mount-table entries and vnode pointers that survived test execution.  <br /></td></tr>
-<tr class="memitem:a9d792be7e3f099e025d10c0a6ce0680d" id="r_a9d792be7e3f099e025d10c0a6ce0680d"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a9d792be7e3f099e025d10c0a6ce0680d">find_fs</a> (const char *name)</td></tr>
-<tr class="memdesc:a9d792be7e3f099e025d10c0a6ce0680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a registered filesystem driver by name.  <br /></td></tr>
-<tr class="memitem:a0411923a55f520a77d6497349fd7acf6" id="r_a0411923a55f520a77d6497349fd7acf6"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0411923a55f520a77d6497349fd7acf6">mkdir</a> (const char *path, uint16_t mode)</td></tr>
+<tr class="memdesc:aaf0cf262c173f6848095480880c1cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset VFS globals and re-mount standard filesystems.  <br /></td></tr>
+<tr class="memitem:a9d792be7e3f099e025d10c0a6ce0680d" id="r_a9d792be7e3f099e025d10c0a6ce0680d"><td class="memItemLeft">Filesystem *&#160;</td><td class="memItemRight"><a class="el" href="#a9d792be7e3f099e025d10c0a6ce0680d">find_fs</a> (const char *name)</td></tr>
+<tr class="memdesc:a9d792be7e3f099e025d10c0a6ce0680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a mounted filesystem by name.  <br /></td></tr>
+<tr class="memitem:a0411923a55f520a77d6497349fd7acf6" id="r_a0411923a55f520a77d6497349fd7acf6"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0411923a55f520a77d6497349fd7acf6">mkdir</a> (const char *path, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> mode)</td></tr>
 <tr class="memdesc:a0411923a55f520a77d6497349fd7acf6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a subdirectory at the given path.  <br /></td></tr>
 <tr class="memitem:ab8191b68620f64ca864fad18239e5bce" id="r_ab8191b68620f64ca864fad18239e5bce"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ab8191b68620f64ca864fad18239e5bce">unlink</a> (const char *path)</td></tr>
 <tr class="memdesc:ab8191b68620f64ca864fad18239e5bce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a file or empty directory at the given path.  <br /></td></tr>
-<tr class="memitem:a94bddce0efe1b0b6a3dade264883f7ce" id="r_a94bddce0efe1b0b6a3dade264883f7ce"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a94bddce0efe1b0b6a3dade264883f7ce">create</a> (const char *path, uint16_t mode)</td></tr>
+<tr class="memitem:a94bddce0efe1b0b6a3dade264883f7ce" id="r_a94bddce0efe1b0b6a3dade264883f7ce"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a94bddce0efe1b0b6a3dade264883f7ce">create</a> (const char *path, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> mode)</td></tr>
 <tr class="memdesc:a94bddce0efe1b0b6a3dade264883f7ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a regular file at the given path.  <br /></td></tr>
-<tr class="memitem:ad4618eec85ebd8a3d27bfc4d974d7591" id="r_ad4618eec85ebd8a3d27bfc4d974d7591"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#ad4618eec85ebd8a3d27bfc4d974d7591">mount_err</a> (<a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> &amp;filesystem, const char *mount_point)</td></tr>
-<tr class="memdesc:ad4618eec85ebd8a3d27bfc4d974d7591"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point with error code.  <br /></td></tr>
-<tr class="memitem:a6281f0779a982cc0f19a98b36495e7b3" id="r_a6281f0779a982cc0f19a98b36495e7b3"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6281f0779a982cc0f19a98b36495e7b3">init_err</a> ()</td></tr>
-<tr class="memdesc:a6281f0779a982cc0f19a98b36495e7b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem with error code.  <br /></td></tr>
-<tr class="memitem:a32714102a524a6f980eac4fd048b3604" id="r_a32714102a524a6f980eac4fd048b3604"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#a32714102a524a6f980eac4fd048b3604">find_fs_err</a> (const char *name, <a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> *&amp;out_fs)</td></tr>
-<tr class="memdesc:a32714102a524a6f980eac4fd048b3604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a registered filesystem driver by name with error code.  <br /></td></tr>
-<tr class="memitem:abf5c58a8fb7ecb09a275d19b1029b125" id="r_abf5c58a8fb7ecb09a275d19b1029b125"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#abf5c58a8fb7ecb09a275d19b1029b125">set_root_vnode_err</a> (<a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> &amp;vnode)</td></tr>
-<tr class="memdesc:abf5c58a8fb7ecb09a275d19b1029b125"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the root vnode of the VFS tree with error code.  <br /></td></tr>
-<tr class="memitem:ad31548f035d75326ab34f5fd3fce896a" id="r_ad31548f035d75326ab34f5fd3fce896a"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#ad31548f035d75326ab34f5fd3fce896a">resolve_err</a> (const char *path, <a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&amp;out_vnode)</td></tr>
-<tr class="memdesc:ad31548f035d75326ab34f5fd3fce896a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve an absolute path to a vnode with error code.  <br /></td></tr>
-<tr class="memitem:a4e062ba9d7ffaca41f17dce1644388a8" id="r_a4e062ba9d7ffaca41f17dce1644388a8"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#a4e062ba9d7ffaca41f17dce1644388a8">mkdir_err</a> (const char *path, uint16_t mode)</td></tr>
-<tr class="memdesc:a4e062ba9d7ffaca41f17dce1644388a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a subdirectory at the given path with error code.  <br /></td></tr>
-<tr class="memitem:a19093f8bf45bac4a87dc6818084e3843" id="r_a19093f8bf45bac4a87dc6818084e3843"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#a19093f8bf45bac4a87dc6818084e3843">create_err</a> (const char *path, uint16_t mode)</td></tr>
-<tr class="memdesc:a19093f8bf45bac4a87dc6818084e3843"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a regular file at the given path with error code.  <br /></td></tr>
-<tr class="memitem:af555f6cb1ba4c592ec31fcf5902e367f" id="r_af555f6cb1ba4c592ec31fcf5902e367f"><td class="memItemLeft"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a>&#160;</td><td class="memItemRight"><a class="el" href="#af555f6cb1ba4c592ec31fcf5902e367f">unlink_err</a> (const char *path)</td></tr>
-<tr class="memdesc:af555f6cb1ba4c592ec31fcf5902e367f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a file or empty directory at the given path with error code.  <br /></td></tr>
+<tr class="memitem:ad4618eec85ebd8a3d27bfc4d974d7591" id="r_ad4618eec85ebd8a3d27bfc4d974d7591"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#ad4618eec85ebd8a3d27bfc4d974d7591">mount_err</a> (Filesystem &amp;filesystem, const char *mount_point)</td></tr>
+<tr class="memdesc:ad4618eec85ebd8a3d27bfc4d974d7591"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mount a filesystem with error handling.  <br /></td></tr>
+<tr class="memitem:a6281f0779a982cc0f19a98b36495e7b3" id="r_a6281f0779a982cc0f19a98b36495e7b3"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#a6281f0779a982cc0f19a98b36495e7b3">init_err</a> ()</td></tr>
+<tr class="memdesc:a6281f0779a982cc0f19a98b36495e7b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the VFS subsystem with error code return.  <br /></td></tr>
+<tr class="memitem:a32714102a524a6f980eac4fd048b3604" id="r_a32714102a524a6f980eac4fd048b3604"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#a32714102a524a6f980eac4fd048b3604">find_fs_err</a> (const char *name, Filesystem *&amp;out_fs)</td></tr>
+<tr class="memdesc:a32714102a524a6f980eac4fd048b3604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a mounted filesystem by name with error code return.  <br /></td></tr>
+<tr class="memitem:abf5c58a8fb7ecb09a275d19b1029b125" id="r_abf5c58a8fb7ecb09a275d19b1029b125"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#abf5c58a8fb7ecb09a275d19b1029b125">set_root_vnode_err</a> (Vnode &amp;vnode)</td></tr>
+<tr class="memdesc:abf5c58a8fb7ecb09a275d19b1029b125"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the global root vnode with error code return.  <br /></td></tr>
+<tr class="memitem:ad31548f035d75326ab34f5fd3fce896a" id="r_ad31548f035d75326ab34f5fd3fce896a"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#ad31548f035d75326ab34f5fd3fce896a">resolve_err</a> (const char *path, Vnode *&amp;out_vnode)</td></tr>
+<tr class="memdesc:ad31548f035d75326ab34f5fd3fce896a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve an absolute path to a vnode with error code return.  <br /></td></tr>
+<tr class="memitem:a4e062ba9d7ffaca41f17dce1644388a8" id="r_a4e062ba9d7ffaca41f17dce1644388a8"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#a4e062ba9d7ffaca41f17dce1644388a8">mkdir_err</a> (const char *path, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> mode)</td></tr>
+<tr class="memdesc:a4e062ba9d7ffaca41f17dce1644388a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a subdirectory with error code return.  <br /></td></tr>
+<tr class="memitem:a19093f8bf45bac4a87dc6818084e3843" id="r_a19093f8bf45bac4a87dc6818084e3843"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#a19093f8bf45bac4a87dc6818084e3843">create_err</a> (const char *path, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> mode)</td></tr>
+<tr class="memdesc:a19093f8bf45bac4a87dc6818084e3843"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a regular file with error code return.  <br /></td></tr>
+<tr class="memitem:af555f6cb1ba4c592ec31fcf5902e367f" id="r_af555f6cb1ba4c592ec31fcf5902e367f"><td class="memItemLeft">VfsError&#160;</td><td class="memItemRight"><a class="el" href="#af555f6cb1ba4c592ec31fcf5902e367f">unlink_err</a> (const char *path)</td></tr>
+<tr class="memdesc:af555f6cb1ba4c592ec31fcf5902e367f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a file or empty directory with error code return.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ac37c50582b436a337d048c3039465d0b" id="r_ac37c50582b436a337d048c3039465d0b"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="#ac37c50582b436a337d048c3039465d0b">dev_fs</a></td></tr>
-<tr class="memitem:a475fe7e5e6b24b39b825fa1065ec2ab9" id="r_a475fe7e5e6b24b39b825fa1065ec2ab9"><td class="memItemLeft"><a class="el" href="classkernel_1_1fat32_1_1_fat32_partition.html">fat32::Fat32Partition</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a475fe7e5e6b24b39b825fa1065ec2ab9">fat32_partition_instance</a> = nullptr</td></tr>
-<tr class="memdesc:a475fe7e5e6b24b39b825fa1065ec2ab9"><td class="mdescLeft">&#160;</td><td class="mdescRight">The FAT32 filesystem instance. Set <span class="tt">partition</span> before boot.  <br /></td></tr>
-<tr class="memitem:a2275ccef078f68b2ae134a3340f0858a" id="r_a2275ccef078f68b2ae134a3340f0858a"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a>&#160;</td><td class="memItemRight"><a class="el" href="#a2275ccef078f68b2ae134a3340f0858a">fat32_root_vnode</a> = {}</td></tr>
-<tr class="memitem:adb50110880ce45345185d1204eaf4fef" id="r_adb50110880ce45345185d1204eaf4fef"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="#adb50110880ce45345185d1204eaf4fef">fat32_fs</a></td></tr>
-<tr class="memdesc:adb50110880ce45345185d1204eaf4fef"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS filesystem descriptor for FAT32.  <br /></td></tr>
-<tr class="memitem:a7ef3281549b66c34c3500a7b5156718b" id="r_a7ef3281549b66c34c3500a7b5156718b"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="#a7ef3281549b66c34c3500a7b5156718b">initrd_fs</a></td></tr>
-<tr class="memitem:a8049afbb25873d95c723f015f6c61856" id="r_a8049afbb25873d95c723f015f6c61856"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="#a8049afbb25873d95c723f015f6c61856">proc_fs</a></td></tr>
-<tr class="memitem:a2b378cb7928ca3f7781737c9987aa29d" id="r_a2b378cb7928ca3f7781737c9987aa29d"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a>&#160;</td><td class="memItemRight"><a class="el" href="#a2b378cb7928ca3f7781737c9987aa29d">tmpfs_fs</a></td></tr>
-<tr class="memitem:afe7aade40b0052d48ed8a26d16d7026d" id="r_afe7aade40b0052d48ed8a26d16d7026d"><td class="memItemLeft">constexpr int64_t&#160;</td><td class="memItemRight"><a class="el" href="#afe7aade40b0052d48ed8a26d16d7026d">VFS_INVALID</a> = static_cast&lt;int64_t&gt;(<a class="el" href="#a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912">VfsSentinel::INVALID_FD</a>)</td></tr>
+<tr class="memitem:ac37c50582b436a337d048c3039465d0b" id="r_ac37c50582b436a337d048c3039465d0b"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="#ac37c50582b436a337d048c3039465d0b">dev_fs</a></td></tr>
+<tr class="memitem:ab80516fdc83a878a34cb7cf8a2baeb4f" id="r_ab80516fdc83a878a34cb7cf8a2baeb4f"><td class="memItemLeft">constinit fat32::Fat32Partition *&#160;</td><td class="memItemRight"><a class="el" href="#ab80516fdc83a878a34cb7cf8a2baeb4f">fat32_partition_instance</a> = nullptr</td></tr>
+<tr class="memitem:a2275ccef078f68b2ae134a3340f0858a" id="r_a2275ccef078f68b2ae134a3340f0858a"><td class="memItemLeft">Vnode&#160;</td><td class="memItemRight"><a class="el" href="#a2275ccef078f68b2ae134a3340f0858a">fat32_root_vnode</a> = {}</td></tr>
+<tr class="memitem:adb50110880ce45345185d1204eaf4fef" id="r_adb50110880ce45345185d1204eaf4fef"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="#adb50110880ce45345185d1204eaf4fef">fat32_fs</a></td></tr>
+<tr class="memitem:a7ef3281549b66c34c3500a7b5156718b" id="r_a7ef3281549b66c34c3500a7b5156718b"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="#a7ef3281549b66c34c3500a7b5156718b">initrd_fs</a></td></tr>
+<tr class="memitem:a8049afbb25873d95c723f015f6c61856" id="r_a8049afbb25873d95c723f015f6c61856"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="#a8049afbb25873d95c723f015f6c61856">proc_fs</a></td></tr>
+<tr class="memitem:a2b378cb7928ca3f7781737c9987aa29d" id="r_a2b378cb7928ca3f7781737c9987aa29d"><td class="memItemLeft">Filesystem&#160;</td><td class="memItemRight"><a class="el" href="#a2b378cb7928ca3f7781737c9987aa29d">tmpfs_fs</a></td></tr>
 </table>
-<a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
-<a id="a1f4942f39db1d3fc9e3ee5fdc2c4242d" name="a1f4942f39db1d3fc9e3ee5fdc2c4242d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f4942f39db1d3fc9e3ee5fdc2c4242d">&#9670;&#160;</a></span>FileMode</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="#a1f4942f39db1d3fc9e3ee5fdc2c4242d">kernel::vfs::FileMode</a> : uint16_t</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a1f4942f39db1d3fc9e3ee5fdc2c4242da4a86df648df2a5dd05162999bae6de45" name="a1f4942f39db1d3fc9e3ee5fdc2c4242da4a86df648df2a5dd05162999bae6de45"></a>S_IFREG&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a1f4942f39db1d3fc9e3ee5fdc2c4242da5b1200119155cf35ac2b2e3ee53d9808" name="a1f4942f39db1d3fc9e3ee5fdc2c4242da5b1200119155cf35ac2b2e3ee53d9808"></a>S_IFDIR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a1f4942f39db1d3fc9e3ee5fdc2c4242da28ec930c65de0e9280b7a485634ca0cc" name="a1f4942f39db1d3fc9e3ee5fdc2c4242da28ec930c65de0e9280b7a485634ca0cc"></a>S_IFCHR&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
-<a id="aab14b078d7c764d6ba93929d2ab74e04" name="aab14b078d7c764d6ba93929d2ab74e04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab14b078d7c764d6ba93929d2ab74e04">&#9670;&#160;</a></span>OpenFlags</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="#aab14b078d7c764d6ba93929d2ab74e04">kernel::vfs::OpenFlags</a> : uint64_t</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d" name="aab14b078d7c764d6ba93929d2ab74e04a47a5c5c3c82fe1008c9a5a5b3ec7466d"></a>O_RDONLY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e" name="aab14b078d7c764d6ba93929d2ab74e04a32c7f9a4f271227a69e050219c805d3e"></a>O_WRONLY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b" name="aab14b078d7c764d6ba93929d2ab74e04a5449d90a0dc381245c9331239243c93b"></a>O_RDWR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d" name="aab14b078d7c764d6ba93929d2ab74e04a95f82cf4c9f7958eef3753fd044ddc4d"></a>O_NONBLOCK&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1" name="aab14b078d7c764d6ba93929d2ab74e04ac66be63c8a8e4a0b72d5d521387bb5b1"></a>O_CREAT&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
-<a id="a8954ce9d4d8d2fff51e147b09edc0735" name="a8954ce9d4d8d2fff51e147b09edc0735"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8954ce9d4d8d2fff51e147b09edc0735">&#9670;&#160;</a></span>SeekWhence</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="#a8954ce9d4d8d2fff51e147b09edc0735">kernel::vfs::SeekWhence</a> : int64_t</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a8954ce9d4d8d2fff51e147b09edc0735ae6d370ab50f0dd8329a8f9618b731d29" name="a8954ce9d4d8d2fff51e147b09edc0735ae6d370ab50f0dd8329a8f9618b731d29"></a>SEEK_SET&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a8954ce9d4d8d2fff51e147b09edc0735ab8032c9fc067b9908777f138dbb494f0" name="a8954ce9d4d8d2fff51e147b09edc0735ab8032c9fc067b9908777f138dbb494f0"></a>SEEK_CUR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a8954ce9d4d8d2fff51e147b09edc0735a378d8adfe1592ce55def6c86e96e2d4a" name="a8954ce9d4d8d2fff51e147b09edc0735a378d8adfe1592ce55def6c86e96e2d4a"></a>SEEK_END&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
-<a id="af02af811bc63e572d34fdddbd62cdafe" name="af02af811bc63e572d34fdddbd62cdafe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af02af811bc63e572d34fdddbd62cdafe">&#9670;&#160;</a></span>VfsError</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">kernel::errors::VfsError</a> : uint64_t</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a67564326d23668700148e0b789314f87" name="a67564326d23668700148e0b789314f87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67564326d23668700148e0b789314f87">&#9670;&#160;</a></span>VfsSentinel</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum class <a class="el" href="#a67564326d23668700148e0b789314f87">kernel::vfs::VfsSentinel</a> : int64_t</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel strong">strong</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912" name="a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912"></a>INVALID_FD&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a94bddce0efe1b0b6a3dade264883f7ce" name="a94bddce0efe1b0b6a3dade264883f7ce"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a94bddce0efe1b0b6a3dade264883f7ce">&#9670;&#160;</a></span>create()</h2>
@@ -335,19 +212,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a></td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Create a regular file at the given path. </p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, VFS_INVALID on failure. </dd></dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1vfs_a94bddce0efe1b0b6a3dade264883f7ce_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a94bddce0efe1b0b6a3dade264883f7ce_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
 
 </div>
 </div>
@@ -358,26 +229,20 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::create_err </td>
+          <td class="memname">VfsError kernel::vfs::create_err </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a></td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Create a regular file at the given path with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1vfs_a19093f8bf45bac4a87dc6818084e3843_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a19093f8bf45bac4a87dc6818084e3843_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
+<p>Create a regular file with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -397,24 +262,12 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Create a pair of connected pipe file descriptors. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">fds</td><td>Array of two descriptors: fds[0] for read, fds[1] for write. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, or VFS_INVALID on failure. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, VFS_INVALID on failure. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph" id="anamespacekernel_1_1vfs_a63004773b8b1cae833b25ae477c4b956_cgraph">
-<area shape="rect" title=" " alt="" coords="5,47,163,73"/>
-<area shape="rect" href="classkernel_1_1Scheduler.html#ac094d7e0ec9c48c58637e36fce587be2" title="Returns the currently running task." alt="" coords="229,5,359,48"/>
-<area shape="poly" title=" " alt="" coords="162,45,216,38,211,40,164,50"/>
-<area shape="rect" href="classkernel_1_1sync_1_1Semaphore.html#a40efc024fad57141f0c9d9c7c69d0b63" title=" " alt="" coords="211,72,377,115"/>
-<area shape="poly" title=" " alt="" coords="163,70,198,77,192,78,163,75"/>
-</map>
+<!-- MAP 0 -->
 </div>
 
 </div>
@@ -434,7 +287,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Initialize the device filesystem, registering device nodes. </p>
+<p>Initialize the device filesystem, flushing keyboard buffer. </p>
 
 </div>
 </div>
@@ -445,7 +298,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> * kernel::vfs::find_fs </td>
+          <td class="memname">Filesystem * kernel::vfs::find_fs </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span></td><td>)</td>
           <td></td>
@@ -453,17 +306,13 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Find a registered filesystem driver by name. </p>
+<p>Find a mounted filesystem by name. </p>
 <dl class="section return"><dt>Returns</dt><dd>The filesystem, or nullptr if not found. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph" id="anamespacekernel_1_1vfs_a9d792be7e3f099e025d10c0a6ce0680d_cgraph">
-<area shape="rect" title=" " alt="" coords="5,5,135,32"/>
-<area shape="rect" href="string_8hpp.html#a14e6581584b7433c4440fdc7ecf86aea" title=" " alt="" coords="183,5,244,32"/>
-<area shape="poly" title=" " alt="" coords="135,16,170,18,164,19,135,21"/>
-</map>
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -475,26 +324,20 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::find_fs_err </td>
+          <td class="memname">VfsError kernel::vfs::find_fs_err </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> *&amp;</td>          <td class="paramname"><span class="paramname"><em>out_fs</em></span>&#160;)</td>
+          <td class="paramtype">Filesystem *&amp;</td>          <td class="paramname"><span class="paramname"><em>out_fs</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Find a registered filesystem driver by name with error code. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">out_fs</td><td>The filesystem on success. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
+<p>Find a mounted filesystem by name with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -511,7 +354,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> * kernel::vfs::get_root_vnode </td>
+          <td class="memname">Vnode * kernel::vfs::get_root_vnode </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -519,7 +362,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Get the root vnode of the VFS tree. </p>
+<p>Get the global root vnode. </p>
 
 </div>
 </div>
@@ -538,7 +381,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Initialize the VFS subsystem (root vnode, mounts, etc.). </p>
+<p>Initialize the VFS subsystem (clear mount table). </p>
 
 </div>
 </div>
@@ -549,7 +392,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::init_err </td>
+          <td class="memname">VfsError kernel::vfs::init_err </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -557,8 +400,8 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Initialize the VFS subsystem with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
+<p>Initialize the VFS subsystem with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -576,7 +419,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a></td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -599,26 +442,20 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::mkdir_err </td>
+          <td class="memname">VfsError kernel::vfs::mkdir_err </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a></td>          <td class="paramname"><span class="paramname"><em>mode</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Create a subdirectory at the given path with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1vfs_a4e062ba9d7ffaca41f17dce1644388a8_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a4e062ba9d7ffaca41f17dce1644388a8_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
+<p>Create a subdirectory with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -631,7 +468,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">int kernel::vfs::mount </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>filesystem</em></span>, </td>
+          <td class="paramtype">Filesystem &amp;</td>          <td class="paramname"><span class="paramname"><em>filesystem</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -641,8 +478,14 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point. </p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, or VFS_INVALID on failure. </dd></dl>
+<p>Mount a filesystem at a mount point. </p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, VFS_INVALID on failure. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_aebf94bc8bbd1d4da9adf682e10e082de_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_aebf94bc8bbd1d4da9adf682e10e082de_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -653,9 +496,9 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::mount_err </td>
+          <td class="memname">VfsError kernel::vfs::mount_err </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>filesystem</em></span>, </td>
+          <td class="paramtype">Filesystem &amp;</td>          <td class="paramname"><span class="paramname"><em>filesystem</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -665,8 +508,8 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> a filesystem at a given mount point with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
+<p>Mount a filesystem with error handling. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -685,7 +528,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p><a class="el" href="structkernel_1_1vfs_1_1_mount.html">Mount</a> the FAT32 filesystem at the given mount point. </p>
+<p>Mount the FAT32 filesystem at the given mount point. </p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, VFS_INVALID on error. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
@@ -711,7 +554,7 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Reset VFS globals and re-mount standard filesystems. Called from snapshot_restore() after MemPool/PMM restoration to clear stale mount-table entries and vnode pointers that survived test execution. </p>
+<p>Reset VFS globals and re-mount standard filesystems. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -728,7 +571,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> * kernel::vfs::resolve </td>
+          <td class="memname">Vnode * kernel::vfs::resolve </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span></td><td>)</td>
           <td></td>
@@ -736,21 +579,13 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Resolve an absolute path to a vnode. </p>
+<p>Resolve an absolute or relative path to a vnode. </p>
 <dl class="section return"><dt>Returns</dt><dd>The vnode, or nullptr if not found. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph" id="anamespacekernel_1_1vfs_a11645e6a37081ee178777f682740736d_cgraph">
-<area shape="rect" title=" " alt="" coords="5,72,138,99"/>
-<area shape="rect" href="classkernel_1_1Scheduler.html#ac094d7e0ec9c48c58637e36fce587be2" title="Returns the currently running task." alt="" coords="186,5,316,48"/>
-<area shape="poly" title=" " alt="" coords="114,69,173,51,168,54,116,74"/>
-<area shape="rect" href="string_8hpp.html#aa383452fe445bfae989358c9d7d96f4f" title="Returns the length of a null&#45;terminated string." alt="" coords="224,72,278,99"/>
-<area shape="poly" title=" " alt="" coords="138,83,211,84,206,86,138,88"/>
-<area shape="rect" href="string_8hpp.html#a617eed2430471abc2c2ac192bd280869" title=" " alt="" coords="217,123,285,149"/>
-<area shape="poly" title=" " alt="" coords="122,97,204,121,199,123,121,102"/>
-</map>
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -762,31 +597,25 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::resolve_err </td>
+          <td class="memname">VfsError kernel::vfs::resolve_err </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&amp;</td>          <td class="paramname"><span class="paramname"><em>out_vnode</em></span>&#160;)</td>
+          <td class="paramtype">Vnode *&amp;</td>          <td class="paramname"><span class="paramname"><em>out_vnode</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Resolve an absolute path to a vnode with error code. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[out]</td><td class="paramname">out_vnode</td><td>The resolved vnode on success. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
+<p>Resolve an absolute path to a vnode with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -800,13 +629,13 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::vfs::set_root_vnode </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>vnode</em></span></td><td>)</td>
+          <td class="paramtype">Vnode &amp;</td>          <td class="paramname"><span class="paramname"><em>vnode</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Set the root vnode of the VFS tree. </p>
+<p>Set the global root vnode. </p>
 
 </div>
 </div>
@@ -817,16 +646,16 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::set_root_vnode_err </td>
+          <td class="memname">VfsError kernel::vfs::set_root_vnode_err </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>vnode</em></span></td><td>)</td>
+          <td class="paramtype">Vnode &amp;</td>          <td class="paramname"><span class="paramname"><em>vnode</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Set the root vnode of the VFS tree with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
+<p>Set the global root vnode with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -844,6 +673,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Reset the tmpfs root directory (clear children). </p>
 
 </div>
 </div>
@@ -868,7 +699,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -880,7 +711,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> kernel::vfs::unlink_err </td>
+          <td class="memname">VfsError kernel::vfs::unlink_err </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span></td><td>)</td>
           <td></td>
@@ -888,14 +719,8 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Remove a file or empty directory at the given path with error code. </p>
-<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespacekernel_1_1errors.html#af02af811bc63e572d34fdddbd62cdafe">VfsError</a> code. </dd></dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
-</div>
+<p>Remove a file or empty directory with error code return. </p>
+<dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
 
 </div>
 </div>
@@ -907,7 +732,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> kernel::vfs::dev_fs</td>
+          <td class="memname">Filesystem kernel::vfs::dev_fs</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -925,7 +750,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> kernel::vfs::fat32_fs</td>
+          <td class="memname">Filesystem kernel::vfs::fat32_fs</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -934,23 +759,27 @@ Here is the call graph for this function:</div>
 <div class="line">    fat32_get_root,</div>
 <div class="line">}</div>
 </div><!-- fragment -->
-<p>VFS filesystem descriptor for FAT32. </p>
-
 </div>
 </div>
-<a id="a475fe7e5e6b24b39b825fa1065ec2ab9" name="a475fe7e5e6b24b39b825fa1065ec2ab9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a475fe7e5e6b24b39b825fa1065ec2ab9">&#9670;&#160;</a></span>fat32_partition_instance</h2>
+<a id="ab80516fdc83a878a34cb7cf8a2baeb4f" name="ab80516fdc83a878a34cb7cf8a2baeb4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab80516fdc83a878a34cb7cf8a2baeb4f">&#9670;&#160;</a></span>fat32_partition_instance</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classkernel_1_1fat32_1_1_fat32_partition.html">fat32::Fat32Partition</a> * kernel::vfs::fat32_partition_instance = nullptr</td>
+          <td class="memname">fat32::Fat32Partition* kernel::vfs::fat32_partition_instance = nullptr</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constinit">constinit</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-
-<p>The FAT32 filesystem instance. Set <span class="tt">partition</span> before boot. </p>
 
 </div>
 </div>
@@ -961,7 +790,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> kernel::vfs::fat32_root_vnode = {}</td>
+          <td class="memname">Vnode kernel::vfs::fat32_root_vnode = {}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -975,7 +804,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> kernel::vfs::initrd_fs</td>
+          <td class="memname">Filesystem kernel::vfs::initrd_fs</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -993,7 +822,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> kernel::vfs::proc_fs</td>
+          <td class="memname">Filesystem kernel::vfs::proc_fs</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1011,7 +840,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_filesystem.html">Filesystem</a> kernel::vfs::tmpfs_fs</td>
+          <td class="memname">Filesystem kernel::vfs::tmpfs_fs</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1020,28 +849,6 @@ Here is the call graph for this function:</div>
 <div class="line">    tmpfs_get_root,</div>
 <div class="line">}</div>
 </div><!-- fragment -->
-</div>
-</div>
-<a id="afe7aade40b0052d48ed8a26d16d7026d" name="afe7aade40b0052d48ed8a26d16d7026d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe7aade40b0052d48ed8a26d16d7026d">&#9670;&#160;</a></span>VFS_INVALID</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t kernel::vfs::VFS_INVALID = static_cast&lt;int64_t&gt;(<a class="el" href="#a67564326d23668700148e0b789314f87a75b6b52c6dc664dc8673a9edfa367912">VfsSentinel::INVALID_FD</a>)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel constexpr">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
 </div>
 </div>
 </div><!-- contents -->

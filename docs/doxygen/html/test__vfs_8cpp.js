@@ -6,6 +6,8 @@ var test__vfs_8cpp =
     [ "JARVIS_TEST", "test__vfs_8cpp.html#a07424bae6bf3a3e6a93878cb508b5fcd", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#a994914237610a166ed49b920c5ca86ce", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#a9104b4f3ebb5b484a0d9db6ecfd88d0a", null ],
+    [ "JARVIS_TEST", "test__vfs_8cpp.html#ae53b6f7a8637f4295c2852002e467f4d", null ],
+    [ "JARVIS_TEST", "test__vfs_8cpp.html#a0f251738ac679172b381a1ef20ae96ae", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#af74bf3cc127e24628783b19b925a08c2", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#ab8944f432e3704bfa8fa4f112dda995f", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#ac5f4594ff5bbebc5e295e565ad0be5f8", null ],
@@ -17,5 +19,6 @@ var test__vfs_8cpp =
     [ "JARVIS_TEST", "test__vfs_8cpp.html#ae4cd754496a338d01c4fa9864c50f493", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#ac807efb09fd7ceac4325b2607e47299f", null ],
     [ "JARVIS_TEST", "test__vfs_8cpp.html#a80921b523bf997022dbdb12cb214c91f", null ],
+    [ "JARVIS_TEST", "test__vfs_8cpp.html#af23ee6374a782b8c066ea641000987b3", null ],
     [ "register_vfs_tests", "test__vfs_8cpp.html#a61db377fe984787e19074e47a87ba3db", null ]
 ];

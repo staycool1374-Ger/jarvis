@@ -24,12 +24,18 @@ var test_8hpp =
     [ "REGISTER_CLASS_FLAGS", "test_8hpp.html#ace9d865ef1ecb142666cd0beb9c51af3", null ],
     [ "REGISTER_RELEASE_CLASS", "test_8hpp.html#ade6c7976dfdd68610815dca74c7be91d", null ],
     [ "TEST_CLASS", "test_8hpp.html#a90a8db2c8cb10c09750f1f73a0bbf01c", null ],
+    [ "TEST_CLASS_DIAG_IGNORE", "test_8hpp.html#a63090b98936c40fe36959666f20e9b5a", null ],
+    [ "TEST_CLASS_DIAG_POP", "test_8hpp.html#a150303e01ba93eb38c6b6fe25a02ca17", null ],
+    [ "TEST_CLASS_DIAG_PUSH", "test_8hpp.html#aad8a8d3a88163a9f5bc99478d042d6d9", null ],
+    [ "kernel::test::TaskControlBlock", "namespacekernel_1_1test.html#af219b4b081470c65fb5140fbabdd424c", null ],
     [ "kernel::test::TestFlags", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924", [
       [ "kernel::test::TF_KERNEL", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a758901b7d4ff562bfcf86fd8d1a08252", null ],
       [ "kernel::test::TF_RELEASE", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8", null ],
       [ "kernel::test::TF_USER", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a6ef6b63d678fd3b18029892f6956a47c", null ],
       [ "kernel::test::TF_BENCH", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a99ab7f179010344acb627e851eae44d8", null ]
     ] ],
+    [ "kernel::test::add_task_named", "namespacekernel_1_1test.html#a2f2ad7408a2984ebbc8a46b37f1e6f5f", null ],
+    [ "kernel::test::create_named_task", "namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0", null ],
     [ "kernel::test::dump_class_counts", "namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d", null ],
     [ "kernel::test::print_report", "namespacekernel_1_1test.html#a0fb9d643d01186cc11f1c2868176b39c", null ],
     [ "kernel::test::register_class", "namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450", null ],

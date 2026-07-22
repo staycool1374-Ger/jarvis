@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('structkernel_1
   <div class="headertitle"><div class="title">kernel::vfs::TmpfsEntry Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>A directory entry in tmpfs (linked-list node).  
+ <a href="#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for kernel::vfs::TmpfsEntry:</div>
 <div class="dyncontent">
@@ -128,10 +131,15 @@ Collaboration diagram for kernel::vfs::TmpfsEntry:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Data Fields</h2></td></tr>
 <tr class="memitem:ada618f7f2d07e7e11bbeba928a1b6b6e" id="r_ada618f7f2d07e7e11bbeba928a1b6b6e"><td class="memItemLeft">char&#160;</td><td class="memItemRight"><a class="el" href="#ada618f7f2d07e7e11bbeba928a1b6b6e">name</a> [64]</td></tr>
-<tr class="memitem:a9771a08671906bc09fe79a413eed5a3f" id="r_a9771a08671906bc09fe79a413eed5a3f"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a9771a08671906bc09fe79a413eed5a3f">vnode</a></td></tr>
+<tr class="memdesc:ada618f7f2d07e7e11bbeba928a1b6b6e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry name (null-terminated).  <br /></td></tr>
+<tr class="memitem:a9771a08671906bc09fe79a413eed5a3f" id="r_a9771a08671906bc09fe79a413eed5a3f"><td class="memItemLeft">Vnode *&#160;</td><td class="memItemRight"><a class="el" href="#a9771a08671906bc09fe79a413eed5a3f">vnode</a></td></tr>
+<tr class="memdesc:a9771a08671906bc09fe79a413eed5a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to the entry's vnode.  <br /></td></tr>
 <tr class="memitem:acbfccaeb35609bc4ac916c40ccda33df" id="r_acbfccaeb35609bc4ac916c40ccda33df"><td class="memItemLeft"><a class="el" href="structkernel_1_1vfs_1_1_tmpfs_entry.html">TmpfsEntry</a> *&#160;</td><td class="memItemRight"><a class="el" href="#acbfccaeb35609bc4ac916c40ccda33df">next</a></td></tr>
+<tr class="memdesc:acbfccaeb35609bc4ac916c40ccda33df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Next entry in the linked list.  <br /></td></tr>
 </table>
-<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A directory entry in tmpfs (linked-list node). </p>
+</div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="ada618f7f2d07e7e11bbeba928a1b6b6e" name="ada618f7f2d07e7e11bbeba928a1b6b6e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ada618f7f2d07e7e11bbeba928a1b6b6e">&#9670;&#160;</a></span>name</h2>
 
@@ -143,6 +151,8 @@ Data Fields</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Entry name (null-terminated). </p>
 
 </div>
 </div>
@@ -158,6 +168,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Next entry in the linked list. </p>
+
 </div>
 </div>
 <a id="a9771a08671906bc09fe79a413eed5a3f" name="a9771a08671906bc09fe79a413eed5a3f"></a>
@@ -167,10 +179,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structkernel_1_1vfs_1_1_vnode.html">Vnode</a>* kernel::vfs::TmpfsEntry::vnode</td>
+          <td class="memname">Vnode* kernel::vfs::TmpfsEntry::vnode</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Pointer to the entry's vnode. </p>
 
 </div>
 </div>

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -128,22 +128,39 @@ Directory dependency graph for hal:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-files" class="groupheader"><a id="files" name="files"></a>
 Files</h2></td></tr>
 <tr class="memitem:bits_2Ehpp" id="r_bits_2Ehpp"><td class="memItemLeft"><a href="bits_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="bits_8hpp.html">bits.hpp</a></td></tr>
+<tr class="memdesc:bits_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit manipulation utilities — find highest/lowest set bit. <br /></td></tr>
 <tr class="memitem:context_2Ehpp" id="r_context_2Ehpp"><td class="memItemLeft"><a href="hal_2context_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2context_8hpp.html">context.hpp</a></td></tr>
+<tr class="memdesc:hal_2context_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Architecture-specific CPU context (register save area) and context switching. <br /></td></tr>
 <tr class="memitem:cpuid_2Ehpp" id="r_cpuid_2Ehpp"><td class="memItemLeft"><a href="hal_2cpuid_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2cpuid_8hpp.html">cpuid.hpp</a></td></tr>
+<tr class="memdesc:hal_2cpuid_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPU identification — dispatches to architecture-specific cpuid implementations. <br /></td></tr>
 <tr class="memitem:gdt_2Ehpp" id="r_gdt_2Ehpp"><td class="memItemLeft"><a href="hal_2gdt_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2gdt_8hpp.html">gdt.hpp</a></td></tr>
+<tr class="memdesc:hal_2gdt_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Global Descriptor Table (x86_64) / no-op stubs for other architectures. <br /></td></tr>
 <tr class="memitem:idt_2Ehpp" id="r_idt_2Ehpp"><td class="memItemLeft"><a href="hal_2idt_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2idt_8hpp.html">idt.hpp</a></td></tr>
+<tr class="memdesc:hal_2idt_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interrupt Descriptor Table (x86_64) / interrupt vector dispatch for all architectures. <br /></td></tr>
 <tr class="memitem:interrupt_5Fcontroller_2Ehpp" id="r_interrupt_5Fcontroller_2Ehpp"><td class="memItemLeft"><a href="hal_2interrupt__controller_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2interrupt__controller_8hpp.html">interrupt_controller.hpp</a></td></tr>
+<tr class="memdesc:hal_2interrupt__controller_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interrupt controller abstraction — PIC (x86_64), GIC (AArch64), PLIC (RISC-V). <br /></td></tr>
 <tr class="memitem:io_2Ehpp" id="r_io_2Ehpp"><td class="memItemLeft"><a href="hal_2io_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2io_8hpp.html">io.hpp</a></td></tr>
+<tr class="memdesc:hal_2io_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Port I/O (x86_64) and memory-mapped I/O (AArch64, RISC-V) primitives. <br /></td></tr>
 <tr class="memitem:irq_5Fguard_2Ehpp" id="r_irq_5Fguard_2Ehpp"><td class="memItemLeft"><a href="hal_2irq__guard_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2irq__guard_8hpp.html">irq_guard.hpp</a></td></tr>
+<tr class="memdesc:hal_2irq__guard_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAII interrupt disable — disable IRQs on construction, restore on destruction. <br /></td></tr>
 <tr class="memitem:keyboard_2Ehpp" id="r_keyboard_2Ehpp"><td class="memItemLeft"><a href="hal_2keyboard_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2keyboard_8hpp.html">keyboard.hpp</a></td></tr>
+<tr class="memdesc:hal_2keyboard_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">PS/2 keyboard driver (x86_64) / no-op stubs (AArch64, RISC-V). <br /></td></tr>
 <tr class="memitem:msr_2Ehpp" id="r_msr_2Ehpp"><td class="memItemLeft"><a href="hal_2msr_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2msr_8hpp.html">msr.hpp</a></td></tr>
+<tr class="memdesc:hal_2msr_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Model-Specific Register (MSR) read/write (x86_64) / no-op stubs (AArch64, RISC-V). <br /></td></tr>
 <tr class="memitem:page_5Fflags_2Ehpp" id="r_page_5Fflags_2Ehpp"><td class="memItemLeft"><a href="page__flags_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="page__flags_8hpp.html">page_flags.hpp</a></td></tr>
+<tr class="memdesc:page__flags_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Architecture-independent page flag constants for page table entries. <br /></td></tr>
 <tr class="memitem:page_5Ftable_2Ehpp" id="r_page_5Ftable_2Ehpp"><td class="memItemLeft"><a href="hal_2page__table_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2page__table_8hpp.html">page_table.hpp</a></td></tr>
+<tr class="memdesc:hal_2page__table_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Page table management — dispatches to architecture-specific implementations. <br /></td></tr>
 <tr class="memitem:pci_2Ehpp" id="r_pci_2Ehpp"><td class="memItemLeft"><a href="hal_2pci_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2pci_8hpp.html">pci.hpp</a></td></tr>
+<tr class="memdesc:hal_2pci_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">PCI config space access — CF8/CFC port I/O (x86_64) and ECAM (AArch64, RISC-V). <br /></td></tr>
 <tr class="memitem:rand_2Ehpp" id="r_rand_2Ehpp"><td class="memItemLeft"><a href="hal_2rand_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2rand_8hpp.html">rand.hpp</a></td></tr>
+<tr class="memdesc:hal_2rand_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hardware random number generation — dispatches to architecture-specific implementations. <br /></td></tr>
 <tr class="memitem:rtc_2Ehpp" id="r_rtc_2Ehpp"><td class="memItemLeft"><a href="hal_2rtc_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2rtc_8hpp.html">rtc.hpp</a></td></tr>
+<tr class="memdesc:hal_2rtc_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Real-Time Clock (CMOS RTC on x86_64, platform RTC on AArch64/RISC-V). <br /></td></tr>
 <tr class="memitem:serial_2Ehpp" id="r_serial_2Ehpp"><td class="memItemLeft"><a href="hal_2serial_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2serial_8hpp.html">serial.hpp</a></td></tr>
+<tr class="memdesc:hal_2serial_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serial port (UART) driver — architecture-agnostic interface. <br /></td></tr>
 <tr class="memitem:timer_2Ehpp" id="r_timer_2Ehpp"><td class="memItemLeft"><a href="hal_2timer_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="hal_2timer_8hpp.html">timer.hpp</a></td></tr>
+<tr class="memdesc:hal_2timer_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Timer abstraction — PIT+TSC (x86_64), generic timer (AArch64), timer (RISC-V). <br /></td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

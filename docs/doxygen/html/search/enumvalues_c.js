@@ -1,9 +1,6 @@
 var searchData=
 [
-  ['max_5fsyscall_0',['MAX_SYSCALL',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa20583d4255e204362b630fbbc2d805da',1,'kernel']]],
-  ['memory_5f32_1',['MEMORY_32',['../namespacearch.html#ace55aa6ebb17936eac963ce91904fc17a8ac2184bb784f3bc8ff528d088af41fd',1,'arch']]],
-  ['memory_5f64_2',['MEMORY_64',['../namespacearch.html#ace55aa6ebb17936eac963ce91904fc17a71bfcb5bef603c42af94dc0d9a38ac89',1,'arch']]],
-  ['mempool_3',['MEMPOOL',['../namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa9bb9239ff286274c8363021f3d82b782',1,'kernel::log']]],
-  ['mempool_5ferror_5fcodes_4',['MEMPOOL_ERROR_CODES',['../namespacekernel_1_1errors.html#aeb48fedc2d846227f58f7b1207bd4e9fa9894bcb1bf2887c59cbb64539b160a0b',1,'kernel::errors']]],
-  ['mkdir_5',['MKDIR',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa54396a6379fdf76909f612cd9537897f',1,'kernel']]]
+  ['rlimit_5fdata_0',['RLIMIT_DATA',['../namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa5cedad6358425b5bfd888f80f1d5d9c0',1,'kernel::RLIMIT_DATA'],['../test__rlimit_8cpp.html#a2e9c5fc5c5951f5059e407b4c707195daa753cbe053a26567f271b2b7c23bc300',1,'RLIMIT_DATA:&#160;test_rlimit.cpp']]],
+  ['rlimit_5fnofile_1',['RLIMIT_NOFILE',['../namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afa3af036df3d1c74c3a8a9b127e668495f',1,'kernel::RLIMIT_NOFILE'],['../test__rlimit_8cpp.html#a2e9c5fc5c5951f5059e407b4c707195da7514d7156a180da72e008d10ac3e8302',1,'RLIMIT_NOFILE:&#160;test_rlimit.cpp']]],
+  ['rlimit_5fstack_2',['RLIMIT_STACK',['../namespacekernel.html#a4c7abd4d7b6e60921e6661d7e6ac80afafa92ee44ab9e8ffac445366271d021e3',1,'kernel::RLIMIT_STACK'],['../test__rlimit_8cpp.html#a2e9c5fc5c5951f5059e407b4c707195dad89c7d241607406f8f5bf71ac4275085',1,'RLIMIT_STACK:&#160;test_rlimit.cpp']]]
 ];

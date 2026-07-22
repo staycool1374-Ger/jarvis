@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -120,25 +120,43 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('hal_2serial_8h
 <div class="contents">
 <a href="hal_2serial_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacearch.html">arch</a> {</div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span> </div>
-<div class="foldopen" id="foldopen00005" data-start="{" data-end="};">
-<div class="line"><a id="l00005" name="l00005"></a><span class="lineno"><a class="line" href="classarch_1_1_serial.html">    5</a></span><span class="keyword">class </span><a class="code hl_class" href="classarch_1_1_serial.html">Serial</a> {</div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#acd5b088c85ae5925492a248973f382ee">init</a>();</div>
-<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#a2f8bcf0e34fb705854192fbdb8b3a04d">putchar</a>(<span class="keywordtype">char</span> c);</div>
-<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span>    <span class="keyword">static</span> <span class="keywordtype">char</span> <a class="code hl_function" href="classarch_1_1_serial.html#a655ac032c591b1f0156f26cd18eca4e9">getchar</a>();</div>
-<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="classarch_1_1_serial.html#a46ee5ade7378701ed69f936fdbea2039">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* str);</div>
-<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span>};</div>
-</div>
-<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span> </div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>} <span class="comment">// namespace arch</span></div>
-<div class="ttc" id="aclassarch_1_1_serial_html"><div class="ttname"><a href="classarch_1_1_serial.html">arch::Serial</a></div><div class="ttdef"><b>Definition</b> serial.hpp:5</div></div>
-<div class="ttc" id="aclassarch_1_1_serial_html_a2f8bcf0e34fb705854192fbdb8b3a04d"><div class="ttname"><a href="classarch_1_1_serial.html#a2f8bcf0e34fb705854192fbdb8b3a04d">arch::Serial::putchar</a></div><div class="ttdeci">static void putchar(char c)</div><div class="ttdef"><b>Definition</b> serial.cpp:30</div></div>
-<div class="ttc" id="aclassarch_1_1_serial_html_a46ee5ade7378701ed69f936fdbea2039"><div class="ttname"><a href="classarch_1_1_serial.html#a46ee5ade7378701ed69f936fdbea2039">arch::Serial::puts</a></div><div class="ttdeci">static void puts(const char *str)</div><div class="ttdef"><b>Definition</b> serial.cpp:44</div></div>
-<div class="ttc" id="aclassarch_1_1_serial_html_a655ac032c591b1f0156f26cd18eca4e9"><div class="ttname"><a href="classarch_1_1_serial.html#a655ac032c591b1f0156f26cd18eca4e9">arch::Serial::getchar</a></div><div class="ttdeci">static char getchar()</div><div class="ttdef"><b>Definition</b> serial.cpp:39</div></div>
-<div class="ttc" id="aclassarch_1_1_serial_html_acd5b088c85ae5925492a248973f382ee"><div class="ttname"><a href="classarch_1_1_serial.html#acd5b088c85ae5925492a248973f382ee">arch::Serial::init</a></div><div class="ttdeci">static void init()</div><div class="ttdef"><b>Definition</b> serial.cpp:19</div></div>
-<div class="ttc" id="anamespacearch_html"><div class="ttname"><a href="namespacearch.html">arch</a></div><div class="ttdef"><b>Definition</b> cpuid_impl.hpp:5</div></div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
+<div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment"> * it under the terms of the GNU General Public License as published by</span></div>
+<div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment"> * the Free Software Foundation, either version 3 of the License, or</span></div>
+<div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span><span class="comment"> * (at your option) any later version.</span></div>
+<div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span><span class="comment"> * This program is distributed in the hope that it will be useful,</span></div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span><span class="comment"> * but WITHOUT ANY WARRANTY; without even the implied warranty of</span></div>
+<div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="comment"> * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span></div>
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment"> * GNU General Public License for more details.</span></div>
+<div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment"> *</span></div>
+<div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment"> * You should have received a copy of the GNU General Public License</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment"> * along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.</span></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#pragma once</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacearch.html">arch</a> {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">class </span>Serial {</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">init</a>();</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a>(<span class="keywordtype">char</span> c);</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keyword">static</span> <span class="keywordtype">char</span> <a class="code hl_function" href="stdio_8c.html#a3e29caa20f7cffe18f410f01278905a8">getchar</a>();</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> <a class="code hl_function" href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *str);</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>};</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>} <span class="comment">// namespace arch</span></div>
+<div class="ttc" id="anamespacearch_html"><div class="ttname"><a href="namespacearch.html">arch</a></div><div class="ttdef"><b>Definition</b> idt.cpp:26</div></div>
+<div class="ttc" id="anamespaceinitrd_html_a7b70f1cbe142d57f40fb7691d81ce5de"><div class="ttname"><a href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">initrd::init</a></div><div class="ttdeci">void init(const uint8_t *start, const uint8_t *end)</div><div class="ttdef"><b>Definition</b> initrd.cpp:60</div></div>
+<div class="ttc" id="astdio_8c_html_a3e29caa20f7cffe18f410f01278905a8"><div class="ttname"><a href="stdio_8c.html#a3e29caa20f7cffe18f410f01278905a8">getchar</a></div><div class="ttdeci">int getchar(void)</div><div class="ttdef"><b>Definition</b> stdio.c:19</div></div>
+<div class="ttc" id="astdio_8c_html_ad41876f99f190c7488e64ef39c50a23f"><div class="ttname"><a href="stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f">puts</a></div><div class="ttdeci">int puts(const char *s)</div><div class="ttdef"><b>Definition</b> stdio.c:13</div></div>
+<div class="ttc" id="astdio_8c_html_af4de2514b7778805db3815e8dd6cf09a"><div class="ttname"><a href="stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a">putchar</a></div><div class="ttdeci">int putchar(int c)</div><div class="ttdef"><b>Definition</b> stdio.c:7</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

@@ -1,10 +1,9 @@
 var searchData=
 [
-  ['s_0',['S',['../namespacekernel_1_1debug.html#a4c63317d15f89eed657007431bb35cb9',1,'kernel::debug']]],
-  ['sighandler_5ft_1',['sighandler_t',['../namespacekernel.html#ae89f8530616ba6e58eebc1f5104f6e5c',1,'kernel::sighandler_t'],['../signal_8h.html#a754cdc0bcfffe07baa426dc252c9101a',1,'sighandler_t:&#160;signal.h']]],
-  ['simpletaskptr_2',['SimpleTaskPtr',['../task__ptr_8hpp.html#a53ca8685f1df91ebe286141b39601554',1,'task_ptr.hpp']]],
-  ['size_5ft_3',['size_t',['../namespacearch.html#ab14cee44c8235473f34c47e6a358dd52',1,'arch::size_t'],['../types_8h.html#acf18a0d6c4b39d531e021702e9a77984',1,'size_t:&#160;types.h']]],
-  ['ssize_5ft_4',['ssize_t',['../types_8h.html#a831c6b6852c6d34448e30a88c34539fd',1,'types.h']]],
-  ['suseconds_5ft_5',['suseconds_t',['../types_8h.html#ae32f449456d5f1877a9e630e92422c01',1,'types.h']]],
-  ['syscallhandler_6',['SyscallHandler',['../namespacekernel.html#abe038280d699f93160026ae1a453c8fe',1,'kernel']]]
+  ['uid_5ft_0',['uid_t',['../types_8h.html#afc544433253791fc5f87b8203c9b6e63',1,'types.h']]],
+  ['uint16_5ft_1',['uint16_t',['../types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6',1,'types.hpp']]],
+  ['uint32_5ft_2',['uint32_t',['../types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82',1,'types.hpp']]],
+  ['uint64_5ft_3',['uint64_t',['../types_8hpp.html#a4fd212339282cce62b0d2700490de00f',1,'types.hpp']]],
+  ['uint8_5ft_4',['uint8_t',['../types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879',1,'types.hpp']]],
+  ['uintptr_5ft_5',['uintptr_t',['../types_8hpp.html#a5b7cbd695e4ef11023a4088e5ebe9612',1,'uintptr_t:&#160;types.hpp'],['../types_8h.html#a83242de74310b4aec3fc506bc3644211',1,'uintptr_t:&#160;types.h']]]
 ];

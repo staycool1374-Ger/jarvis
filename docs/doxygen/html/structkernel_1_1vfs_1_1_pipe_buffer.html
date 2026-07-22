@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('structkernel_1
   <div class="headertitle"><div class="title">kernel::vfs::PipeBuffer Struct Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Ring buffer shared between the read and write ends of a pipe.  
+ <a href="#details">More...</a></p>
 <div class="dynheader">
 Collaboration diagram for kernel::vfs::PipeBuffer:</div>
 <div class="dyncontent">
@@ -127,16 +130,26 @@ Collaboration diagram for kernel::vfs::PipeBuffer:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a569469f533b16d8998b1ec508841fad3" id="r_a569469f533b16d8998b1ec508841fad3"><td class="memItemLeft">uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#a569469f533b16d8998b1ec508841fad3">data</a> [PIPE_BUF_SIZE]</td></tr>
-<tr class="memitem:a46cf2dc3fd037402dc96616bd20aa754" id="r_a46cf2dc3fd037402dc96616bd20aa754"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a46cf2dc3fd037402dc96616bd20aa754">read_pos</a> = 0</td></tr>
-<tr class="memitem:af552d711224e3c2fd4dcaef1a489eda7" id="r_af552d711224e3c2fd4dcaef1a489eda7"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af552d711224e3c2fd4dcaef1a489eda7">write_pos</a> = 0</td></tr>
-<tr class="memitem:a66a9e380ae7d9214ef5e8769ca41e0cf" id="r_a66a9e380ae7d9214ef5e8769ca41e0cf"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a66a9e380ae7d9214ef5e8769ca41e0cf">count</a> = 0</td></tr>
+<tr class="memitem:a569469f533b16d8998b1ec508841fad3" id="r_a569469f533b16d8998b1ec508841fad3"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a569469f533b16d8998b1ec508841fad3">data</a> [PIPE_BUF_SIZE]</td></tr>
+<tr class="memdesc:a569469f533b16d8998b1ec508841fad3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Circular buffer.  <br /></td></tr>
+<tr class="memitem:a46cf2dc3fd037402dc96616bd20aa754" id="r_a46cf2dc3fd037402dc96616bd20aa754"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a46cf2dc3fd037402dc96616bd20aa754">read_pos</a> = 0</td></tr>
+<tr class="memdesc:a46cf2dc3fd037402dc96616bd20aa754"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read cursor position.  <br /></td></tr>
+<tr class="memitem:af552d711224e3c2fd4dcaef1a489eda7" id="r_af552d711224e3c2fd4dcaef1a489eda7"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af552d711224e3c2fd4dcaef1a489eda7">write_pos</a> = 0</td></tr>
+<tr class="memdesc:af552d711224e3c2fd4dcaef1a489eda7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write cursor position.  <br /></td></tr>
+<tr class="memitem:a66a9e380ae7d9214ef5e8769ca41e0cf" id="r_a66a9e380ae7d9214ef5e8769ca41e0cf"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a66a9e380ae7d9214ef5e8769ca41e0cf">count</a> = 0</td></tr>
+<tr class="memdesc:a66a9e380ae7d9214ef5e8769ca41e0cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of bytes currently in the buffer.  <br /></td></tr>
 <tr class="memitem:ae274141154b74ff3ee14c09b28cad776" id="r_ae274141154b74ff3ee14c09b28cad776"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ae274141154b74ff3ee14c09b28cad776">refcount</a> = 2</td></tr>
+<tr class="memdesc:ae274141154b74ff3ee14c09b28cad776"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of open references (read + write).  <br /></td></tr>
 <tr class="memitem:ae09b1219a56bc5e61dc0898f018ce8df" id="r_ae09b1219a56bc5e61dc0898f018ce8df"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae09b1219a56bc5e61dc0898f018ce8df">read_closed</a> = false</td></tr>
+<tr class="memdesc:ae09b1219a56bc5e61dc0898f018ce8df"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when the read end is closed.  <br /></td></tr>
 <tr class="memitem:a6d680699587040ef5d23eff5093940e4" id="r_a6d680699587040ef5d23eff5093940e4"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a6d680699587040ef5d23eff5093940e4">write_closed</a> = false</td></tr>
-<tr class="memitem:a7c9e4fbf324f1564b6e1fa021acbf0b2" id="r_a7c9e4fbf324f1564b6e1fa021acbf0b2"><td class="memItemLeft"><a class="el" href="classkernel_1_1sync_1_1_semaphore.html">sync::Semaphore</a>&#160;</td><td class="memItemRight"><a class="el" href="#a7c9e4fbf324f1564b6e1fa021acbf0b2">data_avail</a></td></tr>
+<tr class="memdesc:a6d680699587040ef5d23eff5093940e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">True when the write end is closed.  <br /></td></tr>
+<tr class="memitem:a7c9e4fbf324f1564b6e1fa021acbf0b2" id="r_a7c9e4fbf324f1564b6e1fa021acbf0b2"><td class="memItemLeft">sync::Semaphore&#160;</td><td class="memItemRight"><a class="el" href="#a7c9e4fbf324f1564b6e1fa021acbf0b2">data_avail</a></td></tr>
+<tr class="memdesc:a7c9e4fbf324f1564b6e1fa021acbf0b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Semaphore signalled when data is written.  <br /></td></tr>
 </table>
-<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Ring buffer shared between the read and write ends of a pipe. </p>
+</div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="a66a9e380ae7d9214ef5e8769ca41e0cf" name="a66a9e380ae7d9214ef5e8769ca41e0cf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a66a9e380ae7d9214ef5e8769ca41e0cf">&#9670;&#160;</a></span>count</h2>
 
@@ -144,10 +157,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::vfs::PipeBuffer::count = 0</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::vfs::PipeBuffer::count = 0</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Number of bytes currently in the buffer. </p>
 
 </div>
 </div>
@@ -158,10 +173,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint8_t kernel::vfs::PipeBuffer::data[PIPE_BUF_SIZE]</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> kernel::vfs::PipeBuffer::data[PIPE_BUF_SIZE]</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Circular buffer. </p>
 
 </div>
 </div>
@@ -172,10 +189,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classkernel_1_1sync_1_1_semaphore.html">sync::Semaphore</a> kernel::vfs::PipeBuffer::data_avail</td>
+          <td class="memname">sync::Semaphore kernel::vfs::PipeBuffer::data_avail</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Semaphore signalled when data is written. </p>
 
 </div>
 </div>
@@ -191,6 +210,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>True when the read end is closed. </p>
+
 </div>
 </div>
 <a id="a46cf2dc3fd037402dc96616bd20aa754" name="a46cf2dc3fd037402dc96616bd20aa754"></a>
@@ -200,10 +221,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::vfs::PipeBuffer::read_pos = 0</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::vfs::PipeBuffer::read_pos = 0</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Read cursor position. </p>
 
 </div>
 </div>
@@ -219,6 +242,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Number of open references (read + write). </p>
+
 </div>
 </div>
 <a id="a6d680699587040ef5d23eff5093940e4" name="a6d680699587040ef5d23eff5093940e4"></a>
@@ -233,6 +258,8 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>True when the write end is closed. </p>
+
 </div>
 </div>
 <a id="af552d711224e3c2fd4dcaef1a489eda7" name="af552d711224e3c2fd4dcaef1a489eda7"></a>
@@ -242,10 +269,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::vfs::PipeBuffer::write_pos = 0</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::vfs::PipeBuffer::write_pos = 0</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Write cursor position. </p>
 
 </div>
 </div>

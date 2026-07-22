@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,16 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__schedule
   <div class="headertitle"><div class="title">test_scheduler.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Scheduler core tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vmm_8hpp_source.html">kernel/memory/vmm.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="irq__guard_8hpp_source.html">kernel/arch/irq_guard.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_scheduler.cpp:</div>
 <div class="dyncontent">
@@ -151,7 +155,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a3ed19d1e12ef525e67d2583b527dca26" id="r_a3ed19d1e12ef525e67d2583b527dca26"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a3ed19d1e12ef525e67d2583b527dca26">JARVIS_TEST</a> (scheduler_no_spurious_switch, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:ae0cab941a0788e5de9d47d450ab148c0" id="r_ae0cab941a0788e5de9d47d450ab148c0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae0cab941a0788e5de9d47d450ab148c0">register_scheduler_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Scheduler core tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="afbfa830b08770863cdaeea0165ffb45b" name="afbfa830b08770863cdaeea0165ffb45b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afbfa830b08770863cdaeea0165ffb45b">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/16]</span></h2>
 
@@ -170,12 +176,6 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_afbfa830b08770863cdaeea0165ffb45b_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_afbfa830b08770863cdaeea0165ffb45b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
-</div>
 
 </div>
 </div>
@@ -197,12 +197,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_af0023f004ad581981b500e45b6f078fa_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_af0023f004ad581981b500e45b6f078fa_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -224,12 +218,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_afa64ede09ee59619260a5bac4f1d672f_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_afa64ede09ee59619260a5bac4f1d672f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -251,12 +239,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a9cefddd0549cedc1c5a75825cf004d81_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a9cefddd0549cedc1c5a75825cf004d81_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
-</div>
 
 </div>
 </div>
@@ -278,12 +260,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a5680a3e0d6921e251b60d17b79178375_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a5680a3e0d6921e251b60d17b79178375_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
-</div>
 
 </div>
 </div>
@@ -305,12 +281,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a3ed19d1e12ef525e67d2583b527dca26_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a3ed19d1e12ef525e67d2583b527dca26_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
-</div>
 
 </div>
 </div>
@@ -332,12 +302,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a1bfa1491bc727a17b4743cb4b733bc2b_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a1bfa1491bc727a17b4743cb4b733bc2b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
-</div>
 
 </div>
 </div>
@@ -359,12 +323,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a6fec196ef74ea5f1d42c155241751c9b_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a6fec196ef74ea5f1d42c155241751c9b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
-</div>
 
 </div>
 </div>
@@ -386,12 +344,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a9b681dced484f624040aae9ff5000e96_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a9b681dced484f624040aae9ff5000e96_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
-</div>
 
 </div>
 </div>
@@ -413,12 +365,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a65cf23a6ed151731d1407edcf7c61df1_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a65cf23a6ed151731d1407edcf7c61df1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
-</div>
 
 </div>
 </div>
@@ -440,12 +386,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a87e4268805dc9b4f292b7328a2d43b1b_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a87e4268805dc9b4f292b7328a2d43b1b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
-</div>
 
 </div>
 </div>
@@ -467,12 +407,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_ab69df710151da2356637bb8a0ef0f1bc_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_ab69df710151da2356637bb8a0ef0f1bc_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
-</div>
 
 </div>
 </div>
@@ -494,12 +428,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a9bde283a7eb27d36f52fd8c747453a35_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a9bde283a7eb27d36f52fd8c747453a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
-</div>
 
 </div>
 </div>
@@ -521,12 +449,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a1c48d1ee73e8fe1dd3c0768ccd5f793d_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a1c48d1ee73e8fe1dd3c0768ccd5f793d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
-</div>
 
 </div>
 </div>
@@ -548,12 +470,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a887cef8e3ddf8ce08c0a4806617b1e2e_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a887cef8e3ddf8ce08c0a4806617b1e2e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
-</div>
 
 </div>
 </div>
@@ -575,12 +491,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__scheduler_8cpp_a42e1a37046f39e650ef1bbe9d97e6dc7_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_a42e1a37046f39e650ef1bbe9d97e6dc7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
-</div>
 
 </div>
 </div>
@@ -602,7 +512,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__scheduler_8cpp_ae0cab941a0788e5de9d47d450ab148c0_cgraph.png" border="0" usemap="#atest__scheduler_8cpp_ae0cab941a0788e5de9d47d450ab148c0_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
+<!-- MAP 1 -->
 </div>
 
 </div>

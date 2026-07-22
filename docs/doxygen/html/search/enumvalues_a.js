@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['kernel_0',['KERNEL',['../namespacekernel_1_1task.html#afe20b357887445ef77f145177213ee11a35c10219c45ccfb5b07444fd7e17214c',1,'kernel::task']]],
-  ['kill_1',['KILL',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa3986dd0914958ae2115e0ae7f10beef3',1,'kernel']]],
-  ['klog_2',['KLOG',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfad8c8cf61670a0a7d2526ee3c190434a3',1,'kernel']]]
+  ['ok_0',['OK',['../namespacekernel.html#a1cb7b5e6d84a69536a1605c81098f106ae0aa021e21dddbd6d8cecec71e9cf564',1,'kernel']]],
+  ['oom_1',['OOM',['../namespacekernel.html#a1cb7b5e6d84a69536a1605c81098f106a56a16d94e7f11cd4af1723c74c8d9291',1,'kernel']]]
 ];

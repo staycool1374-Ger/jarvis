@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,9 +118,13 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('ipc_8cpp.html'
   <div class="headertitle"><div class="title">ipc.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Priority-based IPC implementation — message queue, send/recv, sync send, priority inheritance.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="buffer__pool_8hpp_source.html">kernel/ipc/buffer_pool.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="ipc__sched__trace_8hpp_source.html">kernel/debug/ipc_sched_trace.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="assert_8hpp_source.html">assert.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -134,7 +138,9 @@ Include dependency graph for ipc.cpp:</div>
 Namespaces</h2></td></tr>
 <tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Priority-based IPC implementation — message queue, send/recv, sync send, priority inheritance. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

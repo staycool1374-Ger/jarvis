@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -126,9 +126,15 @@ Data Structures</h2></td></tr>
 <tr class="memitem:Registry" id="r_Registry"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_registry.html">Registry</a></td></tr>
 <tr class="memitem:ResourceCounters" id="r_ResourceCounters"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_resource_counters.html">ResourceCounters</a></td></tr>
 <tr class="memitem:ResourceTracker" id="r_ResourceTracker"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_resource_tracker.html">ResourceTracker</a></td></tr>
+<tr class="memitem:ScopedCurrentTask" id="r_ScopedCurrentTask"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_scoped_current_task.html">ScopedCurrentTask</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAII guard that sets a task as current for the duration of a scope, restoring the original task on destruction. Interrupts are disabled for the entire scope to prevent the timer ISR from consuming stale globals or undoing set_current().  <a href="classkernel_1_1test_1_1_scoped_current_task.html#details">More...</a><br /></td></tr>
 <tr class="memitem:TestBase" id="r_TestBase"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1test_1_1_test_base.html">TestBase</a></td></tr>
 <tr class="memitem:TestCase" id="r_TestCase"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_test_case.html">TestCase</a></td></tr>
 <tr class="memitem:TestClass" id="r_TestClass"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1test_1_1_test_class.html">TestClass</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:af219b4b081470c65fb5140fbabdd424c" id="r_af219b4b081470c65fb5140fbabdd424c"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> = kernel::TaskControlBlock</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -146,14 +152,16 @@ Functions</h2></td></tr>
 <tr class="memdesc:aabafa220128e328e46c2c19135411898"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse test configuration from initrd file.  <br /></td></tr>
 <tr class="memitem:adef941cb96fe1a42d92076d37649d84a" id="r_adef941cb96fe1a42d92076d37649d84a"><td class="memItemLeft">const char **&#160;</td><td class="memItemRight"><a class="el" href="#adef941cb96fe1a42d92076d37649d84a">get_test_classes</a> ()</td></tr>
 <tr class="memdesc:adef941cb96fe1a42d92076d37649d84a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the list of test classes to run (populated by parse_test_config).  <br /></td></tr>
-<tr class="memitem:a499e498dbadd7417450754e39ff8d025" id="r_a499e498dbadd7417450754e39ff8d025"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a499e498dbadd7417450754e39ff8d025">get_test_class_count</a> ()</td></tr>
+<tr class="memitem:a499e498dbadd7417450754e39ff8d025" id="r_a499e498dbadd7417450754e39ff8d025"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a499e498dbadd7417450754e39ff8d025">get_test_class_count</a> ()</td></tr>
 <tr class="memdesc:a499e498dbadd7417450754e39ff8d025"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the count of test classes to run.  <br /></td></tr>
 <tr class="memitem:ac77ca03eec1fc93ea4a740b9566588d7" id="r_ac77ca03eec1fc93ea4a740b9566588d7"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac77ca03eec1fc93ea4a740b9566588d7">should_run_class</a> (const char *class_name)</td></tr>
 <tr class="memdesc:ac77ca03eec1fc93ea4a740b9566588d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a specific test class should run.  <br /></td></tr>
-<tr class="memitem:a6407505c9e51e9aafc535ceb8a0f074f" id="r_a6407505c9e51e9aafc535ceb8a0f074f"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6407505c9e51e9aafc535ceb8a0f074f">arch_count</a> (const <a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a> &amp;ec)</td></tr>
-<tr class="memitem:a22a1e73ffb69f6fd807228fc5756b380" id="r_a22a1e73ffb69f6fd807228fc5756b380"><td class="memItemLeft"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a22a1e73ffb69f6fd807228fc5756b380">expected_for_class</a> (const char *name)</td></tr>
-<tr class="memitem:ad187fb124266bd89f9f48be1d22ba617" id="r_ad187fb124266bd89f9f48be1d22ba617"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ad187fb124266bd89f9f48be1d22ba617">validate_class_count</a> (const char *name, <a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> actual_count)</td></tr>
+<tr class="memitem:a6407505c9e51e9aafc535ceb8a0f074f" id="r_a6407505c9e51e9aafc535ceb8a0f074f"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6407505c9e51e9aafc535ceb8a0f074f">arch_count</a> (const <a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a> &amp;ec)</td></tr>
+<tr class="memitem:a22a1e73ffb69f6fd807228fc5756b380" id="r_a22a1e73ffb69f6fd807228fc5756b380"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a22a1e73ffb69f6fd807228fc5756b380">expected_for_class</a> (const char *name)</td></tr>
+<tr class="memitem:ad187fb124266bd89f9f48be1d22ba617" id="r_ad187fb124266bd89f9f48be1d22ba617"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ad187fb124266bd89f9f48be1d22ba617">validate_class_count</a> (const char *name, <a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> actual_count)</td></tr>
 <tr class="memitem:aebdef3f581d2b87696f34fa1a77a20d5" id="r_aebdef3f581d2b87696f34fa1a77a20d5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aebdef3f581d2b87696f34fa1a77a20d5">validate_all_consistency</a> ()</td></tr>
+<tr class="memitem:ac3dcbb860f4f6469142dd4dd33b78398" id="r_ac3dcbb860f4f6469142dd4dd33b78398"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac3dcbb860f4f6469142dd4dd33b78398">mark_vfs_touched</a> ()</td></tr>
+<tr class="memdesc:ac3dcbb860f4f6469142dd4dd33b78398"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by VFS syscall handlers to mark that VFS state was touched.  <br /></td></tr>
 <tr class="memitem:a5b61544ff1676d3f6d4a777c3211be31" id="r_a5b61544ff1676d3f6d4a777c3211be31"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a5b61544ff1676d3f6d4a777c3211be31">snapshot_create</a> ()</td></tr>
 <tr class="memitem:aa2a58a012f3f56d28d6e0df037fd66a6" id="r_aa2a58a012f3f56d28d6e0df037fd66a6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore</a> (const char *test_name)</td></tr>
 <tr class="memitem:ae4288686f519dcd0faacfe54ae2f1bff" id="r_ae4288686f519dcd0faacfe54ae2f1bff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae4288686f519dcd0faacfe54ae2f1bff">snapshot_destroy</a> ()</td></tr>
@@ -161,32 +169,57 @@ Functions</h2></td></tr>
 <tr class="memdesc:abbd641156133e294c60aa475e73dd520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate old daemon tasks and reload them from initrd. Call AFTER snapshot_restore + snapshot_destroy to replace corrupted page tables with fresh ones from initrd.  <br /></td></tr>
 <tr class="memitem:ad8af3e26f5e10cffe7d3eecf79016c1d" id="r_ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad8af3e26f5e10cffe7d3eecf79016c1d">run_all_isolated_tests</a> ()</td></tr>
 <tr class="memdesc:ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all tests from the generated registry, calling setup/test/teardown in sequence with snapshot isolation between each test.  <br /></td></tr>
-<tr class="memitem:a3682848fa74834ef280e24ea7c67ff5e" id="r_a3682848fa74834ef280e24ea7c67ff5e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3682848fa74834ef280e24ea7c67ff5e">watchdog_arm</a> (uint64_t ms, const char *test_name)</td></tr>
+<tr class="memitem:a5734651fc6722563ecb7a1893ea19b81" id="r_a5734651fc6722563ecb7a1893ea19b81"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5734651fc6722563ecb7a1893ea19b81">yield_as</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
+<tr class="memdesc:a5734651fc6722563ecb7a1893ea19b81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR interference between the two operations. This restores the IF=0 semantics that tests using the "set_current + reschedule" pattern were originally designed for.  <br /></td></tr>
+<tr class="memitem:a6cdcc19c8e326942d1c980c8c62894f0" id="r_a6cdcc19c8e326942d1c980c8c62894f0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6cdcc19c8e326942d1c980c8c62894f0">yield_to_task</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
+<tr class="memdesc:a6cdcc19c8e326942d1c980c8c62894f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Yield to a task to steer next_task() scheduling, then restore the harness as current and re-enqueue the task. Unlike <a class="el" href="#a5734651fc6722563ecb7a1893ea19b81" title="Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR i...">yield_as()</a>, the task was never actually executing — only configured as current to influence the scheduler's next selection. After this call the harness continues to drive execution via reschedule() and the given task remains eligible for scheduling (READY, in ready queue). This avoids the invariant violation that set_current() removes the "old current" from the ready queue even when it never ran.  <br /></td></tr>
+<tr class="memitem:a3682848fa74834ef280e24ea7c67ff5e" id="r_a3682848fa74834ef280e24ea7c67ff5e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3682848fa74834ef280e24ea7c67ff5e">watchdog_arm</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> ms, const char *test_name)</td></tr>
 <tr class="memdesc:a3682848fa74834ef280e24ea7c67ff5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arm the watchdog with both TSC-based and PIT-based timers. PIT channel 1 one-shot (~55ms) + TSC deadline.  <br /></td></tr>
 <tr class="memitem:a0a6da7c5576fe1c48584026927954c24" id="r_a0a6da7c5576fe1c48584026927954c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a6da7c5576fe1c48584026927954c24">watchdog_disarm</a> ()</td></tr>
 <tr class="memitem:abfb7a4e797c8023392967822f5451ab1" id="r_abfb7a4e797c8023392967822f5451ab1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abfb7a4e797c8023392967822f5451ab1">watchdog_check_inline</a> ()</td></tr>
 <tr class="memdesc:abfb7a4e797c8023392967822f5451ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronous check — uses TSC when available, falls back to PIT channel 0 elapsed-time accumulation when TSC freq is 0. Also reloads PIT channel 1 one-shot.  <br /></td></tr>
 <tr class="memitem:a6dbac4eb3cd0354a626677222a8c6a35" id="r_a6dbac4eb3cd0354a626677222a8c6a35"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6dbac4eb3cd0354a626677222a8c6a35">watchdog_panic</a> ()</td></tr>
 <tr class="memitem:a2be813db3ba66a8c409d2c8c8e2d69da" id="r_a2be813db3ba66a8c409d2c8c8e2d69da"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2be813db3ba66a8c409d2c8c8e2d69da">set_kernel_entry_ns</a> ()</td></tr>
+<tr class="memitem:a0393b984f5bd8f8fa3e1014037f2dcd0" id="r_a0393b984f5bd8f8fa3e1014037f2dcd0"><td class="memItemLeft"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a0393b984f5bd8f8fa3e1014037f2dcd0">create_named_task</a> (void(*entry)(), <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> priority, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> period_ticks, const char *tag=nullptr)</td></tr>
+<tr class="memdesc:a0393b984f5bd8f8fa3e1014037f2dcd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a task (via the kernel's TaskControlBlock::create) and adds it to the scheduler, tagging its <span class="tt">name</span> with the calling test case so leaked/orphaned tasks are traceable to their origin. <span class="tt">tag</span> (if non-null) is prefixed to the test name (e.g. a role like "worker"). Falls back to the raw <span class="tt">create</span> name when no test is active.  <br /></td></tr>
+<tr class="memitem:a2f2ad7408a2984ebbc8a46b37f1e6f5f" id="r_a2f2ad7408a2984ebbc8a46b37f1e6f5f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2f2ad7408a2984ebbc8a46b37f1e6f5f">add_task_named</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task, const char *tag=nullptr)</td></tr>
+<tr class="memdesc:a2f2ad7408a2984ebbc8a46b37f1e6f5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds an already-created task to the scheduler, tagging its <span class="tt">name</span> with the calling test case (see create_named_task). Thin wrapper over Scheduler::add_task that records provenance.  <br /></td></tr>
 <tr class="memitem:a47e1961f61dd3427ce55333d8828a5de" id="r_a47e1961f61dd3427ce55333d8828a5de"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a47e1961f61dd3427ce55333d8828a5de">run_all</a> ()</td></tr>
 <tr class="memitem:a1c32eb5484b7cdcad0ae45d94849f02b" id="r_a1c32eb5484b7cdcad0ae45d94849f02b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1c32eb5484b7cdcad0ae45d94849f02b">run_safe</a> ()</td></tr>
-<tr class="memitem:a9096f1bb9a2e4b1541226759b08c1ae5" id="r_a9096f1bb9a2e4b1541226759b08c1ae5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9096f1bb9a2e4b1541226759b08c1ae5">run_filtered</a> (uint8_t required_flags, bool use_isolation)</td></tr>
+<tr class="memitem:a9096f1bb9a2e4b1541226759b08c1ae5" id="r_a9096f1bb9a2e4b1541226759b08c1ae5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9096f1bb9a2e4b1541226759b08c1ae5">run_filtered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags, bool use_isolation)</td></tr>
 <tr class="memitem:ae1b9042f585e1bfaf6898aed96a403de" id="r_ae1b9042f585e1bfaf6898aed96a403de"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae1b9042f585e1bfaf6898aed96a403de">run_debug</a> ()</td></tr>
 <tr class="memitem:ae3930997b95bec7a00f32aecd001850a" id="r_ae3930997b95bec7a00f32aecd001850a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae3930997b95bec7a00f32aecd001850a">run_release</a> ()</td></tr>
-<tr class="memitem:a1becd6394583e37ae0142fa07904cb67" id="r_a1becd6394583e37ae0142fa07904cb67"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1becd6394583e37ae0142fa07904cb67">shutdown_kernel</a> (uint64_t result)</td></tr>
-<tr class="memitem:a1b7421d43e0e94ec4c1f0005f25222e2" id="r_a1b7421d43e0e94ec4c1f0005f25222e2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1b7421d43e0e94ec4c1f0005f25222e2">run_registered</a> (uint8_t required_flags)</td></tr>
+<tr class="memitem:a1becd6394583e37ae0142fa07904cb67" id="r_a1becd6394583e37ae0142fa07904cb67"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1becd6394583e37ae0142fa07904cb67">shutdown_kernel</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> result)</td></tr>
+<tr class="memitem:a1b7421d43e0e94ec4c1f0005f25222e2" id="r_a1b7421d43e0e94ec4c1f0005f25222e2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1b7421d43e0e94ec4c1f0005f25222e2">run_registered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags)</td></tr>
 <tr class="memitem:ac6959c848d7b1df0ba4eea129c708171" id="r_ac6959c848d7b1df0ba4eea129c708171"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac6959c848d7b1df0ba4eea129c708171">set_class_auto_shutdown</a> (bool enabled)</td></tr>
 <tr class="memitem:ac69baaa93109936ecff8ff06f6fb827a" id="r_ac69baaa93109936ecff8ff06f6fb827a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac69baaa93109936ecff8ff06f6fb827a">run_suite</a> (const char *suite_name)</td></tr>
-<tr class="memitem:a0fb9d643d01186cc11f1c2868176b39c" id="r_a0fb9d643d01186cc11f1c2868176b39c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0fb9d643d01186cc11f1c2868176b39c">print_report</a> (uint64_t start_ns, uint64_t end_ns)</td></tr>
+<tr class="memitem:a0fb9d643d01186cc11f1c2868176b39c" id="r_a0fb9d643d01186cc11f1c2868176b39c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0fb9d643d01186cc11f1c2868176b39c">print_report</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> start_ns, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> end_ns)</td></tr>
 <tr class="memitem:a47ad5e6d76deb150bf2cb8bf66bd3450" id="r_a47ad5e6d76deb150bf2cb8bf66bd3450"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a47ad5e6d76deb150bf2cb8bf66bd3450">register_class</a> (const char *name)</td></tr>
 <tr class="memitem:a528c863464ccdb09e9f57510adee048d" id="r_a528c863464ccdb09e9f57510adee048d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a528c863464ccdb09e9f57510adee048d">dump_class_counts</a> ()</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a74d790429154a6100e23fdf3ac51371e" id="r_a74d790429154a6100e23fdf3ac51371e"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a74d790429154a6100e23fdf3ac51371e">g_watchdog_deadline_ns</a> = 0</td></tr>
-<tr class="memitem:a5b59830418dc51c0e6381baa16153565" id="r_a5b59830418dc51c0e6381baa16153565"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a5b59830418dc51c0e6381baa16153565">g_watchdog_task_id</a> = 0</td></tr>
+<tr class="memitem:a8ae596b8a7161c4f9f54d704059f822e" id="r_a8ae596b8a7161c4f9f54d704059f822e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a8ae596b8a7161c4f9f54d704059f822e">g_vfs_touched</a> = false</td></tr>
+<tr class="memdesc:a8ae596b8a7161c4f9f54d704059f822e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tracks whether any VFS syscall was invoked during the current test. <a class="el" href="#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore()</a> checks this flag to decide whether daemon tasks need a full reload (VFS touched) or can be left running (VFS not touched).  <br /></td></tr>
+<tr class="memitem:af5d0c2b75741c70c7c103e4dc2f2aac8" id="r_af5d0c2b75741c70c7c103e4dc2f2aac8"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af5d0c2b75741c70c7c103e4dc2f2aac8">g_watchdog_deadline_ns</a> = 0</td></tr>
+<tr class="memitem:ac868441e34e35154b50c0ef71dfc793c" id="r_ac868441e34e35154b50c0ef71dfc793c"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ac868441e34e35154b50c0ef71dfc793c">g_watchdog_task_id</a> = 0</td></tr>
 <tr class="memitem:ad58197db512c3865261fe3571878f10a" id="r_ad58197db512c3865261fe3571878f10a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ad58197db512c3865261fe3571878f10a">g_class_auto_shutdown</a> = false</td></tr>
 </table>
+<a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
+<a id="af219b4b081470c65fb5140fbabdd424c" name="af219b4b081470c65fb5140fbabdd424c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af219b4b081470c65fb5140fbabdd424c">&#9670;&#160;</a></span>TaskControlBlock</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="#af219b4b081470c65fb5140fbabdd424c">kernel::test::TaskControlBlock</a> = kernel::TaskControlBlock</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
 <a id="a3c3d9504ac5a18a5220063a8e94b0924" name="a3c3d9504ac5a18a5220063a8e94b0924"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3c3d9504ac5a18a5220063a8e94b0924">&#9670;&#160;</a></span>TestFlags</h2>
@@ -195,7 +228,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="#a3c3d9504ac5a18a5220063a8e94b0924">kernel::test::TestFlags</a> : uint8_t</td>
+          <td class="memname">enum <a class="el" href="#a3c3d9504ac5a18a5220063a8e94b0924">kernel::test::TestFlags</a> : <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -209,6 +242,29 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="a2f2ad7408a2984ebbc8a46b37f1e6f5f" name="a2f2ad7408a2984ebbc8a46b37f1e6f5f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f2ad7408a2984ebbc8a46b37f1e6f5f">&#9670;&#160;</a></span>add_task_named()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::add_task_named </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>tag</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds an already-created task to the scheduler, tagging its <span class="tt">name</span> with the calling test case (see create_named_task). Thin wrapper over Scheduler::add_task that records provenance. </p>
+
+</div>
+</div>
 <a id="a6407505c9e51e9aafc535ceb8a0f074f" name="a6407505c9e51e9aafc535ceb8a0f074f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6407505c9e51e9aafc535ceb8a0f074f">&#9670;&#160;</a></span>arch_count()</h2>
 
@@ -219,7 +275,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::test::arch_count </td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::test::arch_count </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="structkernel_1_1test_1_1_expected_counts.html">ExpectedCounts</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>ec</em></span></td><td>)</td>
           <td></td>
@@ -231,6 +287,39 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0393b984f5bd8f8fa3e1014037f2dcd0" name="a0393b984f5bd8f8fa3e1014037f2dcd0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0393b984f5bd8f8fa3e1014037f2dcd0">&#9670;&#160;</a></span>create_named_task()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> * kernel::test::create_named_task </td>
+          <td>(</td>
+          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>entry&#160;</em></span>)(), </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>priority</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>period_ticks</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>tag</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Creates a task (via the kernel's TaskControlBlock::create) and adds it to the scheduler, tagging its <span class="tt">name</span> with the calling test case so leaked/orphaned tasks are traceable to their origin. <span class="tt">tag</span> (if non-null) is prefixed to the test name (e.g. a role like "worker"). Falls back to the raw <span class="tt">create</span> name when no test is active. </p>
 
 </div>
 </div>
@@ -267,7 +356,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::test::expected_for_class </td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::test::expected_for_class </td>
           <td>(</td>
           <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span></td><td>)</td>
           <td></td>
@@ -295,7 +384,7 @@ Here is the call graph for this function:</div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a> kernel::test::get_test_class_count </td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> kernel::test::get_test_class_count </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -324,6 +413,25 @@ Here is the call graph for this function:</div>
 
 <p>Get the list of test classes to run (populated by parse_test_config). </p>
 <dl class="section return"><dt>Returns</dt><dd>Null-terminated array of class names </dd></dl>
+
+</div>
+</div>
+<a id="ac3dcbb860f4f6469142dd4dd33b78398" name="ac3dcbb860f4f6469142dd4dd33b78398"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3dcbb860f4f6469142dd4dd33b78398">&#9670;&#160;</a></span>mark_vfs_touched()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::mark_vfs_touched </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Called by VFS syscall handlers to mark that VFS state was touched. </p>
 
 </div>
 </div>
@@ -362,12 +470,12 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::test::print_report </td>
           <td>(</td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>start_ns</em></span>, </td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>start_ns</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>end_ns</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>end_ns</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -446,36 +554,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph" id="anamespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph">
-<area shape="rect" title=" " alt="" coords="5,215,138,241"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ae1c6719a50dda5616660226460c8fbdf" title=" " alt="" coords="186,5,329,48"/>
-<area shape="poly" title=" " alt="" coords="77,213,117,145,148,103,184,65,200,55,196,59,187,69,152,107,122,148,82,216"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a67e0bf935731e851c5130bab1b6c1861" title=" " alt="" coords="377,56,520,99"/>
-<area shape="poly" title=" " alt="" coords="79,213,120,160,150,131,184,108,228,91,273,80,363,73,359,76,274,85,229,96,187,113,153,136,124,164,84,216"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ac55cd7a631b4e76a2293edf8b8bb0bd4" title=" " alt="" coords="191,240,324,267"/>
-<area shape="poly" title=" " alt="" coords="137,234,179,241,174,244,139,240"/>
-<area shape="rect" href="namespacekernel_1_1test.html#afe67f03cec26eaf04ba601e548d6761d" title=" " alt="" coords="198,123,317,165"/>
-<area shape="poly" title=" " alt="" coords="101,212,196,170,193,174,105,216"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ad4ae5d24650cf692a9d70d545eaa1867" title=" " alt="" coords="382,189,515,232"/>
-<area shape="poly" title=" " alt="" coords="137,222,369,212,366,217,139,228"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a3706a331b1f53a82cec9a9020a1efdc4" title=" " alt="" coords="186,291,329,333"/>
-<area shape="poly" title=" " alt="" coords="103,239,197,282,192,285,103,245"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a290fced036e79169734ae8b01c424f83" title=" " alt="" coords="186,357,329,400"/>
-<area shape="poly" title=" " alt="" coords="84,239,127,289,156,317,187,343,194,349,189,349,184,347,152,321,123,293,83,245"/>
-<area shape="rect" href="classkernel_1_1Logger.html#a789c5af9e2c7393712ff3bfdae709afa" title=" " alt="" coords="188,424,327,451"/>
-<area shape="poly" title=" " alt="" coords="78,239,94,275,116,320,148,368,187,410,194,417,188,415,184,414,143,371,112,323,89,277,77,244"/>
-<area shape="rect" href="classkernel_1_1Logger.html#a12794441edd7245c8a81bfe5b9a6dd14" title=" " alt="" coords="377,340,520,367"/>
-<area shape="poly" title=" " alt="" coords="302,265,330,276,377,302,419,331,413,331,374,307,328,281,302,270"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ad2aea07eb751fad2fb738fe4123c7e7b" title=" " alt="" coords="568,315,733,341"/>
-<area shape="poly" title=" " alt="" coords="520,342,555,340,550,341,521,347"/>
-<area shape="rect" href="classkernel_1_1Logger.html#ae7f9fd488685463ec9810c40d6f907c7" title=" " alt="" coords="568,365,733,392"/>
-<area shape="poly" title=" " alt="" coords="521,360,555,366,550,366,521,365"/>
-<area shape="poly" title=" " alt="" coords="316,121,373,103,369,106,319,126"/>
-<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ad30c0be8d7ba6161c038aa562c3ac885" title=" " alt="" coords="377,123,520,165"/>
-<area shape="poly" title=" " alt="" coords="316,141,364,143,359,145,318,147"/>
-<area shape="poly" title=" " alt="" coords="317,162,374,183,369,184,318,167"/>
-<area shape="poly" title=" " alt="" coords="299,421,328,410,406,375,411,374,330,414,301,426"/>
-</map>
+<!-- MAP 6 -->
 </div>
 
 </div>
@@ -500,7 +579,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -523,7 +602,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -537,7 +616,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::test::run_filtered </td>
           <td>(</td>
-          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>required_flags</em></span>, </td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a></td>          <td class="paramname"><span class="paramname"><em>required_flags</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -550,7 +629,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -564,7 +643,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::test::run_registered </td>
           <td>(</td>
-          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>required_flags</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a></td>          <td class="paramname"><span class="paramname"><em>required_flags</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -573,7 +652,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -596,7 +675,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
+<!-- MAP 11 -->
 </div>
 
 </div>
@@ -619,7 +698,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
+<!-- MAP 12 -->
 </div>
 
 </div>
@@ -642,7 +721,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
+<!-- MAP 13 -->
 </div>
 
 </div>
@@ -701,7 +780,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -715,17 +794,11 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::test::shutdown_kernel </td>
           <td>(</td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>result</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>result</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1test_a1becd6394583e37ae0142fa07904cb67_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1becd6394583e37ae0142fa07904cb67_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
-</div>
 
 </div>
 </div>
@@ -766,12 +839,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1test_ae4288686f519dcd0faacfe54ae2f1bff_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae4288686f519dcd0faacfe54ae2f1bff_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
-</div>
 
 </div>
 </div>
@@ -793,7 +860,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
+<!-- MAP 16 -->
 </div>
 
 </div>
@@ -819,7 +886,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 18 -->
+<!-- MAP 17 -->
 </div>
 
 </div>
@@ -850,7 +917,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 19 -->
+<!-- MAP 18 -->
 </div>
 
 </div>
@@ -872,7 +939,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a></td>          <td class="paramname"><span class="paramname"><em>actual_count</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a></td>          <td class="paramname"><span class="paramname"><em>actual_count</em></span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -885,7 +952,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 20 -->
+<!-- MAP 19 -->
 </div>
 
 </div>
@@ -899,7 +966,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::test::watchdog_arm </td>
           <td>(</td>
-          <td class="paramtype">uint64_t</td>          <td class="paramname"><span class="paramname"><em>ms</em></span>, </td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>ms</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -910,12 +977,6 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Arm the watchdog with both TSC-based and PIT-based timers. PIT channel 1 one-shot (~55ms) + TSC deadline. </p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 21 -->
-</div>
 
 </div>
 </div>
@@ -939,7 +1000,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 22 -->
+<!-- MAP 20 -->
 </div>
 
 </div>
@@ -979,8 +1040,63 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 23 -->
+<!-- MAP 21 -->
 </div>
+
+</div>
+</div>
+<a id="a5734651fc6722563ecb7a1893ea19b81" name="a5734651fc6722563ecb7a1893ea19b81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5734651fc6722563ecb7a1893ea19b81">&#9670;&#160;</a></span>yield_as()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::yield_as </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR interference between the two operations. This restores the IF=0 semantics that tests using the "set_current + reschedule" pattern were originally designed for. </p>
+
+</div>
+</div>
+<a id="a6cdcc19c8e326942d1c980c8c62894f0" name="a6cdcc19c8e326942d1c980c8c62894f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cdcc19c8e326942d1c980c8c62894f0">&#9670;&#160;</a></span>yield_to_task()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::yield_to_task </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Yield to a task to steer next_task() scheduling, then restore the harness as current and re-enqueue the task. Unlike <a class="el" href="#a5734651fc6722563ecb7a1893ea19b81" title="Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR i...">yield_as()</a>, the task was never actually executing — only configured as current to influence the scheduler's next selection. After this call the harness continues to drive execution via reschedule() and the given task remains eligible for scheduling (READY, in ready queue). This avoids the invariant violation that set_current() removes the "old current" from the ready queue even when it never ran. </p>
+<p>NOTE: sets scheduler_need_resched directly instead of calling Scheduler::reschedule(), because reschedule() calls next_task() which DEQUEUES the highest-priority peer task from the ready queue, leaving the RQ with only the re-enqueued task. The timer ISR would then dispatch the wrong task first. </p>
 
 </div>
 </div>
@@ -999,30 +1115,62 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a74d790429154a6100e23fdf3ac51371e" name="a74d790429154a6100e23fdf3ac51371e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74d790429154a6100e23fdf3ac51371e">&#9670;&#160;</a></span>g_watchdog_deadline_ns</h2>
+<a id="a8ae596b8a7161c4f9f54d704059f822e" name="a8ae596b8a7161c4f9f54d704059f822e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ae596b8a7161c4f9f54d704059f822e">&#9670;&#160;</a></span>g_vfs_touched</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::test::g_watchdog_deadline_ns = 0</td>
+          <td class="memname">bool kernel::test::g_vfs_touched = false</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Tracks whether any VFS syscall was invoked during the current test. <a class="el" href="#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore()</a> checks this flag to decide whether daemon tasks need a full reload (VFS touched) or can be left running (VFS not touched). </p>
+
 </div>
 </div>
-<a id="a5b59830418dc51c0e6381baa16153565" name="a5b59830418dc51c0e6381baa16153565"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5b59830418dc51c0e6381baa16153565">&#9670;&#160;</a></span>g_watchdog_task_id</h2>
+<a id="af5d0c2b75741c70c7c103e4dc2f2aac8" name="af5d0c2b75741c70c7c103e4dc2f2aac8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5d0c2b75741c70c7c103e4dc2f2aac8">&#9670;&#160;</a></span>g_watchdog_deadline_ns</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::test::g_watchdog_task_id = 0</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::test::g_watchdog_deadline_ns = 0</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constinit">constinit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac868441e34e35154b50c0ef71dfc793c" name="ac868441e34e35154b50c0ef71dfc793c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac868441e34e35154b50c0ef71dfc793c">&#9670;&#160;</a></span>g_watchdog_task_id</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::test::g_watchdog_task_id = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constinit">constinit</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

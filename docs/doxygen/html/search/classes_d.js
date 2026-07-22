@@ -1,19 +1,8 @@
 var searchData=
 [
-  ['scheduler_0',['Scheduler',['../classkernel_1_1_scheduler.html',1,'kernel']]],
-  ['scopeguard_1',['ScopeGuard',['../class_scope_guard.html',1,'']]],
-  ['semaphore_2',['Semaphore',['../classkernel_1_1sync_1_1_semaphore.html',1,'kernel::sync']]],
-  ['sendsyncctx_3',['SendSyncCtx',['../struct_send_sync_ctx.html',1,'']]],
-  ['serial_4',['Serial',['../classarch_1_1_serial.html',1,'arch']]],
-  ['sgentry_5',['SgEntry',['../structkernel_1_1dma_1_1_sg_entry.html',1,'kernel::dma']]],
-  ['sglist_6',['SgList',['../structkernel_1_1dma_1_1_sg_list.html',1,'kernel::dma']]],
-  ['shell_7',['Shell',['../classservice_1_1_shell.html',1,'service']]],
-  ['signalframe_8',['SignalFrame',['../structkernel_1_1_signal_frame.html',1,'kernel']]],
-  ['simpletaskdeleter_9',['SimpleTaskDeleter',['../struct_simple_task_deleter.html',1,'']]],
-  ['spinlock_10',['SpinLock',['../classkernel_1_1sync_1_1_spin_lock.html',1,'kernel::sync']]],
-  ['spinlockguard_11',['SpinLockGuard',['../class_spin_lock_guard.html',1,'']]],
-  ['sporadicserver_12',['SporadicServer',['../classkernel_1_1task_1_1_sporadic_server.html',1,'kernel::task']]],
-  ['spscring_13',['SPSCRing',['../class_s_p_s_c_ring.html',1,'']]],
-  ['stat_14',['stat',['../structstat.html',1,'']]],
-  ['syscall_15',['Syscall',['../classkernel_1_1_syscall.html',1,'kernel']]]
+  ['uniqueptr_0',['UniquePtr',['../class_unique_ptr.html',1,'']]],
+  ['uniqueptr_3c_20taskcontrolblock_2c_20simpletaskdeleter_20_3e_1',['UniquePtr&lt; TaskControlBlock, SimpleTaskDeleter &gt;',['../class_unique_ptr.html',1,'']]],
+  ['uniqueptr_3c_20taskcontrolblock_2c_20taskdeleter_20_3e_2',['UniquePtr&lt; TaskControlBlock, TaskDeleter &gt;',['../class_unique_ptr.html',1,'']]],
+  ['utsname_3',['Utsname',['../structkernel_1_1_utsname.html',1,'kernel::Utsname'],['../struct_utsname.html',1,'Utsname']]],
+  ['utsname_4',['utsname',['../structutsname.html',1,'']]]
 ];

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -151,11 +151,14 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a6df1d22fb5f09eccc23b9f399670cfd7" id="r_a6df1d22fb5f09eccc23b9f399670cfd7"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a6df1d22fb5f09eccc23b9f399670cfd7">STRINGIFY</a>(x)</td></tr>
+<tr class="memdesc:a6df1d22fb5f09eccc23b9f399670cfd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper: stringify without macro expansion (single level).  <br /></td></tr>
+<tr class="memitem:af404f8f49103651e90d404acdae3ffc4" id="r_af404f8f49103651e90d404acdae3ffc4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af404f8f49103651e90d404acdae3ffc4">EXPAND_AND_STRINGIFY</a>(x)</td></tr>
+<tr class="memdesc:af404f8f49103651e90d404acdae3ffc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper: expand then stringify (two levels so <b>LINE</b> expands first).  <br /></td></tr>
 <tr class="memitem:aed6cb01692023fc3b2bd46d82db8a3be" id="r_aed6cb01692023fc3b2bd46d82db8a3be"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aed6cb01692023fc3b2bd46d82db8a3be">ENSURE</a>(cond)</td></tr>
 <tr class="memdesc:aed6cb01692023fc3b2bd46d82db8a3be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fatal invariant check — panics if the condition is false. Use this for conditions that should <em>never</em> fail.  <br /></td></tr>
 <tr class="memitem:a2ce71a97f7f029c3e0116c14c0380db8" id="r_a2ce71a97f7f029c3e0116c14c0380db8"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a2ce71a97f7f029c3e0116c14c0380db8">ASSERT</a>(err)</td></tr>
 <tr class="memdesc:a2ce71a97f7f029c3e0116c14c0380db8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-fatal error assertion — logs the error with file/line in debug builds and compiles to a no-op in release builds.  <br /></td></tr>
-<tr class="memitem:afb45806c1c9e5a9574e690d5a23e5e35" id="r_afb45806c1c9e5a9574e690d5a23e5e35"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#afb45806c1c9e5a9574e690d5a23e5e35">__STRINGIFY</a>(x)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -167,24 +170,6 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Debug assertion macros and the panic handler declaration. </p>
 </div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="afb45806c1c9e5a9574e690d5a23e5e35" name="afb45806c1c9e5a9574e690d5a23e5e35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb45806c1c9e5a9574e690d5a23e5e35">&#9670;&#160;</a></span>__STRINGIFY</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define __STRINGIFY</td>
-          <td>(</td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line"><span class="preprocessor">#x</span></div>
-</div><!-- fragment -->
-</div>
-</div>
 <a id="a2ce71a97f7f029c3e0116c14c0380db8" name="a2ce71a97f7f029c3e0116c14c0380db8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2ce71a97f7f029c3e0116c14c0380db8">&#9670;&#160;</a></span>ASSERT</h2>
 
@@ -204,7 +189,7 @@ Functions</h2></td></tr>
 <p>Non-fatal error assertion — logs the error with file/line in debug builds and compiles to a no-op in release builds. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">err</td><td>An enum value from a module error header; the associated error message is looked up via <a class="el" href="namespacekernel_1_1errors.html#a49c76709b89cc22ed2cae21695d5aac8">kernel::errors::error_string()</a>. </td></tr>
+    <tr><td class="paramname">err</td><td>An enum value from a module error header; the associated error message is looked up via <a class="el" href="namespacekernel_1_1errors.html#a7a109eae637dbae8c0b5db75fad08745">kernel::errors::error_string()</a>. </td></tr>
   </table>
   </dd>
 </dl>
@@ -228,12 +213,53 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line"><span class="keywordflow">do</span> { \</div>
 <div class="line">    if (!(cond)) { \</div>
 <div class="line">        panic(<span class="stringliteral">&quot;ENSURE failed: &quot;</span> #cond <span class="stringliteral">&quot; at &quot;</span> __FILE__ <span class="stringliteral">&quot;:&quot;</span> \</div>
-<div class="line">              <a class="code hl_define" href="#afb45806c1c9e5a9574e690d5a23e5e35">__STRINGIFY</a>(__LINE__)); \</div>
+<div class="line">              <a class="code hl_define" href="#af404f8f49103651e90d404acdae3ffc4">EXPAND_AND_STRINGIFY</a>(__LINE__)); \</div>
 <div class="line">    } \</div>
 <div class="line">} <span class="keywordflow">while</span> (0)</div>
-<div class="ttc" id="aassert_8hpp_html_afb45806c1c9e5a9574e690d5a23e5e35"><div class="ttname"><a href="#afb45806c1c9e5a9574e690d5a23e5e35">__STRINGIFY</a></div><div class="ttdeci">#define __STRINGIFY(x)</div><div class="ttdef"><b>Definition</b> assert.hpp:64</div></div>
+<div class="ttc" id="aassert_8hpp_html_af404f8f49103651e90d404acdae3ffc4"><div class="ttname"><a href="#af404f8f49103651e90d404acdae3ffc4">EXPAND_AND_STRINGIFY</a></div><div class="ttdeci">#define EXPAND_AND_STRINGIFY(x)</div><div class="ttdoc">Helper: expand then stringify (two levels so LINE expands first).</div><div class="ttdef"><b>Definition</b> assert.hpp:44</div></div>
 </div><!-- fragment -->
 <p>Fatal invariant check — panics if the condition is false. Use this for conditions that should <em>never</em> fail. </p>
+
+</div>
+</div>
+<a id="af404f8f49103651e90d404acdae3ffc4" name="af404f8f49103651e90d404acdae3ffc4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af404f8f49103651e90d404acdae3ffc4">&#9670;&#160;</a></span>EXPAND_AND_STRINGIFY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define EXPAND_AND_STRINGIFY</td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line"><a class="code hl_define" href="#a6df1d22fb5f09eccc23b9f399670cfd7">STRINGIFY</a>(x)</div>
+<div class="ttc" id="aassert_8hpp_html_a6df1d22fb5f09eccc23b9f399670cfd7"><div class="ttname"><a href="#a6df1d22fb5f09eccc23b9f399670cfd7">STRINGIFY</a></div><div class="ttdeci">#define STRINGIFY(x)</div><div class="ttdoc">Helper: stringify without macro expansion (single level).</div><div class="ttdef"><b>Definition</b> assert.hpp:41</div></div>
+</div><!-- fragment -->
+<p>Helper: expand then stringify (two levels so <b>LINE</b> expands first). </p>
+
+</div>
+</div>
+<a id="a6df1d22fb5f09eccc23b9f399670cfd7" name="a6df1d22fb5f09eccc23b9f399670cfd7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6df1d22fb5f09eccc23b9f399670cfd7">&#9670;&#160;</a></span>STRINGIFY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define STRINGIFY</td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line"><span class="preprocessor">#x</span></div>
+</div><!-- fragment -->
+<p>Helper: stringify without macro expansion (single level). </p>
 
 </div>
 </div>

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -121,67 +121,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('ipc_8hpp.html'
 
 <p>Priority-based IPC — send, recv, events, notifications.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="spinlock_8hpp_source.html">kernel/sync/spinlock.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="spinlock__guard_8hpp_source.html">kernel/sync/spinlock_guard.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for ipc.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="ipc_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2ipc_2ipc_8hpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2ipc_2ipc_8hpp" id="asrc_2kernel_2ipc_2ipc_8hpp">
-<area shape="rect" title="Priority&#45;based IPC — send, recv, events, notifications." alt="" coords="5,5,151,32"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="86,229,164,256"/>
-<area shape="poly" title=" " alt="" coords="76,30,73,66,74,106,82,144,95,180,112,216,107,215,90,182,76,146,69,107,68,66,75,35"/>
-<area shape="rect" href="task_8hpp.html" title="Task control block and state definitions for the kernel scheduler." alt="" coords="83,80,222,107"/>
-<area shape="poly" title=" " alt="" coords="91,30,132,68,127,70,91,35"/>
-<area shape="poly" title=" " alt="" coords="135,109,119,129,103,156,100,170,102,186,112,216,107,215,96,187,95,170,98,154,115,126,139,105"/>
-<area shape="rect" href="vfs_8hpp.html" title=" " alt="" coords="113,155,238,181"/>
-<area shape="poly" title=" " alt="" coords="158,105,169,140,164,139,156,110"/>
-<area shape="rect" href="signal_8hpp.html" title="Signal definitions used by the kernel for user exception delivery." alt="" coords="262,155,342,181"/>
-<area shape="poly" title=" " alt="" coords="179,105,264,146,259,148,178,110"/>
-<area shape="poly" title=" " alt="" coords="169,181,144,219,140,215,164,183"/>
-<area shape="poly" title=" " alt="" coords="274,182,170,226,169,221,268,182"/>
-</map>
-</div>
-</div><div class="textblock"><div class="dynheader">
+<div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="ipc_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2ipc_2ipc_8hppdep" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2ipc_2ipc_8hppdep" id="asrc_2kernel_2ipc_2ipc_8hppdep">
-<area shape="rect" title="Priority&#45;based IPC — send, recv, events, notifications." alt="" coords="331,5,476,32"/>
-<area shape="rect" href="ipc_8cpp.html" title=" " alt="" coords="5,88,151,115"/>
-<area shape="poly" title=" " alt="" coords="338,39,130,90,129,85,337,34"/>
-<area shape="rect" href="kernel_8cpp.html" title=" " alt="" coords="175,88,317,115"/>
-<area shape="poly" title=" " alt="" coords="368,39,271,90,269,85,363,40"/>
-<area shape="rect" href="syscall_8cpp.html" title=" " alt="" coords="342,80,465,123"/>
-<area shape="poly" title=" " alt="" coords="405,46,405,81,401,78,401,49"/>
-<area shape="rect" href="task_8cpp.html" title=" " alt="" coords="489,88,651,115"/>
-<area shape="poly" title=" " alt="" coords="443,36,547,88,541,87,442,42"/>
-<area shape="rect" href="test__selftest_8cpp.html" title=" " alt="" coords="674,80,804,123"/>
-<area shape="poly" title=" " alt="" coords="475,33,664,77,677,83,671,82,663,83,475,39"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div>
 <p><a href="ipc_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:kernel_3A_3AMessageQueue" id="r_kernel_3A_3AMessageQueue"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_message_queue.html">kernel::MessageQueue</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Priority-ordered circular message queue embedded via pointer in each TCB.  <a href="structkernel_1_1_message_queue.html#details">More...</a><br /></td></tr>
-<tr class="memitem:kernel_3A_3AIPC" id="r_kernel_3A_3AIPC"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_i_p_c.html">kernel::IPC</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inter-process communication manager.  <a href="classkernel_1_1_i_p_c.html#details">More...</a><br /></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:acf26df622e6621b8e36d62ce14d07809" id="r_acf26df622e6621b8e36d62ce14d07809"><td class="memItemLeft">enum &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#acf26df622e6621b8e36d62ce14d07809">kernel::IpcFlags</a> : uint64_t { <a class="el" href="namespacekernel.html#acf26df622e6621b8e36d62ce14d07809a68f1114534e580a5fd150623827ff14e">kernel::IPC_NONBLOCK</a> = 1 &lt;&lt; 0
- }</td></tr>
-<tr class="memdesc:acf26df622e6621b8e36d62ce14d07809"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flags for <a class="el" href="classkernel_1_1_i_p_c.html#a00e816427b1df78df3310cba80ef23f3" title="Sends a message to a destination task.">IPC::send()</a>.  <a href="namespacekernel.html#acf26df622e6621b8e36d62ce14d07809">More...</a><br /></td></tr>
-</table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Priority-based IPC — send, recv, events, notifications. </p>
 </div></div><!-- contents -->

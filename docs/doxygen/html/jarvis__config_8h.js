@@ -1,6 +1,10 @@
 var jarvis__config_8h =
 [
     [ "CONFIG_ASSERT", "jarvis__config_8h.html#af7dbe515e22f94aa374530a637f8418c", null ],
+    [ "CONFIG_DEADLINE_ACTION", "jarvis__config_8h.html#a515a1e55a71216c50a7d94659c372998", null ],
+    [ "CONFIG_DEADLINE_MISS_DETECTION", "jarvis__config_8h.html#ad7f0edb3b1228f6361d92c6cfa81fc30", null ],
+    [ "CONFIG_DEADLINE_MONITOR_PID", "jarvis__config_8h.html#adbfd2982bfd8abcdb392578155755823", null ],
+    [ "CONFIG_DEADLINE_MONITOR_TASK", "jarvis__config_8h.html#a9a7951d5ba3d567a2f0e372fd5540a44", null ],
     [ "CONFIG_DMESG_CAPACITY", "jarvis__config_8h.html#a15f72011bdc6888b3a6aef544acc4604", null ],
     [ "CONFIG_HAS_HPET", "jarvis__config_8h.html#a835305cb9a116e1c539f8f2a6b880848", null ],
     [ "CONFIG_HAS_MPU", "jarvis__config_8h.html#a95ce8c171faeb012773cd4f72a0f2935", null ],
@@ -60,12 +64,16 @@ var jarvis__config_8h =
     [ "CONFIG_MEMPOOL_BLOCK_SIZES", "jarvis__config_8h.html#a0b9c9423efd7e8b9bd77eea32bac9c93", null ],
     [ "CONFIG_MEMPOOL_NUM_POOLS", "jarvis__config_8h.html#acbcfbe0c56cbf62799c4a0ea83bdbd0e", null ],
     [ "CONFIG_MIN_STACK_SIZE", "jarvis__config_8h.html#ae22e3ae7b4c39d839d5e02455b5a3aac", null ],
+    [ "CONFIG_MUTEX_PIP", "jarvis__config_8h.html#ad16f6b64a36d83cce633b6c7784a82df", null ],
     [ "CONFIG_OOM_HOOK", "jarvis__config_8h.html#aaa67bf023e8838df96aa8ec37674ee90", null ],
     [ "CONFIG_PML4_USER_COUNT", "jarvis__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f", null ],
     [ "CONFIG_PREEMPTION", "jarvis__config_8h.html#abbd8a5d807d37174a80088bb5a34de10", null ],
     [ "CONFIG_PRIORITY_CEILING", "jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f", null ],
+    [ "CONFIG_QUEUE_PIP", "jarvis__config_8h.html#a08b1decd478ffc1359ac5e6385741d61", null ],
+    [ "CONFIG_SEMAPHORE_PIP", "jarvis__config_8h.html#a7cf9db7fcc2c0bf9b1bb475b2bad3d93", null ],
     [ "CONFIG_SPORADIC_SERVER_BUDGET_GRANULARITY", "jarvis__config_8h.html#a31b2fca43fed672f65115a92304475a2", null ],
     [ "CONFIG_SPORADIC_SERVER_DEADLINE_HOOK", "jarvis__config_8h.html#afd4dfde1bb949f7e03c90dea7fe274f9", null ],
+    [ "CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE", "jarvis__config_8h.html#afa71e737433cca1a4223e904afcf0a9c", null ],
     [ "CONFIG_SPORADIC_SERVER_MAX_TASKS", "jarvis__config_8h.html#a1f0f6f5cc7c492c7681e37388246ba52", null ],
     [ "CONFIG_STACK_OVERFLOW_HOOK", "jarvis__config_8h.html#a5ed865b603ba7ee04437c1cc28ce89fa", null ],
     [ "CONFIG_STACK_SIZE", "jarvis__config_8h.html#aa345b3c812d23b1ef0f9ae26d6005f64", null ],
@@ -77,5 +85,7 @@ var jarvis__config_8h =
     [ "CONFIG_TIME_SLICING", "jarvis__config_8h.html#a17a756a1a1d4b973d32c8a694b3a944d", null ],
     [ "CONFIG_VERSION", "jarvis__config_8h.html#a33fbd7e91d033fa1e09b4ed4de899c02", null ],
     [ "CONFIG_VFS_MAX_PATH", "jarvis__config_8h.html#aab75aa8a7d758ce4e36fa6be7fbce78b", null ],
+    [ "CONFIG_WCET_OVERRUN_DETECTION", "jarvis__config_8h.html#a5347bb9dbf512963efd21650e2d3961c", null ],
+    [ "JARVIS_CONFIG_H", "jarvis__config_8h.html#a6cbad48473f7f79a39d324ee988c0d46", null ],
     [ "panic", "jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727", null ]
 ];

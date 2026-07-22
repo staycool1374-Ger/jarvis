@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -128,13 +128,21 @@ Directory dependency graph for hal:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-files" class="groupheader"><a id="files" name="files"></a>
 Files</h2></td></tr>
 <tr class="memitem:cpuid_5Fimpl_2Ehpp" id="r_cpuid_5Fimpl_2Ehpp"><td class="memItemLeft"><a href="x86__64_2hal_2cpuid__impl_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2cpuid__impl_8hpp.html">cpuid_impl.hpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2cpuid__impl_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 CPUID instruction wrappers — feature detection flags and helpers. <br /></td></tr>
 <tr class="memitem:gdt_2Ecpp" id="r_gdt_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="gdt_8cpp.html">gdt.cpp</a></td></tr>
+<tr class="memdesc:gdt_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Global Descriptor Table — sets up segmentation and Task State Segment (TSS) for privilege levels and IST. <br /></td></tr>
 <tr class="memitem:idt_2Ecpp" id="r_idt_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2idt_8cpp.html">idt.cpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2idt_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interrupt Descriptor Table — populates IDT entries and dispatches interrupts to registered handlers. <br /></td></tr>
 <tr class="memitem:io_5Fimpl_2Ehpp" id="r_io_5Fimpl_2Ehpp"><td class="memItemLeft"><a href="x86__64_2hal_2io__impl_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2io__impl_8hpp.html">io_impl.hpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2io__impl_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 I/O port access, control register access, and CPU instruction wrappers. <br /></td></tr>
 <tr class="memitem:msr_5Fimpl_2Ehpp" id="r_msr_5Fimpl_2Ehpp"><td class="memItemLeft"><a href="x86__64_2hal_2msr__impl_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2msr__impl_8hpp.html">msr_impl.hpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2msr__impl_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 Model-Specific Register (MSR) read/write — RDMSR, WRMSR, and common MSR constants. <br /></td></tr>
 <tr class="memitem:page_5Ftable_5Fimpl_2Ehpp" id="r_page_5Ftable_5Fimpl_2Ehpp"><td class="memItemLeft"><a href="x86__64_2hal_2page__table__impl_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2page__table__impl_8hpp.html">page_table_impl.hpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2page__table__impl_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 page-table management — CR3 activation and TLB invalidation wrappers. <br /></td></tr>
 <tr class="memitem:rand_5Fimpl_2Ehpp" id="r_rand_5Fimpl_2Ehpp"><td class="memItemLeft"><a href="x86__64_2hal_2rand__impl_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2rand__impl_8hpp.html">rand_impl.hpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2rand__impl_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 RDRAND and RDSEED instructions — hardware random number generation. <br /></td></tr>
 <tr class="memitem:timer_2Ecpp" id="r_timer_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="x86__64_2hal_2timer_8cpp.html">timer.cpp</a></td></tr>
+<tr class="memdesc:x86__64_2hal_2timer_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">PIT (Programmable Interval Timer) driver — generates periodic ticks and calibrates the TSC. <br /></td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

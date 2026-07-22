@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('aarch64_2test_
   <div class="headertitle"><div class="title">test_stubs.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Stub implementations for x86_64-specific test registrations on non-x86_64 architectures.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_stubs.cpp:</div>
@@ -129,23 +132,41 @@ Include dependency graph for test_stubs.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a6685cde06dcd80a022800c8644c2bfe9" id="r_a6685cde06dcd80a022800c8644c2bfe9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6685cde06dcd80a022800c8644c2bfe9">register_pci_tests</a> ()</td></tr>
+<tr class="memdesc:a6685cde06dcd80a022800c8644c2bfe9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — PCI tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a61e37195860bf4a23fe7d568eb51c735" id="r_a61e37195860bf4a23fe7d568eb51c735"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a61e37195860bf4a23fe7d568eb51c735">register_virtio_tests</a> ()</td></tr>
+<tr class="memdesc:a61e37195860bf4a23fe7d568eb51c735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — VirtIO tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:ab69bd5c81e5dc927d22eeaaa2c80e226" id="r_ab69bd5c81e5dc927d22eeaaa2c80e226"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab69bd5c81e5dc927d22eeaaa2c80e226">register_fpu_tests</a> ()</td></tr>
+<tr class="memdesc:ab69bd5c81e5dc927d22eeaaa2c80e226"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — FPU tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a782a4d8da57d29e671b70c1a7870f9a8" id="r_a782a4d8da57d29e671b70c1a7870f9a8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a782a4d8da57d29e671b70c1a7870f9a8">register_fpu_sse_tests</a> ()</td></tr>
+<tr class="memdesc:a782a4d8da57d29e671b70c1a7870f9a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — FPU/SSE tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:aa59c860ec78de1ec56ff1fcac00994dd" id="r_aa59c860ec78de1ec56ff1fcac00994dd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa59c860ec78de1ec56ff1fcac00994dd">register_fpu_clone_tests</a> ()</td></tr>
+<tr class="memdesc:aa59c860ec78de1ec56ff1fcac00994dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — FPU clone tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a07bf5de326f03950b4012c1b42f5c171" id="r_a07bf5de326f03950b4012c1b42f5c171"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a07bf5de326f03950b4012c1b42f5c171">register_fpu_multi_tests</a> ()</td></tr>
+<tr class="memdesc:a07bf5de326f03950b4012c1b42f5c171"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — FPU multi-tasking tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a3ab66b0eea8703db9755ada9d14e2ff8" id="r_a3ab66b0eea8703db9755ada9d14e2ff8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3ab66b0eea8703db9755ada9d14e2ff8">register_fpu_xmm_all_tests</a> ()</td></tr>
+<tr class="memdesc:a3ab66b0eea8703db9755ada9d14e2ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — FPU XMM register tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a5ceb5bd7cd243830f61b4e6d18eaafc5" id="r_a5ceb5bd7cd243830f61b4e6d18eaafc5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5ceb5bd7cd243830f61b4e6d18eaafc5">register_task_tests</a> ()</td></tr>
+<tr class="memdesc:a5ceb5bd7cd243830f61b4e6d18eaafc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — Task tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:ae1d5232fbf708fd2680b373e55efe60e" id="r_ae1d5232fbf708fd2680b373e55efe60e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae1d5232fbf708fd2680b373e55efe60e">register_process_tests</a> ()</td></tr>
+<tr class="memdesc:ae1d5232fbf708fd2680b373e55efe60e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — Process tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:affc6e1f3c00d359c180ade7c951bb83f" id="r_affc6e1f3c00d359c180ade7c951bb83f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#affc6e1f3c00d359c180ade7c951bb83f">register_gdt_tests</a> ()</td></tr>
+<tr class="memdesc:affc6e1f3c00d359c180ade7c951bb83f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — GDT tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a5c1a54812368e4ac2f814c6a1ef88e24" id="r_a5c1a54812368e4ac2f814c6a1ef88e24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5c1a54812368e4ac2f814c6a1ef88e24">register_idt_tests</a> ()</td></tr>
+<tr class="memdesc:a5c1a54812368e4ac2f814c6a1ef88e24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — IDT tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:adaad5cbf59a873be4f9b89273f3c83c0" id="r_adaad5cbf59a873be4f9b89273f3c83c0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adaad5cbf59a873be4f9b89273f3c83c0">register_pic_tests</a> ()</td></tr>
+<tr class="memdesc:adaad5cbf59a873be4f9b89273f3c83c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — PIC tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:aae15a79ba7cb568b6210f193130060ba" id="r_aae15a79ba7cb568b6210f193130060ba"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aae15a79ba7cb568b6210f193130060ba">register_rtc_tests</a> ()</td></tr>
+<tr class="memdesc:aae15a79ba7cb568b6210f193130060ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — RTC tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a13714cd376989323d066b68000c5ca93" id="r_a13714cd376989323d066b68000c5ca93"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a13714cd376989323d066b68000c5ca93">register_shell_interaction_tests</a> ()</td></tr>
+<tr class="memdesc:a13714cd376989323d066b68000c5ca93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — Shell interaction tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a0dd08c3292aaf585484267f753d2f909" id="r_a0dd08c3292aaf585484267f753d2f909"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0dd08c3292aaf585484267f753d2f909">register_buildsystem_tests</a> ()</td></tr>
+<tr class="memdesc:a0dd08c3292aaf585484267f753d2f909"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — Build-system tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 <tr class="memitem:a637112bdb55e34aca69dfce994c616cd" id="r_a637112bdb55e34aca69dfce994c616cd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a637112bdb55e34aca69dfce994c616cd">register_block_device_tests</a> ()</td></tr>
+<tr class="memdesc:a637112bdb55e34aca69dfce994c616cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stub — Block device tests are not supported on non-x86_64 architectures.  <br /></td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Stub implementations for x86_64-specific test registrations on non-x86_64 architectures. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a637112bdb55e34aca69dfce994c616cd" name="a637112bdb55e34aca69dfce994c616cd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a637112bdb55e34aca69dfce994c616cd">&#9670;&#160;</a></span>register_block_device_tests()</h2>
 
@@ -160,6 +181,8 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — Block device tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -183,6 +206,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — Build-system tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -206,6 +231,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — FPU clone tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -229,6 +256,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — FPU multi-tasking tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -252,6 +281,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — FPU/SSE tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -275,6 +306,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — FPU tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -298,6 +331,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — FPU XMM register tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -321,6 +356,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — GDT tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -344,6 +381,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — IDT tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -367,6 +406,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — PCI tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -390,6 +431,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — PIC tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -413,6 +456,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — Process tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -436,6 +481,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — RTC tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -459,6 +506,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — Shell interaction tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -482,6 +531,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — Task tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
@@ -505,6 +556,8 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Stub — VirtIO tests are not supported on non-x86_64 architectures. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

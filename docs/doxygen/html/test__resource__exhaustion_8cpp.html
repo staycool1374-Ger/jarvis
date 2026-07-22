@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__resource
   <div class="headertitle"><div class="title">test_resource_exhaustion.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Resource exhaustion stress tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scope__guard_8hpp_source.html">scope_guard.hpp</a>&gt;</code><br />
@@ -134,6 +137,10 @@ Include dependency graph for test_resource_exhaustion.cpp:</div>
 <!-- MAP 0 -->
 </div>
 </div><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:a49a5891685f4d1649326f093ca8a1335" id="r_a49a5891685f4d1649326f093ca8a1335"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a49a5891685f4d1649326f093ca8a1335">CHECK_NONFATAL</a>(cond)</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a1d88966dd046249872a60ceafcfadcf0" id="r_a1d88966dd046249872a60ceafcfadcf0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a1d88966dd046249872a60ceafcfadcf0">TEST_CLASS</a> (FdTableExhaustion)</td></tr>
@@ -142,6 +149,30 @@ Functions</h2></td></tr>
 <tr class="memitem:a4d445d5f108aa3154b339ec71a7ae67e" id="r_a4d445d5f108aa3154b339ec71a7ae67e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4d445d5f108aa3154b339ec71a7ae67e">TEST_CLASS</a> (PmmExhaustion)</td></tr>
 <tr class="memitem:aeb1330b7631274eb38eda1e6884311eb" id="r_aeb1330b7631274eb38eda1e6884311eb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aeb1330b7631274eb38eda1e6884311eb">register_resource_exhaustion_tests</a> ()</td></tr>
 </table>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Resource exhaustion stress tests. </p>
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a id="a49a5891685f4d1649326f093ca8a1335" name="a49a5891685f4d1649326f093ca8a1335"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49a5891685f4d1649326f093ca8a1335">&#9670;&#160;</a></span>CHECK_NONFATAL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CHECK_NONFATAL</td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>cond</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line"><span class="keywordflow">do</span> {                                                                       \</div>
+<div class="line">    if (!(cond))                                                           \</div>
+<div class="line">        fail(__FILE__, __LINE__, #cond);                                   \</div>
+<div class="line">} <span class="keywordflow">while</span> (0)</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="aeb1330b7631274eb38eda1e6884311eb" name="aeb1330b7631274eb38eda1e6884311eb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aeb1330b7631274eb38eda1e6884311eb">&#9670;&#160;</a></span>register_resource_exhaustion_tests()</h2>
@@ -180,12 +211,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__resource__exhaustion_8cpp_a1d88966dd046249872a60ceafcfadcf0_cgraph.png" border="0" usemap="#atest__resource__exhaustion_8cpp_a1d88966dd046249872a60ceafcfadcf0_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -203,12 +228,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__resource__exhaustion_8cpp_af8bcd58f7bec484dec4ee82b2096fbb1_cgraph.png" border="0" usemap="#atest__resource__exhaustion_8cpp_af8bcd58f7bec484dec4ee82b2096fbb1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -230,7 +249,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__resource__exhaustion_8cpp_a4d445d5f108aa3154b339ec71a7ae67e_cgraph.png" border="0" usemap="#atest__resource__exhaustion_8cpp_a4d445d5f108aa3154b339ec71a7ae67e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -253,7 +272,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__resource__exhaustion_8cpp_a9caf365b3e8016aaa21dfbd0385e8fbf_cgraph.png" border="0" usemap="#atest__resource__exhaustion_8cpp_a9caf365b3e8016aaa21dfbd0385e8fbf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 3 -->
 </div>
 
 </div>

@@ -1,29 +1,7 @@
 var searchData=
 [
-  ['vaddr_0',['vaddr',['../structkernel_1_1elf_1_1_e_l_f64_program_header.html#abd51ed754a6243b59f8e68f4602ce421',1,'kernel::elf::ELF64ProgramHeader::vaddr'],['../elf_8hpp.html#a674826ac4551bd6353b61bb78db62172',1,'vaddr:&#160;elf.hpp']]],
-  ['valid_1',['valid',['../structnet_1_1_arp_cache_entry.html#af8e6797a4d221cc1901c4c8b4f0f1b53',1,'net::ArpCacheEntry::valid'],['../structkernel_1_1fat32_1_1_mbr_partition.html#adfb0a4590657a328742f33e10cdb2475',1,'kernel::fat32::MbrPartition::valid'],['../structkernel_1_1fat32_1_1_fat32_bpb.html#a3160a914a82f7b80e9af02ac9a18fd3e',1,'kernel::fat32::Fat32Bpb::valid'],['../structkernel_1_1fat32_1_1_dir_entry.html#a9ff2e89c2c080339dc32d37d147af50c',1,'kernel::fat32::DirEntry::valid']]],
-  ['value_2',['value',['../structkernel_1_1_error_or.html#a35360a5c262bf6fc941512cdcd717265',1,'kernel::ErrorOr::value'],['../structintegral__constant.html#ac7331c704031e5e636cf419dfe4c58b5',1,'integral_constant::value'],['../structkernel_1_1_error_or.html#a35360a5c262bf6fc941512cdcd717265',1,'kernel::ErrorOr&lt; void &gt;::value']]],
-  ['vendor_5fid_3',['vendor_id',['../structarch_1_1_pci_device_info.html#a3da461e15037c1346f504266becc7997',1,'arch::PciDeviceInfo']]],
-  ['ver_5fihl_4',['ver_ihl',['../structnet_1_1_ipv4_header.html#ac981fddbd2e93603bf63dc9e27412ab6',1,'net::Ipv4Header::ver_ihl'],['../ipv4_8hpp.html#ac7f8fbdb4cc699d813b4b32c81c1d401',1,'ver_ihl:&#160;ipv4.hpp']]],
-  ['version_5',['version',['../structkernel_1_1elf_1_1_e_l_f64_header.html#a54a119e8984828a830c9becdad743729',1,'kernel::elf::ELF64Header::version'],['../structkernel_1_1_utsname.html#ac091210e0ca0b699107c4498dac7d292',1,'kernel::Utsname::version'],['../struct_utsname.html#a2238669fd24d0bed2a46aa978d2db00c',1,'Utsname::version'],['../structfdt__header.html#ad1ab024c18f8f6b87c7c5d6541a5b4fb',1,'fdt_header::version'],['../structutsname.html#acbd210b282a10423243acb647d3aeaec',1,'utsname::version'],['../elf_8hpp.html#acd99bb05ca015e7d74448acb1deba7ca',1,'version:&#160;elf.hpp']]],
-  ['vfs_5finvalid_6',['VFS_INVALID',['../namespacekernel_1_1vfs.html#afe7aade40b0052d48ed8a26d16d7026d',1,'kernel::vfs']]],
-  ['virt_5faddr_7',['virt_addr',['../structarch_1_1_virtio_mmio.html#a165161cbcd66b1681ab34445cf81fb38',1,'arch::VirtioMmio::virt_addr'],['../structkernel_1_1dma_1_1_sg_entry.html#aff99ecdf840fe4138ee10df7e5252f8a',1,'kernel::dma::SgEntry::virt_addr'],['../structkernel_1_1dma_1_1_dma_buffer.html#a1dd99310886bb460f6aeb16a4f411fa1',1,'kernel::dma::DmaBuffer::virt_addr']]],
-  ['virtio_5fdevice_5fblock_8',['VIRTIO_DEVICE_BLOCK',['../namespacearch.html#a4f72be4b7546f01d21d913376f67f5a2',1,'arch']]],
-  ['virtio_5fdevice_5fblock_5flegacy_9',['VIRTIO_DEVICE_BLOCK_LEGACY',['../namespacearch.html#a84dbcfe6fd5518a2c435f3bfe9deecf3',1,'arch']]],
-  ['virtio_5fdevice_5fnet_10',['VIRTIO_DEVICE_NET',['../namespacearch.html#a1bf84a3664f3570772a9a7d411748c1b',1,'arch']]],
-  ['virtio_5fdevice_5fnet_5flegacy_11',['VIRTIO_DEVICE_NET_LEGACY',['../namespacearch.html#ae1bb973c5bcbd1e1b200e5e059d019b8',1,'arch']]],
-  ['virtio_5ff_5fring_5fevent_5fidx_12',['VIRTIO_F_RING_EVENT_IDX',['../namespacearch.html#acae95631841775e8085754ff9823bc8e',1,'arch']]],
-  ['virtio_5ff_5fring_5findirect_5fdesc_13',['VIRTIO_F_RING_INDIRECT_DESC',['../namespacearch.html#ab45ace8cb03440fcb6be99a62c32d017',1,'arch']]],
-  ['virtio_5ff_5fversion_5f1_14',['VIRTIO_F_VERSION_1',['../namespacearch.html#aa0bc1e5c81f3f40eca61af8f2f81c6e7',1,'arch']]],
-  ['virtio_5fnet_5fhdr_5fsize_15',['VIRTIO_NET_HDR_SIZE',['../namespacekernel_1_1net.html#ad345498ecb7601f76e0af8f2b57acee1',1,'kernel::net']]],
-  ['virtio_5fnet_5fqueue_5frx_16',['VIRTIO_NET_QUEUE_RX',['../namespacekernel_1_1net.html#ad1a0583fe930593c5698468802a84868',1,'kernel::net']]],
-  ['virtio_5fnet_5fqueue_5ftx_17',['VIRTIO_NET_QUEUE_TX',['../namespacekernel_1_1net.html#a791e8db7fbc529ecbdabdfcc31c4f859',1,'kernel::net']]],
-  ['virtio_5fnotify_5fnext_18',['VIRTIO_NOTIFY_NEXT',['../namespacearch.html#a62b72defc904b61b774d75efaa3684e2',1,'arch']]],
-  ['virtio_5fnotify_5foff_5fmul_19',['VIRTIO_NOTIFY_OFF_MUL',['../namespacearch.html#a59fd0f6b6e66554c2374b90cf2bfb6fa',1,'arch']]],
-  ['virtio_5fpci_5fvendor_20',['VIRTIO_PCI_VENDOR',['../namespacearch.html#a5e66929017560c032582b51dd0580641',1,'arch']]],
-  ['virtio_5fqueue_5fsize_5fmax_21',['VIRTIO_QUEUE_SIZE_MAX',['../namespacearch.html#a6c94f1a9353d75cd3a802e4d1d566be7',1,'arch']]],
-  ['vnode_22',['vnode',['../structkernel_1_1vfs_1_1_dev_entry.html#ad92fb247a53093452dd757201dc0b229',1,'kernel::vfs::DevEntry::vnode'],['../structkernel_1_1vfs_1_1_tmpfs_entry.html#a9771a08671906bc09fe79a413eed5a3f',1,'kernel::vfs::TmpfsEntry::vnode'],['../structkernel_1_1vfs_1_1_file_description.html#a623e148f5c96cdfeb6d5c2e2f0b10b1b',1,'kernel::vfs::FileDescription::vnode']]],
-  ['vnodes_23',['vnodes',['../structkernel_1_1test_1_1_resource_counters.html#a4e8f4cb19eed10d9d3b8b1172d493c1d',1,'kernel::test::ResourceCounters']]],
-  ['vs_5fmajor_5fmask_24',['VS_MAJOR_MASK',['../namespacekernel_1_1ahci.html#ab39c584325d661afd95211f9f6266cdd',1,'kernel::ahci']]],
-  ['vs_5fminor_5fmask_25',['VS_MINOR_MASK',['../namespacekernel_1_1ahci.html#a19527ce2746fc2eab56de5497c7c1a6d',1,'kernel::ahci']]]
+  ['value_0',['value',['../structkernel_1_1_error_or.html#a35360a5c262bf6fc941512cdcd717265',1,'kernel::ErrorOr::value'],['../structintegral__constant.html#ac7331c704031e5e636cf419dfe4c58b5',1,'integral_constant::value'],['../structkernel_1_1_error_or.html#a35360a5c262bf6fc941512cdcd717265',1,'kernel::ErrorOr&lt; void &gt;::value']]],
+  ['version_1',['version',['../structkernel_1_1_utsname.html#ac091210e0ca0b699107c4498dac7d292',1,'kernel::Utsname::version'],['../struct_utsname.html#a2238669fd24d0bed2a46aa978d2db00c',1,'Utsname::version'],['../structfdt__header.html#ad1ab024c18f8f6b87c7c5d6541a5b4fb',1,'fdt_header::version'],['../structutsname.html#acbd210b282a10423243acb647d3aeaec',1,'utsname::version']]],
+  ['vnode_2',['vnode',['../structkernel_1_1vfs_1_1_dev_entry.html#ad92fb247a53093452dd757201dc0b229',1,'kernel::vfs::DevEntry::vnode'],['../structkernel_1_1vfs_1_1_tmpfs_entry.html#a9771a08671906bc09fe79a413eed5a3f',1,'kernel::vfs::TmpfsEntry::vnode']]],
+  ['vnodes_3',['vnodes',['../structkernel_1_1test_1_1_resource_counters.html#a4e8f4cb19eed10d9d3b8b1172d493c1d',1,'kernel::test::ResourceCounters']]]
 ];

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('ready__queue__
   <div class="headertitle"><div class="title">ready_queue_manager.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>O(1) priority-ordered ready queue with bitmap-based scheduling.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="jarvis__config_8h_source.html">kernel/jarvis_config.h</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="priority__map_8hpp_source.html">kernel/task/priority_map.hpp</a>&gt;</code><br />
@@ -141,14 +144,17 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:kernel_3A_3AReadyQueuePOD" id="r_kernel_3A_3AReadyQueuePOD"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_ready_queue_p_o_d.html">kernel::ReadyQueuePOD</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  <a href="structkernel_1_1_ready_queue_p_o_d.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html" title="O(1) priority-ordered ready queue. Uses a bitmap (PriorityMap) to track non-empty priority levels and...">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  <a href="structkernel_1_1_ready_queue_p_o_d.html#details">More...</a><br /></td></tr>
 <tr class="memitem:kernel_3A_3AReadyQueueManager" id="r_kernel_3A_3AReadyQueueManager"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_ready_queue_manager.html">kernel::ReadyQueueManager</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">O(1) priority-ordered ready queue. Uses a bitmap (<a class="el" href="classkernel_1_1_priority_map.html" title="Two-level bitmap supporting O(1) highest-priority find. Supports up to 128 priority levels (0–127) as...">PriorityMap</a>) to track non-empty priority levels and a per-priority <a class="el" href="classkernel_1_1_task_queue.html" title="Intrusive doubly-linked list queue for TaskControlBlock. Operations are O(1), no dynamic allocation....">TaskQueue</a> array. Enqueue/dequeue by priority are O(1).  <a href="classkernel_1_1_ready_queue_manager.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>O(1) priority-ordered ready queue with bitmap-based scheduling. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

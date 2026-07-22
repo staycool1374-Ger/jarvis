@@ -1,8 +1,7 @@
 var searchData=
 [
-  ['get_5fticks_0',['GET_TICKS',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa83e990574e4601b663d42b05121bf312',1,'kernel']]],
-  ['getpid_1',['GETPID',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa27beb5c4ac5e1d44c9a9c48260a86043',1,'kernel']]],
-  ['getrandom_2',['GETRANDOM',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa28cffe05a3dce6d9d9afa6675f1837a7',1,'kernel']]],
-  ['getrlimit_3',['GETRLIMIT',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfaaf7ecf75b39da3b49d57d40ce7b0171a',1,'kernel']]],
-  ['gettod_4',['GETTOD',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfacff1e0f0bef6d93db592185f3f3d2413',1,'kernel']]]
+  ['ignore_0',['IGNORE',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749aa2e843feab94ef623fea888f07c28696',1,'kernel']]],
+  ['info_1',['INFO',['../namespacekernel.html#a608b4a9ee1c4d240362c930be12ae9f2a551b723eafd6a31d444fcb2f5920fbd3',1,'kernel']]],
+  ['invalid_5farg_2',['INVALID_ARG',['../namespacekernel.html#a1cb7b5e6d84a69536a1605c81098f106a894ac82c59da1ab27f0f2ec607e67de4',1,'kernel']]],
+  ['io_5ferror_3',['IO_ERROR',['../namespacekernel.html#a1cb7b5e6d84a69536a1605c81098f106a198489bd72edc2407c15917c5323cd93',1,'kernel']]]
 ];

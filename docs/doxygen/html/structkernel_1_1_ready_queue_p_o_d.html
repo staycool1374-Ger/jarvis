@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('structkernel_1
 </div><!--header-->
 <div class="contents">
 
-<p>POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  
+<p>POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html" title="O(1) priority-ordered ready queue. Uses a bitmap (PriorityMap) to track non-empty priority levels and...">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  
  <a href="#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="ready__queue__manager_8hpp_source.html">ready_queue_manager.hpp</a>&gt;</code></p>
@@ -132,14 +132,19 @@ Collaboration diagram for kernel::ReadyQueuePOD:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a75d8c520894d7d08359a7f8960953ff9" id="r_a75d8c520894d7d08359a7f8960953ff9"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a75d8c520894d7d08359a7f8960953ff9">bitmap_hi</a></td></tr>
-<tr class="memitem:a5d33176a7f455e6dced403448ecba251" id="r_a5d33176a7f455e6dced403448ecba251"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a5d33176a7f455e6dced403448ecba251">bitmap_lo</a></td></tr>
-<tr class="memitem:a73ad3bfc3216e8d09316be6306e9c8df" id="r_a73ad3bfc3216e8d09316be6306e9c8df"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a73ad3bfc3216e8d09316be6306e9c8df">queue_heads</a> [<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
-<tr class="memitem:abbd93ac844bfb457cc9fc2258c36a3d3" id="r_abbd93ac844bfb457cc9fc2258c36a3d3"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#abbd93ac844bfb457cc9fc2258c36a3d3">queue_tails</a> [<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
-<tr class="memitem:a21bddaf59707c9ef88f8db2cdec41d3e" id="r_a21bddaf59707c9ef88f8db2cdec41d3e"><td class="memItemLeft">uint64_t&#160;</td><td class="memItemRight"><a class="el" href="#a21bddaf59707c9ef88f8db2cdec41d3e">queue_counts</a> [<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
+<tr class="memitem:a75d8c520894d7d08359a7f8960953ff9" id="r_a75d8c520894d7d08359a7f8960953ff9"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a75d8c520894d7d08359a7f8960953ff9">bitmap_hi</a></td></tr>
+<tr class="memdesc:a75d8c520894d7d08359a7f8960953ff9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Snapshot of priority-map upper 64 bits.  <br /></td></tr>
+<tr class="memitem:a5d33176a7f455e6dced403448ecba251" id="r_a5d33176a7f455e6dced403448ecba251"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a5d33176a7f455e6dced403448ecba251">bitmap_lo</a></td></tr>
+<tr class="memdesc:a5d33176a7f455e6dced403448ecba251"><td class="mdescLeft">&#160;</td><td class="mdescRight">Snapshot of priority-map lower 64 bits.  <br /></td></tr>
+<tr class="memitem:a59a58c05f78035ebab676ffd6b7d31ba" id="r_a59a58c05f78035ebab676ffd6b7d31ba"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a59a58c05f78035ebab676ffd6b7d31ba">queue_heads</a> [<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
+<tr class="memdesc:a59a58c05f78035ebab676ffd6b7d31ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-priority queue head pointers.  <br /></td></tr>
+<tr class="memitem:af82d9d63c8f0f2f4854f9d9c365f9131" id="r_af82d9d63c8f0f2f4854f9d9c365f9131"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af82d9d63c8f0f2f4854f9d9c365f9131">queue_tails</a> [<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
+<tr class="memdesc:af82d9d63c8f0f2f4854f9d9c365f9131"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-priority queue tail pointers.  <br /></td></tr>
+<tr class="memitem:a318bc49fef785fc0a3189cef55985f40" id="r_a318bc49fef785fc0a3189cef55985f40"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a318bc49fef785fc0a3189cef55985f40">queue_counts</a> [<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td></tr>
+<tr class="memdesc:a318bc49fef785fc0a3189cef55985f40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-priority queue entry counts.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction. </p>
+<div class="textblock"><p>POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html" title="O(1) priority-ordered ready queue. Uses a bitmap (PriorityMap) to track non-empty priority levels and...">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction. </p>
 </div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Field Documentation</h2>
 <a id="a75d8c520894d7d08359a7f8960953ff9" name="a75d8c520894d7d08359a7f8960953ff9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a75d8c520894d7d08359a7f8960953ff9">&#9670;&#160;</a></span>bitmap_hi</h2>
@@ -148,10 +153,12 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::ReadyQueuePOD::bitmap_hi</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::ReadyQueuePOD::bitmap_hi</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Snapshot of priority-map upper 64 bits. </p>
 
 </div>
 </div>
@@ -162,52 +169,60 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::ReadyQueuePOD::bitmap_lo</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::ReadyQueuePOD::bitmap_lo</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Snapshot of priority-map lower 64 bits. </p>
+
 </div>
 </div>
-<a id="a21bddaf59707c9ef88f8db2cdec41d3e" name="a21bddaf59707c9ef88f8db2cdec41d3e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21bddaf59707c9ef88f8db2cdec41d3e">&#9670;&#160;</a></span>queue_counts</h2>
+<a id="a318bc49fef785fc0a3189cef55985f40" name="a318bc49fef785fc0a3189cef55985f40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a318bc49fef785fc0a3189cef55985f40">&#9670;&#160;</a></span>queue_counts</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::ReadyQueuePOD::queue_counts[<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::ReadyQueuePOD::queue_counts[<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+ 1]</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Per-priority queue entry counts. </p>
+
 </div>
 </div>
-<a id="a73ad3bfc3216e8d09316be6306e9c8df" name="a73ad3bfc3216e8d09316be6306e9c8df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73ad3bfc3216e8d09316be6306e9c8df">&#9670;&#160;</a></span>queue_heads</h2>
+<a id="a59a58c05f78035ebab676ffd6b7d31ba" name="a59a58c05f78035ebab676ffd6b7d31ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59a58c05f78035ebab676ffd6b7d31ba">&#9670;&#160;</a></span>queue_heads</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::ReadyQueuePOD::queue_heads[<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::ReadyQueuePOD::queue_heads[<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+ 1]</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Per-priority queue head pointers. </p>
+
 </div>
 </div>
-<a id="abbd93ac844bfb457cc9fc2258c36a3d3" name="abbd93ac844bfb457cc9fc2258c36a3d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abbd93ac844bfb457cc9fc2258c36a3d3">&#9670;&#160;</a></span>queue_tails</h2>
+<a id="af82d9d63c8f0f2f4854f9d9c365f9131" name="af82d9d63c8f0f2f4854f9d9c365f9131"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af82d9d63c8f0f2f4854f9d9c365f9131">&#9670;&#160;</a></span>queue_tails</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint64_t kernel::ReadyQueuePOD::queue_tails[<a class="el" href="aarch64_2serial_8cpp.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+1]</td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel::ReadyQueuePOD::queue_tails[<a class="el" href="jarvis__config_8h.html#a560bec767ff9229f8b02270422f9109f">CONFIG_PRIORITY_CEILING</a>+ 1]</td>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Per-priority queue tail pointers. </p>
 
 </div>
 </div>

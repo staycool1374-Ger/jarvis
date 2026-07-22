@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,16 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__ipc__loc
   <div class="headertitle"><div class="title">test_ipc_lock_free.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>IPC lock-free queue tests.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_ipc_lock_free.cpp:</div>
 <div class="dyncontent">
@@ -143,7 +147,9 @@ Functions</h2></td></tr>
 <tr class="memitem:af3b7d7892dcf7f3da13f93725a90622f" id="r_af3b7d7892dcf7f3da13f93725a90622f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af3b7d7892dcf7f3da13f93725a90622f">JARVIS_TEST</a> (ipc_lock_free_throughput, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a06729e409915245214ed22f278e5101e" id="r_a06729e409915245214ed22f278e5101e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a06729e409915245214ed22f278e5101e">register_ipc_lock_free_tests</a> ()</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>IPC lock-free queue tests. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="af3b7d7892dcf7f3da13f93725a90622f" name="af3b7d7892dcf7f3da13f93725a90622f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af3b7d7892dcf7f3da13f93725a90622f">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/3]</span></h2>
 
@@ -189,12 +195,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc__lock__free_8cpp_a714f4433cd2fcbfb0b888d54118f8f28_cgraph.png" border="0" usemap="#atest__ipc__lock__free_8cpp_a714f4433cd2fcbfb0b888d54118f8f28_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
-</div>
 
 </div>
 </div>
@@ -216,12 +216,6 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><img src="test__ipc__lock__free_8cpp_a8ad4340e168bfc72da1a00a30a417aaf_cgraph.png" border="0" usemap="#atest__ipc__lock__free_8cpp_a8ad4340e168bfc72da1a00a30a417aaf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
-</div>
 
 </div>
 </div>
@@ -243,7 +237,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__ipc__lock__free_8cpp_a06729e409915245214ed22f278e5101e_cgraph.png" border="0" usemap="#atest__ipc__lock__free_8cpp_a06729e409915245214ed22f278e5101e_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 2 -->
 </div>
 
 </div>

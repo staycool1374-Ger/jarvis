@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__isolate_
   <div class="headertitle"><div class="title">test_isolate.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Test isolation snapshot/restore helpers.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="resource__tracker_8hpp_source.html">kernel/test/resource_tracker.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
@@ -149,8 +152,12 @@ Functions</h2></td></tr>
 <tr class="memdesc:abbd641156133e294c60aa475e73dd520"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate old daemon tasks and reload them from initrd. Call AFTER snapshot_restore + snapshot_destroy to replace corrupted page tables with fresh ones from initrd.  <br /></td></tr>
 <tr class="memitem:ad8af3e26f5e10cffe7d3eecf79016c1d" id="r_ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ad8af3e26f5e10cffe7d3eecf79016c1d">kernel::test::run_all_isolated_tests</a> ()</td></tr>
 <tr class="memdesc:ad8af3e26f5e10cffe7d3eecf79016c1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all tests from the generated registry, calling setup/test/teardown in sequence with snapshot isolation between each test.  <br /></td></tr>
+<tr class="memitem:ac3dcbb860f4f6469142dd4dd33b78398" id="r_ac3dcbb860f4f6469142dd4dd33b78398"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ac3dcbb860f4f6469142dd4dd33b78398">kernel::test::mark_vfs_touched</a> ()</td></tr>
+<tr class="memdesc:ac3dcbb860f4f6469142dd4dd33b78398"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called by VFS syscall handlers to mark that VFS state was touched.  <br /></td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Test isolation snapshot/restore helpers. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

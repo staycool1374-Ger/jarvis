@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['kernel_5fversion_5fstring_0',['KERNEL_VERSION_STRING',['../version_8hpp.html#abba67610a81ec56f7d1f834e9bfdbec3',1,'version.hpp']]]
+  ['null_0',['NULL',['../stdlib_8h.html#a070d2ce7b6bb7e5c05602aa8c308d0c4',1,'stdlib.h']]]
 ];

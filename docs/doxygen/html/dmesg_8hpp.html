@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -118,136 +118,20 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('dmesg_8hpp.htm
   <div class="headertitle"><div class="title">dmesg.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="error_8hpp_source.html">lib/error.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="sync__errors_8hpp_source.html">kernel/sync/sync_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="vfs__errors_8hpp_source.html">kernel/vfs/vfs_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="mempool__errors_8hpp_source.html">kernel/memory/mempool_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="scheduler__errors_8hpp_source.html">kernel/task/scheduler_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="ipc__errors_8hpp_source.html">kernel/ipc/ipc_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="syscall__errors_8hpp_source.html">kernel/syscall/syscall_errors.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="jarvis__config_8h_source.html">kernel/jarvis_config.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="atomic_8hpp_source.html">lib/atomic.hpp</a>&gt;</code><br />
-</div><div class="textblock"><div class="dynheader">
-Include dependency graph for dmesg.hpp:</div>
-<div class="dyncontent">
-<div class="center"><img src="dmesg_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2log_2dmesg_8hpp" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
-</div>
-</div><div class="textblock"><div class="dynheader">
+
+<p>Lock-free SPSC structured kernel log (dmesg) — LogEntry, DmesgBuffer, macros, error-string helpers.  
+<a href="#details">More...</a></p>
+<div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="dmesg_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2log_2dmesg_8hppdep" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 0 -->
 </div>
 </div>
 <p><a href="dmesg_8hpp_source.html">Go to the source code of this file.</a></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:kernel_3A_3Alog_3A_3ALogEntry" id="r_kernel_3A_3Alog_3A_3ALogEntry"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1log_1_1_log_entry.html">kernel::log::LogEntry</a></td></tr>
-<tr class="memitem:kernel_3A_3Alog_3A_3ADmesgBuffer_3C_20Capacity_20_3E" id="r_kernel_3A_3Alog_3A_3ADmesgBuffer_3C_20Capacity_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1log_1_1_dmesg_buffer.html">kernel::log::DmesgBuffer&lt; Capacity &gt;</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
-Namespaces</h2></td></tr>
-<tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
-<tr class="memitem:kernel_3A_3Alog" id="r_kernel_3A_3Alog"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html">kernel::log</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:aec083c1d4c147751520c17f8d86e15e4" id="r_aec083c1d4c147751520c17f8d86e15e4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aec083c1d4c147751520c17f8d86e15e4">dmesg_push</a>(subsys,  err,  msg,  ctx)</td></tr>
-<tr class="memitem:a3eecc26744b43034cc4cabc3306e3e36" id="r_a3eecc26744b43034cc4cabc3306e3e36"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a3eecc26744b43034cc4cabc3306e3e36">dmesg_push_base</a>(err,  msg,  ctx)</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:a0a15565ea32d9d5ddb218c71e3f3c44a" id="r_a0a15565ea32d9d5ddb218c71e3f3c44a"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44a">kernel::log::ErrorSubsystem</a> : uint8_t { <br />
-&#160;&#160;<a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef">kernel::log::BASE</a> = 0
-, <a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa274ccef15a21e829d03293a6fd1974f3">kernel::log::SYNC</a> = 1
-, <a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa296c58c4afa6e6c1d159f7d0d6cc864c">kernel::log::VFS</a> = 2
-, <a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa9bb9239ff286274c8363021f3d82b782">kernel::log::MEMPOOL</a> = 3
-, <br />
-&#160;&#160;<a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa4e6ea598d35449adb3c246bf97f5a71c">kernel::log::SCHED</a> = 4
-, <a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aac8660c6d72e7323867ec800d6bb953df">kernel::log::IPC</a> = 5
-, <a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aa45f1e61f22cb04eb7a6a39016b56db9b">kernel::log::SYSCALL</a> = 6
-<br />
- }</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ac43913f72a3a5fe3c6a6cc0ccc754165" id="r_ac43913f72a3a5fe3c6a6cc0ccc754165"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html#ac43913f72a3a5fe3c6a6cc0ccc754165">kernel::log::base_error_string</a> (<a class="el" href="namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcd">kernel::Error</a> e)</td></tr>
-<tr class="memitem:ad82063e29ea0c8f5de69a0748c72621f" id="r_ad82063e29ea0c8f5de69a0748c72621f"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html#ad82063e29ea0c8f5de69a0748c72621f">kernel::log::subsystem_name</a> (<a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a> s)</td></tr>
-<tr class="memitem:a3d54be80d65b536f19f6aabdb6878bd5" id="r_a3d54be80d65b536f19f6aabdb6878bd5"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html#a3d54be80d65b536f19f6aabdb6878bd5">kernel::log::error_string</a> (<a class="el" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44a">ErrorSubsystem</a> subsys, uint64_t code)</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:a7873f3246fdc21af9b32fe43eb3e6435" id="r_a7873f3246fdc21af9b32fe43eb3e6435"><td class="memItemLeft">constexpr <a class="el" href="types_8h.html#acf18a0d6c4b39d531e021702e9a77984">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1log.html#a7873f3246fdc21af9b32fe43eb3e6435">kernel::log::DMESG_CAPACITY</a> = <a class="el" href="aarch64_2serial_8cpp.html#a15f72011bdc6888b3a6aef544acc4604">CONFIG_DMESG_CAPACITY</a></td></tr>
-</table>
-<a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="aec083c1d4c147751520c17f8d86e15e4" name="aec083c1d4c147751520c17f8d86e15e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec083c1d4c147751520c17f8d86e15e4">&#9670;&#160;</a></span>dmesg_push</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define dmesg_push</td>
-          <td>(</td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>subsys</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>err</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>msg</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>ctx</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line"><a class="code hl_variable" href="namespacekernel_1_1log.html#a5ddfffb1758c3078ae879afa99b135c6">kernel::log::g_dmesg</a>.push(kernel::log::ErrorSubsystem::subsys, \</div>
-<div class="line">                          <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(err), msg, ctx)</div>
-<div class="ttc" id="anamespacekernel_1_1log_html_a5ddfffb1758c3078ae879afa99b135c6"><div class="ttname"><a href="namespacekernel_1_1log.html#a5ddfffb1758c3078ae879afa99b135c6">kernel::log::g_dmesg</a></div><div class="ttdeci">DmesgBuffer&lt; DMESG_CAPACITY &gt; g_dmesg</div><div class="ttdef"><b>Definition</b> dmesg.cpp:11</div></div>
-</div><!-- fragment -->
-</div>
-</div>
-<a id="a3eecc26744b43034cc4cabc3306e3e36" name="a3eecc26744b43034cc4cabc3306e3e36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3eecc26744b43034cc4cabc3306e3e36">&#9670;&#160;</a></span>dmesg_push_base</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define dmesg_push_base</td>
-          <td>(</td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>err</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>msg</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>ctx</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line"><a class="code hl_variable" href="namespacekernel_1_1log.html#a5ddfffb1758c3078ae879afa99b135c6">kernel::log::g_dmesg</a>.push(<a class="code hl_enumvalue" href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef">kernel::log::ErrorSubsystem::BASE</a>, \</div>
-<div class="line">                          <span class="keyword">static_cast&lt;</span>uint64_t<span class="keyword">&gt;</span>(err), msg, ctx)</div>
-<div class="ttc" id="anamespacekernel_1_1log_html_a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef"><div class="ttname"><a href="namespacekernel_1_1log.html#a0a15565ea32d9d5ddb218c71e3f3c44aae7b1a5c82772e0e055096008cb9883ef">kernel::log::ErrorSubsystem::BASE</a></div><div class="ttdeci">@ BASE</div><div class="ttdef"><b>Definition</b> dmesg.hpp:23</div></div>
-</div><!-- fragment -->
-</div>
-</div>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Lock-free SPSC structured kernel log (dmesg) — LogEntry, DmesgBuffer, macros, error-string helpers. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

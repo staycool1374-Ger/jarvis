@@ -1,7 +1,26 @@
 var searchData=
 [
-  ['not_5ffound_0',['NOT_FOUND',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcda8c02547a8a3b02382bac3557bcb2280d',1,'kernel']]],
-  ['not_5fimplemented_1',['NOT_IMPLEMENTED',['../namespacekernel.html#ac3675881848739146fbcc8b84d5c1fcda3e860a081575fc82cc7b6ed2ca602947',1,'kernel']]],
-  ['notify_2',['NOTIFY',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa9d087bfb809874e1b3e9adcbae8ca761',1,'kernel']]],
-  ['notify_5fwait_3',['NOTIFY_WAIT',['../namespacekernel.html#a3c91fa593738cd1ac9fa175bf06916bfa3f6169628af7f81a8313e2a08a7c06e6',1,'kernel']]]
+  ['sig_5fnone_0',['SIG_NONE',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18abe1b5cc142851a9d68baf85010fd51df',1,'kernel']]],
+  ['sigabrt_1',['SIGABRT',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a15f9aa0df490edfab4d2c36d4db49c76',1,'kernel']]],
+  ['sigalrm_2',['SIGALRM',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a13437ed26e007dff27ce5977b6188d73',1,'kernel']]],
+  ['sigbus_3',['SIGBUS',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a90c253803477b4a447ac1c9432e03dd3',1,'kernel']]],
+  ['sigchld_4',['SIGCHLD',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a8792f21bbe7cf3ba4e9d4565e8ad4730',1,'kernel']]],
+  ['sigcont_5',['SIGCONT',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a0354155cc51aa3cb8b554322e7bdefc0',1,'kernel']]],
+  ['sigfpe_6',['SIGFPE',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18ab5c6072d3eb30c0f0b977757f45f3a3c',1,'kernel']]],
+  ['sighup_7',['SIGHUP',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a139267a4cd115fbe116fca16a8c8ca2c',1,'kernel']]],
+  ['sigill_8',['SIGILL',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a86fc44466cc75e16fbfc84128aeaf7f3',1,'kernel']]],
+  ['sigint_9',['SIGINT',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a8b0e529b44fab9009c19d3e4f5ff8563',1,'kernel']]],
+  ['sigkill_10',['SIGKILL',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a21c921ee5909f29406a9e109e8b6fb7c',1,'kernel']]],
+  ['sigpipe_11',['SIGPIPE',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a1e0ef59487d7100202c298986b8dcc47',1,'kernel']]],
+  ['sigquit_12',['SIGQUIT',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18aa7dc43a376cd73b7b714978a6a6cfc08',1,'kernel']]],
+  ['sigsegv_13',['SIGSEGV',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18acb417868e3bf0b91e676658fc54c1d88',1,'kernel']]],
+  ['sigstkflt_14',['SIGSTKFLT',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a7a948b4e69258b7e3ebb1c381c7f7d46',1,'kernel']]],
+  ['sigstop_15',['SIGSTOP',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a6b8c78efd0ad618d08f0ee2884bdfab4',1,'kernel']]],
+  ['sigsys_16',['SIGSYS',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a5eb9c806a7872b8be9981e825ae26244',1,'kernel']]],
+  ['sigterm_17',['SIGTERM',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a0ff8f128b17e0ce45a2b511fbe581efe',1,'kernel']]],
+  ['sigtrap_18',['SIGTRAP',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a22eb50ce9c079cab11bac0a4a029c1d1',1,'kernel']]],
+  ['sigtstp_19',['SIGTSTP',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a72394f94f78436b1c49fb25bb8186934',1,'kernel']]],
+  ['sigusr1_20',['SIGUSR1',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18a3fca8d1bd1fd9d7eb4c4ae46c4a555e5',1,'kernel']]],
+  ['sigusr2_21',['SIGUSR2',['../namespacekernel.html#aab4cc62899bcb5fcce7228da55cd0e18aec2c8804a8dac6a866e1a43cfce32fc1',1,'kernel']]],
+  ['stop_22',['STOP',['../namespacekernel.html#a02b711df5b135d6792ce2fa4369c7749a615a46af313786fc4e349f34118be111',1,'kernel']]]
 ];

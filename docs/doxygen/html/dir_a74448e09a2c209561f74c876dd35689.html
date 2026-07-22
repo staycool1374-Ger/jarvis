@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
    </div>
   </td>
  </tr>
@@ -128,24 +128,43 @@ Directory dependency graph for vfs:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-files" class="groupheader"><a id="files" name="files"></a>
 Files</h2></td></tr>
 <tr class="memitem:devfs_2Ecpp" id="r_devfs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="devfs_8cpp.html">devfs.cpp</a></td></tr>
+<tr class="memdesc:devfs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device filesystem implementation (tty, null, console, kbd, random). <br /></td></tr>
 <tr class="memitem:devfs_2Ehpp" id="r_devfs_2Ehpp"><td class="memItemLeft"><a href="devfs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="devfs_8hpp.html">devfs.hpp</a></td></tr>
+<tr class="memdesc:devfs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device filesystem (devfs) declaration. <br /></td></tr>
 <tr class="memitem:fat32_2Ecpp" id="r_fat32_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="fat32_8cpp.html">fat32.cpp</a></td></tr>
+<tr class="memdesc:fat32_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">FAT32 partition parsing, directory reading, and write primitives. <br /></td></tr>
 <tr class="memitem:fat32_2Ehpp" id="r_fat32_2Ehpp"><td class="memItemLeft"><a href="fat32_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="fat32_8hpp.html">fat32.hpp</a></td></tr>
+<tr class="memdesc:fat32_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">FAT32 on-disk structures, partition class, and directory helpers. <br /></td></tr>
 <tr class="memitem:fat32_5Ffs_2Ecpp" id="r_fat32_5Ffs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="fat32__fs_8cpp.html">fat32_fs.cpp</a></td></tr>
+<tr class="memdesc:fat32__fs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">FAT32 VFS filesystem implementation (file/dir vnode ops, mounting). <br /></td></tr>
 <tr class="memitem:fat32_5Ffs_2Ehpp" id="r_fat32_5Ffs_2Ehpp"><td class="memItemLeft"><a href="fat32__fs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="fat32__fs_8hpp.html">fat32_fs.hpp</a></td></tr>
+<tr class="memdesc:fat32__fs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">FAT32 VFS filesystem integration (mount, root vnode). <br /></td></tr>
 <tr class="memitem:initrd_5Ffs_2Ecpp" id="r_initrd_5Ffs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="initrd__fs_8cpp.html">initrd_fs.cpp</a></td></tr>
+<tr class="memdesc:initrd__fs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial ramdisk filesystem implementation (read-only file vnodes). <br /></td></tr>
 <tr class="memitem:initrd_5Ffs_2Ehpp" id="r_initrd_5Ffs_2Ehpp"><td class="memItemLeft"><a href="initrd__fs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="initrd__fs_8hpp.html">initrd_fs.hpp</a></td></tr>
+<tr class="memdesc:initrd__fs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial ramdisk filesystem (initrd) declaration. <br /></td></tr>
 <tr class="memitem:pipe_2Ecpp" id="r_pipe_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="pipe_8cpp.html">pipe.cpp</a></td></tr>
+<tr class="memdesc:pipe_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Anonymous pipe implementation (ring buffer, read/write vnode ops). <br /></td></tr>
 <tr class="memitem:pipe_2Ehpp" id="r_pipe_2Ehpp"><td class="memItemLeft"><a href="pipe_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="pipe_8hpp.html">pipe.hpp</a></td></tr>
+<tr class="memdesc:pipe_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pipe (anonymous FIFO) creation API. <br /></td></tr>
 <tr class="memitem:procfs_2Ecpp" id="r_procfs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="procfs_8cpp.html">procfs.cpp</a></td></tr>
+<tr class="memdesc:procfs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process filesystem implementation (meminfo, pci, self, pid directories). <br /></td></tr>
 <tr class="memitem:procfs_2Ehpp" id="r_procfs_2Ehpp"><td class="memItemLeft"><a href="procfs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="procfs_8hpp.html">procfs.hpp</a></td></tr>
+<tr class="memdesc:procfs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process filesystem (procfs) declaration. <br /></td></tr>
 <tr class="memitem:tmpfs_2Ecpp" id="r_tmpfs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="tmpfs_8cpp.html">tmpfs.cpp</a></td></tr>
+<tr class="memdesc:tmpfs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-memory temporary filesystem implementation (file/dir ops, mkdir, create). <br /></td></tr>
 <tr class="memitem:tmpfs_2Ehpp" id="r_tmpfs_2Ehpp"><td class="memItemLeft"><a href="tmpfs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="tmpfs_8hpp.html">tmpfs.hpp</a></td></tr>
+<tr class="memdesc:tmpfs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-memory temporary filesystem (tmpfs) declaration. <br /></td></tr>
 <tr class="memitem:vfs_2Ecpp" id="r_vfs_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="vfs_8cpp.html">vfs.cpp</a></td></tr>
+<tr class="memdesc:vfs_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS core implementation: path resolution, mounting, file/directory ops. <br /></td></tr>
 <tr class="memitem:vfs_2Ehpp" id="r_vfs_2Ehpp"><td class="memItemLeft"><a href="vfs_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="vfs_8hpp.html">vfs.hpp</a></td></tr>
+<tr class="memdesc:vfs_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Core VFS types, structures, and public API declarations. <br /></td></tr>
 <tr class="memitem:vfs_5Ferrors_2Ehpp" id="r_vfs_5Ferrors_2Ehpp"><td class="memItemLeft"><a href="vfs__errors_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="vfs__errors_8hpp.html">vfs_errors.hpp</a></td></tr>
+<tr class="memdesc:vfs__errors_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS error code definitions and error-string conversion. <br /></td></tr>
 <tr class="memitem:vfsd_2Ecpp" id="r_vfsd_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="vfsd_8cpp.html">vfsd.cpp</a></td></tr>
+<tr class="memdesc:vfsd_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS daemon PID management. <br /></td></tr>
 <tr class="memitem:vfsd_2Ehpp" id="r_vfsd_2Ehpp"><td class="memItemLeft"><a href="vfsd_8hpp_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="vfsd_8hpp.html">vfsd.hpp</a></td></tr>
+<tr class="memdesc:vfsd_8hpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">VFS daemon IPC message types and PID tracking. <br /></td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
