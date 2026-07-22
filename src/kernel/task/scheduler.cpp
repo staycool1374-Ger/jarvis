@@ -639,12 +639,80 @@ void Scheduler::on_tick() noexcept {
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     if (all_tasks_.size() >= 6) {
         bool lk_held = scheduler_lock_.try_lock();
-        IPC_SCHED_TRACE("[TICK]", "t=", current_tick, "pe=",
-                        (uint64_t)preempt_enabled_, "lk=",
-                        (uint64_t)lk_held, "nt=",
+        IPC_SCHED_TRACE("[TICK]", "t=", current_tick, "lk=",
+                        (uint64_t)lk_held, "h=",
+                        (uint64_t)scheduler_lock_.holder(), "nt=",
                         (uint64_t)all_tasks_.size());
         if (lk_held)
             scheduler_lock_.unlock();
+    }
+    // ==== Lock-contention detector (diagnostic only) ====
+    // NOTE: on_tick may be called from task context (e.g. tests calling
+    // Scheduler::on_tick() in a loop).  In that case the lock is legitimately
+    // held by the *caller's* on_tick body, not by the ISR.  The timer ISR's
+    // on_tick then repeatedly finds lk=0 until the caller's on_tick returns.
+    // This is NOT a stuck lock — it is temporary contention.  Track the holder
+    // address across invocations: if the holder changes, the lock was released
+    // and re-acquired — not stuck.
+    {
+        static uint64_t s_lk0_count = 0;
+        static const void *s_last_holder = nullptr;
+        bool held = scheduler_lock_.try_lock();
+        const void *curr_holder = scheduler_lock_.holder();
+        if (held) {
+            s_lk0_count = 0;
+            s_last_holder = nullptr;
+            scheduler_lock_.unlock();
+        } else {
+            if (curr_holder != s_last_holder) {
+                // Holder changed — lock was released and re-acquired
+                s_lk0_count = 1;
+                s_last_holder = curr_holder;
+            } else {
+                ++s_lk0_count;
+            }
+            if (s_lk0_count >= 200) {
+                char buf[128];
+                int p = 0;
+                kernel::debug::fmt_str(buf, p, "[LK-CONTEND] h=");
+                p = kernel::debug::fmt_u64(buf, p,
+                    (uint64_t)curr_holder);
+                kernel::debug::fmt_str(buf, p, " cur=");
+                p = kernel::debug::fmt_u64(buf, p,
+                    current_task_ptr_ ? (uint64_t)current_task_ptr_->id : 0u);
+                kernel::debug::fmt_str(buf, p, " st=");
+                p = kernel::debug::fmt_u64(buf, p,
+                    current_task_ptr_
+                        ? (uint64_t)current_task_ptr_->state
+                        : 99u);
+                kernel::debug::fmt_str(buf, p, " sched=");
+                p = kernel::debug::fmt_u64(buf, p,
+                    (uint64_t)kernel::scheduler_need_resched);
+                buf[p] = 0;
+                kernel::debug::trace(buf);
+                for (auto *t = all_tasks_.first_ptr(); t;
+                     t = all_tasks_.next_ptr(t)) {
+                    if (t->magic != TaskControlBlock::TCB_MAGIC) continue;
+                    char tb[96];
+                    int tp = 0;
+                    kernel::debug::fmt_str(tb, tp, "  T");
+                    tp = kernel::debug::fmt_u64(tb, tp, t->id);
+                    kernel::debug::fmt_str(tb, tp, " st=");
+                    tp = kernel::debug::fmt_u64(tb, tp,
+                        (uint64_t)t->state);
+                    kernel::debug::fmt_str(tb, tp, " inrq=");
+                    tp = kernel::debug::fmt_u64(tb, tp,
+                        t->in_ready_queue_ ? 1u : 0u);
+                    tb[tp] = 0;
+                    kernel::debug::trace(tb);
+                }
+                // Log warning but do NOT halt — high contention is not
+                // necessarily a stuck lock (e.g. task-context on_tick).
+                kernel::debug::trace("[LK-CONTEND] possible lock contention");
+                s_lk0_count = 0;
+                s_last_holder = nullptr;
+            }
+        }
     }
 #endif
 
@@ -1689,11 +1757,16 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     // rebuild only heals this when the queue is empty and the caller retries;
     // a non-empty queue (e.g. idle at priority 0) returns the wrong task and
     // tests that check priority fail intermittently.
+    //
+    // Allow voluntary yields from the harness (reschedule set need_resched).
+    // Without this, harness_nonpreempt prevents the timer ISR from applying
+    // the deferred switch that reschedule requested, stranding the peer task.
     bool harness_nonpreempt =
         (s_test_active_ && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
          current->state == TaskState::RUNNING);
-    if (harness_nonpreempt) {
+    if (harness_nonpreempt &&
+        !__atomic_load_n(&kernel::scheduler_need_resched, __ATOMIC_ACQUIRE)) {
         scheduler_lock_.unlock();
         return;
     }
@@ -1865,6 +1938,7 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
 
     {
         arch::IrqGuard ig{};
+        scheduler_lock_.unlock();
         __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, &exiting.context.rsp,
                          __ATOMIC_RELEASE);
@@ -1872,8 +1946,6 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
         cr0 |= (1ULL << 3);
         arch::write_cr0(cr0);
     }
-
-    scheduler_lock_.unlock();
 }
 
 // ---------------------------------------------------------------------------

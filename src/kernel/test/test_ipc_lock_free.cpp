@@ -237,12 +237,16 @@ JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
     kernel::test::yield_as(*task_b);
 
     // Kick off ping-pong: task_a sends first message to task_b
-    // Use on_tick to drive scheduler forward
-    for (int tick = 0; tick < 100; ++tick) {
-        Scheduler::on_tick();
+    // Use on_tick to drive scheduler forward with interrupts DISABLED to
+    // prevent the timer ISR epilogue from processing deferred context-switch
+    // globals set by rate_monotonic_schedule() inside on_tick().
+    {
+        arch::IrqGuard guard;
+        for (int tick = 0; tick < 100; ++tick) {
+            Scheduler::on_tick();
+        }
+        Scheduler::set_current(*original);
     }
-
-    Scheduler::set_current(*original);
 
     if (task_a->magic == TaskControlBlock::TCB_MAGIC) {
         Scheduler::remove_task(*task_a);
