@@ -81,7 +81,8 @@ errors::SyncError Mutex::init_err(uint64_t ceiling) {
 /// @return false if the array is full.
 bool Mutex::add_waiter(TaskControlBlock &task) {
     for (size_t i = 0; i < wait_count_; ++i) {
-        ENSURE(waiters_[i] != &task);
+        if (waiters_[i] == &task)
+            return true;
     }
     if (wait_count_ >= MAX_WAITERS)
         return false;
@@ -209,7 +210,6 @@ void Mutex::lock() {
             task->state = TaskState::BLOCKED;
             Scheduler::reschedule();
             lock_.lock();
-            task->waiting_on_mutex = nullptr;
             if (owner_ == task) {
                 ++lock_count_;
                 lock_.unlock();
@@ -245,8 +245,9 @@ void Mutex::lock() {
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
         lock_.lock();
-        task->waiting_on_mutex = nullptr;
     }
+
+    lock_.unlock();
 }
 
 /// @brief Acquire the mutex (error-returning overload).
@@ -280,7 +281,6 @@ errors::SyncError Mutex::lock_err() {
             task->state = TaskState::BLOCKED;
             Scheduler::reschedule();
             lock_.lock();
-            task->waiting_on_mutex = nullptr;
             if (owner_ == task) {
                 ++lock_count_;
                 lock_.unlock();
@@ -321,7 +321,6 @@ errors::SyncError Mutex::lock_err() {
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
         lock_.lock();
-        task->waiting_on_mutex = nullptr;
     }
 
     lock_.unlock();

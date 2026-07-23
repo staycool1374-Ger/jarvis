@@ -158,3 +158,6 @@ SUMMARY: total=37 ok=32 fail=5
 2026-07-22 23:15:00 preemption_under_syscall PASSED: 4 FAILED: 0 TIME: 1474ms
 2026-07-22 23:18:00 all PASSED: 757 FAILED: 2 TIME: N/A (2 pre-existing timing bench fails)
 2026-07-22 23:40:00 all PASSED: 759 FAILED: 0 TIME: 315688ms
+2026-07-23 14:05:00 lock_protocol PASSED: 34 FAILED: 0 TIME: 554ms
+2026-07-23 14:06:00 priority_inheritance PASSED: 11 FAILED: 0 TIME: 293ms
+2026-07-23 14:07:00 selftest PASSED: 132 FAILED: 0 TIME: 8058ms

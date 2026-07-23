@@ -120,6 +120,8 @@ void register_deadline_action_tests();
 void register_ss_deadline_tests();
 void register_deadline_recovery_tests();
 void register_priority_inheritance_tests();
+void register_queue_pip_tests();
+void register_mutex_pcp_tests();
 void register_resource_exhaustion_tests();
 void register_microkernel_transition_tests();
 void register_random_tests();
@@ -279,6 +281,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_deadline_action_tests();
         register_wcet_scheduler_tests();
         register_priority_inheritance_tests();
+        register_queue_pip_tests();
+        register_mutex_pcp_tests();
         register_pic_tests();
         register_integration_tests();
         register_pml4_clone_tests();
@@ -355,6 +359,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_budget_tests();
         register_pip_tests();
         register_pcp_tests();
+        register_queue_pip_tests();
+        register_mutex_pcp_tests();
         register_lock_validator_tests();
     }},
 
@@ -505,7 +511,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"wcet", []() { register_wcet_scheduler_tests(); }},
 
-    {"priority_inheritance", []() { register_priority_inheritance_tests(); }},
+    {"priority_inheritance", []() {
+        register_priority_inheritance_tests();
+        register_queue_pip_tests();
+        register_mutex_pcp_tests();
+    }},
 
     {"stress",
      []() {
