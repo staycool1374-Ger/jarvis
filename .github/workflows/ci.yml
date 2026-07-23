@@ -18,18 +18,27 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          gcc \
-          clang \
-          lld \
+          build-essential \
           nasm \
           xorriso \
           mtools \
           grub-pc-bin \
           grub-common \
-          qemu-system-x86 \
+          qemu-system-x86_64 \
           ovmf \
           expect \
           wget
+
+    - name: Setup cross-compiler symlinks
+      run: |
+        sudo ln -sf /usr/bin/gcc /usr/local/bin/x86_64-elf-gcc
+        sudo ln -sf /usr/bin/g++ /usr/local/bin/x86_64-elf-g++
+        sudo ln -sf /usr/bin/ld /usr/local/bin/x86_64-elf-ld
+        sudo ln -sf /usr/bin/ar /usr/local/bin/x86_64-elf-ar
+        sudo ln -sf /usr/bin/objcopy /usr/local/bin/x86_64-elf-objcopy
+
+    - name: Verify cross-compiler
+      run: x86_64-elf-gcc --version
 
     - name: Install Renode (Linux portable)
       run: |
@@ -54,28 +63,15 @@ jobs:
 
     - name: Build Kernel (x86_64 Debug)
       run: |
-        make debug \
-          ARCH=x86_64 \
-          CC=gcc \
-          CXX=clang++ \
-          LD=ld \
-          AR=ar \
-          OBJCOPY=objcopy \
-          QEMU_UEFI=/usr/share/ovmf/OVMF.fd
+        make debug QEMU_UEFI=/usr/share/ovmf/OVMF.fd
 
     - name: Run Automated Test Suite (selftest — CI gate)
       run: |
-        # Host-side watchdog monitors serial log growth to detect hangs the
-        # in-kernel watchdog cannot catch (interrupts disabled during test exec).
-        # Makefile's _run_test_qemu includes both the watchdog and a 120s expect
-        # timeout.  CI-level safety net (6 min) catches unexpected QEMU stalls.
         timeout 360 make execute-test x86 debug selftest \
-          ARCH=x86_64 \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd
 
     - name: Run Full Test Suite (all classes)
       if: success()
       run: |
         timeout 360 make execute-test x86 debug all \
-          ARCH=x86_64 \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd
