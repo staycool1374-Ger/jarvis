@@ -147,6 +147,12 @@ void register_aarch64_tests();
 void register_riscv64_tests();
 #endif
 
+// ---- External test registration hook (weak symbol) ----
+// When the external test suite is linked in, it provides a strong override
+// that registers test classes defined in the external repo.  When no external
+// tests are linked, this is a no-op.
+__attribute__((weak)) void register_external_test_classes() {}
+
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
 // functions.  The "safe" class is the curated TF_RELEASE subset for release
@@ -312,7 +318,9 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 #if defined(CONFIG_ARCH_RISCV64)
          register_riscv64_tests();
 #endif
-     }},
+        // External test suite registration (weak symbol — no-op if not linked)
+        register_external_test_classes();
+    }},
 
     // -- individual classes --
     {"scheduler",
