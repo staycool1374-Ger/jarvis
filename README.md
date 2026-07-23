@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.3.3** — Priority Inheritance & Ceiling Protocol (PIP/PCP).
+Current version: **v0.3.4-dev** — Minimal & Known Interrupt Latency Jitter (Pillar 4).
 
 ---
 
