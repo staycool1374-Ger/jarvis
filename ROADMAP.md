@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** ACTIVE — Priority Inheritance & Ceiling.
-**Target Focus:** v0.3.3 — Priority Inheritance & Ceiling: Priority Inheritance Protocol (PIP), Priority Ceiling Protocol (PCP), mutex/semaphore/queue inheritance, scheduler preemption points.
+**Status:** v0.3.3 COMPLETE — PIP, PCP, Queue PIP, Preemption Points implemented and validated (main + testbed).
+**Target Focus:** v0.3.4 — Minimal & Known Interrupt Latency Jitter (APIC, IRQ latency measurement, threaded IRQs, cross-arch HAL).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -178,28 +178,28 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 - ~~**`DeadlockRecoveryResourceReclamation`:** test class never implemented — placeholder removed~~
 
 #### Priority Inheritance & Ceiling
-- [ ] Priority Inheritance Protocol (PIP) — Mutex
-  - [ ] Add Mutex::priority_ceiling (static ceiling = max priority of any task that may lock)
-  - [ ] In Mutex::lock(): if contested, boost owner to max(owner_prio, waiter_prio) via Scheduler::boost_priority()
-  - [ ] In Mutex::unlock(): restore owner to base_priority (or highest held ceiling)
-  - [ ] Add CONFIG_MUTEX_PIP (default 1) — disable for soft-RT builds
-  - [ ] Add CONFIG_MUTEX_PRIORITY_CEILING — compile-time ceiling validation
-- [ ] Priority Inheritance — Semaphore
-  - [ ] Same pattern: Semaphore::lock_ already exists; add owner tracking + PIP
-  - [ ] Binary semaphore: single owner; counting: track last waiter priority for boost
-  - [ ] Add CONFIG_SEMAPHORE_PIP
-- [ ] Priority Inheritance — Message Queue
-  - [ ] Queue::send_waiters / recv_waiters — boost receiver when high-prio sender blocks
-  - [ ] Boost sender when high-prio receiver blocks (rare but possible)
-  - [ ] Add CONFIG_QUEUE_PIP
-- [ ] Priority Ceiling Protocol (PCP) — Optional Stronger Guarantee
-  - [ ] Add CONFIG_PRIORITY_CEILING_PROTOCOL — mutex ceiling = static max priority of all users
-  - [ ] On lock: system ceiling = max of all held mutex ceilings; block if task prio ≤ system ceiling
-  - [ ] Prevents deadlock + chained blocking
-- [ ] Scheduler Preemption Points — Verify All
-  - [ ] Audit every cli/sti pair — ensure preemption check at each sti
-  - [ ] Scheduler::reschedule() called from: syscall return, ISR exit, on_tick, explicit yield
-  - [ ] Add CONFIG_PREEMPTION_LATENCY_MAX_CYCLES — measure and assert in test
+- [x] Priority Inheritance Protocol (PIP) — Mutex
+  - [x] Add Mutex::priority_ceiling (static ceiling = max priority of any task that may lock)
+  - [x] In Mutex::lock(): if contested, boost owner to max(owner_prio, waiter_prio) via Scheduler::boost_priority()
+  - [x] In Mutex::unlock(): restore owner to base_priority (or highest held ceiling)
+  - [x] Add CONFIG_MUTEX_PIP (default 1) — disable for soft-RT builds
+  - [x] Add CONFIG_MUTEX_PRIORITY_CEILING — compile-time ceiling validation
+- [x] Priority Inheritance — Semaphore
+  - [x] Same pattern: Semaphore::lock_ already exists; add owner tracking + PIP
+  - [x] Binary semaphore: single owner; counting: track last waiter priority for boost
+  - [x] Add CONFIG_SEMAPHORE_PIP
+- [x] Priority Inheritance — Message Queue
+  - [x] Queue::send_waiters / recv_waiters — boost receiver when high-prio sender blocks
+  - [x] Boost sender when high-prio receiver blocks (rare but possible)
+  - [x] Add CONFIG_QUEUE_PIP
+- [x] Priority Ceiling Protocol (PCP) — Optional Stronger Guarantee
+  - [x] Add CONFIG_PRIORITY_CEILING_PROTOCOL — mutex ceiling = static max priority of all users
+  - [x] On lock: system ceiling = max of all held mutex ceilings; block if task prio ≤ system ceiling
+  - [x] Prevents deadlock + chained blocking
+- [x] Scheduler Preemption Points — Verify All
+  - [x] Audit every cli/sti pair — ensure preemption check at each sti
+  - [x] Scheduler::reschedule() called from: syscall return, ISR exit, on_tick, explicit yield
+  - [x] Add CONFIG_PREEMPTION_LATENCY_MAX_CYCLES — measure and assert in test
 
 ### 0.3.4 Minimal & Known Interrupt Latency Jitter (Pillar 4)
 - [ ] Replace PIC with APIC/x2APIC (x86_64)
