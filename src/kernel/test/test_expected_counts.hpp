@@ -19,10 +19,10 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 807,    0,       0      },  // every registration function
+    {"all",                 813,    0,       0      },  // every registration function
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
-    {"lock_protocol",        28,    0,       0      },  // lock_order + budget + pip + pcp + lock_validator
+    {"lock_protocol",        34,    0,       0      },  // lock_order + budget + pip + pcp + queue_pip + mutex_pcp + lock_validator
     {"timer",                 5,    0,       0      },  // timer tests
     {"wfg",                   4,    0,       0      },  // wfg tests
     {"lock",                  5,    0,       0      },  // mlock (MCS lock)
@@ -50,7 +50,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"deadline_recovery",    4,     0,       0      },  // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck + DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor
     {"deadline_action",      1,     0,       0      },  // single action-dispatch test per build (CONFIG_DEADLINE_ACTION)
     {"wcet",                 1,     0,       0      },  // WCET benchmark for scan_deadlines (P7b)
-    {"priority_inheritance", 5,     0,       0      },  // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown + MutexNestedDrop + SemaphoreInherits
+    {"priority_inheritance", 11,    0,       0      },  // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown + MutexNestedDrop + SemaphoreInherits + queue_pip(3) + mutex_pcp(3)
     {"stress",              10,     0,       0      },  // stress + starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
