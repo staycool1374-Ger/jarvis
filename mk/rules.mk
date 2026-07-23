@@ -22,6 +22,44 @@ endif
 ifeq ($(ARCH),x86_64)
 SRC_CXX_GENERIC := $(filter-out src/kernel/test/test_fpu.cpp src/kernel/test/test_fpu_clone.cpp src/kernel/test/test_fpu_multi.cpp src/kernel/test/test_fpu_sse.cpp src/kernel/test/test_fpu_xmm_all.cpp, $(SRC_CXX_GENERIC))
 endif
+
+# External test suite support
+# When EXTERNAL_TEST_DIR is set:
+#   1. Only selftest (safe-class) files from src/kernel/test/ are compiled
+#   2. External test sources from $(EXTERNAL_TEST_DIR) provide the rest
+#   3. External include paths are added
+ifneq ($(EXTERNAL_TEST_DIR),)
+# Selftest infrastructure — always needed
+SELFTEST_INFRA := src/kernel/test/test_registry.cpp \
+                  src/kernel/test/test_isolate.cpp \
+                  src/kernel/test/test_cleanup.cpp \
+                  src/kernel/test/test_config.cpp \
+                  src/kernel/test/resource_tracker.cpp \
+                  src/kernel/test/test_watchdog.cpp \
+                  src/kernel/test/test_weak_stubs.cpp
+# Safe-class test files — compiled into every kernel
+SELFTEST_TESTS := src/kernel/test/test_lib.cpp \
+                  src/kernel/test/test_checked_ptr.cpp \
+                  src/kernel/test/test_block_device.cpp \
+                  src/kernel/test/test_fat32.cpp \
+                  src/kernel/test/test_vfs_fat32.cpp \
+                  src/kernel/test/test_waitpid.cpp \
+                  src/kernel/test/test_shell_interaction.cpp \
+                  src/kernel/test/test_hal_bits.cpp \
+                  src/kernel/test/test_o1_scheduler.cpp
+# Keep all non-test sources, but replace everything under src/kernel/test/
+# with only the selftest subset
+SRC_CXX_GENERIC := $(filter-out src/kernel/test/%.cpp, $(SRC_CXX_GENERIC))
+SRC_CXX_GENERIC += $(SELFTEST_INFRA) $(SELFTEST_TESTS)
+# Also exclude arch-specific test files (not selftest infrastructure)
+SRC_CXX_ARCH := $(filter-out %test_aarch64.cpp %test_riscv64.cpp, $(SRC_CXX_ARCH))
+# Discover external test sources
+EXTERNAL_SRC := $(shell find $(EXTERNAL_TEST_DIR)/src -name '*.cpp' 2>/dev/null)
+# Map external source paths to build/external/ object files
+EXTERNAL_OBJ := $(patsubst $(EXTERNAL_TEST_DIR)/src/%.cpp,build/external/%.o,$(EXTERNAL_SRC))
+# Add include paths for external test headers
+CXXFLAGS += -I$(EXTERNAL_TEST_DIR)/include
+endif
 SRC_S_GENERIC   := $(shell find src -path '*/kernel/arch' -prune -o -path '*/libc' -prune -o -name '*.S' -print)
 
 SRC_CXX_ARCH    := $(shell find src/kernel/arch/$(ARCH) -name '*.cpp' 2>/dev/null)
@@ -33,6 +71,9 @@ SRC_CXX         := $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH_BASE) $(SRC_CXX_ARCH)
 SRC_ASM         := $(SRC_ASM_GENERIC) $(SRC_ASM_ARCH)
 SRC_S           := $(SRC_S_GENERIC) $(SRC_S_ARCH)
 OBJ             := $(SRC_CXX:src/%.cpp=build/%.o) $(SRC_ASM:src/%.asm=build/%.o) $(SRC_S:src/%.S=build/%.o)
+ifneq ($(EXTERNAL_TEST_DIR),)
+OBJ             += $(EXTERNAL_OBJ)
+endif
 DEPFILES        := $(shell find build -name '*.d' 2>/dev/null)
 -include $(DEPFILES)
 
@@ -71,6 +112,14 @@ build/%.o: src/%.S
 	@mkdir -p $(dir $@)
 	@printf '  %-7s %s\n' 'AS' '$@'
 	$(CC) $(CCFLAGS) -c -o $@ $<
+
+ifneq ($(EXTERNAL_TEST_DIR),)
+# Pattern rule for external test sources
+build/external/%.o: $(EXTERNAL_TEST_DIR)/src/%.cpp
+	@mkdir -p $(dir $@)
+	@printf '  %-7s %s\n' 'CC' '$@'
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+endif
 
 # ------------------------------------------------------------------------------
 # Libc rules

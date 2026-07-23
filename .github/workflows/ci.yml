@@ -69,13 +69,13 @@ jobs:
         # in-kernel watchdog cannot catch (interrupts disabled during test exec).
         # Makefile's _run_test_qemu includes both the watchdog and a 120s expect
         # timeout.  CI-level safety net (6 min) catches unexpected QEMU stalls.
-        timeout 360 make test-selftest \
+        timeout 360 make execute-test x86 debug selftest \
           ARCH=x86_64 \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd
 
     - name: Run Full Test Suite (all classes)
       if: success()
       run: |
-        timeout 360 make test-all-debug \
+        timeout 360 make execute-test x86 debug all \
           ARCH=x86_64 \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd

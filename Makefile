@@ -19,6 +19,14 @@ SHELL := /bin/bash
 # ==============================================================================
 # Jarvis RTOS Microkernel Makefile
 # Target architecture: set ARCH to build for a different arch (default: x86_64)
+#
+# External test suite support:
+#   EXTERNAL_TEST_DIR — path to a directory containing additional test sources
+#   to compile and link into the kernel.  When set, only selftest files from
+#   src/kernel/test/ are built; all other test files are expected in
+#   $(EXTERNAL_TEST_DIR)/src/kernel/test/.
+#
+#   Example: make execute-test x86 debug all EXTERNAL_TEST_DIR=/path/to/tests
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -30,6 +38,16 @@ SUPPORTED_ARCHS := x86_64 aarch64 riscv64
 ifneq ($(filter $(ARCH),$(SUPPORTED_ARCHS)),$(ARCH))
 $(error Unsupported architecture '$(ARCH)'. Supported: $(SUPPORTED_ARCHS))
 endif
+
+# ------------------------------------------------------------------------------
+# External test suite directory
+# ------------------------------------------------------------------------------
+# When set, only selftest (safe-class) files from src/kernel/test/ are compiled;
+# all other test sources are expected under $(EXTERNAL_TEST_DIR)/src/kernel/test/.
+# The external tests are compiled with the same CXXFLAGS and linked into the
+# kernel binary.  Leave empty to build all kernel-space tests normally.
+# ------------------------------------------------------------------------------
+EXTERNAL_TEST_DIR ?=
 
 # Architecture stamp — forces rebuild of arch-specific binaries (initrd, fat32)
 # when ARCH changes between invocations.
@@ -281,6 +299,12 @@ $(KERNEL): $(TEST_REGISTRY_GEN)
 # test_isolate.cpp #includes the generated header; ensure it exists
 # before compiling that translation unit.
 build/kernel/test/test_isolate.o: $(TEST_REGISTRY_GEN)
+
+# External test registry is not generated here — the test_registry.gen.hpp
+# generated from kernel selftest sources is sufficient.  External tests
+# register at runtime via JARVIS_REGISTER_TEST() macros in their compiled
+# object code.  The weak symbol register_external_test_classes() in
+# test_registry.cpp calls into external registration functions when linked.
 
 # ------------------------------------------------------------------------------
 # Phony targets
@@ -873,11 +897,16 @@ clean:
 	rm -f $(FAT32_DISK)
 	rm -f *.d
 	rm -f $(TEST_REGISTRY_GEN) $(TEST_FILE_LIST)
+	rm -rf build/external
 
 # ------------------------------------------------------------------------------
 # clang-tidy static analysis (debug builds only)
 # ------------------------------------------------------------------------------
-CLANG_TIDY_SRCS := $(filter-out src/kernel/test/%.cpp src/lib/test.cpp src/lib/compiler_rt.cpp src/lib/cxxabi.cpp src/lib/new.cpp, $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH))
+CLANG_TIDY_FILTER := src/kernel/test/%.cpp src/lib/test.cpp src/lib/compiler_rt.cpp src/lib/cxxabi.cpp src/lib/new.cpp
+ifneq ($(EXTERNAL_TEST_DIR),)
+CLANG_TIDY_FILTER += $(EXTERNAL_TEST_DIR)/src/%.cpp
+endif
+CLANG_TIDY_SRCS := $(filter-out $(CLANG_TIDY_FILTER), $(SRC_CXX_GENERIC) $(SRC_CXX_ARCH))
 CLANG_TIDY_EXCL := $(addprefix --extra-arg=-I,src src/kernel src/lib)
 CLANG_TIDY_DEFS := --extra-arg=-DCONFIG_ARCH_$(ARCH_UPPER) --extra-arg=-DCONFIG_DEBUG
 
