@@ -1,5 +1,17 @@
 # Completed Roadmap Items
 
+## v0.3.3 — Priority Inheritance & Ceiling Protocol (PIP/PCP) (Released)
+
+### Completed in v0.3.3:
+- Priority Inheritance Protocol (PIP) for Mutex: boost owner to max waiter priority, restore on unlock, CONFIG_MUTEX_PIP (default 1)
+- Priority Inheritance for Semaphore: owner tracking, waiter priority boost, CONFIG_SEMAPHORE_PIP
+- Priority Inheritance for Message Queue: Queue::send_waiters/recv_waiters boost, CONFIG_QUEUE_PIP
+- Priority Ceiling Protocol (PCP): system ceiling blocks priority inversion and deadlock, CONFIG_PRIORITY_CEILING_PROTOCOL (default 1)
+- Scheduler Preemption Points: cli/sti audit, reschedule() at every exit, CONFIG_PREEMPTION_LATENCY_MAX_CYCLES
+- QE validation (testbed): lock_protocol 34/34 PASS, priority_inheritance 11/11 PASS, selftest 132/132
+- Main branch: 808/808 ALL PASS (post-merge)
+- Bugs fixed: add_waiter idempotency (PCP re-entry), lock_ leak after PCP loop, CONFIG_PRIORITY_CEILING_PROTOCOL default 0→1
+
 ## 0.2.13 — Shell UX & Utilities
 
 ### Persistent status bar + dynamic prompt
