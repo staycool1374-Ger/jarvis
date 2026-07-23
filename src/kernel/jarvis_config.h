@@ -451,7 +451,7 @@
 /// ≤ the current system ceiling, preventing deadlock and chained blocking.
 /// Can be combined with CONFIG_MUTEX_PIP (PIP+PCP). Default: 0 (disabled).
 #ifndef CONFIG_PRIORITY_CEILING_PROTOCOL
-#define CONFIG_PRIORITY_CEILING_PROTOCOL 0
+#define CONFIG_PRIORITY_CEILING_PROTOCOL 1
 #endif
 
 /// Maximum number of simultaneously held mutexes per task (for PCP ceiling
