@@ -36,15 +36,18 @@ class Mutex {
     static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Mutex()
-        : owner_(nullptr), holder_priority_(0), lock_count_(0), wait_count_(0) {
+        : owner_(nullptr), holder_priority_(0), lock_count_(0),
+          priority_ceiling_(0), wait_count_(0) {
     }
     /// @brief Initialize the mutex to unlocked state.
     void init();
+    void init(uint64_t ceiling);
     /// @brief Initialize the mutex to unlocked state (error-returning
     /// overload).
     /// @return SYNC_ERR_OK on success, SYNC_ERR_ALREADY_INITIALIZED if already
     /// initialized.
     errors::SyncError init_err();
+    errors::SyncError init_err(uint64_t ceiling);
 
     /// @brief Acquire the mutex, blocking until available.
     void lock();
@@ -84,6 +87,7 @@ class Mutex {
                                ///< restore).
     uint64_t lock_count_;      ///< Recursive lock count.
     bool initialized_ = false; ///< Whether init_err() has been called.
+    uint64_t priority_ceiling_; ///< Static priority ceiling for PCP (0 = none).
     TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks
                                              ///< (priority-sorted on wake).
     size_t wait_count_;                      ///< Number of waiting tasks.

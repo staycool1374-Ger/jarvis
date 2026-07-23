@@ -128,6 +128,38 @@ def check_config(path):
         print(f"WARNING: CONFIG_MAX_PROCESS_PAGES={proc_pages} > 65536")
         warnings += 1
 
+    # 15. CONFIG_HARD_REAL_TIME dependency constraints
+    hard_rt = get_int(cfg, "CONFIG_HARD_REAL_TIME", 0)
+    mutex_pip = get_int(cfg, "CONFIG_MUTEX_PIP", 1)
+    sem_pip = get_int(cfg, "CONFIG_SEMAPHORE_PIP", 1)
+    queue_pip = get_int(cfg, "CONFIG_QUEUE_PIP", 1)
+    preemption = get_int(cfg, "CONFIG_PREEMPTION", 1)
+    static_pools = get_int(cfg, "CONFIG_STATIC_POOLS_ONLY", 0)
+    if hard_rt:
+        if not mutex_pip:
+            print("ERROR: CONFIG_HARD_REAL_TIME=1 requires CONFIG_MUTEX_PIP=1")
+            errors += 1
+        if not preemption:
+            print("ERROR: CONFIG_HARD_REAL_TIME=1 requires CONFIG_PREEMPTION=1")
+            errors += 1
+        if not static_pools:
+            print("WARNING: CONFIG_HARD_REAL_TIME=1 should enable CONFIG_STATIC_POOLS_ONLY=1")
+            warnings += 1
+
+    # 16. CONFIG_PRIORITY_CEILING_PROTOCOL dependency
+    pcp = get_int(cfg, "CONFIG_PRIORITY_CEILING_PROTOCOL", 0)
+    if pcp and not mutex_pip:
+        print("WARNING: CONFIG_PRIORITY_CEILING_PROTOCOL=1 without CONFIG_MUTEX_PIP=1 "
+              "— ceiling blocking active but no priority inheritance (soft-RT PCP)")
+        warnings += 1
+
+    # 17. CONFIG_PREEMPTION_LATENCY_MAX_CYCLES range
+    preempt_max = get_int(cfg, "CONFIG_PREEMPTION_LATENCY_MAX_CYCLES", 0)
+    if preempt_max and preempt_max < 100:
+        print(f"WARNING: CONFIG_PREEMPTION_LATENCY_MAX_CYCLES={preempt_max} < 100 "
+              "may be too tight for measurement overhead")
+        warnings += 1
+
     # Summary
     if errors == 0 and warnings == 0:
         print(f"[OK] All config checks passed for {path}")

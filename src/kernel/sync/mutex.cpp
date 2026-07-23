@@ -23,6 +23,11 @@
 #include <kernel/task/scheduler.hpp>
 #include <assert.hpp>
 
+// PCP (Priority Ceiling Protocol) requires PI (Priority Inheritance) support.
+#if CONFIG_PRIORITY_CEILING_PROTOCOL && !CONFIG_MUTEX_PIP
+#error "CONFIG_PRIORITY_CEILING_PROTOCOL requires CONFIG_MUTEX_PIP"
+#endif
+
 namespace kernel {
 namespace sync {
 
@@ -32,6 +37,16 @@ void Mutex::init() {
     holder_priority_ = 0;
     lock_count_ = 0;
     wait_count_ = 0;
+    priority_ceiling_ = 0;
+}
+
+/// @brief Initialise the mutex to unlocked state with PCP ceiling.
+void Mutex::init(uint64_t ceiling) {
+    owner_ = nullptr;
+    holder_priority_ = 0;
+    lock_count_ = 0;
+    wait_count_ = 0;
+    priority_ceiling_ = ceiling;
 }
 
 /// @brief Initialise the mutex (error-returning overload).
@@ -44,6 +59,21 @@ errors::SyncError Mutex::init_err() {
     holder_priority_ = 0;
     lock_count_ = 0;
     wait_count_ = 0;
+    priority_ceiling_ = 0;
+    return errors::SYNC_ERR_OK;
+}
+
+/// @brief Initialise the mutex (error-returning) with PCP ceiling.
+errors::SyncError Mutex::init_err(uint64_t ceiling) {
+    if (initialized_) {
+        return errors::SYNC_ERR_ALREADY_INITIALIZED;
+    }
+    initialized_ = true;
+    owner_ = nullptr;
+    holder_priority_ = 0;
+    lock_count_ = 0;
+    wait_count_ = 0;
+    priority_ceiling_ = ceiling;
     return errors::SYNC_ERR_OK;
 }
 
@@ -82,6 +112,7 @@ void Mutex::wake_one() {
 ///        Scans all waiters to find the max priority (handles multiple
 ///        waiters at different priorities and transitive chains).
 void Mutex::inherit_priority(TaskControlBlock &waiter) {
+#if CONFIG_MUTEX_PIP
     if (!owner_)
         return;
 
@@ -96,16 +127,18 @@ void Mutex::inherit_priority(TaskControlBlock &waiter) {
             holder_priority_ = owner_->priority;
         owner_->priority = max_prio;
 
-        // Transitive PI: if the owner is itself blocked on another mutex,
-        // propagate the boost up the chain.
         if (owner_->waiting_on_mutex)
             owner_->waiting_on_mutex->reevaluate();
     }
+#else
+    (void)waiter;
+#endif
 }
 
 /// @brief Restore the owner's priority to its saved original value,
 ///        unless remaining waiters still need a boost.
 void Mutex::restore_priority() {
+#if CONFIG_MUTEX_PIP
     if (!owner_ || holder_priority_ == 0)
         return;
 
@@ -121,12 +154,14 @@ void Mutex::restore_priority() {
         owner_->priority = holder_priority_;
         holder_priority_ = 0;
     }
+#endif
 }
 
 /// @brief Re-evaluate the owner's priority based on all current waiters.
 ///        Called when a waiter's priority changes (e.g. transitively boosted
 ///        by another mutex further down the chain).
 void Mutex::reevaluate() {
+#if CONFIG_MUTEX_PIP
     if (!owner_ || wait_count_ == 0)
         return;
 
@@ -144,6 +179,7 @@ void Mutex::reevaluate() {
         if (owner_->waiting_on_mutex)
             owner_->waiting_on_mutex->reevaluate();
     }
+#endif
 }
 
 /// @brief Acquire the mutex, blocking until available (supports recursion).
@@ -161,23 +197,56 @@ void Mutex::lock() {
         return;
     }
 
-    if (owner_ == nullptr) {
-        owner_ = task;
-        lock_count_ = 1;
+    size_t _pcp_retry = 0;
+    for (; _pcp_retry < MAX_WAITERS + 1; ++_pcp_retry) {
+#if CONFIG_PRIORITY_CEILING_PROTOCOL
+        if (priority_ceiling_ > 0 && task->system_ceiling_ > 0 &&
+            task->priority <= task->system_ceiling_) {
+            bool added = add_waiter(*task);
+            ENSURE(added);
+            task->waiting_on_mutex = this;
+            lock_.unlock();
+            task->state = TaskState::BLOCKED;
+            Scheduler::reschedule();
+            lock_.lock();
+            task->waiting_on_mutex = nullptr;
+            if (owner_ == task) {
+                ++lock_count_;
+                lock_.unlock();
+                return;
+            }
+            continue;
+        }
+#endif
+        if (owner_ == nullptr) {
+            owner_ = task;
+            lock_count_ = 1;
+#if CONFIG_PRIORITY_CEILING_PROTOCOL
+            if (priority_ceiling_ > 0 &&
+                task->held_ceiling_depth_ < CONFIG_MAX_HELD_CEILINGS) {
+                task->held_ceilings_[task->held_ceiling_depth_++] =
+                    priority_ceiling_;
+                if (priority_ceiling_ > task->system_ceiling_)
+                    task->system_ceiling_ = priority_ceiling_;
+            }
+#endif
+            lock_.unlock();
+            return;
+        }
+
+        inherit_priority(*task);
+
+        bool added = add_waiter(*task);
+        ENSURE(added);
+        task->waiting_on_mutex = this;
+
         lock_.unlock();
-        return;
+
+        task->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+        lock_.lock();
+        task->waiting_on_mutex = nullptr;
     }
-
-    inherit_priority(*task);
-
-    bool added = add_waiter(*task);
-    ENSURE(added);
-    task->waiting_on_mutex = this;
-
-    lock_.unlock();
-
-    task->state = TaskState::BLOCKED;
-    Scheduler::reschedule();
 }
 
 /// @brief Acquire the mutex (error-returning overload).
@@ -195,27 +264,68 @@ errors::SyncError Mutex::lock_err() {
         return errors::SYNC_ERR_OK;
     }
 
-    if (owner_ == nullptr) {
-        owner_ = task;
-        lock_count_ = 1;
-        lock_.unlock();
-        return errors::SYNC_ERR_OK;
-    }
+    size_t _pcp_retry = 0;
+    for (; _pcp_retry < MAX_WAITERS + 1; ++_pcp_retry) {
+#if CONFIG_PRIORITY_CEILING_PROTOCOL
+        if (priority_ceiling_ > 0 && task->system_ceiling_ > 0 &&
+            task->priority <= task->system_ceiling_) {
+            if (wait_count_ >= MAX_WAITERS) {
+                lock_.unlock();
+                return errors::SYNC_ERR_MAX_WAITERS;
+            }
+            bool added = add_waiter(*task);
+            ENSURE(added);
+            task->waiting_on_mutex = this;
+            lock_.unlock();
+            task->state = TaskState::BLOCKED;
+            Scheduler::reschedule();
+            lock_.lock();
+            task->waiting_on_mutex = nullptr;
+            if (owner_ == task) {
+                ++lock_count_;
+                lock_.unlock();
+                return errors::SYNC_ERR_OK;
+            }
+            continue;
+        }
+#endif
+        if (owner_ == nullptr) {
+            owner_ = task;
+            lock_count_ = 1;
+#if CONFIG_PRIORITY_CEILING_PROTOCOL
+            if (priority_ceiling_ > 0 &&
+                task->held_ceiling_depth_ < CONFIG_MAX_HELD_CEILINGS) {
+                task->held_ceilings_[task->held_ceiling_depth_++] =
+                    priority_ceiling_;
+                if (priority_ceiling_ > task->system_ceiling_)
+                    task->system_ceiling_ = priority_ceiling_;
+            }
+#endif
+            lock_.unlock();
+            return errors::SYNC_ERR_OK;
+        }
 
-    inherit_priority(*task);
+        if (wait_count_ >= MAX_WAITERS) {
+            lock_.unlock();
+            return errors::SYNC_ERR_MAX_WAITERS;
+        }
 
-    bool added = add_waiter(*task);
-    if (!added) {
+        inherit_priority(*task);
+
+        bool added = add_waiter(*task);
+        ENSURE(added);
+        task->waiting_on_mutex = this;
+
         lock_.unlock();
-        return errors::SYNC_ERR_MAX_WAITERS;
+
+        task->state = TaskState::BLOCKED;
+        Scheduler::reschedule();
+        lock_.lock();
+        task->waiting_on_mutex = nullptr;
     }
-    task->waiting_on_mutex = this;
 
     lock_.unlock();
-
-    task->state = TaskState::BLOCKED;
-    Scheduler::reschedule();
-    return errors::SYNC_ERR_OK;
+    return errors::SYNC_ERR_INTERRUPTED;
 }
 
 /// @brief Attempt to acquire without blocking.
@@ -270,6 +380,37 @@ errors::SyncError Mutex::try_lock_err() {
     return errors::SYNC_ERR_NOT_OWNER;
 }
 
+/// @brief Helper: pop the mutex's ceiling from the owner's held ceiling stack
+///        and recalculate system_ceiling_.
+static void pop_ceiling(TaskControlBlock *owner, uint64_t ceiling) {
+#if CONFIG_PRIORITY_CEILING_PROTOCOL
+    if (!owner || ceiling == 0 || owner->held_ceiling_depth_ == 0)
+        return;
+    // Find and remove the matching ceiling entry
+    bool found = false;
+    for (size_t i = 0; i < owner->held_ceiling_depth_; ++i) {
+        if (!found && owner->held_ceilings_[i] == ceiling) {
+            found = true;
+        }
+        if (found && i + 1 < owner->held_ceiling_depth_) {
+            owner->held_ceilings_[i] = owner->held_ceilings_[i + 1];
+        }
+    }
+    if (found) {
+        owner->held_ceiling_depth_--;
+    }
+    // Recalculate system ceiling
+    owner->system_ceiling_ = 0;
+    for (size_t i = 0; i < owner->held_ceiling_depth_; ++i) {
+        if (owner->held_ceilings_[i] > owner->system_ceiling_)
+            owner->system_ceiling_ = owner->held_ceilings_[i];
+    }
+#else
+    (void)owner;
+    (void)ceiling;
+#endif
+}
+
 /// @brief Release the mutex, waking the next highest-priority waiter.
 void Mutex::unlock() {
     lock_.lock();
@@ -285,9 +426,8 @@ void Mutex::unlock() {
         return;
     }
 
-    // Wake the highest-priority waiter BEFORE restoring the old
-    // owner's priority, so that the awoken waiter is no longer
-    // counted in the max-remaining-waiter calculation.
+    uint64_t released_ceiling = priority_ceiling_;
+
     if (wait_count_ > 0) {
         wake_one();
     }
@@ -296,6 +436,8 @@ void Mutex::unlock() {
 
     owner_ = nullptr;
     lock_count_ = 0;
+
+    pop_ceiling(task, released_ceiling);
 
     lock_.unlock();
 }
@@ -323,6 +465,8 @@ errors::SyncError Mutex::unlock_err() {
         return errors::SYNC_ERR_OK;
     }
 
+    uint64_t released_ceiling = priority_ceiling_;
+
     if (wait_count_ > 0) {
         wake_one();
     }
@@ -331,6 +475,8 @@ errors::SyncError Mutex::unlock_err() {
 
     owner_ = nullptr;
     lock_count_ = 0;
+
+    pop_ceiling(task, released_ceiling);
 
     lock_.unlock();
     return errors::SYNC_ERR_OK;

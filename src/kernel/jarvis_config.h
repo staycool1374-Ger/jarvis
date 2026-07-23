@@ -444,6 +444,22 @@
 #define CONFIG_HAS_HPET 0
 #endif
 
+/// Enable Priority Ceiling Protocol for Mutex.
+/// When set, each mutex has a static priority_ceiling (= max priority of any
+/// task that may lock it). The system ceiling is the max of all held mutex
+/// ceilings. A task is blocked from acquiring a mutex if its priority is
+/// ≤ the current system ceiling, preventing deadlock and chained blocking.
+/// Can be combined with CONFIG_MUTEX_PIP (PIP+PCP). Default: 0 (disabled).
+#ifndef CONFIG_PRIORITY_CEILING_PROTOCOL
+#define CONFIG_PRIORITY_CEILING_PROTOCOL 0
+#endif
+
+/// Maximum number of simultaneously held mutexes per task (for PCP ceiling
+/// tracking). Only used when CONFIG_PRIORITY_CEILING_PROTOCOL > 0.
+#ifndef CONFIG_MAX_HELD_CEILINGS
+#define CONFIG_MAX_HELD_CEILINGS 16
+#endif
+
 // ---------------------------------------------------------------------------
 // Priority Inheritance Protocol Configuration
 // ---------------------------------------------------------------------------
@@ -453,7 +469,7 @@
 /// inversion. Set to 0 for soft-RT builds (no PI overhead). Default: 1
 /// (enabled).
 #ifndef CONFIG_MUTEX_PIP
-#define CONFIG_MUTEX_PIP 0
+#define CONFIG_MUTEX_PIP 1
 #endif
 
 /// Enable Priority Inheritance Protocol for Semaphore.
@@ -471,6 +487,15 @@
 /// queue. Set to 0 for soft-RT builds. Default: 1 (enabled).
 #ifndef CONFIG_QUEUE_PIP
 #define CONFIG_QUEUE_PIP 1
+#endif
+
+/// Maximum allowed cycles with interrupts disabled (preempt-off region).
+/// Used by CONFIG_ASSERT in debug builds to catch overly long critical
+/// sections that would increase interrupt latency beyond the hard-RT
+/// bound. Measured via rdtsc around arch::cli()/arch::sti() pairs.
+/// Set to 0 to disable the assertion. Default: 0 (disabled).
+#ifndef CONFIG_PREEMPTION_LATENCY_MAX_CYCLES
+#define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
 // ---------------------------------------------------------------------------

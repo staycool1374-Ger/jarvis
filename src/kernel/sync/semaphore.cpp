@@ -86,6 +86,7 @@ void Semaphore::wake_one() {
 
 /// @brief Boost the owner if the waiter has higher priority (PIP).
 void Semaphore::inherit_priority(TaskControlBlock &waiter) {
+#if CONFIG_SEMAPHORE_PIP
     if (!owner_)
         return;
     uint64_t max_prio = waiter.priority;
@@ -98,10 +99,14 @@ void Semaphore::inherit_priority(TaskControlBlock &waiter) {
             holder_priority_ = owner_->priority;
         owner_->priority = max_prio;
     }
+#else
+    (void)waiter;
+#endif
 }
 
 /// @brief Restore the owner's priority (PIP).
 void Semaphore::restore_priority() {
+#if CONFIG_SEMAPHORE_PIP
     if (!owner_ || holder_priority_ == 0)
         return;
     uint64_t max_remaining = 0;
@@ -115,6 +120,7 @@ void Semaphore::restore_priority() {
         owner_->priority = holder_priority_;
         holder_priority_ = 0;
     }
+#endif
 }
 
 /// @brief Decrement the count, blocking if zero.

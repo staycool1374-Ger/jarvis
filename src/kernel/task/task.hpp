@@ -174,6 +174,7 @@ struct TaskControlBlock {
           blocked_next(nullptr), blocked_prev(nullptr),
           blocked_on_queue(nullptr), reply_wait(false),
           waiting_on_mutex(nullptr),
+          held_ceiling_depth_(0), system_ceiling_(0),
           first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
           num_children(0) {
     }
@@ -309,6 +310,15 @@ struct TaskControlBlock {
     /// Non-null only while the task is in a Mutex's waiter array.
     /// Set in Mutex::lock(), cleared in Mutex::wake_one().
     sync::Mutex *waiting_on_mutex;
+
+    /// @brief Number of mutexes currently held by this task (for PCP ceiling
+    /// tracking).
+    size_t held_ceiling_depth_;
+    /// @brief Stack of priority_ceiling values of all held mutexes.
+    uint64_t held_ceilings_[CONFIG_MAX_HELD_CEILINGS];
+    /// @brief Current system ceiling — max priority_ceiling of all held
+    /// mutexes. 0 when no mutex is held. Used by PCP to block lock attempts.
+    uint64_t system_ceiling_;
 
     /// @brief Process hierarchy: first child, next sibling, previous sibling.
     TaskControlBlock *first_child;

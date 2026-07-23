@@ -48,7 +48,9 @@ class Queue {
     static constexpr size_t MAX_WAITERS = CONFIG_SYNC_MAX_WAITERS;
 
     Queue()
-        : head_(0), tail_(0), count_(0), send_waiters_(0), recv_waiters_(0) {
+        : head_(0), tail_(0), count_(0), send_waiters_(0), recv_waiters_(0),
+          last_sender_(nullptr), last_receiver_(nullptr),
+          send_holder_prio_(0), recv_holder_prio_(0) {
     }
     /// @brief Initialize the message queue to empty.
     void init();
@@ -135,6 +137,20 @@ class Queue {
     bool add_recv_waiter(TaskControlBlock *task);
     void wake_send_one();
     void wake_recv_one();
+
+    /// @brief Boost the last receiver when a high-prio sender blocks.
+    void boost_receiver(TaskControlBlock &blocked_sender);
+    /// @brief Boost the last sender when a high-prio receiver blocks.
+    void boost_sender(TaskControlBlock &blocked_receiver);
+    /// @brief Restore the last receiver's priority after send completes.
+    void restore_receiver();
+    /// @brief Restore the last sender's priority after receive completes.
+    void restore_sender();
+
+    TaskControlBlock *last_sender_;    ///< Last task to enter send() (for PIP).
+    TaskControlBlock *last_receiver_;  ///< Last task to enter receive() (for PIP).
+    uint64_t send_holder_prio_;        ///< Saved priority of last_sender_ for PIP restore.
+    uint64_t recv_holder_prio_;        ///< Saved priority of last_receiver_ for PIP restore.
 };
 
 } // namespace sync

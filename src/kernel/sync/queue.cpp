@@ -35,6 +35,10 @@ void Queue::init() {
     count_ = 0;
     send_waiters_count_ = 0;
     recv_waiters_count_ = 0;
+    last_sender_ = nullptr;
+    last_receiver_ = nullptr;
+    send_holder_prio_ = 0;
+    recv_holder_prio_ = 0;
 }
 
 /// @brief Initialise the message queue (error-returning overload).
@@ -47,6 +51,10 @@ errors::SyncError Queue::init_err() {
     count_ = 0;
     send_waiters_count_ = 0;
     recv_waiters_count_ = 0;
+    last_sender_ = nullptr;
+    last_receiver_ = nullptr;
+    send_holder_prio_ = 0;
+    recv_holder_prio_ = 0;
     return errors::SYNC_ERR_OK;
 }
 
@@ -105,8 +113,10 @@ bool Queue::send(const uint8_t *data, size_t size) {
         return false;
 
     auto *task = Scheduler::current_task();
+    last_sender_ = task;
 
     while (is_full()) {
+        boost_receiver(*task);
         if (!add_send_waiter(task))
             return false;
         task->state = TaskState::BLOCKED;
@@ -118,6 +128,7 @@ bool Queue::send(const uint8_t *data, size_t size) {
     tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
     ++count_;
 
+    restore_receiver();
     wake_recv_one();
 
     return true;
@@ -134,9 +145,12 @@ errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
     if (!task)
         return errors::SYNC_ERR_NO_TASK;
 
+    last_sender_ = task;
+
     while (is_full()) {
         if (send_waiters_count_ >= MAX_WAITERS)
             return errors::SYNC_ERR_MAX_WAITERS;
+        boost_receiver(*task);
         send_waiters_[send_waiters_count_++] = task;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -147,6 +161,7 @@ errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
     tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
     ++count_;
 
+    restore_receiver();
     wake_recv_one();
 
     if (sent_bytes)
@@ -160,11 +175,13 @@ bool Queue::try_send(const uint8_t *data, size_t size) {
     if (size > QUEUE_MAX_MSG_SIZE || is_full())
         return false;
 
+    last_sender_ = Scheduler::current_task();
     memcpy(msgs_[tail_].data, data, size);
     msgs_[tail_].size = size;
     tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
     ++count_;
 
+    restore_receiver();
     wake_recv_one();
     return true;
 }
@@ -178,11 +195,13 @@ errors::SyncError Queue::try_send_err(const uint8_t *data, size_t size,
     if (is_full())
         return errors::SYNC_ERR_QUEUE_FULL;
 
+    last_sender_ = Scheduler::current_task();
     memcpy(msgs_[tail_].data, data, size);
     msgs_[tail_].size = size;
     tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
     ++count_;
 
+    restore_receiver();
     wake_recv_one();
 
     if (sent_bytes)
@@ -194,8 +213,10 @@ errors::SyncError Queue::try_send_err(const uint8_t *data, size_t size,
 bool Queue::receive(uint8_t *buf, size_t *size) {
     SpinLockGuard<SpinLock> guard(lock_);
     auto *task = Scheduler::current_task();
+    last_receiver_ = task;
 
     while (is_empty()) {
+        boost_sender(*task);
         if (!add_recv_waiter(task))
             return false;
         task->state = TaskState::BLOCKED;
@@ -213,6 +234,7 @@ bool Queue::receive(uint8_t *buf, size_t *size) {
     head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
     --count_;
 
+    restore_sender();
     wake_send_one();
     return true;
 }
@@ -226,9 +248,12 @@ errors::SyncError Queue::receive_err(uint8_t *buf, size_t *size,
     if (!task)
         return errors::SYNC_ERR_NO_TASK;
 
+    last_receiver_ = task;
+
     while (is_empty()) {
         if (recv_waiters_count_ >= MAX_WAITERS)
             return errors::SYNC_ERR_MAX_WAITERS;
+        boost_sender(*task);
         recv_waiters_[recv_waiters_count_++] = task;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -245,6 +270,7 @@ errors::SyncError Queue::receive_err(uint8_t *buf, size_t *size,
     head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
     --count_;
 
+    restore_sender();
     wake_send_one();
 
     if (received_bytes)
@@ -258,6 +284,7 @@ bool Queue::try_receive(uint8_t *buf, size_t *size) {
     if (is_empty())
         return false;
 
+    last_receiver_ = Scheduler::current_task();
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
         if (*size < copy_size)
@@ -269,6 +296,7 @@ bool Queue::try_receive(uint8_t *buf, size_t *size) {
     head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
     --count_;
 
+    restore_sender();
     wake_send_one();
     return true;
 }
@@ -281,6 +309,7 @@ errors::SyncError Queue::try_receive_err(uint8_t *buf, size_t *size,
     if (is_empty())
         return errors::SYNC_ERR_QUEUE_EMPTY;
 
+    last_receiver_ = Scheduler::current_task();
     size_t copy_size = msgs_[head_].size;
     if (buf && size) {
         if (*size < copy_size)
@@ -292,11 +321,68 @@ errors::SyncError Queue::try_receive_err(uint8_t *buf, size_t *size,
     head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
     --count_;
 
+    restore_sender();
     wake_send_one();
 
     if (received_bytes)
         *received_bytes = copy_size;
     return errors::SYNC_ERR_OK;
+}
+
+//
+// --- Priority Inheritance Protocol (PIP) helpers ---
+//
+
+/// @brief Boost the last receiver when a high-prio sender blocks on a full
+/// queue.
+void Queue::boost_receiver(TaskControlBlock &blocked_sender) {
+#if CONFIG_QUEUE_PIP
+    if (!last_receiver_)
+        return;
+    if (blocked_sender.priority > last_receiver_->priority) {
+        if (recv_holder_prio_ == 0)
+            recv_holder_prio_ = last_receiver_->priority;
+        last_receiver_->priority = blocked_sender.priority;
+    }
+#else
+    (void)blocked_sender;
+#endif
+}
+
+/// @brief Boost the last sender when a high-prio receiver blocks on an empty
+/// queue.
+void Queue::boost_sender(TaskControlBlock &blocked_receiver) {
+#if CONFIG_QUEUE_PIP
+    if (!last_sender_)
+        return;
+    if (blocked_receiver.priority > last_sender_->priority) {
+        if (send_holder_prio_ == 0)
+            send_holder_prio_ = last_sender_->priority;
+        last_sender_->priority = blocked_receiver.priority;
+    }
+#else
+    (void)blocked_receiver;
+#endif
+}
+
+/// @brief Restore the last receiver's priority after a message is enqueued.
+void Queue::restore_receiver() {
+#if CONFIG_QUEUE_PIP
+    if (!last_receiver_ || recv_holder_prio_ == 0)
+        return;
+    last_receiver_->priority = recv_holder_prio_;
+    recv_holder_prio_ = 0;
+#endif
+}
+
+/// @brief Restore the last sender's priority after a message is dequeued.
+void Queue::restore_sender() {
+#if CONFIG_QUEUE_PIP
+    if (!last_sender_ || send_holder_prio_ == 0)
+        return;
+    last_sender_->priority = send_holder_prio_;
+    send_holder_prio_ = 0;
+#endif
 }
 
 } // namespace sync
