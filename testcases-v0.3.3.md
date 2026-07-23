@@ -1,34 +1,47 @@
-# Test Cases — v0.3.3 (Phase 4: WCET Analysis & Tuning)
+# Test Cases — v0.3.3 (Phase 4: Inheritance & Ceiling)
 
-## Branch: testbed only
+## Branch: main
 
 *Outline — test details to be expanded when implementation begins.*
 
-### Syscall WCET Tracking — test_syscall_wcet.cpp
-- Each syscall records min/max/avg execution time
-- Fast syscalls (getpid, getticks) have sub-microsecond WCET
-- Blocking syscalls (recv, send) record active time only
-- WCET stats exported via /proc/syscall_stats
+### Priority Inheritance Protocol — Mutex — test_pip_mutex.cpp
+- 3-task chain (low holds lock, medium preempts, high waits for lock) — verify low inherits high's priority
+- Priority inheritance released when high times out or lock released
+- Nested mutex: low holds A, waits for B held by medium; medium inherits max(waiter priorities)
+- Boosting does not exceed `CONFIG_MAX_PRIORITY`
+- Owner change on inheritance is visible to all cores (SMP)
+- `CONFIG_MUTEX_PIP=0` build: inheritance disabled, standard priority inversion observable
+- `CONFIG_MUTEX_PRIORITY_CEILING` compile-time validation of ceiling values
+- No spurious wake or missed unlock after inheritance chain
 
-### Kernel Stack Usage Profiler — test_stack_profiler.cpp
-- Background task records max stack depth per thread
-- Stack depth increases with call nesting
-- Stack usage resets on thread exit
-- Profiler overhead does not skew measurements
+### Priority Inheritance — Semaphore — test_pip_semaphore.cpp
+- Binary semaphore: owner tracking + PIP — low-prio holder boosted when high-prio waiter blocks
+- Counting semaphore: last-waiter priority determines boost amount
+- Semaphore with multiple waiters: boost to highest waiting priority
+- Uncontested lock/unlock has zero PIP overhead (fast path)
+- `CONFIG_SEMAPHORE_PIP=0` build: standard semaphore behaviour retained
 
-### Allocation-free IRQ Paths — test_irq_alloc.cpp
-- No dynamic allocation in any IRQ handler
-- No allocation in syscall fast-path (getpid, getticks)
-- Allocation only in syscall slow-path (open, fork) where documented
+### Priority Inheritance — Message Queue — test_pip_queue.cpp
+- Queue::send_waiters / recv_waiters: high-prio sender blocked on full queue boosts receiver
+- High-prio receiver blocked on empty queue boosts sender
+- Priority donation returned to original on queue operation completion
+- Nested boost: task inherits multiple priorities across different queues
+- `CONFIG_QUEUE_PIP=0` build: queue without inheritance
 
-### Interrupt Latency Measurement — test_irq_latency.cpp
-- Hardware-timed interrupt response time measured
-- Latency distribution: min, max, avg, p99
-- No interrupt latency exceeds 10 us on idle system
-- Worst-case latency under load bounded
+### Priority Ceiling Protocol — test_pcp.cpp
+- Mutex ceiling = static max priority of all tasks that may lock the mutex
+- On lock attempt: block if caller priority ≤ system ceiling (max of all held ceilings)
+- PCP prevents deadlock: 2-task, 2-mutex circular-wait scenario resolved by ceiling blocking
+- PCP prevents chained blocking: high-prio task not blocked by multiple lower-prio holders
+- Ceiling violation detection: task tries to lock mutex with ceiling lower than current system ceiling → blocked
+- `CONFIG_PRIORITY_CEILING_PROTOCOL=1` + `CONFIG_MUTEX_PIP=1`: combined PIP+PCP mode
+- `CONFIG_PRIORITY_CEILING_PROTOCOL=1` alone: PCP without PIP (ceiling-based blocking only)
 
-### Jitter Benchmarking — test_jitter.cpp
-- Synthetic load: N tasks at same priority
-- Schedule-to-schedule jitter measured
-- Jitter is deterministic (bounded variance)
-- Jitter under max load < 2x idle jitter
+### Scheduler Preemption Points — test_preemption_points.cpp
+- Every `cli`/`sti` pair audited: preemption check at each `sti`
+- `Scheduler::reschedule()` called from: syscall return, ISR exit, `on_tick`, explicit yield
+- Preemption disabled region bounded to < CONFIG_PREEMPTION_LATENCY_MAX_CYCLES
+- `CONFIG_PREEMPTION_LATENCY_MAX_CYCLES` measurement — `rdtsc` before/after preempt-off region
+- Assertion fires if measured latency exceeds configured max
+- Nested preempt-disable: outermost `sti` triggers reschedule only once
+- No preemption in IRQ handler tail-chaining (nested ISR non-preemptible)
