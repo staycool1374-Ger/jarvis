@@ -83,6 +83,7 @@ class Mutex {
     uint64_t holder_priority_; ///< Saved original priority of owner (for PI
                                ///< restore).
     uint64_t lock_count_;      ///< Recursive lock count.
+    bool initialized_ = false; ///< Whether init_err() has been called.
     TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks
                                              ///< (priority-sorted on wake).
     size_t wait_count_;                      ///< Number of waiting tasks.

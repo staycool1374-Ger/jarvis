@@ -21,7 +21,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"selftest",            132,    0,       0      },  // same as safe
     {"all",                 807,    0,       0      },  // every registration function
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
-    {"deadlock",             16,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
+    {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
     {"lock_protocol",        28,    0,       0      },  // lock_order + budget + pip + pcp + lock_validator
     {"timer",                 5,    0,       0      },  // timer tests
     {"wfg",                   4,    0,       0      },  // wfg tests

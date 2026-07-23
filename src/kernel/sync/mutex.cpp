@@ -36,9 +36,10 @@ void Mutex::init() {
 
 /// @brief Initialise the mutex (error-returning overload).
 errors::SyncError Mutex::init_err() {
-    if (owner_ != nullptr || lock_count_ != 0 || wait_count_ != 0) {
+    if (initialized_) {
         return errors::SYNC_ERR_ALREADY_INITIALIZED;
     }
+    initialized_ = true;
     owner_ = nullptr;
     holder_priority_ = 0;
     lock_count_ = 0;
