@@ -102,6 +102,7 @@ void register_shell_interaction_tests();
 void register_irq_guard_tests();
 void register_shell_redirect_tests();
 void register_klog_tests();
+void register_dmesg_tests();
 void register_hal_tests();
 void register_buildsystem_tests();
 void register_secure_exec_tests();
@@ -300,6 +301,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_irqguard_audit_tests();
         register_shell_redirect_tests();
         register_klog_tests();
+        register_dmesg_tests();
         register_hal_tests();
         register_buildsystem_tests();
         register_secure_exec_tests();
@@ -488,6 +490,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_secure_exec_tests();
          register_vfsd_authorization_tests();
      }},
+
+    {"dmesg", []() { register_dmesg_tests(); }},
 
     {"debug",
      []() {

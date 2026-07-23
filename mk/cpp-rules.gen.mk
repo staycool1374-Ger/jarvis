@@ -366,6 +366,10 @@ build/kernel/test/test_syscall_fuzz.o: src/kernel/test/test_syscall_fuzz.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_dmesg.o: src/kernel/test/test_dmesg.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_process.o: src/kernel/test/test_process.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
