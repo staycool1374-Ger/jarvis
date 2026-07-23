@@ -106,3 +106,11 @@ __attribute__((weak)) void register_aarch64_tests() {}
 #if defined(CONFIG_ARCH_RISCV64)
 __attribute__((weak)) void register_riscv64_tests() {}
 #endif
+__attribute__((weak)) void register_lock_order_tests() {}
+__attribute__((weak)) void register_budget_tests() {}
+__attribute__((weak)) void register_pip_tests() {}
+__attribute__((weak)) void register_pcp_tests() {}
+__attribute__((weak)) void register_lock_validator_tests() {}
+__attribute__((weak)) void register_mlock_tests() {}
+__attribute__((weak)) void register_cpu_load_tests() {}
+__attribute__((weak)) void register_slab_reclaim_tests() {}

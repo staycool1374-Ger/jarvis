@@ -17,57 +17,46 @@ struct ExpectedCounts {
 
 static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
-    {"safe", 132, 0, 0},     // curated TF_RELEASE subset
-    {"selftest", 132, 0, 0}, // same as safe
-    {"all", 764, 0, 0},      // every registration function
-    {"scheduler", 85, 0, 0}, // sched + task + lifecycle + deadlock + timer
-    {"memory", 45, 0, 0},    // PMM + VMM + checked_ptr + buffer_pool
-    {"ipc", 42, 0, 0},       // IPC + pipe + blocking + lock-free + robustness
-    {"vfs", 143, 0,
-     0}, // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
-    {"process", 43, 0,
-     0}, // process + elf + signals + rlimit + waitpid + pml4_clone
-    {"syscall", 28, 0, 0}, // syscall + syscall_fuzz
-    {"arch", 59, 0, 0},    // cross_arch + GDT + IDT + bootparams + multiboot +
-                           // address + PIC + HAL
-    {"cross_arch", 16, 0, 0}, // cross-architecture tests
-    {"device", 33, 0,
-     0}, // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
-    {"shell", 22, 0, 0},      // shell_interaction + shell_redirect + textutils
-    {"net", 42, 0, 0},        // net + PCI + virtio + DMA
-    {"security", 31, 0, 0},   // capability + secure_exec + vfsd_authorization
-    {"debug", 14, 0, 0},      // debug + gcov + klog
-    {"integration", 1, 0, 0}, // integration smoke tests
-    {"starvation_deadlock", 3, 0,
-     0}, // SchedulerStarvation + PriorityInversionChain5 +
-         // DeadlockNestedMutexLoad
+    {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
+    {"selftest",            132,    0,       0      },  // same as safe
+    {"all",                 807,    0,       0      },  // every registration function
+    {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
+    {"deadlock",             16,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
+    {"lock_protocol",        28,    0,       0      },  // lock_order + budget + pip + pcp + lock_validator
+    {"timer",                 5,    0,       0      },  // timer tests
+    {"wfg",                   4,    0,       0      },  // wfg tests
+    {"lock",                  5,    0,       0      },  // mlock (MCS lock)
+    {"memory",              50,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool + slab_reclaim
+    {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
+    {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
+    {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
+    {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
+    {"arch",                59,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
+    {"cross_arch",          16,     0,       0      },  // cross-architecture tests
+    {"device",              33,     0,       0      },  // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
+    {"shell",               22,     0,       0      },  // shell_interaction + shell_redirect + textutils
+    {"net",                 42,     0,       0      },  // net + PCI + virtio + DMA
+    {"security",            31,     0,       0      },  // capability + secure_exec + vfsd_authorization
+    {"debug",               14,     0,       0      },  // debug + gcov + klog
+    {"integration",          1,     0,       0      },  // integration smoke tests
+    {"starvation_deadlock",  4,     0,       0      },  // SchedulerStarvation + PriorityInversionChain5 + DeadlockNestedMutexLoad + DeadlockRecoveryResourceReclamation
 #if CONFIG_DEADLINE_MONITOR_TASK
-    {"deadline_miss", 5, 0,
-     0}, // + DeadlineMonitorTaskSpawned + DeadlineMonitorDetectsMiss
+    {"deadline_miss",        5,     0,       0      },  // + DeadlineMonitorTaskSpawned + DeadlineMonitorDetectsMiss
 #else
-    {"deadline_miss", 3, 0,
-     0}, // DeadlineMissWhileBlocked + DeadlineMissWhileTerminatedSkipped +
-         // DeadlineRearmOnPeriodRollover
+    {"deadline_miss",        3,     0,       0      },  // DeadlineMissWhileBlocked + DeadlineMissWhileTerminatedSkipped + DeadlineRearmOnPeriodRollover
 #endif
-    {"wcet_overrun", 2, 0,
-     0}, // WcetOverrunDetectionFires + DeadlineMissWithinWcet
-    {"ss_deadline", 2, 0,
-     0}, // SsExhaustionTriggersDeadline + SsDeadlineMissDuringReplenish
-    {"deadline_recovery", 4, 0,
-     0}, // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck +
-         // DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor
-    {"deadline_action", 1, 0,
-     0}, // single action-dispatch test per build (CONFIG_DEADLINE_ACTION)
-    {"wcet", 1, 0, 0}, // WCET benchmark for scan_deadlines (P7b)
-    {"priority_inheritance", 5, 0,
-     0}, // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown +
-         // MutexNestedDrop + SemaphoreInherits
-    {"stress", 9, 0, 0}, // 6 stress + 3 starvation_deadlock
-    {"init", 3, 0, 0},   // init tests
-    {"build", 5, 0, 0},  // buildsystem tests
-    {"bench", 17, 0, 0}, // IPC + microkernel + syscall/IRQ latency benchmarks
-    {"sporadic", 25, 0, 0}, // sporadic server tests
-    {"atomic", 12, 0, 0},   // atomic operation tests
+    {"wcet_overrun",         2,     0,       0      },  // WcetOverrunDetectionFires + DeadlineMissWithinWcet
+    {"ss_deadline",          2,     0,       0      },  // SsExhaustionTriggersDeadline + SsDeadlineMissDuringReplenish
+    {"deadline_recovery",    4,     0,       0      },  // DeadlineActionKillCleansUp + DeadlineDetectionMagicCheck + DeadlineDetectionMcdcCoverage + DeadlineActionNotifyMonitor
+    {"deadline_action",      1,     0,       0      },  // single action-dispatch test per build (CONFIG_DEADLINE_ACTION)
+    {"wcet",                 1,     0,       0      },  // WCET benchmark for scan_deadlines (P7b)
+    {"priority_inheritance", 5,     0,       0      },  // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown + MutexNestedDrop + SemaphoreInherits
+    {"stress",              10,     0,       0      },  // stress + starvation_deadlock
+    {"init",                 3,     0,       0      },  // init tests
+    {"build",                5,     0,       0      },  // buildsystem tests
+    {"bench",               17,     0,       0      },  // IPC + microkernel + syscall/IRQ latency benchmarks
+    {"sporadic",            25,     0,       0      },  // sporadic server tests
+    {"atomic",              12,     0,       0      },  // atomic operation tests
 };
 
 static constexpr size_t k_expected_count_size =
