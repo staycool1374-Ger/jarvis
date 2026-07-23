@@ -32,11 +32,15 @@ using namespace kernel;
 
 static constexpr size_t BENCH_ITERATIONS = 1000;
 
+namespace {
+
 struct BenchResult {
     uint64_t min;
     uint64_t avg;
     uint64_t max;
 };
+
+} // anonymous namespace
 
 // Runmode: kernel
 // Testidea: Simulate reschedule() overhead (core of ISR-triggered context

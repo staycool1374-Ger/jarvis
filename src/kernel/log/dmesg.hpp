@@ -116,6 +116,7 @@ template <size_t Capacity> class DmesgBuffer {
     }
 
   private:
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static inline bool s_suppressed_ =
 #ifdef CONFIG_DEBUG
         false
@@ -127,8 +128,8 @@ template <size_t Capacity> class DmesgBuffer {
 
 /// Capacity of the global dmesg ring buffer (from Kconfig).
 constexpr size_t DMESG_CAPACITY = CONFIG_DMESG_CAPACITY;
-// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 /// @brief Global dmesg buffer instance.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern DmesgBuffer<DMESG_CAPACITY> g_dmesg;
 
 /// @brief Shorthand: push an entry to the global dmesg buffer.
@@ -161,6 +162,8 @@ inline const char *base_error_string(uint64_t code) {
             return "Daemon restarting";
         case 0xDA06:
             return "Daemon up";
+        default:
+            break;
         }
         return "Daemon event";
     }

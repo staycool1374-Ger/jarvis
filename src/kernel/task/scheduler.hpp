@@ -434,6 +434,7 @@ class Scheduler {
 
     /// @brief All registered tasks, grouped by priority in per-priority
     ///        intrusive doubly-linked lists with O(1) bitmap lookup.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static AllTasksRegistry all_tasks_;
     /// @brief Pointer to the currently executing task.
     static constinit TaskControlBlock *current_task_ptr_;
@@ -458,11 +459,13 @@ class Scheduler {
     static constinit TaskControlBlock *s_monitor_task_;
     /// @brief Atomic handoff flag — on_tick() sets it, monitor_task_entry()
     ///        consumes it via atomic exchange (lock-free, no spinlock needed).
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static volatile bool s_scan_requested_;
     /// @brief Set by the test runner before executing test functions; cleared
     ///        afterward.  When true, on_tick() skips the monitor-wake path
     ///        (preventing the timer ISR from switching to the monitor during
     ///        a test, which would hang the test framework).
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static bool s_test_active_;
 #endif
 
@@ -498,6 +501,7 @@ extern uint64_t scheduler_next_task_id;
 ///        task-context reschedule() and the timer ISR's rate_monotonic_schedule
 ///        both called switch_to_task and the last writer before the epilogue
 ///        won, starving the other's selection.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern bool scheduler_need_resched;
 /// @brief Current ISR nesting depth.  Incremented at each ISR entry,
 ///        decremented before iretq.  Checked by on_tick() to detect

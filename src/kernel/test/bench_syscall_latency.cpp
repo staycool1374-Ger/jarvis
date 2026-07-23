@@ -31,11 +31,15 @@ using namespace kernel;
 
 static constexpr size_t BENCH_ITERATIONS = 10000;
 
+namespace {
+
 struct BenchResult {
     uint64_t min;
     uint64_t avg;
     uint64_t max;
 };
+
+} // anonymous namespace
 
 template <typename F> static BenchResult measure(F fn) {
     BenchResult r = {~0ULL, 0, 0};

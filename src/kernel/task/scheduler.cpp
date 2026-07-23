@@ -1139,13 +1139,10 @@ void Scheduler::reap_orphans() noexcept {
         }
 
         // Determine if reapable
-        bool can_reap = false;
-        if (t->parent_id == 0) {
-            can_reap = true;
-        } else if (init_task && t->parent_id == init_task->id &&
-                   init_task->state == TaskState::RUNNING) {
-            can_reap = true;
-        } else {
+        bool can_reap = (t->parent_id == 0) ||
+                        (init_task && t->parent_id == init_task->id &&
+                         init_task->state == TaskState::RUNNING);
+        if (!can_reap) {
             bool parent_found = false;
             for (TaskIter it(0);;) {
                 auto *p = it.next();
