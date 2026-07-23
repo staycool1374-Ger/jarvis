@@ -123,6 +123,14 @@ void register_atomic_tests();
 void register_cross_arch_tests();
 void register_o1_scheduler_tests();
 void register_hal_bits_tests();
+void register_lock_order_tests();
+void register_budget_tests();
+void register_pip_tests();
+void register_pcp_tests();
+void register_lock_validator_tests();
+void register_mlock_tests();
+void register_cpu_load_tests();
+void register_slab_reclaim_tests();
 #if defined(CONFIG_ARCH_AARCH64)
 void register_aarch64_tests();
 #endif
@@ -251,6 +259,14 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_cross_arch_tests();
         register_hal_bits_tests();
         register_o1_scheduler_tests();
+        register_lock_order_tests();
+        register_budget_tests();
+        register_pip_tests();
+        register_pcp_tests();
+        register_lock_validator_tests();
+        register_mlock_tests();
+        register_cpu_load_tests();
+        register_slab_reclaim_tests();
 #if defined(CONFIG_ARCH_AARCH64)
         register_aarch64_tests();
 #endif
@@ -267,17 +283,39 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_task_tests();
         register_task_lifecycle_tests();
         register_idle_task_tests();
+        register_health_tests();
+        register_cpu_load_tests();
+    }},
+
+    {"deadlock", []() {
         register_deadlock_detect_tests();
         register_deadlock_recovery_tests();
-        register_health_tests();
-        register_timer_tests();
-        register_wfg_tests();
         register_starvation_deadlock_tests();
-        register_sporadic_server_tests();
+    }},
+
+    {"lock_protocol", []() {
+        register_lock_order_tests();
+        register_budget_tests();
+        register_pip_tests();
+        register_pcp_tests();
+        register_lock_validator_tests();
+    }},
+
+    {"timer", []() {
+        register_timer_tests();
+    }},
+
+    {"wfg", []() {
+        register_wfg_tests();
+    }},
+
+    {"lock", []() {
+        register_mlock_tests();
     }},
 
     {"memory", []() {
         register_memory_tests();
+        register_slab_reclaim_tests();
         register_checked_ptr_tests();
         register_buffer_pool_tests();
         register_resource_exhaustion_tests();

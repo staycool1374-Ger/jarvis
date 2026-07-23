@@ -15,9 +15,14 @@ struct ExpectedCounts {
 static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
-    {"all",                 727,    0,       0      },  // every registration function
-    {"scheduler",           85,     0,       0      },  // sched + task + lifecycle + deadlock + timer
-    {"memory",              45,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool
+    {"all",                 770,    0,       0      },  // every registration function
+    {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
+    {"deadlock",             16,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
+    {"lock_protocol",        28,    0,       0      },  // lock_order + budget + pip + pcp + lock_validator
+    {"timer",                 5,    0,       0      },  // timer tests
+    {"wfg",                   4,    0,       0      },  // wfg tests
+    {"lock",                  5,    0,       0      },  // mlock (MCS lock)
+    {"memory",              50,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool + slab_reclaim
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
