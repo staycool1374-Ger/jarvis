@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 828,    0,       0      },  // every registration function
+    {"all",                 845,    0,       0      },  // every registration function
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
@@ -55,9 +55,15 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"stress",              10,     0,       0      },  // stress + starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
-    {"bench",               17,     0,       0      },  // IPC + microkernel + syscall/IRQ latency benchmarks
+    {"bench",               22,     0,       0      },  // IPC + microkernel + syscall + IRQ latency + APIC timer + jitter benchmarks
     {"sporadic",            25,     0,       0      },  // sporadic server tests
     {"atomic",              12,     0,       0      },  // atomic operation tests
+    {"apic_timer",           3,     0,       0      },  // APIC timer tick rate, one-shot, stop
+    {"irq_alloc",            3,     0,       0      },  // Allocation-free IRQ paths (stubs)
+    {"jitter",               2,     0,       0      },  // Schedule-to-schedule jitter benchmarks
+    {"threaded_irq",         3,     0,       0      },  // Deferred IRQ handling (stubs)
+    {"gic",                  3,     0,       0      },  // ARM64 GICv3/v4 (stubs — x86_64 pass)
+    {"plic",                 3,     0,       0      },  // RISC-V64 PLIC (stubs — x86_64 pass)
 };
 
 static constexpr size_t k_expected_count_size =
