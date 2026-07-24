@@ -23,26 +23,56 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/idt.hpp>
+#include <kernel/arch/apic.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/idt.hpp>
 
 namespace arch {
 
-/// @brief Monotonic tick counter, incremented on each PIT IRQ.
+/// @brief Monotonic tick counter, incremented on each timer IRQ.
 constinit volatile uint64_t Timer::ticks_ = 0;
 /// @brief Calibrated TSC frequency in Hz.
 constinit uint64_t Timer::tsc_freq_hz_ = 0;
 
-/// @brief Initialise the PIT timer and register its IRQ handler.
+/// @brief Initialise the system timer.
+/// When CONFIG_USE_APIC_TIMER=1 and the APIC was successfully enabled, the
+/// APIC timer drives the system tick; otherwise the legacy PIT is used.
 /// @param frequency_hz Desired tick frequency in Hertz.
 void Timer::init(uint32_t frequency_hz) {
+    // Always calibrate TSC using the PIT (it's the most reliable method
+    // across QEMU/hardware, and is independent of the tick source).
+    calibrate_tsc(frequency_hz);
+
+#if CONFIG_USE_APIC_TIMER
+    if (arch::APIC::is_enabled()) {
+        // Register the tick handler at the dedicated APIC timer vector.
+        // The handler increments ticks and calls the scheduler.
+        IDT::register_handler_raw(APIC::APIC_TIMER_VECTOR,
+                                  [](uint64_t, uint64_t, uint64_t) {
+                                      handle_irq();
+                                      kernel::Scheduler::on_tick();
+                                      // Re-arm TSC-deadline for next tick
+                                      if (arch::APIC::is_timer_active())
+                                          arch::APIC::timer_start();
+                                  });
+        // Initialise and start the APIC timer (TSC-deadline or periodic).
+        arch::APIC::timer_init(frequency_hz);
+        arch::APIC::timer_start();
+        // The PIT is no longer needed for ticks — stop programming it.
+        // (The PIT counter continues to count but its output is ignored
+        //  by the I/O APIC since IRQ0 is routed through the APIC.)
+        return;
+    }
+    // Fall through to PIT if APIC is not enabled
+#endif
+
+    // Legacy PIT timer
     set_frequency(frequency_hz);
     IDT::register_handler(InterruptVector::TIMER,
                           [](uint64_t, uint64_t, uint64_t) {
                               handle_irq();
                               kernel::Scheduler::on_tick();
                           });
-    calibrate_tsc(frequency_hz);
 }
 
 /// @brief Program the PIT to fire at a given frequency.

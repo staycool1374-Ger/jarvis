@@ -1422,19 +1422,28 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
     arch::IDT::handle_interrupt(vector, error_code, rip);
 
 #if defined(CONFIG_ARCH_X86_64)
+    // Send APIC EOI for every interrupt — the APIC requires EOI
+    // for any vector it delivered, regardless of the source.
+    if (arch::APIC::is_enabled()) {
+        arch::APIC::eoi();
+    }
+
+    // Legacy PIC EOI for vectors routed through the PIC (IRQ0‑15 → 32‑47).
+    // When the APIC is active, these interrupts still reach the PIC as well
+    // (both controllers receive the same physical IRQ signal), so the PIC
+    // must be acknowledged to keep its state machine consistent.
     if (vector >= 32 && vector < 48) {
-        // Always send PIC EOI — the PIC manages the legacy IRQ
         outb(arch::PIC1_CMD, 0x20);
         if (vector >= 40)
             outb(arch::PIC2_CMD, 0x20);
-        // Also send APIC EOI if the APIC is enabled
-        if (arch::APIC::is_enabled()) {
-            arch::APIC::eoi();
-        }
-#if CONFIG_IRQ_LATENCY_HISTOGRAM
-        kernel::IrqLatencyHistogram::record(entry_tsc);
-#endif
     }
+
+    // Record IRQ latency histogram for hardware IRQs (vectors 32-47).
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+    if (vector >= 32 && vector < 48) {
+        kernel::IrqLatencyHistogram::record(entry_tsc);
+    }
+#endif
 #endif
 }
 

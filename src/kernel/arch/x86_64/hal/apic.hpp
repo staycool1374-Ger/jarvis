@@ -42,7 +42,7 @@ public:
     /// Must be called after VMM::init() but before APIC::init().
     static bool map_mmio();
 
-    static constexpr uint8_t APIC_TIMER_VECTOR = 32;
+    static constexpr uint8_t APIC_TIMER_VECTOR = 64;
 
 private:
     // ─── MMIO base addresses ──────────────────────────────────────────────
@@ -97,8 +97,12 @@ private:
     // ─── Access mode ──────────────────────────────────────────────────────
     enum Mode { MODE_NONE, MODE_X2, MODE_XAPIC };
     static Mode mode_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static bool enabled_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static bool timer_active_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+    static uint64_t timer_tsc_delta_;
     static uint32_t bus_freq_hz_;
     static uint32_t tsc_deadline_supported_;
 

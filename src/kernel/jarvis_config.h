@@ -516,10 +516,9 @@
 /// Use the local APIC timer instead of the PIT for system ticks.
 /// When enabled, replaces the PIT (IRQ0) with the APIC timer in TSC-deadline
 /// or periodic mode.  Requires APIC support on the CPU (CPUID.01H:EDX[9]).
-/// Default: 0 (disabled — PIT is still the functional system timer).
-/// APIC initialisation still runs for capability detection.
+/// Default: 1 (enabled) on x86_64.
 #ifndef CONFIG_USE_APIC_TIMER
-#define CONFIG_USE_APIC_TIMER 0
+#define CONFIG_USE_APIC_TIMER 1
 #endif
 
 // ---------------------------------------------------------------------------

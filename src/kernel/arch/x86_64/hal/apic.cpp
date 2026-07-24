@@ -13,6 +13,7 @@ namespace arch {
 APIC::Mode APIC::mode_          = MODE_NONE;
 bool        APIC::enabled_      = false;
 bool        APIC::timer_active_ = false;
+uint64_t    APIC::timer_tsc_delta_ = 0;
 uint32_t    APIC::bus_freq_hz_  = 0;
 uint32_t    APIC::tsc_deadline_supported_ = 0;
 
@@ -145,11 +146,113 @@ void APIC::eoi() {
         lapic_wr(REG_EOI, 0);
 }
 
-// ─── APIC timer stubs ────────────────────────────────────────────────────
-void APIC::timer_init(uint32_t frequency_hz) { (void)frequency_hz; }
-void APIC::timer_start() {}
-void APIC::timer_stop() {}
-uint32_t APIC::timer_current_count() { return 0; }
-uint32_t APIC::calibrate_bus_hz() { return 0; }
+// ─── APIC timer ───────────────────────────────────────────────────────────
+
+void APIC::x2_write(uint32_t off, uint32_t v) { wrmsr(x2apic_msr(off), v); }
+uint32_t APIC::x2_read(uint32_t off) { return static_cast<uint32_t>(rdmsr(x2apic_msr(off))); }
+
+void APIC::timer_init(uint32_t frequency_hz) {
+    if (!enabled_) return;
+    auto wr = [&](uint32_t off, uint32_t v) {
+        if (mode_ == MODE_X2) wrmsr(x2apic_msr(off), v);
+        else lapic_wr(off, v);
+    };
+
+    if (tsc_deadline_supported_) {
+        // TSC-deadline mode: fire once when TSC reaches a programmed value.
+        // Re-arm is done during the ISR by calling timer_start().
+        wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_TSCDEADLINE);
+        kernel::Logger::info("APIC timer: TSC-deadline mode, %lu Hz",
+                             frequency_hz);
+    } else {
+        // Periodic mode: calibrate bus frequency, set divider + init-count.
+        // The timer auto-re-arms in hardware — no re-arm needed in the ISR.
+        bus_freq_hz_ = calibrate_bus_hz();
+        if (bus_freq_hz_ == 0) {
+            kernel::Logger::warn("APIC timer: bus freq calibration failed");
+            return;
+        }
+        kernel::Logger::info("APIC timer: periodic mode, bus=%lu Hz target=%lu Hz",
+                             bus_freq_hz_, frequency_hz);
+        wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+        wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_PERIODIC);
+    }
+    timer_active_ = true;
+
+    // Mask I/O APIC IRQ0 (PIT) — the APIC timer now drives the system tick.
+    // The PIT counter continues to run (for potential TSC re‑calibration)
+    // but its interrupt is no longer forwarded to the CPU.
+    arch::ioapic_wr(IOAPIC_REDIR_BASE + 0 * 2, 32 | IOAPIC_MASKED_BIT);
+    arch::ioapic_wr(IOAPIC_REDIR_BASE + 0 * 2 + 1, 0);
+}
+
+void APIC::timer_start() {
+    if (!timer_active_) return;
+    if (tsc_deadline_supported_) {
+        uint64_t tsc_freq = arch::Timer::tsc_freq_hz();
+        if (tsc_freq == 0) tsc_freq = 2000000000ULL;
+        uint64_t delta = tsc_freq / 1000;
+        wrmsr(MSR_TSC_DEADLINE, rdtsc() + (delta > 0 ? delta : 1));
+    } else {
+        // Periodic mode: set initial count once; hardware auto-re-arms.
+        // timer_start() is still called from the ISR (for TSC-deadline
+        // re-arm), but in periodic mode it's a no-op.
+        if (bus_freq_hz_ == 0) return;
+        if (mode_ == MODE_X2)
+            x2_write(REG_TIMER_INITCNT, bus_freq_hz_ / 1000);
+        else
+            lapic_wr(REG_TIMER_INITCNT, bus_freq_hz_ / 1000);
+    }
+}
+
+void APIC::timer_stop() {
+    if (!enabled_) return;
+    if (tsc_deadline_supported_)
+        wrmsr(MSR_TSC_DEADLINE, 0);
+    if (mode_ == MODE_X2)
+        x2_write(REG_LVT_TIMER, LVT_MASKED);
+    else
+        lapic_wr(REG_LVT_TIMER, LVT_MASKED);
+    timer_active_ = false;
+}
+
+uint32_t APIC::timer_current_count() {
+    if (mode_ == MODE_X2) return x2_read(REG_TIMER_CURCNT);
+    return lapic_rd(REG_TIMER_CURCNT);
+}
+
+// ─── Bus frequency calibration (periodic mode only) ──────────────────────
+uint32_t APIC::calibrate_bus_hz() {
+    // One-shot mode: write a known initial count, measure elapsed TSC
+    auto wr = [&](uint32_t off, uint32_t v) {
+        if (mode_ == MODE_X2) wrmsr(x2apic_msr(off), v);
+        else lapic_wr(off, v);
+    };
+    auto rd = [&](uint32_t off) -> uint32_t {
+        if (mode_ == MODE_X2)
+            return static_cast<uint32_t>(rdmsr(x2apic_msr(off)));
+        return lapic_rd(off);
+    };
+
+    wr(REG_LVT_TIMER, APIC_TIMER_VECTOR);
+    wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+
+    constexpr uint32_t TEST_COUNT = 0x1000000;
+    wr(REG_TIMER_INITCNT, TEST_COUNT);
+
+    uint64_t ts0 = rdtsc();
+    for (int i = 0; i < 1000000; ++i) {
+        if (rd(REG_TIMER_CURCNT) <= TEST_COUNT / 2) break;
+        asm volatile("pause");
+    }
+    uint64_t ts1 = rdtsc();
+    uint32_t rem = rd(REG_TIMER_CURCNT);
+    uint32_t elapsed = TEST_COUNT - rem;
+    if (elapsed == 0) return 0;
+
+    uint64_t tsc_freq = arch::Timer::tsc_freq_hz();
+    if (tsc_freq == 0) tsc_freq = 2000000000ULL;
+    return static_cast<uint32_t>((elapsed * tsc_freq) / (ts1 - ts0));
+}
 
 } // namespace arch
