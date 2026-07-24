@@ -214,9 +214,15 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [x] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
   - [x] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
 - [ ] Deferred Interrupt Handling (Threaded IRQs)
+  - [x] IrqThread class — kernel task per IRQ vector, Notify-based wakeup
   - [ ] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
   - [ ] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
   - [ ] IrqThread::init(vector, priority, handler) — replace IDT::register_handler for enabled IRQs
+
+  > **Future:** IrqThread is the recommended pattern for device-driver ISRs (virtio, AHCI, ATA) in
+  > a follow-up version where blocking operations (Mutex, sleep, allocation) are needed inside the
+  > handler.  The present implementation covers keyboard as the first consumer; the timer IRQ and
+  > scheduler `on_tick()` always remain in the fast (non-threaded) ISR path.
 - [ ] ARM64 / RISC-V64 Interrupt Controllers
   - [ ] arch/aarch64/hal/gic.hpp — GICv3/v4 driver, priority masking, SGI/PPI/SPI
   - [ ] arch/riscv64/hal/plic.hpp — PLIC driver, priority levels, threshold
