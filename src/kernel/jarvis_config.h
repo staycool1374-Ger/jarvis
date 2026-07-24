@@ -498,6 +498,43 @@
 #define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
+/// Enable IRQ latency histogram (64 buckets, 0-100 μs).
+/// Records latency at ISR entry via rdtsc. When enabled, the histogram is
+/// populated on every IRQ and can be dumped via kernel shell or API.
+/// Set to 0 to disable (zero overhead). Default: 0 (disabled for stability).
+#ifndef CONFIG_IRQ_LATENCY_HISTOGRAM
+#define CONFIG_IRQ_LATENCY_HISTOGRAM 1
+#endif
+
+/// Maximum allowed IRQ latency in nanoseconds (debug assert).
+/// When > 0 and CONFIG_IRQ_LATENCY_HISTOGRAM is enabled, the interrupt
+/// handler panics if any single IRQ exceeds this threshold. Set to 0 to disable.
+#ifndef CONFIG_IRQ_LATENCY_MAX_NS
+#define CONFIG_IRQ_LATENCY_MAX_NS 0
+#endif
+
+/// Use the local APIC timer instead of the PIT for system ticks.
+/// When enabled, replaces the PIT (IRQ0) with the APIC timer in TSC-deadline
+/// or periodic mode.  Requires APIC support on the CPU (CPUID.01H:EDX[9]).
+/// Default: 1 (enabled) on x86_64.
+#ifndef CONFIG_USE_APIC_TIMER
+#define CONFIG_USE_APIC_TIMER 1
+#endif
+
+/// Enable threaded interrupt handling (CONFIG_THREADED_IRQS).
+/// When non-zero, nominated IRQ vectors run their handler in a dedicated kernel
+/// task (IrqThread) instead of raw ISR context.  The ISR does minimal work
+/// (ack + data capture + Notify), while the handler runs at task priority.
+/// Default: 0 (all IRQs handled in ISR context).
+#ifndef CONFIG_THREADED_IRQS
+#define CONFIG_THREADED_IRQS 1
+#endif
+
+/// Maximum number of simultaneous threaded IRQ handler tasks.
+#ifndef CONFIG_MAX_THREADED_IRQS
+#define CONFIG_MAX_THREADED_IRQS 16
+#endif
+
 // ---------------------------------------------------------------------------
 // Hook Configuration Points
 // ---------------------------------------------------------------------------

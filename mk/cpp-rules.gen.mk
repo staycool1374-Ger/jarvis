@@ -70,6 +70,14 @@ build/kernel/bootparams.o: src/kernel/bootparams.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/irq_latency_histogram.o: src/kernel/irq_latency_histogram.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/irq_thread.o: src/kernel/irq_thread.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/vfs/vfsd.o: src/kernel/vfs/vfsd.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -827,6 +835,10 @@ build/kernel/arch/x86_64/hal/idt.o: src/kernel/arch/x86_64/hal/idt.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/arch/x86_64/hal/timer.o: src/kernel/arch/x86_64/hal/timer.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/arch/x86_64/hal/apic.o: src/kernel/arch/x86_64/hal/apic.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.2</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
    </div>
   </td>
  </tr>
@@ -218,9 +218,12 @@ Macros</h2></td></tr>
 <tr class="memdesc:adb1a44e12231914498173d371ade590f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computed count of enabled syscalls (used for dispatch table sizing).  <br /></td></tr>
 <tr class="memitem:a95ce8c171faeb012773cd4f72a0f2935" id="r_a95ce8c171faeb012773cd4f72a0f2935"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a95ce8c171faeb012773cd4f72a0f2935">CONFIG_HAS_MPU</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memitem:a835305cb9a116e1c539f8f2a6b880848" id="r_a835305cb9a116e1c539f8f2a6b880848"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a835305cb9a116e1c539f8f2a6b880848">CONFIG_HAS_HPET</a>&#160;&#160;&#160;0</td></tr>
-<tr class="memitem:ad16f6b64a36d83cce633b6c7784a82df" id="r_ad16f6b64a36d83cce633b6c7784a82df"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad16f6b64a36d83cce633b6c7784a82df">CONFIG_MUTEX_PIP</a>&#160;&#160;&#160;0</td></tr>
+<tr class="memitem:aac781da257db7b6183fac86fc89095c5" id="r_aac781da257db7b6183fac86fc89095c5"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aac781da257db7b6183fac86fc89095c5">CONFIG_PRIORITY_CEILING_PROTOCOL</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a9cd0e684a26b0270d442310ccd4330da" id="r_a9cd0e684a26b0270d442310ccd4330da"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a9cd0e684a26b0270d442310ccd4330da">CONFIG_MAX_HELD_CEILINGS</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memitem:ad16f6b64a36d83cce633b6c7784a82df" id="r_ad16f6b64a36d83cce633b6c7784a82df"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad16f6b64a36d83cce633b6c7784a82df">CONFIG_MUTEX_PIP</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memitem:a7cf9db7fcc2c0bf9b1bb475b2bad3d93" id="r_a7cf9db7fcc2c0bf9b1bb475b2bad3d93"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a7cf9db7fcc2c0bf9b1bb475b2bad3d93">CONFIG_SEMAPHORE_PIP</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memitem:a08b1decd478ffc1359ac5e6385741d61" id="r_a08b1decd478ffc1359ac5e6385741d61"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a08b1decd478ffc1359ac5e6385741d61">CONFIG_QUEUE_PIP</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a804b850b1e890968b4dfb1f1004ee3b0" id="r_a804b850b1e890968b4dfb1f1004ee3b0"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a804b850b1e890968b4dfb1f1004ee3b0">CONFIG_PREEMPTION_LATENCY_MAX_CYCLES</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memitem:af9d0f7c02c48d8057773b2045f011981" id="r_af9d0f7c02c48d8057773b2045f011981"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af9d0f7c02c48d8057773b2045f011981">CONFIG_IDLE_HOOK</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memdesc:af9d0f7c02c48d8057773b2045f011981"><td class="mdescLeft">&#160;</td><td class="mdescRight">If non-zero, declares weak symbol idle_hook() called each idle iteration.  <br /></td></tr>
 <tr class="memitem:a836435ca7dbe895d16b9f942e7a00b43" id="r_a836435ca7dbe895d16b9f942e7a00b43"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a836435ca7dbe895d16b9f942e7a00b43">CONFIG_TICK_HOOK</a>&#160;&#160;&#160;0</td></tr>
@@ -1042,6 +1045,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a9cd0e684a26b0270d442310ccd4330da" name="a9cd0e684a26b0270d442310ccd4330da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9cd0e684a26b0270d442310ccd4330da">&#9670;&#160;</a></span>CONFIG_MAX_HELD_CEILINGS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_MAX_HELD_CEILINGS&#160;&#160;&#160;16</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Maximum number of simultaneously held mutexes per task (for PCP ceiling tracking). Only used when CONFIG_PRIORITY_CEILING_PROTOCOL &gt; 0. </p>
+
+</div>
+</div>
 <a id="a941c94e5b716a5c776a30efc5e030724" name="a941c94e5b716a5c776a30efc5e030724"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a941c94e5b716a5c776a30efc5e030724">&#9670;&#160;</a></span>CONFIG_MAX_MOUNTS</h2>
 
@@ -1204,7 +1222,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define CONFIG_MUTEX_PIP&#160;&#160;&#160;0</td>
+          <td class="memname">#define CONFIG_MUTEX_PIP&#160;&#160;&#160;1</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1258,6 +1276,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a804b850b1e890968b4dfb1f1004ee3b0" name="a804b850b1e890968b4dfb1f1004ee3b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a804b850b1e890968b4dfb1f1004ee3b0">&#9670;&#160;</a></span>CONFIG_PREEMPTION_LATENCY_MAX_CYCLES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Maximum allowed cycles with interrupts disabled (preempt-off region). Used by CONFIG_ASSERT in debug builds to catch overly long critical sections that would increase interrupt latency beyond the hard-RT bound. Measured via rdtsc around arch::cli()/arch::sti() pairs. Set to 0 to disable the assertion. Default: 0 (disabled). </p>
+
+</div>
+</div>
 <a id="a560bec767ff9229f8b02270422f9109f" name="a560bec767ff9229f8b02270422f9109f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a560bec767ff9229f8b02270422f9109f">&#9670;&#160;</a></span>CONFIG_PRIORITY_CEILING</h2>
 
@@ -1270,6 +1303,21 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Highest schedulable priority (0 = lowest). Valid range: 1–127. Default: 127. Limited to 128 levels for O(1) bitmap scheduler (2 × <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>). </p>
+
+</div>
+</div>
+<a id="aac781da257db7b6183fac86fc89095c5" name="aac781da257db7b6183fac86fc89095c5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac781da257db7b6183fac86fc89095c5">&#9670;&#160;</a></span>CONFIG_PRIORITY_CEILING_PROTOCOL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_PRIORITY_CEILING_PROTOCOL&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Enable Priority Ceiling Protocol for Mutex. When set, each mutex has a static priority_ceiling (= max priority of any task that may lock it). The system ceiling is the max of all held mutex ceilings. A task is blocked from acquiring a mutex if its priority is ≤ the current system ceiling, preventing deadlock and chained blocking. Can be combined with CONFIG_MUTEX_PIP (PIP+PCP). Default: 0 (disabled). </p>
 
 </div>
 </div>

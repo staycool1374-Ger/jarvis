@@ -20,6 +20,9 @@
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/apic.hpp>
+#include <kernel/arch/irq_latency_histogram.hpp>
+#include <kernel/irq_thread.hpp>
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
@@ -397,13 +400,16 @@ uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = UINT64_MAX;
 bool scheduler_need_resched = false;
 uint64_t isr_nesting_depth = 0;
+uint64_t irq_entry_tsc = 0;
 uint64_t scheduler_corruption_count = 0;
 uint64_t deadline_detection_integrity = 0;
 kernel::TaskControlBlock *fpu_owner = nullptr;
 #if defined(CONFIG_ARCH_X86_64)
 constinit uint64_t multiboot_magic = 0;
 constinit uint64_t multiboot_info_ptr = 0;
+
 #endif
+
 }
 
 extern char kernel_virt_end[];
@@ -453,7 +459,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     g_boot_info.hart_id = static_cast<int>(magic);
     g_boot_info.dtb_ptr = mb_info;
     arch::fp_enable();
+
 #endif
+
 
     kernel::Logger::init();
     kernel::test::set_kernel_entry_ns();
@@ -465,7 +473,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write(" [DEBUG]");
 #else
     debug_write(" [RELEASE]");
+
 #endif
+
     debug_write("\n");
 
     debug_write("[BOOT] Arch init...\n");
@@ -489,13 +499,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     cr4 |= (1ULL << 9);
     cr4 |= (1ULL << 10);
     arch::write_cr4(cr4);
+
 #endif
+
     arch::IDT::init();
     arch::IDT::load();
 
 #if defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
     arch::ArchInterruptController::init();
+
 #endif
+
 
 #if defined(CONFIG_ARCH_X86_64)
     {
@@ -567,16 +581,26 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         mem_size = 0x40000000 + 256_MiB;
 #elif defined(CONFIG_ARCH_RISCV64)
         mem_size = 0x80000000 + 128_MiB;
+
 #endif
+
     }
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
+
+    // Map APIC MMIO pages and initialise the local/I/O APIC.
+    if (arch::APIC::is_apic_supported()) {
+        arch::APIC::map_mmio();
+        arch::APIC::init();
+    }
     if (g_boot_info.cmdline[0]) {
         kernel::BootParams::parse_cstr(g_boot_info.cmdline);
     }
 #if defined(CONFIG_ARCH_X86_64)
     kernel::BootParams::parse_multiboot_cmdline();
+
 #endif
+
     {
         auto &bp = kernel::BootParams::instance();
         debug_write("[BOOT] timer_hz=");
@@ -673,11 +697,24 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #if defined(CONFIG_ARCH_X86_64)
     init_pic();
     arch::Keyboard::init();
+#if CONFIG_THREADED_IRQS
+    kernel::IrqThread::create(33, 50,
+                              [](uint64_t, uint64_t, uint64_t) {
+                                  arch::Keyboard::handle_irq();
+                              },
+                              [](uint8_t vector) {
+                                  // x86_64: send APIC EOI + PIC EOI
+                                  if (arch::APIC::is_enabled())
+                                      arch::APIC::eoi();
+                                  arch::ArchInterruptController::eoi(vector);
+                              });
+#else
     arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
                                 [](uint64_t, uint64_t, uint64_t) {
                                     arch::Keyboard::handle_irq();
                                     outb(arch::PIC1_CMD, 0x20);
                                 });
+#endif
 #endif
 
     kernel::vfs::devfs_init();
@@ -774,6 +811,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
+
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+    kernel::IrqLatencyHistogram::init();
+#endif
+
     arch::RTC::init();
     g_boot_epoch = arch::RTC::read_seconds();
     g_boot_ns = arch::Timer::ns();
@@ -1239,7 +1281,11 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
 }
 
 extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
-                                   uint64_t rip, uint64_t *regs) {
+                                   uint64_t rip, uint64_t *regs,
+                                   uint64_t entry_tsc) {
+#if !CONFIG_IRQ_LATENCY_HISTOGRAM
+    (void)entry_tsc;
+#endif
 #if defined(CONFIG_ARCH_X86_64)
     // #NM (Device Not Available, vector 7) — lazy FPU/SSE context switch
     if (vector == 7) {
@@ -1386,14 +1432,44 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         return;
     }
 
+#if CONFIG_THREADED_IRQS
+    // Threaded IRQ dispatch: if this vector has an IrqThread, let the
+    // handler task process it.  The ISR entry does ack + Notify and returns.
+    {
+        auto *irqt = kernel::IrqThread::for_vector(static_cast<uint8_t>(vector));
+        if (irqt) {
+            kernel::IrqThread::isr_entry(static_cast<uint8_t>(vector),
+                                          error_code, rip);
+            return;
+        }
+    }
+#endif
+
     arch::IDT::handle_interrupt(vector, error_code, rip);
 
 #if defined(CONFIG_ARCH_X86_64)
+    // Send APIC EOI for every interrupt — the APIC requires EOI
+    // for any vector it delivered, regardless of the source.
+    if (arch::APIC::is_enabled()) {
+        arch::APIC::eoi();
+    }
+
+    // Legacy PIC EOI for vectors routed through the PIC (IRQ0‑15 → 32‑47).
+    // When the APIC is active, these interrupts still reach the PIC as well
+    // (both controllers receive the same physical IRQ signal), so the PIC
+    // must be acknowledged to keep its state machine consistent.
     if (vector >= 32 && vector < 48) {
         outb(arch::PIC1_CMD, 0x20);
         if (vector >= 40)
             outb(arch::PIC2_CMD, 0x20);
     }
+
+    // Record IRQ latency histogram for hardware IRQs (vectors 32-47).
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+    if (vector >= 32 && vector < 48) {
+        kernel::IrqLatencyHistogram::record(entry_tsc);
+    }
+#endif
 #endif
 }
 

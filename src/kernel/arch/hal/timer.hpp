@@ -64,6 +64,8 @@ class Timer {
     /// @brief Get the remaining ticks on the current timer.
     /// @return Remaining ticks.
     static uint64_t remaining();
+    /// @brief Return the calibrated TSC frequency in Hz.
+    static uint64_t tsc_freq_hz();
 
   private:
     /// @brief Calibrate the TSC frequency using the PIT.
