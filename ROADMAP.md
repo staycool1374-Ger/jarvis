@@ -208,6 +208,7 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [ ] APIC::set_timer_oneshot(ns) / periodic(ns) — nanosecond resolution
   - [ ] Per-CPU timer interrupt vector (not shared PIC IRQ0)
   - [x] CONFIG_USE_APIC_TIMER (default 0 on x86_64 — PIT primary, APIC fallback)
+  - [x] I/O APIC routing for legacy IRQs (PIT, keyboard via APIC, PIC masked)
 - [ ] Interrupt Latency Measurement & Bounding
   - [ ] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
   - [ ] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
