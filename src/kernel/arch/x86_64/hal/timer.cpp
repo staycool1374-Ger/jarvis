@@ -109,6 +109,11 @@ void Timer::calibrate_tsc(uint32_t frequency_hz) {
     tsc_freq_hz_ = 2000000000ULL;
 }
 
+/// @brief Return the calibrated TSC frequency in Hz.
+uint64_t Timer::tsc_freq_hz() {
+    return tsc_freq_hz_;
+}
+
 /// @brief Return the time elapsed since boot in nanoseconds.
 /// Uses the calibrated TSC frequency to convert TSC ticks to nanoseconds.
 /// @return Nanoseconds since boot, or 0 if the TSC has not been calibrated.

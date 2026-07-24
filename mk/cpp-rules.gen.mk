@@ -70,6 +70,10 @@ build/kernel/bootparams.o: src/kernel/bootparams.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/irq_latency_histogram.o: src/kernel/irq_latency_histogram.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/vfs/vfsd.o: src/kernel/vfs/vfsd.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@

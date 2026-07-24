@@ -539,6 +539,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_bench_irq_latency_tests();
      }},
 
+    {"bench_irq_latency",
+     []() {
+         register_bench_irq_latency_tests();
+     }},
+
     {"sporadic", []() { register_sporadic_server_tests(); }},
 
     {"atomic", []() { register_atomic_tests(); }},

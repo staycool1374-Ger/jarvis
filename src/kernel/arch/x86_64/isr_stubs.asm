@@ -21,6 +21,7 @@ extern scheduler_load_cr3_from
 extern scheduler_on_context_switch
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
+extern irq_entry_tsc
 
 %macro ISR_NOERR 1
 global isr_%1
@@ -79,6 +80,17 @@ ISR_NOERR i
 section .text
 isr_common:
     inc qword [rel isr_nesting_depth]
+
+    ; Capture TSC at ISR entry — rdtsc clobbers RAX and RDX
+    push rax
+    push rdx
+    rdtsc
+    shl rdx, 32
+    or  rax, rdx
+    mov [rel irq_entry_tsc], rax
+    pop rdx
+    pop rax
+
     push r15
     push r14
     push r13
@@ -99,6 +111,7 @@ isr_common:
     mov rsi, [rsp + 16*8]
     mov rdx, [rsp + 17*8]
     mov rcx, rsp
+    mov r8, [rel irq_entry_tsc]
 
     call handle_interrupt_c
 

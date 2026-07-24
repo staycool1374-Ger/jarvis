@@ -26,6 +26,7 @@
 #include <kernel/arch/keyboard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/arch/irq_latency_histogram.hpp>
 #include "test_sched_helpers.hpp"
 
 using namespace kernel;
@@ -120,8 +121,22 @@ JARVIS_TEST(bench_spinlock_try_lock, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+// Runmode: kernel
+// Testidea: Dump IRQ latency histogram collected during boot.
+// Input: none (reads static histogram data).
+// Expect: At least one IRQ recorded (timer tick).
+JARVIS_TEST(bench_irq_histogram_dump, "PRE: none | POST: none") {
+    kernel::IrqLatencyHistogram::dump();
+    JARVIS_TEST_PASS();
+}
+#endif
+
 void register_bench_irq_latency_tests() {
     Logger::info("Registering IRQ-path latency benchmarks");
     JARVIS_REGISTER_TEST(bench_reschedule_latency);
     JARVIS_REGISTER_TEST(bench_spinlock_try_lock);
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+    JARVIS_REGISTER_TEST(bench_irq_histogram_dump);
+#endif
 }

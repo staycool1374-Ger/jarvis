@@ -498,6 +498,21 @@
 #define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
+/// Enable IRQ latency histogram (64 buckets, 0-100 μs).
+/// Records latency at ISR entry via rdtsc. When enabled, the histogram is
+/// populated on every IRQ and can be dumped via kernel shell or API.
+/// Set to 0 to disable (zero overhead). Default: 0 (disabled for stability).
+#ifndef CONFIG_IRQ_LATENCY_HISTOGRAM
+#define CONFIG_IRQ_LATENCY_HISTOGRAM 1
+#endif
+
+/// Maximum allowed IRQ latency in nanoseconds (debug assert).
+/// When > 0 and CONFIG_IRQ_LATENCY_HISTOGRAM is enabled, the interrupt
+/// handler panics if any single IRQ exceeds this threshold. Set to 0 to disable.
+#ifndef CONFIG_IRQ_LATENCY_MAX_NS
+#define CONFIG_IRQ_LATENCY_MAX_NS 0
+#endif
+
 // ---------------------------------------------------------------------------
 // Hook Configuration Points
 // ---------------------------------------------------------------------------

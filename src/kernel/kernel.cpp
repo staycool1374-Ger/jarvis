@@ -20,6 +20,7 @@
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/irq_latency_histogram.hpp>
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
@@ -397,13 +398,16 @@ uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = UINT64_MAX;
 bool scheduler_need_resched = false;
 uint64_t isr_nesting_depth = 0;
+uint64_t irq_entry_tsc = 0;
 uint64_t scheduler_corruption_count = 0;
 uint64_t deadline_detection_integrity = 0;
 kernel::TaskControlBlock *fpu_owner = nullptr;
 #if defined(CONFIG_ARCH_X86_64)
 constinit uint64_t multiboot_magic = 0;
 constinit uint64_t multiboot_info_ptr = 0;
+
 #endif
+
 }
 
 extern char kernel_virt_end[];
@@ -453,7 +457,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     g_boot_info.hart_id = static_cast<int>(magic);
     g_boot_info.dtb_ptr = mb_info;
     arch::fp_enable();
+
 #endif
+
 
     kernel::Logger::init();
     kernel::test::set_kernel_entry_ns();
@@ -465,7 +471,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     debug_write(" [DEBUG]");
 #else
     debug_write(" [RELEASE]");
+
 #endif
+
     debug_write("\n");
 
     debug_write("[BOOT] Arch init...\n");
@@ -489,13 +497,17 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     cr4 |= (1ULL << 9);
     cr4 |= (1ULL << 10);
     arch::write_cr4(cr4);
+
 #endif
+
     arch::IDT::init();
     arch::IDT::load();
 
 #if defined(CONFIG_ARCH_AARCH64) || defined(CONFIG_ARCH_RISCV64)
     arch::ArchInterruptController::init();
+
 #endif
+
 
 #if defined(CONFIG_ARCH_X86_64)
     {
@@ -567,7 +579,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         mem_size = 0x40000000 + 256_MiB;
 #elif defined(CONFIG_ARCH_RISCV64)
         mem_size = 0x80000000 + 128_MiB;
+
 #endif
+
     }
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
@@ -576,7 +590,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 #if defined(CONFIG_ARCH_X86_64)
     kernel::BootParams::parse_multiboot_cmdline();
+
 #endif
+
     {
         auto &bp = kernel::BootParams::instance();
         debug_write("[BOOT] timer_hz=");
@@ -774,6 +790,11 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
+
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+    kernel::IrqLatencyHistogram::init();
+#endif
+
     arch::RTC::init();
     g_boot_epoch = arch::RTC::read_seconds();
     g_boot_ns = arch::Timer::ns();
@@ -1239,7 +1260,11 @@ static bool deliver_signal_to_user(kernel::TaskControlBlock *task, uint64_t sig,
 }
 
 extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
-                                   uint64_t rip, uint64_t *regs) {
+                                   uint64_t rip, uint64_t *regs,
+                                   uint64_t entry_tsc) {
+#if !CONFIG_IRQ_LATENCY_HISTOGRAM
+    (void)entry_tsc;
+#endif
 #if defined(CONFIG_ARCH_X86_64)
     // #NM (Device Not Available, vector 7) — lazy FPU/SSE context switch
     if (vector == 7) {
@@ -1393,6 +1418,9 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         outb(arch::PIC1_CMD, 0x20);
         if (vector >= 40)
             outb(arch::PIC2_CMD, 0x20);
+#if CONFIG_IRQ_LATENCY_HISTOGRAM
+        kernel::IrqLatencyHistogram::record(entry_tsc);
+#endif
     }
 #endif
 }

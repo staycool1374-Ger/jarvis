@@ -43,7 +43,7 @@ void panic(const char *msg) __attribute__((noreturn));
 /// @param rip        Instruction pointer at time of interrupt.
 /// @param regs       Pointer to saved register array (GPRs).
 void handle_interrupt_c(uint64_t vector, uint64_t error_code, uint64_t rip,
-                        uint64_t *regs);
+                        uint64_t *regs, uint64_t entry_tsc = 0);
 }
 
 /// @brief Kernel stack base (bottom address).
