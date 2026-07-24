@@ -20,6 +20,7 @@
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/arch/apic.hpp>
 #include <kernel/arch/irq_latency_histogram.hpp>
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/rtc.hpp>
@@ -789,6 +790,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
 #endif
 
+#if CONFIG_USE_APIC_TIMER
+    arch::APIC::init();
+#endif
+
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
 
 #if CONFIG_IRQ_LATENCY_HISTOGRAM
@@ -1415,9 +1420,16 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 
 #if defined(CONFIG_ARCH_X86_64)
     if (vector >= 32 && vector < 48) {
-        outb(arch::PIC1_CMD, 0x20);
-        if (vector >= 40)
-            outb(arch::PIC2_CMD, 0x20);
+#if CONFIG_USE_APIC_TIMER
+        if (arch::APIC::is_enabled()) {
+            arch::APIC::eoi();
+        } else
+#endif
+        {
+            outb(arch::PIC1_CMD, 0x20);
+            if (vector >= 40)
+                outb(arch::PIC2_CMD, 0x20);
+        }
 #if CONFIG_IRQ_LATENCY_HISTOGRAM
         kernel::IrqLatencyHistogram::record(entry_tsc);
 #endif

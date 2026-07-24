@@ -810,6 +810,10 @@ build/kernel/arch/x86_64/hal/timer.o: src/kernel/arch/x86_64/hal/timer.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/arch/x86_64/hal/apic.o: src/kernel/arch/x86_64/hal/apic.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/arch/x86_64/hal/gdt.o: src/kernel/arch/x86_64/hal/gdt.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@

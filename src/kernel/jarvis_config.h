@@ -513,6 +513,15 @@
 #define CONFIG_IRQ_LATENCY_MAX_NS 0
 #endif
 
+/// Use the local APIC timer instead of the PIT for system ticks.
+/// When enabled, replaces the PIT (IRQ0) with the APIC timer in TSC-deadline
+/// or periodic mode.  Requires APIC support on the CPU (CPUID.01H:EDX[9]).
+/// Default: 0 (disabled — PIT is still the functional system timer).
+/// APIC initialisation still runs for capability detection.
+#ifndef CONFIG_USE_APIC_TIMER
+#define CONFIG_USE_APIC_TIMER 0
+#endif
+
 // ---------------------------------------------------------------------------
 // Hook Configuration Points
 // ---------------------------------------------------------------------------
