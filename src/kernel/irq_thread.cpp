@@ -2,6 +2,7 @@
 
 #if CONFIG_THREADED_IRQS
 
+#include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/apic.hpp>
 #include <kernel/arch/io.hpp>
@@ -63,20 +64,14 @@ void IrqThread::isr_entry(uint8_t vector, uint64_t error_code, uint64_t rip) {
     if (!irqt)
         return;
 
-    // 1. Default ack (APIC EOI + optional PIC EOI for legacy vectors)
+    // 1. Default ack: call the arch-generic interrupt controller EOI.
+    //    On x86_64 this sends PIC EOI; APIC EOI is handled separately
+    //    via a custom isr_ack in the keyboard (and future) registration.
+    //    On AArch64 this calls GIC EOI; on RISC-V this calls PLIC complete.
     if (irqt->isr_ack_) {
         irqt->isr_ack_(vector);
     } else {
-        if (arch::APIC::is_enabled())
-            arch::APIC::eoi();
-        // Legacy PIC EOI for IRQs 0-15 (vectors 32-47)
-        // These IRQs are still wired through the PIC even when the APIC
-        // is active, so the PIC state machine must be kept consistent.
-        if (vector >= 32 && vector < 48) {
-            arch::outb(arch::PIC1_CMD, 0x20);
-            if (vector >= 40)
-                arch::outb(arch::PIC2_CMD, 0x20);
-        }
+        arch::ArchInterruptController::eoi(vector);
     }
 
     // 2. Wake the handler task

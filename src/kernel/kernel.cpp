@@ -701,6 +701,12 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::IrqThread::create(33, 50,
                               [](uint64_t, uint64_t, uint64_t) {
                                   arch::Keyboard::handle_irq();
+                              },
+                              [](uint8_t vector) {
+                                  // x86_64: send APIC EOI + PIC EOI
+                                  if (arch::APIC::is_enabled())
+                                      arch::APIC::eoi();
+                                  arch::ArchInterruptController::eoi(vector);
                               });
 #else
     arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
