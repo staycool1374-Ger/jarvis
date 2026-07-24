@@ -147,6 +147,14 @@ void APIC::eoi() {
         lapic_wr(REG_EOI, 0);
 }
 
+void APIC::mask_irq(uint8_t irq, bool mask) {
+    if (!enabled_ || irq >= 16) return;
+    uint32_t entry = 32 + irq;
+    if (mask) entry |= IOAPIC_MASKED_BIT;
+    arch::ioapic_wr(IOAPIC_REDIR_BASE + irq * 2,     entry);
+    arch::ioapic_wr(IOAPIC_REDIR_BASE + irq * 2 + 1, 0);
+}
+
 // ─── APIC timer ───────────────────────────────────────────────────────────
 
 // Helper: compute TSC delta for a given nanosecond interval.

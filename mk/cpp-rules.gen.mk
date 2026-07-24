@@ -74,6 +74,10 @@ build/kernel/irq_latency_histogram.o: src/kernel/irq_latency_histogram.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/irq_thread.o: src/kernel/irq_thread.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/vfs/vfsd.o: src/kernel/vfs/vfsd.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@

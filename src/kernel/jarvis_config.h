@@ -521,6 +521,20 @@
 #define CONFIG_USE_APIC_TIMER 1
 #endif
 
+/// Enable threaded interrupt handling (CONFIG_THREADED_IRQS).
+/// When non-zero, nominated IRQ vectors run their handler in a dedicated kernel
+/// task (IrqThread) instead of raw ISR context.  The ISR does minimal work
+/// (ack + data capture + Notify), while the handler runs at task priority.
+/// Default: 0 (all IRQs handled in ISR context).
+#ifndef CONFIG_THREADED_IRQS
+#define CONFIG_THREADED_IRQS 1
+#endif
+
+/// Maximum number of simultaneous threaded IRQ handler tasks.
+#ifndef CONFIG_MAX_THREADED_IRQS
+#define CONFIG_MAX_THREADED_IRQS 16
+#endif
+
 // ---------------------------------------------------------------------------
 // Hook Configuration Points
 // ---------------------------------------------------------------------------

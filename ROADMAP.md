@@ -213,11 +213,11 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [x] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
   - [x] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
   - [x] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
-- [ ] Deferred Interrupt Handling (Threaded IRQs)
+- [x] Deferred Interrupt Handling (Threaded IRQs)
   - [x] IrqThread class — kernel task per IRQ vector, Notify-based wakeup
-  - [ ] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
-  - [ ] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
-  - [ ] IrqThread::init(vector, priority, handler) — replace IDT::register_handler for enabled IRQs
+  - [x] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
+  - [x] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
+  - [x] IrqThread::create(vector, priority, handler) — replace IDT::register_handler for enabled IRQs
 
   > **Future:** IrqThread is the recommended pattern for device-driver ISRs (virtio, AHCI, ATA) in
   > a follow-up version where blocking operations (Mutex, sleep, allocation) are needed inside the

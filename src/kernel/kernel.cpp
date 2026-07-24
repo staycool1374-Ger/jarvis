@@ -22,6 +22,7 @@
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/apic.hpp>
 #include <kernel/arch/irq_latency_histogram.hpp>
+#include <kernel/irq_thread.hpp>
 #include <kernel/arch/interrupt_controller.hpp>
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
@@ -696,11 +697,18 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #if defined(CONFIG_ARCH_X86_64)
     init_pic();
     arch::Keyboard::init();
+#if CONFIG_THREADED_IRQS
+    kernel::IrqThread::create(33, 50,
+                              [](uint64_t, uint64_t, uint64_t) {
+                                  arch::Keyboard::handle_irq();
+                              });
+#else
     arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
                                 [](uint64_t, uint64_t, uint64_t) {
                                     arch::Keyboard::handle_irq();
                                     outb(arch::PIC1_CMD, 0x20);
                                 });
+#endif
 #endif
 
     kernel::vfs::devfs_init();
@@ -1417,6 +1425,19 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
         }
         return;
     }
+
+#if CONFIG_THREADED_IRQS
+    // Threaded IRQ dispatch: if this vector has an IrqThread, let the
+    // handler task process it.  The ISR entry does ack + Notify and returns.
+    {
+        auto *irqt = kernel::IrqThread::for_vector(static_cast<uint8_t>(vector));
+        if (irqt) {
+            kernel::IrqThread::isr_entry(static_cast<uint8_t>(vector),
+                                          error_code, rip);
+            return;
+        }
+    }
+#endif
 
     arch::IDT::handle_interrupt(vector, error_code, rip);
 

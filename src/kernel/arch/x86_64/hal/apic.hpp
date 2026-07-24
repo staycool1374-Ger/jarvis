@@ -54,6 +54,11 @@ public:
     /// Must be called after VMM::init() but before APIC::init().
     static bool map_mmio();
 
+    /// @brief Mask or unmask a legacy IRQ in the I/O APIC.
+    /// @param irq  Legacy IRQ number (0-15).
+    /// @param mask true = mask, false = unmask.
+    static void mask_irq(uint8_t irq, bool mask);
+
     static constexpr uint8_t APIC_TIMER_VECTOR = 64;
 
 private:
