@@ -223,10 +223,10 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   > a follow-up version where blocking operations (Mutex, sleep, allocation) are needed inside the
   > handler.  The present implementation covers keyboard as the first consumer; the timer IRQ and
   > scheduler `on_tick()` always remain in the fast (non-threaded) ISR path.
-- [ ] ARM64 / RISC-V64 Interrupt Controllers
-  - [ ] arch/aarch64/hal/gic.hpp — GICv3/v4 driver, priority masking, SGI/PPI/SPI
-  - [ ] arch/riscv64/hal/plic.hpp — PLIC driver, priority levels, threshold
-  - [ ] Common ArchInterruptController interface: init, eoi, mask, unmask, set_priority, get_priority
+- [x] ARM64 / RISC-V64 Interrupt Controllers
+  - [x] arch/aarch64/hal/gic.hpp — GICv3/v4 driver, priority masking, SGI/PPI/SPI
+  - [x] arch/riscv64/hal/plic.hpp — PLIC driver, priority levels, threshold
+  - [x] Common ArchInterruptController interface: init, eoi, mask, unmask, set_priority, get_priority
 
 
 ### 0.3.5 Deterministic Memory & Resource Management (Pillar 5)
