@@ -587,11 +587,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
 
-    // Map APIC MMIO pages (no I/O APIC writes, no local APIC enable)
-    // I/O APIC writes will be re-enabled once the APIC timer is wired.
+    // Map APIC MMIO pages and initialise the local/I/O APIC.
     if (arch::APIC::is_apic_supported()) {
         arch::APIC::map_mmio();
-        // arch::APIC::init();  // I/O APIC access disabled for now
+        arch::APIC::init();
     }
     if (g_boot_info.cmdline[0]) {
         kernel::BootParams::parse_cstr(g_boot_info.cmdline);

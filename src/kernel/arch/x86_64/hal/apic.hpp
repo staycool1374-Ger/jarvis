@@ -32,6 +32,18 @@ public:
     /// @brief Stop the APIC timer.
     static void timer_stop();
 
+    /// @brief Program the APIC timer to fire once after `ns` nanoseconds.
+    /// Uses TSC-deadline MSR when available; falls back to one-shot bus-clock
+    /// mode.  The interrupt is delivered at APIC_TIMER_VECTOR.
+    /// @param ns  Delay in nanoseconds (0 = no-op).
+    static void set_timer_oneshot(uint64_t ns);
+
+    /// @brief Program the APIC timer to fire every `ns` nanoseconds.
+    /// In TSC-deadline mode the ISR re-arms at `periodic_ns_`; in periodic
+    /// bus-clock mode the hardware auto-re-arms.
+    /// @param ns  Period in nanoseconds (0 = stop timer).
+    static void set_timer_periodic(uint64_t ns);
+
     /// @brief Read the current APIC timer count.
     static uint32_t timer_current_count();
 
@@ -103,6 +115,8 @@ private:
     static bool timer_active_;
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static uint64_t timer_tsc_delta_;
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+    static uint64_t periodic_ns_;
     static uint32_t bus_freq_hz_;
     static uint32_t tsc_deadline_supported_;
 

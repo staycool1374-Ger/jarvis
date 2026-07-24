@@ -14,6 +14,7 @@ APIC::Mode APIC::mode_          = MODE_NONE;
 bool        APIC::enabled_      = false;
 bool        APIC::timer_active_ = false;
 uint64_t    APIC::timer_tsc_delta_ = 0;
+uint64_t    APIC::periodic_ns_ = 0;
 uint32_t    APIC::bus_freq_hz_  = 0;
 uint32_t    APIC::tsc_deadline_supported_ = 0;
 
@@ -148,6 +149,21 @@ void APIC::eoi() {
 
 // ─── APIC timer ───────────────────────────────────────────────────────────
 
+// Helper: compute TSC delta for a given nanosecond interval.
+// Returns 0 if tsc_freq is unknown.
+static uint64_t ns_to_tsc_delta(uint64_t ns) {
+    uint64_t freq = arch::Timer::tsc_freq_hz();
+    if (freq == 0) {
+        kernel::Logger::warn("APIC timer: TSC frequency unknown");
+        return 0;
+    }
+    // delta = (ns * freq) / 1_000_000_000
+    // Use 128-bit via compiler builtins to avoid overflow (ns × freq ≫ 2^64
+    // for large ns).  The builtin returns (high, low) of the 128-bit product.
+    unsigned __int128 product = static_cast<unsigned __int128>(ns) * freq;
+    return static_cast<uint64_t>(product / 1000000000ULL);
+}
+
 void APIC::x2_write(uint32_t off, uint32_t v) { wrmsr(x2apic_msr(off), v); }
 uint32_t APIC::x2_read(uint32_t off) { return static_cast<uint32_t>(rdmsr(x2apic_msr(off))); }
 
@@ -159,50 +175,87 @@ void APIC::timer_init(uint32_t frequency_hz) {
     };
 
     if (tsc_deadline_supported_) {
-        // TSC-deadline mode: fire once when TSC reaches a programmed value.
-        // Re-arm is done during the ISR by calling timer_start().
         wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_TSCDEADLINE);
-        kernel::Logger::info("APIC timer: TSC-deadline mode, %lu Hz",
-                             frequency_hz);
+        kernel::Logger::info("APIC timer: TSC-deadline, %lu Hz", frequency_hz);
     } else {
-        // Periodic mode: calibrate bus frequency, set divider + init-count.
-        // The timer auto-re-arms in hardware — no re-arm needed in the ISR.
         bus_freq_hz_ = calibrate_bus_hz();
         if (bus_freq_hz_ == 0) {
-            kernel::Logger::warn("APIC timer: bus freq calibration failed");
+            kernel::Logger::warn("APIC timer: calibration failed, keeping PIT");
             return;
         }
-        kernel::Logger::info("APIC timer: periodic mode, bus=%lu Hz target=%lu Hz",
+        kernel::Logger::info("APIC timer: periodic, bus=%lu Hz target=%lu Hz",
                              bus_freq_hz_, frequency_hz);
         wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
         wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_PERIODIC);
     }
     timer_active_ = true;
+    periodic_ns_  = 1000000000ULL / frequency_hz;
 
     // Mask I/O APIC IRQ0 (PIT) — the APIC timer now drives the system tick.
-    // The PIT counter continues to run (for potential TSC re‑calibration)
-    // but its interrupt is no longer forwarded to the CPU.
     arch::ioapic_wr(IOAPIC_REDIR_BASE + 0 * 2, 32 | IOAPIC_MASKED_BIT);
     arch::ioapic_wr(IOAPIC_REDIR_BASE + 0 * 2 + 1, 0);
 }
 
+void APIC::set_timer_oneshot(uint64_t ns) {
+    if (!enabled_ || ns == 0) return;
+    periodic_ns_ = 0;  // disarm re-arm
+
+    if (tsc_deadline_supported_) {
+        uint64_t delta = ns_to_tsc_delta(ns);
+        if (delta == 0) return;
+        wrmsr(MSR_TSC_DEADLINE, rdtsc() + delta);
+    } else {
+        // Bus-clock one-shot: write initial count, clear periodic bit
+        if (bus_freq_hz_ == 0) return;
+        uint32_t count = static_cast<uint32_t>((bus_freq_hz_ * ns) / 1000000000ULL);
+        if (count == 0) count = 1;
+        if (mode_ == MODE_X2) {
+            x2_write(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+            x2_write(REG_LVT_TIMER, APIC_TIMER_VECTOR);
+            x2_write(REG_TIMER_INITCNT, count);
+        } else {
+            lapic_wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+            lapic_wr(REG_LVT_TIMER, APIC_TIMER_VECTOR);
+            lapic_wr(REG_TIMER_INITCNT, count);
+        }
+    }
+}
+
+void APIC::set_timer_periodic(uint64_t ns) {
+    if (!enabled_ || ns == 0) return;
+    periodic_ns_ = ns;
+
+    if (tsc_deadline_supported_) {
+        // TSC-deadline: set first deadline; ISR re-arms at periodic_ns_
+        uint64_t delta = ns_to_tsc_delta(ns);
+        if (delta == 0) return;
+        wrmsr(MSR_TSC_DEADLINE, rdtsc() + delta);
+    } else {
+        // Bus-clock periodic: write initial count, set periodic LVT
+        if (bus_freq_hz_ == 0) return;
+        uint32_t count = static_cast<uint32_t>((bus_freq_hz_ * ns) / 1000000000ULL);
+        if (count == 0) count = 1;
+        if (mode_ == MODE_X2) {
+            x2_write(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+            x2_write(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_PERIODIC);
+            x2_write(REG_TIMER_INITCNT, count);
+        } else {
+            lapic_wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
+            lapic_wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_PERIODIC);
+            lapic_wr(REG_TIMER_INITCNT, count);
+        }
+    }
+}
+
 void APIC::timer_start() {
     if (!timer_active_) return;
+    if (periodic_ns_ == 0) return;  // not in periodic mode
     if (tsc_deadline_supported_) {
-        uint64_t tsc_freq = arch::Timer::tsc_freq_hz();
-        if (tsc_freq == 0) tsc_freq = 2000000000ULL;
-        uint64_t delta = tsc_freq / 1000;
-        wrmsr(MSR_TSC_DEADLINE, rdtsc() + (delta > 0 ? delta : 1));
-    } else {
-        // Periodic mode: set initial count once; hardware auto-re-arms.
-        // timer_start() is still called from the ISR (for TSC-deadline
-        // re-arm), but in periodic mode it's a no-op.
-        if (bus_freq_hz_ == 0) return;
-        if (mode_ == MODE_X2)
-            x2_write(REG_TIMER_INITCNT, bus_freq_hz_ / 1000);
-        else
-            lapic_wr(REG_TIMER_INITCNT, bus_freq_hz_ / 1000);
+        uint64_t delta = ns_to_tsc_delta(periodic_ns_);
+        if (delta == 0) return;
+        wrmsr(MSR_TSC_DEADLINE, rdtsc() + delta);
     }
+    // Bus-clock periodic: auto-re-arms in hardware — no-op
 }
 
 void APIC::timer_stop() {
@@ -214,6 +267,7 @@ void APIC::timer_stop() {
     else
         lapic_wr(REG_LVT_TIMER, LVT_MASKED);
     timer_active_ = false;
+    periodic_ns_  = 0;
 }
 
 uint32_t APIC::timer_current_count() {
