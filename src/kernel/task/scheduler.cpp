@@ -186,6 +186,7 @@ static void wake_waiting_parent(TaskControlBlock &child) {
     // on the run queue, and re-enqueueing it would corrupt the intrusive
     // ready-queue links.
     if (p->state == TaskState::BLOCKED) {
+        p->in_ready_queue_ = false;
         Scheduler::set_task_ready(*p);
         if (TASK_STACK_PTR(p)) {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)

@@ -86,6 +86,7 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         return 0;
     cur->waiting_child_pid = target_pid;
     cur->waiting_child_status = status_ptr;
+    Scheduler::dequeue_ready(*cur);
     cur->state = TaskState::BLOCKED;
     return static_cast<uint64_t>(-1);
 }
