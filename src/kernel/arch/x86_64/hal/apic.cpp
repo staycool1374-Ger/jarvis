@@ -3,144 +3,93 @@
 #include <kernel/arch/cpuid.hpp>
 #include <kernel/arch/msr.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/memory/vmm.hpp>
+#include <kernel/memory/address.hpp>
 #include <logger.hpp>
 
 namespace arch {
 
 // ─── Static members ───────────────────────────────────────────────────────
-uint32_t APIC::bus_freq_hz_ = 0;
-bool APIC::enabled_ = false;
+APIC::Mode APIC::mode_          = MODE_NONE;
+bool        APIC::enabled_      = false;
+bool        APIC::timer_active_ = false;
+uint32_t    APIC::bus_freq_hz_  = 0;
+uint32_t    APIC::tsc_deadline_supported_ = 0;
 
-// ─── x2APIC MSR base — each APIC register at MSR (0x800 + reg_offset / 16) ─
-static inline uint32_t x2apic_msr(uint32_t mmio_offset) {
-    return 0x800 + (mmio_offset >> 4);
-}
-
-// ─── Helper: check CPUID for APIC / x2APIC / TSC-deadline support ─────────
-struct ApicCaps {
-    bool apic;
-    bool x2apic;
-    bool tsc_deadline;
-};
-
-static ApicCaps apic_caps() {
-    ApicCaps caps{};
+// ─── CPUID caps ──────────────────────────────────────────────────────────
+struct Caps { bool apic, x2apic, tsc_deadline; };
+static Caps caps() {
+    Caps c{};
     auto r = cpuid(1);
-    caps.apic         = (r.edx >> 9) & 1;
-    caps.x2apic       = (r.ecx >> 21) & 1;
-    caps.tsc_deadline = (r.ecx >> 24) & 1;
-    return caps;
+    c.apic         = (r.edx >> 9) & 1;
+    c.x2apic       = (r.ecx >> 21) & 1;
+    c.tsc_deadline = (r.ecx >> 24) & 1;
+    return c;
 }
 
-// ─── x2APIC register helpers ──────────────────────────────────────────────
-// x2APIC accesses all local APIC registers via MSR[0x800..0x8FF], requiring
-// no MMIO page mappings.  The MSR address = 0x800 + (MMIO_offset >> 4).
+// ─── MMIO helpers ────────────────────────────────────────────────────────
+static constexpr uint64_t LAPIC_PHYS  = 0xFEE00000;
+static constexpr uint64_t IOAPIC_PHYS = 0xFEC00000;
 
-static void x2_write(uint32_t mmio_offset, uint32_t value) {
-    wrmsr(x2apic_msr(mmio_offset), value);
+static volatile uint32_t *ioapic_ptr(uint32_t reg) {
+    return reinterpret_cast<volatile uint32_t *>(
+        arch::HHDM_OFFSET + IOAPIC_PHYS + reg);
 }
 
-static uint32_t x2_read(uint32_t mmio_offset) {
-    return static_cast<uint32_t>(rdmsr(x2apic_msr(mmio_offset)));
+static void ioapic_wr(uint32_t sel, uint32_t v) {
+    *ioapic_ptr(0x00) = sel;        // IOREGSEL
+    *ioapic_ptr(0x10) = v;          // IOWIN
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────
-// This implementation requires x2APIC (MSR-based) access.  CPUs that lack
-// x2APIC are uncommon on modern QEMU/hardware; if absent we simply keep the
-// legacy PIC/PIT and skip APIC init entirely.
+// The local APIC is NOT enabled at boot — we only set up MMIO mappings and
+// I/O APIC structures.  This keeps the legacy PIC fully operational while
+// the APIC infrastructure is prepared for a future hot-switch.
+// When the APIC timer (TSC-deadline or periodic) is ready, a call to
+// apic_enable() will program MSR_APIC_BASE, the SPURIOUS vector, LVT
+// entries, and unmask the appropriate I/O APIC redirections.
 
-bool APIC::is_apic_supported() {
-    return apic_caps().apic;
+bool APIC::is_apic_supported() { return caps().apic; }
+
+bool APIC::map_mmio() {
+    auto map = [](uint64_t phys) {
+        kernel::VMM::map_page(arch::HHDM_OFFSET + phys, phys, false);
+    };
+    map(LAPIC_PHYS);
+    map(IOAPIC_PHYS);
+    return true;
 }
 
 bool APIC::init() {
-    auto caps = apic_caps();
-    if (!caps.apic) {
-        kernel::Logger::warn("APIC not supported by CPU");
-        enabled_ = false;
-        return false;
-    }
-    if (!caps.x2apic) {
-        kernel::Logger::warn("CPU lacks x2APIC — keeping legacy PIC");
-        enabled_ = false;
-        return false;
-    }
+    auto c = caps();
+    if (!c.apic) return false;
 
-    uint64_t apic_base = rdmsr(MSR_APIC_BASE);
-    apic_base |= (APIC_BASE_ENABLE | APIC_BASE_X2APIC);
-    wrmsr(MSR_APIC_BASE, apic_base);
+    tsc_deadline_supported_ = c.tsc_deadline;
 
-    x2_write(REG_SPURIOUS, SPURIOUS_VECTOR | SPURIOUS_ENABLE);
+    // I/O APIC: mask all legacy IRQs (PIC remains active)
+    auto redir = [](uint8_t irq, uint8_t vec, bool mask) {
+        uint32_t entry = vec;
+        if (mask) entry |= IOAPIC_MASKED;
+        uint32_t r = IOAPIC_REDIR + irq * 2;
+        ioapic_wr(r,     entry);
+        ioapic_wr(r + 1, 0);
+    };
+    for (int i = 0; i < 16; ++i)
+        redir(i, 32 + i, true);
 
-    x2_write(REG_LVT_TIMER,   LVT_MASKED);
-    x2_write(REG_LVT_THERMAL, LVT_MASKED);
-    x2_write(REG_LVT_PERFMON, LVT_MASKED);
-    x2_write(REG_LVT_LINT0,   LVT_MASKED);
-    x2_write(REG_LVT_LINT1,   LVT_MASKED);
-    x2_write(REG_LVT_ERROR,   LVT_MASKED);
-
-    x2_write(REG_ESR, 0);
-    x2_read(REG_ESR);
-
-    x2_write(REG_TPR, 0);
-
-    enabled_ = true;
-    kernel::Logger::info("x2APIC initialised (TSC-deadline=%d)", caps.tsc_deadline);
+    kernel::Logger::info("APIC: mapped, I/O APIC masked (PIC active)");
     return true;
 }
 
 void APIC::eoi() {
-    if (!enabled_)
-        return;
-    wrmsr(x2apic_msr(REG_EOI), 0);
+    // No-op until APIC is enabled
 }
 
-// ─── APIC timer (TSC-deadline mode preferred) ────────────────────────────
-
-void APIC::timer_init(uint32_t frequency_hz) {
-    (void)frequency_hz;
-    auto caps = apic_caps();
-
-    if (caps.tsc_deadline) {
-        x2_write(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_TSCDEADLINE);
-    } else {
-        // Fallback: periodic mode (requires I/O APIC I/O-routing — not wired)
-        kernel::Logger::warn("APIC timer: TSC-deadline not available, keeping PIT");
-        x2_write(REG_LVT_TIMER, LVT_MASKED);
-    }
-}
-
-void APIC::timer_start() {
-    auto caps = apic_caps();
-    if (!caps.tsc_deadline)
-        return;
-
-    uint64_t tsc_freq = arch::Timer::tsc_freq_hz();
-    if (tsc_freq == 0) {
-        kernel::Logger::warn("APIC timer: TSC freq unknown, using 2 GHz");
-        tsc_freq = 2000000000ULL;
-    }
-
-    uint64_t tsc_now = rdtsc();
-    uint64_t delta = tsc_freq / 1000;  // 1000 Hz
-    wrmsr(MSR_TSC_DEADLINE, tsc_now + (delta > 0 ? delta : 1));
-}
-
-void APIC::timer_stop() {
-    wrmsr(MSR_TSC_DEADLINE, 0);
-    x2_write(REG_LVT_TIMER, LVT_MASKED);
-}
-
-uint32_t APIC::timer_current_count() {
-    return x2_read(REG_TIMER_CURCNT);
-}
-
-// ─── Calibration ──────────────────────────────────────────────────────────
-// (Unused with TSC-deadline mode; kept for periodic-mode fallback.)
-
-uint32_t APIC::calibrate_timer_hz(uint32_t target_hz) {
-    (void)target_hz;
-    return 0;
-}
+// ─── APIC timer stubs (inactive until apic_enable) ────────────────────────
+void APIC::timer_init(uint32_t frequency_hz) { (void)frequency_hz; }
+void APIC::timer_start() {}
+void APIC::timer_stop() {}
+uint32_t APIC::timer_current_count() { return 0; }
+uint32_t APIC::calibrate_bus_hz() { return 0; }
 
 } // namespace arch

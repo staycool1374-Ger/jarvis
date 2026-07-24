@@ -586,6 +586,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     }
     kernel::PMM::init(mem_size, arch::PAGE_SIZE_2M, kend);
     kernel::VMM::init();
+
+    // Map APIC MMIO pages (no I/O APIC writes, no local APIC enable)
+    // I/O APIC writes will be re-enabled once the APIC timer is wired.
+    if (arch::APIC::is_apic_supported()) {
+        arch::APIC::map_mmio();
+        // arch::APIC::init();  // I/O APIC access disabled for now
+    }
     if (g_boot_info.cmdline[0]) {
         kernel::BootParams::parse_cstr(g_boot_info.cmdline);
     }
@@ -788,10 +795,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             debug_write("[BOOT] No virtio-net NIC found\n");
         }
     }
-#endif
-
-#if CONFIG_USE_APIC_TIMER
-    arch::APIC::init();
 #endif
 
     arch::Timer::init(kernel::BootParams::instance().timer_hz);
@@ -1420,15 +1423,13 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
 
 #if defined(CONFIG_ARCH_X86_64)
     if (vector >= 32 && vector < 48) {
-#if CONFIG_USE_APIC_TIMER
+        // Always send PIC EOI — the PIC manages the legacy IRQ
+        outb(arch::PIC1_CMD, 0x20);
+        if (vector >= 40)
+            outb(arch::PIC2_CMD, 0x20);
+        // Also send APIC EOI if the APIC is enabled
         if (arch::APIC::is_enabled()) {
             arch::APIC::eoi();
-        } else
-#endif
-        {
-            outb(arch::PIC1_CMD, 0x20);
-            if (vector >= 40)
-                outb(arch::PIC2_CMD, 0x20);
         }
 #if CONFIG_IRQ_LATENCY_HISTOGRAM
         kernel::IrqLatencyHistogram::record(entry_tsc);
