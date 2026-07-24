@@ -206,13 +206,13 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [x] Create arch/x86_64/hal/apic.hpp + apic.cpp — Local APIC timer, IPI, TSC-deadline mode
   - [x] APIC::init() — calibrate TSC, configure timer in one-shot/periodic mode
   - [ ] APIC::set_timer_oneshot(ns) / periodic(ns) — nanosecond resolution
-  - [ ] Per-CPU timer interrupt vector (not shared PIC IRQ0)
-  - [x] CONFIG_USE_APIC_TIMER (default 0 on x86_64 — PIT primary, APIC fallback)
+  - [x] Per-CPU timer interrupt vector (dedicated APIC vector 64, not shared PIC IRQ0)
+  - [x] CONFIG_USE_APIC_TIMER (default 1 on x86_64 — APIC primary, PIT calibration only)
   - [x] I/O APIC routing for legacy IRQs (PIT, keyboard via APIC, PIC masked)
-- [ ] Interrupt Latency Measurement & Bounding
-  - [ ] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
-  - [ ] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
-  - [ ] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
+- [x] Interrupt Latency Measurement & Bounding
+  - [x] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
+  - [x] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
+  - [x] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
 - [ ] Deferred Interrupt Handling (Threaded IRQs)
   - [ ] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
   - [ ] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
