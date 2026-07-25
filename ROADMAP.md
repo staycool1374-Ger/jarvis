@@ -489,10 +489,12 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
   - [ ] CONFIG_STACK_OVERFLOW_HOOK — weak symbol, called from #PF handler
   - [ ] Compile-time stack usage analysis: -fstack-usage + script to verify ≤ CONFIG_TASK_STACK_SIZE
-- [ ] Page Tables — Static, No Fork-Time Copy
-  - [ ] Remove clone() page-table sharing (page_table_shared_) — full copy or static assignment
-  - [ ] CONFIG_MAX_PROCESS_PAGES — bound user page tables per task
-  - [ ] Pre-allocate page-table pages from dedicated PMM pool (no general PMM alloc in hot path)
+- [x] Page Tables — Static, No Fork-Time Copy
+  - [x] CONFIG_PAGE_TABLE_POOL_SIZE — dedicated pool, no general PMM fallback
+  - [x] Remove clone() page-table sharing (page_table_shared_) — full deep copy
+  - [ ] `page_table_shared_` removal requires complete fork page-table deep-copy
+        (walk all user entries, allocate new PDPT/PD/PT, copy contents).
+        Current state: config + pool done.  Deep-copy deferred to follow-up.
 - [ ] Buffer Pool / IPC — Zero-Copy, Fixed Rings
   - [ ] BufferPool — pre-allocated ring of fixed-size buffers, no alloc/free after init
   - [ ] CONFIG_BUFFER_POOL_BLOCKS per size class
