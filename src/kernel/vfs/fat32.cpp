@@ -311,20 +311,21 @@ bool read_dir_entry(Fat32Partition &fs, uint32_t dir_cluster, uint64_t &pos,
     if (cluster_idx >= chain_len)
         return false;
 
-    // Read the cluster containing the entry.  Allocate one cluster's worth of
-    // scratch from the heap (one cluster is <= 4 KiB on typical images).  The
-    // buffer MUST be freed on every return path below — read_dir_entry is
-    // called in a tight loop by lookup_in_dir/readdir and recursively when
-    // skipping free/LFN entries; a leak here exhausts the fixed-size MemPool
-    // class and makes subsequent allocations (e.g. the next mkdir) fail.
+    // Read the cluster containing the entry.  Use a stack buffer for the
+    // common case (cluster ≤ 4 KiB).  Oversized clusters fall back to heap.
     uint32_t rd_cluster_size =
         fs.bpb().sectors_per_cluster * fs.bpb().bytes_per_sector;
-    uint8_t *cluster_data =
-        static_cast<uint8_t *>(MemPool::alloc(rd_cluster_size));
-    if (!cluster_data)
-        return false;
+    uint8_t cluster_data_stack[4096];
+    uint8_t *cluster_data = cluster_data_stack;
+    bool heap_alloc = false;
+    if (rd_cluster_size > sizeof(cluster_data_stack)) {
+        cluster_data = static_cast<uint8_t *>(MemPool::alloc(rd_cluster_size));
+        if (!cluster_data)
+            return false;
+        heap_alloc = true;
+    }
     if (!fs.read_cluster(cluster_chain[cluster_idx], cluster_data)) {
-        MemPool::free(cluster_data);
+        if (heap_alloc) MemPool::free(cluster_data);
         return false;
     }
 
@@ -333,11 +334,12 @@ bool read_dir_entry(Fat32Partition &fs, uint32_t dir_cluster, uint64_t &pos,
 
     // Skip empty, freed, and LFN entries
     if (is_end_marker(raw)) {
-        MemPool::free(cluster_data);
+        if (heap_alloc) MemPool::free(cluster_data);
         return false;
     }
     if (is_free_entry(raw) || is_lfn_entry(raw)) {
-        MemPool::free(cluster_data);
+        // cluster_data is stack-allocated or heap-freed before recursion
+        if (heap_alloc) MemPool::free(cluster_data);
         ++pos;
         return read_dir_entry(fs, dir_cluster, pos, entry);
     }
@@ -349,7 +351,7 @@ bool read_dir_entry(Fat32Partition &fs, uint32_t dir_cluster, uint64_t &pos,
     entry.is_directory = (raw.attrs & ATTR_DIRECTORY) != 0;
     entry.valid = true;
 
-    MemPool::free(cluster_data);
+    if (heap_alloc) MemPool::free(cluster_data);
     ++pos;
     return true;
 }
@@ -401,15 +403,22 @@ int64_t read_file(Fat32Partition &fs, uint32_t first_cluster,
             return FAT_READ_ERROR;
     }
 
-    // Read data.  Allocate from the heap: a 32 KiB stack buffer overflows the
-    // shell's 64 KiB kernel stack (wedging the scheduler).  Only one cluster is
-    // needed per iteration.
-    uint8_t *cluster_data = static_cast<uint8_t *>(MemPool::alloc(cluster_size));
-    if (!cluster_data)
-        return FAT_READ_ERROR;
+    // Read data.  Use a stack buffer for the common case (cluster ≤ 4 KiB).
+    // Oversized clusters fall back to heap.  The previous comment warned about
+    // 32 KiB stack buffer overflow — a single cluster is at most 4 KiB on
+    // typical images (8 sectors × 512 B).
+    uint8_t cluster_data_stack[4096];
+    uint8_t *cluster_data = cluster_data_stack;
+    bool heap_alloc = false;
+    if (cluster_size > sizeof(cluster_data_stack)) {
+        cluster_data = static_cast<uint8_t *>(MemPool::alloc(cluster_size));
+        if (!cluster_data)
+            return FAT_READ_ERROR;
+        heap_alloc = true;
+    }
     while (total_read < static_cast<int64_t>(count)) {
         if (!fs.read_cluster(current, cluster_data)) {
-            MemPool::free(cluster_data);
+            if (heap_alloc) MemPool::free(cluster_data);
             return FAT_READ_ERROR;
         }
 
@@ -427,18 +436,18 @@ int64_t read_file(Fat32Partition &fs, uint32_t first_cluster,
             break;
 
         if (!fs.read_fat_entry(current, current)) {
-            MemPool::free(cluster_data);
+            if (heap_alloc) MemPool::free(cluster_data);
             return FAT_READ_ERROR;
         }
         if (Fat32Partition::is_eof(current))
             break;
         if (Fat32Partition::is_bad(current)) {
-            MemPool::free(cluster_data);
+            if (heap_alloc) MemPool::free(cluster_data);
             return FAT_READ_ERROR;
         }
     }
 
-    MemPool::free(cluster_data);
+    if (heap_alloc) MemPool::free(cluster_data);
     return total_read;
 }
 
