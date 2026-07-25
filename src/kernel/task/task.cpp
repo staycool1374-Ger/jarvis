@@ -872,10 +872,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 /// destroys IPC objects, and notifies the daemon manager. After this call the
 /// TCB must not be used except for MemPool::free().
 void TaskControlBlock::cleanup() noexcept {
-    if (magic != TCB_MAGIC)
-        return;
     state = TaskState::REAPED;
-    magic = 0;
 
     // Unregister from the scheduler's live tables so we never leave a dangling
     // tasks_[]/id_table_ entry that aliases a later allocation (which

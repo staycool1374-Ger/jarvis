@@ -1,0 +1,105 @@
+Class arch::ArchIO
+   size=1 align=1
+   base size=0 base align=1
+arch::ArchIO (0x0x10be40000) 0 empty
+
+Class kernel::sync::SpinLock
+   size=16 align=8
+   base size=16 base align=8
+kernel::sync::SpinLock (0x0x10be400c0) 0
+
+Class kernel::Logger
+   size=1 align=1
+   base size=0 base align=1
+kernel::Logger (0x0x10be40120) 0 empty
+
+Class kernel::vfs::VfsStat
+   size=16 align=8
+   base size=16 base align=8
+kernel::vfs::VfsStat (0x0x10be40180) 0
+
+Class kernel::vfs::Dirent
+   size=72 align=8
+   base size=72 base align=8
+kernel::vfs::Dirent (0x0x10be401e0) 0
+
+Class kernel::vfs::VnodeOps
+   size=96 align=8
+   base size=96 base align=8
+kernel::vfs::VnodeOps (0x0x10be40240) 0
+
+Class kernel::vfs::Vnode
+   size=56 align=8
+   base size=56 base align=8
+kernel::vfs::Vnode (0x0x10be402a0) 0
+
+Class kernel::vfs::FileDescription
+   size=32 align=8
+   base size=32 base align=8
+kernel::vfs::FileDescription (0x0x10be40300) 0
+
+Class kernel::vfs::FdTable
+   size=1024 align=8
+   base size=1024 base align=8
+kernel::vfs::FdTable (0x0x10be40360) 0
+
+Class kernel::vfs::Filesystem
+   size=16 align=8
+   base size=16 base align=8
+kernel::vfs::Filesystem (0x0x10be40420) 0
+
+Class kernel::vfs::Mount
+   size=32 align=8
+   base size=32 base align=8
+kernel::vfs::Mount (0x0x10be40480) 0
+
+Class kernel::sync::Notify
+   size=40 align=8
+   base size=33 base align=8
+kernel::sync::Notify (0x0x10be404e0) 0
+
+Class kernel::sync::EventGroup::EventWaiter
+   size=24 align=8
+   base size=24 base align=8
+kernel::sync::EventGroup::EventWaiter (0x0x10be405a0) 0
+
+Class kernel::sync::EventGroup
+   size=800 align=8
+   base size=800 base align=8
+kernel::sync::EventGroup (0x0x10be40540) 0
+
+Class kernel::ExceptionSignalMap
+   size=16 align=8
+   base size=16 base align=8
+kernel::ExceptionSignalMap (0x0x10be40600) 0
+
+Class kernel::SignalFrame
+   size=64 align=8
+   base size=64 base align=8
+kernel::SignalFrame (0x0x10be40660) 0
+
+Class kernel::Message
+   size=104 align=8
+   base size=104 base align=8
+kernel::Message (0x0x10be406c0) 0
+
+Class kernel::MessageQueue
+   size=1736 align=8
+   base size=1736 base align=8
+kernel::MessageQueue (0x0x10be40720) 0
+
+Class kernel::TaskContext
+   size=176 align=8
+   base size=176 base align=8
+kernel::TaskContext (0x0x10be40780) 0
+
+Class kernel::TaskControlBlock::DebugSwitchRecord
+   size=208 align=8
+   base size=208 base align=8
+kernel::TaskControlBlock::DebugSwitchRecord (0x0x10be40840) 0
+
+Class kernel::TaskControlBlock
+   size=6256 align=16
+   base size=6248 base align=16
+kernel::TaskControlBlock (0x0x10be407e0) 0
+

@@ -44,7 +44,7 @@ JARVIS_TEST(memory_safety_mempool_free_null, "PRE: none | POST: none") {
 // Depends: MemPool
 JARVIS_TEST(memory_safety_mempool_alloc_large_rejected,
             "PRE: none | POST: none") {
-    void *p = MemPool::alloc(4481);
+    void *p = MemPool::alloc(8193);
     JARVIS_ASSERT(p == nullptr);
     JARVIS_TEST_PASS();
 }

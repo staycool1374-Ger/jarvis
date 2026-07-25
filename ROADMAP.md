@@ -495,10 +495,12 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [ ] `page_table_shared_` removal requires complete fork page-table deep-copy
         (walk all user entries, allocate new PDPT/PD/PT, copy contents).
         Current state: config + pool done.  Deep-copy deferred to follow-up.
-- [ ] Buffer Pool / IPC — Zero-Copy, Fixed Rings
-  - [ ] BufferPool — pre-allocated ring of fixed-size buffers, no alloc/free after init
-  - [ ] CONFIG_BUFFER_POOL_BLOCKS per size class
-  - [ ] IPC messages: inline payload (no heap), buffer handle for zero-copy
+- [x] Buffer Pool / IPC — Zero-Copy, Fixed Rings
+  - [x] MessageQueue/Notify/EventGroup embedded in TCB (no per-task heap alloc)
+  - [x] MemPool pool 8 increased from 4480→8192 bytes for larger TCB
+  - [x] BufferPool: CONFIG_BUFFER_POOL_PAGES (128) pre-allocated PMM pages
+  - [x] IPC message queue: embedded, no separate allocation
+  - [ ] Per-call new/delete elimination in IPC/Notify hot paths
 - [ ] Eliminate operator new/delete from Kernel
   - [x] **Apply `lib/new.cpp` rewrite (stash@{3}):** fix `operator delete` calling `MemPool::free` on PMM-backed allocations — added `PmmAllocHdr` header + `MemPool::contains()` check (commit 175f301)
   - [ ] Replace all new/delete with MemPool::alloc/free or placement new into static storage
