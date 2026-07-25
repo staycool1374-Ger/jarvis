@@ -687,6 +687,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #endif
     kernel::DriverRegistry::init();
     debug_write("[BOOT] Kernel init done\n");
+    kernel::PMM::mark_init_done();
 
     service::Framebuffer::init();
     service::Terminal::init();

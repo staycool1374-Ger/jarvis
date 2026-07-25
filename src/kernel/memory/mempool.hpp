@@ -144,6 +144,9 @@ class MemPool {
     /// @return MemPoolError code.
     static errors::MemPoolError free_err(void *block);
 
+    /// @brief Reserve (pin) `count` blocks in pool `pool_idx` at init time.
+    static errors::MemPoolError reserve(size_t pool_idx, size_t count);
+
     /// @brief Check if a pointer falls within any MemPool pool range.
     /// @param ptr Pointer to check.
     /// @return true if ptr is owned by MemPool.

@@ -401,4 +401,22 @@ MemPoolError MemPool::free_err(void *block) {
     return MEMPOOL_ERR_INVALID_PTR;
 }
 
+MemPoolError MemPool::reserve(size_t pool_idx, size_t count) {
+    if (pool_idx >= POOL_COUNT)
+        return MEMPOOL_ERR_OOM;
+    auto &pool = pools_[pool_idx];
+    if (count > pool.free_count)
+        return MEMPOOL_ERR_OOM;
+    size_t reserved = 0;
+    for (size_t i = 0; i < pool.block_count && reserved < count; ++i) {
+        if (pool.is_block_freed(i)) {
+            pool.set_block_pinned(i);
+            --pool.free_count;
+            pool.clear_block_freed(i);
+            ++reserved;
+        }
+    }
+    return reserved == count ? MEMPOOL_ERR_OK : MEMPOOL_ERR_OOM;
+}
+
 } // namespace kernel

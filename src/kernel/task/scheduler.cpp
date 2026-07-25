@@ -1871,6 +1871,12 @@ void Scheduler::reschedule() noexcept {
     // Inline switching here would write the slot but the spinning caller is not
     // preempted, so the ISR never applies it -> live-lock.  Deferring is the
     // correct, design-compliant behavior.
+    //
+    // INV-7 (liveness under OOM): a non-yielding kernel task must still be
+    // preempted by the tick even when the system runs out of memory.  The
+    // tick ISR's on_tick() does not allocate — it only reads/writes existing
+    // scheduler structures.  Therefore OOM cannot freeze the scheduler; a
+    // runaway task is preempted by the next tick and the idle task runs.
     scheduler_lock_.unlock();
     __atomic_store_n(&kernel::scheduler_need_resched, true, __ATOMIC_RELEASE);
 }

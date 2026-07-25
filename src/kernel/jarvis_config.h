@@ -558,6 +558,14 @@
 #define CONFIG_OOM_HOOK 0
 #endif
 
+/// When non-zero, disables PMM::alloc_page() and alloc_contiguous() after
+/// kernel::init() completes (PMM::mark_init_done()).  All memory must be
+/// pre-allocated at boot from static pools — any post-init allocation
+/// triggers an assertion failure.  Default: 0 (dynamic allocation allowed).
+#ifndef CONFIG_STATIC_POOLS_ONLY
+#define CONFIG_STATIC_POOLS_ONLY 0
+#endif
+
 /// If non-zero, declares weak symbol init_hook() after daemon init complete.
 #ifndef CONFIG_INIT_HOOK
 #define CONFIG_INIT_HOOK 0

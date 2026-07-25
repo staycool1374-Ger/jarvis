@@ -203,10 +203,10 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 ### 0.3.5 Deterministic Memory & Resource Management (Pillar 5)
 ## Static Memory Pools — Zero Dynamic Allocation After Init
-  - [ ] CONFIG_STATIC_POOLS_ONLY — disable PMM::alloc_page() after kernel::init() complete
+  - [x] CONFIG_STATIC_POOLS_ONLY — disable PMM::alloc_page() after kernel::init() complete
   - [ ] Pre-allocate ALL kernel structures at boot: TCB array, page tables, IPC buffers, driver rings
   - [ ] MemPool — replace PMM-backed growth with fixed compile-time pools (from v0.2.21 config)
-  - [ ] Add MemPool::reserve(pool_idx, count) — called once at init, fails if insufficient
+  - [x] Add MemPool::reserve(pool_idx, count) — called once at init, fails if insufficient
 
 ### 0.3.5.x — RT-Scheduler Hardening & VMM Cleanup
 
@@ -277,7 +277,7 @@ returns 0; no crash; free restores capacity") legitimately passes. But this is *
 - [ ] **Memory-determinism test** (`test_static_pool_exhaustion.cpp`, §0.3.8) — exhaust a pool/budget
       and verify *graceful, policy-defined* failure (task blocked/killed, capacity restored), not just
       "returns 0".
-- [ ] **Document OOM semantics** in the scheduler redesign doc (INV-1..6 currently cover only
+- [x] **Document OOM semantics** in the scheduler redesign doc (INV-1..6 currently cover only
       deferred-switch correctness; add an explicit liveness guarantee: "a non-yielding kernel task must
       still be preempted by the tick; the system must not freeze under OOM").
 

@@ -36,6 +36,10 @@ constinit uint64_t PMM::page_table_pool_start_ = 0;
 constinit uint64_t PMM::page_table_pool_end_ = 0;
 constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
+#if CONFIG_STATIC_POOLS_ONLY
+static bool g_pmm_init_done = false;
+#endif
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 /// @brief Initialise the PMM bitmap and mark kernel/reserved pages as
 /// allocated.
@@ -153,6 +157,12 @@ uint64_t PMM::try_alloc_user(size_t count) {
 /// @brief Allocate a single KERNEL page.  Invokes OOM handler on failure.
 /// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_page() {
+#if CONFIG_STATIC_POOLS_ONLY
+    if (g_pmm_init_done) {
+        ASSERT(false && "alloc_page after init with CONFIG_STATIC_POOLS_ONLY");
+        return 0;
+    }
+#endif
     uint64_t result = try_alloc_kernel(1);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
@@ -169,10 +179,22 @@ uint64_t PMM::alloc_page() {
     return result;
 }
 
+void PMM::mark_init_done() {
+#if CONFIG_STATIC_POOLS_ONLY
+    g_pmm_init_done = true;
+#endif
+}
+
 /// @brief Allocate contiguous KERNEL pages.  Invokes OOM handler on failure.
 /// @param count Number of pages.
 /// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_contiguous(size_t count) {
+#if CONFIG_STATIC_POOLS_ONLY
+    if (g_pmm_init_done) {
+        ASSERT(false && "alloc_contiguous after init with CONFIG_STATIC_POOLS_ONLY");
+        return 0;
+    }
+#endif
     if (count == 0 || count > total_pages_)
         return 0;
     uint64_t result = try_alloc_kernel(count);

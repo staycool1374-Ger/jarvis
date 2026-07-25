@@ -46,6 +46,11 @@ class PMM {
     static errors::PmmError init_err(uint64_t mem_size, uint64_t kernel_start,
                                      uint64_t kernel_end);
 
+    /// @brief Mark the PMM as fully initialized (post-boot).
+    /// After this call, alloc_page() checks CONFIG_STATIC_POOLS_ONLY
+    /// and panics/returns 0 if a dynamic allocation is attempted.
+    static void mark_init_done();
+
     /// @brief Allocates a single 4 KiB page (KERNEL ownership).
     static uint64_t alloc_page();
     /// @brief Allocates a single 4 KiB page (KERNEL ownership) with error code.
