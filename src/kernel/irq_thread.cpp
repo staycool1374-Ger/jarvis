@@ -43,7 +43,7 @@ bool IrqThread::create(uint8_t vector, uint64_t priority,
     inst.handler_  = handler;
     inst.isr_ack_  = isr_ack;
     inst.tcb_      = tcb;
-    inst.notify_   = tcb->notify;
+    inst.notify_   = &tcb->notify;
     inst.ring_.reset();
     inst.valid_ = true;
 

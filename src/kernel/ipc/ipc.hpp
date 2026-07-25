@@ -36,60 +36,8 @@ enum IpcFlags : uint64_t {
     IPC_NONBLOCK = 1 << 0,
 };
 
-/// @brief Priority-ordered circular message queue embedded via pointer in each
-/// TCB.
-struct MessageQueue {
-    Message msgs[IPC_MAX_QUEUE_MSG];
-    uint64_t prio_bitmap; ///< Bit n set = at least one msg at priority n
-    // NOTE: head/tail/count are accessed from a task that busy-waits on
-    // is_empty()/is_full() across reschedule() calls.  reschedule() only
-    // *defers* the context switch (the peer task's push/pop happens via an ISR
-    // context-switch, invisible to the compiler's data-flow analysis for the
-    // current function), so a plain field would be hoisted/cached by the
-    // optimizer and the waiter would never observe the peer's write — wedging
-    // IPC send_sync (ipc_blocking test hang).  std::atomic (relaxed is enough
-    // on the single kernel stack / UP) forces a fresh load on every access.
-    volatile size_t head;
-    volatile size_t tail;
-    volatile size_t count;
-
-    TaskControlBlock *blocked_senders_head;
-    TaskControlBlock *blocked_senders_tail;
-
-    /// @brief TCB that owns this queue (set during task creation).
-    TaskControlBlock *owner;
-
-    MessageQueue()
-        : prio_bitmap(0), head(0), tail(0), count(0),
-          blocked_senders_head(nullptr), blocked_senders_tail(nullptr),
-          owner(nullptr) {
-    }
-
-    /// @brief Destructor — wakes any blocked senders before the queue is freed.
-    ~MessageQueue();
-
-    sync::SpinLock lock_; ///< Protects queue + blocked_senders + owner state
-
-    /// @brief Initialize the message queue to empty.
-    void init();
-    /// @brief Push a message into the queue (priority-ordered insertion).
-    /// @return true on success, false if the queue is full.
-    bool push(const Message &msg);
-    /// @brief Pop the highest-priority message from the queue.
-    /// @return true if a message was dequeued.
-    bool pop(Message &msg);
-
-    bool is_empty() const {
-        return count == 0;
-    }
-    bool is_full() const {
-        return count >= IPC_MAX_QUEUE_MSG;
-    }
-
-    /// @brief Returns the highest priority with messages, or
-    /// IPC_PRIORITY_LEVELS if empty.
-    size_t highest_priority() const;
-};
+/// @brief MessageQueue is defined in <kernel/task/task.hpp> and embedded
+/// in each TaskControlBlock.
 
 /// @brief Inter-process communication manager.
 class IPC {

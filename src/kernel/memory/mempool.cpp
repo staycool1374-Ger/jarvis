@@ -32,7 +32,7 @@ constinit bool MemPool::ready_ = false;
 ///        embedded free list.
 void MemPool::init() {
     static const size_t sizes[POOL_COUNT] = {16,  32,   64,   128, 256,
-                                             512, 1024, 2048, 4480};
+                                             512, 1024, 2048, 8192};
     static const size_t counts[POOL_COUNT] = {256, 128, 64, 32, 16,
                                               8,   16,  64, 64};
 

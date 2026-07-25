@@ -38,7 +38,6 @@ using namespace kernel;
 TEST_CLASS(IpcMisformedMessages) {
     auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
-    CT_ASSERT(cur->msg_queue != nullptr);
 
     MessageQueue q;
     q.init();
@@ -156,7 +155,7 @@ TEST_CLASS(IpcConcurrentSenders) {
     fill.priority = 0;
     fill.data_size = 0;
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG / 2; ++i) {
-        receiver->msg_queue->push(fill);
+        receiver->msg_queue.push(fill);
     }
 
     static const int NUM_SENDERS = 4;
@@ -188,7 +187,7 @@ TEST_CLASS(IpcConcurrentSenders) {
     {
         kernel::test::ScopedCurrentTask _sc(*receiver);
         Message out;
-        while (receiver->msg_queue->pop(out)) {
+        while (receiver->msg_queue.pop(out)) {
         }
     }
 
@@ -369,7 +368,7 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
     fill.priority = 0;
     fill.data_size = 0;
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
-        receiver->msg_queue->push(fill);
+        receiver->msg_queue.push(fill);
     }
 
     Message msg{};
@@ -383,7 +382,7 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
         bool ok = IPC::send(receiver->id, msg, 0);
         CT_ASSERT(!ok);
         CT_ASSERT(sender->state == TaskState::BLOCKED);
-        CT_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+        CT_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
     }
 
     receiver->state = TaskState::TERMINATED;
@@ -392,7 +391,6 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
 
     CT_ASSERT(sender->state == TaskState::READY);
     CT_ASSERT(sender->blocked_on_queue == nullptr);
-    CT_ASSERT(receiver->msg_queue == nullptr);
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);

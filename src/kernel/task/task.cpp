@@ -135,16 +135,9 @@ void init_task_common(TaskControlBlock &tcb) {
         ++tcb.cwd_vnode->refcount;
 
     // Initialize IPC message queue
-    auto *mq =
-        static_cast<MessageQueue *>(MemPool::alloc(sizeof(MessageQueue)));
-    if (mq) {
-        mq->init();
-        mq->owner = &tcb;
-        tcb.msg_queue = mq;
-        kernel::test::ResourceTracker::instance().track_msg_queue_add();
-    } else {
-        tcb.msg_queue = nullptr;
-    }
+    tcb.msg_queue.init();
+    tcb.msg_queue.owner = &tcb;
+    kernel::test::ResourceTracker::instance().track_msg_queue_add();
     tcb.blocked_next = nullptr;
     tcb.blocked_prev = nullptr;
     tcb.blocked_on_queue = nullptr;
@@ -153,24 +146,11 @@ void init_task_common(TaskControlBlock &tcb) {
     tcb.user_stack_ = 0;
     tcb.user_stack_size_ = 0;
 
-    auto *n = static_cast<sync::Notify *>(MemPool::alloc(sizeof(sync::Notify)));
-    if (n) {
-        n->init();
-        tcb.notify = n;
-        kernel::test::ResourceTracker::instance().track_notify_add();
-    } else {
-        tcb.notify = nullptr;
-    }
+    tcb.notify.init();
+    kernel::test::ResourceTracker::instance().track_notify_add();
 
-    auto *eg = static_cast<sync::EventGroup *>(
-        MemPool::alloc(sizeof(sync::EventGroup)));
-    if (eg) {
-        eg->init();
-        tcb.event_group = eg;
-        kernel::test::ResourceTracker::instance().track_event_group_add();
-    } else {
-        tcb.event_group = nullptr;
-    }
+    tcb.event_group.init();
+    kernel::test::ResourceTracker::instance().track_event_group_add();
 
     // Process hierarchy initialization
     tcb.first_child = nullptr;
@@ -591,36 +571,16 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
         parent->add_child(tcb);
     }
 
-    // Allocate per-task IPC objects (child gets fresh empty queues)
-    auto *mq =
-        static_cast<MessageQueue *>(MemPool::alloc(sizeof(MessageQueue)));
-    if (mq) {
-        mq->init();
-        mq->owner = tcb;
-        tcb->msg_queue = mq;
-        kernel::test::ResourceTracker::instance().track_msg_queue_add();
-    } else {
-        tcb->msg_queue = nullptr;
-    }
+    // Per-task IPC objects (child gets fresh empty queues — embedded in TCB)
+    tcb->msg_queue.init();
+    tcb->msg_queue.owner = tcb;
+    kernel::test::ResourceTracker::instance().track_msg_queue_add();
 
-    auto *n = static_cast<sync::Notify *>(MemPool::alloc(sizeof(sync::Notify)));
-    if (n) {
-        n->init();
-        tcb->notify = n;
-        kernel::test::ResourceTracker::instance().track_notify_add();
-    } else {
-        tcb->notify = nullptr;
-    }
+    tcb->notify.init();
+    kernel::test::ResourceTracker::instance().track_notify_add();
 
-    auto *eg = static_cast<sync::EventGroup *>(
-        MemPool::alloc(sizeof(sync::EventGroup)));
-    if (eg) {
-        eg->init();
-        tcb->event_group = eg;
-        kernel::test::ResourceTracker::instance().track_event_group_add();
-    } else {
-        tcb->event_group = nullptr;
-    }
+    tcb->event_group.init();
+    kernel::test::ResourceTracker::instance().track_event_group_add();
 
 
     // Copy fd_table
@@ -1023,24 +983,14 @@ void TaskControlBlock::cleanup() noexcept {
         page_table_ = 0;
     }
 
-    if (msg_queue) {
-        msg_queue->~MessageQueue();
-        kernel::test::ResourceTracker::instance().track_msg_queue_remove();
-        MemPool::free(msg_queue);
-        msg_queue = nullptr;
-    }
-    if (notify) {
-        notify->~Notify();
-        kernel::test::ResourceTracker::instance().track_notify_remove();
-        MemPool::free(notify);
-        notify = nullptr;
-    }
-    if (event_group) {
-        event_group->~EventGroup();
-        kernel::test::ResourceTracker::instance().track_event_group_remove();
-        MemPool::free(event_group);
-        event_group = nullptr;
-    }
+    msg_queue.~MessageQueue();
+    kernel::test::ResourceTracker::instance().track_msg_queue_remove();
+
+    notify.~Notify();
+    kernel::test::ResourceTracker::instance().track_notify_remove();
+
+    event_group.~EventGroup();
+    kernel::test::ResourceTracker::instance().track_event_group_remove();
 
     if (sporadic_server) {
         Scheduler::dec_sporadic_count();

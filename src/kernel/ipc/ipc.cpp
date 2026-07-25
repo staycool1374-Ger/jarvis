@@ -154,12 +154,12 @@ void IPC::init() {
 /// IPC_NONBLOCK).
 bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
     auto *tcb = Scheduler::find_task(dest_id);
-    if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED)
+    if (!tcb || tcb->state == TaskState::TERMINATED)
         return false;
 
     // If the queue is already full, either return immediately (NONBLOCK)
     // or block the sender until space becomes available.
-    if (tcb->msg_queue->is_full()) {
+    if (tcb->msg_queue.is_full()) {
         if (flags & IPC_NONBLOCK)
             return false;
 
@@ -167,28 +167,28 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
         if (!cur)
             return false;
 
-        block_sender(*tcb->msg_queue, *cur);
+        block_sender(tcb->msg_queue, *cur);
         cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
         // Woken up — destination may have been cleaned up while we were
         // blocked.  Re-lookup to avoid accessing a dangling reference.
         tcb = Scheduler::find_task(dest_id);
-        if (!tcb || !tcb->msg_queue || tcb->state == TaskState::TERMINATED)
+        if (!tcb || tcb->state == TaskState::TERMINATED)
             return false;
 
         // Queue should have space now
-        if (tcb->msg_queue->is_full())
+        if (tcb->msg_queue.is_full())
             return false;
     }
 
-    bool ok = tcb->msg_queue->push(msg);
+    bool ok = tcb->msg_queue.push(msg);
     if (!ok)
         return false;
 
     IPC_SCHED_TRACE("[SEND]", "to=", dest_id, "from=",
                     (Scheduler::current_task() ? Scheduler::current_task()->id : 0),
-                    "ty=", msg.type, "q=", tcb->msg_queue->count);
+                    "ty=", msg.type, "q=", tcb->msg_queue.count);
 
     // Wake a task blocked in send_sync() waiting for a reply on its own queue.
     // send_sync sets reply_wait and blocks; without this, the reply would sit
@@ -200,7 +200,7 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
             IPC_SCHED_TRACE("[WAKE]", "dest=", dest_id, "st=",
                             static_cast<uint64_t>(tcb->state), "inrq=",
                             tcb->in_ready_queue_ ? 1u : 0u, "q=",
-                            tcb->msg_queue->count);
+                            tcb->msg_queue.count);
             Scheduler::set_task_ready(*tcb);
             tcb->remaining_ticks = tcb->period_ticks;
         }
@@ -225,12 +225,12 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
 /// @brief Receive a message from the calling task's own queue.
 bool IPC::recv(Message &msg) {
     auto *cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue)
+    if (!cur)
         return false;
 
-    bool ok = cur->msg_queue->pop(msg);
-    if (ok && cur->msg_queue->blocked_senders_head) {
-        wake_sender(*cur->msg_queue, *cur);
+    bool ok = cur->msg_queue.pop(msg);
+    if (ok && cur->msg_queue.blocked_senders_head) {
+        wake_sender(cur->msg_queue, *cur);
     }
     return ok;
 }
@@ -243,13 +243,13 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
 
     // Block waiting for a reply on our own queue
     auto *cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue)
+    if (!cur)
         return false;
 
     bool was_blocked = false;
     IPC_SCHED_TRACE("[SYNC]", "cur=", cur->id, "dest=", dest_id, "ty=",
-                    msg.type, "q=", cur->msg_queue->count);
-    while (cur->msg_queue->is_empty()) {
+                    msg.type, "q=", cur->msg_queue.count);
+    while (cur->msg_queue.is_empty()) {
         // If destination died while we were waiting for a reply, bail out.
         // BUT: a reply may already be queued (the peer delivered its reply and
         // then terminated normally).  In that case the IPC contract is
@@ -258,14 +258,14 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
         // genuinely empty queue means the peer died before replying.
         auto *dest = Scheduler::find_task(dest_id);
         if (!dest || dest->state == TaskState::TERMINATED) {
-            if (cur->msg_queue->is_empty()) {
+            if (cur->msg_queue.is_empty()) {
                 IPC_SCHED_TRACE("[SYNC-FAIL]", "dest-gone-empty cur=", cur->id,
-                                "dest=", dest_id, "q=", cur->msg_queue->count,
+                                "dest=", dest_id, "q=", cur->msg_queue.count,
                                 "x=", 0u);
                 return false;
             }
             IPC_SCHED_TRACE("[SYNC-FAIL]", "dest-gone-reply cur=", cur->id,
-                            "dest=", dest_id, "q=", cur->msg_queue->count,
+                            "dest=", dest_id, "q=", cur->msg_queue.count,
                             "x=", 0u);
             break;
         }
@@ -287,14 +287,14 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
         cur->remaining_ticks = cur->period_ticks;
     }
 
-    return cur->msg_queue->pop(reply);
+    return cur->msg_queue.pop(reply);
 }
 
 /// @brief Return a reference to a task's message queue (asserts existence).
 MessageQueue &IPC::queue(uint64_t task_id) {
     auto *tcb = Scheduler::find_task(task_id);
-    ENSURE(tcb != nullptr && tcb->msg_queue != nullptr);
-    return *tcb->msg_queue;
+    ENSURE(tcb != nullptr );
+    return tcb->msg_queue;
 }
 
 /// @brief Block the current task on a full queue (priority inheritance if

@@ -37,7 +37,6 @@ using namespace kernel;
 JARVIS_TEST(ipc_send_data_size_exceeds_max, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
@@ -45,7 +44,7 @@ JARVIS_TEST(ipc_send_data_size_exceeds_max, "PRE: none | POST: none") {
     msg.priority = 0;
     msg.data_size = IPC_MAX_MSG_SIZE + 1; // Exceeds max
 
-    bool ok = cur->msg_queue->push(msg);
+    bool ok = cur->msg_queue.push(msg);
     JARVIS_ASSERT(ok == false);
 }
 
@@ -57,7 +56,6 @@ JARVIS_TEST(ipc_send_data_size_exceeds_max, "PRE: none | POST: none") {
 JARVIS_TEST(ipc_send_data_size_zero, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
@@ -65,12 +63,12 @@ JARVIS_TEST(ipc_send_data_size_zero, "PRE: none | POST: none") {
     msg.priority = 0;
     msg.data_size = 0;
 
-    bool ok = cur->msg_queue->push(msg);
+    bool ok = cur->msg_queue.push(msg);
     JARVIS_ASSERT(ok == true);
 
     // Verify we can pop it
     Message recv{};
-    ok = cur->msg_queue->pop(recv);
+    ok = cur->msg_queue.pop(recv);
     JARVIS_ASSERT(ok == true);
     JARVIS_ASSERT(recv.data_size == 0);
 }
@@ -95,7 +93,6 @@ JARVIS_TEST(ipc_queue_remove_from_mid, "PRE: none | POST: none") {
 JARVIS_TEST(ipc_multiple_blocked_senders_wake_one, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Fill queue to capacity
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
@@ -104,24 +101,24 @@ JARVIS_TEST(ipc_multiple_blocked_senders_wake_one, "PRE: none | POST: none") {
         msg.type = static_cast<uint64_t>(i);
         msg.priority = 0;
         msg.data_size = 0;
-        JARVIS_ASSERT(cur->msg_queue->push(msg) == true);
+        JARVIS_ASSERT(cur->msg_queue.push(msg) == true);
     }
 
     // Try to send one more (should block if we were in task context)
     // Since we're in test context, just verify queue is full
-    JARVIS_ASSERT(cur->msg_queue->is_full() == true);
+    JARVIS_ASSERT(cur->msg_queue.is_full() == true);
 
     // Pop one message
     Message recv{};
-    JARVIS_ASSERT(cur->msg_queue->pop(recv) == true);
+    JARVIS_ASSERT(cur->msg_queue.pop(recv) == true);
     JARVIS_ASSERT(recv.type == 0); // FIFO: first pushed = first popped
 
     // Queue should now have space
-    JARVIS_ASSERT(cur->msg_queue->is_full() == false);
+    JARVIS_ASSERT(cur->msg_queue.is_full() == false);
 
     // Pop remaining
     for (size_t i = 1; i < IPC_MAX_QUEUE_MSG; ++i) {
-        JARVIS_ASSERT(cur->msg_queue->pop(recv) == true);
+        JARVIS_ASSERT(cur->msg_queue.pop(recv) == true);
         JARVIS_ASSERT(recv.type == i);
     }
 }
@@ -146,18 +143,17 @@ JARVIS_TEST(ipc_send_sync_timeout, "PRE: none | POST: none") {
 JARVIS_TEST(ipc_priority_inversion, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Simulate priority inheritance scenario
     // Current task acts as queue owner
     cur->base_priority = 10;
     cur->priority = 10;
-    cur->msg_queue->owner = cur;
+    cur->msg_queue.owner = cur;
 
     // Create a "blocked sender" with higher priority
     // (In real scenario this would be another task, but we test the logic
     // directly)
-    MessageQueue &q = *cur->msg_queue;
+    MessageQueue &q = cur->msg_queue;
 
     // Simulate blocked sender with priority 20 (higher urgency = higher number)
     // The block_sender function boosts owner priority
@@ -184,7 +180,6 @@ JARVIS_TEST(ipc_priority_inversion, "PRE: none | POST: none") {
 JARVIS_TEST(ipc_send_self_max_message_size, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
@@ -198,10 +193,10 @@ JARVIS_TEST(ipc_send_self_max_message_size, "PRE: none | POST: none") {
     }
 
     // Push and pop
-    JARVIS_ASSERT(cur->msg_queue->push(msg) == true);
+    JARVIS_ASSERT(cur->msg_queue.push(msg) == true);
 
     Message recv{};
-    JARVIS_ASSERT(cur->msg_queue->pop(recv) == true);
+    JARVIS_ASSERT(cur->msg_queue.pop(recv) == true);
 
     // Verify all fields
     JARVIS_ASSERT(recv.sender_id == msg.sender_id);
@@ -302,7 +297,7 @@ JARVIS_TEST(ipc_priority_inheritance_send, "PRE: none | POST: none") {
         fill.type = 99;
         fill.priority = 0;
         fill.data_size = 0;
-        low->msg_queue->push(fill);
+        low->msg_queue.push(fill);
     }
 
     // High tries to send to low — blocks because low's queue is full

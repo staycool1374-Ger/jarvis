@@ -105,7 +105,7 @@ JARVIS_TEST(ipc_bench_rdtsc_overhead, "PRE: none | POST: none") {
 
 static uint64_t bench_ipc_send_self() {
     auto *cur = Scheduler::current_task();
-    if (!cur || !cur->msg_queue)
+    if (!cur)
         return ~0ULL;
     Message msg{};
     msg.sender_id = cur->id;
@@ -210,8 +210,8 @@ JARVIS_TEST(ipc_bench_send_full, "PRE: none | POST: none") {
     bench_ipc_send_full_id_ = cur->id;
     Message filler{};
     filler.sender_id = cur->id;
-    while (!cur->msg_queue->is_full()) {
-        cur->msg_queue->push(filler);
+    while (!cur->msg_queue.is_full()) {
+        cur->msg_queue.push(filler);
     }
 
     auto r = measure(bench_ipc_send_full);

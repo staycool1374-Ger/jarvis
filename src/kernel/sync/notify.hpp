@@ -25,11 +25,14 @@
 #pragma once
 
 #include <types.hpp>
-#include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
+
+// Forward declaration — Notify only stores a pointer to TCB.
+struct TaskControlBlock;
+
 namespace sync {
 
 static constexpr uint64_t NOTIFY_INVALID = 0;

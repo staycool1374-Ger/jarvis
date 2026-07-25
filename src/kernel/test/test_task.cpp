@@ -46,16 +46,10 @@ JARVIS_TEST(task_cleanup_frees_resources, "PRE: none | POST: none") {
     auto *tcb = TaskControlBlock::create([]() {}, 1, 10);
     JARVIS_ASSERT(tcb != nullptr);
     JARVIS_ASSERT(tcb->kernel_stack != nullptr);
-    JARVIS_ASSERT(tcb->msg_queue != nullptr);
-    JARVIS_ASSERT(tcb->notify != nullptr);
-    JARVIS_ASSERT(tcb->event_group != nullptr);
 
     tcb->cleanup();
 
     JARVIS_ASSERT(tcb->kernel_stack == nullptr);
-    JARVIS_ASSERT(tcb->msg_queue == nullptr);
-    JARVIS_ASSERT(tcb->notify == nullptr);
-    JARVIS_ASSERT(tcb->event_group == nullptr);
     JARVIS_ASSERT_EQ(0ULL, tcb->stack_phys_);
 
     delete tcb;
@@ -146,9 +140,6 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
 
     // ELF load should have called init_task_common, so IPC objects should be
     // initialized
-    JARVIS_ASSERT(tcb->msg_queue != nullptr);
-    JARVIS_ASSERT(tcb->notify != nullptr);
-    JARVIS_ASSERT(tcb->event_group != nullptr);
 
     // Cleanup
     tcb->cleanup();

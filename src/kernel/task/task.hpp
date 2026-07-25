@@ -29,6 +29,8 @@
 #include <kernel/jarvis_config.h>
 #include <kernel/task/task_errors.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include <kernel/sync/notify.hpp>
+#include <kernel/sync/eventgroup.hpp>
 #include <signal.hpp>
 
 namespace kernel {
@@ -55,12 +57,40 @@ struct Message {
     uint64_t buf_handle = 0;
 };
 
-/// @brief Forward declarations so TaskControlBlock can hold pointers.
-struct MessageQueue;
+/// @brief Priority-ordered circular message queue embedded in each TCB.
+struct MessageQueue {
+    Message msgs[IPC_MAX_QUEUE_MSG];
+    uint64_t prio_bitmap;
+    volatile size_t head;
+    volatile size_t tail;
+    volatile size_t count;
+
+    TaskControlBlock *blocked_senders_head;
+    TaskControlBlock *blocked_senders_tail;
+
+    TaskControlBlock *owner;
+
+    MessageQueue()
+        : prio_bitmap(0), head(0), tail(0), count(0),
+          blocked_senders_head(nullptr), blocked_senders_tail(nullptr),
+          owner(nullptr) {
+    }
+
+    ~MessageQueue();
+
+    sync::SpinLock lock_;
+
+    void init();
+    bool push(const Message &msg);
+    bool pop(Message &msg);
+
+    bool is_empty() const { return count == 0; }
+    bool is_full() const { return count >= IPC_MAX_QUEUE_MSG; }
+
+    size_t highest_priority() const;
+};
 
 namespace sync {
-class Notify;
-class EventGroup;
 class Mutex;
 } // namespace sync
 
@@ -170,8 +200,7 @@ struct TaskControlBlock {
           dl_prev_(nullptr), pri_next_(nullptr), pri_prev_(nullptr),
           in_ready_queue_(false), rq_priority_(0), waiting_child_pid(0),
           waiting_child_status(nullptr), pending_signals(0), alarm_ticks(0),
-          alarm_armed(false), msg_queue(nullptr), notify(nullptr),
-          event_group(nullptr), sporadic_server(nullptr), buf_list_head(0),
+          alarm_armed(false), sporadic_server(nullptr), buf_list_head(0),
           blocked_next(nullptr), blocked_prev(nullptr),
           blocked_on_queue(nullptr), reply_wait(false),
           waiting_on_mutex(nullptr),
@@ -271,17 +300,14 @@ struct TaskControlBlock {
     /// @brief True if alarm is armed.
     bool alarm_armed;
 
-    /// @brief Pointer to the task's message queue (allocated and
-    /// owned by IPC layer).
-    MessageQueue *msg_queue;
+    /// @brief Embedded message queue (no separate heap allocation).
+    MessageQueue msg_queue;
 
-    /// @brief Per-task notification object (allocated in
-    /// init_task_common).
-    sync::Notify *notify;
+    /// @brief Per-task notification object (embedded).
+    sync::Notify notify;
 
-    /// @brief Per-task event-group object (allocated in
-    /// init_task_common).
-    sync::EventGroup *event_group;
+    /// @brief Per-task event-group object (embedded).
+    sync::EventGroup event_group;
 
     /// @brief Optional per-task SporadicServer for aperiodic
     /// daemon budget management (vfsd, iocd).  nullptr for normal tasks.

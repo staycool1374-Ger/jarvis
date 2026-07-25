@@ -47,18 +47,12 @@ using namespace kernel;
 JARVIS_TEST(task_exit_cleans_all_ipc_objects, "PRE: none | POST: none") {
     SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
     JARVIS_ASSERT(tcb != nullptr);
-    JARVIS_ASSERT(tcb->msg_queue != nullptr);
-    JARVIS_ASSERT(tcb->notify != nullptr);
-    JARVIS_ASSERT(tcb->event_group != nullptr);
 
     tcb->state = TaskState::TERMINATED;
     tcb->exit_code = 0;
 
     tcb->cleanup();
 
-    JARVIS_ASSERT(tcb->msg_queue == nullptr);
-    JARVIS_ASSERT(tcb->notify == nullptr);
-    JARVIS_ASSERT(tcb->event_group == nullptr);
     JARVIS_ASSERT(tcb->kernel_stack == nullptr);
 
     JARVIS_TEST_PASS();
@@ -102,7 +96,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
         fill_msg.type = 99;
         fill_msg.priority = 0;
         fill_msg.data_size = 0;
-        receiver->msg_queue->push(fill_msg);
+        receiver->msg_queue.push(fill_msg);
     }
 
     // Now send from sender - should block
@@ -110,7 +104,7 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
     (void)kernel::IPC::send(receiver->id, msg, 0);
     // IPC::send with blocking should not return if queue is full
     // The sender should be in blocked list
-    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Now terminate receiver and cleanup
@@ -122,7 +116,6 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
     JARVIS_ASSERT(sender->state == TaskState::READY);
     JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
     // cleanup() frees the receiver's msg_queue after clearing blocked senders
-    JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
     JARVIS_TEST_PASS();
 }
@@ -302,9 +295,6 @@ JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
 
     // init_task_common should have been called, so IPC objects should be
     // initialized
-    JARVIS_ASSERT(tcb->msg_queue != nullptr);
-    JARVIS_ASSERT(tcb->notify != nullptr);
-    JARVIS_ASSERT(tcb->event_group != nullptr);
 
     JARVIS_TEST_PASS();
 }
@@ -371,20 +361,19 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
         fill_msg.type = 99;
         fill_msg.priority = 0;
         fill_msg.data_size = 0;
-        receiver->msg_queue->push(fill_msg);
+        receiver->msg_queue.push(fill_msg);
     }
 
     // Send from sender — should block (receiver queue full)
     Scheduler::set_current(*sender);
     (void)IPC::send(receiver->id, msg, 0);
-    JARVIS_ASSERT(receiver->msg_queue->blocked_senders_head == sender);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
     // Terminate + cleanup — must free msg_queue
     receiver->state = TaskState::TERMINATED;
     receiver->exit_code = 0;
     receiver->cleanup();
 
-    JARVIS_ASSERT(receiver->msg_queue == nullptr);
 
     JARVIS_TEST_PASS();
 }

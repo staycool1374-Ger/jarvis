@@ -45,7 +45,6 @@ JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
     arch::IrqGuard guard;
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
@@ -57,7 +56,7 @@ JARVIS_TEST(ipc_receive_was_blocked_restores_state, "PRE: none | POST: none") {
     JARVIS_ASSERT(ok);
 
     // Verify queue has message
-    JARVIS_ASSERT(!cur->msg_queue->is_empty());
+    JARVIS_ASSERT(!cur->msg_queue.is_empty());
 
     // The was_blocked flag is internal to sys_receive - we verify by checking
     // that after receiving, the task is in READY state (not BLOCKED)
@@ -173,7 +172,6 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
 JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Use a kernel task: a C++ lambda cannot run as a userspace task (no
     // user-mapped entry mechanism), and calling IPC:: directly from user mode
@@ -234,7 +232,6 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
 JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT(cur->msg_queue != nullptr);
 
     // Create a kernel task (no page_table_)
     auto *kernel_task = TaskControlBlock::create(

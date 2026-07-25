@@ -151,7 +151,6 @@ TEST_CLASS(UserspaceDriverIsolation) {
 TEST_CLASS(IpcLatencyJitter) {
     auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
-    CT_ASSERT(cur->msg_queue != nullptr);
 
     Message msg{};
     msg.sender_id = cur->id;
