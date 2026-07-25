@@ -295,6 +295,7 @@ def validate(cfg: dict[str, int]):
     check_ge("CONFIG_IPC_MAX_QUEUE_MSG", cfg.get("CONFIG_IPC_MAX_QUEUE_MSG", 16), 1)
     check_ge("CONFIG_IPC_PRIORITY_LEVELS", cfg.get("CONFIG_IPC_PRIORITY_LEVELS", 32), 1)
     check_ge("CONFIG_IPC_SHMEM_MAX_PAGES", cfg.get("CONFIG_IPC_SHMEM_MAX_PAGES", 64), 0)
+    check_ge("CONFIG_BUFFER_POOL_PAGES", cfg.get("CONFIG_BUFFER_POOL_PAGES", 128), 1)
     check_ge("CONFIG_MAX_PROCESS_PAGES", cfg.get("CONFIG_MAX_PROCESS_PAGES", 512), 1)
     check_ge("CONFIG_MAX_SIGNAL_HANDLERS", cfg.get("CONFIG_MAX_SIGNAL_HANDLERS", 32), 1)
     check_ge("CONFIG_VFS_MAX_PATH", cfg.get("CONFIG_VFS_MAX_PATH", 256), 1)

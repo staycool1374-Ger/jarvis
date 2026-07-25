@@ -29,28 +29,19 @@
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/buffer_pool_errors.hpp>
+#include <kernel/jarvis_config.h>
 
 namespace kernel {
-
-/// @brief Sentinel values for linked-list head/tail.
-enum class ListSentinel : int8_t {
-    EMPTY = -1, ///< List is empty.
-};
-/// @brief Sentinel values returned by validation functions.
-enum class BufferSentinel : int8_t {
-    INVALID_HANDLE = -2, ///< Handle generation mismatch or zero.
-    INVALID_INDEX = -3,  ///< Index out of bounds.
-};
-constexpr int64_t LIST_EMPTY = static_cast<int64_t>(ListSentinel::EMPTY);
-constexpr int64_t BUF_INVALID_HANDLE =
-    static_cast<int64_t>(BufferSentinel::INVALID_HANDLE);
-constexpr int64_t BUF_INVALID_INDEX =
-    static_cast<int64_t>(BufferSentinel::INVALID_INDEX);
 
 class BufferPool {
   public:
     static constexpr size_t MAX_BUFFERS = 1024;
     static constexpr size_t BUFFER_SIZE = arch::PAGE_SIZE;
+    static constexpr size_t POOL_PAGES = CONFIG_BUFFER_POOL_PAGES;
+
+    static constexpr int64_t LIST_EMPTY = -1;
+    static constexpr int64_t BUF_INVALID_HANDLE = -2;
+    static constexpr int64_t BUF_INVALID_INDEX = -3;
 
     /// @brief A single buffer-pool entry.
     struct Entry {
@@ -118,7 +109,8 @@ class BufferPool {
     static void restore_state(const uint8_t *src, size_t max_bytes);
     /// @brief Bytes needed for BufferPool state capture.
     static constexpr size_t state_bytes() {
-        return sizeof(entries) + sizeof(free_head_) + sizeof(next_cookie_);
+        return sizeof(entries) + sizeof(free_head_) + sizeof(next_cookie_) +
+               sizeof(pool_count_);
     }
 
   private:
@@ -126,6 +118,15 @@ class BufferPool {
         free_head_; ///< Head of the free-entry linked list.
     static constinit uint32_t
         next_cookie_; ///< Monotonically increasing cookie counter.
+
+    /// @brief Pre-allocated physical pages for buffer data (no dynamic PMM).
+    static uint64_t pool_pages_[POOL_PAGES];
+    static constinit size_t pool_count_;
+
+    /// @brief Pop a page from the pre-allocated pool.
+    static uint64_t alloc_page();
+    /// @brief Return a page to the pre-allocated pool.
+    static void free_page(uint64_t phys);
 
     /// @brief Allocate an entry from the free list.
     static int32_t alloc_entry();

@@ -167,11 +167,11 @@ JARVIS_TEST(buffer_pool_invalid_handle, "PRE: none | POST: none") {
     JARVIS_ASSERT(task != nullptr);
 
     // Handle 0 should always be invalid
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(0));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(0));
 
     // Forged handle (index 0, gen 0xDEAD)
     uint64_t bad = (static_cast<uint64_t>(0xDEAD) << 32) | 0;
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(bad));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(bad));
 
     // Valid alloc then check bogus gen
     uint64_t va = 0x30000000;
@@ -182,12 +182,12 @@ JARVIS_TEST(buffer_pool_invalid_handle, "PRE: none | POST: none") {
 
     // Wrong generation
     uint64_t forged = (static_cast<uint64_t>(real_gen + 1) << 32) | real_idx;
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(forged));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(forged));
 
     // Index out of range
     uint64_t oob =
         (static_cast<uint64_t>(real_gen) << 32) | BufferPool::MAX_BUFFERS;
-    JARVIS_ASSERT_EQ(BUF_INVALID_INDEX, BufferPool::validate(oob));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_INDEX, BufferPool::validate(oob));
 
     BufferPool::free(*task, good);
 
@@ -615,7 +615,7 @@ JARVIS_TEST(buffer_pool_forged_handle_after_free, "PRE: none | POST: none") {
     JARVIS_ASSERT(BufferPool::free(*task, handle));
 
     // Try to use the old handle (same idx, same gen)
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(handle));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(handle));
 
     JARVIS_TEST_PASS();
 }
@@ -820,14 +820,14 @@ JARVIS_TEST(buffer_pool_handle_reuse_security, "PRE: none | POST: none") {
 
     uint64_t old_handle = h1;
     JARVIS_ASSERT(BufferPool::free(*task, h1));
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
 
     uint64_t h2 = BufferPool::alloc(*task, va);
     JARVIS_ASSERT(h2 != 0);
     uint32_t old_gen = static_cast<uint32_t>(old_handle >> 32);
     uint32_t new_gen = static_cast<uint32_t>(h2 >> 32);
     JARVIS_ASSERT(new_gen > old_gen);
-    JARVIS_ASSERT_EQ(BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
+    JARVIS_ASSERT_EQ(BufferPool::BUF_INVALID_HANDLE, BufferPool::validate(old_handle));
 
     BufferPool::free(*task, h2);
     JARVIS_TEST_PASS();

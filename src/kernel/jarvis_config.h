@@ -218,6 +218,13 @@
 #define CONFIG_IPC_SHMEM_MAX_PAGES 64
 #endif
 
+/// @brief Number of physical pages pre-allocated for the zero-copy BufferPool.
+///        Each page is 4096 bytes.  Boot-time PMM reservation; no dynamic
+///        alloc after init.  Must be >= max expected concurrent buffers.
+#ifndef CONFIG_BUFFER_POOL_PAGES
+#define CONFIG_BUFFER_POOL_PAGES 128
+#endif
+
 /// Maximum physical pages for a user-space process loaded via runelf.
 #ifndef CONFIG_MAX_PROCESS_PAGES
 #define CONFIG_MAX_PROCESS_PAGES 512

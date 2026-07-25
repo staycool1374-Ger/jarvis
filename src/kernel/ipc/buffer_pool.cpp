@@ -31,8 +31,10 @@
 namespace kernel {
 
 BufferPool::Entry BufferPool::entries[MAX_BUFFERS];
-constinit int32_t BufferPool::free_head_ = LIST_EMPTY;
+constinit int32_t BufferPool::free_head_ = BufferPool::LIST_EMPTY;
 constinit uint32_t BufferPool::next_cookie_ = 1;
+uint64_t BufferPool::pool_pages_[POOL_PAGES];
+constinit size_t BufferPool::pool_count_ = 0;
 
 /// @brief Clear a single page-table entry for @p virt_addr in the given PML4.
 /// Handles x86_64, AArch64, and RISC-V page-table hierarchies.
@@ -118,11 +120,11 @@ static void list_insert(TaskControlBlock &task, int32_t idx) {
     bp_check_guard();
     ENSURE(idx >= 0 && static_cast<size_t>(idx) < BufferPool::MAX_BUFFERS);
     int32_t old_head = task.buf_list_head;
-    if (old_head != LIST_EMPTY)
+    if (old_head != BufferPool::LIST_EMPTY)
         ENSURE(static_cast<size_t>(old_head) < BufferPool::MAX_BUFFERS);
-    BufferPool::entries[idx].list_prev = LIST_EMPTY;
+    BufferPool::entries[idx].list_prev = BufferPool::LIST_EMPTY;
     BufferPool::entries[idx].list_next = old_head;
-    if (old_head != LIST_EMPTY)
+    if (old_head != BufferPool::LIST_EMPTY)
         BufferPool::entries[old_head].list_prev = idx;
     task.buf_list_head = idx;
 }
@@ -146,7 +148,7 @@ static void list_remove(TaskControlBlock &task, int32_t idx) {
     BufferPool::entries[idx].list_next = -1;
 }
 
-/// @brief Initialise the pool — build the free list and reset state.
+/// @brief Initialise the pool — build the free list, pre-allocate pages.
 void BufferPool::init() {
     free_head_ = -1;
     next_cookie_ = 1;
@@ -156,26 +158,51 @@ void BufferPool::init() {
         entries[i].refcount = 0;
         entries[i].owner_task = 0;
         entries[i].mapped_va = 0;
-        entries[i].list_prev = LIST_EMPTY;
-        entries[i].list_next = LIST_EMPTY;
+        entries[i].list_prev = BufferPool::LIST_EMPTY;
+        entries[i].list_next = BufferPool::LIST_EMPTY;
         free_entry(static_cast<int32_t>(i));
+    }
+    // Pre-allocate physical pages for buffer data
+    for (size_t i = 0; i < POOL_PAGES; ++i) {
+        uint64_t phys = PMM::alloc_page();
+        ENSURE(phys != 0);
+        pool_pages_[i] = phys;
+    }
+    pool_count_ = POOL_PAGES;
+}
+
+/// @brief Pop a physical page from the pre-allocated pool.
+///        Falls back to PMM::alloc_page() when the pool is exhausted.
+uint64_t BufferPool::alloc_page() {
+    if (pool_count_ > 0)
+        return pool_pages_[--pool_count_];
+    return PMM::alloc_page();
+}
+
+/// @brief Return a physical page to the pre-allocated pool.
+///        Falls back to PMM::free_page() if the pool is full.
+void BufferPool::free_page(uint64_t phys) {
+    if (pool_count_ < POOL_PAGES) {
+        pool_pages_[pool_count_++] = phys;
+    } else {
+        PMM::free_page(phys);
     }
 }
 
 /// @brief Pop an entry from the free list.
-/// @return index, or BUF_INVALID_INDEX if the pool is exhausted.
+/// @return index, or BufferPool::BUF_INVALID_INDEX if the pool is exhausted.
 int32_t BufferPool::alloc_entry() {
     bp_check_guard();
-    if (free_head_ == LIST_EMPTY)
-        return BUF_INVALID_INDEX;
+    if (free_head_ == BufferPool::LIST_EMPTY)
+        return BufferPool::BUF_INVALID_INDEX;
     ENSURE(static_cast<size_t>(free_head_) < MAX_BUFFERS);
     int32_t idx = free_head_;
     ENSURE(static_cast<size_t>(idx) < MAX_BUFFERS);
     free_head_ = static_cast<int32_t>(entries[idx].list_next);
-    if (free_head_ != LIST_EMPTY)
+    if (free_head_ != BufferPool::LIST_EMPTY)
         ENSURE(static_cast<size_t>(free_head_) < MAX_BUFFERS);
     ENSURE(entries[idx].phys_addr == 0);
-    entries[idx].list_next = LIST_EMPTY;
+    entries[idx].list_next = BufferPool::LIST_EMPTY;
     kernel::test::ResourceTracker::instance().track_bufpool_alloc();
     return idx;
 }
@@ -187,14 +214,14 @@ void BufferPool::free_entry(int32_t idx) {
     entries[idx].refcount = 0;
     entries[idx].owner_task = 0;
     entries[idx].mapped_va = 0;
-    entries[idx].list_prev = LIST_EMPTY;
+    entries[idx].list_prev = BufferPool::LIST_EMPTY;
     entries[idx].list_next = free_head_;
     free_head_ = idx;
     kernel::test::ResourceTracker::instance().track_bufpool_free();
 }
 
 /// @brief Validate a handle (index + generation match).
-/// @return index, BUF_INVALID_HANDLE, or BUF_INVALID_INDEX.
+/// @return index, BufferPool::BUF_INVALID_HANDLE, or BufferPool::BUF_INVALID_INDEX.
 /// @brief BUGS.md#020: verify the `entries[]` red-zone guard word is intact.
 /// An OOB `entries[idx]` write (idx >= MAX_BUFFERS) corrupts this sentinel,
 /// which sits immediately after the array; panic with a precise message so the
@@ -214,16 +241,16 @@ static inline void bp_check_guard() {
 
 int32_t BufferPool::validate(uint64_t handle) {
     if (handle == 0)
-        return BUF_INVALID_HANDLE;
+        return BufferPool::BUF_INVALID_HANDLE;
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     uint32_t gen = static_cast<uint32_t>(handle >> 32);
     bp_check_guard();
     if (idx >= MAX_BUFFERS)
-        return BUF_INVALID_INDEX;
+        return BufferPool::BUF_INVALID_INDEX;
     if (entries[idx].phys_addr == 0)
-        return BUF_INVALID_HANDLE;
+        return BufferPool::BUF_INVALID_HANDLE;
     if (entries[idx].generation != gen)
-        return BUF_INVALID_HANDLE;
+        return BufferPool::BUF_INVALID_HANDLE;
     return static_cast<int32_t>(idx);
 }
 
@@ -243,7 +270,7 @@ uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
     if (idx < 0)
         return 0;
 
-    uint64_t phys = PMM::alloc_page();
+    uint64_t phys = alloc_page();
     if (!phys) {
         free_entry(idx);
         return 0;
@@ -278,7 +305,7 @@ bool BufferPool::free(TaskControlBlock &task, uint64_t handle) {
     }
 
     list_remove(task, idx);
-    PMM::free_page(entries[idx].phys_addr);
+    BufferPool::free_page(entries[idx].phys_addr);
     free_entry(idx);
     return true;
 }
@@ -354,6 +381,8 @@ void BufferPool::capture_state(uint8_t *dst, size_t max_bytes) {
     __builtin_memcpy(dst, &free_head_, sizeof(free_head_));
     dst += sizeof(free_head_);
     __builtin_memcpy(dst, &next_cookie_, sizeof(next_cookie_));
+    dst += sizeof(next_cookie_);
+    __builtin_memcpy(dst, &pool_count_, sizeof(pool_count_));
 }
 
 /// @brief Restore pool state from a flat buffer (test isolation).
@@ -364,6 +393,8 @@ void BufferPool::restore_state(const uint8_t *src, size_t max_bytes) {
     __builtin_memcpy(&free_head_, src, sizeof(free_head_));
     src += sizeof(free_head_);
     __builtin_memcpy(&next_cookie_, src, sizeof(next_cookie_));
+    src += sizeof(next_cookie_);
+    __builtin_memcpy(&pool_count_, src, sizeof(pool_count_));
 }
 
 /// @brief Unmap and free all buffers owned by a task (called from
@@ -385,7 +416,7 @@ void BufferPool::unmap_all(TaskControlBlock &task) {
             entries[idx].mapped_va = 0;
         }
 
-        PMM::free_page(entries[idx].phys_addr);
+        BufferPool::free_page(entries[idx].phys_addr);
         free_entry(idx);
         idx = next;
     }
