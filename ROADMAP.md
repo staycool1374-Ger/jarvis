@@ -208,6 +208,30 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [ ] MemPool — replace PMM-backed growth with fixed compile-time pools (from v0.2.21 config)
   - [ ] Add MemPool::reserve(pool_idx, count) — called once at init, fails if insufficient
 
+### 0.3.5.x — RT-Scheduler Hardening & VMM Cleanup
+
+- [ ] **Consistent SpinLock usage in on_tick()** — The tick handler currently mixes atomic
+      operations with SpinLock for scheduler state access, allowing IRQs to fire during
+      non-atomic sections (SpinLock does not disable IRQs).  This means `on_tick()` can read
+      mid-mutation while the interrupted context holds the lock, leading to transient
+      inconsistency.  Fix: wrap all scheduler state mutations in the running task with
+      `arch::IrqGuard` + `SpinLock` so that `on_tick()` never observes torn reads.
+- [ ] **True bitmap-granular ReadyQueue per priority level** — The current `ReadyQueueManager`
+      uses a single `PriorityMap` bitmap + one `TaskQueue` per level.  Each `dequeue_highest()`
+      scans the bitmap for the highest priority, then pops from that level's queue — this is
+      O(1) per operation via `ctz`/`clz`.  However, the bitmap is *shared* and the lazy-rebuild
+      fallback walks all tasks, which breaks strict O(1) WCET.  Fix: 128 dedicated per-priority
+      `TaskQueue` instances (the array already exists); eliminate the lazy-rebuild path by
+      ensuring `next_task()` never orphans a dequeued task (see reschedule() → peek_highest()
+      fix from v0.3.4).  Hard O(1) WCET for every scheduler path.
+- [ ] **Abstract VMM page-table helpers** — `free_stack_pdpt()` and `clone()` in vmm.cpp
+      currently hardcode x86_64 shift/mask constants (e.g. `PD_MASK`, `PDPT_SHIFT`) and
+      direct PML4/PDPT/PD/PT walks.  These must be replaced with arch-independent
+      `ArchPageTable` virtual methods (already defined in `hal/page_table.hpp` but not yet
+      consumed by the VMM).  This is a pre-requisite for AArch64/RISC-V64 MMU support.
+      Deliverable: zero x86_64-specific shift/mask in `vmm.cpp`; all page-table walks go
+      through `arch::ArchPageTable::walk()` / `map()` / `unmap()`.
+
 #### 0.3.5.x — OOM / Resource-Exhaustion RT-Safety Gap (KNOWN LIMITATION, found during scheduler re-design)
 **Context (discovered v0.3.2 scheduler re-design, `PmmExhaustion` test):** When a RUNNING task
 calls `PMM::alloc_page()` and it returns 0 (OOM), the kernel currently does **nothing** — the task
