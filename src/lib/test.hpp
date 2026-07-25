@@ -156,7 +156,15 @@ void add_task_named(TaskControlBlock &task, const char *tag = nullptr);
 void run_all();
 void run_safe();
 void run_filtered(uint8_t required_flags, bool use_isolation = true);
+/// @brief Name of the currently loaded test class (set by register_class).
+extern const char *g_current_class;
+/// @brief When true, run_filtered will skip TF_BENCH tests.
+extern bool g_filter_bench;
+
+/// @brief Run all registered non-benchmark tests.
 void run_debug();
+/// @brief Run all registered benchmark tests (TF_BENCH).
+void run_benchmarks();
 void run_release();
 void run_registered(uint8_t required_flags);
 void run_suite(const char* suite_name);

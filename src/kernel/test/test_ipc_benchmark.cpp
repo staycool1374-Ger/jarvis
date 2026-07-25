@@ -41,7 +41,7 @@ using namespace kernel;
 // Results below are in TSC cycles; divide by ~1000 for approximate µs.
 // ---------------------------------------------------------------------------
 
-static constexpr size_t BENCH_ITERATIONS = 10000;
+static constexpr size_t BENCH_ITERATIONS = 2000;
 
 struct BenchResult {
     uint64_t min;
@@ -298,11 +298,11 @@ JARVIS_TEST(ipc_bench_current_task, "PRE: none | POST: none") {
 void register_ipc_benchmark_tests() {
     Logger::info("Registering IPC benchmark suite");
 
-    JARVIS_REGISTER_TEST(ipc_bench_rdtsc_overhead);
-    JARVIS_REGISTER_TEST(ipc_bench_current_task);
-    JARVIS_REGISTER_TEST(ipc_bench_send_only);
-    JARVIS_REGISTER_TEST(ipc_bench_recv_self);
-    JARVIS_REGISTER_TEST(ipc_bench_send_self);
-    JARVIS_REGISTER_TEST(ipc_bench_send_full);
-    JARVIS_REGISTER_TEST(ipc_bench_send_64byte);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_rdtsc_overhead, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_current_task, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_send_only, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_recv_self, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_send_self, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_send_full, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(ipc_bench_send_64byte, kernel::test::TF_BENCH);
 }

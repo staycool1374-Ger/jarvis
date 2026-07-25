@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 828,    0,       0      },  // every registration function
+    {"all",                 824,    0,       0      },  // every registration function (811 after TF_BENCH filter)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock

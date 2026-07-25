@@ -37,6 +37,9 @@
 namespace kernel {
 namespace test {
 
+const char *g_current_class = nullptr;
+bool g_filter_bench = false;
+
 TestCase Registry::tests_[MAX_TESTS];
 size_t Registry::count_ = 0;
 size_t Registry::passed_ = 0;
@@ -370,6 +373,7 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         auto& tc = Registry::tests()[i];
         if (tc.flags & TF_USER) continue;
         if (required_flags && !(tc.flags & required_flags)) continue;
+        if (g_filter_bench && (tc.flags & TF_BENCH)) continue;
         ++expected;
     }
     Registry::set_expected_count(expected);
@@ -405,6 +409,7 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
         // If required_flags has TF_RELEASE set, run only tests with TF_RELEASE.
         if (tc.flags & TF_USER) continue;
         if (required_flags && !(tc.flags & required_flags)) continue;
+        if (g_filter_bench && (tc.flags & TF_BENCH)) continue;
 
         for (size_t ci = 0; ci < Registry::class_count(); ++ci) {
             auto* cs = Registry::class_section(ci);
@@ -499,6 +504,10 @@ void run_debug() {
     run_filtered(0, true);
 }
 
+void run_benchmarks() {
+    run_filtered(TF_BENCH, true);
+}
+
 void run_release() {
     run_filtered(TF_RELEASE, false);
 }
@@ -547,7 +556,20 @@ void run_release() {
 }
 
 void run_registered(uint8_t required_flags) {
-    run_filtered(required_flags, true);
+    // When no explicit flags and the current class is a bench variant,
+    // run benchmarks only.  For non-bench classes (e.g. "all", "safe"),
+    // skip TF_BENCH tests to keep the suite within QEMU timeout.
+    bool is_bench = g_current_class &&
+                    g_current_class[0] == 'b' &&
+                    g_current_class[1] == 'e';
+    if (required_flags == 0 && !is_bench) {
+        // Run non-benchmark tests only
+        g_filter_bench = true;
+        run_filtered(0, true);
+        g_filter_bench = false;
+    } else {
+        run_filtered(required_flags, true);
+    }
     if (g_class_auto_shutdown) {
         uint64_t result = (Registry::test_failed() == 0) ? 0 : 1;
         shutdown_kernel(result);

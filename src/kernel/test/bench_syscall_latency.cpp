@@ -109,8 +109,8 @@ JARVIS_TEST(bench_spsc_push_pop, "PRE: none | POST: none") {
 }
 
 void register_bench_syscall_latency_tests() {
-    Logger::info("Registering kernel primitive latency benchmarks");
-    JARVIS_REGISTER_TEST(bench_spinlock_acquire_release);
-    JARVIS_REGISTER_TEST(bench_mutex_acquire_release);
-    JARVIS_REGISTER_TEST(bench_spsc_push_pop);
+    Logger::info("Registering syscall latency benchmarks");
+    JARVIS_REGISTER_TEST_FLAGS(bench_spinlock_acquire_release, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(bench_mutex_acquire_release, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(bench_spsc_push_pop, kernel::test::TF_BENCH);
 }

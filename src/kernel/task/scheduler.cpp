@@ -219,7 +219,13 @@ void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     // the idle loop (observed as the `all` suite hanging at the atomic
     // context-switch tests).
     if (&task == current_task_ptr_) {
-        auto *next = next_task();
+    // peek the highest-priority ready task without dequeuing it.
+    // next_task() would dequeue, but reschedule() never dispatches —
+    // it only requests a deferred switch (INV-4).  Dequeuing here would
+    // orphan the task until the next lazy rebuild, causing the calling
+    // test's tight `while (state != TERMINATED) reschedule();` loop to
+    // constantly dequeue → lazy-rebuild → dequeue (infinite livelock).
+    auto *next = ready_queue_.peek_highest();
         if (next && next != &task) {
             switch_to_task(&task, next, nullptr);
         }

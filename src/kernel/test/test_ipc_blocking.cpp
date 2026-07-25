@@ -132,16 +132,14 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
     // set it current and get it skipped+discarded, deadlocking the handshake.
     kernel::test::yield_as(*receiver);
 
-    // Drive the sender→receiver→sender handshake to completion.  reschedule()
-    // only *defers* the context switch (the actual switch + current_task_ptr_
-    // update happens in the next timer ISR).  Wait on the tasks' terminal
-    // state with an unbounded loop (the established pattern in this suite,
-    // e.g. test_fpu_multi.cpp): each reschedule() lets a timer ISR run the
-    // peer task, so the handshake always converges — a bounded loop with
-    // arch::pause() can burn its iterations before the needed ISRs fire.
+    // Drive the sender→receiver→sender handshake to completion.  A single
+    // reschedule() defers the context switch; the timer ISR dispatches the
+    // peer tasks on subsequent ticks.  Busy-wait WITHOUT reschedule()
+    // so the timer ISR can acquire the scheduler lock without contention.
+    Scheduler::reschedule();
     while (sender->state != TaskState::TERMINATED ||
            receiver->state != TaskState::TERMINATED) {
-        Scheduler::reschedule();
+        asm volatile("pause");
     }
 
     Scheduler::set_current(*original);
@@ -207,11 +205,13 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
     // reschedule() lets next_task() pick the higher-priority task (11 > 10).
     Scheduler::reschedule();
 
-    // Drive the task's self-IPC handshake to completion.  reschedule()
-    // only defers the context switch (the real switch happens in the next
-    // timer ISR), so wait (unbounded) until the task has run to completion.
+    // Drive the task's self-IPC handshake to completion.  A single
+    // reschedule() defers the context switch; the timer ISR dispatches
+    // the peer task on the next tick.  Busy-wait WITHOUT reschedule()
+    // so the timer ISR can acquire the scheduler lock without contention.
+    Scheduler::reschedule();
     while (user_task->state != TaskState::TERMINATED) {
-        Scheduler::reschedule();
+        asm volatile("pause");
     }
 
     Scheduler::set_current(*original);

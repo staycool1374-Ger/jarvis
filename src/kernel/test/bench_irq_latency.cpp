@@ -134,9 +134,9 @@ JARVIS_TEST(bench_irq_histogram_dump, "PRE: none | POST: none") {
 
 void register_bench_irq_latency_tests() {
     Logger::info("Registering IRQ-path latency benchmarks");
-    JARVIS_REGISTER_TEST(bench_reschedule_latency);
-    JARVIS_REGISTER_TEST(bench_spinlock_try_lock);
+    JARVIS_REGISTER_TEST_FLAGS(bench_reschedule_latency, kernel::test::TF_BENCH);
+    JARVIS_REGISTER_TEST_FLAGS(bench_spinlock_try_lock, kernel::test::TF_BENCH);
 #if CONFIG_IRQ_LATENCY_HISTOGRAM
-    JARVIS_REGISTER_TEST(bench_irq_histogram_dump);
+    JARVIS_REGISTER_TEST_FLAGS(bench_irq_histogram_dump, kernel::test::TF_BENCH);
 #endif
 }
