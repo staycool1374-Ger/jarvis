@@ -352,7 +352,7 @@ check-style:
 
 check-config:
 	@printf '  %-7s %s\n' 'CONFIG' 'Validating kernel configuration…'
-	@python3 tools/check-config.py; \
+	@ARCH=$(ARCH) python3 tools/check-config.py; \
 	rc=$$?; \
 	if [ $$rc -eq 0 ]; then \
 	    printf '  %-7s %s\n' 'CONFIG' 'All checks passed.'; \

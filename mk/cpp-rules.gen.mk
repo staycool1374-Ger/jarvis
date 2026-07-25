@@ -74,10 +74,6 @@ build/kernel/irq_latency_histogram.o: src/kernel/irq_latency_histogram.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/irq_thread.o: src/kernel/irq_thread.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/vfs/vfsd.o: src/kernel/vfs/vfsd.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -250,6 +246,10 @@ build/kernel/test/test_atomic_context_switch.o: src/kernel/test/test_atomic_cont
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_jitter.o: src/kernel/test/test_jitter.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_task.o: src/kernel/test/test_task.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -291,6 +291,10 @@ build/kernel/test/test_shell_redirect.o: src/kernel/test/test_shell_redirect.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_virtio.o: src/kernel/test/test_virtio.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_irq_alloc.o: src/kernel/test/test_irq_alloc.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -414,6 +418,10 @@ build/kernel/test/test_signals.o: src/kernel/test/test_signals.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_apic_timer.o: src/kernel/test/test_apic_timer.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_framebuffer.o: src/kernel/test/test_framebuffer.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -506,30 +514,6 @@ build/kernel/test/test_o1_scheduler.o: src/kernel/test/test_o1_scheduler.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_apic_timer.o: src/kernel/test/test_apic_timer.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_irq_alloc.o: src/kernel/test/test_irq_alloc.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_jitter.o: src/kernel/test/test_jitter.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_threaded_irqs.o: src/kernel/test/test_threaded_irqs.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_gic.o: src/kernel/test/test_gic.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_plic.o: src/kernel/test/test_plic.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_microkernel_transition.o: src/kernel/test/test_microkernel_transition.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -590,7 +574,15 @@ build/kernel/test/test_watchdog.o: src/kernel/test/test_watchdog.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_plic.o: src/kernel/test/test_plic.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_queue_pip.o: src/kernel/test/test_queue_pip.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_gic.o: src/kernel/test/test_gic.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -599,6 +591,10 @@ build/kernel/test/test_address.o: src/kernel/test/test_address.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_task_lifecycle.o: src/kernel/test/test_task_lifecycle.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_threaded_irqs.o: src/kernel/test/test_threaded_irqs.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -711,6 +707,10 @@ build/kernel/driver/iocd.o: src/kernel/driver/iocd.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/random.o: src/kernel/random.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/irq_thread.o: src/kernel/irq_thread.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

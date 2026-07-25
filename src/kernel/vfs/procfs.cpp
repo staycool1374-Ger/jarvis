@@ -324,6 +324,9 @@ static int64_t pid_stat_read(Vnode &self, uint8_t *buf, uint64_t count,
     case TaskState::TERMINATED:
         state_str = "T";
         break;
+    case TaskState::REAPED:
+        state_str = "Z";
+        break;
     }
 
     const char *fmt = "pid=%s state=%s priority=%s ticks=%lu\n";

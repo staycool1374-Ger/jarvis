@@ -216,7 +216,7 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
       mid-mutation while the interrupted context holds the lock, leading to transient
       inconsistency.        Fix: wrap all scheduler state mutations in the running task with
       `arch::IrqGuard` + `SpinLock` so that `on_tick()` never observes torn reads.
-- [ ] **current_task_ptr_ TERMINATED guard** — After a task is reaped by
+- [x] **current_task_ptr_ TERMINATED guard** — After a task is reaped by
       `reap_orphans()` or `cleanup_test_tasks()`, `current_task_ptr_` may still alias
       the freed TCB until the next deferred switch publishes a new task.  Any code
       dereferencing `current_task_ptr_` during this window (e.g. fault handlers,

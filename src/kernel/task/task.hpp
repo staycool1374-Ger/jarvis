@@ -76,6 +76,7 @@ enum class TaskState : uint8_t {
     BLOCKED,
     WAITING,
     TERMINATED,
+    REAPED,
 };
 
 /// @brief CPU register save area for context switching.

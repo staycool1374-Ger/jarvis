@@ -910,6 +910,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 void TaskControlBlock::cleanup() noexcept {
     if (magic != TCB_MAGIC)
         return;
+    state = TaskState::REAPED;
     magic = 0;
 
     // Unregister from the scheduler's live tables so we never leave a dangling

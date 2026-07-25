@@ -1358,6 +1358,12 @@ static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
         Logger::raw_write(": next=null\n");
         return false;
     }
+    if (current->magic != TaskControlBlock::TCB_MAGIC) {
+        Logger::raw_write("[SCHED] ");
+        Logger::raw_write(label);
+        Logger::raw_write(": current magic invalid\n");
+        return false;
+    }
     auto caddr = reinterpret_cast<uint64_t>(current);
     auto naddr = reinterpret_cast<uint64_t>(next);
     if (caddr < 0xFFFF800000000000ULL) {
