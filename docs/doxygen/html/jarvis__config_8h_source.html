@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -526,75 +526,95 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('jarvis__config
 <div class="line"><a id="l00497" name="l00497"></a><span class="lineno">  497</span><span class="preprocessor">#ifndef CONFIG_PREEMPTION_LATENCY_MAX_CYCLES</span></div>
 <div class="line"><a id="l00498" name="l00498"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a804b850b1e890968b4dfb1f1004ee3b0">  498</a></span><span class="preprocessor">#define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0</span></div>
 <div class="line"><a id="l00499" name="l00499"></a><span class="lineno">  499</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span> </div>
-<div class="line"><a id="l00501" name="l00501"></a><span class="lineno">  501</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00502" name="l00502"></a><span class="lineno">  502</span><span class="comment">// Hook Configuration Points</span></div>
-<div class="line"><a id="l00503" name="l00503"></a><span class="lineno">  503</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span><span class="preprocessor">#ifndef CONFIG_IDLE_HOOK</span></div>
-<div class="line"><a id="l00506" name="l00506"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#af9d0f7c02c48d8057773b2045f011981">  506</a></span><span class="preprocessor">#define CONFIG_IDLE_HOOK 0</span></div>
+<div class="line"><a id="l00500" name="l00500"></a><span class="lineno">  500</span></div>
+<div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span><span class="preprocessor">#ifndef CONFIG_IRQ_LATENCY_HISTOGRAM</span></div>
+<div class="line"><a id="l00506" name="l00506"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#aac30e89938cc6eef8d1516f75c2c3fc7">  506</a></span><span class="preprocessor">#define CONFIG_IRQ_LATENCY_HISTOGRAM 1</span></div>
 <div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span></div>
-<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span><span class="preprocessor">#ifndef CONFIG_TICK_HOOK</span></div>
-<div class="line"><a id="l00511" name="l00511"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a836435ca7dbe895d16b9f942e7a00b43">  511</a></span><span class="preprocessor">#define CONFIG_TICK_HOOK 0</span></div>
-<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span></div>
-<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span><span class="preprocessor">#ifndef CONFIG_STACK_OVERFLOW_HOOK</span></div>
-<div class="line"><a id="l00516" name="l00516"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5ed865b603ba7ee04437c1cc28ce89fa">  516</a></span><span class="preprocessor">#define CONFIG_STACK_OVERFLOW_HOOK 0</span></div>
-<div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span></div>
-<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span><span class="preprocessor">#ifndef CONFIG_OOM_HOOK</span></div>
-<div class="line"><a id="l00521" name="l00521"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#aaa67bf023e8838df96aa8ec37674ee90">  521</a></span><span class="preprocessor">#define CONFIG_OOM_HOOK 0</span></div>
+<div class="line"><a id="l00512" name="l00512"></a><span class="lineno">  512</span><span class="preprocessor">#ifndef CONFIG_IRQ_LATENCY_MAX_NS</span></div>
+<div class="line"><a id="l00513" name="l00513"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a40b63eab36f99de494ff321df05721a4">  513</a></span><span class="preprocessor">#define CONFIG_IRQ_LATENCY_MAX_NS 0</span></div>
+<div class="line"><a id="l00514" name="l00514"></a><span class="lineno">  514</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span></div>
+<div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span><span class="preprocessor">#ifndef CONFIG_USE_APIC_TIMER</span></div>
+<div class="line"><a id="l00521" name="l00521"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#afff88f0519de5cce9a9edfb88c8a5052">  521</a></span><span class="preprocessor">#define CONFIG_USE_APIC_TIMER 1</span></div>
 <div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span></div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span><span class="preprocessor">#ifndef CONFIG_INIT_HOOK</span></div>
-<div class="line"><a id="l00526" name="l00526"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5f748bfe245b9c25fb556172a5e4f2e5">  526</a></span><span class="preprocessor">#define CONFIG_INIT_HOOK 0</span></div>
-<div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span></div>
-<div class="line"><a id="l00530" name="l00530"></a><span class="lineno">  530</span><span class="preprocessor">#ifndef CONFIG_SPORADIC_SERVER_DEADLINE_HOOK</span></div>
-<div class="line"><a id="l00531" name="l00531"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#afd4dfde1bb949f7e03c90dea7fe274f9">  531</a></span><span class="preprocessor">#define CONFIG_SPORADIC_SERVER_DEADLINE_HOOK 1</span></div>
-<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span></div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MISS_DETECTION</span></div>
-<div class="line"><a id="l00536" name="l00536"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#ad7f0edb3b1228f6361d92c6cfa81fc30">  536</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MISS_DETECTION 1</span></div>
-<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span></div>
-<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span><span class="preprocessor">#ifndef CONFIG_WCET_OVERRUN_DETECTION</span></div>
-<div class="line"><a id="l00543" name="l00543"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5347bb9dbf512963efd21650e2d3961c">  543</a></span><span class="preprocessor">#define CONFIG_WCET_OVERRUN_DETECTION 1</span></div>
+<div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span><span class="preprocessor">#ifndef CONFIG_THREADED_IRQS</span></div>
+<div class="line"><a id="l00530" name="l00530"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a34c264bdfb52e2047d5fd32486834070">  530</a></span><span class="preprocessor">#define CONFIG_THREADED_IRQS 1</span></div>
+<div class="line"><a id="l00531" name="l00531"></a><span class="lineno">  531</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span></div>
+<div class="line"><a id="l00534" name="l00534"></a><span class="lineno">  534</span><span class="preprocessor">#ifndef CONFIG_MAX_THREADED_IRQS</span></div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a03a2952bcbbf877610fd24374cef4021">  535</a></span><span class="preprocessor">#define CONFIG_MAX_THREADED_IRQS 16</span></div>
+<div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span> </div>
+<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l00539" name="l00539"></a><span class="lineno">  539</span><span class="comment">// Hook Configuration Points</span></div>
+<div class="line"><a id="l00540" name="l00540"></a><span class="lineno">  540</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l00542" name="l00542"></a><span class="lineno">  542</span><span class="preprocessor">#ifndef CONFIG_IDLE_HOOK</span></div>
+<div class="line"><a id="l00543" name="l00543"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#af9d0f7c02c48d8057773b2045f011981">  543</a></span><span class="preprocessor">#define CONFIG_IDLE_HOOK 0</span></div>
 <div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span></div>
-<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span><span class="preprocessor">#ifndef CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE</span></div>
-<div class="line"><a id="l00549" name="l00549"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#afa71e737433cca1a4223e904afcf0a9c">  549</a></span><span class="preprocessor">#define CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE 0</span></div>
-<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span></div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MONITOR_TASK</span></div>
-<div class="line"><a id="l00559" name="l00559"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a9a7951d5ba3d567a2f0e372fd5540a44">  559</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MONITOR_TASK 1</span></div>
-<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span></div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_ACTION</span></div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a515a1e55a71216c50a7d94659c372998">  567</a></span><span class="preprocessor">#define CONFIG_DEADLINE_ACTION 0</span></div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span></div>
-<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MONITOR_PID</span></div>
-<div class="line"><a id="l00573" name="l00573"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#adbfd2982bfd8abcdb392578155755823">  573</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MONITOR_PID 0</span></div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span><span class="preprocessor">#ifndef CONFIG_TICK_HOOK</span></div>
+<div class="line"><a id="l00548" name="l00548"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a836435ca7dbe895d16b9f942e7a00b43">  548</a></span><span class="preprocessor">#define CONFIG_TICK_HOOK 0</span></div>
+<div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span></div>
+<div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span><span class="preprocessor">#ifndef CONFIG_STACK_OVERFLOW_HOOK</span></div>
+<div class="line"><a id="l00553" name="l00553"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5ed865b603ba7ee04437c1cc28ce89fa">  553</a></span><span class="preprocessor">#define CONFIG_STACK_OVERFLOW_HOOK 0</span></div>
+<div class="line"><a id="l00554" name="l00554"></a><span class="lineno">  554</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span></div>
+<div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span><span class="preprocessor">#ifndef CONFIG_OOM_HOOK</span></div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#aaa67bf023e8838df96aa8ec37674ee90">  558</a></span><span class="preprocessor">#define CONFIG_OOM_HOOK 0</span></div>
+<div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span></div>
+<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span><span class="preprocessor">#ifndef CONFIG_INIT_HOOK</span></div>
+<div class="line"><a id="l00563" name="l00563"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5f748bfe245b9c25fb556172a5e4f2e5">  563</a></span><span class="preprocessor">#define CONFIG_INIT_HOOK 0</span></div>
+<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span></div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span><span class="preprocessor">#ifndef CONFIG_SPORADIC_SERVER_DEADLINE_HOOK</span></div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#afd4dfde1bb949f7e03c90dea7fe274f9">  568</a></span><span class="preprocessor">#define CONFIG_SPORADIC_SERVER_DEADLINE_HOOK 1</span></div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span></div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MISS_DETECTION</span></div>
+<div class="line"><a id="l00573" name="l00573"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#ad7f0edb3b1228f6361d92c6cfa81fc30">  573</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MISS_DETECTION 1</span></div>
 <div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span> </div>
-<div class="line"><a id="l00576" name="l00576"></a><span class="lineno">  576</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00577" name="l00577"></a><span class="lineno">  577</span><span class="comment">// Custom Assertion Macro</span></div>
-<div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span><span class="preprocessor">#ifndef CONFIG_ASSERT</span></div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> <a class="code hl_function" href="jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *msg);</div>
-<div class="foldopen" id="foldopen00582" data-start="" data-end="">
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#af7dbe515e22f94aa374530a637f8418c">  582</a></span><span class="preprocessor">#define CONFIG_ASSERT(expr)                                                    \</span></div>
-<div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span><span class="preprocessor">    do {                                                                       \</span></div>
-<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span><span class="preprocessor">        if (!(expr)) {                                                         \</span></div>
-<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span><span class="preprocessor">            panic(&quot;CONFIG_ASSERT: &quot; #expr &quot; at &quot; __FILE__);                    \</span></div>
-<div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span><span class="preprocessor">        }                                                                      \</span></div>
-<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span><span class="preprocessor">    } while (0)</span></div>
+<div class="line"><a id="l00575" name="l00575"></a><span class="lineno">  575</span></div>
+<div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span><span class="preprocessor">#ifndef CONFIG_WCET_OVERRUN_DETECTION</span></div>
+<div class="line"><a id="l00580" name="l00580"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a5347bb9dbf512963efd21650e2d3961c">  580</a></span><span class="preprocessor">#define CONFIG_WCET_OVERRUN_DETECTION 1</span></div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span></div>
+<div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span><span class="preprocessor">#ifndef CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE</span></div>
+<div class="line"><a id="l00586" name="l00586"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#afa71e737433cca1a4223e904afcf0a9c">  586</a></span><span class="preprocessor">#define CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE 0</span></div>
+<div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span></div>
+<div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MONITOR_TASK</span></div>
+<div class="line"><a id="l00596" name="l00596"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a9a7951d5ba3d567a2f0e372fd5540a44">  596</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MONITOR_TASK 1</span></div>
+<div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span></div>
+<div class="line"><a id="l00603" name="l00603"></a><span class="lineno">  603</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_ACTION</span></div>
+<div class="line"><a id="l00604" name="l00604"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#a515a1e55a71216c50a7d94659c372998">  604</a></span><span class="preprocessor">#define CONFIG_DEADLINE_ACTION 0</span></div>
+<div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span></div>
+<div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span><span class="preprocessor">#ifndef CONFIG_DEADLINE_MONITOR_PID</span></div>
+<div class="line"><a id="l00610" name="l00610"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#adbfd2982bfd8abcdb392578155755823">  610</a></span><span class="preprocessor">#define CONFIG_DEADLINE_MONITOR_PID 0</span></div>
+<div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span> </div>
+<div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span><span class="comment">// Custom Assertion Macro</span></div>
+<div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l00617" name="l00617"></a><span class="lineno">  617</span><span class="preprocessor">#ifndef CONFIG_ASSERT</span></div>
+<div class="line"><a id="l00618" name="l00618"></a><span class="lineno">  618</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> <span class="keywordtype">void</span> <a class="code hl_function" href="jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a>(<span class="keyword">const</span> <span class="keywordtype">char</span> *msg);</div>
+<div class="foldopen" id="foldopen00619" data-start="" data-end="">
+<div class="line"><a id="l00619" name="l00619"></a><span class="lineno"><a class="line" href="jarvis__config_8h.html#af7dbe515e22f94aa374530a637f8418c">  619</a></span><span class="preprocessor">#define CONFIG_ASSERT(expr)                                                    \</span></div>
+<div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span><span class="preprocessor">    do {                                                                       \</span></div>
+<div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span><span class="preprocessor">        if (!(expr)) {                                                         \</span></div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span><span class="preprocessor">            panic(&quot;CONFIG_ASSERT: &quot; #expr &quot; at &quot; __FILE__);                    \</span></div>
+<div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span><span class="preprocessor">        }                                                                      \</span></div>
+<div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span><span class="preprocessor">    } while (0)</span></div>
 </div>
-<div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span> </div>
-<div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span><span class="preprocessor">#endif </span><span class="comment">// JARVIS_CONFIG_H</span></div>
-<div class="ttc" id="ajarvis__config_8h_html_ae22655ba6f328217f1ebd6248ed82727"><div class="ttname"><a href="jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a></div><div class="ttdeci">void panic(const char *msg)</div><div class="ttdoc">Overridable assertion macro. Default calls panic on failure.</div><div class="ttdef"><b>Definition</b> kernel.cpp:908</div></div>
+<div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span> </div>
+<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span><span class="preprocessor">#endif </span><span class="comment">// JARVIS_CONFIG_H</span></div>
+<div class="ttc" id="ajarvis__config_8h_html_ae22655ba6f328217f1ebd6248ed82727"><div class="ttname"><a href="jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a></div><div class="ttdeci">void panic(const char *msg)</div><div class="ttdoc">Overridable assertion macro. Default calls panic on failure.</div><div class="ttdef"><b>Definition</b> kernel.cpp:950</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

@@ -1,7 +1,9 @@
 var hierarchy =
 [
     [ "kernel::AllTasksRegistry", "classkernel_1_1_all_tasks_registry.html", null ],
+    [ "arch::APIC", "classarch_1_1_a_p_i_c.html", null ],
     [ "BenchResult", "struct_bench_result.html", null ],
+    [ "arch::Caps", "structarch_1_1_caps.html", null ],
     [ "crypto::ChaChaState", "structcrypto_1_1_cha_cha_state.html", null ],
     [ "kernel::test::ClassSection", "structkernel_1_1test_1_1_class_section.html", null ],
     [ "service::Shell::Command", "structservice_1_1_shell_1_1_command.html", null ],

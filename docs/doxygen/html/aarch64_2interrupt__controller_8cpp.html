@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,10 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('aarch64_2inter
   <div class="headertitle"><div class="title">interrupt_controller.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>AArch64 GICv2/v3 interrupt controller driver.  
-<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="interrupt__controller_8hpp_source.html">kernel/arch/interrupt_controller.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="idt_8hpp_source.html">kernel/arch/idt.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="gic_8hpp_source.html">kernel/arch/aarch64/hal/gic.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for interrupt_controller.cpp:</div>
 <div class="dyncontent">
@@ -134,273 +132,13 @@ Include dependency graph for interrupt_controller.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:arch" id="r_arch"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html">arch</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:a60145b8750e840c58949fbc9483f2fc5" id="r_a60145b8750e840c58949fbc9483f2fc5"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a60145b8750e840c58949fbc9483f2fc5">GICD_BASE</a>&#160;&#160;&#160;(0x8000000ULL)</td></tr>
-<tr class="memitem:a971c4b3a9504879ce74b96226288f742" id="r_a971c4b3a9504879ce74b96226288f742"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a971c4b3a9504879ce74b96226288f742">GICC_BASE</a>&#160;&#160;&#160;(0x8010000ULL)</td></tr>
-<tr class="memitem:a7b0f578b16065a69c27a4552b191f5f8" id="r_a7b0f578b16065a69c27a4552b191f5f8"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a7b0f578b16065a69c27a4552b191f5f8">GICR_RD_BASE</a>&#160;&#160;&#160;(0x80A0000ULL)</td></tr>
-<tr class="memitem:a8a91895aaa3282ce57e3768e6b751539" id="r_a8a91895aaa3282ce57e3768e6b751539"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a8a91895aaa3282ce57e3768e6b751539">GICR_SGI_BASE</a>&#160;&#160;&#160;(0x80B0000ULL)</td></tr>
-<tr class="memitem:a00f17ebce4b31e38e18375340fdf3826" id="r_a00f17ebce4b31e38e18375340fdf3826"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a00f17ebce4b31e38e18375340fdf3826">GICD_CTLR</a>&#160;&#160;&#160;0x0000</td></tr>
-<tr class="memitem:a1b97217a477f13f173ff4a22c0aeeef6" id="r_a1b97217a477f13f173ff4a22c0aeeef6"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a1b97217a477f13f173ff4a22c0aeeef6">GICD_TYPER</a>&#160;&#160;&#160;0x0004</td></tr>
-<tr class="memitem:a995349f3bfdd895c60b8eb63bc176d18" id="r_a995349f3bfdd895c60b8eb63bc176d18"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a995349f3bfdd895c60b8eb63bc176d18">GICD_IGROUPR</a>&#160;&#160;&#160;0x0080</td></tr>
-<tr class="memitem:ad6013481a4c73be9ba10c48b63c0b4b3" id="r_ad6013481a4c73be9ba10c48b63c0b4b3"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad6013481a4c73be9ba10c48b63c0b4b3">GICD_ISENABLER</a>&#160;&#160;&#160;0x0100</td></tr>
-<tr class="memitem:a93b67ba2b0e625f47ef7371672c4a763" id="r_a93b67ba2b0e625f47ef7371672c4a763"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a93b67ba2b0e625f47ef7371672c4a763">GICD_ICENABLER</a>&#160;&#160;&#160;0x0180</td></tr>
-<tr class="memitem:ac745828a3b83b7a1a19ffe673677e37f" id="r_ac745828a3b83b7a1a19ffe673677e37f"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ac745828a3b83b7a1a19ffe673677e37f">GICR_WAKER</a>&#160;&#160;&#160;0x0014</td></tr>
-<tr class="memitem:adfad36c83b399088cde1f97dbee45911" id="r_adfad36c83b399088cde1f97dbee45911"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#adfad36c83b399088cde1f97dbee45911">GICR_IGROUPR0</a>&#160;&#160;&#160;0x0080</td></tr>
-<tr class="memitem:a740d01d87cdee0c63d23c5ca4879005e" id="r_a740d01d87cdee0c63d23c5ca4879005e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a740d01d87cdee0c63d23c5ca4879005e">GICR_ISENABLER0</a>&#160;&#160;&#160;0x0100</td></tr>
-<tr class="memitem:aa1a9392f7225fdc5f8cc79307d83aa44" id="r_aa1a9392f7225fdc5f8cc79307d83aa44"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aa1a9392f7225fdc5f8cc79307d83aa44">GICR_ICENABLER0</a>&#160;&#160;&#160;0x0180</td></tr>
-<tr class="memitem:a11871e15a62cbfcc1e54f3dd2ce21e74" id="r_a11871e15a62cbfcc1e54f3dd2ce21e74"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a11871e15a62cbfcc1e54f3dd2ce21e74">GICC_CTLR</a>&#160;&#160;&#160;0x0000</td></tr>
-<tr class="memitem:a8d72b8216b091c1d148b5812bc46e7d4" id="r_a8d72b8216b091c1d148b5812bc46e7d4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a8d72b8216b091c1d148b5812bc46e7d4">GICC_PMR</a>&#160;&#160;&#160;0x0004</td></tr>
-<tr class="memitem:a61672c3cde5301e076793c2ad904cdb9" id="r_a61672c3cde5301e076793c2ad904cdb9"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a61672c3cde5301e076793c2ad904cdb9">GICC_IAR</a>&#160;&#160;&#160;0x000C</td></tr>
-<tr class="memitem:af92519fe60b0cf2183a6100bea15dd43" id="r_af92519fe60b0cf2183a6100bea15dd43"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af92519fe60b0cf2183a6100bea15dd43">GICC_EOIR</a>&#160;&#160;&#160;0x0010</td></tr>
+<tr class="memdesc:namespacearch"><td class="mdescLeft">&#160;</td><td class="mdescRight">AArch64 GICv2/v3 register definitions and accessors. <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:af44c28e0176ac64b504464bbd30f31b2" id="r_af44c28e0176ac64b504464bbd30f31b2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#af44c28e0176ac64b504464bbd30f31b2">arch::handle_gic_irq</a> (void)</td></tr>
-<tr class="memdesc:af44c28e0176ac64b504464bbd30f31b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main IRQ handler called from vectors.S IRQ entries. Handles both GICv2 (memory-mapped) and GICv3 (system register) IAR/EOIR.  <br /></td></tr>
+<tr class="memdesc:af44c28e0176ac64b504464bbd30f31b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">IRQ handler called from vectors.S. Dispatches all non-spurious INTIDs via the IDT table.  <br /></td></tr>
 </table>
-<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>AArch64 GICv2/v3 interrupt controller driver. </p>
-</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="a971c4b3a9504879ce74b96226288f742" name="a971c4b3a9504879ce74b96226288f742"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a971c4b3a9504879ce74b96226288f742">&#9670;&#160;</a></span>GICC_BASE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICC_BASE&#160;&#160;&#160;(0x8010000ULL)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a11871e15a62cbfcc1e54f3dd2ce21e74" name="a11871e15a62cbfcc1e54f3dd2ce21e74"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11871e15a62cbfcc1e54f3dd2ce21e74">&#9670;&#160;</a></span>GICC_CTLR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICC_CTLR&#160;&#160;&#160;0x0000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af92519fe60b0cf2183a6100bea15dd43" name="af92519fe60b0cf2183a6100bea15dd43"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af92519fe60b0cf2183a6100bea15dd43">&#9670;&#160;</a></span>GICC_EOIR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICC_EOIR&#160;&#160;&#160;0x0010</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a61672c3cde5301e076793c2ad904cdb9" name="a61672c3cde5301e076793c2ad904cdb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61672c3cde5301e076793c2ad904cdb9">&#9670;&#160;</a></span>GICC_IAR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICC_IAR&#160;&#160;&#160;0x000C</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a8d72b8216b091c1d148b5812bc46e7d4" name="a8d72b8216b091c1d148b5812bc46e7d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d72b8216b091c1d148b5812bc46e7d4">&#9670;&#160;</a></span>GICC_PMR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICC_PMR&#160;&#160;&#160;0x0004</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a60145b8750e840c58949fbc9483f2fc5" name="a60145b8750e840c58949fbc9483f2fc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60145b8750e840c58949fbc9483f2fc5">&#9670;&#160;</a></span>GICD_BASE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_BASE&#160;&#160;&#160;(0x8000000ULL)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a00f17ebce4b31e38e18375340fdf3826" name="a00f17ebce4b31e38e18375340fdf3826"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00f17ebce4b31e38e18375340fdf3826">&#9670;&#160;</a></span>GICD_CTLR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_CTLR&#160;&#160;&#160;0x0000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a93b67ba2b0e625f47ef7371672c4a763" name="a93b67ba2b0e625f47ef7371672c4a763"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93b67ba2b0e625f47ef7371672c4a763">&#9670;&#160;</a></span>GICD_ICENABLER</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_ICENABLER&#160;&#160;&#160;0x0180</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a995349f3bfdd895c60b8eb63bc176d18" name="a995349f3bfdd895c60b8eb63bc176d18"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a995349f3bfdd895c60b8eb63bc176d18">&#9670;&#160;</a></span>GICD_IGROUPR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_IGROUPR&#160;&#160;&#160;0x0080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad6013481a4c73be9ba10c48b63c0b4b3" name="ad6013481a4c73be9ba10c48b63c0b4b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6013481a4c73be9ba10c48b63c0b4b3">&#9670;&#160;</a></span>GICD_ISENABLER</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_ISENABLER&#160;&#160;&#160;0x0100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a1b97217a477f13f173ff4a22c0aeeef6" name="a1b97217a477f13f173ff4a22c0aeeef6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b97217a477f13f173ff4a22c0aeeef6">&#9670;&#160;</a></span>GICD_TYPER</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICD_TYPER&#160;&#160;&#160;0x0004</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa1a9392f7225fdc5f8cc79307d83aa44" name="aa1a9392f7225fdc5f8cc79307d83aa44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1a9392f7225fdc5f8cc79307d83aa44">&#9670;&#160;</a></span>GICR_ICENABLER0</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_ICENABLER0&#160;&#160;&#160;0x0180</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="adfad36c83b399088cde1f97dbee45911" name="adfad36c83b399088cde1f97dbee45911"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adfad36c83b399088cde1f97dbee45911">&#9670;&#160;</a></span>GICR_IGROUPR0</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_IGROUPR0&#160;&#160;&#160;0x0080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a740d01d87cdee0c63d23c5ca4879005e" name="a740d01d87cdee0c63d23c5ca4879005e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a740d01d87cdee0c63d23c5ca4879005e">&#9670;&#160;</a></span>GICR_ISENABLER0</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_ISENABLER0&#160;&#160;&#160;0x0100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a7b0f578b16065a69c27a4552b191f5f8" name="a7b0f578b16065a69c27a4552b191f5f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b0f578b16065a69c27a4552b191f5f8">&#9670;&#160;</a></span>GICR_RD_BASE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_RD_BASE&#160;&#160;&#160;(0x80A0000ULL)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a8a91895aaa3282ce57e3768e6b751539" name="a8a91895aaa3282ce57e3768e6b751539"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a91895aaa3282ce57e3768e6b751539">&#9670;&#160;</a></span>GICR_SGI_BASE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_SGI_BASE&#160;&#160;&#160;(0x80B0000ULL)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ac745828a3b83b7a1a19ffe673677e37f" name="ac745828a3b83b7a1a19ffe673677e37f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac745828a3b83b7a1a19ffe673677e37f">&#9670;&#160;</a></span>GICR_WAKER</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define GICR_WAKER&#160;&#160;&#160;0x0014</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

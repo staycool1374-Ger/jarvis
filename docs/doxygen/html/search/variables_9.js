@@ -3,6 +3,21 @@ var searchData=
   ['idx_0',['idx',['../gcov__handler_8cpp.html#a1f658a7d21dc9b85b8009cedb0a1aef6',1,'gcov_handler.cpp']]],
   ['initial_1',['INITIAL',['../classkernel_1_1_c_r_c32.html#ad3b73507e9c32b7ed204fa8f86c6c285',1,'kernel::CRC32']]],
   ['initrd_5ffs_2',['initrd_fs',['../namespacekernel_1_1vfs.html#a7ef3281549b66c34c3500a7b5156718b',1,'kernel::vfs']]],
-  ['is_5fdir_3',['is_dir',['../structinitrd_1_1_initrd_entry.html#a48e95a6e7d3e3e0f77113e60847c9670',1,'initrd::InitrdEntry']]],
-  ['isr_5fnesting_5fdepth_4',['isr_nesting_depth',['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'kernel.cpp']]]
+  ['intid_5frtc_3',['INTID_RTC',['../namespacearch.html#aa58e5a794a7b439c68022656d6277820',1,'arch']]],
+  ['intid_5fuart0_4',['INTID_UART0',['../namespacearch.html#a9b746daa507660e7743691e667ca07db',1,'arch']]],
+  ['intid_5fvirtio0_5',['INTID_VIRTIO0',['../namespacearch.html#acc5915b44b2ed7809dcb53701534dd45',1,'arch']]],
+  ['intid_5fvirtio1_6',['INTID_VIRTIO1',['../namespacearch.html#a7f8e686d7799c020e30b443ced21dc32',1,'arch']]],
+  ['intid_5fvirtio2_7',['INTID_VIRTIO2',['../namespacearch.html#a607d71551b23fa906a8ddbdb3c6a3af2',1,'arch']]],
+  ['intid_5fvirtio3_8',['INTID_VIRTIO3',['../namespacearch.html#af13221a37481c42ba06dfad672246264',1,'arch']]],
+  ['intid_5fvirtio4_9',['INTID_VIRTIO4',['../namespacearch.html#a646aecfdaea719de77bae2c37a43d95a',1,'arch']]],
+  ['irq_5fentry_5ftsc_10',['irq_entry_tsc',['../kernel_8cpp.html#aeb543e504861746afd26a43391444494',1,'kernel.cpp']]],
+  ['irq_5fkeyboard_11',['IRQ_KEYBOARD',['../namespacearch.html#aa595a02252ff6e7295062c376298dfea',1,'arch']]],
+  ['irq_5fuart_12',['IRQ_UART',['../namespacearch.html#a59a16d1b88e89b79e36c5af717b1eb31',1,'arch']]],
+  ['irq_5fvirtio0_13',['IRQ_VIRTIO0',['../namespacearch.html#aae41679811ea59a0aa0cdd8f52bf3864',1,'arch']]],
+  ['irq_5fvirtio1_14',['IRQ_VIRTIO1',['../namespacearch.html#ab166acd95e02feb70d34a7a00d6f8287',1,'arch']]],
+  ['irq_5fvirtio2_15',['IRQ_VIRTIO2',['../namespacearch.html#a63d7c8b6460e0d5ab46a5a5eb226cc0c',1,'arch']]],
+  ['irq_5fvirtio3_16',['IRQ_VIRTIO3',['../namespacearch.html#abafa01b25d7e7e2b081d6ecc5058eb5d',1,'arch']]],
+  ['irq_5fvirtio4_17',['IRQ_VIRTIO4',['../namespacearch.html#a9c39a084cebdfc926cd28dd5ac4bd7f1',1,'arch']]],
+  ['is_5fdir_18',['is_dir',['../structinitrd_1_1_initrd_entry.html#a48e95a6e7d3e3e0f77113e60847c9670',1,'initrd::InitrdEntry']]],
+  ['isr_5fnesting_5fdepth_19',['isr_nesting_depth',['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'kernel.cpp']]]
 ];

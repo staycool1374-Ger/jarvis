@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -188,6 +188,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1c32eb5484b7cdcad0ae45d94849f02b" id="r_a1c32eb5484b7cdcad0ae45d94849f02b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1c32eb5484b7cdcad0ae45d94849f02b">run_safe</a> ()</td></tr>
 <tr class="memitem:a9096f1bb9a2e4b1541226759b08c1ae5" id="r_a9096f1bb9a2e4b1541226759b08c1ae5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9096f1bb9a2e4b1541226759b08c1ae5">run_filtered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags, bool use_isolation)</td></tr>
 <tr class="memitem:ae1b9042f585e1bfaf6898aed96a403de" id="r_ae1b9042f585e1bfaf6898aed96a403de"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae1b9042f585e1bfaf6898aed96a403de">run_debug</a> ()</td></tr>
+<tr class="memdesc:ae1b9042f585e1bfaf6898aed96a403de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all registered non-benchmark tests.  <br /></td></tr>
+<tr class="memitem:a3e91e9cb699a855fe92a5294e1f9463b" id="r_a3e91e9cb699a855fe92a5294e1f9463b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3e91e9cb699a855fe92a5294e1f9463b">run_benchmarks</a> ()</td></tr>
+<tr class="memdesc:a3e91e9cb699a855fe92a5294e1f9463b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all registered benchmark tests (TF_BENCH).  <br /></td></tr>
 <tr class="memitem:ae3930997b95bec7a00f32aecd001850a" id="r_ae3930997b95bec7a00f32aecd001850a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae3930997b95bec7a00f32aecd001850a">run_release</a> ()</td></tr>
 <tr class="memitem:a1becd6394583e37ae0142fa07904cb67" id="r_a1becd6394583e37ae0142fa07904cb67"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1becd6394583e37ae0142fa07904cb67">shutdown_kernel</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> result)</td></tr>
 <tr class="memitem:a1b7421d43e0e94ec4c1f0005f25222e2" id="r_a1b7421d43e0e94ec4c1f0005f25222e2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1b7421d43e0e94ec4c1f0005f25222e2">run_registered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags)</td></tr>
@@ -203,6 +206,10 @@ Variables</h2></td></tr>
 <tr class="memdesc:a8ae596b8a7161c4f9f54d704059f822e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tracks whether any VFS syscall was invoked during the current test. <a class="el" href="#aa2a58a012f3f56d28d6e0df037fd66a6">snapshot_restore()</a> checks this flag to decide whether daemon tasks need a full reload (VFS touched) or can be left running (VFS not touched).  <br /></td></tr>
 <tr class="memitem:af5d0c2b75741c70c7c103e4dc2f2aac8" id="r_af5d0c2b75741c70c7c103e4dc2f2aac8"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af5d0c2b75741c70c7c103e4dc2f2aac8">g_watchdog_deadline_ns</a> = 0</td></tr>
 <tr class="memitem:ac868441e34e35154b50c0ef71dfc793c" id="r_ac868441e34e35154b50c0ef71dfc793c"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ac868441e34e35154b50c0ef71dfc793c">g_watchdog_task_id</a> = 0</td></tr>
+<tr class="memitem:a42f880a33580e5d7b3a0953951fd451b" id="r_a42f880a33580e5d7b3a0953951fd451b"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="#a42f880a33580e5d7b3a0953951fd451b">g_current_class</a> = nullptr</td></tr>
+<tr class="memdesc:a42f880a33580e5d7b3a0953951fd451b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of the currently loaded test class (set by register_class).  <br /></td></tr>
+<tr class="memitem:aa1ef760812274a6f89acf0ae8db11e94" id="r_aa1ef760812274a6f89acf0ae8db11e94"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aa1ef760812274a6f89acf0ae8db11e94">g_filter_bench</a> = false</td></tr>
+<tr class="memdesc:aa1ef760812274a6f89acf0ae8db11e94"><td class="mdescLeft">&#160;</td><td class="mdescRight">When true, run_filtered will skip TF_BENCH tests.  <br /></td></tr>
 <tr class="memitem:ad58197db512c3865261fe3571878f10a" id="r_ad58197db512c3865261fe3571878f10a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ad58197db512c3865261fe3571878f10a">g_class_auto_shutdown</a> = false</td></tr>
 </table>
 <a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
@@ -613,6 +620,31 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="a3e91e9cb699a855fe92a5294e1f9463b" name="a3e91e9cb699a855fe92a5294e1f9463b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e91e9cb699a855fe92a5294e1f9463b">&#9670;&#160;</a></span>run_benchmarks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::run_benchmarks </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Run all registered benchmark tests (TF_BENCH). </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_a3e91e9cb699a855fe92a5294e1f9463b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a3e91e9cb699a855fe92a5294e1f9463b_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 7 -->
+</div>
+
+</div>
+</div>
 <a id="ae1b9042f585e1bfaf6898aed96a403de" name="ae1b9042f585e1bfaf6898aed96a403de"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae1b9042f585e1bfaf6898aed96a403de">&#9670;&#160;</a></span>run_debug()</h2>
 
@@ -627,11 +659,13 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Run all registered non-benchmark tests. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -658,7 +692,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -681,7 +715,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -704,7 +738,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
+<!-- MAP 11 -->
 </div>
 
 </div>
@@ -727,7 +761,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
+<!-- MAP 12 -->
 </div>
 
 </div>
@@ -840,7 +874,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
+<!-- MAP 13 -->
 </div>
 
 </div>
@@ -880,7 +914,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -920,7 +954,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
+<!-- MAP 15 -->
 </div>
 
 </div>
@@ -946,7 +980,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
+<!-- MAP 16 -->
 </div>
 
 </div>
@@ -977,7 +1011,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
+<!-- MAP 17 -->
 </div>
 
 </div>
@@ -1012,7 +1046,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
+<!-- MAP 18 -->
 </div>
 
 </div>
@@ -1060,7 +1094,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 18 -->
+<!-- MAP 19 -->
 </div>
 
 </div>
@@ -1100,7 +1134,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 19 -->
+<!-- MAP 20 -->
 </div>
 
 </div>
@@ -1172,6 +1206,38 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a42f880a33580e5d7b3a0953951fd451b" name="a42f880a33580e5d7b3a0953951fd451b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a42f880a33580e5d7b3a0953951fd451b">&#9670;&#160;</a></span>g_current_class</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char * kernel::test::g_current_class = nullptr</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Name of the currently loaded test class (set by register_class). </p>
+
+</div>
+</div>
+<a id="aa1ef760812274a6f89acf0ae8db11e94" name="aa1ef760812274a6f89acf0ae8db11e94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa1ef760812274a6f89acf0ae8db11e94">&#9670;&#160;</a></span>g_filter_bench</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool kernel::test::g_filter_bench = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>When true, run_filtered will skip TF_BENCH tests. </p>
 
 </div>
 </div>

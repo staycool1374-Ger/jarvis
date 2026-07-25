@@ -40,6 +40,7 @@ var test_8hpp =
     [ "kernel::test::print_report", "namespacekernel_1_1test.html#a0fb9d643d01186cc11f1c2868176b39c", null ],
     [ "kernel::test::register_class", "namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450", null ],
     [ "kernel::test::run_all", "namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de", null ],
+    [ "kernel::test::run_benchmarks", "namespacekernel_1_1test.html#a3e91e9cb699a855fe92a5294e1f9463b", null ],
     [ "kernel::test::run_debug", "namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de", null ],
     [ "kernel::test::run_filtered", "namespacekernel_1_1test.html#a9096f1bb9a2e4b1541226759b08c1ae5", null ],
     [ "kernel::test::run_registered", "namespacekernel_1_1test.html#a1b7421d43e0e94ec4c1f0005f25222e2", null ],

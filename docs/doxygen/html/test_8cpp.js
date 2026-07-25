@@ -4,6 +4,7 @@ var test_8cpp =
     [ "kernel::test::create_named_task", "namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0", null ],
     [ "kernel::test::print_report", "namespacekernel_1_1test.html#a0fb9d643d01186cc11f1c2868176b39c", null ],
     [ "kernel::test::run_all", "namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de", null ],
+    [ "kernel::test::run_benchmarks", "namespacekernel_1_1test.html#a3e91e9cb699a855fe92a5294e1f9463b", null ],
     [ "kernel::test::run_debug", "namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de", null ],
     [ "kernel::test::run_filtered", "namespacekernel_1_1test.html#a9096f1bb9a2e4b1541226759b08c1ae5", null ],
     [ "kernel::test::run_registered", "namespacekernel_1_1test.html#a1b7421d43e0e94ec4c1f0005f25222e2", null ],
@@ -13,5 +14,7 @@ var test_8cpp =
     [ "kernel::test::set_class_auto_shutdown", "namespacekernel_1_1test.html#ac6959c848d7b1df0ba4eea129c708171", null ],
     [ "kernel::test::set_kernel_entry_ns", "namespacekernel_1_1test.html#a2be813db3ba66a8c409d2c8c8e2d69da", null ],
     [ "kernel::test::shutdown_kernel", "namespacekernel_1_1test.html#a1becd6394583e37ae0142fa07904cb67", null ],
-    [ "kernel::test::g_class_auto_shutdown", "namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a", null ]
+    [ "kernel::test::g_class_auto_shutdown", "namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a", null ],
+    [ "kernel::test::g_current_class", "namespacekernel_1_1test.html#a42f880a33580e5d7b3a0953951fd451b", null ],
+    [ "kernel::test::g_filter_bench", "namespacekernel_1_1test.html#aa1ef760812274a6f89acf0ae8db11e94", null ]
 ];

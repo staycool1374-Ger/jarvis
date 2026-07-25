@@ -11,5 +11,14 @@ var searchData=
   ['get_5fvfsd_5fpid_8',['get_vfsd_pid',['../namespacekernel_1_1vfsd.html#aa0df972eac82190a35e45b47576066a7',1,'kernel::vfsd']]],
   ['getchar_9',['getchar',['../stdio_8c.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c'],['../stdio_8h.html#a3e29caa20f7cffe18f410f01278905a8',1,'getchar(void):&#160;stdio.c']]],
   ['getpid_10',['getpid',['../unistd_8c.html#ac61b207337ca21b3b309593fd1a0cb82',1,'getpid(void):&#160;unistd.c'],['../unistd_8h.html#ac61b207337ca21b3b309593fd1a0cb82',1,'getpid(void):&#160;unistd.c']]],
-  ['gettimeofday_11',['gettimeofday',['../time_8c.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../time_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../unistd_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c']]]
+  ['gettimeofday_11',['gettimeofday',['../time_8c.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../time_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c'],['../unistd_8h.html#a2f316a4ad94a242df56b01953677015d',1,'gettimeofday(struct timeval *tv, void *tz):&#160;time.c']]],
+  ['gic_5fv3_5fread_5fiar_12',['gic_v3_read_iar',['../namespacearch.html#abe825a3f67343b75c57efa83cb71feec',1,'arch']]],
+  ['gic_5fv3_5fset_5figrpen1_13',['gic_v3_set_igrpen1',['../namespacearch.html#a0e66b1a01d873e894c6676c2d63657c4',1,'arch']]],
+  ['gic_5fv3_5fset_5fpmr_14',['gic_v3_set_pmr',['../namespacearch.html#a5cb9e37cba4166320e1c12a7a759a083',1,'arch']]],
+  ['gic_5fv3_5fset_5fsre_15',['gic_v3_set_sre',['../namespacearch.html#adab534d45e1d7dff71a2a408ee1bdb7e',1,'arch']]],
+  ['gic_5fv3_5fwrite_5feoir_16',['gic_v3_write_eoir',['../namespacearch.html#a53368020492a5d8b11acfc764445eaad',1,'arch']]],
+  ['gicc_5freg_17',['gicc_reg',['../namespacearch.html#addb0aafa44f85ad234abeacf6a11a2a5',1,'arch']]],
+  ['gicd_5freg_18',['gicd_reg',['../namespacearch.html#abb9df6f2809054a385414ac4aa9eff3a',1,'arch']]],
+  ['gicr_5frd_5freg_19',['gicr_rd_reg',['../namespacearch.html#a4da73406011eca3290f9e1baebeb720e',1,'arch']]],
+  ['gicr_5fsgi_5freg_20',['gicr_sgi_reg',['../namespacearch.html#a0be0121227150927d9c3e750b7d86455',1,'arch']]]
 ];

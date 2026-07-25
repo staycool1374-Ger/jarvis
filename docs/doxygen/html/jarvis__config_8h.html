@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -224,6 +224,12 @@ Macros</h2></td></tr>
 <tr class="memitem:a7cf9db7fcc2c0bf9b1bb475b2bad3d93" id="r_a7cf9db7fcc2c0bf9b1bb475b2bad3d93"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a7cf9db7fcc2c0bf9b1bb475b2bad3d93">CONFIG_SEMAPHORE_PIP</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memitem:a08b1decd478ffc1359ac5e6385741d61" id="r_a08b1decd478ffc1359ac5e6385741d61"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a08b1decd478ffc1359ac5e6385741d61">CONFIG_QUEUE_PIP</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memitem:a804b850b1e890968b4dfb1f1004ee3b0" id="r_a804b850b1e890968b4dfb1f1004ee3b0"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a804b850b1e890968b4dfb1f1004ee3b0">CONFIG_PREEMPTION_LATENCY_MAX_CYCLES</a>&#160;&#160;&#160;0</td></tr>
+<tr class="memitem:aac30e89938cc6eef8d1516f75c2c3fc7" id="r_aac30e89938cc6eef8d1516f75c2c3fc7"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aac30e89938cc6eef8d1516f75c2c3fc7">CONFIG_IRQ_LATENCY_HISTOGRAM</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a40b63eab36f99de494ff321df05721a4" id="r_a40b63eab36f99de494ff321df05721a4"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a40b63eab36f99de494ff321df05721a4">CONFIG_IRQ_LATENCY_MAX_NS</a>&#160;&#160;&#160;0</td></tr>
+<tr class="memitem:afff88f0519de5cce9a9edfb88c8a5052" id="r_afff88f0519de5cce9a9edfb88c8a5052"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#afff88f0519de5cce9a9edfb88c8a5052">CONFIG_USE_APIC_TIMER</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a34c264bdfb52e2047d5fd32486834070" id="r_a34c264bdfb52e2047d5fd32486834070"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a34c264bdfb52e2047d5fd32486834070">CONFIG_THREADED_IRQS</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memitem:a03a2952bcbbf877610fd24374cef4021" id="r_a03a2952bcbbf877610fd24374cef4021"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a03a2952bcbbf877610fd24374cef4021">CONFIG_MAX_THREADED_IRQS</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:a03a2952bcbbf877610fd24374cef4021"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of simultaneous threaded IRQ handler tasks.  <br /></td></tr>
 <tr class="memitem:af9d0f7c02c48d8057773b2045f011981" id="r_af9d0f7c02c48d8057773b2045f011981"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af9d0f7c02c48d8057773b2045f011981">CONFIG_IDLE_HOOK</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memdesc:af9d0f7c02c48d8057773b2045f011981"><td class="mdescLeft">&#160;</td><td class="mdescRight">If non-zero, declares weak symbol idle_hook() called each idle iteration.  <br /></td></tr>
 <tr class="memitem:a836435ca7dbe895d16b9f942e7a00b43" id="r_a836435ca7dbe895d16b9f942e7a00b43"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a836435ca7dbe895d16b9f942e7a00b43">CONFIG_TICK_HOOK</a>&#160;&#160;&#160;0</td></tr>
@@ -997,6 +1003,36 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aac30e89938cc6eef8d1516f75c2c3fc7" name="aac30e89938cc6eef8d1516f75c2c3fc7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac30e89938cc6eef8d1516f75c2c3fc7">&#9670;&#160;</a></span>CONFIG_IRQ_LATENCY_HISTOGRAM</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_IRQ_LATENCY_HISTOGRAM&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Enable IRQ latency histogram (64 buckets, 0-100 μs). Records latency at ISR entry via rdtsc. When enabled, the histogram is populated on every IRQ and can be dumped via kernel shell or API. Set to 0 to disable (zero overhead). Default: 0 (disabled for stability). </p>
+
+</div>
+</div>
+<a id="a40b63eab36f99de494ff321df05721a4" name="a40b63eab36f99de494ff321df05721a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40b63eab36f99de494ff321df05721a4">&#9670;&#160;</a></span>CONFIG_IRQ_LATENCY_MAX_NS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_IRQ_LATENCY_MAX_NS&#160;&#160;&#160;0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Maximum allowed IRQ latency in nanoseconds (debug assert). When &gt; 0 and CONFIG_IRQ_LATENCY_HISTOGRAM is enabled, the interrupt handler panics if any single IRQ exceeds this threshold. Set to 0 to disable. </p>
+
+</div>
+</div>
 <a id="a2c580044f067f2f953c3bdd1471189c6" name="a2c580044f067f2f953c3bdd1471189c6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2c580044f067f2f953c3bdd1471189c6">&#9670;&#160;</a></span>CONFIG_MAX_DAEMONS</h2>
 
@@ -1151,6 +1187,22 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Maximum number of tasks managed by the scheduler (including idle). Valid range: 2–4096. Default: 64. </p>
+
+</div>
+</div>
+<a id="a03a2952bcbbf877610fd24374cef4021" name="a03a2952bcbbf877610fd24374cef4021"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03a2952bcbbf877610fd24374cef4021">&#9670;&#160;</a></span>CONFIG_MAX_THREADED_IRQS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_MAX_THREADED_IRQS&#160;&#160;&#160;16</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum number of simultaneous threaded IRQ handler tasks. </p>
 
 </div>
 </div>
@@ -1543,6 +1595,21 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a34c264bdfb52e2047d5fd32486834070" name="a34c264bdfb52e2047d5fd32486834070"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34c264bdfb52e2047d5fd32486834070">&#9670;&#160;</a></span>CONFIG_THREADED_IRQS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_THREADED_IRQS&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Enable threaded interrupt handling (CONFIG_THREADED_IRQS). When non-zero, nominated IRQ vectors run their handler in a dedicated kernel task (IrqThread) instead of raw ISR context. The ISR does minimal work (ack + data capture + Notify), while the handler runs at task priority. Default: 0 (all IRQs handled in ISR context). </p>
+
+</div>
+</div>
 <a id="a836435ca7dbe895d16b9f942e7a00b43" name="a836435ca7dbe895d16b9f942e7a00b43"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a836435ca7dbe895d16b9f942e7a00b43">&#9670;&#160;</a></span>CONFIG_TICK_HOOK</h2>
 
@@ -1586,6 +1653,21 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p>Enable round-robin time-slicing within the same priority. Default: 1 (enabled). </p>
+
+</div>
+</div>
+<a id="afff88f0519de5cce9a9edfb88c8a5052" name="afff88f0519de5cce9a9edfb88c8a5052"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afff88f0519de5cce9a9edfb88c8a5052">&#9670;&#160;</a></span>CONFIG_USE_APIC_TIMER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define CONFIG_USE_APIC_TIMER&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Use the local APIC timer instead of the PIT for system ticks. When enabled, replaces the PIT (IRQ0) with the APIC timer in TSC-deadline or periodic mode. Requires APIC support on the CPU (CPUID.01H:EDX[9]). Default: 1 (enabled) on x86_64. </p>
 
 </div>
 </div>

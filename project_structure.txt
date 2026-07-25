@@ -171,6 +171,16 @@
 │   │       ├── all__tasks__registry_8hpp.js
 │   │       ├── annotated_dup.js
 │   │       ├── annotated.html
+│   │       ├── apic_8cpp__incl.md5
+│   │       ├── apic_8cpp.html
+│   │       ├── apic_8cpp.js
+│   │       ├── apic_8hpp__dep__incl.md5
+│   │       ├── apic_8hpp__incl.md5
+│   │       ├── apic_8hpp_source.html
+│   │       ├── apic_8hpp.html
+│   │       ├── arch_2irq__thread_8hpp__incl.md5
+│   │       ├── arch_2irq__thread_8hpp_source.html
+│   │       ├── arch_2irq__thread_8hpp.html
 │   │       ├── arp_8cpp__incl.md5
 │   │       ├── arp_8cpp.html
 │   │       ├── arp_8hpp__dep__incl.md5
@@ -303,6 +313,10 @@
 │   │       ├── class_unique_ptr_afa4131d6dc0cfe42951416ed553c361d_cgraph.md5
 │   │       ├── class_unique_ptr.html
 │   │       ├── class_unique_ptr.js
+│   │       ├── classarch_1_1_a_p_i_c__coll__graph.md5
+│   │       ├── classarch_1_1_a_p_i_c_ab249fe370f75c1368059078e6c88f6d9_cgraph.md5
+│   │       ├── classarch_1_1_a_p_i_c_af7e4a0e6659cd8f7a49f6c08c269f321_cgraph.md5
+│   │       ├── classarch_1_1_a_p_i_c.html
 │   │       ├── classarch_1_1_arch_context_manager__coll__graph.md5
 │   │       ├── classarch_1_1_arch_context_manager.html
 │   │       ├── classarch_1_1_arch_i_o__coll__graph.md5
@@ -1147,6 +1161,7 @@
 │   │       ├── dir_000001_000026.html
 │   │       ├── dir_000001_000028.html
 │   │       ├── dir_000001_000029.html
+│   │       ├── dir_000001_000033.html
 │   │       ├── dir_000002_000005.html
 │   │       ├── dir_000002_000007.html
 │   │       ├── dir_000002_000008.html
@@ -1364,6 +1379,7 @@
 │   │       ├── dir_000013_000017.html
 │   │       ├── dir_000013_000018.html
 │   │       ├── dir_000013_000019.html
+│   │       ├── dir_000013_000020.html
 │   │       ├── dir_000013_000021.html
 │   │       ├── dir_000013_000022.html
 │   │       ├── dir_000013_000023.html
@@ -1724,6 +1740,7 @@
 │   │       ├── dir_000032_000031.html
 │   │       ├── dir_000033_000011.html
 │   │       ├── dir_000033_000017.html
+│   │       ├── dir_000033_000020.html
 │   │       ├── dir_000033_000029.html
 │   │       ├── dir_0acad8e611f5f3679e26f7f6ddf45d1c_dep.md5
 │   │       ├── dir_0acad8e611f5f3679e26f7f6ddf45d1c.html
@@ -2116,6 +2133,11 @@
 │   │       ├── gdt_8hpp_source.html
 │   │       ├── gdt_8hpp.html
 │   │       ├── gdt_8hpp.js
+│   │       ├── gic_8hpp__dep__incl.md5
+│   │       ├── gic_8hpp__incl.md5
+│   │       ├── gic_8hpp_source.html
+│   │       ├── gic_8hpp.html
+│   │       ├── gic_8hpp.js
 │   │       ├── globals_a.html
 │   │       ├── globals_b.html
 │   │       ├── globals_c.html
@@ -2230,6 +2252,10 @@
 │   │       ├── hal_2irq__guard_8hpp_source.html
 │   │       ├── hal_2irq__guard_8hpp.html
 │   │       ├── hal_2irq__guard_8hpp.js
+│   │       ├── hal_2irq__latency__histogram_8hpp__dep__incl.md5
+│   │       ├── hal_2irq__latency__histogram_8hpp__incl.md5
+│   │       ├── hal_2irq__latency__histogram_8hpp_source.html
+│   │       ├── hal_2irq__latency__histogram_8hpp.html
 │   │       ├── hal_2keyboard_8hpp__dep__incl.md5
 │   │       ├── hal_2keyboard_8hpp__incl.md5
 │   │       ├── hal_2keyboard_8hpp_source.html
@@ -2739,6 +2765,18 @@
 │   │       ├── irq__guard_8hpp_source.html
 │   │       ├── irq__guard_8hpp.html
 │   │       ├── irq__guard_8hpp.js
+│   │       ├── irq__latency__histogram_8cpp__incl.md5
+│   │       ├── irq__latency__histogram_8cpp.html
+│   │       ├── irq__latency__histogram_8hpp__dep__incl.md5
+│   │       ├── irq__latency__histogram_8hpp__incl.md5
+│   │       ├── irq__latency__histogram_8hpp_source.html
+│   │       ├── irq__latency__histogram_8hpp.html
+│   │       ├── irq__thread_8cpp__incl.md5
+│   │       ├── irq__thread_8cpp.html
+│   │       ├── irq__thread_8hpp__dep__incl.md5
+│   │       ├── irq__thread_8hpp__incl.md5
+│   │       ├── irq__thread_8hpp_source.html
+│   │       ├── irq__thread_8hpp.html
 │   │       ├── jarvis__config_8h__dep__incl.md5
 │   │       ├── jarvis__config_8h_ae22655ba6f328217f1ebd6248ed82727_cgraph.md5
 │   │       ├── jarvis__config_8h_source.html
@@ -2761,6 +2799,7 @@
 │   │       ├── kernel_8cpp_a59c51dc200e018623c3a7468c91552b7_cgraph.map
 │   │       ├── kernel_8cpp_a59c51dc200e018623c3a7468c91552b7_cgraph.md5
 │   │       ├── kernel_8cpp_a59c51dc200e018623c3a7468c91552b7_cgraph.png
+│   │       ├── kernel_8cpp_a61e633c8acb5cb45303ce5b45599b872_cgraph.md5
 │   │       ├── kernel_8cpp_a6e2b2613415bc86a1e097b05e9d8e091_cgraph.map
 │   │       ├── kernel_8cpp_a6e2b2613415bc86a1e097b05e9d8e091_cgraph.md5
 │   │       ├── kernel_8cpp_a6e2b2613415bc86a1e097b05e9d8e091_cgraph.png
@@ -2938,6 +2977,7 @@
 │   │       ├── namespacearch_ab8a3d0ed72e0355f607878da738a53e4_cgraph.md5
 │   │       ├── namespacearch_abbeb3ab0f47eb34d314b97e6a8d462bc_cgraph.md5
 │   │       ├── namespacearch_abc54811c04e86d3fe207d2c3fcc0d6b3_cgraph.md5
+│   │       ├── namespacearch_abcb80cfbe5c335ca7659697f28452a7b_cgraph.md5
 │   │       ├── namespacearch_ac4c4e3fb0b0fd7eca30243a625be5ce0_cgraph.md5
 │   │       ├── namespacearch_ac8d928a29e65bd03b83c3811e5f6feda_cgraph.md5
 │   │       ├── namespacearch_ad1bd3651496d2b1ba81f482883b82572_cgraph.md5
@@ -2951,6 +2991,7 @@
 │   │       ├── namespacearch_af1db3b0c561e94a99c8f3f6d020093f5_cgraph.md5
 │   │       ├── namespacearch_af2c8cf8af0cd94cd8162d6f45b689426_cgraph.md5
 │   │       ├── namespacearch_af42ba0c651229ba30e96c82094e72d88_cgraph.md5
+│   │       ├── namespacearch_af44c28e0176ac64b504464bbd30f31b2_cgraph.md5
 │   │       ├── namespacearch.html
 │   │       ├── namespacearch.js
 │   │       ├── namespacecrypto_a93a880a6e249c3f38c61c3a10becbaa5_cgraph.md5
@@ -3041,6 +3082,7 @@
 │   │       ├── namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a22a1e73ffb69f6fd807228fc5756b380_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a3682848fa74834ef280e24ea7c67ff5e_cgraph.md5
+│   │       ├── namespacekernel_1_1test_a3e91e9cb699a855fe92a5294e1f9463b_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph.md5
 │   │       ├── namespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph.map
 │   │       ├── namespacekernel_1_1test_a47e1961f61dd3427ce55333d8828a5de_cgraph.md5
@@ -3137,6 +3179,7 @@
 │   │       ├── namespacemembers_func_u.html
 │   │       ├── namespacemembers_func_v.html
 │   │       ├── namespacemembers_func_w.html
+│   │       ├── namespacemembers_func_y.html
 │   │       ├── namespacemembers_func.html
 │   │       ├── namespacemembers_func.js
 │   │       ├── namespacemembers_g.html
@@ -3312,6 +3355,11 @@
 │   │       ├── pipe_8hpp_source.html
 │   │       ├── pipe_8hpp.html
 │   │       ├── pipe_8hpp.js
+│   │       ├── plic_8hpp__dep__incl.md5
+│   │       ├── plic_8hpp__incl.md5
+│   │       ├── plic_8hpp_source.html
+│   │       ├── plic_8hpp.html
+│   │       ├── plic_8hpp.js
 │   │       ├── pmm__errors_8hpp__dep__incl.md5
 │   │       ├── pmm__errors_8hpp__incl.md5
 │   │       ├── pmm__errors_8hpp_source.html
@@ -3998,6 +4046,9 @@
 │   │       ├── structarch_1_1_arch_context__coll__graph.md5
 │   │       ├── structarch_1_1_arch_context.html
 │   │       ├── structarch_1_1_arch_context.js
+│   │       ├── structarch_1_1_caps__coll__graph.md5
+│   │       ├── structarch_1_1_caps.html
+│   │       ├── structarch_1_1_caps.js
 │   │       ├── structarch_1_1_cpu_id_result__coll__graph.md5
 │   │       ├── structarch_1_1_cpu_id_result.html
 │   │       ├── structarch_1_1_cpu_id_result.js
@@ -5038,6 +5089,10 @@
 │   │       ├── test__dma_8cpp_aeb37bcc92efd9192a02e076d4129e3f4_cgraph.md5
 │   │       ├── test__dma_8cpp.html
 │   │       ├── test__dma_8cpp.js
+│   │       ├── test__dmesg_8cpp__incl.md5
+│   │       ├── test__dmesg_8cpp_abfa960f0ad03fa1e771a8c9a4a5d4868_cgraph.md5
+│   │       ├── test__dmesg_8cpp.html
+│   │       ├── test__dmesg_8cpp.js
 │   │       ├── test__driver_8cpp__incl.md5
 │   │       ├── test__driver_8cpp_a68941981361591d229e136075e4c9f92_cgraph.md5
 │   │       ├── test__driver_8cpp_a87cf22fc15f08db813196330c138370c_cgraph.md5
@@ -5873,6 +5928,7 @@
 │   │       ├── test__registry_8cpp_ab74ca935473e30643560ee99398e534a_cgraph.md5
 │   │       ├── test__registry_8cpp_ab83bebb02e17a73823e833ff4719caa4_cgraph.md5
 │   │       ├── test__registry_8cpp_ab8539b253931ffb0e4e3228972a47964_cgraph.md5
+│   │       ├── test__registry_8cpp_abfa960f0ad03fa1e771a8c9a4a5d4868_cgraph.md5
 │   │       ├── test__registry_8cpp_ac111094de6d6e84b76c97c3f86dc85b3_cgraph.md5
 │   │       ├── test__registry_8cpp_ac35c6ec8bc88d371b6124c8a5f4bad37_cgraph.md5
 │   │       ├── test__registry_8cpp_ace55408832580798c22c0b745a5d00e0_cgraph.md5
@@ -7056,6 +7112,11 @@
 │   │       ├── vmm_8hpp_source.html
 │   │       ├── vmm_8hpp.html
 │   │       ├── vmm_8hpp.js
+│   │       ├── x86__64_2hal_2apic_8hpp__dep__incl.md5
+│   │       ├── x86__64_2hal_2apic_8hpp__incl.md5
+│   │       ├── x86__64_2hal_2apic_8hpp_source.html
+│   │       ├── x86__64_2hal_2apic_8hpp.html
+│   │       ├── x86__64_2hal_2apic_8hpp.js
 │   │       ├── x86__64_2hal_2cpuid__impl_8hpp__incl.md5
 │   │       ├── x86__64_2hal_2cpuid__impl_8hpp_source.html
 │   │       ├── x86__64_2hal_2cpuid__impl_8hpp.html
@@ -8002,6 +8063,7 @@
 │   │   │   │   ├── early_init.cpp
 │   │   │   │   ├── hal
 │   │   │   │   │   ├── cpuid_impl.hpp
+│   │   │   │   │   ├── gic.hpp
 │   │   │   │   │   ├── io_impl.hpp
 │   │   │   │   │   ├── page_table_impl.hpp
 │   │   │   │   │   ├── pci_impl.hpp
@@ -8015,6 +8077,7 @@
 │   │   │   │   ├── test_stubs.cpp
 │   │   │   │   ├── timer.cpp
 │   │   │   │   └── vectors.S
+│   │   │   ├── apic.hpp
 │   │   │   ├── context.hpp
 │   │   │   ├── cpuid.hpp
 │   │   │   ├── gdt.hpp
@@ -8027,6 +8090,7 @@
 │   │   │   │   ├── interrupt_controller.hpp
 │   │   │   │   ├── io.hpp
 │   │   │   │   ├── irq_guard.hpp
+│   │   │   │   ├── irq_latency_histogram.hpp
 │   │   │   │   ├── keyboard.hpp
 │   │   │   │   ├── msr.hpp
 │   │   │   │   ├── page_flags.hpp
@@ -8040,6 +8104,8 @@
 │   │   │   ├── interrupt_controller.hpp
 │   │   │   ├── io.hpp
 │   │   │   ├── irq_guard.hpp
+│   │   │   ├── irq_latency_histogram.hpp
+│   │   │   ├── irq_thread.hpp
 │   │   │   ├── keyboard.hpp
 │   │   │   ├── msr.hpp
 │   │   │   ├── page_table.hpp
@@ -8056,6 +8122,7 @@
 │   │   │   │   │   ├── msr_impl.hpp
 │   │   │   │   │   ├── page_table_impl.hpp
 │   │   │   │   │   ├── pci_impl.hpp
+│   │   │   │   │   ├── plic.hpp
 │   │   │   │   │   └── rand_impl.hpp
 │   │   │   │   ├── idt.cpp
 │   │   │   │   ├── interrupt_controller.cpp
@@ -8074,6 +8141,8 @@
 │   │   │       │   ├── boot.asm
 │   │   │       │   └── multiboot_header.asm
 │   │   │       ├── hal
+│   │   │       │   ├── apic.cpp
+│   │   │       │   ├── apic.hpp
 │   │   │       │   ├── cpuid_impl.hpp
 │   │   │       │   ├── gdt.cpp
 │   │   │       │   ├── idt.cpp
@@ -8131,6 +8200,9 @@
 │   │   │   ├── ipc_errors.hpp
 │   │   │   ├── ipc.cpp
 │   │   │   └── ipc.hpp
+│   │   ├── irq_latency_histogram.cpp
+│   │   ├── irq_thread.cpp
+│   │   ├── irq_thread.hpp
 │   │   ├── jarvis_config.h
 │   │   ├── kernel.cpp
 │   │   ├── kernel.hpp
@@ -8247,6 +8319,7 @@
 │   │   │   ├── test_deadlock_recovery.cpp
 │   │   │   ├── test_debug.cpp
 │   │   │   ├── test_dma.cpp
+│   │   │   ├── test_dmesg.cpp
 │   │   │   ├── test_driver.cpp
 │   │   │   ├── test_elf.cpp
 │   │   │   ├── test_expected_counts.hpp
@@ -8454,7 +8527,6 @@
 ├── test-history.txt
 ├── test.txt
 ├── testcases-v0.3.10.md
-├── testcases-v0.3.4.md
 ├── testcases-v0.3.5.md
 ├── testcases-v0.3.6.md
 ├── testcases-v0.3.7.md
@@ -8588,4 +8660,4 @@
     ├── vfsd.c.d
     └── vfsd.c.elf
 
-107 directories, 8482 files
+107 directories, 8554 files

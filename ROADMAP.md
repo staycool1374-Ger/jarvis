@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** v0.3.3 COMPLETE — PIP, PCP, Queue PIP, Preemption Points implemented and validated (main + testbed).
-**Target Focus:** v0.3.4 — Minimal & Known Interrupt Latency Jitter (APIC, IRQ latency measurement, threaded IRQs, cross-arch HAL).
+**Status:** v0.3.4 COMPLETE — APIC, IRQ latency histogram, Threaded IRQs, GIC/PLIC headers, cross-arch HAL validated (main + testbed).
+**Target Focus:** v0.3.5 — Deterministic Memory & Resource Management (Static Pools, OOM RT-Safety).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -200,34 +200,6 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
   - [x] Audit every cli/sti pair — ensure preemption check at each sti
   - [x] Scheduler::reschedule() called from: syscall return, ISR exit, on_tick, explicit yield
   - [x] Add CONFIG_PREEMPTION_LATENCY_MAX_CYCLES — measure and assert in test
-
-### 0.3.4 Minimal & Known Interrupt Latency Jitter (Pillar 4)
-- [x] Replace PIC with APIC/x2APIC (x86_64)
-  - [x] Create arch/x86_64/hal/apic.hpp + apic.cpp — Local APIC timer, IPI, TSC-deadline mode
-  - [x] APIC::init() — calibrate TSC, configure timer in one-shot/periodic mode
-  - [x] APIC::set_timer_oneshot(ns) / periodic(ns) — nanosecond resolution
-  - [x] Per-CPU timer interrupt vector (dedicated APIC vector 64, not shared PIC IRQ0)
-  - [x] CONFIG_USE_APIC_TIMER (default 1 on x86_64 — APIC primary, PIT calibration only)
-  - [x] I/O APIC routing for legacy IRQs (PIT, keyboard via APIC, PIC masked)
-- [x] Interrupt Latency Measurement & Bounding
-  - [x] Add IRQ_LATENCY_HISTOGRAM (64 buckets, 0-100μs) — record at ISR entry via rdtsc
-  - [x] CONFIG_IRQ_LATENCY_MAX_NS — assert in debug if exceeded
-  - [x] ISR entry/exit stubs in isr_stubs.asm — save rdtsc immediately, no C++ prologue
-- [x] Deferred Interrupt Handling (Threaded IRQs)
-  - [x] IrqThread class — kernel task per IRQ vector, Notify-based wakeup
-  - [x] CONFIG_THREADED_IRQS — ISR does minimal ack + enqueue to per-IRQ kernel task
-  - [x] IRQ threads: fixed priority (configurable), dedicated stack, no blocking syscalls
-  - [x] IrqThread::create(vector, priority, handler) — replace IDT::register_handler for enabled IRQs
-
-  > **Future:** IrqThread is the recommended pattern for device-driver ISRs (virtio, AHCI, ATA) in
-  > a follow-up version where blocking operations (Mutex, sleep, allocation) are needed inside the
-  > handler.  The present implementation covers keyboard as the first consumer; the timer IRQ and
-  > scheduler `on_tick()` always remain in the fast (non-threaded) ISR path.
-- [x] ARM64 / RISC-V64 Interrupt Controllers
-  - [x] arch/aarch64/hal/gic.hpp — GICv3/v4 driver, priority masking, SGI/PPI/SPI
-  - [x] arch/riscv64/hal/plic.hpp — PLIC driver, priority levels, threshold
-  - [x] Common ArchInterruptController interface: init, eoi, mask, unmask, set_priority, get_priority
-
 
 ### 0.3.5 Deterministic Memory & Resource Management (Pillar 5)
 ## Static Memory Pools — Zero Dynamic Allocation After Init

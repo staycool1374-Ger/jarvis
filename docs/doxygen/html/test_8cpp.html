@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -169,6 +169,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a1c32eb5484b7cdcad0ae45d94849f02b" id="r_a1c32eb5484b7cdcad0ae45d94849f02b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a1c32eb5484b7cdcad0ae45d94849f02b">kernel::test::run_safe</a> ()</td></tr>
 <tr class="memitem:a9096f1bb9a2e4b1541226759b08c1ae5" id="r_a9096f1bb9a2e4b1541226759b08c1ae5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a9096f1bb9a2e4b1541226759b08c1ae5">kernel::test::run_filtered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags, bool use_isolation)</td></tr>
 <tr class="memitem:ae1b9042f585e1bfaf6898aed96a403de" id="r_ae1b9042f585e1bfaf6898aed96a403de"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de">kernel::test::run_debug</a> ()</td></tr>
+<tr class="memdesc:ae1b9042f585e1bfaf6898aed96a403de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all registered non-benchmark tests.  <br /></td></tr>
+<tr class="memitem:a3e91e9cb699a855fe92a5294e1f9463b" id="r_a3e91e9cb699a855fe92a5294e1f9463b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a3e91e9cb699a855fe92a5294e1f9463b">kernel::test::run_benchmarks</a> ()</td></tr>
+<tr class="memdesc:a3e91e9cb699a855fe92a5294e1f9463b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run all registered benchmark tests (TF_BENCH).  <br /></td></tr>
 <tr class="memitem:ae3930997b95bec7a00f32aecd001850a" id="r_ae3930997b95bec7a00f32aecd001850a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ae3930997b95bec7a00f32aecd001850a">kernel::test::run_release</a> ()</td></tr>
 <tr class="memitem:a1becd6394583e37ae0142fa07904cb67" id="r_a1becd6394583e37ae0142fa07904cb67"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a1becd6394583e37ae0142fa07904cb67">kernel::test::shutdown_kernel</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> result)</td></tr>
 <tr class="memitem:a1b7421d43e0e94ec4c1f0005f25222e2" id="r_a1b7421d43e0e94ec4c1f0005f25222e2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a1b7421d43e0e94ec4c1f0005f25222e2">kernel::test::run_registered</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> required_flags)</td></tr>
@@ -178,6 +181,10 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:a42f880a33580e5d7b3a0953951fd451b" id="r_a42f880a33580e5d7b3a0953951fd451b"><td class="memItemLeft">const char *&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a42f880a33580e5d7b3a0953951fd451b">kernel::test::g_current_class</a> = nullptr</td></tr>
+<tr class="memdesc:a42f880a33580e5d7b3a0953951fd451b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Name of the currently loaded test class (set by register_class).  <br /></td></tr>
+<tr class="memitem:aa1ef760812274a6f89acf0ae8db11e94" id="r_aa1ef760812274a6f89acf0ae8db11e94"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#aa1ef760812274a6f89acf0ae8db11e94">kernel::test::g_filter_bench</a> = false</td></tr>
+<tr class="memdesc:aa1ef760812274a6f89acf0ae8db11e94"><td class="mdescLeft">&#160;</td><td class="mdescRight">When true, run_filtered will skip TF_BENCH tests.  <br /></td></tr>
 <tr class="memitem:ad58197db512c3865261fe3571878f10a" id="r_ad58197db512c3865261fe3571878f10a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a">kernel::test::g_class_auto_shutdown</a> = false</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>

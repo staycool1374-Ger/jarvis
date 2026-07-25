@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -119,7 +119,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacemembe
 
 <h3 class="doxsection"><a id="index_g" name="index_g"></a>- g -</h3><ul>
 <li>g_class_auto_shutdown&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a">kernel::test</a></li>
+<li>g_current_class&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#a42f880a33580e5d7b3a0953951fd451b">kernel::test</a></li>
 <li>g_dmesg&#160;:&#160;<a class="el" href="namespacekernel_1_1log.html#a6c21bbcc889a65c9d1de21f46be7ae23">kernel::log</a></li>
+<li>g_filter_bench&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#aa1ef760812274a6f89acf0ae8db11e94">kernel::test</a></li>
 <li>g_klog&#160;:&#160;<a class="el" href="namespacekernel_1_1log.html#a5d37b94a40a3fb0722d235be6d2b43d8">kernel::log</a></li>
 <li>g_nic&#160;:&#160;<a class="el" href="namespacenet.html#a952961bd539959a2e0f7d4f581666e7f">net</a></li>
 <li>g_user_access_recover_ip&#160;:&#160;<a class="el" href="namespacekernel.html#ac685742eaa07e592bff0bab7216c0253">kernel</a></li>
@@ -133,6 +135,41 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacemembe
 <li>get_test_class_count()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#a499e498dbadd7417450754e39ff8d025">kernel::test</a></li>
 <li>get_test_classes()&#160;:&#160;<a class="el" href="namespacekernel_1_1test.html#adef941cb96fe1a42d92076d37649d84a">kernel::test</a></li>
 <li>get_vfsd_pid()&#160;:&#160;<a class="el" href="namespacekernel_1_1vfsd.html#aa0df972eac82190a35e45b47576066a7">kernel::vfsd</a></li>
+<li>gic_v3_read_iar()&#160;:&#160;<a class="el" href="namespacearch.html#abe825a3f67343b75c57efa83cb71feec">arch</a></li>
+<li>gic_v3_set_igrpen1()&#160;:&#160;<a class="el" href="namespacearch.html#a0e66b1a01d873e894c6676c2d63657c4">arch</a></li>
+<li>gic_v3_set_pmr()&#160;:&#160;<a class="el" href="namespacearch.html#a5cb9e37cba4166320e1c12a7a759a083">arch</a></li>
+<li>gic_v3_set_sre()&#160;:&#160;<a class="el" href="namespacearch.html#adab534d45e1d7dff71a2a408ee1bdb7e">arch</a></li>
+<li>gic_v3_write_eoir()&#160;:&#160;<a class="el" href="namespacearch.html#a53368020492a5d8b11acfc764445eaad">arch</a></li>
+<li>GICC_BASE&#160;:&#160;<a class="el" href="namespacearch.html#a3b94ff78f7b9fc3de77542c57af2703a">arch</a></li>
+<li>GICC_CTLR&#160;:&#160;<a class="el" href="namespacearch.html#a9a2d4827817f87651def264300fbcbc1">arch</a></li>
+<li>GICC_EOIR&#160;:&#160;<a class="el" href="namespacearch.html#aee4f8ca1c1c346aed7468abf74036348">arch</a></li>
+<li>GICC_IAR&#160;:&#160;<a class="el" href="namespacearch.html#a482011a570ed30cf60b56b575e5f4ecf">arch</a></li>
+<li>GICC_PMR&#160;:&#160;<a class="el" href="namespacearch.html#a4116c31f44abf39e5c8ede6721a65690">arch</a></li>
+<li>gicc_reg()&#160;:&#160;<a class="el" href="namespacearch.html#addb0aafa44f85ad234abeacf6a11a2a5">arch</a></li>
+<li>GICD_BASE&#160;:&#160;<a class="el" href="namespacearch.html#a12f8e4c8b8adadb460137a2c9fd4ba14">arch</a></li>
+<li>GICD_CTLR&#160;:&#160;<a class="el" href="namespacearch.html#ac7f969e6cdfb3ba30b1cd75aec7265ae">arch</a></li>
+<li>GICD_ICACTIVE&#160;:&#160;<a class="el" href="namespacearch.html#a72cd4c72062ca0a0258f3a3d3748649a">arch</a></li>
+<li>GICD_ICENABLER&#160;:&#160;<a class="el" href="namespacearch.html#a2eea05dd4370082c1545aa6ec2f9a608">arch</a></li>
+<li>GICD_ICFGR&#160;:&#160;<a class="el" href="namespacearch.html#a1f173bdcd60b54eb10bd6dbe23f7ef27">arch</a></li>
+<li>GICD_ICPEND&#160;:&#160;<a class="el" href="namespacearch.html#a51a21ad7573bb5e0bc36389a3ac4626f">arch</a></li>
+<li>GICD_IGROUPR&#160;:&#160;<a class="el" href="namespacearch.html#a89b179527a41fafc0224c128c59da3cc">arch</a></li>
+<li>GICD_IIDR&#160;:&#160;<a class="el" href="namespacearch.html#a58ff9920cb743fe927b35fef55ce47b2">arch</a></li>
+<li>GICD_IPRIORITY&#160;:&#160;<a class="el" href="namespacearch.html#a6c994508dd6cffbfe900a227c043053e">arch</a></li>
+<li>GICD_ISENABLER&#160;:&#160;<a class="el" href="namespacearch.html#a2ff1c9bbd77443cec8d81d794a855d4e">arch</a></li>
+<li>GICD_ITARGETSR&#160;:&#160;<a class="el" href="namespacearch.html#afe1e0a05bbaa2d008052f0c9f0ff130f">arch</a></li>
+<li>GICD_NSACR&#160;:&#160;<a class="el" href="namespacearch.html#af6d482207fc1d589711fe7f535470893">arch</a></li>
+<li>gicd_reg()&#160;:&#160;<a class="el" href="namespacearch.html#abb9df6f2809054a385414ac4aa9eff3a">arch</a></li>
+<li>GICD_SGIR&#160;:&#160;<a class="el" href="namespacearch.html#aebf085a47380ef9e7303c1aa568f5f2e">arch</a></li>
+<li>GICD_TYPER&#160;:&#160;<a class="el" href="namespacearch.html#aadb69e090b70cb8ed04861bb776ab546">arch</a></li>
+<li>GICR_ICENABLER0&#160;:&#160;<a class="el" href="namespacearch.html#a0a572c70d81a18206016f3c795172fd5">arch</a></li>
+<li>GICR_IGROUPR0&#160;:&#160;<a class="el" href="namespacearch.html#ad3c0b10a2051dab9d984ab330e0ee9be">arch</a></li>
+<li>GICR_IPRIORITY0&#160;:&#160;<a class="el" href="namespacearch.html#a4a4eaf92260ee151ed9d4cf70104fccc">arch</a></li>
+<li>GICR_ISENABLER0&#160;:&#160;<a class="el" href="namespacearch.html#a78d90969cf2e5838fd65f902472d8bed">arch</a></li>
+<li>GICR_RD_BASE&#160;:&#160;<a class="el" href="namespacearch.html#a024087ec76a8f9982b009fa6696f23dd">arch</a></li>
+<li>gicr_rd_reg()&#160;:&#160;<a class="el" href="namespacearch.html#a4da73406011eca3290f9e1baebeb720e">arch</a></li>
+<li>GICR_SGI_BASE&#160;:&#160;<a class="el" href="namespacearch.html#aea75d86f398e56dec26a630d41bc1b91">arch</a></li>
+<li>gicr_sgi_reg()&#160;:&#160;<a class="el" href="namespacearch.html#a0be0121227150927d9c3e750b7d86455">arch</a></li>
+<li>GICR_WAKER&#160;:&#160;<a class="el" href="namespacearch.html#a7250075e1293fefcadae16792b540e49">arch</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

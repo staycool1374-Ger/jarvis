@@ -29,6 +29,7 @@ var dir_6198906391a1b3439aea9d345bf1b4f0 =
     [ "test_deadlock_recovery.cpp", "test__deadlock__recovery_8cpp.html", "test__deadlock__recovery_8cpp" ],
     [ "test_debug.cpp", "test__debug_8cpp.html", "test__debug_8cpp" ],
     [ "test_dma.cpp", "test__dma_8cpp.html", "test__dma_8cpp" ],
+    [ "test_dmesg.cpp", "test__dmesg_8cpp.html", "test__dmesg_8cpp" ],
     [ "test_driver.cpp", "test__driver_8cpp.html", "test__driver_8cpp" ],
     [ "test_elf.cpp", "test__elf_8cpp.html", "test__elf_8cpp" ],
     [ "test_expected_counts.hpp", "test__expected__counts_8hpp.html", "test__expected__counts_8hpp" ],

@@ -30,6 +30,7 @@ var namespacekernel_1_1test =
     [ "reload_daemon_tasks", "namespacekernel_1_1test.html#abbd641156133e294c60aa475e73dd520", null ],
     [ "run_all", "namespacekernel_1_1test.html#a47e1961f61dd3427ce55333d8828a5de", null ],
     [ "run_all_isolated_tests", "namespacekernel_1_1test.html#ad8af3e26f5e10cffe7d3eecf79016c1d", null ],
+    [ "run_benchmarks", "namespacekernel_1_1test.html#a3e91e9cb699a855fe92a5294e1f9463b", null ],
     [ "run_debug", "namespacekernel_1_1test.html#ae1b9042f585e1bfaf6898aed96a403de", null ],
     [ "run_filtered", "namespacekernel_1_1test.html#a9096f1bb9a2e4b1541226759b08c1ae5", null ],
     [ "run_registered", "namespacekernel_1_1test.html#a1b7421d43e0e94ec4c1f0005f25222e2", null ],
@@ -53,6 +54,8 @@ var namespacekernel_1_1test =
     [ "yield_as", "namespacekernel_1_1test.html#a5734651fc6722563ecb7a1893ea19b81", null ],
     [ "yield_to_task", "namespacekernel_1_1test.html#a6cdcc19c8e326942d1c980c8c62894f0", null ],
     [ "g_class_auto_shutdown", "namespacekernel_1_1test.html#ad58197db512c3865261fe3571878f10a", null ],
+    [ "g_current_class", "namespacekernel_1_1test.html#a42f880a33580e5d7b3a0953951fd451b", null ],
+    [ "g_filter_bench", "namespacekernel_1_1test.html#aa1ef760812274a6f89acf0ae8db11e94", null ],
     [ "g_vfs_touched", "namespacekernel_1_1test.html#a8ae596b8a7161c4f9f54d704059f822e", null ],
     [ "g_watchdog_deadline_ns", "namespacekernel_1_1test.html#af5d0c2b75741c70c7c103e4dc2f2aac8", null ],
     [ "g_watchdog_task_id", "namespacekernel_1_1test.html#ac868441e34e35154b50c0ef71dfc793c", null ]

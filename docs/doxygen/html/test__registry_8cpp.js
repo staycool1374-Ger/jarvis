@@ -22,6 +22,7 @@ var test__registry_8cpp =
     [ "register_deadlock_recovery_tests", "test__registry_8cpp.html#a80549dbcc6db20e6191682ab58b3c327", null ],
     [ "register_debug_tests", "test__registry_8cpp.html#af7799ded87d74784946e93e698c080fa", null ],
     [ "register_dma_tests", "test__registry_8cpp.html#a490b6a4d27e09f053c9fe737b5a8d80b", null ],
+    [ "register_dmesg_tests", "test__registry_8cpp.html#abfa960f0ad03fa1e771a8c9a4a5d4868", null ],
     [ "register_driver_tests", "test__registry_8cpp.html#af936af2ecbdca9446ddb4b9b4d3e24ea", null ],
     [ "register_elf_tests", "test__registry_8cpp.html#a42bbc14efc4b99cea2f9a618c9b3ab15", null ],
     [ "register_fat32_tests", "test__registry_8cpp.html#a483d7be201b2ba8fbebde2c428e763b5", null ],

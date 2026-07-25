@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,10 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('riscv64_2inter
   <div class="headertitle"><div class="title">interrupt_controller.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>RISC-V64 PLIC (Platform-Level Interrupt Controller) driver.  
-<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="interrupt__controller_8hpp_source.html">kernel/arch/interrupt_controller.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="hal_2io_8hpp_source.html">kernel/arch/hal/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="idt_8hpp_source.html">kernel/arch/idt.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="plic_8hpp_source.html">kernel/arch/riscv64/hal/plic.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for interrupt_controller.cpp:</div>
 <div class="dyncontent">
@@ -134,113 +132,13 @@ Include dependency graph for interrupt_controller.cpp:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:arch" id="r_arch"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html">arch</a></td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:aaf2bf9ecb3d69d1cdd521e44d0ec29e9" id="r_aaf2bf9ecb3d69d1cdd521e44d0ec29e9"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a>&#160;&#160;&#160;(0x0C000000ULL)</td></tr>
-<tr class="memdesc:aaf2bf9ecb3d69d1cdd521e44d0ec29e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">PLIC register memory map (QEMU virt / Renode).  <br /></td></tr>
-<tr class="memitem:a2eb8374fceaffe4bff92f60021bb4361" id="r_a2eb8374fceaffe4bff92f60021bb4361"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a2eb8374fceaffe4bff92f60021bb4361">PLIC_PRIORITY</a>&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x000000)</td></tr>
-<tr class="memitem:ad0c9de851ca0c4ab4bebbd99a6b16039" id="r_ad0c9de851ca0c4ab4bebbd99a6b16039"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad0c9de851ca0c4ab4bebbd99a6b16039">PLIC_PENDING</a>&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x001000)</td></tr>
-<tr class="memitem:a1a473252aa3088f62bd94c071d457aeb" id="r_a1a473252aa3088f62bd94c071d457aeb"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a1a473252aa3088f62bd94c071d457aeb">PLIC_ENABLE</a>&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x002000)</td></tr>
-<tr class="memitem:ab788a5d8f86b33832158b8121fff466e" id="r_ab788a5d8f86b33832158b8121fff466e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ab788a5d8f86b33832158b8121fff466e">PLIC_THRESHOLD</a>&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x200000)</td></tr>
-<tr class="memitem:a109e7916aec744ebc344847b5b511a6f" id="r_a109e7916aec744ebc344847b5b511a6f"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a109e7916aec744ebc344847b5b511a6f">PLIC_CLAIM</a>&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x200004)</td></tr>
+<tr class="memdesc:namespacearch"><td class="mdescLeft">&#160;</td><td class="mdescRight">AArch64 GICv2/v3 register definitions and accessors. <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:abcb80cfbe5c335ca7659697f28452a7b" id="r_abcb80cfbe5c335ca7659697f28452a7b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#abcb80cfbe5c335ca7659697f28452a7b">arch::handle_plic_trap</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scause, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sepc, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *regs)</td></tr>
-<tr class="memdesc:abcb80cfbe5c335ca7659697f28452a7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">C-level trap handler for PLIC interrupts and timer interrupts.  <br /></td></tr>
 <tr class="memitem:ade82e23d3659eed529a27355052fcdac" id="r_ade82e23d3659eed529a27355052fcdac"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacearch.html#ade82e23d3659eed529a27355052fcdac">arch::handle_kernel_exception</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sepc, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scause, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> stval)</td></tr>
-<tr class="memdesc:ade82e23d3659eed529a27355052fcdac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump exception info via SBI ecall, then panic.  <br /></td></tr>
 </table>
-<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>RISC-V64 PLIC (Platform-Level Interrupt Controller) driver. </p>
-</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="aaf2bf9ecb3d69d1cdd521e44d0ec29e9" name="aaf2bf9ecb3d69d1cdd521e44d0ec29e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">&#9670;&#160;</a></span>PLIC_BASE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_BASE&#160;&#160;&#160;(0x0C000000ULL)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>PLIC register memory map (QEMU virt / Renode). </p>
-
-</div>
-</div>
-<a id="a109e7916aec744ebc344847b5b511a6f" name="a109e7916aec744ebc344847b5b511a6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a109e7916aec744ebc344847b5b511a6f">&#9670;&#160;</a></span>PLIC_CLAIM</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_CLAIM&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x200004)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a1a473252aa3088f62bd94c071d457aeb" name="a1a473252aa3088f62bd94c071d457aeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1a473252aa3088f62bd94c071d457aeb">&#9670;&#160;</a></span>PLIC_ENABLE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_ENABLE&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x002000)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad0c9de851ca0c4ab4bebbd99a6b16039" name="ad0c9de851ca0c4ab4bebbd99a6b16039"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0c9de851ca0c4ab4bebbd99a6b16039">&#9670;&#160;</a></span>PLIC_PENDING</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_PENDING&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x001000)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a2eb8374fceaffe4bff92f60021bb4361" name="a2eb8374fceaffe4bff92f60021bb4361"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2eb8374fceaffe4bff92f60021bb4361">&#9670;&#160;</a></span>PLIC_PRIORITY</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_PRIORITY&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x000000)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab788a5d8f86b33832158b8121fff466e" name="ab788a5d8f86b33832158b8121fff466e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab788a5d8f86b33832158b8121fff466e">&#9670;&#160;</a></span>PLIC_THRESHOLD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define PLIC_THRESHOLD&#160;&#160;&#160;(<a class="el" href="#aaf2bf9ecb3d69d1cdd521e44d0ec29e9">PLIC_BASE</a> + 0x200000)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.3</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
    </div>
   </td>
  </tr>
@@ -118,12 +118,30 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacearch.
   <div class="headertitle"><div class="title">arch Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>AArch64 GICv2/v3 register definitions and accessors.  
+<a href="#details">More...</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:APIC" id="r_APIC"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classarch_1_1_a_p_i_c.html">APIC</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">x86_64 <a class="el" href="classarch_1_1_a_p_i_c.html" title="x86_64 APIC driver — Local APIC (xAPIC + x2APIC), I/O APIC, timer.">APIC</a> driver — Local <a class="el" href="classarch_1_1_a_p_i_c.html" title="x86_64 APIC driver — Local APIC (xAPIC + x2APIC), I/O APIC, timer.">APIC</a> (xAPIC + x2APIC), I/O <a class="el" href="classarch_1_1_a_p_i_c.html" title="x86_64 APIC driver — Local APIC (xAPIC + x2APIC), I/O APIC, timer.">APIC</a>, timer.  <a href="classarch_1_1_a_p_i_c.html#details">More...</a><br /></td></tr>
+<tr class="memitem:Caps" id="r_Caps"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structarch_1_1_caps.html">Caps</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a53368020492a5d8b11acfc764445eaad" id="r_a53368020492a5d8b11acfc764445eaad"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a53368020492a5d8b11acfc764445eaad">gic_v3_write_eoir</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> intid)</td></tr>
+<tr class="memitem:abe825a3f67343b75c57efa83cb71feec" id="r_abe825a3f67343b75c57efa83cb71feec"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#abe825a3f67343b75c57efa83cb71feec">gic_v3_read_iar</a> ()</td></tr>
+<tr class="memitem:a5cb9e37cba4166320e1c12a7a759a083" id="r_a5cb9e37cba4166320e1c12a7a759a083"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5cb9e37cba4166320e1c12a7a759a083">gic_v3_set_pmr</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> mask)</td></tr>
+<tr class="memitem:a0e66b1a01d873e894c6676c2d63657c4" id="r_a0e66b1a01d873e894c6676c2d63657c4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0e66b1a01d873e894c6676c2d63657c4">gic_v3_set_igrpen1</a> (bool enable)</td></tr>
+<tr class="memitem:adab534d45e1d7dff71a2a408ee1bdb7e" id="r_adab534d45e1d7dff71a2a408ee1bdb7e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adab534d45e1d7dff71a2a408ee1bdb7e">gic_v3_set_sre</a> (bool enable)</td></tr>
+<tr class="memitem:abb9df6f2809054a385414ac4aa9eff3a" id="r_abb9df6f2809054a385414ac4aa9eff3a"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#abb9df6f2809054a385414ac4aa9eff3a">gicd_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> offset)</td></tr>
+<tr class="memitem:addb0aafa44f85ad234abeacf6a11a2a5" id="r_addb0aafa44f85ad234abeacf6a11a2a5"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#addb0aafa44f85ad234abeacf6a11a2a5">gicc_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> offset)</td></tr>
+<tr class="memitem:a4da73406011eca3290f9e1baebeb720e" id="r_a4da73406011eca3290f9e1baebeb720e"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a4da73406011eca3290f9e1baebeb720e">gicr_rd_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> offset)</td></tr>
+<tr class="memitem:a0be0121227150927d9c3e750b7d86455" id="r_a0be0121227150927d9c3e750b7d86455"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a0be0121227150927d9c3e750b7d86455">gicr_sgi_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> offset)</td></tr>
 <tr class="memitem:a46488b8cc19b71e9d4bd3d8ea44603e4" id="r_a46488b8cc19b71e9d4bd3d8ea44603e4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a46488b8cc19b71e9d4bd3d8ea44603e4">exception_entry</a> (void)</td></tr>
 <tr class="memitem:af44c28e0176ac64b504464bbd30f31b2" id="r_af44c28e0176ac64b504464bbd30f31b2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af44c28e0176ac64b504464bbd30f31b2">handle_gic_irq</a> (void)</td></tr>
-<tr class="memdesc:af44c28e0176ac64b504464bbd30f31b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main IRQ handler called from vectors.S IRQ entries. Handles both GICv2 (memory-mapped) and GICv3 (system register) IAR/EOIR.  <br /></td></tr>
+<tr class="memdesc:af44c28e0176ac64b504464bbd30f31b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">IRQ handler called from vectors.S. Dispatches all non-spurious INTIDs via the IDT table.  <br /></td></tr>
 <tr class="memitem:adf555b81d7d72b5c61d212eaf1aa1e69" id="r_adf555b81d7d72b5c61d212eaf1aa1e69"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#adf555b81d7d72b5c61d212eaf1aa1e69">pci_scan_all</a> ()</td></tr>
 <tr class="memitem:a11748e0603d0f9b77d1198c4e14fd224" id="r_a11748e0603d0f9b77d1198c4e14fd224"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a11748e0603d0f9b77d1198c4e14fd224">pci_dump_tree</a> ()</td></tr>
 <tr class="memitem:a4191f59246c41e7a68abf50fc57f2da9" id="r_a4191f59246c41e7a68abf50fc57f2da9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4191f59246c41e7a68abf50fc57f2da9">pci_print_tree</a> (char *buffer, <a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> size)</td></tr>
@@ -137,10 +155,12 @@ Functions</h2></td></tr>
 <tr class="memitem:adc4b509b8ba2e26aae708fff98409565" id="r_adc4b509b8ba2e26aae708fff98409565"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#adc4b509b8ba2e26aae708fff98409565">pci_find_capability</a> (PciBdf bdf, <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> cap_id)</td></tr>
 <tr class="memitem:af1db3b0c561e94a99c8f3f6d020093f5" id="r_af1db3b0c561e94a99c8f3f6d020093f5"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af1db3b0c561e94a99c8f3f6d020093f5">pci_enable_msi</a> (PciBdf bdf, <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> apic_id)</td></tr>
 <tr class="memitem:ab8a3d0ed72e0355f607878da738a53e4" id="r_ab8a3d0ed72e0355f607878da738a53e4"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab8a3d0ed72e0355f607878da738a53e4">pci_enable_msix</a> (PciBdf bdf, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> entry, <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> apic_id)</td></tr>
+<tr class="memitem:ae035b7cc5b725012469b59d037ab15b7" id="r_ae035b7cc5b725012469b59d037ab15b7"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ae035b7cc5b725012469b59d037ab15b7">plic_priority_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> irq)</td></tr>
+<tr class="memitem:a6807f252e313e023fb6310b60223e4f6" id="r_a6807f252e313e023fb6310b60223e4f6"><td class="memItemLeft">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a6807f252e313e023fb6310b60223e4f6">plic_enable_reg</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> irq)</td></tr>
+<tr class="memitem:ad8cf1975e657fd548aa97fd3c37f812e" id="r_ad8cf1975e657fd548aa97fd3c37f812e"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ad8cf1975e657fd548aa97fd3c37f812e">plic_claim</a> ()</td></tr>
+<tr class="memitem:a8dcc3bc98dc325b9ed085730ea58aaec" id="r_a8dcc3bc98dc325b9ed085730ea58aaec"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8dcc3bc98dc325b9ed085730ea58aaec">plic_complete</a> (<a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> intid)</td></tr>
 <tr class="memitem:abcb80cfbe5c335ca7659697f28452a7b" id="r_abcb80cfbe5c335ca7659697f28452a7b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abcb80cfbe5c335ca7659697f28452a7b">handle_plic_trap</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scause, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sepc, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *regs)</td></tr>
-<tr class="memdesc:abcb80cfbe5c335ca7659697f28452a7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">C-level trap handler for PLIC interrupts and timer interrupts.  <br /></td></tr>
 <tr class="memitem:ade82e23d3659eed529a27355052fcdac" id="r_ade82e23d3659eed529a27355052fcdac"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ade82e23d3659eed529a27355052fcdac">handle_kernel_exception</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sepc, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scause, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> stval)</td></tr>
-<tr class="memdesc:ade82e23d3659eed529a27355052fcdac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dump exception info via SBI ecall, then panic.  <br /></td></tr>
 <tr class="memitem:a1888fb8a7b37d30dec1c191cacb1fbf2" id="r_a1888fb8a7b37d30dec1c191cacb1fbf2"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a1888fb8a7b37d30dec1c191cacb1fbf2">virtio_map_mmio</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> bar, <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> offset, <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> length, VirtioMmio &amp;mmio_out, PciBdf bdf)</td></tr>
 <tr class="memitem:a12155265301dd4e78b8ed8523ff7353f" id="r_a12155265301dd4e78b8ed8523ff7353f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a12155265301dd4e78b8ed8523ff7353f">virtio_find_device</a> (<a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> device_id, VirtioTransport &amp;transport)</td></tr>
 <tr class="memitem:a270fa39795ea158dfa9285d6eb472e3f" id="r_a270fa39795ea158dfa9285d6eb472e3f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a270fa39795ea158dfa9285d6eb472e3f">virtio_init_transport</a> (VirtioTransport &amp;transport)</td></tr>
@@ -149,6 +169,53 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:a12f8e4c8b8adadb460137a2c9fd4ba14" id="r_a12f8e4c8b8adadb460137a2c9fd4ba14"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a12f8e4c8b8adadb460137a2c9fd4ba14">GICD_BASE</a> = 0x08000000ULL</td></tr>
+<tr class="memitem:a3b94ff78f7b9fc3de77542c57af2703a" id="r_a3b94ff78f7b9fc3de77542c57af2703a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a3b94ff78f7b9fc3de77542c57af2703a">GICC_BASE</a> = 0x08010000ULL</td></tr>
+<tr class="memitem:a024087ec76a8f9982b009fa6696f23dd" id="r_a024087ec76a8f9982b009fa6696f23dd"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a024087ec76a8f9982b009fa6696f23dd">GICR_RD_BASE</a> = 0x080A0000ULL</td></tr>
+<tr class="memitem:aea75d86f398e56dec26a630d41bc1b91" id="r_aea75d86f398e56dec26a630d41bc1b91"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aea75d86f398e56dec26a630d41bc1b91">GICR_SGI_BASE</a> = 0x080B0000ULL</td></tr>
+<tr class="memitem:ac7f969e6cdfb3ba30b1cd75aec7265ae" id="r_ac7f969e6cdfb3ba30b1cd75aec7265ae"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ac7f969e6cdfb3ba30b1cd75aec7265ae">GICD_CTLR</a> = 0x0000</td></tr>
+<tr class="memitem:aadb69e090b70cb8ed04861bb776ab546" id="r_aadb69e090b70cb8ed04861bb776ab546"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aadb69e090b70cb8ed04861bb776ab546">GICD_TYPER</a> = 0x0004</td></tr>
+<tr class="memitem:a58ff9920cb743fe927b35fef55ce47b2" id="r_a58ff9920cb743fe927b35fef55ce47b2"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a58ff9920cb743fe927b35fef55ce47b2">GICD_IIDR</a> = 0x0008</td></tr>
+<tr class="memitem:a89b179527a41fafc0224c128c59da3cc" id="r_a89b179527a41fafc0224c128c59da3cc"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a89b179527a41fafc0224c128c59da3cc">GICD_IGROUPR</a> = 0x0080</td></tr>
+<tr class="memitem:a2ff1c9bbd77443cec8d81d794a855d4e" id="r_a2ff1c9bbd77443cec8d81d794a855d4e"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a2ff1c9bbd77443cec8d81d794a855d4e">GICD_ISENABLER</a> = 0x0100</td></tr>
+<tr class="memitem:a2eea05dd4370082c1545aa6ec2f9a608" id="r_a2eea05dd4370082c1545aa6ec2f9a608"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a2eea05dd4370082c1545aa6ec2f9a608">GICD_ICENABLER</a> = 0x0180</td></tr>
+<tr class="memitem:a51a21ad7573bb5e0bc36389a3ac4626f" id="r_a51a21ad7573bb5e0bc36389a3ac4626f"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a51a21ad7573bb5e0bc36389a3ac4626f">GICD_ICPEND</a> = 0x0280</td></tr>
+<tr class="memitem:a72cd4c72062ca0a0258f3a3d3748649a" id="r_a72cd4c72062ca0a0258f3a3d3748649a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a72cd4c72062ca0a0258f3a3d3748649a">GICD_ICACTIVE</a> = 0x0380</td></tr>
+<tr class="memitem:a6c994508dd6cffbfe900a227c043053e" id="r_a6c994508dd6cffbfe900a227c043053e"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6c994508dd6cffbfe900a227c043053e">GICD_IPRIORITY</a> = 0x0400</td></tr>
+<tr class="memitem:afe1e0a05bbaa2d008052f0c9f0ff130f" id="r_afe1e0a05bbaa2d008052f0c9f0ff130f"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#afe1e0a05bbaa2d008052f0c9f0ff130f">GICD_ITARGETSR</a> = 0x0800</td></tr>
+<tr class="memitem:a1f173bdcd60b54eb10bd6dbe23f7ef27" id="r_a1f173bdcd60b54eb10bd6dbe23f7ef27"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1f173bdcd60b54eb10bd6dbe23f7ef27">GICD_ICFGR</a> = 0x0C00</td></tr>
+<tr class="memitem:af6d482207fc1d589711fe7f535470893" id="r_af6d482207fc1d589711fe7f535470893"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af6d482207fc1d589711fe7f535470893">GICD_NSACR</a> = 0x0E00</td></tr>
+<tr class="memitem:aebf085a47380ef9e7303c1aa568f5f2e" id="r_aebf085a47380ef9e7303c1aa568f5f2e"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aebf085a47380ef9e7303c1aa568f5f2e">GICD_SGIR</a> = 0x0F00</td></tr>
+<tr class="memitem:a7250075e1293fefcadae16792b540e49" id="r_a7250075e1293fefcadae16792b540e49"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a7250075e1293fefcadae16792b540e49">GICR_WAKER</a> = 0x0014</td></tr>
+<tr class="memitem:ad3c0b10a2051dab9d984ab330e0ee9be" id="r_ad3c0b10a2051dab9d984ab330e0ee9be"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ad3c0b10a2051dab9d984ab330e0ee9be">GICR_IGROUPR0</a> = 0x0080</td></tr>
+<tr class="memitem:a78d90969cf2e5838fd65f902472d8bed" id="r_a78d90969cf2e5838fd65f902472d8bed"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a78d90969cf2e5838fd65f902472d8bed">GICR_ISENABLER0</a> = 0x0100</td></tr>
+<tr class="memitem:a0a572c70d81a18206016f3c795172fd5" id="r_a0a572c70d81a18206016f3c795172fd5"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0a572c70d81a18206016f3c795172fd5">GICR_ICENABLER0</a> = 0x0180</td></tr>
+<tr class="memitem:a4a4eaf92260ee151ed9d4cf70104fccc" id="r_a4a4eaf92260ee151ed9d4cf70104fccc"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a4a4eaf92260ee151ed9d4cf70104fccc">GICR_IPRIORITY0</a> = 0x0400</td></tr>
+<tr class="memitem:a9a2d4827817f87651def264300fbcbc1" id="r_a9a2d4827817f87651def264300fbcbc1"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9a2d4827817f87651def264300fbcbc1">GICC_CTLR</a> = 0x0000</td></tr>
+<tr class="memitem:a4116c31f44abf39e5c8ede6721a65690" id="r_a4116c31f44abf39e5c8ede6721a65690"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a4116c31f44abf39e5c8ede6721a65690">GICC_PMR</a> = 0x0004</td></tr>
+<tr class="memitem:a482011a570ed30cf60b56b575e5f4ecf" id="r_a482011a570ed30cf60b56b575e5f4ecf"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a482011a570ed30cf60b56b575e5f4ecf">GICC_IAR</a> = 0x000C</td></tr>
+<tr class="memitem:aee4f8ca1c1c346aed7468abf74036348" id="r_aee4f8ca1c1c346aed7468abf74036348"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aee4f8ca1c1c346aed7468abf74036348">GICC_EOIR</a> = 0x0010</td></tr>
+<tr class="memitem:a9b746daa507660e7743691e667ca07db" id="r_a9b746daa507660e7743691e667ca07db"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9b746daa507660e7743691e667ca07db">INTID_UART0</a> = 33</td></tr>
+<tr class="memitem:aa58e5a794a7b439c68022656d6277820" id="r_aa58e5a794a7b439c68022656d6277820"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aa58e5a794a7b439c68022656d6277820">INTID_RTC</a> = 34</td></tr>
+<tr class="memitem:acc5915b44b2ed7809dcb53701534dd45" id="r_acc5915b44b2ed7809dcb53701534dd45"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#acc5915b44b2ed7809dcb53701534dd45">INTID_VIRTIO0</a> = 36</td></tr>
+<tr class="memitem:a7f8e686d7799c020e30b443ced21dc32" id="r_a7f8e686d7799c020e30b443ced21dc32"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a7f8e686d7799c020e30b443ced21dc32">INTID_VIRTIO1</a> = 37</td></tr>
+<tr class="memitem:a607d71551b23fa906a8ddbdb3c6a3af2" id="r_a607d71551b23fa906a8ddbdb3c6a3af2"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a607d71551b23fa906a8ddbdb3c6a3af2">INTID_VIRTIO2</a> = 38</td></tr>
+<tr class="memitem:af13221a37481c42ba06dfad672246264" id="r_af13221a37481c42ba06dfad672246264"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af13221a37481c42ba06dfad672246264">INTID_VIRTIO3</a> = 39</td></tr>
+<tr class="memitem:a646aecfdaea719de77bae2c37a43d95a" id="r_a646aecfdaea719de77bae2c37a43d95a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a646aecfdaea719de77bae2c37a43d95a">INTID_VIRTIO4</a> = 40</td></tr>
+<tr class="memitem:a430ef23b1e75c1574e6b7147df85da0a" id="r_a430ef23b1e75c1574e6b7147df85da0a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> = 0x0C000000ULL</td></tr>
+<tr class="memitem:abf2e1f00c3daa866f33b06562a43f162" id="r_abf2e1f00c3daa866f33b06562a43f162"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#abf2e1f00c3daa866f33b06562a43f162">PLIC_PRIORITY</a> = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x000000</td></tr>
+<tr class="memitem:abb1979d1597b729886beeba2e2bf02e9" id="r_abb1979d1597b729886beeba2e2bf02e9"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#abb1979d1597b729886beeba2e2bf02e9">PLIC_PENDING</a> = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x001000</td></tr>
+<tr class="memitem:af9db2f057762c54d6bbfcd3fd786e766" id="r_af9db2f057762c54d6bbfcd3fd786e766"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#af9db2f057762c54d6bbfcd3fd786e766">PLIC_ENABLE</a> = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x002000</td></tr>
+<tr class="memitem:a3933704bb1a46f6e6f4bd8e4bb66294a" id="r_a3933704bb1a46f6e6f4bd8e4bb66294a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a3933704bb1a46f6e6f4bd8e4bb66294a">PLIC_THRESHOLD</a> = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x200000</td></tr>
+<tr class="memitem:a67baa3c64948cd27a41e80f35d8f805a" id="r_a67baa3c64948cd27a41e80f35d8f805a"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a67baa3c64948cd27a41e80f35d8f805a">PLIC_CLAIM</a> = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x200004</td></tr>
+<tr class="memitem:aae41679811ea59a0aa0cdd8f52bf3864" id="r_aae41679811ea59a0aa0cdd8f52bf3864"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aae41679811ea59a0aa0cdd8f52bf3864">IRQ_VIRTIO0</a> = 1</td></tr>
+<tr class="memdesc:aae41679811ea59a0aa0cdd8f52bf3864"><td class="mdescLeft">&#160;</td><td class="mdescRight">QEMU virt IRQ numbers.  <br /></td></tr>
+<tr class="memitem:ab166acd95e02feb70d34a7a00d6f8287" id="r_ab166acd95e02feb70d34a7a00d6f8287"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab166acd95e02feb70d34a7a00d6f8287">IRQ_VIRTIO1</a> = 2</td></tr>
+<tr class="memitem:a63d7c8b6460e0d5ab46a5a5eb226cc0c" id="r_a63d7c8b6460e0d5ab46a5a5eb226cc0c"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a63d7c8b6460e0d5ab46a5a5eb226cc0c">IRQ_VIRTIO2</a> = 3</td></tr>
+<tr class="memitem:abafa01b25d7e7e2b081d6ecc5058eb5d" id="r_abafa01b25d7e7e2b081d6ecc5058eb5d"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#abafa01b25d7e7e2b081d6ecc5058eb5d">IRQ_VIRTIO3</a> = 4</td></tr>
+<tr class="memitem:a9c39a084cebdfc926cd28dd5ac4bd7f1" id="r_a9c39a084cebdfc926cd28dd5ac4bd7f1"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9c39a084cebdfc926cd28dd5ac4bd7f1">IRQ_VIRTIO4</a> = 5</td></tr>
+<tr class="memitem:a59a16d1b88e89b79e36c5af717b1eb31" id="r_a59a16d1b88e89b79e36c5af717b1eb31"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a59a16d1b88e89b79e36c5af717b1eb31">IRQ_UART</a> = 10</td></tr>
+<tr class="memitem:aa595a02252ff6e7295062c376298dfea" id="r_aa595a02252ff6e7295062c376298dfea"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aa595a02252ff6e7295062c376298dfea">IRQ_KEYBOARD</a> = 12</td></tr>
 <tr class="memitem:aabce4ce1e12afd68caf560773edc154f" id="r_aabce4ce1e12afd68caf560773edc154f"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aabce4ce1e12afd68caf560773edc154f">__isr_vector</a> []</td></tr>
 <tr class="memdesc:aabce4ce1e12afd68caf560773edc154f"><td class="mdescLeft">&#160;</td><td class="mdescRight">External ISR vector table defined in the linker or assembly entry point.  <br /></td></tr>
 <tr class="memitem:a57c6bb74fdc3ee11eecab91b0142e95b" id="r_a57c6bb74fdc3ee11eecab91b0142e95b"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a57c6bb74fdc3ee11eecab91b0142e95b">HHDM_OFFSET</a> = CONFIG_HHDM_OFFSET</td></tr>
@@ -185,7 +252,14 @@ Variables</h2></td></tr>
 <tr class="memdesc:ad7dae9e06cf7cd82339d09d0f1ebb560"><td class="mdescLeft">&#160;</td><td class="mdescRight">ATA master/slave drive select bits.  <br /></td></tr>
 <tr class="memitem:a4fa4849684d67f99ae261cd330942aef" id="r_a4fa4849684d67f99ae261cd330942aef"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a4fa4849684d67f99ae261cd330942aef">ATA_DRIVE_SLAVE</a> = 0xF0</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>AArch64 GICv2/v3 register definitions and accessors. </p>
+<p>RISC-V 64 PLIC (Platform-Level Interrupt Controller) register definitions and accessors.</p>
+<p>Memory map (QEMU virt): GICD = 0x0800_0000 (distributor) GICC = 0x0801_0000 (GICv2 CPU interface) GICR = 0x080A_0000 (GICv3 redistributor RD frame, core 0) GICR_SGI = 0x080B_0000 (GICv3 SGI/PPI frame, core 0)</p>
+<p>INTID ranges (GICv3): 0-15 SGI (software-generated, IPI) 16-31 PPI (private per-core: timer, PMU, etc.) 32-1019 SPI (shared: UART, virtio, RTC, etc.)</p>
+<p>Memory map (QEMU virt): PLIC_BASE = 0x0C00_0000 Priority = base + 0x0000_0000 (one 4-byte word per source) Pending = base + 0x0000_1000 Enable = base + 0x0000_2000 (one bit per source) Threshold = base + 0x0020_0000 Claim/Complete= base + 0x0020_0004</p>
+<p>IRQ map (QEMU virt): 0 = reserved 1-8 = virtio-mmio devices 9 = (unused) 10 = UART 11 = (unused) 12 = keyboard (PS/2) </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a46488b8cc19b71e9d4bd3d8ea44603e4" name="a46488b8cc19b71e9d4bd3d8ea44603e4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a46488b8cc19b71e9d4bd3d8ea44603e4">&#9670;&#160;</a></span>exception_entry()</h2>
 
@@ -209,6 +283,231 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="abe825a3f67343b75c57efa83cb71feec" name="abe825a3f67343b75c57efa83cb71feec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe825a3f67343b75c57efa83cb71feec">&#9670;&#160;</a></span>gic_v3_read_iar()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::gic_v3_read_iar </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0e66b1a01d873e894c6676c2d63657c4" name="a0e66b1a01d873e894c6676c2d63657c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e66b1a01d873e894c6676c2d63657c4">&#9670;&#160;</a></span>gic_v3_set_igrpen1()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void arch::gic_v3_set_igrpen1 </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>enable</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5cb9e37cba4166320e1c12a7a759a083" name="a5cb9e37cba4166320e1c12a7a759a083"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cb9e37cba4166320e1c12a7a759a083">&#9670;&#160;</a></span>gic_v3_set_pmr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void arch::gic_v3_set_pmr </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>mask</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adab534d45e1d7dff71a2a408ee1bdb7e" name="adab534d45e1d7dff71a2a408ee1bdb7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adab534d45e1d7dff71a2a408ee1bdb7e">&#9670;&#160;</a></span>gic_v3_set_sre()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void arch::gic_v3_set_sre </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>enable</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a53368020492a5d8b11acfc764445eaad" name="a53368020492a5d8b11acfc764445eaad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53368020492a5d8b11acfc764445eaad">&#9670;&#160;</a></span>gic_v3_write_eoir()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void arch::gic_v3_write_eoir </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>intid</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="addb0aafa44f85ad234abeacf6a11a2a5" name="addb0aafa44f85ad234abeacf6a11a2a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addb0aafa44f85ad234abeacf6a11a2a5">&#9670;&#160;</a></span>gicc_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::gicc_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>offset</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abb9df6f2809054a385414ac4aa9eff3a" name="abb9df6f2809054a385414ac4aa9eff3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb9df6f2809054a385414ac4aa9eff3a">&#9670;&#160;</a></span>gicd_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::gicd_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>offset</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4da73406011eca3290f9e1baebeb720e" name="a4da73406011eca3290f9e1baebeb720e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4da73406011eca3290f9e1baebeb720e">&#9670;&#160;</a></span>gicr_rd_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::gicr_rd_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>offset</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0be0121227150927d9c3e750b7d86455" name="a0be0121227150927d9c3e750b7d86455"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0be0121227150927d9c3e750b7d86455">&#9670;&#160;</a></span>gicr_sgi_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::gicr_sgi_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>offset</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af44c28e0176ac64b504464bbd30f31b2" name="af44c28e0176ac64b504464bbd30f31b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af44c28e0176ac64b504464bbd30f31b2">&#9670;&#160;</a></span>handle_gic_irq()</h2>
 
@@ -224,8 +523,13 @@ Here is the call graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Main IRQ handler called from vectors.S IRQ entries. Handles both GICv2 (memory-mapped) and GICv3 (system register) IAR/EOIR. </p>
-<dl class="section note"><dt>Note</dt><dd>Spurious interrupts (INTID &gt;= 1023) are acknowledged and discarded. Only the timer PPI (INTID 30) is dispatched to the IDT. </dd></dl>
+<p>IRQ handler called from vectors.S. Dispatches all non-spurious INTIDs via the IDT table. </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacearch_af44c28e0176ac64b504464bbd30f31b2_cgraph.png" border="0" usemap="#anamespacearch_af44c28e0176ac64b504464bbd30f31b2_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -252,22 +556,11 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Dump exception info via SBI ecall, then panic. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">sepc</td><td>Exception program counter. </td></tr>
-    <tr><td class="paramname">scause</td><td>Exception cause register value. </td></tr>
-    <tr><td class="paramname">stval</td><td>Exception trap value register. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section warning"><dt>Warning</dt><dd>Never returns — calls <a class="el" href="jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727" title="Overridable assertion macro. Default calls panic on failure.">panic()</a>. </dd></dl>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_ade82e23d3659eed529a27355052fcdac_cgraph.png" border="0" usemap="#anamespacearch_ade82e23d3659eed529a27355052fcdac_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -295,16 +588,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>C-level trap handler for PLIC interrupts and timer interrupts. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">scause</td><td>Supervisory trap cause register value. </td></tr>
-    <tr><td class="paramname">sepc</td><td>Supervisory exception program counter. </td></tr>
-    <tr><td class="paramname">regs</td><td>Pointer to saved register state (unused). </td></tr>
-  </table>
-  </dd>
-</dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacearch_abcb80cfbe5c335ca7659697f28452a7b_cgraph.png" border="0" usemap="#anamespacearch_abcb80cfbe5c335ca7659697f28452a7b_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -326,7 +615,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_af42ba0c651229ba30e96c82094e72d88_cgraph.png" border="0" usemap="#anamespacearch_af42ba0c651229ba30e96c82094e72d88_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 4 -->
 </div>
 
 </div>
@@ -383,7 +672,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a11748e0603d0f9b77d1198c4e14fd224_cgraph.png" border="0" usemap="#anamespacearch_a11748e0603d0f9b77d1198c4e14fd224_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -410,7 +699,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_af1db3b0c561e94a99c8f3f6d020093f5_cgraph.png" border="0" usemap="#anamespacearch_af1db3b0c561e94a99c8f3f6d020093f5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 6 -->
 </div>
 
 </div>
@@ -442,7 +731,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_ab8a3d0ed72e0355f607878da738a53e4_cgraph.png" border="0" usemap="#anamespacearch_ab8a3d0ed72e0355f607878da738a53e4_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -469,7 +758,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_adc4b509b8ba2e26aae708fff98409565_cgraph.png" border="0" usemap="#anamespacearch_adc4b509b8ba2e26aae708fff98409565_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -513,7 +802,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a68057e54d9a90d6545678a5b77d8b604_cgraph.png" border="0" usemap="#anamespacearch_a68057e54d9a90d6545678a5b77d8b604_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -574,7 +863,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a8fd92f41ff58ee30a496023a66c4482f_cgraph.png" border="0" usemap="#anamespacearch_a8fd92f41ff58ee30a496023a66c4482f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -597,8 +886,108 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_adf555b81d7d72b5c61d212eaf1aa1e69_cgraph.png" border="0" usemap="#anamespacearch_adf555b81d7d72b5c61d212eaf1aa1e69_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
+<!-- MAP 11 -->
 </div>
+
+</div>
+</div>
+<a id="ad8cf1975e657fd548aa97fd3c37f812e" name="ad8cf1975e657fd548aa97fd3c37f812e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad8cf1975e657fd548aa97fd3c37f812e">&#9670;&#160;</a></span>plic_claim()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::plic_claim </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8dcc3bc98dc325b9ed085730ea58aaec" name="a8dcc3bc98dc325b9ed085730ea58aaec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8dcc3bc98dc325b9ed085730ea58aaec">&#9670;&#160;</a></span>plic_complete()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void arch::plic_complete </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>intid</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6807f252e313e023fb6310b60223e4f6" name="a6807f252e313e023fb6310b60223e4f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6807f252e313e023fb6310b60223e4f6">&#9670;&#160;</a></span>plic_enable_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::plic_enable_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>irq</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae035b7cc5b725012469b59d037ab15b7" name="ae035b7cc5b725012469b59d037ab15b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae035b7cc5b725012469b59d037ab15b7">&#9670;&#160;</a></span>plic_priority_reg()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">volatile <a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> * arch::plic_priority_reg </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a></td>          <td class="paramname"><span class="paramname"><em>irq</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -624,7 +1013,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a12155265301dd4e78b8ed8523ff7353f_cgraph.png" border="0" usemap="#anamespacearch_a12155265301dd4e78b8ed8523ff7353f_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
+<!-- MAP 12 -->
 </div>
 
 </div>
@@ -683,7 +1072,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a1888fb8a7b37d30dec1c191cacb1fbf2_cgraph.png" border="0" usemap="#anamespacearch_a1888fb8a7b37d30dec1c191cacb1fbf2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
+<!-- MAP 13 -->
 </div>
 
 </div>
@@ -710,7 +1099,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a61b1d4d8c642abd27d65bb1f64405e58_cgraph.png" border="0" usemap="#anamespacearch_a61b1d4d8c642abd27d65bb1f64405e58_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -757,7 +1146,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacearch_a9feefbea1a3cdebff8c58cb8dec3d426_cgraph.png" border="0" usemap="#anamespacearch_a9feefbea1a3cdebff8c58cb8dec3d426_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
+<!-- MAP 15 -->
 </div>
 
 </div>
@@ -1183,6 +1572,578 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="a3b94ff78f7b9fc3de77542c57af2703a" name="a3b94ff78f7b9fc3de77542c57af2703a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b94ff78f7b9fc3de77542c57af2703a">&#9670;&#160;</a></span>GICC_BASE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::GICC_BASE = 0x08010000ULL</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9a2d4827817f87651def264300fbcbc1" name="a9a2d4827817f87651def264300fbcbc1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a2d4827817f87651def264300fbcbc1">&#9670;&#160;</a></span>GICC_CTLR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICC_CTLR = 0x0000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aee4f8ca1c1c346aed7468abf74036348" name="aee4f8ca1c1c346aed7468abf74036348"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee4f8ca1c1c346aed7468abf74036348">&#9670;&#160;</a></span>GICC_EOIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICC_EOIR = 0x0010</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a482011a570ed30cf60b56b575e5f4ecf" name="a482011a570ed30cf60b56b575e5f4ecf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a482011a570ed30cf60b56b575e5f4ecf">&#9670;&#160;</a></span>GICC_IAR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICC_IAR = 0x000C</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4116c31f44abf39e5c8ede6721a65690" name="a4116c31f44abf39e5c8ede6721a65690"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4116c31f44abf39e5c8ede6721a65690">&#9670;&#160;</a></span>GICC_PMR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICC_PMR = 0x0004</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a12f8e4c8b8adadb460137a2c9fd4ba14" name="a12f8e4c8b8adadb460137a2c9fd4ba14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12f8e4c8b8adadb460137a2c9fd4ba14">&#9670;&#160;</a></span>GICD_BASE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::GICD_BASE = 0x08000000ULL</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac7f969e6cdfb3ba30b1cd75aec7265ae" name="ac7f969e6cdfb3ba30b1cd75aec7265ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7f969e6cdfb3ba30b1cd75aec7265ae">&#9670;&#160;</a></span>GICD_CTLR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_CTLR = 0x0000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a72cd4c72062ca0a0258f3a3d3748649a" name="a72cd4c72062ca0a0258f3a3d3748649a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72cd4c72062ca0a0258f3a3d3748649a">&#9670;&#160;</a></span>GICD_ICACTIVE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ICACTIVE = 0x0380</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2eea05dd4370082c1545aa6ec2f9a608" name="a2eea05dd4370082c1545aa6ec2f9a608"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2eea05dd4370082c1545aa6ec2f9a608">&#9670;&#160;</a></span>GICD_ICENABLER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ICENABLER = 0x0180</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1f173bdcd60b54eb10bd6dbe23f7ef27" name="a1f173bdcd60b54eb10bd6dbe23f7ef27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f173bdcd60b54eb10bd6dbe23f7ef27">&#9670;&#160;</a></span>GICD_ICFGR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ICFGR = 0x0C00</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a51a21ad7573bb5e0bc36389a3ac4626f" name="a51a21ad7573bb5e0bc36389a3ac4626f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51a21ad7573bb5e0bc36389a3ac4626f">&#9670;&#160;</a></span>GICD_ICPEND</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ICPEND = 0x0280</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a89b179527a41fafc0224c128c59da3cc" name="a89b179527a41fafc0224c128c59da3cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89b179527a41fafc0224c128c59da3cc">&#9670;&#160;</a></span>GICD_IGROUPR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_IGROUPR = 0x0080</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a58ff9920cb743fe927b35fef55ce47b2" name="a58ff9920cb743fe927b35fef55ce47b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58ff9920cb743fe927b35fef55ce47b2">&#9670;&#160;</a></span>GICD_IIDR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_IIDR = 0x0008</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6c994508dd6cffbfe900a227c043053e" name="a6c994508dd6cffbfe900a227c043053e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c994508dd6cffbfe900a227c043053e">&#9670;&#160;</a></span>GICD_IPRIORITY</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_IPRIORITY = 0x0400</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2ff1c9bbd77443cec8d81d794a855d4e" name="a2ff1c9bbd77443cec8d81d794a855d4e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ff1c9bbd77443cec8d81d794a855d4e">&#9670;&#160;</a></span>GICD_ISENABLER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ISENABLER = 0x0100</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afe1e0a05bbaa2d008052f0c9f0ff130f" name="afe1e0a05bbaa2d008052f0c9f0ff130f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe1e0a05bbaa2d008052f0c9f0ff130f">&#9670;&#160;</a></span>GICD_ITARGETSR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_ITARGETSR = 0x0800</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af6d482207fc1d589711fe7f535470893" name="af6d482207fc1d589711fe7f535470893"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6d482207fc1d589711fe7f535470893">&#9670;&#160;</a></span>GICD_NSACR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_NSACR = 0x0E00</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aebf085a47380ef9e7303c1aa568f5f2e" name="aebf085a47380ef9e7303c1aa568f5f2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebf085a47380ef9e7303c1aa568f5f2e">&#9670;&#160;</a></span>GICD_SGIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_SGIR = 0x0F00</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aadb69e090b70cb8ed04861bb776ab546" name="aadb69e090b70cb8ed04861bb776ab546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aadb69e090b70cb8ed04861bb776ab546">&#9670;&#160;</a></span>GICD_TYPER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICD_TYPER = 0x0004</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a572c70d81a18206016f3c795172fd5" name="a0a572c70d81a18206016f3c795172fd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a572c70d81a18206016f3c795172fd5">&#9670;&#160;</a></span>GICR_ICENABLER0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICR_ICENABLER0 = 0x0180</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad3c0b10a2051dab9d984ab330e0ee9be" name="ad3c0b10a2051dab9d984ab330e0ee9be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3c0b10a2051dab9d984ab330e0ee9be">&#9670;&#160;</a></span>GICR_IGROUPR0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICR_IGROUPR0 = 0x0080</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4a4eaf92260ee151ed9d4cf70104fccc" name="a4a4eaf92260ee151ed9d4cf70104fccc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a4eaf92260ee151ed9d4cf70104fccc">&#9670;&#160;</a></span>GICR_IPRIORITY0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICR_IPRIORITY0 = 0x0400</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a78d90969cf2e5838fd65f902472d8bed" name="a78d90969cf2e5838fd65f902472d8bed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78d90969cf2e5838fd65f902472d8bed">&#9670;&#160;</a></span>GICR_ISENABLER0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICR_ISENABLER0 = 0x0100</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a024087ec76a8f9982b009fa6696f23dd" name="a024087ec76a8f9982b009fa6696f23dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a024087ec76a8f9982b009fa6696f23dd">&#9670;&#160;</a></span>GICR_RD_BASE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::GICR_RD_BASE = 0x080A0000ULL</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aea75d86f398e56dec26a630d41bc1b91" name="aea75d86f398e56dec26a630d41bc1b91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea75d86f398e56dec26a630d41bc1b91">&#9670;&#160;</a></span>GICR_SGI_BASE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::GICR_SGI_BASE = 0x080B0000ULL</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7250075e1293fefcadae16792b540e49" name="a7250075e1293fefcadae16792b540e49"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7250075e1293fefcadae16792b540e49">&#9670;&#160;</a></span>GICR_WAKER</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::GICR_WAKER = 0x0014</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a57c6bb74fdc3ee11eecab91b0142e95b" name="a57c6bb74fdc3ee11eecab91b0142e95b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a57c6bb74fdc3ee11eecab91b0142e95b">&#9670;&#160;</a></span>HHDM_OFFSET</h2>
 
@@ -1204,6 +2165,316 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Higher-half offset: convert physical → kernel-visible virtual. </p>
+
+</div>
+</div>
+<a id="aa58e5a794a7b439c68022656d6277820" name="aa58e5a794a7b439c68022656d6277820"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa58e5a794a7b439c68022656d6277820">&#9670;&#160;</a></span>INTID_RTC</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_RTC = 34</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9b746daa507660e7743691e667ca07db" name="a9b746daa507660e7743691e667ca07db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b746daa507660e7743691e667ca07db">&#9670;&#160;</a></span>INTID_UART0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_UART0 = 33</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acc5915b44b2ed7809dcb53701534dd45" name="acc5915b44b2ed7809dcb53701534dd45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc5915b44b2ed7809dcb53701534dd45">&#9670;&#160;</a></span>INTID_VIRTIO0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_VIRTIO0 = 36</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7f8e686d7799c020e30b443ced21dc32" name="a7f8e686d7799c020e30b443ced21dc32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7f8e686d7799c020e30b443ced21dc32">&#9670;&#160;</a></span>INTID_VIRTIO1</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_VIRTIO1 = 37</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a607d71551b23fa906a8ddbdb3c6a3af2" name="a607d71551b23fa906a8ddbdb3c6a3af2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a607d71551b23fa906a8ddbdb3c6a3af2">&#9670;&#160;</a></span>INTID_VIRTIO2</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_VIRTIO2 = 38</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af13221a37481c42ba06dfad672246264" name="af13221a37481c42ba06dfad672246264"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af13221a37481c42ba06dfad672246264">&#9670;&#160;</a></span>INTID_VIRTIO3</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_VIRTIO3 = 39</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a646aecfdaea719de77bae2c37a43d95a" name="a646aecfdaea719de77bae2c37a43d95a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a646aecfdaea719de77bae2c37a43d95a">&#9670;&#160;</a></span>INTID_VIRTIO4</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::INTID_VIRTIO4 = 40</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa595a02252ff6e7295062c376298dfea" name="aa595a02252ff6e7295062c376298dfea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa595a02252ff6e7295062c376298dfea">&#9670;&#160;</a></span>IRQ_KEYBOARD</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_KEYBOARD = 12</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a59a16d1b88e89b79e36c5af717b1eb31" name="a59a16d1b88e89b79e36c5af717b1eb31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59a16d1b88e89b79e36c5af717b1eb31">&#9670;&#160;</a></span>IRQ_UART</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_UART = 10</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aae41679811ea59a0aa0cdd8f52bf3864" name="aae41679811ea59a0aa0cdd8f52bf3864"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae41679811ea59a0aa0cdd8f52bf3864">&#9670;&#160;</a></span>IRQ_VIRTIO0</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_VIRTIO0 = 1</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>QEMU virt IRQ numbers. </p>
+
+</div>
+</div>
+<a id="ab166acd95e02feb70d34a7a00d6f8287" name="ab166acd95e02feb70d34a7a00d6f8287"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab166acd95e02feb70d34a7a00d6f8287">&#9670;&#160;</a></span>IRQ_VIRTIO1</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_VIRTIO1 = 2</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a63d7c8b6460e0d5ab46a5a5eb226cc0c" name="a63d7c8b6460e0d5ab46a5a5eb226cc0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63d7c8b6460e0d5ab46a5a5eb226cc0c">&#9670;&#160;</a></span>IRQ_VIRTIO2</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_VIRTIO2 = 3</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abafa01b25d7e7e2b081d6ecc5058eb5d" name="abafa01b25d7e7e2b081d6ecc5058eb5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abafa01b25d7e7e2b081d6ecc5058eb5d">&#9670;&#160;</a></span>IRQ_VIRTIO3</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_VIRTIO3 = 4</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9c39a084cebdfc926cd28dd5ac4bd7f1" name="a9c39a084cebdfc926cd28dd5ac4bd7f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c39a084cebdfc926cd28dd5ac4bd7f1">&#9670;&#160;</a></span>IRQ_VIRTIO4</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> arch::IRQ_VIRTIO4 = 5</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -1240,6 +2511,138 @@ Here is the call graph for this function:</div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PAGE_SIZE_2M = 0x200000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a430ef23b1e75c1574e6b7147df85da0a" name="a430ef23b1e75c1574e6b7147df85da0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a430ef23b1e75c1574e6b7147df85da0a">&#9670;&#160;</a></span>PLIC_BASE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_BASE = 0x0C000000ULL</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a67baa3c64948cd27a41e80f35d8f805a" name="a67baa3c64948cd27a41e80f35d8f805a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a67baa3c64948cd27a41e80f35d8f805a">&#9670;&#160;</a></span>PLIC_CLAIM</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_CLAIM = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x200004</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af9db2f057762c54d6bbfcd3fd786e766" name="af9db2f057762c54d6bbfcd3fd786e766"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9db2f057762c54d6bbfcd3fd786e766">&#9670;&#160;</a></span>PLIC_ENABLE</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_ENABLE = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x002000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abb1979d1597b729886beeba2e2bf02e9" name="abb1979d1597b729886beeba2e2bf02e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb1979d1597b729886beeba2e2bf02e9">&#9670;&#160;</a></span>PLIC_PENDING</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_PENDING = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x001000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf2e1f00c3daa866f33b06562a43f162" name="abf2e1f00c3daa866f33b06562a43f162"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf2e1f00c3daa866f33b06562a43f162">&#9670;&#160;</a></span>PLIC_PRIORITY</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_PRIORITY = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x000000</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3933704bb1a46f6e6f4bd8e4bb66294a" name="a3933704bb1a46f6e6f4bd8e4bb66294a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3933704bb1a46f6e6f4bd8e4bb66294a">&#9670;&#160;</a></span>PLIC_THRESHOLD</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PLIC_THRESHOLD = <a class="el" href="#a430ef23b1e75c1574e6b7147df85da0a">PLIC_BASE</a> + 0x200000</td>
         </tr>
       </table>
   </td>

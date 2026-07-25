@@ -29,7 +29,7 @@ var NAVTREE =
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
         [ "All", "namespacemembers.html", "namespacemembers_dup" ],
-        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Functions", "namespacemembers_func.html", "namespacemembers_func" ],
         [ "Variables", "namespacemembers_vars.html", null ],
         [ "Typedefs", "namespacemembers_type.html", null ],
         [ "Enumerations", "namespacemembers_enum.html", null ],
@@ -44,7 +44,7 @@ var NAVTREE =
       [ "Data Fields", "functions.html", [
         [ "All", "functions.html", "functions_dup" ],
         [ "Functions", "functions_func.html", "functions_func" ],
-        [ "Variables", "functions_vars.html", null ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
         [ "Typedefs", "functions_type.html", null ],
         [ "Related Symbols", "functions_rela.html", null ]
       ] ]
@@ -67,29 +67,30 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "aarch64_2early__init_8cpp.html",
-"classkernel_1_1_task_queue.html#a11497a31721fe4d5c95973e534261b5b",
-"elf_8cpp.html",
-"initrd_8cpp.html#ace80a1c88d9591989ed3dd6fed3f10c2",
-"namespacearch.html#a68057e54d9a90d6545678a5b77d8b604",
-"namespacekernel_1_1test.html#a5b61544ff1676d3f6d4a777c3211be31",
-"signal_8h.html#a3c330fbddd84bf34e65af370b11998d6",
-"structinitrd_1_1_initrd_entry.html#a48e95a6e7d3e3e0f77113e60847c9670",
-"structkernel_1_1vfs_1_1_pipe_buffer.html#af552d711224e3c2fd4dcaef1a489eda7",
-"test__buffer__pool_8cpp.html#a891bec855eb855dc76523ad8937b6af5",
-"test__idle__task_8cpp.html#a645af4258b4bc86c512ad62632a308c5",
-"test__pcp_8cpp.html#afc1e123b72676a8e06179c68f2235394",
-"test__registry_8gen_8hpp.html#a04c1058a96233a8496435ec4c38c95fd",
-"test__registry_8gen_8hpp.html#a20353fc8acc847e617829a4d647ee6ed",
-"test__registry_8gen_8hpp.html#a3b0e9700ce98488427b0f01c52eeff05",
-"test__registry_8gen_8hpp.html#a57717b1bc06e5463d6c78f70947887a3",
-"test__registry_8gen_8hpp.html#a713faf083a8d8386a9e93e71ff63e5d9",
-"test__registry_8gen_8hpp.html#a8ac9199937f2d575afa59bae33670026",
-"test__registry_8gen_8hpp.html#aa2b3d62448a13941e40c9a76cb96a9c0",
-"test__registry_8gen_8hpp.html#abbccfd1fae440cd46c7b2e0a5555b6a1",
-"test__registry_8gen_8hpp.html#ad6f6329fbe9b5667dff3d29dd3ba6bfc",
-"test__registry_8gen_8hpp.html#af163df1e42ea0f94152a34407f75ca8a",
-"test__sporadic__server_8cpp.html#a7df9e3500305c749d8dc046442b69fbe",
-"test__wfg_8cpp.html#a82b07ad9116fe7bb73c2d7430ec9f3cd"
+"classkernel_1_1_task_queue.html#aa5a4c0397d73f35c198c22b40e9e4d9e",
+"errno_8h.html#a2d1678d5a7cc8ce499643f3b8957def4",
+"initrd_8cpp.html",
+"msr_8hpp_source.html",
+"namespacekernel_1_1dma.html#a2b0e39f4a2f3d6d1eb72850767919d44",
+"pmm_8cpp.html",
+"struct_default_deleter.html",
+"structkernel_1_1test_1_1_resource_counters.html#a5618a47f1f59452a7d6c81810412e111",
+"syscall__helpers_8hpp_source.html",
+"test__driver_8cpp.html",
+"test__lib_8cpp.html#a04f578d01c5ba1f1e8a67a1fc91fbf9d",
+"test__registry_8cpp.html#a4e074816d98f50dc07e66e4024508608",
+"test__registry_8gen_8hpp.html#a1109710d06c2f62f588f4eaaa6021c91",
+"test__registry_8gen_8hpp.html#a2bfb5fd5de2d3af80d2a114ec5ec3cea",
+"test__registry_8gen_8hpp.html#a4787acf3798f1d5dd7777608520ae5a7",
+"test__registry_8gen_8hpp.html#a62a57d2d08e30c240831e4e245a6db56",
+"test__registry_8gen_8hpp.html#a7d6416280ad7bd40d5ff99a598c30957",
+"test__registry_8gen_8hpp.html#a923dccae82c2363b6a8d2d70ec847f41",
+"test__registry_8gen_8hpp.html#aaa7d45d492f17be1e4059dd09efb5a65",
+"test__registry_8gen_8hpp.html#ac4fd0f861737579b1b791fc8d748d3cc",
+"test__registry_8gen_8hpp.html#adf8cfe58e4328e883bfb3b87335e3bec",
+"test__registry_8gen_8hpp.html#af82aaa1c16ff591fa8f18686026af536",
+"test__syscall_8cpp.html#af710540e032ff2baa15c33e9e0107473",
+"unistd_8h.html#a0d112bae8fd35be772185b6ec6bcbe64"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

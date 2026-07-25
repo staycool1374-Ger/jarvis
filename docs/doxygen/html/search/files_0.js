@@ -6,10 +6,12 @@ var searchData=
   ['ahci_5fprotocol_2ehpp_3',['ahci_protocol.hpp',['../ahci__protocol_8hpp.html',1,'']]],
   ['all_5ftasks_5fregistry_2ecpp_4',['all_tasks_registry.cpp',['../all__tasks__registry_8cpp.html',1,'']]],
   ['all_5ftasks_5fregistry_2ehpp_5',['all_tasks_registry.hpp',['../all__tasks__registry_8hpp.html',1,'']]],
-  ['arp_2ecpp_6',['arp.cpp',['../arp_8cpp.html',1,'']]],
-  ['arp_2ehpp_7',['arp.hpp',['../arp_8hpp.html',1,'']]],
-  ['assert_2ehpp_8',['assert.hpp',['../assert_8hpp.html',1,'']]],
-  ['ata_5fpio_2ecpp_9',['ata_pio.cpp',['../ata__pio_8cpp.html',1,'']]],
-  ['ata_5fpio_2ehpp_10',['ata_pio.hpp',['../ata__pio_8hpp.html',1,'']]],
-  ['atomic_2ehpp_11',['atomic.hpp',['../atomic_8hpp.html',1,'']]]
+  ['apic_2ecpp_6',['apic.cpp',['../apic_8cpp.html',1,'']]],
+  ['apic_2ehpp_7',['apic.hpp',['../apic_8hpp.html',1,'(Global Namespace)'],['../x86__64_2hal_2apic_8hpp.html',1,'(Global Namespace)']]],
+  ['arp_2ecpp_8',['arp.cpp',['../arp_8cpp.html',1,'']]],
+  ['arp_2ehpp_9',['arp.hpp',['../arp_8hpp.html',1,'']]],
+  ['assert_2ehpp_10',['assert.hpp',['../assert_8hpp.html',1,'']]],
+  ['ata_5fpio_2ecpp_11',['ata_pio.cpp',['../ata__pio_8cpp.html',1,'']]],
+  ['ata_5fpio_2ehpp_12',['ata_pio.hpp',['../ata__pio_8hpp.html',1,'']]],
+  ['atomic_2ehpp_13',['atomic.hpp',['../atomic_8hpp.html',1,'']]]
 ];

@@ -1,5 +1,9 @@
 var annotated_dup =
 [
+    [ "arch", "namespacearch.html", [
+      [ "APIC", "classarch_1_1_a_p_i_c.html", null ],
+      [ "Caps", "structarch_1_1_caps.html", "structarch_1_1_caps" ]
+    ] ],
     [ "crypto", "namespacecrypto.html", [
       [ "ChaChaState", "structcrypto_1_1_cha_cha_state.html", "structcrypto_1_1_cha_cha_state" ]
     ] ],
