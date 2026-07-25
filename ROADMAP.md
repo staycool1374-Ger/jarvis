@@ -214,8 +214,21 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
       operations with SpinLock for scheduler state access, allowing IRQs to fire during
       non-atomic sections (SpinLock does not disable IRQs).  This means `on_tick()` can read
       mid-mutation while the interrupted context holds the lock, leading to transient
-      inconsistency.  Fix: wrap all scheduler state mutations in the running task with
+      inconsistency.        Fix: wrap all scheduler state mutations in the running task with
       `arch::IrqGuard` + `SpinLock` so that `on_tick()` never observes torn reads.
+- [ ] **current_task_ptr_ TERMINATED guard** — After a task is reaped by
+      `reap_orphans()` or `cleanup_test_tasks()`, `current_task_ptr_` may still alias
+      the freed TCB until the next deferred switch publishes a new task.  Any code
+      dereferencing `current_task_ptr_` during this window (e.g. fault handlers,
+      syscall entry, `on_tick()`) operates on freed memory — a use-after-free.
+      Fix: add a `TaskState::REAPED` sentinel state; set it in `cleanup()` before
+      freeing the TCB.  All `current_task_ptr_` dereferences validate via
+      `TaskControlBlock::is_valid()` which rejects `magic != TCB_MAGIC`.  Ensure
+      `cleanup()` sets `magic = 0` (already done) and that every path consuming
+      `current_task_ptr_` checks `magic` before accessing members.
+      Additionally, in `switch_to_task()` and `reschedule()`, guard against
+      `current_task_ptr_` pointing to a TERMINATED/REAPED task by falling back to
+      the idle task.
 - [ ] **True bitmap-granular ReadyQueue per priority level** — The current `ReadyQueueManager`
       uses a single `PriorityMap` bitmap + one `TaskQueue` per level.  Each `dequeue_highest()`
       scans the bitmap for the highest priority, then pops from that level's queue — this is
