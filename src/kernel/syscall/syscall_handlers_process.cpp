@@ -79,7 +79,7 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         cur->remove_child(child);
         child->cleanup();
         Scheduler::remove_task(*child);
-        MemPool::free(child);
+        delete child;
         return cid;
     }
     if (arg2 & 1)

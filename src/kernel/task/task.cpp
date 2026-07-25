@@ -293,7 +293,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
     if (!stack_phys) {
         Logger::warn("TCB::create: PMM OOM for %zu-page stack", stack_pages);
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
 
@@ -416,7 +416,7 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
     if (!kstack_phys) {
         ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC);
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
     tcb->stack_phys_ = kstack_phys;
@@ -430,14 +430,14 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
     if (!ustack_phys) {
         ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC);
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
 
     uint64_t pml4 = VMM::clone_kernel_pml4();
     if (!pml4) {
         ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
     tcb->page_table_ = pml4;
@@ -620,7 +620,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
     if (!kstack_phys) {
         ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC);
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
     tcb->stack_phys_ = kstack_phys;
@@ -695,7 +695,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
         uint64_t new_pml4 = PMM::alloc_page();
         if (!new_pml4) {
             ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
-            MemPool::free(tcb);
+            delete tcb;
             return nullptr;
         }
         tcb->page_table_ = new_pml4;
@@ -754,7 +754,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
             if (stack_pdpt_phys)
                 PMM::free_page(stack_pdpt_phys);
             ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC);
-            MemPool::free(tcb);
+            delete tcb;
             return nullptr;
         }
         tcb->user_stack_ = ustack_phys;
@@ -1038,11 +1038,10 @@ void TaskControlBlock::operator delete(void *ptr) noexcept {
     if (tcb->magic == TCB_MAGIC) {
         tcb->cleanup();
         Scheduler::remove_task(*tcb);
+        tcb->magic = 0;  // Prevent double-free if caller re-enters operator delete
         MemPool::free(ptr);
         return;
     }
-    // magic == 0: cleanup() was called externally but block wasn't freed.
-    // Only free the memory; don't re-enter cleanup/remove_task.
     if (tcb->magic == 0)
         MemPool::free(ptr);
     // magic == 0xDD: reaper already freed it — skip silently.

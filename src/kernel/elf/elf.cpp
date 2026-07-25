@@ -370,7 +370,7 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
     uint64_t kstack_phys = PMM::alloc_contiguous(kstack_pages);
     if (!kstack_phys) {
         tcb->cleanup();
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
     tcb->stack_phys_ = kstack_phys;
@@ -382,7 +382,7 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
     uint64_t pml4 = VMM::clone_kernel_pml4();
     if (!pml4) {
         tcb->cleanup();
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
     tcb->page_table_ = pml4;
@@ -390,7 +390,7 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
     uint64_t ustack_phys = 0;
     if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) {
         tcb->cleanup();
-        MemPool::free(tcb);
+        delete tcb;
         return nullptr;
     }
 

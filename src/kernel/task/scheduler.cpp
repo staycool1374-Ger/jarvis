@@ -1220,7 +1220,8 @@ void Scheduler::reap_orphans() noexcept {
         to_reap[num_to_reap++] = t;
     }
 
-    // Destroy reaped tasks
+    // Destroy reaped tasks — use delete (operator delete handles magic
+    // clearing and prevents double-free if a stale reference exists).
     for (uint64_t ri = 0; ri < num_to_reap; ++ri) {
         auto *t = to_reap[ri];
         dequeue_ready(*t);
@@ -1234,15 +1235,13 @@ void Scheduler::reap_orphans() noexcept {
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
                              t->id);
-            t->cleanup();
-            MemPool::free(t);
+            delete t;
             new_idle = created;
         } else {
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
                              t->id);
-            t->cleanup();
-            MemPool::free(t);
+            delete t;
         }
     }
 
@@ -1316,7 +1315,7 @@ void Scheduler::cleanup_test_tasks() noexcept {
         id_table_remove(t);
         all_tasks_.remove(t);
         t->cleanup();
-        MemPool::free(t);
+        delete t;
     }
 
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
@@ -1503,7 +1502,7 @@ void Scheduler::cleanup_zombies() noexcept {
         all_tasks_.remove(t);
         deadline_list_.remove(t);
         id_table_remove(t);
-        MemPool::free(t);
+        delete t;
     }
 }
 
@@ -2210,9 +2209,7 @@ void Scheduler::process_deferred_kills() noexcept {
 
         Logger::info("[DMD] Task %lu (%s) killed and cleaned up", task->id,
                      task->name);
-        task->cleanup();
-        Scheduler::remove_task(*task);
-        MemPool::free(task);
+        delete task;
     }
     s_deferred_kill_count = 0;
 }
