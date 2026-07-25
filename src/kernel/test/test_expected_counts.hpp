@@ -55,10 +55,16 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"stress",              10,     0,       0      },  // stress + starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
-    {"bench",               18,     0,       0      },  // IPC + microkernel + syscall + IRQ latency benchmarks
+    {"bench",               23,     0,       0      },  // IPC + microkernel + syscall + IRQ latency + APIC timer + jitter benchmarks
     {"bench_irq_latency",   3,      0,       0      },  // IRQ latency histogram tests
     {"sporadic",            25,     0,       0      },  // sporadic server tests
     {"atomic",              12,     0,       0      },  // atomic operation tests
+    {"apic_timer",           3,     0,       0      },  // APIC timer tick rate, one-shot, stop
+    {"irq_alloc",            3,     0,       0      },  // Allocation-free IRQ paths (stubs)
+    {"jitter",               2,     0,       0      },  // Schedule-to-schedule jitter benchmarks
+    {"threaded_irq",         3,     0,       0      },  // Deferred IRQ handling (stubs)
+    {"gic",                  3,     0,       0      },  // ARM64 GICv3/v4 (stubs — x86_64 pass)
+    {"plic",                 3,     0,       0      },  // RISC-V64 PLIC (stubs — x86_64 pass)
 };
 
 static constexpr size_t k_expected_count_size =

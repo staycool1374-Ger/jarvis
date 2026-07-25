@@ -76,6 +76,12 @@ void register_spinlock_stress_tests();
 void register_atomic_context_switch_tests();
 void register_bench_syscall_latency_tests();
 void register_bench_irq_latency_tests();
+void register_apic_timer_tests();
+void register_irq_alloc_tests();
+void register_jitter_tests();
+void register_threaded_irq_tests();
+void register_gic_tests();
+void register_plic_tests();
 void register_gdt_tests();
 void register_idt_tests();
 void register_bootparams_tests();
@@ -272,10 +278,19 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_spinlock_stress_tests();
         register_atomic_context_switch_tests();
         register_bench_syscall_latency_tests();
-        register_bench_irq_latency_tests();
-        register_stress_tests();
-        register_starvation_deadlock_tests();
-        register_deadline_miss_tests();
+         register_bench_irq_latency_tests();
+         register_stress_tests();
+         register_starvation_deadlock_tests();
+
+         // v0.3.4 tests
+         register_apic_timer_tests();
+         register_irq_alloc_tests();
+         register_jitter_tests();
+         register_threaded_irq_tests();
+         register_gic_tests();
+         register_plic_tests();
+
+         register_deadline_miss_tests();
         register_wcet_overrun_tests();
         register_ss_deadline_tests();
         register_deadline_recovery_tests();
@@ -537,6 +552,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_microkernel_transition_tests();
          register_bench_syscall_latency_tests();
          register_bench_irq_latency_tests();
+         register_apic_timer_tests();
+         register_jitter_tests();
      }},
 
     {"bench_irq_latency",
@@ -553,6 +570,13 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"timing", []() { register_timing_tests(); }},
 
     {"spinlock_stress", []() { register_spinlock_stress_tests(); }},
+
+    {"apic_timer",  []() { register_apic_timer_tests(); }},
+    {"irq_alloc",   []() { register_irq_alloc_tests(); }},
+    {"jitter",      []() { register_jitter_tests(); }},
+    {"threaded_irq",[]() { register_threaded_irq_tests(); }},
+    {"gic",         []() { register_gic_tests(); }},
+    {"plic",        []() { register_plic_tests(); }},
 
     {"preemption_under_syscall",
      []() { register_preemption_under_syscall_tests(); }},

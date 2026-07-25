@@ -506,6 +506,30 @@ build/kernel/test/test_o1_scheduler.o: src/kernel/test/test_o1_scheduler.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_apic_timer.o: src/kernel/test/test_apic_timer.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_irq_alloc.o: src/kernel/test/test_irq_alloc.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_jitter.o: src/kernel/test/test_jitter.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_threaded_irqs.o: src/kernel/test/test_threaded_irqs.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_gic.o: src/kernel/test/test_gic.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_plic.o: src/kernel/test/test_plic.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_microkernel_transition.o: src/kernel/test/test_microkernel_transition.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@

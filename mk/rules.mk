@@ -47,7 +47,13 @@ SELFTEST_TESTS := src/kernel/test/test_lib.cpp \
                   src/kernel/test/test_waitpid.cpp \
                   src/kernel/test/test_shell_interaction.cpp \
                   src/kernel/test/test_hal_bits.cpp \
-                  src/kernel/test/test_o1_scheduler.cpp
+                  src/kernel/test/test_o1_scheduler.cpp \
+                  src/kernel/test/test_apic_timer.cpp \
+                  src/kernel/test/test_irq_alloc.cpp \
+                  src/kernel/test/test_jitter.cpp \
+                  src/kernel/test/test_threaded_irqs.cpp \
+                  src/kernel/test/test_gic.cpp \
+                  src/kernel/test/test_plic.cpp
 # Keep all non-test sources, but replace everything under src/kernel/test/
 # with only the selftest subset
 SRC_CXX_GENERIC := $(filter-out src/kernel/test/%.cpp, $(SRC_CXX_GENERIC))
