@@ -223,6 +223,14 @@
 #define CONFIG_MAX_PROCESS_PAGES 512
 #endif
 
+/// Size of the dedicated page-table pool in pages (4 KiB each).
+/// Page tables are allocated from this pool to avoid general PMM pressure.
+/// Default: 4096 pages = 16 MiB (enough for ~128 user processes with 32
+/// page-table pages each).
+#ifndef CONFIG_PAGE_TABLE_POOL_SIZE
+#define CONFIG_PAGE_TABLE_POOL_SIZE 4096
+#endif
+
 /// Maximum number of signal handlers per task.
 #ifndef CONFIG_MAX_SIGNAL_HANDLERS
 #define CONFIG_MAX_SIGNAL_HANDLERS 32

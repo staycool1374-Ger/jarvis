@@ -82,7 +82,7 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     }
 
     uint64_t pool_start_page = reserved_end_page;
-    uint64_t pool_size_pages = 4096;
+    uint64_t pool_size_pages = CONFIG_PAGE_TABLE_POOL_SIZE;
     if (pool_start_page + pool_size_pages < total_pages_) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
@@ -412,7 +412,7 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
     }
 
     uint64_t pool_start_page = reserved_end_page;
-    uint64_t pool_size_pages = 4096;
+    uint64_t pool_size_pages = CONFIG_PAGE_TABLE_POOL_SIZE;
     if (pool_start_page + pool_size_pages < total_pages_) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
