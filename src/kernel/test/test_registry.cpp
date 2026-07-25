@@ -271,11 +271,13 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_address_tests();
         register_pipe_tests();
         register_vfs_internal_tests();
-        register_gcov_tests();
-        register_debug_tests();
-        register_framebuffer_tests();
-        register_preemption_under_syscall_tests();
-        register_spinlock_stress_tests();
+         register_gcov_tests();
+         register_debug_tests();
+         register_framebuffer_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+         register_preemption_under_syscall_tests();
+#endif
+         register_spinlock_stress_tests();
         register_atomic_context_switch_tests();
         register_bench_syscall_latency_tests();
          register_bench_irq_latency_tests();
@@ -578,8 +580,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"gic",         []() { register_gic_tests(); }},
     {"plic",        []() { register_plic_tests(); }},
 
+#if CONFIG_VERSION_NUM >= 0x000307
     {"preemption_under_syscall",
      []() { register_preemption_under_syscall_tests(); }},
+#endif
 };
 
 static constexpr size_t g_test_class_count =
