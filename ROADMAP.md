@@ -500,12 +500,13 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] MemPool pool 8 increased from 4480→8192 bytes for larger TCB
   - [x] BufferPool: CONFIG_BUFFER_POOL_PAGES (128) pre-allocated PMM pages
   - [x] IPC message queue: embedded, no separate allocation
-  - [ ] Per-call new/delete elimination in IPC/Notify hot paths
-- [ ] Eliminate operator new/delete from Kernel
-  - [x] **Apply `lib/new.cpp` rewrite (stash@{3}):** fix `operator delete` calling `MemPool::free` on PMM-backed allocations — added `PmmAllocHdr` header + `MemPool::contains()` check (commit 175f301)
-  - [ ] Replace all new/delete with MemPool::alloc/free or placement new into static storage
-  - [ ] Add -fno-exceptions -fno-rtti -fno-threadsafe-statics to kernel CFLAGS
-  - [ ] Audit lib/stdcpp.cpp — remove ::operator new implementations
+  - [x] Per-call new/delete elimination in IPC/Notify hot paths
+- [x] Eliminate operator new/delete from Kernel
+  - [x] Replace all kernel new/delete with MemPool::alloc + placement new (ahci, ata_pio, virtio_blk, virtio_net, kernel.cpp Fat32Partition)
+  - [x] Add placement new declarations to types.hpp (globally available)
+  - [x] Keep ::operator new/delete in lib/new.cpp for services code + compiler ABI (deleting destructors on virtual classes)
+  - [x] -fno-exceptions -fno-rtti -fno-threadsafe-statics already in CXXFLAGS
+  - [x] Audit lib/stdcpp.cpp — file does not exist, no removal needed
 
 
 ### 0.3.6 Cross-Architecture Hard Real-Time HAL
