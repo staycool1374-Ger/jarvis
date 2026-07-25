@@ -20,6 +20,7 @@
 /// @brief Virtio-net NIC driver implementation.
 
 #include <kernel/driver/virtio_net.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <string.hpp>
 #include <logger.hpp>
@@ -116,7 +117,9 @@ bool virtio_net_probe(Nic &nic) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #endif
-    auto *dev = new VirtioNetDevice();
+    auto *dev_mem = kernel::MemPool::alloc(sizeof(VirtioNetDevice));
+    if (dev_mem == nullptr) return false;
+    auto *dev = new (dev_mem) VirtioNetDevice();
 #ifndef __clang__
 #pragma GCC diagnostic pop
 #endif
@@ -133,7 +136,7 @@ bool virtio_net_probe(Nic &nic) {
         !alloc_queue_pages(dev->tx_desc_phys, dev->tx_avail_phys,
                            dev->tx_used_phys, dev->tx_desc, dev->tx_avail,
                            dev->tx_used, dev->queue_size)) {
-        delete dev;
+        dev->~VirtioNetDevice(); kernel::MemPool::free(dev);
         return false;
     }
 
@@ -144,7 +147,7 @@ bool virtio_net_probe(Nic &nic) {
         !arch::virtio_setup_queue(transport, VIRTIO_NET_QUEUE_TX,
                                   dev->queue_size, dev->tx_desc_phys,
                                   dev->tx_avail_phys, dev->tx_used_phys)) {
-        delete dev;
+        dev->~VirtioNetDevice(); kernel::MemPool::free(dev);
         return false;
     }
 
@@ -153,7 +156,7 @@ bool virtio_net_probe(Nic &nic) {
         uint64_t phys = PMM::alloc_page();
         if (!phys) {
             Logger::error("virtio-net: OOM for RX buffer %d", i);
-            delete dev;
+            dev->~VirtioNetDevice(); kernel::MemPool::free(dev);
             return false;
         }
         dev->rx_bufs_phys[i] = phys;
@@ -168,7 +171,7 @@ bool virtio_net_probe(Nic &nic) {
     // Allocate TX DMA buffer
     dev->tx_buf_phys = PMM::alloc_page();
     if (!dev->tx_buf_phys) {
-        delete dev;
+        dev->~VirtioNetDevice(); kernel::MemPool::free(dev);
         return false;
     }
     // NOLINTNEXTLINE(performance-no-int-to-ptr)

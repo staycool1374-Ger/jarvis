@@ -20,6 +20,7 @@
 /// @brief Virtio block driver implementation.
 
 #include <kernel/driver/virtio_blk.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <logger.hpp>
 #include <string.hpp>
@@ -215,12 +216,14 @@ VirtioBlkDriver *VirtioBlkDriver::probe() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #endif
-    auto *drv = new VirtioBlkDriver(transport);
+    auto *drv_mem = kernel::MemPool::alloc(sizeof(VirtioBlkDriver));
+    if (!drv_mem) return nullptr;
+    auto *drv = new (drv_mem) VirtioBlkDriver(transport);
 #ifndef __clang__
 #pragma GCC diagnostic pop
 #endif
     if (!drv->init()) {
-        delete drv;
+        drv->~VirtioBlkDriver(); kernel::MemPool::free(drv);
         return nullptr;
     }
     return drv;

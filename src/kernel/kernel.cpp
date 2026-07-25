@@ -729,37 +729,48 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         auto *ahci = kernel::block::AhciDriver::probe();
         if (ahci) {
             debug_write("[BOOT] AHCI drive found\n");
-            auto *part = new kernel::fat32::Fat32Partition(*ahci);
-            if (part->mount()) {
-                debug_write("[BOOT] FAT32 partition mounted via AHCI\n");
-                kernel::vfs::fat32_partition_instance = part;
-                if (kernel::vfs::mount_fat32("/mnt") == 0) {
-                    debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
-                } else {
-                    debug_write("[BOOT] mount_fat32 failed\n");
-                }
+            auto *part_mem = kernel::MemPool::alloc(sizeof(kernel::fat32::Fat32Partition));
+            if (!part_mem) {
+                debug_write("[BOOT] FAT32 OOM\n");
             } else {
-                debug_write("[BOOT] FAT32 partition mount failed\n");
-                delete part;
+                auto *part = new (part_mem) kernel::fat32::Fat32Partition(*ahci);
+                if (part->mount()) {
+                    debug_write("[BOOT] FAT32 partition mounted via AHCI\n");
+                    kernel::vfs::fat32_partition_instance = part;
+                    if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                        debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                    } else {
+                        debug_write("[BOOT] mount_fat32 failed\n");
+                    }
+                } else {
+                    debug_write("[BOOT] FAT32 partition mount failed\n");
+                    part->~Fat32Partition();
+                    kernel::MemPool::free(part);
+                }
             }
         } else {
             debug_write("[BOOT] No AHCI drive found, trying legacy ATA PIO\n");
             auto *ata = kernel::block::AtaPioDriver::probe_first_drive();
             if (ata) {
                 debug_write("[BOOT] ATA drive found\n");
-                auto *part = new kernel::fat32::Fat32Partition(*ata);
-                if (part->mount()) {
-                    debug_write("[BOOT] FAT32 partition mounted via PIO\n");
-                    kernel::vfs::fat32_partition_instance = part;
-                    if (kernel::vfs::mount_fat32("/mnt") == 0) {
-                        debug_write(
-                            "[BOOT] FAT32 filesystem mounted at /mnt\n");
-                    } else {
-                        debug_write("[BOOT] mount_fat32 failed\n");
-                    }
+                auto *part_mem = kernel::MemPool::alloc(sizeof(kernel::fat32::Fat32Partition));
+                if (!part_mem) {
+                    debug_write("[BOOT] FAT32 OOM\n");
                 } else {
-                    debug_write("[BOOT] FAT32 partition mount failed\n");
-                    delete part;
+                    auto *part = new (part_mem) kernel::fat32::Fat32Partition(*ata);
+                    if (part->mount()) {
+                        debug_write("[BOOT] FAT32 partition mounted via PIO\n");
+                        kernel::vfs::fat32_partition_instance = part;
+                        if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                            debug_write("[BOOT] FAT32 filesystem mounted at /mnt\n");
+                        } else {
+                            debug_write("[BOOT] mount_fat32 failed\n");
+                        }
+                    } else {
+                        debug_write("[BOOT] FAT32 partition mount failed\n");
+                        part->~Fat32Partition();
+                        kernel::MemPool::free(part);
+                    }
                 }
             } else {
                 debug_write("[BOOT] No ATA drive found\n");
@@ -774,21 +785,27 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         auto *vblk = kernel::block::VirtioBlkDriver::probe();
         if (vblk) {
             debug_write("[BOOT] Virtio-blk drive found\n");
-            auto *part = new kernel::fat32::Fat32Partition(*vblk);
-            if (part->mount()) {
-                debug_write("[BOOT] FAT32 partition mounted via virtio-blk\n");
-                if (!kernel::vfs::fat32_partition_instance) {
-                    kernel::vfs::fat32_partition_instance = part;
-                    if (kernel::vfs::mount_fat32("/mnt") == 0) {
-                        debug_write(
-                            "[BOOT] FAT32 filesystem mounted at /mnt\n");
-                    } else {
-                        debug_write("[BOOT] mount_fat32 failed\n");
-                    }
-                }
+            auto *part_mem = kernel::MemPool::alloc(sizeof(kernel::fat32::Fat32Partition));
+            if (!part_mem) {
+                debug_write("[BOOT] FAT32 OOM\n");
             } else {
-                debug_write("[BOOT] FAT32 partition mount failed\n");
-                delete part;
+                auto *part = new (part_mem) kernel::fat32::Fat32Partition(*vblk);
+                if (part->mount()) {
+                    debug_write("[BOOT] FAT32 partition mounted via virtio-blk\n");
+                    if (!kernel::vfs::fat32_partition_instance) {
+                        kernel::vfs::fat32_partition_instance = part;
+                        if (kernel::vfs::mount_fat32("/mnt") == 0) {
+                            debug_write(
+                                "[BOOT] FAT32 filesystem mounted at /mnt\n");
+                        } else {
+                            debug_write("[BOOT] mount_fat32 failed\n");
+                        }
+                    }
+                } else {
+                    debug_write("[BOOT] FAT32 partition mount failed\n");
+                    part->~Fat32Partition();
+                    kernel::MemPool::free(part);
+                }
             }
         } else {
             debug_write("[BOOT] No virtio-blk device found\n");

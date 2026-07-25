@@ -16,6 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/// @file new.cpp
+/// @brief Heap operator new/delete (used by services code and compiler ABI).
+/// Kernel code uses explicit MemPool::alloc/free + placement new instead.
+
 #include <types.hpp>
 #include <string.hpp>
 #include <assert.hpp>
@@ -76,7 +80,6 @@ void* operator new(unsigned long size) {
     if (mempool_ready()) {
         void* p = kernel::MemPool::alloc(size);
         if (p) return p;
-        // Too large for MemPool — allocate from PMM directly
         p = pmm_alloc(size);
         if (p) return p;
     }
@@ -105,17 +108,17 @@ void* operator new[](unsigned long size) {
     return operator new(size);
 }
 
-void* operator new(unsigned long size, void* ptr) {
+void* operator new(unsigned long size, void* ptr) noexcept {
     (void)size;
     return ptr;
 }
 
-void* operator new[](unsigned long size, void* ptr) {
+void* operator new[](unsigned long size, void* ptr) noexcept {
     (void)size;
     return ptr;
 }
 
-void operator delete(void* p) {
+void operator delete(void* p) noexcept {
     if (!p) return;
     if (kernel::MemPool::contains(p)) {
         kernel::MemPool::free(p);
@@ -124,8 +127,8 @@ void operator delete(void* p) {
     }
 }
 
-void operator delete[](void* p) { operator delete(p); }
+void operator delete[](void* p) noexcept { operator delete(p); }
 
-void operator delete(void* p, unsigned long) { operator delete(p); }
+void operator delete(void* p, unsigned long) noexcept { operator delete(p); }
 
-void operator delete[](void* p, unsigned long) { operator delete(p); }
+void operator delete[](void* p, unsigned long) noexcept { operator delete(p); }

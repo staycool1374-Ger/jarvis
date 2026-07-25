@@ -22,6 +22,7 @@
 #if defined(CONFIG_ARCH_X86_64)
 
 #include <kernel/driver/ahci.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/driver/dma.hpp>
 #include <kernel/arch/pci.hpp>
 #include <kernel/arch/io.hpp>
@@ -547,12 +548,14 @@ AhciDriver *AhciDriver::probe() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #endif
-    auto *drv = new AhciDriver();
+    auto *drv_mem = kernel::MemPool::alloc(sizeof(AhciDriver));
+    if (!drv_mem) return nullptr;
+    auto *drv = new (drv_mem) AhciDriver();
 #ifndef __clang__
 #pragma GCC diagnostic pop
 #endif
     if (!drv || !drv->init()) {
-        delete drv;
+        drv->~AhciDriver(); kernel::MemPool::free(drv);
         return nullptr;
     }
     return drv;

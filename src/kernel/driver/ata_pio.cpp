@@ -20,6 +20,7 @@
 /// @brief ATA PIO driver implementation.
 
 #include <kernel/driver/ata_pio.hpp>
+#include <kernel/memory/mempool.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
 #include <string.hpp>
@@ -211,13 +212,15 @@ AtaPioDriver *AtaPioDriver::probe_first_drive() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-possible-null-dereference"
 #endif
-        auto *drv = new AtaPioDriver(ch.port_base, ch.drive_head);
+        auto *drv_mem = kernel::MemPool::alloc(sizeof(AtaPioDriver));
+        if (!drv_mem) continue;
+        auto *drv = new (drv_mem) AtaPioDriver(ch.port_base, ch.drive_head);
 #ifndef __clang__
 #pragma GCC diagnostic pop
 #endif
         if (drv->init())
             return drv;
-        delete drv;
+        drv->~AtaPioDriver(); kernel::MemPool::free(drv);
     }
     return nullptr;
 }

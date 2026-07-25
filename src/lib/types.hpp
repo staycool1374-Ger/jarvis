@@ -42,5 +42,10 @@ static constexpr size_t operator""_KiB(unsigned long long v) { return v * 1024; 
 /// @brief User-defined literal for mebibytes (multiplies by 1024^2).
 static constexpr size_t operator""_MiB(unsigned long long v) { return v * 1024 * 1024; }
 
+// Placement new — required for `new (ptr) Type(...)` syntax.
+// These do NOT allocate; they return the pointer unchanged.
+void* operator new(unsigned long size, void* ptr) noexcept;
+void* operator new[](unsigned long size, void* ptr) noexcept;
+
 /// @brief Pull in the central configuration header.
 #include <kernel/jarvis_config.h>
