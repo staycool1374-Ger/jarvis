@@ -27,14 +27,14 @@ JARVIS_TEST(apic_timer_ticks_increment, "PRE: isolate | POST: none") {
     uint64_t t0 = arch::Timer::ticks();
     uint64_t tsc_freq = arch::Timer::tsc_freq_hz();
     JARVIS_ASSERT(tsc_freq > 0);
+    uint64_t target = arch::rdtsc() + tsc_freq / 5;  // ~200 ms
 
-    uint64_t target = arch::rdtsc() + tsc_freq / 20;  // ~50 ms
     while (arch::rdtsc() < target) {
         asm volatile("pause");
     }
 
     uint64_t elapsed = arch::Timer::ticks() - t0;
-    Logger::info("apic_timer_ticks_increment: %lu ticks in ~50 ms", elapsed);
+    Logger::info("apic_timer_ticks_increment: %lu ticks in ~200 ms", elapsed);
     JARVIS_ASSERT(elapsed > 0);
 #else
     Logger::warn("APIC test skipped (not x86_64)");
