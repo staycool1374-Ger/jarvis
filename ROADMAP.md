@@ -509,11 +509,16 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] Audit lib/stdcpp.cpp — file does not exist, no removal needed
 
 ### 0.3.7 — Rate-Monotonic Scheduling Refactor
-  - [ ] **Re-enable `ipc_blocking` test class** — currently commented out in `test_registry.cpp` (`// SKIPPED: need RMS rework`). The blocking IPC tests (`ipc_send_sync_blocking`, `ipc_receive_blocking`, etc.) rely on priority-ordered wakeup semantics that require the scheduler to handle blocked-sender chains correctly under deadline pressure. Scope:
+  - [ ] **Re-enable `ipc_blocking` test class** — currently commented out in `test_registry.cpp:404` (`// SKIPPED: need RMS rework`). The blocking IPC tests (`ipc_send_sync_blocking`, `ipc_receive_blocking`, etc.) rely on priority-ordered wakeup semantics that require the scheduler to handle blocked-sender chains correctly under deadline pressure. Scope:
     - Audit `ready_queue_manager` for correct FIFO-within-priority ordering
     - Ensure `set_task_ready()` from IPC wakeup paths does not reorder tasks of equal priority
     - Validate blocked-sender lists (`MessageQueue::blocked_senders_head/tail`) maintain strict FIFO order
     - Add deadline-monitor coverage for blocking IPC scenarios
+  - [ ] **Fix `preemption_under_syscall`** — introduced by the v0.3.4 testbed merge (`289ed6b4`). Tests 1–2 pass, tests 3–4 crash with `effective_priority` UAF on `sporadic_server` (freed TCB still referenced in `all_tasks_` during test-isolation daemon teardown). Root cause:
+    - `cleanup_test_tasks()` → `reap_orphans()` frees daemon TCBs during test-class transitions
+    - A timer tick between reaper run and daemon re-creation iterates `all_tasks_` and hits a freed entry
+    - `is_poisoned_block` detects 0xDD-poisoned `sporadic_server` and panics
+    - Fix: audit `all_tasks_` iteration in `on_tick()` for stale entries; ensure `cleanup_test_tasks()` drains pending timer work before returning
   - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
 
 ### 0.3.6 Cross-Architecture Hard Real-Time HAL
