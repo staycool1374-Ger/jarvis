@@ -144,6 +144,7 @@ void Scheduler::dequeue_ready(TaskControlBlock &task) noexcept {
 }
 
 void Scheduler::set_task_ready(TaskControlBlock &task) noexcept {
+    arch::IrqGuard irq_guard{};
     task.state = TaskState::READY;
     enqueue_ready(task);
 }
@@ -204,6 +205,7 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                            sync::SpinLock *held_lock);
 
 void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
+    arch::IrqGuard irq_guard{};
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     dequeue_ready(task);
     task.state = TaskState::TERMINATED;

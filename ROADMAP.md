@@ -210,7 +210,7 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
 
 ### 0.3.5.x — RT-Scheduler Hardening & VMM Cleanup
 
-- [ ] **Consistent SpinLock usage in on_tick()** — The tick handler currently mixes atomic
+- [x] **Consistent SpinLock usage in on_tick()** — The tick handler currently mixes atomic
       operations with SpinLock for scheduler state access, allowing IRQs to fire during
       non-atomic sections (SpinLock does not disable IRQs).  This means `on_tick()` can read
       mid-mutation while the interrupted context holds the lock, leading to transient
