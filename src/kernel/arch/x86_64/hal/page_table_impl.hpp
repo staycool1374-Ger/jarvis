@@ -72,6 +72,30 @@ class ArchPageTable {
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
     /// @brief Number of entries per page-table level.
     static constexpr uint64_t ENTRIES = 512;
+
+    // ─── Page-table index constants (x86_64 4-level paging) ───────────────
+    static constexpr uint64_t PML4_SHIFT = 39;
+    static constexpr uint64_t PDPT_SHIFT = 30;
+    static constexpr uint64_t PD_SHIFT   = 21;
+    static constexpr uint64_t PT_SHIFT   = 12;
+    static constexpr uint64_t PML4_MASK  = 0x1FFULL << PML4_SHIFT;
+    static constexpr uint64_t PDPT_MASK  = 0x1FFULL << PDPT_SHIFT;
+    static constexpr uint64_t PD_MASK    = 0x1FFULL << PD_SHIFT;
+    static constexpr uint64_t PT_MASK    = 0x1FFULL << PT_SHIFT;
+
+    /// @brief Extract the PML4 index from a virtual address.
+    static inline size_t pml4_index(uint64_t vaddr) {
+        return (vaddr & PML4_MASK) >> PML4_SHIFT;
+    }
+    static inline size_t pdpt_index(uint64_t vaddr) {
+        return (vaddr & PDPT_MASK) >> PDPT_SHIFT;
+    }
+    static inline size_t pd_index(uint64_t vaddr) {
+        return (vaddr & PD_MASK) >> PD_SHIFT;
+    }
+    static inline size_t pt_index(uint64_t vaddr) {
+        return (vaddr & PT_MASK) >> PT_SHIFT;
+    }
 };
 
 } // namespace arch

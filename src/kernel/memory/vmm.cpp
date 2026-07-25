@@ -246,10 +246,10 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (kernel_pml4_ & ~0xFFFULL));
 
-    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
-    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
-    size_t pd_idx = (virt_addr & PD_MASK) >> PD_SHIFT;
-    size_t pt_idx = (virt_addr & PT_MASK) >> PT_SHIFT;
+    size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
+    size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
+    size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, true);
     auto *pd = get_table(pdpt, pdpt_idx, true);
@@ -326,10 +326,10 @@ void VMM::unmap_page(uint64_t virt_addr) {
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (kernel_pml4_ & ~0xFFFULL));
 
-    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
-    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
-    size_t pd_idx = (virt_addr & PD_MASK) >> PD_SHIFT;
-    size_t pt_idx = (virt_addr & PT_MASK) >> PT_SHIFT;
+    size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
+    size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
+    size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, false);
     if (!pdpt)
@@ -379,10 +379,10 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (kernel_pml4_ & ~0xFFFULL));
 
-    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
-    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
-    size_t pd_idx = (virt_addr & PD_MASK) >> PD_SHIFT;
-    size_t pt_idx = (virt_addr & PT_MASK) >> PT_SHIFT;
+    size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
+    size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
+    size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, false);
     if (!pdpt)
@@ -445,10 +445,10 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (pml4_phys & ~0xFFFULL));
 
-    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
-    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
-    size_t pd_idx = (virt_addr & PD_MASK) >> PD_SHIFT;
-    size_t pt_idx = (virt_addr & PT_MASK) >> PT_SHIFT;
+    size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
+    size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
+    size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, true, true);
     auto *pd = get_table(pdpt, pdpt_idx, true, true);
@@ -731,10 +731,10 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (pml4_phys & ~0xFFFULL));
 
-    size_t pml4_idx = (virt_addr & PML4_MASK) >> PML4_SHIFT;
-    size_t pdpt_idx = (virt_addr & PDPT_MASK) >> PDPT_SHIFT;
-    size_t pd_idx = (virt_addr & PD_MASK) >> PD_SHIFT;
-    size_t pt_idx = (virt_addr & PT_MASK) >> PT_SHIFT;
+    size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
+    size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
+    size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     if (!(pml4[pml4_idx] & PAGE_PRESENT))
         return 0;

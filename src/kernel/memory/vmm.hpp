@@ -202,16 +202,6 @@ class VMM {
     static constexpr uint64_t PAGE_HUGE = 1ULL << 7;
 #endif
 
-    static constexpr uint64_t PML4_SHIFT = 39;
-    static constexpr uint64_t PDPT_SHIFT = 30;
-    static constexpr uint64_t PD_SHIFT = 21;
-    static constexpr uint64_t PT_SHIFT = 12;
-
-    static constexpr uint64_t PML4_MASK = 0x1FFULL << PML4_SHIFT;
-    static constexpr uint64_t PDPT_MASK = 0x1FFULL << PDPT_SHIFT;
-    static constexpr uint64_t PD_MASK = 0x1FFULL << PD_SHIFT;
-    static constexpr uint64_t PT_MASK = 0x1FFULL << PT_SHIFT;
-
 #if defined(CONFIG_ARCH_RISCV64)
     // Sv39: 3-level page table
     // L0 (1GB): bits 38:30

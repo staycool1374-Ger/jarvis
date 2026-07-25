@@ -237,7 +237,7 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
       `TaskQueue` instances (the array already exists); eliminate the lazy-rebuild path by
       ensuring `next_task()` never orphans a dequeued task (see reschedule() → peek_highest()
       fix from v0.3.4).  Hard O(1) WCET for every scheduler path.
-- [ ] **Abstract VMM page-table helpers** — `free_stack_pdpt()` and `clone()` in vmm.cpp
+- [x] **Abstract VMM page-table helpers** — `free_stack_pdpt()` and `clone()` in vmm.cpp
       currently hardcode x86_64 shift/mask constants (e.g. `PD_MASK`, `PDPT_SHIFT`) and
       direct PML4/PDPT/PD/PT walks.  These must be replaced with arch-independent
       `ArchPageTable` virtual methods (already defined in `hal/page_table.hpp` but not yet

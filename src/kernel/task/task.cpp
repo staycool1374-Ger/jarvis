@@ -29,6 +29,7 @@
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/arch/page_table.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
@@ -876,10 +877,9 @@ TaskControlBlock *TaskControlBlock::find_child(uint64_t pid) noexcept {
 ///        Only frees intermediate page-table pages (PD, PT), not leaf pages
 ///        (those are freed separately by the user_stack_ loop in cleanup()).
 static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
-    constexpr uint64_t PDPT_SHIFT = 30;
     constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
     constexpr uint64_t PAGE_HUGE = 1ULL << 7;
-    size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
+    size_t st_pdpt_idx = arch::ArchPageTable::pdpt_index(mem::STACK_VADDR);
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
