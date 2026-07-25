@@ -104,6 +104,17 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
             }
         }
     }
+
+    // Register the default OOM handler based on CONFIG_OOM_POLICY.
+#if CONFIG_OOM_POLICY == 1 && !CONFIG_OOM_HOOK
+    if (!oom_handler_) {
+        oom_handler_ = []() -> bool {
+            kernel::Logger::fatal("OOM: no free pages (%lu remaining)",
+                                  free_pages_);
+            return false;
+        };
+    }
+#endif
 }
 
 /// @brief Linear-scan KERNEL allocation from the bitmap.

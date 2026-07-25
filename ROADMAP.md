@@ -268,7 +268,7 @@ returns 0; no crash; free restores capacity") legitimately passes. But this is *
 - [ ] **Admission control** — a task needing guaranteed memory is only admitted if the budget can be
       reserved; otherwise it is BLOCKED or rejected at spawn (link to §0.3.9 runelf admission control:
       `is_rm_schedulable` must also check memory schedulability).
-- [ ] **Controlled OOM reaction** — define kernel policy for OOM: task BLOCKED (retry with budget),
+- [x] **Controlled OOM reaction** — define kernel policy for OOM: task BLOCKED (retry with budget),
       KILL (deferred-kill list, §0.3.2 P5a), or monitored exception (NOTIFY_MONITOR, §0.3.2 P5b) —
       instead of "returns 0 and hopes the caller checks". Disabling the OOM handler (as the test does)
       must remain a test-only escape hatch, not production behavior.

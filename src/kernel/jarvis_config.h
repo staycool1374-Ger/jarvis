@@ -558,6 +558,15 @@
 #define CONFIG_OOM_HOOK 0
 #endif
 
+/// OOM reaction policy when PMM::alloc_page() cannot satisfy a request.
+/// 0 = LOG_ONLY — log warning and return 0 (caller must check).
+/// 1 = PANIC — panic with diagnostic (debug builds only; test-only
+///     escape hatch via CONFIG_OOM_HOOK disables this).
+/// Default: 0 (compatible with existing tests).
+#ifndef CONFIG_OOM_POLICY
+#define CONFIG_OOM_POLICY 0
+#endif
+
 /// When non-zero, disables PMM::alloc_page() and alloc_contiguous() after
 /// kernel::init() completes (PMM::mark_init_done()).  All memory must be
 /// pre-allocated at boot from static pools — any post-init allocation
