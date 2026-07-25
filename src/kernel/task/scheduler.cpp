@@ -645,6 +645,26 @@ TaskControlBlock *Scheduler::id_table_find(uint64_t id) {
     return nullptr;
 }
 
+bool Scheduler::charge_task_memory(uint64_t pages) {
+    auto *cur = current_task();
+    if (!cur || cur->memory_budget_pages_ == 0)
+        return true;  // unlimited
+    if (cur->memory_used_pages_ + pages > cur->memory_budget_pages_)
+        return false;  // over budget
+    cur->memory_used_pages_ += pages;
+    return true;
+}
+
+void Scheduler::credit_task_memory(uint64_t pages) {
+    auto *cur = current_task();
+    if (!cur || cur->memory_used_pages_ == 0)
+        return;
+    if (pages > cur->memory_used_pages_)
+        cur->memory_used_pages_ = 0;
+    else
+        cur->memory_used_pages_ -= pages;
+}
+
 // ---------------------------------------------------------------------------
 // on_tick — timer tick handler
 // ---------------------------------------------------------------------------

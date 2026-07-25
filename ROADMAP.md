@@ -263,7 +263,7 @@ returns 0; no crash; free restores capacity") legitimately passes. But this is *
   addresses the *detector*, not the OOM *policy*.
 
 **Required design work (future version — NOT a test fix, the test is correct):**
-- [ ] **Per-task / per-server memory budget & cap** — bound how much a task (or Sporadic Server) may
+- [x] **Per-task / per-server memory budget & cap** — bound how much a task (or Sporadic Server) may
       allocate, so one task cannot drain the pool (ties into §0.3.3 SporadicServer budgeting).
 - [ ] **Admission control** — a task needing guaranteed memory is only admitted if the budget can be
       reserved; otherwise it is BLOCKED or rejected at spawn (link to §0.3.9 runelf admission control:

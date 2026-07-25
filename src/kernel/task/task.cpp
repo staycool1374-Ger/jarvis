@@ -304,6 +304,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->remaining_ticks = period_ticks;
     tcb->wcet_ticks = 0;
     tcb->wcet_overrun_fired = false;
+    tcb->memory_budget_pages_ = 0;
+    tcb->memory_used_pages_ = 0;
     init_task_common(*tcb);
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
@@ -423,6 +425,8 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     tcb->deadline_miss_count = 0;
     tcb->executed_ticks = 0;
     tcb->remaining_ticks = period_ticks;
+    tcb->memory_budget_pages_ = 0;
+    tcb->memory_used_pages_ = 0;
     tcb->wcet_ticks = 0;
     tcb->wcet_overrun_fired = false;
     init_task_common(*tcb);

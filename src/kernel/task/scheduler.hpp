@@ -244,6 +244,14 @@ class Scheduler {
     /// @brief Sets the current running task.
     /// @param task Reference to the task to set as current.
     static void set_current(TaskControlBlock &task) noexcept;
+
+    /// @brief Charge @p pages to the current task's memory budget.
+    /// Returns false if charging would exceed the task's budget cap.
+    /// When budget_pages_ == 0 (unlimited), charging always succeeds.
+    static bool charge_task_memory(uint64_t pages);
+
+    /// @brief Credit @p pages back to the current task's memory usage.
+    static void credit_task_memory(uint64_t pages);
     /// @brief Safely switches the CPU off a task that is being terminated while
     ///        it is the current task, WITHOUT calling switch_to_task (which
     ///        resolves the live RSP owner and corrupts contexts when invoked

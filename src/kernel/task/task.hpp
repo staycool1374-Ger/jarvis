@@ -227,6 +227,11 @@ struct TaskControlBlock {
     uint64_t program_break;
     uint64_t program_break_start;
 
+    /// @brief Maximum pages this task may allocate from PMM.  0 = unlimited.
+    uint64_t memory_budget_pages_;
+    /// @brief Current pages charged to this task.
+    uint64_t memory_used_pages_;
+
     vfs::FdTable fd_table;
     char cwd[CONFIG_VFS_MAX_PATH];
     vfs::Vnode *cwd_vnode;
