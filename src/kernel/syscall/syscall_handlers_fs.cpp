@@ -30,6 +30,7 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/memory/checked_ptr.hpp>
 #include <kernel/memory/mempool.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <string.hpp>
 
@@ -241,11 +242,28 @@ uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
             f->offset += static_cast<uint64_t>(r);
         return static_cast<uint64_t>(r >= 0 ? r : 0);
     }
-    // BUGS.md#020 root cause #3: the user buffer is a user-space VA.  The VFS
-    // write ops (e.g. Terminal::write) dereference the pointer directly in
-    // kernel mode, so a user VA that is out of range or unmapped faults the
-    // kernel (#PF, CS=0x8).  Copy the payload into a kernel bounce buffer with
-    // fault recovery (safe_copy_from_user) and hand that to the op instead.
+    // Fast path: single-page user write via HHDM (no alloc, no copy).
+    // The HHDM maps all physical RAM 1:1 at arch::HHDM_OFFSET, so translating
+    // the user VA to a physical address gives a directly-readable kernel pointer.
+    {
+        uint64_t user_va = reinterpret_cast<uint64_t>(buf.unsafe_ptr());
+        uint64_t page_va = user_va & ~0xFFFULL;
+        uint64_t page_off = user_va & 0xFFFULL;
+        if (page_off + count <= 4096) {
+            uint64_t phys = VMM::virt_to_phys_in_pml4(page_va, cur->page_table_);
+            if (phys == 0)
+                return static_cast<uint64_t>(-1);
+            auto *kaddr = reinterpret_cast<uint8_t *>(arch::HHDM_OFFSET +
+                                                      phys + page_off);
+            int64_t r = f->vnode->ops->write(*f->vnode, kaddr, count,
+                                              f->offset);
+            if (r > 0)
+                f->offset += static_cast<uint64_t>(r);
+            return static_cast<uint64_t>(r >= 0 ? r : 0);
+        }
+    }
+    // Slow path: multi-page write — kernel bounce buffer with fault recovery.
+    // This path is rare (most writes fit in a single page).
     constexpr uint64_t kMaxWriteBounce = 1 << 20; // 1 MiB
     if (count > kMaxWriteBounce)
         return static_cast<uint64_t>(-1);
