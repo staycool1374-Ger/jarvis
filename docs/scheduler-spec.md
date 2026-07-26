@@ -192,10 +192,10 @@ Replace the destructive while-loop with a non-destructive peek:
 while (auto *candidate = ready_queue_.peek_highest()) {
     if (candidate == current_task_ptr_ ||
         (candidate->state != READY && candidate->state != RUNNING)) {
-        ready_queue_.dequeue_highest();  // remove from queue
-        continue;                        // candidate was orphaned, remove it
+        ready_queue_.dequeue_highest();  // corrective removal
+        continue;
     }
-    ready_queue_.dequeue_highest();  // commit
+    ready_queue_.dequeue_highest();      // commit
     return candidate;
 }
 return idle_task_;

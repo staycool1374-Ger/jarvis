@@ -387,7 +387,11 @@ bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
 
     // Priority inheritance: boost queue owner if sender is more urgent
     if (q.owner && task.priority > q.owner->priority) {
+        uint64_t old_prio = Scheduler::effective_priority(q.owner);
         q.owner->priority = task.priority;
+        uint64_t new_prio = Scheduler::effective_priority(q.owner);
+        if (old_prio != new_prio)
+            Scheduler::move_priority(*q.owner, old_prio, new_prio);
     }
     return true;
 }
@@ -412,13 +416,17 @@ void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
     // Priority inheritance: restore receiver priority based on remaining
     // blocked senders
     uint64_t max_prio = receiver.base_priority;
-    auto *cur = q.blocked_senders_head;
-    while (cur) {
-        if (cur->priority > max_prio)
-            max_prio = cur->priority;
-        cur = cur->blocked_next;
+    auto *cur_bs = q.blocked_senders_head;
+    while (cur_bs) {
+        if (cur_bs->priority > max_prio)
+            max_prio = cur_bs->priority;
+        cur_bs = cur_bs->blocked_next;
     }
+    uint64_t old_prio = Scheduler::effective_priority(&receiver);
     receiver.priority = max_prio;
+    uint64_t new_prio = Scheduler::effective_priority(&receiver);
+    if (old_prio != new_prio)
+        Scheduler::move_priority(receiver, old_prio, new_prio);
 }
 
 } // namespace kernel
