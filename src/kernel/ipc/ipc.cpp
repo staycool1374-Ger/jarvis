@@ -375,15 +375,17 @@ MessageQueue &IPC::queue(uint64_t task_id) {
 bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
     task.state = TaskState::BLOCKED;
     kernel::Scheduler::dequeue_ready(task);
-    task.blocked_next = nullptr;
+
+    // Insert into priority-ordered blocked-senders list (highest first).
+    // O(n) scan of blocked list, bounded by CONFIG_MAX_TASKS (64).
     task.blocked_on_queue = &q;
-    if (q.blocked_senders_tail) {
-        q.blocked_senders_tail->blocked_next = &task;
+    TaskControlBlock **pp = &q.blocked_senders_head;
+    while (*pp && (*pp)->priority >= task.priority)
+        pp = &(*pp)->blocked_next;
+    task.blocked_next = *pp;
+    *pp = &task;
+    if (!task.blocked_next)
         q.blocked_senders_tail = &task;
-    } else {
-        q.blocked_senders_head = &task;
-        q.blocked_senders_tail = &task;
-    }
 
     // Priority inheritance: boost queue owner if sender is more urgent
     if (q.owner && task.priority > q.owner->priority) {
