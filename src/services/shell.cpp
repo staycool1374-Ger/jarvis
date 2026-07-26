@@ -628,8 +628,8 @@ static const char *state_name(kernel::TaskState s) {
 }
 
 void Shell::cmd_tasks(int, const char**) {
-    Terminal::write("ID  NAME             STATE      PRIO  PERIOD   MEM_PG STACK_KiB CURRENT\n");
-    Terminal::write("--- ---------------- ---------- ----- ------- ------- --------- -------\n");
+    Terminal::write("ID  NAME             STATE      PRIO  PERIOD   MEM_PG STACK_KiB CPU_TICKS CURRENT\n");
+    Terminal::write("--- ---------------- ---------- ----- ------- ------- --------- --------- -------\n");
 
     auto *cur = kernel::Scheduler::current_task();
     auto count = kernel::Scheduler::task_count();
@@ -688,6 +688,14 @@ void Shell::cmd_tasks(int, const char**) {
         while (tmp >= 10) { --stk_pad; tmp /= 10; }
         for (uint64_t p = 1; p < stk_pad; ++p) Terminal::putchar(' ');
         print_uint(stack_kib);
+        Terminal::putchar(' ');
+
+        // CPU ticks (right-aligned, 9 chars)
+        tmp = t->executed_ticks;
+        uint64_t cpu_pad = 9;
+        while (tmp >= 10) { --cpu_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < cpu_pad; ++p) Terminal::putchar(' ');
+        print_uint(t->executed_ticks);
         Terminal::putchar(' ');
 
         // Current marker
