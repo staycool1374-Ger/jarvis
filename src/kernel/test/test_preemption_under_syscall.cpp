@@ -261,10 +261,17 @@ JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
         delete low;
     });
 
-    // Let the timer ISR drive scheduling naturally — high-pri tasks
-    // (priority 10) preempt and run, then terminate.  reschedule() in
-    // the busy-loop is safe: Phase 1 RMS rework uses IrqGuard, not
-    // scheduler_lock_, so it does not contend with the timer ISR.
+    // FIX(pret-test4): reschedule()+hlt() is REQUIRED here, not just hlt().
+    // When the harness (current task) calls hlt() without reschedule(), the
+    // timer ISR on_tick() sees the harness RUNNING with equal-priority peer
+    // tasks READY but, under harness_nonpreempt logic, declines to preempt.
+    // The peer tasks never run and the test times out.  reschedule() sets
+    // need_resched which prompt() checks before the hlt() entry, and also
+    // releases harness_nonpreempt (see the check around line 1811).
+    // Without reschedule(), hlt() waits for the next tick which may never
+    // preempt if the peer and harness share a priority level.
+    // Phase 1 RMS rework uses IrqGuard, not scheduler_lock_, so
+    // reschedule() does not contend with the timer ISR — safe to call here.
     for (int h = 0; h < 200 && starve_lowpri_progress_ < STARVE_TARGET; ++h) {
         Scheduler::reschedule();
         arch::hlt();

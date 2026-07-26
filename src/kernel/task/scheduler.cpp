@@ -112,6 +112,13 @@ void Scheduler::dequeue_ready(TaskControlBlock &task) noexcept {
     ready_queue_.remove(task, effective_priority(&task));
 }
 
+// FIX(rms-o1): Explicit priority movement in the O(1) ReadyQueue.  The queue
+// does NOT re-derive the node's bucket from tcb.priority — it stores nodes at
+// the position where they were originally enqueued.  Whenever tcb.priority or
+// effective_priority changes (PI boost, sporadic server replenish, deadline
+// miss demote), the caller MUST invoke move_priority with both old and new
+// values.  Failure to do so leaves the task in the wrong priority bucket,
+// causing missed preemptions or priority inversion.
 void Scheduler::move_priority(TaskControlBlock &task, uint64_t old_prio,
                                uint64_t new_prio) noexcept {
     ready_queue_.move_priority(task, old_prio, new_prio);
@@ -955,6 +962,12 @@ void Scheduler::on_tick() noexcept {
         }
 #endif
 #if CONFIG_DEADLINE_MONITOR_TASK
+        // FIX(pret): s_test_active_ disables the deadline-monitor wake and
+        // periodic reap_orphans() during test execution.  Without this guard,
+        // the reaper (tick 100 reap_orphans below) frees terminated test tasks
+        // before the test's ScopeGuard or snapshot_restore can clean them up,
+        // causing double-free use-after-free.  Test termination is handled
+        // entirely by the harness — the reaper must not race with it.
         if (!s_test_active_) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
             // on_tick already holds scheduler_lock_ (acquired at line 548 and
@@ -1060,11 +1073,26 @@ void Scheduler::on_tick() noexcept {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
+                // FIX(ss-race): is_poisoned_block checks for a freed TCB whose
+                // sporadic_server field has been poisoned (0xDDDD...) by the
+                // MemPool free path.  During daemon teardown the sporadic server
+                // object may be destroyed while a terminated task still has a
+                // stale pointer.  Without this guard the subsequent
+                // process_replenishments() call would dereference freed memory.
+                // This check is safe because no active task has a valid pointer
+                // that matches the poison pattern — the poison value is chosen
+                // to be outside any valid allocation.
                 if (is_poisoned_block(t->sporadic_server)) {
-                    // Freed TCB with poisoned sporadic_server (daemon teardown
-                    // race).  Skip — the task is being cleaned up.
                     continue;
                 }
+                // FIX(rms-o1): Effective priority may change after replenishment
+                // (e.g. budget restored → sporadic server priority rises).
+                // The O(1) queue does not re-derive position from tcb.priority,
+                // so we MUST call move_priority explicitly.  Skipping this leaves
+                // the task at its depleted (lower) bucket, starving it until the
+                // next reschedule, which may never come if the task is blocked.
+                // Skip when t == cur — the current task is not in the ready
+                // queue and move_priority on a non-enqueued task is undefined.
                 {
                     uint64_t old_eff = effective_priority(t);
                     t->sporadic_server->process_replenishments(current_tick);
@@ -1101,10 +1129,16 @@ void Scheduler::on_tick() noexcept {
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
+    // FIX(pret): reap_orphans runs every 100 ticks but is gated on
+    // !s_test_active_ to prevent a UAF race with test ScopeGuards.  The test
+    // harness owns its task lifecycle — it calls remove_task+cleanup+delete in
+    // the ScopeGuard.  If the reaper frees the task first, the ScopeGuard's
+    // delete double-frees the MemPool block.  Test tasks are short-lived and
+    // few, so deferring reaping to the post-test snapshot_restore is safe and
+    // avoids the race entirely.  The 100-tick batching ensures ammortised O(1)
+    // cost in production while not being so infrequent that zombie count grows
+    // unbounded (CONFIG_MAX_TASKS=64 caps the worst case).
     if (tick_counter % 100 == 0 && !s_test_active_) {
-        // Skip reaping during test execution — terminated test tasks are
-        // cleaned up by the test's ScopeGuard or snapshot_restore.  The
-        // reaper would free them first, causing double-free UAF.
         reap_orphans();
         if (lock_acquired) {
             daemon::restart_stale_daemons();
@@ -1483,12 +1517,13 @@ void Scheduler::cleanup_zombies() noexcept {
         // underflow.
         if (t->state != TaskState::TERMINATED)
             continue;
-        // BUGS.md#019/#020: never reap the task that is currently executing
-        // (current_task_ptr_).  Freeing it here reclaims the very kernel stack
-        // we are running on and/or leaves current_task_ptr_ aliasing a freed
-        // block that a later create() reuses and memset()s to zero — zeroing
-        // the live task's context (ctx.rip=0) and corrupting the scheduler.
-        // reap_orphans() already skips the current task; mirror that guard.
+        // FIX(reap-self): BUGS.md#019/#020 — never reap the task that is
+        // currently executing (current_task_ptr_).  Freeing it here reclaims the
+        // very kernel stack we are running on and/or leaves current_task_ptr_
+        // aliasing a freed block that a later create() reuses and memset()s to
+        // zero — zeroing the live task's context (ctx.rip=0) and corrupting the
+        // scheduler.  reap_orphans() already skips the current task; mirror that
+        // guard for all terminate paths.
         if (t == current_task_ptr_)
             continue;
         zombies[num_zombies++] = t;
