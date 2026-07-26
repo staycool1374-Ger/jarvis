@@ -178,9 +178,6 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write,
         Scheduler::remove_task(*low);
         low->cleanup();
         delete low;
-        // VFS has no unmount API, but the created file must be removed so its
-        // tmpfs inode/block (MemPool[2]/[3]) are released; otherwise the test
-        // leaks resources that ResourceTracker flags.
         vfs::unlink("/tmp_preempt_prio/data.bin");
     });
 
