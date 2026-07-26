@@ -202,3 +202,29 @@ All mandatory coding rules, safety constraints, and error-handling patterns are 
 If a test fails or a regression is detected:
 - Immediately inspect the `debug_switch_ring` state using the GDB panic surveillance targets (`make test-gdb`) to extract `entry_addr`, `exit_rip`, and `consumed_ticks` of the faulting task sequence.
 - Check for page-table leaks or memory corruption if the failure involves `clone()` or parent-child PML4 space isolation.
+
+# Test Execution Rules (MANDATORY)
+
+## Read test-history.txt Before Running Tests
+- Parse `test-history.txt` to extract per-class state: last PASSED/FAILED counts, elapsed time, and any abnormal terminations (TIMEOUT/PANIC).
+- Use the **last-known elapsed time × 1.5** as the timeout for the next run. Never use a fixed arbitrary timeout.
+- If no row exists for the class, default to 60s for class runs, 180s for `all`.
+- Example: `2026-07-26 14:03:22 scheduler PASSED: 23 FAILED: 0 TIME: 45123ms` → use 68s timeout.
+
+## Choose the Right Test Target
+| Scenario | Target | Reason |
+|----------|--------|--------|
+| Kernel bugfix in subsystem X | `make execute-test x86_64 debug <class-X>` | Fastest feedback, isolates the subsystem |
+| Test harness / test-environment fix | `make execute-test x86_64 debug testrunner` | Validates harness integrity without kernel noise |
+| Release gate or full regression check | `make execute-test x86_64 debug all` | Only acceptable after per-class passes |
+| CI / selftest | `make execute-test x86_64 debug selftest` | Matches CI pipeline |
+
+**Never** use `all` or `run_all_classes.sh` during active bugfixing — both are too time-consuming.
+
+**Never** run a test class without a concrete and meaningful code change since the last run. Running tests just to check "was this bug pre-existing?" is forbidden — the bug must be fixed regardless.
+
+## Timeout Discipline
+- When running a specific class, use the concrete timeout derived from `test-history.txt` as described above.
+- Never increase the timeout if the number of tests has not increased significantly (more than +10% tests or +50% new IPC-heavy tests).
+- If a test class times out at the expected timeout, diagnose the hang — do not blindly increase the timeout.
+- The default Makefile watchdog (10s stall detection) catches immediate freezes. Use the class-specific timeout as the overall `timeout` wrapper.
