@@ -463,13 +463,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"slab_reclaim", []() { register_slab_reclaim_tests(); }},
 
-#if CONFIG_VERSION_NUM >= 0x000307
     {"ipc_blocking", []() { register_ipc_blocking_tests(); }},
-#endif
     {"ipc",
      []() {
          register_ipc_tests();
-         // register_ipc_blocking_tests();  // SKIPPED: need RMS rework
+          register_ipc_blocking_tests();
          register_ipc_lock_free_tests();
          register_ipc_robustness_tests();
          register_pipe_tests();
