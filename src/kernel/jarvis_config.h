@@ -519,6 +519,13 @@
 #define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
+/// Maximum number of zombies in the zombie list before the on_tick watchdog
+/// force-flushes.  0 disables the watchdog (idle-only cleanup).
+/// Default: 32.
+#ifndef CONFIG_ZOMBIE_STARVATION_LIMIT
+#define CONFIG_ZOMBIE_STARVATION_LIMIT 32
+#endif
+
 /// Enable IRQ latency histogram (64 buckets, 0-100 μs).
 /// Records latency at ISR entry via rdtsc. When enabled, the histogram is
 /// populated on every IRQ and can be dumped via kernel shell or API.

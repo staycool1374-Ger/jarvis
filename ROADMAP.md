@@ -473,14 +473,17 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 - Configurable via `CONFIG_IDLE_CLEANUP` (default 1 in hard-RT builds, 0 for legacy ISR reaper).
 
 **Required work:**
-- [ ] Design `ZombieList` (intrusive singly-linked list anchored in scheduler; push/pop both O(1))
-- [ ] Implement `release_zombie(task)` — unregister from all scheduler structures, enqueue, never touch again
-- [ ] Refactor `Scheduler::terminate()` and all `state = TERMINATED` paths to use `release_zombie` when the task is not the current task
-- [ ] Implement `IdleTask::cleanup_step()` — pop one zombie, free one resource chunk, check cycle budget, reschedule if exhausted
-- [ ] Replace `reap_orphans()` with zombie-list handoff; keep a safety watchdog that flushes the list if idle hasn't run (starvation guard)
-- [ ] Ensure snapshot/restore drains the zombie list before save
-- [ ] Add `CONFIG_CLEANUP_MAX_CYCLES_PER_STEP` (default 1000) and a WCET benchmark for cleanup steps
-- [ ] Tests: `test_idle_cleanup_simple` — terminate a task, verify resources freed within N idle cycles; `test_idle_cleanup_no_deadline_impact` — terminate large task during RT workload, verify no deadline miss
+- [x] Design `ZombieList` — see `docs/zombie-list-spec.md`
+- [x] Implement `release_zombie(task)` + `flush_zombies()` + `drain_zombie_list()`
+- [x] Refactor `Scheduler::terminate()` to use `release_zombie`
+- [x] Implement `Scheduler::cleanup_step()` — idle-task cleanup, called from idle main loop
+- [x] Safety watchdog in `on_tick()` — `flush_zombies()` every 100 ticks
+- [x] Snapshot/restore: drain zombie list + reset after restore
+- [x] Add `CONFIG_ZOMBIE_STARVATION_LIMIT` (default 32)
+- [x] Remove `s_reap_in_progress`, `cleanup_zombies()`, legacy reaper guards
+- [x] Tests: `zombie_cleanup_step_frees_resources`, `zombie_drain_multiple`
+- [ ] WCET benchmark for cleanup steps (deferred)
+- [ ] `test_idle_cleanup_no_deadline_impact` (deferred)
 
  - [ ] Stack Allocation — Fixed, Guarded, No Growth
   - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)

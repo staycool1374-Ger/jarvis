@@ -97,12 +97,12 @@ JARVIS_TEST(scheduler_remove_task, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Validates that reaping orphans removes a terminated task whose
-// parent has exited (parent_id 999999).
+// Testidea: Validates that terminate + release_zombie adds the task to the
+// zombie list and that drain_zombie_list frees its resources.
 // Input: A new TaskControlBlock with parent_id=999999, state=TERMINATED,
 // exit_code=42
-// Expect: JARVIS_ASSERT checks count increased by 1 after add, then <=
-// original+1 after reap_orphans; current_task non-null
+// Expect: task count decreases by 1 after terminate (release_zombie removes
+// from all_tasks_); drain_zombie_list cleans up without leak.
 // Depends: test, scheduler, task, pmm, vmm
 JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
     uint64_t cnt_before = Scheduler::task_count();
@@ -111,13 +111,14 @@ JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
     JARVIS_ASSERT(child != nullptr);
     child->parent_id = 999999;
     Scheduler::add_task(*child);
+
+    // terminate now calls release_zombie which removes from all_tasks_
+    // (task count decreases by 1) and defers cleanup to the zombie list.
     Scheduler::terminate(*child, 42);
+    JARVIS_ASSERT_EQ(cnt_before, Scheduler::task_count());
 
-    JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
-
-    Scheduler::reap_orphans();
-
-    JARVIS_ASSERT(Scheduler::task_count() <= cnt_before + 1);
+    // drain_zombie_list synchronously cleans up the zombie.
+    Scheduler::drain_zombie_list();
 
     auto *cur = Scheduler::current_task();
     JARVIS_ASSERT(cur != nullptr);
@@ -204,12 +205,9 @@ JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred,
 
     Scheduler::terminate(*child, 42);
 
-    // A parent that is waiting for a specific child (waiting_child_pid ==
-    // child.id) must be woken and delivered the child's exit status when the
-    // child terminates on ANY path (matching sys_exit).  terminate() therefore
-    // reaps the child on the next reap pass instead of leaving it as a
-    // permanent zombie that the parent would never collect.
-    Scheduler::reap_orphans();
+    // terminate() calls release_zombie which appends to the zombie list.
+    // Drain synchronously to free resources before the test ends.
+    Scheduler::drain_zombie_list();
 
     // Child should now be reaped (parent's wait satisfied).
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);

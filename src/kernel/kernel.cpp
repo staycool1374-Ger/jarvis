@@ -319,7 +319,7 @@ void init_task_main() {
     // ── Reap loop — block until a child exits ───────────────────
     for (;;) {
         arch::pause();
-        kernel::Scheduler::reap_orphans();
+        kernel::Scheduler::drain_zombie_list();
 
         kernel::Message msg{};
         while (kernel::IPC::recv(msg)) {
@@ -677,9 +677,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         debug_write(" priority=");
         debug_write_hex(victim->priority);
         debug_write("\n");
-        victim->state = kernel::TaskState::TERMINATED;
-        victim->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(9));
-        kernel::Scheduler::reap_orphans();
+        kernel::Scheduler::terminate(*victim,
+            static_cast<uint64_t>(-static_cast<int64_t>(9)));
+        kernel::Scheduler::drain_zombie_list();
         return true;
     });
 #ifndef __clang__

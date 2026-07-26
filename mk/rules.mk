@@ -48,6 +48,7 @@ SELFTEST_TESTS := src/kernel/test/test_lib.cpp \
                   src/kernel/test/test_shell_interaction.cpp \
                   src/kernel/test/test_hal_bits.cpp \
                   src/kernel/test/test_o1_scheduler.cpp \
+                  src/kernel/test/test_zombie_cleanup.cpp \
                   src/kernel/test/test_apic_timer.cpp \
                   src/kernel/test/test_irq_alloc.cpp \
                   src/kernel/test/test_jitter.cpp \
