@@ -508,11 +508,7 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
 ### 0.3.7 — Rate-Monotonic Scheduling Refactor
   - [x] **Re-enable `ipc_blocking` test class** — 4/4 PASS. Root cause: `reschedule()` held `scheduler_lock_`, preventing timer ISR from applying deferred switch. Fix: Phase 1 RMS rework — `reschedule()` uses `IrqGuard` instead of `scheduler_lock_`. See `docs/rms-rework-plan.md`.
-  - [ ] **Fix `preemption_under_syscall`** — introduced by the v0.3.4 testbed merge (`289ed6b4`). Tests 1–2 pass, tests 3–4 crash with `effective_priority` UAF on `sporadic_server` (freed TCB still referenced in `all_tasks_` during test-isolation daemon teardown). Root cause:
-    - `cleanup_test_tasks()` → `reap_orphans()` frees daemon TCBs during test-class transitions
-    - A timer tick between reaper run and daemon re-creation iterates `all_tasks_` and hits a freed entry
-    - `is_poisoned_block` detects 0xDD-poisoned `sporadic_server` and panics
-    - Fix: audit `all_tasks_` iteration in `on_tick()` for stale entries; ensure `cleanup_test_tasks()` drains pending timer work before returning
+  - [x] **Fix `preemption_under_syscall`** — 4/4 PASS. Root cause: daemon teardown race + stale `sporadic_server` access in `on_tick()`. Fix: `is_poisoned_block` guard in `on_tick()` SS iteration; `s_test_active_` guards `reap_orphans()` in tick; test 4 rewritten to use `reschedule()` + `hlt()` instead of broken `ScopedCurrentTask` + manual `on_tick()` pattern.
   - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
 
 ### 0.3.6 Cross-Architecture Hard Real-Time HAL

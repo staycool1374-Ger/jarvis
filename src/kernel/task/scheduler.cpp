@@ -1060,6 +1060,11 @@ void Scheduler::on_tick() noexcept {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
+                if (is_poisoned_block(t->sporadic_server)) {
+                    // Freed TCB with poisoned sporadic_server (daemon teardown
+                    // race).  Skip — the task is being cleaned up.
+                    continue;
+                }
                 {
                     uint64_t old_eff = effective_priority(t);
                     t->sporadic_server->process_replenishments(current_tick);
@@ -1096,7 +1101,11 @@ void Scheduler::on_tick() noexcept {
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
-    if (tick_counter % 100 == 0) {
+    if (tick_counter % 100 == 0 && !s_test_active_) {
+        // Skip reaping during test execution — the test framework's
+        // snapshot_restore cleans up orphaned tasks between tests.  The
+        // reaper would free terminated test tasks before the test's
+        // ScopeGuard can clean them up, leading to double-free / UAF.
         reap_orphans();
         if (lock_acquired) {
             daemon::restart_stale_daemons();
