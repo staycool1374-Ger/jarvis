@@ -290,9 +290,19 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     init_task_common(*tcb);
 
     size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+#if CONFIG_MEMORY_BUDGET
+    if (!Scheduler::reserve_memory_pages(stack_pages)) {
+        Logger::warn("TCB::create: budget OOM for %zu-page stack", stack_pages);
+        delete tcb;
+        return nullptr;
+    }
+#endif
     uint64_t stack_phys = PMM::alloc_contiguous(stack_pages);
     if (!stack_phys) {
         Logger::warn("TCB::create: PMM OOM for %zu-page stack", stack_pages);
+#if CONFIG_MEMORY_BUDGET
+        Scheduler::release_memory_pages(stack_pages);
+#endif
         delete tcb;
         return nullptr;
     }
@@ -976,6 +986,9 @@ void TaskControlBlock::cleanup() noexcept {
         for (size_t i = 0; i < pages; ++i) {
             PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
         }
+#if CONFIG_MEMORY_BUDGET
+        Scheduler::release_memory_pages(pages);
+#endif
         stack_phys_ = 0;
         kernel_stack = nullptr;
         kernel_stack_top = 0;

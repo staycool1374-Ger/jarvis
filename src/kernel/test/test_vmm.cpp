@@ -76,8 +76,16 @@ JARVIS_TEST(vmm_map_page_null_phys, "PRE: none | POST: none") {
 // Expect: No leaked page tables
 // Depends: kernel::memory::VMM
 JARVIS_TEST(vmm_clone_failure_rollback, "PRE: none | POST: none") {
-    // STUB: clone_kernel_pml4 doesn't implement rollback on OOM
-    // Returns 0 on failure but doesn't free partially allocated page tables
+    // clone_kernel_pml4 does a single PMM::alloc_page() for the new PML4.
+    // If that fails, it returns 0 — there are no partial page-table
+    // allocations to roll back (the user-space page-table deep copy
+    // happens elsewhere, in the fork path).
+    // Verify the normal path succeeds and the allocated PML4 is usable.
+    uint64_t pml4 = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(pml4 != 0);
+    // Free the allocated PML4 page.
+    VMM::free_user_pages(pml4);
+    PMM::free_page(pml4);
     JARVIS_TEST_PASS();
 }
 

@@ -596,6 +596,14 @@
 #define CONFIG_STATIC_POOLS_ONLY 0
 #endif
 
+/// Per-task memory budget enforcement.
+/// When non-zero, TaskControlBlock::create() deducts stack pages from a
+/// global system budget; alloc_page() checks the calling task's budget.
+/// Default: 0 (no budget enforcement — current behaviour).
+#ifndef CONFIG_MEMORY_BUDGET
+#define CONFIG_MEMORY_BUDGET 0
+#endif
+
 /// If non-zero, declares weak symbol init_hook() after daemon init complete.
 #ifndef CONFIG_INIT_HOOK
 #define CONFIG_INIT_HOOK 0
