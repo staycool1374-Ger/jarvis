@@ -173,9 +173,36 @@ void Scheduler::flush_zombies(uint64_t max_flush) noexcept {
 }
 
 void Scheduler::drain_zombie_list() noexcept {
-    arch::IrqGuard irq_guard{};
-    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    flush_zombies(UINT64_MAX);
+    // Pop zombies under IRQ-disable (ISR watchdog can't race).
+    // No scheduler_lock_: cleanup doesn't touch scheduler structures,
+    // and single-core with IRQs off is sufficient for list ops.
+    // Holding the lock during cleanup (PMM free, VMM unmap) would
+    // starve the timer ISR and prevent task scheduling.
+    for (;;) {
+        TaskControlBlock *task;
+        {
+            arch::IrqGuard irq_guard{};
+            task = zombie_head_;
+            if (!task)
+                return;
+            if (task->magic != TaskControlBlock::TCB_MAGIC) {
+                zombie_head_ = nullptr;
+                zombie_tail_ = nullptr;
+                zombie_count_ = 0;
+                continue;
+            }
+            zombie_head_ = task->zombie_next_;
+            if (!zombie_head_)
+                zombie_tail_ = nullptr;
+            task->zombie_next_ = nullptr;
+            if (task->in_ready_queue_)
+                ready_queue_.remove(*task, effective_priority(task));
+            __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+        }
+        // IRQs on — cleanup and free without holding any lock.
+        task->cleanup();
+        MemPool::free(task);
+    }
 }
 
 void Scheduler::cleanup_step() noexcept {
