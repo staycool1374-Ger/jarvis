@@ -872,6 +872,10 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 /// destroys IPC objects, and notifies the daemon manager. After this call the
 /// TCB must not be used except for MemPool::free().
 void TaskControlBlock::cleanup() noexcept {
+    if (!TaskControlBlock::is_valid(this)) {
+        Logger::raw_write("[CLEANUP] skip poisoned TCB\n");
+        return;
+    }
     state = TaskState::REAPED;
 
     // Pinned TCBs are part of the test-isolation baseline (snapshot).
@@ -911,17 +915,21 @@ void TaskControlBlock::cleanup() noexcept {
     // (blocked_on_queue != nullptr) we must detach now — otherwise the
     // queue owner's cleanup() will walk a dangling pointer after we are
     // freed and poisoned.
-    if (blocked_on_queue) {
+    if (blocked_on_queue &&
+        reinterpret_cast<uintptr_t>(blocked_on_queue) >= 0xFFFF800000000000ULL) {
         auto &q = *blocked_on_queue;
-        if (q.blocked_senders_head == this) {
+        if (TaskControlBlock::is_valid(q.blocked_senders_head) &&
+            q.blocked_senders_head == this) {
             q.blocked_senders_head = blocked_next;
-            if (q.blocked_senders_tail == this)
+            if (TaskControlBlock::is_valid(q.blocked_senders_tail) &&
+                q.blocked_senders_tail == this)
                 q.blocked_senders_tail = nullptr;
         } else {
             auto *prev = q.blocked_senders_head;
-            while (prev && prev->blocked_next != this)
+            while (prev && TaskControlBlock::is_valid(prev) &&
+                   prev->blocked_next != this)
                 prev = prev->blocked_next;
-            if (prev) {
+            if (prev && TaskControlBlock::is_valid(prev)) {
                 prev->blocked_next = blocked_next;
                 if (q.blocked_senders_tail == this)
                     q.blocked_senders_tail = prev;

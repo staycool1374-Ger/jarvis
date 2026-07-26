@@ -75,6 +75,8 @@ TaskControlBlock *ReadyQueueManager::peek_highest() noexcept {
 void ReadyQueueManager::remove(TaskControlBlock &tcb,
                                 uint64_t priority) noexcept {
     (void)priority;
+    if (!TaskControlBlock::is_valid(&tcb))
+        return;
     // Locate the queue that physically contains this node by walking the
     // intrusive links (the authoritative membership), not by trusting
     // rq_priority_ or in_ready_queue_.  A priority boost/drop can change

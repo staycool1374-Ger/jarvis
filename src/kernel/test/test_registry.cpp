@@ -308,9 +308,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_resource_exhaustion_tests();
         register_block_device_tests();
         register_fat32_tests();
-        register_vfs_fat32_tests();
-        register_ipc_blocking_tests();
-        register_ipc_lock_free_tests();
+         register_vfs_fat32_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+         register_ipc_blocking_tests();
+#endif
+         register_ipc_lock_free_tests();
         register_vfsd_authorization_tests();
         register_textutils_tests();
         register_shell_interaction_tests();
@@ -403,7 +405,9 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_resource_exhaustion_tests();
     }},
 
-    // {"ipc_blocking", []() { register_ipc_blocking_tests(); }},
+#if CONFIG_VERSION_NUM >= 0x000307
+    {"ipc_blocking", []() { register_ipc_blocking_tests(); }},
+#endif
     {"ipc",
      []() {
          register_ipc_tests();
