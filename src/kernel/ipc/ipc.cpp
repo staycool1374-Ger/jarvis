@@ -167,20 +167,23 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
         if (!cur)
             return false;
 
+        // Self-send to a full queue can never be drained — return immediately.
+        if (dest_id == cur->id)
+            return false;
+
         block_sender(tcb->msg_queue, *cur);
         cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
-        // reschedule() is deferred (INV-4) — the current task is still
+        // reschedule() is deferred (INV-4) — the current task continues
         // running with state=BLOCKED.  Spin-wait until the timer ISR
-        // actually dispatches us away, the receiver drains the queue,
-        // and we are woken (state → READY).
-        while (cur->state == TaskState::BLOCKED) {
-            arch::pause();
-            // Re-load cur — current_task may change after reschedule
-            cur = Scheduler::current_task();
-            if (!cur)
-                break;
+        // dispatches the receiver, which drains and wakes us.
+        // Skip spin-wait if interrupts are off (e.g. under IrqGuard):
+        // the ISR can't fire, so the receiver can never run.
+        if (arch::interrupts_enabled()) {
+            while (cur->state == TaskState::BLOCKED) {
+                arch::pause();
+            }
         }
 
         // Woken up — destination may have been cleaned up while we were
