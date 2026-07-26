@@ -641,10 +641,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"gic",         []() { register_gic_tests(); }},
     {"plic",        []() { register_plic_tests(); }},
 
-#if CONFIG_VERSION_NUM >= 0x000307
     {"preemption_under_syscall",
      []() { register_preemption_under_syscall_tests(); }},
-#endif
 };
 
 static constexpr size_t g_test_class_count =

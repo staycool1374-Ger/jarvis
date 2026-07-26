@@ -264,21 +264,18 @@ JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
         delete low;
     });
 
-    // Use ScopedCurrentTask (IF=0) to avoid timer ISR interference with
-    // the set_current+on_tick pattern.  Under IF=0 the task lambdas never
-    // execute (no real context switches), but we verify the scheduler's
-    // tick-accounting operates correctly for the designated task.
-    {
-        ScopedCurrentTask scope(*low);
-        uint64_t ticks_before = low->executed_ticks;
-        for (int tick = 0; tick < 100; ++tick) {
-            low->state = TaskState::RUNNING;
-            Scheduler::on_tick();
-        }
-        JARVIS_ASSERT_FMT(low->executed_ticks == ticks_before + 100,
-                          "Low task executed_ticks %lu (expected %lu)",
-                          low->executed_ticks, ticks_before + 100);
+    // Let the timer ISR drive scheduling naturally — high-pri tasks
+    // (priority 10) preempt and run, then terminate.  reschedule() in
+    // the busy-loop is safe: Phase 1 RMS rework uses IrqGuard, not
+    // scheduler_lock_, so it does not contend with the timer ISR.
+    for (int h = 0; h < 200 && starve_lowpri_progress_ < STARVE_TARGET; ++h) {
+        Scheduler::reschedule();
+        arch::hlt();
     }
+
+    JARVIS_ASSERT_FMT(starve_lowpri_progress_ >= STARVE_TARGET,
+                      "Low-pri task reached %lu (expected >= %lu)",
+                      starve_lowpri_progress_, STARVE_TARGET);
 
     JARVIS_TEST_PASS();
 }
