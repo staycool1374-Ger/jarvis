@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 824,    0,       0      },  // every registration function (811 after TF_BENCH filter)
+    {"all",                 863,    0,       0      },  // every registration function (863 = 824 + 39 new v0.3.5)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
@@ -65,6 +65,12 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"threaded_irq",         3,     0,       0      },  // Deferred IRQ handling (stubs)
     {"gic",                  3,     0,       0      },  // ARM64 GICv3/v4 (stubs — x86_64 pass)
     {"plic",                 3,     0,       0      },  // RISC-V64 PLIC (stubs — x86_64 pass)
+    {"static_pools",          6,     0,       0      },  // CONFIG_STATIC_POOLS_ONLY, MemPool::reserve
+    {"stack_profiler",        6,     0,       0      },  // kernel stack depth profiling
+    {"stack_alloc",           8,     0,       0      },  // stack allocation, guard pages, overflow hook
+    {"page_tables",           7,     0,       0      },  // page-table pool, budget, no sharing
+    {"buffer_pool_deterministic", 6, 0,       0      },  // pre-allocated buffers, zero-copy, no alloc after init
+    {"no_op_new",             6,     0,       0      },  // no operator new/delete, all MemPool / placement-new
 };
 
 static constexpr size_t k_expected_count_size =

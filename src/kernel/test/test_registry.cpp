@@ -158,6 +158,12 @@ void register_lock_validator_tests();
 void register_mlock_tests();
 void register_cpu_load_tests();
 void register_slab_reclaim_tests();
+void register_static_pools_tests();
+void register_stack_profiler_tests();
+void register_stack_alloc_tests();
+void register_page_tables_tests();
+void register_buffer_pool_deterministic_tests();
+void register_no_op_new_tests();
 #if defined(CONFIG_ARCH_AARCH64)
 void register_aarch64_tests();
 #endif
@@ -209,6 +215,25 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     // -- hal_bits: HAL bit-manipulation primitives --
     {"hal_bits", []() { register_hal_bits_tests(); }},
+
+    // -- static_pools: CONFIG_STATIC_POOLS_ONLY, MemPool::reserve, pool exhaustion --
+    {"static_pools", []() { register_static_pools_tests(); }},
+
+    // -- stack_profiler: kernel stack depth profiling --
+    {"stack_profiler", []() { register_stack_profiler_tests(); }},
+
+    // -- stack_alloc: stack allocation, guard pages, overflow hook --
+    {"stack_alloc", []() { register_stack_alloc_tests(); }},
+
+    // -- page_tables: page-table pre-allocated pool, budget, no sharing --
+    {"page_tables", []() { register_page_tables_tests(); }},
+
+    // -- buffer_pool_deterministic: pre-allocated buffers, zero-copy, no alloc after init --
+    {"buffer_pool_deterministic",
+     []() { register_buffer_pool_deterministic_tests(); }},
+
+    // -- no_op_new: no operator new/delete, all MemPool / placement-new --
+    {"no_op_new", []() { register_no_op_new_tests(); }},
 
     // -- safe: curated subset with TF_RELEASE tests --
     {"safe",
@@ -352,6 +377,12 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_mlock_tests();
         register_cpu_load_tests();
         register_slab_reclaim_tests();
+        register_static_pools_tests();
+        register_stack_profiler_tests();
+        register_stack_alloc_tests();
+        register_page_tables_tests();
+        register_buffer_pool_deterministic_tests();
+        register_no_op_new_tests();
 #if defined(CONFIG_ARCH_AARCH64)
          register_aarch64_tests();
 #endif

@@ -246,6 +246,10 @@ build/kernel/test/bench_irq_latency.o: src/kernel/test/bench_irq_latency.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_buffer_pool_deterministic.o: src/kernel/test/test_buffer_pool_deterministic.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_atomic_context_switch.o: src/kernel/test/test_atomic_context_switch.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -422,6 +426,10 @@ build/kernel/test/test_signals.o: src/kernel/test/test_signals.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_stack_alloc.o: src/kernel/test/test_stack_alloc.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_apic_timer.o: src/kernel/test/test_apic_timer.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -446,11 +454,19 @@ build/kernel/test/test_driver.o: src/kernel/test/test_driver.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_static_pools.o: src/kernel/test/test_static_pools.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_vfsd.o: src/kernel/test/test_vfsd.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_mutex_pcp.o: src/kernel/test/test_mutex_pcp.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_stack_profiler.o: src/kernel/test/test_stack_profiler.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -503,6 +519,10 @@ build/kernel/test/test_memory_safety.o: src/kernel/test/test_memory_safety.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_tmpfs_mount_unmount_failure.o: src/kernel/test/test_tmpfs_mount_unmount_failure.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_no_op_new.o: src/kernel/test/test_no_op_new.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -627,6 +647,10 @@ build/kernel/test/test_deadlock_detect.o: src/kernel/test/test_deadlock_detect.c
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_vfs.o: src/kernel/test/test_vfs.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_page_tables.o: src/kernel/test/test_page_tables.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
