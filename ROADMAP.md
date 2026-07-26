@@ -229,14 +229,12 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
       Additionally, in `switch_to_task()` and `reschedule()`, guard against
       `current_task_ptr_` pointing to a TERMINATED/REAPED task by falling back to
       the idle task.
-- [ ] **True bitmap-granular ReadyQueue per priority level** — The current `ReadyQueueManager`
-      uses a single `PriorityMap` bitmap + one `TaskQueue` per level.  Each `dequeue_highest()`
-      scans the bitmap for the highest priority, then pops from that level's queue — this is
-      O(1) per operation via `ctz`/`clz`.  However, the bitmap is *shared* and the lazy-rebuild
-      fallback walks all tasks, which breaks strict O(1) WCET.  Fix: 128 dedicated per-priority
-      `TaskQueue` instances (the array already exists); eliminate the lazy-rebuild path by
-      ensuring `next_task()` never orphans a dequeued task (see reschedule() → peek_highest()
-      fix from v0.3.4).  Hard O(1) WCET for every scheduler path.
+- [ ] **True bitmap-granular ReadyQueue per priority level** — The per-priority `TaskQueue[128]`
+      array already exists; the lazy-rebuild fallback in `next_task()` (O(n) walk of `all_tasks_`)
+      is what breaks strict O(1) WCET.  Fix: eliminate the lazy-rebuild by switching `next_task()`
+      to `peek_highest()` + commit-dequeue (never orphans a dequeued task), add `move_priority()`
+      at priority-inheritance sites, and clear stale pending switches in `rate_monotonic_schedule()`.
+      See `docs/scheduler-spec.md §8` (specification) and `docs/ipc_blocking-plan.md` (implementation plan).
 - [x] **Abstract VMM page-table helpers** — `free_stack_pdpt()` and `clone()` in vmm.cpp
       currently hardcode x86_64 shift/mask constants (e.g. `PD_MASK`, `PDPT_SHIFT`) and
       direct PML4/PDPT/PD/PT walks.  These must be replaced with arch-independent

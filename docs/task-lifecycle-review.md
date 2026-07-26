@@ -579,21 +579,39 @@ I.6 Conclusion for the review
   as the final correctness gate once a stable QEMU environment is available.
 
 ================================================================================
-PART J — FINAL FIX CHECKLIST (as implemented under option-b)
+PART J — VERIFIED CHECKLIST (against code at d5f74263, 2026-07-26)
 ================================================================================
 
-[x] VIOL-1: ReadyQueueManager::remove bucket-scan (unlink wherever node lives,
-    is_valid-guarded) — safe stopgap; snapshot rebuild heals staleness anyway.
-[x] unlink_sender() safe walk in MessageQueue + cleanup() call — severs
-    blocked_senders back-links before free (INV-1e).
-[x] D5: magic=0 moved to END of cleanup() (valid through unregister) — snapshot-safe.
-[x] D5/D6 panic-free: set_task_ready keeps is_valid skip (corruption test expects
-    silent drop, not panic); no ENSURE-panic in scheduler hot path.
-[ ] move_priority re-index at IPC/Mutex/DEMOTE sites — DEFERRED (lock-ordering
-    hazard + not required for memory safety; snapshot rebuild covers it). Track as
-    follow-up optimization.
+[x] VIOL-1: ReadyQueueManager::remove bucket-scan (ready_queue_manager.cpp:75-119)
+    — walks all priority queues to find the physically-linked node. Safe stopgap;
+    snapshot rebuild heals staleness anyway. Short-term needed because no caller
+    calls move_priority() (see below).
+
+[x] unlink_sender() safe walk in MessageQueue + cleanup() call (ipc.cpp, task.cpp)
+    — severs blocked_senders back-links before free (INV-1e). Verified: cleanup()
+    at task.cpp:874 does NOT zero magic at start; calls unregister_task() first.
+
+[x] D5: magic=0 moved to operator delete (task.cpp:1058) — NOT in cleanup().
+    cleanup() (task.cpp:874) keeps TCB_MAGIC through unregister_task().
+    Magic is zeroed only in operator delete, after remove_task() completes.
+    Snapshot-safe.
+
+[x] D5/D6 panic-free: set_task_ready keeps is_valid skip — verified: scheduler.cpp
+    enqueue_ready/dequeue_ready paths use is_valid() guards. No ENSURE-panic in
+    scheduler hot path.
+
+[ ] move_priority re-index at IPC/Mutex/DEMOTE sites — STILL DEFERRED (ZERO
+    callers in src/). Priority inheritance (block_sender, wake_sender, deadline
+    DEMOTE, sporadic server EXHAUSTED↔ACTIVE) all mutate task->priority directly
+    without calling move_priority(). Bucket-scan remove() covers it. Tracked as:
+    → Phase 2 of the ReadyQueue fix plan (docs/scheduler-spec.md §8.2)
+
 [ ] G2: DeadlineList::remove O(1) via dl_prev_ — optional, deferred.
-[ ] Validate each PART-E class; drive DIAG-FIXUP/zero-frame dumps to zero once QEMU
-    env is stable; record every run in test-history.txt; commit as separate commit.
+
+[ ] ReadyQueue fix plan — NEW, supersedes D1/D2 from earlier plan:
+    Phase 1: next_task() → peek_highest (never orphan, kill lazy-rebuild)
+    Phase 2: move_priority at all priority-change sites
+    Phase 3: clear stale pending switch in rate_monotonic_schedule
+    See docs/scheduler-spec.md §8 and docs/ipc_blocking-plan.md for full plan.
 
 
