@@ -556,6 +556,24 @@ void Scheduler::set_current(TaskControlBlock &task) noexcept {
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                      __ATOMIC_RELEASE);
+
+    // Re-enqueue the previous task if it is still runnable but NOT current
+    // or idle.  Without this, a higher-priority task that was preempted by a
+    // lower-priority one (e.g. IPC receiver after wakeup) cannot be found
+    // again — it is not in the ready queue and not current, so the scheduler
+    // has no path to dispatch it (lazy rebuild in next_task only runs when
+    // dequeue_highest returns null, which never happens while the receiver
+    // sits in the queue).  See docs/ipc_blocking-analysis.md §H2/B and
+    // docs/task-lifecycle-review.md §VIOL-1.
+    if (old && old != &task && old != idle_task_ &&
+        old->magic == TaskControlBlock::TCB_MAGIC &&
+        (old->state == TaskState::READY ||
+         old->state == TaskState::RUNNING)) {
+        old->in_ready_queue_ = false;
+        old->rq_priority_ = 0;
+        enqueue_ready(*old);
+    }
+
     current_task_ptr_ = &task;
 }
 
@@ -1831,7 +1849,13 @@ void Scheduler::reschedule() noexcept {
         return;
     }
 
-    auto *next = next_task();
+    // Peek the highest-priority ready task.  We do NOT dequeue here —
+    // the switch is deferred (INV-4) and the actual dequeue happens in
+    // rate_monotonic_schedule() -> next_task() on the next timer tick.
+    // Dequeuing here would remove the task from the ready queue and leave
+    // it in limbo until the tick dispatches it.  set_current() re-enqueues
+    // the preempted task so it can be found again.
+    auto *next = ready_queue_.peek_highest();
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     {
         IPC_SCHED_TRACE("[RS]", "cur=", current->id, "next=",

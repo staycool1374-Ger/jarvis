@@ -69,16 +69,17 @@ JARVIS_TEST(harness_priority_ordered_wakeup,
     ipc_test_done_ = false;
     ipc_recv_count_ = 0;
 
-    // Receiver at priority 10 (LOW) — drains queue when high-prio sender blocks
+    // Receiver at priority 5 (LOWER than init's 10) — runs when init blocks.
+    // After init wakes and continues, its higher priority (10) preempts receiver.
     auto *receiver = TaskControlBlock::create([]() {
         while (!ipc_test_done_) {
             Message msg;
             if (IPC::recv(msg)) {
                 __atomic_add_fetch(&ipc_recv_count_, 1, __ATOMIC_RELAXED);
             }
-            Scheduler::reschedule();
+            arch::pause();
         }
-    }, 10, 10);
+    }, 5, 10);
     JARVIS_ASSERT(receiver != nullptr);
     uint64_t rcv_id = receiver->id;
     Scheduler::add_task(*receiver);

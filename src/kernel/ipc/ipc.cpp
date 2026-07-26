@@ -171,6 +171,18 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
         cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
+        // reschedule() is deferred (INV-4) — the current task is still
+        // running with state=BLOCKED.  Spin-wait until the timer ISR
+        // actually dispatches us away, the receiver drains the queue,
+        // and we are woken (state → READY).
+        while (cur->state == TaskState::BLOCKED) {
+            arch::pause();
+            // Re-load cur — current_task may change after reschedule
+            cur = Scheduler::current_task();
+            if (!cur)
+                break;
+        }
+
         // Woken up — destination may have been cleaned up while we were
         // blocked.  Re-lookup to avoid accessing a dangling reference.
         tcb = Scheduler::find_task(dest_id);
