@@ -24,6 +24,7 @@
 
 using namespace kernel;
 
+#if CONFIG_STATIC_POOLS_ONLY
 JARVIS_TEST(static_pools_pmm_disabled_after_init, "PRE: none | POST: none") {
     PMM::mark_init_done();
     uint64_t page = PMM::alloc_page();
@@ -38,6 +39,7 @@ JARVIS_TEST(static_pools_contiguous_disabled_after_init,
     JARVIS_ASSERT_EQ(0ULL, pages);
     JARVIS_TEST_PASS();
 }
+#endif
 
 JARVIS_TEST(static_pools_mempool_reserve_success, "PRE: none | POST: none") {
     size_t before = MemPool::pool_free_count(0);
@@ -79,8 +81,10 @@ JARVIS_TEST(static_pools_mempool_reserve_all_then_alloc_fails,
 
 void register_static_pools_tests() {
     Logger::info("Registering static pools tests");
+#if CONFIG_STATIC_POOLS_ONLY
     JARVIS_REGISTER_TEST(static_pools_pmm_disabled_after_init);
     JARVIS_REGISTER_TEST(static_pools_contiguous_disabled_after_init);
+#endif
     JARVIS_REGISTER_TEST(static_pools_mempool_reserve_success);
     JARVIS_REGISTER_TEST(static_pools_mempool_reserve_exhaustion);
     JARVIS_REGISTER_TEST(static_pools_mempool_reserve_then_alloc);

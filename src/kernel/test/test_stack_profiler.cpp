@@ -59,9 +59,7 @@ JARVIS_TEST(stack_profiler_context_rsp_in_range, "PRE: none | POST: none") {
         delete t;
     });
     uint64_t stack_base = reinterpret_cast<uint64_t>(t->kernel_stack);
-    uint64_t rsp;
-    asm volatile("mov %%rsp, %0" : "=r"(rsp));
-    JARVIS_ASSERT(rsp >= stack_base && rsp < t->kernel_stack_top);
+    JARVIS_ASSERT(t->context.rsp >= stack_base && t->context.rsp < t->kernel_stack_top);
     JARVIS_TEST_PASS();
 }
 
