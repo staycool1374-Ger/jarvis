@@ -65,7 +65,11 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"threaded_irq",         3,     0,       0      },  // Deferred IRQ handling (stubs)
     {"gic",                  3,     0,       0      },  // ARM64 GICv3/v4 (stubs — x86_64 pass)
     {"plic",                 3,     0,       0      },  // RISC-V64 PLIC (stubs — x86_64 pass)
+#if CONFIG_STATIC_POOLS_ONLY
     {"static_pools",          6,     0,       0      },  // CONFIG_STATIC_POOLS_ONLY, MemPool::reserve
+#else
+    {"static_pools",          4,     0,       0      },  // MemPool::reserve only (no PMM gating without CONFIG_STATIC_POOLS_ONLY)
+#endif
     {"stack_profiler",        6,     0,       0      },  // kernel stack depth profiling
     {"stack_alloc",           8,     0,       0      },  // stack allocation, guard pages, overflow hook
     {"page_tables",           7,     0,       0      },  // page-table pool, budget, no sharing
