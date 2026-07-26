@@ -174,8 +174,19 @@ uint64_t PMM::alloc_page() {
         return 0;
     }
 #endif
+#if CONFIG_MEMORY_BUDGET
+    auto *cur = Scheduler::current_task();
+    if (cur && cur->magic == TaskControlBlock::TCB_MAGIC &&
+        cur->memory_used_pages_ >= cur->memory_budget_pages_) {
+        return 0;
+    }
+#endif
     uint64_t result = try_alloc_kernel(1);
     if (result) {
+#if CONFIG_MEMORY_BUDGET
+        if (cur && cur->magic == TaskControlBlock::TCB_MAGIC)
+            cur->memory_used_pages_ += 1;
+#endif
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         return result;
     }
@@ -185,8 +196,13 @@ uint64_t PMM::alloc_page() {
     if (!result) {
         ASSERT(errors::PmmError::PMM_ERR_OOM);
     }
-    if (result)
+    if (result) {
+#if CONFIG_MEMORY_BUDGET
+        if (cur && cur->magic == TaskControlBlock::TCB_MAGIC)
+            cur->memory_used_pages_ += 1;
+#endif
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+    }
     return result;
 }
 
@@ -208,8 +224,19 @@ uint64_t PMM::alloc_contiguous(size_t count) {
 #endif
     if (count == 0 || count > total_pages_)
         return 0;
+#if CONFIG_MEMORY_BUDGET
+    auto *cur = Scheduler::current_task();
+    if (cur && cur->magic == TaskControlBlock::TCB_MAGIC &&
+        cur->memory_used_pages_ + count > cur->memory_budget_pages_) {
+        return 0;
+    }
+#endif
     uint64_t result = try_alloc_kernel(count);
     if (result) {
+#if CONFIG_MEMORY_BUDGET
+        if (cur && cur->magic == TaskControlBlock::TCB_MAGIC)
+            cur->memory_used_pages_ += count;
+#endif
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
         return result;
     }
@@ -219,8 +246,13 @@ uint64_t PMM::alloc_contiguous(size_t count) {
     if (!result) {
         ASSERT(errors::PmmError::PMM_ERR_OOM);
     }
-    if (result)
+    if (result) {
+#if CONFIG_MEMORY_BUDGET
+        if (cur && cur->magic == TaskControlBlock::TCB_MAGIC)
+            cur->memory_used_pages_ += count;
+#endif
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
+    }
     return result;
 }
 
