@@ -147,7 +147,7 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
         // corrupted node into the ready queue and produces the flaky GPF in
         // effective_priority()/pop_front().  Only restore queues whose head
         // and tail are still live, valid TCBs; otherwise drop the queue to
-        // empty and let next_task()'s lazy rebuild reconstruct it from
+        // empty and let rebuild_ready_queue() reconstruct it from
         // all_tasks_ (which is itself safe_tcb-guarded).
         if ((h == nullptr || TaskControlBlock::is_valid(h)) &&
             (t == nullptr || TaskControlBlock::is_valid(t))) {

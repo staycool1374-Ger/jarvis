@@ -91,7 +91,7 @@ static inline bool is_poisoned_block(const void *p) noexcept {
 #endif
 }
 
-static inline uint64_t effective_priority(const TaskControlBlock *t) noexcept {
+uint64_t Scheduler::effective_priority(const TaskControlBlock *t) noexcept {
     if (t && t->sporadic_server) {
         uintptr_t ss = reinterpret_cast<uintptr_t>(t->sporadic_server);
         if (ss < 0xFFFF800000000000ULL)
@@ -110,6 +110,11 @@ void Scheduler::enqueue_ready(TaskControlBlock &task) noexcept {
 
 void Scheduler::dequeue_ready(TaskControlBlock &task) noexcept {
     ready_queue_.remove(task, effective_priority(&task));
+}
+
+void Scheduler::move_priority(TaskControlBlock &task, uint64_t old_prio,
+                               uint64_t new_prio) noexcept {
+    ready_queue_.move_priority(task, old_prio, new_prio);
 }
 
 void Scheduler::set_task_ready(TaskControlBlock &task) noexcept {
@@ -481,46 +486,15 @@ TaskControlBlock *Scheduler::next_task() noexcept {
         return idle_task_;
 
     {
-        auto *next = ready_queue_.dequeue_highest();
-        while (next &&
-               (next == current_task_ptr_ ||
-                (next->state != TaskState::READY &&
-                 next->state != TaskState::RUNNING))) {
-            next = ready_queue_.dequeue_highest();
-        }
-        if (next) {
-            return next;
-        }
-    }
-
-    // Lazy rebuild
-    ready_queue_.clear_all();
-    {
-        auto *cur = current_task_ptr_;
-        for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-            if (t->magic != TaskControlBlock::TCB_MAGIC)
-                continue;
-            if (t == cur || t == idle_task_) {
-                t->in_ready_queue_ = false;
-                t->rq_priority_ = 0;
+        while (auto *candidate = ready_queue_.peek_highest()) {
+            if (candidate == current_task_ptr_ ||
+                (candidate->state != TaskState::READY &&
+                 candidate->state != TaskState::RUNNING)) {
+                ready_queue_.dequeue_highest();
                 continue;
             }
-            if (t->state == TaskState::READY ||
-                t->state == TaskState::RUNNING) {
-                t->in_ready_queue_ = false;
-                t->rq_priority_ = 0;
-                ready_queue_.enqueue(*t, effective_priority(t));
-                continue;
-            }
-            t->in_ready_queue_ = false;
-            t->rq_priority_ = 0;
-        }
-    }
-
-    {
-        auto *next = ready_queue_.dequeue_highest();
-        if (next) {
-            return next;
+            ready_queue_.dequeue_highest();
+            return candidate;
         }
     }
 
@@ -1062,7 +1036,13 @@ void Scheduler::on_tick() noexcept {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
-                t->sporadic_server->process_replenishments(current_tick);
+                {
+                    uint64_t old_eff = effective_priority(t);
+                    t->sporadic_server->process_replenishments(current_tick);
+                    uint64_t new_eff = effective_priority(t);
+                    if (old_eff != new_eff && t != cur)
+                        ready_queue_.move_priority(*t, old_eff, new_eff);
+                }
                 if (t == cur && t->sporadic_server->is_active()) {
                     if (!t->sporadic_server->consume(current_tick)) {
 #if CONFIG_SPORADIC_SERVER_EXHAUSTION_IS_DEADLINE
@@ -1752,21 +1732,18 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
-    // A deferred switch is already published and awaiting the timer ISR to
-    // apply it.  Do NOT publish a second one on top of it — that would
-    // A pending switch from a previous terminate()/switch_away is about to be
-    // consumed by the ISR epilogue.  We must NOT publish a second switch on top
-    // of it (mismatched RSP/CR3 pair) UNLESS the current task is BLOCKED — in
-    // which case the pending switch was for a DIFFERENT exiting task and our
-    // task will never be dispatched again unless we override the pending switch.
+    // A deferred switch from a previous tick may still be pending (the ISR
+    // epilogue has not yet consumed it).  Clear all four atoms so we can
+    // publish a fresh one.  The dropped switch is harmless — next_task()
+    // re-selects the correct target below.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
-        auto *cur = current_task();
-        if (!cur || cur->state == TaskState::RUNNING ||
-            cur->state == TaskState::READY) {
-            scheduler_lock_.unlock();
-            return;
-        }
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_next_task_id, (uint64_t)-1,
                          __ATOMIC_RELEASE);
     }
 
@@ -2351,8 +2328,13 @@ deadline_miss_handler(TaskControlBlock *task,
         Logger::warn(
             "[DMD] Task %lu (%s) missed deadline by %lu ticks (action=DEMOTE)",
             task->id, task->name, missed_by_ticks);
-    if (task->priority > 1)
+    if (task->priority > 1) {
+        uint64_t old_prio = effective_priority(task);
         task->priority >>= 1;
+        uint64_t new_prio = effective_priority(task);
+        if (old_prio != new_prio)
+            ready_queue_.move_priority(*task, old_prio, new_prio);
+    }
 #elif CONFIG_DEADLINE_ACTION == 3
     if (budget_exhausted)
         Logger::warn("[DMD] Task %lu (%s) budget exhausted (state=EXHAUSTED, "

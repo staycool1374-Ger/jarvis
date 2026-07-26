@@ -303,11 +303,17 @@ class Scheduler {
         preempt_enabled_ = en;
     }
 
+    /// @brief Returns the effective scheduling priority, accounting for
+    ///        sporadic-server budget state.
+    static uint64_t effective_priority(const TaskControlBlock *t) noexcept;
     /// @brief Enqueues a task into the O(1) ready queue at its effective
     /// priority.
     static void enqueue_ready(TaskControlBlock &task) noexcept;
     /// @brief Removes a task from the O(1) ready queue.
     static void dequeue_ready(TaskControlBlock &task) noexcept;
+    /// @brief Moves a task from one priority queue to another (re-index).
+    static void move_priority(TaskControlBlock &task, uint64_t old_prio,
+                              uint64_t new_prio) noexcept;
 
     /// @brief Lightweight forward iterator over all tasks in the registry.
     ///        Iterates by priority (highest to lowest), then insertion order

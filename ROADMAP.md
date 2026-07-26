@@ -229,12 +229,13 @@ The deadline miss detection infrastructure already exists in basic form (TCB fie
       Additionally, in `switch_to_task()` and `reschedule()`, guard against
       `current_task_ptr_` pointing to a TERMINATED/REAPED task by falling back to
       the idle task.
-- [ ] **True bitmap-granular ReadyQueue per priority level** — The per-priority `TaskQueue[128]`
+- [x] **True bitmap-granular ReadyQueue per priority level** — The per-priority `TaskQueue[128]`
       array already exists; the lazy-rebuild fallback in `next_task()` (O(n) walk of `all_tasks_`)
       is what breaks strict O(1) WCET.  Fix: eliminate the lazy-rebuild by switching `next_task()`
       to `peek_highest()` + commit-dequeue (never orphans a dequeued task), add `move_priority()`
       at priority-inheritance sites, and clear stale pending switches in `rate_monotonic_schedule()`.
-      See `docs/scheduler-spec.md §8` (specification) and `docs/ipc_blocking-plan.md` (implementation plan).
+      See `docs/scheduler-spec.md §8` (specification), `docs/phase1-peek-highest.md`,
+      `docs/phase3-clear-stale-switch.md` (implementation).
 - [x] **Abstract VMM page-table helpers** — `free_stack_pdpt()` and `clone()` in vmm.cpp
       currently hardcode x86_64 shift/mask constants (e.g. `PD_MASK`, `PDPT_SHIFT`) and
       direct PML4/PDPT/PD/PT walks.  These must be replaced with arch-independent
