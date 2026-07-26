@@ -146,6 +146,11 @@ void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
 void register_memory_determinism_tests();
+void register_pmm_tests();
+void register_mempool_tests();
+void register_slab_reclaim_tests();
+void register_checked_ptr_tests();
+void register_resource_exhaustion_tests();
 void register_sporadic_server_tests();
 void register_atomic_tests();
 void register_cross_arch_tests();
@@ -258,6 +263,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_buffer_pool_tests();
         register_lib_tests();
         register_memory_tests();
+        register_pmm_tests();
+        register_mempool_tests();
         register_ipc_tests();
         register_ipc_robustness_tests();
         register_scheduler_tests();
@@ -438,11 +445,23 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"memory", []() {
         register_memory_tests();
+        register_pmm_tests();
+        register_mempool_tests();
         register_slab_reclaim_tests();
         register_checked_ptr_tests();
         register_buffer_pool_tests();
         register_resource_exhaustion_tests();
     }},
+
+    {"mempool", []() { register_mempool_tests(); }},
+
+    {"checked_ptr", []() { register_checked_ptr_tests(); }},
+
+    {"pmm", []() { register_pmm_tests(); }},
+
+    {"resource_exhaustion", []() { register_resource_exhaustion_tests(); }},
+
+    {"slab_reclaim", []() { register_slab_reclaim_tests(); }},
 
 #if CONFIG_VERSION_NUM >= 0x000307
     {"ipc_blocking", []() { register_ipc_blocking_tests(); }},

@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 872,    0,       0      },  // every registration function (872 = 870 + 2 memory_determinism)
+    {"all",                 881,    0,       0      },  // every registration function (881 = 872 + 5 pmm + 4 mempool)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
@@ -27,7 +27,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"timer",                 5,    0,       0      },  // timer tests
     {"wfg",                   4,    0,       0      },  // wfg tests
     {"lock",                  5,    0,       0      },  // mlock (MCS lock)
-    {"memory",              50,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool + slab_reclaim
+    {"memory",              51,     0,       0      },  // composite: pmm(5) + mempool(4) + slab_reclaim(5) + checked_ptr(4) + buffer_pool(24) + resource_exhaustion(5) + memory_determinism(2) + vmm(4 via all)
     {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
@@ -35,7 +35,12 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
     {"arch",                59,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
     {"cross_arch",          16,     0,       0      },  // cross-architecture tests
-    {"vmm",                  7,     0,       0      },  // VMM unit tests
+    {"vmm",                 11,     0,       0      },  // VMM unit tests (7 original + 2 unconditional + 2 x86_64 = 11 on x86_64)
+    {"pmm",                  5,     0,       0      },  // PMM alloc/free unit tests
+    {"mempool",              4,     0,       0      },  // MemPool allocator tests
+    {"slab_reclaim",         5,     0,       0      },  // Slab reclaim tests
+    {"checked_ptr",          4,     0,       0      },  // Checked pointer + signal frame tests
+    {"resource_exhaustion",  5,     0,       0      },  // FdTable, TaskLimit, MaxBuffers, MempoolFrag, PmmExhaustion
     {"device",              33,     0,       0      },  // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
     {"shell",               22,     0,       0      },  // shell_interaction + shell_redirect + textutils
     {"net",                 42,     0,       0      },  // net + PCI + virtio + DMA

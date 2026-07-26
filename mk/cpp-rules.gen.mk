@@ -274,6 +274,11 @@ build/kernel/test/test_memory.o: src/kernel/test/test_memory.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+build/kernel/test/test_mempool.o: src/kernel/test/test_mempool.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_pic.o: src/kernel/test/test_pic.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
