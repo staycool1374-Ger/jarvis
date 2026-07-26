@@ -874,6 +874,15 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 void TaskControlBlock::cleanup() noexcept {
     state = TaskState::REAPED;
 
+    // Pinned TCBs are part of the test-isolation baseline (snapshot).
+    // Their resources (sporadic_server, kernel stack, page tables) must
+    // survive intact — the snapshot restore puts back the original field
+    // values, so freeing a pinned task's resources creates dangling
+    // pointers.  Skip all teardown; the block itself is also never freed
+    // (MemPool::free on a pinned block is a no-op).
+    if (kernel::MemPool::is_block_pinned(this))
+        return;
+
     // Unregister from the scheduler's live tables so we never leave a dangling
     // tasks_[]/id_table_ entry that aliases a later allocation (which
     // previously caused add_task to ENSURE on a non-READY state, and a spurious

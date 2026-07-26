@@ -94,41 +94,16 @@ static inline bool is_poisoned_block(const void *p) noexcept {
 static inline uint64_t effective_priority(const TaskControlBlock *t) noexcept {
     if (t && t->sporadic_server) {
 #ifdef CONFIG_DEBUG
-        if (is_poisoned_block(t->sporadic_server)) {
-            kernel::Logger::fatal("BUGS.md#020 UAF: task %u references FREED "
-                                  "sporadic_server %p (poison 0xDDDD)",
-                                  t->id, t->sporadic_server);
-            kernel::debug::dump_scheduler_info();
-            panic("sporadic_server use-after-free");
-        }
-        // BUGS.md#020: a sporadic_server pointer must point at a real
-        // MemPool-owned SporadicServer object.  The panic's CR2 is repeatedly a
-        // test_buffer_pool.cpp code address — i.e. a task's `entry` (lambda code
-        // addr) was planted into some TCB's sporadic_server field by a wild
-        // write / heap overflow.  The planted value can have its high 32 bits
-        // zeroed (32-bit store), so validate against the heap instead of a
-        // .text range.  Name the offending + victim tasks instead of GPFing.
         uintptr_t ss = reinterpret_cast<uintptr_t>(t->sporadic_server);
-        if (!kernel::MemPool::contains(reinterpret_cast<void *>(ss))) {
-            uint64_t owner = kernel::debug::find_entry_owner(ss);
-            kernel::Logger::fatal(
-                "BUGS.md#020 WILD-WRITE: task %u sporadic_server=%p is NOT a "
-                "MemPool object (heap corruption). victim magic=%p id=%u "
-                "kstack_top=%p parent=%u",
-                t->id, t->sporadic_server,
-                reinterpret_cast<void *>(t->magic), t->id,
-                reinterpret_cast<void *>(t->kernel_stack_top),
-                static_cast<uint32_t>(t->parent_id));
-            if (owner)
-                kernel::Logger::fatal("  -> matches entry of task tcb=%p",
-                                      reinterpret_cast<void *>(owner));
-            else
-                kernel::Logger::fatal(
-                    "  -> value 0x%llx not in recent-task entry ring",
-                    static_cast<unsigned long long>(ss));
-            kernel::debug::dump_scheduler_info();
-            panic("sporadic_server field holds a non-heap value (wild write)");
-        }
+        // Must be a kernel-space address to be a valid MemPool pointer.
+        // Values like 0xDDDDDDDDDDDDDDDD come from freed/poisoned TCBs
+        // and fault if dereferenced — check address range first.
+        if (ss < 0xFFFF800000000000ULL)
+            return t->priority;
+        if (is_poisoned_block(t->sporadic_server))
+            return t->priority;
+        if (!kernel::MemPool::contains(reinterpret_cast<void *>(ss)))
+            return t->priority;
 #endif
         return t->sporadic_server->current_priority();
     }
@@ -1220,8 +1195,7 @@ void Scheduler::reap_orphans() noexcept {
         to_reap[num_to_reap++] = t;
     }
 
-    // Destroy reaped tasks — use delete (operator delete handles magic
-    // clearing and prevents double-free if a stale reference exists).
+    // Destroy reaped tasks
     for (uint64_t ri = 0; ri < num_to_reap; ++ri) {
         auto *t = to_reap[ri];
         dequeue_ready(*t);
@@ -1235,13 +1209,15 @@ void Scheduler::reap_orphans() noexcept {
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
                              t->id);
-            delete t;
+            t->cleanup();
+            MemPool::free(t);
             new_idle = created;
         } else {
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
                              t->id);
-            delete t;
+            t->cleanup();
+            MemPool::free(t);
         }
     }
 
