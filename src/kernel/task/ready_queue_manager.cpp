@@ -156,9 +156,8 @@ void ReadyQueueManager::restore_pod(const ReadyQueuePOD &src) noexcept {
             // restore (otherwise a restored-queue TCB keeps a stale
             // in_ready_queue_=false and a later set_task_ready re-enqueues it,
             // corrupting the intrusive links).
-            for (auto *n = queues_[i].head(); n; n = n->runq_next_) {
-                if (TaskControlBlock::is_valid(n))
-                    n->in_ready_queue_ = true;
+            for (auto *n = queues_[i].head(); n && TaskControlBlock::is_valid(n); n = n->runq_next_) {
+                n->in_ready_queue_ = true;
             }
         } else {
             // Queue dropped (head/tail invalid): clear in_ready_queue_ on its
