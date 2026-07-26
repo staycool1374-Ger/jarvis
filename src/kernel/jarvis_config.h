@@ -519,6 +519,13 @@
 #define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
+/// Kernel stack sizes per priority tier (bytes).  Indexed by priority.
+/// Default: idle(4K), daemon(16K), RT(32K), normal(64K).
+#ifndef CONFIG_STACK_SIZE_TABLE
+#define CONFIG_STACK_SIZE_TABLE \
+    { 4096, 4096, 16384, 16384, 32768, 32768, 65536, 65536 }
+#endif
+
 /// Maximum number of zombies in the zombie list before the on_tick watchdog
 /// force-flushes.  0 disables the watchdog (idle-only cleanup).
 /// Default: 32.

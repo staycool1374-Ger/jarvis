@@ -28,6 +28,7 @@
 #include <string.hpp>
 #include <kernel/vfs/vfs.hpp>
 #include <kernel/memory/pmm.hpp>
+
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/page_table.hpp>
 #include <kernel/memory/mempool.hpp>
@@ -217,6 +218,19 @@ static void debug_check_tcb_reuse(TaskControlBlock *tcb) {
 }
 #endif
 
+/// @brief Look up the kernel stack size for a given priority from the
+///        CONFIG_STACK_SIZE_TABLE.
+static uint64_t stack_size_for_priority(uint64_t priority) {
+    constexpr uint64_t table[] = CONFIG_STACK_SIZE_TABLE;
+    constexpr uint64_t tiers = sizeof(table) / sizeof(table[0]);
+    if (tiers == 0)
+        return CONFIG_STACK_SIZE;
+    uint64_t idx = priority;
+    if (idx >= tiers)
+        idx = tiers - 1;
+    return table[idx];
+}
+
 /// @brief Creates a new kernel-space TaskControlBlock.
 /// Allocates a TCB from MemPool, sets up a kernel stack with an
 /// architecture-specific initial register frame, and returns it.
@@ -289,7 +303,9 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->memory_used_pages_ = 0;
     init_task_common(*tcb);
 
-    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+    // Determine stack size by priority, then allocate physical pages.
+    uint64_t stack_size = stack_size_for_priority(priority);
+    size_t stack_pages = (stack_size + 4095) / arch::PAGE_SIZE;
 #if CONFIG_MEMORY_BUDGET
     if (!Scheduler::reserve_memory_pages(stack_pages)) {
         Logger::warn("TCB::create: budget OOM for %zu-page stack", stack_pages);
@@ -311,15 +327,10 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
-    tcb->kernel_stack_top = stack_virt + STACK_SIZE;
+    tcb->kernel_stack_top = stack_virt + stack_size;
 
-    // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
-    // so a stack allocated from recycled memory can retain stale poison in
-    // the region below the initial frame.  Zero the entire stack up front so
-    // every slot the task may reach — including deep call-chain return
-    // addresses — starts from a known state instead of tripping a fault on a
-    // leftover 0x0b return address.
-    __builtin_memset(tcb->kernel_stack, 0, STACK_SIZE);
+    // PMM does not zero freed pages, so clear the stack.
+    __builtin_memset(tcb->kernel_stack, 0, stack_size);
 
 #if defined(CONFIG_ARCH_X86_64)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -422,7 +433,9 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     tcb->wcet_overrun_fired = false;
     init_task_common(*tcb);
 
-    size_t kernel_stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+    // Determine kernel stack size by priority.
+    uint64_t kstack_size = stack_size_for_priority(priority);
+    size_t kernel_stack_pages = (kstack_size + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(kernel_stack_pages);
     if (!kstack_phys) {
         ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC);
@@ -431,10 +444,11 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     }
     tcb->stack_phys_ = kstack_phys;
 
+    tcb->stack_phys_ = kstack_phys;
     uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
-    tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+    tcb->kernel_stack_top = kstack_virt + kstack_size;
 
     size_t user_stack_pages = (user_stack_size + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
@@ -625,8 +639,9 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
         __builtin_memcpy(tcb->fpu_state, parent->fpu_state, 512);
     }
 
-    // Allocate and set up kernel stack
-    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+    // Allocate and set up kernel stack (same size as parent).
+    uint64_t kstack_size = STACK_SIZE;
+    size_t stack_pages = (kstack_size + 4095) / arch::PAGE_SIZE;
     uint64_t kstack_phys = PMM::alloc_contiguous(stack_pages);
     if (!kstack_phys) {
         ASSERT(errors::TaskError::TASK_ERR_STACK_ALLOC);
@@ -640,11 +655,11 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
         uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
-        tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+        tcb->kernel_stack_top = kstack_virt + kstack_size;
     } else {
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_phys);
-        tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
+        tcb->kernel_stack_top = kstack_phys + kstack_size;
     }
 
 #if defined(CONFIG_ARCH_X86_64)
