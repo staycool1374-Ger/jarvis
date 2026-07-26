@@ -1102,10 +1102,9 @@ void Scheduler::on_tick() noexcept {
     static uint64_t tick_counter = 0;
     ++tick_counter;
     if (tick_counter % 100 == 0 && !s_test_active_) {
-        // Skip reaping during test execution — the test framework's
-        // snapshot_restore cleans up orphaned tasks between tests.  The
-        // reaper would free terminated test tasks before the test's
-        // ScopeGuard can clean them up, leading to double-free / UAF.
+        // Skip reaping during test execution — terminated test tasks are
+        // cleaned up by the test's ScopeGuard or snapshot_restore.  The
+        // reaper would free them first, causing double-free UAF.
         reap_orphans();
         if (lock_acquired) {
             daemon::restart_stale_daemons();

@@ -399,9 +399,7 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     Logger::print_dec(start_ns);
     Logger::raw_write("\n");
 
-#if CONFIG_DEADLINE_MONITOR_TASK
     Scheduler::set_test_active(true);
-#endif
 
     for (size_t i = 0; i < n; ++i) {
         auto& tc = Registry::tests()[i];
@@ -459,7 +457,9 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
             // so the snapshot has s_test_active_ == false.  Restore it
             // to true to prevent the ISR from waking the deadline monitor
             // during tests.
-            Scheduler::set_test_active(true);
+#if CONFIG_DEADLINE_MONITOR_TASK
+    Scheduler::set_test_active(true);
+#endif
 #endif
         }
     }
