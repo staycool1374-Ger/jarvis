@@ -1845,24 +1845,23 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 }
 
 void Scheduler::reschedule() noexcept {
-    scheduler_lock_.lock();
-    if (all_tasks_.size() <= 1) {
-        scheduler_lock_.unlock();
+    // Single-core UP: read-only ready-queue peek needs only IRQ-safety, not
+    // the full scheduler_lock_.  Holding the lock here prevents the timer
+    // ISR's try_lock() from succeeding in rate_monotonic_schedule(),
+    // blocking the deferred switch from being applied (the ipc_blocking
+    // test harness spins in `while (state != TERMINATED) reschedule();`).
+    arch::IrqGuard irq_guard{};
+
+    if (all_tasks_.size() <= 1)
         return;
-    }
 
     auto *current = current_task();
-    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
-        scheduler_lock_.unlock();
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC)
         return;
-    }
 
     // Peek the highest-priority ready task.  We do NOT dequeue here —
     // the switch is deferred (INV-4) and the actual dequeue happens in
     // rate_monotonic_schedule() -> next_task() on the next timer tick.
-    // Dequeuing here would remove the task from the ready queue and leave
-    // it in limbo until the tick dispatches it.  set_current() re-enqueues
-    // the preempted task so it can be found again.
     auto *next = ready_queue_.peek_highest();
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     {
@@ -1872,38 +1871,17 @@ void Scheduler::reschedule() noexcept {
                         "nt=", (uint64_t)all_tasks_.size());
     }
 #endif
-    if (!next || next == current) {
-        scheduler_lock_.unlock();
+    if (!next || next == current)
         return;
-    }
 
-    // Keep a live RUNNING current task running instead of idling it.
-    if (next == idle_task_ && current->state == TaskState::RUNNING) {
-        scheduler_lock_.unlock();
+    if (next == idle_task_ && current->state == TaskState::RUNNING)
         return;
-    }
 
-    if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
-        scheduler_lock_.unlock();
+    if (next->state != TaskState::READY && next->state != TaskState::RUNNING)
         return;
-    }
 
-    // INV-4 (design contract, confirmed by ipc_blocking test's documented
-    // contract): task-context reschedule() does NOT switch.  It only *requests*
-    // one; the next timer tick publishes + applies it via
-    // rate_monotonic_schedule() -> switch_to_task() -> ISR epilogue (INV-2/3).
-    // The test harness spins in `while (state != TERMINATED) reschedule();` and
-    // relies on the timer ISR to actually run the peer task between iterations.
-    // Inline switching here would write the slot but the spinning caller is not
-    // preempted, so the ISR never applies it -> live-lock.  Deferring is the
-    // correct, design-compliant behavior.
-    //
-    // INV-7 (liveness under OOM): a non-yielding kernel task must still be
-    // preempted by the tick even when the system runs out of memory.  The
-    // tick ISR's on_tick() does not allocate — it only reads/writes existing
-    // scheduler structures.  Therefore OOM cannot freeze the scheduler; a
-    // runaway task is preempted by the next tick and the idle task runs.
-    scheduler_lock_.unlock();
+    // IrqGuard destructor re-enables IRQs here, allowing the timer ISR to
+    // fire and acquire scheduler_lock_ for rate_monotonic_schedule().
     __atomic_store_n(&kernel::scheduler_need_resched, true, __ATOMIC_RELEASE);
 }
 

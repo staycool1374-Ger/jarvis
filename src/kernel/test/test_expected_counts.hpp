@@ -29,7 +29,8 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"lock",                  5,    0,       0      },  // mlock (MCS lock)
     {"memory",              51,     0,       0      },  // composite: pmm(5) + mempool(4) + slab_reclaim(5) + checked_ptr(4) + buffer_pool(24) + resource_exhaustion(5) + memory_determinism(2) + vmm(4 via all)
     {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
-    {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
+    {"ipc",                 46,     0,       0      },  // IPC + pipe + ipc_blocking + lock-free + robustness
+    {"ipc_blocking",         4,     0,       0      },  // IPC blocking send_sync/handshake tests
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
