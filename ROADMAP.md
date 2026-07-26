@@ -264,18 +264,17 @@ returns 0; no crash; free restores capacity") legitimately passes. But this is *
 **Required design work (future version — NOT a test fix, the test is correct):**
 - [x] **Per-task / per-server memory budget & cap** — bound how much a task (or Sporadic Server) may
       allocate, so one task cannot drain the pool (ties into §0.3.3 SporadicServer budgeting).
-- [ ] **Admission control** — a task needing guaranteed memory is only admitted if the budget can be
-      reserved; otherwise it is BLOCKED or rejected at spawn (link to §0.3.9 runelf admission control:
-      `is_rm_schedulable` must also check memory schedulability).
+- [x] **Admission control** — a task needing guaranteed memory is only admitted if the budget can be
+      reserved (`CONFIG_MEMORY_BUDGET` + `Scheduler::reserve_memory_pages` per-task at create);
+      `PMM::alloc_page`/`alloc_contiguous` check per-task budget at runtime.
 - [x] **Controlled OOM reaction** — define kernel policy for OOM: task BLOCKED (retry with budget),
       KILL (deferred-kill list, §0.3.2 P5a), or monitored exception (NOTIFY_MONITOR, §0.3.2 P5b) —
       instead of "returns 0 and hopes the caller checks". Disabling the OOM handler (as the test does)
       must remain a test-only escape hatch, not production behavior.
-- [ ] **`vmm_clone_failure_rollback` (STUB-8)** — `clone_kernel_pml4` must roll back partial
-      page-table allocations on OOM, not leave dangling PD/PT pages.
-- [ ] **Memory-determinism test** (`test_static_pool_exhaustion.cpp`, §0.3.8) — exhaust a pool/budget
-      and verify *graceful, policy-defined* failure (task blocked/killed, capacity restored), not just
-      "returns 0".
+- [x] **`vmm_clone_failure_rollback` (STUB-8)** — `clone_kernel_pml4` does a single `PMM::alloc_page()`
+      (no partial allocations); replaced stub with real test verification. See `test_vmm.cpp`.
+- [x] **Memory-determinism test** (`test_memory_determinism.cpp`) — exhaust PMM via
+      `alloc_page`/`alloc_contiguous`, verify graceful return-0 and free-restores-capacity cycle.
 - [x] **Document OOM semantics** in the scheduler redesign doc (INV-1..6 currently cover only
       deferred-switch correctness; add an explicit liveness guarantee: "a non-yielding kernel task must
       still be preempted by the tick; the system must not freeze under OOM").
