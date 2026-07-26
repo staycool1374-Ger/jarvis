@@ -145,10 +145,12 @@ void register_random_vfs_write_tests();
 void register_ipc_lock_free_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
+void register_memory_determinism_tests();
 void register_sporadic_server_tests();
 void register_atomic_tests();
 void register_cross_arch_tests();
 void register_o1_scheduler_tests();
+void register_vmm_tests();
 void register_hal_bits_tests();
 void register_lock_order_tests();
 void register_budget_tests();
@@ -209,6 +211,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     // -- memory_safety: buffer overflow and memory safety tests --
     {"memory_safety", []() { register_memory_safety_tests(); }},
+    {"memory_determinism", []() { register_memory_determinism_tests(); }},
 
     // -- lib: core library tests (atomics, crc32, etc.) --
     {"lib", []() { register_lib_tests(); }},
@@ -364,9 +367,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_random_seed_tests();
         register_random_vfs_write_tests();
         register_memory_safety_tests();
+        register_memory_determinism_tests();
         register_sporadic_server_tests();
         register_atomic_tests();
         register_cross_arch_tests();
+        register_vmm_tests();
         register_hal_bits_tests();
         register_o1_scheduler_tests();
         register_lock_order_tests();
@@ -503,6 +508,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 #endif
      }},
 
+    {"vmm", []() { register_vmm_tests(); }},
     {"cross_arch", []() { register_cross_arch_tests(); }},
 
 #if defined(CONFIG_ARCH_AARCH64)

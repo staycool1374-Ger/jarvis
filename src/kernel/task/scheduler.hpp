@@ -297,6 +297,17 @@ class Scheduler {
     static bool is_preemptible() noexcept {
         return preempt_enabled_;
     }
+#if CONFIG_MEMORY_BUDGET
+    /// @brief Initialises the global memory budget from available PMM pages.
+    static void init_memory_budget(uint64_t total_pages) noexcept;
+    /// @brief Reserves pages from the global budget. Returns false if
+    ///        insufficient capacity.
+    static bool reserve_memory_pages(uint64_t count) noexcept;
+    /// @brief Releases pages back to the global budget.
+    static void release_memory_pages(uint64_t count) noexcept;
+    /// @brief Returns the remaining budget in pages.
+    static uint64_t remaining_memory_budget() noexcept;
+#endif
     /// @brief Enables or disables preemption.
     /// @param en True to enable preemption.
     static void set_preemptible(bool en) noexcept {
@@ -456,6 +467,9 @@ class Scheduler {
     static constinit uint64_t next_task_id_;
     static constinit uint64_t sporadic_task_count_;
     static constinit bool preempt_enabled_;
+#if CONFIG_MEMORY_BUDGET
+    static constinit uint64_t memory_budget_pages_;
+#endif
     static constinit bool suppress_terminated_log_;
 
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)

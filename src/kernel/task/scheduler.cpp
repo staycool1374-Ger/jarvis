@@ -117,6 +117,27 @@ void Scheduler::move_priority(TaskControlBlock &task, uint64_t old_prio,
     ready_queue_.move_priority(task, old_prio, new_prio);
 }
 
+#if CONFIG_MEMORY_BUDGET
+void Scheduler::init_memory_budget(uint64_t total_pages) noexcept {
+    memory_budget_pages_ = total_pages;
+}
+
+bool Scheduler::reserve_memory_pages(uint64_t count) noexcept {
+    if (memory_budget_pages_ < count)
+        return false;
+    memory_budget_pages_ -= count;
+    return true;
+}
+
+void Scheduler::release_memory_pages(uint64_t count) noexcept {
+    memory_budget_pages_ += count;
+}
+
+uint64_t Scheduler::remaining_memory_budget() noexcept {
+    return memory_budget_pages_;
+}
+#endif
+
 void Scheduler::set_task_ready(TaskControlBlock &task) noexcept {
     arch::IrqGuard irq_guard{};
     task.state = TaskState::READY;
@@ -218,6 +239,9 @@ constinit TaskControlBlock *Scheduler::id_table_[ID_TABLE_SIZE] = {};
 constinit uint64_t Scheduler::next_task_id_ = 0;
 constinit uint64_t Scheduler::sporadic_task_count_ = 0;
 constinit bool Scheduler::preempt_enabled_ = false;
+#if CONFIG_MEMORY_BUDGET
+constinit uint64_t Scheduler::memory_budget_pages_ = 0;
+#endif
 constinit bool Scheduler::suppress_terminated_log_ = false;
 #if CONFIG_DEADLINE_MONITOR_TASK
 constinit TaskControlBlock *Scheduler::s_monitor_task_ = nullptr;

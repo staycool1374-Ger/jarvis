@@ -80,8 +80,34 @@ def strip_comments(text: str) -> str:
     return "".join(result)
 
 
+# Known compile-time config macros and their default (non-zero) values.
+# When the scanner encounters #if MACRO and MACRO is not in this map, it
+# assumes the branch is taken (conservative: includes everything).
+# Add entries here when a CONFIG_* macro gates test registration.
+_CONFIG_TRUE = frozenset({
+    # Add config macros that are 1 by default and gate test registration:
+})
+
+def _is_config_disabled(cond: str) -> bool:
+    """Return True if `cond` is a known-disabled config conditional."""
+    # Literal #if 0
+    if cond == "0":
+        return True
+    # #if CONFIG_XXX where the config is 0 by default
+    if cond.startswith("CONFIG_") or cond.startswith("!CONFIG_"):
+        negated = cond.startswith("!")
+        name = cond.lstrip("!")
+        # If it's in _CONFIG_TRUE, it's enabled -> not disabled
+        if name in _CONFIG_TRUE:
+            return negated  # #if !ENABLED -> disabled, #if ENABLED -> not disabled
+        # Not in the known-true set -> assume 0 by default
+        return not negated  # #if UNKNOWN -> disabled, #if !UNKNOWN -> not disabled
+    # Unknown condition — assume enabled (conservative)
+    return False
+
+
 def strip_disabled_blocks(text: str) -> str:
-    """Remove #if 0 ... #endif blocks (including nested) from C++ source."""
+    """Remove disabled preprocessor blocks (#if 0, #if CONFIG_0, etc.) from C++ source."""
     result: list[str] = []
     disabled_depth = 0
     for line in text.splitlines(keepends=True):
@@ -92,13 +118,14 @@ def strip_disabled_blocks(text: str) -> str:
             comment_pos = raw_cond.find("//")
             if comment_pos >= 0:
                 raw_cond = raw_cond[:comment_pos].strip()
-            if raw_cond == "0":
+            if _is_config_disabled(raw_cond):
                 disabled_depth += 1
                 continue
         elif stripped.startswith("#ifdef ") or stripped.startswith("#ifndef "):
             pass
         elif stripped.startswith("#elif"):
-            if stripped.lstrip("#elif").strip() == "0":
+            raw_elif = stripped.lstrip("#elif").strip()
+            if _is_config_disabled(raw_elif):
                 # entering else branch of #if 0 ... #elif 0
                 if disabled_depth > 0:
                     disabled_depth += 1

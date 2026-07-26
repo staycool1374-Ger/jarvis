@@ -19,7 +19,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 863,    0,       0      },  // every registration function (863 = 824 + 39 new v0.3.5)
+    {"all",                 872,    0,       0      },  // every registration function (872 = 870 + 2 memory_determinism)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
     {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
@@ -28,12 +28,14 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"wfg",                   4,    0,       0      },  // wfg tests
     {"lock",                  5,    0,       0      },  // mlock (MCS lock)
     {"memory",              50,     0,       0      },  // PMM + VMM + checked_ptr + buffer_pool + slab_reclaim
+    {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
     {"ipc",                 42,     0,       0      },  // IPC + pipe + blocking + lock-free + robustness
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
     {"arch",                59,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
     {"cross_arch",          16,     0,       0      },  // cross-architecture tests
+    {"vmm",                  7,     0,       0      },  // VMM unit tests
     {"device",              33,     0,       0      },  // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
     {"shell",               22,     0,       0      },  // shell_interaction + shell_redirect + textutils
     {"net",                 42,     0,       0      },  // net + PCI + virtio + DMA
