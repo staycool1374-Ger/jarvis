@@ -5,7 +5,7 @@
 set -u
 cd "$(dirname "$0")"
 
-CLASSES="arch atomic cross_arch deadline_action deadline_miss deadline_recovery debug device hal_bits init integration ipc lib memory memory_safety net o1_scheduler priority_inheritance process random scheduler security shell spinlock spinlock_stress sporadic ss_deadline starvation_deadlock stress syscall timing vfs wcet wcet_overrun"
+CLASSES="arch atomic cross_arch deadline_action deadline_miss deadline_recovery debug device hal_bits init integration ipc lib memory memory_safety net o1_scheduler priority_inheritance process random scheduler security shell spinlock spinlock_stress sporadic ss_deadline starvation_deadlock stress syscall testrunner timing vfs wcet wcet_overrun"
 
 # Architecture-dependent classes: skip risc64 on non-riscv64 hosts
 ARCH=$(uname -m)

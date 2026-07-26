@@ -60,6 +60,7 @@ void register_spinlock_tests();
 void register_capability_tests();
 void register_task_lifecycle_tests();
 void register_idle_task_tests();
+void register_testrunner_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
 void register_wfg_tests();
@@ -178,6 +179,7 @@ __attribute__((weak)) void register_external_test_classes() {}
 
 static constexpr kernel::test::TestClass g_test_classes[] = {
     // -- buffer_pool: fundamental IPC primitive, run first on any failure --
+    {"testrunner", []() { register_testrunner_tests(); }},
     {"buffer_pool", []() { register_buffer_pool_tests(); }},
 
     // -- o1_scheduler: atomic context switch + IRQ guard audit + O(1) scheduler
@@ -224,6 +226,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     // -- all: everything (debug mode) --
     {"all", []() {
+        register_testrunner_tests();
         register_buffer_pool_tests();
         register_lib_tests();
         register_memory_tests();

@@ -178,6 +178,10 @@ build/kernel/test/test_idle_task.o: src/kernel/test/test_idle_task.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_testrunner.o: src/kernel/test/test_testrunner.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/bench_syscall_latency.o: src/kernel/test/bench_syscall_latency.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
