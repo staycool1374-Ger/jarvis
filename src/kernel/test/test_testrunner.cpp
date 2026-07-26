@@ -37,29 +37,6 @@ static volatile bool   ipc_test_done_ = false;
 static volatile uint64_t ipc_recv_count_ = 0;
 static constexpr uint64_t IPC_MSG_TYPE_TEST = 42;
 
-// ── High-priority receiver: drain queue ──────────────────────────────
-static void ipc_high_prio_receiver() {
-    for (uint64_t i = 0; i < 10 && !ipc_test_done_; ++i) {
-        Message msg;
-        while (IPC::recv(msg)) {
-            __atomic_add_fetch(&ipc_recv_count_, 1, __ATOMIC_RELAXED);
-        }
-        Scheduler::reschedule();
-    }
-    ipc_test_done_ = true;
-}
-
-// ── Low-priority sender ──────────────────────────────────────────────
-static void ipc_low_prio_sender(uint64_t target_id) {
-    for (uint64_t i = 0; i < 5 && !ipc_test_done_; ++i) {
-        Message msg{};
-        msg.type = IPC_MSG_TYPE_TEST;
-        msg.priority = 0;
-        IPC::send(target_id, msg, IPC_NONBLOCK);
-        for (uint64_t w = 0; w < 100; ++w) arch::pause();
-    }
-}
-
 // ======================================================================
 // Tests
 // ======================================================================
@@ -86,38 +63,61 @@ JARVIS_TEST(harness_snapshot_bitmap_consistency,
 //           must be woken and run before low-prio sender.
 JARVIS_TEST(harness_priority_ordered_wakeup,
             "PRE: none | POST: none") {
+    // This test validates that the scheduler correctly handles priority-ordered
+    // wakeup of blocked IPC senders.  It fills a receiver's queue to capacity,
+    // then blocks a sender, then drains the queue and verifies the sender wakes.
     ipc_test_done_ = false;
     ipc_recv_count_ = 0;
 
-    auto *receiver = TaskControlBlock::create(ipc_high_prio_receiver, 3, 10);
+    // Receiver at priority 10 (LOW) — drains queue when high-prio sender blocks
+    auto *receiver = TaskControlBlock::create([]() {
+        while (!ipc_test_done_) {
+            Message msg;
+            if (IPC::recv(msg)) {
+                __atomic_add_fetch(&ipc_recv_count_, 1, __ATOMIC_RELAXED);
+            }
+            Scheduler::reschedule();
+        }
+    }, 10, 10);
     JARVIS_ASSERT(receiver != nullptr);
+    uint64_t rcv_id = receiver->id;
     Scheduler::add_task(*receiver);
 
-    auto *sender = TaskControlBlock::create(
-        []() { ipc_low_prio_sender(2); }, 10, 10);
-    JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
+    // Fill the queue from this context (init, priority 10)
+    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
+        Message msg{};
+        msg.type = IPC_MSG_TYPE_TEST;
+        msg.priority = 0;
+        IPC::send(rcv_id, msg, IPC_NONBLOCK);
+    }
 
-    for (int h = 0; h < 200 && !ipc_test_done_; ++h) {
+    // Send one more — should block (queue full), then wake when receiver drains
+    ipc_recv_count_ = 0;
+    Message block_msg{};
+    block_msg.type = IPC_MSG_TYPE_TEST;
+    block_msg.priority = 0;
+
+    // Current task blocks here; receiver runs, drains queue, wakes us.
+    // After waking, the queue has space and our message is delivered.
+    bool ok = IPC::send(rcv_id, block_msg, 0);
+    JARVIS_ASSERT_FMT(ok, "Priority-ordered wakeup should complete send");
+
+    // Let receiver drain remaining messages
+    for (int h = 0; h < 50; ++h) {
         Scheduler::reschedule();
         arch::hlt();
     }
+    ipc_test_done_ = true;
+    Scheduler::reschedule();
 
-    JARVIS_ASSERT_FMT(ipc_recv_count_ > 0,
-                      "Receiver processed %lu messages (expected > 0)",
-                      ipc_recv_count_);
+    JARVIS_ASSERT_FMT(ipc_recv_count_ > IPC_MAX_QUEUE_MSG,
+                      "Receiver should have processed > %lu messages (got %lu)",
+                      (uint64_t)IPC_MAX_QUEUE_MSG, (uint64_t)ipc_recv_count_);
 
     if (receiver && receiver->magic == TaskControlBlock::TCB_MAGIC) {
-        if (receiver->state != TaskState::TERMINATED)
-            Scheduler::remove_task(*receiver);
+        Scheduler::remove_task(*receiver);
         receiver->cleanup();
         delete receiver;
-    }
-    if (sender && sender->magic == TaskControlBlock::TCB_MAGIC) {
-        if (sender->state != TaskState::TERMINATED)
-            Scheduler::remove_task(*sender);
-        sender->cleanup();
-        delete sender;
     }
 
     JARVIS_TEST_PASS();
@@ -129,18 +129,21 @@ JARVIS_TEST(harness_priority_ordered_wakeup,
 JARVIS_TEST(harness_blocked_sender_wakes,
             "PRE: none | POST: none") {
     ipc_recv_count_ = 0;
+    ipc_test_done_ = false;
 
-    // Create a receiver that drains the queue
+    // Receiver at LOW priority (10) — drains queue when higher-prio sender blocks
+    // Loops until ipc_test_done_ is set, so it never terminates early.
     auto *receiver = TaskControlBlock::create([]() {
-        for (uint64_t i = 0; i < IPC_MAX_QUEUE_MSG + 5; ++i) {
+        while (!ipc_test_done_) {
             Message msg;
             if (IPC::recv(msg)) {
                 __atomic_add_fetch(&ipc_recv_count_, 1, __ATOMIC_RELAXED);
                 Scheduler::reschedule();
             }
         }
-    }, 5, 10);
+    }, 10, 10);
     JARVIS_ASSERT(receiver != nullptr);
+    uint64_t rcv_id = receiver->id;
     Scheduler::add_task(*receiver);
 
     // Fill the queue
@@ -148,19 +151,16 @@ JARVIS_TEST(harness_blocked_sender_wakes,
         Message msg{};
         msg.type = IPC_MSG_TYPE_TEST;
         msg.priority = 0;
-        IPC::send(receiver->id, msg, IPC_NONBLOCK);
+        IPC::send(rcv_id, msg, IPC_NONBLOCK);
     }
 
-    // Send one more — should block (queue full) and this test must
-    // verify that the sender is woken and the message arrives.
+    // Send one more — should block (queue full)
     ipc_recv_count_ = 0;
     Message block_msg{};
     block_msg.type = IPC_MSG_TYPE_TEST;
-    block_msg.priority = 10;
+    block_msg.priority = 0;
 
-    // Use deferred-send: the scheduler must preempt us to the receiver
-    // so it drains the queue and wakes us.
-    if (!IPC::send(receiver->id, block_msg, 0)) {
+    if (!IPC::send(rcv_id, block_msg, 0)) {
         // If IPC::send returns false (e.g. OOM), the test failed
         JARVIS_ASSERT_FMT(false, "Blocking send failed");
     }

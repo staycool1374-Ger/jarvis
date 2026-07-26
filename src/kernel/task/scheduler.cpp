@@ -1729,17 +1729,20 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     // A deferred switch is already published and awaiting the timer ISR to
     // apply it.  Do NOT publish a second one on top of it — that would
-    // overwrite scheduler_load_rsp_from / scheduler_load_cr3_from (set by
-    // switch_to_task as two separate stores) with a different rsp/cr3 pair
-    // while the ISR is about to apply the slot, producing a mismatched
-    // RSP/CR3 pair (e.g. user task loaded with the kernel PML4 -> #UD/#GP on
-    // the next user instruction).  The pending switch is consumed by the next
-    // ISR epilogue; this tick simply waits.  This guard was part of the
-    // original design and is required for correctness even under the
-    // "ISR is sole publisher" model.
+    // A pending switch from a previous terminate()/switch_away is about to be
+    // consumed by the ISR epilogue.  We must NOT publish a second switch on top
+    // of it (mismatched RSP/CR3 pair) UNLESS the current task is BLOCKED — in
+    // which case the pending switch was for a DIFFERENT exiting task and our
+    // task will never be dispatched again unless we override the pending switch.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
-        scheduler_lock_.unlock();
-        return;
+        auto *cur = current_task();
+        if (!cur || cur->state == TaskState::RUNNING ||
+            cur->state == TaskState::READY) {
+            scheduler_lock_.unlock();
+            return;
+        }
+        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                         __ATOMIC_RELEASE);
     }
 
     auto *current = current_task();
