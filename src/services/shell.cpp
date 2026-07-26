@@ -603,27 +603,86 @@ void Shell::cmd_uptime(int, const char**) {
     Terminal::putchar('\n');
 }
 
-void Shell::cmd_tasks(int, const char**) {
-    auto* cur = kernel::Scheduler::current_task();
-    auto count = kernel::Scheduler::task_count();
-
-    Terminal::write("Tasks: ");
-    char buf[16];
+static void print_uint(uint64_t n) {
+    if (n == 0) { Terminal::putchar('0'); return; }
+    char buf[21];
     int pos = 0;
-    uint64_t n = count;
-    if (n == 0) { Terminal::putchar('0'); }
-    else {
-        while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
-        while (pos > 0) Terminal::putchar(buf[--pos]);
+    while (n > 0 && pos < 20) {
+        buf[pos++] = static_cast<char>('0' + (n % 10));
+        n /= 10;
     }
-    Terminal::write(" (aktuell: ");
-    if (cur) {
-        uint64_t id = cur->id;
-        pos = 0;
-        while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
-        while (pos > 0) Terminal::putchar(buf[--pos]);
+    while (pos > 0) Terminal::putchar(buf[--pos]);
+}
+
+static const char *state_name(kernel::TaskState s) {
+    using namespace kernel;
+    switch (s) {
+        case TaskState::READY:     return "READY    ";
+        case TaskState::RUNNING:   return "RUNNING  ";
+        case TaskState::BLOCKED:   return "BLOCKED  ";
+        case TaskState::WAITING:   return "WAITING  ";
+        case TaskState::TERMINATED:return "TERM     ";
+        case TaskState::REAPED:    return "REAPED   ";
+        default:                   return "?        ";
     }
-    Terminal::write(")\n");
+}
+
+void Shell::cmd_tasks(int, const char**) {
+    Terminal::write("ID  NAME             STATE      PRIO  PERIOD  CURRENT\n");
+    Terminal::write("--- ---------------- ---------- ----- ------- -------\n");
+
+    auto *cur = kernel::Scheduler::current_task();
+    auto count = kernel::Scheduler::task_count();
+    for (uint64_t i = 0; i < count; ++i) {
+        auto *t = kernel::Scheduler::task_at(i);
+        if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC)
+            continue;
+
+        // ID (right-aligned)
+        if (t->id < 100) Terminal::putchar(' ');
+        if (t->id < 10)  Terminal::putchar(' ');
+        print_uint(t->id);
+        Terminal::putchar(' ');
+
+        // Name (left-aligned, 16 chars)
+        for (int c = 0; c < 15; ++c) {
+            if (t->name[c])
+                Terminal::putchar(t->name[c]);
+            else
+                Terminal::putchar(' ');
+        }
+        Terminal::putchar(' ');
+
+        // State
+        Terminal::write(state_name(t->state));
+        Terminal::putchar(' ');
+
+        // Priority (right-aligned)
+        if (t->priority < 100) Terminal::putchar(' ');
+        if (t->priority < 10)  Terminal::putchar(' ');
+        print_uint(t->priority);
+        Terminal::putchar(' ');
+
+        // Period (right-aligned)
+        if (t->period_ticks < 100000) Terminal::putchar(' ');
+        if (t->period_ticks < 10000)  Terminal::putchar(' ');
+        if (t->period_ticks < 1000)   Terminal::putchar(' ');
+        if (t->period_ticks < 100)    Terminal::putchar(' ');
+        if (t->period_ticks < 10)     Terminal::putchar(' ');
+        print_uint(t->period_ticks);
+        Terminal::putchar(' ');
+
+        // Current marker
+        if (t == cur)
+            Terminal::write("<-");
+        Terminal::write("\n");
+    }
+
+    // Zombie list summary
+    uint64_t zcount = kernel::Scheduler::zombie_count();
+    Terminal::write("\nZombies: ");
+    print_uint(zcount);
+    Terminal::write("\n");
 }
 
 void Shell::cmd_meminfo(int, const char**) {
