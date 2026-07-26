@@ -150,15 +150,25 @@ void Scheduler::flush_zombies(uint64_t max_flush) noexcept {
         TaskControlBlock *task = zombie_head_;
         if (!task)
             break;
+        // Check magic before accessing any field past offset 0 (may be freed).
+        if (task->magic != TaskControlBlock::TCB_MAGIC) {
+            zombie_head_ = nullptr;
+            zombie_tail_ = nullptr;
+            zombie_count_ = 0;
+            continue;
+        }
         zombie_head_ = task->zombie_next_;
         if (!zombie_head_)
             zombie_tail_ = nullptr;
         task->zombie_next_ = nullptr;
-        ENSURE(!task->in_ready_queue_);
+        if (task->in_ready_queue_)
+            ready_queue_.remove(*task, effective_priority(task));
         __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
 
-        task->cleanup();
-        MemPool::free(task);
+        if (task->magic == TaskControlBlock::TCB_MAGIC) {
+            task->cleanup();
+            MemPool::free(task);
+        }
     }
 }
 
@@ -179,19 +189,18 @@ void Scheduler::cleanup_step() noexcept {
             if (!zombie_head_)
                 zombie_tail_ = nullptr;
             task->zombie_next_ = nullptr;
-            ENSURE(!task->in_ready_queue_);
+            if (task->in_ready_queue_)
+                ready_queue_.remove(*task, effective_priority(task));
             __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
         }
     }
     if (!task)
         return;
 
-    // IRQs are now enabled.  on_tick may fire concurrently:
-    // - it accesses zombie_head_ (already advanced past task) — safe.
-    // - it may call release_zombie on a different task (under
-    //   scheduler_lock_) which appends to tail — safe (different node).
-    task->cleanup();
-    MemPool::free(task);
+    if (task->magic == TaskControlBlock::TCB_MAGIC) {
+        task->cleanup();
+        MemPool::free(task);
+    }
 }
 
 #if CONFIG_MEMORY_BUDGET
