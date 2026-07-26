@@ -93,18 +93,12 @@ static inline bool is_poisoned_block(const void *p) noexcept {
 
 static inline uint64_t effective_priority(const TaskControlBlock *t) noexcept {
     if (t && t->sporadic_server) {
-#ifdef CONFIG_DEBUG
         uintptr_t ss = reinterpret_cast<uintptr_t>(t->sporadic_server);
-        // Must be a kernel-space address to be a valid MemPool pointer.
-        // Values like 0xDDDDDDDDDDDDDDDD come from freed/poisoned TCBs
-        // and fault if dereferenced — check address range first.
         if (ss < 0xFFFF800000000000ULL)
             return t->priority;
-        if (is_poisoned_block(t->sporadic_server))
+        const uint64_t *vp = reinterpret_cast<const uint64_t *>(ss);
+        if (*vp == 0xDDDDDDDDDDDDDDDDULL)
             return t->priority;
-        if (!kernel::MemPool::contains(reinterpret_cast<void *>(ss)))
-            return t->priority;
-#endif
         return t->sporadic_server->current_priority();
     }
     return t ? t->priority : 0;
@@ -2151,6 +2145,11 @@ void Scheduler::restore_task_fields(const TaskFields *saved) {
             t->pending_signals = saved[j].pending_signals;
             t->alarm_ticks = saved[j].alarm_ticks;
             t->alarm_armed = saved[j].alarm_armed;
+            // Snapshot does not capture SporadicServer state nor PMM page-table
+            // pools — clear the pointer so stale UAF (0xDD-poisoned block) from
+            // a restored MemPool free-list cannot crash effective_priority().
+            // Daemon ensure_running() recreates the SporadicServer if needed.
+            t->sporadic_server = nullptr;
             t->runq_next_ = saved[j].runq_next;
             t->runq_prev_ = saved[j].runq_prev;
             t->in_ready_queue_ = saved[j].in_ready_queue;
