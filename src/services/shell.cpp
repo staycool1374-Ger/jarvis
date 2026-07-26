@@ -628,8 +628,8 @@ static const char *state_name(kernel::TaskState s) {
 }
 
 void Shell::cmd_tasks(int, const char**) {
-    Terminal::write("ID  NAME             STATE      PRIO  PERIOD  CURRENT\n");
-    Terminal::write("--- ---------------- ---------- ----- ------- -------\n");
+    Terminal::write("ID  NAME             STATE      PRIO  PERIOD   MEM_PG STACK_KiB CURRENT\n");
+    Terminal::write("--- ---------------- ---------- ----- ------- ------- --------- -------\n");
 
     auto *cur = kernel::Scheduler::current_task();
     auto count = kernel::Scheduler::task_count();
@@ -638,7 +638,7 @@ void Shell::cmd_tasks(int, const char**) {
         if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC)
             continue;
 
-        // ID (right-aligned)
+        // ID (right-aligned, 3 chars)
         if (t->id < 100) Terminal::putchar(' ');
         if (t->id < 10)  Terminal::putchar(' ');
         print_uint(t->id);
@@ -653,23 +653,41 @@ void Shell::cmd_tasks(int, const char**) {
         }
         Terminal::putchar(' ');
 
-        // State
+        // State (9 chars)
         Terminal::write(state_name(t->state));
         Terminal::putchar(' ');
 
-        // Priority (right-aligned)
-        if (t->priority < 100) Terminal::putchar(' ');
-        if (t->priority < 10)  Terminal::putchar(' ');
+        // Priority (right-aligned, 5 chars)
+        uint64_t prio_pad = 5;
+        uint64_t tmp = t->priority;
+        while (tmp >= 10) { --prio_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < prio_pad; ++p) Terminal::putchar(' ');
         print_uint(t->priority);
         Terminal::putchar(' ');
 
-        // Period (right-aligned)
-        if (t->period_ticks < 100000) Terminal::putchar(' ');
-        if (t->period_ticks < 10000)  Terminal::putchar(' ');
-        if (t->period_ticks < 1000)   Terminal::putchar(' ');
-        if (t->period_ticks < 100)    Terminal::putchar(' ');
-        if (t->period_ticks < 10)     Terminal::putchar(' ');
+        // Period (right-aligned, 7 chars)
+        tmp = t->period_ticks;
+        uint64_t per_pad = 7;
+        while (tmp >= 10) { --per_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < per_pad; ++p) Terminal::putchar(' ');
         print_uint(t->period_ticks);
+        Terminal::putchar(' ');
+
+        // Memory used pages (right-aligned, 7 chars)
+        tmp = t->memory_used_pages_;
+        uint64_t mem_pad = 7;
+        while (tmp >= 10) { --mem_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < mem_pad; ++p) Terminal::putchar(' ');
+        print_uint(t->memory_used_pages_);
+        Terminal::putchar(' ');
+
+        // Stack size in KiB (right-aligned, 9 chars)
+        uint64_t stack_kib = kernel::TaskControlBlock::STACK_SIZE / 1024;
+        tmp = stack_kib;
+        uint64_t stk_pad = 9;
+        while (tmp >= 10) { --stk_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < stk_pad; ++p) Terminal::putchar(' ');
+        print_uint(stack_kib);
         Terminal::putchar(' ');
 
         // Current marker
