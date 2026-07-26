@@ -83,12 +83,6 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
         delete receiver;
     });
 
-    kernel::Message msg{};
-    msg.sender_id = sender->id;
-    msg.type = 1;
-    msg.priority = 0;
-    msg.data_size = 0;
-
     // Fill receiver's queue to force sender to block
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         kernel::Message fill_msg{};
@@ -99,11 +93,35 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
         receiver->msg_queue.push(fill_msg);
     }
 
-    // Now send from sender - should block
+    // Block sender directly via block_sender (not IPC::send, which would
+    // enter the deferred-switch spin-wait and never return since the
+    // receiver never drains its queue — deadlocking the test).
+    //
+    // IPC::send() with a full queue has two phases:
+    //   1. block_sender + reschedule()  (deferred)
+    //   2. spin-wait: while (state == BLOCKED) { arch::pause(); }
+    //
+    // The spin-wait can only exit when the RECEIVER drains the queue and
+    // wakes the sender via wake_sender().  If the receiver's entry function
+    // never calls IPC::recv() — as in this test where the entry is [](){}
+    // (empty lambda) — the queue stays full and the sender hangs forever.
+    // The spin-wait was introduced by the INV-4 deferred-switch model:
+    // reschedule() no longer switches synchronously, so after blocking
+    // the caller continues on-CPU with state=BLOCKED until the next timer
+    // tick.  The spin-wait bridges that gap, but only works when the
+    // receiver eventually processes messages.
+    //
+    // Tests that only need to verify the blocked-sender list and the
+    // cleanup-wakeup path should call block_sender() directly and skip
+    // the spin-wait entirely.
+    //
+    // Precondition: sender must be the current task (set_current above).
+    // Postcondition: sender->state == BLOCKED, sender is queued on
+    // receiver->msg_queue.blocked_senders_head, and sender->in_ready_queue_
+    // is false (block_sender maintains the WEDGE invariant by calling
+    // dequeue_ready internally).
     Scheduler::set_current(*sender);
-    (void)kernel::IPC::send(receiver->id, msg, 0);
-    // IPC::send with blocking should not return if queue is full
-    // The sender should be in blocked list
+    kernel::IPC::block_sender(receiver->msg_queue, *sender);
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
@@ -348,12 +366,6 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
         delete receiver;
     });
 
-    Message msg{};
-    msg.sender_id = sender->id;
-    msg.type = 1;
-    msg.priority = 0;
-    msg.data_size = 0;
-
     // Fill receiver's queue to force sender to block
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         Message fill_msg{};
@@ -364,9 +376,12 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
         receiver->msg_queue.push(fill_msg);
     }
 
-    // Send from sender — should block (receiver queue full)
+    // Block sender directly via block_sender (not IPC::send, which would
+    // enter the deferred-switch spin-wait and never return since the
+    // receiver never drains its queue — deadlocking the test).
+    // See task_exit_wakes_blocked_senders above for the full rationale.
     Scheduler::set_current(*sender);
-    (void)IPC::send(receiver->id, msg, 0);
+    IPC::block_sender(receiver->msg_queue, *sender);
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
     // Terminate + cleanup — must free msg_queue

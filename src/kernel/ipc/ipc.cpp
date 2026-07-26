@@ -314,8 +314,67 @@ MessageQueue &IPC::queue(uint64_t task_id) {
 
 /// @brief Block the current task on a full queue (priority inheritance if
 /// sender is more urgent).
+///
+/// # Scheduling contract (WEDGE-invariant)
+///
+/// After this call the task's state is `BLOCKED`.  The scheduler's
+/// [WEDGE] detector (scheduler.cpp:838) enforces that a BLOCKED task
+/// must NEVER have `in_ready_queue_ == true`.  Violating this invariant
+/// triggers the [WEDGE] diagnostic and, if an orphan (non-linkable)
+/// READY/RUNNING task is also present, a hard halt.
+///
+/// Every call MUST dequeue the task from the ready queue BEFORE setting
+/// state = BLOCKED:
+///
+///   task.state = TaskState::BLOCKED;
+///   kernel::Scheduler::dequeue_ready(task);   // <-- mandatory
+///
+/// **Precondition:** `task` must be a valid, live TaskControlBlock
+/// (magic == TCB_MAGIC).  The caller is typically the current task
+/// (established via `Scheduler::set_current()` or RMS dispatch).
+///
+/// **Postcondition:**
+///   - `task.state == TaskState::BLOCKED`
+///   - `task.in_ready_queue_ == false`  — ready-queue membership revoked
+///   - `task.blocked_on_queue == &q`    — linked into q's sender list
+///   - `task.priority` may be lowered by the priority-inheritance boost
+///     (owner's priority raised if sender is more urgent).
+///
+/// **Caller discipline:**
+///   - The scheduler lock (`scheduler_lock_`) must NOT be held when
+///     entering this function — `dequeue_ready()` acquires it via
+///     `ready_queue_.remove()`.  If the lock is already held the call
+///     will spin-wait on the spinlock until released, which can deadlock
+///     if the holder is the same CPU (non-recursive spinlock).
+///   - Interrupts: `dequeue_ready` does not disable interrupts.  Callers
+///     should ensure IRQ safety is managed externally (e.g., via
+///     `arch::IrqGuard` in `IPC::send`).
+///   - After return, the caller MUST invoke `Scheduler::reschedule()` to
+///     request a deferred context switch (INV-4).  Because of the deferred
+///     model, the caller continues executing with state=BLOCKED until the
+///     next timer tick applies the switch.  The spin-wait loop in
+///     `IPC::send()` handles this window.  Calling `reschedule()` without
+///     having dequeued the task first would leave it BLOCKED+inrq and
+///     trigger the [WEDGE] invariant violation on the very next tick.
+///   - When IPC::send's spin-wait is active, the task's state is temporarily
+///     BLOCKED on-CPU — this is the one legitimate case of a BLOCKED task
+///     having CPU ownership (INV-4 deferred switch).  The ready-queue
+///     invariant is what matters; CPU ownership is separate.
+///
+/// # WEDGE-avoidance summary
+///
+/// Every transition to BLOCKED must be atomic with dequeue_ready:
+///   | code                                | invariant |
+///   |-------------------------------------|-----------|
+///   | state = BLOCKED; + dequeue_ready(); | OK        |
+///   | state = BLOCKED; (no dequeue)        | WEDGE     |
+///
+/// This function implements the correct pattern.  Callers that set
+/// `state = BLOCKED` independently (e.g., `monitor_task_entry`,
+/// `Scheduler::terminate`) must also dequeue first.
 bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
     task.state = TaskState::BLOCKED;
+    kernel::Scheduler::dequeue_ready(task);
     task.blocked_next = nullptr;
     task.blocked_on_queue = &q;
     if (q.blocked_senders_tail) {

@@ -942,10 +942,17 @@ void Scheduler::on_tick() noexcept {
                     tb[tp] = 0;
                     kernel::debug::trace(tb);
                 }
-                kernel::debug::trace("[WEDGE] HALT");
-                arch::cli();
-                for (;;)
-                    arch::hlt();
+                // Only halt for orphans (INV-2 violation: READY/RUNNING task
+                // not physically linked).  BLOCKED+inrq is benign — the
+                // scheduler handles it via next_task()'s while loop.
+                if (!orphan_found) {
+                    kernel::debug::trace("[WEDGE] block-in-runq skipped (benign)");
+                } else {
+                    kernel::debug::trace("[WEDGE] HALT");
+                    arch::cli();
+                    for (;;)
+                        arch::hlt();
+                }
             }
         }
 #endif

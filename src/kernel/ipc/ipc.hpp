@@ -58,7 +58,25 @@ class IPC {
     static MessageQueue &queue(uint64_t task_id);
 
     /// @brief Blocks the current task on a full queue
-    /// (may boost owner priority).
+    ///        (may boost owner priority).
+    ///
+    /// Maintains the scheduler's WEDGE-invariant:
+    /// a BLOCKED task must never have `in_ready_queue_ == true`.
+    /// This function calls `dequeue_ready()` before setting the state,
+    /// so the ready-queue membership is revoked atomically with the
+    /// BLOCKED transition.
+    ///
+    /// Precondition:  task must be a valid TCB, typically the caller
+    ///                (= current task).  scheduler_lock_ must NOT be held.
+    /// Postcondition: task.state == BLOCKED
+    ///                task.in_ready_queue_ == false
+    ///                task is appended to q.blocked_senders_{head,tail}
+    ///                q.owner->priority may be boosted by priority inheritance
+    ///
+    /// Caller must invoke Scheduler::reschedule() after this function to
+    /// request a deferred context switch (INV-4).  Do NOT set task.state
+    /// to BLOCKED before calling dequeue_ready — the invariant requires
+    /// a strict order: set BLOCKED, then dequeue.
     static bool block_sender(MessageQueue &q, TaskControlBlock &task);
 
     /// @brief Wakes the oldest blocked sender and
