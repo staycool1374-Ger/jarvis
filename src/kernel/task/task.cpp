@@ -932,7 +932,21 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
             return nullptr;
         }
 
-        tcb->stack_pdpt_phys_ = 0;  // private PDPT hack no longer needed
+        tcb->stack_pdpt_phys_ = 0;
+
+        // Free deep-copied stack data pages before mapping new ones.
+        // deep_copy_user_pages copied the parent's stack data pages into
+        // the child's PML4, but clone allocates fresh stack pages below.
+        {
+            uint64_t stack_va = mem::STACK_VADDR + arch::PAGE_SIZE;
+            size_t stack_pages = (parent->user_stack_size_ + 4095) / 4096;
+            for (size_t si = 0; si < stack_pages; ++si) {
+                uint64_t pa = VMM::virt_to_phys_in_pml4(
+                    stack_va + si * arch::PAGE_SIZE, new_pml4);
+                if (pa)
+                    PMM::free_page(pa);
+            }
+        }
 
         size_t ustack_pages =
             (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
