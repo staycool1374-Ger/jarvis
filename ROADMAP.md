@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
 **Status:** v0.3.5 COMPLETE — Scheduler deferred-switch fix, test infrastructure robustness (all-1 clean), CI split verification.
-**Target Focus:** v0.3.6 — Page-table pool exclusion from snapshot restore, VMM test re-enable, Deterministic Memory & Resource Management (Static Pools, OOM RT-Safety).
+**Target Focus:** v0.3.6 — Page-table pool snapshot fix, VMM test re-enable, Deterministic Memory & Resource Management.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -517,7 +517,31 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] **Fix `preemption_under_syscall`** — 4/4 PASS. Root cause: daemon teardown race + stale `sporadic_server` access in `on_tick()`. Fix: `is_poisoned_block` guard in `on_tick()` SS iteration; `s_test_active_` guards `reap_orphans()` in tick; test 4 rewritten to use `reschedule()` + `hlt()` instead of broken `ScopedCurrentTask` + manual `on_tick()` pattern.
   - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
 
-### 0.3.6 Cross-Architecture Hard Real-Time HAL
+### v0.3.6 — Page-Table Pool Snapshot Isolation & VMM Test Re-enable
+- [ ] **Exclude page-table pool from PMM restore** — `snapshot_restore` currently overwrites the
+      entire PMM bitmap with the saved state, freeing page-table pages allocated during the test
+      while the kernel PML4 still points to them. This is the root cause of the `all-2` crash
+      (~100 tests in) and the `all` class limit (~850 tests). The fix: save the page-table pool
+      bitmap entries before restore and re-mark them after.
+  - [ ] `snapshot_restore()` in `test_isolate.cpp`: save/restore the `PMM::page_table_pool_*`
+        bit range around the main bitmap memcpy (see `docs/kstack-window-pt-pool.md`)
+  - [ ] Verify: `make execute-test x86_64 debug all-2` passes clean (132/132)
+  - [ ] Verify: `make execute-test x86_64 debug all` passes clean (880/880)
+- [ ] **Re-enable commented-out VMM tests** — 3 tests disabled in v0.3.5 (huge page split at
+      kernel-identity and HHDM addresses). These caused GPF crashes because snapshot_restore
+      freed the split PT page. After the pool fix they work correctly.
+  - [ ] Restore `vmm_huge_page_split_corner` test body in `test_vmm.cpp`
+  - [ ] Restore `vmm_huge_page_split_regression` test body
+  - [ ] Restore `vmm_hhdm_access_consistency` test body
+  - [ ] Restore their registration in `register_vmm_tests()`
+- [ ] **Fix `vmm_free_user_pages_shared`** — `free_user_pages()` doesn't properly traverse
+      user-allocated page tables after the `alloc_page_table` → `alloc_user_page` change.
+      Investigate why `is_user_page(leaf)` returns true but the leaf isn't freed, or the
+      traversal short-circuits.
+- [ ] **Consolidate `all` class** — once page-table pool fix is verified, remove `all-1`/`all-2`
+      split and restore the single `all` class. Update CI to run `all` instead of `all-1`+`all-2`.
+
+### 0.3.7 Cross-Architecture Hard Real-Time HAL
 ## x86_64 — Complete APIC + TSC-Deadline
   - [ ] arch/x86_64/hal/apic.hpp/.cpp — Local APIC, I/O APIC, TSC-deadline timer, keep in mind to check invariant of TSC (CPUID.80000007H:EDX[8])
   - [ ] arch/x86_64/hal/tsc.hpp — Invariant TSC calibration, rdtsc/rdtscp wrappers
