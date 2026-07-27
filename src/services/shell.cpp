@@ -755,6 +755,27 @@ void Shell::cmd_meminfo(int, const char**) {
     Terminal::write("Gesamt: "); print_size(total); Terminal::putchar('\n');
     Terminal::write("Belegt: "); print_size(used); Terminal::putchar('\n');
     Terminal::write("Frei:   "); print_size(free); Terminal::putchar('\n');
+
+    // Page-table pool
+    uint64_t pt_start = kernel::PMM::pool_start();
+    uint64_t pt_end   = kernel::PMM::pool_end();
+    if (pt_start) {
+        uint64_t pt_total = (pt_end - pt_start) / 4096;
+        uint64_t pt_used  = kernel::PMM::pool_used_pages();
+        uint64_t pt_free  = pt_total - pt_used;
+        Terminal::write("PT-Pool: ");
+        Terminal::write("  gesamt: "); print_uint(pt_total);
+        Terminal::write(" Seiten (");
+        print_size(pt_end - pt_start);
+        Terminal::write(")\n         belegt: "); print_uint(pt_used);
+        Terminal::write("  frei: "); print_uint(pt_free);
+        Terminal::putchar('\n');
+    }
+
+    // Kernel config info
+    Terminal::write("Config:  Stack="); print_uint(CONFIG_STACK_SIZE / 1024);
+    Terminal::write(" KiB  MaxTasks="); print_uint(CONFIG_MAX_TASKS);
+    Terminal::putchar('\n');
 }
 
 void Shell::cmd_version(int, const char**) {

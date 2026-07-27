@@ -676,4 +676,17 @@ void PMM::restore_pool_snapshot(
                      src.owner, bytes);
 }
 
+uint64_t PMM::pool_used_pages() noexcept {
+    if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0)
+        return 0;
+    uint64_t start = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t end   = page_table_pool_end_   / PAGE_SIZE;
+    uint64_t count = 0;
+    for (uint64_t i = start; i < end; ++i) {
+        if (bitmap_test(i))
+            ++count;
+    }
+    return count;
+}
+
 } // namespace kernel

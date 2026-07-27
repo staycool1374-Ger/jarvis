@@ -167,6 +167,16 @@ class PMM {
     /// @brief Restore page-table pool state from a snapshot struct.
     static void restore_pool_snapshot(
         const kernel::test::PtPoolSnapshot &src);
+    /// @brief Page-table pool base physical address (0 if pool not active).
+    static uint64_t pool_start() noexcept {
+        return page_table_pool_start_;
+    }
+    /// @brief Page-table pool end physical address.
+    static uint64_t pool_end() noexcept {
+        return page_table_pool_end_;
+    }
+    /// @brief Number of allocated pages in the page-table pool.
+    static uint64_t pool_used_pages() noexcept;
 
   private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
