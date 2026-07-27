@@ -93,11 +93,9 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
             page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
-        // Pool pages are pre-allocated (reserved) so they are never handed
-        // out by the general allocator.  alloc_page_table() scans the pool
-        // first, then falls back to alloc_page().  The PtPoolSnapshot in
-        // snapshot_restore protects the pool bitmap from the general PMM
-        // restore, preventing stale PML4 entries pointing to freed pages.
+        // Pool pages are pre-allocated (reserved).  PtPoolSnapshot protects
+        // this bitmap range from the general PMM restore so the kstack
+        // window and other pool-allocated pages survive snapshot cycles.
         for (uint64_t i = pool_start_page;
              i < pool_start_page + pool_size_pages; ++i) {
             bitmap_set(i);
@@ -462,11 +460,9 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
             page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
-        // Pool pages are pre-allocated (reserved) so they are never handed
-        // out by the general allocator.  alloc_page_table() scans the pool
-        // first, then falls back to alloc_page().  The PtPoolSnapshot in
-        // snapshot_restore protects the pool bitmap from the general PMM
-        // restore, preventing stale PML4 entries pointing to freed pages.
+        // Pool pages are pre-allocated (reserved).  PtPoolSnapshot protects
+        // this bitmap range from the general PMM restore so the kstack
+        // window and other pool-allocated pages survive snapshot cycles.
         for (uint64_t i = pool_start_page;
              i < pool_start_page + pool_size_pages; ++i) {
             bitmap_set(i);
