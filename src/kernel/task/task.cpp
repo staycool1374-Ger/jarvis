@@ -254,7 +254,20 @@ static uint64_t stack_size_for_priority(uint64_t priority) {
     return table[idx];
 }
 
+/// @brief Physical addresses of the 8 pre-allocated PT pages for the window.
+static uint64_t s_kstack_pt_pages[8] = {};
+
+static void init_kstack_window();
+static void map_kstack_page(uint64_t virt, uint64_t phys);
+static void unmap_kstack_page(uint64_t virt);
+
 static uint64_t alloc_kslot(uint64_t stack_size) {
+    // Lazy init: pre-allocate page table pages on first call.
+    // Must be called after PMM and VMM init (first create() is in
+    // Scheduler::init(), well after both).
+    if (!s_kstack_pt_pages[0])
+        init_kstack_window();
+
     uint64_t slot_size = ((stack_size + 4095) / 4096) * 4096 + 4096;
 
     { // Free list (first-fit), IRQ-safe.
@@ -297,6 +310,90 @@ static void free_kslot(uint64_t va, uint64_t size) {
     s_kslot_pool[idx].size = size;
     s_kslot_pool[idx].next = s_kslot_list;
     s_kslot_list = idx;
+}
+
+// ---------------------------------------------------------------------------
+// Kernel-stack window page table pool
+// ---------------------------------------------------------------------------
+
+/// @brief Pre-allocate all page table pages for the kernel-stack window and
+///        wire them into the kernel PML4.  Called once at boot, before any
+///        snapshot is taken.
+void init_kstack_window() {
+    const uint64_t addr_mask = 0x0000FFFFFFFFFFFFULL;
+    uint64_t base_48 = CONFIG_KSTACK_WINDOW_BASE & addr_mask;
+    unsigned pml4_idx = (base_48 >> 39) & 0x1FF;
+    unsigned pdpt_idx = (base_48 >> 30) & 0x1FF;
+    unsigned pd_idx   = (base_48 >> 21) & 0x1FF;
+
+    auto *pml4 = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (VMM::get_kernel_pml4() & ~0xFFFULL));
+    constexpr uint64_t P = 1ULL << 0;   // PAGE_PRESENT
+    constexpr uint64_t W = 1ULL << 1;   // PAGE_WRITE
+
+    uint64_t pdpt_phys;
+    if (!(pml4[pml4_idx] & P)) {
+        pdpt_phys = PMM::alloc_page_table();
+        auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
+        __builtin_memset(pdpt, 0, 4096);
+        pml4[pml4_idx] = pdpt_phys | P | W;
+    } else {
+        pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+    }
+
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
+    uint64_t pd_phys;
+    if (!(pdpt[pdpt_idx] & P)) {
+        pd_phys = PMM::alloc_page_table();
+        auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
+        __builtin_memset(pd, 0, 4096);
+        pdpt[pdpt_idx] = pd_phys | P | W;
+    } else {
+        pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
+    }
+
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
+    for (unsigned i = 0; i < 8; ++i) {
+        if (!(pd[pd_idx + i] & P)) {
+            s_kstack_pt_pages[i] = PMM::alloc_page_table();
+            auto *pt = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + s_kstack_pt_pages[i]);
+            __builtin_memset(pt, 0, 4096);
+            pd[pd_idx + i] = s_kstack_pt_pages[i] | P | W;
+        } else {
+            s_kstack_pt_pages[i] = pd[pd_idx + i] & ~0xFFFULL;
+        }
+    }
+
+    uint64_t cr3;
+    asm volatile("mov %%cr3, %0" : "=r"(cr3) : : "memory");
+    asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
+}
+
+/// @brief Map one 4 KiB kernel-stack page via pre-allocated PT.
+static void map_kstack_page(uint64_t virt, uint64_t phys) {
+    uint64_t offset = virt - CONFIG_KSTACK_WINDOW_BASE;
+    unsigned pt_idx = offset / (512 * 4096);
+    unsigned entry  = (offset / 4096) & 0x1FF;
+    if (pt_idx >= 8) return;
+    constexpr uint64_t P = 1ULL << 0;  // PAGE_PRESENT
+    constexpr uint64_t W = 1ULL << 1;  // PAGE_WRITE
+    auto *pt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + s_kstack_pt_pages[pt_idx]);
+    pt[entry] = phys | P | W;
+    asm volatile("invlpg (%0)" : : "r"(virt) : "memory");
+}
+
+/// @brief Unmap one 4 KiB kernel-stack page.
+static void unmap_kstack_page(uint64_t virt) {
+    uint64_t offset = virt - CONFIG_KSTACK_WINDOW_BASE;
+    unsigned pt_idx = offset / (512 * 4096);
+    unsigned entry  = (offset / 4096) & 0x1FF;
+    if (pt_idx >= 8) return;
+    auto *pt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + s_kstack_pt_pages[pt_idx]);
+    pt[entry] = 0;
+    asm volatile("invlpg (%0)" : : "r"(virt) : "memory");
 }
 
 } // anonymous namespace
@@ -395,7 +492,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->stack_phys_ = stack_phys;
     // Use private kernel-stack window when not in test mode (no snapshot).
     // In test mode (snapshot_restore would free page-table pages), use HHDM.
-    bool use_window = false;  // reserved for future: private window
+    bool use_window = true;  // private window with pre-allocated page tables
     if (use_window) {
         uint64_t slot_va = alloc_kslot(stack_size);
         if (slot_va) {
@@ -403,8 +500,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
             tcb->kstack_slot_size_ = ((stack_size + 4095) / 4096) * 4096 + 4096;
             uint64_t kstack_va = slot_va + 4096;
             for (size_t i = 0; i < stack_pages; ++i)
-                VMM::map_page(kstack_va + i * arch::PAGE_SIZE,
-                              stack_phys + i * arch::PAGE_SIZE, false);
+                map_kstack_page(kstack_va + i * arch::PAGE_SIZE,
+                                stack_phys + i * arch::PAGE_SIZE);
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
             tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
             tcb->kernel_stack_top = kstack_va + stack_size;
@@ -1098,7 +1195,7 @@ void TaskControlBlock::cleanup() noexcept {
             uint64_t slot_va = kstack_slot_va_;
             uint64_t stack_va = slot_va + 4096;
             for (size_t i = 0; i < pages; ++i)
-                VMM::unmap_page(stack_va + i * arch::PAGE_SIZE);
+                unmap_kstack_page(stack_va + i * arch::PAGE_SIZE);
             free_kslot(slot_va, kstack_slot_size_);
         }
         // Poison physical pages via HHDM before freeing.
