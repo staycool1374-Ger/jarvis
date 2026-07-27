@@ -54,7 +54,7 @@ JARVIS_TEST(static_pools_mempool_reserve_exhaustion,
             "PRE: none | POST: none") {
     size_t total = MemPool::pool_free_count(0);
     errors::MemPoolError err = MemPool::reserve(0, total + 1);
-    JARVIS_ASSERT(err != errors::MemPoolError::MEMPOOL_ERR_OK);
+    JARVIS_ASSERT(err == errors::MemPoolError::MEMPOOL_ERR_OOM);
     JARVIS_TEST_PASS();
 }
 

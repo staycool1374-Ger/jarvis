@@ -46,6 +46,13 @@ JARVIS_TEST(stack_alloc_task_has_stack_phys, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: User task has guard page (STACK_VADDR+0 unmapped) and
+// stack pages (STACK_VADDR+PAGE_SIZE mapped) in its page table.
+// Input: Create user task with 64_KiB stack.
+// Expect: Guard page unmapped -> virt_to_phys returns 0.
+//         Stack base mapped -> virt_to_phys returns non-zero.
+// Depends: VMM page table walk, TaskControlBlock::create_user
 JARVIS_TEST(stack_alloc_user_task_has_guard_page, "PRE: none | POST: none") {
     auto *t = TaskControlBlock::create_user([]() {}, 5, 10, 64_KiB);
     JARVIS_ASSERT(t != nullptr);
@@ -53,9 +60,20 @@ JARVIS_TEST(stack_alloc_user_task_has_guard_page, "PRE: none | POST: none") {
         t->cleanup();
         delete t;
     });
-    uint64_t stack_virt = t->user_stack_;
-    JARVIS_ASSERT(stack_virt != 0);
     JARVIS_ASSERT(t->page_table_ != 0);
+
+    uint64_t guard_phys = VMM::virt_to_phys_in_pml4(mem::STACK_VADDR,
+                                                     t->page_table_);
+    JARVIS_ASSERT_FMT(guard_phys == 0,
+                      "Guard page at 0x%lx mapped to 0x%lx (expected unmapped)",
+                      mem::STACK_VADDR, guard_phys);
+
+    uint64_t stack_phys = VMM::virt_to_phys_in_pml4(
+        mem::STACK_VADDR + arch::PAGE_SIZE, t->page_table_);
+    JARVIS_ASSERT_FMT(stack_phys != 0,
+                      "Stack base at 0x%lx unmapped (expected mapped)",
+                      mem::STACK_VADDR + arch::PAGE_SIZE);
+    JARVIS_ASSERT(stack_phys % arch::PAGE_SIZE == 0);
     JARVIS_TEST_PASS();
 }
 

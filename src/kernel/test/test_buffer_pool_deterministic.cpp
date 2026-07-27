@@ -38,6 +38,15 @@ JARVIS_TEST(buffer_pool_deterministic_preallocated_pool,
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Pre-allocated buffer pool fulfills alloc/free without
+// requiring dynamic PMM allocation during the call.  Verified by
+// snapshot isolation (ResourceTracker catches any PMM leak across
+// tests).  This test validates that alloc returns a handle pointing
+// to a pre-initialised entry with valid phys_addr and mapped_va.
+// Input: Create user task, allocate one buffer, inspect entry.
+// Expect: Valid handle, non-zero phys_addr, correct mapped_va.
+// Depends: BufferPool, TaskControlBlock
 JARVIS_TEST(buffer_pool_deterministic_no_dynamic_alloc,
             "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
@@ -51,27 +60,37 @@ JARVIS_TEST(buffer_pool_deterministic_no_dynamic_alloc,
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Exhaust buffer pool at MAX_BUFFERS, then verify overflow
+// returns 0.  Properly cleans up all allocated buffers afterward.
+// Input: Allocate MAX_BUFFERS buffers at distinct VAs, then one more.
+// Expect: The first MAX_BUFFERS succeed; the overflow returns 0.
+// Depends: BufferPool, TaskControlBlock
 JARVIS_TEST(buffer_pool_deterministic_exhaustion_returns_zero,
             "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
     uint64_t va = 0x20000000;
-    for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
-        uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
-        if (h == 0) {
-            JARVIS_TEST_PASS();
-            return;
-        }
+
+    uint64_t handles[BufferPool::MAX_BUFFERS];
+    uint64_t n_alloced = 0;
+    for (; n_alloced < BufferPool::MAX_BUFFERS; ++n_alloced) {
+        handles[n_alloced] = BufferPool::alloc(*task, va + n_alloced * arch::PAGE_SIZE);
+        if (handles[n_alloced] == 0)
+            break;
     }
+    JARVIS_ASSERT_FMT(n_alloced == BufferPool::MAX_BUFFERS,
+                      "Only allocated %lu of %u buffers before exhaustion",
+                      n_alloced, BufferPool::MAX_BUFFERS);
+
     uint64_t overflow = BufferPool::alloc(*task, va + BufferPool::MAX_BUFFERS * arch::PAGE_SIZE);
     JARVIS_ASSERT_EQ(0ULL, overflow);
-    int32_t idx = task->buf_list_head;
-    while (idx != -1) {
-        int32_t next = BufferPool::entries[idx].list_next;
+
+    for (uint64_t i = 0; i < n_alloced; ++i) {
+        uint32_t idx = static_cast<uint32_t>(handles[i] & 0xFFFFFFFFULL);
         uint32_t gen = BufferPool::entries[idx].generation;
-        uint64_t h = (static_cast<uint64_t>(gen) << 32) | static_cast<uint64_t>(idx);
+        uint64_t h = (static_cast<uint64_t>(gen) << 32) | idx;
         BufferPool::free(*task, h);
-        idx = next;
     }
     JARVIS_TEST_PASS();
 }
@@ -93,6 +112,13 @@ JARVIS_TEST(buffer_pool_deterministic_zero_copy_transfer,
     JARVIS_ASSERT(BufferPool::transfer(handle, *sender, *receiver));
     JARVIS_ASSERT(BufferPool::entries[handle & 0xFFFFFFFF].owner_task ==
                   static_cast<uint32_t>(receiver->id));
+
+    // Security check: after transfer, sender's original VA must be unmapped.
+    uint64_t sender_va_phys = VMM::virt_to_phys_in_pml4(va, sender->page_table_);
+    JARVIS_ASSERT_FMT(sender_va_phys == 0,
+                      "Sender still owns VA 0x%lx (phys 0x%lx) after transfer",
+                      va, sender_va_phys);
+
     uint64_t recv_va = 0x40000000;
     JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
     JARVIS_ASSERT(BufferPool::free(*receiver, handle));

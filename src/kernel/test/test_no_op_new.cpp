@@ -30,6 +30,15 @@ struct alignas(16) TestStruct {
 
 static uint8_t g_static_buf[sizeof(TestStruct)];
 
+// Runmode: kernel
+// Testidea: Placement new into static buffer works without heap allocation.
+// This verifies placement new compiles and functions correctly in the
+// kernel (which disables global operator new).  The elimination of
+// ::operator new is a compile-time/link-time property — this test
+// confirms that placement new (the only form available) works.
+// Input: Placement-new a TestStruct into static buffer, write fields.
+// Expect: Fields round-trip correctly.
+// Depends: placement-new syntax, compiler support
 JARVIS_TEST(no_op_new_placement_new_in_static, "PRE: none | POST: none") {
     auto *obj = ::new (g_static_buf) TestStruct();
     JARVIS_ASSERT(obj != nullptr);
@@ -45,6 +54,14 @@ JARVIS_TEST(no_op_new_placement_new_in_static, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: MemPool alloc/free cycle works (replacement for ::new/::delete).
+// In the kernel, ::operator new is disabled — all dynamic allocation goes
+// through MemPool.  This test verifies the basic MemPool alloc/write/free
+// cycle is functional.
+// Input: Allocate 64 bytes from MemPool, fill with 0xAA, free.
+// Expect: Non-null pointer, MemPool::contains() true, content persists.
+// Depends: MemPool
 JARVIS_TEST(no_op_new_mempool_alloc_free_cycle, "PRE: none | POST: none") {
     void *p = MemPool::alloc(64);
     JARVIS_ASSERT(p != nullptr);

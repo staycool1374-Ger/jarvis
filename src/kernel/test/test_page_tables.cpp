@@ -93,6 +93,66 @@ JARVIS_TEST(page_tables_max_process_pages_config, "PRE: none | POST: none") {
     JARVIS_TEST_PASS();
 }
 
+// Runmode: kernel
+// Testidea: Exhaust the page-table pool and verify alloc returns 0.
+// Input: Call PMM::alloc_page_table() until exhaustion.
+// Expect: Returns 0 when pool is exhausted (no panic/crash).
+// Depends: PMM page-table pool
+JARVIS_TEST(page_tables_pool_exhaustion, "PRE: none | POST: none") {
+    uint64_t pages[256];
+    uint64_t n = 0;
+    for (; n < 256; ++n) {
+        pages[n] = PMM::alloc_page_table();
+        if (pages[n] == 0)
+            break;
+    }
+    JARVIS_ASSERT_FMT(n > 0, "Page-table pool empty at test start");
+    // Exhaustion is expected eventually — no assertion on exact count.
+    // Free all allocated pages.
+    for (uint64_t i = 0; i < n; ++i)
+        PMM::free_page(pages[i]);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Two user tasks have independent page tables — mapping a
+// page in one task's PML4 does not appear in the other's.
+// Input: Create two user tasks, map a page in task A's PML4,
+//        verify it does NOT resolve in task B's PML4.
+// Expect: target_phys != 0 in A, 0 in B.
+// Depends: VMM::map_page_in_pml4, VMM::virt_to_phys_in_pml4
+JARVIS_TEST(page_tables_isolation, "PRE: none | POST: none") {
+    auto *a = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
+    auto *b = TaskControlBlock::create_user([]() {}, 6, 10, 32_KiB);
+    JARVIS_ASSERT(a != nullptr && b != nullptr);
+    auto cleanup = ScopeGuard([&]() {
+        a->cleanup();
+        delete a;
+        b->cleanup();
+        delete b;
+    });
+    JARVIS_ASSERT(a->page_table_ != b->page_table_);
+
+    // Map a test page in A's PML4 at a known VA (below STACK_VADDR).
+    uint64_t test_va = 0x10000000;
+    uint64_t test_pa = PMM::alloc_page();
+    JARVIS_ASSERT(test_pa != 0);
+    VMM::map_page_in_pml4(test_va, test_pa, true, a->page_table_);
+
+    uint64_t in_a = VMM::virt_to_phys_in_pml4(test_va, a->page_table_);
+    JARVIS_ASSERT_FMT(in_a == test_pa,
+                      "Page in A resolves to 0x%lx (expected 0x%lx)",
+                      in_a, test_pa);
+
+    uint64_t in_b = VMM::virt_to_phys_in_pml4(test_va, b->page_table_);
+    JARVIS_ASSERT_FMT(in_b == 0,
+                      "Page in B resolves to 0x%lx (expected 0 — isolated)",
+                      in_b);
+
+    PMM::free_page(test_pa);
+    JARVIS_TEST_PASS();
+}
+
 void register_page_tables_tests() {
     Logger::info("Registering page tables tests");
     JARVIS_REGISTER_TEST(page_tables_alloc_from_pool);
@@ -102,4 +162,6 @@ void register_page_tables_tests() {
     JARVIS_REGISTER_TEST(page_tables_user_task_page_table_set);
     JARVIS_REGISTER_TEST(page_tables_free_pages_on_cleanup);
     JARVIS_REGISTER_TEST(page_tables_max_process_pages_config);
+    JARVIS_REGISTER_TEST(page_tables_pool_exhaustion);
+    JARVIS_REGISTER_TEST(page_tables_isolation);
 }

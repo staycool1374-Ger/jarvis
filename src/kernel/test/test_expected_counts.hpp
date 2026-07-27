@@ -19,9 +19,9 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 887,    0,       0      },  // every registration function (887 = 881 + 4 preemption_under_syscall + 2 zombie_cleanup)
+    {"all",                 891,    0,       0      },  // every registration function (891 = 881 + 4 preemption_under_syscall + 4 zombie_cleanup + 2 page_tables)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
-    {"scheduler",            53,    0,       0      },  // sched + task + lifecycle + idle_task + zombie_cleanup + health + cpu_load
+    {"scheduler",            55,    0,       0      },  // sched + task + lifecycle + idle_task + zombie_cleanup + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
     {"lock_protocol",        34,    0,       0      },  // lock_order + budget + pip + pcp + queue_pip + mutex_pcp + lock_validator
     {"timer",                 5,    0,       0      },  // timer tests
@@ -31,7 +31,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
     {"ipc",                 46,     0,       0      },  // IPC + pipe + ipc_blocking + lock-free + robustness
     {"ipc_blocking",         4,     0,       0      },  // IPC blocking send_sync/handshake tests
-    {"zombie_cleanup",       2,     0,       0      },  // zombie list deferred cleanup
+    {"zombie_cleanup",       4,     0,       0      },  // zombie list deferred cleanup
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
@@ -82,7 +82,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
 #endif
     {"stack_profiler",        6,     0,       0      },  // kernel stack depth profiling
     {"stack_alloc",           8,     0,       0      },  // stack allocation, guard pages, overflow hook
-    {"page_tables",           7,     0,       0      },  // page-table pool, budget, no sharing
+    {"page_tables",           9,     0,       0      },  // page-table pool, budget, no sharing
     {"buffer_pool_deterministic", 6, 0,       0      },  // pre-allocated buffers, zero-copy, no alloc after init
     {"no_op_new",             6,     0,       0      },  // no operator new/delete, all MemPool / placement-new
 };
