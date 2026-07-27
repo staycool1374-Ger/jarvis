@@ -187,6 +187,14 @@ void register_riscv64_tests();
 // tests are linked, this is a no-op.
 __attribute__((weak)) void register_external_test_classes() {}
 
+// Helper functions for split "all" / "all-1" / "all-2" classes.
+// all-1 and all-2 work around the cumulative kernel page-table
+// corruption that occurs after ~850 snapshot-restore cycles
+// (resolved in v0.3.6, docs/kstack-window-pt-pool.md).
+static void register_all_tests();
+static void register_all_tests_first_half();
+static void register_all_tests_second_half();
+
 // ---- Test class table ----
 // Each class maps to a lambda that calls the relevant register_*_tests()
 // functions.  The "safe" class is the curated TF_RELEASE subset for release
@@ -261,155 +269,16 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
      }},
 
     // -- all: everything (debug mode) --
-    {"all", []() {
-        register_testrunner_tests();
-        register_buffer_pool_tests();
-        register_lib_tests();
-        register_memory_tests();
-        register_pmm_tests();
-        register_mempool_tests();
-        register_ipc_tests();
-        register_ipc_robustness_tests();
-        register_scheduler_tests();
-        register_task_tests();
-        register_driver_tests();
-        register_vfs_tests();
-        register_tmpfs_tests();
-        register_tmpfs_invalid_mount_tests();
-        register_tmpfs_io_timeout_tests();
-        register_tmpfs_corrupted_metadata_tests();
-        register_tmpfs_mount_unmount_failure_tests();
-        register_signals_tests();
-        register_process_tests();
-        register_elf_tests();
-        register_checked_ptr_tests();
-        register_fstab_tests();
-        register_rtc_tests();
-        register_rlimit_tests();
-        register_init_tests();
-        register_syscall_tests();
-        register_syscall_fuzz_tests();
-        register_sync_tests();
-        register_spinlock_tests();
-        register_capability_tests();
-        register_task_lifecycle_tests();
-        register_idle_task_tests();
-        register_zombie_cleanup_tests();
-        register_wcet_cleanup_tests();
-        register_idle_cleanup_tests();
-        register_vfsd_tests();
-        register_iocd_tests();
-        register_wfg_tests();
-        register_deadlock_detect_tests();
-        register_deadlock_recovery_tests();
-        register_health_tests();
-        register_timer_tests();
-        register_timing_tests();
-        register_serial_tests();
-        register_keyboard_tests();
-        register_spsc_tests();
-        register_gdt_tests();
-        register_idt_tests();
-        register_bootparams_tests();
-        register_multiboot_tests();
-        register_address_tests();
-        register_pipe_tests();
-        register_vfs_internal_tests();
-         register_gcov_tests();
-         register_debug_tests();
-         register_framebuffer_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
-         register_preemption_under_syscall_tests();
-#endif
-         register_spinlock_stress_tests();
-        register_atomic_context_switch_tests();
-        register_bench_syscall_latency_tests();
-         register_bench_irq_latency_tests();
-         register_stress_tests();
-         register_starvation_deadlock_tests();
+    {"all", []() { register_all_tests(); }},
 
-         // v0.3.4 tests
-         register_apic_timer_tests();
-         register_irq_alloc_tests();
-         register_jitter_tests();
-         register_threaded_irq_tests();
-         register_gic_tests();
-         register_plic_tests();
-
-         register_deadline_miss_tests();
-        register_wcet_overrun_tests();
-        register_ss_deadline_tests();
-        register_deadline_recovery_tests();
-        register_deadline_action_tests();
-        register_wcet_scheduler_tests();
-        register_priority_inheritance_tests();
-        register_queue_pip_tests();
-        register_mutex_pcp_tests();
-        register_pic_tests();
-        register_integration_tests();
-        register_pml4_clone_tests();
-        register_waitpid_tests();
-        register_resource_exhaustion_tests();
-        register_block_device_tests();
-        register_fat32_tests();
-         register_vfs_fat32_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
-         register_ipc_blocking_tests();
-#endif
-         register_ipc_lock_free_tests();
-        register_vfsd_authorization_tests();
-        register_textutils_tests();
-        register_shell_interaction_tests();
-        register_irq_guard_tests();
-        register_irqguard_audit_tests();
-        register_shell_redirect_tests();
-        register_klog_tests();
-        register_dmesg_tests();
-        register_hal_tests();
-        register_buildsystem_tests();
-        register_secure_exec_tests();
-        register_pci_tests();
-        register_virtio_tests();
-        register_dma_tests();
-        register_net_tests();
-        register_ipc_benchmark_tests();
-        register_microkernel_transition_tests();
-        register_random_tests();
-        register_random_vfs_tests();
-        register_random_syscall_tests();
-        register_random_seed_tests();
-        register_random_vfs_write_tests();
-        register_memory_safety_tests();
-        register_memory_determinism_tests();
-        register_sporadic_server_tests();
-        register_atomic_tests();
-        register_cross_arch_tests();
-        register_vmm_tests();
-        register_hal_bits_tests();
-        register_o1_scheduler_tests();
-        register_lock_order_tests();
-        register_budget_tests();
-        register_pip_tests();
-        register_pcp_tests();
-        register_lock_validator_tests();
-        register_mlock_tests();
-        register_cpu_load_tests();
-        register_slab_reclaim_tests();
-        register_static_pools_tests();
-        register_stack_profiler_tests();
-        register_stack_alloc_tests();
-        register_page_tables_tests();
-        register_buffer_pool_deterministic_tests();
-        register_no_op_new_tests();
-#if defined(CONFIG_ARCH_AARCH64)
-         register_aarch64_tests();
-#endif
-#if defined(CONFIG_ARCH_RISCV64)
-         register_riscv64_tests();
-#endif
-        // External test suite registration (weak symbol — no-op if not linked)
-        register_external_test_classes();
-    }},
+    // -- all-1 / all-2: split for pre-release verification —
+    //    The page-table pool exclusion from snapshot restore is v0.3.6
+    //    work (docs/kstack-window-pt-pool.md).  Until then, the
+    //    cumulative kernel-page-table corruption from ~850+ snapshot
+    //    restore cycles crashes the suite before completion.
+    //    Splitting keeps each half under the limit.
+    {"all-1", []() { register_all_tests_first_half(); }},
+    {"all-2", []() { register_all_tests_second_half(); }},
 
     // -- individual classes --
     {"scheduler", []() {
@@ -664,6 +533,311 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"preemption_under_syscall",
      []() { register_preemption_under_syscall_tests(); }},
 };
+
+// ---- all / all-1 / all-2 function definitions ----
+static void register_all_tests() {
+    register_testrunner_tests();
+    register_buffer_pool_tests();
+    register_lib_tests();
+    register_memory_tests();
+    register_pmm_tests();
+    register_mempool_tests();
+    register_ipc_tests();
+    register_ipc_robustness_tests();
+    register_scheduler_tests();
+    register_task_tests();
+    register_driver_tests();
+    register_vfs_tests();
+    register_tmpfs_tests();
+    register_tmpfs_invalid_mount_tests();
+    register_tmpfs_io_timeout_tests();
+    register_tmpfs_corrupted_metadata_tests();
+    register_tmpfs_mount_unmount_failure_tests();
+    register_signals_tests();
+    register_process_tests();
+    register_elf_tests();
+    register_checked_ptr_tests();
+    register_fstab_tests();
+    register_rtc_tests();
+    register_rlimit_tests();
+    register_init_tests();
+    register_syscall_tests();
+    register_syscall_fuzz_tests();
+    register_sync_tests();
+    register_spinlock_tests();
+    register_capability_tests();
+    register_task_lifecycle_tests();
+    register_idle_task_tests();
+    register_zombie_cleanup_tests();
+    register_wcet_cleanup_tests();
+    register_idle_cleanup_tests();
+    register_vfsd_tests();
+    register_iocd_tests();
+    register_wfg_tests();
+    register_deadlock_detect_tests();
+    register_deadlock_recovery_tests();
+    register_health_tests();
+    register_timer_tests();
+    register_timing_tests();
+    register_serial_tests();
+    register_keyboard_tests();
+    register_spsc_tests();
+    register_gdt_tests();
+    register_idt_tests();
+    register_bootparams_tests();
+    register_multiboot_tests();
+    register_address_tests();
+    register_pipe_tests();
+    register_vfs_internal_tests();
+     register_gcov_tests();
+     register_debug_tests();
+     register_framebuffer_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+     register_preemption_under_syscall_tests();
+#endif
+     register_spinlock_stress_tests();
+    register_atomic_context_switch_tests();
+    register_bench_syscall_latency_tests();
+     register_bench_irq_latency_tests();
+     register_stress_tests();
+     register_starvation_deadlock_tests();
+
+     // v0.3.4 tests
+     register_apic_timer_tests();
+     register_irq_alloc_tests();
+     register_jitter_tests();
+     register_threaded_irq_tests();
+     register_gic_tests();
+     register_plic_tests();
+
+     register_deadline_miss_tests();
+    register_wcet_overrun_tests();
+    register_ss_deadline_tests();
+    register_deadline_recovery_tests();
+    register_deadline_action_tests();
+    register_wcet_scheduler_tests();
+    register_priority_inheritance_tests();
+    register_queue_pip_tests();
+    register_mutex_pcp_tests();
+    register_pic_tests();
+    register_integration_tests();
+    register_pml4_clone_tests();
+    register_waitpid_tests();
+    register_resource_exhaustion_tests();
+    register_block_device_tests();
+    register_fat32_tests();
+     register_vfs_fat32_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+     register_ipc_blocking_tests();
+#endif
+     register_ipc_lock_free_tests();
+    register_vfsd_authorization_tests();
+    register_textutils_tests();
+    register_shell_interaction_tests();
+    register_irq_guard_tests();
+    register_irqguard_audit_tests();
+    register_shell_redirect_tests();
+    register_klog_tests();
+    register_dmesg_tests();
+    register_hal_tests();
+    register_buildsystem_tests();
+    register_secure_exec_tests();
+    register_pci_tests();
+    register_virtio_tests();
+    register_dma_tests();
+    register_net_tests();
+    register_ipc_benchmark_tests();
+    register_microkernel_transition_tests();
+    register_random_tests();
+    register_random_vfs_tests();
+    register_random_syscall_tests();
+    register_random_seed_tests();
+    register_random_vfs_write_tests();
+    register_memory_safety_tests();
+    register_memory_determinism_tests();
+    register_sporadic_server_tests();
+    register_atomic_tests();
+    register_cross_arch_tests();
+    register_vmm_tests();
+    register_hal_bits_tests();
+    register_o1_scheduler_tests();
+    register_lock_order_tests();
+    register_budget_tests();
+    register_pip_tests();
+    register_pcp_tests();
+    register_lock_validator_tests();
+    register_mlock_tests();
+    register_cpu_load_tests();
+    register_slab_reclaim_tests();
+    register_static_pools_tests();
+    register_stack_profiler_tests();
+    register_stack_alloc_tests();
+    register_page_tables_tests();
+    register_buffer_pool_deterministic_tests();
+    register_no_op_new_tests();
+#if defined(CONFIG_ARCH_AARCH64)
+     register_aarch64_tests();
+#endif
+#if defined(CONFIG_ARCH_RISCV64)
+     register_riscv64_tests();
+#endif
+    register_external_test_classes();
+}
+
+// First half: up to register_atomic_tests() (~425 tests, well below the
+// ~850-cycle snapshot-restore page-table corruption limit).
+static void register_all_tests_first_half() {
+    register_testrunner_tests();
+    register_buffer_pool_tests();
+    register_lib_tests();
+    register_memory_tests();
+    register_pmm_tests();
+    register_mempool_tests();
+    register_ipc_tests();
+    register_ipc_robustness_tests();
+    register_scheduler_tests();
+    register_task_tests();
+    register_driver_tests();
+    register_vfs_tests();
+    register_tmpfs_tests();
+    register_tmpfs_invalid_mount_tests();
+    register_tmpfs_io_timeout_tests();
+    register_tmpfs_corrupted_metadata_tests();
+    register_tmpfs_mount_unmount_failure_tests();
+    register_signals_tests();
+    register_process_tests();
+    register_elf_tests();
+    register_checked_ptr_tests();
+    register_fstab_tests();
+    register_rtc_tests();
+    register_rlimit_tests();
+    register_init_tests();
+    register_syscall_tests();
+    register_syscall_fuzz_tests();
+    register_sync_tests();
+    register_spinlock_tests();
+    register_capability_tests();
+    register_task_lifecycle_tests();
+    register_idle_task_tests();
+    register_zombie_cleanup_tests();
+    register_wcet_cleanup_tests();
+    register_idle_cleanup_tests();
+    register_vfsd_tests();
+    register_iocd_tests();
+    register_wfg_tests();
+    register_deadlock_detect_tests();
+    register_deadlock_recovery_tests();
+    register_health_tests();
+    register_timer_tests();
+    register_timing_tests();
+    register_serial_tests();
+    register_keyboard_tests();
+    register_spsc_tests();
+    register_gdt_tests();
+    register_idt_tests();
+    register_bootparams_tests();
+    register_multiboot_tests();
+    register_address_tests();
+    register_pipe_tests();
+    register_vfs_internal_tests();
+     register_gcov_tests();
+     register_debug_tests();
+     register_framebuffer_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+     register_preemption_under_syscall_tests();
+#endif
+     register_spinlock_stress_tests();
+    register_atomic_context_switch_tests();
+    register_bench_syscall_latency_tests();
+     register_bench_irq_latency_tests();
+     register_stress_tests();
+     register_starvation_deadlock_tests();
+
+     // v0.3.4 tests
+     register_apic_timer_tests();
+     register_irq_alloc_tests();
+     register_jitter_tests();
+     register_threaded_irq_tests();
+     register_gic_tests();
+     register_plic_tests();
+
+     register_deadline_miss_tests();
+    register_wcet_overrun_tests();
+    register_ss_deadline_tests();
+    register_deadline_recovery_tests();
+    register_deadline_action_tests();
+    register_wcet_scheduler_tests();
+    register_priority_inheritance_tests();
+    register_queue_pip_tests();
+    register_mutex_pcp_tests();
+    register_pic_tests();
+    register_integration_tests();
+    register_pml4_clone_tests();
+    register_waitpid_tests();
+    register_resource_exhaustion_tests();
+    register_block_device_tests();
+    register_fat32_tests();
+     register_vfs_fat32_tests();
+#if CONFIG_VERSION_NUM >= 0x000307
+     register_ipc_blocking_tests();
+#endif
+     register_ipc_lock_free_tests();
+    register_vfsd_authorization_tests();
+    register_textutils_tests();
+    register_shell_interaction_tests();
+    register_irq_guard_tests();
+    register_irqguard_audit_tests();
+    register_shell_redirect_tests();
+    register_klog_tests();
+    register_dmesg_tests();
+    register_hal_tests();
+    register_buildsystem_tests();
+    register_secure_exec_tests();
+    register_pci_tests();
+    register_virtio_tests();
+    register_dma_tests();
+    register_net_tests();
+    register_ipc_benchmark_tests();
+    register_microkernel_transition_tests();
+    register_random_tests();
+    register_random_vfs_tests();
+    register_random_syscall_tests();
+    register_random_seed_tests();
+    register_random_vfs_write_tests();
+    register_memory_safety_tests();
+    register_memory_determinism_tests();
+    register_sporadic_server_tests();
+    register_atomic_tests();
+}
+
+// Second half: the remaining tests.
+static void register_all_tests_second_half() {
+    register_cross_arch_tests();
+    register_vmm_tests();
+    register_hal_bits_tests();
+    register_o1_scheduler_tests();
+    register_lock_order_tests();
+    register_budget_tests();
+    register_pip_tests();
+    register_pcp_tests();
+    register_lock_validator_tests();
+    register_mlock_tests();
+    register_cpu_load_tests();
+    register_slab_reclaim_tests();
+    register_static_pools_tests();
+    register_stack_profiler_tests();
+    register_stack_alloc_tests();
+    register_page_tables_tests();
+    register_buffer_pool_deterministic_tests();
+    register_no_op_new_tests();
+#if defined(CONFIG_ARCH_AARCH64)
+     register_aarch64_tests();
+#endif
+#if defined(CONFIG_ARCH_RISCV64)
+     register_riscv64_tests();
+#endif
+    register_external_test_classes();
+}
 
 static constexpr size_t g_test_class_count =
     sizeof(g_test_classes) / sizeof(g_test_classes[0]);

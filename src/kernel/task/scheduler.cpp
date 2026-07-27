@@ -1828,21 +1828,6 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         return;
     }
 
-    // A deferred switch from a previous tick may still be pending (the ISR
-    // epilogue has not yet consumed it).  Clear all four atoms so we can
-    // publish a fresh one.  The dropped switch is harmless — next_task()
-    // re-selects the correct target below.
-    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
-        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
-                         __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
-                         __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0,
-                         __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_next_task_id, (uint64_t)-1,
-                         __ATOMIC_RELEASE);
-    }
-
     auto *current = current_task();
     if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
         scheduler_lock_.unlock();
@@ -1872,6 +1857,13 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     // Also allow preemption when a ready task has equal or higher priority
     // (handles tests that rely on the timer ISR to schedule peer tasks at
     // the same priority as the harness).
+    //
+    // CRITICAL: the pending-switch clear (below) must come AFTER the
+    // harness-nonpreempt guard.  If the guard returns early, the old
+    // pending switch is left intact so the ISR epilogue can still apply
+    // it — otherwise a deferred switch from a task-context on_tick call
+    // (e.g. test 226 spinlock_preemption_yield) would be discarded before
+    // the guard has a chance to preserve it, stranding the peer task.
     bool harness_nonpreempt =
         (s_test_active_ && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
@@ -1880,14 +1872,23 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         !__atomic_load_n(&kernel::scheduler_need_resched, __ATOMIC_ACQUIRE)) {
         uint64_t cur_prio = effective_priority(current);
         uint64_t highest_ready = ready_queue_.highest_ready_priority();
-        // Allow preemption if any ready task has priority >= current.
-        // After snapshot_restore, rebuild_ready_queue() only enqueues READY
-        // tasks — the harness (RUNNING) is NOT in the ready queue, so the
-        // simple count-check would miss same-priority peers.
         if (highest_ready < cur_prio) {
             scheduler_lock_.unlock();
             return;
         }
+    }
+
+    // Clear any pending deferred switch — the guard above did NOT return
+    // early, so we are about to publish a fresh one via next_task().
+    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
+        __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_next_task_id, (uint64_t)-1,
+                         __ATOMIC_RELEASE);
     }
 
     auto *next = next_task();

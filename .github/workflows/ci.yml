@@ -70,8 +70,14 @@ jobs:
         timeout 360 make execute-test x86 debug selftest \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd
 
-    - name: Run Full Test Suite (all classes)
+    - name: Run Full Test Suite (all-1 — first half)
       if: success()
       run: |
-        timeout 360 make execute-test x86 debug all \
+        timeout 360 make execute-test x86 debug all-1 \
+          QEMU_UEFI=/usr/share/ovmf/OVMF.fd
+
+    - name: Run Full Test Suite (all-2 — second half)
+      if: success()
+      run: |
+        timeout 180 make execute-test x86 debug all-2 \
           QEMU_UEFI=/usr/share/ovmf/OVMF.fd

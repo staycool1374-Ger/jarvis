@@ -188,12 +188,16 @@ JARVIS_TEST(spinlock_preemption_yield, "PRE: none | POST: none") {
     auto *original = Scheduler::current_task();
     Scheduler::set_current(*low);
 
-    for (int tick = 0; tick < 15 && !g_yield_done_; ++tick) {
-        low->state = TaskState::RUNNING;
-        Scheduler::on_tick();
-    }
-    for (int h = 0; h < 6 && !g_yield_done_; ++h)
+    // Yield control so the timer ISR can dispatch high over low.
+    // Direct on_tick calls do NOT apply deferred switches (they
+    // require the ISR assembly epilogue), so this loop triggers
+    // timer ticks via hlt + reschedule.
+    // low is the "current" task (from set_current above) and is
+    // already in the ready queue with state READY.
+    for (int tick = 0; tick < 30 && !g_yield_done_; ++tick) {
+        Scheduler::reschedule();
         arch::hlt();
+    }
     Scheduler::set_current(*original);
 
     JARVIS_ASSERT_FMT(g_yield_highpri_count_ > 0,

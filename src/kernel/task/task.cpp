@@ -491,8 +491,11 @@ uint64_t stack_size = stack_size_for_priority(priority);
 
     tcb->stack_phys_ = stack_phys;
     // Use private kernel-stack window when not in test mode (no snapshot).
-    // In test mode (snapshot_restore would free page-table pages), use HHDM.
-    bool use_window = true;  // private window with pre-allocated page tables
+    // In test mode (snapshot_restore would free page-table pages), use HHDM
+    // so each test does not permanently modify the kernel page table —
+    // otherwise the cumulative page-table entries from 800+ test cycles
+    // exhaust the kslot window and corrupt the HHDM PML4 entries.
+    bool use_window = !Scheduler::is_test_active();
     if (use_window) {
         uint64_t slot_va = alloc_kslot(stack_size);
         if (slot_va) {

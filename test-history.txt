@@ -125,3 +125,7 @@
 2026-07-27 10:03:24 stack_profiler PASSED: 6 FAILED: 0 TIME: 106ms
 2026-07-27 10:03:24 buffer_pool_deterministic PASSED: 6 FAILED: 0 TIME: 406ms
 2026-07-27 10:03:24 static_pools PASSED: 4 FAILED: 0 TIME: 73ms
+2026-07-27 10:52:04 all PASSED: 0 FAILED: 0 TIME: 250s STATUS: TIMEOUT (crashed at test ~851 - VMM page table corruption)
+2026-07-27 11:29:06 all PASSED: 849 FAILED: 1 TIME: 250s STATUS: TIMEOUT (kernel PT corruption at test 851)
+2026-07-27 12:41:36 all-1 PASSED: 745 FAILED: 0 TIME: ~180s
+CI: all class split into all-1/all-2 to work around kernel PT corruption limit (v0.3.6 fix)

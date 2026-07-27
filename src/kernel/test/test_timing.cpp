@@ -110,7 +110,10 @@ JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
     cur->alarm_armed = true;
     cur->pending_signals = 0;
 
+    // Disable IRQs so the PIT ISR cannot fire concurrently and
+    // decrement alarm_ticks alongside the test's direct on_tick calls.
     for (int i = 0; i < 5; ++i) {
+        arch::IrqGuard ig{};
         Scheduler::on_tick();
     }
 
@@ -180,19 +183,18 @@ JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
     child->parent_id = parent->id;
     Scheduler::add_task(*child);
 
-    // Both tasks are RUNNING and in the ready queue.
-    // Set them TERMINATED and remove from ready queue so the reaper finds them.
-    child->state = TaskState::TERMINATED;
-    child->exit_code = 0;
-    Scheduler::dequeue_ready(*child);
-
-    parent->state = TaskState::TERMINATED;
-    parent->exit_code = 0;
-    Scheduler::dequeue_ready(*parent);
+    // Terminate both tasks properly so they enter the zombie list
+    // and resources are freed by drain_zombie_list below.
+    Scheduler::terminate(*child, 0);
+    Scheduler::terminate(*parent, 0);
 
     for (int i = 0; i < 100; ++i) {
         Scheduler::on_tick();
     }
+
+    // Drain the zombie list so resources are freed and
+    // ResourceTracker deltas are balanced.
+    Scheduler::drain_zombie_list();
 
     // After reaping, the terminated test tasks should be gone from the task
     // table. Note: we do NOT assert on global task_count() here because daemon
