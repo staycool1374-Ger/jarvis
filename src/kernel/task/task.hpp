@@ -192,13 +192,15 @@ struct TaskControlBlock {
           remaining_ticks(0), wcet_ticks(0), wcet_overrun_fired(false),
           ss_state_on_deadline_miss(0), ss_budget_on_deadline_miss(0),
           exit_code(0), context({}), kernel_stack(nullptr), kernel_stack_top(0),
-          stack_phys_(0), page_table_(0), page_table_shared_(false),
+          stack_phys_(0), kstack_slot_va_(0), kstack_slot_size_(0),
+          page_table_(0), page_table_shared_(false),
           stack_pdpt_phys_(0), user_stack_(0), user_stack_size_(0),
           user_data(nullptr), fpu_used(false), fpu_state{}, program_break(0),
           program_break_start(0), fd_table({}), cwd_vnode(nullptr),
           runq_next_(nullptr), runq_prev_(nullptr), dl_next_(nullptr),
           dl_prev_(nullptr), pri_next_(nullptr), pri_prev_(nullptr),
-          in_ready_queue_(false), rq_priority_(0), waiting_child_pid(0),
+          in_ready_queue_(false), rq_priority_(0), zombie_next_(nullptr),
+          waiting_child_pid(0),
           waiting_child_status(nullptr), pending_signals(0), alarm_ticks(0),
           alarm_armed(false), sporadic_server(nullptr), buf_list_head(0),
           blocked_next(nullptr), blocked_prev(nullptr),
@@ -234,6 +236,12 @@ struct TaskControlBlock {
     uint8_t *kernel_stack;
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
+
+    /// @brief Virtual address of the kernel-stack window slot (0 = HHDM).
+    ///        Includes guard page at slot_va.
+    uint64_t kstack_slot_va_;
+    /// @brief Total slot size (stack + guard page).  0 if HHDM.
+    uint64_t kstack_slot_size_;
     uint64_t page_table_;
     /// @brief If true, this task shares the parent's user page tables
     /// (fork). free_user_pages() is skipped on cleanup/exec to avoid
@@ -283,6 +291,11 @@ struct TaskControlBlock {
     bool in_ready_queue_;
     /// @brief Priority at which this task was enqueued in the ready queue.
     uint64_t rq_priority_;
+
+    /// @brief Singly-linked list pointer for the zombie list.
+    /// Non-null only while the TCB is in the zombie list (between
+    /// release_zombie and idle cleanup_step).
+    TaskControlBlock *zombie_next_ = nullptr;
 
     uint64_t waiting_child_pid;
     uint64_t *waiting_child_status;

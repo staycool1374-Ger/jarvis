@@ -170,6 +170,10 @@ build/kernel/test/test_wcet_scheduler.o: src/kernel/test/test_wcet_scheduler.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_mempool.o: src/kernel/test/test_mempool.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_pip.o: src/kernel/test/test_pip.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -246,6 +250,10 @@ build/kernel/test/bench_irq_latency.o: src/kernel/test/bench_irq_latency.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_zombie_cleanup.o: src/kernel/test/test_zombie_cleanup.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_buffer_pool_deterministic.o: src/kernel/test/test_buffer_pool_deterministic.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -274,8 +282,7 @@ build/kernel/test/test_memory.o: src/kernel/test/test_memory.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-build/kernel/test/test_mempool.o: src/kernel/test/test_mempool.cpp
+build/kernel/test/test_idle_cleanup.o: src/kernel/test/test_idle_cleanup.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -336,6 +343,10 @@ build/kernel/test/test_init.o: src/kernel/test/test_init.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_bootparams.o: src/kernel/test/test_bootparams.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_memory_determinism.o: src/kernel/test/test_memory_determinism.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -585,6 +596,10 @@ build/kernel/test/test_health.o: src/kernel/test/test_health.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_cpu_load.o: src/kernel/test/test_cpu_load.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_wcet_cleanup.o: src/kernel/test/test_wcet_cleanup.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

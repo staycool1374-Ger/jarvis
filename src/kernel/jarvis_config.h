@@ -519,6 +519,29 @@
 #define CONFIG_PREEMPTION_LATENCY_MAX_CYCLES 0
 #endif
 
+/// Base virtual address of the kernel-stack window (guard page capable).
+#ifndef CONFIG_KSTACK_WINDOW_BASE
+#define CONFIG_KSTACK_WINDOW_BASE 0xFFFF900000000000ULL
+#endif
+
+/// Total VA space reserved for kernel stacks.
+#ifndef CONFIG_KSTACK_WINDOW_SIZE
+#define CONFIG_KSTACK_WINDOW_SIZE 0x1000000ULL  // 16 MiB
+#endif
+
+/// Kernel stack sizes per priority tier (bytes).  Indexed by priority.
+#ifndef CONFIG_STACK_SIZE_TABLE
+#define CONFIG_STACK_SIZE_TABLE \
+    { 4096, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }
+#endif
+
+/// Maximum number of zombies in the zombie list before the on_tick watchdog
+/// force-flushes.  0 disables the watchdog (idle-only cleanup).
+/// Default: 32.
+#ifndef CONFIG_ZOMBIE_STARVATION_LIMIT
+#define CONFIG_ZOMBIE_STARVATION_LIMIT 32
+#endif
+
 /// Enable IRQ latency histogram (64 buckets, 0-100 μs).
 /// Records latency at ISR entry via rdtsc. When enabled, the histogram is
 /// populated on every IRQ and can be dumped via kernel shell or API.

@@ -217,6 +217,187 @@ static void debug_check_tcb_reuse(TaskControlBlock *tcb) {
 }
 #endif
 
+// ---------------------------------------------------------------------------
+// Kernel-stack window slot allocator (indexed pool)
+// ---------------------------------------------------------------------------
+
+namespace {
+
+struct KSlotEntry {
+    uint64_t va;
+    uint64_t size;
+    int32_t  next;
+};
+
+static constexpr int32_t KSLOT_POOL_SIZE = 64;
+static KSlotEntry s_kslot_pool[KSLOT_POOL_SIZE];
+static int32_t    s_kslot_free_head = -1;
+static int32_t    s_kslot_list      = -1;
+static uint64_t   s_kslot_bump      = CONFIG_KSTACK_WINDOW_BASE;
+
+__attribute__((constructor)) static void init_kslot_pool() {
+    for (int32_t i = 0; i < KSLOT_POOL_SIZE - 1; ++i)
+        s_kslot_pool[i].next = i + 1;
+    s_kslot_pool[KSLOT_POOL_SIZE - 1].next = -1;
+    s_kslot_free_head = 0;
+    s_kslot_list = -1;
+}
+
+static uint64_t stack_size_for_priority(uint64_t priority) {
+    constexpr uint64_t table[] = CONFIG_STACK_SIZE_TABLE;
+    constexpr uint64_t tiers = sizeof(table) / sizeof(table[0]);
+    if (tiers == 0)
+        return CONFIG_STACK_SIZE;
+    uint64_t idx = priority;
+    if (idx >= tiers)
+        idx = tiers - 1;
+    return table[idx];
+}
+
+/// @brief Physical addresses of the 8 pre-allocated PT pages for the window.
+static uint64_t s_kstack_pt_pages[8] = {};
+
+static void init_kstack_window();
+static void map_kstack_page(uint64_t virt, uint64_t phys);
+static void unmap_kstack_page(uint64_t virt);
+
+static uint64_t alloc_kslot(uint64_t stack_size) {
+    // Lazy init: pre-allocate page table pages on first call.
+    // Must be called after PMM and VMM init (first create() is in
+    // Scheduler::init(), well after both).
+    if (!s_kstack_pt_pages[0])
+        init_kstack_window();
+
+    uint64_t slot_size = ((stack_size + 4095) / 4096) * 4096 + 4096;
+
+    { // Free list (first-fit), IRQ-safe.
+        arch::IrqGuard _g{};
+        int32_t *pp = &s_kslot_list;
+        while (*pp >= 0) {
+            KSlotEntry &e = s_kslot_pool[*pp];
+            if (e.size >= slot_size) {
+                uint64_t va = e.va;
+                if (va < CONFIG_KSTACK_WINDOW_BASE ||
+                    va + e.size > CONFIG_KSTACK_WINDOW_BASE + CONFIG_KSTACK_WINDOW_SIZE)
+                    panic("kslot free list corrupt");
+                int32_t next = e.next;
+                e.next = s_kslot_free_head;
+                s_kslot_free_head = *pp;
+                *pp = next;
+                return va;
+            }
+            pp = &e.next;
+        }
+    }
+
+    { // Bump allocate, IRQ-safe.
+        arch::IrqGuard _g{};
+        uint64_t va = s_kslot_bump;
+        if (va + slot_size > CONFIG_KSTACK_WINDOW_BASE + CONFIG_KSTACK_WINDOW_SIZE)
+            return 0;
+        s_kslot_bump = va + slot_size;
+        return va;
+    }
+}
+
+static void free_kslot(uint64_t va, uint64_t size) {
+    arch::IrqGuard _g{};
+    if (va == 0 || s_kslot_free_head < 0)
+        return;
+    int32_t idx = s_kslot_free_head;
+    s_kslot_free_head = s_kslot_pool[idx].next;
+    s_kslot_pool[idx].va   = va;
+    s_kslot_pool[idx].size = size;
+    s_kslot_pool[idx].next = s_kslot_list;
+    s_kslot_list = idx;
+}
+
+// ---------------------------------------------------------------------------
+// Kernel-stack window page table pool
+// ---------------------------------------------------------------------------
+
+/// @brief Pre-allocate all page table pages for the kernel-stack window and
+///        wire them into the kernel PML4.  Called once at boot, before any
+///        snapshot is taken.
+void init_kstack_window() {
+    const uint64_t addr_mask = 0x0000FFFFFFFFFFFFULL;
+    uint64_t base_48 = CONFIG_KSTACK_WINDOW_BASE & addr_mask;
+    unsigned pml4_idx = (base_48 >> 39) & 0x1FF;
+    unsigned pdpt_idx = (base_48 >> 30) & 0x1FF;
+    unsigned pd_idx   = (base_48 >> 21) & 0x1FF;
+
+    auto *pml4 = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (VMM::get_kernel_pml4() & ~0xFFFULL));
+    constexpr uint64_t P = 1ULL << 0;   // PAGE_PRESENT
+    constexpr uint64_t W = 1ULL << 1;   // PAGE_WRITE
+
+    uint64_t pdpt_phys;
+    if (!(pml4[pml4_idx] & P)) {
+        pdpt_phys = PMM::alloc_page_table();
+        auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
+        __builtin_memset(pdpt, 0, 4096);
+        pml4[pml4_idx] = pdpt_phys | P | W;
+    } else {
+        pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+    }
+
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
+    uint64_t pd_phys;
+    if (!(pdpt[pdpt_idx] & P)) {
+        pd_phys = PMM::alloc_page_table();
+        auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
+        __builtin_memset(pd, 0, 4096);
+        pdpt[pdpt_idx] = pd_phys | P | W;
+    } else {
+        pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
+    }
+
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
+    for (unsigned i = 0; i < 8; ++i) {
+        if (!(pd[pd_idx + i] & P)) {
+            s_kstack_pt_pages[i] = PMM::alloc_page_table();
+            auto *pt = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + s_kstack_pt_pages[i]);
+            __builtin_memset(pt, 0, 4096);
+            pd[pd_idx + i] = s_kstack_pt_pages[i] | P | W;
+        } else {
+            s_kstack_pt_pages[i] = pd[pd_idx + i] & ~0xFFFULL;
+        }
+    }
+
+    uint64_t cr3;
+    asm volatile("mov %%cr3, %0" : "=r"(cr3) : : "memory");
+    asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
+}
+
+/// @brief Map one 4 KiB kernel-stack page via pre-allocated PT.
+static void map_kstack_page(uint64_t virt, uint64_t phys) {
+    uint64_t offset = virt - CONFIG_KSTACK_WINDOW_BASE;
+    unsigned pt_idx = offset / (512 * 4096);
+    unsigned entry  = (offset / 4096) & 0x1FF;
+    if (pt_idx >= 8) return;
+    constexpr uint64_t P = 1ULL << 0;  // PAGE_PRESENT
+    constexpr uint64_t W = 1ULL << 1;  // PAGE_WRITE
+    auto *pt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + s_kstack_pt_pages[pt_idx]);
+    pt[entry] = phys | P | W;
+    asm volatile("invlpg (%0)" : : "r"(virt) : "memory");
+}
+
+/// @brief Unmap one 4 KiB kernel-stack page.
+static void unmap_kstack_page(uint64_t virt) {
+    uint64_t offset = virt - CONFIG_KSTACK_WINDOW_BASE;
+    unsigned pt_idx = offset / (512 * 4096);
+    unsigned entry  = (offset / 4096) & 0x1FF;
+    if (pt_idx >= 8) return;
+    auto *pt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + s_kstack_pt_pages[pt_idx]);
+    pt[entry] = 0;
+    asm volatile("invlpg (%0)" : : "r"(virt) : "memory");
+}
+
+} // anonymous namespace
+
 /// @brief Creates a new kernel-space TaskControlBlock.
 /// Allocates a TCB from MemPool, sets up a kernel stack with an
 /// architecture-specific initial register frame, and returns it.
@@ -289,7 +470,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->memory_used_pages_ = 0;
     init_task_common(*tcb);
 
-    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+uint64_t stack_size = stack_size_for_priority(priority);
+    size_t stack_pages = (stack_size + 4095) / arch::PAGE_SIZE;
 #if CONFIG_MEMORY_BUDGET
     if (!Scheduler::reserve_memory_pages(stack_pages)) {
         Logger::warn("TCB::create: budget OOM for %zu-page stack", stack_pages);
@@ -308,10 +490,34 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     }
 
     tcb->stack_phys_ = stack_phys;
-    uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
-    // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
-    tcb->kernel_stack_top = stack_virt + STACK_SIZE;
+    // Use private kernel-stack window when not in test mode (no snapshot).
+    // In test mode (snapshot_restore would free page-table pages), use HHDM.
+    bool use_window = true;  // private window with pre-allocated page tables
+    if (use_window) {
+        uint64_t slot_va = alloc_kslot(stack_size);
+        if (slot_va) {
+            tcb->kstack_slot_va_ = slot_va;
+            tcb->kstack_slot_size_ = ((stack_size + 4095) / 4096) * 4096 + 4096;
+            uint64_t kstack_va = slot_va + 4096;
+            for (size_t i = 0; i < stack_pages; ++i)
+                map_kstack_page(kstack_va + i * arch::PAGE_SIZE,
+                                stack_phys + i * arch::PAGE_SIZE);
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
+            tcb->kernel_stack_top = kstack_va + stack_size;
+            goto done_stack;
+        }
+        // Window exhausted — fall through to HHDM.
+    }
+    tcb->kstack_slot_va_ = 0;
+    tcb->kstack_slot_size_ = 0;
+    {
+        uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
+        tcb->kernel_stack_top = stack_virt + stack_size;
+    }
+done_stack:
 
     // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
     // so a stack allocated from recycled memory can retain stale poison in
@@ -319,7 +525,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     // every slot the task may reach — including deep call-chain return
     // addresses — starts from a known state instead of tripping a fault on a
     // leftover 0x0b return address.
-    __builtin_memset(tcb->kernel_stack, 0, STACK_SIZE);
+    __builtin_memset(tcb->kernel_stack, 0, stack_size);
 
 #if defined(CONFIG_ARCH_X86_64)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -701,7 +907,6 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
 
     // For user tasks: clone page table and user stack
     if (is_user_task) {
-        // Allocate a new PML4 page
         uint64_t new_pml4 = PMM::alloc_page();
         if (!new_pml4) {
             ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
@@ -709,60 +914,44 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
             return nullptr;
         }
         tcb->page_table_ = new_pml4;
-        tcb->page_table_shared_ = true;
+        tcb->page_table_shared_ = false;  // deep copy → no sharing
 
-        // Copy user entries (0-255) from parent's PML4 — shares PDPT/PD/PT
-        // pages so the child inherits code/data/heap mappings without
-        // deep-copy. NOLINTNEXTLINE(performance-no-int-to-ptr)
-        auto *parent_pml4_virt = reinterpret_cast<uint64_t *>(
-            arch::HHDM_OFFSET + (parent->page_table_ & ~0xFFFULL));
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        // Copy kernel entries from the kernel PML4.
         auto *new_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
-                                                      (new_pml4 & ~0xFFFULL));
-        for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
-            new_virt[i] = parent_pml4_virt[i];
-        }
-        // Copy kernel entries (256-511) from the kernel PML4
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                                                       (new_pml4 & ~0xFFFULL));
         auto *kernel_virt = reinterpret_cast<uint64_t *>(
             arch::HHDM_OFFSET + (VMM::get_kernel_pml4() & ~0xFFFULL));
-        for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
+        __builtin_memset(new_virt, 0, arch::PAGE_SIZE);
+        for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i)
             new_virt[i] = kernel_virt[i];
+
+        // Deep-copy user entries from parent (walk, allocate, copy).
+        if (!VMM::deep_copy_user_pages(parent->page_table_, new_pml4)) {
+            ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
+            delete tcb;
+            return nullptr;
         }
 
-        // Create private page tables for the user stack region so that
-        // mapping the child's stack below doesn't corrupt the parent's
-        // mappings through shared PDPT/PD/PT pages.
-        uint64_t stack_pdpt_phys = 0;
+        tcb->stack_pdpt_phys_ = 0;
+
+        // Free deep-copied stack data pages before mapping new ones.
+        // deep_copy_user_pages copied the parent's stack data pages into
+        // the child's PML4, but clone allocates fresh stack pages below.
         {
-            constexpr uint64_t PML4_SHIFT = 39;
-            constexpr uint64_t PDPT_SHIFT = 30;
-            constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
-            size_t st_pml4_idx = (mem::STACK_VADDR >> PML4_SHIFT) & 0x1FF;
-            size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
-            if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
-                uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
-                stack_pdpt_phys = PMM::alloc_user_page();
-                // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                auto *old_pdpt = reinterpret_cast<uint64_t *>(
-                    arch::HHDM_OFFSET + old_pdpt_phys);
-                // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                auto *new_pdpt = reinterpret_cast<uint64_t *>(
-                    arch::HHDM_OFFSET + stack_pdpt_phys);
-                memcpy(new_pdpt, old_pdpt, arch::PAGE_SIZE);
-                new_pdpt[st_pdpt_idx] = 0;
-                new_virt[st_pml4_idx] =
-                    stack_pdpt_phys | (new_virt[st_pml4_idx] & 0xFFFULL);
+            uint64_t stack_va = mem::STACK_VADDR + arch::PAGE_SIZE;
+            size_t stack_pages = (parent->user_stack_size_ + 4095) / 4096;
+            for (size_t si = 0; si < stack_pages; ++si) {
+                uint64_t pa = VMM::virt_to_phys_in_pml4(
+                    stack_va + si * arch::PAGE_SIZE, new_pml4);
+                if (pa)
+                    PMM::free_page(pa);
             }
         }
-        tcb->stack_pdpt_phys_ = stack_pdpt_phys;
 
         size_t ustack_pages =
             (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) {
-            if (stack_pdpt_phys)
-                PMM::free_page(stack_pdpt_phys);
             ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC);
             delete tcb;
             return nullptr;
@@ -982,16 +1171,30 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (stack_phys_) {
-        size_t pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
-        for (size_t i = 0; i < pages; ++i) {
-            PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
+        size_t pages = (kstack_slot_size_ && kstack_slot_va_)
+                           ? ((kstack_slot_size_ - 4096) / 4096)
+                           : ((STACK_SIZE + 4095) / arch::PAGE_SIZE);
+        if (kstack_slot_va_) {
+            uint64_t slot_va = kstack_slot_va_;
+            uint64_t stack_va = slot_va + 4096;
+            for (size_t i = 0; i < pages; ++i)
+                unmap_kstack_page(stack_va + i * arch::PAGE_SIZE);
+            free_kslot(slot_va, kstack_slot_size_);
         }
+        // Poison physical pages via HHDM before freeing.
+        __builtin_memset(
+            reinterpret_cast<void *>(arch::HHDM_OFFSET + stack_phys_),
+            0xDD, pages * arch::PAGE_SIZE);
+        for (size_t i = 0; i < pages; ++i)
+            PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
 #if CONFIG_MEMORY_BUDGET
         Scheduler::release_memory_pages(pages);
 #endif
         stack_phys_ = 0;
         kernel_stack = nullptr;
         kernel_stack_top = 0;
+        kstack_slot_va_ = 0;
+        kstack_slot_size_ = 0;
     }
 
     if (page_table_) {

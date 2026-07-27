@@ -19,9 +19,9 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 881,    0,       0      },  // every registration function (881 = 872 + 5 pmm + 4 mempool)
+    {"all",                 887,    0,       0      },  // every registration function (887 = 881 + 4 preemption_under_syscall + 2 zombie_cleanup)
     {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression
-    {"scheduler",            51,    0,       0      },  // sched + task + lifecycle + idle_task + health + cpu_load
+    {"scheduler",            53,    0,       0      },  // sched + task + lifecycle + idle_task + zombie_cleanup + health + cpu_load
     {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
     {"lock_protocol",        34,    0,       0      },  // lock_order + budget + pip + pcp + queue_pip + mutex_pcp + lock_validator
     {"timer",                 5,    0,       0      },  // timer tests
@@ -31,6 +31,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
     {"ipc",                 46,     0,       0      },  // IPC + pipe + ipc_blocking + lock-free + robustness
     {"ipc_blocking",         4,     0,       0      },  // IPC blocking send_sync/handshake tests
+    {"zombie_cleanup",       2,     0,       0      },  // zombie list deferred cleanup
     {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
@@ -60,6 +61,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"deadline_action",      1,     0,       0      },  // single action-dispatch test per build (CONFIG_DEADLINE_ACTION)
     {"wcet",                 1,     0,       0      },  // WCET benchmark for scan_deadlines (P7b)
     {"priority_inheritance", 11,    0,       0      },  // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown + MutexNestedDrop + SemaphoreInherits + queue_pip(3) + mutex_pcp(3)
+    {"preemption_under_syscall", 4,  0,       0      },  // preemption during syscall, tmpfs write, brk, starvation
     {"stress",              10,     0,       0      },  // stress + starvation_deadlock
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests

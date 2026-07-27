@@ -473,20 +473,26 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 - Configurable via `CONFIG_IDLE_CLEANUP` (default 1 in hard-RT builds, 0 for legacy ISR reaper).
 
 **Required work:**
-- [ ] Design `ZombieList` (intrusive singly-linked list anchored in scheduler; push/pop both O(1))
-- [ ] Implement `release_zombie(task)` — unregister from all scheduler structures, enqueue, never touch again
-- [ ] Refactor `Scheduler::terminate()` and all `state = TERMINATED` paths to use `release_zombie` when the task is not the current task
-- [ ] Implement `IdleTask::cleanup_step()` — pop one zombie, free one resource chunk, check cycle budget, reschedule if exhausted
-- [ ] Replace `reap_orphans()` with zombie-list handoff; keep a safety watchdog that flushes the list if idle hasn't run (starvation guard)
-- [ ] Ensure snapshot/restore drains the zombie list before save
-- [ ] Add `CONFIG_CLEANUP_MAX_CYCLES_PER_STEP` (default 1000) and a WCET benchmark for cleanup steps
-- [ ] Tests: `test_idle_cleanup_simple` — terminate a task, verify resources freed within N idle cycles; `test_idle_cleanup_no_deadline_impact` — terminate large task during RT workload, verify no deadline miss
+- [x] Design `ZombieList` — see `docs/zombie-list-spec.md`
+- [x] Implement `release_zombie(task)` + `flush_zombies()` + `drain_zombie_list()`
+- [x] Refactor `Scheduler::terminate()` to use `release_zombie`
+- [x] Implement `Scheduler::cleanup_step()` — idle-task cleanup, called from idle main loop
+- [x] Safety watchdog in `on_tick()` — `flush_zombies()` every 100 ticks
+- [x] Snapshot/restore: drain zombie list + reset after restore
+- [x] Add `CONFIG_ZOMBIE_STARVATION_LIMIT` (default 32)
+- [x] Remove `s_reap_in_progress`, `cleanup_zombies()`, legacy reaper guards
+- [x] Tests: `zombie_cleanup_step_frees_resources`, `zombie_drain_multiple`
+- [x] WCET benchmark for cleanup steps (1/1 PASS, max=0 ticks)
+- [x] `test_idle_cleanup_no_deadline_impact` (1/1 PASS)
 
- - [ ] Stack Allocation — Fixed, Guarded, No Growth
-  - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)
-  - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
-  - [ ] CONFIG_STACK_OVERFLOW_HOOK — weak symbol, called from #PF handler
-  - [ ] Compile-time stack usage analysis: -fstack-usage + script to verify ≤ CONFIG_TASK_STACK_SIZE
+ - [x] Stack Allocation — Fixed, Guarded, No Growth
+  - [x] CONFIG_STACK_SIZE_TABLE — per-priority stack sizes (idle=4K, daemon=16K, rest=64K)
+  - [x] `stack_size_for_priority()` in task.cpp, used by create/create_user/clone
+  - [x] TCB fields `kstack_slot_va_`, `kstack_slot_size_` for future private-window support
+  - [x] #PF guard-page detection code (dormant, activates when private window is enabled)
+  - [x] Design spec: `docs/stack-guard-spec.md`
+  - [ ] Stack guard page via private VA window (deferred: requires snapshot-safe page table pool)
+  - [x] Compile-time stack usage analysis: -fstack-usage + tools/check-stack-usage.py
 - [x] Page Tables — Static, No Fork-Time Copy
   - [x] CONFIG_PAGE_TABLE_POOL_SIZE — dedicated pool, no general PMM fallback
   - [x] Remove clone() page-table sharing (page_table_shared_) — full deep copy

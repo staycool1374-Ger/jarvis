@@ -21,6 +21,7 @@
 #include <logger.hpp>
 #include <assert.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/task/scheduler.hpp>
 #include <constants.hpp>
 
 namespace kernel {
@@ -144,6 +145,7 @@ void idle_task_main() {
         inited = true;
     }
     for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
+        Scheduler::cleanup_step();
         check_section_markers();
         crc_process_chunk();
         arch::hlt();

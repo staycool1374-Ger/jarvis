@@ -130,20 +130,7 @@ class Scheduler {
     ///        before production tasks (shell, idle) are created.
     static void cleanup_test_tasks() noexcept;
 
-    /// @brief Removes all tasks from the scheduler that have invalid magic
-    ///        (freed-and-reused TCBs) without touching the TCB memory.
-    ///        Also removes tasks with valid magic that are not the idle task,
-    ///        the current task, or known daemons.
-    ///
-    /// Iterates at most CONFIG_MAX_TASKS entries in the task array (defensive
-    /// bound against a corrupted task_count_).  Tasks to keep are compacted
-    /// to the front of the array; task_count_ is updated accordingly.
-    /// @param shell_task Pointer to the shell task (use set_shell_task()
-    /// beforehand).
-    static void cleanup_zombies() noexcept;
-
-    /// @brief Stores a pointer to the shell task so cleanup_zombies can
-    /// identify it.
+    /// @brief Stores a pointer to the shell task.
     static void set_shell_task(TaskControlBlock *task) noexcept {
         shell_task_ptr_ = task;
     }
@@ -212,6 +199,9 @@ class Scheduler {
     ///        the monitor-wake path to prevent spurious context switches.
     static void set_test_active(bool v) noexcept {
         s_test_active_ = v;
+    }
+    static bool is_test_active() noexcept {
+        return s_test_active_;
     }
 #endif
     /// @brief Clears assembly-level context-switch globals
@@ -440,6 +430,44 @@ class Scheduler {
     ///        so init gets PID 1 after the test suite finishes).
     static void reset_next_task_id(uint64_t id) noexcept;
 
+    /// @brief Release a terminated task into the zombie list for deferred
+    ///        cleanup by the idle task.  Removes from all scheduler tables
+    ///        (all_tasks_, deadline_list_, id_table_) but does NOT free
+    ///        resources — that happens in cleanup_step().
+    ///        Caller must hold scheduler_lock_.
+    ///        Precondition: task.state == TERMINATED, task NOT in ready queue.
+    static void release_zombie(TaskControlBlock &task) noexcept;
+
+    /// @brief Drain up to @p max_flush zombies from the zombie list,
+    ///        calling cleanup() + MemPool::free() on each.
+    ///        Used by the on_tick watchdog when zombie_count_ exceeds
+    ///        the starvation limit, and by drain_zombie_list().
+    ///        Caller must hold scheduler_lock_ or have IRQs disabled.
+    static void flush_zombies(uint64_t max_flush) noexcept;
+
+    /// @brief Drain ALL zombies from the list synchronously.
+    ///        Takes scheduler_lock_ internally.
+    static void drain_zombie_list() noexcept;
+
+    /// @brief Idle-task cleanup step: pop one zombie from the list and
+    ///        free its resources.  Called from the idle main loop once
+    ///        per iteration.  Safe to call with IRQs enabled — the pop
+    ///        is IRQ-guarded internally.
+    static void cleanup_step() noexcept;
+
+    /// @brief Clear the zombie list (used by snapshot_restore to prevent
+    ///        dangling pointers after MemPool restoration).
+    /// @brief Return the current zombie count (for tests).
+    static uint64_t zombie_count() noexcept {
+        return zombie_count_;
+    }
+
+    static void reset_zombie_list() noexcept {
+        zombie_head_ = nullptr;
+        zombie_tail_ = nullptr;
+        zombie_count_ = 0;
+    }
+
     /// @brief Deferred-kill: add a task to the deferred kill list for
     ///        safe cleanup outside the try_lock critical section.
     static void defer_kill(TaskControlBlock *task) noexcept;
@@ -482,6 +510,14 @@ class Scheduler {
     static constinit TaskControlBlock *idle_task_;
     static constinit TaskControlBlock *shell_task_ptr_;
     static constinit TaskControlBlock *harness_task_ptr_;
+
+    /// @brief Zombie list — intrusive singly-linked list of terminated
+    ///        tasks awaiting deferred cleanup by the idle task.
+    ///        push = release_zombie (under scheduler_lock_), pop =
+    ///        cleanup_step (IRQ-guarded) or flush_zombies (under lock).
+    static constinit TaskControlBlock *zombie_head_;
+    static constinit TaskControlBlock *zombie_tail_;
+    static constinit uint64_t zombie_count_;
 #if CONFIG_DEADLINE_MONITOR_TASK
     /// @brief Pointer to the deadline-monitor task (nullptr if not spawned).
     static constinit TaskControlBlock *s_monitor_task_;
@@ -560,11 +596,6 @@ extern uint64_t deadline_detection_integrity;
 ///        nullptr means no task has used FPU since boot.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern TaskControlBlock *fpu_owner;
-/// @brief Recursion guard for Scheduler::reap_orphans().
-///        Reset in snapshot_restore() to prevent deadlock if a prior
-///        test panicked mid-reap.
-// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-extern bool s_reap_in_progress;
 }
 
 #if CONFIG_DEADLINE_MISS_DETECTION

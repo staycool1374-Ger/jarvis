@@ -603,27 +603,125 @@ void Shell::cmd_uptime(int, const char**) {
     Terminal::putchar('\n');
 }
 
-void Shell::cmd_tasks(int, const char**) {
-    auto* cur = kernel::Scheduler::current_task();
-    auto count = kernel::Scheduler::task_count();
-
-    Terminal::write("Tasks: ");
-    char buf[16];
+static void print_uint(uint64_t n) {
+    if (n == 0) { Terminal::putchar('0'); return; }
+    char buf[21];
     int pos = 0;
-    uint64_t n = count;
-    if (n == 0) { Terminal::putchar('0'); }
-    else {
-        while (n > 0) { buf[pos++] = static_cast<char>('0' + (n % 10)); n /= 10; }
-        while (pos > 0) Terminal::putchar(buf[--pos]);
+    while (n > 0 && pos < 20) {
+        buf[pos++] = static_cast<char>('0' + (n % 10));
+        n /= 10;
     }
-    Terminal::write(" (aktuell: ");
-    if (cur) {
-        uint64_t id = cur->id;
-        pos = 0;
-        while (id > 0) { buf[pos++] = static_cast<char>('0' + (id % 10)); id /= 10; }
-        while (pos > 0) Terminal::putchar(buf[--pos]);
+    while (pos > 0) Terminal::putchar(buf[--pos]);
+}
+
+static const char *state_name(kernel::TaskState s) {
+    using namespace kernel;
+    switch (s) {
+        case TaskState::READY:     return "READY    ";
+        case TaskState::RUNNING:   return "RUNNING  ";
+        case TaskState::BLOCKED:   return "BLOCKED  ";
+        case TaskState::WAITING:   return "WAITING  ";
+        case TaskState::TERMINATED:return "TERM     ";
+        case TaskState::REAPED:    return "REAPED   ";
+        default:                   return "?        ";
     }
-    Terminal::write(")\n");
+}
+
+void Shell::cmd_tasks(int, const char**) {
+    Terminal::write("ID  NAME             STATE      PRIO  PERIOD   MEM_PG STACK_KiB CPU_TIME  CURRENT\n");
+    Terminal::write("--- ---------------- ---------- ----- ------- ------- --------- --------- -------\n");
+
+    auto *cur = kernel::Scheduler::current_task();
+    auto count = kernel::Scheduler::task_count();
+    for (uint64_t i = 0; i < count; ++i) {
+        auto *t = kernel::Scheduler::task_at(i);
+        if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC)
+            continue;
+
+        // ID (right-aligned, 3 chars)
+        if (t->id < 100) Terminal::putchar(' ');
+        if (t->id < 10)  Terminal::putchar(' ');
+        print_uint(t->id);
+        Terminal::putchar(' ');
+
+        // Name (left-aligned, 16 chars)
+        for (int c = 0; c < 15; ++c) {
+            if (t->name[c])
+                Terminal::putchar(t->name[c]);
+            else
+                Terminal::putchar(' ');
+        }
+        Terminal::putchar(' ');
+
+        // State (9 chars)
+        Terminal::write(state_name(t->state));
+        Terminal::putchar(' ');
+
+        // Priority (right-aligned, 5 chars)
+        uint64_t prio_pad = 5;
+        uint64_t tmp = t->priority;
+        while (tmp >= 10) { --prio_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < prio_pad; ++p) Terminal::putchar(' ');
+        print_uint(t->priority);
+        Terminal::putchar(' ');
+
+        // Period (right-aligned, 7 chars)
+        tmp = t->period_ticks;
+        uint64_t per_pad = 7;
+        while (tmp >= 10) { --per_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < per_pad; ++p) Terminal::putchar(' ');
+        print_uint(t->period_ticks);
+        Terminal::putchar(' ');
+
+        // Memory used pages (right-aligned, 7 chars)
+        tmp = t->memory_used_pages_;
+        uint64_t mem_pad = 7;
+        while (tmp >= 10) { --mem_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < mem_pad; ++p) Terminal::putchar(' ');
+        print_uint(t->memory_used_pages_);
+        Terminal::putchar(' ');
+
+        // Stack size in KiB (right-aligned, 9 chars)
+        uint64_t stack_kib = kernel::TaskControlBlock::STACK_SIZE / 1024;
+        tmp = stack_kib;
+        uint64_t stk_pad = 9;
+        while (tmp >= 10) { --stk_pad; tmp /= 10; }
+        for (uint64_t p = 1; p < stk_pad; ++p) Terminal::putchar(' ');
+        print_uint(stack_kib);
+        Terminal::putchar(' ');
+
+        // CPU time as hh:mm:ss (ticks at 1000 Hz = 1 ms per tick)
+        {
+            uint64_t total_ms = t->executed_ticks;
+            uint64_t hh = total_ms / 3600000;
+            total_ms %= 3600000;
+            uint64_t mm = total_ms / 60000;
+            total_ms %= 60000;
+            uint64_t ss = total_ms / 1000;
+
+            if (hh < 100) Terminal::putchar(' ');
+            if (hh < 10)  Terminal::putchar(' ');
+            print_uint(hh);
+            Terminal::putchar(':');
+            if (mm < 10) Terminal::putchar('0');
+            print_uint(mm);
+            Terminal::putchar(':');
+            if (ss < 10) Terminal::putchar('0');
+            print_uint(ss);
+        }
+        Terminal::putchar(' ');
+
+        // Current marker
+        if (t == cur)
+            Terminal::write("<-");
+        Terminal::write("\n");
+    }
+
+    // Zombie list summary
+    uint64_t zcount = kernel::Scheduler::zombie_count();
+    Terminal::write("\nZombies: ");
+    print_uint(zcount);
+    Terminal::write("\n");
 }
 
 void Shell::cmd_meminfo(int, const char**) {
@@ -1057,12 +1155,9 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         // Reap any terminated test tasks that accumulated while interrupts
         // were disabled (on_tick → reap_orphans never ran).
         kernel::Scheduler::reap_orphans();
-        // Remove any zombie tasks whose TCBs have been freed but whose
-        // entries remain in the scheduler table (e.g. tests that deleted
-        // tasks without calling remove_task, or where find_task failed
-        // due to hash-table tombstones).  The TCB magic field distinguishes
-        // valid tasks from freed-and-reused memory.
-        kernel::Scheduler::cleanup_zombies();
+        // Drain any tasks in the zombie list (terminated via release_zombie
+        // but not yet cleaned up by the idle task).
+        kernel::Scheduler::drain_zombie_list();
 
         // Clear stale scheduler context-switch globals.  Test code may have
         // called reschedule()/switch_to_task() while interrupts were disabled

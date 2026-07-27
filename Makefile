@@ -455,17 +455,17 @@ ifneq ($(NO_LTO),1)
 # link via raw ld/gcc without the LTO plugin, so they must stay non-LTO.
 # The kernel link uses the compiler driver (see mk/rules.mk) to load the
 # LTO plugin; LDFLAGS carries -flto for that.
-debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer -flto
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer -fstack-usage -flto
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 debug: LDFLAGS  += -flto
 else
 # GDB flows (debug-test/debug-shell/rr-record) build without LTO so function
 # boundaries survive for clean single-stepping and stack unwinding.
-debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
+debug: CXXFLAGS += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer -fstack-usage
 debug: CCFLAGS  += -g -Og -DCONFIG_DEBUG -fno-omit-frame-pointer
 endif
 debug: $(TEST_REGISTRY_GEN)
-debug: check-build-stamp $(KERNEL_DEBUG)
+debug: check-build-stamp $(KERNEL_DEBUG) stack-usage-report
 ifeq ($(ARCH),x86_64)
 	cp $(KERNEL_DEBUG) iso/boot/kernel.elf
 	@mkdir -p $(dir $(DEBUG_ISO))
@@ -985,6 +985,13 @@ audit:
 		exit 1; \
 	fi
 	@python3 tools/audit_module.py $(HPP) $(CPP)
+
+# ------------------------------------------------------------------------------
+# Stack usage report
+# ------------------------------------------------------------------------------
+.PHONY: stack-usage-report
+stack-usage-report:
+	@python3 tools/check-stack-usage.py || true
 
 # ------------------------------------------------------------------------------
 # Match-all rule: silently consume positional arguments for unified targets

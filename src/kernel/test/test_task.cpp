@@ -75,11 +75,10 @@ JARVIS_TEST(task_create_user_page_table, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that TaskControlBlock::clone() creates a child task
-// whose page table is shared with the parent.
+// Testidea: Verifies that TaskControlBlock::clone() deep-copies page tables.
 // Input: Create a user parent task, set current, push registers, clone
-// Expect: child != nullptr, child->page_table_ != 0,
-// child->page_table_shared_ == true, child->user_stack_ != 0
+// Expect: child has own page tables (page_table_shared_ == false),
+// child user stack exists
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
@@ -100,14 +99,15 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
     JARVIS_ASSERT(child->page_table_ != 0);
-    JARVIS_ASSERT(child->page_table_shared_ == true);
+    JARVIS_ASSERT(child->page_table_shared_ == false);
     JARVIS_ASSERT(child->user_stack_ != 0);
 
-    child->cleanup();
+    Scheduler::add_task(*child);
+    Scheduler::remove_task(*child);
+    // delete calls cleanup() internally — do NOT call cleanup() manually
     delete child;
 
     Scheduler::remove_task(*parent);
-    parent->cleanup();
     delete parent;
     JARVIS_TEST_PASS();
 }
@@ -148,8 +148,8 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that cleaning up a cloned child task does not free the
-// parent's shared page table.
+// Testidea: Verifies that cleaning up a cloned child task does not affect
+// the parent's page table (deep copy ensures independence).
 // Input: Create user parent, clone child, capture parent page_table_
 // address, cleanup/delete child
 // Expect: parent->page_table_ unchanged and non-null after child cleanup
@@ -170,18 +170,19 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages,
 
     auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
-    JARVIS_ASSERT(child->page_table_shared_ == true);
+    JARVIS_ASSERT(child->page_table_shared_ == false);
+    JARVIS_ASSERT(child->page_table_ != parent->page_table_);
 
     uint64_t parent_pml4 = parent->page_table_;
-    child->cleanup();
-    delete child;
+    delete child;  // delete calls cleanup() internally
 
-    JARVIS_ASSERT(parent->page_table_ == parent_pml4);
+    // Parent's page table should be unchanged
+    JARVIS_ASSERT(parent_pml4 != 0);
     JARVIS_ASSERT(parent->page_table_ != 0);
+    JARVIS_ASSERT(parent->page_table_ == parent_pml4);
 
     Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
+    delete parent;  // delete calls cleanup() internally
     JARVIS_TEST_PASS();
 }
 
@@ -213,12 +214,12 @@ JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     auto *child = TaskControlBlock::clone(regs);
     JARVIS_ASSERT(child != nullptr);
 
-    child->cleanup();
-    delete child;
+    Scheduler::add_task(*child);
+    Scheduler::remove_task(*child);
+    delete child;  // delete calls cleanup() internally
 
     Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
+    delete parent;  // delete calls cleanup() internally
 
     uint64_t free_after = PMM::free_memory();
     JARVIS_ASSERT(free_after >= free_before);

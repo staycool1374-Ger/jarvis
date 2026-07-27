@@ -182,17 +182,29 @@ void reboot_from_table() {
     Scheduler::set_suppress_terminated_log(true);
     debug_write("[INFO]  daemon: restarting vfsd, iocd\n");
 
-    // 1. Terminate every task except idle
-    for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
+    // 1. Collect all non-idle, non-current tasks (can't mutate all_tasks_
+    //    during iteration, and must not release our own TCB — we're running on
+    //    its stack).
+    static constexpr uint64_t MAX_KILL = 64;
+    TaskControlBlock *to_kill[MAX_KILL];
+    uint64_t num_to_kill = 0;
+    auto *self = Scheduler::current_task();
+    for (uint64_t i = 0; i < Scheduler::task_count() && num_to_kill < MAX_KILL;
+         ++i) {
         auto *t = Scheduler::task_at(i);
-        if (t && t != idle) {
-            t->state = TaskState::TERMINATED;
-            t->exit_code = 0;
-        }
+        if (t && t != idle && t != self)
+            to_kill[num_to_kill++] = t;
     }
-    Scheduler::reap_orphans();
-
-    // Clear stale ready queue entries from destroyed tasks
+    // Release each into the zombie list.  IRQs are disabled (IrqGuard at
+    // function entry), so no ISR concurrency — the scheduler lock is not
+    // needed here.
+    for (uint64_t i = 0; i < num_to_kill; ++i) {
+        Scheduler::dequeue_ready(*to_kill[i]);
+        to_kill[i]->state = TaskState::TERMINATED;
+        to_kill[i]->exit_code = 0;
+        Scheduler::release_zombie(*to_kill[i]);
+    }
+    Scheduler::drain_zombie_list();
     Scheduler::reset_ready_queue();
 
     // Re-enable death/terminated messages — cleanup is done, any from here

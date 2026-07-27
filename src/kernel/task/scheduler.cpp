@@ -35,6 +35,7 @@ extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
 extern "C" void debug_write_dec(uint64_t value);
 #include <kernel/memory/integrity.hpp>
+#include <assert.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/test/test_watchdog.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
@@ -62,7 +63,6 @@ static uint64_t s_last_switch_tick_ = 0;   // last tick an actual switch ran
 
 extern "C" {
 uint64_t scheduler_dummy_save_rsp = 0;
-bool s_reap_in_progress = false;
 }
 
 namespace kernel {
@@ -112,9 +112,122 @@ void Scheduler::dequeue_ready(TaskControlBlock &task) noexcept {
     ready_queue_.remove(task, effective_priority(&task));
 }
 
+// FIX(rms-o1): Explicit priority movement in the O(1) ReadyQueue.  The queue
+// does NOT re-derive the node's bucket from tcb.priority — it stores nodes at
+// the position where they were originally enqueued.  Whenever tcb.priority or
+// effective_priority changes (PI boost, sporadic server replenish, deadline
+// miss demote), the caller MUST invoke move_priority with both old and new
+// values.  Failure to do so leaves the task in the wrong priority bucket,
+// causing missed preemptions or priority inversion.
 void Scheduler::move_priority(TaskControlBlock &task, uint64_t old_prio,
                                uint64_t new_prio) noexcept {
     ready_queue_.move_priority(task, old_prio, new_prio);
+}
+
+void Scheduler::release_zombie(TaskControlBlock &task) noexcept {
+    // Invariant: a zombie must never be in the ready queue.  terminate()
+    // calls dequeue_ready() before reaching us; self-termination also
+    // dequeues first.
+    ENSURE(!task.in_ready_queue_);
+    ENSURE(task.state == TaskState::TERMINATED);
+
+    deadline_list_.remove(&task);
+    all_tasks_.remove(&task);
+    id_table_remove(&task);
+
+    task.zombie_next_ = nullptr;
+    if (zombie_tail_) {
+        zombie_tail_->zombie_next_ = &task;
+        zombie_tail_ = &task;
+    } else {
+        zombie_head_ = zombie_tail_ = &task;
+    }
+    __atomic_add_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+}
+
+void Scheduler::flush_zombies(uint64_t max_flush) noexcept {
+    for (uint64_t i = 0; i < max_flush; ++i) {
+        TaskControlBlock *task = zombie_head_;
+        if (!task)
+            break;
+        // Check magic before accessing any field past offset 0 (may be freed).
+        if (task->magic != TaskControlBlock::TCB_MAGIC) {
+            zombie_head_ = nullptr;
+            zombie_tail_ = nullptr;
+            zombie_count_ = 0;
+            continue;
+        }
+        zombie_head_ = task->zombie_next_;
+        if (!zombie_head_)
+            zombie_tail_ = nullptr;
+        task->zombie_next_ = nullptr;
+        if (task->in_ready_queue_)
+            ready_queue_.remove(*task, effective_priority(task));
+        __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+
+        if (task->magic == TaskControlBlock::TCB_MAGIC) {
+            task->cleanup();
+            MemPool::free(task);
+        }
+    }
+}
+
+void Scheduler::drain_zombie_list() noexcept {
+    // Pop zombies under IRQ-disable (ISR watchdog can't race).
+    // No scheduler_lock_: cleanup doesn't touch scheduler structures,
+    // and single-core with IRQs off is sufficient for list ops.
+    // Holding the lock during cleanup (PMM free, VMM unmap) would
+    // starve the timer ISR and prevent task scheduling.
+    for (;;) {
+        TaskControlBlock *task;
+        {
+            arch::IrqGuard irq_guard{};
+            task = zombie_head_;
+            if (!task)
+                return;
+            if (task->magic != TaskControlBlock::TCB_MAGIC) {
+                zombie_head_ = nullptr;
+                zombie_tail_ = nullptr;
+                zombie_count_ = 0;
+                continue;
+            }
+            zombie_head_ = task->zombie_next_;
+            if (!zombie_head_)
+                zombie_tail_ = nullptr;
+            task->zombie_next_ = nullptr;
+            if (task->in_ready_queue_)
+                ready_queue_.remove(*task, effective_priority(task));
+            __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+        }
+        // IRQs on — cleanup and free without holding any lock.
+        task->cleanup();
+        MemPool::free(task);
+    }
+}
+
+void Scheduler::cleanup_step() noexcept {
+    // Pop one zombie under IRQ-disable so on_tick watchdog cannot race.
+    TaskControlBlock *task;
+    {
+        arch::IrqGuard irq_guard{};
+        task = zombie_head_;
+        if (task) {
+            zombie_head_ = task->zombie_next_;
+            if (!zombie_head_)
+                zombie_tail_ = nullptr;
+            task->zombie_next_ = nullptr;
+            if (task->in_ready_queue_)
+                ready_queue_.remove(*task, effective_priority(task));
+            __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+        }
+    }
+    if (!task)
+        return;
+
+    if (task->magic == TaskControlBlock::TCB_MAGIC) {
+        task->cleanup();
+        MemPool::free(task);
+    }
 }
 
 #if CONFIG_MEMORY_BUDGET
@@ -209,6 +322,16 @@ void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     // does not deadlock waiting for a child that exited without sys_exit.
     wake_waiting_parent(task);
 
+    // Release into the zombie list for deferred cleanup by the idle task.
+    // For non-self termination this is the final step.
+    // For self-termination we call it before the context switch: it removes
+    // the task from scheduler tables (all_tasks_, deadline_list_, id_table_)
+    // but does NOT free the kernel stack or TCB — those remain valid until
+    // idle's cleanup_step() calls cleanup() + MemPool::free().  The context
+    // switch only reads task.context for the save, so the table removal is
+    // safe before switch_to_task.
+    release_zombie(task);
+
     // If the terminating task is the one currently on the CPU, arrange for a
     // context switch to a valid successor on the next ISR.  Otherwise
     // current_task_ptr_ stays parked on a TERMINATED task and the running RSP
@@ -254,6 +377,9 @@ DeadlineList Scheduler::deadline_list_;
     constinit TaskControlBlock *Scheduler::idle_task_ = nullptr;
     constinit TaskControlBlock *Scheduler::shell_task_ptr_ = nullptr;
     constinit TaskControlBlock *Scheduler::harness_task_ptr_ = nullptr;
+constinit TaskControlBlock *Scheduler::zombie_head_ = nullptr;
+constinit TaskControlBlock *Scheduler::zombie_tail_ = nullptr;
+constinit uint64_t Scheduler::zombie_count_ = 0;
 sync::SpinLock Scheduler::scheduler_lock_;
 
 // Liu-Leyland Rate-Monotonic LUB bounds (scaled by 1000000)
@@ -955,6 +1081,12 @@ void Scheduler::on_tick() noexcept {
         }
 #endif
 #if CONFIG_DEADLINE_MONITOR_TASK
+        // FIX(pret): s_test_active_ disables the deadline-monitor wake and
+        // periodic reap_orphans() during test execution.  Without this guard,
+        // the reaper (tick 100 reap_orphans below) frees terminated test tasks
+        // before the test's ScopeGuard or snapshot_restore can clean them up,
+        // causing double-free use-after-free.  Test termination is handled
+        // entirely by the harness — the reaper must not race with it.
         if (!s_test_active_) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
             // on_tick already holds scheduler_lock_ (acquired at line 548 and
@@ -1060,11 +1192,26 @@ void Scheduler::on_tick() noexcept {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
+// FIX(ss-race): is_poisoned_block checks for a freed TCB whose
+                // sporadic_server field has been poisoned (0xDDDD...) by the
+                // MemPool free path.  During daemon teardown the sporadic server
+                // object may be destroyed while a terminated task still has a
+                // stale pointer.  Without this guard the subsequent
+                // process_replenishments() call would dereference freed memory.
+                // This check is safe because no active task has a valid pointer
+                // that matches the poison pattern — the poison value is chosen
+                // to be outside any valid allocation.
                 if (is_poisoned_block(t->sporadic_server)) {
-                    // Freed TCB with poisoned sporadic_server (daemon teardown
-                    // race).  Skip — the task is being cleaned up.
                     continue;
                 }
+                // FIX(rms-o1): Effective priority may change after replenishment
+                // (e.g. budget restored → sporadic server priority rises).
+                // The O(1) queue does not re-derive position from tcb.priority,
+                // so we MUST call move_priority explicitly.  Skipping this leaves
+                // the task at its depleted (lower) bucket, starving it until the
+                // next reschedule, which may never come if the task is blocked.
+                // Skip when t == cur — the current task is not in the ready
+                // queue and move_priority on a non-enqueued task is undefined.
                 {
                     uint64_t old_eff = effective_priority(t);
                     t->sporadic_server->process_replenishments(current_tick);
@@ -1101,11 +1248,20 @@ void Scheduler::on_tick() noexcept {
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
-    if (tick_counter % 100 == 0 && !s_test_active_) {
-        // Skip reaping during test execution — terminated test tasks are
-        // cleaned up by the test's ScopeGuard or snapshot_restore.  The
-        // reaper would free them first, causing double-free UAF.
-        reap_orphans();
+// FIX(pret): reap_orphans runs every 100 ticks but is gated on
+    // !s_test_active_ to prevent a UAF race with test ScopeGuards.  The test
+    // harness owns its task lifecycle — it calls remove_task+cleanup+delete in
+    // the ScopeGuard.  If the reaper frees the task first, the ScopeGuard's
+    // delete double-frees the MemPool block.  Test tasks are short-lived and
+    // few, so deferring reaping to the post-test snapshot_restore is safe and
+    // avoids the race entirely.  The 100-tick batching ensures ammortised O(1)
+    // cost in production while not being so infrequent that zombie count grows
+    // unbounded (CONFIG_MAX_TASKS=64 caps the worst case).
+    if (tick_counter % 100 == 0) {
+        if (!s_test_active_)
+            reap_orphans();
+        // ZombieList watchdog: force-flush if idle hasn't kept up.
+        flush_zombies(CONFIG_ZOMBIE_STARVATION_LIMIT / 2);
         if (lock_acquired) {
             daemon::restart_stale_daemons();
         }
@@ -1119,10 +1275,6 @@ void Scheduler::on_tick() noexcept {
 // ---------------------------------------------------------------------------
 
 void Scheduler::reap_orphans() noexcept {
-    if (s_reap_in_progress)
-        return;
-    s_reap_in_progress = true;
-
     auto *current = current_task();
     auto *init_task = idle_task_;
     TaskControlBlock *new_idle = nullptr;
@@ -1270,7 +1422,6 @@ void Scheduler::reap_orphans() noexcept {
         }
     }
 
-    s_reap_in_progress = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -1278,60 +1429,36 @@ void Scheduler::reap_orphans() noexcept {
 // ---------------------------------------------------------------------------
 
 void Scheduler::cleanup_test_tasks() noexcept {
-    // The task currently executing this routine is still running on its own
-    // kernel stack. Freeing it here (via t->cleanup()) would reclaim the very
-    // stack we are executing on — a use-after-free that corrupts the return
-    // path with poison and faults. reap_orphans() already skips t == current;
-    // mirror that guard here.
     TaskControlBlock *const running = current_task_ptr_;
 
-    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t == idle_task_ || t == running)
-            continue;
-        if (t->magic == TaskControlBlock::TCB_MAGIC &&
-            t->state != TaskState::TERMINATED) {
-            t->state = TaskState::TERMINATED;
-            t->exit_code = 0;
-            wake_waiting_parent(*t);
-        }
-    }
-    reap_orphans();
-
-    // Remove remaining non-idle tasks
+    // Collect all non-idle, non-running tasks (can't mutate all_tasks_
+    // during iteration: terminate → release_zombie removes from the list).
     static constexpr uint64_t MAX_CLEANUP = 64;
-    TaskControlBlock *to_remove[MAX_CLEANUP];
-    uint64_t num = 0;
-    for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (num >= MAX_CLEANUP)
-            break;
+    TaskControlBlock *to_kill[MAX_CLEANUP];
+    uint64_t num_to_kill = 0;
+    for (auto *t = all_tasks_.first_ptr(); t && num_to_kill < MAX_CLEANUP;
+         t = all_tasks_.next_ptr(t)) {
         if (t == idle_task_ || t == running)
             continue;
-        if (t->magic == TaskControlBlock::TCB_MAGIC) {
-            to_remove[num++] = t;
-        }
-    }
-    for (uint64_t i = 0; i < num; ++i) {
-        auto *t = to_remove[i];
-        // Unlink from every scheduler list before freeing.  These tasks
-        // survived reap_orphans() (their parent is still alive) but may still
-        // be physically linked in the ready queue / deadline list / id table;
-        // freeing without unlinking leaves a dangling node that a later
-        // ready-queue walk dereferences → #GP.
-        Scheduler::dequeue_ready(*t);
-        deadline_list_.remove(t);
-        id_table_remove(t);
-        all_tasks_.remove(t);
-        t->cleanup();
-        delete t;
+        if (t->magic == TaskControlBlock::TCB_MAGIC)
+            to_kill[num_to_kill++] = t;
     }
 
+    // Terminate each collected task: dequeue, set TERMINATED, wake parent,
+    // release_zombie (removes from all_tasks_, deadline_list_, id_table_,
+    // appends to zombie list).
+    for (uint64_t i = 0; i < num_to_kill; ++i)
+        terminate(*to_kill[i], 0);
+
+    // Drain zombies: cleanup() + MemPool::free() for each.
+    drain_zombie_list();
+
+    // Rebuild clean tables: only idle and the running task survive.
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
         id_table_[i] = nullptr;
     all_tasks_.clear();
     all_tasks_.append(idle_task_);
     id_table_insert(idle_task_->id, idle_task_);
-    // Keep the running task in the live set (its stack is still in use); do
-    // not drop it into limbo. If it is idle it is already appended above.
     if (running && running != idle_task_) {
         all_tasks_.append(running);
         id_table_insert(running->id, running);
@@ -1448,69 +1575,6 @@ static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
         return false;
     }
     return true;
-}
-
-// ---------------------------------------------------------------------------
-// cleanup_zombies
-// ---------------------------------------------------------------------------
-
-void Scheduler::cleanup_zombies() noexcept {
-    if (s_reap_in_progress)
-        return;
-    auto *shell = shell_task_ptr_;
-    if (!shell ||
-        (reinterpret_cast<uint64_t>(shell) & 0xFFFF800000000000ULL) !=
-            0xFFFF800000000000ULL ||
-        shell->magic != TaskControlBlock::TCB_MAGIC) {
-        shell = current_task_ptr_;
-    }
-    uint64_t vfsd_pid = vfsd::get_vfsd_pid();
-    uint64_t iocd_pid = iocd::get_iocd_pid();
-
-    static constexpr uint64_t MAX_ZOMBIES = 64;
-    TaskControlBlock *zombies[MAX_ZOMBIES];
-    uint64_t num_zombies = 0;
-    for (auto *t = all_tasks_.first_ptr(); t && num_zombies < MAX_ZOMBIES;
-         t = all_tasks_.next_ptr(t)) {
-        if (t->magic != TaskControlBlock::TCB_MAGIC)
-            continue;
-        if (t == idle_task_ || t == shell || t->id == vfsd_pid ||
-            t->id == iocd_pid) {
-            continue;
-        }
-        // Only consider tasks that are already terminated – otherwise they will
-        // be handled later by reap_orphans(). This prevents double‑removal and
-        // underflow.
-        if (t->state != TaskState::TERMINATED)
-            continue;
-        // BUGS.md#019/#020: never reap the task that is currently executing
-        // (current_task_ptr_).  Freeing it here reclaims the very kernel stack
-        // we are running on and/or leaves current_task_ptr_ aliasing a freed
-        // block that a later create() reuses and memset()s to zero — zeroing
-        // the live task's context (ctx.rip=0) and corrupting the scheduler.
-        // reap_orphans() already skips the current task; mirror that guard.
-        if (t == current_task_ptr_)
-            continue;
-        zombies[num_zombies++] = t;
-    }
-
-    for (uint64_t i = 0; i < num_zombies; ++i) {
-        auto *t = zombies[i];
-        // Always unlink from the ready queue before freeing.  A task can be
-        // physically linked in the queue while in a non-READY state (e.g. a
-        // RUNNING task left linked by a current_task_ptr_ desync, or a
-        // TERMINATED task not yet reaped).  Gating the dequeue on
-        // state==READY left such a node linked, so MemPool::free() freed a
-        // still-linked TCB and the next ready-queue walk dereferenced a
-        // freed/reused node → #GP.  dequeue_ready() is a no-op when the task
-        // is not in the queue, so unlinking unconditionally is safe.
-        Scheduler::dequeue_ready(*t);
-        t->cleanup();
-        all_tasks_.remove(t);
-        deadline_list_.remove(t);
-        id_table_remove(t);
-        delete t;
-    }
 }
 
 // ---------------------------------------------------------------------------

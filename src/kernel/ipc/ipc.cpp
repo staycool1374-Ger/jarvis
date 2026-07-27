@@ -387,7 +387,12 @@ bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
     if (!task.blocked_next)
         q.blocked_senders_tail = &task;
 
-    // Priority inheritance: boost queue owner if sender is more urgent
+    // FIX(rms-ipc-pi): Priority inheritance — boost queue owner when a higher-
+    // priority sender blocks on this queue.  move_priority is REQUIRED because the
+    // O(1) ReadyQueue does not re-derive position from tcb.priority — it uses
+    // the position where the node was originally enqueued.  Without this call the
+    // boosted owner stays at its original (lower) priority bucket and higher-
+    // priority tasks that should inherit to it are delayed, breaking PIP.
     if (q.owner && task.priority > q.owner->priority) {
         uint64_t old_prio = Scheduler::effective_priority(q.owner);
         q.owner->priority = task.priority;
@@ -415,8 +420,13 @@ void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
         task->remaining_ticks = task->period_ticks;
     }
 
-    // Priority inheritance: restore receiver priority based on remaining
-    // blocked senders
+    // FIX(rms-ipc-pi): Priority inheritance — restore receiver priority once the
+    // waking sender is removed.  Recalculate based on the highest-priority
+    // remaining blocked sender.  move_priority is REQUIRED for the same reason as
+    // in block_sender: the O(1) queue does not re-derive the node's bucket from
+    // tcb.priority automatically.  Skipping it leaves the receiver at its boosted
+    // (or stale) priority indefinitely, breaking PIP and causing incorrect
+    // scheduling order.
     uint64_t max_prio = receiver.base_priority;
     auto *cur_bs = q.blocked_senders_head;
     while (cur_bs) {

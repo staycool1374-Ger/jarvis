@@ -319,7 +319,7 @@ void init_task_main() {
     // ── Reap loop — block until a child exits ───────────────────
     for (;;) {
         arch::pause();
-        kernel::Scheduler::reap_orphans();
+        kernel::Scheduler::drain_zombie_list();
 
         kernel::Message msg{};
         while (kernel::IPC::recv(msg)) {
@@ -677,9 +677,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
         debug_write(" priority=");
         debug_write_hex(victim->priority);
         debug_write("\n");
-        victim->state = kernel::TaskState::TERMINATED;
-        victim->exit_code = static_cast<uint64_t>(-static_cast<int64_t>(9));
-        kernel::Scheduler::reap_orphans();
+        kernel::Scheduler::terminate(*victim,
+            static_cast<uint64_t>(-static_cast<int64_t>(9)));
+        kernel::Scheduler::drain_zombie_list();
         return true;
     });
 #ifndef __clang__
@@ -1377,6 +1377,22 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
                 kernel::Scheduler::reschedule();
             }
             return;
+        }
+
+        // ---- Guard-page check (kernel stack overflow) ----
+        if (vector == 14 && t && t->kstack_slot_va_) {
+            uint64_t cr2 = read_cr2();
+            if (cr2 >= t->kstack_slot_va_ &&
+                cr2 < t->kstack_slot_va_ + arch::PAGE_SIZE) {
+                kernel::Logger::fatal(
+                    "STACK OVERFLOW: task '%s' (ID=%u) overflowed "
+                    "kernel stack (CR2=0x%lx slot_va=0x%lx top=0x%lx)",
+                    t->name, t->id, cr2,
+                    t->kstack_slot_va_,
+                    t->kernel_stack_top);
+                dump_regs(regs);
+                panic("kernel stack overflow");
+            }
         }
 
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x rip=%x)",

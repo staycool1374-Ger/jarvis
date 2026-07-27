@@ -103,6 +103,47 @@ class [[nodiscard]] ScopedCurrentTask {
     ScopedCurrentTask &operator=(const ScopedCurrentTask &) = delete;
 };
 
+/// @brief Forever-loop entry function — never returns, so _task_trampoline
+///        never fires and the task stays alive until explicitly terminated.
+inline void forever_entry() {
+    for (;;) arch::pause();
+}
+
+/// @brief Create a task with the forever-loop entry.  The task never
+///        auto-terminates — it must be explicitly terminated via
+///        terminate_and_drain().
+/// @param priority Scheduling priority.
+/// @param period   Task period in ticks.
+/// @param name     Optional name (copied into TCB).
+/// @return Pointer to the new TCB (must be freed by caller).
+inline TaskControlBlock *create_forever_task(uint64_t priority,
+                                             uint64_t period = 10,
+                                             const char *name = nullptr) {
+    auto *tcb = TaskControlBlock::create(forever_entry, priority, period);
+    if (tcb) {
+        Scheduler::add_task(*tcb);
+        if (name)
+            __builtin_strncpy(tcb->name, name, CONFIG_TASK_NAME_LEN - 1);
+    }
+    return tcb;
+}
+
+/// @brief Safely terminate a forever-task and drain its zombie.
+///        Handles the common case where terminate + drain_zombie_list
+///        is needed.
+inline void terminate_and_drain(TaskControlBlock &task) {
+    Scheduler::terminate(task, 0);
+    Scheduler::drain_zombie_list();
+}
+
+/// @brief Wait until a task reaches TERMINATED state, yielding the CPU
+///        via hlt() to let the scheduler dispatch other tasks.
+inline void wait_for_termination(TaskControlBlock &task) {
+    while (task.state != TaskState::TERMINATED) {
+        arch::hlt();
+    }
+}
+
 } // namespace kernel::test
 
 /// @brief  Create a TCB for test use and register it with the scheduler WITHOUT

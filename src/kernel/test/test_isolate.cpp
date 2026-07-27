@@ -324,8 +324,10 @@ void snapshot_restore(const char *test_name) {
                      __ATOMIC_RELEASE);
     __atomic_store_n(&isr_nesting_depth, (uint64_t)0, __ATOMIC_RELEASE);
 
-    // Clear stale static state that survives test execution
-    s_reap_in_progress = false;
+    // Drain zombie list before ResourceTracker check and MemPool restore.
+    // Zombies from termininate()->release_zombie() during the test are freed
+    // here so ResourceTracker does not see leaked resources.
+    Scheduler::drain_zombie_list();
     __atomic_store_n(&fpu_owner, (TaskControlBlock *)nullptr, __ATOMIC_RELEASE);
     scheduler_dummy_save_rsp = 0;
 
@@ -808,11 +810,9 @@ void reload_daemon_tasks() {
             const auto &entry = daemon::get_entry(j);
             if (entry.pid == daemon_pids[i]) {
                 dmesg_push_base(0xDA05, entry.name, entry.pid);
-                if (task && task->magic == TaskControlBlock::TCB_MAGIC) {
-                    if (task != current) {
-                        task->state = TaskState::TERMINATED;
-                        task->exit_code = 0;
-                    }
+                if (task && task->magic == TaskControlBlock::TCB_MAGIC &&
+                    task != current) {
+                    Scheduler::terminate(*task, 0);
                 }
                 daemon::notify_death(entry.pid, true);
                 break;
@@ -820,8 +820,12 @@ void reload_daemon_tasks() {
         }
     }
 
-    // Kill test-created tasks, but skip daemon tasks
-    for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
+    // Collect test-created tasks to kill (can't mutate all_tasks_ during iter)
+    static constexpr uint64_t MAX_KILL = 64;
+    TaskControlBlock *to_kill[MAX_KILL];
+    uint64_t num_to_kill = 0;
+    for (uint64_t i = 1; i < Scheduler::task_count() && num_to_kill < MAX_KILL;
+         ++i) {
         auto *t = Scheduler::task_at(i);
         if (!t)
             continue;
@@ -835,17 +839,18 @@ void reload_daemon_tasks() {
         if (is_daemon)
             continue;
 #if CONFIG_DEADLINE_MONITOR_TASK
-        bool is_monitor = (t == Scheduler::get_monitor_task());
-        if (is_monitor)
+        if (t == Scheduler::get_monitor_task())
             continue;
 #endif
         if (t != current && t != idle && t != Scheduler::get_shell_task() &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
-            t->state = TaskState::TERMINATED;
-            t->exit_code = 0;
+            to_kill[num_to_kill++] = t;
         }
     }
-    Scheduler::reap_orphans();
+    for (uint64_t i = 0; i < num_to_kill; ++i)
+        Scheduler::terminate(*to_kill[i], 0);
+
+    Scheduler::drain_zombie_list();
     Scheduler::reset_ready_queue();
     // NOTE: daemons are NOT restarted here — only killed if stale.
     // The caller (e.g. test.cpp end-of-suite) adds restart_stale_daemons()
