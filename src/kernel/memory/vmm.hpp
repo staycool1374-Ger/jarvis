@@ -124,6 +124,13 @@ class VMM {
     /// space. Skips kernel-owned pages (HHDM-mapped) and honours
     /// page_table_shared_ flag.
     /// @param pml4_phys Physical address of the user PML4.
+    /// @brief Deep-copy user-space page tables from src_pml4 to dst_pml4.
+    ///        Allocates new PDPT/PD/PT pages and copies data page content.
+    /// @param src_pml4 Physical address of source PML4.
+    /// @param dst_pml4 Physical address of destination PML4 (must already
+    ///        have kernel entries populated).
+    /// @return true on success, false on OOM (partial state may remain).
+    static bool deep_copy_user_pages(uint64_t src_pml4, uint64_t dst_pml4);
     static void free_user_pages(uint64_t pml4_phys);
     /// @brief Frees all user-space pages and page tables with error code.
     /// @param pml4_phys Physical address of the user PML4.

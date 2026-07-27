@@ -907,7 +907,6 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
 
     // For user tasks: clone page table and user stack
     if (is_user_task) {
-        // Allocate a new PML4 page
         uint64_t new_pml4 = PMM::alloc_page();
         if (!new_pml4) {
             ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
@@ -915,60 +914,30 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
             return nullptr;
         }
         tcb->page_table_ = new_pml4;
-        tcb->page_table_shared_ = true;
+        tcb->page_table_shared_ = false;  // deep copy → no sharing
 
-        // Copy user entries (0-255) from parent's PML4 — shares PDPT/PD/PT
-        // pages so the child inherits code/data/heap mappings without
-        // deep-copy. NOLINTNEXTLINE(performance-no-int-to-ptr)
-        auto *parent_pml4_virt = reinterpret_cast<uint64_t *>(
-            arch::HHDM_OFFSET + (parent->page_table_ & ~0xFFFULL));
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        // Copy kernel entries from the kernel PML4.
         auto *new_virt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
-                                                      (new_pml4 & ~0xFFFULL));
-        for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i) {
-            new_virt[i] = parent_pml4_virt[i];
-        }
-        // Copy kernel entries (256-511) from the kernel PML4
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                                                       (new_pml4 & ~0xFFFULL));
         auto *kernel_virt = reinterpret_cast<uint64_t *>(
             arch::HHDM_OFFSET + (VMM::get_kernel_pml4() & ~0xFFFULL));
-        for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i) {
+        __builtin_memset(new_virt, 0, arch::PAGE_SIZE);
+        for (size_t i = arch::PML4_KERNEL_START; i < arch::PML4_ENTRIES; ++i)
             new_virt[i] = kernel_virt[i];
+
+        // Deep-copy user entries from parent (walk, allocate, copy).
+        if (!VMM::deep_copy_user_pages(parent->page_table_, new_pml4)) {
+            ASSERT(errors::TaskError::TASK_ERR_PML4_CLONE);
+            delete tcb;
+            return nullptr;
         }
 
-        // Create private page tables for the user stack region so that
-        // mapping the child's stack below doesn't corrupt the parent's
-        // mappings through shared PDPT/PD/PT pages.
-        uint64_t stack_pdpt_phys = 0;
-        {
-            constexpr uint64_t PML4_SHIFT = 39;
-            constexpr uint64_t PDPT_SHIFT = 30;
-            constexpr uint64_t PAGE_PRESENT = 1ULL << 0;
-            size_t st_pml4_idx = (mem::STACK_VADDR >> PML4_SHIFT) & 0x1FF;
-            size_t st_pdpt_idx = (mem::STACK_VADDR >> PDPT_SHIFT) & 0x1FF;
-            if (new_virt[st_pml4_idx] & PAGE_PRESENT) {
-                uint64_t old_pdpt_phys = new_virt[st_pml4_idx] & ~0xFFFULL;
-                stack_pdpt_phys = PMM::alloc_user_page();
-                // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                auto *old_pdpt = reinterpret_cast<uint64_t *>(
-                    arch::HHDM_OFFSET + old_pdpt_phys);
-                // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                auto *new_pdpt = reinterpret_cast<uint64_t *>(
-                    arch::HHDM_OFFSET + stack_pdpt_phys);
-                memcpy(new_pdpt, old_pdpt, arch::PAGE_SIZE);
-                new_pdpt[st_pdpt_idx] = 0;
-                new_virt[st_pml4_idx] =
-                    stack_pdpt_phys | (new_virt[st_pml4_idx] & 0xFFFULL);
-            }
-        }
-        tcb->stack_pdpt_phys_ = stack_pdpt_phys;
+        tcb->stack_pdpt_phys_ = 0;  // private PDPT hack no longer needed
 
         size_t ustack_pages =
             (parent->user_stack_size_ + 4095) / arch::PAGE_SIZE;
         uint64_t ustack_phys = PMM::alloc_user_contiguous(ustack_pages);
         if (!ustack_phys) {
-            if (stack_pdpt_phys)
-                PMM::free_page(stack_pdpt_phys);
             ASSERT(errors::TaskError::TASK_ERR_USTACK_ALLOC);
             delete tcb;
             return nullptr;
