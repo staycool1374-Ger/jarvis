@@ -769,6 +769,9 @@ void Shell::cmd_meminfo(int, const char**) {
         print_size(pt_end - pt_start);
         Terminal::write(")\n         belegt: "); print_uint(pt_used);
         Terminal::write("  frei: "); print_uint(pt_free);
+        Terminal::write("\n         Flags: ");
+        Terminal::write(kernel::PMM::pool_is_tainted() ? " TAINTED" : " clean");
+        Terminal::write(kernel::PMM::pool_is_poisoned() ? " POISONED" : "");
         Terminal::putchar('\n');
     }
 

@@ -35,6 +35,8 @@ constinit uint64_t PMM::bitmap_size_ = 0;
 constinit uint64_t PMM::owner_bitmap_ = 0;
 constinit uint64_t PMM::page_table_pool_start_ = 0;
 constinit uint64_t PMM::page_table_pool_end_ = 0;
+constinit bool PMM::pool_tainted_ = false;
+constinit bool PMM::pool_poisoned_ = false;
 constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
 #if CONFIG_STATIC_POOLS_ONLY
@@ -641,8 +643,8 @@ void PMM::capture_pool_snapshot(
     out.size_pages = (page_table_pool_end_ - page_table_pool_start_) / PAGE_SIZE;
     out.clean      = true;
     out.mapped     = true;
-    out.tainted    = false;
-    out.poisoned   = false;
+    out.tainted    = pool_tainted_;
+    out.poisoned   = pool_poisoned_;
     out.generation = 0;
     out.refcount   = 0;
     out.crc32      = 0;

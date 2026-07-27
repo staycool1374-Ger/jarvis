@@ -177,6 +177,22 @@ class PMM {
     }
     /// @brief Number of allocated pages in the page-table pool.
     static uint64_t pool_used_pages() noexcept;
+    /// @brief Mark the page-table pool as tainted (HW error detected).
+    static void pool_set_tainted() noexcept {
+        pool_tainted_ = true;
+    }
+    /// @brief Mark the page-table pool as poisoned (buffer overflow / UAF).
+    static void pool_set_poisoned() noexcept {
+        pool_poisoned_ = true;
+    }
+    /// @brief True if the pool has been touched by a HW error.
+    static bool pool_is_tainted() noexcept {
+        return pool_tainted_;
+    }
+    /// @brief True if the pool has been corrupted by a buffer overflow / UAF.
+    static bool pool_is_poisoned() noexcept {
+        return pool_poisoned_;
+    }
 
   private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
@@ -188,6 +204,8 @@ class PMM {
     static constinit uint64_t owner_bitmap_;
     static constinit uint64_t page_table_pool_start_;
     static constinit uint64_t page_table_pool_end_;
+    static constinit bool pool_tainted_;
+    static constinit bool pool_poisoned_;
     static constinit OOMHandler oom_handler_;
 
     /// @brief Mark a page as allocated in the bitmap.
