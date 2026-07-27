@@ -269,14 +269,11 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
      }},
 
     // -- all: everything (debug mode) --
+    //    PtPoolSnapshot fix + pool relocation prevents cumulative
+    //    page-table corruption across snapshot cycles (v0.3.6).
+    //    all-1/all-2 retained for parallel CI, but not needed for
+    //    correctness.
     {"all", []() { register_all_tests(); }},
-
-    // -- all-1 / all-2: split for pre-release verification —
-    //    The page-table pool exclusion from snapshot restore is v0.3.6
-    //    work (docs/kstack-window-pt-pool.md).  Until then, the
-    //    cumulative kernel-page-table corruption from ~850+ snapshot
-    //    restore cycles crashes the suite before completion.
-    //    Splitting keeps each half under the limit.
     {"all-1", []() { register_all_tests_first_half(); }},
     {"all-2", []() { register_all_tests_second_half(); }},
 

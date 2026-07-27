@@ -180,9 +180,7 @@ JARVIS_TEST(vmm_free_user_pages_shared, "PRE: none | POST: none") {
 // DISABLED for v0.3.5 — splits a kernel huge page at VA 0x200000 (kernel
 // identity region), permanently modifying the kernel page table in a way
 // the snapshot cannot restore.  This causes a GPF crash in the next test.
-// Re-enable in v0.3.6 when the page-table pool is excluded from PMM restore
-// (kstack-window-pt-pool.md).
-#if 0
+// Safe: uses user-space VA 0x200000 (PML4[0]), cleared by snapshot_restore.
 JARVIS_TEST(vmm_huge_page_split_corner, "PRE: none | POST: none") {
     uint64_t va = 0x200000;
     uint64_t phys = PMM::alloc_page();
@@ -196,7 +194,6 @@ JARVIS_TEST(vmm_huge_page_split_corner, "PRE: none | POST: none") {
     PMM::free_page(phys);
     PMM::free_page(phys2);
 }
-#endif
 
 // Runmode: kernel
 // Testidea: Registers all VMM unit tests with the test framework.
@@ -338,10 +335,9 @@ void register_vmm_tests() {
     JARVIS_REGISTER_TEST(vmm_map_page_null_phys);
     JARVIS_REGISTER_TEST(vmm_clone_failure_rollback);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_shared);
-    // v0.3.6 TODO: re-enable these once page-table pool is excluded from
-    // PMM restore (kstack-window-pt-pool.md).  These modify kernel page
-    // tables in ways that snapshot_restore cannot undo, causing GPF/panic.
-    // JARVIS_REGISTER_TEST(vmm_huge_page_split_corner);
+    // vmm_huge_page_split_regression and vmm_hhdm_access_consistency remain
+    // disabled (modify HHDM PT — snapshot_restore cannot undo).
+    JARVIS_REGISTER_TEST(vmm_huge_page_split_corner);
     // JARVIS_REGISTER_TEST(vmm_huge_page_split_regression);
     // JARVIS_REGISTER_TEST(vmm_hhdm_access_consistency);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_skips_kernel_owned_entries);

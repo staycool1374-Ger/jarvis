@@ -39,6 +39,11 @@ If the branch does not match the intended role, do not proceed.
   `2026-07-16 14:03:22 ipc_blocking PASSED: 4 FAILED: 0 TIME: 1894ms`
 - Never skip this step. Create `test-history.txt` if it does not exist.
 
+## Pre-Existing Failures
+- **Never dismiss a failure as "pre-existing".** Every failure must be investigated and fixed. There is no category of "pre-existing" or "not caused by my changes" that exempts a failure from investigation.
+- If a test was passing before your changes and fails after, your changes caused it — directly or indirectly. Fix it.
+- If a test was failing before your changes, fix it anyway. A failure that exists is a bug that needs fixing. Leaving it unfounded compounds technical debt.
+
 ## Debugging Protocol (strict)
 
 ### Per-Class Fix Discipline
