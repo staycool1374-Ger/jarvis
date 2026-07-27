@@ -22,6 +22,7 @@
 #include <kernel/test/test_isolate.hpp>
 #include <test.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -362,6 +363,29 @@ void snapshot_restore(const char *test_name) {
                          PMM::bitmap_bytes());
         PMM::free_pages_ref() =
             *reinterpret_cast<uint64_t *>(g_snapshot + off_pmm_free());
+    }
+
+    // ---- Clear kernel-stack window page tables ----
+    // After PMM restore, page-table pages allocated by VMM::map_page for
+    // the kernel-stack window are now freed.  Clear PML4 entries so the
+    // next VMM::map_page allocates fresh pages.  Safe to clear because
+    // drain_zombie_list ran before restore, so no active tasks use the
+    // private window.
+    {
+        auto *pml4 = reinterpret_cast<uint64_t *>(
+            arch::HHDM_OFFSET +
+            (kernel::VMM::get_kernel_pml4() & ~0xFFFULL));
+        uint64_t base = CONFIG_KSTACK_WINDOW_BASE & 0x0000FFFFFFFFFFFFULL;
+        uint64_t end  = (CONFIG_KSTACK_WINDOW_BASE +
+                         CONFIG_KSTACK_WINDOW_SIZE - 1) & 0x0000FFFFFFFFFFFFULL;
+        uint64_t lo   = (base >> 39) & 0x1FF;
+        uint64_t hi   = (end  >> 39) & 0x1FF;
+        for (uint64_t i = lo; i <= hi && i < 512; ++i)
+            pml4[i] = 0;
+        // Full TLB flush (reload CR3).
+        uint64_t cr3;
+        asm volatile("mov %%cr3, %0" : "=r"(cr3));
+        asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
     }
 
     // ---- User page content ----

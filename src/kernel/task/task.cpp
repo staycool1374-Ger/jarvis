@@ -217,6 +217,90 @@ static void debug_check_tcb_reuse(TaskControlBlock *tcb) {
 }
 #endif
 
+// ---------------------------------------------------------------------------
+// Kernel-stack window slot allocator (indexed pool)
+// ---------------------------------------------------------------------------
+
+namespace {
+
+struct KSlotEntry {
+    uint64_t va;
+    uint64_t size;
+    int32_t  next;
+};
+
+static constexpr int32_t KSLOT_POOL_SIZE = 64;
+static KSlotEntry s_kslot_pool[KSLOT_POOL_SIZE];
+static int32_t    s_kslot_free_head = -1;
+static int32_t    s_kslot_list      = -1;
+static uint64_t   s_kslot_bump      = CONFIG_KSTACK_WINDOW_BASE;
+
+__attribute__((constructor)) static void init_kslot_pool() {
+    for (int32_t i = 0; i < KSLOT_POOL_SIZE - 1; ++i)
+        s_kslot_pool[i].next = i + 1;
+    s_kslot_pool[KSLOT_POOL_SIZE - 1].next = -1;
+    s_kslot_free_head = 0;
+    s_kslot_list = -1;
+}
+
+static uint64_t stack_size_for_priority(uint64_t priority) {
+    constexpr uint64_t table[] = CONFIG_STACK_SIZE_TABLE;
+    constexpr uint64_t tiers = sizeof(table) / sizeof(table[0]);
+    if (tiers == 0)
+        return CONFIG_STACK_SIZE;
+    uint64_t idx = priority;
+    if (idx >= tiers)
+        idx = tiers - 1;
+    return table[idx];
+}
+
+static uint64_t alloc_kslot(uint64_t stack_size) {
+    uint64_t slot_size = ((stack_size + 4095) / 4096) * 4096 + 4096;
+
+    { // Free list (first-fit), IRQ-safe.
+        arch::IrqGuard _g{};
+        int32_t *pp = &s_kslot_list;
+        while (*pp >= 0) {
+            KSlotEntry &e = s_kslot_pool[*pp];
+            if (e.size >= slot_size) {
+                uint64_t va = e.va;
+                if (va < CONFIG_KSTACK_WINDOW_BASE ||
+                    va + e.size > CONFIG_KSTACK_WINDOW_BASE + CONFIG_KSTACK_WINDOW_SIZE)
+                    panic("kslot free list corrupt");
+                int32_t next = e.next;
+                e.next = s_kslot_free_head;
+                s_kslot_free_head = *pp;
+                *pp = next;
+                return va;
+            }
+            pp = &e.next;
+        }
+    }
+
+    { // Bump allocate, IRQ-safe.
+        arch::IrqGuard _g{};
+        uint64_t va = s_kslot_bump;
+        if (va + slot_size > CONFIG_KSTACK_WINDOW_BASE + CONFIG_KSTACK_WINDOW_SIZE)
+            return 0;
+        s_kslot_bump = va + slot_size;
+        return va;
+    }
+}
+
+static void free_kslot(uint64_t va, uint64_t size) {
+    arch::IrqGuard _g{};
+    if (va == 0 || s_kslot_free_head < 0)
+        return;
+    int32_t idx = s_kslot_free_head;
+    s_kslot_free_head = s_kslot_pool[idx].next;
+    s_kslot_pool[idx].va   = va;
+    s_kslot_pool[idx].size = size;
+    s_kslot_pool[idx].next = s_kslot_list;
+    s_kslot_list = idx;
+}
+
+} // anonymous namespace
+
 /// @brief Creates a new kernel-space TaskControlBlock.
 /// Allocates a TCB from MemPool, sets up a kernel stack with an
 /// architecture-specific initial register frame, and returns it.
@@ -289,7 +373,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->memory_used_pages_ = 0;
     init_task_common(*tcb);
 
-    size_t stack_pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
+    uint64_t stack_size = stack_size_for_priority(priority);
+    size_t stack_pages = (stack_size + 4095) / arch::PAGE_SIZE;
 #if CONFIG_MEMORY_BUDGET
     if (!Scheduler::reserve_memory_pages(stack_pages)) {
         Logger::warn("TCB::create: budget OOM for %zu-page stack", stack_pages);
@@ -308,10 +393,34 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     }
 
     tcb->stack_phys_ = stack_phys;
-    uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
-    // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
-    tcb->kernel_stack_top = stack_virt + STACK_SIZE;
+    // Use private kernel-stack window when not in test mode (no snapshot).
+    // In test mode (snapshot_restore would free page-table pages), use HHDM.
+    bool use_window = false;  // reserved for future: private window
+    if (use_window) {
+        uint64_t slot_va = alloc_kslot(stack_size);
+        if (slot_va) {
+            tcb->kstack_slot_va_ = slot_va;
+            tcb->kstack_slot_size_ = ((stack_size + 4095) / 4096) * 4096 + 4096;
+            uint64_t kstack_va = slot_va + 4096;
+            for (size_t i = 0; i < stack_pages; ++i)
+                VMM::map_page(kstack_va + i * arch::PAGE_SIZE,
+                              stack_phys + i * arch::PAGE_SIZE, false);
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
+            tcb->kernel_stack_top = kstack_va + stack_size;
+            goto done_stack;
+        }
+        // Window exhausted — fall through to HHDM.
+    }
+    tcb->kstack_slot_va_ = 0;
+    tcb->kstack_slot_size_ = 0;
+    {
+        uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
+        tcb->kernel_stack_top = stack_virt + stack_size;
+    }
+done_stack:
 
     // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
     // so a stack allocated from recycled memory can retain stale poison in
@@ -319,7 +428,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     // every slot the task may reach — including deep call-chain return
     // addresses — starts from a known state instead of tripping a fault on a
     // leftover 0x0b return address.
-    __builtin_memset(tcb->kernel_stack, 0, STACK_SIZE);
+    __builtin_memset(tcb->kernel_stack, 0, stack_size);
 
 #if defined(CONFIG_ARCH_X86_64)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -982,16 +1091,30 @@ void TaskControlBlock::cleanup() noexcept {
     }
 
     if (stack_phys_) {
-        size_t pages = (STACK_SIZE + 4095) / arch::PAGE_SIZE;
-        for (size_t i = 0; i < pages; ++i) {
-            PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
+        size_t pages = (kstack_slot_size_ && kstack_slot_va_)
+                           ? ((kstack_slot_size_ - 4096) / 4096)
+                           : ((STACK_SIZE + 4095) / arch::PAGE_SIZE);
+        if (kstack_slot_va_) {
+            uint64_t slot_va = kstack_slot_va_;
+            uint64_t stack_va = slot_va + 4096;
+            for (size_t i = 0; i < pages; ++i)
+                VMM::unmap_page(stack_va + i * arch::PAGE_SIZE);
+            free_kslot(slot_va, kstack_slot_size_);
         }
+        // Poison physical pages via HHDM before freeing.
+        __builtin_memset(
+            reinterpret_cast<void *>(arch::HHDM_OFFSET + stack_phys_),
+            0xDD, pages * arch::PAGE_SIZE);
+        for (size_t i = 0; i < pages; ++i)
+            PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
 #if CONFIG_MEMORY_BUDGET
         Scheduler::release_memory_pages(pages);
 #endif
         stack_phys_ = 0;
         kernel_stack = nullptr;
         kernel_stack_top = 0;
+        kstack_slot_va_ = 0;
+        kstack_slot_size_ = 0;
     }
 
     if (page_table_) {

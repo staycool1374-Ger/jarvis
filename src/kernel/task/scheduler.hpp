@@ -200,6 +200,9 @@ class Scheduler {
     static void set_test_active(bool v) noexcept {
         s_test_active_ = v;
     }
+    static bool is_test_active() noexcept {
+        return s_test_active_;
+    }
 #endif
     /// @brief Clears assembly-level context-switch globals
     ///        (scheduler_save_rsp_to, scheduler_load_rsp_from, etc.).

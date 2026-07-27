@@ -415,26 +415,50 @@ For comparison, a simpler approach that avoids the separate VA range:
 production safety.  The canary can be added as a secondary defence layer
 at low cost.
 
-## 8. Status
+## 8. Snapshot Interaction
 
-**Phase 1 (simplified):** Per-priority stack sizes implemented — `stack_size_for_priority()`
-looks up `CONFIG_STACK_SIZE_TABLE` by task priority.  Stacks still use the HHDM direct map
-(HHDM_OFFSET + phys).  Tests pass (53/53 scheduler, 132/132 selftest, 6/6 testrunner).
+The private VA window allocates page table pages (PDPT, PD, PT) from PMM via
+`VMM::map_page()`.  The test isolation framework (`snapshot_restore`) restores
+the PMM bitmap to its pre-test state, marking these page table pages as free.
+After restore, PML4 entries for the kernel-stack window point to freed memory.
 
-**Private VA window + guard page:** Deferred to follow-up due to snapshot-format
-compatibility (TaskFields does not include `kernel_stack` or `kstack_slot_va_`, and adding
-a field shifts offsets in the packed struct, corrupting restored `kernel_stack_top`).
-The fix requires:
-1. A snapshot-format version header
-2. Adding `kernel_stack` and `kstack_slot_va_`/`kstack_slot_size_` to TaskFields
-3. Migration logic for old-format snapshots
+**Solution:** Only use the private window when no snapshot exists
+(`!Scheduler::is_test_active()`).  In practice:
+- **Boot / production:** `is_test_active() == false` → **private window** ✅  
+  Tasks are never snapshot-restored; page tables persist for system lifetime.
+- **Test execution:** `is_test_active() == true` → **HHDM**  
+  Test tasks are cleaned up by `drain_zombie_list()` before `snapshot_restore`.
+  Boot tasks (created before `snapshot_create`) use HHDM.
+- **Dedicated guard-page tests (no snapshot):** Use `selftest` / `safe` classes
+  or a dedicated test class that runs without snapshot isolation.
 
-### Remaining (deferred)
-- Page fault handler: guard-page detection in `handle_interrupt_c()`
-- `VMM::map_page` for private window + `VMM::unmap_page` on cleanup
-- Slot allocator (bump + free list) in a static indexed pool
-- Snapshot format update + migration
-- Tests: `test_stack_guard_page_triggers_panic`, `test_stack_guard_page_normal_operation`
+**snapshot_restore sequence:**
+1. `drain_zombie_list()` — frees all test tasks (unmaps their window pages)
+2. PMM restore — page-table pages for the window are now free
+3. **Clear PML4[288]** — disconnects from freed page table pages (safe: no
+   active tasks use the window at this point)
+4. Scheduler state restore — boot tasks (HHDM) are restored
+5. Next test creates tasks via HHDM
+
+## 9. Implementation
+
+### Phase 1 — Per-priority stack sizing (HHDM) ✅ Done
+- `CONFIG_STACK_SIZE_TABLE` maps priority → stack size
+- `stack_size_for_priority()` in `task.cpp`
+- All stacks via HHDM, no private window
+- 53/53 scheduler, 132/132 selftest, 42/42 ipc, 47/47 memory
+
+### Phase 2 — Private VA window (conditionally enabled)
+1. Add `kstack_slot_va_`, `kstack_slot_size_` to TCB
+2. Indexed-pool slot allocator (`alloc_kslot` / `free_kslot`)
+3. `VMM::map_page` in `create()` when `!is_test_active()`
+4. `VMM::unmap_page` + poison + `free_kslot` in `cleanup()`
+5. Guard-page detection in #PF handler (dormant when HHDM)
+6. Clear PML4[288] in `snapshot_restore` after PMM restore
+
+### Phase 3 — Tests (no-snapshot classes)
+- `test_stack_guard_page_triggers_panic` — overflow via deep recursion
+- `test_stack_guard_page_normal_operation` — normal depth, no fault
 
 ## 9. Risks and Caveats
 

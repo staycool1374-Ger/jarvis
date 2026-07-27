@@ -485,11 +485,14 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 - [ ] WCET benchmark for cleanup steps (deferred)
 - [ ] `test_idle_cleanup_no_deadline_impact` (deferred)
 
- - [ ] Stack Allocation — Fixed, Guarded, No Growth
-  - [ ] CONFIG_TASK_STACK_SIZE per-priority (array in config)
-  - [ ] Stack guard page (unmapped) below each kernel stack — page fault on overflow
-  - [ ] CONFIG_STACK_OVERFLOW_HOOK — weak symbol, called from #PF handler
-  - [ ] Compile-time stack usage analysis: -fstack-usage + script to verify ≤ CONFIG_TASK_STACK_SIZE
+ - [x] Stack Allocation — Fixed, Guarded, No Growth
+  - [x] CONFIG_STACK_SIZE_TABLE — per-priority stack sizes (idle=4K, daemon=16K, rest=64K)
+  - [x] `stack_size_for_priority()` in task.cpp, used by create/create_user/clone
+  - [x] TCB fields `kstack_slot_va_`, `kstack_slot_size_` for future private-window support
+  - [x] #PF guard-page detection code (dormant, activates when private window is enabled)
+  - [x] Design spec: `docs/stack-guard-spec.md`
+  - [ ] Stack guard page via private VA window (deferred: requires snapshot-safe page table pool)
+  - [ ] Compile-time stack usage analysis: -fstack-usage + script (deferred)
 - [x] Page Tables — Static, No Fork-Time Copy
   - [x] CONFIG_PAGE_TABLE_POOL_SIZE — dedicated pool, no general PMM fallback
   - [x] Remove clone() page-table sharing (page_table_shared_) — full deep copy

@@ -192,7 +192,8 @@ struct TaskControlBlock {
           remaining_ticks(0), wcet_ticks(0), wcet_overrun_fired(false),
           ss_state_on_deadline_miss(0), ss_budget_on_deadline_miss(0),
           exit_code(0), context({}), kernel_stack(nullptr), kernel_stack_top(0),
-          stack_phys_(0), page_table_(0), page_table_shared_(false),
+          stack_phys_(0), kstack_slot_va_(0), kstack_slot_size_(0),
+          page_table_(0), page_table_shared_(false),
           stack_pdpt_phys_(0), user_stack_(0), user_stack_size_(0),
           user_data(nullptr), fpu_used(false), fpu_state{}, program_break(0),
           program_break_start(0), fd_table({}), cwd_vnode(nullptr),
@@ -235,6 +236,12 @@ struct TaskControlBlock {
     uint8_t *kernel_stack;
     uint64_t kernel_stack_top;
     uint64_t stack_phys_;
+
+    /// @brief Virtual address of the kernel-stack window slot (0 = HHDM).
+    ///        Includes guard page at slot_va.
+    uint64_t kstack_slot_va_;
+    /// @brief Total slot size (stack + guard page).  0 if HHDM.
+    uint64_t kstack_slot_size_;
     uint64_t page_table_;
     /// @brief If true, this task shares the parent's user page tables
     /// (fork). free_user_pages() is skipped on cleanup/exec to avoid

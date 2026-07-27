@@ -1379,6 +1379,22 @@ extern "C" void handle_interrupt_c(uint64_t vector, uint64_t error_code,
             return;
         }
 
+        // ---- Guard-page check (kernel stack overflow) ----
+        if (vector == 14 && t && t->kstack_slot_va_) {
+            uint64_t cr2 = read_cr2();
+            if (cr2 >= t->kstack_slot_va_ &&
+                cr2 < t->kstack_slot_va_ + arch::PAGE_SIZE) {
+                kernel::Logger::fatal(
+                    "STACK OVERFLOW: task '%s' (ID=%u) overflowed "
+                    "kernel stack (CR2=0x%lx slot_va=0x%lx top=0x%lx)",
+                    t->name, t->id, cr2,
+                    t->kstack_slot_va_,
+                    t->kernel_stack_top);
+                dump_regs(regs);
+                panic("kernel stack overflow");
+            }
+        }
+
         kernel::Logger::fatal("CPU EXCEPTION: %s (vector=%x err=%x rip=%x)",
                               exception_name(vector), vector, error_code, rip);
         dump_regs(regs);
