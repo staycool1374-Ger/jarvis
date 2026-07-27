@@ -1192,7 +1192,7 @@ void Scheduler::on_tick() noexcept {
                     Logger::raw_write("[BUG] on_tick: sporadic_server=-1\n");
                     continue;
                 }
-                // FIX(ss-race): is_poisoned_block checks for a freed TCB whose
+// FIX(ss-race): is_poisoned_block checks for a freed TCB whose
                 // sporadic_server field has been poisoned (0xDDDD...) by the
                 // MemPool free path.  During daemon teardown the sporadic server
                 // object may be destroyed while a terminated task still has a
@@ -1248,7 +1248,7 @@ void Scheduler::on_tick() noexcept {
 
     static uint64_t tick_counter = 0;
     ++tick_counter;
-    // FIX(pret): reap_orphans runs every 100 ticks but is gated on
+// FIX(pret): reap_orphans runs every 100 ticks but is gated on
     // !s_test_active_ to prevent a UAF race with test ScopeGuards.  The test
     // harness owns its task lifecycle — it calls remove_task+cleanup+delete in
     // the ScopeGuard.  If the reaper frees the task first, the ScopeGuard's

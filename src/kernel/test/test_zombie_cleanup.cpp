@@ -22,10 +22,79 @@
 #include <test.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/arch/io.hpp>
 #include <logger.hpp>
 
 using namespace kernel;
 using namespace kernel::test;
+
+// --- self-terminating entry ---
+static void self_term_entry() {
+    Scheduler::terminate(*Scheduler::current_task(), 42);
+    for (;;) arch::hlt();
+}
+
+// Runmode: kernel
+// Testidea: A task that explicitly self-terminates reaches the zombie list
+// and idle cleanup frees it.  Tests the self-termination path in
+// Scheduler::terminate() which calls release_zombie() before switch_away.
+// Input: Create task that calls terminate(self, 42).  Wait for it to run.
+// Expect: task state == TERMINATED, exit_code == 42, zombie_count incremented.
+// Depends: Scheduler terminate self-path, TaskControlBlock, release_zombie
+JARVIS_TEST(test_release_zombie_self, "PRE: none | POST: none") {
+    auto *task = TaskControlBlock::create(self_term_entry, 20, 10);
+    JARVIS_ASSERT(task != nullptr);
+    Scheduler::add_task(*task);
+
+    for (int h = 0; h < 50 && task->state != TaskState::TERMINATED; ++h) {
+        Scheduler::reschedule();
+        arch::hlt();
+    }
+
+    JARVIS_ASSERT(task->state == TaskState::TERMINATED);
+    JARVIS_ASSERT(task->exit_code == 42);
+    JARVIS_ASSERT(Scheduler::zombie_count() > 0);
+
+    Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(Scheduler::zombie_count() == 0);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: When zombie_count exceeds CONFIG_ZOMBIE_STARVATION_LIMIT,
+// the on_tick watchdog force-flushes a batch.
+// Input: Create LIMIT+2 tasks, terminate all.  Spin-wait >100 ticks.
+// Expect: zombie_count drops below the initial count after watchdog fires.
+// Depends: Scheduler on_tick watchdog, flush_zombies
+JARVIS_TEST(test_zombie_starvation_watchdog, "PRE: none | POST: none") {
+    uint64_t const COUNT = CONFIG_ZOMBIE_STARVATION_LIMIT + 2;
+    TaskControlBlock *tasks[COUNT];
+    for (uint64_t i = 0; i < COUNT; ++i) {
+        tasks[i] = TaskControlBlock::create([]() {}, 5, 10);
+        JARVIS_ASSERT(tasks[i] != nullptr);
+        Scheduler::add_task(*tasks[i]);
+    }
+    for (uint64_t i = 0; i < COUNT; ++i)
+        Scheduler::terminate(*tasks[i], 0);
+
+    uint64_t initial = Scheduler::zombie_count();
+    JARVIS_ASSERT(initial == COUNT);
+
+    // Wait 300+ ticks so the watchdog fires at least twice
+    // (fires every 100 ticks, flushes up to LIMIT/2 per shot).
+    for (int h = 0; h < 300; ++h)
+        arch::hlt();
+
+    uint64_t remaining = Scheduler::zombie_count();
+    JARVIS_ASSERT_FMT(remaining < initial,
+                      "Watchdog did not flush: %lu remaining (initial %lu)",
+                      remaining, initial);
+
+    Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(Scheduler::zombie_count() == 0);
+    JARVIS_TEST_PASS();
+}
 
 // Runmode: kernel
 // Testidea: Terminate a task and verify idle cleanup_step frees its resources.
@@ -79,4 +148,6 @@ void register_zombie_cleanup_tests() {
     Logger::info("Registering zombie cleanup tests");
     JARVIS_REGISTER_TEST(zombie_cleanup_step_frees_resources);
     JARVIS_REGISTER_TEST(zombie_drain_multiple);
+    JARVIS_REGISTER_TEST(test_release_zombie_self);
+    JARVIS_REGISTER_TEST(test_zombie_starvation_watchdog);
 }

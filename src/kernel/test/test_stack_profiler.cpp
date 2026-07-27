@@ -47,7 +47,13 @@ JARVIS_TEST(stack_profiler_stack_usage_bounded, "PRE: none | POST: none") {
     });
     uint64_t stack_base = reinterpret_cast<uint64_t>(t->kernel_stack);
     uint64_t stack_size = t->kernel_stack_top - stack_base;
-    JARVIS_ASSERT(stack_size == TaskControlBlock::STACK_SIZE);
+    JARVIS_ASSERT_FMT(stack_size >= CONFIG_MIN_STACK_SIZE,
+                      "Stack size %lu < MIN_STACK_SIZE %lu", stack_size,
+                      (uint64_t)CONFIG_MIN_STACK_SIZE);
+    JARVIS_ASSERT_FMT(stack_size <= CONFIG_STACK_SIZE,
+                      "Stack size %lu > CONFIG_STACK_SIZE %lu", stack_size,
+                      (uint64_t)CONFIG_STACK_SIZE);
+    JARVIS_ASSERT(stack_size % arch::PAGE_SIZE == 0);
     JARVIS_TEST_PASS();
 }
 
@@ -85,8 +91,13 @@ JARVIS_TEST(stack_profiler_current_task_stack_valid,
     asm volatile("mov %%rsp, %0" : "=r"(rsp));
     JARVIS_ASSERT(rsp >= stack_base);
     JARVIS_ASSERT(rsp < cur->kernel_stack_top);
-    JARVIS_ASSERT(cur->kernel_stack_top - stack_base ==
-                  TaskControlBlock::STACK_SIZE);
+    uint64_t cur_stack_size = cur->kernel_stack_top - stack_base;
+    JARVIS_ASSERT_FMT(cur_stack_size >= CONFIG_MIN_STACK_SIZE,
+                      "Current task stack %lu < MIN %lu",
+                      cur_stack_size, (uint64_t)CONFIG_MIN_STACK_SIZE);
+    JARVIS_ASSERT_FMT(cur_stack_size <= CONFIG_STACK_SIZE,
+                      "Current task stack %lu > MAX %lu",
+                      cur_stack_size, (uint64_t)CONFIG_STACK_SIZE);
     JARVIS_TEST_PASS();
 }
 

@@ -470,7 +470,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
     tcb->memory_used_pages_ = 0;
     init_task_common(*tcb);
 
-    uint64_t stack_size = stack_size_for_priority(priority);
+uint64_t stack_size = stack_size_for_priority(priority);
     size_t stack_pages = (stack_size + 4095) / arch::PAGE_SIZE;
 #if CONFIG_MEMORY_BUDGET
     if (!Scheduler::reserve_memory_pages(stack_pages)) {
