@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
    </div>
   </td>
  </tr>
@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__vmm_8cpp
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vmm_8hpp_source.html">kernel/memory/vmm.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_vmm.cpp:</div>
 <div class="dyncontent">
@@ -139,14 +141,15 @@ Functions</h2></td></tr>
 <tr class="memitem:a8aef89a1240107fcb8d051a0c83d485b" id="r_a8aef89a1240107fcb8d051a0c83d485b"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a8aef89a1240107fcb8d051a0c83d485b">JARVIS_TEST</a> (vmm_map_page_null_phys, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a99903710d70f09fa8bfb15340fda4fb9" id="r_a99903710d70f09fa8bfb15340fda4fb9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a99903710d70f09fa8bfb15340fda4fb9">JARVIS_TEST</a> (vmm_clone_failure_rollback, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a9c1904931608fc7ed6620a708afd440c" id="r_a9c1904931608fc7ed6620a708afd440c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a9c1904931608fc7ed6620a708afd440c">JARVIS_TEST</a> (vmm_free_user_pages_shared, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:aaf391924f9732ce75c4c206f1bb27f4f" id="r_aaf391924f9732ce75c4c206f1bb27f4f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aaf391924f9732ce75c4c206f1bb27f4f">JARVIS_TEST</a> (vmm_huge_page_split_corner, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:aecaaadc0a5793cdb0c5af31517aac110" id="r_aecaaadc0a5793cdb0c5af31517aac110"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aecaaadc0a5793cdb0c5af31517aac110">JARVIS_TEST</a> (vmm_free_user_pages_skips_kernel_owned_entries, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a7a84bf29bbee152ec584268207b8d1ff" id="r_a7a84bf29bbee152ec584268207b8d1ff"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7a84bf29bbee152ec584268207b8d1ff">JARVIS_TEST</a> (vmm_free_user_pages_fork_stack_scenario, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:ab039ea1d1bf1b4ff96a90765af430dae" id="r_ab039ea1d1bf1b4ff96a90765af430dae"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab039ea1d1bf1b4ff96a90765af430dae">register_vmm_tests</a> ()</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Virtual memory manager (VMM) tests. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a99903710d70f09fa8bfb15340fda4fb9" name="a99903710d70f09fa8bfb15340fda4fb9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a99903710d70f09fa8bfb15340fda4fb9">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a99903710d70f09fa8bfb15340fda4fb9">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -166,8 +169,29 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a7a84bf29bbee152ec584268207b8d1ff" name="a7a84bf29bbee152ec584268207b8d1ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a84bf29bbee152ec584268207b8d1ff">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/7]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">JARVIS_TEST </td>
+          <td>(</td>
+          <td class="paramtype">vmm_free_user_pages_fork_stack_scenario</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9c1904931608fc7ed6620a708afd440c" name="a9c1904931608fc7ed6620a708afd440c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c1904931608fc7ed6620a708afd440c">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c1904931608fc7ed6620a708afd440c">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -187,8 +211,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aaf391924f9732ce75c4c206f1bb27f4f" name="aaf391924f9732ce75c4c206f1bb27f4f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf391924f9732ce75c4c206f1bb27f4f">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/6]</span></h2>
+<a id="aecaaadc0a5793cdb0c5af31517aac110" name="aecaaadc0a5793cdb0c5af31517aac110"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aecaaadc0a5793cdb0c5af31517aac110">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -196,7 +220,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">vmm_huge_page_split_corner</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">vmm_free_user_pages_skips_kernel_owned_entries</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -209,7 +233,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="ace9196839b1bd0cba4696d6b3f2df78a" name="ace9196839b1bd0cba4696d6b3f2df78a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace9196839b1bd0cba4696d6b3f2df78a">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ace9196839b1bd0cba4696d6b3f2df78a">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -230,7 +254,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a8aef89a1240107fcb8d051a0c83d485b" name="a8aef89a1240107fcb8d051a0c83d485b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8aef89a1240107fcb8d051a0c83d485b">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a8aef89a1240107fcb8d051a0c83d485b">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -251,7 +275,7 @@ Functions</h2></td></tr>
 </div>
 </div>
 <a id="a01f4d4c4f908802bd78fc5b7f8c1cd90" name="a01f4d4c4f908802bd78fc5b7f8c1cd90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01f4d4c4f908802bd78fc5b7f8c1cd90">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/6]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a01f4d4c4f908802bd78fc5b7f8c1cd90">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[7/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">

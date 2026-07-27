@@ -7,10 +7,11 @@ var searchData=
   ['testcase_4',['TestCase',['../structkernel_1_1test_1_1_test_case.html',1,'kernel::test']]],
   ['testclass_5',['TestClass',['../structkernel_1_1test_1_1_test_class.html',1,'kernel::test']]],
   ['testmeta_6',['TestMeta',['../struct_test_meta.html',1,'']]],
-  ['throughputctx_7',['ThroughputCtx',['../struct_throughput_ctx.html',1,'']]],
-  ['timespec_8',['timespec',['../structtimespec.html',1,'']]],
-  ['timeval_9',['Timeval',['../structkernel_1_1_timeval.html',1,'kernel::Timeval'],['../struct_timeval.html',1,'Timeval']]],
-  ['timeval_10',['timeval',['../structtimeval.html',1,'']]],
-  ['tm_11',['tm',['../structtm.html',1,'']]],
-  ['tmpfsentry_12',['TmpfsEntry',['../structkernel_1_1vfs_1_1_tmpfs_entry.html',1,'kernel::vfs']]]
+  ['teststruct_7',['TestStruct',['../struct_test_struct.html',1,'']]],
+  ['throughputctx_8',['ThroughputCtx',['../struct_throughput_ctx.html',1,'']]],
+  ['timespec_9',['timespec',['../structtimespec.html',1,'']]],
+  ['timeval_10',['Timeval',['../structkernel_1_1_timeval.html',1,'kernel::Timeval'],['../struct_timeval.html',1,'Timeval']]],
+  ['timeval_11',['timeval',['../structtimeval.html',1,'']]],
+  ['tm_12',['tm',['../structtm.html',1,'']]],
+  ['tmpfsentry_13',['TmpfsEntry',['../structkernel_1_1vfs_1_1_tmpfs_entry.html',1,'kernel::vfs']]]
 ];

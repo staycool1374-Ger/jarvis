@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** v0.3.4 COMPLETE — APIC, IRQ latency histogram, Threaded IRQs, GIC/PLIC headers, cross-arch HAL validated (main + testbed).
-**Target Focus:** v0.3.5 — Deterministic Memory & Resource Management (Static Pools, OOM RT-Safety).
+**Status:** v0.3.5 COMPLETE — Scheduler deferred-switch fix, test infrastructure robustness (all-1 clean), CI split verification.
+**Target Focus:** v0.3.6 — Page-table pool exclusion from snapshot restore, VMM test re-enable, Deterministic Memory & Resource Management (Static Pools, OOM RT-Safety).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.

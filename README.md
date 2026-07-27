@@ -24,7 +24,7 @@ Jarvis RTOS is an independent, ground-up implementation of a real-time operating
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.3.4** — Minimal & Known Interrupt Latency Jitter (APIC, IRQ latency histogram, Threaded IRQs, cross-arch HAL).
+Current version: **v0.3.5** — Scheduler deadlock fix, test infrastructure robustness, CI split verification.
 
 ---
 
@@ -139,10 +139,10 @@ make qemu-iso       # Launch in QEMU with serial console
 make release        # Optimised release build (no tests)
 
 # Testing targets (QEMU)
-make test-selftest       # Safe class (~102 tests, CI gate)
-make test-all-debug      # Full 665-test suite (debug)
-make test-all-release    # Release-candidate subset
-make test-class CLASS=<name>  # Specific test class
+make execute-test x86 debug selftest  # Safe class (~96 tests, CI gate)
+make execute-test x86 debug all-1    # First half (745 tests)
+make execute-test x86 debug all-2    # Second half (132 tests)
+make execute-test x86 debug <class>  # Specific test class
 
 # Renode simulation (multi-arch)
 make run-renode RENODE_ARCH=x86_64   # x86_64 via SeaBIOS+ISO

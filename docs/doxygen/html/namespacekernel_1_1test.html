@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
    </div>
   </td>
  </tr>
@@ -173,6 +173,14 @@ Functions</h2></td></tr>
 <tr class="memdesc:a5734651fc6722563ecb7a1893ea19b81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR interference between the two operations. This restores the IF=0 semantics that tests using the "set_current + reschedule" pattern were originally designed for.  <br /></td></tr>
 <tr class="memitem:a6cdcc19c8e326942d1c980c8c62894f0" id="r_a6cdcc19c8e326942d1c980c8c62894f0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6cdcc19c8e326942d1c980c8c62894f0">yield_to_task</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
 <tr class="memdesc:a6cdcc19c8e326942d1c980c8c62894f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Yield to a task to steer next_task() scheduling, then restore the harness as current and re-enqueue the task. Unlike <a class="el" href="#a5734651fc6722563ecb7a1893ea19b81" title="Atomically set a task as current and call reschedule, with interrupts disabled to prevent timer ISR i...">yield_as()</a>, the task was never actually executing — only configured as current to influence the scheduler's next selection. After this call the harness continues to drive execution via reschedule() and the given task remains eligible for scheduling (READY, in ready queue). This avoids the invariant violation that set_current() removes the "old current" from the ready queue even when it never ran.  <br /></td></tr>
+<tr class="memitem:a9a26c096fcccf73fa199e553d354ab15" id="r_a9a26c096fcccf73fa199e553d354ab15"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9a26c096fcccf73fa199e553d354ab15">forever_entry</a> ()</td></tr>
+<tr class="memdesc:a9a26c096fcccf73fa199e553d354ab15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Forever-loop entry function — never returns, so _task_trampoline never fires and the task stays alive until explicitly terminated.  <br /></td></tr>
+<tr class="memitem:afc3a2ab344e9fd124b6995c4332a1067" id="r_afc3a2ab344e9fd124b6995c4332a1067"><td class="memItemLeft"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *&#160;</td><td class="memItemRight"><a class="el" href="#afc3a2ab344e9fd124b6995c4332a1067">create_forever_task</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> priority, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> period=10, const char *name=nullptr)</td></tr>
+<tr class="memdesc:afc3a2ab344e9fd124b6995c4332a1067"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a task with the forever-loop entry. The task never auto-terminates — it must be explicitly terminated via <a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123" title="Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain...">terminate_and_drain()</a>.  <br /></td></tr>
+<tr class="memitem:a93254b4e527b1ef044a6f9fb022f1123" id="r_a93254b4e527b1ef044a6f9fb022f1123"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123">terminate_and_drain</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task)</td></tr>
+<tr class="memdesc:a93254b4e527b1ef044a6f9fb022f1123"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain_zombie_list is needed.  <br /></td></tr>
+<tr class="memitem:ac86464678a0416364344c9be40496e41" id="r_ac86464678a0416364344c9be40496e41"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac86464678a0416364344c9be40496e41">wait_for_termination</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task)</td></tr>
+<tr class="memdesc:ac86464678a0416364344c9be40496e41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait until a task reaches TERMINATED state, yielding the CPU via hlt() to let the scheduler dispatch other tasks.  <br /></td></tr>
 <tr class="memitem:a3682848fa74834ef280e24ea7c67ff5e" id="r_a3682848fa74834ef280e24ea7c67ff5e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3682848fa74834ef280e24ea7c67ff5e">watchdog_arm</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> ms, const char *test_name)</td></tr>
 <tr class="memdesc:a3682848fa74834ef280e24ea7c67ff5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arm the watchdog with both TSC-based and PIT-based timers. PIT channel 1 one-shot (~55ms) + TSC deadline.  <br /></td></tr>
 <tr class="memitem:a0a6da7c5576fe1c48584026927954c24" id="r_a0a6da7c5576fe1c48584026927954c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a6da7c5576fe1c48584026927954c24">watchdog_disarm</a> ()</td></tr>
@@ -297,6 +305,57 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="afc3a2ab344e9fd124b6995c4332a1067" name="afc3a2ab344e9fd124b6995c4332a1067"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc3a2ab344e9fd124b6995c4332a1067">&#9670;&#160;</a></span>create_forever_task()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> * kernel::test::create_forever_task </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>priority</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>period</em></span><span class="paramdefsep"> = </span><span class="paramdefval">10</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a task with the forever-loop entry. The task never auto-terminates — it must be explicitly terminated via <a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123" title="Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain...">terminate_and_drain()</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">priority</td><td>Scheduling priority. </td></tr>
+    <tr><td class="paramname">period</td><td>Task period in ticks. </td></tr>
+    <tr><td class="paramname">name</td><td>Optional name (copied into TCB). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the new TCB (must be freed by caller). </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_afc3a2ab344e9fd124b6995c4332a1067_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_afc3a2ab344e9fd124b6995c4332a1067_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
+
+</div>
+</div>
 <a id="a0393b984f5bd8f8fa3e1014037f2dcd0" name="a0393b984f5bd8f8fa3e1014037f2dcd0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0393b984f5bd8f8fa3e1014037f2dcd0">&#9670;&#160;</a></span>create_named_task()</h2>
 
@@ -348,7 +407,7 @@ Variables</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a528c863464ccdb09e9f57510adee048d_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a528c863464ccdb09e9f57510adee048d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -379,8 +438,35 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a22a1e73ffb69f6fd807228fc5756b380_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a22a1e73ffb69f6fd807228fc5756b380_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 2 -->
 </div>
+
+</div>
+</div>
+<a id="a9a26c096fcccf73fa199e553d354ab15" name="a9a26c096fcccf73fa199e553d354ab15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a26c096fcccf73fa199e553d354ab15">&#9670;&#160;</a></span>forever_entry()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::forever_entry </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Forever-loop entry function — never returns, so _task_trampoline never fires and the task stays alive until explicitly terminated. </p>
 
 </div>
 </div>
@@ -463,7 +549,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aabafa220128e328e46c2c19135411898_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aabafa220128e328e46c2c19135411898_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 3 -->
 </div>
 
 </div>
@@ -490,7 +576,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a0fb9d643d01186cc11f1c2868176b39c_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a0fb9d643d01186cc11f1c2868176b39c_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 4 -->
 </div>
 
 </div>
@@ -513,7 +599,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a47ad5e6d76deb150bf2cb8bf66bd3450_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -538,7 +624,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abbd641156133e294c60aa475e73dd520_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abbd641156133e294c60aa475e73dd520_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 6 -->
 </div>
 
 </div>
@@ -615,7 +701,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad8af3e26f5e10cffe7d3eecf79016c1d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -640,7 +726,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a3e91e9cb699a855fe92a5294e1f9463b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a3e91e9cb699a855fe92a5294e1f9463b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 7 -->
+<!-- MAP 8 -->
 </div>
 
 </div>
@@ -665,7 +751,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae1b9042f585e1bfaf6898aed96a403de_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 8 -->
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -692,7 +778,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a9096f1bb9a2e4b1541226759b08c1ae5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 9 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -715,7 +801,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1b7421d43e0e94ec4c1f0005f25222e2_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 10 -->
+<!-- MAP 11 -->
 </div>
 
 </div>
@@ -738,7 +824,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ae3930997b95bec7a00f32aecd001850a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 11 -->
+<!-- MAP 12 -->
 </div>
 
 </div>
@@ -761,7 +847,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a1c32eb5484b7cdcad0ae45d94849f02b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 12 -->
+<!-- MAP 13 -->
 </div>
 
 </div>
@@ -874,7 +960,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 13 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -914,7 +1000,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
+<!-- MAP 15 -->
 </div>
 
 </div>
@@ -954,8 +1040,35 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
+<!-- MAP 16 -->
 </div>
+
+</div>
+</div>
+<a id="a93254b4e527b1ef044a6f9fb022f1123" name="a93254b4e527b1ef044a6f9fb022f1123"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93254b4e527b1ef044a6f9fb022f1123">&#9670;&#160;</a></span>terminate_and_drain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::terminate_and_drain </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain_zombie_list is needed. </p>
 
 </div>
 </div>
@@ -980,7 +1093,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
+<!-- MAP 17 -->
 </div>
 
 </div>
@@ -1011,7 +1124,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
+<!-- MAP 18 -->
 </div>
 
 </div>
@@ -1046,8 +1159,35 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 18 -->
+<!-- MAP 19 -->
 </div>
+
+</div>
+</div>
+<a id="ac86464678a0416364344c9be40496e41" name="ac86464678a0416364344c9be40496e41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac86464678a0416364344c9be40496e41">&#9670;&#160;</a></span>wait_for_termination()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::wait_for_termination </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Wait until a task reaches TERMINATED state, yielding the CPU via hlt() to let the scheduler dispatch other tasks. </p>
 
 </div>
 </div>
@@ -1094,7 +1234,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 19 -->
+<!-- MAP 20 -->
 </div>
 
 </div>
@@ -1134,7 +1274,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 20 -->
+<!-- MAP 21 -->
 </div>
 
 </div>

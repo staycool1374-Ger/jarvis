@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
    </div>
   </td>
  </tr>
@@ -119,10 +119,11 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__pmm_8cpp
 </div><!--header-->
 <div class="contents">
 
-<p>Physical memory manager (PMM) tests.  
+<p>Physical memory manager tests.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_pmm.cpp:</div>
@@ -133,19 +134,18 @@ Include dependency graph for test_pmm.cpp:</div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aa3156e22d07cc707485eacda146acaa4" id="r_aa3156e22d07cc707485eacda146acaa4"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa3156e22d07cc707485eacda146acaa4">JARVIS_TEST</a> (pmm_double_free_rejected, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:a5759fb30e726205036c5710d462d42ea" id="r_a5759fb30e726205036c5710d462d42ea"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5759fb30e726205036c5710d462d42ea">JARVIS_TEST</a> (pmm_free_invalid_address, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:a73ec0a7e71f159a31295aae7ed8a8a8a" id="r_a73ec0a7e71f159a31295aae7ed8a8a8a"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a73ec0a7e71f159a31295aae7ed8a8a8a">JARVIS_TEST</a> (pmm_alloc_contiguous_zero, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:aad3cc79f7c4839112f3da74315cac2e9" id="r_aad3cc79f7c4839112f3da74315cac2e9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aad3cc79f7c4839112f3da74315cac2e9">JARVIS_TEST</a> (pmm_alloc_contiguous_exhaustion, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:a4889e5ffbdd3a3d011c901f1fdea4983" id="r_a4889e5ffbdd3a3d011c901f1fdea4983"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4889e5ffbdd3a3d011c901f1fdea4983">JARVIS_TEST</a> (pmm_alloc_user_page_oob, &quot;PRE: none | POST: none&quot;)</td></tr>
-<tr class="memitem:a9cf3fa6de147f6c6b54348fc1b1feccc" id="r_a9cf3fa6de147f6c6b54348fc1b1feccc"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a9cf3fa6de147f6c6b54348fc1b1feccc">JARVIS_TEST</a> (pmm_page_table_alloc_from_low_mem, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a812d7b188e10d917f46800f633936d1e" id="r_a812d7b188e10d917f46800f633936d1e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a812d7b188e10d917f46800f633936d1e">JARVIS_TEST</a> (pmm_alloc_free, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a0d323f8fe437ab42c5664fe6075c924e" id="r_a0d323f8fe437ab42c5664fe6075c924e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0d323f8fe437ab42c5664fe6075c924e">JARVIS_TEST</a> (pmm_alloc_contiguous, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a522b275c6c186899ee8db7c5037344ca" id="r_a522b275c6c186899ee8db7c5037344ca"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a522b275c6c186899ee8db7c5037344ca">JARVIS_TEST</a> (pmm_user_alloc, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a5ac5bd0a6e5d7fc0a87c3aef16cd77d9" id="r_a5ac5bd0a6e5d7fc0a87c3aef16cd77d9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5ac5bd0a6e5d7fc0a87c3aef16cd77d9">JARVIS_TEST</a> (pmm_total_memory, &quot;PRE: none | POST: none&quot;)</td></tr>
+<tr class="memitem:a7d5eeb9ff58f8de6ff30375c8ab0fe85" id="r_a7d5eeb9ff58f8de6ff30375c8ab0fe85"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7d5eeb9ff58f8de6ff30375c8ab0fe85">JARVIS_TEST</a> (pmm_alloc_page_table, &quot;PRE: none | POST: none&quot;)</td></tr>
 <tr class="memitem:a211f27122b0ca43dee5fbbfe29063a71" id="r_a211f27122b0ca43dee5fbbfe29063a71"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a211f27122b0ca43dee5fbbfe29063a71">register_pmm_tests</a> ()</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Physical memory manager (PMM) tests. </p>
+<div class="textblock"><p>Physical memory manager tests. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="aad3cc79f7c4839112f3da74315cac2e9" name="aad3cc79f7c4839112f3da74315cac2e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad3cc79f7c4839112f3da74315cac2e9">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/6]</span></h2>
+<a id="a0d323f8fe437ab42c5664fe6075c924e" name="a0d323f8fe437ab42c5664fe6075c924e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d323f8fe437ab42c5664fe6075c924e">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -153,7 +153,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">pmm_alloc_contiguous_exhaustion</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">pmm_alloc_contiguous</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -165,8 +165,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a73ec0a7e71f159a31295aae7ed8a8a8a" name="a73ec0a7e71f159a31295aae7ed8a8a8a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73ec0a7e71f159a31295aae7ed8a8a8a">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/6]</span></h2>
+<a id="a812d7b188e10d917f46800f633936d1e" name="a812d7b188e10d917f46800f633936d1e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a812d7b188e10d917f46800f633936d1e">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[2/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -174,7 +174,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">pmm_alloc_contiguous_zero</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">pmm_alloc_free</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -186,8 +186,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a4889e5ffbdd3a3d011c901f1fdea4983" name="a4889e5ffbdd3a3d011c901f1fdea4983"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4889e5ffbdd3a3d011c901f1fdea4983">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/6]</span></h2>
+<a id="a7d5eeb9ff58f8de6ff30375c8ab0fe85" name="a7d5eeb9ff58f8de6ff30375c8ab0fe85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d5eeb9ff58f8de6ff30375c8ab0fe85">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -195,7 +195,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">pmm_alloc_user_page_oob</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">pmm_alloc_page_table</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -207,8 +207,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa3156e22d07cc707485eacda146acaa4" name="aa3156e22d07cc707485eacda146acaa4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa3156e22d07cc707485eacda146acaa4">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/6]</span></h2>
+<a id="a5ac5bd0a6e5d7fc0a87c3aef16cd77d9" name="a5ac5bd0a6e5d7fc0a87c3aef16cd77d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ac5bd0a6e5d7fc0a87c3aef16cd77d9">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[4/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -216,7 +216,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">pmm_double_free_rejected</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">pmm_total_memory</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -228,8 +228,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a5759fb30e726205036c5710d462d42ea" name="a5759fb30e726205036c5710d462d42ea"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5759fb30e726205036c5710d462d42ea">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/6]</span></h2>
+<a id="a522b275c6c186899ee8db7c5037344ca" name="a522b275c6c186899ee8db7c5037344ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a522b275c6c186899ee8db7c5037344ca">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,28 +237,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">JARVIS_TEST </td>
           <td>(</td>
-          <td class="paramtype">pmm_free_invalid_address</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&quot;PRE: none | POST: none&quot;</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a9cf3fa6de147f6c6b54348fc1b1feccc" name="a9cf3fa6de147f6c6b54348fc1b1feccc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cf3fa6de147f6c6b54348fc1b1feccc">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[6/6]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">JARVIS_TEST </td>
-          <td>(</td>
-          <td class="paramtype">pmm_page_table_alloc_from_low_mem</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">pmm_user_alloc</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

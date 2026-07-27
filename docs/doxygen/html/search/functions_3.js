@@ -22,8 +22,9 @@ var searchData=
   ['crc_5fprocess_5fchunk_19',['crc_process_chunk',['../namespacekernel_1_1integrity.html#ad8c610ebd258a2fd322fa982b5dccaff',1,'kernel::integrity']]],
   ['create_20',['create',['../namespacekernel_1_1vfs.html#a94bddce0efe1b0b6a3dade264883f7ce',1,'kernel::vfs']]],
   ['create_5ferr_21',['create_err',['../namespacekernel_1_1vfs.html#a19093f8bf45bac4a87dc6818084e3843',1,'kernel::vfs']]],
-  ['create_5fnamed_5ftask_22',['create_named_task',['../namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0',1,'kernel::test']]],
-  ['create_5fpipe_23',['create_pipe',['../namespacekernel_1_1vfs.html#a63004773b8b1cae833b25ae477c4b956',1,'kernel::vfs']]],
-  ['create_5ftest_5ftask_24',['create_test_task',['../test__sched__helpers_8hpp.html#adaf685bd992e296e30fb7358c5f28b9a',1,'test_sched_helpers.hpp']]],
-  ['current_5ftest_5fname_25',['current_test_name',['../classkernel_1_1test_1_1_registry.html#a2e184916c79d80372a39ee0de29aaeb8',1,'kernel::test::Registry']]]
+  ['create_5fforever_5ftask_22',['create_forever_task',['../namespacekernel_1_1test.html#afc3a2ab344e9fd124b6995c4332a1067',1,'kernel::test']]],
+  ['create_5fnamed_5ftask_23',['create_named_task',['../namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0',1,'kernel::test']]],
+  ['create_5fpipe_24',['create_pipe',['../namespacekernel_1_1vfs.html#a63004773b8b1cae833b25ae477c4b956',1,'kernel::vfs']]],
+  ['create_5ftest_5ftask_25',['create_test_task',['../test__sched__helpers_8hpp.html#adaf685bd992e296e30fb7358c5f28b9a',1,'test_sched_helpers.hpp']]],
+  ['current_5ftest_5fname_26',['current_test_name',['../classkernel_1_1test_1_1_registry.html#a2e184916c79d80372a39ee0de29aaeb8',1,'kernel::test::Registry']]]
 ];

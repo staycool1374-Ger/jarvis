@@ -29,13 +29,14 @@ var searchData=
   ['fmt_5fstr_26',['fmt_str',['../namespacekernel_1_1debug.html#adc744b33c8c6fcc879f99b6094f3a8ae',1,'kernel::debug']]],
   ['fmt_5fu64_27',['fmt_u64',['../namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d',1,'kernel::debug']]],
   ['for_28',['for',['../namespacekernel.html#a1dae18e023980d3a17ebc183f9986bd3',1,'kernel']]],
-  ['fork_29',['fork',['../unistd_8c.html#aa4e4714e6e8927c80b2553a40094b6d9',1,'fork(void):&#160;unistd.c'],['../unistd_8h.html#aa4e4714e6e8927c80b2553a40094b6d9',1,'fork(void):&#160;unistd.c']]],
-  ['format_5fdatetime_30',['format_datetime',['../kernel_8cpp.html#a6758dbad75005fb55338b477c2e5204a',1,'kernel.cpp']]],
-  ['format_5fshort_5fname_31',['format_short_name',['../namespacekernel_1_1fat32.html#ad96c400fa4e603f70ae0ecd41241cbbf',1,'kernel::fat32']]],
-  ['forward_32',['forward',['../utils_8hpp.html#a25df175eb2c708b8703706828dc59cf0',1,'forward(typename remove_reference&lt; T &gt;::type &amp;t) noexcept:&#160;utils.hpp'],['../utils_8hpp.html#a84de50f91f80486020e9048df873168a',1,'forward(typename remove_reference&lt; T &gt;::type &amp;&amp;t) noexcept:&#160;utils.hpp']]],
-  ['free_33',['free',['../stdlib_8c.html#afbedc913aa4651b3c3b4b3aecd9b4711',1,'free(void *ptr):&#160;stdlib.c'],['../stdlib_8h.html#afbedc913aa4651b3c3b4b3aecd9b4711',1,'free(void *ptr):&#160;stdlib.c']]],
-  ['free_5fbuffer_34',['free_buffer',['../namespacekernel_1_1dma.html#ae63cca35e8ce0810d35364b5e21a252d',1,'kernel::dma']]],
-  ['free_5fcluster_5fchain_35',['free_cluster_chain',['../namespacekernel_1_1fat32.html#acaa9ea1e7204014b1ee87d1b18e2786f',1,'kernel::fat32']]],
-  ['fstat_36',['fstat',['../stat_8c.html#a198a57e185e8a036ad06345623b84521',1,'fstat(int fd, struct stat *buf):&#160;stat.c'],['../stat_8h.html#a198a57e185e8a036ad06345623b84521',1,'fstat(int fd, struct stat *buf):&#160;stat.c']]],
-  ['full_5fstring_37',['full_string',['../structkernel_1_1_version.html#a6900c1bf9a13fb19ffdef8f8288bafe8',1,'kernel::Version']]]
+  ['forever_5fentry_29',['forever_entry',['../namespacekernel_1_1test.html#a9a26c096fcccf73fa199e553d354ab15',1,'kernel::test']]],
+  ['fork_30',['fork',['../unistd_8c.html#aa4e4714e6e8927c80b2553a40094b6d9',1,'fork(void):&#160;unistd.c'],['../unistd_8h.html#aa4e4714e6e8927c80b2553a40094b6d9',1,'fork(void):&#160;unistd.c']]],
+  ['format_5fdatetime_31',['format_datetime',['../kernel_8cpp.html#a6758dbad75005fb55338b477c2e5204a',1,'kernel.cpp']]],
+  ['format_5fshort_5fname_32',['format_short_name',['../namespacekernel_1_1fat32.html#ad96c400fa4e603f70ae0ecd41241cbbf',1,'kernel::fat32']]],
+  ['forward_33',['forward',['../utils_8hpp.html#a25df175eb2c708b8703706828dc59cf0',1,'forward(typename remove_reference&lt; T &gt;::type &amp;t) noexcept:&#160;utils.hpp'],['../utils_8hpp.html#a84de50f91f80486020e9048df873168a',1,'forward(typename remove_reference&lt; T &gt;::type &amp;&amp;t) noexcept:&#160;utils.hpp']]],
+  ['free_34',['free',['../stdlib_8c.html#afbedc913aa4651b3c3b4b3aecd9b4711',1,'free(void *ptr):&#160;stdlib.c'],['../stdlib_8h.html#afbedc913aa4651b3c3b4b3aecd9b4711',1,'free(void *ptr):&#160;stdlib.c']]],
+  ['free_5fbuffer_35',['free_buffer',['../namespacekernel_1_1dma.html#ae63cca35e8ce0810d35364b5e21a252d',1,'kernel::dma']]],
+  ['free_5fcluster_5fchain_36',['free_cluster_chain',['../namespacekernel_1_1fat32.html#acaa9ea1e7204014b1ee87d1b18e2786f',1,'kernel::fat32']]],
+  ['fstat_37',['fstat',['../stat_8c.html#a198a57e185e8a036ad06345623b84521',1,'fstat(int fd, struct stat *buf):&#160;stat.c'],['../stat_8h.html#a198a57e185e8a036ad06345623b84521',1,'fstat(int fd, struct stat *buf):&#160;stat.c']]],
+  ['full_5fstring_38',['full_string',['../structkernel_1_1_version.html#a6900c1bf9a13fb19ffdef8f8288bafe8',1,'kernel::Version']]]
 ];

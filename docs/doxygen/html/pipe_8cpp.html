@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
    </div>
   </td>
  </tr>
@@ -176,6 +176,7 @@ Namespaces</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a60edd84a4517b89d8d8d7a6feddb380e" id="r_a60edd84a4517b89d8d8d7a6feddb380e"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a60edd84a4517b89d8d8d7a6feddb380e">operator new</a> (unsigned long, void *p) noexcept</td></tr>
+<tr class="memdesc:a60edd84a4517b89d8d8d7a6feddb380e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Placement new — required for <span class="tt">new (ptr) Type(...)</span> syntax. These do NOT allocate; they return the pointer unchanged.  <br /></td></tr>
 <tr class="memitem:a63004773b8b1cae833b25ae477c4b956" id="r_a63004773b8b1cae833b25ae477c4b956"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1vfs.html#a63004773b8b1cae833b25ae477c4b956">kernel::vfs::create_pipe</a> (int fds[2])</td></tr>
 <tr class="memdesc:a63004773b8b1cae833b25ae477c4b956"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a pair of connected pipe file descriptors.  <br /></td></tr>
 </table>
@@ -194,7 +195,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void * operator new </td>
           <td>(</td>
-          <td class="paramtype">unsigned long</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+          <td class="paramtype">unsigned long</td>          <td class="paramname"><span class="paramname"><em>size</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -208,6 +209,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Placement new — required for <span class="tt">new (ptr) Type(...)</span> syntax. These do NOT allocate; they return the pointer unchanged. </p>
 
 </div>
 </div>

@@ -15,6 +15,7 @@ var dir_c85d3e3c5052e9ad9ce18c6863244a25 =
     [ "logger.cpp", "logger_8cpp.html", null ],
     [ "logger.hpp", "logger_8hpp.html", "logger_8hpp" ],
     [ "new.cpp", "new_8cpp.html", "new_8cpp" ],
+    [ "new.hpp", "new_8hpp.html", "new_8hpp" ],
     [ "scope_guard.hpp", "scope__guard_8hpp.html", "scope__guard_8hpp" ],
     [ "signal.hpp", "signal_8hpp.html", "signal_8hpp" ],
     [ "string.hpp", "string_8hpp.html", "string_8hpp" ],

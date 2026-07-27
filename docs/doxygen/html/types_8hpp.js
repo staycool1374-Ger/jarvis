@@ -11,5 +11,7 @@ var types_8hpp =
     [ "uint32_t", "types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82", null ],
     [ "uint64_t", "types_8hpp.html#a4fd212339282cce62b0d2700490de00f", null ],
     [ "uint8_t", "types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879", null ],
-    [ "uintptr_t", "types_8hpp.html#a5b7cbd695e4ef11023a4088e5ebe9612", null ]
+    [ "uintptr_t", "types_8hpp.html#a5b7cbd695e4ef11023a4088e5ebe9612", null ],
+    [ "operator new", "types_8hpp.html#aa6a1b1124bd441ce2ee587d4e3509eac", null ],
+    [ "operator new[]", "types_8hpp.html#aa312a664ddfec0cee4d6757e67477176", null ]
 ];

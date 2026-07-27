@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.4</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
    </div>
   </td>
  </tr>
@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('new_8cpp.html'
   <div class="headertitle"><div class="title">new.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Heap operator new/delete (used by services code and compiler ABI). Kernel code uses explicit MemPool::alloc/free + placement new instead.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="string_8hpp_source.html">string.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="assert_8hpp_source.html">assert.hpp</a>&gt;</code><br />
@@ -129,21 +132,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('new_8cpp.html'
 Include dependency graph for new.cpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="new_8cpp__incl.png" border="0" usemap="#asrc_2lib_2new_8cpp" loading="lazy" alt=""/></div>
-<map name="asrc_2lib_2new_8cpp" id="asrc_2lib_2new_8cpp">
-<area shape="rect" title=" " alt="" coords="45,5,152,32"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="62,229,140,256"/>
-<area shape="poly" title=" " alt="" coords="81,35,56,61,27,98,16,118,10,139,9,160,15,180,33,202,58,220,53,223,30,206,11,183,4,160,4,138,11,116,23,95,52,58,84,30"/>
-<area shape="rect" href="string_8hpp.html" title="Memory and string utility functions (extern &quot;C&quot; for ABI compat)." alt="" coords="24,155,103,181"/>
-<area shape="poly" title=" " alt="" coords="87,35,77,55,66,81,62,110,63,139,57,139,57,110,61,79,72,53,90,30"/>
-<area shape="rect" href="pmm_8hpp.html" title="Physical Memory Manager — bitmap&#45;based page allocator with owner tracking." alt="" coords="76,80,241,107"/>
-<area shape="poly" title=" " alt="" coords="109,30,141,68,136,69,109,35"/>
-<area shape="rect" href="constants_8hpp.html" title="Central hardware and memory&#45;layout constants (no magic numbers)." alt="" coords="177,155,281,181"/>
-<area shape="poly" title=" " alt="" coords="152,23,180,30,209,41,234,57,255,79,261,94,261,111,248,144,244,140,256,110,256,95,251,81,231,61,206,45,179,35,153,28"/>
-<area shape="poly" title=" " alt="" coords="71,180,90,216,85,216,69,184"/>
-<area shape="poly" title=" " alt="" coords="156,107,114,216,109,213,151,108"/>
-<area shape="poly" title=" " alt="" coords="171,105,209,143,204,144,170,110"/>
-<area shape="poly" title=" " alt="" coords="209,181,138,224,135,219,204,182"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
@@ -155,14 +144,17 @@ Functions</h2></td></tr>
 <tr class="memitem:a632fb5550678e7d65db823fb1adc2dd9" id="r_a632fb5550678e7d65db823fb1adc2dd9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a632fb5550678e7d65db823fb1adc2dd9">init_heap</a> ()</td></tr>
 <tr class="memitem:a71443e4efb14ea8b638adafddb954311" id="r_a71443e4efb14ea8b638adafddb954311"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a71443e4efb14ea8b638adafddb954311">operator new</a> (unsigned long size)</td></tr>
 <tr class="memitem:a6c3b33e13f2044d8d02c73dba393b522" id="r_a6c3b33e13f2044d8d02c73dba393b522"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a6c3b33e13f2044d8d02c73dba393b522">operator new[]</a> (unsigned long size)</td></tr>
-<tr class="memitem:afe58dd974f3e2b9a61cff9b39b4bc77c" id="r_afe58dd974f3e2b9a61cff9b39b4bc77c"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#afe58dd974f3e2b9a61cff9b39b4bc77c">operator new</a> (unsigned long size, void *ptr)</td></tr>
-<tr class="memitem:a391ee1509db0ecb760fc695faee9b0c4" id="r_a391ee1509db0ecb760fc695faee9b0c4"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#a391ee1509db0ecb760fc695faee9b0c4">operator new[]</a> (unsigned long size, void *ptr)</td></tr>
-<tr class="memitem:a86107594327f3a001230df9802cd4422" id="r_a86107594327f3a001230df9802cd4422"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a86107594327f3a001230df9802cd4422">operator delete</a> (void *p)</td></tr>
-<tr class="memitem:aaa8d8403dca7d813a59dd1f07728349d" id="r_aaa8d8403dca7d813a59dd1f07728349d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aaa8d8403dca7d813a59dd1f07728349d">operator delete[]</a> (void *p)</td></tr>
-<tr class="memitem:a14b90c584c06d6808fdec3b46abdb170" id="r_a14b90c584c06d6808fdec3b46abdb170"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a14b90c584c06d6808fdec3b46abdb170">operator delete</a> (void *p, unsigned long)</td></tr>
-<tr class="memitem:a420ed83b0b3186929275bd8dedd383f6" id="r_a420ed83b0b3186929275bd8dedd383f6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a420ed83b0b3186929275bd8dedd383f6">operator delete[]</a> (void *p, unsigned long)</td></tr>
+<tr class="memitem:aa6a1b1124bd441ce2ee587d4e3509eac" id="r_aa6a1b1124bd441ce2ee587d4e3509eac"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aa6a1b1124bd441ce2ee587d4e3509eac">operator new</a> (unsigned long size, void *ptr) noexcept</td></tr>
+<tr class="memdesc:aa6a1b1124bd441ce2ee587d4e3509eac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Placement new — required for <span class="tt">new (ptr) Type(...)</span> syntax. These do NOT allocate; they return the pointer unchanged.  <br /></td></tr>
+<tr class="memitem:aa312a664ddfec0cee4d6757e67477176" id="r_aa312a664ddfec0cee4d6757e67477176"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="#aa312a664ddfec0cee4d6757e67477176">operator new[]</a> (unsigned long size, void *ptr) noexcept</td></tr>
+<tr class="memitem:a7988d271b794871cc241b736a115251a" id="r_a7988d271b794871cc241b736a115251a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7988d271b794871cc241b736a115251a">operator delete</a> (void *p) noexcept</td></tr>
+<tr class="memitem:a110a5118acd3eee17e00fca299b0451a" id="r_a110a5118acd3eee17e00fca299b0451a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a110a5118acd3eee17e00fca299b0451a">operator delete[]</a> (void *p) noexcept</td></tr>
+<tr class="memitem:a2c8e96b6c5a6f1146ce153532d994331" id="r_a2c8e96b6c5a6f1146ce153532d994331"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2c8e96b6c5a6f1146ce153532d994331">operator delete</a> (void *p, unsigned long) noexcept</td></tr>
+<tr class="memitem:a863fe87a3328886e4f3f017f0566c254" id="r_a863fe87a3328886e4f3f017f0566c254"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a863fe87a3328886e4f3f017f0566c254">operator delete[]</a> (void *p, unsigned long) noexcept</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Heap operator new/delete (used by services code and compiler ABI). Kernel code uses explicit MemPool::alloc/free + placement new instead. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a632fb5550678e7d65db823fb1adc2dd9" name="a632fb5550678e7d65db823fb1adc2dd9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a632fb5550678e7d65db823fb1adc2dd9">&#9670;&#160;</a></span>init_heap()</h2>
 
@@ -180,11 +172,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a86107594327f3a001230df9802cd4422" name="a86107594327f3a001230df9802cd4422"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86107594327f3a001230df9802cd4422">&#9670;&#160;</a></span>operator delete() <span class="overload">[1/2]</span></h2>
+<a id="a7988d271b794871cc241b736a115251a" name="a7988d271b794871cc241b736a115251a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7988d271b794871cc241b736a115251a">&#9670;&#160;</a></span>operator delete() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void operator delete </td>
@@ -193,15 +188,23 @@ Functions</h2></td></tr>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a14b90c584c06d6808fdec3b46abdb170" name="a14b90c584c06d6808fdec3b46abdb170"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14b90c584c06d6808fdec3b46abdb170">&#9670;&#160;</a></span>operator delete() <span class="overload">[2/2]</span></h2>
+<a id="a2c8e96b6c5a6f1146ce153532d994331" name="a2c8e96b6c5a6f1146ce153532d994331"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c8e96b6c5a6f1146ce153532d994331">&#9670;&#160;</a></span>operator delete() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void operator delete </td>
@@ -214,15 +217,23 @@ Functions</h2></td></tr>
           <td class="paramtype">unsigned long</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aaa8d8403dca7d813a59dd1f07728349d" name="aaa8d8403dca7d813a59dd1f07728349d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa8d8403dca7d813a59dd1f07728349d">&#9670;&#160;</a></span>operator delete[]() <span class="overload">[1/2]</span></h2>
+<a id="a110a5118acd3eee17e00fca299b0451a" name="a110a5118acd3eee17e00fca299b0451a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a110a5118acd3eee17e00fca299b0451a">&#9670;&#160;</a></span>operator delete[]() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void operator delete[] </td>
@@ -231,15 +242,23 @@ Functions</h2></td></tr>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a420ed83b0b3186929275bd8dedd383f6" name="a420ed83b0b3186929275bd8dedd383f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a420ed83b0b3186929275bd8dedd383f6">&#9670;&#160;</a></span>operator delete[]() <span class="overload">[2/2]</span></h2>
+<a id="a863fe87a3328886e4f3f017f0566c254" name="a863fe87a3328886e4f3f017f0566c254"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a863fe87a3328886e4f3f017f0566c254">&#9670;&#160;</a></span>operator delete[]() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void operator delete[] </td>
@@ -252,6 +271,11 @@ Functions</h2></td></tr>
           <td class="paramtype">unsigned long</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -274,16 +298,19 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="new_8cpp_a71443e4efb14ea8b638adafddb954311_cgraph.png" border="0" usemap="#anew_8cpp_a71443e4efb14ea8b638adafddb954311_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
 </div>
-<a id="afe58dd974f3e2b9a61cff9b39b4bc77c" name="afe58dd974f3e2b9a61cff9b39b4bc77c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe58dd974f3e2b9a61cff9b39b4bc77c">&#9670;&#160;</a></span>operator new() <span class="overload">[2/2]</span></h2>
+<a id="aa6a1b1124bd441ce2ee587d4e3509eac" name="aa6a1b1124bd441ce2ee587d4e3509eac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6a1b1124bd441ce2ee587d4e3509eac">&#9670;&#160;</a></span>operator new() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void * operator new </td>
@@ -296,7 +323,14 @@ Here is the call graph for this function:</div>
           <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>&#160;)</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
+
+<p>Placement new — required for <span class="tt">new (ptr) Type(...)</span> syntax. These do NOT allocate; they return the pointer unchanged. </p>
 
 </div>
 </div>
@@ -317,11 +351,14 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a391ee1509db0ecb760fc695faee9b0c4" name="a391ee1509db0ecb760fc695faee9b0c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a391ee1509db0ecb760fc695faee9b0c4">&#9670;&#160;</a></span>operator new[]() <span class="overload">[2/2]</span></h2>
+<a id="aa312a664ddfec0cee4d6757e67477176" name="aa312a664ddfec0cee4d6757e67477176"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa312a664ddfec0cee4d6757e67477176">&#9670;&#160;</a></span>operator new[]() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void * operator new[] </td>
@@ -334,6 +371,11 @@ Here is the call graph for this function:</div>
           <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span>&#160;)</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>

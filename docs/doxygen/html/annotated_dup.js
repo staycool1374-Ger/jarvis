@@ -84,6 +84,7 @@ var annotated_dup =
     [ "stat", "structstat.html", "structstat" ],
     [ "TaskDeleter", "struct_task_deleter.html", "struct_task_deleter" ],
     [ "TestMeta", "struct_test_meta.html", "struct_test_meta" ],
+    [ "TestStruct", "struct_test_struct.html", "struct_test_struct" ],
     [ "ThroughputCtx", "struct_throughput_ctx.html", "struct_throughput_ctx" ],
     [ "timespec", "structtimespec.html", "structtimespec" ],
     [ "Timeval", "struct_timeval.html", "struct_timeval" ],

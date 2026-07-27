@@ -127,7 +127,7 @@ Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
 architecture is mid-transition toward a <strong>capability-based
 microkernel</strong>, where drivers, VFS, and block I/O are externalised
 to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
-<p>Current version: <strong>v0.3.4-dev</strong> — Interrupt Latency Jitter Reduction (APIC, threaded IRQs):
+<p>Current version: <strong>v0.3.5</strong> — Scheduler deferred-switch fix, test infrastructure robustness, CI split verification.
 O(1) priority bitmap scheduler, bounded WCET, hard real-time compliance.</p>
 <hr />
 <h2 id="architectural-pillars">Architectural Pillars</h2>
@@ -512,7 +512,7 @@ variables, shell execution options (<code>-x</code>, <code>-e</code>,
 <code>-u</code>), Zsh‑style prompt.</p>
 <h3 id="test-framework">Test Framework</h3>
 <ul>
-<li><strong>675 test cases</strong> across 80+ test files covering every
+<li><strong>745 test cases</strong> across 80+ test files covering every
 kernel subsystem</li>
 <li>Run automatically at boot in debug builds; 84 curated tests in
 release</li>
@@ -626,7 +626,7 @@ deadlock detection, stack canary markers</td>
 <tr>
 <td><strong>Testing</strong></td>
 <td>Community demos, no built-in test framework</td>
-<td>675 kernel-mode tests with full state snapshot/isolation, QEMU CI,
+<td>745 kernel-mode tests with full state snapshot/isolation, QEMU CI,
 leak detection</td>
 </tr>
 </tbody>
@@ -705,10 +705,10 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> release        <span class="co"># Optimised release build (no tests)</span></span>
 <span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Testing targets (QEMU)</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-selftest       <span class="co"># Safe class (~102 tests, CI gate)</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-all-debug      <span class="co"># Full 675-test suite (debug)</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-all-release    <span class="co"># Release-candidate subset</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> test-class CLASS=<span class="op">&lt;</span>name<span class="op">&gt;</span>  <span class="co"># Specific test class</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> execute-test x86 debug selftest  <span class="co"># Safe class (~96 tests, CI gate)</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> execute-test x86 debug all-1    <span class="co"># First half (745 tests)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> execute-test x86 debug all-2    <span class="co"># Second half (132 tests)</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> execute-test x86 debug &lt;class&gt;  <span class="co"># Specific test class</span></span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Renode simulation (multi-arch)</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> run-renode RENODE_ARCH=x86_64   <span class="co"># x86_64 via SeaBIOS+ISO</span></span>

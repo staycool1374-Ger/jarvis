@@ -77,6 +77,7 @@ var hierarchy =
     [ "kernel::test::TestCase", "structkernel_1_1test_1_1_test_case.html", null ],
     [ "kernel::test::TestClass", "structkernel_1_1test_1_1_test_class.html", null ],
     [ "TestMeta", "struct_test_meta.html", null ],
+    [ "TestStruct", "struct_test_struct.html", null ],
     [ "ThroughputCtx", "struct_throughput_ctx.html", null ],
     [ "timespec", "structtimespec.html", null ],
     [ "kernel::Timeval", "structkernel_1_1_timeval.html", null ],
