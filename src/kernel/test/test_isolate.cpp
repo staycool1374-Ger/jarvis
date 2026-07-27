@@ -31,6 +31,7 @@
 #include <kernel/log/dmesg.hpp>
 #include <kernel/vfs/tmpfs.hpp>
 #include <kernel/driver/iocd.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/arch/gdt.hpp>
@@ -143,9 +144,13 @@ static size_t off_kstack_header(size_t user_page_count) {
            user_page_count * (sizeof(uint64_t) + arch::PAGE_SIZE);
 }
 
-static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
+static size_t off_pt_pool(size_t user_page_count, uint64_t num_kstacks) {
     size_t kstack_area = sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
     return off_kstack_header(user_page_count) + kstack_area;
+}
+
+static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
+    return off_pt_pool(user_page_count, num_kstacks) + sizeof(PtPoolSnapshot);
 }
 
 bool snapshot_create() {
@@ -308,6 +313,13 @@ bool snapshot_create() {
         }
     }
 
+    // ---- Page-table pool snapshot ----
+    {
+        auto *pool = reinterpret_cast<PtPoolSnapshot *>(
+            g_snapshot + off_pt_pool(user_page_count, task_count));
+        PMM::capture_pool_snapshot(*pool);
+    }
+
     return true;
 }
 
@@ -362,6 +374,34 @@ void snapshot_restore(const char *test_name) {
                          PMM::bitmap_bytes());
         PMM::free_pages_ref() =
             *reinterpret_cast<uint64_t *>(g_snapshot + off_pmm_free());
+    }
+
+    // ---- Page-table pool restore (overlays main bitmap) ----
+    {
+        auto *saved_misc =
+            reinterpret_cast<uint64_t *>(g_snapshot + off_sched_misc());
+        uint64_t nu = *reinterpret_cast<uint64_t *>(
+            g_snapshot + off_user_page_count());
+        uint64_t nk = saved_misc[0];
+        auto *pool = reinterpret_cast<const PtPoolSnapshot *>(
+            g_snapshot + off_pt_pool(nu, nk));
+        PMM::restore_pool_snapshot(*pool);
+    }
+
+    // ---- Clear stale kernel PML4 user entries ----
+    // VMM::map_page allocates page-table pages and writes their physical
+    // addresses into the kernel PML4 entries 0-255 (user space).  After
+    // PMM restore those pages are freed, but the PML4 entries still point
+    // to the freed pages.  Clear all 256 user entries so the next call
+    // allocates fresh pages from the page-table pool.
+    {
+        uint64_t pml4_phys = VMM::get_kernel_pml4();
+        if (pml4_phys) {
+            auto *pml4 = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+            for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i)
+                pml4[i] = 0;
+        }
     }
 
     // ---- User page content ----

@@ -129,3 +129,4 @@
 2026-07-27 11:29:06 all PASSED: 849 FAILED: 1 TIME: 250s STATUS: TIMEOUT (kernel PT corruption at test 851)
 2026-07-27 12:41:36 all-1 PASSED: 745 FAILED: 0 TIME: ~180s
 CI: all class split into all-1/all-2 to work around kernel PT corruption limit (v0.3.6 fix)
+2026-07-27 13:37:35 all-2 PASSED: 103 FAILED: 1 TIME: ~15s STATUS: PANIC (pre-existing vmm_map_page PML4 corruption - v0.3.6 fix)

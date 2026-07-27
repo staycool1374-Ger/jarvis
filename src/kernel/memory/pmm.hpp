@@ -28,6 +28,12 @@
 #include <constants.hpp>
 #include <kernel/memory/pmm_errors.hpp>
 
+namespace kernel::test {
+struct PtPoolSnapshot;
+}
+
+
+
 namespace kernel {
 
 /// @brief Physical memory manager using a bitmap to track free 4 KiB pages.
@@ -155,6 +161,12 @@ class PMM {
     static uint64_t &free_pages_ref() {
         return free_pages_;
     }
+    /// @brief Capture page-table pool state into a snapshot struct.
+    static void capture_pool_snapshot(
+        kernel::test::PtPoolSnapshot &out);
+    /// @brief Restore page-table pool state from a snapshot struct.
+    static void restore_pool_snapshot(
+        const kernel::test::PtPoolSnapshot &src);
 
   private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;

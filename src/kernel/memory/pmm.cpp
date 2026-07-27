@@ -17,6 +17,7 @@
  */
 
 #include <kernel/memory/pmm.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/test/resource_tracker.hpp>
@@ -87,6 +88,11 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
             page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
+        // Pool pages are pre-allocated (reserved) so they are never handed
+        // out by the general allocator.  alloc_page_table() scans the pool
+        // first, then falls back to alloc_page().  The PtPoolSnapshot in
+        // snapshot_restore protects the pool bitmap from the general PMM
+        // restore, preventing stale PML4 entries pointing to freed pages.
         for (uint64_t i = pool_start_page;
              i < pool_start_page + pool_size_pages; ++i) {
             bitmap_set(i);
@@ -312,7 +318,8 @@ uint64_t PMM::alloc_page_table() {
             owner_set_kernel(i);
             --free_pages_;
             kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
-            return i * PAGE_SIZE;
+            uint64_t phys = i * PAGE_SIZE;
+            return phys;
         }
     }
     uint64_t result = alloc_page();
@@ -330,6 +337,7 @@ void PMM::free_page(uint64_t phys_addr) {
         return;
     if (bitmap_test(index)) {
         bitmap_clear(index);
+        owner_set_kernel(index);
         ++free_pages_;
         kernel::test::ResourceTracker::instance().track_pmm_free(1);
     }
@@ -449,6 +457,11 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
         page_table_pool_end_ =
             page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
+        // Pool pages are pre-allocated (reserved) so they are never handed
+        // out by the general allocator.  alloc_page_table() scans the pool
+        // first, then falls back to alloc_page().  The PtPoolSnapshot in
+        // snapshot_restore protects the pool bitmap from the general PMM
+        // restore, preventing stale PML4 entries pointing to freed pages.
         for (uint64_t i = pool_start_page;
              i < pool_start_page + pool_size_pages; ++i) {
             bitmap_set(i);
@@ -618,6 +631,49 @@ errors::PmmError PMM::is_user_page_err(uint64_t phys_addr, bool &out_is_user) {
     }
     out_is_user = owner_test(index);
     return errors::PMM_ERR_OK;
+}
+
+// ---- Page-table pool snapshot (test isolation) ----
+
+void PMM::capture_pool_snapshot(
+    kernel::test::PtPoolSnapshot &out) {
+    out.base       = page_table_pool_start_;
+    out.size_pages = (page_table_pool_end_ - page_table_pool_start_) / PAGE_SIZE;
+    out.clean      = true;
+    out.mapped     = true;
+    out.tainted    = false;
+    out.poisoned   = false;
+    out.generation = 0;
+    out.refcount   = 0;
+    out.crc32      = 0;
+
+    if (out.size_pages == 0 || out.size_pages * 8 > sizeof(out.bitmap)) {
+        out.size_pages = 0;
+        return;
+    }
+    uint64_t start_bit = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t bytes = (out.size_pages + 7) / 8;
+    __builtin_memset(out.bitmap, 0, sizeof(out.bitmap));
+    __builtin_memset(out.owner, 0, sizeof(out.owner));
+    __builtin_memcpy(out.bitmap,
+                     reinterpret_cast<uint8_t *>(bitmap_) + start_bit / 8,
+                     bytes);
+    __builtin_memcpy(out.owner,
+                     reinterpret_cast<uint8_t *>(owner_bitmap_) + start_bit / 8,
+                     bytes);
+}
+
+void PMM::restore_pool_snapshot(
+    const kernel::test::PtPoolSnapshot &src) {
+    if (src.size_pages == 0 || src.poisoned) {
+        return; // refuse to restore a corrupted pool
+    }
+    uint64_t start_bit = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t bytes = (src.size_pages + 7) / 8;
+    __builtin_memcpy(reinterpret_cast<uint8_t *>(bitmap_) + start_bit / 8,
+                     src.bitmap, bytes);
+    __builtin_memcpy(reinterpret_cast<uint8_t *>(owner_bitmap_) + start_bit / 8,
+                     src.owner, bytes);
 }
 
 } // namespace kernel

@@ -21,6 +21,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <kernel/memory/pmm.hpp>
 #include <kernel/arch/page_table.hpp>
 #include <kernel/arch/context.hpp>
 #include <kernel/arch/cpuid.hpp>
@@ -119,8 +120,14 @@ JARVIS_TEST(hal_context_switch_to, "PRE: iocd | POST: none") {
     arch::ArchContext ctx_a;
     arch::ArchContext ctx_b;
 
-    uint64_t rsp_a = 0x7000;
-    uint64_t rsp_b = 0x8000;
+    // Allocate writable memory for fake kernel stacks (via HHDM).
+    uint64_t stack_a_phys = PMM::alloc_page();
+    JARVIS_ASSERT(stack_a_phys != 0);
+    uint64_t stack_b_phys = PMM::alloc_page();
+    JARVIS_ASSERT(stack_b_phys != 0);
+
+    uint64_t rsp_a = arch::HHDM_OFFSET + stack_a_phys + arch::PAGE_SIZE;
+    uint64_t rsp_b = arch::HHDM_OFFSET + stack_b_phys + arch::PAGE_SIZE;
 
     arch::ArchContextManager::init_stack(
         reinterpret_cast<uint64_t *>(rsp_b), reinterpret_cast<void (*)()>(0),
@@ -135,6 +142,8 @@ JARVIS_TEST(hal_context_switch_to, "PRE: iocd | POST: none") {
     JARVIS_ASSERT_EQ(ctx_b.rsp, rsp_b);
     JARVIS_ASSERT_EQ(current_rsp, rsp_b);
 
+    PMM::free_page(stack_a_phys);
+    PMM::free_page(stack_b_phys);
     JARVIS_TEST_PASS();
 }
 #endif

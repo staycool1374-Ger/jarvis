@@ -18,6 +18,7 @@
 
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/task/scheduler.hpp>
 #include <kernel/arch/io.hpp>
 #include <constants.hpp>
 #include <kernel/arch/page_table.hpp>
@@ -247,6 +248,17 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
                                               (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+
+    // Reject kernel-space VAs when tests are active: modifying PML4 entries
+    // >= PML4_USER_COUNT corrupts the kernel's own page table (HHDM, kstack
+    // window, etc.) and the damage cannot be undone by test snapshot_restore.
+    // Boot-time calls (APIC MMIO mapping, etc.) are still permitted.
+    if (Scheduler::is_test_active() && pml4_idx >= arch::PML4_USER_COUNT) {
+        Logger::error("map_page: test attempted kernel-space VA 0x%lx "
+                      "(pml4_idx=%zu) — rejected", virt_addr, pml4_idx);
+        return;
+    }
+
     size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
     size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
     size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
@@ -327,6 +339,9 @@ void VMM::unmap_page(uint64_t virt_addr) {
                                               (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    if (Scheduler::is_test_active() && pml4_idx >= arch::PML4_USER_COUNT)
+        return;
+
     size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
     size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
     size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
@@ -380,6 +395,9 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
                                               (kernel_pml4_ & ~0xFFFULL));
 
     size_t pml4_idx = arch::ArchPageTable::pml4_index(virt_addr);
+    if (Scheduler::is_test_active() && pml4_idx >= arch::PML4_USER_COUNT)
+        return 0;
+
     size_t pdpt_idx = arch::ArchPageTable::pdpt_index(virt_addr);
     size_t pd_idx = arch::ArchPageTable::pd_index(virt_addr);
     size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);

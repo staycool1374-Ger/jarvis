@@ -45,7 +45,7 @@ JARVIS_TEST(vmm_unmap_already_unmapped, "PRE: none | POST: none") {
 // Expect: Fails or unmaps first
 // Depends: kernel::memory::VMM
 JARVIS_TEST(vmm_map_already_mapped, "PRE: none | POST: none") {
-    uint64_t va = 0x800000000000ULL;
+    uint64_t va = 0x400000ULL;  // user-space address (PML4 entry 0)
     uint64_t phys1 = PMM::alloc_page();
     JARVIS_ASSERT(phys1 != 0);
     VMM::map_page(va, phys1, false);
@@ -66,7 +66,7 @@ JARVIS_TEST(vmm_map_already_mapped, "PRE: none | POST: none") {
 // Expect: Returns error
 // Depends: kernel::memory::VMM
 JARVIS_TEST(vmm_map_page_null_phys, "PRE: none | POST: none") {
-    uint64_t va = 0x800000100000ULL;
+    uint64_t va = 0x401000ULL;  // user-space address (PML4 entry 0)
     VMM::map_page(va, 0, false);
     JARVIS_ASSERT(VMM::virt_to_phys(va) == 0);
 }

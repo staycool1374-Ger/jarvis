@@ -40,6 +40,27 @@ void reload_daemon_tasks();
 ///        in sequence with snapshot isolation between each test.
 void run_all_isolated_tests();
 
+/// @brief Snapshot of the page-table pool state — survives PMM bitmap restore
+///        so that kernel page-table pages (kstack window, VMM map_page)
+///        remain valid across snapshot_restore cycles.
+struct PtPoolSnapshot {
+    uint64_t base;         ///< physical base (page_table_pool_start_)
+    uint64_t size_pages;   ///< pool extent in pages
+
+    bool     clean;         ///< known-good state after init
+    bool     mapped;        ///< pages are live in kernel PML4/PD/PT
+    bool     tainted;       ///< HW error (ECC, PCIe parity, etc.)
+    bool     poisoned;      ///< buffer overflow / UAF detected in pool
+
+    uint8_t  bitmap[256];   ///< 2048 bits = covers pool up to 8 MiB
+    uint8_t  owner[256];    ///< owner bitmap for pool pages
+
+    uint32_t generation;    ///< incremented per snapshot capture
+    uint32_t refcount;      ///< tasks referencing this pool
+    uint32_t crc32;         ///< integrity check over bitmap
+    uint32_t _reserved[4];  ///< padding for forward compat
+};
+
 /// @brief Tracks whether any VFS syscall was invoked during the current test.
 /// snapshot_restore() checks this flag to decide whether daemon tasks need
 /// a full reload (VFS touched) or can be left running (VFS not touched).
