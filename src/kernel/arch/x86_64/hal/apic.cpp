@@ -166,10 +166,16 @@ static uint64_t ns_to_tsc_delta(uint64_t ns) {
         return 0;
     }
     // delta = (ns * freq) / 1_000_000_000
-    // Use 128-bit via compiler builtins to avoid overflow (ns × freq ≫ 2^64
-    // for large ns).  The builtin returns (high, low) of the 128-bit product.
-    unsigned __int128 product = static_cast<unsigned __int128>(ns) * freq;
-    return static_cast<uint64_t>(product / 1000000000ULL);
+    // Use double-word arithmetic via __udivdi3/libgcc helpers.  The product
+    // can exceed 2^64, so decompose: a = ns / 1e9, b = ns % 1e9.
+    uint64_t a = ns / 1000000000ULL;
+    uint64_t b = ns % 1000000000ULL;
+    // ns*freq = (a*1e9 + b)*freq = a*freq*1e9 + b*freq
+    // Divide each term by 1e9:
+    // result = a*freq + (b*freq) / 1e9
+    // The second term may still overflow 64-bit: b*freq can be up to
+    // 1e9 * 4e9 = 4e18 < 2^64 (~1.8e19), so it fits in 64 bits.
+    return a * freq + (b * freq) / 1000000000ULL;
 }
 
 void APIC::x2_write(uint32_t off, uint32_t v) { wrmsr(x2apic_msr(off), v); }

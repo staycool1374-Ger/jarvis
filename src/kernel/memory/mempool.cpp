@@ -33,7 +33,7 @@ constinit bool MemPool::ready_ = false;
 void MemPool::init() {
     static const size_t sizes[POOL_COUNT] = {16,  32,   64,   128, 256,
                                              512, 1024, 2048, 8192};
-    static const size_t counts[POOL_COUNT] = {256, 128, 64, 32, 16,
+    static const size_t counts[POOL_COUNT] = {256, 128, 320, 32, 16,
                                               8,   16,  64, 64};
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
@@ -189,34 +189,28 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
     auto &p = pools_[idx];
     p.write_freed_bitmap(meta.freed_bitmap);
 
-    // If the pool was resized after the snapshot was taken (block_count grew),
-    // the added blocks have zero bits in the bitmap and would be treated as
-    // "allocated".  Mark them genuinely free now.
+    // If the pool was resized after the snapshot, mark new blocks free.
     if (p.block_count > meta.block_count) {
         for (size_t j = meta.block_count; j < p.block_count; ++j) {
             p.set_block_freed(j);
         }
     }
 
-    // Rebuild the free-list *next* pointers from the bitmap so the
-    // pool is internally consistent even if test code wrote into
-    // supposedly-allocated blocks that have now been restored to "free".
-    // Build the list by prepending each freed block to the head so that
-    // every freed block is reachable from first_free.
+    // Rebuild the free-list next pointers from the bitmap so the pool is
+    // internally consistent even if test code modified freed blocks.
     p.first_free = static_cast<size_t>(-1);
     p.free_count = 0;
     for (size_t j = 0; j < p.block_count; ++j) {
         if (p.is_block_pinned(j))
-            continue; // pinned blocks stay allocated, never in free list
+            continue;
         if (!p.is_block_freed(j))
-            continue; // still allocated — skip
+            continue;
         auto *next = reinterpret_cast<uint64_t *>(p.data + j * p.block_size);
         *next = p.first_free;
         p.first_free = j;
         ++p.free_count;
     }
-    // If the pool was completely full before snapshot the rebuild
-    // leaves first_free == -1 (no free blocks) — correct.
+    // If the pool was completely full, first_free stays -1 — correct.
 }
 
 /// @brief Copy all pool block data into a contiguous buffer.

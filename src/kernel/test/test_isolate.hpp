@@ -43,6 +43,10 @@ void run_all_isolated_tests();
 /// @brief Snapshot of the page-table pool state — survives PMM bitmap restore
 ///        so that kernel page-table pages (kstack window, VMM map_page)
 ///        remain valid across snapshot_restore cycles.
+/// Max pool pages we can snapshot — must match CONFIG_PAGE_TABLE_POOL_SIZE
+/// (default 4096).  bitmap/owner each need CONFIG_PAGE_TABLE_POOL_SIZE/8 bytes.
+static constexpr size_t PT_POOL_SNAP_MAX_PAGES = 4096;
+
 struct PtPoolSnapshot {
     uint64_t base;         ///< physical base (page_table_pool_start_)
     uint64_t size_pages;   ///< pool extent in pages
@@ -52,8 +56,8 @@ struct PtPoolSnapshot {
     bool     tainted;       ///< HW error (ECC, PCIe parity, etc.)
     bool     poisoned;      ///< buffer overflow / UAF detected in pool
 
-    uint8_t  bitmap[256];   ///< 2048 bits = covers pool up to 8 MiB
-    uint8_t  owner[256];    ///< owner bitmap for pool pages
+    uint8_t  bitmap[PT_POOL_SNAP_MAX_PAGES / 8];  ///< covers pool bitmap
+    uint8_t  owner[PT_POOL_SNAP_MAX_PAGES / 8];   ///< owner bitmap
 
     uint32_t generation;    ///< incremented per snapshot capture
     uint32_t refcount;      ///< tasks referencing this pool

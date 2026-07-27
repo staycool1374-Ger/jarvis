@@ -87,23 +87,20 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
         --free_pages_;
     }
 
-    uint64_t pool_start_page = reserved_end_page;
+    // Place the page-table pool at the end of the HHDM window (128 MiB)
+    // so general allocations (try_alloc_kernel scanning from 0) naturally
+    // find free pages before the pool.  Only alloc_page_table uses the
+    // pool range.  PtPoolSnapshot protects the pool bitmap from PMM restore.
+    uint64_t hhdm_limit_pages = (128ULL * 1024 * 1024) / PAGE_SIZE; // 32768
     uint64_t pool_size_pages = CONFIG_PAGE_TABLE_POOL_SIZE;
-    if (pool_start_page + pool_size_pages < total_pages_) {
+    uint64_t pool_start_page = hhdm_limit_pages - pool_size_pages - 16;
+    if (pool_start_page > reserved_end_page &&
+        pool_start_page + pool_size_pages <= hhdm_limit_pages) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
-        page_table_pool_end_ =
-            page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
-        // Pool pages are pre-allocated (reserved).  PtPoolSnapshot protects
-        // this bitmap range from the general PMM restore so the kstack
-        // window and other pool-allocated pages survive snapshot cycles.
-        for (uint64_t i = pool_start_page;
-             i < pool_start_page + pool_size_pages; ++i) {
-            bitmap_set(i);
-            owner_set_kernel(i);
-            --free_pages_;
-        }
+        page_table_pool_end_ = (pool_start_page + pool_size_pages) * PAGE_SIZE;
     }
 
+    // Reserve the last 16 pages.
     if (total_pages_ > 16) {
         for (uint64_t i = total_pages_ - 1; i >= total_pages_ - 16; --i) {
             if (!bitmap_test(i)) {
@@ -454,21 +451,13 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
         --free_pages_;
     }
 
-    uint64_t pool_start_page = reserved_end_page;
+    uint64_t hhdm_limit_pages = (128ULL * 1024 * 1024) / PAGE_SIZE;
     uint64_t pool_size_pages = CONFIG_PAGE_TABLE_POOL_SIZE;
-    if (pool_start_page + pool_size_pages < total_pages_) {
+    uint64_t pool_start_page = hhdm_limit_pages - pool_size_pages - 16;
+    if (pool_start_page > reserved_end_page &&
+        pool_start_page + pool_size_pages <= hhdm_limit_pages) {
         page_table_pool_start_ = pool_start_page * PAGE_SIZE;
-        page_table_pool_end_ =
-            page_table_pool_start_ + pool_size_pages * PAGE_SIZE;
-        // Pool pages are pre-allocated (reserved).  PtPoolSnapshot protects
-        // this bitmap range from the general PMM restore so the kstack
-        // window and other pool-allocated pages survive snapshot cycles.
-        for (uint64_t i = pool_start_page;
-             i < pool_start_page + pool_size_pages; ++i) {
-            bitmap_set(i);
-            owner_set_kernel(i);
-            --free_pages_;
-        }
+        page_table_pool_end_ = (pool_start_page + pool_size_pages) * PAGE_SIZE;
     }
 
     if (total_pages_ > 16) {
@@ -649,7 +638,8 @@ void PMM::capture_pool_snapshot(
     out.refcount   = pool_refcount_;
     out.crc32      = 0;
 
-    if (out.size_pages == 0 || out.size_pages * 8 > sizeof(out.bitmap)) {
+    if (out.size_pages == 0 ||
+        out.size_pages > sizeof(out.bitmap) * 8) {
         out.size_pages = 0;
         return;
     }
@@ -671,7 +661,10 @@ void PMM::restore_pool_snapshot(
         return; // refuse to restore a corrupted pool
     }
     uint64_t start_bit = page_table_pool_start_ / PAGE_SIZE;
-    uint64_t bytes = (src.size_pages + 7) / 8;
+    size_t max_bytes = sizeof(src.bitmap);
+    size_t bytes = (src.size_pages + 7) / 8;
+    if (bytes > max_bytes)
+        bytes = max_bytes;
     __builtin_memcpy(reinterpret_cast<uint8_t *>(bitmap_) + start_bit / 8,
                      src.bitmap, bytes);
     __builtin_memcpy(reinterpret_cast<uint8_t *>(owner_bitmap_) + start_bit / 8,

@@ -203,7 +203,8 @@ static void debug_check_tcb_reuse(TaskControlBlock *tcb) {
                 reinterpret_cast<void *>(tcb) ||
             t->runq_next_ == tcb || t->blocked_next == tcb ||
             t->dl_next_ == tcb ||
-            static_cast<uint64_t>(t->parent_id) == tcb->id) {
+            (tcb->id != 0 &&
+             static_cast<uint64_t>(t->parent_id) == tcb->id)) {
             kernel::Logger::fatal("BUGS.md#019/#020: create reused TCB block %p "
                                   "still referenced by task %u (child=%p sib=%p "
                                   "spor=%p par=%lu)",
