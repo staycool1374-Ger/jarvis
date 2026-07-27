@@ -37,6 +37,9 @@ constinit uint64_t PMM::page_table_pool_start_ = 0;
 constinit uint64_t PMM::page_table_pool_end_ = 0;
 constinit bool PMM::pool_tainted_ = false;
 constinit bool PMM::pool_poisoned_ = false;
+constinit bool PMM::pool_mapped_ = true;
+constinit uint64_t PMM::pool_generation_ = 0;
+constinit uint64_t PMM::pool_refcount_ = 0;
 constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
 
 #if CONFIG_STATIC_POOLS_ONLY
@@ -645,8 +648,9 @@ void PMM::capture_pool_snapshot(
     out.mapped     = true;
     out.tainted    = pool_tainted_;
     out.poisoned   = pool_poisoned_;
-    out.generation = 0;
-    out.refcount   = 0;
+    pool_bump_generation();
+    out.generation = pool_generation_;
+    out.refcount   = pool_refcount_;
     out.crc32      = 0;
 
     if (out.size_pages == 0 || out.size_pages * 8 > sizeof(out.bitmap)) {
@@ -689,6 +693,12 @@ uint64_t PMM::pool_used_pages() noexcept {
             ++count;
     }
     return count;
+}
+
+uint64_t PMM::pool_total_pages() noexcept {
+    if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0)
+        return 0;
+    return (page_table_pool_end_ - page_table_pool_start_) / PAGE_SIZE;
 }
 
 } // namespace kernel

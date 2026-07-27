@@ -177,6 +177,20 @@ class PMM {
     }
     /// @brief Number of allocated pages in the page-table pool.
     static uint64_t pool_used_pages() noexcept;
+    /// @brief Total capacity of the page-table pool in pages.
+    static uint64_t pool_total_pages() noexcept;
+    /// @brief Page-table pool generation (incremented on each snapshot capture).
+    static uint64_t pool_generation() noexcept { return pool_generation_; }
+    /// @brief Bump the pool generation.
+    static void pool_bump_generation() noexcept { ++pool_generation_; }
+    /// @brief Pool reference count (tasks using pool pages).
+    static uint64_t pool_refcount() noexcept { return pool_refcount_; }
+    /// @brief Increment pool reference count.
+    static void pool_ref_inc() noexcept { ++pool_refcount_; }
+    /// @brief Decrement pool reference count.
+    static void pool_ref_dec() noexcept { --pool_refcount_; }
+    /// @brief True if the pool is mapped in the kernel PML4.
+    static bool pool_is_mapped() noexcept { return pool_mapped_; }
     /// @brief Mark the page-table pool as tainted (HW error detected).
     static void pool_set_tainted() noexcept {
         pool_tainted_ = true;
@@ -206,6 +220,9 @@ class PMM {
     static constinit uint64_t page_table_pool_end_;
     static constinit bool pool_tainted_;
     static constinit bool pool_poisoned_;
+    static constinit bool pool_mapped_;
+    static constinit uint64_t pool_generation_;
+    static constinit uint64_t pool_refcount_;
     static constinit OOMHandler oom_handler_;
 
     /// @brief Mark a page as allocated in the bitmap.

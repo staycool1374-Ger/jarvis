@@ -760,18 +760,20 @@ void Shell::cmd_meminfo(int, const char**) {
     uint64_t pt_start = kernel::PMM::pool_start();
     uint64_t pt_end   = kernel::PMM::pool_end();
     if (pt_start) {
-        uint64_t pt_total = (pt_end - pt_start) / 4096;
+        uint64_t pt_total = kernel::PMM::pool_total_pages();
         uint64_t pt_used  = kernel::PMM::pool_used_pages();
         uint64_t pt_free  = pt_total - pt_used;
-        Terminal::write("PT-Pool: ");
-        Terminal::write("  gesamt: "); print_uint(pt_total);
-        Terminal::write(" Seiten (");
-        print_size(pt_end - pt_start);
-        Terminal::write(")\n         belegt: "); print_uint(pt_used);
-        Terminal::write("  frei: "); print_uint(pt_free);
-        Terminal::write("\n         Flags: ");
-        Terminal::write(kernel::PMM::pool_is_tainted() ? " TAINTED" : " clean");
-        Terminal::write(kernel::PMM::pool_is_poisoned() ? " POISONED" : "");
+        Terminal::write("PT-Pool:\n");
+        Terminal::write("  Pages:  total="); print_uint(pt_total);
+        Terminal::write(" used="); print_uint(pt_used);
+        Terminal::write(" free="); print_uint(pt_free);
+        Terminal::write("\n  Size:   "); print_size(pt_end - pt_start);
+        Terminal::write("\n  Gen:    "); print_uint(kernel::PMM::pool_generation());
+        Terminal::write("\n  Ref:    "); print_uint(kernel::PMM::pool_refcount());
+        Terminal::write("\n  Flags:  ");
+        Terminal::write(kernel::PMM::pool_is_mapped() ? "mapped" : "unmapped");
+        Terminal::write(kernel::PMM::pool_is_tainted() ? " tainted" : " clean");
+        Terminal::write(kernel::PMM::pool_is_poisoned() ? " poisoned" : "");
         Terminal::putchar('\n');
     }
 
