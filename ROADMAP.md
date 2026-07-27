@@ -482,8 +482,8 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 - [x] Add `CONFIG_ZOMBIE_STARVATION_LIMIT` (default 32)
 - [x] Remove `s_reap_in_progress`, `cleanup_zombies()`, legacy reaper guards
 - [x] Tests: `zombie_cleanup_step_frees_resources`, `zombie_drain_multiple`
-- [ ] WCET benchmark for cleanup steps (deferred)
-- [ ] `test_idle_cleanup_no_deadline_impact` (deferred)
+- [x] WCET benchmark for cleanup steps (1/1 PASS, max=0 ticks)
+- [x] `test_idle_cleanup_no_deadline_impact` (1/1 PASS)
 
  - [x] Stack Allocation — Fixed, Guarded, No Growth
   - [x] CONFIG_STACK_SIZE_TABLE — per-priority stack sizes (idle=4K, daemon=16K, rest=64K)
@@ -492,7 +492,7 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] #PF guard-page detection code (dormant, activates when private window is enabled)
   - [x] Design spec: `docs/stack-guard-spec.md`
   - [ ] Stack guard page via private VA window (deferred: requires snapshot-safe page table pool)
-  - [ ] Compile-time stack usage analysis: -fstack-usage + script (deferred)
+  - [x] Compile-time stack usage analysis: -fstack-usage + tools/check-stack-usage.py
 - [x] Page Tables — Static, No Fork-Time Copy
   - [x] CONFIG_PAGE_TABLE_POOL_SIZE — dedicated pool, no general PMM fallback
   - [x] Remove clone() page-table sharing (page_table_shared_) — full deep copy

@@ -61,6 +61,8 @@ void register_capability_tests();
 void register_task_lifecycle_tests();
 void register_idle_task_tests();
 void register_zombie_cleanup_tests();
+void register_wcet_cleanup_tests();
+void register_idle_cleanup_tests();
 void register_testrunner_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
@@ -293,6 +295,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_task_lifecycle_tests();
         register_idle_task_tests();
         register_zombie_cleanup_tests();
+        register_wcet_cleanup_tests();
+        register_idle_cleanup_tests();
         register_vfsd_tests();
         register_iocd_tests();
         register_wfg_tests();
@@ -420,6 +424,15 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"zombie_cleanup", []() {
         register_zombie_cleanup_tests();
+        register_wcet_cleanup_tests();
+    }},
+
+    {"wcet_cleanup", []() {
+        register_wcet_cleanup_tests();
+    }},
+
+    {"idle_cleanup", []() {
+        register_idle_cleanup_tests();
     }},
 
     {"deadlock", []() {

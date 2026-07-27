@@ -28,6 +28,8 @@ __attribute__((weak)) void register_capability_tests() {}
 __attribute__((weak)) void register_task_lifecycle_tests() {}
 __attribute__((weak)) void register_idle_task_tests() {}
 __attribute__((weak)) void register_zombie_cleanup_tests() {}
+__attribute__((weak)) void register_wcet_cleanup_tests() {}
+__attribute__((weak)) void register_idle_cleanup_tests() {}
 __attribute__((weak)) void register_vfsd_tests() {}
 __attribute__((weak)) void register_iocd_tests() {}
 __attribute__((weak)) void register_wfg_tests() {}
