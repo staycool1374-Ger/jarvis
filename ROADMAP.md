@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** v0.3.6 IN PROGRESS — PtPoolSnapshot bitmap overflow fixed, pool relocated to end of HHDM, cumulative page-table corruption eliminated.
-**Target Focus:** v0.3.6 — PtPoolSnapshot fix, pool relocation, cumulative corruption eliminated, Deterministic Memory & Resource Management.
+**Status:** v0.3.6 IN PROGRESS — Memory subsystem audit fixes.
+**Target Focus:** v0.3.6 — Memory subsystem audit remediation (11 findings from `audits/memory_audit.md`).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -517,29 +517,69 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] **Fix `preemption_under_syscall`** — 4/4 PASS. Root cause: daemon teardown race + stale `sporadic_server` access in `on_tick()`. Fix: `is_poisoned_block` guard in `on_tick()` SS iteration; `s_test_active_` guards `reap_orphans()` in tick; test 4 rewritten to use `reschedule()` + `hlt()` instead of broken `ScopedCurrentTask` + manual `on_tick()` pattern.
   - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
 
-### v0.3.6 — Page-Table Pool Snapshot Isolation & VMM Test Re-enable
-- [ ] **Exclude page-table pool from PMM restore** — `snapshot_restore` currently overwrites the
-      entire PMM bitmap with the saved state, freeing page-table pages allocated during the test
-      while the kernel PML4 still points to them. This is the root cause of the `all-2` crash
-      (~100 tests in) and the `all` class limit (~850 tests). The fix: save the page-table pool
-      bitmap entries before restore and re-mark them after.
-  - [ ] `snapshot_restore()` in `test_isolate.cpp`: save/restore the `PMM::page_table_pool_*`
-        bit range around the main bitmap memcpy (see `docs/kstack-window-pt-pool.md`)
-  - [ ] Verify: `make execute-test x86_64 debug all-2` passes clean (132/132)
-  - [ ] Verify: `make execute-test x86_64 debug all` passes clean (880/880)
-- [ ] **Re-enable commented-out VMM tests** — 3 tests disabled in v0.3.5 (huge page split at
-      kernel-identity and HHDM addresses). These caused GPF crashes because snapshot_restore
-      freed the split PT page. After the pool fix they work correctly.
-  - [ ] Restore `vmm_huge_page_split_corner` test body in `test_vmm.cpp`
-  - [ ] Restore `vmm_huge_page_split_regression` test body
-  - [ ] Restore `vmm_hhdm_access_consistency` test body
-  - [ ] Restore their registration in `register_vmm_tests()`
-- [ ] **Fix `vmm_free_user_pages_shared`** — `free_user_pages()` doesn't properly traverse
-      user-allocated page tables after the `alloc_page_table` → `alloc_user_page` change.
-      Investigate why `is_user_page(leaf)` returns true but the leaf isn't freed, or the
-      traversal short-circuits.
-- [ ] **Consolidate `all` class** — once page-table pool fix is verified, remove `all-1`/`all-2`
-      split and restore the single `all` class. Update CI to run `all` instead of `all-1`+`all-2`.
+### v0.3.6 — Memory Subsystem Audit Remediation (11 findings)
+
+**Source:** `audits/memory_audit.md`  
+**Reference:** `docs/memory-subsystem-audit-fix.md` (detailed spec with code-level fixes)
+
+#### Phase 1 — Independent Fixes (no dependencies)
+
+- [x] **VULN-001: MemPool bitmap OOB (CRITICAL)** — `freed_bitmap[4]` (256 bits) overflowed with
+      pool-2 block_count=320. Fixed: `BITMAP_WORDS = (320+63)/64 = 5`. Updated `Pool`,
+      `PoolMeta` arrays and all iteration loops. Added `static_assert` in `MemPool::init()`.
+      *Files: `mempool.hpp`, `mempool.cpp`*
+- [ ] **VULN-004: Ownership check in map_page (HIGH)** — Add `ENSURE(PMM::is_user_page(phys_addr))`
+      before leaf PTE write when `user=true`, in both `map_page()` (3 arch branches) and
+      `map_page_in_pml4()`. Goes beyond existing test-only kernel-space guard.
+      *File: `vmm.cpp`*
+- [ ] **VULN-006: Yield in free_user_pages/deep_copy (MEDIUM)** — Add WCET-bound comment and
+      cooperative yield point every 64 entries in `free_user_pages()` and `deep_copy_user_pages()`.
+      *File: `vmm.cpp`*
+- [ ] **VULN-007: Boot-phase gate in reserve/pool_used_pages (LOW)** — Add `ENSURE(!ready_)` in
+      `MemPool::reserve()`. Add doc-comment to `PMM::pool_used_pages()`.
+      *Files: `mempool.cpp`, `pmm.hpp`*
+- [ ] **VULN-008: Pinned-block diagnostics (LOW)** — `pin_block()`: add `ENSURE(!is_block_freed(...))`.
+      `free_err()`: return `MEMPOOL_ERR_PINNED`. `free()`: add `Logger::warn`.
+      *Files: `mempool.cpp`, `mempool_errors.hpp`*
+- [ ] **VULN-009: free_page_err missing owner_set_kernel (LOW)** — One-liner: add
+      `owner_set_kernel(index)` after `bitmap_clear(index)` in `free_page_err()`.
+      *File: `pmm.cpp`*
+- [ ] **VULN-010: Idle loop style (LOW)** — Replace `for (i < UINT64_MAX)` with `for (;;)`.
+      *File: `integrity.cpp`*
+- [ ] **VULN-011: CRC reentrancy guard (LOW)** — Add reentrancy assertion flag in
+      `reset_crc_state()` and `crc_process_chunk()`. Add doc-comment above statics.
+      *File: `integrity.cpp`*
+
+#### Phase 2 — Lock Infrastructure (prerequisite for Phase 3)
+
+- [ ] **VULN-002: SpinLock + PMM/MemPool locks (CRITICAL)** — Introduce freestanding
+      `SpinLock` (TAS-based, `constinit`, no heap). Add `IrqSpinLockGuard` to all mutating
+      PMM functions (bitmap + free-list) and MemPool functions (alloc/free/reserve/pin/unpin).
+      OOM handler must unlock before callback, re-lock for retry.
+      *Files: `src/kernel/sync/spinlock.hpp` (new), `pmm.cpp`, `mempool.cpp`*
+
+#### Phase 3 — Depends on Phase 2 (VULN-002)
+
+- [ ] **VULN-003: O(1) free-list allocator (HIGH)** — Replace linear bitmap scan in
+      `try_alloc_kernel()`/`try_alloc_user()` with intrusive free-list. `free_page()` pushes
+      to free-list head. `alloc_contiguous` keeps bitmap scan fallback with documented WCET
+      bound. `alloc_page_table()` pool scan gets per-pool free-list.
+      *File: `pmm.cpp`, `pmm.hpp`*
+- [ ] **VULN-005: Atomic memory budget counter (MEDIUM)** — Move entire budget check → alloc →
+      increment inside the `IrqSpinLockGuard` from VULN-002, re-fetching `current_task()`
+      inside the critical section.
+      *File: `pmm.cpp`*
+
+#### Completed in earlier v0.3.6 work (PtPoolSnapshot + pool relocation)
+- [x] **PtPoolSnapshot bitmap overflow** — `bitmap[256]` → `[4096/8]`, fixed size comparison.
+- [x] **Pool relocation** — moved from `reserved_end_page` to end of HHDM (112-128 MB).
+- [x] **alloc_page_table no-fallback** — removed `alloc_page()` fallback.
+- [x] **Re-enable vmm_huge_page_split_corner** — user-space VA, safe.
+
+#### Deferred to v0.3.7
+- [ ] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
+- [ ] **Re-enable vmm_huge_page_split_regression/vmm_hhdm_access_consistency**
+- [ ] **Consolidate `all` class** — once HHDM tests pass, remove `all-1`/`all-2` split
 
 ### 0.3.7 Cross-Architecture Hard Real-Time HAL
 ## x86_64 — Complete APIC + TSC-Deadline
