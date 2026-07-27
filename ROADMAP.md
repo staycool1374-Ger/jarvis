@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** v0.3.5 COMPLETE — Scheduler deferred-switch fix, test infrastructure robustness (all-1 clean), CI split verification.
-**Target Focus:** v0.3.6 — Page-table pool snapshot fix, VMM test re-enable, Deterministic Memory & Resource Management.
+**Status:** v0.3.6 IN PROGRESS — PtPoolSnapshot bitmap overflow fixed, pool relocated to end of HHDM, cumulative page-table corruption eliminated.
+**Target Focus:** v0.3.6 — PtPoolSnapshot fix, pool relocation, cumulative corruption eliminated, Deterministic Memory & Resource Management.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -796,6 +796,42 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
 4. Compare wall-clock time between baseline (unconditional restart) and Option B.
 
 **Future extension (Option B+):** If IPC state is also expensive to restore, add `ipc_touched` flag with the same pattern. The mechanism generalises to any subsystem whose daemon restart can be deferred.
+
+### 0.3.7 HHDM Snapshot-Restore — Kernel Page-Table Isolation for Test Cycles
+
+**Goal:** Enable `vmm_huge_page_split_regression` and `vmm_hhdm_access_consistency` tests by implementing PD save/restore in `snapshot_create`/`snapshot_restore`. These tests split 2MB huge pages in the kernel HHDM (PML4[256] → PDPT[0] → PD), which snapshot_restore currently cannot undo.
+
+**Prerequisite (v0.3.6, committed):** PtPoolSnapshot bitmap overflow fixed, pool relocated, cumulative corruption eliminated.
+
+**Reference:** `docs/hhdm-snapshot-restore.md` — full spec with architecture, failure analysis, and implementation plan.
+
+**Remaining (plan from `docs/hhdm-snapshot-restore.md`):**
+
+#### Step 1: Add PD save/restore to snapshot buffer
+- [ ] Add `off_hhdm_pd` offset function in `test_isolate.cpp` (4096 bytes, between kstack_header and PtPoolSnapshot)
+- [ ] Capture PD content in `snapshot_create`: walk PML4[256] → PDPT[0] → PD, memcpy 512 entries
+
+#### Step 2: Restore PD BEFORE PMM restore (critical order fix)
+- [ ] In `snapshot_restore`, add PD restore block BEFORE the PMM bitmap restore
+- [ ] For each saved entry that was a 2MB huge page:
+  - If current entry is NOT a huge page and IS present → free the split PT page via `PMM::free_page`
+- [ ] memcpy saved entries over current PD (restore all 512 entries)
+- [ ] Add `invlpg` or CR3 reload after restore to flush stale TLB entries
+
+#### Step 3: Re-enable HHDM tests and relax guard
+- [ ] Remove `#if 0` from `vmm_huge_page_split_regression` and `vmm_hhdm_access_consistency` in `test_vmm.cpp`
+- [ ] Change `map_page` kernel-space guard from `return` to `Logger::warn` (allow with log)
+- [ ] Keep `virt_to_phys` guard as-is (confirmed needed for all-2 stability)
+
+#### Step 4: Verification
+- [ ] `make execute-test x86_64 debug vmm` → 10/10 PASS
+- [ ] `make execute-test x86_64 debug all-2` → 133/133 PASS
+- [ ] `make execute-test x86_64 debug selftest` → 132/132 PASS
+- [ ] `make execute-test x86_64 debug all-1` (745 tests) → verify no cumulative corruption
+
+**Reference:** `docs/hhdm-snapshot-restore.md`
+
+---
 
 ### Test Isolation — CI/CD Blockers & Infrastructure Fixes
 
