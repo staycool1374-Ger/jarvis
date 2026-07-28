@@ -204,7 +204,7 @@ struct TaskControlBlock {
           program_break_start(0), fd_table({}), cwd_vnode(nullptr),
           runq_next_(nullptr), runq_prev_(nullptr), dl_next_(nullptr),
           dl_prev_(nullptr), pri_next_(nullptr), pri_prev_(nullptr),
-          in_ready_queue_(false), rq_priority_(0), zombie_next_(nullptr),
+           in_ready_queue_(false), rq_priority_(0), all_bucket_(0), zombie_next_(nullptr),
           waiting_child_pid(0),
           waiting_child_status(nullptr), pending_signals(0), alarm_ticks(0),
           alarm_armed(false), sporadic_server(nullptr), buf_list_head(0),
@@ -296,6 +296,8 @@ struct TaskControlBlock {
     bool in_ready_queue_;
     /// @brief Priority at which this task was enqueued in the ready queue.
     uint64_t rq_priority_;
+    /// @brief Priority bucket in AllTasksRegistry (set at append, never changes).
+    uint64_t all_bucket_;
 
     /// @brief Singly-linked list pointer for the zombie list.
     /// Non-null only while the TCB is in the zombie list (between

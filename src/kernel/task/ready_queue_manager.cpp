@@ -77,43 +77,15 @@ void ReadyQueueManager::remove(TaskControlBlock &tcb,
     (void)priority;
     if (!TaskControlBlock::is_valid(&tcb))
         return;
-    // Locate the queue that physically contains this node by walking the
-    // intrusive links (the authoritative membership), not by trusting
-    // rq_priority_ or in_ready_queue_.  A priority boost/drop can change
-    // effective_priority() without a re-enqueue, so the node may sit in a queue
-    // indexed by its stale rq_priority_; and a reset()/snapshot can leave it
-    // linked with a stale flag.  TaskQueue::remove now splices by links
-    // regardless of the flag, so once we find the right queue the unlink is
-    // definitive.  is_valid guards break the walk on a freed/recycled node.
-    uint64_t actual = tcb.rq_priority_;
-    bool found = queues_[actual].contains(tcb);
-    if (!found) {
-        for (uint64_t p = 0; p <= CONFIG_PRIORITY_CEILING; ++p) {
-            bool in = false;
-            for (auto *n = queues_[p].head(); n; n = n->runq_next_) {
-                if (!TaskControlBlock::is_valid(n))
-                    break;
-                if (n == &tcb) {
-                    in = true;
-                    break;
-                }
-            }
-            if (in) {
-                actual = p;
-                found = true;
-                break;
-            }
-        }
+    // rq_priority_ is the authoritative bucket: it is set by every enqueue()
+    // and cleared by every dequeue/remove/clear path.  No scan is needed.
+    uint64_t p = tcb.rq_priority_;
+    if (p <= CONFIG_PRIORITY_CEILING && queues_[p].contains(tcb)) {
+        queues_[p].remove(tcb);
+        if (queues_[p].empty())
+            bitmap_.clear(p);
     }
-    if (found) {
-        queues_[actual].remove(tcb);
-        if (queues_[actual].empty()) {
-            bitmap_.clear(actual);
-        }
-    }
-    // Always force the flags consistent so a later enqueue() (guarded by
-    // in_ready_queue_) cannot refuse a legitimately-ready task, and so a later
-    // MemPool::free cannot find a stale inrq=true on a freed TCB.
+    // Always force flags consistent (idempotent when already cleared).
     tcb.rq_priority_ = 0;
     tcb.in_ready_queue_ = false;
 }

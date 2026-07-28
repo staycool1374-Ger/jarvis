@@ -20,6 +20,7 @@ void AllTasksRegistry::append(TaskControlBlock *t) noexcept {
     uint64_t prio = t->priority;
     if (prio > CONFIG_PRIORITY_CEILING)
         prio = CONFIG_PRIORITY_CEILING;
+    t->all_bucket_ = prio;
 
     t->pri_next_ = nullptr;
     t->pri_prev_ = tails_[prio];
@@ -35,42 +36,31 @@ void AllTasksRegistry::append(TaskControlBlock *t) noexcept {
 }
 
 void AllTasksRegistry::remove(TaskControlBlock *t) noexcept {
-    // The node's stored priority (t->priority) may have been changed by
-    // priority inheritance (Mutex::inherit_priority / reevaluate) WITHOUT the
-    // node being re-indexed, so we cannot trust t->priority to locate the
-    // bucket it was inserted into. Scan every priority level to find the node
-    // in the bucket it actually lives in. If we trusted t->priority we would
-    // look in the wrong (empty) bucket, leave the node linked in its real
-    // bucket, and a later MemPool::free() would corrupt the list (use-after-
-    // free cycle in first_ptr()/next_ptr()).
-    for (uint64_t p = 0; p < NUM_PRIORITIES; ++p) {
-        for (auto *cur = heads_[p]; safe_tcb(cur); cur = cur->pri_next_) {
-            if (cur == t) {
-                // Unlink from bucket p. Guard the邻居 links with safe_tcb so a
-                // corrupted pri_prev_/pri_next_ cannot be dereferenced.
-                if (safe_tcb(t->pri_prev_)) {
-                    t->pri_prev_->pri_next_ = t->pri_next_;
-                } else {
-                    heads_[p] = t->pri_next_;
-                }
-                if (safe_tcb(t->pri_next_)) {
-                    t->pri_next_->pri_prev_ = t->pri_prev_;
-                } else {
-                    tails_[p] = t->pri_prev_;
-                }
-                t->pri_next_ = nullptr;
-                t->pri_prev_ = nullptr;
-                if (!heads_[p])
-                    bitmap_.clear(p);
-                --total_;
-                return;
-            }
-        }
+    uint64_t p = t->all_bucket_;
+    if (p >= NUM_PRIORITIES)
+        return;
+    // Idempotent guard: if both links are null and we're not the bucket head,
+    // the node was already removed (double-remove from reap_orphans +
+    // cleanup).  Skip to avoid total_ underflow.
+    if (!t->pri_prev_ && heads_[p] != t)
+        return;
+    // Unlink from bucket p. Guard the neighbor links with safe_tcb so a
+    // corrupted pri_prev_/pri_next_ cannot be dereferenced.
+    if (safe_tcb(t->pri_prev_)) {
+        t->pri_prev_->pri_next_ = t->pri_next_;
+    } else {
+        heads_[p] = t->pri_next_;
     }
-    // Node already unlinked — idempotent no-op (also guards the double-remove
-    // from reap_orphans() + TaskControlBlock::cleanup()).
+    if (safe_tcb(t->pri_next_)) {
+        t->pri_next_->pri_prev_ = t->pri_prev_;
+    } else {
+        tails_[p] = t->pri_prev_;
+    }
     t->pri_next_ = nullptr;
     t->pri_prev_ = nullptr;
+    if (!heads_[p])
+        bitmap_.clear(p);
+    --total_;
 }
 
 /// @brief Find the priority bucket a node currently lives in.
