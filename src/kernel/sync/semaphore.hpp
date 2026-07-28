@@ -81,12 +81,13 @@ class Semaphore {
     uint64_t count_;     ///< Current semaphore count.
     uint64_t max_count_; ///< Maximum count (capped on post).
     TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
+    uint32_t waiter_gens_[MAX_WAITERS];      ///< Generations at insertion time.
     size_t waiter_count_; ///< Number of tasks waiting on this semaphore.
     TaskControlBlock
         *owner_; ///< Owner task for PIP (non-null when count < initial).
     uint64_t holder_priority_; ///< Saved original priority for PI restore.
 
-    bool add_waiter(TaskControlBlock *task);
+    bool add_waiter(TaskControlBlock &task);
     void wake_one();
     void inherit_priority(TaskControlBlock &waiter);
     void restore_priority();

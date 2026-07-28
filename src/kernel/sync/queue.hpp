@@ -120,10 +120,12 @@ class Queue {
 
     TaskControlBlock
         *send_waiters_[MAX_WAITERS]; ///< Tasks blocked on full queue.
+    uint32_t send_waiter_gens_[MAX_WAITERS]; ///< Generations at insertion.
     size_t send_waiters_count_;      ///< Number of blocked senders.
 
     TaskControlBlock
         *recv_waiters_[MAX_WAITERS]; ///< Tasks blocked on empty queue.
+    uint32_t recv_waiter_gens_[MAX_WAITERS]; ///< Generations at insertion.
     size_t recv_waiters_count_;      ///< Number of blocked receivers.
 
     bool is_full() const {
@@ -133,8 +135,8 @@ class Queue {
         return count_ == 0;
     }
 
-    bool add_send_waiter(TaskControlBlock *task);
-    bool add_recv_waiter(TaskControlBlock *task);
+    bool add_send_waiter(TaskControlBlock &task);
+    bool add_recv_waiter(TaskControlBlock &task);
     void wake_send_one();
     void wake_recv_one();
 

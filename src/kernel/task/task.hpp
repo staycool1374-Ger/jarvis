@@ -213,7 +213,7 @@ struct TaskControlBlock {
           waiting_on_mutex(nullptr),
           held_ceiling_depth_(0), system_ceiling_(0),
           first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
-          num_children(0) {
+          num_children(0), generation(0) {
     }
 
     uint64_t magic;
@@ -379,6 +379,11 @@ struct TaskControlBlock {
 
     /// @brief Number of live child processes.
     uint64_t num_children;
+
+    /// @brief Monotonically-increasing generation counter, incremented at
+    ///        every task creation.  Stored in waiter arrays alongside the
+    ///        task pointer to detect stale references (use-after-reuse).
+    uint32_t generation;
 
     /// @brief Checks if the task has a handler registered for a signal.
     bool has_signal_handler(uint64_t sig) const {

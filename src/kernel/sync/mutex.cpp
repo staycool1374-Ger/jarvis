@@ -81,32 +81,36 @@ errors::SyncError Mutex::init_err(uint64_t ceiling) {
 /// @return false if the array is full.
 bool Mutex::add_waiter(TaskControlBlock &task) {
     for (size_t i = 0; i < wait_count_; ++i) {
-        if (waiters_[i] == &task)
+        if (waiters_[i] == &task && waiter_gens_[i] == task.generation)
             return true;
     }
     if (wait_count_ >= MAX_WAITERS)
         return false;
-    waiters_[wait_count_++] = &task;
+    waiters_[wait_count_] = &task;
+    waiter_gens_[wait_count_] = task.generation;
+    ++wait_count_;
     return true;
 }
 
 /// @brief Wake the highest-priority waiter.
 void Mutex::wake_one() {
-    if (wait_count_ == 0)
-        return;
-
-    size_t best = 0;
-    for (size_t i = 1; i < wait_count_; ++i) {
-        if (waiters_[i] && (!waiters_[best] ||
-                            waiters_[i]->priority > waiters_[best]->priority))
+    size_t best = wait_count_;
+    for (size_t i = 0; i < wait_count_; ++i) {
+        if (waiters_[i]->generation != waiter_gens_[i])
+            continue; // stale — TCB was recycled
+        if (best == wait_count_ ||
+            waiters_[i]->priority > waiters_[best]->priority)
             best = i;
     }
+    if (best >= wait_count_)
+        return;
 
-    if (waiters_[best] && waiters_[best]->state != TaskState::TERMINATED) {
+    if (waiters_[best]->state != TaskState::TERMINATED) {
         waiters_[best]->waiting_on_mutex = nullptr;
         Scheduler::set_task_ready(*waiters_[best]);
     }
     waiters_[best] = waiters_[--wait_count_];
+    waiter_gens_[best] = waiter_gens_[wait_count_];
 }
 
 /// @brief Boost the owner's priority if the waiter has higher priority.

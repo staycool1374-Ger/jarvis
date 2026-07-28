@@ -54,17 +54,29 @@ errors::SyncError Semaphore::init_err(uint64_t initial, uint64_t max) {
 }
 
 /// @brief Add a task to the waiter array (caller must hold lock_).
-bool Semaphore::add_waiter(TaskControlBlock *task) {
-    // Caller must hold lock_ (wait already holds it)
+bool Semaphore::add_waiter(TaskControlBlock &task) {
     if (waiter_count_ >= MAX_WAITERS)
         return false;
-    waiters_[waiter_count_++] = task;
+    waiters_[waiter_count_] = &task;
+    waiter_gens_[waiter_count_] = task.generation;
+    ++waiter_count_;
     return true;
 }
 
 /// @brief Wake the highest-priority waiter (caller must hold lock_).
 void Semaphore::wake_one() {
-    // Caller must hold lock_ (post already holds it)
+    if (waiter_count_ == 0)
+        return;
+
+    for (size_t i = 0; i < waiter_count_;) {
+        if (waiters_[i]->generation != waiter_gens_[i]) {
+            waiters_[i] = waiters_[--waiter_count_];
+            waiter_gens_[i] = waiter_gens_[waiter_count_];
+        } else {
+            ++i;
+        }
+    }
+
     if (waiter_count_ == 0)
         return;
 
@@ -77,6 +89,7 @@ void Semaphore::wake_one() {
         if (waiters_[best]->state != TaskState::TERMINATED)
             Scheduler::set_task_ready(*waiters_[best]);
         waiters_[best] = waiters_[--waiter_count_];
+        waiter_gens_[best] = waiter_gens_[waiter_count_];
     } else {
         if (waiters_[0]->state != TaskState::TERMINATED)
             Scheduler::set_task_ready(*waiters_[0]);
@@ -140,7 +153,7 @@ void Semaphore::wait() {
 
     inherit_priority(*task);
 
-    bool added = add_waiter(task);
+    bool added = add_waiter(*task);
     ENSURE(added);
 
     task->state = TaskState::BLOCKED;
@@ -168,7 +181,7 @@ errors::SyncError Semaphore::wait_err() {
 
     inherit_priority(*task);
 
-    waiters_[waiter_count_++] = task;
+    add_waiter(*task);
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();
 

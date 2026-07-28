@@ -101,6 +101,7 @@ class EventGroup {
         TaskControlBlock *task; ///< Waiting task.
         uint64_t wanted_bits;   ///< Bitmask this task is waiting for.
         bool clear_on_exit;     ///< Clear matched bits on wake.
+        uint32_t generation;    ///< task->generation at insertion time.
     };
     EventWaiter waiters_[MAX_WAITERS]; ///< Array of waiting tasks.
     size_t wait_count_;                ///< Number of waiting tasks.

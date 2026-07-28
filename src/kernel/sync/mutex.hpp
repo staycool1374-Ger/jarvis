@@ -89,7 +89,8 @@ class Mutex {
     bool initialized_ = false; ///< Whether init_err() has been called.
     uint64_t priority_ceiling_; ///< Static priority ceiling for PCP (0 = none).
     TaskControlBlock *waiters_[MAX_WAITERS]; ///< Array of waiting tasks
-                                             ///< (priority-sorted on wake).
+                                              ///< (priority-sorted on wake).
+    uint32_t waiter_gens_[MAX_WAITERS];      ///< Generations at insertion time.
     size_t wait_count_;                      ///< Number of waiting tasks.
 
     /// @brief Add a task to the waiter array.

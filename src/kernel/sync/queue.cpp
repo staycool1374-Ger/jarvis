@@ -59,28 +59,42 @@ errors::SyncError Queue::init_err() {
 }
 
 /// @brief Add a task to the send-waiter array (caller must hold lock_).
-bool Queue::add_send_waiter(TaskControlBlock *task) {
-    // Caller must hold lock_
+bool Queue::add_send_waiter(TaskControlBlock &task) {
     if (send_waiters_count_ >= MAX_WAITERS)
         return false;
-    send_waiters_[send_waiters_count_++] = task;
+    send_waiters_[send_waiters_count_] = &task;
+    send_waiter_gens_[send_waiters_count_] = task.generation;
+    ++send_waiters_count_;
     return true;
 }
 
 /// @brief Add a task to the recv-waiter array (caller must hold lock_).
-bool Queue::add_recv_waiter(TaskControlBlock *task) {
-    // Caller must hold lock_
+bool Queue::add_recv_waiter(TaskControlBlock &task) {
     if (recv_waiters_count_ >= MAX_WAITERS)
         return false;
-    recv_waiters_[recv_waiters_count_++] = task;
+    recv_waiters_[recv_waiters_count_] = &task;
+    recv_waiter_gens_[recv_waiters_count_] = task.generation;
+    ++recv_waiters_count_;
     return true;
 }
 
 /// @brief Wake the highest-priority send waiter (caller must hold lock_).
 void Queue::wake_send_one() {
-    // Caller must hold lock_
     if (send_waiters_count_ == 0)
         return;
+
+    for (size_t i = 0; i < send_waiters_count_;) {
+        if (send_waiters_[i]->generation != send_waiter_gens_[i]) {
+            send_waiters_[i] = send_waiters_[--send_waiters_count_];
+            send_waiter_gens_[i] = send_waiter_gens_[send_waiters_count_];
+        } else {
+            ++i;
+        }
+    }
+
+    if (send_waiters_count_ == 0)
+        return;
+
     size_t best = 0;
     for (size_t i = 1; i < send_waiters_count_; ++i) {
         if (send_waiters_[i]->priority > send_waiters_[best]->priority)
@@ -89,13 +103,26 @@ void Queue::wake_send_one() {
     if (send_waiters_[best]->state != TaskState::TERMINATED)
         Scheduler::set_task_ready(*send_waiters_[best]);
     send_waiters_[best] = send_waiters_[--send_waiters_count_];
+    send_waiter_gens_[best] = send_waiter_gens_[send_waiters_count_];
 }
 
 /// @brief Wake the highest-priority recv waiter (caller must hold lock_).
 void Queue::wake_recv_one() {
-    // Caller must hold lock_
     if (recv_waiters_count_ == 0)
         return;
+
+    for (size_t i = 0; i < recv_waiters_count_;) {
+        if (recv_waiters_[i]->generation != recv_waiter_gens_[i]) {
+            recv_waiters_[i] = recv_waiters_[--recv_waiters_count_];
+            recv_waiter_gens_[i] = recv_waiter_gens_[recv_waiters_count_];
+        } else {
+            ++i;
+        }
+    }
+
+    if (recv_waiters_count_ == 0)
+        return;
+
     size_t best = 0;
     for (size_t i = 1; i < recv_waiters_count_; ++i) {
         if (recv_waiters_[i]->priority > recv_waiters_[best]->priority)
@@ -104,6 +131,7 @@ void Queue::wake_recv_one() {
     if (recv_waiters_[best]->state != TaskState::TERMINATED)
         Scheduler::set_task_ready(*recv_waiters_[best]);
     recv_waiters_[best] = recv_waiters_[--recv_waiters_count_];
+    recv_waiter_gens_[best] = recv_waiter_gens_[recv_waiters_count_];
 }
 
 /// @brief Send a message, blocking if the queue is full.
@@ -117,7 +145,7 @@ bool Queue::send(const uint8_t *data, size_t size) {
 
     while (is_full()) {
         boost_receiver(*task);
-        if (!add_send_waiter(task))
+        if (!add_send_waiter(*task))
             return false;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -151,7 +179,7 @@ errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
         if (send_waiters_count_ >= MAX_WAITERS)
             return errors::SYNC_ERR_MAX_WAITERS;
         boost_receiver(*task);
-        send_waiters_[send_waiters_count_++] = task;
+        add_send_waiter(*task);
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
     }
@@ -217,7 +245,7 @@ bool Queue::receive(uint8_t *buf, size_t *size) {
 
     while (is_empty()) {
         boost_sender(*task);
-        if (!add_recv_waiter(task))
+        if (!add_recv_waiter(*task))
             return false;
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
@@ -254,7 +282,7 @@ errors::SyncError Queue::receive_err(uint8_t *buf, size_t *size,
         if (recv_waiters_count_ >= MAX_WAITERS)
             return errors::SYNC_ERR_MAX_WAITERS;
         boost_sender(*task);
-        recv_waiters_[recv_waiters_count_++] = task;
+        add_recv_waiter(*task);
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
     }

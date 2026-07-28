@@ -93,6 +93,7 @@ bool EventGroup::add_waiter(TaskControlBlock &task, uint64_t wanted,
     waiters_[wait_count_].task = &task;
     waiters_[wait_count_].wanted_bits = wanted;
     waiters_[wait_count_].clear_on_exit = clear;
+    waiters_[wait_count_].generation = task.generation;
     ++wait_count_;
     return true;
 }
@@ -100,8 +101,11 @@ bool EventGroup::add_waiter(TaskControlBlock &task, uint64_t wanted,
 /// @brief Wake all waiters whose conditions are satisfied (caller must hold
 /// lock_).
 void EventGroup::wake_matching() {
-    // Caller must hold lock_ (set_bits / wait_bits already hold it)
     for (size_t i = 0; i < wait_count_;) {
+        if (waiters_[i].task->generation != waiters_[i].generation) {
+            waiters_[i] = waiters_[--wait_count_];
+            continue;
+        }
         if ((bits_ & waiters_[i].wanted_bits) == waiters_[i].wanted_bits) {
             if (waiters_[i].clear_on_exit) {
                 bits_ &= ~waiters_[i].wanted_bits;
@@ -158,10 +162,8 @@ errors::SyncError EventGroup::wait_bits_err(uint64_t bits, bool clear_on_exit,
         return errors::SYNC_ERR_MAX_WAITERS;
     }
 
-    waiters_[wait_count_].task = task;
-    waiters_[wait_count_].wanted_bits = bits;
-    waiters_[wait_count_].clear_on_exit = clear_on_exit;
-    ++wait_count_;
+    bool added = add_waiter(*task, bits, clear_on_exit);
+    (void)added;
 
     task->state = TaskState::BLOCKED;
     Scheduler::reschedule();

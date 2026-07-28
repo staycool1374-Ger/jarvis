@@ -121,7 +121,10 @@ void TaskControlBlock::init_sporadic_server(
 /// @brief Initialises common fields of a newly allocated TaskControlBlock.
 /// Sets up fd table, cwd, IPC objects (MessageQueue, Notify, EventGroup),
 /// process-hierarchy links, signal handlers, and buffer pool state.
+static uint32_t s_next_generation = 1;
+
 void init_task_common(TaskControlBlock &tcb) {
+    tcb.generation = __atomic_fetch_add(&s_next_generation, 1, __ATOMIC_RELAXED);
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         tcb.fd_table.fds[i].used = false;
         tcb.fd_table.fds[i].vnode = nullptr;
