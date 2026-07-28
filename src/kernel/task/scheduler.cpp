@@ -1291,7 +1291,10 @@ void Scheduler::reap_orphans() noexcept {
         if (t != idle_task_ && t == current)
             continue;
 
-        // Adopt children to init_task
+        // Adopt children to init_task via the existing intrusive child list.
+        // All children are tracked in the first_child/next_sibling linked list
+        // (set up in init_task_common / add_child) — no need for a full-table
+        // TaskIter scan to find children by parent_id.
         if (init_task && init_task != t) {
             if (t->first_child) {
                 auto *child = t->first_child;
@@ -1305,19 +1308,6 @@ void Scheduler::reap_orphans() noexcept {
                     child->parent_id = 0;
                     init_task->add_child(child);
                     child = next;
-                }
-            }
-            for (TaskIter it(0);;) {
-                auto *c = it.next(t);
-                if (!c)
-                    break;
-                if (c == init_task)
-                    continue;
-                if (c->parent_id == t->id) {
-                    c->parent_id = 0;
-                    if (t->num_children > 0)
-                        --t->num_children;
-                    init_task->add_child(c);
                 }
             }
         }
@@ -1355,22 +1345,8 @@ void Scheduler::reap_orphans() noexcept {
         if (!can_reap)
             continue;
 
-        if (!t->page_table_shared_) {
-            bool has_sharing_child = false;
-            for (TaskIter it(0);;) {
-                auto *c = it.next(t);
-                if (!c)
-                    break;
-                if (c == current)
-                    continue;
-                if (c->parent_id == t->id && c->page_table_shared_) {
-                    has_sharing_child = true;
-                    break;
-                }
-            }
-            if (has_sharing_child)
-                continue;
-        }
+        // page_table_shared_ is never set (deep copy replaced shared page
+        // tables) — skip the stale full-table scan.
 
         to_reap[num_to_reap++] = t;
     }
