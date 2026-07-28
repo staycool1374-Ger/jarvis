@@ -44,6 +44,9 @@ constinit bool PMM::pool_mapped_ = true;
 constinit uint64_t PMM::pool_generation_ = 0;
 constinit uint64_t PMM::pool_refcount_ = 0;
 constinit PMM::OOMHandler PMM::oom_handler_ = nullptr;
+constinit uint64_t PMM::free_list_ = 0;
+constinit uint64_t PMM::free_head_ = UINT64_MAX;
+constinit uint64_t PMM::pool_free_head_ = UINT64_MAX;
 
 #if CONFIG_STATIC_POOLS_ONLY
 static bool g_pmm_init_done = false;
@@ -61,10 +64,13 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     free_pages_ = total_pages_;
 
     bitmap_size_ = align_up<uint64_t>(total_pages_ / 8, 8_KiB);
+    uint64_t free_list_bytes = align_up<uint64_t>(total_pages_ * sizeof(uint64_t), 8_KiB);
     uint64_t bitmap_phys = align_up<uint64_t>(kernel_end, 8_KiB);
     uint64_t owner_bitmap_phys = bitmap_phys + bitmap_size_;
+    uint64_t free_list_phys = owner_bitmap_phys + bitmap_size_;
     bitmap_ = arch::HHDM_OFFSET + bitmap_phys;
     owner_bitmap_ = arch::HHDM_OFFSET + owner_bitmap_phys;
+    free_list_ = arch::HHDM_OFFSET + free_list_phys;
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *bitmap = reinterpret_cast<uint8_t *>(bitmap_);
@@ -76,7 +82,7 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
     }
 
     uint64_t kernel_start_page = kernel_start / PAGE_SIZE;
-    uint64_t reserved_end = bitmap_phys + bitmap_size_ + bitmap_size_;
+    uint64_t reserved_end = free_list_phys + free_list_bytes;
     uint64_t reserved_end_page = (reserved_end + PAGE_SIZE - 1) / PAGE_SIZE;
 
     for (uint64_t i = 0; i < kernel_start_page; ++i) {
@@ -115,6 +121,9 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
         }
     }
 
+    // Build the O(1) free list (pages within HHDM window only).
+    rebuild_free_list();
+
     // Register the default OOM handler based on CONFIG_OOM_POLICY.
 #if CONFIG_OOM_POLICY == 1 && !CONFIG_OOM_HOOK
     if (!oom_handler_) {
@@ -127,10 +136,53 @@ void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
 #endif
 }
 
-/// @brief Linear-scan KERNEL allocation from the bitmap.
+void PMM::rebuild_free_list() noexcept {
+    free_head_ = UINT64_MAX;
+    auto *fl = reinterpret_cast<uint64_t *>(free_list_);
+    uint64_t hhdm_limit = (128ULL * 1024 * 1024) / PAGE_SIZE;
+    uint64_t pool_start = page_table_pool_start_ / PAGE_SIZE;
+    uint64_t pool_end = page_table_pool_end_ / PAGE_SIZE;
+    uint64_t limit = (hhdm_limit < total_pages_) ? hhdm_limit : total_pages_;
+    for (uint64_t i = 0; i < limit; ++i) {
+        if (bitmap_test(i))
+            continue;
+        if (i >= pool_start && i < pool_end) {
+            fl[i] = pool_free_head_;
+            pool_free_head_ = i;
+        } else {
+            fl[i] = free_head_;
+            free_head_ = i;
+        }
+    }
+}
+
+/// @brief O(1) free-list KERNEL alloc for single pages, bitmap scan for
+///        multi-page contiguous requests (list rebuilt afterward).
 /// @param count Number of contiguous pages.
 /// @return Physical address or 0.
 uint64_t PMM::try_alloc_kernel(size_t count) {
+    if (count == 1) {
+        // O(1) fast path: pop from free list (pages within HHDM window).
+        if (free_head_ < total_pages_) {
+            uint64_t idx = free_head_;
+            free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
+            bitmap_set(idx);
+            owner_set_kernel(idx);
+            --free_pages_;
+            return idx * PAGE_SIZE;
+        }
+        // Fallback: bitmap scan for any remaining pages (beyond HHDM window
+        // or freed via paths that didn't update the free list).
+        for (uint64_t i = 0; i < total_pages_; ++i) {
+            if (!bitmap_test(i)) {
+                bitmap_set(i);
+                owner_set_kernel(i);
+                --free_pages_;
+                return i * PAGE_SIZE;
+            }
+        }
+        return 0;
+    }
     for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
         bool ok = true;
         for (size_t j = 0; j < count; ++j) {
@@ -145,16 +197,37 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
                 owner_set_kernel(i + j);
                 --free_pages_;
             }
+            rebuild_free_list();
             return i * PAGE_SIZE;
         }
     }
     return 0;
 }
 
-/// @brief Linear-scan USER allocation from the bitmap.
+/// @brief O(1) free-list USER alloc for single pages, bitmap scan for
+///        multi-page contiguous requests (list rebuilt afterward).
 /// @param count Number of contiguous pages.
 /// @return Physical address or 0.
 uint64_t PMM::try_alloc_user(size_t count) {
+    if (count == 1) {
+        if (free_head_ < total_pages_) {
+            uint64_t idx = free_head_;
+            free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
+            bitmap_set(idx);
+            owner_set_user(idx);
+            --free_pages_;
+            return idx * PAGE_SIZE;
+        }
+        for (uint64_t i = 0; i < total_pages_; ++i) {
+            if (!bitmap_test(i)) {
+                bitmap_set(i);
+                owner_set_user(i);
+                --free_pages_;
+                return i * PAGE_SIZE;
+            }
+        }
+        return 0;
+    }
     for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
         bool ok = true;
         for (size_t j = 0; j < count; ++j) {
@@ -169,6 +242,7 @@ uint64_t PMM::try_alloc_user(size_t count) {
                 owner_set_user(i + j);
                 --free_pages_;
             }
+            rebuild_free_list();
             return i * PAGE_SIZE;
         }
     }
@@ -343,26 +417,23 @@ uint64_t PMM::alloc_user_contiguous(size_t count) {
     return result;
 }
 
-/// @brief Allocate a page from the reserved page-table pool (or fall back to
-/// alloc_page).
+/// @brief Allocate a page from the reserved page-table pool (O(1) free list).
+///        Falls back to alloc_page() when the pool is exhausted.
 /// @return Physical address, or 0 (asserts on OOM).
 uint64_t PMM::alloc_page_table() {
     if (page_table_pool_start_ == 0 || page_table_pool_end_ == 0) {
         return alloc_page();
     }
-    uint64_t pool_start_page = page_table_pool_start_ / PAGE_SIZE;
-    uint64_t pool_end_page = page_table_pool_end_ / PAGE_SIZE;
     {
         sync::IrqSpinLockGuard lock(pmm_lock_);
-        for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
-            if (!bitmap_test(i)) {
-                bitmap_set(i);
-                owner_set_kernel(i);
-                --free_pages_;
-                kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
-                uint64_t phys = i * PAGE_SIZE;
-                return phys;
-            }
+        if (pool_free_head_ < total_pages_) {
+            uint64_t idx = pool_free_head_;
+            pool_free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
+            bitmap_set(idx);
+            owner_set_kernel(idx);
+            --free_pages_;
+            kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+            return idx * PAGE_SIZE;
         }
     }
     uint64_t result = alloc_page();
@@ -373,9 +444,8 @@ uint64_t PMM::alloc_page_table() {
 }
 
 /// @brief Free a physical page regardless of ownership.
-/// Ownership is managed at allocation time (try_alloc_kernel/try_alloc_user).
-/// Free does NOT change ownership — the allocator sets the correct owner bit
-/// when the page is next allocated.
+/// Ownership is managed at allocation time.
+/// Free pushes the page onto the O(1) free list.
 /// @param phys_addr Physical address to free.
 void PMM::free_page(uint64_t phys_addr) {
     sync::IrqSpinLockGuard lock(pmm_lock_);
@@ -386,6 +456,12 @@ void PMM::free_page(uint64_t phys_addr) {
         bitmap_clear(index);
         ++free_pages_;
         kernel::test::ResourceTracker::instance().track_pmm_free(1);
+        // Push onto free list (always general list; pool pages that somehow
+        // get freed go to general list too, which is safe since alloc_page_table
+        // uses its own pool_free_head_).
+        auto *fl = reinterpret_cast<uint64_t *>(free_list_);
+        fl[index] = free_head_;
+        free_head_ = index;
     }
 }
 

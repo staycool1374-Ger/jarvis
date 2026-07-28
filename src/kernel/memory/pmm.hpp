@@ -225,6 +225,17 @@ class PMM {
     static constinit uint64_t pool_refcount_;
     static constinit OOMHandler oom_handler_;
 
+    /// @brief Free-list array (one entry per page, next-index or sentinel).
+    static constinit uint64_t free_list_;
+    /// @brief Head of the general free list.
+    static constinit uint64_t free_head_;
+    /// @brief Head of the page-table-pool free list.
+    static constinit uint64_t pool_free_head_;
+
+    /// @brief Rebuild the general free list from the bitmap (after bitmap-scan
+    ///        multi-page allocations that bypass the free list).
+    static void rebuild_free_list() noexcept;
+
     /// @brief Mark a page as allocated in the bitmap.
     /// @param index Page index.
     static void bitmap_set(size_t index);
