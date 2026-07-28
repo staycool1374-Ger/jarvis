@@ -19,10 +19,13 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/sync/irq_spinlock_guard.hpp>
 #include <assert.hpp>
 #include <constants.hpp>
 
 namespace kernel {
+
+static sync::SpinLock mempool_lock_;
 
 MemPool::Pool MemPool::pools_[POOL_COUNT] = {};
 constinit bool MemPool::ready_ = false;
@@ -31,6 +34,8 @@ constinit bool MemPool::ready_ = false;
 ///        Each pool carves its region into fixed-size blocks and builds an
 ///        embedded free list.
 void MemPool::init() {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
+
     static const size_t sizes[POOL_COUNT] = {16,  32,   64,   128, 256,
                                              512, 1024, 2048, 8192};
     static const size_t counts[POOL_COUNT] = {256, 128, 320, 32, 16,
@@ -75,6 +80,7 @@ void MemPool::init() {
 /// @param size Minimum number of bytes required.
 /// @return Pointer to the block, or nullptr on failure.
 void *MemPool::alloc(size_t size) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     size_t idx = find_pool(size);
     if (idx >= POOL_COUNT)
         return nullptr;
@@ -102,6 +108,8 @@ void *MemPool::alloc(size_t size) {
 void MemPool::free(void *block) {
     if (!block)
         return;
+
+    sync::IrqSpinLockGuard lock(mempool_lock_);
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &pool = pools_[i];
@@ -174,6 +182,7 @@ size_t MemPool::find_pool(size_t size) {
 /// @param idx Pool index.
 /// @param[out] out Destination to fill with metadata.
 void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     auto &p = pools_[idx];
     out.first_free = p.first_free;
     out.free_count = p.free_count;
@@ -186,6 +195,7 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
 /// @param idx  Pool index.
 /// @param meta Previously captured metadata.
 void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     auto &p = pools_[idx];
     p.write_freed_bitmap(meta.freed_bitmap);
 
@@ -216,6 +226,7 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
 /// @brief Copy all pool block data into a contiguous buffer.
 /// @param[out] dst Destination buffer (must be >= pool_data_bytes()).
 void MemPool::capture_pool_data(uint8_t *dst) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &p = pools_[i];
         if (!p.initialized || !p.data)
@@ -229,6 +240,7 @@ void MemPool::capture_pool_data(uint8_t *dst) {
 /// @brief Restore all pool block data from a contiguous buffer.
 /// @param src Source buffer previously filled by capture_pool_data().
 void MemPool::restore_pool_data(const uint8_t *src) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &p = pools_[i];
         if (!p.initialized || !p.data)
@@ -256,6 +268,7 @@ size_t MemPool::pool_data_bytes() {
 // ---------------------------------------------------------------------------
 
 void MemPool::pin_block(void *block) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     uint8_t *p = static_cast<uint8_t *>(block);
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &pool = pools_[i];
@@ -274,6 +287,7 @@ void MemPool::pin_block(void *block) {
 }
 
 void MemPool::unpin_block(void *block) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     uint8_t *p = static_cast<uint8_t *>(block);
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &pool = pools_[i];
@@ -329,6 +343,8 @@ MemPoolError MemPool::init_err() {
 /// @param[out] out_ptr Set to the allocated block on success.
 /// @return MemPoolError code.
 MemPoolError MemPool::alloc_err(size_t size, void *&out_ptr) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
+
     size_t idx = find_pool(size);
     if (idx >= POOL_COUNT) {
         return MEMPOOL_ERR_TOO_LARGE;
@@ -361,6 +377,8 @@ MemPoolError MemPool::free_err(void *block) {
     if (!block) {
         return MEMPOOL_ERR_INVALID_PTR;
     }
+
+    sync::IrqSpinLockGuard lock(mempool_lock_);
 
     for (size_t i = 0; i < POOL_COUNT; ++i) {
         auto &pool = pools_[i];
@@ -396,6 +414,7 @@ MemPoolError MemPool::free_err(void *block) {
 }
 
 MemPoolError MemPool::reserve(size_t pool_idx, size_t count) {
+    sync::IrqSpinLockGuard lock(mempool_lock_);
     if (pool_idx >= POOL_COUNT)
         return MEMPOOL_ERR_OOM;
     auto &pool = pools_[pool_idx];

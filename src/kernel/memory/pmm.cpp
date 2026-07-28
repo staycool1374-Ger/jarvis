@@ -21,12 +21,15 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/sync/irq_spinlock_guard.hpp>
 #include <constants.hpp>
 #include <utils.hpp>
 #include <assert.hpp>
 #include <kernel/memory/pmm_errors.hpp>
 
 namespace kernel {
+
+static sync::SpinLock pmm_lock_;
 
 constinit uint64_t PMM::total_pages_ = 0;
 constinit uint64_t PMM::free_pages_ = 0;
@@ -53,6 +56,7 @@ static bool g_pmm_init_done = false;
 /// @param kernel_start Physical address of kernel image start.
 /// @param kernel_end   Physical address of kernel image end.
 void PMM::init(uint64_t mem_size, uint64_t kernel_start, uint64_t kernel_end) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     total_pages_ = mem_size / PAGE_SIZE;
     free_pages_ = total_pages_;
 
@@ -180,6 +184,7 @@ uint64_t PMM::alloc_page() {
         return 0;
     }
 #endif
+    sync::IrqSpinLockGuard lock(pmm_lock_);
 #if CONFIG_MEMORY_BUDGET
     auto *cur = Scheduler::current_task();
     if (cur && cur->magic == TaskControlBlock::TCB_MAGIC &&
@@ -196,7 +201,17 @@ uint64_t PMM::alloc_page() {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         return result;
     }
-    if (oom_handler_ && oom_handler_()) {
+    // OOM handler: release lock, call handler, re-acquire for retry.
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+#if CONFIG_MEMORY_BUDGET
+        cur = Scheduler::current_task();
+#endif
+    }
+    if (oom_retry) {
         result = try_alloc_kernel(1);
     }
     if (!result) {
@@ -230,6 +245,7 @@ uint64_t PMM::alloc_contiguous(size_t count) {
 #endif
     if (count == 0 || count > total_pages_)
         return 0;
+    sync::IrqSpinLockGuard lock(pmm_lock_);
 #if CONFIG_MEMORY_BUDGET
     auto *cur = Scheduler::current_task();
     if (cur && cur->magic == TaskControlBlock::TCB_MAGIC &&
@@ -246,7 +262,17 @@ uint64_t PMM::alloc_contiguous(size_t count) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
         return result;
     }
-    if (oom_handler_ && oom_handler_()) {
+    // OOM handler: release lock, call handler, re-acquire for retry.
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+#if CONFIG_MEMORY_BUDGET
+        cur = Scheduler::current_task();
+#endif
+    }
+    if (oom_retry) {
         result = try_alloc_kernel(count);
     }
     if (!result) {
@@ -265,12 +291,19 @@ uint64_t PMM::alloc_contiguous(size_t count) {
 /// @brief Allocate a single USER page.  Invokes OOM handler on failure.
 /// @return Physical address, or 0 (asserts on persistent OOM).
 uint64_t PMM::alloc_user_page() {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_user(1);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         return result;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_user(1);
     }
     if (!result) {
@@ -287,12 +320,19 @@ uint64_t PMM::alloc_user_page() {
 uint64_t PMM::alloc_user_contiguous(size_t count) {
     if (count == 0 || count > total_pages_)
         return 0;
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_user(count);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
         return result;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_user(count);
     }
     if (!result) {
@@ -312,14 +352,17 @@ uint64_t PMM::alloc_page_table() {
     }
     uint64_t pool_start_page = page_table_pool_start_ / PAGE_SIZE;
     uint64_t pool_end_page = page_table_pool_end_ / PAGE_SIZE;
-    for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
-        if (!bitmap_test(i)) {
-            bitmap_set(i);
-            owner_set_kernel(i);
-            --free_pages_;
-            kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
-            uint64_t phys = i * PAGE_SIZE;
-            return phys;
+    {
+        sync::IrqSpinLockGuard lock(pmm_lock_);
+        for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
+            if (!bitmap_test(i)) {
+                bitmap_set(i);
+                owner_set_kernel(i);
+                --free_pages_;
+                kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+                uint64_t phys = i * PAGE_SIZE;
+                return phys;
+            }
         }
     }
     uint64_t result = alloc_page();
@@ -332,6 +375,7 @@ uint64_t PMM::alloc_page_table() {
 /// @brief Free a physical page regardless of ownership.
 /// @param phys_addr Physical address to free.
 void PMM::free_page(uint64_t phys_addr) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t index = phys_addr / PAGE_SIZE;
     if (index >= total_pages_)
         return;
@@ -417,6 +461,7 @@ bool PMM::owner_test(size_t index) {
 /// @return PmmError code.
 errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
                                uint64_t kernel_end) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     total_pages_ = mem_size / PAGE_SIZE;
     free_pages_ = total_pages_;
 
@@ -477,13 +522,20 @@ errors::PmmError PMM::init_err(uint64_t mem_size, uint64_t kernel_start,
 /// @param[out] out_phys_addr Physical address on success.
 /// @return PmmError code.
 errors::PmmError PMM::alloc_page_err(uint64_t &out_phys_addr) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_kernel(1);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         out_phys_addr = result;
         return errors::PMM_ERR_OK;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_kernel(1);
     }
     if (!result) {
@@ -503,13 +555,20 @@ errors::PmmError PMM::alloc_contiguous_err(size_t count,
     if (count == 0 || count > total_pages_) {
         return errors::PMM_ERR_INVALID;
     }
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_kernel(count);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
         out_phys_addr = result;
         return errors::PMM_ERR_OK;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_kernel(count);
     }
     if (!result) {
@@ -524,13 +583,20 @@ errors::PmmError PMM::alloc_contiguous_err(size_t count,
 /// @param[out] out_phys_addr Physical address on success.
 /// @return PmmError code.
 errors::PmmError PMM::alloc_user_page_err(uint64_t &out_phys_addr) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_user(1);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         out_phys_addr = result;
         return errors::PMM_ERR_OK;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_user(1);
     }
     if (!result) {
@@ -550,13 +616,20 @@ errors::PmmError PMM::alloc_user_contiguous_err(size_t count,
     if (count == 0 || count > total_pages_) {
         return errors::PMM_ERR_INVALID;
     }
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t result = try_alloc_user(count);
     if (result) {
         kernel::test::ResourceTracker::instance().track_pmm_alloc(count);
         out_phys_addr = result;
         return errors::PMM_ERR_OK;
     }
-    if (oom_handler_ && oom_handler_()) {
+    bool oom_retry = false;
+    if (oom_handler_) {
+        lock.unlock();
+        oom_retry = oom_handler_();
+        lock.lock();
+    }
+    if (oom_retry) {
         result = try_alloc_user(count);
     }
     if (!result) {
@@ -577,14 +650,17 @@ errors::PmmError PMM::alloc_page_table_err(uint64_t &out_phys_addr) {
     }
     uint64_t pool_start_page = page_table_pool_start_ / PAGE_SIZE;
     uint64_t pool_end_page = page_table_pool_end_ / PAGE_SIZE;
-    for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
-        if (!bitmap_test(i)) {
-            bitmap_set(i);
-            owner_set_kernel(i);
-            --free_pages_;
-            kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
-            out_phys_addr = i * PAGE_SIZE;
-            return errors::PMM_ERR_OK;
+    {
+        sync::IrqSpinLockGuard lock(pmm_lock_);
+        for (uint64_t i = pool_start_page; i < pool_end_page; ++i) {
+            if (!bitmap_test(i)) {
+                bitmap_set(i);
+                owner_set_kernel(i);
+                --free_pages_;
+                kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
+                out_phys_addr = i * PAGE_SIZE;
+                return errors::PMM_ERR_OK;
+            }
         }
     }
     auto err = alloc_page_err(out_phys_addr);
@@ -598,6 +674,7 @@ errors::PmmError PMM::alloc_page_table_err(uint64_t &out_phys_addr) {
 /// @param phys_addr Physical address to free.
 /// @return PmmError code.
 errors::PmmError PMM::free_page_err(uint64_t phys_addr) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t index = phys_addr / PAGE_SIZE;
     if (index >= total_pages_) {
         return errors::PMM_ERR_INVALID;
@@ -627,6 +704,7 @@ errors::PmmError PMM::is_user_page_err(uint64_t phys_addr, bool &out_is_user) {
 
 void PMM::capture_pool_snapshot(
     kernel::test::PtPoolSnapshot &out) {
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     out.base       = page_table_pool_start_;
     out.size_pages = (page_table_pool_end_ - page_table_pool_start_) / PAGE_SIZE;
     out.clean      = true;
@@ -660,6 +738,7 @@ void PMM::restore_pool_snapshot(
     if (src.size_pages == 0 || src.poisoned) {
         return; // refuse to restore a corrupted pool
     }
+    sync::IrqSpinLockGuard lock(pmm_lock_);
     uint64_t start_bit = page_table_pool_start_ / PAGE_SIZE;
     size_t max_bytes = sizeof(src.bitmap);
     size_t bytes = (src.size_pages + 7) / 8;
