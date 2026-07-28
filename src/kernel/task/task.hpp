@@ -26,6 +26,7 @@
 #include <types.hpp>
 #include <constants.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/jarvis_config.h>
 #include <kernel/task/task_errors.hpp>
 #include <kernel/vfs/vfs.hpp>
@@ -86,6 +87,10 @@ struct MessageQueue {
 
     bool is_empty() const { return count == 0; }
     bool is_full() const { return count >= IPC_MAX_QUEUE_MSG; }
+    bool is_full_locked() {
+        SpinLockGuard<sync::SpinLock> guard(lock_);
+        return count >= IPC_MAX_QUEUE_MSG;
+    }
 
     size_t highest_priority() const;
 };

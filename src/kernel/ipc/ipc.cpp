@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/debug/ipc_sched_trace.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
 namespace kernel {
@@ -163,7 +164,7 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
 
     // If the queue is already full, either return immediately (NONBLOCK)
     // or block the sender until space becomes available.
-    if (tcb->msg_queue.is_full()) {
+    if (tcb->msg_queue.is_full_locked()) {
         if (flags & IPC_NONBLOCK)
             return false;
 
@@ -383,69 +384,75 @@ bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
     task.state = TaskState::BLOCKED;
     kernel::Scheduler::dequeue_ready(task);
 
-    // Insert into priority-ordered blocked-senders list (highest first).
-    // O(n) scan of blocked list, bounded by CONFIG_MAX_TASKS (64).
-    task.blocked_on_queue = &q;
-    TaskControlBlock **pp = &q.blocked_senders_head;
-    while (*pp && (*pp)->priority >= task.priority)
-        pp = &(*pp)->blocked_next;
-    task.blocked_next = *pp;
-    *pp = &task;
-    if (!task.blocked_next)
-        q.blocked_senders_tail = &task;
+    // Dequeue_ready must complete BEFORE taking q.lock_ (lock ordering:
+    // scheduler_lock_ first, then queue lock).  The queue lock protects
+    // the blocked_senders list and priority-inheritance boost.
+    {
+        SpinLockGuard<sync::SpinLock> guard(q.lock_);
 
-    // FIX(rms-ipc-pi): Priority inheritance — boost queue owner when a higher-
-    // priority sender blocks on this queue.  move_priority is REQUIRED because the
-    // O(1) ReadyQueue does not re-derive position from tcb.priority — it uses
-    // the position where the node was originally enqueued.  Without this call the
-    // boosted owner stays at its original (lower) priority bucket and higher-
-    // priority tasks that should inherit to it are delayed, breaking PIP.
-    if (q.owner && task.priority > q.owner->priority) {
-        uint64_t old_prio = Scheduler::effective_priority(q.owner);
-        q.owner->priority = task.priority;
-        uint64_t new_prio = Scheduler::effective_priority(q.owner);
-        if (old_prio != new_prio)
-            Scheduler::move_priority(*q.owner, old_prio, new_prio);
+        task.blocked_on_queue = &q;
+        TaskControlBlock **pp = &q.blocked_senders_head;
+        while (*pp && (*pp)->priority >= task.priority)
+            pp = &(*pp)->blocked_next;
+        task.blocked_next = *pp;
+        *pp = &task;
+        if (!task.blocked_next)
+            q.blocked_senders_tail = &task;
+
+        // Priority inheritance — boost owner when higher-priority sender blocks.
+        if (q.owner && task.priority > q.owner->priority) {
+            uint64_t old_prio = Scheduler::effective_priority(q.owner);
+            q.owner->priority = task.priority;
+            uint64_t new_prio = Scheduler::effective_priority(q.owner);
+            if (old_prio != new_prio)
+                Scheduler::move_priority(*q.owner, old_prio, new_prio);
+        }
     }
+
     return true;
 }
 
 /// @brief Unblock the oldest blocked sender and restore receiver priority.
 void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
-    if (!q.blocked_senders_head)
-        return;
+    TaskControlBlock *task;
 
-    auto *task = q.blocked_senders_head;
-    q.blocked_senders_head = task->blocked_next;
-    if (!q.blocked_senders_head) {
-        q.blocked_senders_tail = nullptr;
+    // Pop sender from head under the queue lock.  set_task_ready and priority
+    // restore run outside the lock (they take scheduler_lock_ internally).
+    {
+        SpinLockGuard<sync::SpinLock> guard(q.lock_);
+
+        if (!q.blocked_senders_head)
+            return;
+
+        task = q.blocked_senders_head;
+        q.blocked_senders_head = task->blocked_next;
+        if (!q.blocked_senders_head)
+            q.blocked_senders_tail = nullptr;
+        task->blocked_next = nullptr;
+        task->blocked_on_queue = nullptr;
     }
-    task->blocked_next = nullptr;
-    task->blocked_on_queue = nullptr;
+
     if (task->state != TaskState::TERMINATED) {
         Scheduler::set_task_ready(*task);
         task->remaining_ticks = task->period_ticks;
     }
 
-    // FIX(rms-ipc-pi): Priority inheritance — restore receiver priority once the
-    // waking sender is removed.  Recalculate based on the highest-priority
-    // remaining blocked sender.  move_priority is REQUIRED for the same reason as
-    // in block_sender: the O(1) queue does not re-derive the node's bucket from
-    // tcb.priority automatically.  Skipping it leaves the receiver at its boosted
-    // (or stale) priority indefinitely, breaking PIP and causing incorrect
-    // scheduling order.
-    uint64_t max_prio = receiver.base_priority;
-    auto *cur_bs = q.blocked_senders_head;
-    while (cur_bs) {
-        if (cur_bs->priority > max_prio)
-            max_prio = cur_bs->priority;
-        cur_bs = cur_bs->blocked_next;
+    // Priority inheritance — restore receiver priority after sender removal.
+    {
+        SpinLockGuard<sync::SpinLock> guard(q.lock_);
+        uint64_t max_prio = receiver.base_priority;
+        auto *cur_bs = q.blocked_senders_head;
+        while (cur_bs) {
+            if (cur_bs->priority > max_prio)
+                max_prio = cur_bs->priority;
+            cur_bs = cur_bs->blocked_next;
+        }
+        uint64_t old_prio = Scheduler::effective_priority(&receiver);
+        receiver.priority = max_prio;
+        uint64_t new_prio = Scheduler::effective_priority(&receiver);
+        if (old_prio != new_prio)
+            Scheduler::move_priority(receiver, old_prio, new_prio);
     }
-    uint64_t old_prio = Scheduler::effective_priority(&receiver);
-    receiver.priority = max_prio;
-    uint64_t new_prio = Scheduler::effective_priority(&receiver);
-    if (old_prio != new_prio)
-        Scheduler::move_priority(receiver, old_prio, new_prio);
 }
 
 /// @brief Roll back a block_sender() mutation when IPC::send() is called with
@@ -460,23 +467,26 @@ static void unblock_sender_rollback(MessageQueue &q,
     ENSURE(task.blocked_on_queue == &q &&
            "unblock_sender_rollback: task not blocked on this queue");
 
-    // Remove from singly-linked blocked_senders list.
-    TaskControlBlock **pp = &q.blocked_senders_head;
-    while (*pp && *pp != &task)
-        pp = &(*pp)->blocked_next;
-    if (*pp) {
-        *pp = task.blocked_next;
-        if (q.blocked_senders_tail == &task) {
-            // Task was the tail — walk from head to find new tail.
-            TaskControlBlock *walk = q.blocked_senders_head;
-            while (walk && walk->blocked_next)
-                walk = walk->blocked_next;
-            q.blocked_senders_tail = walk;
-        }
-    }
+    // Remove from singly-linked blocked_senders list under the queue lock.
+    {
+        SpinLockGuard<sync::SpinLock> guard(q.lock_);
 
-    task.blocked_next = nullptr;
-    task.blocked_on_queue = nullptr;
+        TaskControlBlock **pp = &q.blocked_senders_head;
+        while (*pp && *pp != &task)
+            pp = &(*pp)->blocked_next;
+        if (*pp) {
+            *pp = task.blocked_next;
+            if (q.blocked_senders_tail == &task) {
+                TaskControlBlock *walk = q.blocked_senders_head;
+                while (walk && walk->blocked_next)
+                    walk = walk->blocked_next;
+                q.blocked_senders_tail = walk;
+            }
+        }
+
+        task.blocked_next = nullptr;
+        task.blocked_on_queue = nullptr;
+    }
 
     // Restore pre-block state and re-add to ready queue.
     // Do NOT use set_task_ready() — it sets state=READY and alters
