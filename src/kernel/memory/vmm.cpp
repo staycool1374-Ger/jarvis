@@ -578,6 +578,12 @@ uint64_t VMM::clone_kernel_pml4() {
 /// @brief Free all user-space pages and page tables owned by a user PML4.
 ///        Skips kernel-owned pages and honours page_table_shared_ flag.
 /// @param pml4_phys Physical address of the user PML4 to tear down.
+/// @brief Free all user-accessible pages in a page table.
+///        Worst-case iterations: PML4_USER_COUNT (256) × 512 × 512 × 512
+///        leaf visits ≈ 34 billion in a fully populated 4-level walk.
+///        In practice bounded by the actual mapped range (stack + heap +
+///        code segments).  Yields every 64 leaf entries so higher-priority
+///        tasks can run during teardown of large address spaces.
 void VMM::free_user_pages(uint64_t pml4_phys) {
 #if defined(CONFIG_ARCH_RISCV64)
     auto *l0 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
@@ -623,6 +629,8 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
+                    if ((l2_idx & 0x3F) == 0x3F)
+                        Scheduler::cleanup_step();
                     continue;
                 }
                 // Table entry (V=1, R=W=X=0) — old 4-level format with L3
@@ -639,6 +647,8 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
+                    if ((l3_idx & 0x3F) == 0x3F)
+                        Scheduler::cleanup_step();
                 }
                 PMM::free_page(l3_phys);
             }
@@ -710,6 +720,8 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
+                    if ((pt_idx & 0x3F) == 0x3F)
+                        Scheduler::cleanup_step();
                 }
                 PMM::free_page(pt_phys);
             }
@@ -725,6 +737,8 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
 /// @brief Deep-copy user-space page tables from src_pml4 to dst_pml4.
 ///        Allocates new PDPT/PD/PT pages and copies data page content.
 ///        dst_pml4 must already have kernel entries populated.
+///        Worst-case: PML4_USER_COUNT (256) × 512 × 512 × 512 leaf visits,
+///        each doing a 4 KiB memcpy.  Yields every 64 leaf entries.
 /// @return true on success, false on OOM.
 bool VMM::deep_copy_user_pages(uint64_t src_pml4, uint64_t dst_pml4) {
 #if defined(CONFIG_ARCH_X86_64) || defined(CONFIG_ARCH_AARCH64)
@@ -810,7 +824,6 @@ bool VMM::deep_copy_user_pages(uint64_t src_pml4, uint64_t dst_pml4) {
                     uint64_t src_data = src_pt[pt_idx] & ~0xFFFULL;
                     uint64_t flags = src_pt[pt_idx] & 0xFFFULL;
 
-                    // Allocate new data page and copy content.
                     uint64_t dst_data = PMM::alloc_user_page();
                     if (!dst_data) return false;
                     __builtin_memcpy(
@@ -818,6 +831,8 @@ bool VMM::deep_copy_user_pages(uint64_t src_pml4, uint64_t dst_pml4) {
                         reinterpret_cast<void *>(arch::HHDM_OFFSET + src_data),
                         4096);
                     dst_pt[pt_idx] = dst_data | flags;
+                    if ((pt_idx & 0x3F) == 0x3F)
+                        Scheduler::cleanup_step();
                 }
             }
         }
