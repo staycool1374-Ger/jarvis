@@ -213,10 +213,11 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     constexpr uint64_t TEST_VA = 0x70000000;
 
     Logger::raw_write("waitpid58: enter\n");
-    // Allocate two different physical pages for parent and child
-    uint64_t parent_page = PMM::alloc_page();
+    // Allocate two different USER-owned physical pages for parent and child.
+    // These are mapped as user-accessible in their respective PML4s.
+    uint64_t parent_page = PMM::alloc_user_page();
     Logger::raw_write("waitpid58: alloc parent done\n");
-    uint64_t child_page = PMM::alloc_page();
+    uint64_t child_page = PMM::alloc_user_page();
     Logger::raw_write("waitpid58: alloc child done\n");
     JARVIS_ASSERT(parent_page != 0);
     JARVIS_ASSERT(child_page != 0);

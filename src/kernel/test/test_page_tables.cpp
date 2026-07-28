@@ -135,7 +135,7 @@ JARVIS_TEST(page_tables_isolation, "PRE: none | POST: none") {
 
     // Map a test page in A's PML4 at a known VA (below STACK_VADDR).
     uint64_t test_va = 0x10000000;
-    uint64_t test_pa = PMM::alloc_page();
+    uint64_t test_pa = PMM::alloc_user_page();
     JARVIS_ASSERT(test_pa != 0);
     VMM::map_page_in_pml4(test_va, test_pa, true, a->page_table_);
 

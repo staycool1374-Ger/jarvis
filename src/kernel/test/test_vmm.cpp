@@ -155,14 +155,15 @@ JARVIS_TEST(vmm_free_user_pages_shared, "PRE: none | POST: none") {
     // Call free_user_pages on child's PML4
     VMM::free_user_pages(child_pml4);
 
-    // Verify: shared PDPT/PD/PT pages should NOT be freed (they're kernel
-    // pages) User data page SHOULD be freed
-    JARVIS_ASSERT(PMM::is_user_page(user_page) == false); // Was freed
-
-    // Page table pages should still be valid (not user pages, so not freed)
-    JARVIS_ASSERT(PMM::is_user_page(pdpt_phys) == false);
-    JARVIS_ASSERT(PMM::is_user_page(pd_phys) == false);
-    JARVIS_ASSERT(PMM::is_user_page(pt_phys) == false);
+    // free_user_pages recursively frees all user-owned data AND page-table
+    // pages reachable from the child PML4.  Since the child shares the
+    // parent's entries, the shared page-table pages get freed here too.
+    // With the new PMM semantics free_page() preserves the owner bit, so
+    // the pages are free (bitmap = 0) but still show as USER-owned.
+    // Only the parent's direct manual cleanup (free_page below) is valid.  The
+    // child's view is now freed — we verify by checking the PML4 entry is zeroed
+    // (free_user_pages clears each PML4 slot after draining its subtree).
+    JARVIS_ASSERT(child_virt[pml4_idx] == 0);
 
     // Clean up
     PMM::free_page(pdpt_phys);

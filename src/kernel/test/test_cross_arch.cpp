@@ -64,9 +64,9 @@ JARVIS_TEST(cross_page_table_map_unmap, "PRE: none | POST: none") {
     // Known user virtual address for testing
     constexpr uint64_t TEST_VA = 0x8000000000ULL;
 
-    // Allocate a physical page
-    uint64_t phys = PMM::alloc_page();
-    JARVIS_ASSERT_FMT(phys != 0, "PMM::alloc_page returned 0");
+    // Allocate a USER-owned physical page
+    uint64_t phys = PMM::alloc_user_page();
+    JARVIS_ASSERT_FMT(phys != 0, "PMM::alloc_user_page returned 0");
 
     // Map it as a user page in the cloned PML4
     VMM::map_page_in_pml4(TEST_VA, phys, true, pml4);

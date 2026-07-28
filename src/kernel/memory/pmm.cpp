@@ -373,6 +373,9 @@ uint64_t PMM::alloc_page_table() {
 }
 
 /// @brief Free a physical page regardless of ownership.
+/// Ownership is managed at allocation time (try_alloc_kernel/try_alloc_user).
+/// Free does NOT change ownership — the allocator sets the correct owner bit
+/// when the page is next allocated.
 /// @param phys_addr Physical address to free.
 void PMM::free_page(uint64_t phys_addr) {
     sync::IrqSpinLockGuard lock(pmm_lock_);
@@ -381,7 +384,6 @@ void PMM::free_page(uint64_t phys_addr) {
         return;
     if (bitmap_test(index)) {
         bitmap_clear(index);
-        owner_set_kernel(index);
         ++free_pages_;
         kernel::test::ResourceTracker::instance().track_pmm_free(1);
     }

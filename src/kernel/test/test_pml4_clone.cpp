@@ -301,7 +301,7 @@ JARVIS_TEST(pml4_fork_no_child_corrupt_parent, "PRE: none | POST: none") {
 
     // Map a page in the CHILD's PML4 (note: the kid uses child_pml4)
     uint64_t child_va = 0x7FFF00000000ULL;
-    uint64_t child_phys = PMM::alloc_page();
+    uint64_t child_phys = PMM::alloc_user_page();
     JARVIS_ASSERT(child_phys != 0);
     VMM::map_page_in_pml4(child_va, child_phys, true, child_pml4);
 

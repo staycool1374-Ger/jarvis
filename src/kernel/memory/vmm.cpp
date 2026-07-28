@@ -235,6 +235,10 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
 
     auto *l2 = get_table(l1, l1_idx, true);
 
+    if (user)
+        ENSURE(PMM::is_user_page(phys_addr) &&
+               "map_page: KERNEL page mapped as user-accessible");
+
     uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC;
     if (user)
         flags |= PAGE_USER;
@@ -297,6 +301,10 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     }
 
     auto *pt = get_table(pd, pd_idx, true);
+
+    if (user)
+        ENSURE(PMM::is_user_page(phys_addr) &&
+               "map_page: KERNEL page mapped as user-accessible");
 
 #if defined(CONFIG_ARCH_AARCH64)
     uint64_t flags = PAGE_PRESENT | PAGE_TABLE | PAGE_AF;
@@ -452,6 +460,10 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     auto *l1 = get_table(l0, l0_idx, true, true);
     auto *l2 = get_table(l1, l1_idx, true, true);
 
+    if (user)
+        ENSURE(PMM::is_user_page(phys_addr) &&
+               "map_page_in_pml4: KERNEL page mapped as user-accessible");
+
     uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC;
     if (user)
         flags |= PAGE_USER;
@@ -500,6 +512,10 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     }
 
     auto *pt = get_table(pd, pd_idx, true, true);
+
+    if (user)
+        ENSURE(PMM::is_user_page(phys_addr) &&
+               "map_page_in_pml4: KERNEL page mapped as user-accessible");
 
 #if defined(CONFIG_ARCH_AARCH64)
     uint64_t flags = PAGE_PRESENT | PAGE_TABLE | PAGE_AF;

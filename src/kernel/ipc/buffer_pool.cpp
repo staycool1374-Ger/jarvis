@@ -162,9 +162,11 @@ void BufferPool::init() {
         entries[i].list_next = BufferPool::LIST_EMPTY;
         free_entry(static_cast<int32_t>(i));
     }
-    // Pre-allocate physical pages for buffer data
+    // Pre-allocate physical pages for buffer data.
+    // These are mapped as user-accessible in task page tables, so they
+    // must be USER-owned pages for isolation correctness.
     for (size_t i = 0; i < POOL_PAGES; ++i) {
-        uint64_t phys = PMM::alloc_page();
+        uint64_t phys = PMM::alloc_user_page();
         ENSURE(phys != 0);
         pool_pages_[i] = phys;
     }
@@ -172,21 +174,36 @@ void BufferPool::init() {
 }
 
 /// @brief Pop a physical page from the pre-allocated pool.
-///        Falls back to PMM::alloc_page() when the pool is exhausted.
+///        Falls back to PMM::alloc_user_page() when the pool is exhausted.
 uint64_t BufferPool::alloc_page() {
-    if (pool_count_ > 0)
-        return pool_pages_[--pool_count_];
-    return PMM::alloc_page();
+    if (pool_count_ > 0) {
+        uint64_t phys = pool_pages_[--pool_count_];
+        // Pool pages may have been freed via PMM::free_page() in a prior
+        // lifecycle (before the pool-only reclaim below), which resets the
+        // owner bit to KERNEL.  Ensure USER ownership.
+        if (!PMM::is_user_page(phys)) {
+            PMM::free_page(phys);
+            phys = PMM::alloc_user_page();
+            if (!phys)
+                return 0;
+        }
+        return phys;
+    }
+    return PMM::alloc_user_page();
 }
 
 /// @brief Return a physical page to the pre-allocated pool.
-///        Falls back to PMM::free_page() if the pool is full.
+///        PMM::free_page() resets ownership to KERNEL, but buffer pages are
+///        mapped as user-accessible — keep them off PMM's free list entirely.
+///        If the pool is full the page is leaked (acceptable: bounded by
+///        POOL_PAGES * max-buffer-live, practically never reached).
 void BufferPool::free_page(uint64_t phys) {
     if (pool_count_ < POOL_PAGES) {
         pool_pages_[pool_count_++] = phys;
-    } else {
-        PMM::free_page(phys);
     }
+    // Pool full: silently drop the page rather than calling PMM::free_page(),
+    // which resets the owner bit to KERNEL and breaks the invariant that
+    // user-mapped pages must be USER-owned.
 }
 
 /// @brief Pop an entry from the free list.
@@ -275,6 +292,8 @@ uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
         free_entry(idx);
         return 0;
     }
+    ENSURE(PMM::is_user_page(phys) &&
+           "BufferPool::alloc: page not user-owned before map_page_in_pml4");
 
     VMM::map_page_in_pml4(va, phys, true, task.page_table_);
 
