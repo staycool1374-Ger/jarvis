@@ -2,7 +2,7 @@
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
 **Status:** v0.3.6 IN PROGRESS — Memory subsystem audit fixes.
-**Target Focus:** v0.3.6 — Memory subsystem audit remediation (11 findings from `audits/memory_audit.md`).
+**Target Focus:** v0.3.6 — Memory + Scheduler audit remediation (19 findings from `audits/memory_audit.md` and `audits/task+scheduler_audit.md`).
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -517,10 +517,10 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
   - [x] **Fix `preemption_under_syscall`** — 4/4 PASS. Root cause: daemon teardown race + stale `sporadic_server` access in `on_tick()`. Fix: `is_poisoned_block` guard in `on_tick()` SS iteration; `s_test_active_` guards `reap_orphans()` in tick; test 4 rewritten to use `reschedule()` + `hlt()` instead of broken `ScopedCurrentTask` + manual `on_tick()` pattern.
   - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
 
-### v0.3.6 — Memory Subsystem Audit Remediation (11 findings)
+### v0.3.6 — Memory + Scheduler Audit Remediation (19 findings)
 
-**Source:** `audits/memory_audit.md`  
-**Reference:** `docs/memory-subsystem-audit-fix.md` (detailed spec with code-level fixes)
+**Sources:** `audits/memory_audit.md`, `audits/task+scheduler_audit.md`  
+**References:** `docs/memory-subsystem-audit-fix.md`, `docs/task-scheduler-audit-fix.md`
 
 #### Phase 1 — Independent Fixes (no dependencies)
 
@@ -569,6 +569,53 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
       increment inside the `IrqSpinLockGuard` from VULN-002, re-fetching `current_task()`
       inside the critical section.
       *File: `pmm.cpp`*
+
+---
+
+#### Scheduler Audit — 8 findings (`audits/task+scheduler_audit.md`)
+
+**Reference:** `docs/task-scheduler-audit-fix.md` (detailed spec with code-level fixes)
+
+##### Phase A — Independent (alongside memory audit)
+
+- [ ] **SCHED-001: Bounded id_table_insert probe (CRITICAL)** — Remove `#pragma` suppression,
+      bound probe loop to `ID_TABLE_SIZE`, propagate `SCHED_ERR_TABLE_FULL` to callers.
+      *File: `scheduler.cpp`*
+- [ ] **SCHED-002: Guard page on all kernel stacks (HIGH)** — Route `create()` (test-active),
+      `create_user()`, and `clone()` through `alloc_kslot()`/`map_kstack_page()`/`free_kslot()`
+      so all stacks have an unmapped guard page below. Add `static_assert(KSLOT_POOL_SIZE >= MAX_TASKS)`.
+      *File: `task.cpp`*
+- [ ] **SCHED-004: Divergent IrqGuard includes (LOW)** — Unify canonical path to
+      `kernel/arch/hal/irq_guard.hpp` across `task.cpp`, `scheduler.cpp`, `taskdefs.cpp`.
+      *Files: `task.cpp`, `arch/irq_guard.hpp`*
+- [ ] **SCHED-005: O(1) priority bucket + indexed removal (CRITICAL)** — Add `current_bucket_`
+      field to `TaskControlBlock` as sole authoritative record. Update all insertion/move paths.
+      Rewrite `AllTasksRegistry::remove()` and `ReadyQueueManager::remove()` to index directly
+      via `current_bucket_` — O(1), no scanning.
+      *Files: `task.hpp`, `all_tasks_registry.cpp`, `ready_queue_manager.cpp`, `scheduler.cpp`*
+- [ ] **SCHED-006: O(n²) reap_orphans adopted-child scan (HIGH)** — Replace `TaskIter` full-table
+      scan with existing intrusive `first_child`/`next_sibling` list. Replace `page_table_shared_`
+      scan with `sharing_child_count_` counter.
+      *Files: `task.hpp`, `scheduler.cpp`, `task.cpp`*
+
+##### Phase B — Lock discipline (parallel to memory audit Phase 2)
+
+- [ ] **SCHED-003: RAII lock discipline on scheduler_lock_ (HIGH)** — Convert `on_tick()`,
+      `rate_monotonic_schedule()`, `switch_away_from_terminating()`, `unregister_task()` to
+      `SpinLockGuard<sync::SpinLock>`. Use `try_lock()` + `owns_lock()` pattern for try_lock sites.
+      *File: `scheduler.cpp`*
+
+##### Phase C — Large refactors (gate on Phase A)
+
+- [ ] **SCHED-007: TCB reference safety (HIGH)** — Change non-nullable API params from
+      `TaskControlBlock*` to `TaskControlBlock&` (append, remove, switch_to_task). Keep
+      `TaskControlBlock*` only for nullable outputs (find_task, current_task).
+      *Multiple files in `src/kernel/task/`*
+- [ ] **SCHED-008: switch_to_task overhead (MEDIUM)** — After SCHED-007 lands, remove O(n)
+      owner-resolution scan. Replace with `debug-assert(current == expected_owner)`.
+      *File: `scheduler.cpp`* (gated on SCHED-007)
+
+---
 
 #### Completed in earlier v0.3.6 work (PtPoolSnapshot + pool relocation)
 - [x] **PtPoolSnapshot bitmap overflow** — `bitmap[256]` → `[4096/8]`, fixed size comparison.
