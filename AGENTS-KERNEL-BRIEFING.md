@@ -14,9 +14,9 @@ verifies OS and user ELF authenticity and runs diagnostic time measurements.
 - O(1) enqueue/dequeue via bitmap scan (`find_highest_bit`)
 - `effective_priority()`: uses `sporadic_server->current_priority()` if server exists, else raw TCB priority
 - Task states: IDLE → READY → RUNNING → BLOCKED → TERMINATED
-- RUNNING tasks are NOT in the ready queue (`next_task()` lazy rebuild only picks READY)
-- `current_index_` tracks which slot in `tasks_[]` is "current" — updated by `scheduler_on_context_switch()`
-- `task_count_` is the total number of tasks; `tasks_[]` is a fixed-size array (`CONFIG_MAX_TASKS`)
+- RUNNING tasks are NOT in the ready queue (`next_task()` only picks READY; RUNNING is skipped)
+- `current_task_ptr_` points to the currently dispatched task (updated by ISR epilogue via `scheduler_on_context_switch`)
+- Task registry: `AllTasksRegistry` with per-priority intrusive linked lists (`pri_next_`/`pri_prev_`, buckets indexed by `all_bucket_`)
 
 ## 2. Deferred Context Switch (CRITICAL GOTCHA)
 - `switch_to_task()` atomically publishes three globals:
@@ -32,10 +32,11 @@ verifies OS and user ELF authenticity and runs diagnostic time measurements.
 ## 3. Voluntary (reschedule) vs Preemptive (RMS)
 - `reschedule()`: called from `sys_receive` (queue empty) or any blocking operation.
   Sets deferred globals → returns → caller continues → `hlt()` → next timer ISR performs switch.
+  Uses `arch::IrqGuard` (NOT scheduler_lock_) to avoid blocking the timer ISR's `rate_monotonic_schedule()`.
 - `rate_monotonic_schedule()`: called from `on_tick()` in timer ISR context.
-  Scans O(1) queue via `next_task()`. Calls `switch_to_task()` if higher-priority task ready.
+  Tries `scheduler_lock_.try_lock()` — if lock is held (test task inside a guarded section), returns early.
+  On success: clears pending switch, calls `next_task()`, calls `switch_to_task()` if higher-priority task ready.
   **RMS must NOT override pending voluntary switches.** Check `scheduler_save_rsp_to` first.
-- `SpinLockGuard` held during `reschedule()`. RMS in ISR context cannot acquire same lock.
 
 ## 4. Sporadic Server
 - vfsd: `init(2, 10, 0)` — budget=2 ticks, period=10 ticks, bg_priority=0
@@ -105,10 +106,14 @@ make execute-test x86 release selftest    # CI gate
 
 ## 8. Task TCB (TaskControlBlock)
 - Fields: id, parent_id, state, priority, base_priority, period_ticks, deadline_ticks, remaining_ticks
-- `kernel_stack` / `kernel_stack_top` / `stack_phys_` — kernel-mode stack
+- `kernel_stack` / `kernel_stack_top` / `stack_phys_` — kernel-mode stack (via kslot window in production, HHDM under test)
+- `kstack_slot_va_` / `kstack_slot_size_` — kslot window slot (guard page at base, kernel stack above)
 - `page_table_` — userspace page table (0 = kernel task, runs in kernel PML4)
+- `all_bucket_` — AllTasksRegistry priority bucket index (SCHED-005, O(1) removal)
+- `generation` — monotonically-increasing counter for stale-TCB detection in waiter arrays (SYNC-03)
 - `msg_queue`, `notify`, `event_group`, `sporadic_server` — per-task resources
 - `runq_next_` / `runq_prev_` — intrusive linked-list for O(1) ready queue
+- `rq_priority_` — priority bucket in ReadyQueueManager
 - `in_ready_queue_` — guard against double-enqueue
 - `signal_handlers[MAX_SIGNAL_HANDLERS]` — per-task signal dispatch (init to nullptr)
 - `debug_switch_ring[4]` — circular buffer of last 4 context switches (CONFIG_DEBUG only)
@@ -154,6 +159,10 @@ make execute-test x86 release selftest    # CI gate
 10. **SCHED/RSCHED prints behind CONFIG_DEBUG** → silent in release builds
 11. **Liu-Leyland bound warnings are informational** → not enforced by scheduler yet
 12. **`sti(); hlt(); cli();` in `sys_receive`** → workaround for deferred switch; may be removable after RMS fix
+13. **PMM ownership is alloc-time only** — `free_page()` does NOT modify the owner bit (VULN-004). Freed pages retain their USER/KERNEL owner bit. `free_user_pages()` MUST clear parent page-table entries after freeing child pages to prevent re-walk into reused memory.
+14. **kslot vs HHDM stacks** — Kernel tasks in test mode use HHDM direct mapping (no guard page). Production kernel tasks and all user tasks use the kslot window (guard page below stack). The dual-path is ASIL-D-certified safe: test isolation provides equivalent fault containment via full memory rewind.
+15. **O(1) free list covers HHDM only** — The PMM free list (VULN-003) only includes pages within the 128MB HHDM window. Pages beyond 128MB are inaccessible via the direct map and are never added to the free list. The bitmap scan fallback is also limited to the HHDM window.
+16. **RSP-owner resolution in switch_to_task** — The O(n) scan that resolves the physically-running task by kernel-stack ownership is retained in debug builds and for release-build drift detection. It cannot be removed while mixed kslot/HHDM stacks exist (SCHED-008 was reverted for this reason).
 
 ## 13. Enforcement Rules (MANDATORY — violations halt and require human input)
 
@@ -176,7 +185,7 @@ First attempt: analyze source code and inject targeted instrumentation/logging. 
 ### Targeted class verification (MANDATORY)
 - Verify kernel code changes using the **smallest applicable test class**, NOT `all`.
 - Examples: `vfs` for VFS/IPC/daemon changes, `buffer_pool` for buffer pool changes, `timer` for timer changes, etc.
-- The `all` target runs 737+ tests and takes **minutes** — only use for full release validation.
+- The `all` target runs 745+ tests and takes **minutes** — only use for full release validation.
 
 ### Full-suite log capture (MANDATORY)
 - When running `make execute-test ... all`, always capture the full output:
