@@ -20,6 +20,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/sync/irq_spinlock_guard.hpp>
+#include <logger.hpp>
 #include <assert.hpp>
 #include <constants.hpp>
 
@@ -128,8 +129,11 @@ void MemPool::free(void *block) {
             // Pinned blocks are reserved (e.g. baseline TCBs referenced by the
             // test-isolation snapshot).  Never return them to the free list;
             // keep them allocated so they cannot be recycled onto test tasks.
-            if (pool.is_block_pinned(block_idx))
+            if (pool.is_block_pinned(block_idx)) {
+                Logger::warn("MemPool::free: pinned block %zu in pool %zu",
+                             block_idx, i);
                 return;
+            }
             ENSURE(!pool.is_block_freed(block_idx) && "double-free detected");
 #ifdef CONFIG_DEBUG
             __builtin_memset(p, 0xDD, pool.block_size);
@@ -279,8 +283,11 @@ void MemPool::pin_block(void *block) {
         if (p >= start && p < end) {
             size_t offset = static_cast<size_t>(p - start);
             size_t block_idx = offset / pool.block_size;
-            if (offset % pool.block_size == 0 && block_idx < pool.block_count)
+            if (offset % pool.block_size == 0 && block_idx < pool.block_count) {
+                ENSURE(!pool.is_block_freed(block_idx) &&
+                       "pin_block: cannot pin a free-list block");
                 pool.set_block_pinned(block_idx);
+            }
             return;
         }
     }

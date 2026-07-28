@@ -37,7 +37,7 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/test/resource_tracker.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/arch/hal/irq_guard.hpp>
 #include <assert.hpp>
 
 // BUGS.md#020: ring buffer of recently-created tasks so that when a wild

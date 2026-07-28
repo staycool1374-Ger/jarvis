@@ -176,8 +176,11 @@ class PMM {
         return page_table_pool_end_;
     }
     /// @brief Number of allocated pages in the page-table pool.
+    /// @note Diagnostic/introspection only — O(pool_size_pages).  Must NOT
+    ///       be called from any WCET-budgeted hot path.
     static uint64_t pool_used_pages() noexcept;
     /// @brief Total capacity of the page-table pool in pages.
+    /// @note Diagnostic/introspection only — O(1).
     static uint64_t pool_total_pages() noexcept;
     /// @brief Page-table pool generation (incremented on each snapshot capture).
     static uint64_t pool_generation() noexcept { return pool_generation_; }

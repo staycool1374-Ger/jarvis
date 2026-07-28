@@ -29,11 +29,14 @@ namespace integrity {
 
 static constexpr uint64_t CRC_CHUNK_SIZE = 4096;
 
+// Single-writer invariant: only idle_task_main (and its callees) may touch
+// this state.  Enforced at runtime via crc_owner_lock_.
 static uint32_t crc_accumulator = CRC32::INITIAL;
 static uint64_t crc_offset = 0;
 static uint64_t crc_total_len = 0;
 static bool crc_complete = false;
 static bool crc_checked = false;
+static bool crc_owner_lock_ = false;
 
 extern "C" {
 extern uint64_t _text_start[];
@@ -79,10 +82,13 @@ void check_section_markers() {
 
 /// @brief Reset CRC accumulator, offset, and completion flags for a fresh scan.
 void reset_crc_state() {
+    ENSURE(!crc_owner_lock_ && "integrity: concurrent CRC state access");
+    crc_owner_lock_ = true;
     crc_accumulator = CRC32::INITIAL;
     crc_offset = 0;
     crc_complete = false;
     crc_checked = false;
+    crc_owner_lock_ = false;
 
     uint64_t start_addr = reinterpret_cast<uint64_t>(_text_start) + 8;
     uint64_t end_addr = reinterpret_cast<uint64_t>(_text_end);
@@ -98,6 +104,8 @@ void reset_crc_state() {
 ///        expected value stored by the linker.  Panics on mismatch.
 /// @return true if the CRC scan is complete (or was already checked).
 bool crc_process_chunk() {
+    ENSURE(!crc_owner_lock_ && "integrity: concurrent CRC state access");
+    crc_owner_lock_ = true;
     if (crc_complete) {
         if (!crc_checked) {
             crc_checked = true;
@@ -109,6 +117,7 @@ bool crc_process_chunk() {
                 Logger::info("Idle: code CRC verified OK");
             }
         }
+        crc_owner_lock_ = false;
         return true;
     }
 
@@ -119,6 +128,7 @@ bool crc_process_chunk() {
 
     if (chunk == 0) {
         crc_complete = true;
+        crc_owner_lock_ = false;
         return true;
     }
 
@@ -132,6 +142,7 @@ bool crc_process_chunk() {
         crc_complete = true;
     }
 
+    crc_owner_lock_ = false;
     return crc_complete;
 }
 
@@ -144,7 +155,7 @@ void idle_task_main() {
         reset_crc_state();
         inited = true;
     }
-    for (uint64_t _i = 0; _i < UINT64_MAX; ++_i) {
+    for (;;) {
         Scheduler::cleanup_step();
         check_section_markers();
         crc_process_chunk();
