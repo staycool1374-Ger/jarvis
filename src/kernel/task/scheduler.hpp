@@ -538,7 +538,7 @@ class Scheduler {
 
     /// @brief Hash-table helpers for O(1) task-ID→TCB lookup.
     static uint64_t id_table_probe(uint64_t id);
-    static void id_table_insert(uint64_t id, TaskControlBlock *tcb);
+    static bool id_table_insert(uint64_t id, TaskControlBlock *tcb);
     static void id_table_remove(TaskControlBlock *task);
     static TaskControlBlock *id_table_find(uint64_t id);
 };

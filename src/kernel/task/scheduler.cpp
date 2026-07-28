@@ -405,7 +405,7 @@ void Scheduler::init() {
     idle_task_->name[CONFIG_TASK_NAME_LEN - 1] = '\0';
 
     all_tasks_.append(idle_task_);
-    id_table_insert(idle_task_->id, idle_task_);
+    ENSURE(id_table_insert(idle_task_->id, idle_task_) && "id_table full at init");
     current_task_ptr_ = idle_task_;
     sporadic_task_count_ = 0;
     preempt_enabled_ = true;
@@ -417,7 +417,7 @@ void Scheduler::init() {
 
 void Scheduler::register_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
-    id_table_insert(task.id, &task);
+    ENSURE(id_table_insert(task.id, &task) && "id_table full");
     all_tasks_.append(&task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
@@ -431,7 +431,7 @@ void Scheduler::register_task(TaskControlBlock &task) {
 void Scheduler::add_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task.state == TaskState::READY);
-    id_table_insert(task.id, &task);
+    ENSURE(id_table_insert(task.id, &task) && "id_table full");
     all_tasks_.append(&task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
@@ -709,19 +709,16 @@ uint64_t Scheduler::id_table_probe(uint64_t id) {
     return id & ID_TABLE_MASK;
 }
 
-void Scheduler::id_table_insert(uint64_t id, TaskControlBlock *tcb) {
-#ifndef __clang__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wanalyzer-infinite-loop"
-#endif
+bool Scheduler::id_table_insert(uint64_t id, TaskControlBlock *tcb) {
     uint64_t idx = id_table_probe(id);
-    while (id_table_[idx] != nullptr && id_table_[idx] != ID_TOMBSTONE) {
+    for (uint64_t probes = 0; probes < ID_TABLE_SIZE; ++probes) {
+        if (id_table_[idx] == nullptr || id_table_[idx] == ID_TOMBSTONE) {
+            id_table_[idx] = tcb;
+            return true;
+        }
         idx = (idx + 1) & ID_TABLE_MASK;
     }
-    id_table_[idx] = tcb;
-#ifndef __clang__
-#pragma GCC diagnostic pop
-#endif
+    return false;
 }
 
 uint64_t Scheduler::alloc_id() noexcept {
@@ -1408,7 +1405,7 @@ void Scheduler::reap_orphans() noexcept {
     if (new_idle) {
         all_tasks_.append(new_idle);
         idle_task_ = new_idle;
-        id_table_insert(new_idle->id, new_idle);
+        ENSURE(id_table_insert(new_idle->id, new_idle) && "id_table full in reap");
     }
 
     // Restore current_task_ptr_
@@ -1458,10 +1455,12 @@ void Scheduler::cleanup_test_tasks() noexcept {
         id_table_[i] = nullptr;
     all_tasks_.clear();
     all_tasks_.append(idle_task_);
-    id_table_insert(idle_task_->id, idle_task_);
+    ENSURE(id_table_insert(idle_task_->id, idle_task_) &&
+           "id_table full in restore");
     if (running && running != idle_task_) {
         all_tasks_.append(running);
-        id_table_insert(running->id, running);
+        ENSURE(id_table_insert(running->id, running) &&
+               "id_table full in restore");
     }
     current_task_ptr_ = idle_task_;
     ready_queue_.reset();
@@ -2551,7 +2550,7 @@ SchedulerError Scheduler::add_task_err(TaskControlBlock &task) {
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
         deadline_list_.insert(&task);
     }
-    id_table_insert(task.id, &task);
+    ENSURE(id_table_insert(task.id, &task) && "id_table full in add_task_err");
     ready_queue_.enqueue(task, effective_priority(&task));
     kernel::test::ResourceTracker::instance().track_task_add();
     return SCHED_ERR_OK;
