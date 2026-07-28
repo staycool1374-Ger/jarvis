@@ -248,6 +248,7 @@ void Mutex::lock() {
     }
 
     lock_.unlock();
+    panic("Mutex::lock() exhausted PCP retry budget");
 }
 
 /// @brief Acquire the mutex (error-returning overload).
