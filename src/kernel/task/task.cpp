@@ -495,12 +495,11 @@ uint64_t stack_size = stack_size_for_priority(priority);
 
     tcb->stack_phys_ = stack_phys;
     // Use the pre-allocated private kernel-stack window (provides a guard
-    // page below each stack).  If the window is exhausted, fall back to
-    // HHDM direct mapping (no guard page but still functional).
-    // The window's page-table pages survive snapshot_restore via
-    // PtPoolSnapshot; slot-bookkeeping desync after restore is acceptable
-    // because the fallback handles exhaustion gracefully.
-    {
+    // page below each stack) in production.  During test cycles the HHDM
+    // direct mapping is used for kernel tasks to avoid kslot bookkeeping
+    // desync after snapshot_restore (which does not rewind the kslot pool).
+    // User tasks (create_user/clone) always route through kslot.
+    if (!Scheduler::is_test_active()) {
         uint64_t slot_va = alloc_kslot(stack_size);
         if (slot_va) {
             tcb->kstack_slot_va_ = slot_va;
@@ -512,15 +511,18 @@ uint64_t stack_size = stack_size_for_priority(priority);
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
             tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
             tcb->kernel_stack_top = kstack_va + stack_size;
-        } else {
-            tcb->kstack_slot_va_ = 0;
-            tcb->kstack_slot_size_ = 0;
-            uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
-            // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
-            tcb->kernel_stack_top = stack_virt + stack_size;
+            goto done_stack;
         }
     }
+    tcb->kstack_slot_va_ = 0;
+    tcb->kstack_slot_size_ = 0;
+    {
+        uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
+        tcb->kernel_stack_top = stack_virt + stack_size;
+    }
+done_stack:
 
     // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
     // so a stack allocated from recycled memory can retain stale poison in
