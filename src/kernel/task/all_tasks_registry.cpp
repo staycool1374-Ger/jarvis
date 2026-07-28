@@ -14,50 +14,45 @@ static inline bool safe_tcb(const TaskControlBlock *t) noexcept {
     return t->magic == TaskControlBlock::TCB_MAGIC;
 }
 
-void AllTasksRegistry::append(TaskControlBlock *t) noexcept {
-    if (!safe_tcb(t))
+void AllTasksRegistry::append(TaskControlBlock &t) noexcept {
+    if (!safe_tcb(&t))
         return;
-    uint64_t prio = t->priority;
+    uint64_t prio = t.priority;
     if (prio > CONFIG_PRIORITY_CEILING)
         prio = CONFIG_PRIORITY_CEILING;
-    t->all_bucket_ = prio;
+    t.all_bucket_ = prio;
 
-    t->pri_next_ = nullptr;
-    t->pri_prev_ = tails_[prio];
+    t.pri_next_ = nullptr;
+    t.pri_prev_ = tails_[prio];
 
     if (tails_[prio]) {
-        tails_[prio]->pri_next_ = t;
+        tails_[prio]->pri_next_ = &t;
     } else {
-        heads_[prio] = t;
+        heads_[prio] = &t;
     }
-    tails_[prio] = t;
+    tails_[prio] = &t;
     bitmap_.set(prio);
     ++total_;
 }
 
-void AllTasksRegistry::remove(TaskControlBlock *t) noexcept {
-    uint64_t p = t->all_bucket_;
+void AllTasksRegistry::remove(TaskControlBlock &t) noexcept {
+    uint64_t p = t.all_bucket_;
     if (p >= NUM_PRIORITIES)
         return;
-    // Idempotent guard: if both links are null and we're not the bucket head,
-    // the node was already removed (double-remove from reap_orphans +
-    // cleanup).  Skip to avoid total_ underflow.
-    if (!t->pri_prev_ && heads_[p] != t)
+    if (!t.pri_prev_ && heads_[p] != &t)
         return;
-    // Unlink from bucket p. Guard the neighbor links with safe_tcb so a
-    // corrupted pri_prev_/pri_next_ cannot be dereferenced.
-    if (safe_tcb(t->pri_prev_)) {
-        t->pri_prev_->pri_next_ = t->pri_next_;
+    if (safe_tcb(t.pri_prev_)) {
+        t.pri_prev_->pri_next_ = t.pri_next_;
     } else {
-        heads_[p] = t->pri_next_;
+        heads_[p] = t.pri_next_;
     }
-    if (safe_tcb(t->pri_next_)) {
-        t->pri_next_->pri_prev_ = t->pri_prev_;
+    if (safe_tcb(t.pri_next_)) {
+        t.pri_next_->pri_prev_ = t.pri_prev_;
     } else {
-        tails_[p] = t->pri_prev_;
+        tails_[p] = t.pri_prev_;
     }
-    t->pri_next_ = nullptr;
-    t->pri_prev_ = nullptr;
+    t.pri_next_ = nullptr;
+    t.pri_prev_ = nullptr;
     if (!heads_[p])
         bitmap_.clear(p);
     --total_;
@@ -135,11 +130,11 @@ void AllTasksRegistry::capture(TaskControlBlock **out,
 }
 
 void AllTasksRegistry::restore(TaskControlBlock *const *in,
-                               uint64_t count) noexcept {
+                                uint64_t count) noexcept {
     clear();
     for (uint64_t i = 0; i < count; ++i) {
         if (safe_tcb(in[i]))
-            append(in[i]);
+            append(*in[i]);
     }
 }
 
@@ -197,7 +192,7 @@ void AllTasksRegistry::rebuild() noexcept {
     // Re-insert using each task's current (now-correct) priority.
     clear();
     for (uint64_t i = 0; i < count; ++i) {
-        append(buf[i]);
+        append(*buf[i]);
     }
 }
 

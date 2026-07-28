@@ -18,10 +18,10 @@ class AllTasksRegistry {
     }
 
     /// @brief Append a task to its priority-level list. O(1).
-    void append(TaskControlBlock *t) noexcept;
+    void append(TaskControlBlock &t) noexcept;
 
     /// @brief Remove a task from its priority-level list. O(1).
-    void remove(TaskControlBlock *t) noexcept;
+    void remove(TaskControlBlock &t) noexcept;
 
     /// @brief Returns the head of the list for a given priority, or nullptr.
     TaskControlBlock *head(uint64_t prio) const noexcept {

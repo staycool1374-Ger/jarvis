@@ -16,11 +16,11 @@ class DeadlineList {
     /// @brief Insert a task into the list, ordered by deadline_ticks ascending.
     ///        Only meaningful for tasks with period_ticks > 0 and
     ///        deadline_ticks > 0.  O(n) where n ≤ CONFIG_MAX_TASKS (≤64).
-    void insert(TaskControlBlock *t) noexcept;
+    void insert(TaskControlBlock &t) noexcept;
 
     /// @brief Remove a task from the list.  Safe to call if t is not in the
     ///        list (scans for matching node).  O(n).
-    void remove(TaskControlBlock *t) noexcept;
+    void remove(TaskControlBlock &t) noexcept;
 
     /// @brief Remove and return the earliest-deadline task if its deadline
     ///        has expired (arch::Timer::ticks() > deadline_ticks).

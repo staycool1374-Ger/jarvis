@@ -131,8 +131,8 @@ void Scheduler::release_zombie(TaskControlBlock &task) noexcept {
     ENSURE(!task.in_ready_queue_);
     ENSURE(task.state == TaskState::TERMINATED);
 
-    deadline_list_.remove(&task);
-    all_tasks_.remove(&task);
+    deadline_list_.remove(task);
+    all_tasks_.remove(task);
     id_table_remove(&task);
 
     task.zombie_next_ = nullptr;
@@ -309,7 +309,7 @@ static void wake_waiting_parent(TaskControlBlock &child) {
 }
 
 // Forward declaration — defined later in this translation unit.
-static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
+static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
                            sync::SpinLock *held_lock);
 
 void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
@@ -347,7 +347,7 @@ void Scheduler::terminate(TaskControlBlock &task, uint64_t exit_code) noexcept {
     // constantly dequeue → lazy-rebuild → dequeue (infinite livelock).
     auto *next = ready_queue_.peek_highest();
         if (next && next != &task) {
-            switch_to_task(&task, next, nullptr);
+            switch_to_task(&task, *next, nullptr);
         }
     }
 }
@@ -404,7 +404,7 @@ void Scheduler::init() {
     __builtin_strncpy(idle_task_->name, "idle", CONFIG_TASK_NAME_LEN - 1);
     idle_task_->name[CONFIG_TASK_NAME_LEN - 1] = '\0';
 
-    all_tasks_.append(idle_task_);
+    all_tasks_.append(*idle_task_);
     ENSURE(id_table_insert(idle_task_->id, idle_task_) && "id_table full at init");
     current_task_ptr_ = idle_task_;
     sporadic_task_count_ = 0;
@@ -418,9 +418,9 @@ void Scheduler::init() {
 void Scheduler::register_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(id_table_insert(task.id, &task) && "id_table full");
-    all_tasks_.append(&task);
+    all_tasks_.append(task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
-        deadline_list_.insert(&task);
+        deadline_list_.insert(task);
     }
     task.in_ready_queue_ = false;
     task.runq_next_ = nullptr;
@@ -432,9 +432,9 @@ void Scheduler::add_task(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     ENSURE(task.state == TaskState::READY);
     ENSURE(id_table_insert(task.id, &task) && "id_table full");
-    all_tasks_.append(&task);
+    all_tasks_.append(task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
-        deadline_list_.insert(&task);
+        deadline_list_.insert(task);
     }
     task.in_ready_queue_ = false;
     task.runq_next_ = nullptr;
@@ -495,8 +495,8 @@ void Scheduler::remove_task(TaskControlBlock &task) {
     if (&task == current_task_ptr_ && idle_task_ && idle_task_ != &task) {
         current_task_ptr_ = idle_task_;
     }
-    all_tasks_.remove(&task);
-    deadline_list_.remove(&task);
+    all_tasks_.remove(task);
+    deadline_list_.remove(task);
     id_table_remove(&task);
     dequeue_ready(task);
 
@@ -520,8 +520,8 @@ bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
     if (&task == current_task_ptr_ && idle_task_ && idle_task_ != &task) {
         current_task_ptr_ = idle_task_;
     }
-    all_tasks_.remove(&task);
-    deadline_list_.remove(&task);
+    all_tasks_.remove(task);
+    deadline_list_.remove(task);
     id_table_remove(&task);
     dequeue_ready(task);
 
@@ -1133,8 +1133,8 @@ void Scheduler::on_tick() noexcept {
                     task->deadline_ticks += task->period_ticks;
                     task->deadline_missed = false;
                     if (task->deadline_ticks > 0) {
-                        deadline_list_.insert(task);
-                    }
+                         deadline_list_.insert(*task);
+                     }
 #if CONFIG_WCET_OVERRUN_DETECTION
                     task->wcet_overrun_fired = false;
 #endif
@@ -1351,9 +1351,9 @@ void Scheduler::reap_orphans() noexcept {
     for (uint64_t ri = 0; ri < num_to_reap; ++ri) {
         auto *t = to_reap[ri];
         dequeue_ready(*t);
-        all_tasks_.remove(t);
+        all_tasks_.remove(*t);
         id_table_remove(t);
-        deadline_list_.remove(t);
+        deadline_list_.remove(*t);
         if (t == idle_task_) {
             auto *created = TaskControlBlock::create(
                 kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
@@ -1375,7 +1375,7 @@ void Scheduler::reap_orphans() noexcept {
 
     // If idle was recreated, register it
     if (new_idle) {
-        all_tasks_.append(new_idle);
+        all_tasks_.append(*new_idle);
         idle_task_ = new_idle;
         ENSURE(id_table_insert(new_idle->id, new_idle) && "id_table full in reap");
     }
@@ -1426,11 +1426,11 @@ void Scheduler::cleanup_test_tasks() noexcept {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
         id_table_[i] = nullptr;
     all_tasks_.clear();
-    all_tasks_.append(idle_task_);
+    all_tasks_.append(*idle_task_);
     ENSURE(id_table_insert(idle_task_->id, idle_task_) &&
            "id_table full in restore");
     if (running && running != idle_task_) {
-        all_tasks_.append(running);
+        all_tasks_.append(*running);
         ENSURE(id_table_insert(running->id, running) &&
                "id_table full in restore");
     }
@@ -1552,7 +1552,7 @@ static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
 // switch_to_task
 // ---------------------------------------------------------------------------
 
-static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
+static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
                            sync::SpinLock *held_lock = nullptr) {
     auto release_lock = [&]() {
         if (held_lock) {
@@ -1561,17 +1561,17 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         }
     };
 
-    if (!validate_switch(current, next, "switch")) {
+    if (!validate_switch(current, &next, "switch")) {
         report_corruption("switch");
         release_lock();
         return;
     }
-    if (next->state != TaskState::READY && next->state != TaskState::RUNNING) {
+    if (next.state != TaskState::READY && next.state != TaskState::RUNNING) {
         report_corruption("switch next state");
         release_lock();
         return;
     }
-    if (current == next) {
+    if (current == &next) {
         release_lock();
         return;
     }
@@ -1646,10 +1646,10 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
     }
 #endif
     {
-        uint64_t nsp = TASK_STACK_PTR(next);
-        uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
-        uint64_t npg = reinterpret_cast<uint64_t>(next->page_table_);
-        bool bad = (!nsp || nsp < nbase || nsp >= next->kernel_stack_top ||
+        uint64_t nsp = TASK_STACK_PTR(&next);
+        uint64_t nbase = reinterpret_cast<uint64_t>(next.kernel_stack);
+        uint64_t npg = reinterpret_cast<uint64_t>(next.page_table_);
+        bool bad = (!nsp || nsp < nbase || nsp >= next.kernel_stack_top ||
                     (npg != 0 && (npg & 0xFFF) != 0));
         uint64_t f_rflags = 0;
         if (!bad) {
@@ -1695,11 +1695,11 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
             // once it has a real iret frame).
             uint64_t phys_rsp{};
             asm volatile("mov %%rsp, %0" : "=r"(phys_rsp));
-            uint64_t nb = reinterpret_cast<uint64_t>(next->kernel_stack);
+            uint64_t nb = reinterpret_cast<uint64_t>(next.kernel_stack);
             bool next_is_runner =
-                (next == current) ||
-                (next->kernel_stack && next->kernel_stack_top &&
-                 phys_rsp >= nb && phys_rsp < next->kernel_stack_top);
+                (&next == current) ||
+                (next.kernel_stack && next.kernel_stack_top &&
+                 phys_rsp >= nb && phys_rsp < next.kernel_stack_top);
             if (next_is_runner) {
                 // `next` IS the physically-running task (current or a task whose
                 // stack the live RSP sits on) but current_task_ptr_ has drifted
@@ -1712,9 +1712,9 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 // just keep it running.  The cache is NOT updated here (Rule 4):
                 // the timer ISR sets it via set_current_task after the real swap
                 // lands.
-                next->state = TaskState::RUNNING;
-                next->in_ready_queue_ = false;
-                next->rq_priority_ = 0;
+                next.state = TaskState::RUNNING;
+                next.in_ready_queue_ = false;
+                next.rq_priority_ = 0;
             } else {
                 // D2 fix (INV-2 / VIOL-5): next_task() already dequeued `next`
                 // from the runq.  The old comment claimed "the bad task stays
@@ -1726,28 +1726,28 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
                 // eligible and is retried once it has a real iret frame.  Never
                 // re-enqueue the idle task (it is the default fallback) or the
                 // current physical runner.
-                if (next != Scheduler::get_idle_task() && next != current) {
-                    Scheduler::set_task_ready(*next);
+                if (&next != Scheduler::get_idle_task() && &next != current) {
+                    Scheduler::set_task_ready(next);
                 }
             }
             release_lock();
             return; // do not set scheduler_load_rsp_from -> no switch
         }
     }
-    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
+    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(&next),
                      __ATOMIC_RELEASE);
-    if (next->page_table_) {
-        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
+    if (next.page_table_) {
+        __atomic_store_n(&scheduler_load_cr3_from, next.page_table_,
                          __ATOMIC_RELEASE);
 #if defined(CONFIG_DEBUG_IPC_SCHED)
         {
             auto *c = Scheduler::current_task();
-            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next->id,
-                            "rsp=", (uint64_t)TASK_STACK_PTR(next), "x=", 0u);
+            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next.id,
+                            "rsp=", (uint64_t)TASK_STACK_PTR(&next), "x=", 0u);
         }
 #endif
 #if defined(CONFIG_ARCH_X86_64)
-        arch::GDT::set_tss_rsp0(next->kernel_stack_top);
+        arch::GDT::set_tss_rsp0(next.kernel_stack_top);
 #endif
     } else {
         __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
@@ -1755,8 +1755,8 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
 #if defined(CONFIG_DEBUG_IPC_SCHED)
         {
             auto *c = Scheduler::current_task();
-            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next->id,
-                            "rsp=", (uint64_t)TASK_STACK_PTR(next), "x=", 0u);
+            IPC_SCHED_TRACE("[SW]", "cur=", c ? c->id : 0u, "next=", next.id,
+                            "rsp=", (uint64_t)TASK_STACK_PTR(&next), "x=", 0u);
         }
 #endif
     }
@@ -1765,12 +1765,12 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock *next,
         current->state = TaskState::READY;
         Scheduler::enqueue_ready(*current);
     }
-    next->state = TaskState::RUNNING;
+    next.state = TaskState::RUNNING;
 
     {
         arch::IrqGuard ig{};
         release_lock();
-        __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_next_task_id, next.id, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
 
         uint64_t cr0 = arch::read_cr0();
@@ -1843,7 +1843,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 #endif
     if (next && next != current &&
         !(next == idle_task_ && current->state == TaskState::RUNNING)) {
-        switch_to_task(current, next, nullptr);
+        switch_to_task(current, *next, nullptr);
     }
 
     __atomic_store_n(&kernel::scheduler_need_resched, false, __ATOMIC_RELEASE);
@@ -2466,9 +2466,9 @@ SchedulerError Scheduler::add_task_err(TaskControlBlock &task) {
         return SCHED_ERR_TABLE_FULL;
     if (id_table_find(task.id) != nullptr)
         return SCHED_ERR_DUPLICATE_ID;
-    all_tasks_.append(&task);
+    all_tasks_.append(task);
     if (task.period_ticks > 0 && task.deadline_ticks > 0) {
-        deadline_list_.insert(&task);
+        deadline_list_.insert(task);
     }
     ENSURE(id_table_insert(task.id, &task) && "id_table full in add_task_err");
     ready_queue_.enqueue(task, effective_priority(&task));
@@ -2480,8 +2480,8 @@ SchedulerError Scheduler::remove_task_err(TaskControlBlock &task) {
     SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
     if (id_table_find(task.id) == nullptr)
         return SCHED_ERR_NOT_FOUND;
-    all_tasks_.remove(&task);
-    deadline_list_.remove(&task);
+    all_tasks_.remove(task);
+    deadline_list_.remove(task);
     id_table_remove(&task);
     dequeue_ready(task);
 

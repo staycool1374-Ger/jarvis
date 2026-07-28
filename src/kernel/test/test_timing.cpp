@@ -436,7 +436,7 @@ static TaskControlBlock *dl_make(DeadlineList &dl, uint64_t deadline) {
         kernel::test::ScopedCurrentTask scope(*t);
         t->state = TaskState::BLOCKED;
     }
-    dl.insert(t);
+    dl.insert(*t);
     return t;
 }
 
@@ -505,11 +505,11 @@ JARVIS_TEST(deadline_list_remove_mid, "PRE: none | POST: none") {
     auto *b = dl_make(dl, base + 20);
     auto *c = dl_make(dl, base + 30);
     JARVIS_ASSERT(a && b && c);
-    dl.remove(b); // remove middle
+    dl.remove(*b); // remove middle
     JARVIS_ASSERT(dl.size() == 2);
     JARVIS_ASSERT(dl.peek_earliest() == a);
-    dl.remove(a);
-    dl.remove(c);
+    dl.remove(*a);
+    dl.remove(*c);
     JARVIS_ASSERT(dl.empty());
     dl_free(a);
     dl_free(b);
@@ -528,8 +528,8 @@ JARVIS_TEST(deadline_list_remove_absent, "PRE: none | POST: none") {
     JARVIS_ASSERT(a && b);
     auto *ghost = dl_make(dl, base + 999); // member, then removed as "absent"
     JARVIS_ASSERT(ghost != nullptr);
-    dl.remove(a); // remove real member
-    dl.remove(ghost);
+    dl.remove(*a); // remove real member
+    dl.remove(*ghost);
     JARVIS_ASSERT(dl.size() == 1);
     JARVIS_ASSERT(dl.peek_earliest() == b);
     dl_free(a);
@@ -572,7 +572,7 @@ JARVIS_TEST(deadline_list_capacity, "PRE: none | POST: none") {
     auto cleanup = ScopeGuard([&]() {
         for (uint64_t i = 0; i < count; ++i)
             if (made[i]) {
-                dl.remove(made[i]);
+                dl.remove(*made[i]);
                 dl_free(made[i]);
             }
     });
