@@ -1,37 +1,41 @@
 #pragma once
 
-/*
- * Jarvis RTOS — Development Roadmap / Kernel Core
- * Copyright (C) 2026 Arnold Hasshold
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+#include <types.hpp>
 
-/// @file spinlock_guard.hpp
-/// @brief RAII lock guard template for any lock with lock()/unlock().
-
-#pragma once
+/// @brief Tag type for SpinLockGuard adopt-lock constructor.
+struct adopt_lock_t {};
+/// @brief Tag value indicating the lock is already held by the caller.
+constexpr adopt_lock_t adopt_lock{};
 
 /// @brief RAII lock guard for any lock type with lock()/unlock() methods.
 template <typename Lock> class [[nodiscard]] SpinLockGuard {
   public:
-    explicit SpinLockGuard(Lock &lock) noexcept : lock_(lock) {
+    /// @brief Acquire the lock on construction.
+    explicit SpinLockGuard(Lock &lock) noexcept : lock_(lock), owns_(true) {
         lock_.lock();
     }
 
+    /// @brief Adopt an already-acquired lock (caller must have called
+    ///        lock() or try_lock() successfully before constructing).
+    ///        The destructor will call unlock().
+    explicit SpinLockGuard(Lock &lock, adopt_lock_t) noexcept
+        : lock_(lock), owns_(true) {
+    }
+
     ~SpinLockGuard() noexcept {
-        lock_.unlock();
+        if (owns_)
+            lock_.unlock();
+    }
+
+    /// @brief True if this guard holds the lock and will release it.
+    bool owns_lock() const noexcept { return owns_; }
+
+    /// @brief Release the lock early (guard becomes a no-op on destruction).
+    void unlock() noexcept {
+        if (owns_) {
+            lock_.unlock();
+            owns_ = false;
+        }
     }
 
     SpinLockGuard(const SpinLockGuard &) = delete;
@@ -41,4 +45,5 @@ template <typename Lock> class [[nodiscard]] SpinLockGuard {
 
   private:
     Lock &lock_;
+    bool owns_;
 };

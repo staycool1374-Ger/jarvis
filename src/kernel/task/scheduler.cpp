@@ -513,10 +513,10 @@ void Scheduler::remove_task(TaskControlBlock &task) {
 }
 
 bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
-    if (!scheduler_lock_.try_lock()) {
+    if (!scheduler_lock_.try_lock())
         return false;
-    }
-    // BUGS.md#019/#020: keep current_task_ptr_ off a block about to be freed.
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_, adopt_lock);
+
     if (&task == current_task_ptr_ && idle_task_ && idle_task_ != &task) {
         current_task_ptr_ = idle_task_;
     }
@@ -528,11 +528,7 @@ bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
     __atomic_store_n(&scheduler_save_rsp_to, nullptr, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
-    // ResourceTracker::track_task_remove() is owned by TaskControlBlock::
-    // cleanup() (the single shared teardown point) — not here — to avoid
-    // double-counting tasks torn down via operator delete.  See remove_task().
 
-    scheduler_lock_.unlock();
     return true;
 }
 
@@ -865,6 +861,7 @@ void Scheduler::on_tick() noexcept {
 
     bool lock_acquired = scheduler_lock_.try_lock();
     if (lock_acquired) {
+        SpinLockGuard<sync::SpinLock> guard(scheduler_lock_, adopt_lock);
 #if defined(CONFIG_DEBUG_IPC_SCHED)
         // Universal hang detector: if no actual context switch has occurred for
         // STALL_LIMIT ticks while a non-idle task is still runnable, the
@@ -1167,7 +1164,6 @@ void Scheduler::on_tick() noexcept {
 #if !CONFIG_DEADLINE_MONITOR_TASK
         __atomic_fetch_add(&deadline_detection_integrity, 1, __ATOMIC_RELEASE);
 #endif
-        scheduler_lock_.unlock();
     }
 
     if (s_deferred_kill_count > 0)
@@ -1799,46 +1795,18 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     if (all_tasks_.size() <= 1)
         return;
 
-    if (!scheduler_lock_.try_lock()) {
+    if (!scheduler_lock_.try_lock())
         return;
-    }
+    SpinLockGuard<sync::SpinLock> guard(scheduler_lock_, adopt_lock);
 
     auto *current = current_task();
-    if (!current || current->magic != TaskControlBlock::TCB_MAGIC) {
-        scheduler_lock_.unlock();
+    if (!current || current->magic != TaskControlBlock::TCB_MAGIC)
         return;
-    }
 
     // BUGS.md#021: during the test cycle, do NOT preemptively switch away from
     // the harness (init_task, PID 1) while it is RUNNING.  The harness runs the
     // synchronous test bodies; being preempted by lower-priority test tasks
-    // orphans it (switch_to_task re-enqueues it, but set_current dequeues it
-    // again) and — combined with tests that remove_task()+delete still-running
-    // tasks — can drop the harness from the runnable set, wedging the scheduler
-    // in the idle loop (observed as the `memory` class timing out).  Voluntary
-    // yields are still honoured: reschedule() sets the harness state to BLOCKED,
-    // so this guard's `state == RUNNING` check does not suppress them and child
-    // test tasks still run when the harness blocks.
-    //
-    // This check must come BEFORE next_task() so a dequeued task is never
-    // stranded (dequeued from the ready queue but not switched to).  The lazy
-    // rebuild only heals this when the queue is empty and the caller retries;
-    // a non-empty queue (e.g. idle at priority 0) returns the wrong task and
-    // tests that check priority fail intermittently.
-    //
-    // Allow voluntary yields from the harness (reschedule set need_resched).
-    // Without this, harness_nonpreempt prevents the timer ISR from applying
-    // the deferred switch that reschedule requested, stranding the peer task.
-    // Also allow preemption when a ready task has equal or higher priority
-    // (handles tests that rely on the timer ISR to schedule peer tasks at
-    // the same priority as the harness).
-    //
-    // CRITICAL: the pending-switch clear (below) must come AFTER the
-    // harness-nonpreempt guard.  If the guard returns early, the old
-    // pending switch is left intact so the ISR epilogue can still apply
-    // it — otherwise a deferred switch from a task-context on_tick call
-    // (e.g. test 226 spinlock_preemption_yield) would be discarded before
-    // the guard has a chance to preserve it, stranding the peer task.
+    // orphans it ... (see full comment in original).
     bool harness_nonpreempt =
         (s_test_active_ && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
@@ -1847,14 +1815,11 @@ void Scheduler::rate_monotonic_schedule() noexcept {
         !__atomic_load_n(&kernel::scheduler_need_resched, __ATOMIC_ACQUIRE)) {
         uint64_t cur_prio = effective_priority(current);
         uint64_t highest_ready = ready_queue_.highest_ready_priority();
-        if (highest_ready < cur_prio) {
-            scheduler_lock_.unlock();
+        if (highest_ready < cur_prio)
             return;
-        }
     }
 
-    // Clear any pending deferred switch — the guard above did NOT return
-    // early, so we are about to publish a fresh one via next_task().
+    // Clear any pending deferred switch.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                          __ATOMIC_RELEASE);
@@ -1876,20 +1841,12 @@ void Scheduler::rate_monotonic_schedule() noexcept {
                         r6 ? (uint64_t)r6->in_ready_queue_ : 9u);
     }
 #endif
-    // Never switch a live RUNNING current task to idle: that would idle-loop
-    // forever and permanently starve the live task (e.g. the test harness
-    // running the `all` suite between tests, when it is the only runnable
-    // task).  If no other task is ready, keep running current.
     if (next && next != current &&
         !(next == idle_task_ && current->state == TaskState::RUNNING)) {
         switch_to_task(current, next, nullptr);
     }
 
-    // The sole task-context reschedule() path set this flag; we have now
-    // (re)published the deferred switch for it, so clear the request.
     __atomic_store_n(&kernel::scheduler_need_resched, false, __ATOMIC_RELEASE);
-
-    scheduler_lock_.unlock();
 }
 
 void Scheduler::reschedule() noexcept {
@@ -1934,96 +1891,83 @@ void Scheduler::reschedule() noexcept {
 }
 
 void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept {
-    scheduler_lock_.lock();
+    TaskControlBlock *next;
 
-    // A deferred switch is already published and awaiting the next ISR epilogue.
-    // Do NOT publish a second one on top of it (would produce a mismatched
-    // RSP/CR3 pair).  The pending switch already excludes `exiting` because
-    // next_task() skips current_task_ptr_ (still == &exiting here), so it is
-    // safe to rely on the in-flight switch.
-    if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
-        scheduler_lock_.unlock();
-        return;
-    }
-
-    TaskControlBlock *next = next_task();
-    if (!next || next == &exiting) {
-        next = idle_task_;
-    }
-    if (!next || next->magic != TaskControlBlock::TCB_MAGIC) {
-        scheduler_lock_.unlock();
-        return;
-    }
-
-    // Validate `next`'s iret frame (mirrors switch_to_task's dispatch guard so
-    // we never iretq into a corrupt context).  On failure, fall back to idle.
+    // Scope for scheduler_lock_ — released before the IRQ-guarded publish step.
     {
-        uint64_t nsp = TASK_STACK_PTR(next);
-        uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
-        bool bad = (!nsp || nsp < nbase || nsp >= next->kernel_stack_top ||
-                    (next->page_table_ != 0 && (next->page_table_ & 0xFFF) != 0));
-        if (!bad) {
-            const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
-            uint64_t rip_a = f[136 / 8], cs_a = f[144 / 8], rsp_a = f[160 / 8],
-                      ss_a = f[168 / 8];
-            uint64_t rip_b = f[168 / 8], cs_b = f[160 / 8], rsp_b = f[144 / 8],
-                      ss_b = f[136 / 8];
-            uint64_t f_rflags = f[152 / 8];
-            auto frame_ok = [&](uint64_t rip, uint64_t cs, uint64_t rsp,
-                                uint64_t ss) -> bool {
-                bool ring0 = (cs == 0x8);
-                bool ring3 = (cs == 0x1B);
-                if (rip == 0 || (!ring0 && !ring3))
-                    return false;
-                if ((ring0 || ring3) && (f_rflags & 0x2) == 0)
-                    return false;
-                if (ring3 && (ss != 0x23 || rsp == 0))
-                    return false;
-                return true;
-            };
-            if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
-                !frame_ok(rip_b, cs_b, rsp_b, ss_b))
-                bad = true;
-        }
-        if (bad) {
+        SpinLockGuard<sync::SpinLock> guard(scheduler_lock_);
+
+        // A deferred switch is already published.  Do NOT publish a second.
+        if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0)
+            return;
+
+        next = next_task();
+        if (!next || next == &exiting)
             next = idle_task_;
+        if (!next || next->magic != TaskControlBlock::TCB_MAGIC)
+            return;
+
+        // Validate `next`'s iret frame.
+        {
+            uint64_t nsp = TASK_STACK_PTR(next);
+            uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
+            bool bad = (!nsp || nsp < nbase ||
+                        nsp >= next->kernel_stack_top ||
+                        (next->page_table_ != 0 &&
+                         (next->page_table_ & 0xFFF) != 0));
+            if (!bad) {
+                const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
+                uint64_t rip_a = f[136 / 8], cs_a = f[144 / 8],
+                         rsp_a = f[160 / 8], ss_a = f[168 / 8];
+                uint64_t rip_b = f[168 / 8], cs_b = f[160 / 8],
+                         rsp_b = f[144 / 8], ss_b = f[136 / 8];
+                uint64_t f_rflags = f[152 / 8];
+                auto frame_ok = [&](uint64_t rip, uint64_t cs, uint64_t rsp,
+                                    uint64_t ss) -> bool {
+                    bool ring0 = (cs == 0x8);
+                    bool ring3 = (cs == 0x1B);
+                    if (rip == 0 || (!ring0 && !ring3))
+                        return false;
+                    if ((ring0 || ring3) && (f_rflags & 0x2) == 0)
+                        return false;
+                    if (ring3 && (ss != 0x23 || rsp == 0))
+                        return false;
+                    return true;
+                };
+                if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
+                    !frame_ok(rip_b, cs_b, rsp_b, ss_b))
+                    bad = true;
+            }
+            if (bad)
+                next = idle_task_;
         }
-    }
-    if (!next || next->magic != TaskControlBlock::TCB_MAGIC) {
-        scheduler_lock_.unlock();
-        return;
-    }
+        if (!next || next->magic != TaskControlBlock::TCB_MAGIC)
+            return;
 
-    // Publish the deferred switch.  save_target is &exiting.context.rsp — a
-    // dead slot for a TERMINATED task, so the ISR epilogue's
-    // `mov [save], rsp` (which saves the ISR's own RSP) landing there is
-    // harmless.  We deliberately do NOT run switch_to_task's live-RSP owner
-    // resolution, which from ISR context would re-point save_target at a
-    // *live* task and corrupt it.  Order: load first, then save, so the
-    // epilogue sees the slot consistently (it reads save_rsp_to first).
-    __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
-                     __ATOMIC_RELEASE);
-    if (next->page_table_) {
-        __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
+        // Publish the deferred switch globals (load side only under lock).
+        __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
                          __ATOMIC_RELEASE);
-    } else {
-        __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
-                         __ATOMIC_RELEASE);
+        if (next->page_table_) {
+            __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,
+                             __ATOMIC_RELEASE);
+        } else {
+            __atomic_store_n(&scheduler_load_cr3_from, VMM::get_kernel_pml4(),
+                             __ATOMIC_RELEASE);
+        }
+
+        if (exiting.state == TaskState::RUNNING) {
+            exiting.state = TaskState::READY;
+            Scheduler::enqueue_ready(exiting);
+        }
+        next->state = TaskState::RUNNING;
+
+        if (next->page_table_)
+            arch::GDT::set_tss_rsp0(next->kernel_stack_top);
     }
 
-    if (exiting.state == TaskState::RUNNING) {
-        exiting.state = TaskState::READY;
-        Scheduler::enqueue_ready(exiting);
-    }
-    next->state = TaskState::RUNNING;
-
-    if (next->page_table_) {
-        arch::GDT::set_tss_rsp0(next->kernel_stack_top);
-    }
-
+    // IRQ-guarded publish step (lock released).
     {
         arch::IrqGuard ig{};
-        scheduler_lock_.unlock();
         __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, &exiting.context.rsp,
                          __ATOMIC_RELEASE);
