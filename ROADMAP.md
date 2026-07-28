@@ -519,8 +519,8 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
 ### v0.3.6 — Memory + Scheduler Audit Remediation (19 findings)
 
-**Sources:** `audits/memory_audit.md`, `audits/task+scheduler_audit.md`  
-**References:** `docs/memory-subsystem-audit-fix.md`, `docs/task-scheduler-audit-fix.md`
+**Sources:** `audits/memory_audit.md`, `audits/task+scheduler_audit.md`, `audits/ipc_audit.md`  
+**References:** `docs/memory-subsystem-audit-fix.md`, `docs/task-scheduler-audit-fix.md`, `docs/ipc-sync-audit-fix.md`
 
 #### Phase 1 — Independent Fixes (no dependencies)
 
@@ -614,6 +614,39 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 - [ ] **SCHED-008: switch_to_task overhead (MEDIUM)** — After SCHED-007 lands, remove O(n)
       owner-resolution scan. Replace with `debug-assert(current == expected_owner)`.
       *File: `scheduler.cpp`* (gated on SCHED-007)
+
+---
+
+---
+
+#### IPC/Sync Audit — 6 findings (`audits/ipc_audit.md`)
+
+**Reference:** `docs/ipc-sync-audit-fix.md` (detailed spec with code-level fixes)
+
+All findings are independent of each other and of memory/scheduler audits. Priority order:
+
+- [ ] **IPC-03: send_sync missing dequeue_ready (CRITICAL)** — Insert `Scheduler::dequeue_ready(*cur)`
+      before `state = BLOCKED` in both the wait loop body and initial blocking transition.
+      *File: `ipc.cpp`*
+- [ ] **IPC-01: send() rollback omission on interrupts-disabled (CRITICAL)** — Add
+      `unblock_sender_rollback()` helper. Call it in `IPC::send()` when interrupts are disabled
+      after reschedule, before falling through to re-lookup. `ENSURE(blocked_on_queue == &q)`.
+      *File: `ipc.cpp`*
+- [ ] **IPC-02: Unsynchronised blocked_senders list (CRITICAL)** — Guard `block_sender()` and
+      `wake_sender()` list mutations with `q.lock_`. Add `is_full_locked()` for the is_full check
+      in `send()`. Respect lock ordering: `dequeue_ready` before queue lock.
+      *File: `ipc.cpp`* (depends on SpinLock infra from VULN-002 or existing sync::SpinLock)
+- [ ] **SYNC-01: Mutex::lock() panic on PCP retry exhaustion (HIGH)** — Add `panic()` after
+      retry loop exhausts in `Mutex::lock()`. The void-returning lock() can't report failure,
+      so fail loud.
+      *File: `mutex.cpp`*
+- [ ] **SYNC-02: MessageQueue pop compaction loop bound (MEDIUM)** — Replace `while (true)` with
+      `for (iter < IPC_MAX_QUEUE_MSG)`. Add `ENSURE(iter < IPC_MAX_QUEUE_MSG)` post-loop.
+      *File: `ipc.cpp`*
+- [ ] **SYNC-03: Waiter array generation cookies (MEDIUM)** — Add `uint32_t generation` to TCB.
+      Store `generation` at waiter insertion. Verify at wake time; drop stale entries on mismatch.
+      API consistency: unify `Queue`/`Semaphore` add_waiter to `TaskControlBlock&`.
+      *Files: `task.hpp`, `mutex.cpp`, `semaphore.cpp`, `queue.cpp`, `eventgroup.cpp`*
 
 ---
 

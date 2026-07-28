@@ -1,2 +1,4 @@
 audits/run_asil_audit.sh task src/kernel/task/*.cpp src/kernel/task/*.hpp  
 audits/run_asil_audit.sh ipc src/kernel/ipc/*.cpp src/kernel/ipc/*.hpp src/kernel/sync/*.cpp src/kernel/sync/*.hpp
+audits/run_asil_audit.sh boundary src/kernel/syscall/*.cpp src/kernel/vfs/*.cpp src/kernel/elf/*.cpp
+audits/run_asil_audit.sh hardware src/kernel/driver/*.cpp src/kernel/arch/x86_64/*.cpp
