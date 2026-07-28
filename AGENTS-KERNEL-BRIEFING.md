@@ -155,7 +155,23 @@ make execute-test x86 release selftest    # CI gate
 11. **Liu-Leyland bound warnings are informational** → not enforced by scheduler yet
 12. **`sti(); hlt(); cli();` in `sys_receive`** → workaround for deferred switch; may be removable after RMS fix
 
-## 13. Test Discipline for Kernel Development
+## 13. Enforcement Rules (MANDATORY — violations halt and require human input)
+
+### Rule A: Hypothesis-First Checkpoint
+Before ANY code edit, output `[HYPOTHESIS] <specific root cause>` and `[EVIDENCE] <plan to prove/disprove>`. Wait for user confirmation before touching any file. No exceptions. This applies even to "obvious" one-line fixes.
+
+### Rule B: No "Pre-Existing" Dismissal
+Never claim a test failure is "pre-existing" or "not caused by my changes." Every failure must be investigated and fixed. The only exception is a test that was documented as failing in ROADMAP.md or BUGS.md BEFORE the current session started, AND you have run it on the baseline commit and confirmed the same failure signature.
+
+### Rule C: No Push Suggestions
+Never suggest, ask about, or initiate pushing commits. Only push when explicitly told to.
+
+### Rule D: Debugging Escalation
+First attempt: analyze source code and inject targeted instrumentation/logging. If the root cause remains unclear after 3 analysis iterations (going in circles), use GDB batch surveillance (`make debug-test`) to gather precise evidence — backtrace, register state, memory values. Do NOT switch back to source speculation once GDB is warranted.
+
+---
+
+## 14. Test Discipline for Kernel Development
 
 ### Targeted class verification (MANDATORY)
 - Verify kernel code changes using the **smallest applicable test class**, NOT `all`.
