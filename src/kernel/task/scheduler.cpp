@@ -1577,55 +1577,6 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
     }
 
     uint64_t *save_target = &TASK_STACK_PTR(current);
-    {
-        uint64_t cur_rsp{};
-        asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
-        TaskControlBlock *owner = nullptr;
-#ifndef CONFIG_DEBUG
-        uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
-        // Release builds: only resolve the true RSP owner when the live RSP is
-        // NOT inside `current`'s own kernel stack (the rare drift case).  This
-        // keeps the common context-switch path O(1) with no per-switch task scan.
-        if (!current->kernel_stack || !current->kernel_stack_top ||
-            cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
-            for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
-                auto *tt = Scheduler::task_at(ti);
-                if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
-                    continue;
-                uint64_t tb = reinterpret_cast<uint64_t>(tt->kernel_stack);
-                if (tt->kernel_stack && tt->kernel_stack_top &&
-                    cur_rsp >= tb && cur_rsp < tt->kernel_stack_top) {
-                    owner = tt;
-                    break;
-                }
-            }
-        }
-#else
-        // Debug builds: always resolve the physically-running task by stack
-        // ownership.  current_task_ptr_ can drift onto a peer TCB (context-switch
-        // bookkeeping desync) while the CPU is actually executing on another
-        // task's kernel stack; saving the live CPU state into the wrong TCB
-        // corrupts that peer's context.rsp and wedges the scheduler.  Always pin
-        // `current` to the true RSP owner so the save lands in the real runner.
-        // The unconditional O(n) scan is acceptable only under CONFIG_DEBUG.
-        for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
-            auto *tt = Scheduler::task_at(ti);
-            if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
-                continue;
-            uint64_t tb = reinterpret_cast<uint64_t>(tt->kernel_stack);
-            if (tt->kernel_stack && tt->kernel_stack_top &&
-                cur_rsp >= tb && cur_rsp < tt->kernel_stack_top) {
-                owner = tt;
-                break;
-            }
-        }
-#endif
-        if (owner && owner != current) {
-            current = owner;
-            Scheduler::set_current(*owner);
-        }
-        save_target = &TASK_STACK_PTR(current);
-    }
 
 #ifdef CONFIG_DEBUG
     {
