@@ -287,6 +287,7 @@ bool IPC::send_sync(uint64_t dest_id, const Message &msg, Message &reply) {
 
         cur->reply_wait = true;
         cur->state = TaskState::BLOCKED;
+        Scheduler::dequeue_ready(*cur);
         was_blocked = true;
         Scheduler::reschedule();
         if (cur->page_table_) {
