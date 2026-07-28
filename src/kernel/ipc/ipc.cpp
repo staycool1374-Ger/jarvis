@@ -108,13 +108,16 @@ bool MessageQueue::pop(Message &out) {
         head = (head + 1) % IPC_MAX_QUEUE_MSG;
     } else {
         size_t pos = best_idx;
-        while (true) {
+        size_t iter;
+        for (iter = 0; iter < IPC_MAX_QUEUE_MSG; ++iter) {
             size_t next = (pos + 1) % IPC_MAX_QUEUE_MSG;
             if (next == tail)
                 break;
             msgs[pos] = msgs[next];
             pos = next;
         }
+        ENSURE(iter < IPC_MAX_QUEUE_MSG && "queue compaction: tail not found");
+        (void)iter;
         if (tail == 0) {
             tail = IPC_MAX_QUEUE_MSG - 1;
         } else {
