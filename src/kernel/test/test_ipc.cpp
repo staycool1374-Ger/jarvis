@@ -561,12 +561,13 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send blocks the sender when the target queue
-// is full, and unblocks the sender when the receiver pops a message.
-// Input: Fill own queue, create sender task, switch to sender and attempt
-// send (blocks), switch back to receiver and recv
-// Expect: Sender is BLOCKED after failed send, becomes READY after receiver
-// pops, send returns false
+// Testidea: Verifies IPC::send rollback when called with interrupts disabled
+// and the target queue is full.  With IRQs off the deferred switch can never
+// apply, so send() rolls back block_sender mutations and returns false.
+// Input: Fill own queue, create sender task, switch to sender under IrqGuard
+// and attempt send; switch back to receiver and recv.
+// Expect: send returns false; sender is RUNNING (not BLOCKED) after rollback
+// and is not linked into any blocked-senders list.
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler, IPC_MAX_QUEUE_MSG
 JARVIS_TEST(ipc_send_block_full, "PRE: irq_shield | POST: none") {
@@ -588,20 +589,22 @@ JARVIS_TEST(ipc_send_block_full, "PRE: irq_shield | POST: none") {
     auto *sender = sender_ptr.get();
     JARVIS_ASSERT(sender != nullptr);
 
-    // send + block + restore under IrqGuard: prevents timer ISR from switching
-    // to idle when the sender blocks (its context would be stranded otherwise).
+    // send + block + restore under IrqGuard: with interrupts disabled the
+    // deferred switch can never apply, so send() rolls back the block_sender
+    // mutations and returns false.  The sender is restored to RUNNING.
     {
         arch::IrqGuard guard;
         Scheduler::set_current(*sender);
         bool ok = IPC::send(cur->id, msg);
         JARVIS_ASSERT(!ok);
-        JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+        JARVIS_ASSERT(sender->state == TaskState::RUNNING);
+        JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
         Scheduler::set_current(*cur);
     }
 
     Message out;
     JARVIS_ASSERT(IPC::recv(out));
-    JARVIS_ASSERT(sender->state == TaskState::READY);
+    JARVIS_ASSERT(sender->state == TaskState::RUNNING);
 
     JARVIS_TEST_PASS();
 }
@@ -690,12 +693,13 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that blocked IPC senders are unblocked when the
-// receiver task exits.
-// Input: Create receiver and sender. Fill receiver's queue, sender blocks on
-// send. Terminate receiver and cleanup.
-// Expect: Sender is woken up (state becomes READY) and removed from blocked
-// list.
+// Testidea: Verifies that IPC::send rolls back block_sender mutations when
+// called with interrupts disabled (IrqGuard / ScopedCurrentTask).  Sender is
+// restored to RUNNING and removed from blocked-senders list.
+// Input: Fill receiver's queue, sender tries to send under IrqGuard.
+// Terminate receiver and cleanup.
+// Expect: send returns false; sender is RUNNING (never left BLOCKED after
+// rollback) and blocked_on_queue is null.
 JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: irq_shield | POST: none") {
     auto receiver_ptr = create_test_task(5, 10);
     auto *receiver = receiver_ptr.get();
@@ -721,27 +725,24 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: irq_shield | POST: none
         receiver->msg_queue.push(fill_msg);
     }
 
-    // Now send from sender - should block.
-    // ScopedCurrentTask saves the harness as current, disables interrupts,
-    // and sets current=sender.  On scope exit it restores the harness and
-    // re-enables interrupts, so current_task_ptr_ never dangles.
+    // Now send from sender - should fail because with interrupts disabled
+    // (ScopedCurrentTask cli) the deferred switch can never apply.  send()
+    // rolls back block_sender mutations and returns false.  The sender
+    // is restored to RUNNING, not left BLOCKED.
     {
         kernel::test::ScopedCurrentTask scoped(*sender);
-        (void)kernel::IPC::send(receiver->id, msg, 0);
-        // The sender should be in blocked list
-        JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
-        JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
+        bool ok = kernel::IPC::send(receiver->id, msg, 0);
+        JARVIS_ASSERT(!ok);
+        // Rollback removed sender from blocked list and restored RUNNING
+        JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
+        JARVIS_ASSERT(sender->state == TaskState::RUNNING);
+        JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
 
         // Now terminate receiver and cleanup
         receiver->state = TaskState::TERMINATED;
         receiver->exit_code = 0;
         receiver->cleanup();
     }
-
-    // Sender should be woken up and removed from the blocked list
-    JARVIS_ASSERT(sender->state == TaskState::READY);
-    JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
-    // cleanup() frees the receiver's msg_queue after clearing blocked senders
 
     JARVIS_TEST_PASS();
 }

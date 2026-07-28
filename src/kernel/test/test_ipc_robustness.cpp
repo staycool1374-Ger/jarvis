@@ -381,16 +381,16 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
         Scheduler::set_current(*sender);
         bool ok = IPC::send(receiver->id, msg, 0);
         CT_ASSERT(!ok);
-        CT_ASSERT(sender->state == TaskState::BLOCKED);
-        CT_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
+        // With interrupts disabled the deferred switch can never apply;
+        // send() rolls back block_sender mutations — sender is RUNNING.
+        CT_ASSERT(sender->state == TaskState::RUNNING);
+        CT_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
+        CT_ASSERT(sender->blocked_on_queue == nullptr);
     }
 
     receiver->state = TaskState::TERMINATED;
     receiver->exit_code = 0;
     receiver->cleanup();
-
-    CT_ASSERT(sender->state == TaskState::READY);
-    CT_ASSERT(sender->blocked_on_queue == nullptr);
 
     Scheduler::remove_task(*sender);
     Scheduler::remove_task(*receiver);

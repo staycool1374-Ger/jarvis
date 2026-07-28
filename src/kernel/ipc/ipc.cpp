@@ -150,6 +150,10 @@ void IPC::init() {
     // Message queues are initialised per-task in create/create_user/clone.
 }
 
+// Forward declaration for rollback helper used by send().
+static void unblock_sender_rollback(MessageQueue &q,
+                                    TaskControlBlock &task) noexcept;
+
 /// @brief Send a message to a destination task (blocks if queue is full, unless
 /// IPC_NONBLOCK).
 bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
@@ -172,18 +176,20 @@ bool IPC::send(uint64_t dest_id, const Message &msg, uint64_t flags) {
             return false;
 
         block_sender(tcb->msg_queue, *cur);
-        cur->state = TaskState::BLOCKED;
         Scheduler::reschedule();
 
         // reschedule() is deferred (INV-4) — the current task continues
         // running with state=BLOCKED.  Spin-wait until the timer ISR
         // dispatches the receiver, which drains and wakes us.
-        // Skip spin-wait if interrupts are off (e.g. under IrqGuard):
-        // the ISR can't fire, so the receiver can never run.
+        // If interrupts are off (e.g. under IrqGuard) the ISR can't fire,
+        // so the receiver can never run — roll back and fail.
         if (arch::interrupts_enabled()) {
             while (cur->state == TaskState::BLOCKED) {
                 arch::pause();
             }
+        } else {
+            unblock_sender_rollback(tcb->msg_queue, *cur);
+            return false;
         }
 
         // Woken up — destination may have been cleaned up while we were
@@ -440,6 +446,44 @@ void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
     uint64_t new_prio = Scheduler::effective_priority(&receiver);
     if (old_prio != new_prio)
         Scheduler::move_priority(receiver, old_prio, new_prio);
+}
+
+/// @brief Roll back a block_sender() mutation when IPC::send() is called with
+///        interrupts disabled and the deferred switch can never apply.
+///        Removes @p task from @p q's blocked-senders list, restores its state
+///        to RUNNING, and re-enqueues it on the ready queue.
+/// @pre task.blocked_on_queue == &q
+/// @param q   The message queue whose blocked-senders list contains @p task.
+/// @param task The task to unblock.
+static void unblock_sender_rollback(MessageQueue &q,
+                                    TaskControlBlock &task) noexcept {
+    ENSURE(task.blocked_on_queue == &q &&
+           "unblock_sender_rollback: task not blocked on this queue");
+
+    // Remove from singly-linked blocked_senders list.
+    TaskControlBlock **pp = &q.blocked_senders_head;
+    while (*pp && *pp != &task)
+        pp = &(*pp)->blocked_next;
+    if (*pp) {
+        *pp = task.blocked_next;
+        if (q.blocked_senders_tail == &task) {
+            // Task was the tail — walk from head to find new tail.
+            TaskControlBlock *walk = q.blocked_senders_head;
+            while (walk && walk->blocked_next)
+                walk = walk->blocked_next;
+            q.blocked_senders_tail = walk;
+        }
+    }
+
+    task.blocked_next = nullptr;
+    task.blocked_on_queue = nullptr;
+
+    // Restore pre-block state and re-add to ready queue.
+    // Do NOT use set_task_ready() — it sets state=READY and alters
+    // remaining_ticks.  The task never actually left the CPU, so restore
+    // RUNNING directly and only fix ready-queue membership.
+    task.state = TaskState::RUNNING;
+    Scheduler::enqueue_ready(task);
 }
 
 } // namespace kernel
