@@ -515,153 +515,12 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 ### 0.3.7 — Rate-Monotonic Scheduling Refactor
   - [x] **Re-enable `ipc_blocking` test class** — 4/4 PASS. Root cause: `reschedule()` held `scheduler_lock_`, preventing timer ISR from applying deferred switch. Fix: Phase 1 RMS rework — `reschedule()` uses `IrqGuard` instead of `scheduler_lock_`. See `docs/rms-rework-plan.md`.
   - [x] **Fix `preemption_under_syscall`** — 4/4 PASS. Root cause: daemon teardown race + stale `sporadic_server` access in `on_tick()`. Fix: `is_poisoned_block` guard in `on_tick()` SS iteration; `s_test_active_` guards `reap_orphans()` in tick; test 4 rewritten to use `reschedule()` + `hlt()` instead of broken `ScopedCurrentTask` + manual `on_tick()` pattern.
-  - [ ] **SpinLock-less Notify** — convert `sync::Notify` from SpinLock-based to atomic state machine (see analysis in session archive).
+### v0.3.6 — Complete
 
-### v0.3.6 — Memory + Scheduler Audit Remediation (19 findings)
+All 19 audit findings resolved. See `ROADMAP_done.md` for the full list.
+- **BUGS.md #021:** `all-1` GPF at `IpcConcurrentSenders` (test 80/745) — shared page-table lifecycle issue exposed by VULN-004 ownership model. Mitigated with parent-entry clearing in `free_user_pages()` and null-checks in `get_table()`/`map_page_in_pml4()`. Not fully resolved in the 745-test sequence.
 
-**Sources:** `audits/memory_audit.md`, `audits/task+scheduler_audit.md`, `audits/ipc_audit.md`  
-**References:** `docs/memory-subsystem-audit-fix.md`, `docs/task-scheduler-audit-fix.md`, `docs/ipc-sync-audit-fix.md`
-
-#### Phase 1 — Independent Fixes (no dependencies)
-
-- [x] **VULN-001: MemPool bitmap OOB (CRITICAL)** — `freed_bitmap[4]` (256 bits) overflowed with
-      pool-2 block_count=320. Fixed: `BITMAP_WORDS = (320+63)/64 = 5`. Updated `Pool`,
-      `PoolMeta` arrays and all iteration loops. Added `static_assert` in `MemPool::init()`.
-      *Files: `mempool.hpp`, `mempool.cpp`*
-- [x] **VULN-004: Ownership check in map_page (HIGH)** — Add `ENSURE(PMM::is_user_page(phys_addr))`
-      before leaf PTE write when `user=true`, in both `map_page()` (3 arch branches) and
-      `map_page_in_pml4()`. Goes beyond existing test-only kernel-space guard.
-      *File: `vmm.cpp`*
-- [x] **VULN-006: Yield in free_user_pages/deep_copy (MEDIUM)** — Add WCET-bound comment and
-      cooperative yield point every 64 entries in `free_user_pages()` and `deep_copy_user_pages()`.
-      *File: `vmm.cpp`*
-- [x] **VULN-007: Boot-phase gate in reserve/pool_used_pages (LOW)** — Add `ENSURE(!ready_)` in
-      `MemPool::reserve()`. Add doc-comment to `PMM::pool_used_pages()`.
-      *Files: `mempool.cpp`, `pmm.hpp`*
-- [x] **VULN-008: Pinned-block diagnostics (LOW)** — `pin_block()`: add `ENSURE(!is_block_freed(...))`.
-      `free_err()`: return `MEMPOOL_ERR_PINNED`. `free()`: add `Logger::warn`.
-      *Files: `mempool.cpp`, `mempool_errors.hpp`*
-- [x] **VULN-009: free_page_err missing owner_set_kernel (LOW)** — One-liner: add
-      `owner_set_kernel(index)` after `bitmap_clear(index)` in `free_page_err()`.
-      *File: `pmm.cpp`*
-- [x] **VULN-010: Idle loop style (LOW)** — Replace `for (i < UINT64_MAX)` with `for (;;)`.
-      *File: `integrity.cpp`*
-- [x] **VULN-011: CRC reentrancy guard (LOW)** — Add reentrancy assertion flag in
-      `reset_crc_state()` and `crc_process_chunk()`. Add doc-comment above statics.
-      *File: `integrity.cpp`*
-
-#### Phase 2 — Lock Infrastructure (prerequisite for Phase 3)
-
-- [x] **VULN-002: SpinLock + PMM/MemPool locks (CRITICAL)** — Introduce freestanding
-      `SpinLock` (TAS-based, `constinit`, no heap). Add `IrqSpinLockGuard` to all mutating
-      PMM functions (bitmap + free-list) and MemPool functions (alloc/free/reserve/pin/unpin).
-      OOM handler must unlock before callback, re-lock for retry.
-      *Files: `src/kernel/sync/spinlock.hpp` (new), `pmm.cpp`, `mempool.cpp`*
-
-#### Phase 3 — Depends on Phase 2 (VULN-002)
-
-- [x] **VULN-003: O(1) free-list allocator (HIGH)** — Replace linear bitmap scan in
-      `try_alloc_kernel()`/`try_alloc_user()` with intrusive free-list. `free_page()` pushes
-      to free-list head. `alloc_contiguous` keeps bitmap scan fallback with documented WCET
-      bound. `alloc_page_table()` pool scan gets per-pool free-list.
-      *File: `pmm.cpp`, `pmm.hpp`*
-- [x] **VULN-005: Atomic memory budget counter (MEDIUM)** — Move entire budget check → alloc →
-      increment inside the `IrqSpinLockGuard` from VULN-002, re-fetching `current_task()`
-      inside the critical section.
-      *File: `pmm.cpp`*
-
----
-
-#### Scheduler Audit — 8 findings (`audits/task+scheduler_audit.md`)
-
-**Reference:** `docs/task-scheduler-audit-fix.md` (detailed spec with code-level fixes)
-
-##### Phase A — Independent (alongside memory audit)
-
-- [x] **SCHED-001: Bounded id_table_insert probe (CRITICAL)** — Remove `#pragma` suppression,
-      bound probe loop to `ID_TABLE_SIZE`, propagate `SCHED_ERR_TABLE_FULL` to callers.
-      *File: `scheduler.cpp`*
-- [x] **SCHED-002: Guard page on all kernel stacks (HIGH)** — Route `create()` (test-active),
-      `create_user()`, and `clone()` through `alloc_kslot()`/`map_kstack_page()`/`free_kslot()`
-      so all stacks have an unmapped guard page below. Add `static_assert(KSLOT_POOL_SIZE >= MAX_TASKS)`.
-      *File: `task.cpp`*
-- [x] **SCHED-004: Divergent IrqGuard includes (LOW)** — Unify canonical path to
-      `kernel/arch/hal/irq_guard.hpp` across `task.cpp`, `scheduler.cpp`, `taskdefs.cpp`.
-      *Files: `task.cpp`, `arch/irq_guard.hpp`*
-- [x] **SCHED-005: O(1) priority bucket + indexed removal (CRITICAL)** — Add `current_bucket_`
-      field to `TaskControlBlock` as sole authoritative record. Update all insertion/move paths.
-      Rewrite `AllTasksRegistry::remove()` and `ReadyQueueManager::remove()` to index directly
-      via `current_bucket_` — O(1), no scanning.
-      *Files: `task.hpp`, `all_tasks_registry.cpp`, `ready_queue_manager.cpp`, `scheduler.cpp`*
-- [x] **SCHED-006: O(n²) reap_orphans adopted-child scan (HIGH)** — Replace `TaskIter` full-table
-      scan with existing intrusive `first_child`/`next_sibling` list. Replace `page_table_shared_`
-      scan with `sharing_child_count_` counter.
-      *Files: `task.hpp`, `scheduler.cpp`, `task.cpp`*
-
-##### Phase B — Lock discipline (parallel to memory audit Phase 2)
-
-- [x] **SCHED-003: RAII lock discipline on scheduler_lock_ (HIGH)** — Convert `on_tick()`,
-      `rate_monotonic_schedule()`, `switch_away_from_terminating()`, `unregister_task()` to
-      `SpinLockGuard<sync::SpinLock>`. Use `try_lock()` + `owns_lock()` pattern for try_lock sites.
-      *File: `scheduler.cpp`*
-
-##### Phase C — Large refactors (gate on Phase A)
-
-- [x] **SCHED-007: TCB reference safety (HIGH)** — Change non-nullable API params from
-      `TaskControlBlock*` to `TaskControlBlock&` (append, remove, switch_to_task). Keep
-      `TaskControlBlock*` only for nullable outputs (find_task, current_task).
-      *Multiple files in `src/kernel/task/`*
-- [x] **SCHED-008: switch_to_task overhead (MEDIUM)** — After SCHED-007 lands, remove O(n)
-      owner-resolution scan. Replace with `debug-assert(current == expected_owner)`.
-      *File: `scheduler.cpp`* (gated on SCHED-007)
-
----
-
----
-
-#### IPC/Sync Audit — 6 findings (`audits/ipc_audit.md`)
-
-**Reference:** `docs/ipc-sync-audit-fix.md` (detailed spec with code-level fixes)
-
-All findings are independent of each other and of memory/scheduler audits. Priority order:
-
-- [x] **IPC-03: send_sync missing dequeue_ready (CRITICAL)** — Insert `Scheduler::dequeue_ready(*cur)`
-      before `state = BLOCKED` in both the wait loop body and initial blocking transition.
-      *File: `ipc.cpp`*
-- [x] **IPC-01: send() rollback omission on interrupts-disabled (CRITICAL)** — Add
-      `unblock_sender_rollback()` helper. Call it in `IPC::send()` when interrupts are disabled
-      after reschedule, before falling through to re-lookup. `ENSURE(blocked_on_queue == &q)`.
-      *File: `ipc.cpp`*
-- [x] **IPC-02: Unsynchronised blocked_senders list (CRITICAL)** — Guard `block_sender()` and
-      `wake_sender()` list mutations with `q.lock_`. Add `is_full_locked()` for the is_full check
-      in `send()`. Respect lock ordering: `dequeue_ready` before queue lock.
-      *File: `ipc.cpp`* (depends on SpinLock infra from VULN-002 or existing sync::SpinLock)
-- [x] **SYNC-01: Mutex::lock() panic on PCP retry exhaustion (HIGH)** — Add `panic()` after
-      retry loop exhausts in `Mutex::lock()`. The void-returning lock() can't report failure,
-      so fail loud.
-      *File: `mutex.cpp`*
-- [x] **SYNC-02: MessageQueue pop compaction loop bound (MEDIUM)** — Replace `while (true)` with
-      `for (iter < IPC_MAX_QUEUE_MSG)`. Add `ENSURE(iter < IPC_MAX_QUEUE_MSG)` post-loop.
-      *File: `ipc.cpp`*
-- [x] **SYNC-03: Waiter array generation cookies (MEDIUM)** — Add `uint32_t generation` to TCB.
-      Store `generation` at waiter insertion. Verify at wake time; drop stale entries on mismatch.
-      API consistency: unify `Queue`/`Semaphore` add_waiter to `TaskControlBlock&`.
-      *Files: `task.hpp`, `mutex.cpp`, `semaphore.cpp`, `queue.cpp`, `eventgroup.cpp`*
-
----
-
-#### Completed in earlier v0.3.6 work (PtPoolSnapshot + pool relocation)
-- [x] **PtPoolSnapshot bitmap overflow** — `bitmap[256]` → `[4096/8]`, fixed size comparison.
-- [x] **Pool relocation** — moved from `reserved_end_page` to end of HHDM (112-128 MB).
-- [x] **alloc_page_table no-fallback** — removed `alloc_page()` fallback.
-- [x] **Re-enable vmm_huge_page_split_corner** — user-space VA, safe.
-
-#### Deferred to v0.3.7
-- [x] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
-- [x] **Re-enable vmm_huge_page_split_regression/vmm_hhdm_access_consistency**
-- [x] **Consolidate `all` class** — once HHDM tests pass, remove `all-1`/`all-2` split
-
-### 0.3.7 Cross-Architecture Hard Real-Time HAL
+### 0.3.7 — Cross-Architecture Hard Real-Time HAL + Remediation
 ## x86_64 — Complete APIC + TSC-Deadline
   - [x] arch/x86_64/hal/apic.hpp/.cpp — Local APIC, I/O APIC, TSC-deadline timer, keep in mind to check invariant of TSC (CPUID.80000007H:EDX[8])
   - [x] arch/x86_64/hal/tsc.hpp — Invariant TSC calibration, rdtsc/rdtscp wrappers
@@ -693,6 +552,12 @@ All findings are independent of each other and of memory/scheduler audits. Prior
   - [x] Validate: Sporadic Server C ≤ T for all configured servers
   - [x] Validate: Priority ceiling ≥ max task priority for each mutex
   - [x] Validate: CONFIG_IRQ_LATENCY_MAX_NS < CONFIG_MIN_TASK_PERIOD_NS
+
+#### Deferred from v0.3.6
+- [ ] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
+- [ ] **Re-enable vmm_huge_page_split_regression/vmm_hhdm_access_consistency**
+- [ ] **Consolidate `all` class** — once HHDM tests pass, remove `all-1`/`all-2` split
+- [ ] **BUGS.md #021: all-1 GPF at IpcConcurrentSenders** — shared page-table lifecycle issue; requires deeper fix in free_user_pages or shared-page-table tracking
 
 ### 0.3.8 Test & Verification Suite
 

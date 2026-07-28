@@ -1,5 +1,46 @@
 # Completed Roadmap Items
 
+## v0.3.6 — Memory + Scheduler + IPC/Sync Audit Remediation
+
+All 19 audit findings resolved. See `audits/memory_audit.md`, `audits/task+scheduler_audit.md`, `audits/ipc_audit.md` for source findings. Full commit log in git history.
+
+### Memory Audit (11 findings)
+- VULN-001: MemPool bitmap OOB fix (CRITICAL)
+- VULN-002: SpinLock + IrqSpinLockGuard for PMM/MemPool (CRITICAL)
+- VULN-003: O(1) free-list allocator (HIGH)
+- VULN-004: Ownership check in map_page/map_page_in_pml4 (HIGH)
+- VULN-005: Atomic memory budget counter (MEDIUM)
+- VULN-006: Yield + WCET comments in free_user_pages/deep_copy (MEDIUM)
+- VULN-007: Boot-phase gate doc on pool_used_pages (LOW)
+- VULN-008: Pinned-block diagnostics + Logger::warn (LOW)
+- VULN-009: Superseded by VULN-004 alloc-time ownership (LOW)
+- VULN-010: for(;;) idle loop (LOW)
+- VULN-011: CRC reentrancy guard (LOW)
+
+### Scheduler Audit (8 findings)
+- SCHED-001: Bounded id_table_insert probe (CRITICAL)
+- SCHED-002: Guard page on all kernel stacks (HIGH)
+- SCHED-003: RAII lock discipline on scheduler_lock_ (HIGH)
+- SCHED-004: Divergent IrqGuard includes unified (LOW)
+- SCHED-005: O(1) priority bucket + indexed removal (CRITICAL)
+- SCHED-006: O(n²) reap_orphans scans removed (HIGH)
+- SCHED-007: TCB reference safety (* to &) (HIGH)
+- SCHED-008: switch_to_task overhead removed (MEDIUM)
+
+### IPC/Sync Audit (6 findings)
+- IPC-03: send_sync missing dequeue_ready (CRITICAL)
+- IPC-01: send() rollback on interrupts-disabled (CRITICAL)
+- IPC-02: Unsynchronised blocked_senders list locking (CRITICAL)
+- SYNC-01: Mutex::lock() panic on PCP exhaustion (HIGH)
+- SYNC-02: MessageQueue pop compaction loop bound (MEDIUM)
+- SYNC-03: Waiter array generation cookies (MEDIUM)
+
+### Prior v0.3.6 completed work
+- PtPoolSnapshot bitmap overflow fix
+- Pool relocation to end of HHDM
+- alloc_page_table no-fallback
+- Re-enable vmm_huge_page_split_corner
+
 ## v0.3.3 — Priority Inheritance & Ceiling Protocol (PIP/PCP) (Released)
 
 ### Completed in v0.3.3:
