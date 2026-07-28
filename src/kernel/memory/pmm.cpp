@@ -171,9 +171,11 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
             --free_pages_;
             return idx * PAGE_SIZE;
         }
-        // Fallback: bitmap scan for any remaining pages (beyond HHDM window
-        // or freed via paths that didn't update the free list).
-        for (uint64_t i = 0; i < total_pages_; ++i) {
+        // Fallback: bitmap scan within HHDM window for pages not on the
+        // free list (e.g., freed via paths that didn't update it).
+        uint64_t hhdm_limit = (128ULL * 1024 * 1024) / PAGE_SIZE;
+        uint64_t limit = (hhdm_limit < total_pages_) ? hhdm_limit : total_pages_;
+        for (uint64_t i = 0; i < limit; ++i) {
             if (!bitmap_test(i)) {
                 bitmap_set(i);
                 owner_set_kernel(i);

@@ -350,6 +350,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"slab_reclaim", []() { register_slab_reclaim_tests(); }},
 
     {"ipc_blocking", []() { register_ipc_blocking_tests(); }},
+    {"ipc_robustness", []() { register_ipc_robustness_tests(); }},
     {"ipc",
      []() {
          register_ipc_tests();

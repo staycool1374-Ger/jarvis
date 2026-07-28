@@ -177,7 +177,8 @@ uint64_t *VMM::get_table(uint64_t *table, size_t index, bool create,
 
     uint64_t new_page =
         user_alloc ? PMM::alloc_user_page() : PMM::alloc_page_table();
-    ENSURE(new_page != 0);
+    if (!new_page)
+        return nullptr;
 
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *new_table =
@@ -268,7 +269,9 @@ void VMM::map_page(uint64_t virt_addr, uint64_t phys_addr, bool user) {
     size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, true);
+    if (!pdpt) return;
     auto *pd = get_table(pdpt, pdpt_idx, true);
+    if (!pd) return;
 
     // If the PD entry is a 2MB huge page, split it into 512 4KB entries
     // so we can map an individual 4KB page within it.
@@ -481,7 +484,9 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     size_t pt_idx = arch::ArchPageTable::pt_index(virt_addr);
 
     auto *pdpt = get_table(pml4, pml4_idx, true, true);
+    if (!pdpt) return;
     auto *pd = get_table(pdpt, pdpt_idx, true, true);
+    if (!pd) return;
 
 #if defined(CONFIG_ARCH_AARCH64)
     if ((pd[pd_idx] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT)
@@ -490,7 +495,7 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
 #endif
     {
         uint64_t new_pt_phys = PMM::alloc_user_page();
-        ENSURE(new_pt_phys != 0);
+        if (!new_pt_phys) return;
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto *new_pt =
             reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + new_pt_phys);
@@ -512,6 +517,7 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     }
 
     auto *pt = get_table(pd, pd_idx, true, true);
+    if (!pt) return;
 
     if (user)
         ENSURE(PMM::is_user_page(phys_addr) &&
@@ -651,8 +657,10 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                         Scheduler::cleanup_step();
                 }
                 PMM::free_page(l3_phys);
+                l2[l2_idx] = 0; // clear L2 entry to prevent re-walk
             }
             PMM::free_page(l2_phys);
+            l1[l1_idx] = 0; // clear L1 entry to prevent re-walk
         }
         PMM::free_page(l1_phys);
         l0[l0_idx] = 0;
@@ -724,8 +732,10 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                         Scheduler::cleanup_step();
                 }
                 PMM::free_page(pt_phys);
+                pd[pd_idx] = 0; // clear PD entry to prevent re-walk
             }
             PMM::free_page(pd_phys);
+            pdpt[pdpt_idx] = 0; // clear PDPT entry to prevent re-walk
         }
         PMM::free_page(pdpt_phys);
         pml4[pml4_idx] = 0;
