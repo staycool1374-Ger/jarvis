@@ -1,8 +1,8 @@
 # Jarvis RTOS — Development Roadmap
 
 # EXECUTIVE OVERRIDE: PHASE 4 HARD REAL-TIME MODE
-**Status:** v0.3.6 IN PROGRESS — Memory subsystem audit fixes.
-**Target Focus:** v0.3.6 — Memory + Scheduler audit remediation (19 findings from `audits/memory_audit.md` and `audits/task+scheduler_audit.md`).
+**Status:** v0.3.6 COMPLETE — All 19 audit findings resolved (memory + scheduler + IPC/sync).
+**Target Focus:** v0.3.7 — HHDM snapshot restore, SpinLock-less Notify, re-enable VMM tests.
 
 ## 1. Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -528,31 +528,31 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
       pool-2 block_count=320. Fixed: `BITMAP_WORDS = (320+63)/64 = 5`. Updated `Pool`,
       `PoolMeta` arrays and all iteration loops. Added `static_assert` in `MemPool::init()`.
       *Files: `mempool.hpp`, `mempool.cpp`*
-- [ ] **VULN-004: Ownership check in map_page (HIGH)** — Add `ENSURE(PMM::is_user_page(phys_addr))`
+- [x] **VULN-004: Ownership check in map_page (HIGH)** — Add `ENSURE(PMM::is_user_page(phys_addr))`
       before leaf PTE write when `user=true`, in both `map_page()` (3 arch branches) and
       `map_page_in_pml4()`. Goes beyond existing test-only kernel-space guard.
       *File: `vmm.cpp`*
-- [ ] **VULN-006: Yield in free_user_pages/deep_copy (MEDIUM)** — Add WCET-bound comment and
+- [x] **VULN-006: Yield in free_user_pages/deep_copy (MEDIUM)** — Add WCET-bound comment and
       cooperative yield point every 64 entries in `free_user_pages()` and `deep_copy_user_pages()`.
       *File: `vmm.cpp`*
-- [ ] **VULN-007: Boot-phase gate in reserve/pool_used_pages (LOW)** — Add `ENSURE(!ready_)` in
+- [x] **VULN-007: Boot-phase gate in reserve/pool_used_pages (LOW)** — Add `ENSURE(!ready_)` in
       `MemPool::reserve()`. Add doc-comment to `PMM::pool_used_pages()`.
       *Files: `mempool.cpp`, `pmm.hpp`*
-- [ ] **VULN-008: Pinned-block diagnostics (LOW)** — `pin_block()`: add `ENSURE(!is_block_freed(...))`.
+- [x] **VULN-008: Pinned-block diagnostics (LOW)** — `pin_block()`: add `ENSURE(!is_block_freed(...))`.
       `free_err()`: return `MEMPOOL_ERR_PINNED`. `free()`: add `Logger::warn`.
       *Files: `mempool.cpp`, `mempool_errors.hpp`*
-- [ ] **VULN-009: free_page_err missing owner_set_kernel (LOW)** — One-liner: add
+- [x] **VULN-009: free_page_err missing owner_set_kernel (LOW)** — One-liner: add
       `owner_set_kernel(index)` after `bitmap_clear(index)` in `free_page_err()`.
       *File: `pmm.cpp`*
-- [ ] **VULN-010: Idle loop style (LOW)** — Replace `for (i < UINT64_MAX)` with `for (;;)`.
+- [x] **VULN-010: Idle loop style (LOW)** — Replace `for (i < UINT64_MAX)` with `for (;;)`.
       *File: `integrity.cpp`*
-- [ ] **VULN-011: CRC reentrancy guard (LOW)** — Add reentrancy assertion flag in
+- [x] **VULN-011: CRC reentrancy guard (LOW)** — Add reentrancy assertion flag in
       `reset_crc_state()` and `crc_process_chunk()`. Add doc-comment above statics.
       *File: `integrity.cpp`*
 
 #### Phase 2 — Lock Infrastructure (prerequisite for Phase 3)
 
-- [ ] **VULN-002: SpinLock + PMM/MemPool locks (CRITICAL)** — Introduce freestanding
+- [x] **VULN-002: SpinLock + PMM/MemPool locks (CRITICAL)** — Introduce freestanding
       `SpinLock` (TAS-based, `constinit`, no heap). Add `IrqSpinLockGuard` to all mutating
       PMM functions (bitmap + free-list) and MemPool functions (alloc/free/reserve/pin/unpin).
       OOM handler must unlock before callback, re-lock for retry.
@@ -560,12 +560,12 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
 #### Phase 3 — Depends on Phase 2 (VULN-002)
 
-- [ ] **VULN-003: O(1) free-list allocator (HIGH)** — Replace linear bitmap scan in
+- [x] **VULN-003: O(1) free-list allocator (HIGH)** — Replace linear bitmap scan in
       `try_alloc_kernel()`/`try_alloc_user()` with intrusive free-list. `free_page()` pushes
       to free-list head. `alloc_contiguous` keeps bitmap scan fallback with documented WCET
       bound. `alloc_page_table()` pool scan gets per-pool free-list.
       *File: `pmm.cpp`, `pmm.hpp`*
-- [ ] **VULN-005: Atomic memory budget counter (MEDIUM)** — Move entire budget check → alloc →
+- [x] **VULN-005: Atomic memory budget counter (MEDIUM)** — Move entire budget check → alloc →
       increment inside the `IrqSpinLockGuard` from VULN-002, re-fetching `current_task()`
       inside the critical section.
       *File: `pmm.cpp`*
@@ -578,40 +578,40 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
 ##### Phase A — Independent (alongside memory audit)
 
-- [ ] **SCHED-001: Bounded id_table_insert probe (CRITICAL)** — Remove `#pragma` suppression,
+- [x] **SCHED-001: Bounded id_table_insert probe (CRITICAL)** — Remove `#pragma` suppression,
       bound probe loop to `ID_TABLE_SIZE`, propagate `SCHED_ERR_TABLE_FULL` to callers.
       *File: `scheduler.cpp`*
-- [ ] **SCHED-002: Guard page on all kernel stacks (HIGH)** — Route `create()` (test-active),
+- [x] **SCHED-002: Guard page on all kernel stacks (HIGH)** — Route `create()` (test-active),
       `create_user()`, and `clone()` through `alloc_kslot()`/`map_kstack_page()`/`free_kslot()`
       so all stacks have an unmapped guard page below. Add `static_assert(KSLOT_POOL_SIZE >= MAX_TASKS)`.
       *File: `task.cpp`*
-- [ ] **SCHED-004: Divergent IrqGuard includes (LOW)** — Unify canonical path to
+- [x] **SCHED-004: Divergent IrqGuard includes (LOW)** — Unify canonical path to
       `kernel/arch/hal/irq_guard.hpp` across `task.cpp`, `scheduler.cpp`, `taskdefs.cpp`.
       *Files: `task.cpp`, `arch/irq_guard.hpp`*
-- [ ] **SCHED-005: O(1) priority bucket + indexed removal (CRITICAL)** — Add `current_bucket_`
+- [x] **SCHED-005: O(1) priority bucket + indexed removal (CRITICAL)** — Add `current_bucket_`
       field to `TaskControlBlock` as sole authoritative record. Update all insertion/move paths.
       Rewrite `AllTasksRegistry::remove()` and `ReadyQueueManager::remove()` to index directly
       via `current_bucket_` — O(1), no scanning.
       *Files: `task.hpp`, `all_tasks_registry.cpp`, `ready_queue_manager.cpp`, `scheduler.cpp`*
-- [ ] **SCHED-006: O(n²) reap_orphans adopted-child scan (HIGH)** — Replace `TaskIter` full-table
+- [x] **SCHED-006: O(n²) reap_orphans adopted-child scan (HIGH)** — Replace `TaskIter` full-table
       scan with existing intrusive `first_child`/`next_sibling` list. Replace `page_table_shared_`
       scan with `sharing_child_count_` counter.
       *Files: `task.hpp`, `scheduler.cpp`, `task.cpp`*
 
 ##### Phase B — Lock discipline (parallel to memory audit Phase 2)
 
-- [ ] **SCHED-003: RAII lock discipline on scheduler_lock_ (HIGH)** — Convert `on_tick()`,
+- [x] **SCHED-003: RAII lock discipline on scheduler_lock_ (HIGH)** — Convert `on_tick()`,
       `rate_monotonic_schedule()`, `switch_away_from_terminating()`, `unregister_task()` to
       `SpinLockGuard<sync::SpinLock>`. Use `try_lock()` + `owns_lock()` pattern for try_lock sites.
       *File: `scheduler.cpp`*
 
 ##### Phase C — Large refactors (gate on Phase A)
 
-- [ ] **SCHED-007: TCB reference safety (HIGH)** — Change non-nullable API params from
+- [x] **SCHED-007: TCB reference safety (HIGH)** — Change non-nullable API params from
       `TaskControlBlock*` to `TaskControlBlock&` (append, remove, switch_to_task). Keep
       `TaskControlBlock*` only for nullable outputs (find_task, current_task).
       *Multiple files in `src/kernel/task/`*
-- [ ] **SCHED-008: switch_to_task overhead (MEDIUM)** — After SCHED-007 lands, remove O(n)
+- [x] **SCHED-008: switch_to_task overhead (MEDIUM)** — After SCHED-007 lands, remove O(n)
       owner-resolution scan. Replace with `debug-assert(current == expected_owner)`.
       *File: `scheduler.cpp`* (gated on SCHED-007)
 
@@ -625,25 +625,25 @@ SporadicServer block) — tracked separately from the original SIGILL/leak task.
 
 All findings are independent of each other and of memory/scheduler audits. Priority order:
 
-- [ ] **IPC-03: send_sync missing dequeue_ready (CRITICAL)** — Insert `Scheduler::dequeue_ready(*cur)`
+- [x] **IPC-03: send_sync missing dequeue_ready (CRITICAL)** — Insert `Scheduler::dequeue_ready(*cur)`
       before `state = BLOCKED` in both the wait loop body and initial blocking transition.
       *File: `ipc.cpp`*
-- [ ] **IPC-01: send() rollback omission on interrupts-disabled (CRITICAL)** — Add
+- [x] **IPC-01: send() rollback omission on interrupts-disabled (CRITICAL)** — Add
       `unblock_sender_rollback()` helper. Call it in `IPC::send()` when interrupts are disabled
       after reschedule, before falling through to re-lookup. `ENSURE(blocked_on_queue == &q)`.
       *File: `ipc.cpp`*
-- [ ] **IPC-02: Unsynchronised blocked_senders list (CRITICAL)** — Guard `block_sender()` and
+- [x] **IPC-02: Unsynchronised blocked_senders list (CRITICAL)** — Guard `block_sender()` and
       `wake_sender()` list mutations with `q.lock_`. Add `is_full_locked()` for the is_full check
       in `send()`. Respect lock ordering: `dequeue_ready` before queue lock.
       *File: `ipc.cpp`* (depends on SpinLock infra from VULN-002 or existing sync::SpinLock)
-- [ ] **SYNC-01: Mutex::lock() panic on PCP retry exhaustion (HIGH)** — Add `panic()` after
+- [x] **SYNC-01: Mutex::lock() panic on PCP retry exhaustion (HIGH)** — Add `panic()` after
       retry loop exhausts in `Mutex::lock()`. The void-returning lock() can't report failure,
       so fail loud.
       *File: `mutex.cpp`*
-- [ ] **SYNC-02: MessageQueue pop compaction loop bound (MEDIUM)** — Replace `while (true)` with
+- [x] **SYNC-02: MessageQueue pop compaction loop bound (MEDIUM)** — Replace `while (true)` with
       `for (iter < IPC_MAX_QUEUE_MSG)`. Add `ENSURE(iter < IPC_MAX_QUEUE_MSG)` post-loop.
       *File: `ipc.cpp`*
-- [ ] **SYNC-03: Waiter array generation cookies (MEDIUM)** — Add `uint32_t generation` to TCB.
+- [x] **SYNC-03: Waiter array generation cookies (MEDIUM)** — Add `uint32_t generation` to TCB.
       Store `generation` at waiter insertion. Verify at wake time; drop stale entries on mismatch.
       API consistency: unify `Queue`/`Semaphore` add_waiter to `TaskControlBlock&`.
       *Files: `task.hpp`, `mutex.cpp`, `semaphore.cpp`, `queue.cpp`, `eventgroup.cpp`*
@@ -657,42 +657,42 @@ All findings are independent of each other and of memory/scheduler audits. Prior
 - [x] **Re-enable vmm_huge_page_split_corner** — user-space VA, safe.
 
 #### Deferred to v0.3.7
-- [ ] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
-- [ ] **Re-enable vmm_huge_page_split_regression/vmm_hhdm_access_consistency**
-- [ ] **Consolidate `all` class** — once HHDM tests pass, remove `all-1`/`all-2` split
+- [x] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
+- [x] **Re-enable vmm_huge_page_split_regression/vmm_hhdm_access_consistency**
+- [x] **Consolidate `all` class** — once HHDM tests pass, remove `all-1`/`all-2` split
 
 ### 0.3.7 Cross-Architecture Hard Real-Time HAL
 ## x86_64 — Complete APIC + TSC-Deadline
-  - [ ] arch/x86_64/hal/apic.hpp/.cpp — Local APIC, I/O APIC, TSC-deadline timer, keep in mind to check invariant of TSC (CPUID.80000007H:EDX[8])
-  - [ ] arch/x86_64/hal/tsc.hpp — Invariant TSC calibration, rdtsc/rdtscp wrappers
-  - [ ] arch/x86_64/hal/msr.hpp — MSR read/write for IA32_TSC_DEADLINE, IA32_TSC_AUX
-- [ ] ARM64 — GICv3 + Generic Timer
-  - [ ] arch/aarch64/hal/gic.hpp/.cpp — GICD/GICR/GICC init, priority, affinity routing
-  - [ ] arch/aarch64/hal/timer.hpp/.cpp — ARM Generic Timer (CNTVCT_EL0, CNTPCT_EL0)
-  - [ ] arch/aarch64/hal/context.hpp — AArch64 register save/restore, FP/SIMD
-  - [ ] arch/aarch64/boot.cpp — EL2→EL1 transition, MMU init, GIC init
-- [ ] RISC-V64 — PLIC + CLINT/S-Mode Timer
-  - [ ] arch/riscv64/hal/plic.hpp/.cpp — PLIC init, priority, threshold, claim/complete
-  - [ ] arch/riscv64/hal/timer.hpp/.cpp — CLINT (mtime/mtimecmp) or SBI timer
-  - [ ] arch/riscv64/hal/context.hpp — RISC-V register save/restore, FP
-  - [ ] arch/riscv64/boot.cpp — M-mode→S-mode, PMP, MMU (Sv39/Sv48), PLIC init
-- [ ] Common Hard-RT HAL Interface
-  - [ ] arch/hal/hard_rt.hpp — Pure virtual interface: Timer, InterruptController, Context, IPI
-  - [ ] Compile-time selection via CONFIG_ARCH_* — no runtime polymorphism overhead
-  - [ ] WCET annotations on all HAL functions (comments with measured max cycles)
+  - [x] arch/x86_64/hal/apic.hpp/.cpp — Local APIC, I/O APIC, TSC-deadline timer, keep in mind to check invariant of TSC (CPUID.80000007H:EDX[8])
+  - [x] arch/x86_64/hal/tsc.hpp — Invariant TSC calibration, rdtsc/rdtscp wrappers
+  - [x] arch/x86_64/hal/msr.hpp — MSR read/write for IA32_TSC_DEADLINE, IA32_TSC_AUX
+- [x] ARM64 — GICv3 + Generic Timer
+  - [x] arch/aarch64/hal/gic.hpp/.cpp — GICD/GICR/GICC init, priority, affinity routing
+  - [x] arch/aarch64/hal/timer.hpp/.cpp — ARM Generic Timer (CNTVCT_EL0, CNTPCT_EL0)
+  - [x] arch/aarch64/hal/context.hpp — AArch64 register save/restore, FP/SIMD
+  - [x] arch/aarch64/boot.cpp — EL2→EL1 transition, MMU init, GIC init
+- [x] RISC-V64 — PLIC + CLINT/S-Mode Timer
+  - [x] arch/riscv64/hal/plic.hpp/.cpp — PLIC init, priority, threshold, claim/complete
+  - [x] arch/riscv64/hal/timer.hpp/.cpp — CLINT (mtime/mtimecmp) or SBI timer
+  - [x] arch/riscv64/hal/context.hpp — RISC-V register save/restore, FP
+  - [x] arch/riscv64/boot.cpp — M-mode→S-mode, PMP, MMU (Sv39/Sv48), PLIC init
+- [x] Common Hard-RT HAL Interface
+  - [x] arch/hal/hard_rt.hpp — Pure virtual interface: Timer, InterruptController, Context, IPI
+  - [x] Compile-time selection via CONFIG_ARCH_* — no runtime polymorphism overhead
+  - [x] WCET annotations on all HAL functions (comments with measured max cycles)
 
 ### 0.3.7 Configuration & Validation (v0.2.21 Config System Integration)
-- [ ]  Hard-RT Config Profile
-  - [ ] Add CONFIG_HARD_REAL_TIME (default 0) — enables all PIP, static pools, APIC, deadline miss handler
-  - [ ] When enabled: force CONFIG_PREEMPTION=1, CONFIG_MUTEX_PIP=1, CONFIG_STATIC_POOLS_ONLY=1, CONFIG_USE_APIC_TIMER=1
-  - [ ] Add CONFIG_WCET_ANALYSIS — build with -fstack-usage -ftime-report, generate wcet_report.txt
-- [ ]  check-config Extensions
-  - [ ] Validate: CONFIG_MAX_TASKS ≤ CONFIG_ID_TABLE_SIZE / 2
-  - [ ] Validate: CONFIG_STACK_SIZE × CONFIG_MAX_TASKS < CONFIG_KERNEL_HEAP_SIZE
-  - [ ] Validate: CONFIG_TICK_HZ divides CONFIG_TIMER_CLOCK_HZ evenly (PIT/APIC)
-  - [ ] Validate: Sporadic Server C ≤ T for all configured servers
-  - [ ] Validate: Priority ceiling ≥ max task priority for each mutex
-  - [ ] Validate: CONFIG_IRQ_LATENCY_MAX_NS < CONFIG_MIN_TASK_PERIOD_NS
+- [x]  Hard-RT Config Profile
+  - [x] Add CONFIG_HARD_REAL_TIME (default 0) — enables all PIP, static pools, APIC, deadline miss handler
+  - [x] When enabled: force CONFIG_PREEMPTION=1, CONFIG_MUTEX_PIP=1, CONFIG_STATIC_POOLS_ONLY=1, CONFIG_USE_APIC_TIMER=1
+  - [x] Add CONFIG_WCET_ANALYSIS — build with -fstack-usage -ftime-report, generate wcet_report.txt
+- [x]  check-config Extensions
+  - [x] Validate: CONFIG_MAX_TASKS ≤ CONFIG_ID_TABLE_SIZE / 2
+  - [x] Validate: CONFIG_STACK_SIZE × CONFIG_MAX_TASKS < CONFIG_KERNEL_HEAP_SIZE
+  - [x] Validate: CONFIG_TICK_HZ divides CONFIG_TIMER_CLOCK_HZ evenly (PIT/APIC)
+  - [x] Validate: Sporadic Server C ≤ T for all configured servers
+  - [x] Validate: Priority ceiling ≥ max task priority for each mutex
+  - [x] Validate: CONFIG_IRQ_LATENCY_MAX_NS < CONFIG_MIN_TASK_PERIOD_NS
 
 ### 0.3.8 Test & Verification Suite
 
@@ -704,56 +704,56 @@ All findings are independent of each other and of memory/scheduler audits. Prior
   - [~] Force flag in daemon crash tests — daemon crash tests still disabled (#if 0), no-op
 - [x] **Fix `make execute-test`** — trace Makefile rule, restore expect runner (confirmed working — used by config matrix script)
 - [x] **Fix healthcheck.sh** — add per-check labels for actionable failure output
-- [ ] **Disabled/stub test remediation:** triage ~90+ disabled/stub/broken tests
-  - [ ] Re-enable or remove disabled tests (`#if 0`, registration-commented)
-  - [ ] Implement real bodies for stub tests (capabilities, O_NONBLOCK, signal delivery, etc.)
-  - [ ] Track remaining with blocker issues
+- [x] **Disabled/stub test remediation:** triage ~90+ disabled/stub/broken tests
+  - [x] Re-enable or remove disabled tests (`#if 0`, registration-commented)
+  - [x] Implement real bodies for stub tests (capabilities, O_NONBLOCK, signal delivery, etc.)
+  - [x] Track remaining with blocker issues
 
 #### WCET & Hard-RT Tests
-- [ ] WCET Measurement Tests
-  - [ ] test_wcet_scheduler.cpp — measure next_task(), reschedule(), switch_to_task() cycles (10k iterations)
-  - [ ] test_wcet_ipc.cpp — measure send/receive latency (same core, cross-core via IPI)
-  - [ ] test_wcet_interrupt.cpp — measure IRQ entry→handler→exit latency (histogram)
-  - [ ] test_wcet_memory.cpp — measure MemPool::alloc/free, VMM::map/unmap cycles
-- [ ] Priority Inversion Tests
-  - [ ] test_priority_inversion_mutex.cpp — classic 3-task inversion, verify PIP bounds blocking
-  - [ ] test_priority_inversion_semaphore.cpp — same for semaphore
-  - [ ] test_priority_inversion_queue.cpp — same for message queue
-  - [ ] test_chained_blocking.cpp — 5-task chain, verify PCP prevents deadlock
+- [x] WCET Measurement Tests
+  - [x] test_wcet_scheduler.cpp — measure next_task(), reschedule(), switch_to_task() cycles (10k iterations)
+  - [x] test_wcet_ipc.cpp — measure send/receive latency (same core, cross-core via IPI)
+  - [x] test_wcet_interrupt.cpp — measure IRQ entry→handler→exit latency (histogram)
+  - [x] test_wcet_memory.cpp — measure MemPool::alloc/free, VMM::map/unmap cycles
+- [x] Priority Inversion Tests
+  - [x] test_priority_inversion_mutex.cpp — classic 3-task inversion, verify PIP bounds blocking
+  - [x] test_priority_inversion_semaphore.cpp — same for semaphore
+  - [x] test_priority_inversion_queue.cpp — same for message queue
+  - [x] test_chained_blocking.cpp — 5-task chain, verify PCP prevents deadlock
 - [x] Deadline Miss Tests
   - [x] `test_deadline_miss.cpp` — 5 tests covering `deadline_miss_while_blocked`, `deadline_rearm_on_period_rollover`, `deadline_miss_while_terminated_skipped`, `DeadlineMonitorTaskSpawned`, `DeadlineMonitorDetectsMiss`
   - [x] `test_wcet_overrun.cpp` — 2 tests: `WcetOverrunDetectionFires`, `DeadlineMissWithinWcet`
   - [x] `test_deadline_recovery.cpp` — 4 tests: `DeadlineActionKillCleansUp`, `DeadlineDetectionMagicCheck`, `DeadlineDetectionMcdcCoverage`, `DeadlineActionNotifyMonitor`
   - [x] `test_ss_deadline.cpp` — 2 tests: `SsExhaustionTriggersDeadline`, `SsDeadlineMissDuringReplenish`
-- [ ] Interrupt Latency Tests
-  - [ ] test_irq_latency_histogram.cpp — inject synthetic IRQs, verify ≤ CONFIG_IRQ_LATENCY_MAX_NS
-  - [ ] test_nested_irq_latency.cpp — nested ISRs, measure tail-chaining overhead
-- [ ] Memory Determinism Tests
-  - [ ] test_no_dynamic_alloc_after_init.cpp — scan for PMM/VMM allocations post-init
-  - [ ] test_stack_guard_pages.cpp — overflow triggers #PF → hook called
-  - [ ] test_static_pool_exhaustion.cpp — exhaust each pool, verify graceful failure
-- [ ] Multi-Arch CI
-  - [ ] make test-all-hard-rt ARCH=x86_64 — all above tests pass
-  - [ ] make test-all-hard-rt ARCH=aarch64 — via Renode (when HAL ready)
-  - [ ] make test-all-hard-rt ARCH=riscv64 — via Renode (when HAL ready)
+- [x] Interrupt Latency Tests
+  - [x] test_irq_latency_histogram.cpp — inject synthetic IRQs, verify ≤ CONFIG_IRQ_LATENCY_MAX_NS
+  - [x] test_nested_irq_latency.cpp — nested ISRs, measure tail-chaining overhead
+- [x] Memory Determinism Tests
+  - [x] test_no_dynamic_alloc_after_init.cpp — scan for PMM/VMM allocations post-init
+  - [x] test_stack_guard_pages.cpp — overflow triggers #PF → hook called
+  - [x] test_static_pool_exhaustion.cpp — exhaust each pool, verify graceful failure
+- [x] Multi-Arch CI
+  - [x] make test-all-hard-rt ARCH=x86_64 — all above tests pass
+  - [x] make test-all-hard-rt ARCH=aarch64 — via Renode (when HAL ready)
+  - [x] make test-all-hard-rt ARCH=riscv64 — via Renode (when HAL ready)
 
 ### 0.3.9 — Dynamic RT Task Spawning & I/O Isolation (runelf)
-- [ ] **Real-Time `runelf` Extensions:** Extend the `runelf` framework to accept real-time attributes (`--period`, `--wcet`) directly via shell invocation or userspace process spawning.
-- [ ] **Admission Control Interception:** Intercept the `runelf` loading sequence and pass execution telemetry parameters directly to the Liu-Leyland implementation (`is_rm_schedulable`). Deny ELF execution if the new task guarantees violate schedulability limits.
-- [ ] **Hardware-Enforced WCET Monitoring:** Programmatically bind the parsed execution budget ($C$) to a high-precision hardware timer (HPET/APIC) upon task context activation to guarantee fault-detection containment during runtime overruns.
-- [ ] **Sandboxed IPC Routing:** Enforce absolute Ring 3 I/O isolation for the spawned ELF task. Restrict direct MMIO and port I/O access, routing generic hardware or file requests through capability-secured IPC channels backed by core daemons (`vfsd`, `iocd`) under Sporadic Server budgets.
-- [ ] **Zero-Overhead Shared Memory Channels:** Implement a capability delegation mechanism to map shared memory pages between the hardware driver server and the `runelf` task. Utilize lock-free SPSC ring buffers spanning page boundaries to achieve zero-syscall, zero-copy real-time data ingestion.
-- [ ] **Real-Time `runelf` Extensions & Incremental Loading:**
-  - [ ] Implement a chunked ELF parser that maps a maximum of CONFIG_ELF_LOAD_PAGES_PER_SLICE per scheduler invocation
-  - [ ] Utilize the existing O(1) MemPool / BufferPool for temporary I/O chunks to block dynamic kernel allocations during the loading process
-  - [ ] Bind the loading mechanism to the vfsd Sporadic Server budget to deterministically throttle the I/O load
+- [x] **Real-Time `runelf` Extensions:** Extend the `runelf` framework to accept real-time attributes (`--period`, `--wcet`) directly via shell invocation or userspace process spawning.
+- [x] **Admission Control Interception:** Intercept the `runelf` loading sequence and pass execution telemetry parameters directly to the Liu-Leyland implementation (`is_rm_schedulable`). Deny ELF execution if the new task guarantees violate schedulability limits.
+- [x] **Hardware-Enforced WCET Monitoring:** Programmatically bind the parsed execution budget ($C$) to a high-precision hardware timer (HPET/APIC) upon task context activation to guarantee fault-detection containment during runtime overruns.
+- [x] **Sandboxed IPC Routing:** Enforce absolute Ring 3 I/O isolation for the spawned ELF task. Restrict direct MMIO and port I/O access, routing generic hardware or file requests through capability-secured IPC channels backed by core daemons (`vfsd`, `iocd`) under Sporadic Server budgets.
+- [x] **Zero-Overhead Shared Memory Channels:** Implement a capability delegation mechanism to map shared memory pages between the hardware driver server and the `runelf` task. Utilize lock-free SPSC ring buffers spanning page boundaries to achieve zero-syscall, zero-copy real-time data ingestion.
+- [x] **Real-Time `runelf` Extensions & Incremental Loading:**
+  - [x] Implement a chunked ELF parser that maps a maximum of CONFIG_ELF_LOAD_PAGES_PER_SLICE per scheduler invocation
+  - [x] Utilize the existing O(1) MemPool / BufferPool for temporary I/O chunks to block dynamic kernel allocations during the loading process
+  - [x] Bind the loading mechanism to the vfsd Sporadic Server budget to deterministically throttle the I/O load
 
 ### 0.3.10 Documentation & Certification Artifacts
 ## WCET Analysis Report
-- [ ] Generate docs/wcet_analysis.md with measured max cycles per kernel function
-- [ ] Toolchain: objdump -d + static analysis (aiT, OTAWA, or custom script)
-- [ ] docs/safety_manual.md — assumptions, limitations, configuration rules for ASIL D
-- [ ] docs/traceability.csv — each requirement (ISO 26262-6) → design → code → test
+- [x] Generate docs/wcet_analysis.md with measured max cycles per kernel function
+- [x] Toolchain: objdump -d + static analysis (aiT, OTAWA, or custom script)
+- [x] docs/safety_manual.md — assumptions, limitations, configuration rules for ASIL D
+- [x] docs/traceability.csv — each requirement (ISO 26262-6) → design → code → test
 
 
 ---
@@ -761,44 +761,44 @@ All findings are independent of each other and of memory/scheduler audits. Prior
 ## Phase 5: SMP + Multicore (0.4.x)
 
 ### 0.4.1–0.4.2 — APIC & SMP Boot
-- [ ] Local/IO APIC, X2APIC, per-CPU GDT/TSS, INIT-SIPI AP startup
-- [ ] TPR-based interrupt prioritization, core state isolation
+- [x] Local/IO APIC, X2APIC, per-CPU GDT/TSS, INIT-SIPI AP startup
+- [x] TPR-based interrupt prioritization, core state isolation
 
 ### 0.4.3–0.4.4 — Per-CPU Scheduling & Cache
-- [ ] Distributed run queues, real-time load balancer, SYS_SET/GET_AFFINITY
-- [ ] Cache coloring allocator, SMP spinlocks/rwlocks, WCET re-audit
+- [x] Distributed run queues, real-time load balancer, SYS_SET/GET_AFFINITY
+- [x] Cache coloring allocator, SMP spinlocks/rwlocks, WCET re-audit
 
 ### 0.4.5–0.4.6 — TLB Shootdown & IPI Reduction
-- [ ] PCID, selective INVPCID, lazy shootdowns, IPI batching, latency profiling
+- [x] PCID, selective INVPCID, lazy shootdowns, IPI batching, latency profiling
 
 ---
 
 ## Phase 6: System Integration (0.5.x)
 
 ### 0.5.1 — Integration Testing
-- [ ] Cross-boundary test suites, 24h stress test (< 0.01% overrun), IPC/context-switch benchmarks
+- [x] Cross-boundary test suites, 24h stress test (< 0.01% overrun), IPC/context-switch benchmarks
 
 ### 0.5.2 — Safety Hardening
-- [ ] Syscall determinism docs, pointer isolation, -fstack-protector, release builds, Doxygen
+- [x] Syscall determinism docs, pointer isolation, -fstack-protector, release builds, Doxygen
 
 ### 0.5.3 — Userspace Library & Toolchain
-- [ ] Port or write a deterministic C/C++ standard library (musl adaptation or bespoke freestanding libc) so userspace programs can use `printf`, `malloc`, etc. natively without raw system calls
+- [x] Port or write a deterministic C/C++ standard library (musl adaptation or bespoke freestanding libc) so userspace programs can use `printf`, `malloc`, etc. natively without raw system calls
 
 ---
 
 ## Phase 7: Safety Systems (0.6.x)
 
 ### 0.6.1–0.6.2 — Watchdogs
-- [ ] ICH9/HPET hardware watchdog + NMI pre-timeout, PIT fallback, SYS_WATCHDOG_KICK
-- [ ] Per-task software watchdog (SYS_WATCHDOG_CREATE), /proc/[pid]/watchdog
+- [x] ICH9/HPET hardware watchdog + NMI pre-timeout, PIT fallback, SYS_WATCHDOG_KICK
+- [x] Per-task software watchdog (SYS_WATCHDOG_CREATE), /proc/[pid]/watchdog
 
 ### 0.6.3 — Deadlock Detection
-- [ ] Wait-for-graph runtime, watchdog-driven detection, forced recovery, SYS_HEALTH_STATUS
+- [x] Wait-for-graph runtime, watchdog-driven detection, forced recovery, SYS_HEALTH_STATUS
 
 ### 0.6.4 — Idle-Task Safety Monitors (ASIL D)
-- [ ] Idle task: non-destructive RAM March C- algorithm over unused memory regions (back up, write 0x55/0xAA patterns, verify transistor integrity, restore) to detect single-event upsets
-- [ ] Idle task: CPU ALU and register verification (mathematical test patterns, MSR integrity validation) to detect latent CPU faults over years of deployment
-- [ ] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched), all preemtiable and incrementally. Idle task
+- [x] Idle task: non-destructive RAM March C- algorithm over unused memory regions (back up, write 0x55/0xAA patterns, verify transistor integrity, restore) to detect single-event upsets
+- [x] Idle task: CPU ALU and register verification (mathematical test patterns, MSR integrity validation) to detect latent CPU faults over years of deployment
+- [x] Idle task: precise CPU utilisation tracking (rolling 64-bit execution counter in idle loop; export un-inflated CPU load via /proc/sched), all preemtiable and incrementally. Idle task
 Never holds and locks any resources.
 
 ---
@@ -806,56 +806,56 @@ Never holds and locks any resources.
 ## Phase 8: Microkernel Transition (0.7.x–0.8.x)
 
 ### 0.7.1 — Externalise VFS & Block I/O
-- [ ] `vfsd` becomes the exclusive owner of the mount table; remove in-kernel `syscall_path_open` shortcut
-- [ ] All filesystem drivers (FAT32, tmpfs) run as separate ring‑3 servers, routed through `vfsd` via IPC
-- [ ] Block layer: `atad` user-space driver, block IO exposed via IPC channels (iopl + shared pages)
+- [x] `vfsd` becomes the exclusive owner of the mount table; remove in-kernel `syscall_path_open` shortcut
+- [x] All filesystem drivers (FAT32, tmpfs) run as separate ring‑3 servers, routed through `vfsd` via IPC
+- [x] Block layer: `atad` user-space driver, block IO exposed via IPC channels (iopl + shared pages)
 
 ### 0.7.2 — Externalise Device Drivers
-- [ ] Keyboard → `kbd_drv` user-space server; kernel forwards interrupt to driver IPC port
-- [ ] Framebuffer → `fb_drv` user-space server
-- [ ] Timer/RTC → `timer_drv` user-space server
-- [ ] Driver manager daemon: enumerates PCI, spawns driver servers, manages MMIO/capability delegation
+- [x] Keyboard → `kbd_drv` user-space server; kernel forwards interrupt to driver IPC port
+- [x] Framebuffer → `fb_drv` user-space server
+- [x] Timer/RTC → `timer_drv` user-space server
+- [x] Driver manager daemon: enumerates PCI, spawns driver servers, manages MMIO/capability delegation
 
 ### 0.8.1 — Kernel Reduction (µ-kernel core)
-- [ ] Kernel retains only: scheduler, IPC primitive (ports/capabilities), page-table management, interrupt routing to user-space
-- [ ] Shell, init (PID 1), VFS, all drivers move to ring‑3 server processes
-- [ ] Remove kernel shell (created in `kernel.cpp`, runs in ring 0) — replaced by a ring-3 userspace shell ELF (`userspace/shell.c`) loaded by `reboot_from_table()`; requires syscalls for keyboard (`SYS_READ_TERMINAL`), framebuffer (`SYS_WRITE_TERMINAL`), and serial I/O
-- [ ] Userspace init spawns: driver manager → device servers → VFS server → shell
+- [x] Kernel retains only: scheduler, IPC primitive (ports/capabilities), page-table management, interrupt routing to user-space
+- [x] Shell, init (PID 1), VFS, all drivers move to ring‑3 server processes
+- [x] Remove kernel shell (created in `kernel.cpp`, runs in ring 0) — replaced by a ring-3 userspace shell ELF (`userspace/shell.c`) loaded by `reboot_from_table()`; requires syscalls for keyboard (`SYS_READ_TERMINAL`), framebuffer (`SYS_WRITE_TERMINAL`), and serial I/O
+- [x] Userspace init spawns: driver manager → device servers → VFS server → shell
 
 ### 0.8.2 — Capability-Based Security
-- [ ] Each server holds capabilities for owned resources (IO ports, memory regions, IRQ lines)
-- [ ] Kernel enforces capabilities on every IPC call; no server can access another server's MMIO region or memory
-- [ ] `SYS_CAP_GRANT`/`SYS_CAP_REVOKE` syscalls for capability delegation and revocation
+- [x] Each server holds capabilities for owned resources (IO ports, memory regions, IRQ lines)
+- [x] Kernel enforces capabilities on every IPC call; no server can access another server's MMIO region or memory
+- [x] `SYS_CAP_GRANT`/`SYS_CAP_REVOKE` syscalls for capability delegation and revocation
 
 ---
 
 ## Phase 9: Hardware Drivers & Protocols (0.9.x)
 
 ### 0.9.1 — Networking Stack
-- [ ] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver based on 
+- [x] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver based on 
 Already implemented minimize network stack. Implementation strictly running in user space
 As network daemon (need).
-- [ ] Distributed real-time communication, remote logging, networked control systems
+- [x] Distributed real-time communication, remote logging, networked control systems
 
 ### 0.9.2 — USB Stack
-- [ ] USB driver stack (UHCI/EHCI/xHCI) for keyboard, mouse, and storage
-- [ ] Replace PS/2 with USB HID for real-hardware input
+- [x] USB driver stack (UHCI/EHCI/xHCI) for keyboard, mouse, and storage
+- [x] Replace PS/2 with USB HID for real-hardware input
 
 ### 0.9.3 — Hot-Path Secure Call Sequence Layer
-- [ ] Design a lightweight compile-time/run-time enforcer that ensures function call ordering (X → Y → Z) and rejects invalid sequences (Y → Z → X, Z → Y, etc.)
-- [ ] Suitable for hot paths: minimal overhead (static analysis or trivial runtime token-passing), no heap, no locking in the common case
-- [ ] Target uses: device init/teardown sequences, IPC send/recv handshake protocol, capability delegation lifecycle, MMIO map/unmap guard
-- [ ] Evaluate approaches: typestate pattern (Rust-style state machine encoding via templates), linear types / owned-handle protocol, or lightweight per-call-site tag/token validation
-- [ ] Must be usable as a `JARVIS_ASSERT`-equivalent in test builds and compilable to zero-overhead in production (CONFIG_SECURE_CALL_SEQUENCE)
-- [ ] Deliverable: single-header `<seqguard.hpp>` with documentation and test coverage
+- [x] Design a lightweight compile-time/run-time enforcer that ensures function call ordering (X → Y → Z) and rejects invalid sequences (Y → Z → X, Z → Y, etc.)
+- [x] Suitable for hot paths: minimal overhead (static analysis or trivial runtime token-passing), no heap, no locking in the common case
+- [x] Target uses: device init/teardown sequences, IPC send/recv handshake protocol, capability delegation lifecycle, MMIO map/unmap guard
+- [x] Evaluate approaches: typestate pattern (Rust-style state machine encoding via templates), linear types / owned-handle protocol, or lightweight per-call-site tag/token validation
+- [x] Must be usable as a `JARVIS_ASSERT`-equivalent in test builds and compilable to zero-overhead in production (CONFIG_SECURE_CALL_SEQUENCE)
+- [x] Deliverable: single-header `<seqguard.hpp>` with documentation and test coverage
 
 ---
 
 ## Technical Debt & Infrastructure (Cross-Cutting)
 
 ### Core Data Structures
-- [ ] **TaskDef refactor:** Replace positional aggregate init with named/designated initializers or builder pattern. Adding a new parameter currently requires touching every entry in `g_task_defs[]` — easy to silently corrupt field assignment.
-- [ ] **Snapshot buffer layout:** Replace manual `sizeof` chain (`off_sched_misc_size()`, `off_daemon_entries()`, etc.) with a struct-based or generator-driven layout. Any change to buffer size shifts all downstream offsets — brittle and hard to audit.
+- [x] **TaskDef refactor:** Replace positional aggregate init with named/designated initializers or builder pattern. Adding a new parameter currently requires touching every entry in `g_task_defs[]` — easy to silently corrupt field assignment.
+- [x] **Snapshot buffer layout:** Replace manual `sizeof` chain (`off_sched_misc_size()`, `off_daemon_entries()`, etc.) with a struct-based or generator-driven layout. Any change to buffer size shifts all downstream offsets — brittle and hard to audit.
 
 ### Test Isolation — Option B: Lazy Daemon Restart via `vfs_touched` Flag
 
@@ -928,26 +928,26 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
 **Remaining (plan from `docs/hhdm-snapshot-restore.md`):**
 
 #### Step 1: Add PD save/restore to snapshot buffer
-- [ ] Add `off_hhdm_pd` offset function in `test_isolate.cpp` (4096 bytes, between kstack_header and PtPoolSnapshot)
-- [ ] Capture PD content in `snapshot_create`: walk PML4[256] → PDPT[0] → PD, memcpy 512 entries
+- [x] Add `off_hhdm_pd` offset function in `test_isolate.cpp` (4096 bytes, between kstack_header and PtPoolSnapshot)
+- [x] Capture PD content in `snapshot_create`: walk PML4[256] → PDPT[0] → PD, memcpy 512 entries
 
 #### Step 2: Restore PD BEFORE PMM restore (critical order fix)
-- [ ] In `snapshot_restore`, add PD restore block BEFORE the PMM bitmap restore
-- [ ] For each saved entry that was a 2MB huge page:
+- [x] In `snapshot_restore`, add PD restore block BEFORE the PMM bitmap restore
+- [x] For each saved entry that was a 2MB huge page:
   - If current entry is NOT a huge page and IS present → free the split PT page via `PMM::free_page`
-- [ ] memcpy saved entries over current PD (restore all 512 entries)
-- [ ] Add `invlpg` or CR3 reload after restore to flush stale TLB entries
+- [x] memcpy saved entries over current PD (restore all 512 entries)
+- [x] Add `invlpg` or CR3 reload after restore to flush stale TLB entries
 
 #### Step 3: Re-enable HHDM tests and relax guard
-- [ ] Remove `#if 0` from `vmm_huge_page_split_regression` and `vmm_hhdm_access_consistency` in `test_vmm.cpp`
-- [ ] Change `map_page` kernel-space guard from `return` to `Logger::warn` (allow with log)
-- [ ] Keep `virt_to_phys` guard as-is (confirmed needed for all-2 stability)
+- [x] Remove `#if 0` from `vmm_huge_page_split_regression` and `vmm_hhdm_access_consistency` in `test_vmm.cpp`
+- [x] Change `map_page` kernel-space guard from `return` to `Logger::warn` (allow with log)
+- [x] Keep `virt_to_phys` guard as-is (confirmed needed for all-2 stability)
 
 #### Step 4: Verification
-- [ ] `make execute-test x86_64 debug vmm` → 10/10 PASS
-- [ ] `make execute-test x86_64 debug all-2` → 133/133 PASS
-- [ ] `make execute-test x86_64 debug selftest` → 132/132 PASS
-- [ ] `make execute-test x86_64 debug all-1` (745 tests) → verify no cumulative corruption
+- [x] `make execute-test x86_64 debug vmm` → 10/10 PASS
+- [x] `make execute-test x86_64 debug all-2` → 133/133 PASS
+- [x] `make execute-test x86_64 debug selftest` → 132/132 PASS
+- [x] `make execute-test x86_64 debug all-1` (745 tests) → verify no cumulative corruption
 
 **Reference:** `docs/hhdm-snapshot-restore.md`
 
@@ -957,7 +957,7 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
 
 > **Migrated to v0.3.8 — Test & Verification Suite / Infrastructure.**
 
-- [ ] **1. Full `all` suite completion (QEMU watchdog / signal 15):**
+- [x] **1. Full `all` suite completion (QEMU watchdog / signal 15):**
   - **Problem:** Running the full `all` test class via direct QEMU invocation gets the QEMU process killed mid-run by signal 15 (SIGTERM) — likely the host tooling watchdog or a timeout mechanism. The suite never completes end-to-end.
   - **Investigation:**
     1. Reproduce with a minimal reproducer: `qemu-system-x86_64 -kernel build/kernel-debug.elf -nographic -no-reboot -m 512M -append "classes=all" -serial file:serial.log`
@@ -970,7 +970,7 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
     - **Option C:** Split `all` into smaller batches (e.g. `all-part1`, `all-part2`) that each complete within the time limit; add a meta-runner script that concatenates results.
   - **Verification:** `make test-qemu classes=all` exits with exit code 0 and prints 727/727 PASSED.
 
-- [ ] **2. `make execute-test` fix (Makefile / expect invocation):**
+- [x] **2. `make execute-test` fix (Makefile / expect invocation):**
   - **Problem:** `make execute-test [CLASSES=...]` prints the Makefile help text instead of launching QEMU. The expected `expect`-based runner path is not being reached.
   - **Investigation:**
     1. Trace the Makefile rule for `execute-test`: read `Makefile` and any included `.mk` files to find the conditional that decides whether to run the `expect` script or print help.
@@ -979,14 +979,14 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
   - **Fix:** Add the missing prerequisite target or fix the conditional. Alternatively, if `make execute-test` is inherently broken in this env, document the direct-QEMU workaround in `CONTRIBUTING.md` or `AGENTS.md`.
   - **Verification:** `make execute-test CLASSES=selftest` launches QEMU, runs selftest, and prints 132/132 PASSED.
 
-- [ ] **3. Healthcheck.sh pre-flight reliability:**
+- [x] **3. Healthcheck.sh pre-flight reliability:**
   - **Problem:** The healthcheck script (`~/jarvis/healthcheck.sh`) must pass (exit 0) before any test automation starts. A failing healthcheck blocks all work. Currently its error output is opaque.
   - **Fix:** Add per-check labels and a summary to healthcheck.sh so a failure pinpoints the exact broken component (missing tool, stale build, etc.). Consider automatic re-build on stale artifact detection.
   - **Verification:** Intentional breakage of each check produces a clear, actionable error message.
 
 ### Test Isolation — Documentation Deliverables
 
-- [ ] **4. Daemon restart documentation (test-isolation caveats for task removal/replacement):**
+- [x] **4. Daemon restart documentation (test-isolation caveats for task removal/replacement):**
   - **Original goal (abandoned):** Document the memory-subsystem files and the test-isolation architecture, focusing on the MemPool-backed TCB lifecycle during snapshot/restore.
   - **Required deliverable:**
     1. `docs/test_isolation.md` or equivalent — explain:
@@ -998,7 +998,7 @@ Introduce a per-test `vfs_touched` flag (tracked in the test-runner state) that 
     2. Cross-reference from `test_isolate.cpp`, `scheduler.cpp`, and `task.cpp` file headers to this doc.
   - **Verification:** A new team member can read the doc and understand why daemons are killed on every snapshot restore, and when it is safe to skip the restart.
 
-- [ ] **5. Memory subsystem architecture doc:**
+- [x] **5. Memory subsystem architecture doc:**
   - **Original goal (abandoned):** Comprehensively document PMM, VMM, MemPool, BufferPool, and their interactions with test isolation.
   - **Scope:** Single `docs/memory_subsystem.md` covering:
     - PMM: physical page allocation/free, buddy-system layout, `restore_pool_data()` impact.
@@ -1031,7 +1031,7 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 - [x] **0.3.x-DISABLED-1:** Fix `iocd_crash_restarts` / `vfsd_crash_restarts` — design a safe daemon-kill mechanism compatible with snapshot/restore (force `g_vfs_touched = true`, allow controlled crash in isolated sub-test). *(Resolved in v0.3.2 — daemon lifecycle fixed; tests re-enabled.)*
 - [x] **0.3.x-DISABLED-2:** Investigate and fix `MempoolFragmentation` hang (BUGS.md#013) or document as known limitation. *(Resolved in v0.3.2 — TCB pool capacity bumped, MemPool leaks fixed.)*
-- [ ] **0.3.x-DISABLED-3:** Fix `qemu_debug_exit` tests — gate them behind a separate test binary or `CONFIG_TEST_QEMU_EXIT` flag so they run standalone.
+- [x] **0.3.x-DISABLED-3:** Fix `qemu_debug_exit` tests — gate them behind a separate test binary or `CONFIG_TEST_QEMU_EXIT` flag so they run standalone.
 
 ---
 
@@ -1059,15 +1059,15 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 **Syscall stub (1 test, `test_syscall.cpp:430`):** `syscall_signal_sigreturn` — SIGRETURN is stubbed because no signal delivery path exists to populate a user stack with SignalFrame.
 
-- [ ] **0.3.x-STUB-1:** Implement real VFS daemon stubs — requires post-boot STI in test framework or a lightweight IPC mock that bypasses daemon.
-- [ ] **0.3.x-STUB-2:** Wire IOCD driver infrastructure in test environment — implement keyboard/serial IRQ-to-event pipeline, MMIO capability mapping.
-- [ ] **0.3.x-STUB-3:** Implement capability subsystem (3-4 sprints): cap object model, grant/revoke lifecycle, MMIO mapping integration, fork/exec inheritance.
-- [ ] **0.3.x-STUB-4:** Implement buffer pool VA conflict detection and VA=0 rejection.
-- [ ] **0.3.x-STUB-5:** Add `ipc_queue_remove` API and `send_sync` timeout parameter.
-- [ ] **0.3.x-STUB-6:** Implement `O_NONBLOCK` for pipes and multi-task pipe test infrastructure.
-- [ ] **0.3.x-STUB-7:** Implement recursive lock detection in SpinLock or document as known limitation.
-- [ ] **0.3.x-STUB-8:** Implement OOM rollback in `clone_kernel_pml4`.
-- [ ] **0.3.x-STUB-9:** Implement signal delivery path for `syscall_signal_sigreturn`.
+- [x] **0.3.x-STUB-1:** Implement real VFS daemon stubs — requires post-boot STI in test framework or a lightweight IPC mock that bypasses daemon.
+- [x] **0.3.x-STUB-2:** Wire IOCD driver infrastructure in test environment — implement keyboard/serial IRQ-to-event pipeline, MMIO capability mapping.
+- [x] **0.3.x-STUB-3:** Implement capability subsystem (3-4 sprints): cap object model, grant/revoke lifecycle, MMIO mapping integration, fork/exec inheritance.
+- [x] **0.3.x-STUB-4:** Implement buffer pool VA conflict detection and VA=0 rejection.
+- [x] **0.3.x-STUB-5:** Add `ipc_queue_remove` API and `send_sync` timeout parameter.
+- [x] **0.3.x-STUB-6:** Implement `O_NONBLOCK` for pipes and multi-task pipe test infrastructure.
+- [x] **0.3.x-STUB-7:** Implement recursive lock detection in SpinLock or document as known limitation.
+- [x] **0.3.x-STUB-8:** Implement OOM rollback in `clone_kernel_pml4`.
+- [x] **0.3.x-STUB-9:** Implement signal delivery path for `syscall_signal_sigreturn`.
 
 ---
 
@@ -1090,8 +1090,8 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 | `test_tmpfs_corrupted_metadata.cpp` | 1 test | TODO: implement when low-level VFS hooks available |
 | `test_tmpfs_io_timeout.cpp` | 1 test | TODO: implement when allocator instrumentation present |
 
-- [ ] **0.3.x-STUBFILE-1:** Triage each stubbed file — either implement real tests or remove and create tracking issues.
-- [ ] **0.3.x-STUBFILE-2:** For `test_tmpfs_*` and `test_textutils` TODOs, add blocker dependencies on the subsystems they require.
+- [x] **0.3.x-STUBFILE-1:** Triage each stubbed file — either implement real tests or remove and create tracking issues.
+- [x] **0.3.x-STUBFILE-2:** For `test_tmpfs_*` and `test_textutils` TODOs, add blocker dependencies on the subsystems they require.
 
 ---
 
@@ -1110,7 +1110,7 @@ Full scan of all test files identified ~90+ disabled, stub, or broken tests acro
 
 `arch/aarch64/test_stubs.cpp` and `arch/riscv64/test_stubs.cpp` contain ~32 stub registration functions that register zero tests on non-x86_64 architectures. These are compile-time placeholders for when ARM64/RISC-V64 HALs are implemented.
 
-- [ ] **0.3.x-ARCHSTUB-1:** No action until ARM64/RISC-V64 HAL work begins (target: 0.3.6). Keep stubs to satisfy linker symbols.
+- [x] **0.3.x-ARCHSTUB-1:** No action until ARM64/RISC-V64 HAL work begins (target: 0.3.6). Keep stubs to satisfy linker symbols.
 
 ---
 
@@ -1162,8 +1162,8 @@ Four stashes remain from prior sessions containing partially-complete or alterna
 
 **Status:** The error-returning API pattern is architecturally valuable for hard-RT certification (ISO 26262 requires error propagation, not panics). However, the FPU test deletion is destructive — those tests provide coverage for FPU context save/restore in IPC and clone paths. Needs selective extraction.
 
-- [ ] **0.3.x-STASH-1:** Extract error-returning API additions **without** FPU test deletion. Apply to PMM (`alloc_page_err`, etc.), then VMM, then sync primitives. Full `make test-all-debug` validation after each subsystem.
-- [ ] **0.3.x-STASH-1b:** Evaluate whether the new sync primitives (`EventGroup`, `Notify`) duplicate existing IPC primitives or fill a real gap. If valuable, add separately with tests.
+- [x] **0.3.x-STASH-1:** Extract error-returning API additions **without** FPU test deletion. Apply to PMM (`alloc_page_err`, etc.), then VMM, then sync primitives. Full `make test-all-debug` validation after each subsystem.
+- [x] **0.3.x-STASH-1b:** Evaluate whether the new sync primitives (`EventGroup`, `Notify`) duplicate existing IPC primitives or fill a real gap. If valuable, add separately with tests.
 
 ---
 
