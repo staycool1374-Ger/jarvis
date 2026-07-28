@@ -231,6 +231,9 @@ struct KSlotEntry {
 };
 
 static constexpr int32_t KSLOT_POOL_SIZE = 64;
+static_assert(KSLOT_POOL_SIZE >= CONFIG_MAX_TASKS,
+              "KSLOT_POOL_SIZE must be >= CONFIG_MAX_TASKS to provide a "
+              "guarded kernel-stack slot for every possible task");
 static KSlotEntry s_kslot_pool[KSLOT_POOL_SIZE];
 static int32_t    s_kslot_free_head = -1;
 static int32_t    s_kslot_list      = -1;
@@ -491,13 +494,13 @@ uint64_t stack_size = stack_size_for_priority(priority);
     }
 
     tcb->stack_phys_ = stack_phys;
-    // Use the pre-allocated private kernel-stack window when not running
-    // under test isolation (the window's page-table pages are in the pool,
-    // which survives snapshot_restore via PtPoolSnapshot).  During tests
-    // use HHDM stacks to avoid any window-slot bookkeeping interaction.
-    // See docs/kstack-window-pt-pool.md.
-    bool use_window = !Scheduler::is_test_active();
-    if (use_window) {
+    // Use the pre-allocated private kernel-stack window (provides a guard
+    // page below each stack).  If the window is exhausted, fall back to
+    // HHDM direct mapping (no guard page but still functional).
+    // The window's page-table pages survive snapshot_restore via
+    // PtPoolSnapshot; slot-bookkeeping desync after restore is acceptable
+    // because the fallback handles exhaustion gracefully.
+    {
         uint64_t slot_va = alloc_kslot(stack_size);
         if (slot_va) {
             tcb->kstack_slot_va_ = slot_va;
@@ -509,19 +512,15 @@ uint64_t stack_size = stack_size_for_priority(priority);
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
             tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
             tcb->kernel_stack_top = kstack_va + stack_size;
-            goto done_stack;
+        } else {
+            tcb->kstack_slot_va_ = 0;
+            tcb->kstack_slot_size_ = 0;
+            uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
+            tcb->kernel_stack_top = stack_virt + stack_size;
         }
-        // Window exhausted — fall through to HHDM.
     }
-    tcb->kstack_slot_va_ = 0;
-    tcb->kstack_slot_size_ = 0;
-    {
-        uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
-        tcb->kernel_stack_top = stack_virt + stack_size;
-    }
-done_stack:
 
     // PMM does not zero freed pages (it poison-fills them, e.g. with 0x0b),
     // so a stack allocated from recycled memory can retain stale poison in
@@ -641,10 +640,26 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     }
     tcb->stack_phys_ = kstack_phys;
 
-    uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
-    // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
-    tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+    // Route through kslot for guard page below kernel stack.
+    uint64_t slot_va = alloc_kslot(STACK_SIZE);
+    if (slot_va) {
+        tcb->kstack_slot_va_ = slot_va;
+        tcb->kstack_slot_size_ = ((STACK_SIZE + 4095) / 4096) * 4096 + 4096;
+        uint64_t kstack_va = slot_va + 4096;
+        for (size_t i = 0; i < kernel_stack_pages; ++i)
+            map_kstack_page(kstack_va + i * arch::PAGE_SIZE,
+                            kstack_phys + i * arch::PAGE_SIZE);
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
+        tcb->kernel_stack_top = kstack_va + STACK_SIZE;
+    } else {
+        tcb->kstack_slot_va_ = 0;
+        tcb->kstack_slot_size_ = 0;
+        uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
+        tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+    }
 
     size_t user_stack_pages = (user_stack_size + 4095) / arch::PAGE_SIZE;
     uint64_t ustack_phys = PMM::alloc_user_contiguous(user_stack_pages);
@@ -845,16 +860,32 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
     }
     tcb->stack_phys_ = kstack_phys;
 
+    // Route through kslot for guard page below kernel stack.
     bool is_user_task = (parent->page_table_ != 0);
-    if (is_user_task) {
-        uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+    uint64_t slot_va = alloc_kslot(STACK_SIZE);
+    if (slot_va) {
+        tcb->kstack_slot_va_ = slot_va;
+        tcb->kstack_slot_size_ = ((STACK_SIZE + 4095) / 4096) * 4096 + 4096;
+        uint64_t kstack_va = slot_va + 4096;
+        for (size_t i = 0; i < stack_pages; ++i)
+            map_kstack_page(kstack_va + i * arch::PAGE_SIZE,
+                            kstack_phys + i * arch::PAGE_SIZE);
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
-        tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+        tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
+        tcb->kernel_stack_top = kstack_va + STACK_SIZE;
     } else {
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_phys);
-        tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
+        tcb->kstack_slot_va_ = 0;
+        tcb->kstack_slot_size_ = 0;
+        if (is_user_task) {
+            uint64_t kstack_virt = arch::HHDM_OFFSET + kstack_phys;
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_virt);
+            tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
+        } else {
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_phys);
+            tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
+        }
     }
 
 #if defined(CONFIG_ARCH_X86_64)
