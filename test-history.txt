@@ -89,3 +89,4 @@
 2026-07-29 20:02:00 testrunner PASSED: 11 FAILED: 0 TIME: ~6s STATUS: test 11 triggers expected panic
 2026-07-29 22:00:00 all-1 PASSED: 717 FAILED: 0 TIME: 65603ms
 2026-07-29 23:00:00 all-1 PASSED: 722 FAILED: 0 TIME: ~66s
+2026-07-29 23:30:00 all PASSED: 820 FAILED: 0 TIME: ~85s STATUS: GPF at test 820 in PMM::restore_pool_snapshot (cumulative corruption limit pushed from ~400 to ~820)

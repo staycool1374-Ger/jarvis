@@ -139,9 +139,12 @@ static size_t off_user_page_data() {
     return off_user_page_count() + sizeof(uint64_t);
 }
 
+static constexpr size_t PML4_USER_BYTES = 256 * sizeof(uint64_t); // 2048
+
 static size_t off_kstack_header(size_t user_page_count) {
     return off_user_page_data() +
-           user_page_count * (sizeof(uint64_t) + arch::PAGE_SIZE);
+           user_page_count * (sizeof(uint64_t) + arch::PAGE_SIZE) +
+           PML4_USER_BYTES;
 }
 
 static size_t off_pt_pool(size_t user_page_count, uint64_t num_kstacks) {
@@ -285,6 +288,22 @@ bool snapshot_create() {
         }
     }
 
+    // ---- Kernel PML4 user entries save ----
+    // Preserve PML4[0..255] across test cycles so user-space mappings
+    // set up by the ELF loader survive snapshot_restore.  Without this,
+    // is_user_string and copy_from_user would crash on unmapped pages.
+    {
+        uint64_t pml4_phys = VMM::get_kernel_pml4();
+        if (pml4_phys) {
+            auto *pml4 = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+            __builtin_memcpy(
+                g_snapshot + off_kstack_header(user_page_count) -
+                    PML4_USER_BYTES,
+                pml4, PML4_USER_BYTES);
+        }
+    }
+
     // ---- Kernel stacks (save all tasks) ----
     {
         uint64_t num_kstacks = Scheduler::task_count();
@@ -395,22 +414,24 @@ void snapshot_restore(const char *test_name) {
     // both freelists from the restored bitmaps to prevent double-alloc.
     PMM::rebuild_free_list();
 
-    // ---- Clear stale kernel PML4 user entries ----
-    // VMM::map_page allocates page-table pages and writes their physical
-    // addresses into the kernel PML4 entries 0-255 (user space).  After
-    // PMM restore those pages are freed, but the PML4 entries still point
-    // to the freed pages.  Clear all 256 user entries so the next call
-    // allocates fresh pages from the page-table pool.
+    // ---- Restore kernel PML4 user entries ----
+    // Restore PML4[0..255] from the snapshot so user-space mappings
+    // set up by the ELF loader survive across test cycles.  The
+    // is_allocated guard in get_table() protects against any remaining
+    // stale entries that were freed during the test.
     {
         uint64_t pml4_phys = VMM::get_kernel_pml4();
         if (pml4_phys) {
             auto *pml4 = reinterpret_cast<uint64_t *>(
                 arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
-            for (size_t i = 0; i < arch::PML4_USER_COUNT; ++i)
-                pml4[i] = 0;
+            uint64_t nu = *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_user_page_count());
+            __builtin_memcpy(pml4,
+                             g_snapshot + off_kstack_header(nu) -
+                                 PML4_USER_BYTES,
+                             PML4_USER_BYTES);
         }
     }
-    Logger::raw_write("[DIAG-SNAP] PML4 entries cleared\n");
 
     // ---- User page content ----
     {
@@ -429,7 +450,6 @@ void snapshot_restore(const char *test_name) {
             in += sizeof(uint64_t) + arch::PAGE_SIZE;
         }
     }
-    Logger::raw_write("[DIAG-SNAP] user pages restored\n");
 
     // ---- MemPool ----
     {
