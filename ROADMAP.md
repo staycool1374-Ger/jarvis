@@ -39,10 +39,21 @@ See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.
 #### 0.4.5–0.4.6 — TLB Shootdown & IPI Reduction
 - [ ] PCID, selective INVPCID, lazy shootdowns, IPI batching, latency profiling
 
-### Phase 6: System Integration (0.5.x)
-- [ ] Cross-boundary test suites, 24h stress test, IPC/context-switch benchmarks
-- [ ] Syscall determinism docs, pointer isolation, -fstack-protector, release builds, Doxygen
-- [ ] Userspace C/C++ standard library (musl adaptation or bespoke freestanding libc)
+### Phase 6: System Integration / Userspace ABI (0.5.x)
+
+**Priority:** picolibc integration — syscall ABI, TLS, POSIX stubs.
+
+#### Syscall ABI Definition
+- [ ] **Document trap/IRQ numbers** — create `src/kernel/syscall/syscall.h` with stable, documented trap vectors and IRQ numbers
+- [ ] **Register conventions** — specify register layout for syscall arguments and return values per architecture (x86_64: `rax=num, rdi, rsi, rdx, r10, r8, r9`; aarch64: `x8=num, x0-x5`; riscv64: `a7=num, a0-a5`)
+- [ ] **syscall.h public header** — export to userspace, used by both kernel dispatcher and libc stubs
+
+#### picolibc Integration
+- [ ] **POSIX syscall stubs** — implement `src/libc/picolib_stubs.c` with wrappers for `_write`, `_read`, `_sbrk`, `_exit`, `_open`, `_close`, `_fstat`, `_lseek`, `_getpid`, `_kill` using `jarvis_syscall()` dispatcher
+- [ ] **Build picolibc** — compile with meson as `libc.a` + `libm.a` (static), targeting x86_64-elf
+- [ ] **Makefile integration** — link `libc.a`/`libm.a` into kernel image; add build rules for picolibc subproject
+- [ ] **TLS on context switch** — every task switch must load the thread-local-storage address into the appropriate base register (`FS` on x86_64, `TPIDR_EL0` on aarch64, `tp` on riscv64). picolibc uses this for `errno` and per-task internal state — no global locks needed.
+- [ ] **Verify** — `printf`, `malloc`, `scanf` work from userspace tasks via syscall stubs
 
 ### Phase 7: Safety Systems (0.6.x)
 - [ ] ICH9/HPET hardware watchdog + NMI pre-timeout, PIT fallback, SYS_WATCHDOG_KICK
