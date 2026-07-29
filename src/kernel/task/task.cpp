@@ -1334,8 +1334,13 @@ void TaskControlBlock::operator delete(void *ptr) noexcept {
         return;
     auto *tcb = static_cast<TaskControlBlock *>(ptr);
     if (tcb->magic == TCB_MAGIC) {
-        tcb->cleanup();
-        Scheduler::remove_task(*tcb);
+        // If the caller already called cleanup() before delete, state
+        // is REAPED and we must NOT cleanup/remove again — doing so
+        // double-frees resources and corrupts the scheduler lists.
+        if (tcb->state != TaskState::REAPED) {
+            tcb->cleanup();
+            Scheduler::remove_task(*tcb);
+        }
         tcb->magic = 0;  // Prevent double-free if caller re-enters operator delete
         MemPool::free(ptr);
         return;

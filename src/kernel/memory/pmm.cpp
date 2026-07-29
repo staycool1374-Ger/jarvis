@@ -462,10 +462,21 @@ void PMM::free_page(uint64_t phys_addr) {
         bitmap_clear(index);
         ++free_pages_;
         kernel::test::ResourceTracker::instance().track_pmm_free(1);
-        // Push onto free list (always general list; pool pages that somehow
-        // get freed go to general list too, which is safe since alloc_page_table
-        // uses its own pool_free_head_).
         auto *fl = reinterpret_cast<uint64_t *>(free_list_);
+        // Pool pages must go back to the pool freelist, not the general
+        // list.  But guard against uninitialized pool range (boot-time
+        // free_page calls before pool is set up).
+        uint64_t pool_start = page_table_pool_start_;
+        uint64_t pool_end = page_table_pool_end_;
+        if (pool_start != 0 && pool_end != 0) {
+            uint64_t ps = pool_start / PAGE_SIZE;
+            uint64_t pe = pool_end / PAGE_SIZE;
+            if (index >= ps && index < pe) {
+                fl[index] = pool_free_head_;
+                pool_free_head_ = index;
+                return;
+            }
+        }
         fl[index] = free_head_;
         free_head_ = index;
     }
