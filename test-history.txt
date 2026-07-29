@@ -87,3 +87,4 @@
 2026-07-29 20:00:00 all-1 PASSED: 485 FAILED: 1 TIME: ~95s STATUS: pre-existing PML4 clone test crash (test 485-486) -- not caused by PCP fix
 2026-07-29 20:01:00 lock_protocol PASSED: 34 FAILED: 0 TIME: 635ms
 2026-07-29 20:02:00 testrunner PASSED: 11 FAILED: 0 TIME: ~6s STATUS: test 11 triggers expected panic
+2026-07-29 22:00:00 all-1 PASSED: 717 FAILED: 0 TIME: 65603ms

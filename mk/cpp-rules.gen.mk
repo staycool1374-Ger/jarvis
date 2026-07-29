@@ -534,11 +534,6 @@ build/kernel/test/test_memory_safety.o: src/kernel/test/test_memory_safety.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-build/kernel/test/test_memory_determinism.o: src/kernel/test/test_memory_determinism.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_tmpfs_mount_unmount_failure.o: src/kernel/test/test_tmpfs_mount_unmount_failure.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -712,6 +707,10 @@ build/kernel/test/test_sync.o: src/kernel/test/test_sync.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_preemption.o: src/kernel/test/test_preemption.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_freelist_consistency.o: src/kernel/test/test_freelist_consistency.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

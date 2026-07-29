@@ -23,6 +23,7 @@
 #include <types.hpp>
 #include <string.hpp>
 #include <concepts.hpp>
+#include <kernel/memory/vmm.hpp>
 
 namespace kernel {
 
@@ -144,6 +145,12 @@ static inline bool is_user_string(const void *user_ptr,
         return false;
     uint64_t end = addr + max_len - 1;
     if (end < addr || end >= USER_SPACE_LIMIT)
+        return false;
+    // Check if the page is actually mapped before dereferencing.
+    // After snapshot_restore clears kernel PML4 user entries, unmapped
+    // user addresses would cause a Page Fault here.  virt_to_phys
+    // returns 0 for unmapped pages without faulting.
+    if (VMM::virt_to_phys(addr) == 0)
         return false;
     auto *p = static_cast<const volatile char *>(user_ptr);
     for (uint64_t i = 0; i < max_len; ++i) {
