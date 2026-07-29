@@ -14,7 +14,6 @@
 - [ ] **Re-enable `vmm_huge_page_split_regression` / `vmm_hhdm_access_consistency`** — blocked by HHDM snapshot restore
 - [ ] **Consolidate `all` class** — once HHDM tests pass, remove `all-1` / `all-2` split
 - [ ] **BUGS.md #021: all-1 GPF at `IpcConcurrentSenders`** — shared page-table lifecycle issue; requires deeper fix in `free_user_pages` or shared-page-table tracking
-- [ ] **BUGS.md #022: PCP retry budget exhaustion** — direct ownership transfer in unlock() prevents lock stealing; remaining contention in `lock_protocol` class tests (PcpCeilingDisabled, PcpPipFallback) needs `lock_err()` migration
 - [ ] **pml4_clone test class crashes** — Page Fault after `pml4_fork_no_child_corrupt_parent` (test 485) and `pml4_free_user_pages_shared_safe` (test 486) with CR3 corruption; pre-existing, blocked by HHDM snapshot restore
 
 ### Stack Guard & Fork (Deferred)
