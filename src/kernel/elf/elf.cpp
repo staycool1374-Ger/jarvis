@@ -200,7 +200,6 @@ static bool load_segments_and_stack(const ELF64Header *hdr,
         uint64_t seg_phys = PMM::alloc_user_contiguous(num_pages);
         if (!seg_phys)
             return false;
-
         for (size_t page_idx = 0; page_idx < num_pages; ++page_idx) {
             VMM::map_page_in_pml4(vaddr_base + page_idx * arch::PAGE_SIZE,
                                   seg_phys + page_idx * arch::PAGE_SIZE, true,

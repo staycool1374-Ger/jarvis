@@ -248,7 +248,6 @@ JARVIS_TEST(vmm_free_user_pages_fork_stack_scenario, "PRE: none | POST: none") {
 // mapping is restored.
 // Depends: PMM, VMM, arch
 // v0.3.6 TODO: re-enable (see registration above).
-#if 0
 JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
     constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000;
     constexpr uint64_t huge_page_base = arch::HHDM_OFFSET + 0x800000;
@@ -326,7 +325,6 @@ JARVIS_TEST(vmm_hhdm_access_consistency, "PRE: none | POST: none") {
     PMM::free_page(p);
     JARVIS_TEST_PASS();
 }
-#endif
 #endif
 
 void register_vmm_tests() {

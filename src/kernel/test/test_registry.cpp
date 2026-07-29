@@ -65,6 +65,7 @@ void register_wcet_cleanup_tests();
 void register_idle_cleanup_tests();
 void register_testrunner_tests();
 void register_expected_panic_tests();
+void register_freelist_consistency_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
 void register_wfg_tests();
@@ -204,7 +205,7 @@ static void register_all_tests_second_half();
 
 static constexpr kernel::test::TestClass g_test_classes[] = {
     // -- buffer_pool: fundamental IPC primitive, run first on any failure --
-    {"testrunner", []() { register_testrunner_tests(); register_expected_panic_tests(); }},
+    {"testrunner", []() { register_testrunner_tests(); register_freelist_consistency_tests(); register_expected_panic_tests(); }},
     {"buffer_pool", []() { register_buffer_pool_tests(); }},
 
     // -- o1_scheduler: atomic context switch + IRQ guard audit + O(1) scheduler

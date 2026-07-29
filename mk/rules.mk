@@ -56,7 +56,8 @@ SELFTEST_TESTS := src/kernel/test/test_lib.cpp \
                   src/kernel/test/test_jitter.cpp \
                   src/kernel/test/test_threaded_irqs.cpp \
                   src/kernel/test/test_gic.cpp \
-                  src/kernel/test/test_plic.cpp
+                   src/kernel/test/test_plic.cpp \
+                   src/kernel/test/test_freelist_consistency.cpp
 # Keep all non-test sources, but replace everything under src/kernel/test/
 # with only the selftest subset
 SRC_CXX_GENERIC := $(filter-out src/kernel/test/%.cpp, $(SRC_CXX_GENERIC))
