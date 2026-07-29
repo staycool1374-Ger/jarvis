@@ -204,6 +204,13 @@ void Mutex::lock() {
 
     size_t _pcp_retry = 0;
     for (; _pcp_retry < MAX_WAITERS + 1; ++_pcp_retry) {
+        // Direct ownership transfer from unlock: unlock set owner_ to the
+        // next waiter so it can acquire immediately without lock stealing.
+        if (owner_ == task) {
+            ++lock_count_;
+            lock_.unlock();
+            return;
+        }
 #if CONFIG_PRIORITY_CEILING_PROTOCOL
         if (priority_ceiling_ > 0 && task->system_ceiling_ > 0 &&
             task->priority <= task->system_ceiling_) {
@@ -272,6 +279,11 @@ errors::SyncError Mutex::lock_err() {
 
     size_t _pcp_retry = 0;
     for (; _pcp_retry < MAX_WAITERS + 1; ++_pcp_retry) {
+        if (owner_ == task) {
+            ++lock_count_;
+            lock_.unlock();
+            return errors::SYNC_ERR_OK;
+        }
 #if CONFIG_PRIORITY_CEILING_PROTOCOL
         if (priority_ceiling_ > 0 && task->system_ceiling_ > 0 &&
             task->priority <= task->system_ceiling_) {
@@ -433,7 +445,31 @@ void Mutex::unlock() {
     uint64_t released_ceiling = priority_ceiling_;
 
     if (wait_count_ > 0) {
-        wake_one();
+        // Direct ownership transfer: restore priority for the releasing
+        // task, then transfer owner_ to the highest-priority waiter.
+        // This prevents another task from stealing the lock between
+        // unlock and the waiter's resumption.
+        restore_priority();
+        pop_ceiling(task, released_ceiling);
+        size_t best = wait_count_;
+        for (size_t i = 0; i < wait_count_; ++i) {
+            if (waiters_[i]->generation != waiter_gens_[i])
+                continue;
+            if (best == wait_count_ ||
+                waiters_[i]->priority > waiters_[best]->priority)
+                best = i;
+        }
+        if (best < wait_count_) {
+            auto *next = waiters_[best];
+            next->waiting_on_mutex = nullptr;
+            owner_ = next;
+            lock_count_ = 0;
+            waiters_[best] = waiters_[--wait_count_];
+            waiter_gens_[best] = waiter_gens_[wait_count_];
+            Scheduler::set_task_ready(*next);
+            lock_.unlock();
+            return;
+        }
     }
 
     restore_priority();
@@ -471,8 +507,31 @@ errors::SyncError Mutex::unlock_err() {
 
     uint64_t released_ceiling = priority_ceiling_;
 
+    // SYNC-01: Direct ownership transfer — same as unlock() above.
+    // Prevents lock-stealing race that would exhaust the PCP retry
+    // budget in lock()/lock_err().  The panic stays as the safety net.
     if (wait_count_ > 0) {
-        wake_one();
+        restore_priority();
+        pop_ceiling(task, released_ceiling);
+        size_t best = wait_count_;
+        for (size_t i = 0; i < wait_count_; ++i) {
+            if (waiters_[i]->generation != waiter_gens_[i])
+                continue;
+            if (best == wait_count_ ||
+                waiters_[i]->priority > waiters_[best]->priority)
+                best = i;
+        }
+        if (best < wait_count_) {
+            auto *next = waiters_[best];
+            next->waiting_on_mutex = nullptr;
+            owner_ = next;
+            lock_count_ = 0;
+            waiters_[best] = waiters_[--wait_count_];
+            waiter_gens_[best] = waiter_gens_[wait_count_];
+            Scheduler::set_task_ready(*next);
+            lock_.unlock();
+            return errors::SYNC_ERR_OK;
+        }
     }
 
     restore_priority();

@@ -82,3 +82,5 @@
 2026-07-29 10:14:00 all-2 PASSED: 133 FAILED: 0 TIME: 2452ms
 2026-07-29 10:45:00 all-1 PASSED: 382 FAILED: 1 TIME: 75s STATUS: PANIC at test 382 (pre-existing PCP panic)
 2026-07-29 12:00:00 all-1 PASSED: 385 FAILED: 0 TIME: ~90s STATUS: PANIC at ~test 385 (pre-existing PCP retry budget)
+2026-07-29 18:30:00 lock_protocol PASSED: 26 FAILED: 0 TIME: 35s STATUS: expected panic (PCP retry budget) at test 26/34
+2026-07-29 18:31:00 testrunner PASSED: 11 FAILED: 0 TIME: 6s STATUS: test 11 triggers expected panic

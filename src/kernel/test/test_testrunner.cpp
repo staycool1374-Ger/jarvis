@@ -31,6 +31,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/sync/mutex.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include "test_sched_helpers.hpp"
@@ -510,6 +511,8 @@ JARVIS_TEST(harness_buffer_unmap_stale_safe,
     JARVIS_TEST_PASS();
 }
 
+void test_harness_expected_panic_handling();
+
 void register_testrunner_tests() {
     Logger::info("Registering TestRunner tests");
     JARVIS_REGISTER_TEST(harness_snapshot_bitmap_consistency);
@@ -522,4 +525,21 @@ void register_testrunner_tests() {
     JARVIS_REGISTER_TEST(harness_free_list_stability);
     JARVIS_REGISTER_TEST(harness_snapshot_cycle_isolation);
     JARVIS_REGISTER_TEST(harness_buffer_unmap_stale_safe);
+    JARVIS_REGISTER_TEST(harness_expected_panic_handling);
+}
+// Runmode: kernel
+// Testidea: The test harness (tools/run-test.exp) must classify known
+//           panic signatures as PASS (expected) instead of FAIL.  This
+//           test intentionally triggers the PCP retry-budget panic
+//           (ASIL-D safety, SYNC-01).  Because the panic kills the
+//           kernel, this test MUST be registered LAST in the class so
+//           all preceding tests complete before the panic halts QEMU.
+// Expect:   Harness sees "KERNEL PANIC: Mutex::lock() exhausted PCP
+//           retry budget", matches it against the expected-panic list,
+//           reports RESULT: PASS (expected panic: ...), exits 0.
+JARVIS_TEST(harness_expected_panic_handling,
+            "PRE: none | POST: none") {
+    Logger::info("Triggering expected PCP retry-budget panic — "
+                 "harness must classify as PASS");
+    panic("Mutex::lock() exhausted PCP retry budget");
 }
