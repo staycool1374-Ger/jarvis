@@ -525,6 +525,15 @@ void register_testrunner_tests() {
     JARVIS_REGISTER_TEST(harness_free_list_stability);
     JARVIS_REGISTER_TEST(harness_snapshot_cycle_isolation);
     JARVIS_REGISTER_TEST(harness_buffer_unmap_stale_safe);
+    // NOTE: harness_expected_panic_handling is NOT registered here
+    // because it panics the kernel — it would prevent all subsequent
+    // tests from running in all-1/all-2.  It's registered separately
+    // via register_expected_panic_tests() which is only called by the
+    // "testrunner" class, never by "all-1" or "all-2".
+}
+
+void register_expected_panic_tests() {
+    Logger::info("Registering expected-panic harness test");
     JARVIS_REGISTER_TEST(harness_expected_panic_handling);
 }
 // Runmode: kernel
