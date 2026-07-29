@@ -9,11 +9,30 @@
 
 ## Active Development — v0.3.6
 
-### Remaining Work
-- [ ] **HHDM snapshot restore** — PD save/restore for PDPT[0] (see `docs/hhdm-snapshot-restore.md`)
-- [ ] **Re-enable `vmm_huge_page_split_regression` / `vmm_hhdm_access_consistency`** — blocked by HHDM snapshot restore
-- [ ] **Consolidate `all` class** — once HHDM tests pass, remove `all-1` / `all-2` split
-- [ ] **pml4_clone test class crashes** — Page Fault after `pml4_fork_no_child_corrupt_parent` (test 485) and `pml4_free_user_pages_shared_safe` (test 486) with CR3 corruption; pre-existing, blocked by HHDM snapshot restore
+### Completed this session
+- **PCP retry budget panic** — direct ownership transfer in unlock/unlock_err. restore_priority ordering fixed (move after waiter removal). 6 test classes migrated to `lock_err()`.
+- **PMM freelist rebuild** — `rebuild_free_list()` called after bitmap+pool restore in snapshot_restore. `free_page()` routes pool-range pages to pool freelist.
+- **operator delete double-cleanup guard** — skip cleanup+remove_task if state==REAPED.
+- **MemPool metadata restore** — `restore_pool_meta` now restores `block_count`, `block_size`, `data`. `freed_bitmap` increased from [4] to [5] (320 bits) for pool-2's 320-block count.
+- **Kernel PML4 user entries save/restore** — replaces blind clear with proper save/restore in snapshot buffer. Preserves ELF-loader mappings across test cycles.
+- **`is_user_string` fault-safe** — added `VMM::virt_to_phys(addr)` check before dereferencing unmapped user addresses.
+- **`all` class consolidation** — combined `all` class reaches 820/855 tests (was ~400 before fixes).
+
+### Remaining Work for `all` class 855/855
+- [ ] **HHDM PD save/restore** — save/restore PDPT[0]→PD (512 entries) in snapshot buffer. Required to re-enable 4 disabled pml4_clone tests and 2 VMM HHDM tests. See `docs/hhdm-snapshot-restore.md`.
+- [ ] **`restore_pool_snapshot` GPF** — GPF in `PMM::restore_pool_snapshot()` at test ~820 in the combined `all` class. The page-table pool snapshot restore writes to `bitmap_` which might be corrupted after many cycles. Blocks ~15 tests.
+- [ ] **VirtIO/DMA MMIO page tables** — device MMIO (VirtIO, DMA) page-table pages allocated during first test access, not at boot time. Pool snapshot doesn't protect them → freed after restore → dangling reference. Fix: probe devices at boot (before snapshot_create). Blocks ~22 tests.
+- [ ] **microkernel_transition tests** — `KernelApiPureFunctions` causes memcpy stack corruption at test position ~657. Root cause unclear. Blocks 5 tests.
+
+### Disabled test groups (pre-existing, incompatible with snapshot isolation)
+| Group | Tests | Reason |
+|-------|-------|--------|
+| `pml4_clone` | 4 | HHDM PD entries not saved/restored (needs #1 above) |
+| `vmm_hhdm` | 2 | HHDM huge-page split not restorable (needs #1 above) |
+| `virtio` | 9 | Device MMIO page tables freed by pool restore (needs #3 above) |
+| `dma` | 13 | Same as virtio |
+| `microkernel_transition` | 5 | Stack corruption in KernelApiPureFunctions (needs #4 above) |
+| **Total disabled** | **33** | |
 
 ### Stack Guard & Fork (Deferred)
 - [ ] Stack guard page via private VA window (requires snapshot-safe page table pool)
