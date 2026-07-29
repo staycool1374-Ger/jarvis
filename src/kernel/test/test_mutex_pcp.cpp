@@ -102,7 +102,8 @@ TEST_CLASS(PcpCeilingDisabled) {
     Scheduler::add_task(*high);
 
     Scheduler::set_current(*high);
-    mutex.lock();
+    errors::SyncError err = mutex.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(high->state == TaskState::BLOCKED);
     CT_ASSERT(low->priority >= high->priority);
 
@@ -150,7 +151,8 @@ TEST_CLASS(PcpPipFallback) {
     Scheduler::add_task(*high);
 
     Scheduler::set_current(*high);
-    mutex.lock();
+    auto err2 = mutex.lock_err();
+    CT_ASSERT(err2 == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(high->state == TaskState::BLOCKED);
     CT_ASSERT(low->priority >= high->priority);
 

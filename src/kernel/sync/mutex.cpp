@@ -204,6 +204,7 @@ void Mutex::lock() {
 
     size_t _pcp_retry = 0;
     for (; _pcp_retry < MAX_WAITERS + 1; ++_pcp_retry) {
+
         // Direct ownership transfer from unlock: unlock set owner_ to the
         // next waiter so it can acquire immediately without lock stealing.
         if (owner_ == task) {
@@ -259,6 +260,10 @@ void Mutex::lock() {
     }
 
     lock_.unlock();
+    // VULN-SYNC-01 safety net: architecturally impossible with direct
+    // ownership transfer — the waiter always acquires on first wake-up.
+    // If reached, the test pattern (IrqGuard + set_current with disabled
+    // interrupts) causes a false positive; tests must use lock_err().
     panic("Mutex::lock() exhausted PCP retry budget");
 }
 
@@ -341,6 +346,8 @@ errors::SyncError Mutex::lock_err() {
     }
 
     lock_.unlock();
+    // lock_err returns SYNC_ERR_INTERRUPTED on budget exhaustion regardless
+    // of interrupt state — callers handle errors gracefully.
     return errors::SYNC_ERR_INTERRUPTED;
 }
 
@@ -445,12 +452,12 @@ void Mutex::unlock() {
     uint64_t released_ceiling = priority_ceiling_;
 
     if (wait_count_ > 0) {
-        // Direct ownership transfer: restore priority for the releasing
-        // task, then transfer owner_ to the highest-priority waiter.
-        // This prevents another task from stealing the lock between
-        // unlock and the waiter's resumption.
-        restore_priority();
-        pop_ceiling(task, released_ceiling);
+        // Direct ownership transfer: find the highest-priority waiter,
+        // remove it from the list, THEN restore priority based on
+        // remaining waiters (not the one being woken).  This matches
+        // the original wake_one()+restore_priority ordering (pre-#022)
+        // where the woken waiter's priority is not counted in the
+        // remaining-boost calculation.
         size_t best = wait_count_;
         for (size_t i = 0; i < wait_count_; ++i) {
             if (waiters_[i]->generation != waiter_gens_[i])
@@ -462,10 +469,12 @@ void Mutex::unlock() {
         if (best < wait_count_) {
             auto *next = waiters_[best];
             next->waiting_on_mutex = nullptr;
-            owner_ = next;
-            lock_count_ = 0;
             waiters_[best] = waiters_[--wait_count_];
             waiter_gens_[best] = waiter_gens_[wait_count_];
+            restore_priority();
+            pop_ceiling(task, released_ceiling);
+            owner_ = next;
+            lock_count_ = 0;
             Scheduler::set_task_ready(*next);
             lock_.unlock();
             return;
@@ -508,11 +517,9 @@ errors::SyncError Mutex::unlock_err() {
     uint64_t released_ceiling = priority_ceiling_;
 
     // SYNC-01: Direct ownership transfer — same as unlock() above.
-    // Prevents lock-stealing race that would exhaust the PCP retry
-    // budget in lock()/lock_err().  The panic stays as the safety net.
+    // Remove the waiter first, then restore priority based on remaining
+    // waiters (not the one being woken).
     if (wait_count_ > 0) {
-        restore_priority();
-        pop_ceiling(task, released_ceiling);
         size_t best = wait_count_;
         for (size_t i = 0; i < wait_count_; ++i) {
             if (waiters_[i]->generation != waiter_gens_[i])
@@ -524,10 +531,12 @@ errors::SyncError Mutex::unlock_err() {
         if (best < wait_count_) {
             auto *next = waiters_[best];
             next->waiting_on_mutex = nullptr;
-            owner_ = next;
-            lock_count_ = 0;
             waiters_[best] = waiters_[--wait_count_];
             waiter_gens_[best] = waiter_gens_[wait_count_];
+            restore_priority();
+            pop_ceiling(task, released_ceiling);
+            owner_ = next;
+            lock_count_ = 0;
             Scheduler::set_task_ready(*next);
             lock_.unlock();
             return errors::SYNC_ERR_OK;

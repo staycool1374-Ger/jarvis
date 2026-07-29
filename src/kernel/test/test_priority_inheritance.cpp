@@ -69,7 +69,8 @@ TEST_CLASS(MutexPriorityDonates) {
     Scheduler::add_task(*high);
 
     Scheduler::set_current(*high);
-    mutex.lock();
+    errors::SyncError err = mutex.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
 
     CT_ASSERT(high->state == TaskState::BLOCKED);
     CT_ASSERT(high->waiting_on_mutex == &mutex);
@@ -121,7 +122,8 @@ TEST_CLASS(MutexChainPropagates) {
     Scheduler::set_current(*b);
     m2.lock();
     CT_ASSERT(m2.owner() == b);
-    m1.lock();
+    auto err = m1.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(b->state == TaskState::BLOCKED);
     CT_ASSERT(b->waiting_on_mutex == &m1);
     // A boosted to B's priority
@@ -134,7 +136,8 @@ TEST_CLASS(MutexChainPropagates) {
     Scheduler::add_task(*c);
 
     Scheduler::set_current(*c);
-    m2.lock();
+    err = m2.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(c->state == TaskState::BLOCKED);
     // B boosted to C's priority
     CT_ASSERT(b->priority >= c->priority);
@@ -196,11 +199,14 @@ TEST_CLASS(MutexPriStepDown) {
     Scheduler::add_task(*w20);
 
     Scheduler::set_current(*w10);
-    mutex.lock();
+    auto err = mutex.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     Scheduler::set_current(*w15);
-    mutex.lock();
+    err = mutex.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     Scheduler::set_current(*w20);
-    mutex.lock();
+    err = mutex.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(holder->priority >= 20);
 
     // Unlock wakes w20, holder should drop to 15
@@ -254,9 +260,11 @@ TEST_CLASS(MutexNestedDrop) {
     Scheduler::add_task(*w20);
 
     Scheduler::set_current(*w10);
-    m1.lock();
+    auto err = m1.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     Scheduler::set_current(*w20);
-    m2.lock();
+    err = m2.lock_err();
+    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(a->priority >= 20);
 
     // Release M2 → still at 10 (M1 waiter remains)
