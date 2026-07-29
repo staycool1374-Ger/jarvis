@@ -79,15 +79,15 @@ class MemPool {
         }
 
         /// @brief Copy the freed bitmap to an external buffer.
-        /// @param[out] dst Destination array (4 x uint64_t).
+        /// @param[out] dst Destination array (5 x uint64_t).
         void copy_freed_bitmap(uint64_t *dst) const {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 5; ++i)
                 dst[i] = freed_bitmap[i];
         }
-        /// @brief Overwrite the freed bitmap from an external buffer.
-        /// @param src Source array (4 x uint64_t).
+
+        /// @param src Source array (5 x uint64_t).
         void write_freed_bitmap(const uint64_t *src) {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 5; ++i)
                 freed_bitmap[i] = src[i];
         }
         /// @brief Clear all pinned flags.
@@ -116,7 +116,7 @@ class MemPool {
         }
 
       private:
-        uint64_t freed_bitmap[4]; // 256 bits — covers all pools
+        uint64_t freed_bitmap[5]; // 320 bits — covers largest pool (320 blocks)
         uint64_t pinned_bitmap[4]; // 256 bits — pinned (never freed/reused)
     };
 
@@ -163,6 +163,8 @@ class MemPool {
         size_t first_free;
         size_t free_count;
         size_t block_count;
+        size_t block_size;
+        uint8_t *data;
         uint64_t freed_bitmap[4];
     };
     /// @brief Return the number of pool classes.

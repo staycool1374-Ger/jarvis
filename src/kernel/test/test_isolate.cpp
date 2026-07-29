@@ -410,6 +410,7 @@ void snapshot_restore(const char *test_name) {
                 pml4[i] = 0;
         }
     }
+    Logger::raw_write("[DIAG-SNAP] PML4 entries cleared\n");
 
     // ---- User page content ----
     {
@@ -428,6 +429,7 @@ void snapshot_restore(const char *test_name) {
             in += sizeof(uint64_t) + arch::PAGE_SIZE;
         }
     }
+    Logger::raw_write("[DIAG-SNAP] user pages restored\n");
 
     // ---- MemPool ----
     {

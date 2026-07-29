@@ -191,6 +191,8 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
     out.first_free = p.first_free;
     out.free_count = p.free_count;
     out.block_count = p.block_count;
+    out.block_size = p.block_size;
+    out.data = p.data;
     p.copy_freed_bitmap(out.freed_bitmap);
 }
 
@@ -201,6 +203,14 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
 void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
     sync::IrqSpinLockGuard lock(mempool_lock_);
     auto &p = pools_[idx];
+
+    // Restore block count FIRST so all subsequent operations use the
+    // correct (saved) count.  If a test corrupted p.block_count, the
+    // freed bitmap and free-list rebuild would be based on garbage.
+    p.block_count = meta.block_count;
+    p.block_size = meta.block_size;
+    p.data = meta.data;
+
     p.write_freed_bitmap(meta.freed_bitmap);
 
     // If the pool was resized after the snapshot, mark new blocks free.
