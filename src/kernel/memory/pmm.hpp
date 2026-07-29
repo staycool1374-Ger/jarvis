@@ -216,6 +216,13 @@ class PMM {
         return pool_poisoned_;
     }
 
+    /// @brief Rebuild the general + pool free lists from the current bitmap.
+    ///        Called after PMM bitmap + pool snapshot restore to re-sync
+    ///        freelist heads (free_head_, pool_free_head_) with the restored
+    ///        bitmap state.  Without this, alloc_page()/alloc_page_table()
+    ///        follow stale freelist entries and return already-allocated pages.
+    static void rebuild_free_list() noexcept;
+
   private:
     static constexpr uint64_t PAGE_SIZE = CONFIG_PAGE_SIZE;
 
@@ -239,10 +246,6 @@ class PMM {
     static constinit uint64_t free_head_;
     /// @brief Head of the page-table-pool free list.
     static constinit uint64_t pool_free_head_;
-
-    /// @brief Rebuild the general free list from the bitmap (after bitmap-scan
-    ///        multi-page allocations that bypass the free list).
-    static void rebuild_free_list() noexcept;
 
     /// @brief Mark a page as allocated in the bitmap.
     /// @param index Page index.

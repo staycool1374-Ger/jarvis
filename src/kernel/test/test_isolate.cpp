@@ -388,6 +388,13 @@ void snapshot_restore(const char *test_name) {
         PMM::restore_pool_snapshot(*pool);
     }
 
+    // ---- Rebuild PMM free list from restored bitmap ----
+    // The PMM bitmap and pool bitmap were restored above, but free_head_
+    // and pool_free_head_ are still in their post-test state (pointing to
+    // freelist entries that may now reference allocated pages).  Rebuild
+    // both freelists from the restored bitmaps to prevent double-alloc.
+    PMM::rebuild_free_list();
+
     // ---- Clear stale kernel PML4 user entries ----
     // VMM::map_page allocates page-table pages and writes their physical
     // addresses into the kernel PML4 entries 0-255 (user space).  After
