@@ -22,3 +22,41 @@
 ## Past Releases
 
 See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.5).
+
+---
+
+## Future Roadmap (Aspirational)
+
+### Phase 5: SMP + Multicore (0.4.x)
+#### 0.4.1–0.4.2 — APIC & SMP Boot
+- [ ] Local/IO APIC, X2APIC, per-CPU GDT/TSS, INIT-SIPI AP startup
+- [ ] TPR-based interrupt prioritization, core state isolation
+
+#### 0.4.3–0.4.4 — Per-CPU Scheduling & Cache
+- [ ] Distributed run queues, real-time load balancer, SYS_SET/GET_AFFINITY
+- [ ] Cache coloring allocator, SMP spinlocks/rwlocks, WCET re-audit
+
+#### 0.4.5–0.4.6 — TLB Shootdown & IPI Reduction
+- [ ] PCID, selective INVPCID, lazy shootdowns, IPI batching, latency profiling
+
+### Phase 6: System Integration (0.5.x)
+- [ ] Cross-boundary test suites, 24h stress test, IPC/context-switch benchmarks
+- [ ] Syscall determinism docs, pointer isolation, -fstack-protector, release builds, Doxygen
+- [ ] Userspace C/C++ standard library (musl adaptation or bespoke freestanding libc)
+
+### Phase 7: Safety Systems (0.6.x)
+- [ ] ICH9/HPET hardware watchdog + NMI pre-timeout, PIT fallback, SYS_WATCHDOG_KICK
+- [ ] Per-task software watchdog (SYS_WATCHDOG_CREATE), /proc/[pid]/watchdog
+- [ ] Wait-for-graph deadlock detection, watchdog-driven recovery, SYS_HEALTH_STATUS
+- [ ] Idle-task safety monitors: RAM March C-, CPU ALU verification, utilisation tracking
+
+### Phase 8: Microkernel Transition (0.7.x–0.8.x)
+- [ ] Externalise VFS & block I/O to user-space servers
+- [ ] Externalise device drivers (keyboard, framebuffer, timer/RTC)
+- [ ] Kernel reduction: scheduler, IPC, page-table management, interrupt routing only
+- [ ] Capability-based security (SYS_CAP_GRANT / SYS_CAP_REVOKE)
+
+### Phase 9: Hardware Drivers & Protocols (0.9.x)
+- [ ] Full TCP/IP stack (ARP, IP, ICMP, UDP, TCP) with Ethernet NIC driver
+- [ ] USB driver stack (UHCI/EHCI/xHCI)
+- [ ] Hot-path secure call sequence layer (<seqguard.hpp>)
