@@ -105,6 +105,11 @@ class PMM {
     /// @return PmmError code.
     static errors::PmmError free_page_err(uint64_t phys_addr);
 
+    /// @brief Returns true if a physical page is currently allocated.
+    /// @param phys_addr Physical address to check.
+    /// @return true if the allocation bit is set.
+    static bool is_allocated(uint64_t phys_addr);
+
     /// @brief Returns true if the page was allocated as USER ownership.
     static bool is_user_page(uint64_t phys_addr);
     /// @brief Returns true if the page was allocated as USER ownership with

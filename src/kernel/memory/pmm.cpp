@@ -161,9 +161,11 @@ void PMM::rebuild_free_list() noexcept {
 /// @param count Number of contiguous pages.
 /// @return Physical address or 0.
 uint64_t PMM::try_alloc_kernel(size_t count) {
+    uint64_t hhdm_limit = (128ULL * 1024 * 1024) / PAGE_SIZE;
+    uint64_t limit = (hhdm_limit < total_pages_) ? hhdm_limit : total_pages_;
     if (count == 1) {
         // O(1) fast path: pop from free list (pages within HHDM window).
-        if (free_head_ < total_pages_) {
+        if (free_head_ < limit) {
             uint64_t idx = free_head_;
             free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
             bitmap_set(idx);
@@ -173,8 +175,6 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
         }
         // Fallback: bitmap scan within HHDM window for pages not on the
         // free list (e.g., freed via paths that didn't update it).
-        uint64_t hhdm_limit = (128ULL * 1024 * 1024) / PAGE_SIZE;
-        uint64_t limit = (hhdm_limit < total_pages_) ? hhdm_limit : total_pages_;
         for (uint64_t i = 0; i < limit; ++i) {
             if (!bitmap_test(i)) {
                 bitmap_set(i);
@@ -185,7 +185,7 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
         }
         return 0;
     }
-    for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
+    for (uint64_t i = 0; i <= limit - count; ++i) {
         bool ok = true;
         for (size_t j = 0; j < count; ++j) {
             if (bitmap_test(i + j)) {
@@ -211,8 +211,10 @@ uint64_t PMM::try_alloc_kernel(size_t count) {
 /// @param count Number of contiguous pages.
 /// @return Physical address or 0.
 uint64_t PMM::try_alloc_user(size_t count) {
+    uint64_t hhdm_limit_pages = (128ULL * 1024 * 1024) / arch::PAGE_SIZE;
+    uint64_t limit = (hhdm_limit_pages < total_pages_) ? hhdm_limit_pages : total_pages_;
     if (count == 1) {
-        if (free_head_ < total_pages_) {
+        if (free_head_ < limit) {
             uint64_t idx = free_head_;
             free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
             bitmap_set(idx);
@@ -220,7 +222,7 @@ uint64_t PMM::try_alloc_user(size_t count) {
             --free_pages_;
             return idx * PAGE_SIZE;
         }
-        for (uint64_t i = 0; i < total_pages_; ++i) {
+        for (uint64_t i = 0; i < limit; ++i) {
             if (!bitmap_test(i)) {
                 bitmap_set(i);
                 owner_set_user(i);
@@ -230,7 +232,7 @@ uint64_t PMM::try_alloc_user(size_t count) {
         }
         return 0;
     }
-    for (uint64_t i = 0; i <= total_pages_ - count; ++i) {
+    for (uint64_t i = 0; i <= limit - count; ++i) {
         bool ok = true;
         for (size_t j = 0; j < count; ++j) {
             if (bitmap_test(i + j)) {
@@ -428,7 +430,9 @@ uint64_t PMM::alloc_page_table() {
     }
     {
         sync::IrqSpinLockGuard lock(pmm_lock_);
-        if (pool_free_head_ < total_pages_) {
+        uint64_t hhdm_limit_pages = (128ULL * 1024 * 1024) / arch::PAGE_SIZE;
+        uint64_t limit = (hhdm_limit_pages < total_pages_) ? hhdm_limit_pages : total_pages_;
+        if (pool_free_head_ < limit) {
             uint64_t idx = pool_free_head_;
             pool_free_head_ = reinterpret_cast<uint64_t *>(free_list_)[idx];
             bitmap_set(idx);
@@ -465,6 +469,16 @@ void PMM::free_page(uint64_t phys_addr) {
         fl[index] = free_head_;
         free_head_ = index;
     }
+}
+
+/// @brief Check if a physical page is currently allocated.
+/// @param phys_addr Physical address.
+/// @return true if allocated.
+bool PMM::is_allocated(uint64_t phys_addr) {
+    uint64_t index = phys_addr / arch::PAGE_SIZE;
+    if (index >= total_pages_)
+        return false;
+    return bitmap_test(index);
 }
 
 /// @brief Check if a physical page was allocated as USER-owned.

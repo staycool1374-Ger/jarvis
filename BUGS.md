@@ -3,11 +3,18 @@
 ## Kernel — Scheduler / Page Tables
 
 ### ID: #021 — all-1 GPF at IpcConcurrentSenders (test 80/745)
-- **Description:** `all-1` class crashes with GPF (vector 0xD) in `VMM::map_page_in_pml4` after `IpcConcurrentSenders` (80/745) PASSes. The crash happens during snapshot_restore / daemon reload between tests. `get_table()` returns a pointer to a previously-freed page-table page because a parent PML4/PDPT entry was not cleared after a sibling `free_user_pages()` freed the shared page.
-- **Root Cause:** When multiple page tables share page-table-descriptor pages (PDPT/PD/PT via `clone_kernel_pml4` + manual copy), `free_user_pages()` on one table frees the shared pages. With VULN-004's alloc-time ownership model (freed pages retain USER owner bit), a subsequent `free_user_pages()` on a sibling table walks into the freed page because `is_user_page()` still returns true → GPF on garbage content.
-- **Fix (partial):** `free_user_pages()` now clears parent entries (`pd[pd_idx] = 0`, `pdpt[pdpt_idx] = 0`) after freeing child page-table pages.  `get_table()` returns nullptr instead of asserting on OOM, with null checks added at all call sites.  The crash is mitigated but not fully eliminated in the 745-test `all-1` sequence — `IpcConcurrentSenders` passes 6/6 when run alone via `ipc_robustness`.
-- **Severity:** Medium — only triggers in full `all-1` run at test 80; all individual test classes pass.
+- **Description:** `all-1` class crashed with GPF (vector 0xD) in `VMM::get_table()` during snapshot_restore / daemon reload between tests. After PMM bitmap restore, user task (daemon) page-tables still have PAGE_PRESENT entries pointing to pages that are now free in the bitmap. Walking such entries via `get_table()` reads garbage as page-table data → GPF.
+- **Root Cause:** `snapshot_restore()` rewinds the PMM bitmap to pre-test state, but user task page tables (daemon PML4s) are not cleared. Entries pointing to test-allocated pages become stale (present but pointing to freed pages). `get_table()` follows these entries into freed memory → GPF.
+- **Fix:** Added `PMM::is_allocated()` and a safety check in `VMM::get_table()`: before following a PAGE_PRESENT entry, verify the target page is actually allocated. If not, clear the entry and fall through to the create path (or return nullptr). This prevents stale-follow GPFs entirely. Tested: `IpcConcurrentSenders` (80/745) passes in all-1, all-2 passes 133/133.
+- **Severity:** Fixed.
 - **Domain:** Kernel — VM / Page Table Lifecycle
-- **Status:** Under investigation (v0.3.7)
+- **Status:** Resolved (v0.3.7) — get_table stale-entry guard + is_allocated check.
+
+### ID: #022 — all-1 PCP mutex retry budget exhausted (test ~382/745)
+- **Description:** `all-1` panics with `Mutex::lock() exhausted PCP retry budget` at approximately test 382 in the full 745-test sequence. The PCP mutex retry loop (`MAX_WAITERS + 1` iterations) exits without acquiring the lock. This occurs in the non-PCP path (the retry loop is shared); the panic message's "PCP" refers to the loop variable name.
+- **Root Cause:** Under investigation. Likely a high-contention scenario where a mutex owner is preempted or delayed while holding the lock, and a waiter wakes up, re-adds itself, and blocks repeatedly without the lock being released. Timing-dependent — not reproducible in isolated class runs.
+- **Severity:** Medium — blocks full all-1 completion; all individual test classes pass.
+- **Domain:** Kernel — Synchronization / Mutex
+- **Status:** Pre-existing (masked by #021 GPF which prevented all-1 from reaching test 382)
 
 

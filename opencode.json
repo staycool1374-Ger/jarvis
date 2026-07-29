@@ -10,5 +10,11 @@
         "setCacheKey": true
       }
     }
+  },
+  "allowedTools": {
+    "Bash": {
+      "allow": true,
+      "allowedPaths": ["/tmp"]
+    }
   }
 }

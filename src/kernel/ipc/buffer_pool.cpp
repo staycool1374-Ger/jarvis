@@ -85,14 +85,18 @@ static void clear_pte_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 
     if (!(pml4[pml4_idx] & PAGE_PRESENT))
         return;
-    // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
-                                              (pml4[pml4_idx] & ~0xFFFULL));
-    if (!(pdpt[pdpt_idx] & PAGE_PRESENT))
+    uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+    if (!PMM::is_allocated(pdpt_phys))
         return;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
-                                            (pdpt[pdpt_idx] & ~0xFFFULL));
+    auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
+    if (!(pdpt[pdpt_idx] & PAGE_PRESENT))
+        return;
+    uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
+    if (!PMM::is_allocated(pd_phys))
+        return;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
     if (pd[pd_idx] & PAGE_PRESENT) {
 #if defined(CONFIG_ARCH_AARCH64)
         constexpr uint64_t PAGE_TABLE = 1ULL << 1;

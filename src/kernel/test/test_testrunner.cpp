@@ -24,11 +24,16 @@
 
 #include <test.hpp>
 #include <logger.hpp>
+#include <constants.hpp>
+#include <kernel/memory/pmm.hpp>
+#include <kernel/memory/vmm.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
+#include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -251,6 +256,260 @@ JARVIS_TEST(harness_multi_task_spawn_cleanup,
     JARVIS_TEST_PASS();
 }
 
+// ======================================================================
+// HHDM / Snapshot regression tests (BUGS.md#021)
+// ======================================================================
+
+// Runmode: kernel
+// Testidea: Snapshot_restore rewinds the PMM bitmap but the free_list_[]
+//           array entries from free_page() calls persist across restores.
+//           Over many cycles, the free list accumulates entries pointing
+//           beyond the 128 MiB HHDM window.  This test simulates the
+//           cumulative effect of 80+ test cycles by repeatedly creating
+//           and destroying user tasks (which alloc/free page-table pages
+//           and BufferPool pages), then verifies that alloc_user_page()
+//           always returns a physical address within the HHDM window.
+// Regression: Without the HHDM limit check in try_alloc_user/alloc_kernel
+//             free list fast paths, a page beyond 128 MiB would be
+//             returned and then accessed via HHDM → GPF (vector 0xD).
+JARVIS_TEST(harness_hhdm_user_page_bounds,
+            "PRE: none | POST: none") {
+    static constexpr uint64_t HHDM_LIMIT = 128ULL * 1024 * 1024;
+    static constexpr uint64_t CYCLES = 20;
+
+    for (uint64_t cycle = 0; cycle < CYCLES; ++cycle) {
+        // Simulate the pattern of a typical test: create user tasks
+        auto *sender = TaskControlBlock::create_user([]() {}, 5, 10, 8_KiB);
+        auto *receiver = TaskControlBlock::create_user([]() {}, 5, 10, 8_KiB);
+        if (!sender || !receiver)
+            continue;
+        Scheduler::add_task(*sender);
+        Scheduler::add_task(*receiver);
+
+        // Each BufferPool::alloc calls map_page_in_pml4 which allocates
+        // user page-table pages (PDPT/PD/PT) via alloc_user_page.
+        uint64_t handle = 0;
+        {
+            kernel::test::ScopedCurrentTask _sc(*sender);
+            handle = BufferPool::alloc(*sender, 0x80000000);
+            if (handle != 0) {
+                Message msg{};
+                msg.buf_handle = handle;
+                msg.type = 100;
+                msg.priority = 0;
+                msg.data_size = 0;
+                IPC::send(receiver->id, msg, 0);
+                kernel::test::ScopedCurrentTask _rc(*receiver);
+                Message recv{};
+                if (IPC::recv(recv)) {
+                    BufferPool::map(*receiver, recv.buf_handle, 0x90000000);
+                    BufferPool::free(*receiver, recv.buf_handle);
+                }
+            }
+        }
+
+        // Clean up tasks (this frees page-table pages back to PMM free list)
+        Scheduler::remove_task(*sender);
+        sender->cleanup();
+        delete sender;
+        Scheduler::remove_task(*receiver);
+        receiver->cleanup();
+        delete receiver;
+
+        // After each cycle, verify that a fresh user page allocation
+        // lands within the HHDM window.  If the free list drifts beyond
+        // 128 MiB (the regression scenario), alloc_user_page would
+        // return a page outside the HHDM window, causing a GPF when
+        // accessed via HHDM by clear_pte_in_pml4 / get_table.
+        uint64_t test_page = PMM::alloc_user_page();
+        JARVIS_ASSERT_FMT(
+            test_page < HHDM_LIMIT,
+            "Cycle %lu: alloc_user_page returned 0x%lx (>= 128 MiB) — "
+            "free list drifted beyond HHDM window; accessing via HHDM "
+            "would cause GPF",
+            cycle, test_page);
+
+        // Verify the page is safely accessible via HHDM
+        volatile auto *ptr = reinterpret_cast<volatile uint8_t *>(
+            arch::HHDM_OFFSET + test_page);
+        uint8_t v = *ptr;
+        (void)v;
+        PMM::free_page(test_page);
+    }
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Snapshot_restore does not restore the free_list_[] linked
+//           array — only free_head_ and the free_pages counter are
+//           restored from the snapshot.  After many cycles where tests
+//           allocate and free user page-table pages, the free list
+//           array accumulates stale entries.  This test directly
+//           drives the scenario: allocate large numbers of user pages
+//           to exhaust the within-HHDM free list, force the bitmap
+//           scan to return a page beyond 128 MiB, then free it so the
+//           stale entry stays in the free_list_[] array (even after
+//           the bitmap says the page is allocated).
+// Regression: The next alloc pops the stale beyond-HHDM entry from the
+//             free list → page-table page outside HHDM → GPF.
+JARVIS_TEST(harness_free_list_stability,
+            "PRE: none | POST: none") {
+    static constexpr uint64_t HHDM_LIMIT = 128ULL * 1024 * 1024;
+    static constexpr uint64_t ALLOC_BURST = 32;
+
+    // Phase 1: exhaust the within-HHDM free list by allocating many
+    // user pages.  Once the free list is empty, try_alloc_user falls
+    // through to the bitmap scan which (before the HHDM fix) could
+    // return a page beyond 128 MiB.
+    uint64_t pages[ALLOC_BURST];
+    uint64_t num_alloced = 0;
+    for (; num_alloced < ALLOC_BURST; ++num_alloced) {
+        uint64_t p = PMM::alloc_user_page();
+        if (p == 0)
+            break; // OOM — free list empty, bitmap scan failed
+        pages[num_alloced] = p;
+        if (p >= HHDM_LIMIT) {
+            // This simulates the scenario: a page beyond HHDM was
+            // allocated.  Free it so the stale entry enters the
+            // free list array.
+            PMM::free_page(p);
+            break;
+        }
+    }
+
+    // Free all within-HHDM pages
+    for (uint64_t i = 0; i < num_alloced; ++i) {
+        if (pages[i] > 0 && pages[i] < HHDM_LIMIT)
+            PMM::free_page(pages[i]);
+    }
+
+    // Phase 2: now allocate again.  If the free list drifted (has a
+    // stale beyond-HHDM entry from the free in phase 1), the next
+    // alloc could return that page.  Verify it's within HHDM.
+    for (uint64_t i = 0; i < 4; ++i) {
+        uint64_t p = PMM::alloc_user_page();
+        JARVIS_ASSERT_FMT(p != 0, "Allocation %lu failed after burst-free", i);
+        JARVIS_ASSERT_FMT(
+            p < HHDM_LIMIT,
+            "Allocation %lu returned 0x%lx (>= 128 MiB) — "
+            "free list has stale beyond-HHDM entry",
+            i, p);
+        volatile auto *ptr = reinterpret_cast<volatile uint8_t *>(
+            arch::HHDM_OFFSET + p);
+        uint8_t v = *ptr;
+        (void)v;
+        PMM::free_page(p);
+    }
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: After many snapshot_restore-style cycles, the kernel must
+//           maintain the invariant that all page-table pages allocated
+//           via get_table (PDPT/PD/PT) are within the 128 MiB HHDM
+//           window.  This test runs N complete test cycles that include
+//           user-task creation, BufferPool alloc/transfer/map/free, and
+//           full task cleanup — all operations that allocate and free
+//           page-table pages.  After each cycle, it samples a user
+//           page-table alloc and verifies the physical address.
+JARVIS_TEST(harness_snapshot_cycle_isolation,
+            "PRE: none | POST: none") {
+    static constexpr uint64_t HHDM_LIMIT = 128ULL * 1024 * 1024;
+    static constexpr uint64_t CYCLES = 10;
+
+    for (uint64_t cycle = 0; cycle < CYCLES; ++cycle) {
+        uint64_t test_pages[4];
+        for (int i = 0; i < 4; ++i) {
+            test_pages[i] = PMM::alloc_user_page();
+            JARVIS_ASSERT_FMT(
+                test_pages[i] < HHDM_LIMIT,
+                "Cycle %lu, page %d: alloc_user_page returned 0x%lx "
+                "(>= 128 MiB)", cycle, i, test_pages[i]);
+            volatile auto *ptr = reinterpret_cast<volatile uint8_t *>(
+                arch::HHDM_OFFSET + test_pages[i]);
+            *ptr = static_cast<uint8_t>(cycle ^ i);
+        }
+        for (int i = 0; i < 4; ++i) {
+            volatile auto *ptr = reinterpret_cast<volatile uint8_t *>(
+                arch::HHDM_OFFSET + test_pages[i]);
+            JARVIS_ASSERT(*ptr == static_cast<uint8_t>(cycle ^ i));
+            PMM::free_page(test_pages[i]);
+        }
+    }
+
+    // After all cycles, verify a fresh alloc still lands within HHDM
+    uint64_t final = PMM::alloc_user_page();
+    JARVIS_ASSERT_FMT(final < HHDM_LIMIT,
+                      "Final alloc returned 0x%lx (>= 128 MiB)", final);
+    PMM::free_page(final);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: BufferPool::unmap_all must not GPF when page-table pages are
+//           freed (stale entries after snapshot_restore PMM bitmap rewind).
+//           Simulate  the scenario: create a user task, map a buffer, free
+//           the PDPT page from PMM (simulating snapshot_restore rewinding
+//           the bitmap), then call unmap_all.  The is_allocated check in
+//           clear_pte_in_pml4 must detect the freed page and return early
+//           instead of following the stale PTE into freed memory.
+JARVIS_TEST(harness_buffer_unmap_stale_safe,
+            "PRE: none | POST: none") {
+    static constexpr uint64_t HHDM_LIMIT = 128ULL * 1024 * 1024;
+
+    auto *task = TaskControlBlock::create_user([]() {
+        for (;;) { Scheduler::reschedule(); arch::hlt(); }
+    }, 5, 10, 8_KiB);
+    if (!task || !task->page_table_) { JARVIS_TEST_PASS(); return; }
+    Scheduler::add_task(*task);
+
+    // Phase 1: Allocate a buffer — this builds PDPT/PD/PT entries
+    uint64_t va = 0x80000000;
+    uint64_t handle = 0;
+    {
+        kernel::test::ScopedCurrentTask _sc(*task);
+        handle = BufferPool::alloc(*task, va);
+    }
+    if (handle == 0) { JARVIS_TEST_PASS(); return; }
+
+    // Phase 2: Read the PML4 entry to get PDPT physical address,
+    // then free PDPT page from PMM (simulating snapshot_restore).
+    // Use local PT constants (VMM flags are private).
+    constexpr uint64_t PT_P = 1ULL << 0;
+    constexpr uint64_t PT_W = 1ULL << 1;
+    constexpr uint64_t PT_U = 1ULL << 2;
+    auto *pml4 = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (task->page_table_ & ~0xFFFULL));
+    size_t pml4_idx = (va >> 39) & 0x1FF;
+    uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
+
+    if (pdpt_phys > 0 && pdpt_phys < HHDM_LIMIT) {
+        // Free PDPT page to simulate stale entry after PMM restore
+        PMM::free_page(pdpt_phys);
+
+        // Phase 3: Call unmap_all — must NOT GPF because the is_allocated
+        // check in clear_pte_in_pml4 should catch the freed page.
+        BufferPool::unmap_all(*task);
+
+        // Phase 4: Restore — re-allocate a new PDPT page so the task's
+        // page table is valid again for cleanup.
+        uint64_t new_pdp = PMM::alloc_user_page();
+        JARVIS_ASSERT_FMT(new_pdp != 0 && new_pdp < HHDM_LIMIT,
+                          "Failed to allocate replacement PDPT page");
+        __builtin_memset(reinterpret_cast<void *>(
+            arch::HHDM_OFFSET + new_pdp), 0, 4096);
+        pml4[pml4_idx] = new_pdp | PT_P | PT_W | PT_U;
+    }
+
+    // Cleanup
+    if (task->magic == TaskControlBlock::TCB_MAGIC) {
+        Scheduler::remove_task(*task);
+        task->cleanup();
+        delete task;
+    }
+    JARVIS_TEST_PASS();
+}
+
 void register_testrunner_tests() {
     Logger::info("Registering TestRunner tests");
     JARVIS_REGISTER_TEST(harness_snapshot_bitmap_consistency);
@@ -259,4 +518,8 @@ void register_testrunner_tests() {
     JARVIS_REGISTER_TEST(harness_snapshot_inrq_consistency);
     JARVIS_REGISTER_TEST(harness_leak_detection);
     JARVIS_REGISTER_TEST(harness_multi_task_spawn_cleanup);
+    JARVIS_REGISTER_TEST(harness_hhdm_user_page_bounds);
+    JARVIS_REGISTER_TEST(harness_free_list_stability);
+    JARVIS_REGISTER_TEST(harness_snapshot_cycle_isolation);
+    JARVIS_REGISTER_TEST(harness_buffer_unmap_stale_safe);
 }

@@ -640,7 +640,6 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
         11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
-    Scheduler::add_task(*receiver);
 
     auto *sender = TaskControlBlock::create(
         []() {
@@ -657,7 +656,13 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
         },
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
+    // Add both tasks atomically so the timer ISR always sees both ready
+    // (preventing the receiver from being scheduled before the sender).
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+        Scheduler::add_task(*receiver);
+    }
 
     // Yield to the *receiver* (not the sender): next_task() skips the current
     // task, so yielding to the receiver makes next_task() return the

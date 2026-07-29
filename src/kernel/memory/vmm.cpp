@@ -119,7 +119,10 @@ void VMM::init() {
 uint64_t *VMM::get_table(uint64_t *table, size_t index, bool create,
                          bool user_alloc) {
     if (table[index] & PAGE_PRESENT) {
-        if (
+        uint64_t target_phys = table[index] & ~0xFFFULL;
+        if (!PMM::is_allocated(target_phys)) {
+            table[index] = 0;
+        } else if (
 #if defined(CONFIG_ARCH_AARCH64)
             (table[index] & (PAGE_PRESENT | PAGE_TABLE)) == PAGE_PRESENT
 #elif defined(CONFIG_ARCH_RISCV64)
@@ -167,10 +170,11 @@ uint64_t *VMM::get_table(uint64_t *table, size_t index, bool create,
             table[index] = new_page | PAGE_PRESENT | PAGE_WRITE | PAGE_USER;
 #endif
             return new_table;
+        } else {
+            // NOLINTNEXTLINE(performance-no-int-to-ptr)
+            return reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
+                                                (table[index] & ~0xFFFULL));
         }
-        // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        return reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
-                                            (table[index] & ~0xFFFULL));
     }
     if (!create)
         return nullptr;
