@@ -129,14 +129,23 @@ static size_t off_bufpool() {
     return off_iocd_pid() + sizeof(uint64_t);
 }
 
+static constexpr uint64_t CANARY_BEFORE = 0xCAFEBABE00000001ULL;
+static constexpr uint64_t CANARY_AFTER  = 0xCAFEBABE00000002ULL;
+
 static size_t off_rsrc_counts() {
     return off_bufpool() + BufferPool::state_bytes();
 }
-static size_t off_user_page_count() {
+static size_t off_canary_before() {
     return off_rsrc_counts() + sizeof(ResourceCounters);
 }
-static size_t off_user_page_data() {
+static size_t off_user_page_count() {
+    return off_canary_before() + sizeof(uint64_t);
+}
+static size_t off_canary_after() {
     return off_user_page_count() + sizeof(uint64_t);
+}
+static size_t off_user_page_data() {
+    return off_canary_after() + sizeof(uint64_t);
 }
 
 static constexpr size_t PML4_USER_BYTES = 256 * sizeof(uint64_t); // 2048
@@ -275,10 +284,15 @@ bool snapshot_create() {
     ResourceTracker::instance().capture(
         *reinterpret_cast<ResourceCounters *>(g_snapshot + off_rsrc_counts()));
 
-    // ---- User page content ----
+    // ---- User page content + canary guards ----
     {
+        // Set canaries before and after nu to detect stray writes
+        *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_before()) =
+            CANARY_BEFORE;
         *reinterpret_cast<uint64_t *>(g_snapshot + off_user_page_count()) =
             user_page_count;
+        *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_after()) =
+            CANARY_AFTER;
         uint8_t *out = g_snapshot + off_user_page_data();
         uint8_t *owner_bmp = PMM::owner_bitmap_ptr();
         for (size_t i = 0; i < total_pages_sys; ++i) {
@@ -374,6 +388,45 @@ void snapshot_restore(const char *test_name) {
         return;
     arch::IrqGuard guard;
 
+    // Check canaries around nu field — corruption means a stray write
+    // to the snapshot buffer occurred during the previous test.
+    if (g_snapshot) {
+        uint64_t cb = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_before());
+        uint64_t ca = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_after());
+        if (cb != CANARY_BEFORE || ca != CANARY_AFTER) {
+            Logger::raw_write("[CANARY] corruption detected in test \"");
+            Logger::raw_write(test_name ? test_name : "?");
+            Logger::raw_write("\"\n");
+            if (cb != CANARY_BEFORE) {
+                Logger::raw_write("  canary_before: expected 0x");
+                Logger::print_hex(CANARY_BEFORE);
+                Logger::raw_write(" actual 0x");
+                Logger::print_hex(cb);
+                Logger::raw_write("\n");
+            }
+            if (ca != CANARY_AFTER) {
+                Logger::raw_write("  canary_after: expected 0x");
+                Logger::print_hex(CANARY_AFTER);
+                Logger::raw_write(" actual 0x");
+                Logger::print_hex(ca);
+                Logger::raw_write("\n");
+            }
+            // Dump surrounding memory
+            for (int di = -4; di <= 4; ++di) {
+                uint64_t *dp = reinterpret_cast<uint64_t *>(
+                    g_snapshot + off_canary_before() + di * 8);
+                Logger::raw_write("  offset ");
+                Logger::print_dec(off_canary_before() + di * 8);
+                Logger::raw_write(" = 0x");
+                Logger::print_hex(*dp);
+                if (di == 0) Logger::raw_write(" <-- canary_before");
+                if (di == 2) Logger::raw_write(" <-- nu");
+                if (di == 4) Logger::raw_write(" <-- canary_after");
+                Logger::raw_write("\n");
+            }
+        }
+    }
+
     // Clear any pending context-switch state
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
@@ -463,6 +516,25 @@ void snapshot_restore(const char *test_name) {
     {
         uint64_t nu = *reinterpret_cast<uint64_t *>(
             g_snapshot + off_user_page_count());
+        // Check canaries — if corrupted, nu was overwritten and everything
+        // downstream is garbage.  Use safe defaults to continue.
+        uint64_t cb = *reinterpret_cast<uint64_t *>(
+            g_snapshot + off_canary_before());
+        uint64_t ca = *reinterpret_cast<uint64_t *>(
+            g_snapshot + off_canary_after());
+        if (cb != CANARY_BEFORE || ca != CANARY_AFTER) {
+            Logger::raw_write("[CANARY-POOL] nu corrupted at test \"");
+            Logger::raw_write(test_name ? test_name : "?");
+            Logger::raw_write("\" nu=");
+            Logger::print_dec(nu);
+            Logger::raw_write(" canary_before=0x");
+            Logger::print_hex(cb);
+            Logger::raw_write(" canary_after=0x");
+            Logger::print_hex(ca);
+            Logger::raw_write("\n");
+            // Fall back to nu=0 to avoid GPF from corrupted offset
+            nu = 0;
+        }
         // Read nk from kstack header (stable) — misc[0] is overwritten by
         // the refresh block with the post-reload task count.
         uint64_t nk = *reinterpret_cast<uint64_t *>(

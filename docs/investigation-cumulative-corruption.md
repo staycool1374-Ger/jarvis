@@ -98,14 +98,24 @@ The 0xDD corruption is NOT from the PtPoolSnapshot offset. It's from the task cl
 Remove the `0xDD` memset from `TaskControlBlock::cleanup()`. The poison persists in freed pages and leaks into reallocations. Use-after-free detection relies on TCB magic checks (`safe_tcb`) instead.
 
 **Verification:**
-After removing the memset, the `all` test should progress past test 417 without the 0xDD GPF. The remaining ~35 tests (848-882) are blocked by a separate user-task page fault issue at the static_pools → mlock boundary (847 crash).
+After removing the memset, the `all` test should progress past test 417 without the 0xDD GPF. The remaining ~35 tests (848-882) are blocked by a separate GPF in `snapshot_restore` at test 847.
 
 ---
 
-## Attempt 5: (future) User-task page fault at test 847
+## Attempt 5: off_kstack_header returns garbage at test 847
 
-**Symptom:** Task 0x1D (PID 29) tries to execute kernel address `0xFFFF80000021324D` from user mode (CR3=0x6F46000, err=0x15). Kernel sends SIGSEGV, task has no handler → kernel panics.
+**Date:** 2026-07-30
 
-**Hypothesis:** A recreated daemon task (vfsd or iocd) has its user PML4 corrupted. The user PML4 shares kernel page table entries with the kernel PML4 (via `clone_kernel_pml4`). If the shared PD page was corrupted by the PD restore writing to the wrong address, the user task can't access kernel code.
+**Symptom:** GPF at `rip=0xFFFF800000266572` in `snapshot_restore`. Instruction `mov (%rbx,%rax,1),%rsi` reads `nk` from kstack header. `%rax = 0x5F580000FC0D0049` (garbage return from `off_kstack_header(nu)`), `%rdi = 0x5F580000FC00C180`.
 
-**Status:** Not yet investigated. Requires GDB watchpoint or further static analysis.
+**Root cause:** Unknown. `off_kstack_header(nu)` is simple arithmetic (`off_user_page_data() + nu * 4104 + 2048`). It CANNOT return garbage for a valid `nu`. The function code in the binary disassembly is correct.
+
+**Hypotheses:**
+1. Instruction stream corruption — the `movabs` or `call` instructions in `off_kstack_header`'s code were overwritten by a stray write (e.g., PD restore writing to wrong address via HHDM)
+2. Register corruption — `%rax` returned from the function was overwritten by a timer ISR or another interrupt between the function's `ret` and the next instruction
+
+**Attempts to catch:**
+- GDB remote debugging: GDB 17.2 batch mode incompatible with QEMU remote stub (`commands` block fails with "Cannot execute this command while the target is running")
+- Added DIAG-847 diagnostic (2026-07-30): compares `off_kstack_header(nu)` return value against manual computation `off_user_page_data() + nu * 4104 + 2048`. If they differ, dumps function code bytes and snapshot buffer address.
+
+**Next step:** Clean rebuild + run `all` class with DIAG-847.
