@@ -24,7 +24,7 @@ jobs:
           mtools \
           grub-pc-bin \
           grub-common \
-          qemu-system-x86_64 \
+          qemu-system-x86 \
           ovmf \
           expect \
           wget
