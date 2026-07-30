@@ -126,7 +126,7 @@ void demo_main() {
 
     char c;
     while (!arch::Keyboard::getchar(c)) {
-        for (volatile int _pd = 0; _pd < 1000; _pd = _pd + 1) {}
+        for (volatile int _pd = 0; _pd < 1000; ++_pd) {}
     }
 
     draw_spinning_rect();
