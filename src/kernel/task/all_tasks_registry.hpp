@@ -23,6 +23,10 @@ class AllTasksRegistry {
     /// @brief Remove a task from its priority-level list. O(1).
     void remove(TaskControlBlock &t) noexcept;
 
+    /// @brief Remove a task by scanning all priorities (for corrupted TCBs
+    ///        where all_bucket_ is unreliable). O(priority_count).
+    void remove_unsafe(TaskControlBlock &t) noexcept;
+
     /// @brief Returns the head of the list for a given priority, or nullptr.
     TaskControlBlock *head(uint64_t prio) const noexcept {
         if (prio > CONFIG_PRIORITY_CEILING)

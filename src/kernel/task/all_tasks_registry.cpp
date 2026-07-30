@@ -58,6 +58,36 @@ void AllTasksRegistry::remove(TaskControlBlock &t) noexcept {
     --total_;
 }
 
+void AllTasksRegistry::remove_unsafe(TaskControlBlock &t) noexcept {
+    // Scan all priority buckets to find which one contains t.
+    // This is O(128) but only called for corrupted TCBs.
+    for (uint64_t p = 0; p < NUM_PRIORITIES; ++p) {
+        if (!heads_[p])
+            continue;
+        // Walk the list for this priority to find t
+        TaskControlBlock *prev = nullptr;
+        for (auto *cur = heads_[p]; safe_tcb(cur); cur = cur->pri_next_) {
+            if (cur == &t) {
+                // Found it — unlink from this bucket
+                if (prev) {
+                    prev->pri_next_ = t.pri_next_;
+                } else {
+                    heads_[p] = t.pri_next_;
+                }
+                if (!t.pri_next_)
+                    tails_[p] = prev;
+                t.pri_next_ = nullptr;
+                t.pri_prev_ = nullptr;
+                if (!heads_[p])
+                    bitmap_.clear(p);
+                --total_;
+                return;
+            }
+            prev = cur;
+        }
+    }
+}
+
 /// @brief Find the priority bucket a node currently lives in.
 ///        A task's stored t->priority may have been changed by priority
 ///        inheritance WITHOUT the node being re-indexed, so we must NOT trust
