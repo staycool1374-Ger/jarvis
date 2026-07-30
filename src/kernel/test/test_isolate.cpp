@@ -129,8 +129,10 @@ static size_t off_bufpool() {
     return off_iocd_pid() + sizeof(uint64_t);
 }
 
-static constexpr uint64_t CANARY_BEFORE = 0xCAFEBABE00000001ULL;
-static constexpr uint64_t CANARY_AFTER  = 0xCAFEBABE00000002ULL;
+static constexpr uint64_t CANARY_BEFORE  = 0xCAFEBABE00000001ULL;
+static constexpr uint64_t CANARY_AFTER   = 0xCAFEBABE00000002ULL;
+static constexpr uint64_t CANARY_PD      = 0xCAFEBABE00000003ULL;
+static constexpr uint64_t CANARY_PD_END  = 0xCAFEBABE00000004ULL;
 
 static size_t off_rsrc_counts() {
     return off_bufpool() + BufferPool::state_bytes();
@@ -485,17 +487,32 @@ void snapshot_restore(const char *test_name) {
                 auto *pdpt = reinterpret_cast<uint64_t *>(
                     arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
                 if ((pdpt[0] & 1)) {
-                    auto *pd = reinterpret_cast<uint64_t *>(
-                        arch::HHDM_OFFSET + (pdpt[0] & ~0xFFFULL));
-                    for (size_t i = 1; i < 512; ++i) {
-                        uint64_t s = saved_pd[i];
-                        uint64_t c = pd[i];
-                        if ((s & (1ULL << 7)) && (c & 1ULL) && !(c & (1ULL << 7)))
-                            PMM::free_page(c & ~0xFFFULL);
+                    uint64_t pd_phys = pdpt[0] & ~0xFFFULL;
+                    // Sanity check: PDPT[0] must point to the boot PD page
+                    // (physical 0x5000).  Any other address means the PDPT
+                    // was corrupted — skip the restore to prevent memcpy
+                    // from writing to kernel data or snapshot buffer.
+                    if (pd_phys == 0x5000ULL) {
+                        auto *pd = reinterpret_cast<uint64_t *>(
+                            arch::HHDM_OFFSET + pd_phys);
+                        for (size_t i = 1; i < 512; ++i) {
+                            uint64_t s = saved_pd[i];
+                            uint64_t c = pd[i];
+                            if ((s & (1ULL << 7)) && (c & 1ULL) && !(c & (1ULL << 7)))
+                                PMM::free_page(c & ~0xFFFULL);
+                        }
+                        __builtin_memcpy(pd + 1, saved_pd + 1,
+                                         (512 - 1) * sizeof(uint64_t));
+                        arch::write_cr3(pml4_phys);
+                    } else {
+                        Logger::raw_write("[PD-RESTORE] CORRUPTED pdpt[0]=");
+                        Logger::print_hex(pdpt[0]);
+                        Logger::raw_write(" phys=");
+                        Logger::print_hex(pd_phys);
+                        Logger::raw_write(" in test=\"");
+                        Logger::raw_write(test_name ? test_name : "?");
+                        Logger::raw_write("\"\n");
                     }
-                    __builtin_memcpy(pd + 1, saved_pd + 1,
-                                     (512 - 1) * sizeof(uint64_t));
-                    arch::write_cr3(pml4_phys);
                 }
             }
         }
@@ -730,6 +747,28 @@ void snapshot_restore(const char *test_name) {
                         bool skip = (t == current) || on_live_stack;
                         // Skip current task — its stack is active
                         if (!skip) {
+                            uint64_t kstart = reinterpret_cast<uint64_t>(
+                                t->kernel_stack);
+                            uint64_t kend = t->kernel_stack_top;
+                            // Validate destination is NOT within snapshot buffer
+                            if (kstart >= reinterpret_cast<uint64_t>(g_snapshot) &&
+                                kstart < reinterpret_cast<uint64_t>(g_snapshot) +
+                                             g_snapshot_size) {
+                                Logger::raw_write("[KSTACK] corrupt dest in snaphot "
+                                                  "buffer at test \"");
+                                Logger::raw_write(test_name ? test_name : "?");
+                                Logger::raw_write("\"\n");
+                                continue;
+                            }
+                            // Validate size is reasonable (not beyond stack end)
+                            if (kstart + saved_size > kend || saved_size > 65536) {
+                                Logger::raw_write("[KSTACK] invalid saved_size=");
+                                Logger::print_dec(saved_size);
+                                Logger::raw_write(" in test \"");
+                                Logger::raw_write(test_name ? test_name : "?");
+                                Logger::raw_write("\"\n");
+                                continue;
+                            }
                             __builtin_memcpy(t->kernel_stack,
                                              in + sizeof(uint64_t) * 2,
                                              saved_size);
@@ -981,6 +1020,22 @@ void snapshot_restore(const char *test_name) {
             auto *pool = reinterpret_cast<PtPoolSnapshot *>(
                 g_snapshot + off_pt_pool(nu, nk));
             PMM::capture_pool_snapshot(*pool);
+        }
+    }
+
+    // Post-check: canaries should still be intact — corruption here means
+    // it happened DURING snapshot_restore, not during the test.
+    if (g_snapshot) {
+        uint64_t cb = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_before());
+        uint64_t ca = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_after());
+        if (cb != CANARY_BEFORE || ca != CANARY_AFTER) {
+            Logger::raw_write("[CANARY-POST] corruption DURING restore! test=\"");
+            Logger::raw_write(test_name ? test_name : "?");
+            Logger::raw_write("\" canary_before=0x");
+            Logger::print_hex(cb);
+            Logger::raw_write(" canary_after=0x");
+            Logger::print_hex(ca);
+            Logger::raw_write("\n");
         }
     }
 
