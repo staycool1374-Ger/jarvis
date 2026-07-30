@@ -225,6 +225,19 @@ class VMM {
 
     static constinit uint64_t kernel_pml4_;
 
+  public:
+    /// @brief Set to true when a test modifies kernel-space page tables
+    ///        (HHDM range).  Reset after PD restore in snapshot_restore.
+    static bool hhdm_modified_;
+
+    /// @brief Returns true if any test has modified the HHDM page tables
+    ///        since the last clear_hhdm_modified() call.
+    static bool hhdm_was_modified() { return hhdm_modified_; }
+    /// @brief Reset the HHDM modification flag (called after PD restore).
+    static void clear_hhdm_modified() { hhdm_modified_ = false; }
+
+  private:
+
     /// @brief Walks or creates a page-table entry at the given level.
     /// @param table Pointer to the current-level page table.
     /// @param index Index into the table.

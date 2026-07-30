@@ -43,20 +43,13 @@ using namespace kernel;
 // microkernel by moving them to userspace servers.
 // Input: Call each major API entry point.
 // Expect: Documented side-effects match actual observations.
-// Disabled: see register_microkernel_transition_tests below.
+// Disabled: causes memcpy stack corruption at all class position ~657.
+// Root cause: unknown (likely stack or buffer overflow from test code).
 #if 0
-
 TEST_CLASS(KernelApiPureFunctions) {
-    // IPC::send has side-effects: modifies receiver msg_queue and state.
-    // This is expected for a kernel — but in a microkernel this
-    // would be a syscall to a userspace IPC server.
-    // Verify IPC::send only modifies the destination queue, nothing else.
     auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
-
     uint64_t task_count_before = Scheduler::task_count();
-
-    // IPC send to self
     Message msg{};
     msg.sender_id = cur->id;
     msg.type = 1;
@@ -64,15 +57,12 @@ TEST_CLASS(KernelApiPureFunctions) {
     msg.data_size = 0;
     bool ok = IPC::send(cur->id, msg);
     CT_ASSERT(ok);
-
-    // Verify no unexpected side-effects on scheduler or memory
     uint64_t task_count_after = Scheduler::task_count();
     CT_ASSERT(task_count_after == task_count_before);
-
-    // Clean up the message we sent
     Message out;
     IPC::recv(out);
 };
+#endif
 
 // Runmode: kernel
 // Testidea: Identify all kernel functions that require ring-0 privilege
@@ -216,10 +206,13 @@ TEST_CLASS(TimerDrift) {
 
     Logger::info("TSC delta over busy-wait: %llu ticks", delta);
 };
-#endif
 
 void register_microkernel_transition_tests() {
     Logger::info("Registering microkernel transition tests");
-    // Disabled: KernelApiPureFunctions causes memcpy Page Fault at test
-    // position 657 (likely stack overflow or buffer overflow in test code).
+    REGISTER_CLASS(MinimalPrivilegedSurface);
+    REGISTER_CLASS(UserspaceDriverIsolation);
+    REGISTER_CLASS(IpcLatencyJitter);
+    REGISTER_CLASS(TimerDrift);
+    // KernelApiPureFunctions disabled:
+    // causes memcpy stack corruption at all class position ~657
 }

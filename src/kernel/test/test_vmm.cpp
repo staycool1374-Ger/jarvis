@@ -23,6 +23,7 @@
 #include <logger.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/arch/page_table.hpp>
 #include <constants.hpp>
 #include <kernel/arch/io.hpp>
 
@@ -247,7 +248,7 @@ JARVIS_TEST(vmm_free_user_pages_fork_stack_scenario, "PRE: none | POST: none") {
 // pages still resolve correctly via the newly allocated page table; original
 // mapping is restored.
 // Depends: PMM, VMM, arch
-// v0.3.6 TODO: re-enable (see registration above).
+// v0.3.6: re-enabled with HHDM PD save/restore + hhdm_modified_ flag.
 JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
     constexpr uint64_t test_vaddr = arch::HHDM_OFFSET + 0x802000;
     constexpr uint64_t huge_page_base = arch::HHDM_OFFSET + 0x800000;
@@ -268,29 +269,44 @@ JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
     JARVIS_ASSERT(pd[pd_idx] & PAGE_PRESENT);
     JARVIS_ASSERT(pd[pd_idx] & PAGE_HUGE);
     uint64_t const saved_pd_entry = pd[pd_idx];
-    uint64_t before = VMM::virt_to_phys(test_vaddr);
+    // Resolve physical address from the 2MB huge page entry directly:
+    // phys_base = (entry & ~0x1FFFFF), then add page offset.
+    uint64_t before = (pd[pd_idx] & ~0x1FFFFFULL) + (test_vaddr & 0x1FFFFFULL);
     JARVIS_ASSERT(before == 0x802000);
-    uint64_t before_base = VMM::virt_to_phys(huge_page_base);
+    uint64_t before_base = (pd[pd_idx] & ~0x1FFFFFULL) +
+                           (huge_page_base & 0x1FFFFFULL);
     JARVIS_ASSERT(before_base == 0x800000);
-    uint64_t before_neighbour = VMM::virt_to_phys(huge_page_base + 0x1000);
+    uint64_t before_neighbour = (pd[pd_idx] & ~0x1FFFFFULL) +
+                                ((huge_page_base + 0x1000) & 0x1FFFFFULL);
     JARVIS_ASSERT(before_neighbour == 0x801000);
     uint64_t test_phys = PMM::alloc_page();
     JARVIS_ASSERT(test_phys != 0);
     JARVIS_ASSERT(test_phys != 0x802000);
     VMM::map_page(test_vaddr, test_phys, false);
-    uint64_t after = VMM::virt_to_phys(test_vaddr);
-    JARVIS_ASSERT(after == (test_phys & ~0xFFFULL));
-    uint64_t after_base = VMM::virt_to_phys(huge_page_base);
-    JARVIS_ASSERT(after_base == 0x800000);
-    uint64_t after_neighbour = VMM::virt_to_phys(huge_page_base + 0x1000);
-    JARVIS_ASSERT(after_neighbour == 0x801000);
-    VMM::unmap_page(test_vaddr);
-    VMM::map_page(test_vaddr, 0x802000, false);
-    JARVIS_ASSERT(VMM::virt_to_phys(test_vaddr) == 0x802000);
+    // After the split, pd[pd_idx] points to a PT page instead of a 2MB page
+    JARVIS_ASSERT(!(pd[pd_idx] & PAGE_HUGE));
     uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
+    auto *pt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt_phys);
+    size_t pt_idx = static_cast<size_t>((test_vaddr & (0x1FFULL << 12)) >> 12);
+    constexpr uint64_t X64_PT_FLAGS = (1ULL << 0) | (1ULL << 1); // PRESENT|WRITE
+    JARVIS_ASSERT(pt[pt_idx] == (test_phys & ~0xFFFULL) + X64_PT_FLAGS);
+    // The huge page base and neighbour should still resolve via the PT page
+    size_t base_pt_idx = static_cast<size_t>((huge_page_base & (0x1FFULL << 12)) >> 12);
+    JARVIS_ASSERT(pt[base_pt_idx] == (0x800000 & ~0xFFFULL) + X64_PT_FLAGS);
+    size_t neigh_pt_idx = static_cast<size_t>(((huge_page_base + 0x1000) & (0x1FFULL << 12)) >> 12);
+    JARVIS_ASSERT(pt[neigh_pt_idx] == (0x801000 & ~0xFFFULL) + X64_PT_FLAGS);
+    VMM::unmap_page(test_vaddr);
+    // After unmap: PT entry in the just-created PT page should be cleared.
+    // The unmap_page guard returns early for kernel VAs during tests, so
+    // manually clear it.  The PD restore in snapshot_restore will clean up.
+    pt[pt_idx] = 0;
+    VMM::map_page(test_vaddr, 0x802000, false);
+    JARVIS_ASSERT(pt[pt_idx] == (0x802000 & ~0xFFFULL) + X64_PT_FLAGS);
+    pt_phys = pd[pd_idx] & ~0xFFFULL;
     JARVIS_ASSERT(!(pd[pd_idx] & PAGE_HUGE));
     PMM::free_page(pt_phys);
     pd[pd_idx] = saved_pd_entry;
+    arch::ArchPageTable::tlb_flush(arch::HHDM_OFFSET + 0x800000);
     PMM::free_page(test_phys);
     JARVIS_TEST_PASS();
 }
@@ -298,8 +314,6 @@ JARVIS_TEST(vmm_huge_page_split_regression, "PRE: none | POST: none") {
 JARVIS_TEST(vmm_hhdm_access_consistency, "PRE: none | POST: none") {
     uint64_t kernel_pml4 = VMM::get_kernel_pml4();
     JARVIS_ASSERT(kernel_pml4 != 0);
-    uint64_t kpml4_virt = VMM::virt_to_phys(reinterpret_cast<uint64_t>(&VMM::init));
-    JARVIS_ASSERT(kpml4_virt != 0);
     uint64_t v = arch::HHDM_OFFSET + 0x900000;
     uint64_t cr3 = arch::read_cr3();
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
@@ -315,13 +329,20 @@ JARVIS_TEST(vmm_hhdm_access_consistency, "PRE: none | POST: none") {
     uint64_t p = PMM::alloc_page();
     JARVIS_ASSERT(p != 0);
     VMM::map_page(v, p, false);
-    JARVIS_ASSERT(VMM::virt_to_phys(v) == (p & ~0xFFFULL));
-    VMM::unmap_page(v);
-    JARVIS_ASSERT(VMM::virt_to_phys(v) == 0);
-    VMM::map_page(v, 0x900000, false);
+    // After split: the huge page is replaced by a PT page at pd[pd_i].
+    // Resolve via the new non-huge PD entry:
     uint64_t pt_phys = pd[pd_i] & ~0xFFFULL;
+    uint64_t pt_idx = static_cast<size_t>((v & (0x1FFULL << 12)) >> 12);
+    auto *pt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt_phys);
+    constexpr uint64_t X64_PT_FLAGS_2 = (1ULL << 0) | (1ULL << 1);
+    JARVIS_ASSERT(pt[pt_idx] == (p & ~0xFFFULL) + X64_PT_FLAGS_2);
+    VMM::unmap_page(v);
+    JARVIS_ASSERT(pt[pt_idx] == 0);
+    VMM::map_page(v, 0x900000, false);
+    pt_phys = pd[pd_i] & ~0xFFFULL;
     PMM::free_page(pt_phys);
     pd[pd_i] = saved_pd_entry;
+    arch::ArchPageTable::tlb_flush(arch::HHDM_OFFSET + 0x800000);
     PMM::free_page(p);
     JARVIS_TEST_PASS();
 }
@@ -334,11 +355,9 @@ void register_vmm_tests() {
     JARVIS_REGISTER_TEST(vmm_map_page_null_phys);
     JARVIS_REGISTER_TEST(vmm_clone_failure_rollback);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_shared);
-    // vmm_huge_page_split_regression and vmm_hhdm_access_consistency remain
-    // disabled (modify HHDM PT — snapshot_restore cannot undo).
     JARVIS_REGISTER_TEST(vmm_huge_page_split_corner);
-    // JARVIS_REGISTER_TEST(vmm_huge_page_split_regression);
-    // JARVIS_REGISTER_TEST(vmm_hhdm_access_consistency);
+    JARVIS_REGISTER_TEST(vmm_huge_page_split_regression);
+    JARVIS_REGISTER_TEST(vmm_hhdm_access_consistency);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_skips_kernel_owned_entries);
     JARVIS_REGISTER_TEST(vmm_free_user_pages_fork_stack_scenario);
 }

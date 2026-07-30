@@ -140,6 +140,7 @@ static size_t off_user_page_data() {
 }
 
 static constexpr size_t PML4_USER_BYTES = 256 * sizeof(uint64_t); // 2048
+static constexpr size_t HHDM_PD_BYTES = 512 * sizeof(uint64_t); // 4096
 
 static size_t off_kstack_header(size_t user_page_count) {
     return off_user_page_data() +
@@ -147,9 +148,13 @@ static size_t off_kstack_header(size_t user_page_count) {
            PML4_USER_BYTES;
 }
 
-static size_t off_pt_pool(size_t user_page_count, uint64_t num_kstacks) {
+static size_t off_hhdm_pd(size_t user_page_count, uint64_t num_kstacks) {
     size_t kstack_area = sizeof(uint64_t) + num_kstacks * KSTACK_ENTRY_SIZE;
     return off_kstack_header(user_page_count) + kstack_area;
+}
+
+static size_t off_pt_pool(size_t user_page_count, uint64_t num_kstacks) {
+    return off_hhdm_pd(user_page_count, num_kstacks) + HHDM_PD_BYTES;
 }
 
 static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
@@ -339,6 +344,28 @@ bool snapshot_create() {
         PMM::capture_pool_snapshot(*pool);
     }
 
+    // ---- HHDM PD save ----
+    // Save PDPT[0]→PD (512 entries) so snapshot_restore can undo any
+    // huge-page splits performed by kernel-space VMM tests.
+    {
+        uint64_t pml4_phys = VMM::get_kernel_pml4();
+        if (pml4_phys) {
+            auto *pml4 = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+            if (pml4[256] & 1) {
+                auto *pdpt = reinterpret_cast<uint64_t *>(
+                    arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
+                if (pdpt[0] & 1) {
+                    auto *pd = reinterpret_cast<uint64_t *>(
+                        arch::HHDM_OFFSET + (pdpt[0] & ~0xFFFULL));
+                    __builtin_memcpy(
+                        g_snapshot + off_hhdm_pd(user_page_count, task_count),
+                        pd, HHDM_PD_BYTES);
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -385,6 +412,43 @@ void snapshot_restore(const char *test_name) {
         ResourceTracker::instance().restore(baseline);
     }
 
+    // ---- HHDM PD restore (before PMM restore) ----
+    // Only runs when a test actually modified HHDM page tables.
+    // PD[1..511] are restored (PD[0] maps the PD page itself).
+    if (VMM::hhdm_was_modified()) {
+        uint64_t pml4_phys = VMM::get_kernel_pml4();
+        if (pml4_phys) {
+            auto *nu_p = reinterpret_cast<uint64_t *>(
+                g_snapshot + off_user_page_count());
+            uint64_t nu = *nu_p;
+            // Read nk from kstack header (stable)
+            uint64_t nk = *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_kstack_header(nu));
+            auto *saved_pd = reinterpret_cast<const uint64_t *>(
+                g_snapshot + off_hhdm_pd(nu, nk));
+            auto *pml4 = reinterpret_cast<uint64_t *>(
+                arch::HHDM_OFFSET + (pml4_phys & ~0xFFFULL));
+            if ((pml4[256] & 1)) {
+                auto *pdpt = reinterpret_cast<uint64_t *>(
+                    arch::HHDM_OFFSET + (pml4[256] & ~0xFFFULL));
+                if ((pdpt[0] & 1)) {
+                    auto *pd = reinterpret_cast<uint64_t *>(
+                        arch::HHDM_OFFSET + (pdpt[0] & ~0xFFFULL));
+                    for (size_t i = 1; i < 512; ++i) {
+                        uint64_t s = saved_pd[i];
+                        uint64_t c = pd[i];
+                        if ((s & (1ULL << 7)) && (c & 1ULL) && !(c & (1ULL << 7)))
+                            PMM::free_page(c & ~0xFFFULL);
+                    }
+                    __builtin_memcpy(pd + 1, saved_pd + 1,
+                                     (512 - 1) * sizeof(uint64_t));
+                    arch::write_cr3(pml4_phys);
+                }
+            }
+        }
+        VMM::clear_hhdm_modified();
+    }
+
     // ---- PMM ----
     {
         __builtin_memcpy(PMM::bitmap_ptr(), g_snapshot + off_pmm_bitmap(),
@@ -397,11 +461,12 @@ void snapshot_restore(const char *test_name) {
 
     // ---- Page-table pool restore (overlays main bitmap) ----
     {
-        auto *saved_misc =
-            reinterpret_cast<uint64_t *>(g_snapshot + off_sched_misc());
         uint64_t nu = *reinterpret_cast<uint64_t *>(
             g_snapshot + off_user_page_count());
-        uint64_t nk = saved_misc[0];
+        // Read nk from kstack header (stable) — misc[0] is overwritten by
+        // the refresh block with the post-reload task count.
+        uint64_t nk = *reinterpret_cast<uint64_t *>(
+            g_snapshot + off_kstack_header(nu));
         auto *pool = reinterpret_cast<const PtPoolSnapshot *>(
             g_snapshot + off_pt_pool(nu, nk));
         PMM::restore_pool_snapshot(*pool);
@@ -834,6 +899,17 @@ void snapshot_restore(const char *test_name) {
         auto *rqpod =
             reinterpret_cast<ReadyQueuePOD *>(g_snapshot + off_sched_rqpod());
         Scheduler::capture_rqpod(*rqpod);
+
+        // Recapture PtPoolSnapshot — daemon reload may have changed pool state.
+        {
+            uint64_t nu = *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_user_page_count());
+            uint64_t nk = *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_kstack_header(nu));
+            auto *pool = reinterpret_cast<PtPoolSnapshot *>(
+                g_snapshot + off_pt_pool(nu, nk));
+            PMM::capture_pool_snapshot(*pool);
+        }
     }
 
     // Belt-and-suspenders: ensure interrupts enabled before returning to

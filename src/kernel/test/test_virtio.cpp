@@ -215,8 +215,15 @@ JARVIS_TEST(virtio_guest_notify, "PRE: iocd | POST: none") {
 // Depends: Test framework, Logger, arch::virtio
 void register_virtio_tests() {
     Logger::info("Registering Virtio tests");
-    // Disabled: virtio MMIO accesses fault after snapshot_restore
-    // (device MMIO pages not restored across test cycles).
+    JARVIS_REGISTER_TEST(virtio_no_device_found);
+    JARVIS_REGISTER_TEST(virtio_not_virtio_device);
+    JARVIS_REGISTER_TEST(virtio_blk_probe_no_device);
+    JARVIS_REGISTER_TEST(virtio_map_mmio_invalid);
+    JARVIS_REGISTER_TEST(virtio_init_transport_noop);
+    JARVIS_REGISTER_TEST(virtio_device_reset);
+    JARVIS_REGISTER_TEST(virtio_feature_negotiation);
+    JARVIS_REGISTER_TEST(virtio_queue_configuration);
+    JARVIS_REGISTER_TEST(virtio_guest_notify);
 }
 
 #endif // CONFIG_ARCH_X86_64

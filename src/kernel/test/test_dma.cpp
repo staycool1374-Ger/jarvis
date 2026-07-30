@@ -359,4 +359,16 @@ JARVIS_TEST(dma_double_buffered_transfer, "PRE: iocd | POST: none") {
 
 void register_dma_tests() {
     Logger::info("Registering DMA tests");
+    JARVIS_REGISTER_TEST(dma_alloc_buffer);
+    JARVIS_REGISTER_TEST(dma_buffer_write_read);
+    JARVIS_REGISTER_TEST(dma_sg_from_buffer);
+    JARVIS_REGISTER_TEST(dma_prd_from_sg);
+    JARVIS_REGISTER_TEST(dma_bus_master_host_bridge);
+    JARVIS_REGISTER_TEST(dma_sg_reset);
+    JARVIS_REGISTER_TEST(dma_prd_reset);
+    JARVIS_REGISTER_TEST(dma_free_empty_buffer);
+    JARVIS_REGISTER_TEST(dma_zero_length_buffer);
+    JARVIS_REGISTER_TEST(dma_sg_non_contiguous_prd);
+    JARVIS_REGISTER_TEST(dma_completion_interrupt);
+    JARVIS_REGISTER_TEST(dma_double_buffered_transfer);
 }
