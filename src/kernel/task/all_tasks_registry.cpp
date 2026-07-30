@@ -1,5 +1,6 @@
 #include <kernel/task/all_tasks_registry.hpp>
 #include <kernel/task/task.hpp>
+#include <logger.hpp>
 
 namespace kernel {
 
@@ -14,6 +15,33 @@ static inline bool safe_tcb(const TaskControlBlock *t) noexcept {
     return t->magic == TaskControlBlock::TCB_MAGIC;
 }
 
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+/// @brief Validate pointer at a given offset/name (for invasive diagnostics).
+static void diag_check_tails(uint64_t prio, const TaskControlBlock *ptr,
+                             const char *caller) noexcept {
+    if (!ptr)
+        return;
+    if (reinterpret_cast<uint64_t>(ptr) < 0xFFFF800000000000ULL) {
+        Logger::raw_write("[TAILS] CORRUPT by ");
+        Logger::raw_write(caller);
+        Logger::raw_write(": tails_[");
+        Logger::print_dec(prio);
+        Logger::raw_write("] = 0x");
+        Logger::print_hex(reinterpret_cast<uint64_t>(ptr));
+        Logger::raw_write(" (below HHDM, likely 0x55/0xDD poison)\n");
+        return;
+    }
+    if (ptr->magic != TaskControlBlock::TCB_MAGIC) {
+        Logger::raw_write("[TAILS] CORRUPT by ");
+        Logger::raw_write(caller);
+        Logger::raw_write(": tails_[");
+        Logger::print_dec(prio);
+        Logger::raw_write("] -> magic=0x");
+        Logger::print_hex(ptr->magic);
+        Logger::raw_write(" (expected TCB_MAGIC)\n");
+    }
+}
+
 void AllTasksRegistry::append(TaskControlBlock &t) noexcept {
     if (!safe_tcb(&t))
         return;
@@ -24,6 +52,9 @@ void AllTasksRegistry::append(TaskControlBlock &t) noexcept {
 
     t.pri_next_ = nullptr;
     t.pri_prev_ = tails_[prio];
+
+    // INVASIVE DIAG: validate tails_ before the potentially-dangerous write
+    diag_check_tails(prio, tails_[prio], "append");
 
     if (tails_[prio]) {
         tails_[prio]->pri_next_ = &t;
@@ -50,6 +81,7 @@ void AllTasksRegistry::remove(TaskControlBlock &t) noexcept {
         t.pri_next_->pri_prev_ = t.pri_prev_;
     } else {
         tails_[p] = t.pri_prev_;
+        diag_check_tails(p, tails_[p], "remove");
     }
     t.pri_next_ = nullptr;
     t.pri_prev_ = nullptr;
@@ -60,22 +92,25 @@ void AllTasksRegistry::remove(TaskControlBlock &t) noexcept {
 
 void AllTasksRegistry::remove_unsafe(TaskControlBlock &t) noexcept {
     // Scan all priority buckets to find which one contains t.
-    // This is O(128) but only called for corrupted TCBs.
+    // MAX_WALK prevents infinite loops from corrupted pri_next_ chains.
+    static constexpr uint64_t MAX_WALK = CONFIG_MAX_TASKS * 4;
     for (uint64_t p = 0; p < NUM_PRIORITIES; ++p) {
         if (!heads_[p])
             continue;
-        // Walk the list for this priority to find t
         TaskControlBlock *prev = nullptr;
-        for (auto *cur = heads_[p]; safe_tcb(cur); cur = cur->pri_next_) {
+        uint64_t walked = 0;
+        for (auto *cur = heads_[p]; safe_tcb(cur) && walked < MAX_WALK;
+             cur = cur->pri_next_, ++walked) {
             if (cur == &t) {
-                // Found it — unlink from this bucket
                 if (prev) {
                     prev->pri_next_ = t.pri_next_;
                 } else {
                     heads_[p] = t.pri_next_;
                 }
-                if (!t.pri_next_)
+                if (!t.pri_next_) {
                     tails_[p] = prev;
+                    diag_check_tails(p, tails_[p], "remove_unsafe");
+                }
                 t.pri_next_ = nullptr;
                 t.pri_prev_ = nullptr;
                 if (!heads_[p])

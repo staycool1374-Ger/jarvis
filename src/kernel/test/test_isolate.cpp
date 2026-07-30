@@ -206,19 +206,6 @@ bool snapshot_create() {
     g_snapshot_guard_phys = phys;
     g_snapshot_guard_pages = guard_pages;
 
-    // ---- Map-then-unmap guard pages ----
-    // Split the 2MB huge pages and clear the guard PTEs.  Any access to
-    // the guard pages (buffer overflow/underflow) causes an immediate
-    // page fault, catching the stray write at the instruction level.
-    {
-        uint64_t gb_va = arch::HHDM_OFFSET + guard_before_phys;
-        uint64_t ga_va = arch::HHDM_OFFSET + guard_after_phys;
-        VMM::map_page(gb_va, guard_before_phys, false);
-        VMM::unmap_page(gb_va);
-        VMM::map_page(ga_va, guard_after_phys, false);
-        VMM::unmap_page(ga_va);
-    }
-
     // ---- PMM ----
     {
         __builtin_memcpy(g_snapshot + off_pmm_bitmap(), PMM::bitmap_ptr(),
@@ -402,6 +389,25 @@ bool snapshot_create() {
                         pd, HHDM_PD_BYTES);
                 }
             }
+        }
+    }
+
+    // ---- Map-then-unmap guard pages (after PD save, so saved PD is clean) ----
+    // Guard pages must be within HHDM window (phys < 128MB) and above reserved
+    // kernel area (phys > 11MB).  If they're at the window edge, skip them.
+    {
+        uint64_t gb_end = guard_before_phys + arch::PAGE_SIZE;
+        uint64_t ga_end = guard_after_phys + arch::PAGE_SIZE;
+        uint64_t hhdm_limit = 128ULL * 1024 * 1024;
+        if (guard_before_phys >= 0xB00000ULL && gb_end <= hhdm_limit) {
+            uint64_t gb_va = arch::HHDM_OFFSET + guard_before_phys;
+            VMM::map_page(gb_va, guard_before_phys, false);
+            VMM::unmap_page(gb_va);
+        }
+        if (guard_after_phys >= 0xB00000ULL && ga_end <= hhdm_limit) {
+            uint64_t ga_va = arch::HHDM_OFFSET + guard_after_phys;
+            VMM::map_page(ga_va, guard_after_phys, false);
+            VMM::unmap_page(ga_va);
         }
     }
 
