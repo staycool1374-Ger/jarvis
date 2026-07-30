@@ -539,7 +539,8 @@ void snapshot_restore(const char *test_name) {
             g_snapshot + off_canary_before());
         uint64_t ca = *reinterpret_cast<uint64_t *>(
             g_snapshot + off_canary_after());
-        if (cb != CANARY_BEFORE || ca != CANARY_AFTER) {
+        bool pool_corrupt = (cb != CANARY_BEFORE || ca != CANARY_AFTER);
+        if (pool_corrupt) {
             Logger::raw_write("[CANARY-POOL] nu corrupted at test \"");
             Logger::raw_write(test_name ? test_name : "?");
             Logger::raw_write("\" nu=");
@@ -549,16 +550,19 @@ void snapshot_restore(const char *test_name) {
             Logger::raw_write(" canary_after=0x");
             Logger::print_hex(ca);
             Logger::raw_write("\n");
-            // Fall back to nu=0 to avoid GPF from corrupted offset
-            nu = 0;
+            // Buffer is corrupted — skip pool restore entirely.  The
+            // PMM bitmap was already restored above; skipping the pool
+            // overlay risks losing some pool-page protections, but
+            // attempting to read from the corrupted PtPoolSnapshot
+            // offset would cause a GPF.
         }
-        // Read nk from kstack header (stable) — misc[0] is overwritten by
-        // the refresh block with the post-reload task count.
-        uint64_t nk = *reinterpret_cast<uint64_t *>(
-            g_snapshot + off_kstack_header(nu));
-        auto *pool = reinterpret_cast<const PtPoolSnapshot *>(
-            g_snapshot + off_pt_pool(nu, nk));
-        PMM::restore_pool_snapshot(*pool);
+        if (!pool_corrupt) {
+            uint64_t nk = *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_kstack_header(nu));
+            auto *pool = reinterpret_cast<const PtPoolSnapshot *>(
+                g_snapshot + off_pt_pool(nu, nk));
+            PMM::restore_pool_snapshot(*pool);
+        }
     }
 
     // ---- Rebuild PMM free list from restored bitmap ----
@@ -751,6 +755,9 @@ void snapshot_restore(const char *test_name) {
                                 t->kernel_stack);
                             uint64_t kend = t->kernel_stack_top;
                             // Validate destination is NOT within snapshot buffer
+                            // or kernel code section (read-only).  A corrupted
+                            // t->kernel_stack can point to .text, causing a GPF
+                            // when memcpy tries to write saved stack data there.
                             if (kstart >= reinterpret_cast<uint64_t>(g_snapshot) &&
                                 kstart < reinterpret_cast<uint64_t>(g_snapshot) +
                                              g_snapshot_size) {
@@ -758,6 +765,22 @@ void snapshot_restore(const char *test_name) {
                                                   "buffer at test \"");
                                 Logger::raw_write(test_name ? test_name : "?");
                                 Logger::raw_write("\"\n");
+                                continue;
+                            }
+                            if (kstart >= 0xFFFF800000200000ULL &&
+                                kstart < 0xFFFF8000002C3000ULL) {
+                                Logger::raw_write("[KSTACK] corrupt dest in .text "
+                                                  "at test \"");
+                                Logger::raw_write(test_name ? test_name : "?");
+                                Logger::raw_write("\" kstart=0x");
+                                Logger::print_hex(kstart);
+                                Logger::raw_write(" id=");
+                                Logger::print_dec(t->id);
+                                Logger::raw_write(" prio=");
+                                Logger::print_dec(t->priority);
+                                Logger::raw_write(" saved=");
+                                Logger::print_hex(saved_kstack);
+                                Logger::raw_write("\n");
                                 continue;
                             }
                             // Validate size is reasonable (not beyond stack end)
