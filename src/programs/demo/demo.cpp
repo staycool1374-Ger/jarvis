@@ -126,7 +126,7 @@ void demo_main() {
 
     char c;
     while (!arch::Keyboard::getchar(c)) {
-        for (volatile int _pd = 0; _pd < 1000; ++_pd) {}
+        for (int _pd = 0; _pd < 1000; ++_pd) { asm volatile("pause"); }
     }
 
     draw_spinning_rect();
