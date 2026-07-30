@@ -550,11 +550,11 @@ void snapshot_restore(const char *test_name) {
             Logger::raw_write(" canary_after=0x");
             Logger::print_hex(ca);
             Logger::raw_write("\n");
-            // Buffer is corrupted — skip pool restore entirely.  The
-            // PMM bitmap was already restored above; skipping the pool
-            // overlay risks losing some pool-page protections, but
-            // attempting to read from the corrupted PtPoolSnapshot
-            // offset would cause a GPF.
+            // Overwrite the corrupted nu with 0 so all subsequent reads
+            // (PML4 restore, etc.) use a safe value instead of garbage.
+            nu = 0;
+            *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_user_page_count()) = 0;
         }
         if (!pool_corrupt) {
             uint64_t nk = *reinterpret_cast<uint64_t *>(
