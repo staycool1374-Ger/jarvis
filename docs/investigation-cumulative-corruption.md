@@ -72,4 +72,40 @@ All three exhibit the same root pattern: **snapshot buffer data corrupted by a w
 
 **Check:** Does `alloc_contiguous` ever return page 0x4000? The PMM bitmap says page 0x4000/4096 = page index 4. At boot, pages 0 through kernel_reserved_end are marked allocated. Page 4 (0x4000) is before the kernel image (0x100000), so it should be in the "below kernel" range which is allocated. But userspace pages below kernel_start should NOT be free.
 
-Let me verify this by checking the PMM init code.
+---
+
+## Attempt 4: 0xDD stack poison from task cleanup (ROOT CAUSE FOUND)
+
+**Date:** 2026-07-30
+
+**Root cause chain:**
+1. Test creates task T → kernel stack allocated from PMM at physical page X
+2. T terminates during daemon reload → `cleanup()` does `memset(HHDM_OFFSET+X, 0xDD, pages*4096)` → fills X with `0xDD`  
+3. `PMM::free_page(X)` → X is now **free** but still contains `0xDD` (PMM doesn't zero freed pages)
+4. `snapshot_restore` PMM bitmap restore → X already free in saved bitmap → X remains in free list with `0xDD` content
+5. Next test allocates X from free list for a data structure (TCB, buffer, etc.)
+6. Data structure's first 8 bytes = `0xDDDDDDDDDDDDDDDD` (the poison from step 2)
+7. If X holds a struct with a function pointer → pointer = `0xDDDDDDDDDDDDDDDD` → GPF at that address
+8. If X holds a TCB → magic = `0xDDDDDDDDDDDDDDDD` → `safe_tcb` fails → task removed from list
+
+**Why it manifests at test ~417 specifically:**
+Before ~417 tests, the free list is healthy enough that reallocations don't conflict. After ~417 cycles of allocation/free/recycle, the free list structure becomes favorable for a reallocation to land on a page that was poisoned by a recently-cleaned-up task.
+
+**Why the nk fix didn't help:**
+The 0xDD corruption is NOT from the PtPoolSnapshot offset. It's from the task cleanup's `memset(HHDM_OFFSET + stack_phys_, 0xDD, ...)` running BEFORE the PMM restore, poisoning the page, then the page being freed and reallocated with the poison still present.
+
+**Fix:**
+Remove the `0xDD` memset from `TaskControlBlock::cleanup()`. The poison persists in freed pages and leaks into reallocations. Use-after-free detection relies on TCB magic checks (`safe_tcb`) instead.
+
+**Verification:**
+After removing the memset, the `all` test should progress past test 417 without the 0xDD GPF. The remaining ~35 tests (848-882) are blocked by a separate user-task page fault issue at the static_pools → mlock boundary (847 crash).
+
+---
+
+## Attempt 5: (future) User-task page fault at test 847
+
+**Symptom:** Task 0x1D (PID 29) tries to execute kernel address `0xFFFF80000021324D` from user mode (CR3=0x6F46000, err=0x15). Kernel sends SIGSEGV, task has no handler → kernel panics.
+
+**Hypothesis:** A recreated daemon task (vfsd or iocd) has its user PML4 corrupted. The user PML4 shares kernel page table entries with the kernel PML4 (via `clone_kernel_pml4`). If the shared PD page was corrupted by the PD restore writing to the wrong address, the user task can't access kernel code.
+
+**Status:** Not yet investigated. Requires GDB watchpoint or further static analysis.

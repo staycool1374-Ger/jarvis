@@ -1247,9 +1247,9 @@ void TaskControlBlock::cleanup() noexcept {
             free_kslot(slot_va, kstack_slot_size_);
         }
         // Poison physical pages via HHDM before freeing.
-        __builtin_memset(
-            reinterpret_cast<void *>(arch::HHDM_OFFSET + stack_phys_),
-            0xDD, pages * arch::PAGE_SIZE);
+        // NOTE: 0xDD poison removed — it persists in the freed page and
+        // corrupts the next allocation after PMM restore recycles the page.
+        // Use-after-free detection relies on TCB magic checks instead.
         for (size_t i = 0; i < pages; ++i)
             PMM::free_page(stack_phys_ + i * arch::PAGE_SIZE);
 #if CONFIG_MEMORY_BUDGET
