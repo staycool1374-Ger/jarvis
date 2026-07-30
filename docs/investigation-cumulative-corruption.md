@@ -118,4 +118,6 @@ After removing the memset, the `all` test should progress past test 417 without 
 - GDB remote debugging: GDB 17.2 batch mode incompatible with QEMU remote stub (`commands` block fails with "Cannot execute this command while the target is running")
 - Added DIAG-847 diagnostic (2026-07-30): compares `off_kstack_header(nu)` return value against manual computation `off_user_page_data() + nu * 4104 + 2048`. If they differ, dumps function code bytes and snapshot buffer address.
 
-**Next step:** Clean rebuild + run `all` class with DIAG-847.
+**Resolution:** Moving guard pages after the HHDM PD save in snapshot_create resolved the 417 TCB corruption. Before the fix, guard PT page pointers were captured in the saved PD entries, causing 2MB huge pages to stay permanently split across cycles. After ~90+ cycles, orphaned PT pages accumulated in the pool bitmap, corrupting TCB page table entries → `magic = &t`.
+
+**Verification:** `all` test 882/882, 881 PASS, 1 FAIL (pre-existing stack_profiler). The `remove_task` error at test 91 is completely absent.
