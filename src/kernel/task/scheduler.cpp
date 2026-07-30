@@ -482,6 +482,11 @@ void Scheduler::remove_task(TaskControlBlock &task) {
         Logger::error("remove_task: TCB %p magic=0x%lx (expected 0x%lx)",
                       &task, (uint64_t)task.magic,
                       (uint64_t)TaskControlBlock::TCB_MAGIC);
+        // Despite the corruption, still remove from all_tasks_ to prevent
+        // cascading corruption.  Without this, stale pri_next_/pri_prev_
+        // links survive and cause subsequent add_task (tails_ -> pri_next_
+        // = &new_t) to write through freed/reallocated memory.
+        all_tasks_.remove(task);
         return;
     }
     // BUGS.md#019/#020: never leave current_task_ptr_ aliasing a TCB that is
