@@ -53,6 +53,8 @@ namespace kernel::test {
 
 static uint8_t *g_snapshot = nullptr;
 static size_t g_snapshot_size = 0;
+static uint64_t g_snapshot_guard_phys = 0;
+static size_t g_snapshot_guard_pages = 0;
 
 bool g_vfs_touched = false;
 
@@ -189,12 +191,33 @@ bool snapshot_create() {
     uint64_t task_count = Scheduler::task_count();
     size_t total = total_size(user_page_count, task_count);
     size_t pages = (total + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
-    uint64_t phys = PMM::alloc_contiguous(pages);
+    // Allocate 2 extra pages for guard pages (before and after buffer)
+    size_t guard_pages = pages + 2;
+    uint64_t phys = PMM::alloc_contiguous(guard_pages);
     if (!phys) {
         return false;
     }
-    g_snapshot = reinterpret_cast<uint8_t *>(phys + arch::HHDM_OFFSET);
+    // Guard page before (phys), then buffer pages, then guard page after
+    uint64_t guard_before_phys = phys;
+    uint64_t buf_phys = phys + arch::PAGE_SIZE;
+    uint64_t guard_after_phys = phys + (guard_pages - 1) * arch::PAGE_SIZE;
+    g_snapshot = reinterpret_cast<uint8_t *>(buf_phys + arch::HHDM_OFFSET);
     g_snapshot_size = total;
+    g_snapshot_guard_phys = phys;
+    g_snapshot_guard_pages = guard_pages;
+
+    // ---- Map-then-unmap guard pages ----
+    // Split the 2MB huge pages and clear the guard PTEs.  Any access to
+    // the guard pages (buffer overflow/underflow) causes an immediate
+    // page fault, catching the stray write at the instruction level.
+    {
+        uint64_t gb_va = arch::HHDM_OFFSET + guard_before_phys;
+        uint64_t ga_va = arch::HHDM_OFFSET + guard_after_phys;
+        VMM::map_page(gb_va, guard_before_phys, false);
+        VMM::unmap_page(gb_va);
+        VMM::map_page(ga_va, guard_after_phys, false);
+        VMM::unmap_page(ga_va);
+    }
 
     // ---- PMM ----
     {
@@ -1071,10 +1094,17 @@ void snapshot_restore(const char *test_name) {
 void snapshot_destroy() {
     if (!g_snapshot)
         return;
-    uint64_t phys = reinterpret_cast<uint64_t>(g_snapshot) - arch::HHDM_OFFSET;
-    size_t pages = (g_snapshot_size + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
-    for (size_t i = 0; i < pages; ++i)
-        PMM::free_page(phys + i * arch::PAGE_SIZE);
+    if (g_snapshot_guard_phys) {
+        for (size_t i = 0; i < g_snapshot_guard_pages; ++i)
+            PMM::free_page(g_snapshot_guard_phys + i * arch::PAGE_SIZE);
+        g_snapshot_guard_phys = 0;
+        g_snapshot_guard_pages = 0;
+    } else {
+        uint64_t phys = reinterpret_cast<uint64_t>(g_snapshot) - arch::HHDM_OFFSET;
+        size_t pages = (g_snapshot_size + arch::PAGE_SIZE - 1) / arch::PAGE_SIZE;
+        for (size_t i = 0; i < pages; ++i)
+            PMM::free_page(phys + i * arch::PAGE_SIZE);
+    }
     g_snapshot = nullptr;
     g_snapshot_size = 0;
 }
