@@ -20,3 +20,4 @@ initrd/tests/test-config.txt
 src/kernel/test/test_registry.gen.hpp
 bench_mandelbrot
 bench_mandelbrot.cpp
+tools/gdb/*.gdb
