@@ -210,8 +210,10 @@ uint64_t Syscall::sys_fstat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     if (!f || !f->vnode || !f->vnode->ops->fstat)
         return static_cast<uint64_t>(-1);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
-    auto *st = reinterpret_cast<vfs::VfsStat *>(arg1);
-    return static_cast<uint64_t>(f->vnode->ops->fstat(*f->vnode, *st));
+    auto st = checked(reinterpret_cast<vfs::VfsStat *>(arg1));
+    if (syscall_is_user_task() && !st.valid())
+        return static_cast<uint64_t>(-1);
+    return static_cast<uint64_t>(f->vnode->ops->fstat(*f->vnode, *st.unsafe_ptr()));
 }
 
 uint64_t Syscall::sys_write(uint64_t arg0, uint64_t arg1, uint64_t arg2,
