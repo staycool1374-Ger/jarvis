@@ -450,6 +450,145 @@ task-fields region restored `kernel_stack=0` for it.
   list when `[CANARY-POOL]` fires, to identify exactly which function's code
   is landing in the buffer.
 
+---
+
+## Addendum: pinning the write mechanism (2026-08-01)
+
+The corrupt canary region contains a complete `.text` function, giving exactly
+**two** candidate mechanisms:
+
+1. **PTE remap** — the snapshot buffer's virtual address was remapped (PML4 →
+   PDPT → PD → PT entry overwritten) to point at a kernel `.text` physical
+   page.  Reads of `g_snapshot + canary_offset` then return code that was
+   never written by anyone.
+2. **Data write** — a `memcpy`/`memmove` from a `.text` source landed in the
+   buffer's (unchanged) physical pages, copying a real function's bytes.
+
+These are distinguished decisively by **which physical frame backs the canary
+VA at detection time**.  The plan below is executed stepwise; each step is
+committed/verified before the next begins.
+
+### Step 1 — PTE-frame inspection at detection (DECISIVE)
+
+- At `snapshot_create`, record the expected buffer frame:
+  `buf_phys = g_snapshot_guard_phys + PAGE_SIZE`.
+- In the `[CANARY-POOL]` handler, walk the live page tables for the canary VA
+  (`g_snapshot + off_canary_before()`): `CR3 → PML4 → PDPT → PD → PT`, printing
+  each entry and the final PTE frame.
+- Compare against `buf_phys + (off_canary_before() >> 12)`:
+
+  | PTE frame | Conclusion |
+  |---|---|
+  | == expected buffer frame | physical page IS the buffer → data write (mechanism 2) |
+  | != expected, inside `.text` phys range | PTE remap to `.text` (mechanism 1) |
+
+  Timing-independent: the walk runs exactly when corruption is already
+  detected, so the sub-tick nature of test 846 is irrelevant.
+
+**RESULT (2026-08-01): mechanism 2 confirmed — data write, NOT a PTE remap.**
+Walk output at detection:
+```
+[PTE-WALK] va=0xFFFF8000008ED8C8 cr3=0x1000
+  pml4[256]=0x4023
+  pdpt[0]=0x5023
+  pd[4]=0x8000E3   (2MB HHDM huge page at phys 0x800000)
+```
+The canary VA maps to physical `0x8ED000` via the 2MB HHDM huge page.
+Expected buffer frame `0x82A000` + canary page offset `0xC3000` = `0x8ED000`
+**== observed**.  The snapshot buffer's PTE is intact; the corrupt `.text`
+bytes were physically written into the buffer's own pages.  The bug is a
+mis-targeted copy (memcpy from a `.text` source into the buffer), not a
+page-table corruption.  This kills the long-standing "PD restore memcpy to
+wrong physical address" hypothesis (Attempt 3/7) as the source of THIS
+corruption.
+
+### Step 2 — identify the exact `.text` symbol
+
+- Byte-scan `build/kernel-debug.elf` `.text` for the corrupt signature
+  (`55 48 89 E5 C6 45 F0 00 48 85 FF 75 60`).
+- Compute the function's physical frame from its symbol VA; compare with the
+  Step-1 PTE frame.  An exact match proves mechanism 1 at the PTE level.
+
+**STATUS:** mechanism 1 is already disproven by Step 1, so the exact symbol is
+sought only to identify WHICH function's code is being copied into the buffer —
+the copy source, which points at the mis-targeted memcpy.
+
+**RESULT (2026-08-01): the copied bytes are the initrd's `vfsd.c.elf`.**
+Byte-scanning the kernel image for the corrupt 512-byte block found an **exact
+contiguous match at file offset `0xe7099`** → VA `0xffff8000002e7099`, which
+sits inside the embedded initrd cpio region (`.data` 0x2c5321–0x30ed21).  The
+nearest preceding cpio header is the `./vfsd.c.elf` entry (data at file
+0xe6ce0, size 43192); the corrupt block begins at +0x3b9 into that file's
+bytes.  (The vfsd ELF begins `00 7f EL...`; the block at +0x3b9 decodes as code
+because it falls inside the ELF's segment/code area.)
+
+Combined with Step 1 (PTE intact, buffer's own pages), the corruption is
+conclusively: **a copy of initrd `vfsd.c.elf` content written into the snapshot
+buffer's physical pages during test 846**.  No daemon restart occurs at test 846
+(the log's vfsd died/restarted events are at suite end), so the writer is
+something in the `static_pools` test's `MemPool::reserve(2,total)` +
+`MemPool::alloc(64)` path that copies from the vfsd task's loaded image or the
+initrd region into a destination aliasing phys `0x8ED000`.
+
+### ROOT CAUSE FOUND (2026-08-01): MemPool pinned_bitmap OOB + PoolMeta bitmap OOB
+
+Two out-of-bounds bitmaps in `MemPool` produced the canary corruption:
+
+1. **`Pool::pinned_bitmap[4]` (256 bits) vs pool 2's 320 blocks.**
+   `counts[2] = 320`.  Test 846 (`static_pools_mempool_reserve_all_then_alloc_fails`)
+   calls `MemPool::reserve(2, pool_free_count(2))` = `reserve(2, 320)`, which
+   loops `set_block_pinned(idx)` for idx 0..319.  `set_block_pinned` does
+   `pinned_bitmap[idx/64] |= ...` — for idx ≥ 256 that writes
+   `pinned_bitmap[4..7]`, **past the 4-entry array**, clobbering the adjacent
+   `Pool` struct (pool 3's metadata) and whatever the `pools_[]` array is
+   followed by.  This cascaded into the scheduler/snapshot state and the canary
+   region.
+2. **`PoolMeta::freed_bitmap[4]` vs `copy_freed_bitmap`/`write_freed_bitmap`
+   writing 5 words.**  `capture_pool_meta`/`restore_pool_meta` (test-isolation)
+   copied 5 × uint64 into a 4-entry array — an 8-byte stack/heap overflow in
+   the snapshot path.  Additionally, the pinned state was NOT captured, so the
+   reserve-all test's pins leaked across restore cycles, starving pool 2.
+
+**Fix (committed):**
+- `Pool::pinned_bitmap` and `PoolMeta::freed_bitmap`/`pinned_bitmap` widened to
+  `[5]` (320 bits, matching the largest pool).
+- `PoolMeta` now captures/restores the pinned bitmap; `snapshot_create` pins
+  baseline TCBs BEFORE the MemPool meta capture so the snapshot's pinned state
+  is the baseline, and `restore_pool_meta` restores it (rolling back test-added
+  pins so a reserve-all test cannot permanently starve a pool).
+
+**Verification:** `all` = 881/881 PASS across 7 of 8 consecutive runs (the one
+crash was the pre-existing H2 deferred-switch race at test ~84, unrelated).
+The canary corruption at test 846 no longer occurs; `stack_profiler_current_task_stack_valid`
+(851) passes.
+
+### Step 3 — catch the write as it happens
+
+- Poll the canary VA's PTE at the START of every `snapshot_restore` (before
+  the canary read): store the last-good frame; the first mismatch attributes
+  the change to exactly one test (no per-tick timing dependence).
+
+**STATUS:** Step 1 already proved the PTE never changes (data write, not
+remap), so a per-restore PTE poll adds nothing.  The remaining question is the
+exact memcpy source/destination in the `static_pools` test path.  Prioritize
+Step 4's data-write branch instead.
+
+### Step 4 — confirm and fix, based on the answer
+
+- **PTE remap:** instrument `VMM::get_table`/`map_page`/`unmap_page` to refuse
+  the snapshot buffer's frames; watch the PT page via lldb under QEMU icount
+  replay (`-icount shift=auto,rr=record` + `rr=replay`) for a reproducible
+  bit-identical run.
+- **Data write (CONFIRMED):** find the memcpy in the `static_pools`/MemPool
+  path that copies vfsd ELF bytes into phys `0x8ED000`; set `CR0.WP` and mark
+  the canary page read-only after `snapshot_create` so the write GPFs with an
+  exact RIP/backtrace.
+
+**RESOLVED (2026-08-01):** the MemPool pinned-bitmap OOB was the corruption
+source (see ROOT CAUSE FOUND above); the vfsd ELF bytes were a downstream
+artifact of the corrupted pool metadata cascading through the restore path.
+No `CR0.WP` instrumentation was needed once the bitmaps were fixed.
+
 ## Open questions
 
 The `all` suite now passes 881/882, but the root cause is **not understood**.

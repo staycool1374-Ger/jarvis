@@ -194,6 +194,7 @@ void MemPool::capture_pool_meta(size_t idx, PoolMeta &out) {
     out.block_size = p.block_size;
     out.data = p.data;
     p.copy_freed_bitmap(out.freed_bitmap);
+    p.copy_pinned_bitmap(out.pinned_bitmap);
 }
 
 /// @brief Restore a pool's metadata from a snapshot and rebuild the free list.
@@ -212,6 +213,11 @@ void MemPool::restore_pool_meta(size_t idx, const PoolMeta &meta) {
     p.data = meta.data;
 
     p.write_freed_bitmap(meta.freed_bitmap);
+    // Restore pinned state too: baseline TCB pins (captured at snapshot time,
+    // AFTER snapshot_create's pin_block loop) are preserved, while pins added
+    // by a test (e.g. reserve-all in static_pools) are rolled back so the pool
+    // is not permanently starved across test cycles.
+    p.write_pinned_bitmap(meta.pinned_bitmap);
 
     // If the pool was resized after the snapshot, mark new blocks free.
     if (p.block_count > meta.block_count) {

@@ -55,6 +55,10 @@ static uint8_t *g_snapshot = nullptr;
 static size_t g_snapshot_size = 0;
 static uint64_t g_snapshot_guard_phys = 0;
 static size_t g_snapshot_guard_pages = 0;
+// Expected physical frame backing the snapshot buffer (set in snapshot_create).
+// Used by the [CANARY-POOL] PTE-walk discriminator: if the live PTE frame for
+// the canary VA differs from this, the PTE was remapped (mechanism 1).
+static uint64_t g_snapshot_buf_frame = 0;
 
 bool g_vfs_touched = false;
 
@@ -178,6 +182,81 @@ static size_t total_size(size_t user_page_count, uint64_t num_kstacks) {
     return off_pt_pool(user_page_count, num_kstacks) + sizeof(PtPoolSnapshot);
 }
 
+// ---------------------------------------------------------------------------
+// Page-table walk (DEBUG discriminator for the snapshot-canary corruption)
+// ---------------------------------------------------------------------------
+// Dumps the PML4/PDPT/PD/PT chain and the final PTE frame for a virtual
+// address, using the current CR3.  Called from the [CANARY-POOL] handler to
+// decide whether the corrupt canary region is a PTE remap to a .text page
+// (frame != expected buffer frame) or a data write into the buffer's own pages
+// (frame == expected buffer frame).
+static void dump_pte_walk(uint64_t va) {
+    uint64_t cr3 = arch::read_cr3();
+    auto *pml4 = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (cr3 & ~0xFFFULL));
+    uint64_t pml4e = (va >> 39) & 0x1FF;
+    uint64_t pdpte_idx = (va >> 30) & 0x1FF;
+    uint64_t pde_idx = (va >> 21) & 0x1FF;
+    uint64_t pte_idx = (va >> 12) & 0x1FF;
+
+    Logger::raw_write("[PTE-WALK] va=0x");
+    Logger::print_hex(va);
+    Logger::raw_write(" cr3=0x");
+    Logger::print_hex(cr3 & ~0xFFFULL);
+    Logger::raw_write("\n");
+    Logger::raw_write("  pml4[");
+    Logger::print_dec(pml4e);
+    Logger::raw_write("]=");
+    Logger::print_hex(pml4[pml4e]);
+    Logger::raw_write("\n");
+    if (!(pml4[pml4e] & 1)) {
+        Logger::raw_write("  (PML4 not present)\n");
+        return;
+    }
+    auto *pdpt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (pml4[pml4e] & ~0xFFFULL));
+    Logger::raw_write("  pdpt[");
+    Logger::print_dec(pdpte_idx);
+    Logger::raw_write("]=");
+    Logger::print_hex(pdpt[pdpte_idx]);
+    Logger::raw_write("\n");
+    if (!(pdpt[pdpte_idx] & 1)) {
+        Logger::raw_write("  (PDPT not present)\n");
+        return;
+    }
+    auto *pd = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (pdpt[pdpte_idx] & ~0xFFFULL));
+    Logger::raw_write("  pd[");
+    Logger::print_dec(pde_idx);
+    Logger::raw_write("]=");
+    Logger::print_hex(pd[pde_idx]);
+    Logger::raw_write("\n");
+    if (pd[pde_idx] & (1ULL << 7)) {
+        Logger::raw_write("  (2MB huge page)\n");
+        return;
+    }
+    if (!(pd[pde_idx] & 1)) {
+        Logger::raw_write("  (PD not present)\n");
+        return;
+    }
+    auto *pt = reinterpret_cast<uint64_t *>(
+        arch::HHDM_OFFSET + (pd[pde_idx] & ~0xFFFULL));
+    Logger::raw_write("  pt[");
+    Logger::print_dec(pte_idx);
+    Logger::raw_write("]=");
+    Logger::print_hex(pt[pte_idx]);
+    Logger::raw_write("\n");
+    if (pt[pte_idx] & 1) {
+        Logger::raw_write("  frame=0x");
+        Logger::print_hex(pt[pte_idx] & ~0xFFFULL);
+        Logger::raw_write(" flags=0x");
+        Logger::print_hex(pt[pte_idx] & 0xFFF);
+        Logger::raw_write("\n");
+    } else {
+        Logger::raw_write("  (PTE not present)\n");
+    }
+}
+
 bool snapshot_create() {
     arch::IrqGuard guard;
 
@@ -209,6 +288,7 @@ bool snapshot_create() {
     g_snapshot_size = total;
     g_snapshot_guard_phys = phys;
     g_snapshot_guard_pages = guard_pages;
+    g_snapshot_buf_frame = buf_phys;
 
     // ---- PMM ----
     {
@@ -218,6 +298,21 @@ bool snapshot_create() {
                          PMM::bitmap_bytes());
         *reinterpret_cast<uint64_t *>(g_snapshot + off_pmm_free()) =
             PMM::free_pages_ref();
+    }
+
+    // ---- Pin baseline TCB memory ----
+    // The scheduler snapshot stores raw TCB pointers.  Pin every baseline
+    // task's MemPool block so it can never be recycled onto a test-allocated
+    // task; otherwise the captured pointer would alias a foreign TCB, the live
+    // task set and ResourceTracker baseline would silently drift (the "Tasks
+    // -5" corruption), and the run could hard-crash on a use-after-free.
+    // Done BEFORE the MemPool meta capture so the snapshot's pinned_bitmap
+    // includes these baseline pins (restore_pool_meta restores them, rolling
+    // back only test-added pins).
+    for (auto *t = Scheduler::all_tasks().first_ptr(); t;
+         t = Scheduler::all_tasks().next_ptr(t)) {
+        if (t->magic == TaskControlBlock::TCB_MAGIC)
+            MemPool::pin_block(t);
     }
 
     // ---- MemPool ----
@@ -261,18 +356,6 @@ bool snapshot_create() {
         auto *rqpod =
             reinterpret_cast<ReadyQueuePOD *>(g_snapshot + off_sched_rqpod());
         Scheduler::capture_rqpod(*rqpod);
-    }
-
-    // ---- Pin baseline TCB memory ----
-    // The scheduler snapshot stores raw TCB pointers.  Pin every baseline
-    // task's MemPool block so it can never be recycled onto a test-allocated
-    // task; otherwise the captured pointer would alias a foreign TCB, the live
-    // task set and ResourceTracker baseline would silently drift (the "Tasks
-    // -5" corruption), and the run could hard-crash on a use-after-free.
-    for (auto *t = Scheduler::all_tasks().first_ptr(); t;
-         t = Scheduler::all_tasks().next_ptr(t)) {
-        if (t->magic == TaskControlBlock::TCB_MAGIC)
-            MemPool::pin_block(t);
     }
 
     // ---- Daemon ----
@@ -661,6 +744,15 @@ void snapshot_restore(const char *test_name) {
                 Logger::print_hex(reinterpret_cast<uint64_t>(tt->kernel_stack));
                 Logger::raw_write("\n");
             }
+            // PTE discriminator: walk the live page tables for the canary VA
+            // and compare the frame against the expected buffer frame.
+            Logger::raw_write("[CANARY-DUMP] expected buf frame=0x");
+            Logger::print_hex(g_snapshot_buf_frame);
+            Logger::raw_write(" canary_page_off=0x");
+            Logger::print_hex(off_canary_before() & ~(arch::PAGE_SIZE - 1));
+            Logger::raw_write("\n");
+            dump_pte_walk(reinterpret_cast<uint64_t>(
+                              g_snapshot + off_canary_before()));
             // Overwrite the corrupted nu with 0 so all subsequent reads
             // (PML4 restore, etc.) use a safe value instead of garbage.
             nu = 0;
