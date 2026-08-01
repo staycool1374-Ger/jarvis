@@ -20,7 +20,7 @@ def run_agent(prompt, system_instruction):
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         # OpenRouter bittet um diese optionalen Header für das Ranking
-        "HTTP-Referer": "https://github.com/arnold-hasshold/jarvis-rtos", 
+        "HTTP-Referer": "https://github.com/staycool1374-Ger/nexios", 
         "X-Title": "Jarvis RTOS Code Auditor"
     }
     

@@ -83,7 +83,7 @@ call_agent() {
     RESPONSE=$(curl -s -X POST "https://openrouter.ai/api/v1/chat/completions" \
       -H "Authorization: Bearer $OPENROUTER_API_KEY" \
       -H "Content-Type: application/json" \
-      -H "HTTP-Referer: https://github.com/arnold-hasshold/jarvis-rtos" \
+      -H "HTTP-Referer: https://github.com/staycool1374-Ger/nexios" \
       -H "X-Title: Jarvis RTOS Code Auditor" \
       -d "$JSON_PAYLOAD")
 
