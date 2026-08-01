@@ -277,6 +277,8 @@ struct TaskControlBlock {
     vfs::FdTable fd_table;
     char cwd[CONFIG_VFS_MAX_PATH];
     vfs::Vnode *cwd_vnode;
+    /// @brief Guards the cwd_vnode read-modify-write in sys_chdir (VULN-C5/C6).
+    sync::SpinLock cwd_lock_;
 
     /// @brief Intrusive linked-list pointers for O(1) ready queue.
     TaskControlBlock *runq_next_;

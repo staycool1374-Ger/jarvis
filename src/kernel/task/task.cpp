@@ -136,7 +136,7 @@ void init_task_common(TaskControlBlock &tcb) {
     tcb.cwd[1] = '\0';
     tcb.cwd_vnode = vfs::get_root_vnode();
     if (tcb.cwd_vnode)
-        ++tcb.cwd_vnode->refcount;
+        vfs::vnode_ref_inc(tcb.cwd_vnode);
 
     // Initialize IPC message queue
     tcb.msg_queue.init();
@@ -861,8 +861,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
     for (size_t i = 0; i <= cwd_len; ++i)
         tcb->cwd[i] = parent->cwd[i];
     tcb->cwd_vnode = parent->cwd_vnode;
-    if (tcb->cwd_vnode && tcb->cwd_vnode->refcount > 0)
-        ++tcb->cwd_vnode->refcount;
+    vfs::vnode_ref_inc(tcb->cwd_vnode);
 
     // Buffer pool starts empty — buffers are NOT inherited on fork
     tcb->buf_list_head = -1;
@@ -1213,13 +1212,10 @@ void TaskControlBlock::cleanup() noexcept {
     for (size_t i = 0; i < vfs::MAX_FDS; ++i) {
         if (fd_table.fds[i].used) {
             auto *vn = fd_table.fds[i].vnode;
-            if (vn && vn->refcount > 0) {
-                --vn->refcount;
-                if (vn->refcount == 0) {
-                    if (vn->ops->close)
-                        vn->ops->close(*vn);
-                }
-            } else if (vn) {
+            if (vn && vfs::vnode_ref_dec(vn)) {
+                if (vn->ops->close)
+                    vn->ops->close(*vn);
+            } else if (vn && !vn->refcount) {
                 if (vn->ops->close)
                     vn->ops->close(*vn);
             }
@@ -1294,10 +1290,9 @@ void TaskControlBlock::cleanup() noexcept {
         MemPool::free(sporadic_server);
         sporadic_server = nullptr;
     }
-    if (cwd_vnode && cwd_vnode->refcount > 0) {
-        --cwd_vnode->refcount;
-        cwd_vnode = nullptr;
-    }
+    if (cwd_vnode)
+        vfs::vnode_ref_dec(cwd_vnode);
+    cwd_vnode = nullptr;
     kernel::test::ResourceTracker::instance().track_task_remove();
 }
 

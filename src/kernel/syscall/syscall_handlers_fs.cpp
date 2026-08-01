@@ -438,8 +438,7 @@ uint64_t Syscall::sys_dup(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     if (new_fd < 0)
         return static_cast<uint64_t>(-1);
     cur->fd_table.fds[new_fd] = cur->fd_table.fds[old_fd];
-    if (old->vnode && old->vnode->refcount > 0)
-        ++old->vnode->refcount;
+    vfs::vnode_ref_inc(old->vnode);
     return static_cast<uint64_t>(new_fd);
 }
 
@@ -468,10 +467,12 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
         return static_cast<uint64_t>(-1);
     if (!(vn->mode & vfs::S_IFDIR))
         return static_cast<uint64_t>(-1);
-    if (cur->cwd_vnode && cur->cwd_vnode->refcount > 0)
-        --cur->cwd_vnode->refcount;
+    cur->cwd_lock_.lock();
+    if (cur->cwd_vnode)
+        vfs::vnode_ref_dec(cur->cwd_vnode);
     cur->cwd_vnode = vn;
-    ++vn->refcount;
+    vfs::vnode_ref_inc(vn);
+    cur->cwd_lock_.unlock();
     size_t i = 0;
     while (resolved_path[i] && i < 255) {
         cur->cwd[i] = resolved_path[i];
@@ -523,8 +524,7 @@ uint64_t Syscall::sys_dup2(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     t->fd_table.free(new_fd);
     t->fd_table.fds[new_fd] = *old_desc;
     t->fd_table.fds[new_fd].used = true;
-    if (old_desc->vnode && old_desc->vnode->refcount > 0)
-        ++old_desc->vnode->refcount;
+    vfs::vnode_ref_inc(old_desc->vnode);
     return static_cast<uint64_t>(new_fd);
 }
 

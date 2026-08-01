@@ -1023,10 +1023,12 @@ void Shell::cmd_cd(int argc, const char** argv) {
     }
     auto* task = kernel::Scheduler::current_task();
     if (!task) return;
-    if (task->cwd_vnode && task->cwd_vnode->refcount > 0)
-        --task->cwd_vnode->refcount;
+    task->cwd_lock_.lock();
+    if (task->cwd_vnode)
+        kernel::vfs::vnode_ref_dec(task->cwd_vnode);
     task->cwd_vnode = vn;
-    ++vn->refcount;
+    kernel::vfs::vnode_ref_inc(vn);
+    task->cwd_lock_.unlock();
     char canonical[256];
     build_canonical_path(task->cwd, target, canonical, sizeof(canonical));
     size_t i = 0;

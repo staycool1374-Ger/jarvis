@@ -93,14 +93,7 @@ void FdTable::free(int file_descriptor) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS)
         return;
     if (fds[file_descriptor].used && fds[file_descriptor].vnode) {
-        if (fds[file_descriptor].vnode->refcount > 0) {
-            --fds[file_descriptor].vnode->refcount;
-            if (fds[file_descriptor].vnode->refcount == 0) {
-                if (fds[file_descriptor].vnode->ops->close)
-                    fds[file_descriptor].vnode->ops->close(
-                        *fds[file_descriptor].vnode);
-            }
-        } else {
+        if (vnode_ref_dec(fds[file_descriptor].vnode)) {
             if (fds[file_descriptor].vnode->ops->close)
                 fds[file_descriptor].vnode->ops->close(
                     *fds[file_descriptor].vnode);
@@ -121,14 +114,7 @@ VfsError FdTable::free_err(int file_descriptor) {
     if (file_descriptor < 0 || static_cast<size_t>(file_descriptor) >= MAX_FDS)
         return VFS_ERR_INVALID_FD;
     if (fds[file_descriptor].used && fds[file_descriptor].vnode) {
-        if (fds[file_descriptor].vnode->refcount > 0) {
-            --fds[file_descriptor].vnode->refcount;
-            if (fds[file_descriptor].vnode->refcount == 0) {
-                if (fds[file_descriptor].vnode->ops->close)
-                    fds[file_descriptor].vnode->ops->close(
-                        *fds[file_descriptor].vnode);
-            }
-        } else {
+        if (vnode_ref_dec(fds[file_descriptor].vnode)) {
             if (fds[file_descriptor].vnode->ops->close)
                 fds[file_descriptor].vnode->ops->close(
                     *fds[file_descriptor].vnode);

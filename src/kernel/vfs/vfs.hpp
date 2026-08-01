@@ -101,9 +101,25 @@ struct Vnode {
     uint64_t size;       ///< File size in bytes.
     uint16_t mode;       ///< File mode / type flags.
     void *private_data;  ///< Filesystem-specific private data.
-    uint64_t refcount;   ///< Reference count.
+    uint64_t refcount;   ///< Reference count (atomic-intended — see below).
     Vnode *parent;       ///< Parent directory vnode (for `..` resolution).
 };
+
+/// @brief Atomically increment a vnode's refcount (VULN-C5/C6).
+/// @note `std::atomic` is unavailable under `-nostdinc`; `__atomic_*` builtins
+///       give identical lock-free semantics on the existing int field.
+static inline void vnode_ref_inc(Vnode *vn) noexcept {
+    if (vn)
+        __atomic_fetch_add(&vn->refcount, 1ULL, __ATOMIC_RELAXED);
+}
+
+/// @brief Atomically decrement a vnode's refcount.
+/// @return true if this call brought the count from 1 to 0 (owner must close).
+static inline bool vnode_ref_dec(Vnode *vn) noexcept {
+    if (!vn)
+        return false;
+    return __atomic_fetch_sub(&vn->refcount, 1ULL, __ATOMIC_ACQ_REL) == 1;
+}
 
 struct FileDescription {
     Vnode *vnode;    ///< The vnode this descriptor refers to.
