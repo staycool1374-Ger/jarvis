@@ -22,7 +22,9 @@
 // loops are landing pads for undefined behaviour — if reached the system is
 // already in an unrecoverable state.  Suppress the analyzer's infinite-loop
 // diagnostic so -fanalyzer in release builds does not false-positive here.
-#ifndef __clang__
+// -Wanalyzer-infinite-loop only exists in GCC 14+; older GCC (e.g. the
+// ubuntu-24.04 CI default, GCC 13) rejects the option as unknown.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 14
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-infinite-loop"
 #endif
@@ -100,6 +102,6 @@ extern "C" void* memmove(void* dest, const void* src, size_t n) {
     return dest;
 }
 
-#ifndef __clang__
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 14
 #pragma GCC diagnostic pop
 #endif
