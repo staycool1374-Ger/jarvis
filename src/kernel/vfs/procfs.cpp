@@ -124,7 +124,7 @@ static int meminfo_fstat(Vnode &self, VfsStat &st) {
 }
 
 /// @brief I/O control on /proc/meminfo (not supported).
-static int meminfo_ioctl(Vnode &, uint64_t, void *) {
+static int meminfo_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on /proc/meminfo (not supported).
@@ -217,7 +217,7 @@ static int pci_fstat(Vnode &self, VfsStat &st) {
 }
 
 /// @brief I/O control on /proc/pci (not supported).
-static int pci_ioctl(Vnode &, uint64_t, void *) {
+static int pci_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on /proc/pci (not supported).
@@ -263,7 +263,7 @@ static int self_fstat(Vnode &, VfsStat &vfs_stat) {
     return 0;
 }
 /// @brief I/O control on /proc/self (not supported).
-static int self_ioctl(Vnode &, uint64_t, void *) {
+static int self_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on /proc/self (not supported).
@@ -412,7 +412,7 @@ static int pid_stat_fstat(Vnode &, VfsStat &) {
     return VFS_INVALID;
 }
 /// @brief I/O control on process stat (not supported).
-static int pid_stat_ioctl(Vnode &, uint64_t, void *) {
+static int pid_stat_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on process stat (not supported).
@@ -470,7 +470,7 @@ static int pid_dir_fstat(Vnode &, VfsStat &) {
     return VFS_INVALID;
 }
 /// @brief I/O control on PID directory (not supported).
-static int pid_dir_ioctl(Vnode &, uint64_t, void *) {
+static int pid_dir_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on PID directory (not supported).
@@ -547,7 +547,7 @@ static int proc_root_fstat(Vnode &, VfsStat &vfs_stat) {
     return 0;
 }
 /// @brief I/O control on procfs root (not supported).
-static int proc_root_ioctl(Vnode &, uint64_t, void *) {
+static int proc_root_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 

@@ -24,6 +24,7 @@
 #pragma once
 
 #include <types.hpp>
+#include <kernel/memory/checked_ptr.hpp>
 #include <kernel/vfs/vfs_errors.hpp>
 
 namespace kernel {
@@ -83,7 +84,7 @@ struct VnodeOps {
                      uint64_t *out_pos);    ///< Seek to a position.
     int (*fstat)(Vnode &self, VfsStat &st); ///< Get file status.
     int (*ioctl)(Vnode &self, uint64_t request,
-                 void *arg); ///< Device I/O control.
+                 kernel::CheckedPtr<uint8_t> arg); ///< Device I/O control.
     int (*readdir)(Vnode &self, uint64_t &pos,
                    Dirent &dent);                    ///< Read directory entry.
     Vnode *(*lookup)(Vnode &self, const char *name); ///< Look up child by name.

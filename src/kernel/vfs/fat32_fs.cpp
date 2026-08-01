@@ -142,7 +142,7 @@ static int fat32_file_fstat(Vnode &self, VfsStat &st) {
 }
 
 /// @brief I/O control on FAT32 file (not supported).
-static int fat32_file_ioctl(Vnode &, uint64_t, void *) {
+static int fat32_file_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 
@@ -228,7 +228,7 @@ static int fat32_dir_fstat(Vnode &, VfsStat &st) {
 }
 
 /// @brief I/O control on FAT32 directory (not supported).
-static int fat32_dir_ioctl(Vnode &, uint64_t, void *) {
+static int fat32_dir_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 

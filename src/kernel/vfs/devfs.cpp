@@ -102,7 +102,7 @@ static int tty_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on tty (not supported).
-static int tty_ioctl(Vnode &, uint64_t, void *) {
+static int tty_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on tty (not supported).
@@ -166,7 +166,7 @@ static int null_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on null (not supported).
-static int null_ioctl(Vnode &, uint64_t, void *) {
+static int null_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on null (not supported).
@@ -217,7 +217,7 @@ static int console_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on console (not supported).
-static int console_ioctl(Vnode &, uint64_t, void *) {
+static int console_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on console (not supported).
@@ -284,7 +284,7 @@ static int kbd_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on keyboard (not supported).
-static int kbd_ioctl(Vnode &, uint64_t, void *) {
+static int kbd_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on keyboard (not supported).
@@ -335,7 +335,7 @@ static int random_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on random (not supported).
-static int random_ioctl(Vnode &, uint64_t, void *) {
+static int random_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on random (not supported).
@@ -397,7 +397,7 @@ static int dev_root_fstat(Vnode &, VfsStat &stat) {
     return 0;
 }
 /// @brief I/O control on devfs root (not supported).
-static int dev_root_ioctl(Vnode &, uint64_t, void *) {
+static int dev_root_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 

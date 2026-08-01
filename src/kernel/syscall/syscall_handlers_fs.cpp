@@ -306,10 +306,12 @@ uint64_t Syscall::sys_ioctl(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     auto *f = cur->fd_table.get(static_cast<int>(arg0));
     if (!f || !f->vnode || !f->vnode->ops->ioctl)
         return static_cast<uint64_t>(-1);
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto arg_chk = checked(reinterpret_cast<uint8_t *>(arg2), sizeof(uint64_t));
+    if (syscall_is_user_task() && arg2 != 0 && !arg_chk.valid())
+        return static_cast<uint64_t>(-1);
     return static_cast<uint64_t>(
-        f->vnode->ops->ioctl(*f->vnode, arg1,
-                             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-                             reinterpret_cast<void *>(arg2)));
+        f->vnode->ops->ioctl(*f->vnode, arg1, arg_chk));
 }
 
 uint64_t Syscall::sys_readdir(uint64_t arg0, uint64_t arg1, uint64_t arg2,

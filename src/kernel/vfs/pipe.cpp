@@ -144,7 +144,7 @@ static int pipe_fstat(Vnode &, VfsStat &vfs_stat) {
     return 0;
 }
 /// @brief I/O control on pipe (not supported).
-static int pipe_ioctl(Vnode &, uint64_t, void *) {
+static int pipe_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 /// @brief Read directory on pipe (not supported).

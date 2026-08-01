@@ -113,7 +113,7 @@ static int initrd_file_fstat(Vnode &self, VfsStat &st) {
 }
 
 /// @brief I/O control on initrd file (not supported).
-static int initrd_file_ioctl(Vnode &, uint64_t, void *) {
+static int initrd_file_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 
@@ -174,7 +174,7 @@ static int initrd_root_fstat(Vnode &, VfsStat &vfs_stat) {
 }
 
 /// @brief I/O control on initrd root (not supported).
-static int initrd_root_ioctl(Vnode &, uint64_t, void *) {
+static int initrd_root_ioctl(Vnode &, uint64_t, kernel::CheckedPtr<uint8_t>) {
     return VFS_INVALID;
 }
 
