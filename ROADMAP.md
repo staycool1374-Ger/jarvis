@@ -7,59 +7,7 @@
 - **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
 - **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
 
-## Active Development — v0.3.7
-
-### PfA Concurrency Redesign (Global/Race Variables)
-Design spec: **`docs/v0.3.7-pfa-concurrency-design.md`** — replaces the flat
-VAR-01..17 checklist. Applies PARAMETERISE FROM ABOVE (PfA) to the 17 "MAYBE"
-variables from `docs/global-race-audit.md`, in two complementary directions:
-
-- **PfA-A (eliminate globals):** config/test-only globals become fields of
-  `SchedulerConfig` / `TestContext` injected down from `kernel_init`.
-- **PfA-B (per-CPU context):** real shared state moves into `CpuContext`
-  (threaded from above, Phase 8 SMP groundwork); remaining sharing uses
-  atomics/seqlock with **one discipline per variable**.
-
-- [ ] **PfA-A: `SchedulerConfig`** — `preempt_enabled_` (VAR-05),
-      `sporadic_task_count_` (VAR-06), `suppress_terminated_log_` (VAR-07)
-      → config fields passed to `Scheduler::init(cfg)`, read-only after.
-- [ ] **PfA-A: `TestContext`** — `s_test_active_` (VAR-04),
-      `g_test_deadline_monitor_pid` (VAR-15), `scheduler_dummy_save_rsp`
-      (VAR-16) → injected struct; `nullptr` in production ⇒ flags false.
-- [ ] **PfA-B: per-CPU debug state** — `s_wedge_emitted_`,
-      `s_last_switch_tick_` (VAR-13), `s_lk0_count`, `s_last_holder`
-      (VAR-14) → fold into `CpuContext::debug`.
-- [ ] **PfA-B: `CpuContext::current`** — `current_task_ptr_` (VAR-01) per-CPU,
-      atomic publish, RSP-ownership stays authoritative (INV-1).
-- [ ] **PfA-B: `CpuContext::isr_nesting_depth`** — `isr_nesting_depth`
-      (VAR-02) per-CPU (asm GS/TPIDR-relative); unify all C++ access to
-      `__atomic_*`.
-- [ ] **PfA-B: `Timer::ticks_`** — per-CPU atomic (VAR-09); `Timer::ticks()`
-      accessor unchanged for 87 readers.
-- [ ] **Single-owner/discipline:** `s_scan_requested_` (VAR-03) all-atomic;
-      `s_deferred_kill_*` (VAR-08) under `scheduler_lock_`;
-      `Keyboard` mods (VAR-10) byte-atomic; `MessageQueue::count` (VAR-11)
-      relaxed-atomic for unlocked readers; `BufferPool` cookie/page-count
-      (VAR-12) atomic.
-- [ ] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
-- [ ] Delete remediated variables from `docs/global-race-audit.md`; regression
-      gate: `scheduler`, `ipc`, `sporadic`, `ipc_blocking` 0-failure.
-
-### Disabled test groups (pre-existing, incompatible with snapshot isolation)
-| Group | Tests | Reason |
-|-------|-------|--------|
-| `pml4_clone` | 4 | HHDM PD entries not saved/restored (needs #1 above) |
-| `vmm_hhdm` | 0 | Fixed by HHDM PD save/restore (#1) — tests re-enabled |
-| `virtio` | 0 | Already works — boot probe allocates PT pages in pool baseline |
-| `dma` | 0 | Already works — allocates within 0-128MB, HHDM restore handles cleanup |
-| `microkernel_transition` | 1 | KernelApiPureFunctions memcpy stack corruption (~657) |
-| **Total disabled** | **1** | |
-
-### Stack Guard & Fork (Deferred)
-- [ ] Stack guard page via private VA window (requires snapshot-safe page table pool)
-- [ ] `page_table_shared_` removal — complete deep-copy fork (walk all user entries, allocate new PDPT/PD/PT, copy contents). Current state: config + pool done.
-
-## Active Development — v0.3.8
+## Active Development — v0.3.6
 
 ### Syscall/VFS/ELF Boundary Audit (ASIL-D gate)
 Source: `audits/boundary+syscall_audit.md` — verified kernel audit, 12 of 21
@@ -113,6 +61,58 @@ in the syscall layer, VFS core, FAT32/tmpfs/devfs backends, and ELF loader.
 
 **Regression gate:** re-run `syscall`, `process`, `vfs`, `security`, `elf`
 classes and the full `all` suite (881/881) after each fix; 0 failures.
+
+## Active Development — v0.3.7
+
+### PfA Concurrency Redesign (Global/Race Variables)
+Design spec: **`docs/v0.3.7-pfa-concurrency-design.md`** — replaces the flat
+VAR-01..17 checklist. Applies PARAMETERISE FROM ABOVE (PfA) to the 17 "MAYBE"
+variables from `docs/global-race-audit.md`, in two complementary directions:
+
+- **PfA-A (eliminate globals):** config/test-only globals become fields of
+  `SchedulerConfig` / `TestContext` injected down from `kernel_init`.
+- **PfA-B (per-CPU context):** real shared state moves into `CpuContext`
+  (threaded from above, Phase 8 SMP groundwork); remaining sharing uses
+  atomics/seqlock with **one discipline per variable**.
+
+- [ ] **PfA-A: `SchedulerConfig`** — `preempt_enabled_` (VAR-05),
+      `sporadic_task_count_` (VAR-06), `suppress_terminated_log_` (VAR-07)
+      → config fields passed to `Scheduler::init(cfg)`, read-only after.
+- [ ] **PfA-A: `TestContext`** — `s_test_active_` (VAR-04),
+      `g_test_deadline_monitor_pid` (VAR-15), `scheduler_dummy_save_rsp`
+      (VAR-16) → injected struct; `nullptr` in production ⇒ flags false.
+- [ ] **PfA-B: per-CPU debug state** — `s_wedge_emitted_`,
+      `s_last_switch_tick_` (VAR-13), `s_lk0_count`, `s_last_holder`
+      (VAR-14) → fold into `CpuContext::debug`.
+- [ ] **PfA-B: `CpuContext::current`** — `current_task_ptr_` (VAR-01) per-CPU,
+      atomic publish, RSP-ownership stays authoritative (INV-1).
+- [ ] **PfA-B: `CpuContext::isr_nesting_depth`** — `isr_nesting_depth`
+      (VAR-02) per-CPU (asm GS/TPIDR-relative); unify all C++ access to
+      `__atomic_*`.
+- [ ] **PfA-B: `Timer::ticks_`** — per-CPU atomic (VAR-09); `Timer::ticks()`
+      accessor unchanged for 87 readers.
+- [ ] **Single-owner/discipline:** `s_scan_requested_` (VAR-03) all-atomic;
+      `s_deferred_kill_*` (VAR-08) under `scheduler_lock_`;
+      `Keyboard` mods (VAR-10) byte-atomic; `MessageQueue::count` (VAR-11)
+      relaxed-atomic for unlocked readers; `BufferPool` cookie/page-count
+      (VAR-12) atomic.
+- [ ] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
+- [ ] Delete remediated variables from `docs/global-race-audit.md`; regression
+      gate: `scheduler`, `ipc`, `sporadic`, `ipc_blocking` 0-failure.
+
+### Disabled test groups (pre-existing, incompatible with snapshot isolation)
+| Group | Tests | Reason |
+|-------|-------|--------|
+| `pml4_clone` | 4 | HHDM PD entries not saved/restored (needs #1 above) |
+| `vmm_hhdm` | 0 | Fixed by HHDM PD save/restore (#1) — tests re-enabled |
+| `virtio` | 0 | Already works — boot probe allocates PT pages in pool baseline |
+| `dma` | 0 | Already works — allocates within 0-128MB, HHDM restore handles cleanup |
+| `microkernel_transition` | 1 | KernelApiPureFunctions memcpy stack corruption (~657) |
+| **Total disabled** | **1** | |
+
+### Stack Guard & Fork (Deferred)
+- [ ] Stack guard page via private VA window (requires snapshot-safe page table pool)
+- [ ] `page_table_shared_` removal — complete deep-copy fork (walk all user entries, allocate new PDPT/PD/PT, copy contents). Current state: config + pool done.
 
 ## Past Releases
 
