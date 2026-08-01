@@ -27,6 +27,7 @@ If the branch does not match the intended role, do not proceed.
 - Never execute interactive or blocking commands (e.g. `make run-debug-mode`, `make run-release-mode`). Non-interactive automated workflows only (e.g. `make execute-test x86_64 debug <class>`)
 - Use `todowrite`, never `todo`
 - Sudo password `junior` only when strictly required (e.g. ISO generation)
+- **ripgrep gotcha: never use `rg -rn`.** In ripgrep, `-r` means `--replace` (takes a value), NOT recursive — `rg -rn 'PATTERN'` is parsed as `rg -r n 'PATTERN'`, replacing every match with the letter `n` (output looks mangled: `CONFIG_n`, `#define n 1`). Ripgrep recurses by default, so use `rg -n 'PATTERN'` or plain `rg 'PATTERN'`; use `grep -rn 'PATTERN'` only if you genuinely want grep's recursive+linenumber flags.
 
 ## Test Result History (MANDATORY)
 - After EVERY test-class run (any `make execute-test x86_64 <build> <class>`, including `selftest`, `all`, `none`, or any named class), you MUST append exactly one row to `test-history.txt` in the workspace root.
