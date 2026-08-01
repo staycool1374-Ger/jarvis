@@ -399,14 +399,14 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
     // Check for 2MB block mapping (leaf at L1 level)
     if ((l1[l1_idx] & PAGE_PRESENT) &&
         (l1[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-        return (l1[l1_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+        return (l1[l1_idx] & PAGE_HUGE_FRAME_MASK) + (virt_addr & 0x1FFFFF);
     }
 
     auto *l2 = get_table(l1, l1_idx, false);
     if (!l2 || !(l2[l2_idx] & PAGE_PRESENT))
         return 0;
 
-    return (l2[l2_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
+    return (l2[l2_idx] & PAGE_FRAME_MASK) + (virt_addr & 0xFFF);
 #else
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
@@ -435,14 +435,14 @@ uint64_t VMM::virt_to_phys(uint64_t virt_addr) {
     if (pd[pd_idx] & PAGE_HUGE)
 #endif
     {
-        return (pd[pd_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+        return (pd[pd_idx] & PAGE_HUGE_FRAME_MASK) + (virt_addr & 0x1FFFFF);
     }
 
     auto *pt = get_table(pd, pd_idx, false);
     if (!pt || !(pt[pt_idx] & PAGE_PRESENT))
         return 0;
 
-    return (pt[pt_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
+    return (pt[pt_idx] & PAGE_FRAME_MASK) + (virt_addr & 0xFFF);
 #endif
 }
 
@@ -460,6 +460,12 @@ uint64_t VMM::current_pml4() {
 /// @param pml4_phys Physical address of the target PML4.
 void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
                            uint64_t pml4_phys) {
+    // VULN-H1: preserve legacy behaviour (executable) for existing callers.
+    map_page_in_pml4(virt_addr, phys_addr, user, true, pml4_phys);
+}
+
+void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
+                           bool executable, uint64_t pml4_phys) {
 #if defined(CONFIG_ARCH_RISCV64)
     // Sv39 3-level page table walk
     auto *l0 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
@@ -476,7 +482,9 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
         ENSURE(PMM::is_user_page(phys_addr) &&
                "map_page_in_pml4: KERNEL page mapped as user-accessible");
 
-    uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE | PAGE_EXEC;
+    uint64_t flags = PAGE_PRESENT | PAGE_READ | PAGE_WRITE;
+    if (executable)
+        flags |= PAGE_EXEC;
     if (user)
         flags |= PAGE_USER;
     flags |= PAGE_ACCESSED | PAGE_DIRTY;
@@ -536,10 +544,14 @@ void VMM::map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr, bool user,
     uint64_t flags = PAGE_PRESENT | PAGE_TABLE | PAGE_AF;
     if (user)
         flags |= PAGE_AP_USER;
+    if (!executable)
+        flags |= (1ULL << 54); // UXN — not executable at EL0
 #else
     uint64_t flags = PAGE_PRESENT | PAGE_WRITE;
     if (user)
         flags |= PAGE_USER;
+    if (!executable)
+        flags |= (1ULL << 63); // NX — not executable
 #endif
 
     pt[pt_idx] = phys_addr | flags;
@@ -640,7 +652,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                     continue;
                 // Check for leaf PTE (V=1, R|W|X=1) — 3-level Sv39 format
                 if ((l2[l2_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-                    uint64_t leaf = l2[l2_idx] & ~0xFFFULL;
+                    uint64_t leaf = l2[l2_idx] & PAGE_FRAME_MASK;
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
@@ -658,7 +670,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                 for (int l3_idx = 0; l3_idx < 512; ++l3_idx) {
                     if (!(l3[l3_idx] & PAGE_PRESENT))
                         continue;
-                    uint64_t leaf = l3[l3_idx] & ~0xFFFULL;
+                    uint64_t leaf = l3[l3_idx] & PAGE_FRAME_MASK;
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
@@ -718,7 +730,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                 if (pd[pd_idx] & PAGE_HUGE)
 #endif
                 {
-                    uint64_t page = pd[pd_idx] & ~0x1FFFFFULL;
+                    uint64_t page = pd[pd_idx] & PAGE_HUGE_FRAME_MASK;
                     if (!PMM::is_user_page(page))
                         continue;
                     PMM::free_page(page);
@@ -733,7 +745,7 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                 for (int pt_idx = 0; pt_idx < 512; ++pt_idx) {
                     if (!(pt[pt_idx] & PAGE_PRESENT))
                         continue;
-                    uint64_t leaf = pt[pt_idx] & ~0xFFFULL;
+                    uint64_t leaf = pt[pt_idx] & PAGE_FRAME_MASK;
                     if (!PMM::is_user_page(leaf))
                         continue;
                     PMM::free_page(leaf);
@@ -840,8 +852,8 @@ bool VMM::deep_copy_user_pages(uint64_t src_pml4, uint64_t dst_pml4) {
                     if (!(src_pt[pt_idx] & PAGE_PRESENT))
                         continue;
 
-                    uint64_t src_data = src_pt[pt_idx] & ~0xFFFULL;
-                    uint64_t flags = src_pt[pt_idx] & 0xFFFULL;
+                    uint64_t src_data = src_pt[pt_idx] & PAGE_FRAME_MASK;
+                    uint64_t flags = src_pt[pt_idx] & ~PAGE_FRAME_MASK;
 
                     uint64_t dst_data = PMM::alloc_user_page();
                     if (!dst_data) return false;
@@ -981,7 +993,7 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     // Check for 2MB block mapping (leaf at L1 level)
     if ((l2[l1_idx] & PAGE_PRESENT) &&
         (l2[l1_idx] & (PAGE_READ | PAGE_WRITE | PAGE_EXEC))) {
-        return (l2[l1_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+        return (l2[l1_idx] & PAGE_HUGE_FRAME_MASK) + (virt_addr & 0x1FFFFF);
     }
 
     if (!(l2[l2_idx] & PAGE_PRESENT))
@@ -991,7 +1003,7 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 
     if (!(l3[l2_idx] & PAGE_PRESENT))
         return 0;
-    return (l3[l2_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
+    return (l3[l2_idx] & PAGE_FRAME_MASK) + (virt_addr & 0xFFF);
 #else
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
@@ -1020,7 +1032,7 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
     if (pd[pd_idx] & PAGE_HUGE)
 #endif
     {
-        return (pd[pd_idx] & ~0x1FFFFFULL) + (virt_addr & 0x1FFFFF);
+        return (pd[pd_idx] & PAGE_HUGE_FRAME_MASK) + (virt_addr & 0x1FFFFF);
     }
 
     if (!(pd[pd_idx] & PAGE_PRESENT))
@@ -1031,7 +1043,7 @@ uint64_t VMM::virt_to_phys_in_pml4(uint64_t virt_addr, uint64_t pml4_phys) {
 
     if (!(pt[pt_idx] & PAGE_PRESENT))
         return 0;
-    return (pt[pt_idx] & ~0xFFFULL) + (virt_addr & 0xFFF);
+    return (pt[pt_idx] & PAGE_FRAME_MASK) + (virt_addr & 0xFFF);
 #endif
 }
 

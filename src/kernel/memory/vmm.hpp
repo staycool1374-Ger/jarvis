@@ -103,6 +103,18 @@ class VMM {
     /// @param pml4_phys Physical address of the target PML4.
     static void map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
                                  bool user, uint64_t pml4_phys);
+    /// @brief Maps a page into a specific page table with explicit W^X
+    ///        permission (VULN-H1).  When @p executable is false the
+    ///        architectural NX bit is set (x86_64 bit 63, aarch64 bit 54)
+    ///        or the X bit is dropped (riscv64), so the page cannot execute.
+    /// @param virt_addr Virtual address (page-aligned).
+    /// @param phys_addr Physical address (page-aligned).
+    /// @param user      If true, sets user-accessible flag.
+    /// @param executable If true, page is executable (NX clear); if false, NX set.
+    /// @param pml4_phys Physical address of the target PML4.
+    static void map_page_in_pml4(uint64_t virt_addr, uint64_t phys_addr,
+                                 bool user, bool executable,
+                                 uint64_t pml4_phys);
     /// @brief Maps a page into a specific page table with error code.
     /// @param virt_addr Virtual address (page-aligned).
     /// @param phys_addr Physical address (page-aligned).
@@ -207,6 +219,24 @@ class VMM {
     static constexpr uint64_t PAGE_WRITE = 1ULL << 1;
     static constexpr uint64_t PAGE_USER = 1ULL << 2;
     static constexpr uint64_t PAGE_HUGE = 1ULL << 7;
+#endif
+
+#if defined(CONFIG_ARCH_AARCH64)
+    // aarch64: physical frame bits [47:12] (48-bit PA).  Masks off flags,
+    // UXN (bit 54) and PXN (bit 55).
+    static constexpr uint64_t PAGE_FRAME_MASK = 0x0000FFFFFFFFF000ULL;
+    static constexpr uint64_t PAGE_HUGE_FRAME_MASK = 0x0000FFFFFFE00000ULL;
+#elif defined(CONFIG_ARCH_RISCV64)
+    // Sv39: PPN bits [43:12] (34-bit PA).  Masks off flags + reserved bits.
+    static constexpr uint64_t PAGE_FRAME_MASK = 0x00000003FFFFFFF000ULL;
+    static constexpr uint64_t PAGE_HUGE_FRAME_MASK = 0x00000003FFFFE00000ULL;
+#else
+    // x86_64: physical frame bits [51:12] (52-bit PA).  Masks off all flags
+    // INCLUDING NX (bit 63) — without this, a leaf PTE with NX set yields a
+    // "physical address" whose bit 63 wraps HHDM_OFFSET + phys to a
+    // non-canonical address (VULN-H1 GPF).
+    static constexpr uint64_t PAGE_FRAME_MASK = 0x000FFFFFFFFFF000ULL;
+    static constexpr uint64_t PAGE_HUGE_FRAME_MASK = 0x000FFFFFFFE00000ULL;
 #endif
 
 #if defined(CONFIG_ARCH_RISCV64)
