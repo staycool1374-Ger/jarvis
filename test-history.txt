@@ -325,3 +325,15 @@ SUMMARY: total=68 ok=68 fail=0
 
 SUMMARY: total=68 ok=67 fail=1
 2026-08-01 19:00:00 all PASSED: 881 FAILED: 0 TIME: 65154ms (MemPool bitmap OOB fix, 7/8 runs green)
+2026-08-01 19:10:00 all PASSED: 881 FAILED: 0 TIME: 66828ms (MemPool fix re-verify)
+2026-08-01 19:12:00 all PASSED: 881 FAILED: 0 TIME: 64114ms (MemPool fix re-verify)
+2026-08-01 19:14:00 all PASSED: 0 FAILED: 0 TIME: 60000ms STATUS: QEMU_EXIT (H2 deferred-switch race at test ~84, pre-existing)
+2026-08-01 19:16:00 all PASSED: 881 FAILED: 0 TIME: 65403ms (MemPool fix re-verify)
+2026-08-01 19:18:00 all PASSED: 881 FAILED: 0 TIME: 65426ms (MemPool fix re-verify)
+2026-08-01 19:20:00 all PASSED: 881 FAILED: 0 TIME: 64464ms (MemPool fix re-verify)
+2026-08-01 19:22:00 all PASSED: 881 FAILED: 0 TIME: 270191ms (MemPool fix re-verify)
+2026-08-01 19:24:00 all PASSED: 881 FAILED: 0 TIME: 281435ms (MemPool fix re-verify)
+2026-08-01 19:26:00 static_pools PASSED: 4 FAILED: 0 TIME: 82ms
+2026-08-01 19:26:00 no_op_new PASSED: 6 FAILED: 0 TIME: 174ms
+2026-08-01 19:26:00 mempool PASSED: 4 FAILED: 0 TIME: 330ms
+2026-08-01 19:27:00 apic_timer PASSED: 3 FAILED: 0 TIME: 342ms (flaky 18:56 FAIL re-verified 3/3)

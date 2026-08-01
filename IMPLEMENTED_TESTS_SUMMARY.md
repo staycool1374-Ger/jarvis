@@ -208,10 +208,21 @@ All test files compile successfully with `g++ -target x86_64-elf -std=c++20 -Wal
   - `sporadic_server_idle_to_exhaust` — activate, consume all, on_completion, verify no crash on idle
 - **Status**: ✅ Real logic
 
+### 15. test_tcb_write_log.cpp (1 test)
+- **Location**: `/Users/arnold/jarvis/src/kernel/test/test_tcb_write_log.cpp`
+- **Tests**:
+  - `test_tcb_write_log_catches_stray_write` — simulates a stray write that
+    corrupts the current TCB's `magic` field, triggers the poison-detection
+    path in `cleanup()`, and verifies `dump_tcb_write_log()` is wired to the
+    serial log (run with `CONFIG_TCB_WRITE_LOG`, grep for `[TCB-WRITE-LOG]`)
+- **Status**: ✅ Real logic (debug diagnostic harness; registered in the
+  `scheduler` class)
+
 ## ✅ Summary
 
 - **6 new TEST_CLASS-based test files** (24 test classes) covering IPC robustness, syscall fuzzing, starvation/deadlock, resource exhaustion, microkernel transition readiness, and SporadicServer budget enforcement
 - **4 existing test files extended** with additional tests
 - **4 new v0.2.16 test files** (5 tests): FPU clone, 3-way FPU switch, 16-XMM register switch, /dev/random write
+- **1 new debug diagnostic test file** (1 test): `test_tcb_write_log.cpp` — TCB stray-write detection tracer
 - **All test files compile cleanly**
 - **`test_registry.cpp`** updated with forward declarations and class group registrations for all new files
