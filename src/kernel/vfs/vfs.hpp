@@ -159,6 +159,10 @@ Vnode *resolve(const char *path);
 /// @param[out] out_vnode The resolved vnode on success.
 /// @return VfsError code.
 VfsError resolve_err(const char *path, Vnode *&out_vnode);
+/// @brief Resolve the parent directory and leaf name of a path.
+/// @param[out] out_name Leaf component of the path (points into `path`).
+/// @return The parent vnode, or nullptr if not found.
+Vnode *resolve_parent(const char *path, const char *&out_name);
 /// @brief Mount a filesystem at a given mount point.
 /// @return 0 on success, or VFS_INVALID on failure.
 int mount(Filesystem &filesystem, const char *mount_point);

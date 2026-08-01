@@ -368,7 +368,7 @@ Filesystem *find_fs(const char *name) {
 /// @param path  The full path to parse.
 /// @param[out] out_name  Set to the final path component (leaf name).
 /// @return The parent vnode, or nullptr if it cannot be resolved.
-static Vnode *resolve_parent(const char *path, const char *&out_name) {
+Vnode *resolve_parent(const char *path, const char *&out_name) {
     const char *slash = nullptr;
     for (const char *p = path; *p; ++p) {
         if (*p == '/')

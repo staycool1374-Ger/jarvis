@@ -37,7 +37,8 @@
 namespace kernel {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-static bool vfsd_authorize(uint64_t op_type, uint64_t pid, const char *path) {
+static bool vfsd_authorize(uint64_t op_type, uint64_t pid, const char *path,
+                           uint64_t ino = 0) {
     // Kernel tasks (no page table) are trusted — bypass IPC authorization
     auto *cur = kernel::Scheduler::current_task();
     if (cur && !cur->page_table_)
@@ -53,6 +54,11 @@ static bool vfsd_authorize(uint64_t op_type, uint64_t pid, const char *path) {
     msg.sender_id = pid;
     msg.type = op_type;
     msg.arg0 = 0;
+    // VULN-C4: carry the resolved object's inode so vfsd authorizes against
+    // the specific resolved object, not just the path string.  `arg1` is
+    // unused by every existing vfsd handler and by userspace/vfsd.c, so no
+    // layout change is required on either side.
+    msg.arg1 = ino;
     size_t i = 0;
     if (path) {
         while (path[i] && i < sizeof(msg.path) - 1) {
@@ -137,27 +143,85 @@ static bool vfsd_authorize_fd_op(uint64_t op_type, uint64_t pid, int fd) {
     return reply.result >= 0;
 }
 
+/// @brief Resolve-first authorization for path syscalls (VULN-C4).
+/// Resolves the target BEFORE the (blocking) vfsd_authorize IPC, captures the
+/// resolved object's identity (ino + fs-instance), authorizes, then re-resolves
+/// and compares identity.  If the object changed while the CPU was yielded to
+/// vfsd, the syscall fails instead of operating on a different object.
+/// @param op_type vfsd operation type (VFS_OPEN, VFS_STAT, ...).
+/// @param pid Sender task id.
+/// @param path Path to authorize + operate on.
+/// @param[out] out_vn The re-validated resolved vnode on success.
+/// @return true if authorized AND object identity unchanged.
+static bool resolve_then_authorize(uint64_t op_type, uint64_t pid,
+                                   const char *path, vfs::Vnode *&out_vn) {
+    vfs::Vnode *vn = vfs::resolve(path);
+    if (!vn)
+        return false;
+    uint64_t ino = vn->ino;
+    if (!vfsd_authorize(op_type, pid, path, ino))
+        return false;
+    vfs::Vnode *vn2 = vfs::resolve(path);
+    if (!vn2 || vn2 != vn || vn2->ino != ino)
+        return false;
+    out_vn = vn2;
+    return true;
+}
+
+/// @brief Resolve-first authorization for create/mkdir/unlink/rmdir, which
+/// operate on the parent directory + leaf name.
+static bool resolve_parent_then_authorize(uint64_t op_type, uint64_t pid,
+                                          const char *path, const char *&out_name,
+                                          vfs::Vnode *&out_parent) {
+    const char *name = nullptr;
+    vfs::Vnode *parent = vfs::resolve_parent(path, name);
+    if (!parent || !name || !*name)
+        return false;
+    uint64_t ino = parent->ino;
+    if (!vfsd_authorize(op_type, pid, path, ino))
+        return false;
+    const char *name2 = nullptr;
+    vfs::Vnode *parent2 = vfs::resolve_parent(path, name2);
+    if (!parent2 || parent2 != parent || parent2->ino != ino || !name2 ||
+        *name2 == '\0')
+        return false;
+    out_name = name2;
+    out_parent = parent2;
+    return true;
+}
+
 uint64_t Syscall::sys_open(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
                            uint64_t *) {
     kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
-    int fd = -1;
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
+    char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
     if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_OPEN,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        fd = syscall_path_open(path_buf, arg1);
-    } else {
-        if (!vfsd_authorize(vfsd::VFS_OPEN,
-                            syscall_task() ? syscall_task()->id : 0, user_path))
-            return static_cast<uint64_t>(-1);
-        fd = syscall_path_open(user_path, arg1);
+        path = path_buf;
     }
-    return static_cast<uint64_t>(static_cast<int64_t>(fd));
+    vfs::Vnode *vn = nullptr;
+    if (resolve_then_authorize(vfsd::VFS_OPEN, pid, path, vn))
+        return static_cast<uint64_t>(syscall_task_open(vn, arg1));
+    if (arg1 & vfs::O_CREAT) {
+        // Target does not exist yet — authorize + create in the parent dir.
+        const char *name = nullptr;
+        vfs::Vnode *parent = nullptr;
+        if (resolve_parent_then_authorize(vfsd::VFS_OPEN, pid, path, name,
+                                          parent)) {
+            if (parent->ops && parent->ops->create &&
+                parent->ops->create(*parent, name, vfs::S_IFREG) == 0) {
+                vfs::Vnode *created = vfs::resolve(path);
+                if (created)
+                    return static_cast<uint64_t>(syscall_task_open(created,
+                                                                  arg1));
+            }
+        }
+    }
+    return static_cast<uint64_t>(-1);
 }
 
 uint64_t Syscall::sys_read(uint64_t arg0, uint64_t arg1, uint64_t arg2,
@@ -341,22 +405,17 @@ uint64_t Syscall::sys_stat(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
-    vfs::Vnode *vn = nullptr;
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
+    char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
     if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_STAT,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        vn = vfs::resolve(path_buf);
-    } else {
-        if (!vfsd_authorize(vfsd::VFS_STAT,
-                            syscall_task() ? syscall_task()->id : 0, user_path))
-            return static_cast<uint64_t>(-1);
-        vn = vfs::resolve(user_path);
+        path = path_buf;
     }
-    if (!vn || !vn->ops->fstat)
+    vfs::Vnode *vn = nullptr;
+    if (!resolve_then_authorize(vfsd::VFS_STAT, pid, path, vn) || !vn ||
+        !vn->ops->fstat)
         return static_cast<uint64_t>(-1);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto st = checked(reinterpret_cast<vfs::VfsStat *>(arg1));
@@ -389,26 +448,23 @@ uint64_t Syscall::sys_chdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
-    vfs::Vnode *vn = nullptr;
-    const char *resolved_path = nullptr;
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
     char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
+    const char *resolved_path = nullptr;
     if (syscall_is_user_task()) {
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_CHDIR,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        vn = vfs::resolve(path_buf);
+        path = path_buf;
         resolved_path = path_buf;
     } else {
-        if (!vfsd_authorize(vfsd::VFS_CHDIR,
-                            syscall_task() ? syscall_task()->id : 0, user_path))
-            return static_cast<uint64_t>(-1);
-        vn = vfs::resolve(user_path);
         resolved_path = user_path;
     }
+    vfs::Vnode *vn = nullptr;
+    if (!resolve_then_authorize(vfsd::VFS_CHDIR, pid, path, vn) || !vn)
+        return static_cast<uint64_t>(-1);
     auto *cur = syscall_task();
-    if (!cur || !vn)
+    if (!cur)
         return static_cast<uint64_t>(-1);
     if (!(vn->mode & vfs::S_IFDIR))
         return static_cast<uint64_t>(-1);
@@ -477,20 +533,22 @@ uint64_t Syscall::sys_mkdir(uint64_t arg0, uint64_t arg1, uint64_t, uint64_t,
     kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
+    char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
     if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_MKDIR,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        int r = vfs::mkdir(path_buf, static_cast<uint16_t>(arg1));
-        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+        path = path_buf;
     }
-    if (!vfsd_authorize(vfsd::VFS_MKDIR,
-                        syscall_task() ? syscall_task()->id : 0, user_path))
+    const char *name = nullptr;
+    vfs::Vnode *parent = nullptr;
+    if (!resolve_parent_then_authorize(vfsd::VFS_MKDIR, pid, path, name,
+                                       parent))
         return static_cast<uint64_t>(-1);
-    int r = vfs::mkdir(user_path, static_cast<uint16_t>(arg1));
+    if (!parent->ops || !parent->ops->mkdir)
+        return static_cast<uint64_t>(-1);
+    int r = parent->ops->mkdir(*parent, name, static_cast<uint16_t>(arg1));
     return static_cast<uint64_t>(r == 0 ? 0 : -1);
 }
 
@@ -499,20 +557,22 @@ uint64_t Syscall::sys_unlink(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     kernel::test::mark_vfs_touched();
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
+    char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
     if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_UNLINK,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        int r = vfs::unlink(path_buf);
-        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+        path = path_buf;
     }
-    if (!vfsd_authorize(vfsd::VFS_UNLINK,
-                        syscall_task() ? syscall_task()->id : 0, user_path))
+    const char *name = nullptr;
+    vfs::Vnode *parent = nullptr;
+    if (!resolve_parent_then_authorize(vfsd::VFS_UNLINK, pid, path, name,
+                                       parent))
         return static_cast<uint64_t>(-1);
-    int r = vfs::unlink(user_path);
+    if (!parent->ops || !parent->ops->unlink)
+        return static_cast<uint64_t>(-1);
+    int r = parent->ops->unlink(*parent, name);
     return static_cast<uint64_t>(r == 0 ? 0 : -1);
 }
 
@@ -522,20 +582,22 @@ uint64_t Syscall::sys_rmdir(uint64_t arg0, uint64_t, uint64_t, uint64_t,
     // rmdir is just unlink with directory semantics (enforced by FS)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     const char *user_path = reinterpret_cast<const char *>(arg0);
+    uint64_t pid = syscall_task() ? syscall_task()->id : 0;
+    char path_buf[SYSCALL_MAX_PATH];
+    const char *path = user_path;
     if (syscall_is_user_task()) {
-        char path_buf[SYSCALL_MAX_PATH];
         if (!strncpy_from_user(path_buf, user_path, SYSCALL_MAX_PATH))
             return static_cast<uint64_t>(-1);
-        if (!vfsd_authorize(vfsd::VFS_RMDIR,
-                            syscall_task() ? syscall_task()->id : 0, path_buf))
-            return static_cast<uint64_t>(-1);
-        int r = vfs::unlink(path_buf);
-        return static_cast<uint64_t>(r == 0 ? 0 : -1);
+        path = path_buf;
     }
-    if (!vfsd_authorize(vfsd::VFS_RMDIR,
-                        syscall_task() ? syscall_task()->id : 0, user_path))
+    const char *name = nullptr;
+    vfs::Vnode *parent = nullptr;
+    if (!resolve_parent_then_authorize(vfsd::VFS_RMDIR, pid, path, name,
+                                       parent))
         return static_cast<uint64_t>(-1);
-    int r = vfs::unlink(user_path);
+    if (!parent->ops || !parent->ops->unlink)
+        return static_cast<uint64_t>(-1);
+    int r = parent->ops->unlink(*parent, name);
     return static_cast<uint64_t>(r == 0 ? 0 : -1);
 }
 
