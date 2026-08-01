@@ -6,6 +6,9 @@
 <p align="center">
   <em>A deterministic, safety-critical real-time operating system built from scratch in freestanding C++20.</em>
 </p>
+<p align="center">
+  <strong>🌐 Project website: <a href="https://nexios-2.jimdosite.com">https://nexios-2.jimdosite.com</a></strong>
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/C++20-freestanding-00599C?style=flat-square&logo=cplusplus" alt="C++20 Freestanding"/>
