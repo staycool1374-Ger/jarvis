@@ -10,8 +10,7 @@
 ## Active Development — v0.3.6
 
 ### Completed this session
-- **HHDM PD save/restore** — PDPT[0]→PD saved in snapshot_create, restored at beginning of snapshot_restore (before PMM restore). Skips self-referencing PD[0]. Frees split PT pages, memcpy PD[1..511], CR3 reload for TLB flush. Re-enabled vmm_huge_page_split_regression and vmm_hhdm_access_consistency (10/10 VMM PASS). Changed map_page/unmap_page/virt_to_phys kernel-space guards from blocking to warn. Tests fixed to use manual page-table walk instead of VMM::virt_to_phys. See docs/hhdm-snapshot-restore.md.
-- **restore_pool_snapshot GPF fix** — root cause: try_alloc_kernel/user multi-page bitmap scans could allocate page-table pool pages because pool pages are free in bitmap (only separate free list protects them). Added pool-range skip in all bitmap-scan paths. Fixes cumulative corruption at test ~820.
+- **HHDM PD save/restore** — PDPT[0]→PD saved in snapshot_create, restored at beginning of snapshot_restore (before PMM restore). Skips self-referencing PD[0]. Frees split PT pages, memcpy PD[1..511], CR3 reload for TLB flush. Re-enabled vmm_huge_page_split_regression and vmm_hhdm_access_consistency (10/10 VMM PASS). Changed map_page/unmap_page/virt_to_phys kernel-space guards from blocking to warn. Tests fixed to use manual page-table walk instead of VMM::virt_to_phys. See docs/hhdm-snapshot-restore.md.- **restore_pool_snapshot GPF fix** — root cause: try_alloc_kernel/user multi-page bitmap scans could allocate page-table pool pages because pool pages are free in bitmap (only separate free list protects them). Added pool-range skip in all bitmap-scan paths. Fixes cumulative corruption at test ~820.
 - **VirtIO/DMA MMIO re-enabled** — 9 VirtIO tests (probe, reset, feature_negotiation, queue, notify) and 12 DMA tests (buffer, sg, prd, engine) were already functional with current snapshot mechanism. Boot probe allocates VirtIO MMIO PT pages in pool baseline; DMA buffers within 0-128MB use existing 2MB huge pages. Re-enabling removed 22 from disabled count.
 - **microkernel_transition tests re-enabled** — 4 of 5 tests (MinimalPrivilegedSurface, UserspaceDriverIsolation, IpcLatencyJitter, TimerDrift) pass 22/22 in bench class. KernelApiPureFunctions remains disabled (memcpy stack corruption at ~657 — pre-existing).
 - **PCP retry budget panic** — direct ownership transfer in unlock/unlock_err. restore_priority ordering fixed (move after waiter removal). 6 test classes migrated to `lock_err()`.
@@ -26,6 +25,44 @@
 - [x] **HHDM PD save/restore** — save/restore PDPT[0]→PD (512 entries) in snapshot buffer. Re-enabled 2 VMM HHDM tests (8/8 PASS). See `docs/hhdm-snapshot-restore.md`.
 - [x] **`restore_pool_snapshot` GPF** — root cause: `try_alloc_kernel()`/`try_alloc_user()` multi-page bitmap scans could allocate pool pages (free in bitmap, guarded only by separate free list). Fixed by adding pool-range skip in all bitmap-scan paths (single-page fallback + multi-page contiguous). Pool pages now excluded from general allocation.
 - [x] **microkernel_transition tests** — 4 of 5 re-enabled (MinimalPrivilegedSurface, UserspaceDriverIsolation, IpcLatencyJitter, TimerDrift). KernelApiPureFunctions remains disabled — memcpy stack corruption at test position ~657. Root cause unclear (likely test code stack/buffer overflow).
+
+## Active Development — v0.3.7
+
+### PfA Concurrency Redesign (Global/Race Variables)
+Design spec: **`docs/v0.3.7-pfa-concurrency-design.md`** — replaces the flat
+VAR-01..17 checklist. Applies PARAMETERISE FROM ABOVE (PfA) to the 17 "MAYBE"
+variables from `docs/global-race-audit.md`, in two complementary directions:
+
+- **PfA-A (eliminate globals):** config/test-only globals become fields of
+  `SchedulerConfig` / `TestContext` injected down from `kernel_init`.
+- **PfA-B (per-CPU context):** real shared state moves into `CpuContext`
+  (threaded from above, Phase 8 SMP groundwork); remaining sharing uses
+  atomics/seqlock with **one discipline per variable**.
+
+- [ ] **PfA-A: `SchedulerConfig`** — `preempt_enabled_` (VAR-05),
+      `sporadic_task_count_` (VAR-06), `suppress_terminated_log_` (VAR-07)
+      → config fields passed to `Scheduler::init(cfg)`, read-only after.
+- [ ] **PfA-A: `TestContext`** — `s_test_active_` (VAR-04),
+      `g_test_deadline_monitor_pid` (VAR-15), `scheduler_dummy_save_rsp`
+      (VAR-16) → injected struct; `nullptr` in production ⇒ flags false.
+- [ ] **PfA-B: per-CPU debug state** — `s_wedge_emitted_`,
+      `s_last_switch_tick_` (VAR-13), `s_lk0_count`, `s_last_holder`
+      (VAR-14) → fold into `CpuContext::debug`.
+- [ ] **PfA-B: `CpuContext::current`** — `current_task_ptr_` (VAR-01) per-CPU,
+      atomic publish, RSP-ownership stays authoritative (INV-1).
+- [ ] **PfA-B: `CpuContext::isr_nesting_depth`** — `isr_nesting_depth`
+      (VAR-02) per-CPU (asm GS/TPIDR-relative); unify all C++ access to
+      `__atomic_*`.
+- [ ] **PfA-B: `Timer::ticks_`** — per-CPU atomic (VAR-09); `Timer::ticks()`
+      accessor unchanged for 87 readers.
+- [ ] **Single-owner/discipline:** `s_scan_requested_` (VAR-03) all-atomic;
+      `s_deferred_kill_*` (VAR-08) under `scheduler_lock_`;
+      `Keyboard` mods (VAR-10) byte-atomic; `MessageQueue::count` (VAR-11)
+      relaxed-atomic for unlocked readers; `BufferPool` cookie/page-count
+      (VAR-12) atomic.
+- [ ] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
+- [ ] Delete remediated variables from `docs/global-race-audit.md`; regression
+      gate: `scheduler`, `ipc`, `sporadic`, `ipc_blocking` 0-failure.
 
 ### Disabled test groups (pre-existing, incompatible with snapshot isolation)
 | Group | Tests | Reason |
@@ -48,6 +85,14 @@ See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.
 ---
 
 ## Future Roadmap (Aspirational)
+
+### Phase 4.5: Memory Protection (0.4.x) — prerequisite for safe SMP
+- [ ] **Requirement spec:** `docs/memory-protection-spec.md` (REQ-MP-01..06). Current state: user↔user isolation + user-stack guard pages present; kernel-task↔kernel-task isolation ABSENT; software canaries absent. Decisions: full private kernel page tables, both MMU guard pages + software canaries, HW enforcement (SMAP/SMEP/PAN/PXN) recommended-not-mandatory.
+- [ ] **0.4.0-MP1** — Private kernel-half page tables per kernel task (clone kernel PML4, private data/bss/stack frames, CR3 switch; preserve HHDM for kernel→user access)
+- [ ] **0.4.0-MP2** — MMU red-zone guard pages between text/data/heap/stack segments (kernel + user tasks)
+- [ ] **0.4.0-MP3** — Software sentinel canaries at segment boundaries, verified on syscall + context-switch entry
+- [ ] **0.4.0-MP4** — Optional HW enforcement: SMAP/SMEP (x86_64) / PAN/PXN (aarch64) with `stac/clac` audit
+- [ ] **0.4.0-MP5** — Verification suite: cross-task #PF tests, canary-tamper detection, HHDM kernel→user read, SMAP/PAN negatives
 
 ### Phase 5: SMP + Multicore (0.4.x)
 #### 0.4.1–0.4.2 — APIC & SMP Boot

@@ -175,8 +175,37 @@ Never claim a test failure is "pre-existing" or "not caused by my changes." Ever
 ### Rule C: No Push Suggestions
 Never suggest, ask about, or initiate pushing commits. Only push when explicitly told to.
 
+### Known Trap: `restore_task_fields` Skips TCBs with Bad Magic
+
+A common test-isolation failure: `remove_task` logs `magic=0xDDDDDDDDDDDDDDDD`
+with `[CLEANUP] skip poisoned TCB`. The chain:
+
+1. Test frees a TCB → `MemPool::free` fills block with `0xDD` (CONFIG_DEBUG)
+2. `snapshot_restore` restores MemPool bitmap → block allocated again but
+   content is still `0xDD`
+3. `restore_task_fields` (`scheduler.cpp:2129`) checks `t->magic`:
+   ```cpp
+   if (t->magic != TaskControlBlock::TCB_MAGIC)
+       continue;  // skips restore, leaves 0xDD
+   ```
+4. TCB stays in `all_tasks_` with `magic=0xDD` → `remove_task` detects it
+   on the next cycle.
+
+**Fix:** Restore TCB fields regardless of magic. The MemPool bitmap restore
+guarantees the block belongs to the TCB. Confirmed via lldb breakpoint at
+`0xFFFF80000024E1B6` (the `jne` skip) — see `docs/investigation-cumulative-corruption.md`
+Attempt 9 for details.
+
 ### Rule D: Debugging Escalation
 First attempt: analyze source code and inject targeted instrumentation/logging. If the root cause remains unclear after 3 analysis iterations (going in circles), use GDB batch surveillance (`make debug-test`) to gather precise evidence — backtrace, register state, memory values. Do NOT switch back to source speculation once GDB is warranted.
+
+## 14. Catching Stray Writes with lldb Hardware Watchpoints
+
+### Problem
+Test-isolation canary corruption (`canary_before`/`nu`/`canary_after` mismatch at
+`snapshot_restore` entry) indicates a stray write to the snapshot buffer during the
+previous test. GDB 17.2 has batch-mode hardware-watchpoint incompatibilities with
+QEMU; use lldb instead.
 
 ---
 

@@ -201,20 +201,14 @@ preempt idle for a newly-READY task (the zombie's parent woken by
 
 ## 4. Safety Watchdog (`on_tick` replacement)
 
-Replace the current `reap_orphans()` call in `on_tick()`:
-
-```cpp
-if (tick_counter % 100 == 0 && !s_test_active_) {
-    reap_orphans();
-}
-```
-
-With:
+**STATUS: IMPLEMENTED** — the watchdog runs every 100 ticks inside `on_tick`'s
+gated tail (`if (lock_acquired) { arch::IrqGuard ... }`):
 
 ```cpp
 // Safety watchdog: if the zombie list has grown beyond the starvation
-// limit, idle hasn't gotten enough CPU.  Force-drain a batch inline
-// (under scheduler_lock_ which is already held).
+// limit, idle hasn't gotten enough CPU.  Force-drain a batch inline.
+// Runs inside the on_tick tail gate (lock_acquired && IrqGuard), which
+// satisfies the "hold scheduler_lock_ or IRQs disabled" precondition.
 #if CONFIG_ZOMBIE_STARVATION_LIMIT > 0
 if (tick_counter % 100 == 0) {
     uint64_t zcount = __atomic_load_n(&zombie_count_, __ATOMIC_RELAXED);
@@ -224,6 +218,14 @@ if (tick_counter % 100 == 0) {
 }
 #endif
 ```
+
+> **Note on the gate:** `on_tick()` is invoked from the timer ISR (IRQs off)
+> **and** from task context (tests). The `flush_zombies`/`reap_orphans`/
+> `process_deferred_kills`/sporadic-block tail must not race a concurrent
+> `scheduler_lock_` holder's partial writes, so it is gated on
+> `lock_acquired` and additionally wrapped in `arch::IrqGuard`. When the lock
+> is contended, the watchdog batch is deferred to the next uncontended tick
+> (a 100-tick cadence makes this harmless).
 
 ### 4.1 `flush_zombies(uint64_t max_flush)` — new
 
@@ -364,8 +366,9 @@ and busy-wait on `ptr->state != TaskState::TERMINATED` are safe because:
 ### 7.5 Race between idle cleanup_step and on_tick watchdog
 
 `cleanup_step()` pops a zombie with IRQs disabled, then calls `cleanup()` /
-`MemPool::free()` with IRQs enabled.  The watchdog in `on_tick()` holds
-`scheduler_lock_`.  Both pop from `zombie_head_`.
+`MemPool::free()` with IRQs enabled.  The watchdog in `on_tick()` runs inside
+the gated tail (`if (lock_acquired) { arch::IrqGuard ... }`).  Both pop from
+`zombie_head_`.
 
 - While idle has IRQs disabled: watchdog cannot fire (IRQs masked).
 - After idle re-enables IRQs: the popped task is no longer in the list.
@@ -377,12 +380,24 @@ and busy-wait on `ptr->state != TaskState::TERMINATED` are safe because:
 
 **No data race exists.**
 
+> **`cleanup_step()` magic-guard (RACE-FIXED):** `cleanup_step()` validates
+> `task->magic == TCB_MAGIC` BEFORE dereferencing any field past offset 0
+> (the head TCB may have been freed/poisoned).  On a bad-magic head it resets
+> the entire list (`head`/`tail`/`count = 0`) rather than popping a poisoned
+> node, matching `flush_zombies`/`drain_zombie_list`.  Cleanup and free run
+> with IRQs enabled, outside the pop's `IrqGuard`.
+
 ### 7.6 `process_deferred_kills()` (deadline-miss KILL)
 
 Currently calls `delete task` on the killed task.  With the ZombieList, the
 KILL handler should set TERMINATED → `wake_waiting_parent` → `release_zombie`
 instead.  The deferred-kill queue is no longer needed because the zombie list
 handles deferred cleanup.  `process_deferred_kills()` can be simplified.
+
+**Note:** `process_deferred_kills()` calls `delete` → `TaskControlBlock::operator delete`
+→ `cleanup()` + `Scheduler::remove_task()`, which re-acquires
+`scheduler_lock_`.  It must therefore run OUTSIDE the lock (in `on_tick`'s
+gated tail, protected by `IrqGuard` + the `lock_acquired` gate only).
 
 ### 7.7 Zombie list memory overhead
 

@@ -106,7 +106,8 @@ static size_t off_sched_misc_size() {
     // misc[3]=idle_ptr (bits), bool preempt @ offset 32
     // misc[5]=shell_ptr, misc[8]=sporadic_task_count
     // misc[9]=timer_ticks
-    return sizeof(uint64_t) * 10 + sizeof(bool);
+    size_t raw = sizeof(uint64_t) * 10 + sizeof(bool);
+    return (raw + 7) & ~7ULL;
 }
 
 static size_t off_sched_rqpod() {
@@ -145,8 +146,11 @@ static size_t off_canary_before() {
 static size_t off_user_page_count() {
     return off_canary_before() + sizeof(uint64_t);
 }
-static size_t off_canary_after() {
+static size_t off_user_page_count_copy() {
     return off_user_page_count() + sizeof(uint64_t);
+}
+static size_t off_canary_after() {
+    return off_user_page_count_copy() + sizeof(uint64_t);
 }
 static size_t off_user_page_data() {
     return off_canary_after() + sizeof(uint64_t);
@@ -303,6 +307,8 @@ bool snapshot_create() {
             CANARY_BEFORE;
         *reinterpret_cast<uint64_t *>(g_snapshot + off_user_page_count()) =
             user_page_count;
+        *reinterpret_cast<uint64_t *>(g_snapshot + off_user_page_count_copy()) =
+            user_page_count;
         *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_after()) =
             CANARY_AFTER;
         uint8_t *out = g_snapshot + off_user_page_data();
@@ -423,8 +429,11 @@ void snapshot_restore(const char *test_name) {
     // to the snapshot buffer occurred during the previous test.
     if (g_snapshot) {
         uint64_t cb = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_before());
+        uint64_t nu1 = *reinterpret_cast<uint64_t *>(g_snapshot + off_user_page_count());
+        uint64_t nu2 = *reinterpret_cast<uint64_t *>(g_snapshot + off_user_page_count_copy());
         uint64_t ca = *reinterpret_cast<uint64_t *>(g_snapshot + off_canary_after());
-        if (cb != CANARY_BEFORE || ca != CANARY_AFTER) {
+        bool nu_mismatch = (nu1 != nu2);
+        if (cb != CANARY_BEFORE || ca != CANARY_AFTER || nu_mismatch) {
             Logger::raw_write("[CANARY] corruption detected in test \"");
             Logger::raw_write(test_name ? test_name : "?");
             Logger::raw_write("\"\n");
@@ -434,6 +443,13 @@ void snapshot_restore(const char *test_name) {
                 Logger::raw_write(" actual 0x");
                 Logger::print_hex(cb);
                 Logger::raw_write("\n");
+            }
+            if (nu_mismatch) {
+                Logger::raw_write("  nu[0]=0x");
+                Logger::print_hex(nu1);
+                Logger::raw_write(" nu[1]=0x");
+                Logger::print_hex(nu2);
+                Logger::raw_write(" MISMATCH\n");
             }
             if (ca != CANARY_AFTER) {
                 Logger::raw_write("  canary_after: expected 0x");
@@ -451,8 +467,9 @@ void snapshot_restore(const char *test_name) {
                 Logger::raw_write(" = 0x");
                 Logger::print_hex(*dp);
                 if (di == 0) Logger::raw_write(" <-- canary_before");
-                if (di == 2) Logger::raw_write(" <-- nu");
-                if (di == 4) Logger::raw_write(" <-- canary_after");
+                if (di == 1) Logger::raw_write(" <-- nu[0]");
+                if (di == 2) Logger::raw_write(" <-- nu[1]");
+                if (di == 3) Logger::raw_write(" <-- canary_after");
                 Logger::raw_write("\n");
             }
         }
@@ -566,14 +583,19 @@ void snapshot_restore(const char *test_name) {
         // downstream is garbage.  Use safe defaults to continue.
         uint64_t cb = *reinterpret_cast<uint64_t *>(
             g_snapshot + off_canary_before());
+        uint64_t nu_copy = *reinterpret_cast<uint64_t *>(
+            g_snapshot + off_user_page_count_copy());
         uint64_t ca = *reinterpret_cast<uint64_t *>(
             g_snapshot + off_canary_after());
-        bool pool_corrupt = (cb != CANARY_BEFORE || ca != CANARY_AFTER);
+        bool pool_corrupt = (cb != CANARY_BEFORE || ca != CANARY_AFTER ||
+                             nu != nu_copy);
         if (pool_corrupt) {
             Logger::raw_write("[CANARY-POOL] nu corrupted at test \"");
             Logger::raw_write(test_name ? test_name : "?");
-            Logger::raw_write("\" nu=");
+            Logger::raw_write("\" nu[0]=");
             Logger::print_dec(nu);
+            Logger::raw_write(" nu[1]=");
+            Logger::print_dec(nu_copy);
             Logger::raw_write(" canary_before=0x");
             Logger::print_hex(cb);
             Logger::raw_write(" canary_after=0x");
@@ -584,6 +606,8 @@ void snapshot_restore(const char *test_name) {
             nu = 0;
             *reinterpret_cast<uint64_t *>(
                 g_snapshot + off_user_page_count()) = 0;
+            *reinterpret_cast<uint64_t *>(
+                g_snapshot + off_user_page_count_copy()) = 0;
         }
         if (!pool_corrupt) {
             uint64_t nk = *reinterpret_cast<uint64_t *>(

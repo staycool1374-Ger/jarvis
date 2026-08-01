@@ -49,26 +49,33 @@ inline void yield_as(TaskControlBlock &task) noexcept {
     Scheduler::reschedule();
 }
 
-/// @brief Yield to a task to steer next_task() scheduling, then restore the
-///        harness as current and re-enqueue the task.  Unlike yield_as(),
-///        the task was never actually executing — only configured as current
-///        to influence the scheduler's next selection.  After this call the
-///        harness continues to drive execution via reschedule() and the given
-///        task remains eligible for scheduling (READY, in ready queue).
-///        This avoids the invariant violation that set_current() removes the
-///        "old current" from the ready queue even when it never ran.
+/// @brief  Yield to a task to steer next_task() scheduling, then restore the
+///         harness as current and re-enqueue the task.  Unlike yield_as(),
+///         the task was never actually executing — only configured as current
+///         to influence the scheduler's next selection.  After this call the
+///         harness continues to drive execution via reschedule() and the given
+///         task remains eligible for scheduling (READY, in ready queue).
+///         This avoids the invariant violation that set_current() removes the
+///         "old current" from the ready queue even when it never ran.
 ///
-///        NOTE: sets scheduler_need_resched directly instead of calling
-///        Scheduler::reschedule(), because reschedule() calls next_task()
-///        which DEQUEUES the highest-priority peer task from the ready queue,
-///        leaving the RQ with only the re-enqueued task.  The timer ISR would
-///        then dispatch the wrong task first.
+///         NOTE: sets scheduler_need_resched directly instead of calling
+///         Scheduler::reschedule(), because reschedule() calls next_task()
+///         which DEQUEUES the highest-priority peer task from the ready queue,
+///         leaving the RQ with only the re-enqueued task.  The timer ISR would
+///         then dispatch the wrong task first.
 inline void yield_to_task(TaskControlBlock &task) noexcept {
     arch::IrqGuard guard;
     auto *original = Scheduler::current_task();
     Scheduler::set_current(task);
     __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
     Scheduler::set_current(*original);
+    // set_current(task) re-enqueued `original` (the harness) into the ready
+    // queue because it was RUNNING at the time.  We restored it as current
+    // again, so it must NOT remain in the ready queue (INV-4: a current task
+    // must never be queued, or next_task() re-selects it and the subsequent
+    // switch_to_task double-enqueue is refused, wedging the scheduler).
+    if (original->in_ready_queue_)
+        Scheduler::dequeue_ready(*original);
     task.state = TaskState::READY;
     Scheduler::enqueue_ready(task);
 }

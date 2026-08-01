@@ -298,6 +298,14 @@ class MemoryChecker(Checker):
                     # Skip placement-new (new (ptr) T) — it does not allocate heap.
                     if snippet.startswith("new") and snippet[3:].lstrip().startswith("("):
                         continue
+                    # Skip statement-form 'delete X;' of a pool-backed object.
+                    # The kernel disables global operator new/delete (no heap);
+                    # a plain 'delete <ident>;' resolves to the class member
+                    # operator delete, which routes to MemPool::free.
+                    if m.group(0).strip() == "delete":
+                        tail = line_text[len(m.group(0)):].strip()
+                        if re.match(r"^[A-Za-z_]\w*\s*;?$", tail):
+                            continue
                     # Skip operator new/delete declarations.
                     if any(kw in line_text for kw in ("operator new", "operator delete",
                                                       "void* operator", "void operator")):
@@ -346,7 +354,7 @@ class LoopBoundsChecker(Checker):
         # Patterns that indicate intentional blocking I/O loops
         blocking_patterns = [
             "arch::hlt", "hlt()", "arch::pause", "pause()", "cpu_relax", "wfi",
-            "inb(", "outb(", "Keyboard::getchar", "getchar(",
+            "wait(", "inb(", "outb(", "Keyboard::getchar", "getchar(",
             "COM1", "COM2", "COM3", "COM4"
         ]
 

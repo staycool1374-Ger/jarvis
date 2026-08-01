@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/debug/ipc_sched_trace.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/hal/irq_guard.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
 #include <assert.hpp>
 
@@ -108,7 +109,7 @@ bool MessageQueue::pop(Message &out) {
         head = (head + 1) % IPC_MAX_QUEUE_MSG;
     } else {
         size_t pos = best_idx;
-        size_t iter;
+        size_t iter = 0;
         for (iter = 0; iter < IPC_MAX_QUEUE_MSG; ++iter) {
             size_t next = (pos + 1) % IPC_MAX_QUEUE_MSG;
             if (next == tail)
@@ -403,7 +404,13 @@ bool IPC::block_sender(MessageQueue &q, TaskControlBlock &task) {
             q.blocked_senders_tail = &task;
 
         // Priority inheritance — boost owner when higher-priority sender blocks.
+        // FIX(sched-race): the read-modify-write of q.owner->priority and the
+        // move_priority() re-index must be atomic against the timer ISR's
+        // deadline demote / sporadic priority changes.  q.lock_ is a plain
+        // spinlock (does not mask IRQs); IrqGuard excludes the ISR so
+        // old/new effective_priority snapshots stay consistent.
         if (q.owner && task.priority > q.owner->priority) {
+            arch::IrqGuard irq_guard{};
             uint64_t old_prio = Scheduler::effective_priority(q.owner);
             q.owner->priority = task.priority;
             uint64_t new_prio = Scheduler::effective_priority(q.owner);
@@ -441,6 +448,7 @@ void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
     }
 
     // Priority inheritance — restore receiver priority after sender removal.
+    // FIX(sched-race): same IRQ-safety rationale as block_sender's boost.
     {
         SpinLockGuard<sync::SpinLock> guard(q.lock_);
         uint64_t max_prio = receiver.base_priority;
@@ -450,6 +458,7 @@ void IPC::wake_sender(MessageQueue &q, TaskControlBlock &receiver) {
                 max_prio = cur_bs->priority;
             cur_bs = cur_bs->blocked_next;
         }
+        arch::IrqGuard irq_guard{};
         uint64_t old_prio = Scheduler::effective_priority(&receiver);
         receiver.priority = max_prio;
         uint64_t new_prio = Scheduler::effective_priority(&receiver);

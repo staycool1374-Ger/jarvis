@@ -21,6 +21,7 @@
 ///        rate-monotonic dispatch, context switching, and test isolation.
 
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/tcb_write_log.hpp>
 #include <kernel/arch/gdt.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
@@ -92,6 +93,13 @@ static inline bool is_poisoned_block(const void *p) noexcept {
 }
 
 uint64_t Scheduler::effective_priority(const TaskControlBlock *t) noexcept {
+    // FIX(sched-race): t->priority and t->sporadic_server->state_ are plain
+    // (non-atomic, non-volatile) fields mutated concurrently by the timer ISR
+    // (sporadic consume/replenish, deadline demote) and by task-context code
+    // (IPC priority inheritance under q.lock_).  Read both as one consistent
+    // snapshot.  IrqGuard is a no-op when IRQs are already disabled (ISR
+    // context) and cheap otherwise; on single-core it excludes the timer ISR.
+    arch::IrqGuard irq_guard{};
     if (t && t->sporadic_server) {
         uintptr_t ss = reinterpret_cast<uintptr_t>(t->sporadic_server);
         if (ss < 0xFFFF800000000000ULL)
@@ -211,23 +219,26 @@ void Scheduler::cleanup_step() noexcept {
     {
         arch::IrqGuard irq_guard{};
         task = zombie_head_;
-        if (task) {
-            zombie_head_ = task->zombie_next_;
-            if (!zombie_head_)
-                zombie_tail_ = nullptr;
-            task->zombie_next_ = nullptr;
-            if (task->in_ready_queue_)
-                ready_queue_.remove(*task, effective_priority(task));
-            __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
+        if (!task)
+            return;
+        // Check magic before touching any field past offset 0 (may be freed).
+        if (task->magic != TaskControlBlock::TCB_MAGIC) {
+            zombie_head_ = nullptr;
+            zombie_tail_ = nullptr;
+            zombie_count_ = 0;
+            return;
         }
+        zombie_head_ = task->zombie_next_;
+        if (!zombie_head_)
+            zombie_tail_ = nullptr;
+        task->zombie_next_ = nullptr;
+        if (task->in_ready_queue_)
+            ready_queue_.remove(*task, effective_priority(task));
+        __atomic_sub_fetch(&zombie_count_, 1, __ATOMIC_RELAXED);
     }
-    if (!task)
-        return;
-
-    if (task->magic == TaskControlBlock::TCB_MAGIC) {
-        task->cleanup();
-        MemPool::free(task);
-    }
+    // IRQs on — cleanup and free without holding any lock.
+    task->cleanup();
+    MemPool::free(task);
 }
 
 #if CONFIG_MEMORY_BUDGET
@@ -482,6 +493,7 @@ void Scheduler::remove_task(TaskControlBlock &task) {
         Logger::error("remove_task: TCB %p magic=0x%lx (expected 0x%lx)",
                       &task, (uint64_t)task.magic,
                       (uint64_t)TaskControlBlock::TCB_MAGIC);
+        kernel::diag::dump_tcb_write_log("[REMOVE_TASK] corrupted TCB");
         // Despite the corruption, try to remove from all_tasks_ to prevent
         // cascading corruption.  If all_bucket_ is also corrupted (poisoned
         // to >= NUM_PRIORITIES), fall back to a full priority scan.
@@ -1174,11 +1186,23 @@ void Scheduler::on_tick() noexcept {
 #endif
     }
 
-    if (s_deferred_kill_count > 0)
-        Scheduler::process_deferred_kills();
+    // FIX(sched-race): The deferred-kill flush, sporadic budget management,
+    // and zombie reap/flush all mutate scheduler state (ready-queue priority
+    // buckets via move_priority, sporadic server state read by
+    // effective_priority(), zombie list).  on_tick() normally runs from the
+    // timer ISR where IRQs are off, but it is ALSO invoked from task context
+    // (tests).  When the scheduler lock was not acquired (a task holds it
+    // mid-mutation), these tail sections must not run concurrently with the
+    // lock holder.  Gate them on lock_acquired and hold IrqGuard so they are
+    // atomic against both nested IRQs and the lock holder's partial writes.
+    if (lock_acquired) {
+        arch::IrqGuard irq_guard{};
 
-    // Sporadic Server budget management
-    {
+        if (s_deferred_kill_count > 0)
+            Scheduler::process_deferred_kills();
+
+        // Sporadic Server budget management
+        {
         auto *cur = current_task();
         uint64_t found = 0;
         for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
@@ -1258,15 +1282,24 @@ void Scheduler::on_tick() noexcept {
     // avoids the race entirely.  The 100-tick batching ensures ammortised O(1)
     // cost in production while not being so infrequent that zombie count grows
     // unbounded (CONFIG_MAX_TASKS=64 caps the worst case).
-    if (tick_counter % 100 == 0) {
-        if (!s_test_active_)
-            reap_orphans();
-        // ZombieList watchdog: force-flush if idle hasn't kept up.
-        flush_zombies(CONFIG_ZOMBIE_STARVATION_LIMIT / 2);
-        if (lock_acquired) {
+        if (tick_counter % 100 == 0) {
+            if (!s_test_active_)
+                reap_orphans();
+            // ZombieList watchdog: force-flush ONLY when the zombie list has
+            // outgrown the starvation limit (idle hasn't kept up).  Gating on
+            // zcount > LIMIT keeps small zombie populations (e.g. 1-2 test
+            // tasks still referenced by a test ScopeGuard) alive until the
+            // post-test snapshot_restore drains them — flushing them early
+            // frees the TCB while the ScopeGuard still holds the pointer,
+            // producing a use-after-free (magic corruption) in tests like
+            // preemption_under_syscall.
+            uint64_t zcount = __atomic_load_n(&zombie_count_, __ATOMIC_RELAXED);
+            if (zcount > CONFIG_ZOMBIE_STARVATION_LIMIT) {
+                flush_zombies(CONFIG_ZOMBIE_STARVATION_LIMIT / 2);
+            }
             daemon::restart_stale_daemons();
         }
-    }
+    }  // end: gated tail sections (lock_acquired && IrqGuard)
 
     rate_monotonic_schedule();
 }
@@ -2107,6 +2140,7 @@ void Scheduler::capture_task_fields(TaskFields *out) {
         out[idx].remaining_ticks = t->remaining_ticks;
         out[idx].exit_code = t->exit_code;
         out[idx].context = t->context;
+        out[idx].kernel_stack = reinterpret_cast<uint64_t>(t->kernel_stack);
         out[idx].kernel_stack_top = t->kernel_stack_top;
         out[idx].waiting_child_pid = t->waiting_child_pid;
         out[idx].waiting_child_status =
@@ -2125,15 +2159,24 @@ void Scheduler::capture_task_fields(TaskFields *out) {
 }
 
 void Scheduler::restore_task_fields(const TaskFields *saved) {
+    uint64_t t_idx = 0;
     for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
-        if (t->magic != TaskControlBlock::TCB_MAGIC)
-            continue;
+        // NOTE: t->magic is NOT checked here.  If a TCB's block was freed
+        // during the test (MemPool::free fills with 0xDD under CONFIG_DEBUG),
+        // and the MemPool bitmap is restored by snapshot_restore (making the
+        // block allocated again), the TCB's fields are stale.  Fall back to
+        // position-based match when both magic and id are corrupted.
         for (uint64_t j = 0; j < MAX_TASKS; ++j) {
             if (saved[j].magic != TaskControlBlock::TCB_MAGIC)
                 continue;
-            if (saved[j].id != t->id)
+            if (saved[j].id != t->id && j != t_idx)
                 continue;
-            t->state = saved[j].state;
+            if (saved[j].id != t->id && t->magic == TaskControlBlock::TCB_MAGIC)
+                continue; // valid TCB with non-matching ID — keep searching
+            TCB_WRITE(t, magic, saved[j].magic);
+            TCB_WRITE(t, id, saved[j].id);
+            t->parent_id = saved[j].parent_id;
+            TCB_WRITE(t, state, saved[j].state);
             t->priority = saved[j].priority;
             t->base_priority = saved[j].base_priority;
             t->period_ticks = saved[j].period_ticks;
@@ -2144,6 +2187,8 @@ void Scheduler::restore_task_fields(const TaskFields *saved) {
             t->remaining_ticks = saved[j].remaining_ticks;
             t->exit_code = saved[j].exit_code;
             t->context = saved[j].context;
+            TCB_WRITE(t, kernel_stack,
+                      reinterpret_cast<uint8_t *>(saved[j].kernel_stack));
             t->kernel_stack_top = saved[j].kernel_stack_top;
             t->pending_signals = saved[j].pending_signals;
             t->alarm_ticks = saved[j].alarm_ticks;
@@ -2159,6 +2204,7 @@ void Scheduler::restore_task_fields(const TaskFields *saved) {
             t->rq_priority_ = saved[j].rq_priority;
             break;
         }
+        ++t_idx;
     }
 }
 

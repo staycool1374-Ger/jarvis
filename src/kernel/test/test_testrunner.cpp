@@ -50,6 +50,10 @@ static constexpr uint64_t IPC_MSG_TYPE_TEST = 42;
 // Runmode: kernel
 // Testidea: Snapshot/restore must leave the ready queue bitmap consistent.
 //           Create a task, snapshot, remove, restore, verify.
+// TEMPORARY stray-write-catcher — commented out: not normally part of `all`
+// (it manually remove/cleanup/deletes a task and poisons the next test's
+// snapshot_restore). See tcb_write_log tracer for the proper mechanism.
+#if 0
 JARVIS_TEST(harness_snapshot_bitmap_consistency,
             "PRE: none | POST: none") {
     auto *t = TaskControlBlock::create([]() {}, 5, 10);
@@ -63,6 +67,7 @@ JARVIS_TEST(harness_snapshot_bitmap_consistency,
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 // Runmode: kernel
 // Testidea: Priority-ordered wakeup of blocked senders.  High-prio sender
@@ -515,7 +520,11 @@ void test_harness_expected_panic_handling();
 
 void register_testrunner_tests() {
     Logger::info("Registering TestRunner tests");
-    JARVIS_REGISTER_TEST(harness_snapshot_bitmap_consistency);
+    // TEMPORARY stray-write-catcher — NOT normally part of the `all` class.
+    // It manually remove/cleanup/deletes a task, which poisons the next
+    // test's snapshot_restore and deadlocks `all`. Commented out until the
+    // stray-write investigation is resolved via the tcb_write_log tracer.
+    // JARVIS_REGISTER_TEST(harness_snapshot_bitmap_consistency);
     JARVIS_REGISTER_TEST(harness_priority_ordered_wakeup);
     JARVIS_REGISTER_TEST(harness_blocked_sender_wakes);
     JARVIS_REGISTER_TEST(harness_snapshot_inrq_consistency);

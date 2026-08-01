@@ -22,6 +22,7 @@
 
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/tcb_write_log.hpp>
 #include <kernel/task/sporadic_server.hpp>
 #include <kernel/debug/dump.hpp>
 #include <logger.hpp>
@@ -338,7 +339,7 @@ void init_kstack_window() {
     constexpr uint64_t P = 1ULL << 0;   // PAGE_PRESENT
     constexpr uint64_t W = 1ULL << 1;   // PAGE_WRITE
 
-    uint64_t pdpt_phys;
+    uint64_t pdpt_phys = 0;
     if (!(pml4[pml4_idx] & P)) {
         pdpt_phys = PMM::alloc_page_table();
         auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
@@ -349,7 +350,7 @@ void init_kstack_window() {
     }
 
     auto *pdpt = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
-    uint64_t pd_phys;
+    uint64_t pd_phys = 0;
     if (!(pdpt[pdpt_idx] & P)) {
         pd_phys = PMM::alloc_page_table();
         auto *pd = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
@@ -372,7 +373,7 @@ void init_kstack_window() {
         }
     }
 
-    uint64_t cr3;
+    uint64_t cr3 = 0;
     asm volatile("mov %%cr3, %0" : "=r"(cr3) : : "memory");
     asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
 }
@@ -440,8 +441,8 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
 
     memset(tcb, 0, sizeof(TaskControlBlock));
 
-    tcb->magic = TCB_MAGIC;
-    tcb->id = Scheduler::alloc_id();
+    TCB_WRITE(tcb, magic, TCB_MAGIC);
+    TCB_WRITE(tcb, id, Scheduler::alloc_id());
     {
         char buf[CONFIG_TASK_NAME_LEN];
         size_t pos = 0;
@@ -462,7 +463,7 @@ TaskControlBlock *TaskControlBlock::create(void (*entry)(), uint64_t priority,
         buf[pos] = '\0';
         __builtin_memcpy(tcb->name, buf, pos + 1);
     }
-    tcb->state = TaskState::READY;
+    TCB_WRITE(tcb, state, TaskState::READY);
     tcb->priority = priority;
     tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
@@ -537,7 +538,7 @@ uint64_t stack_size = stack_size_for_priority(priority);
                 map_kstack_page(kstack_va + i * arch::PAGE_SIZE,
                                 stack_phys + i * arch::PAGE_SIZE);
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_va);
+            TCB_WRITE(tcb, kernel_stack, reinterpret_cast<uint8_t *>(kstack_va));
             tcb->kernel_stack_top = kstack_va + stack_size;
             goto done_stack;
         }
@@ -547,7 +548,7 @@ uint64_t stack_size = stack_size_for_priority(priority);
     {
         uint64_t stack_virt = arch::HHDM_OFFSET + stack_phys;
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
-        tcb->kernel_stack = reinterpret_cast<uint8_t *>(stack_virt);
+        TCB_WRITE(tcb, kernel_stack, reinterpret_cast<uint8_t *>(stack_virt));
         tcb->kernel_stack_top = stack_virt + stack_size;
     }
 done_stack:
@@ -644,9 +645,9 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
 #endif
     memset(tcb, 0, sizeof(TaskControlBlock));
 
-    tcb->magic = TCB_MAGIC;
-    tcb->id = Scheduler::alloc_id();
-    tcb->state = TaskState::READY;
+    TCB_WRITE(tcb, magic, TCB_MAGIC);
+    TCB_WRITE(tcb, id, Scheduler::alloc_id());
+    TCB_WRITE(tcb, state, TaskState::READY);
     tcb->priority = priority;
     tcb->base_priority = priority;
     tcb->period_ticks = period_ticks;
@@ -806,11 +807,11 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
         return nullptr;
     memset(tcb, 0, sizeof(TaskControlBlock));
 
-    tcb->magic = TCB_MAGIC;
-    tcb->id = Scheduler::alloc_id();
+    TCB_WRITE(tcb, magic, TCB_MAGIC);
+    TCB_WRITE(tcb, id, Scheduler::alloc_id());
     __builtin_memcpy(tcb->name, parent->name, CONFIG_TASK_NAME_LEN);
     tcb->parent_id = parent->id;
-    tcb->state = TaskState::READY;
+    TCB_WRITE(tcb, state, TaskState::READY);
     tcb->priority = parent->priority;
     tcb->base_priority = parent->base_priority;
     tcb->period_ticks = parent->period_ticks;
@@ -913,7 +914,7 @@ TaskControlBlock *TaskControlBlock::clone(uint64_t *regs) {
             tcb->kernel_stack_top = kstack_virt + STACK_SIZE;
         } else {
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
-            tcb->kernel_stack = reinterpret_cast<uint8_t *>(kstack_phys);
+            TCB_WRITE(tcb, kernel_stack, reinterpret_cast<uint8_t *>(kstack_phys));
             tcb->kernel_stack_top = kstack_phys + STACK_SIZE;
         }
     }
@@ -1138,6 +1139,7 @@ static void free_stack_pdpt(uint64_t pdpt_phys) noexcept {
 void TaskControlBlock::cleanup() noexcept {
     if (!TaskControlBlock::is_valid(this)) {
         Logger::raw_write("[CLEANUP] skip poisoned TCB\n");
+        kernel::diag::dump_tcb_write_log("[CLEANUP] poisoned TCB");
         return;
     }
     state = TaskState::REAPED;

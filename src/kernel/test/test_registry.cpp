@@ -61,6 +61,7 @@ void register_capability_tests();
 void register_task_lifecycle_tests();
 void register_idle_task_tests();
 void register_zombie_cleanup_tests();
+void register_tcb_write_log_tests();
 void register_wcet_cleanup_tests();
 void register_idle_cleanup_tests();
 void register_testrunner_tests();
@@ -286,6 +287,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_task_lifecycle_tests();
         register_idle_task_tests();
         register_zombie_cleanup_tests();
+        register_tcb_write_log_tests();
         register_health_tests();
         register_cpu_load_tests();
     }},

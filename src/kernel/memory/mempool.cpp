@@ -26,7 +26,7 @@
 
 namespace kernel {
 
-static sync::SpinLock mempool_lock_;
+static sync::SpinLock mempool_lock_{};
 
 MemPool::Pool MemPool::pools_[POOL_COUNT] = {};
 constinit bool MemPool::ready_ = false;

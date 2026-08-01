@@ -59,7 +59,7 @@ inline void gic_v3_write_eoir(uint64_t intid) {
 }
 
 inline uint64_t gic_v3_read_iar() {
-    uint64_t intid;
+    uint64_t intid = 0;
     asm volatile("mrs %0, ICC_IAR1_EL1" : "=r"(intid));
     return intid;
 }
@@ -73,7 +73,7 @@ inline void gic_v3_set_igrpen1(bool enable) {
 }
 
 inline void gic_v3_set_sre(bool enable) {
-    uint64_t sre;
+    uint64_t sre = 0;
     asm volatile("mrs %0, ICC_SRE_EL1" : "=r"(sre));
     if (enable) sre |= 1;
     else sre &= ~1UL;

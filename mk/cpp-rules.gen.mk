@@ -534,6 +534,10 @@ build/kernel/test/test_memory_safety.o: src/kernel/test/test_memory_safety.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/test/test_tcb_write_log.o: src/kernel/test/test_tcb_write_log.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_tmpfs_mount_unmount_failure.o: src/kernel/test/test_tmpfs_mount_unmount_failure.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -779,6 +783,10 @@ build/kernel/task/dmesg_task.o: src/kernel/task/dmesg_task.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/task/sporadic_server.o: src/kernel/task/sporadic_server.cpp
+	@mkdir -p $(dir $@)
+	@printf "  %s %s\n" CC $@
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+build/kernel/task/tcb_write_log.o: src/kernel/task/tcb_write_log.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

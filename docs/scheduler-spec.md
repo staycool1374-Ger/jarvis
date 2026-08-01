@@ -38,18 +38,25 @@ A task leaving the runnable states (BLOCKED/WAITING/TERMINATED) MUST be dequeued
 - `send_sync` sets BLOCKED without dequeue — task continues on CPU until next tick preempts it (intentional per INV-4 deferred-switch window). `next_task()` filters BLOCKED-in-runq tasks in the while-loop.
 
 ### INV-6 — Priority/priority changes must re-index the ready queue
-`move_priority()` exists but has **zero callers**. Direct priority assignments (`priority = new_val`) leave `rq_priority_` stale. The bucket-scan in `remove()` (walks all priority queues) is a correct but O(P) stopgap.
+`move_priority()` re-buckets a task in the O(1) ready queue. Direct priority assignments (`priority = new_val`) without it leave `rq_priority_` stale. The bucket-scan in `remove()` (walks all priority queues) is a correct but O(P) stopgap, so `move_priority()` MUST be called at every priority-change site.
 
-**Known stale-priority paths:**
-- `IPC::block_sender()` (ipc.cpp:287): `q.owner->priority = task.priority`
-- `IPC::wake_sender()` (ipc.cpp:~411): `receiver.priority = max_prio`
-- `deadline_miss_handler()` (DEMOTE): `task->priority >>= 1`
+**Re-indexed sites (all MUST call `move_priority`):**
+- `IPC::block_sender()`: `q.owner->priority = task.priority` → `move_priority` (ipc.cpp)
+- `IPC::wake_sender()`: `receiver.priority = max_prio` → `move_priority` (ipc.cpp)
+- `deadline_miss_handler()` (DEMOTE): `task->priority >>= 1` → `move_priority` (scheduler.cpp)
+- `on_tick()` sporadic block: after `process_replenishments()` flips EXHAUSTED→ACTIVE → `move_priority` (scheduler.cpp)
 
-**Sporadic-server priority changes (no re-index):**
+**Concurrency contract (RACE-FIXED):**
+- `t->priority` and `sporadic_server->state_` are plain (non-atomic, non-volatile) fields mutated concurrently by the timer ISR (sporadic `consume`/`process_replenishments`, deadline demote) and by task-context code (IPC PI under `q.lock_`). They MUST be read/written inside a critical section that excludes the timer ISR — i.e. `arch::IrqGuard` and/or `scheduler_lock_`.
+- `effective_priority()` takes an internal `IrqGuard` so the composite read (`t->priority` + sporadic `state_`) is a consistent snapshot.
+- The IPC PI read-modify-write + `move_priority` in `block_sender`/`wake_sender` are wrapped in `IrqGuard` (a plain `q.lock_` spinlock does NOT mask IRQs).
+- `move_priority` args (old/new) computed from two `effective_priority()` calls must be produced in the same IRQ-safe section; a stale `old_prio` fed to `move_priority` desyncs the task's bucket.
+
+**Sporadic-server priority changes (re-indexed in `on_tick`):**
 - `consume()` (EXHAUSTED state): `current_priority()` returns `bg_priority_`
 - `process_replenishments()` (EXHAUSTED→ACTIVE): `current_priority()` returns `base_priority_`
-- Effective priority changes only take effect on next context switch-out (`switch_to_task` re-enqueues via `enqueue_ready()`)
-- A replenished non-current task sits in the ready queue at stale (bg) priority until the next lazy rebuild or switch-out
+- Effective priority changes of the **current** task only take effect on next context switch-out (`switch_to_task` re-enqueues via `enqueue_ready()`)
+- A **non-current** replenished task is re-bucketed immediately by `on_tick`'s `move_priority` call (FIX(rms-o1)); without it it sits at stale (bg) priority until the next lazy rebuild or switch-out
 
 ## 3. Ready Queue Architecture
 
@@ -116,20 +123,23 @@ Orphan-halt provides deterministic evidence of stale flag / incomplete dequeue.
           └──────────────┘
 ```
 
-### 4.2 When Priority Changes — No Re-index
+### 4.2 When Priority Changes — Re-indexing
 | Event | Effective priority change | move_priority called? | Priority corrected when? |
 |---|---|---|---|
-| consume() → EXHAUSTED | base → bg | No | Next context switch-out (re-enqueue at line 1719) |
-| process_replenishments() → ACTIVE | bg → base | No | Next lazy rebuild or switch-out |
-| block_sender boost | task.priority raised | No | Bucket-scan remove() finds stale rq_priority_ |
-| wake_sender restore | receiver.priority restored | No | Same — bucket-scan |
+| consume() → EXHAUSTED (current task) | base → bg | No (current task not in RQ) | Next context switch-out (re-enqueue) |
+| process_replenishments() → ACTIVE (non-current) | bg → base | Yes (on_tick sporadic block) | Same tick, inside scheduler_lock_+IrqGuard |
+| block_sender boost | task.priority raised | Yes (IrqGuard-wrapped) | Same RMW section |
+| wake_sender restore | receiver.priority restored | Yes (IrqGuard-wrapped) | Same RMW section |
+| deadline DEMOTE | task.priority >>= 1 | Yes (on_tick, under lock) | Same tick |
 
-### 4.3 `on_tick()` Budget Management (scheduler.cpp:1049–1091)
+### 4.3 `on_tick()` Budget Management (scheduler.cpp:1185–1265)
 - Iterates all tasks with `sporadic_server`
 - Calls `process_replenishments()` (may transition EXHAUSTED→ACTIVE)
 - If current task and active: calls `consume()` (may transition ACTIVE→EXHAUSTED)
 - On exhaustion: calls `reschedule()` to request deferred switch
 - Does NOT re-enqueue the current task — its effective priority change is lazy (applied on switch-out)
+- **Locking (RACE-FIXED):** the sporadic block, `process_deferred_kills`, `reap_orphans`, and `flush_zombies` run inside `if (lock_acquired) { arch::IrqGuard ... }`. They mutate the ready queue (`move_priority`), sporadic state, and zombie list — all fields read/written by task-context code — so they must be excluded against both the timer ISR (via IrqGuard) and a concurrent `scheduler_lock_` holder (via the `lock_acquired` gate). When the lock is contended, the tail sections are skipped for that tick (deferred) rather than raced.
+- `rate_monotonic_schedule()` runs outside the gate (it does its own `try_lock`).
 
 ## 5. IPC Send/Receive Ready-Queue Interaction
 
@@ -208,14 +218,17 @@ return idle_task_;
 
 ### 8.2 Add `move_priority()` calls at priority-change sites
 
-Three sites need `move_priority()`:
-1. `IPC::block_sender()` — after `q.owner->priority = task.priority`: call `ready_queue_.move_priority(*q.owner, old_eff, new_eff)`
-2. `IPC::wake_sender()` — after `receiver.priority = max_prio`: call `ready_queue_.move_priority(*receiver, old_eff, receiver.priority)`
-3. deadline DEMOTE — after `task->priority >>= 1`: call `move_priority`
+**STATUS: IMPLEMENTED (with IRQ-atomicity fix).** All priority-change sites now re-index the ready queue:
+1. `IPC::block_sender()` — after `q.owner->priority = task.priority`, calls `move_priority` (wrapped in `arch::IrqGuard`)
+2. `IPC::wake_sender()` — after `receiver.priority = max_prio`, calls `move_priority` (wrapped in `arch::IrqGuard`)
+3. deadline DEMOTE — after `task->priority >>= 1`, calls `move_priority` (on_tick, under `scheduler_lock_`)
+4. `on_tick()` sporadic block — after `process_replenishments()` (EXHAUSTED→ACTIVE) on a non-current task, calls `move_priority` (inside `if (lock_acquired) { IrqGuard }`)
+
+**Concurrency requirement (RACE-FIXED):** `move_priority`'s `old_prio`/`new_prio` args come from two `effective_priority()` reads. If a nested IRQ (timer tick) or a concurrent `scheduler_lock_` holder mutates `t->priority`/sporadic state between the two reads, the args are stale and the task is moved into the wrong bucket. All such RMW sections therefore run inside `arch::IrqGuard` (single-core: excludes the timer ISR), and the `on_tick` sporadic path additionally gates on `scheduler_lock_`.
 
 **Sporadic server priority transitions:**
-- `consume()` EXHAUSTED: when current task, lazy-corrected on switch-out (line 1719)
-- `process_replenishments()` ACTIVE: non-current task needs explicit re-enqueue at new priority
+- `consume()` EXHAUSTED: when current task, lazy-corrected on switch-out
+- `process_replenishments()` ACTIVE: non-current task re-bucketed immediately by `on_tick`'s `move_priority` call
 
 ### 8.3 `rate_monotonic_schedule()` — clear stale pending switch
 

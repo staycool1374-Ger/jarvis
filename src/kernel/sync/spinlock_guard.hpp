@@ -45,5 +45,5 @@ template <typename Lock> class [[nodiscard]] SpinLockGuard {
 
   private:
     Lock &lock_;
-    bool owns_;
+    bool owns_ = false;
 };

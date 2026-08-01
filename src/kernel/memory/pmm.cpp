@@ -29,7 +29,7 @@
 
 namespace kernel {
 
-static sync::SpinLock pmm_lock_;
+static sync::SpinLock pmm_lock_{};
 
 constinit uint64_t PMM::total_pages_ = 0;
 constinit uint64_t PMM::free_pages_ = 0;

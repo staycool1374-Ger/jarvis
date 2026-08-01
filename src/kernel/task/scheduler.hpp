@@ -370,6 +370,7 @@ class Scheduler {
         uint64_t remaining_ticks;
         uint64_t exit_code;
         TaskContext context;       ///< Full register context (critical: rsp)
+        uint64_t kernel_stack;     ///< Kernel stack base pointer
         uint64_t kernel_stack_top; ///< For RSP-range validation
         uint64_t waiting_child_pid;
         uint64_t waiting_child_status;
