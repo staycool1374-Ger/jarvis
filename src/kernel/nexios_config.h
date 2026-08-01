@@ -3,8 +3,8 @@
 #ifndef JARVIS_CONFIG_H
 #define JARVIS_CONFIG_H
 
-/// @file jarvis_config.h
-/// @brief Central compile-time configuration for Jarvis RTOS.
+/// @file nexios_config.h
+/// @brief Central compile-time configuration for NexIOS RTOS.
 /// All tunables currently scattered as constexpr in 20+ files
 /// get a single configuration home.
 ///
@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-#define CONFIG_VERSION "0.3.5-dev"
+#define CONFIG_VERSION "0.3.6"
 #define CONFIG_VERSION_MAJOR 0
 #define CONFIG_VERSION_MINOR 3
 #define CONFIG_VERSION_PATCH 5

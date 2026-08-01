@@ -3,7 +3,7 @@
 
 #include <test.hpp>
 #include <logger.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <kernel/task/task.hpp>
 #include <kernel/task/priority_map.hpp>
 #include <kernel/task/task_queue.hpp>

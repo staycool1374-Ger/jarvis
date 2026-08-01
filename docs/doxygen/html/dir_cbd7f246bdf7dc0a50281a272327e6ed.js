@@ -21,10 +21,10 @@ var dir_cbd7f246bdf7dc0a50281a272327e6ed =
     [ "irq_latency_histogram.cpp", "irq__latency__histogram_8cpp.html", null ],
     [ "irq_thread.cpp", "irq__thread_8cpp.html", null ],
     [ "irq_thread.hpp", "irq__thread_8hpp.html", null ],
-    [ "jarvis_config.h", "jarvis__config_8h.html", "jarvis__config_8h" ],
     [ "kernel.cpp", "kernel_8cpp.html", "kernel_8cpp" ],
     [ "kernel.hpp", "kernel_8hpp.html", null ],
     [ "multiboot2.hpp", "multiboot2_8hpp.html", null ],
+    [ "nexios_config.h", "nexios__config_8h.html", "nexios__config_8h" ],
     [ "random.cpp", "random_8cpp.html", "random_8cpp" ],
     [ "random.hpp", "random_8hpp.html", null ]
 ];

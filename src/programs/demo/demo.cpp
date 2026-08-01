@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -118,7 +118,7 @@ void draw_spinning_rect() {
 void demo_main() {
     service::Terminal::clear();
     service::Terminal::set_fg(0x00FF00);
-    service::Terminal::write("=== Jarvis RTOS Demo ===\n\n");
+    service::Terminal::write("=== NexIOS RTOS Demo ===\n\n");
     service::Terminal::set_fg(0xC0C0C0);
     service::Terminal::write("Starte Demos...\n\n");
 

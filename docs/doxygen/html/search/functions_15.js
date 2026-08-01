@@ -4,5 +4,6 @@ var searchData=
   ['uniqueptr_1',['UniquePtr',['../class_unique_ptr.html#a4e694c0ff3d7795be7a14478a80e128c',1,'UniquePtr::UniquePtr(T *p=nullptr)'],['../class_unique_ptr.html#a09da9dffb3db27e3b2576272e3b793a1',1,'UniquePtr::UniquePtr(T *p, Deleter d)'],['../class_unique_ptr.html#a7c22f9125b2f1e906512d79d4c06d24a',1,'UniquePtr::UniquePtr(const UniquePtr &amp;)=delete'],['../class_unique_ptr.html#a36d7c0532d4bcfde419a27d383418aa3',1,'UniquePtr::UniquePtr(UniquePtr &amp;&amp;other) noexcept']]],
   ['unlink_2',['unlink',['../namespacekernel_1_1vfs.html#ab8191b68620f64ca864fad18239e5bce',1,'kernel::vfs::unlink()'],['../unistd_8c.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c'],['../unistd_8h.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c']]],
   ['unlink_5ferr_3',['unlink_err',['../namespacekernel_1_1vfs.html#af555f6cb1ba4c592ec31fcf5902e367f',1,'kernel::vfs']]],
-  ['update_4',['update',['../classkernel_1_1_c_r_c32.html#ac21f4ee9e91b9cd5b189be578a566c01',1,'kernel::CRC32']]]
+  ['unlock_4',['unlock',['../classkernel_1_1sync_1_1_irq_spin_lock_guard.html#a2219ff078b9fd2f8759fc9b8adf9eabc',1,'kernel::sync::IrqSpinLockGuard::unlock()'],['../class_spin_lock_guard.html#a1ffb2994e0e021147d1c624246485813',1,'SpinLockGuard::unlock()']]],
+  ['update_5',['update',['../classkernel_1_1_c_r_c32.html#ac21f4ee9e91b9cd5b189be578a566c01',1,'kernel::CRC32']]]
 ];

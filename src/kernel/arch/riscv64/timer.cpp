@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/idt.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 
 namespace arch {
 

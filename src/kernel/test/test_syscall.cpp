@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -98,7 +98,7 @@ JARVIS_TEST(syscall_gettod, "PRE: none | POST: none") {
 // Testidea: Reads system identity via UNAME and validates sysname and
 // machine strings.
 // Input: UNAME syscall with pointer to a Utsname struct.
-// Expect: Returns 0; sysname is "Jarvis"; machine is "x86_64";
+// Expect: Returns 0; sysname is "NexIOS"; machine is "x86_64";
 // release/version/machine non-empty.
 // Depends: kernel::Syscall, string
 JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
@@ -113,7 +113,7 @@ JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
     JARVIS_ASSERT(strlen(uts.version) > 0);
     JARVIS_ASSERT(strlen(uts.machine) > 0);
 
-    JARVIS_ASSERT_EQ(0, strcmp(uts.sysname, "Jarvis"));
+    JARVIS_ASSERT_EQ(0, strcmp(uts.sysname, "NexIOS"));
     JARVIS_ASSERT_EQ(0, strcmp(uts.machine, "x86_64"));
     JARVIS_TEST_PASS();
 }

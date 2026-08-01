@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 #pragma once
 
 #include <types.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 
 namespace arch {
 

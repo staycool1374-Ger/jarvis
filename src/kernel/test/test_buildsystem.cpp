@@ -3,7 +3,7 @@
 
 #if defined(CONFIG_ARCH_X86_64)
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify

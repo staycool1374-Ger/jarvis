@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -33,7 +33,7 @@
 #include <kernel/ipc/ipc_errors.hpp>
 #include <kernel/syscall/syscall_errors.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <lib/atomic.hpp>
 
 namespace kernel::log {

@@ -8,7 +8,7 @@ var searchData=
   ['alarm_5',['alarm',['../signal_8h.html#a8c476685d78ea93ee343f8a0580c79fe',1,'alarm(unsigned int seconds):&#160;time.c'],['../time_8c.html#a8c476685d78ea93ee343f8a0580c79fe',1,'alarm(unsigned int seconds):&#160;time.c'],['../unistd_8h.html#a8c476685d78ea93ee343f8a0580c79fe',1,'alarm(unsigned int seconds):&#160;time.c']]],
   ['alloc_5fbuffer_6',['alloc_buffer',['../namespacekernel_1_1dma.html#a9ed9bda8444aa6fed65a4d02bb7157d9',1,'kernel::dma']]],
   ['alltasksregistry_7',['AllTasksRegistry',['../classkernel_1_1_all_tasks_registry.html#adde419447acdc31d8c26e174cd7591aa',1,'kernel::AllTasksRegistry']]],
-  ['append_8',['append',['../classkernel_1_1_all_tasks_registry.html#a31abf6c80218507069adfa546c4bb93a',1,'kernel::AllTasksRegistry']]],
+  ['append_8',['append',['../classkernel_1_1_all_tasks_registry.html#a199241391536429b4ee4947ded41d063',1,'kernel::AllTasksRegistry']]],
   ['arch_5fcount_9',['arch_count',['../namespacekernel_1_1test.html#a6407505c9e51e9aafc535ceb8a0f074f',1,'kernel::test']]],
   ['atoi_10',['atoi',['../stdlib_8c.html#a30670a60464f77af17dfb353353d6df8',1,'atoi(const char *s):&#160;stdlib.c'],['../stdlib_8h.html#a30670a60464f77af17dfb353353d6df8',1,'atoi(const char *s):&#160;stdlib.c']]],
   ['atol_11',['atol',['../stdlib_8c.html#a825c37450147a643edbcb1a435518307',1,'atol(const char *s):&#160;stdlib.c'],['../stdlib_8h.html#a825c37450147a643edbcb1a435518307',1,'atol(const char *s):&#160;stdlib.c']]],

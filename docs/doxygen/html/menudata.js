@@ -97,7 +97,8 @@ var menudata={children:[
 {text:"Class Hierarchy",url:"inherits.html"},
 {text:"Data Fields",url:"functions.html",children:[
 {text:"All",url:"functions.html",children:[
-{text:"a",url:"functions.html#index_a"},
+{text:"_",url:"functions.html#index__5F"},
+{text:"a",url:"functions_a.html#index_a"},
 {text:"b",url:"functions_b.html#index_b"},
 {text:"c",url:"functions_c.html#index_c"},
 {text:"d",url:"functions_d.html#index_d"},
@@ -130,6 +131,7 @@ var menudata={children:[
 {text:"g",url:"functions_func_g.html#index_g"},
 {text:"h",url:"functions_func_h.html#index_h"},
 {text:"i",url:"functions_func_i.html#index_i"},
+{text:"l",url:"functions_func_l.html#index_l"},
 {text:"m",url:"functions_func_m.html#index_m"},
 {text:"n",url:"functions_func_n.html#index_n"},
 {text:"o",url:"functions_func_o.html#index_o"},
@@ -143,12 +145,14 @@ var menudata={children:[
 {text:"w",url:"functions_func_w.html#index_w"},
 {text:"~",url:"functions_func_~.html#index__7E"}]},
 {text:"Variables",url:"functions_vars.html",children:[
-{text:"a",url:"functions_vars.html#index_a"},
+{text:"_",url:"functions_vars.html#index__5F"},
+{text:"a",url:"functions_vars_a.html#index_a"},
 {text:"b",url:"functions_vars_b.html#index_b"},
 {text:"c",url:"functions_vars_c.html#index_c"},
 {text:"d",url:"functions_vars_d.html#index_d"},
 {text:"e",url:"functions_vars_e.html#index_e"},
 {text:"f",url:"functions_vars_f.html#index_f"},
+{text:"g",url:"functions_vars_g.html#index_g"},
 {text:"h",url:"functions_vars_h.html#index_h"},
 {text:"i",url:"functions_vars_i.html#index_i"},
 {text:"l",url:"functions_vars_l.html#index_l"},

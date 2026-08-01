@@ -55,7 +55,7 @@ fi
 
 echo "Launching Renode — Jarvis RTOS (${ARCH})"
 echo "  Script: ${RESC}"
-echo "  ISO:    ${WORKSPACE}/debug/jarvis-rtos.iso"
+echo "  ISO:    ${WORKSPACE}/debug/nexios-rtos.iso"
 echo ""
 echo "Renode commands:"
 echo "  start          - start simulation"

@@ -1,4 +1,4 @@
-# Jarvis RTOS — autonomous test runner (expect driver)
+# NexIOS RTOS — autonomous test runner (expect driver)
 # Usage: expect run-test.exp <timeout_sec> <verdict_log> <serial_log> <qemu_cmd...>
 # Matches the kernel's TEST SUMMARY block, writes a machine-readable verdict
 # to <verdict_log>, and exits 0 on PASS / 1 on FAIL|TIMEOUT|QEMU_EXIT.

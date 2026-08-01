@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('elf_8hpp_sourc
 <a href="elf_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * NexIOS RTOS — Development Roadmap / Kernel Core</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
@@ -209,8 +209,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('elf_8hpp_sourc
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>} <span class="comment">// namespace kernel</span></div>
 <div class="ttc" id="anamespacekernel_1_1elf_html"><div class="ttname"><a href="namespacekernel_1_1elf.html">kernel::elf</a></div><div class="ttdef"><b>Definition</b> elf.cpp:41</div></div>
 <div class="ttc" id="anamespacekernel_1_1elf_html_a53980ddec04e380da13a0325a465a554"><div class="ttname"><a href="namespacekernel_1_1elf.html#a53980ddec04e380da13a0325a465a554">kernel::elf::validate_header</a></div><div class="ttdeci">bool validate_header(const ELF64Header *hdr)</div><div class="ttdoc">Validate an ELF64 header (magic, class, endianness, machine, bounds).</div><div class="ttdef"><b>Definition</b> elf.cpp:47</div></div>
-<div class="ttc" id="anamespacekernel_1_1elf_html_a77a09264ac49cf4578d49338007c28fc"><div class="ttname"><a href="namespacekernel_1_1elf.html#a77a09264ac49cf4578d49338007c28fc">kernel::elf::load</a></div><div class="ttdeci">TaskControlBlock * load(const ELF64Header *hdr, const uint8_t *file_data)</div><div class="ttdef"><b>Definition</b> elf.cpp:335</div></div>
-<div class="ttc" id="anamespacekernel_1_1elf_html_a7dd0cac7dac7cb71e52673b90af2caae"><div class="ttname"><a href="namespacekernel_1_1elf.html#a7dd0cac7dac7cb71e52673b90af2caae">kernel::elf::exec_into_current</a></div><div class="ttdeci">bool exec_into_current(const ELF64Header *hdr, const uint8_t *data, const char *const *argv, const char *const *envp, uint64_t *regs)</div><div class="ttdef"><b>Definition</b> elf.cpp:448</div></div>
+<div class="ttc" id="anamespacekernel_1_1elf_html_a77a09264ac49cf4578d49338007c28fc"><div class="ttname"><a href="namespacekernel_1_1elf.html#a77a09264ac49cf4578d49338007c28fc">kernel::elf::load</a></div><div class="ttdeci">TaskControlBlock * load(const ELF64Header *hdr, const uint8_t *file_data)</div><div class="ttdef"><b>Definition</b> elf.cpp:334</div></div>
+<div class="ttc" id="anamespacekernel_1_1elf_html_a7dd0cac7dac7cb71e52673b90af2caae"><div class="ttname"><a href="namespacekernel_1_1elf.html#a7dd0cac7dac7cb71e52673b90af2caae">kernel::elf::exec_into_current</a></div><div class="ttdeci">bool exec_into_current(const ELF64Header *hdr, const uint8_t *data, const char *const *argv, const char *const *envp, uint64_t *regs)</div><div class="ttdef"><b>Definition</b> elf.cpp:447</div></div>
 <div class="ttc" id="anamespacekernel_1_1test_html_af219b4b081470c65fb5140fbabdd424c"><div class="ttname"><a href="namespacekernel_1_1test.html#af219b4b081470c65fb5140fbabdd424c">kernel::test::TaskControlBlock</a></div><div class="ttdeci">kernel::TaskControlBlock TaskControlBlock</div><div class="ttdef"><b>Definition</b> test.hpp:35</div></div>
 <div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> bootparams.cpp:23</div></div>
 <div class="ttc" id="anamespacekernel_html_aef2c5f8888b21de09ec3a76f5b964885"><div class="ttname"><a href="namespacekernel.html#aef2c5f8888b21de09ec3a76f5b964885">kernel::__attribute__</a></div><div class="ttdeci">__attribute__((noinline)) static uint64_t bucket_of(const TaskControlBlock *t</div><div class="ttdoc">Find the priority bucket a node currently lives in. A task&#39;s stored t-&gt;priority may have been changed...</div></div>

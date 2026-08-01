@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('daemon__mgr_8h
 <a href="daemon__mgr_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * NexIOS RTOS — Development Roadmap / Kernel Core</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('daemon__mgr_8h
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel.html">kernel</a> {</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacekernel_1_1daemon.html">daemon</a> {</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> MAX_DAEMONS = <a class="code hl_define" href="jarvis__config_8h.html#a2c580044f067f2f953c3bdd1471189c6">CONFIG_MAX_DAEMONS</a>;</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> MAX_DAEMONS = <a class="code hl_define" href="nexios__config_8h.html#a2c580044f067f2f953c3bdd1471189c6">CONFIG_MAX_DAEMONS</a>;</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> MAX_RESTART_COUNT = 10;</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span></div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">struct </span>DaemonEntry {</div>
@@ -180,7 +180,6 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('daemon__mgr_8h
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>} <span class="comment">// namespace daemon</span></div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>} <span class="comment">// namespace kernel</span></div>
-<div class="ttc" id="ajarvis__config_8h_html_a2c580044f067f2f953c3bdd1471189c6"><div class="ttname"><a href="jarvis__config_8h.html#a2c580044f067f2f953c3bdd1471189c6">CONFIG_MAX_DAEMONS</a></div><div class="ttdeci">#define CONFIG_MAX_DAEMONS</div><div class="ttdoc">Maximum number of daemon tasks (vfsd, iocd, etc).</div><div class="ttdef"><b>Definition</b> jarvis_config.h:199</div></div>
 <div class="ttc" id="anamespacekernel_1_1daemon_html"><div class="ttname"><a href="namespacekernel_1_1daemon.html">kernel::daemon</a></div><div class="ttdef"><b>Definition</b> daemon_mgr.cpp:35</div></div>
 <div class="ttc" id="anamespacekernel_1_1daemon_html_a0a2e6431675517acca87d324b2cff80e"><div class="ttname"><a href="namespacekernel_1_1daemon.html#a0a2e6431675517acca87d324b2cff80e">kernel::daemon::init</a></div><div class="ttdeci">void init()</div><div class="ttdoc">Initialize the daemon manager — clear all entries and reset count.</div><div class="ttdef"><b>Definition</b> daemon_mgr.cpp:46</div></div>
 <div class="ttc" id="anamespacekernel_1_1daemon_html_a13c5b38a9f9303f1f5fd4f57fb244cfd"><div class="ttname"><a href="namespacekernel_1_1daemon.html#a13c5b38a9f9303f1f5fd4f57fb244cfd">kernel::daemon::ensure_running</a></div><div class="ttdeci">void ensure_running(const char *name)</div><div class="ttdoc">Ensure a daemon is running — reload from initrd ELF if needed.</div><div class="ttdef"><b>Definition</b> daemon_mgr.cpp:228</div></div>
@@ -195,6 +194,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('daemon__mgr_8h
 <div class="ttc" id="anamespacekernel_1_1daemon_html_ae09ac16adefc443c674743c771bf7df9"><div class="ttname"><a href="namespacekernel_1_1daemon.html#ae09ac16adefc443c674743c771bf7df9">kernel::daemon::capture_state</a></div><div class="ttdeci">void capture_state(DaemonEntry *out_entries, uint64_t &amp;num_out)</div><div class="ttdoc">Snapshot all daemon entries for test isolation.</div><div class="ttdef"><b>Definition</b> daemon_mgr.cpp:121</div></div>
 <div class="ttc" id="anamespacekernel_1_1daemon_html_af8c94939f398ca91404fdf9f7aef8171"><div class="ttname"><a href="namespacekernel_1_1daemon.html#af8c94939f398ca91404fdf9f7aef8171">kernel::daemon::reset_clear_daemons</a></div><div class="ttdeci">void reset_clear_daemons()</div><div class="ttdoc">Kill and re-register all daemons — resets state and clears count.</div><div class="ttdef"><b>Definition</b> daemon_mgr.cpp:73</div></div>
 <div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> bootparams.cpp:23</div></div>
+<div class="ttc" id="anexios__config_8h_html_a2c580044f067f2f953c3bdd1471189c6"><div class="ttname"><a href="nexios__config_8h.html#a2c580044f067f2f953c3bdd1471189c6">CONFIG_MAX_DAEMONS</a></div><div class="ttdeci">#define CONFIG_MAX_DAEMONS</div><div class="ttdoc">Maximum number of daemon tasks (vfsd, iocd, etc).</div><div class="ttdef"><b>Definition</b> nexios_config.h:199</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
 <div class="ttc" id="atypes_8hpp_html_a4fd212339282cce62b0d2700490de00f"><div class="ttname"><a href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></div><div class="ttdeci">unsigned long long uint64_t</div><div class="ttdef"><b>Definition</b> types.hpp:27</div></div>
 </div><!-- fragment --></div><!-- contents -->

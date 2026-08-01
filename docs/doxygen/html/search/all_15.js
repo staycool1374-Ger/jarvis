@@ -26,9 +26,10 @@ var searchData=
   ['unistd_2eh_23',['unistd.h',['../unistd_8h.html',1,'']]],
   ['unlink_24',['unlink',['../namespacekernel_1_1vfs.html#ab8191b68620f64ca864fad18239e5bce',1,'kernel::vfs::unlink()'],['../unistd_8c.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c'],['../unistd_8h.html#a28af9471bbdf262321af663e02899a47',1,'unlink(const char *path):&#160;unistd.c']]],
   ['unlink_5ferr_25',['unlink_err',['../namespacekernel_1_1vfs.html#af555f6cb1ba4c592ec31fcf5902e367f',1,'kernel::vfs']]],
-  ['update_26',['update',['../classkernel_1_1_c_r_c32.html#ac21f4ee9e91b9cd5b189be578a566c01',1,'kernel::CRC32']]],
-  ['utils_2ehpp_27',['utils.hpp',['../utils_8hpp.html',1,'']]],
-  ['utsname_28',['Utsname',['../structkernel_1_1_utsname.html',1,'kernel::Utsname'],['../struct_utsname.html',1,'Utsname']]],
-  ['utsname_29',['utsname',['../structutsname.html',1,'']]],
-  ['utsname_2eh_30',['utsname.h',['../utsname_8h.html',1,'']]]
+  ['unlock_26',['unlock',['../classkernel_1_1sync_1_1_irq_spin_lock_guard.html#a2219ff078b9fd2f8759fc9b8adf9eabc',1,'kernel::sync::IrqSpinLockGuard::unlock()'],['../class_spin_lock_guard.html#a1ffb2994e0e021147d1c624246485813',1,'SpinLockGuard::unlock()']]],
+  ['update_27',['update',['../classkernel_1_1_c_r_c32.html#ac21f4ee9e91b9cd5b189be578a566c01',1,'kernel::CRC32']]],
+  ['utils_2ehpp_28',['utils.hpp',['../utils_8hpp.html',1,'']]],
+  ['utsname_29',['Utsname',['../structkernel_1_1_utsname.html',1,'kernel::Utsname'],['../struct_utsname.html',1,'Utsname']]],
+  ['utsname_30',['utsname',['../structutsname.html',1,'']]],
+  ['utsname_2eh_31',['utsname.h',['../utsname_8h.html',1,'']]]
 ];

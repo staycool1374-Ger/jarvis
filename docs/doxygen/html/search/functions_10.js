@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['panic_0',['panic',['../jarvis__config_8h.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp'],['../kernel_8cpp.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp'],['../assert_8hpp.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp']]],
+  ['panic_0',['panic',['../kernel_8cpp.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp'],['../nexios__config_8h.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp'],['../assert_8hpp.html#ae22655ba6f328217f1ebd6248ed82727',1,'panic(const char *msg):&#160;kernel.cpp']]],
   ['parse_5ftest_5fconfig_1',['parse_test_config',['../namespacekernel_1_1test.html#aabafa220128e328e46c2c19135411898',1,'kernel::test']]],
   ['pass_2',['pass',['../classkernel_1_1test_1_1_test_base.html#a65169196f9556bd9e35e7248b6773acf',1,'kernel::test::TestBase']]],
   ['passed_3',['passed',['../classkernel_1_1test_1_1_registry.html#ad30c0be8d7ba6161c038aa562c3ac885',1,'kernel::test::Registry']]],

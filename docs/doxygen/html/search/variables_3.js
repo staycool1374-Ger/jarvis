@@ -14,13 +14,15 @@ var searchData=
   ['c_5frdevmajor_11',['c_rdevmajor',['../structinitrd_1_1_cpio_newc_header.html#afd17ff8063503725a32a37357d2f0367',1,'initrd::CpioNewcHeader::c_rdevmajor'],['../initrd_8cpp.html#a5ac0f93b9466dbaa8e6821ebb7cf059b',1,'c_rdevmajor:&#160;initrd.cpp']]],
   ['c_5frdevminor_12',['c_rdevminor',['../structinitrd_1_1_cpio_newc_header.html#a603f417a72b9ee66579b7061073ae3f5',1,'initrd::CpioNewcHeader::c_rdevminor'],['../initrd_8cpp.html#a9ed7cf460945ba712009e4f2c2e710f0',1,'c_rdevminor:&#160;initrd.cpp']]],
   ['c_5fuid_13',['c_uid',['../structinitrd_1_1_cpio_newc_header.html#a29f54805bb65465530037c97c19c5412',1,'initrd::CpioNewcHeader::c_uid'],['../initrd_8cpp.html#a46b0f910bcffc2091bc0afb26b78f83c',1,'c_uid:&#160;initrd.cpp']]],
-  ['caller_14',['caller',['../gcov__handler_8cpp.html#a7e19dd463d2afcef730efc915d034736',1,'gcov_handler.cpp']]],
+  ['caller_14',['caller',['../structkernel_1_1diag_1_1_tcb_write_log.html#ac567a8d693c11e39979df50b4cb0ab3f',1,'kernel::diag::TcbWriteLog::caller'],['../gcov__handler_8cpp.html#a7e19dd463d2afcef730efc915d034736',1,'caller:&#160;gcov_handler.cpp']]],
   ['chacha_5fblock_5fsize_15',['CHACHA_BLOCK_SIZE',['../namespacecrypto.html#a560faf37927d2e3144ba5c1d5bf9c5b1',1,'crypto']]],
   ['chacha_5fkey_5fsize_16',['CHACHA_KEY_SIZE',['../namespacecrypto.html#ae66f142c9520599c29a7bff63008ea4f',1,'crypto']]],
   ['chacha_5fnonce_5fsize_17',['CHACHA_NONCE_SIZE',['../namespacecrypto.html#a381e552466292432d690c1b17de92b1c',1,'crypto']]],
   ['chacha_5fstate_5fwords_18',['CHACHA_STATE_WORDS',['../namespacecrypto.html#a6b119b5f4e472a8fc76761bb999309d7',1,'crypto']]],
-  ['cluster_19',['cluster',['../structkernel_1_1vfs_1_1_fat32_vnode_data.html#a460c18510e510862c9ac81276a5bdc6c',1,'kernel::vfs::Fat32VnodeData']]],
-  ['content_20',['content',['../structkernel_1_1vfs_1_1_mem_info_vnode.html#a411a3d7899d767c92aff38ff28b20ed4',1,'kernel::vfs::MemInfoVnode::content'],['../structkernel_1_1vfs_1_1_pci_vnode.html#aea575a2c77b9377f2be9c8cad5bf1c02',1,'kernel::vfs::PciVnode::content']]],
-  ['content_5flen_21',['content_len',['../structkernel_1_1vfs_1_1_mem_info_vnode.html#aaf25d42e245a32389ddd0332bbe347be',1,'kernel::vfs::MemInfoVnode::content_len'],['../structkernel_1_1vfs_1_1_pci_vnode.html#a497fe004dc2a0c522b1b2187541797ef',1,'kernel::vfs::PciVnode::content_len']]],
-  ['count_22',['count',['../struct_bench_result.html#a1f1c0f9c1e6cdc73ddc3c51e93d86814',1,'BenchResult::count'],['../structkernel_1_1vfs_1_1_pipe_buffer.html#a66a9e380ae7d9214ef5e8769ca41e0cf',1,'kernel::vfs::PipeBuffer::count'],['../structkernel_1_1test_1_1_class_section.html#a514bd317958e33d9f501903acd64a9b4',1,'kernel::test::ClassSection::count']]]
+  ['clean_19',['clean',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#af6bd7ed9b079b4c981e213581f84f988',1,'kernel::test::PtPoolSnapshot']]],
+  ['cluster_20',['cluster',['../structkernel_1_1vfs_1_1_fat32_vnode_data.html#a460c18510e510862c9ac81276a5bdc6c',1,'kernel::vfs::Fat32VnodeData']]],
+  ['content_21',['content',['../structkernel_1_1vfs_1_1_mem_info_vnode.html#a411a3d7899d767c92aff38ff28b20ed4',1,'kernel::vfs::MemInfoVnode::content'],['../structkernel_1_1vfs_1_1_pci_vnode.html#aea575a2c77b9377f2be9c8cad5bf1c02',1,'kernel::vfs::PciVnode::content']]],
+  ['content_5flen_22',['content_len',['../structkernel_1_1vfs_1_1_mem_info_vnode.html#aaf25d42e245a32389ddd0332bbe347be',1,'kernel::vfs::MemInfoVnode::content_len'],['../structkernel_1_1vfs_1_1_pci_vnode.html#a497fe004dc2a0c522b1b2187541797ef',1,'kernel::vfs::PciVnode::content_len']]],
+  ['count_23',['count',['../struct_bench_result.html#a1f1c0f9c1e6cdc73ddc3c51e93d86814',1,'BenchResult::count'],['../structkernel_1_1vfs_1_1_pipe_buffer.html#a66a9e380ae7d9214ef5e8769ca41e0cf',1,'kernel::vfs::PipeBuffer::count'],['../structkernel_1_1test_1_1_class_section.html#a514bd317958e33d9f501903acd64a9b4',1,'kernel::test::ClassSection::count']]],
+  ['crc32_24',['crc32',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a6389ebdbd180c4ce63e9c7c2ff0582d6',1,'kernel::test::PtPoolSnapshot']]]
 ];

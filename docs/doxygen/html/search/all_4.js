@@ -49,6 +49,7 @@ var searchData=
   ['dump_5fclass_5fcounts_46',['dump_class_counts',['../namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d',1,'kernel::test']]],
   ['dump_5fscheduler_5finfo_47',['dump_scheduler_info',['../namespacekernel_1_1debug.html#a9c80a5a9a3a6f52efef1fabf4192ab72',1,'kernel::debug']]],
   ['dump_5ftask_5finfo_48',['dump_task_info',['../namespacekernel_1_1debug.html#ade0bc324da03fcc112cdb93eb35f220b',1,'kernel::debug']]],
-  ['dup_49',['dup',['../unistd_8c.html#a4c16b3e0f35d0e104aa87db705451f2f',1,'dup(int fd):&#160;unistd.c'],['../unistd_8h.html#a4c16b3e0f35d0e104aa87db705451f2f',1,'dup(int fd):&#160;unistd.c']]],
-  ['dup2_50',['dup2',['../unistd_8c.html#a0bbddf8ae4f3dea6e57532be36c04268',1,'dup2(int oldfd, int newfd):&#160;unistd.c'],['../unistd_8h.html#a0bbddf8ae4f3dea6e57532be36c04268',1,'dup2(int oldfd, int newfd):&#160;unistd.c']]]
+  ['dump_5ftcb_5fwrite_5flog_49',['dump_tcb_write_log',['../namespacekernel_1_1diag.html#a6492ae82eee05c7afa7ef9b1a5910e6d',1,'kernel::diag']]],
+  ['dup_50',['dup',['../unistd_8c.html#a4c16b3e0f35d0e104aa87db705451f2f',1,'dup(int fd):&#160;unistd.c'],['../unistd_8h.html#a4c16b3e0f35d0e104aa87db705451f2f',1,'dup(int fd):&#160;unistd.c']]],
+  ['dup2_51',['dup2',['../unistd_8c.html#a0bbddf8ae4f3dea6e57532be36c04268',1,'dup2(int oldfd, int newfd):&#160;unistd.c'],['../unistd_8h.html#a0bbddf8ae4f3dea6e57532be36c04268',1,'dup2(int oldfd, int newfd):&#160;unistd.c']]]
 ];

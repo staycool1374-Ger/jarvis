@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -208,6 +208,8 @@ Files</h2></td></tr>
 <tr class="memdesc:test__fpu__xmm__all_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">FPU full XMM register file tests. <br /></td></tr>
 <tr class="memitem:test_5Fframebuffer_2Ecpp" id="r_test_5Fframebuffer_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__framebuffer_8cpp.html">test_framebuffer.cpp</a></td></tr>
 <tr class="memdesc:test__framebuffer_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Framebuffer driver tests. <br /></td></tr>
+<tr class="memitem:test_5Ffreelist_5Fconsistency_2Ecpp" id="r_test_5Ffreelist_5Fconsistency_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__freelist__consistency_8cpp.html">test_freelist_consistency.cpp</a></td></tr>
+<tr class="memdesc:test__freelist__consistency_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Verifies that PMM freelist heads are consistent with the bitmap after free/alloc cycles — snapshot_restore does NOT capture free_head_/pool_free_head_, so they must be rebuilt from the bitmap. Without rebuild, alloc_page()/alloc_page_table() return pages already marked as allocated → double-alloc → corruption. <br /></td></tr>
 <tr class="memitem:test_5Ffstab_2Ecpp" id="r_test_5Ffstab_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__fstab_8cpp.html">test_fstab.cpp</a></td></tr>
 <tr class="memdesc:test__fstab_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filesystem table (fstab) tests. <br /></td></tr>
 <tr class="memitem:test_5Fgcov_2Ecpp" id="r_test_5Fgcov_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__gcov_8cpp.html">test_gcov.cpp</a></td></tr>
@@ -378,6 +380,8 @@ Files</h2></td></tr>
 <tr class="memdesc:test__task_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Task control block tests. <br /></td></tr>
 <tr class="memitem:test_5Ftask_5Flifecycle_2Ecpp" id="r_test_5Ftask_5Flifecycle_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__task__lifecycle_8cpp.html">test_task_lifecycle.cpp</a></td></tr>
 <tr class="memdesc:test__task__lifecycle_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Task creation/termination lifecycle tests. <br /></td></tr>
+<tr class="memitem:test_5Ftcb_5Fwrite_5Flog_2Ecpp" id="r_test_5Ftcb_5Fwrite_5Flog_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__tcb__write__log_8cpp.html">test_tcb_write_log.cpp</a></td></tr>
+<tr class="memdesc:test__tcb__write__log_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Demonstration that the TCB write-log tracer (docs/investigation -cumulative-corruption.md Idea #4) fires when a stray write corrupts a TCB and the poison-detection path runs. <br /></td></tr>
 <tr class="memitem:test_5Ftestrunner_2Ecpp" id="r_test_5Ftestrunner_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__testrunner_8cpp.html">test_testrunner.cpp</a></td></tr>
 <tr class="memdesc:test__testrunner_8cpp"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base test class verifying test-harness integrity: snapshot/restore correctness, priority-ordered blocked-sender wakeup, and leak detection. These tests must pass before any other test class can be trusted — they validate the test infrastructure itself. <br /></td></tr>
 <tr class="memitem:test_5Ftextutils_2Ecpp" id="r_test_5Ftextutils_2Ecpp"><td class="memItemLeft"><span class="icondoc"><div class="doc-icon"></div></span>&#160;</td><td class="memItemRight"><a class="el" href="test__textutils_8cpp.html">test_textutils.cpp</a></td></tr>

@@ -6,5 +6,6 @@ var searchData=
   ['shell_3',['Shell',['../classservice_1_1_shell.html',1,'service']]],
   ['signalframe_4',['SignalFrame',['../structkernel_1_1_signal_frame.html',1,'kernel']]],
   ['simpletaskdeleter_5',['SimpleTaskDeleter',['../struct_simple_task_deleter.html',1,'']]],
-  ['stat_6',['stat',['../structstat.html',1,'']]]
+  ['spinlockguard_6',['SpinLockGuard',['../class_spin_lock_guard.html',1,'']]],
+  ['stat_7',['stat',['../structstat.html',1,'']]]
 ];

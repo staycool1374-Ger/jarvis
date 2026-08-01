@@ -228,8 +228,8 @@ GDB     := $(patsubst %-objcopy,%-gdb,$(OBJCOPY))
 # ------------------------------------------------------------------------------
 KERNEL         := build/kernel.elf
 KERNEL_DEBUG   := build/kernel-debug.elf
-DEBUG_ISO      := debug/jarvis-rtos.iso
-RELEASE_ISO    := release/jarvis-rtos.iso
+DEBUG_ISO      := debug/nexios-rtos.iso
+RELEASE_ISO    := release/nexios-rtos.iso
 KERNEL_SYMBOLS := build/kernel.sym
 KERNEL_DIS     := build/kernel.dis
 
@@ -363,7 +363,7 @@ check-config:
 
 config-summary:
 	@printf '  %-7s %s\n' 'CONFIG' 'Active configuration:'
-	@grep -h '#define CONFIG_' src/kernel/jarvis_config.h | grep -v '//' | \
+	@grep -h '#define CONFIG_' src/kernel/nexios_config.h | grep -v '//' | \
 	sed 's/#define /  /' | column -t
 
 help:
@@ -799,7 +799,7 @@ define _run_test_qemu
 	            STALL=$$((STALL + 1)); \
 	            if [ $$STALL -ge $(WATCHDOG_STALL) ]; then \
 	                echo "[HOST-WATCHDOG] Tests interrupted — no serial output for $(WATCHDOG_STALL) s" | tee -a "$(TEST_SERIAL_LOG)" "$(TEST_VERDICT_LOG)"; \
-	                pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null; \
+	                pkill -f "$(QEMU_SYSTEM).*nexios-rtos" 2>/dev/null; \
 	                exit 1; \
 	            fi; \
 	        else \
@@ -815,7 +815,7 @@ define _run_test_qemu
 	    2>&1 | gstdbuf -oL tee "$(TEST_SERIAL_LOG)"; \
 	date +%s > /tmp/test-end.timestamp; \
 	\
-	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
+	pkill -f "$(QEMU_SYSTEM).*nexios-rtos" 2>/dev/null || true; \
 	kill $$MONITOR_PID 2>/dev/null; \
 	wait $$MONITOR_PID 2>/dev/null; \
 	\
@@ -909,7 +909,7 @@ debug-shell:
 	    exit 0; \
 	'; \
 	rc=$$?; \
-	pkill -f "$(QEMU_SYSTEM).*jarvis-rtos" 2>/dev/null || true; \
+	pkill -f "$(QEMU_SYSTEM).*nexios-rtos" 2>/dev/null || true; \
 	exit $$rc
 
 test: $(KERNEL)

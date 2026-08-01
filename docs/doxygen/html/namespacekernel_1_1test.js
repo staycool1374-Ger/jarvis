@@ -2,6 +2,7 @@ var namespacekernel_1_1test =
 [
     [ "ClassSection", "structkernel_1_1test_1_1_class_section.html", "structkernel_1_1test_1_1_class_section" ],
     [ "ExpectedCounts", "structkernel_1_1test_1_1_expected_counts.html", "structkernel_1_1test_1_1_expected_counts" ],
+    [ "PtPoolSnapshot", "structkernel_1_1test_1_1_pt_pool_snapshot.html", "structkernel_1_1test_1_1_pt_pool_snapshot" ],
     [ "Registry", "classkernel_1_1test_1_1_registry.html", null ],
     [ "ResourceCounters", "structkernel_1_1test_1_1_resource_counters.html", "structkernel_1_1test_1_1_resource_counters" ],
     [ "ResourceTracker", "classkernel_1_1test_1_1_resource_tracker.html", "classkernel_1_1test_1_1_resource_tracker" ],
@@ -43,6 +44,7 @@ var namespacekernel_1_1test =
     [ "set_kernel_entry_ns", "namespacekernel_1_1test.html#a2be813db3ba66a8c409d2c8c8e2d69da", null ],
     [ "should_run_class", "namespacekernel_1_1test.html#ac77ca03eec1fc93ea4a740b9566588d7", null ],
     [ "shutdown_kernel", "namespacekernel_1_1test.html#a1becd6394583e37ae0142fa07904cb67", null ],
+    [ "snapshot_canary_corrupted", "namespacekernel_1_1test.html#af41d7948ad158bc2d5390ece894e112c", null ],
     [ "snapshot_create", "namespacekernel_1_1test.html#a5b61544ff1676d3f6d4a777c3211be31", null ],
     [ "snapshot_destroy", "namespacekernel_1_1test.html#ae4288686f519dcd0faacfe54ae2f1bff", null ],
     [ "snapshot_restore", "namespacekernel_1_1test.html#aa2a58a012f3f56d28d6e0df037fd66a6", null ],

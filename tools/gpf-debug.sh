@@ -12,7 +12,7 @@ echo "=== Starting QEMU with GDB stub (release build) ==="
 expect << 'EXPECT_SCRIPT' &
 set timeout 120
 set stty_init "raw -echo"
-spawn qemu-system-x86_64 -cdrom $env(SCRIPT_DIR)/release/jarvis-rtos.iso -m 256M \
+spawn qemu-system-x86_64 -cdrom $env(SCRIPT_DIR)/release/nexios-rtos.iso -m 256M \
     -serial mon:stdio -nic none \
     -boot order=d -s -no-reboot \
     -drive if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd
@@ -81,7 +81,7 @@ wait $EXPECT_PID 2>/dev/null || true
 
 # Kill any lingering QEMU
 if kill -0 $(jobs -p) 2>/dev/null; then
-    pkill -f "qemu-system-x86_64.*jarvis-rtos" 2>/dev/null || true
+    pkill -f "qemu-system-x86_64.*nexios-rtos" 2>/dev/null || true
 fi
 
 if [ -f "$SCRIPT_DIR/build/gdb-panic-captured" ]; then

@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <logger.hpp>
 
 extern "C" void debug_write(const char *s);
@@ -164,7 +164,7 @@ static_assert(
     "TaskDef: priorities exceed CONFIG_PRIORITY_CEILING, periods are 0, "
     "SS params are invalid, names exceed CONFIG_TASK_NAME_LEN, "
     "or total enabled tasks / daemons exceed CONFIG_MAX_TASKS / CONFIG_MAX_DAEMONS "
-    "(see jarvis_config.h)");
+    "(see nexios_config.h)");
 
 } // anonymous namespace
 

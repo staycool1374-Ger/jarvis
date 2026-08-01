@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -191,8 +191,8 @@ uint64_t Syscall::sys_uname(uint64_t arg0, uint64_t, uint64_t, uint64_t,
         return static_cast<uint64_t>(-1);
 
     Utsname uts{};
-    strlcpy(uts.sysname, "Jarvis", sizeof(uts.sysname));
-    strlcpy(uts.nodename, "jarvis", sizeof(uts.nodename));
+    strlcpy(uts.sysname, "NexIOS", sizeof(uts.sysname));
+    strlcpy(uts.nodename, "nexios", sizeof(uts.nodename));
     strlcpy(uts.release, Version::string(), sizeof(uts.release));
     strlcpy(uts.version, Version::build_date(), sizeof(uts.version));
     strlcpy(uts.machine, "x86_64", sizeof(uts.machine));

@@ -7,7 +7,7 @@
 #include <kernel/arch/apic.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/bootparams.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 
 using namespace kernel;
 

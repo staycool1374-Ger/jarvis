@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('vmm_8hpp_sourc
 <a href="vmm_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * NexIOS RTOS — Development Roadmap / Kernel Core</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
@@ -259,12 +259,20 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('vmm_8hpp_sourc
 <div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>    <span class="keyword">static</span> <span class="keyword">constinit</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> kernel_pml4_;</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span></div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    <span class="keyword">static</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *get_table(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *table, <span class="keywordtype">size_t</span> index, <span class="keywordtype">bool</span> create,</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                               <span class="keywordtype">bool</span> user_alloc = <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>};</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>} <span class="comment">// namespace kernel</span></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>    <span class="keyword">static</span> <span class="keywordtype">bool</span> hhdm_modified_;</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>    <span class="keyword">static</span> <span class="keywordtype">bool</span> hhdm_was_modified() { <span class="keywordflow">return</span> hhdm_modified_; }</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>    <span class="keyword">static</span> <span class="keywordtype">void</span> clear_hhdm_modified() { hhdm_modified_ = <span class="keyword">false</span>; }</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>  <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span></div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    <span class="keyword">static</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *get_table(<a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *table, <span class="keywordtype">size_t</span> index, <span class="keywordtype">bool</span> create,</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                               <span class="keywordtype">bool</span> user_alloc = <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>};</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>} <span class="comment">// namespace kernel</span></div>
 <div class="ttc" id="aconstants_8hpp_html"><div class="ttname"><a href="constants_8hpp.html">constants.hpp</a></div><div class="ttdoc">Central hardware and memory-layout constants (no magic numbers).</div></div>
 <div class="ttc" id="anamespacearch_html_a9e56d1c39ac66468549b4230ebb9f5af"><div class="ttname"><a href="namespacearch.html#a9e56d1c39ac66468549b4230ebb9f5af">arch::PAGE_SIZE</a></div><div class="ttdeci">constexpr uint64_t PAGE_SIZE</div><div class="ttdef"><b>Definition</b> constants.hpp:45</div></div>
 <div class="ttc" id="anamespaceinitrd_html_a7b70f1cbe142d57f40fb7691d81ce5de"><div class="ttname"><a href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">initrd::init</a></div><div class="ttdeci">void init(const uint8_t *start, const uint8_t *end)</div><div class="ttdef"><b>Definition</b> initrd.cpp:60</div></div>

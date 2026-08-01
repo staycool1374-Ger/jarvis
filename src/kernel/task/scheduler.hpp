@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <kernel/task/scheduler_errors.hpp>
 #include <kernel/task/task_errors.hpp>
 #include <kernel/task/ready_queue_manager.hpp>

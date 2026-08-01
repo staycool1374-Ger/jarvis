@@ -27,6 +27,7 @@ var namespacekernel =
       [ "record_task_entry", "namespacekernel_1_1debug.html#ae301850b7dcbeb7beaeb3dc92d909ddf", null ],
       [ "trace", "namespacekernel_1_1debug.html#ad4e746d8bc125cec09030517a74f8180", null ]
     ] ],
+    [ "diag", "namespacekernel_1_1diag.html", "namespacekernel_1_1diag" ],
     [ "dma", "namespacekernel_1_1dma.html", [
       [ "alloc_buffer", "namespacekernel_1_1dma.html#a9ed9bda8444aa6fed65a4d02bb7157d9", null ],
       [ "free_buffer", "namespacekernel_1_1dma.html#ae63cca35e8ce0810d35364b5e21a252d", null ],
@@ -95,9 +96,7 @@ var namespacekernel =
       [ "virtio_net_probe", "namespacekernel_1_1net.html#ac79735cf719349d1a7d42f5c788b1406", null ],
       [ "g_virtio_net_dev", "namespacekernel_1_1net.html#a142edc1532f5ec70f4bbd5014b31f638", null ]
     ] ],
-    [ "sync", "namespacekernel_1_1sync.html", [
-      [ "init_all", "namespacekernel_1_1sync.html#aa2ee8b27f242c1625ef11e01adda6675", null ]
-    ] ],
+    [ "sync", "namespacekernel_1_1sync.html", "namespacekernel_1_1sync" ],
     [ "task", "namespacekernel_1_1task.html", [
       [ "dmesg_task_main", "namespacekernel_1_1task.html#ae7fc9a59f78d98d18c2d3c5a25ec2193", null ],
       [ "reboot_from_table", "namespacekernel_1_1task.html#a7f227dc40c3e02534d8c4640812236c7", null ]

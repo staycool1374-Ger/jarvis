@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -145,10 +145,7 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a6c7a135102a1c57a47603ff3995e1f9b" id="r_a6c7a135102a1c57a47603ff3995e1f9b"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a6c7a135102a1c57a47603ff3995e1f9b">CONFIG_DEBUG_IPC_SCHED</a>&#160;&#160;&#160;1</td></tr>
-<tr class="memitem:a4d47ee50eb004041ce861ff52b819af6" id="r_a4d47ee50eb004041ce861ff52b819af6"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a4d47ee50eb004041ce861ff52b819af6">IPC_SCHED_TRACE_BUF</a>(tag,  n)</td></tr>
 <tr class="memitem:aae8f0940837800404672b2126a6c1a2a" id="r_aae8f0940837800404672b2126a6c1a2a"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aae8f0940837800404672b2126a6c1a2a">IPC_SCHED_TRACE</a>(tag,  a0,  v0,  a1,  v1,  a2,  v2,  a3,  v3)</td></tr>
-<tr class="memdesc:aae8f0940837800404672b2126a6c1a2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-shot trace: tag + up to 4 unsigned integers with labels.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -160,23 +157,10 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Reusable diagnostic harness for IPC reply-loss (H1) and deferred- switch self-deadlock (H2) analysis in the scheduler/IPC subsystem. </p>
-<p>Everything here is gated behind CONFIG_DEBUG_IPC_SCHED. Flip the #define in <a class="el" href="jarvis__config_8h.html" title="Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...">kernel/jarvis_config.h</a> (or uncomment below) to re-enable the whole proof kit for future analysis iterations without re-deriving the instrumentation.</p>
+<p>Everything here is gated behind CONFIG_DEBUG_IPC_SCHED. Flip the #define in <a class="el" href="nexios__config_8h.html" title="Central compile-time configuration for NexIOS RTOS. All tunables currently scattered as constexpr in ...">kernel/nexios_config.h</a> (or uncomment below) to re-enable the whole proof kit for future analysis iterations without re-deriving the instrumentation.</p>
+<p>DEBUGGING ONLY — MUST be deactivated (undefined) for the release procedure. When enabled, the [RS]/[TICK]/[SW]/[APPLY] serial traces fire inside reschedule()/on_tick()/context-switch epilogue on every invocation, polluting timing-sensitive tests (e.g. the <span class="tt">all</span> class and jitter) and perturbing the scheduler. See AGENTS.md "Release Procedure".</p>
 <p>Proven signatures (what each trace tag proves): [SYNC] entered IPC::send_sync for (cur -&gt; dest) [SEND]/[WAKE] a message was pushed into dest's queue and dest was woken [SYNC-FAIL] dest-gone-empty -&gt; genuine peer death, reply never arrived (OK) [SYNC-FAIL] dest-gone-reply -&gt; H1 PROVEN: reply present in own queue but send_sync returned false and discarded it [WEDGE] H2 candidate: save_rsp_to != 0 while a READY task is orphaned (inrq=1, phys=0) and the ready bitmap is empty -&gt; the timer ISR's rate_monotonic_schedule early-returned on a stale pending-switch flag and never re-dispatched the driver, so the driver could never clear the flag -&gt; self-deadlock. </p>
 </div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
-<a id="a6c7a135102a1c57a47603ff3995e1f9b" name="a6c7a135102a1c57a47603ff3995e1f9b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c7a135102a1c57a47603ff3995e1f9b">&#9670;&#160;</a></span>CONFIG_DEBUG_IPC_SCHED</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define CONFIG_DEBUG_IPC_SCHED&#160;&#160;&#160;1</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aae8f0940837800404672b2126a6c1a2a" name="aae8f0940837800404672b2126a6c1a2a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aae8f0940837800404672b2126a6c1a2a">&#9670;&#160;</a></span>IPC_SCHED_TRACE</h2>
 
@@ -231,54 +215,6 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line"><span class="keywordflow">do</span> {                                                                       \</div>
-<div class="line">    <span class="keywordtype">char</span> _b[128];                                                          \</div>
-<div class="line">    <span class="keywordtype">int</span> _p = 0;                                                            \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, (tag));                                 \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, <span class="stringliteral">&quot; &quot;</span>);                                   \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, (a0));                                  \</div>
-<div class="line">    _p = <a class="code hl_function" href="namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d">kernel::debug::fmt_u64</a>(_b, _p, (v0));                             \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, <span class="stringliteral">&quot; &quot;</span>);                                   \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, (a1));                                  \</div>
-<div class="line">    _p = <a class="code hl_function" href="namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d">kernel::debug::fmt_u64</a>(_b, _p, (v1));                             \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, <span class="stringliteral">&quot; &quot;</span>);                                   \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, (a2));                                  \</div>
-<div class="line">    _p = <a class="code hl_function" href="namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d">kernel::debug::fmt_u64</a>(_b, _p, (v2));                             \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, <span class="stringliteral">&quot; &quot;</span>);                                   \</div>
-<div class="line">    kernel::debug::fmt_str(_b, _p, (a3));                                  \</div>
-<div class="line">    _p = <a class="code hl_function" href="namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d">kernel::debug::fmt_u64</a>(_b, _p, (v3));                             \</div>
-<div class="line">    _b[_p] = 0;                                                            \</div>
-<div class="line">    kernel::debug::trace(_b);                                              \</div>
-<div class="line">} <span class="keywordflow">while</span> (0)</div>
-<div class="ttc" id="anamespacekernel_1_1debug_html_abfe4175e0b1de7e6d86961cee076ef9d"><div class="ttname"><a href="namespacekernel_1_1debug.html#abfe4175e0b1de7e6d86961cee076ef9d">kernel::debug::fmt_u64</a></div><div class="ttdeci">int fmt_u64(char *buf, int pos, uint64_t v)</div><div class="ttdoc">Print an integer (decimal, unsigned) appended at buf[pos].</div><div class="ttdef"><b>Definition</b> ipc_sched_trace.hpp:52</div></div>
-</div><!-- fragment -->
-<p>One-shot trace: tag + up to 4 unsigned integers with labels. </p>
-
-</div>
-</div>
-<a id="a4d47ee50eb004041ce861ff52b819af6" name="a4d47ee50eb004041ce861ff52b819af6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d47ee50eb004041ce861ff52b819af6">&#9670;&#160;</a></span>IPC_SCHED_TRACE_BUF</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define IPC_SCHED_TRACE_BUF</td>
-          <td>(</td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>tag</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line"><span class="keywordtype">char</span> _ipc_sched_buf[128];                                                  \</div>
-<div class="line"><span class="keywordtype">int</span> _ipc_sched_len = 0;                                                    \</div>
-<div class="line"><span class="keywordflow">do</span> {                                                                       \</div>
-<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *_t = (tag);                                                \</div>
-<div class="line">    while (*_t)                                                            \</div>
-<div class="line">        _ipc_sched_buf[_ipc_sched_len++] = *_t++;                          \</div>
 <div class="line">} <span class="keywordflow">while</span> (0)</div>
 </div><!-- fragment -->
 </div>

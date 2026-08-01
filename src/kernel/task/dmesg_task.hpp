@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Jarvis RTOS — Kernel Log Consumer Task
+ * NexIOS RTOS — Kernel Log Consumer Task
  */
 
 /// @file dmesg_task.hpp

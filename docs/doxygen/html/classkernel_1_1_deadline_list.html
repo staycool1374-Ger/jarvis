@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -133,10 +133,10 @@ Collaboration diagram for kernel::DeadlineList:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a7613dee0cd5bbb9fbc9d934dbb898f20" id="r_a7613dee0cd5bbb9fbc9d934dbb898f20"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a7613dee0cd5bbb9fbc9d934dbb898f20">DeadlineList</a> ()=default</td></tr>
-<tr class="memitem:a749e2ea1ac63ebb6cf3379255c0d22e8" id="r_a749e2ea1ac63ebb6cf3379255c0d22e8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a749e2ea1ac63ebb6cf3379255c0d22e8">insert</a> (TaskControlBlock *t) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
-<tr class="memdesc:a749e2ea1ac63ebb6cf3379255c0d22e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert a task into the list, ordered by deadline_ticks ascending. Only meaningful for tasks with period_ticks &gt; 0 and deadline_ticks &gt; 0. O(n) where n ≤ CONFIG_MAX_TASKS (≤64).  <br /></td></tr>
-<tr class="memitem:a4159b4a699494fc403e41eb56719ca6a" id="r_a4159b4a699494fc403e41eb56719ca6a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4159b4a699494fc403e41eb56719ca6a">remove</a> (TaskControlBlock *t) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
-<tr class="memdesc:a4159b4a699494fc403e41eb56719ca6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a task from the list. Safe to call if t is not in the list (scans for matching node). O(n).  <br /></td></tr>
+<tr class="memitem:a2f6a12357489a4dfc0689f4bb1f986af" id="r_a2f6a12357489a4dfc0689f4bb1f986af"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2f6a12357489a4dfc0689f4bb1f986af">insert</a> (TaskControlBlock &amp;t) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
+<tr class="memdesc:a2f6a12357489a4dfc0689f4bb1f986af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert a task into the list, ordered by deadline_ticks ascending. Only meaningful for tasks with period_ticks &gt; 0 and deadline_ticks &gt; 0. O(n) where n ≤ CONFIG_MAX_TASKS (≤64).  <br /></td></tr>
+<tr class="memitem:ac8db6d821dbc12b49fca217807a1cd69" id="r_ac8db6d821dbc12b49fca217807a1cd69"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac8db6d821dbc12b49fca217807a1cd69">remove</a> (TaskControlBlock &amp;t) <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
+<tr class="memdesc:ac8db6d821dbc12b49fca217807a1cd69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a task from the list. Safe to call if t is not in the list (scans for matching node). O(n).  <br /></td></tr>
 <tr class="memitem:a9a187c4e54c196c3400b71549372ecec" id="r_a9a187c4e54c196c3400b71549372ecec"><td class="memItemLeft">TaskControlBlock *&#160;</td><td class="memItemRight"><a class="el" href="#a9a187c4e54c196c3400b71549372ecec">pop_earliest_if_expired</a> () <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
 <tr class="memdesc:a9a187c4e54c196c3400b71549372ecec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove and return the earliest-deadline task if its deadline has expired (arch::Timer::ticks() &gt; deadline_ticks). Returns nullptr if the list is empty or the earliest task's deadline has not yet passed. O(1).  <br /></td></tr>
 <tr class="memitem:a90b5ccdae1745e9dcab1573f15ac497f" id="r_a90b5ccdae1745e9dcab1573f15ac497f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a90b5ccdae1745e9dcab1573f15ac497f">empty</a> () const <a class="el" href="namespacekernel.html#ac84f34d32e4683fb9c3f512c093068cf">noexcept</a></td></tr>
@@ -237,8 +237,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a749e2ea1ac63ebb6cf3379255c0d22e8" name="a749e2ea1ac63ebb6cf3379255c0d22e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a749e2ea1ac63ebb6cf3379255c0d22e8">&#9670;&#160;</a></span>insert()</h2>
+<a id="a2f6a12357489a4dfc0689f4bb1f986af" name="a2f6a12357489a4dfc0689f4bb1f986af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f6a12357489a4dfc0689f4bb1f986af">&#9670;&#160;</a></span>insert()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -249,7 +249,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::DeadlineList::insert </td>
           <td>(</td>
-          <td class="paramtype">TaskControlBlock *</td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
+          <td class="paramtype">TaskControlBlock &amp;</td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -318,8 +318,8 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
-<a id="a4159b4a699494fc403e41eb56719ca6a" name="a4159b4a699494fc403e41eb56719ca6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4159b4a699494fc403e41eb56719ca6a">&#9670;&#160;</a></span>remove()</h2>
+<a id="ac8db6d821dbc12b49fca217807a1cd69" name="ac8db6d821dbc12b49fca217807a1cd69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8db6d821dbc12b49fca217807a1cd69">&#9670;&#160;</a></span>remove()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -330,7 +330,7 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="memname">void kernel::DeadlineList::remove </td>
           <td>(</td>
-          <td class="paramtype">TaskControlBlock *</td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
+          <td class="paramtype">TaskControlBlock &amp;</td>          <td class="paramname"><span class="paramname"><em>t</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>

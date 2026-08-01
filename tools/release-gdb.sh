@@ -5,7 +5,7 @@ set -euo pipefail
 rm -f build/gdb-panic-captured build/gdb-serial.log
 
 KERNEL_ELF="build/kernel.elf"
-ISO="release/jarvis-rtos.iso"
+ISO="release/nexios-rtos.iso"
 
 # Launch QEMU with serial to file + GDB stub
 qemu-system-x86_64 \

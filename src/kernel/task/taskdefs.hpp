@@ -1,7 +1,7 @@
 #pragma once
 
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,7 @@ enum class TaskType : uint8_t {
 };
 
 /// @brief Single entry in the boot-time task-definition table.
-/// Entries are validated at compile time against jarvis_config.h bounds
+/// Entries are validated at compile time against nexios_config.h bounds
 /// and at boot time for ELF-file existence.  Set enabled = false to skip.
 struct TaskDef {
     const char *name; ///< for logging / debug (max CONFIG_TASK_NAME_LEN)

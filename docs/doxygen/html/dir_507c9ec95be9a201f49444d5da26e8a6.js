@@ -21,5 +21,7 @@ var dir_507c9ec95be9a201f49444d5da26e8a6 =
     [ "task_queue.cpp", "task__queue_8cpp.html", null ],
     [ "task_queue.hpp", "task__queue_8hpp.html", "task__queue_8hpp" ],
     [ "taskdefs.cpp", "taskdefs_8cpp.html", "taskdefs_8cpp" ],
-    [ "taskdefs.hpp", "taskdefs_8hpp.html", null ]
+    [ "taskdefs.hpp", "taskdefs_8hpp.html", null ],
+    [ "tcb_write_log.cpp", "tcb__write__log_8cpp.html", "tcb__write__log_8cpp" ],
+    [ "tcb_write_log.hpp", "tcb__write__log_8hpp.html", "tcb__write__log_8hpp" ]
 ];

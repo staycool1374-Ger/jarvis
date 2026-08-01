@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Kernel Log Consumer Task
+ * NexIOS RTOS — Kernel Log Consumer Task
  * Asynchronously drains dmesg ring buffer to UART with structured formatting.
  */
 

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -220,9 +220,9 @@ Variables</h2></td></tr>
 <tr class="memdesc:aabce4ce1e12afd68caf560773edc154f"><td class="mdescLeft">&#160;</td><td class="mdescRight">External ISR vector table defined in the linker or assembly entry point.  <br /></td></tr>
 <tr class="memitem:a57c6bb74fdc3ee11eecab91b0142e95b" id="r_a57c6bb74fdc3ee11eecab91b0142e95b"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a57c6bb74fdc3ee11eecab91b0142e95b">HHDM_OFFSET</a> = CONFIG_HHDM_OFFSET</td></tr>
 <tr class="memdesc:a57c6bb74fdc3ee11eecab91b0142e95b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Higher-half offset: convert physical → kernel-visible virtual.  <br /></td></tr>
-<tr class="memitem:a99106776d58225cbe472f60fefc21958" id="r_a99106776d58225cbe472f60fefc21958"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a99106776d58225cbe472f60fefc21958">PML4_USER_COUNT</a> = <a class="el" href="jarvis__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td></tr>
+<tr class="memitem:a99106776d58225cbe472f60fefc21958" id="r_a99106776d58225cbe472f60fefc21958"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a99106776d58225cbe472f60fefc21958">PML4_USER_COUNT</a> = <a class="el" href="nexios__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td></tr>
 <tr class="memdesc:a99106776d58225cbe472f60fefc21958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Page-table layout: indices 0-255 = user (TTBR0), 256-511 = kernel (TTBR1).  <br /></td></tr>
-<tr class="memitem:a0876344ab29527d09bf26d08ea69d620" id="r_a0876344ab29527d09bf26d08ea69d620"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0876344ab29527d09bf26d08ea69d620">PML4_KERNEL_START</a> = <a class="el" href="jarvis__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td></tr>
+<tr class="memitem:a0876344ab29527d09bf26d08ea69d620" id="r_a0876344ab29527d09bf26d08ea69d620"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0876344ab29527d09bf26d08ea69d620">PML4_KERNEL_START</a> = <a class="el" href="nexios__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td></tr>
 <tr class="memitem:aee9618915c006922ecd2deb239616abd" id="r_aee9618915c006922ecd2deb239616abd"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aee9618915c006922ecd2deb239616abd">PML4_ENTRIES</a> = 512</td></tr>
 <tr class="memitem:a9e56d1c39ac66468549b4230ebb9f5af" id="r_a9e56d1c39ac66468549b4230ebb9f5af"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9e56d1c39ac66468549b4230ebb9f5af">PAGE_SIZE</a> = CONFIG_PAGE_SIZE</td></tr>
 <tr class="memitem:a9c04cc6adc05ff5fdca738fe926d5fa3" id="r_a9c04cc6adc05ff5fdca738fe926d5fa3"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a9c04cc6adc05ff5fdca738fe926d5fa3">PAGE_SIZE_2M</a> = 0x200000</td></tr>
@@ -2686,7 +2686,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PML4_KERNEL_START = <a class="el" href="jarvis__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PML4_KERNEL_START = <a class="el" href="nexios__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td>
         </tr>
       </table>
   </td>
@@ -2708,7 +2708,7 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PML4_USER_COUNT = <a class="el" href="jarvis__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> arch::PML4_USER_COUNT = <a class="el" href="nexios__config_8h.html#ad42f27563c0dabc8e3f69851bbbe9f9f">CONFIG_PML4_USER_COUNT</a></td>
         </tr>
       </table>
   </td>

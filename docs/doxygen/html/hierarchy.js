@@ -1,5 +1,6 @@
 var hierarchy =
 [
+    [ "adopt_lock_t", "structadopt__lock__t.html", null ],
     [ "kernel::AllTasksRegistry", "classkernel_1_1_all_tasks_registry.html", null ],
     [ "arch::APIC", "classarch_1_1_a_p_i_c.html", null ],
     [ "BenchResult", "struct_bench_result.html", null ],
@@ -42,6 +43,7 @@ var hierarchy =
     [ "integral_constant&lt; bool, true &gt;", "structintegral__constant.html", [
       [ "is_same< T, T >", "structis__same_3_01_t_00_01_t_01_4.html", null ]
     ] ],
+    [ "kernel::sync::IrqSpinLockGuard", "classkernel_1_1sync_1_1_irq_spin_lock_guard.html", null ],
     [ "kernel::Logger", "classkernel_1_1_logger.html", null ],
     [ "kernel::vfs::MemInfoVnode", "structkernel_1_1vfs_1_1_mem_info_vnode.html", null ],
     [ "kernel::vfs::PciVnode", "structkernel_1_1vfs_1_1_pci_vnode.html", null ],
@@ -52,6 +54,7 @@ var hierarchy =
     [ "kernel::PriorityMap", "classkernel_1_1_priority_map.html", null ],
     [ "service::ProgramRegistry::Program", "structservice_1_1_program_registry_1_1_program.html", null ],
     [ "service::ProgramRegistry", "classservice_1_1_program_registry.html", null ],
+    [ "kernel::test::PtPoolSnapshot", "structkernel_1_1test_1_1_pt_pool_snapshot.html", null ],
     [ "kernel::ReadyQueueManager", "classkernel_1_1_ready_queue_manager.html", null ],
     [ "kernel::ReadyQueuePOD", "structkernel_1_1_ready_queue_p_o_d.html", null ],
     [ "kernel::test::Registry", "classkernel_1_1test_1_1_registry.html", null ],
@@ -69,9 +72,11 @@ var hierarchy =
     [ "service::Shell", "classservice_1_1_shell.html", null ],
     [ "kernel::SignalFrame", "structkernel_1_1_signal_frame.html", null ],
     [ "SimpleTaskDeleter", "struct_simple_task_deleter.html", null ],
+    [ "SpinLockGuard&lt; Lock &gt;", "class_spin_lock_guard.html", null ],
     [ "stat", "structstat.html", null ],
     [ "TaskDeleter", "struct_task_deleter.html", null ],
     [ "kernel::TaskQueue", "classkernel_1_1_task_queue.html", null ],
+    [ "kernel::diag::TcbWriteLog", "structkernel_1_1diag_1_1_tcb_write_log.html", null ],
     [ "service::Terminal", "classservice_1_1_terminal.html", null ],
     [ "kernel::test::TestBase", "classkernel_1_1test_1_1_test_base.html", null ],
     [ "kernel::test::TestCase", "structkernel_1_1test_1_1_test_case.html", null ],

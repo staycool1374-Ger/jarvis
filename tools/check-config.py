@@ -2,13 +2,13 @@
 """
 Jarvis RTOS — Config Validation Script (check-config)
 
-Parses src/kernel/jarvis_config.h and validates every compile-time
+Parses src/kernel/nexios_config.h and validates every compile-time
 tunable against its documented range, cross-dependencies, and
 architecture constraints.  Exits with code 0 on success, 1 on
 errors, 2 on warnings.
 
 Usage:
-    python3 tools/check-config.py [--jarvis-config path]
+    python3 tools/check-config.py [--nexios-config path]
 """
 
 import argparse
@@ -417,14 +417,14 @@ def validate(cfg: dict[str, int]):
 def main():
     parser = argparse.ArgumentParser(
         description="Validate Jarvis RTOS compile-time configuration")
-    parser.add_argument("--jarvis-config", default="src/kernel/jarvis_config.h",
-                        help="Path to jarvis_config.h (default: src/kernel/jarvis_config.h)")
+    parser.add_argument("--nexios-config", default="src/kernel/nexios_config.h",
+                        help="Path to nexios_config.h (default: src/kernel/nexios_config.h)")
     parser.add_argument("--arch", default=None,
                         help="Target architecture: x86_64, aarch64, or riscv64 "
                              "(default: detect from host)")
     args = parser.parse_args()
 
-    path = Path(args.jarvis_config)
+    path = Path(args.nexios_config)
     if not path.exists():
         print(f"FATAL: {path} not found")
         sys.exit(2)

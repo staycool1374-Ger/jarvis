@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.1</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -133,7 +133,14 @@ Collaboration diagram for SpinLockGuard&lt; Lock &gt;:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a64ccd78b7926e3b15d716f553886b490" id="r_a64ccd78b7926e3b15d716f553886b490"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a64ccd78b7926e3b15d716f553886b490">SpinLockGuard</a> (Lock &amp;lock) noexcept</td></tr>
+<tr class="memdesc:a64ccd78b7926e3b15d716f553886b490"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire the lock on construction.  <br /></td></tr>
+<tr class="memitem:a54f9dc0b49255d1b0a4f2f9f531dd28f" id="r_a54f9dc0b49255d1b0a4f2f9f531dd28f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a54f9dc0b49255d1b0a4f2f9f531dd28f">SpinLockGuard</a> (Lock &amp;lock, <a class="el" href="structadopt__lock__t.html">adopt_lock_t</a>) noexcept</td></tr>
+<tr class="memdesc:a54f9dc0b49255d1b0a4f2f9f531dd28f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adopt an already-acquired lock (caller must have called lock() or try_lock() successfully before constructing). The destructor will call <a class="el" href="#a1ffb2994e0e021147d1c624246485813" title="Release the lock early (guard becomes a no-op on destruction).">unlock()</a>.  <br /></td></tr>
 <tr class="memitem:a29d70f70e6499f0a1b97ca4282c3974c" id="r_a29d70f70e6499f0a1b97ca4282c3974c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a29d70f70e6499f0a1b97ca4282c3974c">~SpinLockGuard</a> () noexcept</td></tr>
+<tr class="memitem:ae50bdcd8e6138968f9f54052372810d0" id="r_ae50bdcd8e6138968f9f54052372810d0"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae50bdcd8e6138968f9f54052372810d0">owns_lock</a> () const noexcept</td></tr>
+<tr class="memdesc:ae50bdcd8e6138968f9f54052372810d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">True if this guard holds the lock and will release it.  <br /></td></tr>
+<tr class="memitem:a1ffb2994e0e021147d1c624246485813" id="r_a1ffb2994e0e021147d1c624246485813"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1ffb2994e0e021147d1c624246485813">unlock</a> () noexcept</td></tr>
+<tr class="memdesc:a1ffb2994e0e021147d1c624246485813"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release the lock early (guard becomes a no-op on destruction).  <br /></td></tr>
 <tr class="memitem:a22fc95da8f5d322eee7eb5f9a65383e3" id="r_a22fc95da8f5d322eee7eb5f9a65383e3"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a22fc95da8f5d322eee7eb5f9a65383e3">SpinLockGuard</a> (const <a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a> &amp;)=delete</td></tr>
 <tr class="memitem:a71a83ae3cc1f70d6d5a1424a910b4a34" id="r_a71a83ae3cc1f70d6d5a1424a910b4a34"><td class="memItemLeft"><a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a71a83ae3cc1f70d6d5a1424a910b4a34">operator=</a> (const <a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a> &amp;)=delete</td></tr>
 <tr class="memitem:a0f7a8fa8a1ee329e27e0bff03cae3a31" id="r_a0f7a8fa8a1ee329e27e0bff03cae3a31"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0f7a8fa8a1ee329e27e0bff03cae3a31">SpinLockGuard</a> (<a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a> &amp;&amp;)=delete</td></tr>
@@ -144,7 +151,7 @@ Public Member Functions</h2></td></tr>
 class SpinLockGuard&lt; Lock &gt;</div><p>RAII lock guard for any lock type with lock()/unlock() methods. </p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a64ccd78b7926e3b15d716f553886b490" name="a64ccd78b7926e3b15d716f553886b490"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64ccd78b7926e3b15d716f553886b490">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a64ccd78b7926e3b15d716f553886b490">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -167,6 +174,41 @@ template&lt;typename Lock&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Acquire the lock on construction. </p>
+
+</div>
+</div>
+<a id="a54f9dc0b49255d1b0a4f2f9f531dd28f" name="a54f9dc0b49255d1b0a4f2f9f531dd28f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54f9dc0b49255d1b0a4f2f9f531dd28f">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Lock&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a>&lt; Lock &gt;::SpinLockGuard </td>
+          <td>(</td>
+          <td class="paramtype">Lock &amp;</td>          <td class="paramname"><span class="paramname"><em>lock</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structadopt__lock__t.html">adopt_lock_t</a></td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel explicit">explicit</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Adopt an already-acquired lock (caller must have called lock() or try_lock() successfully before constructing). The destructor will call <a class="el" href="#a1ffb2994e0e021147d1c624246485813" title="Release the lock early (guard becomes a no-op on destruction).">unlock()</a>. </p>
 
 </div>
 </div>
@@ -198,7 +240,7 @@ template&lt;typename Lock&gt; </div>
 </div>
 </div>
 <a id="a22fc95da8f5d322eee7eb5f9a65383e3" name="a22fc95da8f5d322eee7eb5f9a65383e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22fc95da8f5d322eee7eb5f9a65383e3">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a22fc95da8f5d322eee7eb5f9a65383e3">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,7 +273,7 @@ Here is the call graph for this function:</div>
 </div>
 </div>
 <a id="a0f7a8fa8a1ee329e27e0bff03cae3a31" name="a0f7a8fa8a1ee329e27e0bff03cae3a31"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f7a8fa8a1ee329e27e0bff03cae3a31">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f7a8fa8a1ee329e27e0bff03cae3a31">&#9670;&#160;</a></span>SpinLockGuard() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -327,6 +369,64 @@ Here is the call graph for this function:</div>
 <div class="center"><img src="class_spin_lock_guard_a15aa9d4b3c4606646622f7f12b56f641_cgraph.png" border="0" usemap="#aclass_spin_lock_guard_a15aa9d4b3c4606646622f7f12b56f641_cgraph" loading="lazy" alt=""/></div>
 <!-- MAP 4 -->
 </div>
+
+</div>
+</div>
+<a id="ae50bdcd8e6138968f9f54052372810d0" name="ae50bdcd8e6138968f9f54052372810d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae50bdcd8e6138968f9f54052372810d0">&#9670;&#160;</a></span>owns_lock()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Lock&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a>&lt; Lock &gt;::owns_lock </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>True if this guard holds the lock and will release it. </p>
+
+</div>
+</div>
+<a id="a1ffb2994e0e021147d1c624246485813" name="a1ffb2994e0e021147d1c624246485813"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ffb2994e0e021147d1c624246485813">&#9670;&#160;</a></span>unlock()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Lock&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="class_spin_lock_guard.html">SpinLockGuard</a>&lt; Lock &gt;::unlock </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Release the lock early (guard becomes a no-op on destruction). </p>
 
 </div>
 </div>

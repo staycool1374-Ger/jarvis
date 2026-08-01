@@ -3,7 +3,7 @@
 set -euo pipefail
 
 KERNEL_ELF="build/kernel.elf"
-ISO="release/jarvis-rtos.iso"
+ISO="release/nexios-rtos.iso"
 
 rm -f build/gdb-panic-captured /tmp/qemu-serial.in /tmp/qemu-serial.out
 

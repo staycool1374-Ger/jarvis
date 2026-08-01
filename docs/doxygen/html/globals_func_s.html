@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -373,6 +373,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func_s
 <li>setup_fb_putpixel_in_bounds()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a7e4c27546e75ac6082ab243661b7eb8c">test_registry.gen.hpp</a></li>
 <li>setup_fb_putpixel_out_of_bounds()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a57acb35b53ef01e5931f69b1b90dd029">test_registry.gen.hpp</a></li>
 <li>setup_fb_scroll_up()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a7994081a255c1653f177397a79c53f7b">test_registry.gen.hpp</a></li>
+<li>setup_freelist_no_double_alloc_general_pool()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a497245044677ee8c9208c39660ccf7ad">test_registry.gen.hpp</a></li>
+<li>setup_freelist_pool_page_not_double_alloced()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ae15f4bd645d869b53cc7c64dee3c1a67">test_registry.gen.hpp</a></li>
+<li>setup_freelist_task_double_cleanup_safe()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a966297c29bc0b198420b35b377c0da3f">test_registry.gen.hpp</a></li>
 <li>setup_fstab_parses_valid_line()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ab59a08b8b54934dda0feb8f5ffe47b1f">test_registry.gen.hpp</a></li>
 <li>setup_fstab_parses_with_extra_spaces()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a967efc8a6041aba543303ffeddc5b0ea">test_registry.gen.hpp</a></li>
 <li>setup_fstab_rejects_missing_mountpoint()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a9c57c94704403776fff2558c22155b34">test_registry.gen.hpp</a></li>
@@ -418,10 +421,14 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func_s
 <li>setup_hal_timer_periodic()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#af76691583db0c4c56a4e5e30026dc729">test_registry.gen.hpp</a></li>
 <li>setup_hal_timer_remaining()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ac1a560fa098e0129ebfd30dc9d1c6519">test_registry.gen.hpp</a></li>
 <li>setup_harness_blocked_sender_wakes()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#acd0bdeea3ad0d7826692ffa7f9f6c136">test_registry.gen.hpp</a></li>
+<li>setup_harness_buffer_unmap_stale_safe()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#af2cfae828fa3ce1425540d9432497c98">test_registry.gen.hpp</a></li>
+<li>setup_harness_expected_panic_handling()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a20581150e29bedb2a6eb999ed10e8586">test_registry.gen.hpp</a></li>
+<li>setup_harness_free_list_stability()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a38247e6faf02acc3e448debd95cedcfd">test_registry.gen.hpp</a></li>
+<li>setup_harness_hhdm_user_page_bounds()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#af214ebc39086dc013eddc57999f39908">test_registry.gen.hpp</a></li>
 <li>setup_harness_leak_detection()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a6d4f5a9ee58dff8022a617e7add3723f">test_registry.gen.hpp</a></li>
 <li>setup_harness_multi_task_spawn_cleanup()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#adfaf59e0be2f087d514b4edac964f88b">test_registry.gen.hpp</a></li>
 <li>setup_harness_priority_ordered_wakeup()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a86cdd2e560d1bdeb5dec4f306e0fc04f">test_registry.gen.hpp</a></li>
-<li>setup_harness_snapshot_bitmap_consistency()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a23fa76723e5b1539f684625753195b6f">test_registry.gen.hpp</a></li>
+<li>setup_harness_snapshot_cycle_isolation()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a736b9a6a72c696b499462d317d2b452c">test_registry.gen.hpp</a></li>
 <li>setup_harness_snapshot_inrq_consistency()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ae75e867586e09b219fd7e79911d716ea">test_registry.gen.hpp</a></li>
 <li>setup_health_counters_monotonic()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ade88bd092e8e3d9949206def607dcfa8">test_registry.gen.hpp</a></li>
 <li>setup_health_metrics_fields()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a25d07dff2f9971b654c75bd1485fd2f7">test_registry.gen.hpp</a></li>
@@ -863,7 +870,6 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func_s
 <li>setup_sys_getrlimit_stack()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ad7bb982dfffd4ce9c1ac2095d4718e86">test_registry.gen.hpp</a></li>
 <li>setup_syscall_alarm_basic()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a1da06bca3518243f8fba696cd9bd663c">test_registry.gen.hpp</a></li>
 <li>setup_syscall_alarm_subsecond()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ae5ef0a8a70615145c96b7c7b24796b32">test_registry.gen.hpp</a></li>
-<li>setup_syscall_dispatch_exit_returns_zero()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ae67856ba5c3065ab2a0a19da20306305">test_registry.gen.hpp</a></li>
 <li>setup_syscall_dispatch_get_ticks()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a7781dc758c804ba75cc246cf076808fa">test_registry.gen.hpp</a></li>
 <li>setup_syscall_dispatch_getpid()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#afd35e6fad566d7d72faaa50e858c882e">test_registry.gen.hpp</a></li>
 <li>setup_syscall_dispatch_halt()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a2375c3d04df64780292ee79a51498042">test_registry.gen.hpp</a></li>
@@ -893,6 +899,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func_s
 <li>setup_task_reparent_preserves_resources()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a9c61aad3fff8c5b08e313440d8030c3c">test_registry.gen.hpp</a></li>
 <li>setup_task_zombie_state_cleanup()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#af9d35dc3c9871bdd42d7b350329e6f63">test_registry.gen.hpp</a></li>
 <li>setup_test_release_zombie_self()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a3556a80dbe74e5c046d17a09409b6ab0">test_registry.gen.hpp</a></li>
+<li>setup_test_tcb_write_log_catches_stray_write()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a4237adce0856778df7399ff1f898267c">test_registry.gen.hpp</a></li>
 <li>setup_test_zombie_starvation_watchdog()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#aaca0af265fb212ed0c5484f908cd2773">test_registry.gen.hpp</a></li>
 <li>setup_threaded_irq_create()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#aca56483317f4ac34d396647c8b91be02">test_registry.gen.hpp</a></li>
 <li>setup_threaded_irq_isr_entry()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a98eea0a498d2b3fb24581128e71d495a">test_registry.gen.hpp</a></li>
@@ -997,6 +1004,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func_s
 <li>setup_vmm_free_user_pages_fork_stack_scenario()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ac3884b87939c70b3a46275d303f0e1bf">test_registry.gen.hpp</a></li>
 <li>setup_vmm_free_user_pages_shared()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a091a4703a3b680b7068c0c15e4efc56f">test_registry.gen.hpp</a></li>
 <li>setup_vmm_free_user_pages_skips_kernel_owned_entries()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a238a5c53d81dffbfe9413da95f97e7a7">test_registry.gen.hpp</a></li>
+<li>setup_vmm_hhdm_access_consistency()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#ae1ba6de51b297bca08f85d54bc4859ff">test_registry.gen.hpp</a></li>
+<li>setup_vmm_huge_page_split_corner()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a28627e2366bb014c213c2347a3035b3c">test_registry.gen.hpp</a></li>
+<li>setup_vmm_huge_page_split_regression()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#afa9cc4e677e499df2a7725b6ee2fc8e6">test_registry.gen.hpp</a></li>
 <li>setup_vmm_map_already_mapped()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a061d9170913fb8baa1a4614d6e94896b">test_registry.gen.hpp</a></li>
 <li>setup_vmm_map_page_null_phys()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#aaee1bf0a8b6215a6044aee15e569b56b">test_registry.gen.hpp</a></li>
 <li>setup_vmm_unmap_already_unmapped()&#160;:&#160;<a class="el" href="test__registry_8gen_8hpp.html#a64fed3e89d2292d3df26310f38813dfa">test_registry.gen.hpp</a></li>

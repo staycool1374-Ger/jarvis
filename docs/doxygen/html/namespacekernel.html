@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,7 @@ Namespaces</h2></td></tr>
 <tr class="memitem:block" id="r_block"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1block.html">block</a></td></tr>
 <tr class="memitem:daemon" id="r_daemon"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1daemon.html">daemon</a></td></tr>
 <tr class="memitem:debug" id="r_debug"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1debug.html">debug</a></td></tr>
+<tr class="memitem:diag" id="r_diag"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1diag.html">diag</a></td></tr>
 <tr class="memitem:dma" id="r_dma"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1dma.html">dma</a></td></tr>
 <tr class="memitem:elf" id="r_elf"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1elf.html">elf</a></td></tr>
 <tr class="memitem:errors" id="r_errors"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1errors.html">errors</a></td></tr>
@@ -269,7 +270,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a058eeb27b3f54e789e5f17935940c161" id="r_a058eeb27b3f54e789e5f17935940c161"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a058eeb27b3f54e789e5f17935940c161">while</a> (<a class="el" href="#aec37532c2fb1a123d928e41e13297533">head</a>-&gt;pri_prev_ &amp;&amp;safe_tcb(<a class="el" href="#aec37532c2fb1a123d928e41e13297533">head</a>-&gt;pri_prev_)) <a class="el" href="#aec37532c2fb1a123d928e41e13297533">head</a></td></tr>
 <tr class="memitem:a1dae18e023980d3a17ebc183f9986bd3" id="r_a1dae18e023980d3a17ebc183f9986bd3"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a1dae18e023980d3a17ebc183f9986bd3">for</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> p=0;p&lt; num_priorities;++p)</td></tr>
 <tr class="memitem:abb9b26c8d76b814b9ed2a3c78bad290e" id="r_abb9b26c8d76b814b9ed2a3c78bad290e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abb9b26c8d76b814b9ed2a3c78bad290e">init_task_common</a> (TaskControlBlock &amp;tcb)</td></tr>
-<tr class="memdesc:abb9b26c8d76b814b9ed2a3c78bad290e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialises common fields of a newly allocated TaskControlBlock. Sets up fd table, cwd, IPC objects (MessageQueue, Notify, EventGroup), process-hierarchy links, signal handlers, and buffer pool state.  <br /></td></tr>
 <tr class="memitem:a71095cad3c5bc16f145256f5659bc4f5" id="r_a71095cad3c5bc16f145256f5659bc4f5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a71095cad3c5bc16f145256f5659bc4f5">atomic_fence</a> ()</td></tr>
 <tr class="memitem:a0a3c6d96045314e760c63011e9568f9b" id="r_a0a3c6d96045314e760c63011e9568f9b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a3c6d96045314e760c63011e9568f9b">atomic_acquire_fence</a> ()</td></tr>
 <tr class="memitem:a694a81cf88aaa57b10bbb8850672ef0c" id="r_a694a81cf88aaa57b10bbb8850672ef0c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a694a81cf88aaa57b10bbb8850672ef0c">atomic_release_fence</a> ()</td></tr>
@@ -1001,8 +1001,6 @@ template&lt;typename T&gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Initialises common fields of a newly allocated TaskControlBlock. Sets up fd table, cwd, IPC objects (MessageQueue, Notify, EventGroup), process-hierarchy links, signal handlers, and buffer pool state. </p>
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">

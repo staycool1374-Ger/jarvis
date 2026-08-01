@@ -2,7 +2,7 @@
 set timeout 180
 
 set kernel_elf "build/kernel.elf"
-set iso "release/jarvis-rtos.iso"
+set iso "release/nexios-rtos.iso"
 exec rm -f build/gdb-panic-captured
 
 # Start QEMU

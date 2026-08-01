@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 /// @brief Phase 7 (P7a) — Deadline-miss handler ACTION dispatch coverage.
 ///
 ///        The handler action is selected at COMPILE TIME by
-///        CONFIG_DEADLINE_ACTION (jarvis_config.h). To verify each action
+///        CONFIG_DEADLINE_ACTION (nexios_config.h). To verify each action
 ///        (LOG_ONLY / DEMOTE / KILL / NOTIFY_MONITOR) this file is compiled
 ///        once per action under the config matrix (tools/deadline_matrix.sh).
 ///        Exactly one test is registered per build — the one matching the

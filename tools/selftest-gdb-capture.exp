@@ -2,7 +2,7 @@
 set timeout 150
 match_max 500000
 
-set iso "release/jarvis-rtos.iso"
+set iso "release/nexios-rtos.iso"
 set kernel_elf "build/kernel.elf"
 set gdb "x86_64-elf-gdb"
 set uefi "/opt/homebrew/share/qemu/edk2-x86_64-code.fd"

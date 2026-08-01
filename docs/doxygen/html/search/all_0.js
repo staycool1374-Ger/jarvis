@@ -46,7 +46,8 @@ var searchData=
   ['_5fis_5freference_5fv_43',['_is_reference_v',['../namespacekernel.html#a7fd1aa46e37cee18841f905e8fa47ea2',1,'kernel']]],
   ['_5fis_5freference_5fv_3c_20t_20_26_20_3e_44',['_is_reference_v&lt; T &amp; &gt;',['../namespacekernel.html#a863e6a5c2d82cdc71d146391ee86521c',1,'kernel']]],
   ['_5fis_5freference_5fv_3c_20t_20_26_26_20_3e_45',['_is_reference_v&lt; T &amp;&amp; &gt;',['../namespacekernel.html#a74cc18daff81587aac344bfc7b70f645',1,'kernel']]],
-  ['_5ftext_5fend_46',['_text_end',['../namespacekernel_1_1integrity.html#a0912016436aa515459dee605cde9079a',1,'kernel::integrity']]],
-  ['_5ftext_5fstart_47',['_text_start',['../namespacekernel_1_1integrity.html#a656a8b22401d14c937c2a6354ca43fea',1,'kernel::integrity']]],
-  ['_5funwind_5fresume_48',['_Unwind_Resume',['../cxxabi_8cpp.html#a5f67d1acf0b3b73d101a562d2e9f659b',1,'cxxabi.cpp']]]
+  ['_5freserved_46',['_reserved',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a16b2854d620087f0dceaa84bdf5fdcb6',1,'kernel::test::PtPoolSnapshot']]],
+  ['_5ftext_5fend_47',['_text_end',['../namespacekernel_1_1integrity.html#a0912016436aa515459dee605cde9079a',1,'kernel::integrity']]],
+  ['_5ftext_5fstart_48',['_text_start',['../namespacekernel_1_1integrity.html#a656a8b22401d14c937c2a6354ca43fea',1,'kernel::integrity']]],
+  ['_5funwind_5fresume_49',['_Unwind_Resume',['../cxxabi_8cpp.html#a5f67d1acf0b3b73d101a562d2e9f659b',1,'cxxabi.cpp']]]
 ];

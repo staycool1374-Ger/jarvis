@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <kernel/task/priority_map.hpp>
 #include <kernel/task/task_fwd.hpp>
 

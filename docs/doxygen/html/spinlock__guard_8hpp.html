@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -118,20 +118,60 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('spinlock__guar
   <div class="headertitle"><div class="title">spinlock_guard.hpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>RAII lock guard template for any lock with lock()/unlock().  
-<a href="#details">More...</a></p>
-<div class="textblock"><div class="dynheader">
+<div class="textblock"><code>#include &lt;<a class="el" href="types_8hpp_source.html">types.hpp</a>&gt;</code><br />
+</div><div class="textblock"><div class="dynheader">
+Include dependency graph for spinlock_guard.hpp:</div>
+<div class="dyncontent">
+<div class="center"><img src="spinlock__guard_8hpp__incl.png" border="0" usemap="#asrc_2kernel_2sync_2spinlock__guard_8hpp" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
+</div><div class="textblock"><div class="dynheader">
 This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="spinlock__guard_8hpp__dep__incl.png" border="0" usemap="#asrc_2kernel_2sync_2spinlock__guard_8hppdep" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 1 -->
 </div>
 </div>
 <p><a href="spinlock__guard_8hpp_source.html">Go to the source code of this file.</a></p>
-<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>RAII lock guard template for any lock with lock()/unlock(). </p>
-</div></div><!-- contents -->
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:adopt_5Flock_5Ft" id="r_adopt_5Flock_5Ft"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structadopt__lock__t.html">adopt_lock_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tag type for <a class="el" href="class_spin_lock_guard.html" title="RAII lock guard for any lock type with lock()/unlock() methods.">SpinLockGuard</a> adopt-lock constructor.  <a href="structadopt__lock__t.html#details">More...</a><br /></td></tr>
+<tr class="memitem:SpinLockGuard_3C_20Lock_20_3E" id="r_SpinLockGuard_3C_20Lock_20_3E"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="class_spin_lock_guard.html">SpinLockGuard&lt; Lock &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAII lock guard for any lock type with lock()/unlock() methods.  <a href="class_spin_lock_guard.html#details">More...</a><br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:ae87541999d37878249d8fbb062bd6017" id="r_ae87541999d37878249d8fbb062bd6017"><td class="memItemLeft">constexpr <a class="el" href="structadopt__lock__t.html">adopt_lock_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ae87541999d37878249d8fbb062bd6017">adopt_lock</a> {}</td></tr>
+<tr class="memdesc:ae87541999d37878249d8fbb062bd6017"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tag value indicating the lock is already held by the caller.  <br /></td></tr>
+</table>
+<a name="doc-var-members" id="doc-var-members"></a><h2 id="header-doc-var-members" class="groupheader">Variable Documentation</h2>
+<a id="ae87541999d37878249d8fbb062bd6017" name="ae87541999d37878249d8fbb062bd6017"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae87541999d37878249d8fbb062bd6017">&#9670;&#160;</a></span>adopt_lock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structadopt__lock__t.html">adopt_lock_t</a> adopt_lock {}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Tag value indicating the lock is already held by the caller. </p>
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>

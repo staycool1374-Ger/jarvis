@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -48,4 +48,4 @@ void* operator new(unsigned long size, void* ptr) noexcept;
 void* operator new[](unsigned long size, void* ptr) noexcept;
 
 /// @brief Pull in the central configuration header.
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>

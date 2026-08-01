@@ -1,7 +1,7 @@
 var classkernel_1_1_all_tasks_registry =
 [
     [ "AllTasksRegistry", "classkernel_1_1_all_tasks_registry.html#adde419447acdc31d8c26e174cd7591aa", null ],
-    [ "append", "classkernel_1_1_all_tasks_registry.html#a31abf6c80218507069adfa546c4bb93a", null ],
+    [ "append", "classkernel_1_1_all_tasks_registry.html#a199241391536429b4ee4947ded41d063", null ],
     [ "capture", "classkernel_1_1_all_tasks_registry.html#ac5bb897da77af76f4c557cfb94781ab4", null ],
     [ "clear", "classkernel_1_1_all_tasks_registry.html#a5db8372586fad566335b66db035081ba", null ],
     [ "empty", "classkernel_1_1_all_tasks_registry.html#a4947d9763dd3d94f251208ccb043bd00", null ],
@@ -13,7 +13,8 @@ var classkernel_1_1_all_tasks_registry =
     [ "next", "classkernel_1_1_all_tasks_registry.html#a1be43df29b2d559a802215ff818d0ca8", null ],
     [ "next_ptr", "classkernel_1_1_all_tasks_registry.html#a6d8ea5bceb1ebe20c3a30c1f420a44c9", null ],
     [ "rebuild", "classkernel_1_1_all_tasks_registry.html#ac43f5224ce9025352dde2504b4a16f15", null ],
-    [ "remove", "classkernel_1_1_all_tasks_registry.html#a9bb914a469cdb0fceecc1b64a894e200", null ],
+    [ "remove", "classkernel_1_1_all_tasks_registry.html#add8c947d63359ff7e6d66eb8d09fc149", null ],
+    [ "remove_unsafe", "classkernel_1_1_all_tasks_registry.html#a51d3311f9146656152dcc24e168220ae", null ],
     [ "restore", "classkernel_1_1_all_tasks_registry.html#a3632ddecb4543600458bb4c95eb7794e", null ],
     [ "size", "classkernel_1_1_all_tasks_registry.html#a7fbb9448f467f03dc58ab96aa96fe675", null ]
 ];

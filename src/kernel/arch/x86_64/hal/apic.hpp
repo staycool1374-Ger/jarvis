@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.hpp>
-#include <kernel/jarvis_config.h>
+#include <kernel/nexios_config.h>
 #include <kernel/arch/msr.hpp>
 
 namespace arch {

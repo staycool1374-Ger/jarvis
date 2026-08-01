@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -43,7 +43,7 @@ const char* Version::full_string() {
         while (*s && pos < 63) full_buf_[pos++] = *s++;
     };
 
-    append("Jarvis RTOS ");
+    append("NexIOS RTOS ");
     append(KERNEL_VERSION_STRING);
     append(" (");
     append(build_date_);

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('gic_8hpp_sourc
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
 <div class="foldopen" id="foldopen00061" data-start="{" data-end="}">
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno"><a class="line" href="namespacearch.html#abe825a3f67343b75c57efa83cb71feec">   61</a></span><span class="keyword">inline</span> <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> <a class="code hl_function" href="namespacearch.html#abe825a3f67343b75c57efa83cb71feec">gic_v3_read_iar</a>() {</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> intid;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> intid = 0;</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    <span class="keyword">asm</span> <span class="keyword">volatile</span>(<span class="stringliteral">&quot;mrs %0, ICC_IAR1_EL1&quot;</span> : <span class="stringliteral">&quot;=r&quot;</span>(intid));</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <span class="keywordflow">return</span> intid;</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>}</div>
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('gic_8hpp_sourc
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
 <div class="foldopen" id="foldopen00075" data-start="{" data-end="}">
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="namespacearch.html#adab534d45e1d7dff71a2a408ee1bdb7e">   75</a></span><span class="keyword">inline</span> <span class="keywordtype">void</span> <a class="code hl_function" href="namespacearch.html#adab534d45e1d7dff71a2a408ee1bdb7e">gic_v3_set_sre</a>(<span class="keywordtype">bool</span> enable) {</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sre;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_typedef" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> sre = 0;</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keyword">asm</span> <span class="keyword">volatile</span>(<span class="stringliteral">&quot;mrs %0, ICC_SRE_EL1&quot;</span> : <span class="stringliteral">&quot;=r&quot;</span>(sre));</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keywordflow">if</span> (enable) sre |= 1;</div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordflow">else</span> sre &amp;= ~1UL;</div>

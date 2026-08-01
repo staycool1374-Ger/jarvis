@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -119,7 +119,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('irq__guard_8hp
 </div><!--header-->
 <div class="contents">
 <a href="irq__guard_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
-<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="preprocessor">#include &lt;<a class="code" href="hal_2irq__guard_8hpp.html">kernel/arch/hal/irq_guard.hpp</a>&gt;</span></div>
+<div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="comment">// DEPRECATED: Use &lt;kernel/arch/hal/irq_guard.hpp&gt; instead.</span></div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;<a class="code" href="hal_2irq__guard_8hpp.html">kernel/arch/hal/irq_guard.hpp</a>&gt;</span></div>
 <div class="ttc" id="ahal_2irq__guard_8hpp_html"><div class="ttname"><a href="hal_2irq__guard_8hpp.html">irq_guard.hpp</a></div><div class="ttdoc">RAII interrupt disable — disable IRQs on construction, restore on destruction.</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->

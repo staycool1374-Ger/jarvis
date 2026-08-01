@@ -8,7 +8,7 @@ machine LoadPlatformDescription @tools/renode/jarvis-x86_64.repl
 
 showAnalyzer uart0
 
-$kernel?=@debug/jarvis-rtos.iso
+$kernel?=@debug/nexios-rtos.iso
 $bios?=@https://dl.antmicro.com/projects/renode/virt_x86--seabios.bin-s_262144-bf6c73a297b2764eb5f5bbe34297987c16648718
 
 macro reset

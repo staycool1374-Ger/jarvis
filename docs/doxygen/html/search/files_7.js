@@ -26,6 +26,7 @@ var searchData=
   ['irq_5fguard_2ehpp_23',['irq_guard.hpp',['../hal_2irq__guard_8hpp.html',1,'(Global Namespace)'],['../irq__guard_8hpp.html',1,'(Global Namespace)']]],
   ['irq_5flatency_5fhistogram_2ecpp_24',['irq_latency_histogram.cpp',['../irq__latency__histogram_8cpp.html',1,'']]],
   ['irq_5flatency_5fhistogram_2ehpp_25',['irq_latency_histogram.hpp',['../hal_2irq__latency__histogram_8hpp.html',1,'(Global Namespace)'],['../irq__latency__histogram_8hpp.html',1,'(Global Namespace)']]],
-  ['irq_5fthread_2ecpp_26',['irq_thread.cpp',['../irq__thread_8cpp.html',1,'']]],
-  ['irq_5fthread_2ehpp_27',['irq_thread.hpp',['../arch_2irq__thread_8hpp.html',1,'(Global Namespace)'],['../irq__thread_8hpp.html',1,'(Global Namespace)']]]
+  ['irq_5fspinlock_5fguard_2ehpp_26',['irq_spinlock_guard.hpp',['../irq__spinlock__guard_8hpp.html',1,'']]],
+  ['irq_5fthread_2ecpp_27',['irq_thread.cpp',['../irq__thread_8cpp.html',1,'']]],
+  ['irq_5fthread_2ehpp_28',['irq_thread.hpp',['../arch_2irq__thread_8hpp.html',1,'(Global Namespace)'],['../irq__thread_8hpp.html',1,'(Global Namespace)']]]
 ];

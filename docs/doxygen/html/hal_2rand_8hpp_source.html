@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('hal_2rand_8hpp
 <a href="hal_2rand_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * NexIOS RTOS — Development Roadmap / Kernel Core</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('hal_2rand_8hpp
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;<a class="code" href="types_8hpp.html">types.hpp</a>&gt;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;<a class="code" href="jarvis__config_8h.html">kernel/jarvis_config.h</a>&gt;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;<a class="code" href="nexios__config_8h.html">kernel/nexios_config.h</a>&gt;</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span></div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#if defined(CONFIG_ARCH_X86_64)</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &lt;<a class="code" href="x86__64_2hal_2rand__impl_8hpp.html">kernel/arch/x86_64/hal/rand_impl.hpp</a>&gt;</span></div>
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('hal_2rand_8hpp
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="preprocessor">#error &quot;HAL: no rand implementation for this architecture&quot;</span></div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aaarch64_2hal_2rand__impl_8hpp_html"><div class="ttname"><a href="aarch64_2hal_2rand__impl_8hpp.html">rand_impl.hpp</a></div><div class="ttdoc">AArch64 random number generation via ARMv8.5 RNG system registers.</div></div>
-<div class="ttc" id="ajarvis__config_8h_html"><div class="ttname"><a href="jarvis__config_8h.html">jarvis_config.h</a></div><div class="ttdoc">Central compile-time configuration for Jarvis RTOS. All tunables currently scattered as constexpr in ...</div></div>
+<div class="ttc" id="anexios__config_8h_html"><div class="ttname"><a href="nexios__config_8h.html">nexios_config.h</a></div><div class="ttdoc">Central compile-time configuration for NexIOS RTOS. All tunables currently scattered as constexpr in ...</div></div>
 <div class="ttc" id="ariscv64_2hal_2rand__impl_8hpp_html"><div class="ttname"><a href="riscv64_2hal_2rand__impl_8hpp.html">rand_impl.hpp</a></div><div class="ttdoc">RISC-V64 hardware random-number stubs — no x86 RDRAND/RDSEED equivalents; always return false.</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
 <div class="ttc" id="ax86__64_2hal_2rand__impl_8hpp_html"><div class="ttname"><a href="x86__64_2hal_2rand__impl_8hpp.html">rand_impl.hpp</a></div><div class="ttdoc">x86_64 RDRAND and RDSEED instructions — hardware random number generation.</div></div>

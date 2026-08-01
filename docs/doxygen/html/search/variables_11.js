@@ -4,7 +4,7 @@ var searchData=
   ['read_5fpos_1',['read_pos',['../structkernel_1_1vfs_1_1_pipe_buffer.html#a46cf2dc3fd037402dc96616bd20aa754',1,'kernel::vfs::PipeBuffer']]],
   ['ready_2',['ready',['../struct_throughput_ctx.html#a6f535f92491f10a72591ce01ee318299',1,'ThroughputCtx']]],
   ['receiver_5fid_3',['receiver_id',['../struct_send_sync_ctx.html#a9c642bae94cb22c61fefd44f97b93c67',1,'SendSyncCtx']]],
-  ['refcount_4',['refcount',['../structkernel_1_1vfs_1_1_pipe_buffer.html#ae274141154b74ff3ee14c09b28cad776',1,'kernel::vfs::PipeBuffer']]],
+  ['refcount_4',['refcount',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a39c0490bdc2bee8b6daa70f032f240a5',1,'kernel::test::PtPoolSnapshot::refcount'],['../structkernel_1_1vfs_1_1_pipe_buffer.html#ae274141154b74ff3ee14c09b28cad776',1,'kernel::vfs::PipeBuffer::refcount']]],
   ['register_5fall_5',['register_all',['../structkernel_1_1test_1_1_test_class.html#ac4c2bc1cbab77cc8005a1f0f732e2ed7',1,'kernel::test::TestClass']]],
   ['release_6',['release',['../structkernel_1_1_utsname.html#aba8fc0c4d510122bca1f9faf63ece14c',1,'kernel::Utsname::release'],['../struct_utsname.html#a14d02215152c354447ef49255e9e1e78',1,'Utsname::release'],['../structutsname.html#a040b309a89b5548eb5616a4618cfc230',1,'utsname::release']]],
   ['reserved_7',['reserved',['../structkernel_1_1_signal_frame.html#ae26550d4173bfc7b7f667e1d7546b797',1,'kernel::SignalFrame']]],

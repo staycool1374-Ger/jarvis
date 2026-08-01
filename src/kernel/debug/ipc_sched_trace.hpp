@@ -3,7 +3,7 @@
 ///        switch self-deadlock (H2) analysis in the scheduler/IPC subsystem.
 ///
 /// Everything here is gated behind CONFIG_DEBUG_IPC_SCHED.  Flip the #define
-/// in kernel/jarvis_config.h (or uncomment below) to re-enable the whole proof
+/// in kernel/nexios_config.h (or uncomment below) to re-enable the whole proof
 /// kit for future analysis iterations without re-deriving the instrumentation.
 ///
 /// DEBUGGING ONLY — MUST be deactivated (undefined) for the release procedure.

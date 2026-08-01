@@ -13,9 +13,16 @@ var annotated_dup =
       [ "InitrdFile", "structinitrd_1_1_initrd_file.html", "structinitrd_1_1_initrd_file" ]
     ] ],
     [ "kernel", "namespacekernel.html", [
+      [ "diag", "namespacekernel_1_1diag.html", [
+        [ "TcbWriteLog", "structkernel_1_1diag_1_1_tcb_write_log.html", "structkernel_1_1diag_1_1_tcb_write_log" ]
+      ] ],
+      [ "sync", "namespacekernel_1_1sync.html", [
+        [ "IrqSpinLockGuard", "classkernel_1_1sync_1_1_irq_spin_lock_guard.html", "classkernel_1_1sync_1_1_irq_spin_lock_guard" ]
+      ] ],
       [ "test", "namespacekernel_1_1test.html", [
         [ "ClassSection", "structkernel_1_1test_1_1_class_section.html", "structkernel_1_1test_1_1_class_section" ],
         [ "ExpectedCounts", "structkernel_1_1test_1_1_expected_counts.html", "structkernel_1_1test_1_1_expected_counts" ],
+        [ "PtPoolSnapshot", "structkernel_1_1test_1_1_pt_pool_snapshot.html", "structkernel_1_1test_1_1_pt_pool_snapshot" ],
         [ "Registry", "classkernel_1_1test_1_1_registry.html", null ],
         [ "ResourceCounters", "structkernel_1_1test_1_1_resource_counters.html", "structkernel_1_1test_1_1_resource_counters" ],
         [ "ResourceTracker", "classkernel_1_1test_1_1_resource_tracker.html", "classkernel_1_1test_1_1_resource_tracker" ],
@@ -59,6 +66,7 @@ var annotated_dup =
       [ "Shell", "classservice_1_1_shell.html", "classservice_1_1_shell" ],
       [ "Terminal", "classservice_1_1_terminal.html", null ]
     ] ],
+    [ "adopt_lock_t", "structadopt__lock__t.html", null ],
     [ "BenchResult", "struct_bench_result.html", "struct_bench_result" ],
     [ "DefaultDeleter", "struct_default_deleter.html", "struct_default_deleter" ],
     [ "EarlyInitStub", "struct_early_init_stub.html", "struct_early_init_stub" ],
@@ -81,6 +89,7 @@ var annotated_dup =
     [ "ScopeGuard", "class_scope_guard.html", "class_scope_guard" ],
     [ "SendSyncCtx", "struct_send_sync_ctx.html", "struct_send_sync_ctx" ],
     [ "SimpleTaskDeleter", "struct_simple_task_deleter.html", "struct_simple_task_deleter" ],
+    [ "SpinLockGuard", "class_spin_lock_guard.html", "class_spin_lock_guard" ],
     [ "stat", "structstat.html", "structstat" ],
     [ "TaskDeleter", "struct_task_deleter.html", "struct_task_deleter" ],
     [ "TestMeta", "struct_test_meta.html", "struct_test_meta" ],

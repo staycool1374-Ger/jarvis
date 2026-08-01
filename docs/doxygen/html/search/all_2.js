@@ -1,12 +1,12 @@
 var searchData=
 [
   ['b_0',['b',['../struct_test_struct.html#a0dd44e11653433f20f510340766a5b18',1,'TestStruct']]],
-  ['base_1',['base',['../structkernel_1_1vfs_1_1_mem_info_vnode.html#a7e4e61487b979c8ae7600466b978d4f0',1,'kernel::vfs::MemInfoVnode::base'],['../structkernel_1_1vfs_1_1_pci_vnode.html#acda6b96c7342eff41ebed8b28271dfbb',1,'kernel::vfs::PciVnode::base'],['../structkernel_1_1vfs_1_1_pid_stat_vnode.html#a4cb03a160a2f820ea82cb8fdb33d3187',1,'kernel::vfs::PidStatVnode::base'],['../structkernel_1_1vfs_1_1_pid_dir_vnode.html#a3ff4df06403fc4ca53c75fc508001fd4',1,'kernel::vfs::PidDirVnode::base']]],
+  ['base_1',['base',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a40ffeb78e2ad81d7859d1886d721021b',1,'kernel::test::PtPoolSnapshot::base'],['../structkernel_1_1vfs_1_1_mem_info_vnode.html#a7e4e61487b979c8ae7600466b978d4f0',1,'kernel::vfs::MemInfoVnode::base'],['../structkernel_1_1vfs_1_1_pci_vnode.html#acda6b96c7342eff41ebed8b28271dfbb',1,'kernel::vfs::PciVnode::base'],['../structkernel_1_1vfs_1_1_pid_stat_vnode.html#a4cb03a160a2f820ea82cb8fdb33d3187',1,'kernel::vfs::PidStatVnode::base'],['../structkernel_1_1vfs_1_1_pid_dir_vnode.html#a3ff4df06403fc4ca53c75fc508001fd4',1,'kernel::vfs::PidDirVnode::base']]],
   ['bench_5fcpu_2',['bench_cpu',['../namespaceprograms.html#a7853d1b851a49c614301a9c00d8cf1c3',1,'programs']]],
   ['bench_5firq_5flatency_2ecpp_3',['bench_irq_latency.cpp',['../bench__irq__latency_8cpp.html',1,'']]],
   ['bench_5fsyscall_5flatency_2ecpp_4',['bench_syscall_latency.cpp',['../bench__syscall__latency_8cpp.html',1,'']]],
   ['benchresult_5',['BenchResult',['../struct_bench_result.html',1,'']]],
-  ['bitmap_6',['bitmap',['../classkernel_1_1_ready_queue_manager.html#acd3ec729284f5c1396d0889fa4bfe9d3',1,'kernel::ReadyQueueManager']]],
+  ['bitmap_6',['bitmap',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#ab52ab855556a9a345492482caedcec26',1,'kernel::test::PtPoolSnapshot::bitmap'],['../classkernel_1_1_ready_queue_manager.html#acd3ec729284f5c1396d0889fa4bfe9d3',1,'kernel::ReadyQueueManager::bitmap()']]],
   ['bitmap_5fhi_7',['bitmap_hi',['../structkernel_1_1_ready_queue_p_o_d.html#a75d8c520894d7d08359a7f8960953ff9',1,'kernel::ReadyQueuePOD']]],
   ['bitmap_5flo_8',['bitmap_lo',['../structkernel_1_1_ready_queue_p_o_d.html#a5d33176a7f455e6dced403448ecba251',1,'kernel::ReadyQueuePOD']]],
   ['bits_2ehpp_9',['bits.hpp',['../bits_8hpp.html',1,'']]],

@@ -1,5 +1,5 @@
 /*
- * Jarvis RTOS — Development Roadmap / Kernel Core
+ * NexIOS RTOS — Development Roadmap / Kernel Core
  * Copyright (C) 2026 Arnold Hasshold
  *
  * This program is free software: you can redistribute it and/or modify
@@ -44,9 +44,9 @@ void Terminal::init() {
     instance_->line_pos_ = 0;
 
 #ifdef CONFIG_DEBUG
-    draw_status_bar("Jarvis RTOS " KERNEL_VERSION_STRING " [DEBUG]", "");
+    draw_status_bar("NexIOS RTOS " KERNEL_VERSION_STRING " [DEBUG]", "");
 #else
-    draw_status_bar("Jarvis RTOS " KERNEL_VERSION_STRING " [RELEASE]", "");
+    draw_status_bar("NexIOS RTOS " KERNEL_VERSION_STRING " [RELEASE]", "");
 #endif
 }
 
@@ -315,7 +315,7 @@ void Terminal::show_splash() {
     uint32_t fb_h = Framebuffer::height();
     uint32_t total_rows = fb_h / FONT_HEIGHT;
 
-    const char* title = "Jarvis RTOS";
+    const char* title = "NexIOS RTOS";
     size_t title_len = 0;
     for (const char* p = title; *p; ++p) ++title_len;
     uint32_t title_x = (fb_w - title_len * FONT_WIDTH) / 2;

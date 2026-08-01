@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Jarvis-RTOS-logo.png" alt="Jarvis RTOS Logo" width="600"/>
+  <img src="nexios-rtos-logo.png" alt="NexIOS RTOS Logo" width="600"/>
 </p>
 
-<h1 align="center">Jarvis RTOS</h1>
+<h1 align="center">NexIOS RTOS</h1>
 <p align="center">
   <em>A deterministic, safety-critical real-time operating system built from scratch in freestanding C++20.</em>
 </p>
@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
   <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
   <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
-  <img src="https://img.shields.io/badge/tests-665%20passing-2ea44f?style=flat-square" alt="665 Tests Passing"/>
+  <img src="https://img.shields.io/badge/tests-881%20passing-2ea44f?style=flat-square" alt="881 Tests Passing"/>
   <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 
@@ -20,11 +20,38 @@
 
 ## Overview
 
-Jarvis RTOS is an independent, ground-up implementation of a real-time operating system targeting **ISO 26262 ASIL D** safety standards. It is built exclusively in **freestanding C++20** — no libc, no libstdc++, no runtime — delivering zero-overhead object-oriented kernel design, compile-time type safety, and deterministic execution from the first instruction.
+NexIOS RTOS is an independent, ground-up implementation of a real-time operating system targeting **ISO 26262 ASIL D** safety standards. It is built exclusively in **freestanding C++20** — no libc, no libstdc++, no runtime — delivering zero-overhead object-oriented kernel design, compile-time type safety, and deterministic execution from the first instruction.
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.3.5** — Scheduler deadlock fix, test infrastructure robustness, CI split verification.
+Current version: **v0.3.6** — Scheduler/IPC/Sync audit remediation, O(1) scheduler hardening, MemPool bitmap fixes, NexIOS rebrand.
+
+---
+
+## Why NexIOS
+
+NexIOS is engineered so that **any program you can compile — a driver, a filesystem, a device server, a whole application — runs as a dedicated user-task under our control**: scheduled deterministically, isolated in its own address space, and sandboxed behind capability gates. It is a hard-real-time kernel you can actually certify.
+
+Every design decision is made to be *structural*: constraints are enforced at compile time, determinism is non-negotiable, and nothing in the kernel ever allocates or blocks when it shouldn't.
+
+---
+
+## Recent Development
+
+The last few release cycles turned a monolithic experiment into a hardened, auditable real-time kernel. Here is what the roadmap and the commit history show — the engineering steps that matter:
+
+1. **A true from-scratch freestanding C++20 kernel** — no libc, no libstdc++, no runtime. Every scheduler data structure, VFS vnode operation, and page-table walk is pure freestanding C++ with `constexpr`-enforced layout constants.
+2. **An O(1) priority-bitmap scheduler** with rate-monotonic dispatch, priority inheritance, and a priority ceiling protocol — the baseline for hard-real-time guarantees, not an afterthought.
+3. **O(1) everywhere on the hot path.** The ready queue, the priority buckets, the id-table probes, and free-list allocation are all constant-time — no hidden O(n) or O(n²) scans left in the scheduler.
+4. **Zero-alloc by design.** IPC `MessageQueue`/`Notify`/`EventGroup` are embedded in the TCB; a pre-allocated `BufferPool` and a deterministic slab `MemPool` replace every `new`/`delete` in the kernel.
+5. **Fork with eager page-table deep-copy** and a private kernel-stack window with guard pages — per-process isolation that is real, not nominal.
+6. **Per-priority kernel-stack sizing** with guard pages and #PF detection — stack overflow becomes a caught event, not silent corruption.
+7. **Snapshot-based test isolation** powering an **881-test suite** that rewinds the entire kernel (PMM, MemPool, page-table pool, ready queue) between tests — a level of determinism most kernels never reach.
+8. **A hardened user/kernel trust boundary**: every Ring-3 pointer crossing the `int 0x82` gate is validated (`CheckedPtr`), and the syscall surface was audited against an ASIL-D attack model.
+9. **Concurrency that is RAII-first and audit-driven.** `IrqGuard` makes check-then-act races structurally impossible; the scheduler/IPC/memory subsystems went through a full remediation audit.
+10. **Multi-architecture from day one** — x86_64, aarch64, and RISC-V64 HALs with Renode CI — so the real-time core is portable, not welded to one ISA.
+
+**The goal is simple:** NexIOS is being built so that any program — your program — can run as the dedicated user-task it was designed for, under a scheduler and memory model you can trust in a safety-critical context.
 
 ---
 
@@ -65,7 +92,7 @@ This eliminates an entire class of check-then-act races because the guard cannot
 
 ### Microkernel Paradigm Shift (In Progress)
 
-Jarvis is intentionally transitioning from a monolithic service layer to a capability-based microkernel: a deliberate architectural migration planned over Phases 3–8 of the roadmap.
+NexIOS is intentionally transitioning from a monolithic service layer to a capability-based microkernel: a deliberate architectural migration planned over Phases 3–8 of the roadmap.
 
 - **Phase 7 (v0.7.x):** VFS (`vfsd`) and block I/O (`iocd`) are externalised to Ring 3 servers. Filesystem drivers (FAT32, tmpfs) run as isolated userspace processes behind an IPC gateway. No kernel code holds a mount table reference.
 - **Phase 8 (v0.8.x):** The kernel is reduced to scheduler + IPC + page-table manager + interrupt routing. The Shell, init (PID 1), VFS, and all device drivers run as Ring 3 capability-bearing servers. `SYS_CAP_GRANT` / `SYS_CAP_REVOKE` gate every cross-server access — no server can touch another server's MMIO region or memory without explicit capability delegation.
@@ -134,14 +161,14 @@ sudo apt install build-essential git wget xorriso dosfstools \
 ```bash
 git clone <repo-url>
 cd os
-make debug          # Debug build with 665-test suite
+make debug          # Debug build with 881-test suite
 make qemu-iso       # Launch in QEMU with serial console
 make release        # Optimised release build (no tests)
 
 # Testing targets (QEMU)
-make execute-test x86 debug selftest  # Safe class (~96 tests, CI gate)
-make execute-test x86 debug all-1    # First half (745 tests)
-make execute-test x86 debug all-2    # Second half (132 tests)
+make execute-test x86 debug selftest  # Safe class (CI gate)
+make execute-test x86 debug all-1    # First half
+make execute-test x86 debug all-2    # Second half
 make execute-test x86 debug <class>  # Specific test class
 
 # Renode simulation (multi-arch)
@@ -169,7 +196,7 @@ make renode-test          # Renode CI validation
 
 ## Call for Contributions
 
-Jarvis RTOS is an architectural project first and a feature project second. We are seeking contributions from engineers who value **structural correctness over velocity**:
+NexIOS RTOS is an architectural project first and a feature project second. We are seeking contributions from engineers who value **structural correctness over velocity**:
 
 - **Lock-free data structures** for ISR→task handoff (SPSC ring buffers, hazard pointers)
 - **C++20 memory model experts** for formalising the kernel's atomic ordering guarantees (the scheduler uses `volatile` globals today — a migration path to `std::atomic` with `memory_order` is a high-priority engineering goal)
@@ -188,4 +215,4 @@ If this aligns with your engineering philosophy, open an issue or pull request. 
 
 ## License
 
-Jarvis RTOS is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License**, either version 3 of the License, or (at your option) any later version. See [`LICENSE.txt`](LICENSE.txt) for the full text.
+NexIOS RTOS is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License**, either version 3 of the License, or (at your option) any later version. See [`LICENSE.txt`](LICENSE.txt) for the full text.

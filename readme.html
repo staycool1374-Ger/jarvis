@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc 3.10" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Jarvis RTOS</title>
+  <title>NexIOS RTOS</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -97,10 +97,10 @@
 </head>
 <body>
 <p align="center">
-<img src="Jarvis-RTOS-logo.png" alt="Jarvis RTOS Logo" width="600"/>
+<img src="nexios-rtos-logo.png" alt="NexIOS RTOS Logo" width="600"/>
 </p>
 <h1 align="center">
-Jarvis RTOS
+NexIOS RTOS
 </h1>
 <p align="center">
 <em>A deterministic, safety-critical real-time operating system built
@@ -111,12 +111,12 @@ from scratch in freestanding C++20.</em>
 <img src="https://img.shields.io/badge/arch-x86__64-1f425f?style=flat-square" alt="x86_64"/>
 <img src="https://img.shields.io/badge/scheduling-hard%20real--time-critical?style=flat-square&logo=clockifier" alt="Hard Real-Time"/>
 <img src="https://img.shields.io/badge/concurrency-RAII%20guarded-2ea44f?style=flat-square" alt="RAII Concurrency"/>
-<img src="https://img.shields.io/badge/tests-675%20passing-2ea44f?style=flat-square" alt="675 Tests Passing"/>
+<img src="https://img.shields.io/badge/tests-881%20passing-2ea44f?style=flat-square" alt="881 Tests Passing"/>
 <img src="https://img.shields.io/badge/license-GPLv3-blue?style=flat-square" alt="GNU General Public License v3"/>
 </p>
 <hr />
 <h2 id="overview">Overview</h2>
-<p>Jarvis RTOS is an independent, ground-up implementation of a
+<p>NexIOS RTOS is an independent, ground-up implementation of a
 real-time operating system targeting <strong>ISO 26262 ASIL D</strong>
 safety standards. It is built exclusively in <strong>freestanding
 C++20</strong> — no libc, no libstdc++, no runtime — delivering
@@ -127,8 +127,63 @@ Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
 architecture is mid-transition toward a <strong>capability-based
 microkernel</strong>, where drivers, VFS, and block I/O are externalised
 to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
-<p>Current version: <strong>v0.3.5</strong> — Scheduler deferred-switch fix, test infrastructure robustness, CI split verification.
+<p>Current version: <strong>v0.3.6</strong> — Scheduler/IPC/Sync audit remediation, O(1) scheduler hardening, MemPool bitmap fixes, NexIOS rebrand.
 O(1) priority bitmap scheduler, bounded WCET, hard real-time compliance.</p>
+<hr />
+<h2 id="why-nexios">Why NexIOS</h2>
+<p>NexIOS is engineered so that <strong>any program you can compile — a
+driver, a filesystem, a device server, a whole application — runs as a
+dedicated user-task under our control</strong>: scheduled deterministically,
+isolated in its own address space, and sandboxed behind capability gates. It
+is a hard-real-time kernel you can actually certify.</p>
+<p>Every design decision is made to be <em>structural</em>: constraints are
+enforced at compile time, determinism is non-negotiable, and nothing in the
+kernel ever allocates or blocks when it shouldn&rsquo;t.</p>
+<hr />
+<h2 id="recent-development">Recent Development</h2>
+<p>The last few release cycles turned a monolithic experiment into a hardened,
+auditable real-time kernel. Here is what the roadmap and the commit history
+show — the engineering steps that matter:</p>
+<ol>
+<li><strong>A true from-scratch freestanding C++20 kernel</strong> — no libc,
+no libstdc++, no runtime. Every scheduler data structure, VFS vnode operation,
+and page-table walk is pure freestanding C++ with <code>constexpr</code>-enforced
+layout constants.</li>
+<li><strong>An O(1) priority-bitmap scheduler</strong> with rate-monotonic
+dispatch, priority inheritance, and a priority ceiling protocol — the baseline
+for hard-real-time guarantees, not an afterthought.</li>
+<li><strong>O(1) everywhere on the hot path.</strong> The ready queue, the
+priority buckets, the id-table probes, and free-list allocation are all
+constant-time — no hidden O(n) or O(n&sup2;) scans left in the scheduler.</li>
+<li><strong>Zero-alloc by design.</strong> IPC <code>MessageQueue</code>/
+<code>Notify</code>/<code>EventGroup</code> are embedded in the TCB; a
+pre-allocated <code>BufferPool</code> and a deterministic slab
+<code>MemPool</code> replace every <code>new</code>/<code>delete</code> in the
+kernel.</li>
+<li><strong>Fork with eager page-table deep-copy</strong> and a private
+kernel-stack window with guard pages — per-process isolation that is real, not
+nominal.</li>
+<li><strong>Per-priority kernel-stack sizing</strong> with guard pages and #PF
+detection — stack overflow becomes a caught event, not silent corruption.</li>
+<li><strong>Snapshot-based test isolation</strong> powering an
+<strong>881-test suite</strong> that rewinds the entire kernel (PMM, MemPool,
+page-table pool, ready queue) between tests — a level of determinism most
+kernels never reach.</li>
+<li><strong>A hardened user/kernel trust boundary</strong>: every Ring-3
+pointer crossing the <code>int 0x82</code> gate is validated
+(<code>CheckedPtr</code>), and the syscall surface was audited against an
+ASIL-D attack model.</li>
+<li><strong>Concurrency that is RAII-first and audit-driven.</strong>
+<code>IrqGuard</code> makes check-then-act races structurally impossible; the
+scheduler/IPC/memory subsystems went through a full remediation audit.</li>
+<li><strong>Multi-architecture from day one</strong> — x86_64, aarch64, and
+RISC-V64 HALs with Renode CI — so the real-time core is portable, not welded to
+one ISA.</li>
+</ol>
+<p><strong>The goal is simple:</strong> NexIOS is being built so that any
+program — your program — can run as the dedicated user-task it was designed
+for, under a scheduler and memory model you can trust in a safety-critical
+context.</p>
 <hr />
 <h2 id="architectural-pillars">Architectural Pillars</h2>
 <h3 id="modern-freestanding-c20">Modern Freestanding C++20</h3>
@@ -181,7 +236,7 @@ groups, and the scheduler’s internal dispatch — all protected by RAII
 wrappers that enforce unlock-on-destruction.</p>
 <h3 id="microkernel-paradigm-shift-in-progress">Microkernel Paradigm
 Shift (In Progress)</h3>
-<p>Jarvis is intentionally transitioning from a monolithic service layer
+<p>NexIOS is intentionally transitioning from a monolithic service layer
 to a capability-based microkernel: a deliberate architectural migration
 planned over Phases 3–8 of the roadmap.</p>
 <ul>
@@ -524,8 +579,8 @@ frees)</li>
 and validates pass/fail exit codes</li>
 </ul>
 <hr />
-<h2 id="competitive-comparison-freertos-vs-jarvis-rtos">Competitive
-Comparison: FreeRTOS vs Jarvis RTOS</h2>
+<h2 id="competitive-comparison-freertos-vs-nexios-rtos">Competitive
+Comparison: FreeRTOS vs NexIOS RTOS</h2>
 <table>
 <colgroup>
 <col style="width: 32%" />
@@ -536,7 +591,7 @@ Comparison: FreeRTOS vs Jarvis RTOS</h2>
 <tr>
 <th>Dimension</th>
 <th>FreeRTOS</th>
-<th>Jarvis RTOS</th>
+<th>NexIOS RTOS</th>
 </tr>
 </thead>
 <tbody>
@@ -562,7 +617,7 @@ run as isolated Ring 3 servers</td>
 <td><strong>Configuration</strong></td>
 <td><code>FreeRTOSConfig.h</code> — preprocessor defines scattered
 across 200+ options</td>
-<td><code>jarvis_config.h</code> — centralised, documented, with
+<td><code>nexios_config.h</code> — centralised, documented, with
 <code>INCLUDE_</code> syscall gating and <code>CONFIG_HAS_*</code>
 feature flags</td>
 </tr>
@@ -669,7 +724,7 @@ ELF loader, shell, devfs, procfs</label></li>
 Services &amp; Hardware</strong> — FAT32, tmpfs, PCI, Virtio, ATA PIO,
 RNG, FPU, DMA, network stack <em>(completed — v0.2.20)</em></label></li>
 <li><label><input type="checkbox" checked="" /><strong>Phase 4 — Kernel
-Configuration &amp; Portability</strong> — jarvis_config.h, CONFIG_* migration,
+Configuration &amp; Portability</strong> — nexios_config.h, CONFIG_* migration,
 check-config validation, multi-arch HAL infrastructure <em>(completed —
 v0.2.21)</em></label></li>
 <li><label><input type="checkbox" /><strong>Phase 5 — Hard
@@ -727,7 +782,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="
 ═════════════ Monolithic Kernel (Ring 0) ═════════════</code></pre>
 <hr />
 <h2 id="call-for-contributions">Call for Contributions</h2>
-<p>Jarvis RTOS is an architectural project first and a feature project
+<p>NexIOS RTOS is an architectural project first and a feature project
 second. We are seeking contributions from engineers who value
 <strong>structural correctness over velocity</strong>:</p>
 <ul>
@@ -763,7 +818,7 @@ pull request. Code review is rigorous and architectural — expect
 line-by-line attention to every <code>IrqGuard</code> placement.</p>
 <hr />
 <h2 id="license">License</h2>
-<p>Jarvis RTOS is free software: you can redistribute it and/or modify
+<p>NexIOS RTOS is free software: you can redistribute it and/or modify
 it under the terms of the <strong>GNU General Public License</strong>,
 either version 3 of the License, or (at your option) any later version.
 See <a href="LICENSE.txt"><code>LICENSE.txt</code></a> for the full

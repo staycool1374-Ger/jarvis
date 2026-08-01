@@ -20,7 +20,8 @@ var searchData=
   ['pml4_5fkernel_5fstart_17',['PML4_KERNEL_START',['../namespacearch.html#a0876344ab29527d09bf26d08ea69d620',1,'arch']]],
   ['pml4_5fuser_5fcount_18',['PML4_USER_COUNT',['../namespacearch.html#a99106776d58225cbe472f60fefc21958',1,'arch']]],
   ['pmm_5fpages_5fused_19',['pmm_pages_used',['../structkernel_1_1test_1_1_resource_counters.html#ab85e8b09994f94242b55108844b9cc26',1,'kernel::test::ResourceCounters']]],
-  ['post_5fconditions_20',['post_conditions',['../struct_test_meta.html#ad7055871a2e0a71cf806cfc5d65df99c',1,'TestMeta']]],
-  ['pre_5fconditions_21',['pre_conditions',['../struct_test_meta.html#a94d1080f0b11b281af802f69e3349ea0',1,'TestMeta']]],
-  ['proc_5ffs_22',['proc_fs',['../namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856',1,'kernel::vfs']]]
+  ['poisoned_20',['poisoned',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a0012ea8428b1d77822dc667ce16da4c3',1,'kernel::test::PtPoolSnapshot']]],
+  ['post_5fconditions_21',['post_conditions',['../struct_test_meta.html#ad7055871a2e0a71cf806cfc5d65df99c',1,'TestMeta']]],
+  ['pre_5fconditions_22',['pre_conditions',['../struct_test_meta.html#a94d1080f0b11b281af802f69e3349ea0',1,'TestMeta']]],
+  ['proc_5ffs_23',['proc_fs',['../namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856',1,'kernel::vfs']]]
 ];

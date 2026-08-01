@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.5</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
    </div>
   </td>
  </tr>
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('driver_8hpp_so
 <a href="driver_8hpp.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * Jarvis RTOS — Development Roadmap / Kernel Core</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment"> * NexIOS RTOS — Development Roadmap / Kernel Core</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment"> * Copyright (C) 2026 Arnold Hasshold</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment"> *</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment"> * This program is free software: you can redistribute it and/or modify</span></div>
@@ -198,18 +198,18 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('driver_8hpp_so
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    }</div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> MAX_DRIVERS = <a class="code hl_define" href="jarvis__config_8h.html#a932ae61284ebb00cdf5c763d479b47fd">CONFIG_MAX_DRIVERS</a>;</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> MAX_DRIVERS = <a class="code hl_define" href="nexios__config_8h.html#a932ae61284ebb00cdf5c763d479b47fd">CONFIG_MAX_DRIVERS</a>;</div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">static</span> <span class="keyword">constinit</span> Driver *drivers_[MAX_DRIVERS];</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="keyword">static</span> <span class="keyword">constinit</span> <span class="keywordtype">size_t</span> count_;</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>};</div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>} <span class="comment">// namespace kernel</span></div>
-<div class="ttc" id="ajarvis__config_8h_html_a932ae61284ebb00cdf5c763d479b47fd"><div class="ttname"><a href="jarvis__config_8h.html#a932ae61284ebb00cdf5c763d479b47fd">CONFIG_MAX_DRIVERS</a></div><div class="ttdeci">#define CONFIG_MAX_DRIVERS</div><div class="ttdoc">Maximum number of registered device drivers.</div><div class="ttdef"><b>Definition</b> jarvis_config.h:194</div></div>
 <div class="ttc" id="anamespaceinitrd_html_a08db2dcf48cc3117394e849a12e1fc19"><div class="ttname"><a href="namespaceinitrd.html#a08db2dcf48cc3117394e849a12e1fc19">initrd::find</a></div><div class="ttdeci">InitrdFile find(const char *path)</div><div class="ttdef"><b>Definition</b> initrd.cpp:72</div></div>
 <div class="ttc" id="anamespaceinitrd_html_a7b70f1cbe142d57f40fb7691d81ce5de"><div class="ttname"><a href="namespaceinitrd.html#a7b70f1cbe142d57f40fb7691d81ce5de">initrd::init</a></div><div class="ttdeci">void init(const uint8_t *start, const uint8_t *end)</div><div class="ttdef"><b>Definition</b> initrd.cpp:60</div></div>
-<div class="ttc" id="anamespacekernel_1_1elf_html_a77a09264ac49cf4578d49338007c28fc"><div class="ttname"><a href="namespacekernel_1_1elf.html#a77a09264ac49cf4578d49338007c28fc">kernel::elf::load</a></div><div class="ttdeci">TaskControlBlock * load(const ELF64Header *hdr, const uint8_t *file_data)</div><div class="ttdef"><b>Definition</b> elf.cpp:335</div></div>
+<div class="ttc" id="anamespacekernel_1_1elf_html_a77a09264ac49cf4578d49338007c28fc"><div class="ttname"><a href="namespacekernel_1_1elf.html#a77a09264ac49cf4578d49338007c28fc">kernel::elf::load</a></div><div class="ttdeci">TaskControlBlock * load(const ELF64Header *hdr, const uint8_t *file_data)</div><div class="ttdef"><b>Definition</b> elf.cpp:334</div></div>
 <div class="ttc" id="anamespacekernel_html"><div class="ttname"><a href="namespacekernel.html">kernel</a></div><div class="ttdef"><b>Definition</b> bootparams.cpp:23</div></div>
 <div class="ttc" id="anamespacekernel_html_a608b4a9ee1c4d240362c930be12ae9f2abb1ca97ec761fc37101737ba0aa2e7c5"><div class="ttname"><a href="namespacekernel.html#a608b4a9ee1c4d240362c930be12ae9f2abb1ca97ec761fc37101737ba0aa2e7c5">kernel::LogLevel::ERROR</a></div><div class="ttdeci">@ ERROR</div><div class="ttdef"><b>Definition</b> logger.hpp:40</div></div>
+<div class="ttc" id="anexios__config_8h_html_a932ae61284ebb00cdf5c763d479b47fd"><div class="ttname"><a href="nexios__config_8h.html#a932ae61284ebb00cdf5c763d479b47fd">CONFIG_MAX_DRIVERS</a></div><div class="ttdeci">#define CONFIG_MAX_DRIVERS</div><div class="ttdoc">Maximum number of registered device drivers.</div><div class="ttdef"><b>Definition</b> nexios_config.h:194</div></div>
 <div class="ttc" id="astdlib_8c_html_a55e99c539cf7723ec15e856b7e0a8cee"><div class="ttname"><a href="stdlib_8c.html#a55e99c539cf7723ec15e856b7e0a8cee">exit</a></div><div class="ttdeci">void exit(int status)</div><div class="ttdef"><b>Definition</b> stdlib.c:4</div></div>
 <div class="ttc" id="atypes_8hpp_html"><div class="ttname"><a href="types_8hpp.html">types.hpp</a></div><div class="ttdoc">Fundamental type definitions for the kernel (no standard library).</div></div>
 <div class="ttc" id="atypes_8hpp_html_a0ba18cab9bd5513695cbe748e9bb4879"><div class="ttname"><a href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a></div><div class="ttdeci">unsigned char uint8_t</div><div class="ttdef"><b>Definition</b> types.hpp:24</div></div>
