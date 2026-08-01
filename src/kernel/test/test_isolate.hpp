@@ -30,6 +30,13 @@ bool snapshot_create();
 void snapshot_restore(const char *test_name = nullptr);
 void snapshot_destroy();
 
+/// @brief DEBUG watchdog: true when the snapshot buffer's canary region has
+///        been overwritten by a stray write since the last snapshot_create.
+///        Polled by on_tick() / context-switch epilogue (CONFIG_DEBUG) so a
+///        corrupting write is detected within one tick instead of at the next
+///        snapshot_restore boundary.  Read-only; never mutates snapshot state.
+bool snapshot_canary_corrupted();
+
 /// @brief Terminate old daemon tasks and reload them from initrd.
 ///        Call AFTER snapshot_restore + snapshot_destroy to replace
 ///        corrupted page tables with fresh ones from initrd.

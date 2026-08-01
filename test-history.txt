@@ -252,3 +252,5 @@ SUMMARY: total=68 ok=65 fail=3
 2026-08-01 17:23:20 class=preemption_under_syscall PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=16s VERDICT=OK
 
 SUMMARY: total=68 ok=68 fail=0
+2026-08-01 18:05:00 ipc PASSED: 42 FAILED: 0 TIME: 1532ms (post canary-watch gating)
+2026-08-01 18:06:00 scheduler PASSED: 56 FAILED: 0 TIME: 15157ms (post canary-watch gating)

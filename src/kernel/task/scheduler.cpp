@@ -38,6 +38,7 @@ extern "C" void debug_write_dec(uint64_t value);
 #include <kernel/memory/integrity.hpp>
 #include <assert.hpp>
 #include <kernel/test/resource_tracker.hpp>
+#include <kernel/test/test_isolate.hpp>
 #include <kernel/test/test_watchdog.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/vfs/vfsd.hpp>
@@ -1197,6 +1198,48 @@ void Scheduler::on_tick() noexcept {
     // atomic against both nested IRQs and the lock holder's partial writes.
     if (lock_acquired) {
         arch::IrqGuard irq_guard{};
+
+#if defined(CONFIG_SNAPSHOT_CANARY_WATCH)
+        // Snapshot-buffer canary watchdog: a stray write into the snapshot
+        // region (observed as canary corruption at test ~846 in the `all`
+        // suite) is otherwise only detected at the next snapshot_restore —
+        // long after the corrupting instruction ran.  Polling here (every
+        // tick) narrows the window to one tick and lets us dump the current
+        // tick + task at the moment of detection.
+        // Gated behind CONFIG_SNAPSHOT_CANARY_WATCH (default off): per-tick
+        // reads are unnecessary overhead for normal suites; enable with
+        // -DCONFIG_SNAPSHOT_CANARY_WATCH for a targeted corruption run.
+        if (kernel::test::snapshot_canary_corrupted()) {
+            auto *cc = current_task();
+            Logger::raw_write("[SNAP-CANARY] corrupted at tick=");
+            Logger::print_dec(current_tick);
+            Logger::raw_write(" cur=");
+            Logger::print_dec(cc ? cc->id : 0u);
+            Logger::raw_write(" st=");
+            Logger::print_dec(cc ? static_cast<uint64_t>(cc->state) : 99u);
+            Logger::raw_write(" nt=");
+            Logger::print_dec(all_tasks_.size());
+            Logger::raw_write("\n");
+        }
+        // Per-tick TCB-magic watchdog (DEBUG): a corrupted current-task TCB is
+        // otherwise only caught at the next switch/remove_task.  Detect it
+        // here so the corrupting test/tick is attributable.  Skip when
+        // all_tasks_ is empty: snapshot_restore() transiently points
+        // current_task_ptr_ at a not-yet-restored TCB with magic==0 while it
+        // rewinds the task list (nt==0), which is a false positive.
+        if (current_task_ptr_ && all_tasks_.size() > 0 &&
+            current_task_ptr_->magic != TaskControlBlock::TCB_MAGIC) {
+            Logger::raw_write("[TCB-MAGIC] corrupt current at tick=");
+            Logger::print_dec(current_tick);
+            Logger::raw_write(" ptr=0x");
+            Logger::print_hex(reinterpret_cast<uint64_t>(current_task_ptr_));
+            Logger::raw_write(" magic=0x");
+            Logger::print_hex(current_task_ptr_->magic);
+            Logger::raw_write(" nt=");
+            Logger::print_dec(all_tasks_.size());
+            Logger::raw_write("\n");
+        }
+#endif
 
         if (s_deferred_kill_count > 0)
             Scheduler::process_deferred_kills();
@@ -2561,6 +2604,22 @@ extern "C" void scheduler_on_context_switch() {
     auto *t = kernel::Scheduler::find_task(id);
     if (t && t->magic == kernel::TaskControlBlock::TCB_MAGIC)
         kernel::Scheduler::set_current_task(t);
+#if defined(CONFIG_SNAPSHOT_CANARY_WATCH)
+    // Snapshot-canary watchdog on every context switch (DEBUG): catches a
+    // stray write into the snapshot buffer within one switch of occurring,
+    // even for tests shorter than a single timer tick (where the on_tick poll
+    // never fires).  The current test's task-id lets us attribute the corrupt
+    // instruction to a specific test.  Gated behind
+    // CONFIG_SNAPSHOT_CANARY_WATCH (default off) like the on_tick poll.
+    if (kernel::test::snapshot_canary_corrupted()) {
+        auto *cc = kernel::Scheduler::current_task();
+        kernel::Logger::raw_write("[SNAP-CANARY-SW] corrupted cur=");
+        kernel::Logger::print_dec(cc ? cc->id : 0u);
+        kernel::Logger::raw_write(" tick=");
+        kernel::Logger::print_dec(arch::Timer::ticks());
+        kernel::Logger::raw_write("\n");
+    }
+#endif
 #if defined(CONFIG_DEBUG_IPC_SCHED)
     {
         auto *c = kernel::Scheduler::current_task();

@@ -420,6 +420,30 @@ bool snapshot_create() {
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Per-tick / per-context-switch snapshot-canary watchdog (DEBUG only)
+// ---------------------------------------------------------------------------
+// The snapshot buffer's canaries normally guard against corruption detected at
+// the NEXT snapshot_restore (test boundary).  A stray write that overwrites the
+// canary region is only seen much later, hiding the exact tick/test in which it
+// happened.  This function is polled by on_tick() and the context-switch
+// epilogue (under CONFIG_DEBUG) to flag corruption within one tick of occurring.
+// It only reads memory; it never mutates snapshot state.
+
+bool snapshot_canary_corrupted() {
+    if (!g_snapshot)
+        return false;
+    uint64_t cb = *reinterpret_cast<uint64_t *>(
+        g_snapshot + off_canary_before());
+    uint64_t nu = *reinterpret_cast<uint64_t *>(
+        g_snapshot + off_user_page_count());
+    uint64_t nu_copy = *reinterpret_cast<uint64_t *>(
+        g_snapshot + off_user_page_count_copy());
+    uint64_t ca = *reinterpret_cast<uint64_t *>(
+        g_snapshot + off_canary_after());
+    return (cb != CANARY_BEFORE || ca != CANARY_AFTER || nu != nu_copy);
+}
+
 void snapshot_restore(const char *test_name) {
     if (!g_snapshot)
         return;
@@ -601,6 +625,42 @@ void snapshot_restore(const char *test_name) {
             Logger::raw_write(" canary_after=0x");
             Logger::print_hex(ca);
             Logger::raw_write("\n");
+            // Rich dump: the first 4 KB of the corrupted canary region is
+            // kernel machine code (55 48 89 E5 = push rbp; mov rbp,rsp; the
+            // 0F 1F multi-byte NOP padding follows).  Dump 64 qwords so the
+            // offending instruction bytes can be matched to a .text symbol
+            // via nm/addr2line.  Also dump the live task list so the test's
+            // running task is attributable.
+            Logger::raw_write("[CANARY-DUMP] first 64 qwords of corrupt region "
+                              "(offset ");
+            Logger::print_dec(off_canary_before());
+            Logger::raw_write("):\n");
+            const uint64_t *rq = reinterpret_cast<const uint64_t *>(
+                g_snapshot + off_canary_before());
+            for (size_t d = 0; d < 64; ++d) {
+                Logger::raw_write("  [");
+                Logger::print_dec(d);
+                Logger::raw_write("] 0x");
+                Logger::print_hex(rq[d]);
+                Logger::raw_write("\n");
+            }
+            // Live task list: which tasks are registered at detection time.
+            Logger::raw_write("[CANARY-DUMP] live tasks:\n");
+            uint64_t tcnt = Scheduler::task_count();
+            for (uint64_t ti = 0; ti < tcnt; ++ti) {
+                auto *tt = Scheduler::task_at(ti);
+                if (!tt)
+                    continue;
+                Logger::raw_write("  id=");
+                Logger::print_dec(tt->id);
+                Logger::raw_write(" prio=");
+                Logger::print_dec(tt->priority);
+                Logger::raw_write(" st=");
+                Logger::print_dec(static_cast<uint64_t>(tt->state));
+                Logger::raw_write(" kstack=0x");
+                Logger::print_hex(reinterpret_cast<uint64_t>(tt->kernel_stack));
+                Logger::raw_write("\n");
+            }
             // Overwrite the corrupted nu with 0 so all subsequent reads
             // (PML4 restore, etc.) use a safe value instead of garbage.
             nu = 0;

@@ -354,6 +354,102 @@ corruption.
 - The IPC deadlock at test ~78 was transient — resolved after code changes
   (likely the alignment fix or restore_task_fields fix)
 
+---
+
+## Attempt 12: DEBUG canary/tcb-magic catch mechanisms (2026-08-01)
+
+**Goal:** catch the stray write that corrupts the snapshot buffer (canary at
+test ~846) *before* the next snapshot_restore boundary, so the corrupting
+instruction can be attributed to a specific tick/switch/test.
+
+**Implemented (all `#if defined(CONFIG_DEBUG)` x86_64 only):**
+1. Per-tick snapshot canary poll in `on_tick()` → `[SNAP-CANARY]` (dumps tick,
+   current task id/state, task count).
+2. Per-tick TCB-magic poll in `on_tick()` → `[TCB-MAGIC]` (skipped when
+   `all_tasks_` is empty — snapshot_restore rewinds the task list and
+   transiently leaves `current_task_ptr_` pointing at a zeroed TCB, a false
+   positive).
+3. Per-context-switch snapshot canary poll in `scheduler_on_context_switch()`
+   → `[SNAP-CANARY-SW]` (catches corruption even in tests shorter than one
+   timer tick).
+4. Per-switch TCB-magic validation already existed via `validate_switch()`.
+
+**Result across 8 `all` runs (881 planned, 880-881 executed):**
+- **The corruption is a synchronous write during test 846's body**
+  (`static_pools_mempool_reserve_all_then_alloc_fails` →
+  `MemPool::reserve(2, total)` + `MemPool::alloc(64)`).  It is a pure
+  task-context operation with **no timer tick and no context switch in
+  between**, so neither per-tick nor per-switch polling can fire; only the
+  restore-boundary `[CANARY-POOL]` check detects it.  The write therefore
+  completes and is only *observed* at the next snapshot_restore.
+- **The corrupted bytes are kernel function machine code:**
+  ```
+  offset 800968 = 0x841F0F <-- canary_before (expected 0xCAFEBABE00000001)
+  offset 800976 = 0xF045C6E5894855 <-- nu[0]
+  offset 800984 = 0xEF45C66075FF8548 <-- nu[1]
+  offset 800992 = 0x75EB0000000FB830 <-- canary_after
+  ```
+  Decoded little-endian: `55 48 89 E5` = `push rbp; mov rbp,rsp` (function
+  prologue), `0F 1F 84 00 00 00 00 00` = multi-byte NOP padding, `48 85 FF
+  75 60` = `test rdi,rdi; jne +0x60`.  This is **real `.text` content written
+  into the snapshot buffer's physical pages** — a memcpy/move FROM the kernel
+  text segment to a misdirected destination (the snapshot buffer), not a linear
+  stack overflow (which would contain return addresses / data, not instructions).
+- **The 851 `kernel_stack == nullptr` failure is downstream:** once the canary
+  region is corrupted, `snapshot_restore` falls back to `nu = 0` and *skips*
+  the PtPool restore; the corrupted task-fields region then restores
+  `kernel_stack = 0` into the harness/init TCB.  `kernel_stack` was added to
+  `TaskFields` (capture+restore) but the failure persists because the *source*
+  data in the corrupted snapshot buffer is already zero.
+- One `[TCB-MAGIC]` false positive fires at suite-end daemon restart (nt=1
+  transient) — harmless DEBUG noise, not corruption.
+
+**Narrowed hypothesis (unproven):** a `memcpy`/`memmove` whose *source* is
+kernel `.text` and whose *destination* resolves to the snapshot buffer's
+physical pages, executing during `MemPool::reserve/alloc` in test 846.  The
+destination is likely a misdirected pointer (freed page reallocated, or a
+corrupted MemPool free-list node pointing into the snapshot region) rather than
+a bounded overflow.
+
+**CANARY-DUMP disassembly (2026-08-01):** the corrupt region decodes to a
+complete, valid x86-64 function:
+```
+push rbp; mov rbp,rsp; mov byte [rbp-0x10],0x0
+test rdi,rdi; jnz ...; mov byte [rbp-0x11],0x30   ; 0x30 = '0'
+mov eax,0xf
+... hex-digit table lookup @ [rcx+0x401530] ...
+movabs rdx,0xcccccccccccccccd                     ; decimal div magic
+mul rdx; shr rdx,3                                ; /10
+... write-into-buffer loop, then `call` to a serial-write helper
+```
+This is a **number-to-string formatter** (decimal via the `0xCC..CD`
+multiply-magic, hex via the `'0'`-offset digit table) that ends by calling a
+`Serial::puts`-style helper — i.e. the `Logger::print_dec`/`print_hex` /
+`debug::fmt_u64` family.  A contiguous, correctly-aligned function with prologue,
+NOP-padding, and an internal call is present in the snapshot buffer's canary
+region.  Reading `g_snapshot + canary_offset` returns **executable code**, which
+means either:
+1. The snapshot buffer's PTE was remapped to alias a `.text` physical page
+   (reads return code; matches the doc's Attempt-3 leading hypothesis), or
+2. A `memcpy` whose source pointer pointed into `.text` (e.g. a function being
+   copied/trampolined) wrote the function's bytes into the buffer.
+
+`[CANARY-DUMP] live tasks` at detection shows only idle(0), monitor(5),
+vfsd(2), iocd(3) — **the harness/init task (id=1) is absent** from the restored
+task list, which is why `stack_profiler_current_task_stack_valid` (851) then
+sees `current_task()->kernel_stack == nullptr`: the corrupted snapshot's
+task-fields region restored `kernel_stack=0` for it.
+
+**Follow-up implemented (2026-08-01):**
+- Option 1: gated the DEBUG canary/tcb-magic polls behind
+  `CONFIG_SNAPSHOT_CANARY_WATCH` (default off) so the `all` suite is not
+  perturbed by per-switch/per-tick reads in normal runs; enable via
+  `-DCONFIG_SNAPSHOT_CANARY_WATCH` for a targeted corruption run.
+- Option 2: `snapshot_restore` dumps the first 64 qwords of the corrupt canary
+  region (decodable to a `.text` symbol via `ndisasm`/`nm`) plus the live task
+  list when `[CANARY-POOL]` fires, to identify exactly which function's code
+  is landing in the buffer.
+
 ## Open questions
 
 The `all` suite now passes 881/882, but the root cause is **not understood**.
