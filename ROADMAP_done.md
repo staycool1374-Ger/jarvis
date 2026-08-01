@@ -41,6 +41,22 @@ All 19 audit findings resolved. See `audits/memory_audit.md`, `audits/task+sched
 - alloc_page_table no-fallback
 - Re-enable vmm_huge_page_split_corner
 
+### v0.3.6 development-session completion (moved from ROADMAP.md)
+- **HHDM PD save/restore** — PDPT[0]→PD saved in snapshot_create, restored at beginning of snapshot_restore (before PMM restore). Skips self-referencing PD[0]. Frees split PT pages, memcpy PD[1..511], CR3 reload for TLB flush. Re-enabled vmm_huge_page_split_regression and vmm_hhdm_access_consistency (10/10 VMM PASS). Changed map_page/unmap_page/virt_to_phys kernel-space guards from blocking to warn. Tests fixed to use manual page-table walk instead of VMM::virt_to_phys. See docs/hhdm-snapshot-restore.md.
+- **restore_pool_snapshot GPF fix** — root cause: try_alloc_kernel/user multi-page bitmap scans could allocate page-table pool pages because pool pages are free in bitmap (only separate free list protects them). Added pool-range skip in all bitmap-scan paths. Fixes cumulative corruption at test ~820.
+- **VirtIO/DMA MMIO re-enabled** — 9 VirtIO tests (probe, reset, feature_negotiation, queue, notify) and 12 DMA tests (buffer, sg, prd, engine) were already functional with current snapshot mechanism. Boot probe allocates VirtIO MMIO PT pages in pool baseline; DMA buffers within 0-128MB use existing 2MB huge pages. Re-enabling removed 22 from disabled count.
+- **microkernel_transition tests re-enabled** — 4 of 5 tests (MinimalPrivilegedSurface, UserspaceDriverIsolation, IpcLatencyJitter, TimerDrift) pass 22/22 in bench class. KernelApiPureFunctions remains disabled (memcpy stack corruption at ~657 — pre-existing).
+- **PCP retry budget panic** — direct ownership transfer in unlock/unlock_err. restore_priority ordering fixed (move after waiter removal). 6 test classes migrated to `lock_err()`.
+- **PMM freelist rebuild** — `rebuild_free_list()` called after bitmap+pool restore in snapshot_restore. `free_page()` routes pool-range pages to pool freelist.
+- **operator delete double-cleanup guard** — skip cleanup+remove_task if state==REAPED.
+- **MemPool metadata restore** — `restore_pool_meta` now restores `block_count`, `block_size`, `data`. `freed_bitmap` increased from [4] to [5] (320 bits) for pool-2's 320-block count.
+- **Kernel PML4 user entries save/restore** — replaces blind clear with proper save/restore in snapshot buffer. Preserves ELF-loader mappings across test cycles.
+- **`is_user_string` fault-safe** — added `VMM::virt_to_phys(addr)` check before dereferencing unmapped user addresses.
+- **`all` class consolidation** — combined `all` class reaches 820/855 tests (was ~400 before fixes).
+- **HHDM PD save/restore (remaining-work item)** — save/restore PDPT[0]→PD (512 entries) in snapshot buffer. Re-enabled 2 VMM HHDM tests (8/8 PASS). See `docs/hhdm-snapshot-restore.md`.
+- **`restore_pool_snapshot` GPF (remaining-work item)** — root cause: `try_alloc_kernel()`/`try_alloc_user()` multi-page bitmap scans could allocate pool pages (free in bitmap, guarded only by separate free list). Fixed by adding pool-range skip in all bitmap-scan paths (single-page fallback + multi-page contiguous). Pool pages now excluded from general allocation.
+- **microkernel_transition tests (remaining-work item)** — 4 of 5 re-enabled (MinimalPrivilegedSurface, UserspaceDriverIsolation, IpcLatencyJitter, TimerDrift). KernelApiPureFunctions remains disabled — memcpy stack corruption at test position ~657. Root cause unclear (likely test code stack/buffer overflow).
+
 ## v0.3.3 — Priority Inheritance & Ceiling Protocol (PIP/PCP) (Released)
 
 ### Completed in v0.3.3:
