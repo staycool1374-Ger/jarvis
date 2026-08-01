@@ -146,19 +146,26 @@ evidence-backed. Do not stack changes across steps.
 ## Release Procedure
 - **`CONFIG_DEBUG_IPC_SCHED` is DEBUGGING ONLY** and MUST be deactivated
   (undefined — `#define` commented out in `src/kernel/debug/ipc_sched_trace.hpp`)
-  before the release procedure.  When enabled, the `[RS]`/`[TICK]`/`[SW]`/
+  before the release gate.  When enabled, the `[RS]`/`[TICK]`/`[SW]`/
   `[APPLY]` serial traces fire inside `reschedule()`/`on_tick()`/the
   context-switch epilogue on every invocation, polluting timing-sensitive
-  tests and perturbing the scheduler.  The `all` test class only runs to
-  881/881 successfully with `CONFIG_DEBUG_IPC_SCHED` **off**; with it on,
-  the `jitter` class fails its `max <= min*10+1000` bound (the rdtsc window
-  measures UART-write latency, not scheduler jitter) and the suite is
-  otherwise perturbed.
-- Before running the release gate (`make execute-test x86_64 release all` or
-  the debug `all` class-wise run), verify the macro is undefined:
+  tests and perturbing the scheduler.
+  **VERIFIED STATE (2026-08-01):** the *release* gate
+  (`make execute-test x86_64 release all`, 84/84) passes with the trace OFF.
+  The *debug* `all` class (881 tests) passes 881/881 with the trace **ON**;
+  with it OFF, the pre-existing H2 deferred-switch race
+  (`docs/ipc_blocking-analysis.md`) becomes deterministic and hangs at
+  `ipc_send_sync_roundtrip` (~test 77/78).  Fix tracked in ROADMAP §v0.3.9.
+  The earlier claim that "`all` only passes 881/881 with the trace off" was
+  made in commit `4644d795` without ever running a full debug `all` in that
+  state — it is superseded by the above.
+- Before running the release gate (`make execute-test x86_64 release all`),
+  verify the macro is undefined:
   `grep -n CONFIG_DEBUG_IPC_SCHED src/kernel/debug/ipc_sched_trace.hpp`
   must show it commented out.  Re-enable only for targeted debug analysis,
-  then disable again before any gate/release run.
+  then disable again before any release gate run.  For the *debug* `all`
+  development gate (boundary-audit stepwise runs), keep the trace **ON**
+  until the H2 race is fixed (ROADMAP §v0.3.9).
 
 ## graphify
 

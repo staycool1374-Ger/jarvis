@@ -114,6 +114,38 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 - [ ] Stack guard page via private VA window (requires snapshot-safe page table pool)
 - [ ] `page_table_shared_` removal — complete deep-copy fork (walk all user entries, allocate new PDPT/PD/PT, copy contents). Current state: config + pool done.
 
+## Active Development — v0.3.9
+
+### H2 Deferred-Switch Race Fix (debug `all` hang with trace OFF)
+
+Source: `docs/ipc_blocking-analysis.md` §H2 — the split-phase deferred context
+switch publishes `scheduler_load_rsp_from` / `scheduler_load_cr3_from` /
+`scheduler_save_rsp_to` as separate stores; a timer ISR applying the pair can
+save the harness's live RSP (boot stack, kernel-image space) into the wrong
+TCB when `current_task_ptr_` has drifted.  With `CONFIG_DEBUG_IPC_SCHED`
+**off** the race is deterministic: debug `all` hangs 2/2 at
+`ipc_send_sync_roundtrip` (~test 77/78).  With the trace **on** the extra
+serial latency masks it (881/881 verified 2026-08-01).  The debug `all`
+development gate keeps the trace ON until this is fixed.
+
+- [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
+      (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds
+      **none** when the harness runs on the boot stack (not a TCB stack), so
+      `save_target` stays `&TASK_STACK_PTR(current)` and the ISR saves a
+      boot-stack RSP into the harness TCB.  `scheduler_diag_pre_save()`
+      (scheduler.cpp ~2480) catches it as `cur_rsp` outside
+      `kstack=[...] owners: (empty)`.
+- [ ] **Fix candidates (from analysis doc §Next steps):**
+      (1) make the deferred-switch pair atomic — publish RSP+CR3 under a
+      single generation so the ISR never applies a half-written pair
+      (isr_stubs.asm:106-171); (2) treat a boot-stack harness RSP as valid
+      (no-owner ⇒ save into the physically-running harness, or skip the
+      save entirely for the harness/idle path); (3) fix the
+      `current_task_ptr_`/runq desync (INV-2) that leaves a live task out of
+      the runq and not `current`.
+- [ ] **Verification:** debug `all` must pass 881/881 with the trace **off**;
+      then re-verify `release all` (84/84) and `check-style` Errors: 0.
+
 ## Past Releases
 
 See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.6).
