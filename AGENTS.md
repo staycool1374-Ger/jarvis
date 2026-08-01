@@ -142,6 +142,23 @@ evidence-backed. Do not stack changes across steps.
 - **GDB debugging:** `make gdb` launches QEMU with GDB stub on `:1234`; connect with `x86_64-elf-gdb build/kernel-debug.elf -x tools/gdb/init.gdb`
 - **UART FIFO overflow:** 16-byte FIFO capacity; drain between write bursts; release tests use external expect scripting so only affects kernel self-test loopback
 
+## Release Procedure
+- **`CONFIG_DEBUG_IPC_SCHED` is DEBUGGING ONLY** and MUST be deactivated
+  (undefined — `#define` commented out in `src/kernel/debug/ipc_sched_trace.hpp`)
+  before the release procedure.  When enabled, the `[RS]`/`[TICK]`/`[SW]`/
+  `[APPLY]` serial traces fire inside `reschedule()`/`on_tick()`/the
+  context-switch epilogue on every invocation, polluting timing-sensitive
+  tests and perturbing the scheduler.  The `all` test class only runs to
+  881/881 successfully with `CONFIG_DEBUG_IPC_SCHED` **off**; with it on,
+  the `jitter` class fails its `max <= min*10+1000` bound (the rdtsc window
+  measures UART-write latency, not scheduler jitter) and the suite is
+  otherwise perturbed.
+- Before running the release gate (`make execute-test x86_64 release all` or
+  the debug `all` class-wise run), verify the macro is undefined:
+  `grep -n CONFIG_DEBUG_IPC_SCHED src/kernel/debug/ipc_sched_trace.hpp`
+  must show it commented out.  Re-enable only for targeted debug analysis,
+  then disable again before any gate/release run.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

@@ -6,6 +6,12 @@
 /// in kernel/jarvis_config.h (or uncomment below) to re-enable the whole proof
 /// kit for future analysis iterations without re-deriving the instrumentation.
 ///
+/// DEBUGGING ONLY — MUST be deactivated (undefined) for the release procedure.
+/// When enabled, the [RS]/[TICK]/[SW]/[APPLY] serial traces fire inside
+/// reschedule()/on_tick()/context-switch epilogue on every invocation,
+/// polluting timing-sensitive tests (e.g. the `all` class and jitter) and
+/// perturbing the scheduler.  See AGENTS.md "Release Procedure".
+///
 /// Proven signatures (what each trace tag proves):
 ///   [SYNC]        entered IPC::send_sync for (cur -> dest)
 ///   [SEND]/[WAKE] a message was pushed into dest's queue and dest was woken
@@ -23,9 +29,13 @@
 #include <kernel/arch/serial.hpp>
 #include <lib/types.hpp>
 
-#define CONFIG_DEBUG_IPC_SCHED 1
+// DEBUGGING ONLY — comment out to deactivate (release procedure requires this).
+// #define CONFIG_DEBUG_IPC_SCHED 1
 
-#if defined(CONFIG_DEBUG_IPC_SCHED)
+// The formatting helpers (fmt_u64/fmt_str/trace) are ALWAYS available: they are
+// tiny, side-effect-free buffer formatters reused by tcb_write_log.cpp.  Only
+// the IPC_SCHED_TRACE macro (which writes to the serial console) is gated
+// behind CONFIG_DEBUG_IPC_SCHED below.
 
 namespace kernel::debug {
 
@@ -35,19 +45,6 @@ inline void trace(const char *msg) {
     arch::Serial::puts("\n");
 }
 
-} // namespace kernel::debug
-
-// Minimal printf-free formatters: build a fixed buffer from integers.
-#define IPC_SCHED_TRACE_BUF(tag, n)                                            \
-    char _ipc_sched_buf[128];                                                  \
-    int _ipc_sched_len = 0;                                                    \
-    do {                                                                       \
-        const char *_t = (tag);                                                \
-        while (*_t)                                                            \
-            _ipc_sched_buf[_ipc_sched_len++] = *_t++;                          \
-    } while (0)
-
-namespace kernel::debug {
 /// @brief Print an integer (decimal, unsigned) appended at buf[pos].
 inline int fmt_u64(char *buf, int pos, uint64_t v) {
     char tmp[21];
@@ -66,7 +63,20 @@ inline void fmt_str(char *buf, int &pos, const char *s) {
     while (*s)
         buf[pos++] = *s++;
 }
+
 } // namespace kernel::debug
+
+#if defined(CONFIG_DEBUG_IPC_SCHED)
+
+// Minimal printf-free formatters: build a fixed buffer from integers.
+#define IPC_SCHED_TRACE_BUF(tag, n)                                            \
+    char _ipc_sched_buf[128];                                                  \
+    int _ipc_sched_len = 0;                                                    \
+    do {                                                                       \
+        const char *_t = (tag);                                                \
+        while (*_t)                                                            \
+            _ipc_sched_buf[_ipc_sched_len++] = *_t++;                          \
+    } while (0)
 
 /// @brief One-shot trace: tag + up to 4 unsigned integers with labels.
 #define IPC_SCHED_TRACE(tag, a0, v0, a1, v1, a2, v2, a3, v3)                    \

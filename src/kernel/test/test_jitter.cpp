@@ -49,6 +49,12 @@ JARVIS_TEST(jitter_under_idle, "PRE: isolate | POST: none") {
         uint64_t t0 = arch::rdtsc();
         Scheduler::reschedule();
         uint64_t elapsed = arch::rdtsc() - t0;
+        // Skip zero-elapsed samples: reschedule() can complete within the
+        // rdtsc resolution, yielding elapsed==0 which would set min_jitter=0
+        // and break the max <= min*10+1000 bound below (with
+        // CONFIG_DEBUG_IPC_SCHED off the loop is fast enough to hit this).
+        if (elapsed == 0)
+            continue;
         if (elapsed < min_jitter) min_jitter = elapsed;
         if (elapsed > max_jitter) max_jitter = elapsed;
         sum_jitter += elapsed;
@@ -109,6 +115,8 @@ JARVIS_TEST(jitter_under_load, "PRE: isolate | POST: none") {
         uint64_t t0 = arch::rdtsc();
         Scheduler::reschedule();
         uint64_t elapsed = arch::rdtsc() - t0;
+        if (elapsed == 0)
+            continue;
         if (elapsed < min_jitter) min_jitter = elapsed;
         if (elapsed > max_jitter) max_jitter = elapsed;
         sum_jitter += elapsed;
