@@ -45,6 +45,27 @@ bool IrqThread::create(uint8_t vector, uint64_t priority,
         return false;
     }
 
+    // Name the handler task after its IRQ vector (e.g. "irq33" for the
+    // keyboard), replacing the generic auto-generated "task_<id>" name.
+    {
+        char buf[CONFIG_TASK_NAME_LEN];
+        size_t pos = 0;
+        buf[pos++] = 'i';
+        buf[pos++] = 'r';
+        buf[pos++] = 'q';
+        char rev[4];
+        size_t rp = 0;
+        uint32_t n = vector;
+        do {
+            rev[rp++] = static_cast<char>('0' + (n % 10));
+            n /= 10;
+        } while (n);
+        while (rp > 0 && pos < CONFIG_TASK_NAME_LEN - 1)
+            buf[pos++] = rev[--rp];
+        buf[pos] = '\0';
+        __builtin_memcpy(tcb->name, buf, pos + 1);
+    }
+
     auto &inst = instances_[count_];
     inst.vector_   = vector;
     inst.priority_ = priority;
