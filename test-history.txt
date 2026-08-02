@@ -424,3 +424,8 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 12:09:00 scheduler PASSED: 56 FAILED: 0 TIME: 14000ms (init priority runtime change)
 2026-08-02 12:10:00 sporadic PASSED: 25 FAILED: 0 TIME: 10000ms (init priority runtime change)
 2026-08-02 12:11:00 release-all PASSED: 84 FAILED: 0 TIME: 17058ms (init priority runtime change)
+2026-08-02 12:25:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (init-sparing in test cleanup; retry after 2 flaky jitter/ipc fails)
+2026-08-02 12:28:00 buffer_pool PASSED: 24 FAILED: 0 TIME: 9000ms (init-sparing cleanup)
+2026-08-02 12:29:00 integration PASSED: 1 FAILED: 0 TIME: 7000ms (init-sparing cleanup)
+2026-08-02 12:30:00 vfs PASSED: 146 FAILED: 0 TIME: 15000ms (init-sparing cleanup)
+2026-08-02 12:31:00 security PASSED: 31 FAILED: 0 TIME: 9000ms (init-sparing cleanup)

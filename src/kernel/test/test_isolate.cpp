@@ -1350,6 +1350,7 @@ void reload_daemon_tasks() {
             continue;
 #endif
         if (t != current && t != idle && t != Scheduler::get_shell_task() &&
+            t != Scheduler::get_harness_task() &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             to_kill[num_to_kill++] = t;
         }
