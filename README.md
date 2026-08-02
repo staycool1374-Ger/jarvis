@@ -33,114 +33,29 @@ Current version: **v0.3.6** — Scheduler/IPC/Sync, O(1) scheduler hardening, Me
 
 ## Why NexIOS
 
-NexIOS is engineered so that a elf file runs as a dedicated user-task, scheduled deterministically, isolated in its own address space, and sandboxed.
-
----
-
-## Recent Development
-
-Here is what the roadmap and the commit history shows:
-
-1. **A true from-scratch freestanding C++20 kernel** — no libc, no libstdc++, no runtime. Every scheduler data structure, VFS vnode operation, and page-table walk is pure freestanding C++ with `constexpr`-enforced layout constants.
-2. **An O(1) priority-bitmap scheduler** with rate-monotonic dispatch, priority inheritance, and a priority ceiling protocol.
-3. **O(1) everywhere on the hot path.** The ready queue, the priority buckets, the id-table probes, and free-list allocation.
-4. **Zero-alloc by design.** IPC `MessageQueue`/`Notify`/`EventGroup` are embedded in the TCB; a pre-allocated `BufferPool` and a deterministic slab `MemPool` replace every `new`/`delete` in the kernel.
-5. **Fork with eager page-table deep-copy** and a private kernel-stack window with guard pages.
-6. **Per-priority kernel-stack sizing** with guard pages and #PF detection..
-7. **Snapshot-based test isolation** powering an **881-test suite** that rewinds the entire kernel (PMM, MemPool, page-table pool, ready queue) between tests.
-8. **A hardened user/kernel trust boundary**: every Ring-3 pointer crossing the `int 0x82` gate is validated (`CheckedPtr`).
-9. 
-**The goal is simple:** NexIOS is being built so that any program — your program — can run as the dedicated user-task it was designed for, under a scheduler and memory model.
+NexIOS plans to run your application as a dedicated user-task, scheduled deterministically, isolated in its own address space, and sandboxed.
 
 ---
 
 ## Architectural Pillars
-
-### Modern Freestanding C++20
-
-The entire kernel — every scheduler data structure, every VFS vnode operation, every page-table walk — is written in freestanding C++20. There is no C legacy layer, no assembly veneer beyond the boot entry point and ISR stubs, and no reliance on hosted runtime primitives.
-
-- **C++20 Concepts** used extensively for compile-time validation of synchronisation primitive interfaces, memory allocator traits, and architecture HAL requirements.
-- **constexpr** and **consteval** enforce that all scheduling parameters, memory layout constants, and system limits are known at compile time.
-- **RAII** is not a userspace luxury — it is the fundamental lifecycle model for every kernel resource: interrupt guards, page-table mappings, heap allocations, IPC mailbox handles, and file descriptors.
-- **noexcept** by default. The kernel is compiled with `-fno-exceptions`, so every function contract is enforced statically or via assertion.
-- No `malloc`, no `printf`, no `errno`. All memory comes from a deterministic slab allocator (`MemPool`), and all diagnostics go through a custom binary `Logger`.
-
+### Modern Freestanding C++20* **Hardware Target:** x86_64 (ARM64 & RISC-V ports in active preparation).
 ### RAII-First Kernel Synchronisation
+* **Current Status:** Version 0.3.6 (Hardened $O(1)$ scheduler, static MemPool allocators, fixed IPC boundaries).
 
-Every critical section in the kernel is enforced by a scoped guard, not by convention. The primary mechanism is `IrqGuard`:
-
-```cpp
-// kernel/arch/irq_guard.hpp
-class [[nodiscard]] IrqGuard {
-public:
-    IrqGuard() noexcept { if (interrupts_enabled()) { cli(); irq_was_ = true; } }
-    ~IrqGuard() noexcept { if (irq_was_) sti(); }
-
-    IrqGuard(const IrqGuard&)            = delete;
-    IrqGuard& operator=(const IrqGuard&) = delete;
-    IrqGuard(IrqGuard&&)                 = delete;
-    IrqGuard& operator=(IrqGuard&&)      = delete;
-
-private:
-    bool irq_was_;
-};
-```
-
-This eliminates an entire class of check-then-act races because the guard cannot be forgotten, duplicated, or left dangling. The pattern extends to mutexes (with priority inheritance), semaphores, event groups, and the scheduler's internal dispatch — all protected by RAII wrappers that enforce unlock-on-destruction.
+---
 
 ### Microkernel Paradigm Shift (In Progress)
 
-NexIOS is intentionally transitioning from a monolithic service layer to a capability-based microkernel: a deliberate architectural migration planned over Phases 3–8 of the roadmap.
+NexIOS is intentionally transitioning from a monolithic service layer to a capability-based microkernel.
 
-- **Phase 7 (v0.7.x):** VFS (`vfsd`) and block I/O (`iocd`) are externalised to Ring 3 servers. Filesystem drivers (FAT32, tmpfs) run as isolated userspace processes behind an IPC gateway. No kernel code holds a mount table reference.
-- **Phase 8 (v0.8.x):** The kernel is reduced to scheduler + IPC + page-table manager + interrupt routing. The Shell, init (PID 1), VFS, and all device drivers run as Ring 3 capability-bearing servers. `SYS_CAP_GRANT` / `SYS_CAP_REVOKE` gate every cross-server access — no server can touch another server's MMIO region or memory without explicit capability delegation.
-
-This migration is architected from the start: the current monolithic ring-0 service layer is structured as a set of isolated subsystems with clean interface boundaries, making the extraction to individual servers a matter of wrapping, not rewriting.
-
----
-
-## Features
-
-For a complete catalog of all implemented features — scheduler, IPC, VFS, hardware enablement, shell, test framework, dmesg diagnostics, and architectural comparison — see [`README_done.md`](README_done.md).
-
----
-
-## IrqGuard in Practice
-
-The following is extracted from the scheduler's `reschedule()` path — a critical section that must select the next task and prepare the context switch globals without interruption. The `IrqGuard` ensures `cli()` on entry and `sti()` (if interrupts were on) on any exit path, including early returns:
-
-```cpp
-void Scheduler::reschedule() noexcept {
-    arch::IrqGuard guard;                     // RAII: cli() on construction
-    if (task_count_ <= 1) return;             // safe early return — guard handles sti()
-
-    auto* current = tasks_[current_index_];
-    if (!current) return;
-
-    auto* next = next_task();
-    if (next && next != current) {
-        if (next->state != TaskState::READY &&
-            next->state != TaskState::RUNNING) return;
-
-        switch_to_task(current, next);        // sets scheduler globals for ISR epilogue
-    }
-}                                             // guard destructor: sti()
-```
-
-Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGroup`, `Notify`, `MessageQueue` — follows the same RAII contract, making it structurally impossible to leak a critical section.
+- **Phase 7 (v0.7.x):** VFS (`vfsd`) and block I/O (`iocd`) are externalised to Ring 3 servers. Filesystem drivers (FAT32, tmpfs) run as isolated userspace processes behind an IPC gateway.
+- **Phase 8 (v0.8.x):** The kernel is reduced to scheduler + IPC + page-table manager + interrupt routing. The Shell, init (PID 1), VFS, and all device drivers run as Ring 3 capability-bearing servers. `SYS_CAP_GRANT` / `SYS_CAP_REVOKE` gate every cross-server access.
 
 ---
 
 ## Roadmap
 
 Completed phases (v0.2.0–v0.2.23) archived in [`README_done.md`](README_done.md).
-
-- [ ] **Phase 7 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C
-- [ ] **Phase 8 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
-- [ ] **Phase 9 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
-- [ ] **Phase 10 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection
-- [ ] **Phase 11 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
 
 Full roadmap at [`ROADMAP.md`](ROADMAP.md).
 
