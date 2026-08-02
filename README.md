@@ -23,33 +23,31 @@
 
 ## Overview
 
-NexIOS RTOS is an independent, ground-up implementation of a real-time operating system. It is built exclusively in **freestanding C++20** — no libc, no libstdc++, no runtime — delivering zero-overhead object-oriented kernel design, compile-time type safety, and deterministic execution.
+NexIOS RTOS is an independent, ground-up implementation of a real-time operating system. It is built in **freestanding C++20** — no libc, no libstdc++, no runtime.
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
-Current version: **v0.3.6** — Scheduler/IPC/Sync audit remediation, O(1) scheduler hardening, MemPool bitmap fixes, NexIOS rebrand.
+Current version: **v0.3.6** — Scheduler/IPC/Sync, O(1) scheduler hardening, MemPool bitmap fixes.
 
 ---
 
 ## Why NexIOS
 
-NexIOS is engineered so that **any program you can compile — a driver, a filesystem, a device server, a whole application — runs as a dedicated user-task under our control**: scheduled deterministically, isolated in its own address space, and sandboxed behind capability gates. It is a hard-real-time kernel you can actually certify.
-
-Every design decision is made to be *structural*: constraints are enforced at compile time, determinism is non-negotiable, and nothing in the kernel ever allocates or blocks when it shouldn't.
+NexIOS is engineered so that a elf file runs as a dedicated user-task, scheduled deterministically, isolated in its own address space, and sandboxed.
 
 ---
 
 ## Recent Development
 
-The last few release cycles turned a monolithic experiment into a hardened, auditable real-time kernel. Here is what the roadmap and the commit history show — the engineering steps that matter:
+Here is what the roadmap and the commit history shows:
 
 1. **A true from-scratch freestanding C++20 kernel** — no libc, no libstdc++, no runtime. Every scheduler data structure, VFS vnode operation, and page-table walk is pure freestanding C++ with `constexpr`-enforced layout constants.
-2. **An O(1) priority-bitmap scheduler** with rate-monotonic dispatch, priority inheritance, and a priority ceiling protocol — the baseline for hard-real-time guarantees, not an afterthought.
-3. **O(1) everywhere on the hot path.** The ready queue, the priority buckets, the id-table probes, and free-list allocation are all constant-time — no hidden O(n) or O(n²) scans left in the scheduler.
+2. **An O(1) priority-bitmap scheduler** with rate-monotonic dispatch, priority inheritance, and a priority ceiling protocol.
+3. **O(1) everywhere on the hot path.** The ready queue, the priority buckets, the id-table probes, and free-list allocation.
 4. **Zero-alloc by design.** IPC `MessageQueue`/`Notify`/`EventGroup` are embedded in the TCB; a pre-allocated `BufferPool` and a deterministic slab `MemPool` replace every `new`/`delete` in the kernel.
-5. **Fork with eager page-table deep-copy** and a private kernel-stack window with guard pages — per-process isolation that is real, not nominal.
-6. **Per-priority kernel-stack sizing** with guard pages and #PF detection — stack overflow becomes a caught event, not silent corruption.
-7. **Snapshot-based test isolation** powering an **881-test suite** that rewinds the entire kernel (PMM, MemPool, page-table pool, ready queue) between tests — a level of determinism most kernels never reach.
+5. **Fork with eager page-table deep-copy** and a private kernel-stack window with guard pages.
+6. **Per-priority kernel-stack sizing** with guard pages and #PF detection..
+7. **Snapshot-based test isolation** powering an **881-test suite** that rewinds the entire kernel (PMM, MemPool, page-table pool, ready queue) between tests.
 8. **A hardened user/kernel trust boundary**: every Ring-3 pointer crossing the `int 0x82` gate is validated (`CheckedPtr`).
 9. 
 **The goal is simple:** NexIOS is being built so that any program — your program — can run as the dedicated user-task it was designed for, under a scheduler and memory model.
@@ -138,10 +136,10 @@ Every synchronisation primitive in the kernel — `Mutex`, `Semaphore`, `EventGr
 
 Completed phases (v0.2.0–v0.2.23) archived in [`README_done.md`](README_done.md).
 
-- [ ] **Phase 7 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C + ALU integrity monitors (ASIL D)
+- [ ] **Phase 7 — Hard Real-Time** — O(1) bitmap scheduler, HPET, WCRT analysis, priority ceiling protocol, idle-task RAM March-C
 - [ ] **Phase 8 — SMP & Multicore** — APIC, per-CPU run queues, cache-colouring allocator, TLB shootdown
 - [ ] **Phase 9 — System Integration** — 24h stress test, safety hardening, deterministic userspace libc
-- [ ] **Phase 10 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection, ASIL-D idle monitors
+- [ ] **Phase 10 — Safety Systems** — Hardware/software watchdog, wait-for-graph deadlock detection
 - [ ] **Phase 11 — Microkernel Transition** — Externalise VFS, drivers, block I/O to Ring 3 capability servers
 
 Full roadmap at [`ROADMAP.md`](ROADMAP.md).
@@ -197,20 +195,8 @@ make renode-test          # Renode CI validation
 
 ## Call for Contributions
 
-NexIOS RTOS is an architectural project first and a feature project second. We are seeking contributions from engineers who value **structural correctness over velocity**:
-
-- **Lock-free data structures** for ISR→task handoff (SPSC ring buffers, hazard pointers)
-- **C++20 memory model experts** for formalising the kernel's atomic ordering guarantees (the scheduler uses `volatile` globals today — a migration path to `std::atomic` with `memory_order` is a high-priority engineering goal)
-- **Bare-metal systems engineers** for ARM Cortex-A (aarch64) and RISC-V (RV64) port bring-up (arch HAL abstraction, linker scripts, MMU init, GIC/PLIC interrupt controllers)
-- **Formal methods** — model-checking the wait-for-graph deadlock detector, proving the rate-monotonic schedule is feasible under declared WCETs
-
-### Principles
-
-- **Architecture over features.** A new driver does not ship without a test, a `ResourceTracker` entry, and a documented failure mode.
-- **Compile-time over run-time.** If a constraint can be expressed in C++20 Concepts or `constexpr`, it should be.
-- **Determinism is non-negotiable.** No dynamic allocation in the scheduler path, no unbounded loops in ISRs, no spinlocks that disable preemption for more than a single cache-line read.
-
-If this aligns with your engineering philosophy, open an issue or pull request. Code review is rigorous and architectural — expect line-by-line attention to every `IrqGuard` placement.
+NexIOS RTOS is an architectural project first and a feature project second. We are seeking contributions from engineers who like to participate.
+If this aligns with your engineering philosophy, open an issue or pull request.
 
 ---
 
