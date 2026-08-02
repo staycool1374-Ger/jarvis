@@ -1,13 +1,13 @@
 # Jarvis RTOS — Development Roadmap
 
-**Build:** v0.3.6-dev | **Last Release:** v0.3.6
+**Build:** v0.3.6 | **Last Release:** v0.3.6
 
 ## Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
 - **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
 - **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
 
-## Active Development — v0.3.6
+## Released — v0.3.6
 
 ### Syscall/VFS/ELF Boundary Audit (ASIL-D gate)
 Source: `audits/boundary+syscall_audit.md` — verified kernel audit, 12 of 21
@@ -106,7 +106,7 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 ### Disabled test groups (pre-existing, incompatible with snapshot isolation)
 | Group | Tests | Reason |
 |-------|-------|--------|
-| `pml4_clone` | 4 | HHDM PD entries not saved/restored (needs #1 above) |
+| `pml4_clone` | 0 | Re-enabled — all 6 tests pass (all-1 480–485); HHDM PD save/restore landed |
 | `vmm_hhdm` | 0 | Fixed by HHDM PD save/restore (#1) — tests re-enabled |
 | `virtio` | 0 | Already works — boot probe allocates PT pages in pool baseline |
 | `dma` | 0 | Already works — allocates within 0-128MB, HHDM restore handles cleanup |

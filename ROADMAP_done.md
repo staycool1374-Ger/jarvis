@@ -1,5 +1,14 @@
 # Completed Roadmap Items
 
+## v0.3.6 — Released (rebrand + boundary audit)
+
+Released as NexIOS v0.3.6 (2026-08-02). Includes the syscall/VFS/ELF boundary
+audit (VULN-C1/C2/C4/C5/C6/H1/H2/H4/W1/U2/W2/W3 — 12/21 claims confirmed,
+10/10 fixed), plus interactive-shell fixes (APIC timer INITCNT, keyboard
+IrqThread registration, task naming, `tasks` command).  Implementation spec:
+`docs/v0.3.6-boundary-audit-spec.md`.  Regression gate: `all` 881/881,
+release `all` 84/84.
+
 ## v0.3.6 — Memory + Scheduler + IPC/Sync Audit Remediation
 
 All 19 audit findings resolved. See `audits/memory_audit.md`, `audits/task+scheduler_audit.md`, `audits/ipc_audit.md` for source findings. Full commit log in git history.
