@@ -94,7 +94,8 @@ bool validate_header(const ELF64Header *hdr) {
 
 /// @brief Validate a single program header segment.
 /// Checks bounds, permissions (W^X), size limits, and overflow safety.
-static bool validate_segment(const ELF64ProgramHeader *phdr) {
+static bool validate_segment(const ELF64ProgramHeader *phdr,
+                             uint64_t file_size = 0) {
     if (phdr->type != PT_LOAD)
         return true;
     // Basic size sanity
@@ -106,6 +107,11 @@ static bool validate_segment(const ELF64ProgramHeader *phdr) {
     if (phdr->vaddr + phdr->memsz < phdr->vaddr)
         return false;
     if (phdr->vaddr + phdr->filesz < phdr->vaddr)
+        return false;
+    // VULN-H2: the segment's file-resident bytes must fit inside the actual
+    // file buffer.  Previously only a 4_MiB constant bounded phdr->offset;
+    // a crafted ELF could read past the PMM::alloc_contiguous() buffer.
+    if (file_size != 0 && phdr->offset + phdr->filesz > file_size)
         return false;
     // Must be within user space
     if (phdr->vaddr >= USER_SPACE_LIMIT)
@@ -183,13 +189,14 @@ static void copy_strings(uint8_t *dest, const char *const *arr) {
 /// @return true on success.
 static bool load_segments_and_stack(const ELF64Header *hdr,
                                     const uint8_t *file_data, uint64_t pml4,
-                                    uint64_t *out_ustack_phys) {
+                                    uint64_t *out_ustack_phys,
+                                    uint64_t file_size = 0) {
     for (uint16_t i = 0; i < hdr->phnum; ++i) {
         auto *phdr = reinterpret_cast<const ELF64ProgramHeader *>(
             file_data + hdr->phoff + static_cast<uint64_t>(i) * hdr->phentsize);
         if (!phdr || phdr->type != PT_LOAD)
             continue;
-        if (!validate_segment(phdr))
+        if (!validate_segment(phdr, file_size))
             return false;
 
         uint64_t vaddr_base = page_align_down(phdr->vaddr);
@@ -335,7 +342,8 @@ static void open_std_fds(TaskControlBlock &tcb) {
     }
 }
 
-TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
+TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data,
+                       uint64_t file_size) {
     if (!validate_header(hdr))
         return nullptr;
 
@@ -391,7 +399,8 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
     tcb->page_table_ = pml4;
 
     uint64_t ustack_phys = 0;
-    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys)) {
+    if (!load_segments_and_stack(hdr, file_data, pml4, &ustack_phys,
+                                 file_size)) {
         tcb->cleanup();
         delete tcb;
         return nullptr;
@@ -450,7 +459,7 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data) {
 
 bool exec_into_current(const ELF64Header *hdr, const uint8_t *data,
                        const char *const *argv, const char *const *envp,
-                       uint64_t *regs) {
+                       uint64_t *regs, uint64_t file_size) {
     if (!validate_header(hdr))
         return false;
 
@@ -463,7 +472,8 @@ bool exec_into_current(const ELF64Header *hdr, const uint8_t *data,
         return false;
 
     uint64_t ustack_phys = 0;
-    if (!load_segments_and_stack(hdr, data, new_pml4, &ustack_phys))
+    if (!load_segments_and_stack(hdr, data, new_pml4, &ustack_phys,
+                                 file_size))
         return false;
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, argv, envp);

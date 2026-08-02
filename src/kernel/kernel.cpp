@@ -199,7 +199,7 @@ void init_task_main() {
                         reinterpret_cast<const kernel::elf::ELF64Header *>(
                             f.data);
                     if (kernel::elf::validate_header(hdr)) {
-                        auto *task = kernel::elf::load(hdr, f.data);
+                        auto *task = kernel::elf::load(hdr, f.data, f.size);
                         if (task) {
                             task->priority = 1;
                             task->period_ticks = 20;
@@ -867,7 +867,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             auto *hdr =
                 reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
             if (kernel::elf::validate_header(hdr)) {
-                auto *vfsd_task = kernel::elf::load(hdr, f.data);
+                auto *vfsd_task = kernel::elf::load(hdr, f.data, f.size);
                 if (vfsd_task) {
                     vfsd_task->priority = 1;
                     vfsd_task->period_ticks = 10;
@@ -900,7 +900,7 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
             auto *hdr =
                 reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
             if (kernel::elf::validate_header(hdr)) {
-                auto *iocd_task = kernel::elf::load(hdr, f.data);
+                auto *iocd_task = kernel::elf::load(hdr, f.data, f.size);
                 if (iocd_task) {
                     iocd_task->priority = 1;
                     iocd_task->period_ticks = 10;

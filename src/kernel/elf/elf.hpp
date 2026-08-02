@@ -91,15 +91,19 @@ bool validate_header(const ELF64Header *hdr);
 /// @brief Load an ELF binary into a new task.
 /// @param hdr Pointer to the ELF header.
 /// @param data Raw ELF file data.
+/// @param file_size Validated size of `data` in bytes (VULN-H2: bounds
+///        `phdr->offset+filesz` against the real file, not a constant).
 /// @return New TaskControlBlock, or nullptr on failure.
-TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *data);
+TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *data,
+                       uint64_t file_size = 0);
 
 /// @brief Replace the current task's address space with an ELF binary (exec).
 /// @param regs Register state to update with new entry point and stack.
+/// @param file_size Validated size of `data` in bytes (VULN-H2).
 /// @return true on success.
 bool exec_into_current(const ELF64Header *hdr, const uint8_t *data,
                        const char *const *argv, const char *const *envp,
-                       uint64_t *regs);
+                       uint64_t *regs, uint64_t file_size = 0);
 
 } // namespace elf
 } // namespace kernel

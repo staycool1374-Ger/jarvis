@@ -135,7 +135,7 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
         return;
     }
 
-    auto *tcb = kernel::elf::load(hdr, f.data);
+    auto *tcb = kernel::elf::load(hdr, f.data, f.size);
     JARVIS_ASSERT(tcb != nullptr);
 
     // ELF load should have called init_task_common, so IPC objects should be

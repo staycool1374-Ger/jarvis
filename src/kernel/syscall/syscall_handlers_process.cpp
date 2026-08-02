@@ -153,7 +153,10 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
         return static_cast<uint64_t>(-1);
     }
     auto *hdr = reinterpret_cast<const elf::ELF64Header *>(file_buf);
-    if (!elf::exec_into_current(hdr, file_buf, argv, envp, regs)) {
+    // VULN-H2: pass the actual bytes read so validate_segment bounds
+    // phdr->offset+filesz against the real file, not a constant.
+    if (!elf::exec_into_current(hdr, file_buf, argv, envp, regs,
+                                static_cast<uint64_t>(r))) {
         for (size_t i = 0; i < file_pages; ++i)
             PMM::free_page(file_phys + i * 4096);
         return static_cast<uint64_t>(-1);

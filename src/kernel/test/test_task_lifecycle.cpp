@@ -308,7 +308,7 @@ JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
         return;
     }
 
-    SimpleTaskPtr tcb(kernel::elf::load(hdr, f.data));
+    SimpleTaskPtr tcb(kernel::elf::load(hdr, f.data, f.size));
     JARVIS_ASSERT(tcb != nullptr);
 
     // init_task_common should have been called, so IPC objects should be

@@ -287,7 +287,7 @@ void reboot_from_table() {
                              def.elf_path, def.name);
                 break;
             }
-            task = kernel::elf::load(hdr, f.data);
+            task = kernel::elf::load(hdr, f.data, f.size);
             if (task) {
                 task->priority = def.priority;
                 task->period_ticks = def.period_ticks;

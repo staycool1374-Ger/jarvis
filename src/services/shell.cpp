@@ -1106,7 +1106,7 @@ void Shell::cmd_runelf(int argc, const char** argv) {
         return;
     }
 
-    auto* task = kernel::elf::load(hdr, f.data);
+    auto* task = kernel::elf::load(hdr, f.data, f.size);
     if (!task) {
         shell_error_path("runelf", path, "failed to load");
         return;

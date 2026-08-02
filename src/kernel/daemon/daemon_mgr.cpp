@@ -179,7 +179,7 @@ void restart_stale_daemons() {
             continue;
         }
 
-        auto *task = kernel::elf::load(hdr, f.data);
+        auto *task = kernel::elf::load(hdr, f.data, f.size);
         if (!task) {
             Logger::warn("daemon_mgr: '%s' elf::load failed, cannot restart",
                          entries_[i].name);
@@ -269,7 +269,7 @@ void ensure_running(const char *name) {
             return;
         }
 
-        auto *task = kernel::elf::load(hdr, f.data);
+        auto *task = kernel::elf::load(hdr, f.data, f.size);
         if (!task) {
             Logger::warn("daemon_mgr: ensure_running('%s') — elf::load failed",
                          name);
