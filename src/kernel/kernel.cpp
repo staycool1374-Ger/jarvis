@@ -317,6 +317,11 @@ void init_task_main() {
     }
 
     // ── Reap loop — block until a child exits ───────────────────
+    // Boot/test-runner duty is done; the reaper + daemon-restart logger only
+    // needs low priority so it never starves the interactive shell (prio 5).
+    // The shell's `selftest` command raises it back to 10 for the test run.
+    if (auto *init_self = kernel::Scheduler::current_task())
+        kernel::Scheduler::set_priority(*init_self, 1);
     for (;;) {
         arch::pause();
         kernel::Scheduler::drain_zombie_list();
@@ -630,11 +635,13 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::Scheduler::init();
 
     // Init task (PID 1) — mounts fstab, runs /etc/rc, then blocks as reaper.
-    // Priority 10 (below shell at 2) so it doesn't starve interactive tasks.
+    // Priority 10 during boot/test-runner duty; dropped to 1 (reaper/logger)
+    // before the reap loop so it never starves the shell (prio 5).  The
+    // shell's `selftest` command raises it back to 10 for the test run.
     {
         auto *init_task = kernel::TaskControlBlock::create(
             init_task_main,
-            10,  // low priority (below shell at 2)
+            10,  // boot/test-runner priority
             10); // period_ticks
         if (init_task) {
             // Self-explaining name for the test harness / coordinator task

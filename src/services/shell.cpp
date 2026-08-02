@@ -1165,6 +1165,13 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         self_task->priority = 126;
         self_task->base_priority = 126;
     }
+    // The init task normally idles at priority 1 (reaper/logger duty).  For
+    // the test run it must be back at its boot-time priority 10 so the suite
+    // is not starved and the harness exemption (BUGS.md#021) applies.
+    auto *init_task = kernel::Scheduler::get_harness_task();
+    if (init_task && init_task != self_task) {
+        kernel::Scheduler::set_priority(*init_task, 10);
+    }
 
     {
         // Protect test execution from concurrent timer-ISR dispatch of
@@ -1220,6 +1227,10 @@ void Shell::cmd_selftest(int argc, const char** argv) {
     if (self_task) {
         self_task->priority = saved_prio;
         self_task->base_priority = saved_base;
+    }
+    // Restore init to its idle reaper priority (1) now that the suite is done.
+    if (init_task && init_task != self_task) {
+        kernel::Scheduler::set_priority(*init_task, 1);
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");

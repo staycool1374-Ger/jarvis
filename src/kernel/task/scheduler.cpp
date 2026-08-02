@@ -133,6 +133,20 @@ void Scheduler::move_priority(TaskControlBlock &task, uint64_t old_prio,
     ready_queue_.move_priority(task, old_prio, new_prio);
 }
 
+void Scheduler::set_priority(TaskControlBlock &task,
+                             uint64_t new_prio) noexcept {
+    arch::IrqGuard irq_guard{};
+    if (new_prio == task.priority)
+        return;
+    // Re-bucket in the O(1) ready queue if the task is queued, so the
+    // effective priority change is visible on the next tick.  move_priority
+    // must be called BEFORE writing the field (move uses the current bucket).
+    if (task.in_ready_queue_)
+        move_priority(task, task.priority, new_prio);
+    task.priority = new_prio;
+    task.base_priority = new_prio;
+}
+
 void Scheduler::release_zombie(TaskControlBlock &task) noexcept {
     // Invariant: a zombie must never be in the ready queue.  terminate()
     // calls dequeue_ready() before reaching us; self-termination also

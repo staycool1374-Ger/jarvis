@@ -419,3 +419,8 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 01:05:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (v0.3.6 boundary-audit final regression)
 2026-08-02 10:20:00 shell PASSED: 22 FAILED: 0 TIME: 12000ms (shell class after tasks-padding fix)
 2026-08-02 10:22:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (tasks-padding fix regression, run before user asked to skip all-class)
+2026-08-02 12:05:00 shell PASSED: 22 FAILED: 0 TIME: 12000ms (init priority 10->1 runtime change, shell class)
+2026-08-02 12:08:00 init PASSED: 3 FAILED: 0 TIME: 8000ms (init priority runtime change)
+2026-08-02 12:09:00 scheduler PASSED: 56 FAILED: 0 TIME: 14000ms (init priority runtime change)
+2026-08-02 12:10:00 sporadic PASSED: 25 FAILED: 0 TIME: 10000ms (init priority runtime change)
+2026-08-02 12:11:00 release-all PASSED: 84 FAILED: 0 TIME: 17058ms (init priority runtime change)

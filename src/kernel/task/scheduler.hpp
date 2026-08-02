@@ -118,6 +118,16 @@ class Scheduler {
     /// up context switch.
     static void reschedule() noexcept;
 
+    /// @brief Change a task's scheduling priority at runtime.
+    /// Re-buckets the task in the O(1) ready queue (if queued) so the change
+    /// takes effect on the next tick, and updates base_priority.  Safe to
+    /// call from task context; IRQs are disabled around the move so the
+    /// timer ISR cannot read a half-updated bucket.
+    /// @param task Target TCB.
+    /// @param new_prio New scheduling priority.
+    static void set_priority(TaskControlBlock &task,
+                             uint64_t new_prio) noexcept;
+
     /// @brief Reaps orphan TERMINATED tasks (no parent to WAITPID them).
     ///        Single-pass scan: identifies all eligible tasks, destroys them
     ///        without compaction, then compacts the task array once at the end.
