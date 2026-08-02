@@ -27,6 +27,7 @@ If the branch does not match the intended role, do not proceed.
 - Never execute interactive or blocking commands (e.g. `make run-debug-mode`, `make run-release-mode`). Non-interactive automated workflows only (e.g. `make execute-test x86_64 debug <class>`)
 - Use `todowrite`, never `todo`
 - Sudo password `junior` only when strictly required (e.g. ISO generation)
+- **Deleting files: never remove a file without asking first.** The only exception is a temporary file you created yourself during this session (e.g. a scratch log under `/tmp`). User-created or repo files are never deleted without explicit confirmation — an untracked file deleted by the assistant is unrecoverable.
 - **ripgrep gotcha: never use `rg -rn`.** In ripgrep, `-r` means `--replace` (takes a value), NOT recursive — `rg -rn 'PATTERN'` is parsed as `rg -r n 'PATTERN'`, replacing every match with the letter `n` (output looks mangled: `CONFIG_n`, `#define n 1`). Ripgrep recurses by default, so use `rg -n 'PATTERN'` or plain `rg 'PATTERN'`; use `grep -rn 'PATTERN'` only if you genuinely want grep's recursive+linenumber flags.
 
 ## Test Result History (MANDATORY)
