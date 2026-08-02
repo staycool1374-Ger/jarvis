@@ -417,3 +417,5 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 00:57:00 all PASSED: 880 FAILED: 1 TIME: 63623ms (VULN-W3 gate; test 2 harness_blocked_sender_wakes flaky, retried clean)
 2026-08-02 00:59:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-W3 gate, clean retry)
 2026-08-02 01:05:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (v0.3.6 boundary-audit final regression)
+2026-08-02 10:20:00 shell PASSED: 22 FAILED: 0 TIME: 12000ms (shell class after tasks-padding fix)
+2026-08-02 10:22:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (tasks-padding fix regression, run before user asked to skip all-class)
