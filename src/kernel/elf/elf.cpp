@@ -267,11 +267,20 @@ static bool load_segments_and_stack(const ELF64Header *hdr,
 }
 
 /// @brief Set up argv/envp on the user stack and return the initial RSP.
+/// @return Initial user RSP, or 0 if the strings do not fit (VULN-U2).
 static uint64_t setup_user_stack(uint64_t ustack_phys, const char *const *argv,
                                  const char *const *envp) {
     int argc = count_strings(argv);
 
     uint64_t str_total = total_string_len(argv) + total_string_len(envp);
+    // VULN-U2: hard reservation check BEFORE any pointer arithmetic.  The
+    // user stack is mem::STACK_SIZE bytes; sp walks backward by str_total
+    // plus room for the argv/envp pointer arrays + alignment.  Without this
+    // check, an attacker-controlled argv/envp total could underflow sp below
+    // the stack allocation and corrupt adjacent physical memory.
+    constexpr uint64_t kStackReserve = 2048;
+    if (str_total + kStackReserve >= mem::STACK_SIZE)
+        return 0;
     uint64_t stack_base = arch::HHDM_OFFSET + ustack_phys + mem::STACK_SIZE;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     uint8_t *stack_top = reinterpret_cast<uint8_t *>(stack_base);
@@ -414,6 +423,11 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data,
     tcb->program_break = mem::HEAP_VADDR + INITIAL_HEAP_SIZE;
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, nullptr, nullptr);
+    if (user_rsp == 0) {
+        tcb->cleanup();
+        delete tcb;
+        return nullptr;
+    }
 
 #if defined(CONFIG_ARCH_X86_64)
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
@@ -477,6 +491,13 @@ bool exec_into_current(const ELF64Header *hdr, const uint8_t *data,
         return false;
 
     uint64_t user_rsp = setup_user_stack(ustack_phys, argv, envp);
+    if (user_rsp == 0) {
+        // VULN-U2: argv/envp total exceeds the stack reservation — abort the
+        // exec and release the freshly-cloned address space before it leaks.
+        VMM::free_user_pages(new_pml4);
+        PMM::free_page(new_pml4);
+        return false;
+    }
 
     // Free zero-copy buffers mapped into the OLD page table before swapping it
     // out
