@@ -52,9 +52,14 @@ uint64_t Syscall::sys_send(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     return IPC::send(dest_id, msg, flags) ? 0 : static_cast<uint64_t>(-1);
 }
 
-uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2, uint64_t,
-                              uint64_t *) {
+uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2,
+                              uint64_t arg3, uint64_t *) {
     uint64_t max_size = arg2;
+    // VULN-W3: arg3 is the bounded-wait timeout in ticks.  0 = block forever
+    // (preserves current behaviour for non-real-time callers).
+    uint64_t timeout_ticks = arg3;
+    uint64_t deadline =
+        timeout_ticks ? arch::Timer::ticks() + timeout_ticks : 0;
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto buf = checked(reinterpret_cast<uint8_t *>(arg1), max_size);
     if (!buf.valid())
@@ -67,6 +72,10 @@ uint64_t Syscall::sys_receive(uint64_t, uint64_t arg1, uint64_t arg2, uint64_t,
     bool ok = false;
     bool was_blocked = false;
     while (!(ok = IPC::recv(msg))) {
+        // VULN-W3: bounded-wait deadline — fail with -1 once the budget is
+        // exhausted instead of blocking indefinitely.
+        if (deadline && arch::Timer::ticks() >= deadline)
+            return static_cast<uint64_t>(-1);
         if (cur->sporadic_server) {
             cur->sporadic_server->on_completion(arch::Timer::ticks());
         }
