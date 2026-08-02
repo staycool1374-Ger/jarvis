@@ -23,7 +23,7 @@
 
 ## Overview
 
-NexIOS RTOS is an independent, ground-up implementation of a real-time operating system targeting **ISO 26262 ASIL D** safety standards. It is built exclusively in **freestanding C++20** — no libc, no libstdc++, no runtime — delivering zero-overhead object-oriented kernel design, compile-time type safety, and deterministic execution from the first instruction.
+NexIOS RTOS is an independent, ground-up implementation of a real-time operating system. It is built exclusively in **freestanding C++20** — no libc, no libstdc++, no runtime — delivering zero-overhead object-oriented kernel design, compile-time type safety, and deterministic execution.
 
 The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
 
@@ -50,11 +50,9 @@ The last few release cycles turned a monolithic experiment into a hardened, audi
 5. **Fork with eager page-table deep-copy** and a private kernel-stack window with guard pages — per-process isolation that is real, not nominal.
 6. **Per-priority kernel-stack sizing** with guard pages and #PF detection — stack overflow becomes a caught event, not silent corruption.
 7. **Snapshot-based test isolation** powering an **881-test suite** that rewinds the entire kernel (PMM, MemPool, page-table pool, ready queue) between tests — a level of determinism most kernels never reach.
-8. **A hardened user/kernel trust boundary**: every Ring-3 pointer crossing the `int 0x82` gate is validated (`CheckedPtr`), and the syscall surface was audited against an ASIL-D attack model.
-9. **Concurrency that is RAII-first and audit-driven.** `IrqGuard` makes check-then-act races structurally impossible; the scheduler/IPC/memory subsystems went through a full remediation audit.
-10. **Multi-architecture from day one** — x86_64, aarch64, and RISC-V64 HALs with Renode CI — so the real-time core is portable, not welded to one ISA.
-
-**The goal is simple:** NexIOS is being built so that any program — your program — can run as the dedicated user-task it was designed for, under a scheduler and memory model you can trust in a safety-critical context.
+8. **A hardened user/kernel trust boundary**: every Ring-3 pointer crossing the `int 0x82` gate is validated (`CheckedPtr`).
+9. 
+**The goal is simple:** NexIOS is being built so that any program — your program — can run as the dedicated user-task it was designed for, under a scheduler and memory model.
 
 ---
 
