@@ -21,43 +21,40 @@
 
 ---
 
-## Overview
+## Overview NexIOS
 
-NexIOS RTOS is an independent, ground-up implementation of a real-time operating system. It is built in **freestanding C++20** — no libc, no libstdc++, no runtime.
+A freestanding C++20 real-time operating system for x86_64 with zero dynamic heap allocation in critical paths and deterministic $O(1)$ scheduling.
 
-The kernel is currently monolithic, serving userspace processes at Ring 3 via a `int 0x82` syscall gate (47 syscalls). The architecture is mid-transition toward a **capability-based microkernel**, where drivers, VFS, and block I/O are externalised to sandboxed Ring 3 servers communicating through IPC capabilities.
+Currently a monolithic kernel (47 syscalls via `int 0x82`), actively transitioning toward a capability-based microkernel.
 
-Current version: **v0.3.6** — Scheduler/IPC/Sync, O(1) scheduler hardening, MemPool bitmap fixes.
+* **Target:** x86_64 (ARM64 & RISC-V in preparation)
+* **Language:** Freestanding C++20 (`-fno-exceptions`, `-fno-rtti`, zero `libc`/`libstdc++`)
+* **Status:** v0.3.6 ($O(1)$ scheduler hardening, MemPool bitmap fixes, IPC boundaries)
+* **License:** GPLv3
 
----
-
-## Why NexIOS
-
-NexIOS plans to run your application as a dedicated user-task, scheduled deterministically, isolated in its own address space, and sandboxed.
-
----
-
-## Architectural Pillars
-### Modern Freestanding C++20* **Hardware Target:** x86_64 (ARM64 & RISC-V ports in active preparation).
-### RAII-First Kernel Synchronisation
-* **Current Status:** Version 0.3.6 (Hardened $O(1)$ scheduler, static MemPool allocators, fixed IPC boundaries).
+NexIOS RTOS is an independent, ground-up implementation of a real-time operating system.
 
 ---
 
-### Microkernel Paradigm Shift (In Progress)
-
-NexIOS is intentionally transitioning from a monolithic service layer to a capability-based microkernel.
-
-- **Phase 7 (v0.7.x):** VFS (`vfsd`) and block I/O (`iocd`) are externalised to Ring 3 servers. Filesystem drivers (FAT32, tmpfs) run as isolated userspace processes behind an IPC gateway.
-- **Phase 8 (v0.8.x):** The kernel is reduced to scheduler + IPC + page-table manager + interrupt routing. The Shell, init (PID 1), VFS, and all device drivers run as Ring 3 capability-bearing servers. `SYS_CAP_GRANT` / `SYS_CAP_REVOKE` gate every cross-server access.
+## What's different about NexIOS
+The core design goal of NexIOS is to execute any user application (ELF binary) as a dedicated, fully isolated user-task, scheduled deterministically, isolated in its own address space and sandboxed without re-compiling.
 
 ---
 
-## Roadmap
+## Key Features
 
-Completed phases (v0.2.0–v0.2.23) archived in [`README_done.md`](README_done.md).
+* **Zero-Allocation Critical Paths:** TCBs, IPC mailboxes (`MessageQueue`, `Notify`, `EventGroup`), and virtual memory metadata rely on pre-allocated slab allocators (`MemPool`).
+* **RAII Concurrency Guards:** Scoped guards (`IrqGuard`) statically enforce `cli`/`sti` boundaries at compile time to eliminate dangling critical sections.
+* **Rewind-Based Testing:** State-capture (`capture_state()`) and restoration hooks allow an automated suite of **881 integration tests** to run inside QEMU via state rewinds without reboots.
 
-Full roadmap at [`ROADMAP.md`](ROADMAP.md).
+---
+
+## Microkernel Transition (In Progress)
+
+* **Phase 7 (v0.7.x):** VFS (`vfsd`) and block I/O (`iocd`) externalized to isolated Ring 3 servers behind IPC gateways.
+* **Phase 8 (v0.8.x):** Kernel reduced to scheduler, IPC, page-table manager, and IRQ routing. Shell, init, VFS, and drivers run as capability-bearing Ring 3 servers.
+
+Full roadmap archived in `ROADMAP.md` and `README_done.md`.
 
 ---
 
