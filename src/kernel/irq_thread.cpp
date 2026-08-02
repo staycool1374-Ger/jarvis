@@ -21,6 +21,14 @@ size_t    IrqThread::count_ = 0;
 bool IrqThread::create(uint8_t vector, uint64_t priority,
                        arch::ISRHandler handler,
                        void (*isr_ack)(uint8_t vector)) {
+    // Idempotent per vector: a live instance already handles this vector
+    // (e.g. the keyboard IrqThread re-created after reboot_from_table).
+    for (size_t i = 0; i < count_; ++i) {
+        if (instances_[i].valid_ && instances_[i].vector_ == vector) {
+            Logger::info("IrqThread: vector %u already active, reusing", vector);
+            return true;
+        }
+    }
     if (count_ >= CONFIG_MAX_THREADED_IRQS) {
         Logger::error("IrqThread: max instances (%u) reached", CONFIG_MAX_THREADED_IRQS);
         return false;
@@ -48,6 +56,12 @@ bool IrqThread::create(uint8_t vector, uint64_t priority,
     inst.valid_ = true;
 
     count_++;
+
+    // Register the handler task with the scheduler so it can run task_entry()
+    // and reach notify_->wait().  Without this the task is created but never
+    // scheduled — ISR notifies go nowhere and threaded IRQs never fire their
+    // handler (dead keyboard input in the interactive shell).
+    Scheduler::add_task(*tcb);
 
     Logger::info("IrqThread: vector %u created (prio=%lu, tcb=%x)",
                  vector, priority, tcb->id);
@@ -91,6 +105,16 @@ IrqThread *IrqThread::for_vector(uint8_t vector) {
             return &instances_[i];
     }
     return nullptr;
+}
+
+bool IrqThread::is_irq_thread_task(const TaskControlBlock *t) noexcept {
+    if (!t)
+        return false;
+    for (size_t i = 0; i < count_; ++i) {
+        if (instances_[i].valid_ && instances_[i].tcb_ == t)
+            return true;
+    }
+    return false;
 }
 
 // ─── Push data from ISR ─────────────────────────────────────────────────

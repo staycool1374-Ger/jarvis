@@ -43,6 +43,10 @@ public:
     /// @brief Find the IrqThread for a given vector (or nullptr).
     static IrqThread *for_vector(uint8_t vector);
 
+    /// @brief True if the given TCB belongs to a live IrqThread handler task.
+    /// Used by test cleanup to avoid killing threaded-IRQ handler tasks.
+    static bool is_irq_thread_task(const TaskControlBlock *t) noexcept;
+
     /// @brief Push data from the ISR to the handler task (lock-free).
     bool try_push_data(const uint8_t *data, size_t len);
 

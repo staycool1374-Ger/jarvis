@@ -27,6 +27,7 @@
 #include <kernel/driver/driver.hpp>
 #include <kernel/log/dmesg.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
+#include <kernel/irq_thread.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
 
 namespace kernel::test {
@@ -41,15 +42,16 @@ void test_cleanup_all() {
     daemon::restart_stale_daemons();
 
     // ---- 2. Clean up any remaining non-idle, non-current tasks ----
-    // Spare init (harness) and the shell so the interactive system survives
-    // an in-shell `selftest` run.
+    // Spare init (harness), the shell, and threaded-IRQ handler tasks so the
+    // interactive system survives an in-shell `selftest` run.
     auto *current = Scheduler::current_task();
     auto *idle = Scheduler::get_idle_task();
     auto *harness = Scheduler::get_harness_task();
     auto *shell = Scheduler::get_shell_task();
     for (uint64_t i = 1; i < Scheduler::task_count(); ++i) {
         auto *t = Scheduler::task_at(i);
-        if (!t || t == idle || t == current || t == harness || t == shell)
+        if (!t || t == idle || t == current || t == harness || t == shell ||
+            IrqThread::is_irq_thread_task(t))
             continue;
         t->state = TaskState::TERMINATED;
         t->exit_code = 0;

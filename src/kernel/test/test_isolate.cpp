@@ -31,6 +31,7 @@
 #include <kernel/log/dmesg.hpp>
 #include <kernel/vfs/tmpfs.hpp>
 #include <kernel/driver/iocd.hpp>
+#include <kernel/irq_thread.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
@@ -1351,6 +1352,7 @@ void reload_daemon_tasks() {
 #endif
         if (t != current && t != idle && t != Scheduler::get_shell_task() &&
             t != Scheduler::get_harness_task() &&
+            !IrqThread::is_irq_thread_task(t) &&
             t->magic == TaskControlBlock::TCB_MAGIC) {
             to_kill[num_to_kill++] = t;
         }

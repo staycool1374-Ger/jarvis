@@ -316,6 +316,32 @@ void init_task_main() {
         }
     }
 
+    // ── Register keyboard ISR ───────────────────────────────────
+    // Must be done AFTER reboot_from_table() (which killed the boot-time
+    // IrqThread task).  Only in interactive mode (no test suite): during the
+    // test run keyboard input is unused and a persistent IrqThread task would
+    // perturb snapshot-isolation task-count expectations.
+    if (!g_run_tests) {
+#if defined(CONFIG_ARCH_X86_64) && CONFIG_THREADED_IRQS
+    kernel::IrqThread::create(33, 50,
+                              [](uint64_t, uint64_t, uint64_t) {
+                                  arch::Keyboard::handle_irq();
+                              },
+                              [](uint8_t vector) {
+                                  // x86_64: send APIC EOI + PIC EOI
+                                  if (arch::APIC::is_enabled())
+                                      arch::APIC::eoi();
+                                  arch::ArchInterruptController::eoi(vector);
+                              });
+#elif defined(CONFIG_ARCH_X86_64)
+    arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
+                                [](uint64_t, uint64_t, uint64_t) {
+                                    arch::Keyboard::handle_irq();
+                                    outb(arch::PIC1_CMD, 0x20);
+                                });
+#endif
+    }
+
     // ── Reap loop — block until a child exits ───────────────────
     // Boot/test-runner duty is done; the reaper + daemon-restart logger only
     // needs low priority so it never starves the interactive shell (prio 5).
@@ -705,24 +731,6 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
 #if defined(CONFIG_ARCH_X86_64)
     init_pic();
     arch::Keyboard::init();
-#if CONFIG_THREADED_IRQS
-    kernel::IrqThread::create(33, 50,
-                              [](uint64_t, uint64_t, uint64_t) {
-                                  arch::Keyboard::handle_irq();
-                              },
-                              [](uint8_t vector) {
-                                  // x86_64: send APIC EOI + PIC EOI
-                                  if (arch::APIC::is_enabled())
-                                      arch::APIC::eoi();
-                                  arch::ArchInterruptController::eoi(vector);
-                              });
-#else
-    arch::IDT::register_handler(arch::InterruptVector::KEYBOARD,
-                                [](uint64_t, uint64_t, uint64_t) {
-                                    arch::Keyboard::handle_irq();
-                                    outb(arch::PIC1_CMD, 0x20);
-                                });
-#endif
 #endif
 
     kernel::vfs::devfs_init();
