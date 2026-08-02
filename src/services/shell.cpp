@@ -652,10 +652,28 @@ void Shell::cmd_tasks(int, const char**) {
 
     auto *cur = kernel::Scheduler::current_task();
     auto count = kernel::Scheduler::task_count();
-    for (uint64_t i = 0; i < count; ++i) {
+    // Collect all valid tasks, then print sorted by task ID (task_at() returns
+    // priority-then-insertion order, which is not stable/intuitive).
+    kernel::TaskControlBlock *sorted[CONFIG_MAX_TASKS];
+    size_t n = 0;
+    for (uint64_t i = 0; i < count && n < CONFIG_MAX_TASKS; ++i) {
         auto *t = kernel::Scheduler::task_at(i);
         if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC)
             continue;
+        sorted[n++] = t;
+    }
+    // Insertion sort by ID (small N; stable).
+    for (size_t i = 1; i < n; ++i) {
+        kernel::TaskControlBlock *key = sorted[i];
+        size_t j = i;
+        while (j > 0 && sorted[j - 1]->id > key->id) {
+            sorted[j] = sorted[j - 1];
+            --j;
+        }
+        sorted[j] = key;
+    }
+    for (size_t i = 0; i < n; ++i) {
+        auto *t = sorted[i];
 
         // ID (right-aligned, 3 chars)
         if (t->id < 100) Terminal::putchar(' ');
