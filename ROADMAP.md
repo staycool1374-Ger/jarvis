@@ -15,52 +15,55 @@ claims confirmed as real defects.  These harden the user/kernel trust boundary
 in the syscall layer, VFS core, FAT32/tmpfs/devfs backends, and ELF loader.
 
 **Pointer validation (CheckedPtr):**
-- [ ] **VULN-C1: `sys_fstat` raw Ring-3 pointer deref** — replace
+- [x] **VULN-C1: `sys_fstat` raw Ring-3 pointer deref** — replace
       `reinterpret_cast<vfs::VfsStat *>(arg1)` with `checked()`; reject
       invalid user pointers with `-1`; mirror `sys_stat` pattern
       (src/kernel/syscall/syscall_handlers_fs.cpp).
-- [ ] **VULN-C2: `sys_ioctl` forwards unchecked Ring-3 pointer to driver** —
+- [x] **VULN-C2: `sys_ioctl` forwards unchecked Ring-3 pointer to driver** —
       minimum-bound `checked(arg2, sizeof(uint64_t))` at the syscall
       boundary; change `VnodeOps::ioctl` to take `CheckedPtr<void>`; update
       all `*_ioctl` stubs (devfs, fat32, pipe, procfs, tmpfs, initrd_fs).
 
 **Authorization TOCTOU:**
-- [ ] **VULN-C4: authorize-then-resolve TOCTOU in path syscalls** — resolve
+- [x] **VULN-C4: authorize-then-resolve TOCTOU in path syscalls** — resolve
       first, capture `ino`+fs-instance in the stack-local `vfsd::Msg`,
       re-resolve after `vfsd_authorize` IPC and compare identity, then operate
       on the already-resolved vnode (sys_open/stat/mkdir/unlink/rmdir/chdir).
 
 **Concurrency / refcount:**
-- [ ] **VULN-C5/C6: unsynchronized `Vnode::refcount` + `FdTable`** — make
+- [x] **VULN-C5/C6: unsynchronized `Vnode::refcount` + `FdTable`** — make
       `refcount` a `std::atomic<int>`; use `fetch_add`/`fetch_sub` with the
       returned previous value for the zero-check in `FdTable::free`; guard the
       `sys_chdir` `cwd_vnode` swap with a per-task `cwd_lock_`.
 
 **ELF loader / exec:**
-- [ ] **VULN-H1: uniform page permissions defeat W^X** — add a permission
+- [x] **VULN-H1: uniform page permissions defeat W^X** — add a permission
       bitmask to `map_page_in_pml4`; derive per-segment W/X from `phdr->flags`;
       stack+heap mapped writable-only; set NX bit (bit 63) when not executable.
-- [ ] **VULN-H2: OOB ELF read via unchecked `phdr->offset+filesz`** — thread the
+- [x] **VULN-H2: OOB ELF read via unchecked `phdr->offset+filesz`** — thread the
       real file size through `validate_segment`/`load_segments_and_stack`; add
       `offset+filesz > file_size` check after the existing overflow check.
-- [ ] **VULN-H4/W1: unbounded `validate_argv_envp` scan** — cap at
+- [x] **VULN-H4/W1: unbounded `validate_argv_envp` scan** — cap at
       `MAX_EXEC_ARGS`/`MAX_EXEC_ARG_LEN`; validate the full window with
       `checked()` before scanning; return combined argv+envp length out.
-- [ ] **VULN-U2: `setup_user_stack` unbounded underflow** — hard reservation
+- [x] **VULN-U2: `setup_user_stack` unbounded underflow** — hard reservation
       check (`str_total + kStackReserve < mem::STACK_SIZE`) before pointer
       arithmetic; propagate failure through `load()`/`exec_into_current()`.
 
 **Blocking / WCET:**
-- [ ] **VULN-W2: unbounded busy-wait in `tty_read`/`kbd_read`** — replace
+- [x] **VULN-W2: unbounded busy-wait in `tty_read`/`kbd_read`** — replace
       `UINT64_MAX` pause-spin with the `sys_receive` cooperative pattern
       (BLOCKED + `reschedule()`), or a wait/notify primitive posted from the
       IRQ handler if available.
-- [ ] **VULN-W3: `sys_receive` no bounded/timeout variant** — use the unused
+- [x] **VULN-W3: `sys_receive` no bounded/timeout variant** — use the unused
       `arg3` slot as `timeout_ticks` (0 = block forever); add a deadline check
       to the blocking receive loop.
 
-**Regression gate:** re-run `syscall`, `process`, `vfs`, `security`, `elf`
-classes and the full `all` suite (881/881) after each fix; 0 failures.
+**Regression gate (PASSED 2026-08-02):** re-ran `syscall` (19/19), `process`
+(43/43, incl. ELF), `vfs` (146/146), `security` (31/31) and the full `all`
+suite (881/881) after each fix; 0 failures.  `make build` clean,
+`check-style` Errors: 0.  Implementation spec:
+`docs/v0.3.6-boundary-audit-spec.md`.
 
 ## Active Development — v0.3.7
 
