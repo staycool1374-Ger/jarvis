@@ -409,3 +409,11 @@ SUMMARY: total=68 ok=67 fail=1
 SUMMARY: total=68 ok=67 fail=1
 2026-08-01 21:45:00 syscall PASSED: 19 FAILED: 0 TIME: 337ms (NexIOS sysname verified)
 2026-08-01 21:46:00 release-all PASSED: 84 FAILED: 0 TIME: 17058ms (v0.3.6 release gate)
+2026-08-02 00:10:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-H1 gate + NX frame-mask fix)
+2026-08-02 00:25:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-H2 gate; 1st run hung at test 457 = flaky H2 race)
+2026-08-02 00:33:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-H4/W1 gate)
+2026-08-02 00:41:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-U2 gate)
+2026-08-02 00:49:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-W2 gate)
+2026-08-02 00:57:00 all PASSED: 880 FAILED: 1 TIME: 63623ms (VULN-W3 gate; test 2 harness_blocked_sender_wakes flaky, retried clean)
+2026-08-02 00:59:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (VULN-W3 gate, clean retry)
+2026-08-02 01:05:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (v0.3.6 boundary-audit final regression)
