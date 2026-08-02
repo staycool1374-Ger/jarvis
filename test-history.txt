@@ -429,3 +429,5 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 12:29:00 integration PASSED: 1 FAILED: 0 TIME: 7000ms (init-sparing cleanup)
 2026-08-02 12:30:00 vfs PASSED: 146 FAILED: 0 TIME: 15000ms (init-sparing cleanup)
 2026-08-02 12:31:00 security PASSED: 31 FAILED: 0 TIME: 9000ms (init-sparing cleanup)
+2026-08-02 15:05:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (APIC timer INITCNT fix)
+2026-08-02 15:06:00 release-all PASSED: 84 FAILED: 0 TIME: 17058ms (APIC timer INITCNT fix)

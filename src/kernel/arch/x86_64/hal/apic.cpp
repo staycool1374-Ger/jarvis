@@ -199,8 +199,17 @@ void APIC::timer_init(uint32_t frequency_hz) {
         }
         kernel::Logger::info("APIC timer: periodic, bus=%lu Hz target=%lu Hz",
                              bus_freq_hz_, frequency_hz);
+        uint32_t count = static_cast<uint32_t>(
+            (bus_freq_hz_ / frequency_hz) & 0xFFFFFFFFULL);
+        if (count == 0)
+            count = 1;
         wr(REG_TIMER_DIVIDE, TIMER_DIVIDE_1);
         wr(REG_LVT_TIMER, APIC_TIMER_VECTOR | LVT_TIMER_PERIODIC);
+        // Periodic bus-clock mode needs an initial count loaded into
+        // REG_TIMER_INITCNT; the counter then counts down and auto-reloads
+        // on each period (no re-arm in the ISR needed).  Without this the
+        // timer never starts and ticks freeze after the first IRQ.
+        wr(REG_TIMER_INITCNT, count);
     }
     timer_active_ = true;
     periodic_ns_  = 1000000000ULL / frequency_hz;
@@ -271,7 +280,6 @@ void APIC::timer_start() {
     }
     // Bus-clock periodic: auto-re-arms in hardware — no-op
 }
-
 void APIC::timer_stop() {
     if (!enabled_) return;
     if (tsc_deadline_supported_)
