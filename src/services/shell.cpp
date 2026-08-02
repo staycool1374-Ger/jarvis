@@ -614,6 +614,25 @@ static void print_uint(uint64_t n) {
     while (pos > 0) Terminal::putchar(buf[--pos]);
 }
 
+/// @brief Compute a right-alignment padding count that never underflows.
+/// @param width Total field width.
+/// @param value  Value to be printed in that field.
+/// @return Number of leading spaces (clamped to [1, width]).
+/// @note A naive `while (v >= 10) { --pad; v /= 10; }` underflows when a
+///       field holds a value with 10+ digits (e.g. the idle task's priority
+///       0xFFFFFFFF), making the following `for` loop print 2^64 spaces.
+static uint64_t right_pad(uint64_t width, uint64_t value) {
+    uint64_t digits = 1;
+    uint64_t v = value;
+    while (v >= 10 && digits < width) {
+        v /= 10;
+        ++digits;
+    }
+    if (digits > width)
+        return 0;
+    return width - digits;
+}
+
 static const char *state_name(kernel::TaskState s) {
     using namespace kernel;
     switch (s) {
@@ -658,35 +677,27 @@ void Shell::cmd_tasks(int, const char**) {
         Terminal::putchar(' ');
 
         // Priority (right-aligned, 5 chars)
-        uint64_t prio_pad = 5;
-        uint64_t tmp = t->priority;
-        while (tmp >= 10) { --prio_pad; tmp /= 10; }
-        for (uint64_t p = 1; p < prio_pad; ++p) Terminal::putchar(' ');
+        for (uint64_t p = 1; p <= right_pad(5, t->priority); ++p)
+            Terminal::putchar(' ');
         print_uint(t->priority);
         Terminal::putchar(' ');
 
         // Period (right-aligned, 7 chars)
-        tmp = t->period_ticks;
-        uint64_t per_pad = 7;
-        while (tmp >= 10) { --per_pad; tmp /= 10; }
-        for (uint64_t p = 1; p < per_pad; ++p) Terminal::putchar(' ');
+        for (uint64_t p = 1; p <= right_pad(7, t->period_ticks); ++p)
+            Terminal::putchar(' ');
         print_uint(t->period_ticks);
         Terminal::putchar(' ');
 
         // Memory used pages (right-aligned, 7 chars)
-        tmp = t->memory_used_pages_;
-        uint64_t mem_pad = 7;
-        while (tmp >= 10) { --mem_pad; tmp /= 10; }
-        for (uint64_t p = 1; p < mem_pad; ++p) Terminal::putchar(' ');
+        for (uint64_t p = 1; p <= right_pad(7, t->memory_used_pages_); ++p)
+            Terminal::putchar(' ');
         print_uint(t->memory_used_pages_);
         Terminal::putchar(' ');
 
         // Stack size in KiB (right-aligned, 9 chars)
         uint64_t stack_kib = kernel::TaskControlBlock::STACK_SIZE / 1024;
-        tmp = stack_kib;
-        uint64_t stk_pad = 9;
-        while (tmp >= 10) { --stk_pad; tmp /= 10; }
-        for (uint64_t p = 1; p < stk_pad; ++p) Terminal::putchar(' ');
+        for (uint64_t p = 1; p <= right_pad(9, stack_kib); ++p)
+            Terminal::putchar(' ');
         print_uint(stack_kib);
         Terminal::putchar(' ');
 
