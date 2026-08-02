@@ -91,7 +91,21 @@ uint64_t Syscall::sys_waitpid(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     return static_cast<uint64_t>(-1);
 }
 
-static bool validate_argv_envp(const char *const *ptr, bool is_user_task) {
+// VULN-H4/W1: hard bounds on the exec argv/envp scan.  Without these, a
+// malicious task can place a non-NUL-terminated string abutting an unmapped
+// page to trigger an unvalidated kernel-side page fault (DoS), or pass an
+// unbounded entry count that stalls the syscall (WCET violation).
+static constexpr size_t MAX_EXEC_ARGS = 64;
+static constexpr size_t MAX_EXEC_ARG_LEN = SYSCALL_MAX_PATH; // 256
+
+/// @brief Validate a user-space argv/envp array and bound every string.
+/// @param ptr User pointer to the null-terminated pointer array.
+/// @param is_user_task true if the caller is a Ring-3 task.
+/// @param[in,out] out_total_len Accumulates the combined (argv+envp) string
+///        byte total incl. terminators, for VULN-U2's stack reservation check.
+/// @return true if the whole array (and every string window) is valid.
+static bool validate_argv_envp(const char *const *ptr, bool is_user_task,
+                               uint64_t *out_total_len = nullptr) {
     if (!ptr)
         return true;
     if (is_user_task) {
@@ -99,13 +113,24 @@ static bool validate_argv_envp(const char *const *ptr, bool is_user_task) {
         if (!arr.valid())
             return false;
         const char *const *p = ptr;
+        size_t arg_count = 0;
         while (*p) {
-            auto s = checked(*p, static_cast<size_t>(1));
+            if (++arg_count > MAX_EXEC_ARGS)
+                return false;
+            // Validate the ENTIRE maximum-length window up front, so every
+            // byte touched by the scan below is already certified mapped.
+            auto s = checked(*p, static_cast<uint64_t>(MAX_EXEC_ARG_LEN));
             if (!s.valid())
                 return false;
             size_t len = 0;
-            while (s.unsafe_ptr()[len])
-                ++len;
+            for (; len < MAX_EXEC_ARG_LEN; ++len) {
+                if (s.unsafe_ptr()[len] == '\0')
+                    break;
+                if (len == MAX_EXEC_ARG_LEN - 1)
+                    return false; // unterminated within the window
+            }
+            if (out_total_len)
+                *out_total_len += len + 1;
             ++p;
             auto next = checked(p, static_cast<size_t>(1));
             if (!next.valid())
@@ -133,9 +158,12 @@ uint64_t Syscall::sys_exec(uint64_t arg0, uint64_t arg1, uint64_t arg2,
     auto *argv = reinterpret_cast<const char *const *>(arg1);
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *envp = reinterpret_cast<const char *const *>(arg2);
-    if (!validate_argv_envp(argv, true))
+    // VULN-H4/W1 + VULN-U2: validate both arrays with hard bounds and
+    // accumulate the combined string length for the stack-reservation check.
+    uint64_t str_total = 0;
+    if (!validate_argv_envp(argv, true, &str_total))
         return static_cast<uint64_t>(-1);
-    if (!validate_argv_envp(envp, true))
+    if (!validate_argv_envp(envp, true, &str_total))
         return static_cast<uint64_t>(-1);
     if (vn->size == 0 || vn->size > 512_KiB)
         return static_cast<uint64_t>(-1);
