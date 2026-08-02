@@ -83,10 +83,12 @@ enum Ipv4Protocol : uint8_t {
 /// @brief Compute an IPv4 header one's-complement checksum.
 /// @return Big-endian checksum value.
 inline uint16_t ipv4_checksum(const Ipv4Header *hdr) {
+    const auto *bytes = reinterpret_cast<const uint8_t *>(hdr);
     uint32_t sum = 0;
-    auto *words = reinterpret_cast<const uint16_t *>(hdr);
-    for (int i = 0; i < 10; ++i) { // first 20 bytes = 10 half-words
-        sum += words[i];
+    uint16_t word = 0;
+    for (int i = 0; i < 20; i += 2) { // first 20 bytes = 10 half-words
+        __builtin_memcpy(&word, bytes + i, sizeof(word));
+        sum += word;
     }
     while (sum >> 16)
         sum = (sum & 0xFFFF) + (sum >> 16);

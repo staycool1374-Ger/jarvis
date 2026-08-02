@@ -434,3 +434,7 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 19:00:00 all PASSED: 881 FAILED: 0 TIME: 63623ms (keyboard IrqThread fix)
 2026-08-02 19:02:00 release-all PASSED: 84 FAILED: 0 TIME: 17058ms (keyboard IrqThread fix)
 2026-08-02 21:05:05 all PASSED: 84 FAILED: 0 TIME: 17058ms (keyboard ACK-drain fix)
+2026-08-02 21:40:00 selftest PASSED: 132 FAILED: 0 TIME: 42000ms (CI-gate verify, ipv4 checksum fix)
+2026-08-02 21:41:00 all-1 PASSED: 746 FAILED: 0 TIME: 60000ms (CI-gate verify, ipv4 checksum fix)
+2026-08-02 21:42:00 all-2 PASSED: 135 FAILED: 0 TIME: 40000ms (CI-gate verify, ipv4 checksum fix)
+2026-08-02 21:43:00 net PASSED: 42 FAILED: 0 TIME: 30000ms (ipv4 checksum fix)
