@@ -173,6 +173,8 @@ void Shell::init() {
     register_command("ifconfig","Show/configure network interface",  cmd_ifconfig);
     register_command("ping",    "Send ICMP echo requests",           cmd_ping);
     register_command("less",    "Page through a text file",          cmd_less);
+    register_command("cat",     "Print file contents to terminal",   cmd_cat);
+    register_command("touch",   "Create an empty file",              cmd_touch);
     register_command("dmesg",   "Print kernel log buffer",           cmd_dmesg);
     register_command("lspci",   "List PCI devices",                  cmd_lspci);
 
@@ -303,19 +305,11 @@ int Shell::parse_and_exec(const char* line) {
 
                 // Write captured output to the file
                 if (capture_buf[0]) {
-                    auto* vn = kernel::vfs::resolve(redirect_file);
-                    if (!vn) {
-                        // File doesn't exist — try to open it for writing,
-                        // which will fail on most filesystems. Fall back to
-                        // creating via parent directory.
-                        Terminal::write("(redirect to ");
-                        Terminal::write(redirect_file);
-                        Terminal::write(")\n");
-                    }
-
                     auto* task = kernel::Scheduler::current_task();
                     if (task) {
-                        int fd = kernel::syscall_path_open(redirect_file, 1);
+                        int fd = kernel::syscall_path_open(
+                            redirect_file,
+                            kernel::vfs::O_WRONLY | kernel::vfs::O_CREAT);
                         if (fd >= 0) {
                             size_t slen = 0;
                             while (capture_buf[slen]) ++slen;
@@ -2327,6 +2321,48 @@ void Shell::cmd_less(int argc, const char** argv) {
         }
         if (got) break;
         arch::pause();
+    }
+}
+
+void Shell::cmd_cat(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: cat <path>\n");
+        return;
+    }
+
+    auto* vn = kernel::vfs::resolve(argv[1]);
+    if (!vn || !(vn->mode & kernel::vfs::S_IFREG)) {
+        shell_error_path("cat", argv[1], "No such file");
+        return;
+    }
+    if (!vn->ops->read) {
+        shell_error_path("cat", argv[1], "not readable");
+        return;
+    }
+
+    static constexpr int BUF_SIZE = 512;
+    uint8_t buf[BUF_SIZE];
+    uint64_t offset = 0;
+
+    for (;;) {
+        int64_t nread = vn->ops->read(*vn, buf, BUF_SIZE, offset);
+        if (nread <= 0)
+            break;
+        offset += static_cast<uint64_t>(nread);
+        for (int64_t i = 0; i < nread; ++i)
+            Terminal::putchar(static_cast<char>(buf[i]));
+    }
+}
+
+void Shell::cmd_touch(int argc, const char** argv) {
+    if (argc < 2) {
+        Terminal::write("Usage: touch <path>\n");
+        return;
+    }
+
+    auto r = kernel::vfs::create_err(argv[1], kernel::vfs::S_IFREG);
+    if (r != kernel::errors::VFS_ERR_OK && r != kernel::errors::VFS_ERR_EXISTS) {
+        shell_vfs_error("touch", r);
     }
 }
 
