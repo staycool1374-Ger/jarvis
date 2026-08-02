@@ -76,8 +76,20 @@ void Keyboard::init() {
     alt_ = false;
 
     outb(0x64, 0xAE);
+    io_wait();
+    // Drain any pending output (e.g. an ACK to a prior command) so the first
+    // keyboard IRQ does not read a stale byte as a scancode.
+    while ((inb(STATUS_PORT) & 0x01) != 0)
+        inb(DATA_PORT);
     outb(0x60, 0xF4);
     io_wait();
+    // The 0xF4 enable command is ACKed with 0xFA; drain it so it is not
+    // consumed as a fake scancode by the keyboard ISR.
+    for (int i = 0; i < 4; ++i) {
+        if ((inb(STATUS_PORT) & 0x01) == 0)
+            break;
+        inb(DATA_PORT);
+    }
 }
 
 /// @brief Push a single character onto the input ring buffer.
