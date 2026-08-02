@@ -21,6 +21,8 @@
 
 #include <kernel/vfs/devfs.hpp>
 #include <kernel/random.hpp>
+#include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 #include <services/terminal/terminal.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
@@ -51,7 +53,11 @@ static int64_t tty_read(Vnode &self, uint8_t *buffer, uint64_t count,
                         uint64_t) {
     if (count == 0)
         return 0;
-    for (uint64_t retry = 0; retry < UINT64_MAX; ++retry) {
+    // VULN-W2: previously spun on arch::pause() for UINT64_MAX iterations
+    // without descheduling, monopolising the CPU core (WCET violation).  Use
+    // the same cooperative blocking pattern as Syscall::sys_receive: mark
+    // BLOCKED, reschedule, and re-check only after being re-dispatched.
+    while (true) {
         if (serial_has_data()) {
 #if defined(CONFIG_ARCH_X86_64)
             char character = static_cast<char>(arch::inb(arch::COM1));
@@ -68,9 +74,17 @@ static int64_t tty_read(Vnode &self, uint8_t *buffer, uint64_t count,
             (reinterpret_cast<uint64_t>(self.private_data) & O_NONBLOCK)) {
             return VFS_INVALID;
         }
-        arch::pause();
+        auto *cur = kernel::Scheduler::current_task();
+        if (!cur)
+            return VFS_INVALID;
+        cur->state = TaskState::BLOCKED;
+        kernel::Scheduler::reschedule();
+        if (cur->page_table_) {
+            arch::sti();
+            arch::hlt();
+            arch::cli();
+        }
     }
-    return VFS_INVALID;
 }
 
 /// @brief Write to the tty device (serial output).
@@ -247,7 +261,8 @@ static int64_t kbd_read(Vnode &self, uint8_t *buffer, uint64_t count,
     if (count == 0)
         return 0;
     char key_char = 0;
-    for (uint64_t retry = 0; retry < UINT64_MAX; ++retry) {
+    // VULN-W2: cooperative blocking (see tty_read) instead of UINT64_MAX spin.
+    while (true) {
         if (arch::Keyboard::getchar(key_char)) {
             buffer[0] = static_cast<uint8_t>(key_char);
             return 1;
@@ -256,9 +271,17 @@ static int64_t kbd_read(Vnode &self, uint8_t *buffer, uint64_t count,
             (reinterpret_cast<uint64_t>(self.private_data) & O_NONBLOCK)) {
             return VFS_INVALID;
         }
-        arch::pause();
+        auto *cur = kernel::Scheduler::current_task();
+        if (!cur)
+            return VFS_INVALID;
+        cur->state = TaskState::BLOCKED;
+        kernel::Scheduler::reschedule();
+        if (cur->page_table_) {
+            arch::sti();
+            arch::hlt();
+            arch::cli();
+        }
     }
-    return VFS_INVALID;
 }
 /// @brief Write to keyboard device (not supported).
 static int64_t kbd_write(Vnode &, const uint8_t *, uint64_t, uint64_t) {
