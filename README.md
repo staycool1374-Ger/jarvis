@@ -21,15 +21,15 @@
 
 ---
 
-## Overview NexIOS
+# Overview NexIOS
 
-A freestanding C++20 real-time operating system for x86_64 with zero dynamic heap allocation in critical paths and deterministic $O(1)$ scheduling.
+A freestanding C++20 real-time operating system for x86_64 with zero dynamic heap allocation in critical paths and deterministic O(1) scheduling.
 
 Currently a monolithic kernel (47 syscalls via `int 0x82`), actively transitioning toward a capability-based microkernel.
 
 * **Target:** x86_64 (ARM64 & RISC-V in preparation)
 * **Language:** Freestanding C++20 (`-fno-exceptions`, `-fno-rtti`, zero `libc`/`libstdc++`)
-* **Status:** v0.3.6 ($O(1)$ scheduler hardening, MemPool bitmap fixes, IPC boundaries)
+* **Status:** v0.3.6 O(1) scheduler hardening, MemPool bitmap fixes, IPC boundaries)
 * **License:** GPLv3
 
 NexIOS RTOS is an independent, ground-up implementation of a real-time operating system.
@@ -45,7 +45,7 @@ The core design goal of NexIOS is to execute any user application (ELF binary) a
 
 * **Zero-Allocation Critical Paths:** TCBs, IPC mailboxes (`MessageQueue`, `Notify`, `EventGroup`), and virtual memory metadata rely on pre-allocated slab allocators (`MemPool`).
 * **RAII Concurrency Guards:** Scoped guards (`IrqGuard`) statically enforce `cli`/`sti` boundaries at compile time to eliminate dangling critical sections.
-* **Rewind-Based Testing:** State-capture (`capture_state()`) and restoration hooks allow an automated suite of **881 integration tests** to run inside QEMU via state rewinds without reboots.
+* **Rewind-Based Testing:** State-capture (`capture_state()`) and restoration hooks allow an automated test-suite to run inside QEMU via state rewinds without reboots.
 
 ---
 
@@ -72,7 +72,8 @@ sudo apt install build-essential git wget xorriso dosfstools \
 ```bash
 git clone <repo-url>
 cd os
-make debug          # Debug build with 881-test suite
+make help           # showing list of usage
+make debug          # Debug build
 make qemu-iso       # Launch in QEMU with serial console
 make release        # Optimised release build (no tests)
 
