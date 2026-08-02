@@ -166,6 +166,13 @@ evidence-backed. Do not stack changes across steps.
   then disable again before any release gate run.  For the *debug* `all`
   development gate (boundary-audit stepwise runs), keep the trace **ON**
   until the H2 race is fixed (ROADMAP §v0.3.9).
+- **Interactive release shell:** `make run-release-mode` MUST run with the
+  trace OFF.  With it ON, the `[TICK]`/`[SW]`/`[APPLY]` serial spam on every
+  timer tick and context switch makes the shell appear input-dead.  Verified
+  2026-08-02: with the trace off, release boots clean and the shell accepts
+  `version`/`help` input via serial (`-serial mon:stdio`, UEFI pflash boot).
+  The `[DIAG-TABLE]`/`[TCB]`/`[WCET]`/`[DIAG]` boot messages are normal
+  release output (not gated by CONFIG_DEBUG).
 
 ## graphify
 
