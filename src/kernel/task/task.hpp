@@ -155,6 +155,10 @@ struct TaskControlBlock {
     static constexpr uint64_t FLAGS_IF = 0x200;
     static constexpr uint64_t TCB_MAGIC = 0x5443424D41474943ULL;
 
+    /// @brief Sentinel for aperiodic tasks (idle, deadline-monitor, IRQ
+    /// threads): no real period/deadline.  Stored in `period_ticks`.
+    static constexpr uint64_t NO_PERIOD = 0xFFFFFFFFULL;
+
     /// @brief True if `t` is a live, valid TCB.
     ///        The address-range check MUST come first: a corrupted list
     ///        pointer (e.g. a freed/overwritten node whose runq_/pri_ links

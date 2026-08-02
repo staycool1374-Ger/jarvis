@@ -411,7 +411,7 @@ void Scheduler::init() {
         id_table_[i] = nullptr;
 
     idle_task_ = TaskControlBlock::create(kernel::integrity::idle_task_main, 0,
-                                          0xFFFFFFFF);
+                                          TaskControlBlock::NO_PERIOD);
     idle_task_->state = TaskState::READY;
     __builtin_strncpy(idle_task_->name, "idle", CONFIG_TASK_NAME_LEN - 1);
     idle_task_->name[CONFIG_TASK_NAME_LEN - 1] = '\0';
@@ -1440,7 +1440,8 @@ void Scheduler::reap_orphans() noexcept {
         deadline_list_.remove(*t);
         if (t == idle_task_) {
             auto *created = TaskControlBlock::create(
-                kernel::integrity::idle_task_main, 0, 0xFFFFFFFF);
+                kernel::integrity::idle_task_main, 0,
+                TaskControlBlock::NO_PERIOD);
             created->state = TaskState::READY;
             if (!suppress_terminated_log_)
                 Logger::info("Scheduler: task '%s' (ID=%u) terminated", t->name,
@@ -2363,7 +2364,8 @@ void Scheduler::ensure_monitor() noexcept {
         return;
 
     Logger::info("[MON] Re-spawning deadline-monitor task");
-    auto *tcb = TaskControlBlock::create(monitor_task_entry, 127, 0xFFFFFFFF);
+    auto *tcb = TaskControlBlock::create(monitor_task_entry, 127,
+                                         TaskControlBlock::NO_PERIOD);
     if (tcb) {
         __builtin_strncpy(tcb->name, "monitor", CONFIG_TASK_NAME_LEN - 1);
         tcb->name[CONFIG_TASK_NAME_LEN - 1] = '\0';

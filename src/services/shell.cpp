@@ -682,10 +682,16 @@ void Shell::cmd_tasks(int, const char**) {
         print_uint(t->priority);
         Terminal::putchar(' ');
 
-        // Period (right-aligned, 7 chars)
-        for (uint64_t p = 1; p <= right_pad(7, t->period_ticks); ++p)
-            Terminal::putchar(' ');
-        print_uint(t->period_ticks);
+        // Period (right-aligned, 7 chars) — aperiodic tasks (NO_PERIOD)
+        // have no period, display '-'.
+        if (t->period_ticks == kernel::TaskControlBlock::NO_PERIOD) {
+            for (int p = 0; p < 6; ++p) Terminal::putchar(' ');
+            Terminal::putchar('-');
+        } else {
+            for (uint64_t p = 1; p <= right_pad(7, t->period_ticks); ++p)
+                Terminal::putchar(' ');
+            print_uint(t->period_ticks);
+        }
         Terminal::putchar(' ');
 
         // Memory used pages (right-aligned, 7 chars)
