@@ -15,10 +15,10 @@
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-#define CONFIG_VERSION "0.3.6"
+#define CONFIG_VERSION "0.3.7-dev"
 #define CONFIG_VERSION_MAJOR 0
 #define CONFIG_VERSION_MINOR 3
-#define CONFIG_VERSION_PATCH 6
+#define CONFIG_VERSION_PATCH 7
 #define CONFIG_VERSION_NUM ((CONFIG_VERSION_MAJOR << 16) | \
                             (CONFIG_VERSION_MINOR << 8) |  \
                             CONFIG_VERSION_PATCH)

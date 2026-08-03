@@ -594,7 +594,7 @@ static void register_all_tests() {
      register_gcov_tests();
      register_debug_tests();
      register_framebuffer_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
+#if CONFIG_VERSION_NUM >= 0x000309
      register_preemption_under_syscall_tests();
 #endif
      register_spinlock_stress_tests();
@@ -629,7 +629,7 @@ static void register_all_tests() {
     register_block_device_tests();
     register_fat32_tests();
      register_vfs_fat32_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
+#if CONFIG_VERSION_NUM >= 0x000309
      register_ipc_blocking_tests();
 #endif
      register_ipc_lock_free_tests();
@@ -745,7 +745,7 @@ static void register_all_tests_first_half() {
      register_gcov_tests();
      register_debug_tests();
      register_framebuffer_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
+#if CONFIG_VERSION_NUM >= 0x000309
      register_preemption_under_syscall_tests();
 #endif
      register_spinlock_stress_tests();
@@ -780,7 +780,7 @@ static void register_all_tests_first_half() {
     register_block_device_tests();
     register_fat32_tests();
      register_vfs_fat32_tests();
-#if CONFIG_VERSION_NUM >= 0x000307
+#if CONFIG_VERSION_NUM >= 0x000309
      register_ipc_blocking_tests();
 #endif
      register_ipc_lock_free_tests();
