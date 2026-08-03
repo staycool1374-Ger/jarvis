@@ -12,8 +12,8 @@
   highest priority** and **bit 0 = the lowest**.
 - Concretely: **idle runs at priority 0** (lowest — only runs when nothing else
   is runnable); the **deadline-monitor task runs at 127** (highest); kernel
-  daemons (vfsd=80, iocd=70) outrank the shell (5) and the test harness / init
-  task (10 during a test cycle, 1 as reaper).
+  daemons (vfsd=20, iocd=20) outrank the shell (2) and the test harness / init
+  task (10 during a test cycle, 0 as background reaper).
 - This has a direct consequence for **sporadic-server background priority**:
   an EXHAUSTED server's `current_priority()` returns `bg_priority_`, which MUST
   be **lower** than the task's `base_priority_` (and lower than the harness at

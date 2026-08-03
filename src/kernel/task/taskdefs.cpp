@@ -47,21 +47,25 @@ namespace {
 // ── Task definition table ────────────────────────────────────────────────
 
 constexpr TaskDef g_task_defs[] = {
-    // init: coordinator, large period + low prio (RMS). WCET 1 → 1% CPU
-    {"init", TaskType::KERNEL, true, init_task_main, nullptr, 10, 100, 1, 0, 0,
+    // init: PID 1 coordinator + reaper.  Background priority 0; raised to 10
+    // (harness) only while the test runner is active, dropped back to 0 in
+    // the reap loop.  Period 100 for RMS.
+    {"init", TaskType::KERNEL, true, init_task_main, nullptr, 0, 100, 1, 0, 0,
      0, nullptr, nullptr, nullptr, 1, 0, false},
     // vfsd: sporadic server, fast IPC response, 2% worst-case CPU
-    {"vfsd", TaskType::SPORADIC_SERVER, true, nullptr, "vfsd.c.elf", 80, 50, 0,
-     1, 50, 1, "vfsd", vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false},
-    // iocd: sporadic server for I/O, slightly lower prio than vfsd
-    {"iocd", TaskType::SPORADIC_SERVER, true, nullptr, "iocd.c.elf", 70, 50, 0,
-     1, 50, 1, "iocd", iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false},
-    // user-app: generic userspace ELF placeholder (loaded via runelf / taskdef)
-    {"user-app", TaskType::USER_ELF, true, nullptr, "user-app.c.elf", 20, 200,
-     0, 0, 0, 0, nullptr, nullptr, nullptr, 1, 0, false},
-    // shell: interactive kernel debug shell, low prio, short ticks
+    {"vfsd", TaskType::SPORADIC_SERVER, true, nullptr, "vfsd.c.elf", 20, 10, 0,
+     2, 10, 0, "vfsd", vfsd::set_vfsd_pid, vfsd::get_vfsd_pid, 1, 0, false},
+    // iocd: sporadic server for I/O, same prio as vfsd
+    {"iocd", TaskType::SPORADIC_SERVER, true, nullptr, "iocd.c.elf", 20, 10, 0,
+     3, 10, 0, "iocd", iocd::set_iocd_pid, iocd::get_iocd_pid, 1, 0, false},
+    // user-app: generic userspace ELF placeholder — aperiodic (period 0)
+    {"user-app", TaskType::USER_ELF, true, nullptr, "user-app.c.elf", 2, 0, 0,
+     0, 0, 0, nullptr, nullptr, nullptr, 1, 0, false},
+    // shell: interactive kernel debug shell.  Disabled in the table — the
+    // real shell is created aperiodic by init_task_main at prio 2; values
+    // kept here for documentation/validation parity.
     {"shell", TaskType::KERNEL, false, service::Shell::shell_task_main, nullptr,
-     5, 20, 0, 0, 0, 0, nullptr, nullptr, nullptr, 1, 0, false},
+     2, 0, 0, 0, 0, 0, nullptr, nullptr, nullptr, 1, 0, false},
     // dmesg: background logger with very long period
     {"dmesg", TaskType::KERNEL, false, dmesg_task_main, nullptr, 1, 500, 0, 0,
      0, 0, nullptr, nullptr, nullptr, 1, 0, false},
@@ -106,8 +110,10 @@ template <size_t N> constexpr bool validate_all(const TaskDef (&t)[N]) {
         if (d.priority > CONFIG_PRIORITY_CEILING)
             return false;
 
-        // period must be positive
-        if (d.period_ticks == 0)
+        // period must be positive for enabled periodic tasks; aperiodic
+        // USER_ELF tasks (period 0) and disabled (informational) entries are
+        // exempt.
+        if (d.period_ticks == 0 && d.enabled && d.type != TaskType::USER_ELF)
             return false;
 
         // type-specific requirements
@@ -290,6 +296,7 @@ void reboot_from_table() {
             task = kernel::elf::load(hdr, f.data, f.size);
             if (task) {
                 task->priority = def.priority;
+                task->base_priority = def.priority;
                 task->period_ticks = def.period_ticks;
                 if (def.type == TaskType::SPORADIC_SERVER) {
                     task->init_sporadic_server(def.ss_budget, def.ss_period,

@@ -186,7 +186,8 @@ void restart_stale_daemons() {
             continue;
         }
 
-        task->priority = 1;
+        task->priority = 20;
+        task->base_priority = 20;
         task->period_ticks = 10;
         {
             size_t j = 0;
@@ -276,7 +277,8 @@ void ensure_running(const char *name) {
             return;
         }
 
-        task->priority = 1;
+        task->priority = 20;
+        task->base_priority = 20;
         task->period_ticks = 10;
         {
             size_t j = 0;

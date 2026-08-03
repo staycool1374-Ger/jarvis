@@ -48,8 +48,8 @@ verifies OS and user ELF authenticity and runs diagnostic time measurements.
 - `consume()`: decrements `budget_remaining_`, transitions to EXHAUSTED at 0
 
 ## 5. IPC — Producer/Consumer Daemons
-- vfsd (PID 3, PRI 1): VFS operations. Blocks in `sys_receive` until IPC message arrives.
-- iocd (PID 4, PRI 1): I/O device handler. Producer — makes VFS syscalls → sends IPC to vfsd.
+- vfsd (PRI 20, SS(2,10,0)): VFS operations. Blocks in `sys_receive` until IPC message arrives.
+- iocd (PRI 20, SS(3,10,0)): I/O device handler. Producer — makes VFS syscalls → sends IPC to vfsd.
 - `IPC::send(dest_id, msg)`: pushes to dest's msg_queue, calls `set_task_ready(dest)` if BLOCKED
 - `IPC::recv(msg)`: pops from own msg_queue. Returns false if empty.
 - `IPC::send_sync(dest_id, msg, reply)`: send + block-wait-for-reply (used by VFS syscall handlers)
@@ -133,13 +133,18 @@ make execute-test x86 release selftest    # CI gate
 
 ## 10. Kernel Boot Sequence
 - `arch_init()` → `memory_init()` → `kernel_init()`
-- `kernel_init`: `BufferPool::init()` → `daemon::init()` → load `vfsd.c.elf` (PRI 1, SS(2,10,0))
-- load `iocd.c.elf` (PRI 1, SS(3,10,0)) → `set_fb_enabled(false)` → `run_filtered(TF_RELEASE, false)`
-- `set_fb_enabled(true)` → load `test_fork.c.elf` (PRI 1) → create ksh (PRI 2, period 5)
-- create dmesg (PRI 1, period 10) → idle stack switch → sti → hlt loop
+- `kernel_init`: `BufferPool::init()` → `daemon::init()` → `Shell::init()`
+- → `reboot_from_table()` (spawns init, vfsd, iocd, user-app from `g_task_defs`
+  — the single source of truth for priorities/periods) → idle loop
+- Boot task set: init (PID 1, prio 0 background / 10 harness-in-testmode, period
+  100), vfsd (prio 20, SS(2,10,0)), iocd (prio 20, SS(3,10,0)), user-app
+  (prio 2, aperiodic)
+- `init_task_main`: mounts fstab → runs /etc/rc (user-elfs @ prio 2, aperiodic)
+  → waits for daemon-ready → runs test suite (raises self to prio 10) → creates
+  ksh (prio 2, aperiodic) → reap loop (drops self to prio 0)
 - Idle task: `sti` → `1: hlt` → `jmp 1b`. Timer ISR wakes it → RMS picks highest-priority READY task.
 
-## 11. Shell Task (ksh, PID 6, PRI 2)
+## 11. Shell Task (ksh, PRI 2, aperiodic)
 - `shell_task_main()`: `init()` → write banner → `while(true) { prompt; readline; parse_and_exec; }`
 - prompt: `✓ <cwd> $ ` (UTF-8 checkmark, directory, dollar)
 - `readline`: polls COM1 LSR for serial input, `Keyboard::getchar` for PS/2, `arch::pause()` yield

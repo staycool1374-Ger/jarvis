@@ -1240,9 +1240,10 @@ void Shell::cmd_selftest(int argc, const char** argv) {
         self_task->priority = saved_prio;
         self_task->base_priority = saved_base;
     }
-    // Restore init to its idle reaper priority (1) now that the suite is done.
+    // Restore init to its background reaper priority (0) now that the suite
+    // is done.
     if (init_task && init_task != self_task) {
-        kernel::Scheduler::set_priority(*init_task, 1);
+        kernel::Scheduler::set_priority(*init_task, 0);
     }
     Terminal::set_fb_enabled(true);
     Terminal::write("Self-tests complete.\n");

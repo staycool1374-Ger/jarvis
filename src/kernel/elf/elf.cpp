@@ -364,12 +364,12 @@ TaskControlBlock *load(const ELF64Header *hdr, const uint8_t *file_data,
     tcb->magic = TaskControlBlock::TCB_MAGIC;
     tcb->id = kernel::Scheduler::alloc_id();
     tcb->state = TaskState::READY;
-    tcb->priority = 5;
-    tcb->period_ticks = 20;
-    tcb->base_priority = 5;
+    tcb->priority = 2;
+    tcb->period_ticks = 0;
+    tcb->base_priority = 2;
     tcb->executed_ticks = 0;
-    tcb->remaining_ticks = 20;
-    tcb->deadline_ticks = arch::Timer::ticks() + 20;
+    tcb->remaining_ticks = 0;
+    tcb->deadline_ticks = arch::Timer::ticks();
     tcb->page_table_ = 0;
     tcb->page_table_shared_ = false;
     tcb->stack_phys_ = 0;

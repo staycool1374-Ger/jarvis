@@ -532,7 +532,7 @@
 /// Kernel stack sizes per priority tier (bytes).  Indexed by priority.
 #ifndef CONFIG_STACK_SIZE_TABLE
 #define CONFIG_STACK_SIZE_TABLE \
-    { 4096, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }
+    { 65536, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }
 #endif
 
 /// Maximum number of zombies in the zombie list before the on_tick watchdog

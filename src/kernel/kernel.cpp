@@ -201,8 +201,9 @@ void init_task_main() {
                     if (kernel::elf::validate_header(hdr)) {
                         auto *task = kernel::elf::load(hdr, f.data, f.size);
                         if (task) {
-                            task->priority = 1;
-                            task->period_ticks = 20;
+                            task->priority = 2;
+                            task->base_priority = 2;
+                            task->period_ticks = 0;
                             kernel::Scheduler::add_task(*task);
                             kernel::Logger::info("init: started %s", elf_path);
                         }
@@ -284,6 +285,12 @@ void init_task_main() {
         "[DIAG] init_task_main: reached test runner g_run_tests=%u",
         (unsigned)g_run_tests);
     if (g_run_tests) {
+        // BUGS.md#021 harness exemption requires init (PID 1) at priority 10
+        // (its boot/test-runner duty priority) during the suite; the base
+        // priority in g_task_defs is 0 (background reaper).
+        if (auto *self = kernel::Scheduler::current_task()) {
+            kernel::Scheduler::set_priority(*self, 10);
+        }
 #ifdef CONFIG_DEBUG
         kernel::Logger::info("[TEST] Registry tests=%u classes=%u",
                              (unsigned)kernel::test::Registry::count(),
@@ -299,7 +306,7 @@ void init_task_main() {
     // ── Create shell task ───────────────────────────────────────
     {
         auto *shell = kernel::TaskControlBlock::create(
-            service::Shell::shell_task_main, 5, 0);
+            service::Shell::shell_task_main, 2, 0);
         if (shell) {
             const char *src = "shell";
             size_t i = 0;
@@ -344,10 +351,11 @@ void init_task_main() {
 
     // ── Reap loop — block until a child exits ───────────────────
     // Boot/test-runner duty is done; the reaper + daemon-restart logger only
-    // needs low priority so it never starves the interactive shell (prio 5).
-    // The shell's `selftest` command raises it back to 10 for the test run.
+    // needs background priority (0) so it never starves the shell (prio 2)
+    // or the daemons (prio 20).  The shell's `selftest` command raises it
+    // back to 10 for the test run.
     if (auto *init_self = kernel::Scheduler::current_task())
-        kernel::Scheduler::set_priority(*init_self, 1);
+        kernel::Scheduler::set_priority(*init_self, 0);
     for (;;) {
         arch::pause();
         kernel::Scheduler::drain_zombie_list();
@@ -663,27 +671,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::Scheduler::init(kernel::SchedulerConfig{});
 
     // Init task (PID 1) — mounts fstab, runs /etc/rc, then blocks as reaper.
-    // Priority 10 during boot/test-runner duty; dropped to 1 (reaper/logger)
-    // before the reap loop so it never starves the shell (prio 5).  The
-    // shell's `selftest` command raises it back to 10 for the test run.
-    {
-        auto *init_task = kernel::TaskControlBlock::create(
-            init_task_main,
-            10,  // boot/test-runner priority
-            10); // period_ticks
-        if (init_task) {
-            // Self-explaining name for the test harness / coordinator task
-            // (PID 1).  Captured by the scheduler so rate_monotonic_schedule
-            // can exempt it from preemption during the test cycle (BUGS.md#021).
-            __builtin_strncpy(init_task->name, "init",
-                              sizeof(init_task->name) - 1);
-            init_task->name[sizeof(init_task->name) - 1] = '\0';
-            kernel::Scheduler::set_harness_task(init_task);
-            kernel::Scheduler::add_task(*init_task);
-            kernel::Logger::info("init: PID 1 started");
-        }
-    }
-
+    // Priority 0 as background reaper; init_task_main raises itself to 10
+    // (harness priority) when g_run_tests is active, and drops back to 0 in
+    // the reap loop.  Spawned below by reboot_from_table() from g_task_defs.
 #ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
@@ -874,72 +864,10 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::BufferPool::init();
     kernel::daemon::init();
 
-    // Load vfsd userspace daemon before test suite so tests can interact with
-    // it
-    {
-        initrd::InitrdFile f = initrd::find("./vfsd.c.elf");
-        if (!f.data)
-            f = initrd::find("vfsd.c.elf");
-        if (f.data) {
-            auto *hdr =
-                reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
-            if (kernel::elf::validate_header(hdr)) {
-                auto *vfsd_task = kernel::elf::load(hdr, f.data, f.size);
-                if (vfsd_task) {
-                    vfsd_task->priority = 1;
-                    vfsd_task->period_ticks = 10;
-                    {
-                        size_t j = 0;
-                        const char *n = "vfsd";
-                        while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
-                            vfsd_task->name[j] = n[j];
-                            ++j;
-                        }
-                        vfsd_task->name[j] = '\0';
-                    }
-                    vfsd_task->init_sporadic_server(2, 10, 0, 1);
-                    kernel::Scheduler::add_task(*vfsd_task);
-                    kernel::vfsd::set_vfsd_pid(vfsd_task->id);
-                    kernel::daemon::register_daemon("vfsd", "vfsd.c.elf",
-                                                    kernel::vfsd::set_vfsd_pid,
-                                                    kernel::vfsd::get_vfsd_pid);
-                }
-            }
-        }
-    }
-
-    // Load iocd userspace daemon before test suite
-    {
-        initrd::InitrdFile f = initrd::find("./iocd.c.elf");
-        if (!f.data)
-            f = initrd::find("iocd.c.elf");
-        if (f.data) {
-            auto *hdr =
-                reinterpret_cast<const kernel::elf::ELF64Header *>(f.data);
-            if (kernel::elf::validate_header(hdr)) {
-                auto *iocd_task = kernel::elf::load(hdr, f.data, f.size);
-                if (iocd_task) {
-                    iocd_task->priority = 1;
-                    iocd_task->period_ticks = 10;
-                    {
-                        size_t j = 0;
-                        const char *n = "iocd";
-                        while (n[j] && j < CONFIG_TASK_NAME_LEN - 1) {
-                            iocd_task->name[j] = n[j];
-                            ++j;
-                        }
-                        iocd_task->name[j] = '\0';
-                    }
-                    iocd_task->init_sporadic_server(3, 10, 0, 1);
-                    kernel::Scheduler::add_task(*iocd_task);
-                    kernel::iocd::set_iocd_pid(iocd_task->id);
-                    kernel::daemon::register_daemon("iocd", "iocd.c.elf",
-                                                    kernel::iocd::set_iocd_pid,
-                                                    kernel::iocd::get_iocd_pid);
-                }
-            }
-        }
-    }
+    // vfsd/iocd are NOT loaded here — reboot_from_table() below rebuilds the
+    // system from g_task_defs (taskdefs.cpp), which is the single source of
+    // truth for daemon priorities/periods.  Pre-reboot daemon loads were dead
+    // weight (killed unconditionally by reboot_from_table).
 
     if (service::Terminal::instance()) {
         service::Terminal::set_fb_enabled(false);
