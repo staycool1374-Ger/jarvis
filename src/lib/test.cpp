@@ -53,6 +53,12 @@ const char *Registry::current_name_ = nullptr;
 bool g_class_auto_shutdown = false;
 static uint64_t g_kernel_entry_ns = 0;
 
+// PfA-A: the harness injects one TestContext so the scheduler's ISR-visible
+// test flags live here (not as scheduler globals).  Production boots with
+// Scheduler::get_test_context() == nullptr.
+static TestContext g_test_context;
+static bool g_test_context_injected = false;
+
 void set_kernel_entry_ns() {
     g_kernel_entry_ns = arch::Timer::ns();
 }
@@ -399,6 +405,13 @@ void run_filtered(uint8_t required_flags, bool use_isolation) {
     Logger::print_dec(start_ns);
     Logger::raw_write("\n");
 
+    // PfA-A: inject the test context for this cycle.  set_test_active() and
+    // the ISR-visible is_test_active() read through this context.
+    if (!g_test_context_injected) {
+        g_test_context = TestContext{};
+        Scheduler::set_test_context(&g_test_context);
+        g_test_context_injected = true;
+    }
     Scheduler::set_test_active(true);
 
     for (size_t i = 0; i < n; ++i) {

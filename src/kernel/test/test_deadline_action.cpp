@@ -167,9 +167,9 @@ TEST_CLASS(DeadlineActionKill) {
 #if CONFIG_DEADLINE_ACTION == 4
 // Runmode: kernel
 // Testidea: NOTIFY_MONITOR (action=4) delivers SIGUSR1 to the monitor task.
-// The test-only hook g_test_deadline_monitor_pid is pointed at the live
-// [deadline-mon] task so the compile-time CONFIG_DEADLINE_MONITOR_PID (0 by
-// default) is bypassed.
+// The test-only hook (TestContext::deadline_monitor_pid) is pointed at the
+// live [deadline-mon] task so the compile-time CONFIG_DEADLINE_MONITOR_PID (0
+// by default) is bypassed.
 // Input: BLOCKED helper, past deadline; hook set to monitor id; detection run.
 // Expect: deadline_miss_count>=1, monitor pending_signals has SIGUSR1.
 TEST_CLASS(DeadlineActionNotifyProbe) {
@@ -177,7 +177,9 @@ TEST_CLASS(DeadlineActionNotifyProbe) {
     CT_ASSERT(helper != nullptr);
     auto *mon = Scheduler::get_monitor_task();
     CT_ASSERT(mon != nullptr);
-    g_test_deadline_monitor_pid = mon->id;
+    auto *tctx = Scheduler::get_test_context();
+    CT_ASSERT(tctx != nullptr);
+    tctx->deadline_monitor_pid = mon->id;
     uint64_t before = mon->pending_signals;
     (void)before;
     neutralize_other_deadlines(helper);
@@ -185,7 +187,7 @@ TEST_CLASS(DeadlineActionNotifyProbe) {
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT((mon->pending_signals &
                (1ULL << static_cast<uint64_t>(Signal::SIGUSR1))) != 0);
-    g_test_deadline_monitor_pid = 0;
+    tctx->deadline_monitor_pid = 0;
     Scheduler::set_task_ready(*helper);
     Scheduler::remove_task(*helper);
     helper->cleanup();

@@ -25,6 +25,8 @@
 
 #include <types.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/task/scheduler_config.hpp>
+#include <kernel/task/test_context.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/nexios_config.h>
 #include <kernel/task/scheduler_errors.hpp>
@@ -38,19 +40,32 @@ namespace kernel {
 /// @brief Test-only override for the NOTIFY_MONITOR action target PID.
 ///        When CONFIG_DEADLINE_MONITOR_PID == 0 (default), the deadline-miss
 ///        handler's action=4 path delivers SIGUSR1 to the task whose id equals
-///        this value instead. Test binaries set it at runtime so the config
-///        matrix can exercise NOTIFY_MONITOR without a compile-time PID.
-///        Defined in scheduler.cpp; harmless in production (stays 0).
-extern uint64_t g_test_deadline_monitor_pid; // NOLINT(bugprone-dynamic-static-initializers)
+///        this value instead.  PfA-A: this now lives in the injected
+///        TestContext (TestContext::deadline_monitor_pid); see
+///        Scheduler::get_test_context().  Harmless in production (0).
 
 /// @brief Preemptive, rate-monotonic scheduler managing up to MAX_TASKS tasks.
 /// @note Scheduler is tick-driven and supports periodic and aperiodic tasks.
 class Scheduler {
   public:
     /// @brief Initialises the scheduler and creates the idle task.
-    static void init();
+    /// @param cfg Boot-time configuration injected from kernel_init (PfA-A).
+    ///        Defaults match the pre-refactor behaviour.
+    static void init(const SchedulerConfig &cfg = SchedulerConfig{});
     /// @brief Error-returning overload for init().
-    static errors::SchedulerError init_err();
+    static errors::SchedulerError init_err(
+        const SchedulerConfig &cfg = SchedulerConfig{});
+
+    /// @brief Injects the test-runner context (PfA-A).  Production keeps
+    ///        nullptr so all test flags resolve to false; the harness sets it
+    ///        for the duration of a test cycle and clears it afterwards.
+    static void set_test_context(TestContext *ctx) noexcept {
+        test_context_ = ctx;
+    }
+    /// @brief Returns the injected test context, or nullptr.
+    static TestContext *get_test_context() noexcept {
+        return test_context_;
+    }
 
     /// @brief Finds a task by its ID (hash table, O(1) amortized).
     /// @param id Task ID to find.
@@ -207,11 +222,14 @@ class Scheduler {
     }
     /// @brief Sets/clears the test-active flag.  When true, on_tick() skips
     ///        the monitor-wake path to prevent spurious context switches.
+    ///        PfA-A: stored in the injected TestContext; no-op (false) when
+    ///        no test context is set (production).
     static void set_test_active(bool v) noexcept {
-        s_test_active_ = v;
+        if (test_context_)
+            test_context_->test_active = v;
     }
     static bool is_test_active() noexcept {
-        return s_test_active_;
+        return test_context_ ? test_context_->test_active : false;
     }
 #endif
     /// @brief Clears assembly-level context-switch globals
@@ -511,6 +529,11 @@ class Scheduler {
 #endif
     static constinit bool suppress_terminated_log_;
 
+    /// @brief Injected test-runner context (PfA-A).  nullptr in production so
+    ///        all test flags resolve to their compile-time-false defaults.
+    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+    static TestContext *test_context_;
+
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static sync::SpinLock scheduler_lock_;
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
@@ -540,8 +563,7 @@ class Scheduler {
     ///        afterward.  When true, on_tick() skips the monitor-wake path
     ///        (preventing the timer ISR from switching to the monitor during
     ///        a test, which would hang the test framework).
-    // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    static bool s_test_active_;
+    ///        PfA-A: stored in the injected TestContext (see set_test_active).
 #endif
 
     /// @brief Performs rate-monotonic scheduling decision.
@@ -583,12 +605,6 @@ extern bool scheduler_need_resched;
 ///        nested timer interrupts and skip re-entrant scheduler ops.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint64_t isr_nesting_depth;
-/// @brief Dummy save target for boot-stack RSP during reschedule() from
-///        non-ISR context (test harness).  Prevents corrupting task
-///        context.rsp with a boot-stack address while still allowing
-///        the context switch to proceed.
-// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-extern uint64_t scheduler_dummy_save_rsp;
 /// @brief Monotonic counter incremented on every detected scheduler corruption
 ///        (invalid TCB magic, RSP outside kernel-stack range, etc).
 ///        Reset to zero in test_isolate restore; test framework fails any test

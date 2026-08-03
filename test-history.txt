@@ -508,3 +508,7 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-02 23:55:17 class=preemption_under_syscall PASS=6 FAIL=0 STALL=0 WEDGE=0  TIME=120s VERDICT=OK
 2026-08-02 23:52:00 class=ss_deadline PASS=0 FAIL=0 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL (H2 isolation repro x3)
 2026-08-02 23:53:00 class=timing PASS=4 FAIL=0 STALL=0 WEDGE=0 HANG TIME=120s VERDICT=FAIL (H2 isolation repro)
+2026-08-03 02:30:00 scheduler PASSED: 56 FAILED: 0 TIME: 12s (PfA-A config/test-context)
+2026-08-03 02:31:00 ipc PASSED: 42 FAILED: 0 TIME: 12s (PfA-A config/test-context)
+2026-08-03 02:32:00 sporadic PASSED: 25 FAILED: 0 TIME: 12s (PfA-A config/test-context)
+2026-08-03 02:33:00 selftest PASSED: 132 FAILED: 0 TIME: 40s (PfA-A config/test-context)

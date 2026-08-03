@@ -63,10 +63,6 @@ static uint64_t s_wedge_emitted_ = 0;      // throttle [WEDGE] emissions
 static uint64_t s_last_switch_tick_ = 0;   // last tick an actual switch ran
 #endif
 
-extern "C" {
-uint64_t scheduler_dummy_save_rsp = 0;
-}
-
 namespace kernel {
 
 // P5a: Deferred-kill list.
@@ -392,11 +388,10 @@ constinit bool Scheduler::preempt_enabled_ = false;
 constinit uint64_t Scheduler::memory_budget_pages_ = 0;
 #endif
 constinit bool Scheduler::suppress_terminated_log_ = false;
+TestContext *Scheduler::test_context_ = nullptr;
 #if CONFIG_DEADLINE_MONITOR_TASK
 constinit TaskControlBlock *Scheduler::s_monitor_task_ = nullptr;
 volatile bool Scheduler::s_scan_requested_ = false;
-bool Scheduler::s_test_active_ = false;
-uint64_t g_test_deadline_monitor_pid = 0;
 #endif
 ReadyQueueManager Scheduler::ready_queue_;
 DeadlineList Scheduler::deadline_list_;
@@ -420,7 +415,7 @@ static constexpr uint32_t LIU_LEYLAND_LIMIT = 693147;
 // Init / lifecycle
 // ---------------------------------------------------------------------------
 
-void Scheduler::init() {
+void Scheduler::init(const SchedulerConfig &cfg) {
     for (uint64_t i = 0; i < ID_TABLE_SIZE; ++i)
         id_table_[i] = nullptr;
 
@@ -433,8 +428,9 @@ void Scheduler::init() {
     all_tasks_.append(*idle_task_);
     ENSURE(id_table_insert(idle_task_->id, idle_task_) && "id_table full at init");
     current_task_ptr_ = idle_task_;
-    sporadic_task_count_ = 0;
-    preempt_enabled_ = true;
+    sporadic_task_count_ = cfg.sporadic_task_count;
+    preempt_enabled_ = cfg.preempt_enabled;
+    suppress_terminated_log_ = cfg.suppress_terminated_log;
 
 #if CONFIG_DEADLINE_MONITOR_TASK
     ensure_monitor();
@@ -1116,7 +1112,7 @@ void Scheduler::on_tick() noexcept {
         // before the test's ScopeGuard or snapshot_restore can clean them up,
         // causing double-free use-after-free.  Test termination is handled
         // entirely by the harness — the reaper must not race with it.
-        if (!s_test_active_) {
+        if (!is_test_active()) {
             __atomic_store_n(&s_scan_requested_, 1, __ATOMIC_RELEASE);
             // on_tick already holds scheduler_lock_ (acquired at line 548 and
             // released at line 839).  The monitor's block transition also takes
@@ -1340,7 +1336,7 @@ void Scheduler::on_tick() noexcept {
     // cost in production while not being so infrequent that zombie count grows
     // unbounded (CONFIG_MAX_TASKS=64 caps the worst case).
         if (tick_counter % 100 == 0) {
-            if (!s_test_active_)
+            if (!is_test_active())
                 reap_orphans();
             // ZombieList watchdog: force-flush ONLY when the zombie list has
             // outgrown the starvation limit (idle hasn't kept up).  Gating on
@@ -1897,7 +1893,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
     // synchronous test bodies; being preempted by lower-priority test tasks
     // orphans it ... (see full comment in original).
     bool harness_nonpreempt =
-        (s_test_active_ && harness_task_ptr_ != nullptr &&
+        (is_test_active() && harness_task_ptr_ != nullptr &&
          current == harness_task_ptr_ &&
          current->state == TaskState::RUNNING);
     if (harness_nonpreempt &&
@@ -2460,7 +2456,8 @@ deadline_miss_handler(TaskControlBlock *task,
     // the live [deadline-mon] task without a fixed compile-time PID.
     uint64_t monitor_pid = (CONFIG_DEADLINE_MONITOR_PID > 0)
                                ? static_cast<uint64_t>(CONFIG_DEADLINE_MONITOR_PID)
-                               : g_test_deadline_monitor_pid;
+                               : (test_context_ ? test_context_->deadline_monitor_pid
+                                                : 0);
     auto *monitor = Scheduler::find_task(monitor_pid);
     if (monitor && monitor->magic == TaskControlBlock::TCB_MAGIC &&
         monitor->state != TaskState::TERMINATED) {
@@ -2558,8 +2555,8 @@ extern "C" void scheduler_diag_pre_save() {
 namespace kernel {
 using namespace errors;
 
-SchedulerError Scheduler::init_err() {
-    init();
+SchedulerError Scheduler::init_err(const SchedulerConfig &cfg) {
+    init(cfg);
     return SCHED_ERR_OK;
 }
 

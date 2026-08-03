@@ -658,7 +658,9 @@ extern "C" void higherhalf_entry(uint64_t magic, uint64_t mb_info) {
     kernel::vfs::mount(kernel::vfs::initrd_fs, "/");
     kernel::IPC::init();
     kernel::Syscall::init();
-    kernel::Scheduler::init();
+    // PfA-A: scheduler boot configuration flows down from kernel_init instead
+    // of being hardcoded defaults reachable as globals.
+    kernel::Scheduler::init(kernel::SchedulerConfig{});
 
     // Init task (PID 1) — mounts fstab, runs /etc/rc, then blocks as reaper.
     // Priority 10 during boot/test-runner duty; dropped to 1 (reaper/logger)
