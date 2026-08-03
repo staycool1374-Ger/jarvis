@@ -523,3 +523,6 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-03 05:01:00 bench PASSED: 23 FAILED: 0 TIME: 733ms (v0.3.8: KernelApiPureFunctions re-enabled + jitter fix)
 2026-08-03 06:00:00 ss_deadline PASSED: 2 FAILED: 0 TIME: 60ms x16 (v0.3.8: bg_prio fix + scan_deadlines-only)
 2026-08-03 06:01:00 ipc PASSED: 42 FAILED: 0 TIME: 12s (v0.3.8 baseline)
+2026-08-03 06:30:00 bench PASSED: 23 FAILED: 0 TIME: 768ms (v0.3.8 final)
+2026-08-03 06:31:00 jitter PASSED: 2 FAILED: 0 TIME: 73ms (v0.3.8 final)
+2026-08-03 06:32:00 ss_deadline PASSED: 2 FAILED: 0 TIME: 244ms (v0.3.8 final)

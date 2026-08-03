@@ -111,8 +111,8 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 | `vmm_hhdm` | 0 | Fixed by HHDM PD save/restore (#1) — tests re-enabled |
 | `virtio` | 0 | Already works — boot probe allocates PT pages in pool baseline |
 | `dma` | 0 | Already works — allocates within 0-128MB, HHDM restore handles cleanup |
-| `microkernel_transition` | 1 | KernelApiPureFunctions memcpy stack corruption (~657) |
-| **Total disabled** | **1** | |
+| `microkernel_transition` | 0 | KernelApiPureFunctions re-enabled (v0.3.8) — no corruption in isolation; passes bench 12/23 |
+| **Total disabled** | **0** | |
 
 ## Active Development — v0.3.8
 
