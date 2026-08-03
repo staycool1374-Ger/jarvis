@@ -9,7 +9,7 @@ var searchData=
   ['error_5fstring_6',['error_string',['../namespacekernel_1_1errors.html#a7a109eae637dbae8c0b5db75fad08745',1,'kernel::errors']]],
   ['erroror_7',['ErrorOr',['../structkernel_1_1_error_or.html#ac6dbadbd8b6e0aada55b096309e63765',1,'kernel::ErrorOr::ErrorOr(T val)'],['../structkernel_1_1_error_or.html#a5c8e5bb4391f4c78bef6878ae2993930',1,'kernel::ErrorOr::ErrorOr(Error err)'],['../structkernel_1_1_error_or_3_01void_01_4.html#a6479075fe8862d91616d63250dda0b67',1,'kernel::ErrorOr&lt; void &gt;::ErrorOr()'],['../structkernel_1_1_error_or_3_01void_01_4.html#a7be6a9aaaa0039d02e33dce6b5c006e1',1,'kernel::ErrorOr&lt; void &gt;::ErrorOr(Error err)']]],
   ['exception_5fentry_8',['exception_entry',['../namespacearch.html#a46488b8cc19b71e9d4bd3d8ea44603e4',1,'arch']]],
-  ['exec_5finto_5fcurrent_9',['exec_into_current',['../namespacekernel_1_1elf.html#a7dd0cac7dac7cb71e52673b90af2caae',1,'kernel::elf']]],
+  ['exec_5finto_5fcurrent_9',['exec_into_current',['../namespacekernel_1_1elf.html#a8587c966825c28717e2e90c6c754b87c',1,'kernel::elf']]],
   ['execute_10',['execute',['../classkernel_1_1test_1_1_test_base.html#a2dbb31c427fe664032adff15e728f668',1,'kernel::test::TestBase::execute()'],['../classservice_1_1_shell.html#abb9dbef3f563347dc1498f555291ede7',1,'service::Shell::execute()']]],
   ['exit_11',['exit',['../stdlib_8c.html#a55e99c539cf7723ec15e856b7e0a8cee',1,'exit(int status):&#160;stdlib.c'],['../stdlib_8h.html#a55e99c539cf7723ec15e856b7e0a8cee',1,'exit(int status):&#160;stdlib.c']]],
   ['expected_5fcount_12',['expected_count',['../classkernel_1_1test_1_1_registry.html#a4a568529fa16c9832276b3bb84eab6f0',1,'kernel::test::Registry']]],

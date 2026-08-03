@@ -11,6 +11,7 @@ var dir_507c9ec95be9a201f49444d5da26e8a6 =
     [ "ready_queue_manager.hpp", "ready__queue__manager_8hpp.html", "ready__queue__manager_8hpp" ],
     [ "scheduler.cpp", "scheduler_8cpp.html", "scheduler_8cpp" ],
     [ "scheduler.hpp", "scheduler_8hpp.html", null ],
+    [ "scheduler_config.hpp", "scheduler__config_8hpp.html", "scheduler__config_8hpp" ],
     [ "scheduler_errors.hpp", "scheduler__errors_8hpp.html", null ],
     [ "sporadic_server.cpp", "sporadic__server_8cpp.html", null ],
     [ "sporadic_server.hpp", "sporadic__server_8hpp.html", null ],
@@ -23,5 +24,6 @@ var dir_507c9ec95be9a201f49444d5da26e8a6 =
     [ "taskdefs.cpp", "taskdefs_8cpp.html", "taskdefs_8cpp" ],
     [ "taskdefs.hpp", "taskdefs_8hpp.html", null ],
     [ "tcb_write_log.cpp", "tcb__write__log_8cpp.html", "tcb__write__log_8cpp" ],
-    [ "tcb_write_log.hpp", "tcb__write__log_8hpp.html", "tcb__write__log_8hpp" ]
+    [ "tcb_write_log.hpp", "tcb__write__log_8hpp.html", "tcb__write__log_8hpp" ],
+    [ "test_context.hpp", "test__context_8hpp.html", "test__context_8hpp" ]
 ];

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
    </div>
   </td>
  </tr>
@@ -145,6 +145,8 @@ Namespaces</h2></td></tr>
 Data Structures</h2></td></tr>
 <tr class="memitem:AllTasksRegistry" id="r_AllTasksRegistry"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_all_tasks_registry.html">AllTasksRegistry</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bitmap-backed, per-priority intrusive list of all registered tasks. Provides O(1) insert/remove and O(1) highest-priority query. Intended to replace the linear tasks_[] array in the scheduler.  <a href="classkernel_1_1_all_tasks_registry.html#details">More...</a><br /></td></tr>
+<tr class="memitem:CpuContext" id="r_CpuContext"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_cpu_context.html">CpuContext</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-CPU execution context.  <a href="structkernel_1_1_cpu_context.html#details">More...</a><br /></td></tr>
 <tr class="memitem:CRC32" id="r_CRC32"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_c_r_c32.html">CRC32</a></td></tr>
 <tr class="memitem:DeadlineList" id="r_DeadlineList"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_deadline_list.html">DeadlineList</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Intrusive doubly-linked list sorted by deadline_ticks ascending. Provides O(1) expired-detection by checking the head node only. Designed to replace the linear tasks_[] deadline scan in on_tick and scan_deadlines.  <a href="classkernel_1_1_deadline_list.html#details">More...</a><br /></td></tr>
@@ -162,10 +164,14 @@ Data Structures</h2></td></tr>
 <tr class="memitem:ReadyQueuePOD" id="r_ReadyQueuePOD"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_ready_queue_p_o_d.html">ReadyQueuePOD</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">POD snapshot of the full <a class="el" href="classkernel_1_1_ready_queue_manager.html" title="O(1) priority-ordered ready queue. Uses a bitmap (PriorityMap) to track non-empty priority levels and...">ReadyQueueManager</a> state. All fields are plain data; memcpy-safe by construction.  <a href="structkernel_1_1_ready_queue_p_o_d.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Rlimit" id="r_Rlimit"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_rlimit.html">Rlimit</a></td></tr>
+<tr class="memitem:SchedulerConfig" id="r_SchedulerConfig"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_scheduler_config.html">SchedulerConfig</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Boot-time scheduler configuration, injected from kernel_init.  <a href="structkernel_1_1_scheduler_config.html#details">More...</a><br /></td></tr>
 <tr class="memitem:SignalFrame" id="r_SignalFrame"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_signal_frame.html">SignalFrame</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="#aab4cc62899bcb5fcce7228da55cd0e18" title="Standard POSIX-like signal numbers.">Signal</a> frame placed on the user stack when delivering a signal. The handler returns via SYS_SIGRETURN which restores this frame.  <a href="structkernel_1_1_signal_frame.html#details">More...</a><br /></td></tr>
 <tr class="memitem:TaskQueue" id="r_TaskQueue"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classkernel_1_1_task_queue.html">TaskQueue</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Intrusive doubly-linked list queue for TaskControlBlock. Operations are O(1), no dynamic allocation. TCBs embed next/prev pointers.  <a href="classkernel_1_1_task_queue.html#details">More...</a><br /></td></tr>
+<tr class="memitem:TestContext" id="r_TestContext"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_test_context.html">TestContext</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Test-runner state that the scheduler's ISR-visible paths must read.  <a href="structkernel_1_1_test_context.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Timeval" id="r_Timeval"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_timeval.html">Timeval</a></td></tr>
 <tr class="memitem:Utsname" id="r_Utsname"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_utsname.html">Utsname</a></td></tr>
 <tr class="memitem:Version" id="r_Version"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structkernel_1_1_version.html">Version</a></td></tr>
@@ -255,6 +261,8 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a777bca6dec383faa735ebe34c5bdf749" id="r_a777bca6dec383faa735ebe34c5bdf749"><td class="memItemLeft"><a class="el" href="structkernel_1_1_cpu_context.html">CpuContext</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a777bca6dec383faa735ebe34c5bdf749">current_cpu</a> ()</td></tr>
+<tr class="memdesc:a777bca6dec383faa735ebe34c5bdf749"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current CPU's execution context.  <br /></td></tr>
 <tr class="memitem:a03570b332ae94bd1acee2152e83dadd8" id="r_a03570b332ae94bd1acee2152e83dadd8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a03570b332ae94bd1acee2152e83dadd8">random_init</a> ()</td></tr>
 <tr class="memitem:a3a9da091bb2229af08f856b08498fa51" id="r_a3a9da091bb2229af08f856b08498fa51"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3a9da091bb2229af08f856b08498fa51">random_fill</a> (<a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *buffer, <a class="el" href="types_8hpp.html#a2d35ca4f92b748b22e8674ea36a6c875">size_t</a> length)</td></tr>
 <tr class="memitem:aa7278439c20dc6234a77d3b08290701f" id="r_aa7278439c20dc6234a77d3b08290701f"><td class="memItemLeft">TaskControlBlock *&#160;</td><td class="memItemRight"><a class="el" href="#aa7278439c20dc6234a77d3b08290701f">syscall_task</a> ()</td></tr>
@@ -967,6 +975,34 @@ template&lt;typename T&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a777bca6dec383faa735ebe34c5bdf749" name="a777bca6dec383faa735ebe34c5bdf749"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a777bca6dec383faa735ebe34c5bdf749">&#9670;&#160;</a></span>current_cpu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structkernel_1_1_cpu_context.html">CpuContext</a> &amp; kernel::current_cpu </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the current CPU's execution context. </p>
+<p>Single-core today: a single static instance. Phase 8 threads this through the per-CPU GS base (x86_64) / TPIDR (aarch64) / tp (riscv64). </p>
 
 </div>
 </div>

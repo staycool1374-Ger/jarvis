@@ -130,7 +130,7 @@ Ring 3 via a <code>int 0x82</code> syscall gate (47 syscalls). The
 architecture is mid-transition toward a <strong>capability-based
 microkernel</strong>, where drivers, VFS, and block I/O are externalised
 to sandboxed Ring 3 servers communicating through IPC capabilities.</p>
-<p>Current version: <strong>v0.3.6</strong> — Scheduler/IPC/Sync audit remediation, O(1) scheduler hardening, MemPool bitmap fixes, NexIOS rebrand.
+<p>Current version: <strong>v0.3.7</strong> — PfA concurrency redesign (per-CPU context, atomic discipline), Scheduler/IPC/Sync audit remediation, NexIOS rebrand.
 O(1) priority bitmap scheduler, bounded WCET, hard real-time compliance.</p>
 <hr />
 <h2 id="why-nexios">Why NexIOS</h2>

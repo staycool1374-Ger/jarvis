@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
    </div>
   </td>
  </tr>
@@ -164,6 +164,8 @@ Functions</h2></td></tr>
 <tr class="memdesc:aaf0cf262c173f6848095480880c1cbc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset VFS globals and re-mount standard filesystems.  <br /></td></tr>
 <tr class="memitem:a9d792be7e3f099e025d10c0a6ce0680d" id="r_a9d792be7e3f099e025d10c0a6ce0680d"><td class="memItemLeft">Filesystem *&#160;</td><td class="memItemRight"><a class="el" href="#a9d792be7e3f099e025d10c0a6ce0680d">find_fs</a> (const char *name)</td></tr>
 <tr class="memdesc:a9d792be7e3f099e025d10c0a6ce0680d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find a mounted filesystem by name.  <br /></td></tr>
+<tr class="memitem:aab245675b2cdacc0a60a0576dcb4e267" id="r_aab245675b2cdacc0a60a0576dcb4e267"><td class="memItemLeft">Vnode *&#160;</td><td class="memItemRight"><a class="el" href="#aab245675b2cdacc0a60a0576dcb4e267">resolve_parent</a> (const char *path, const char *&amp;out_name)</td></tr>
+<tr class="memdesc:aab245675b2cdacc0a60a0576dcb4e267"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve the parent vnode and leaf name from a path. Handles both absolute ("/foo/bar") and relative ("bar") paths by delegating sub-path resolution to <a class="el" href="#a11645e6a37081ee178777f682740736d" title="Resolve an absolute or relative path to a vnode.">resolve()</a>, which already handles CWD, mount points, .., . etc.  <br /></td></tr>
 <tr class="memitem:a0411923a55f520a77d6497349fd7acf6" id="r_a0411923a55f520a77d6497349fd7acf6"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0411923a55f520a77d6497349fd7acf6">mkdir</a> (const char *path, <a class="el" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> mode)</td></tr>
 <tr class="memdesc:a0411923a55f520a77d6497349fd7acf6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a subdirectory at the given path.  <br /></td></tr>
 <tr class="memitem:ab8191b68620f64ca864fad18239e5bce" id="r_ab8191b68620f64ca864fad18239e5bce"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ab8191b68620f64ca864fad18239e5bce">unlink</a> (const char *path)</td></tr>
@@ -219,6 +221,12 @@ Variables</h2></td></tr>
 
 <p>Create a regular file at the given path. </p>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, VFS_INVALID on failure. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_a94bddce0efe1b0b6a3dade264883f7ce_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a94bddce0efe1b0b6a3dade264883f7ce_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
+</div>
 
 </div>
 </div>
@@ -243,6 +251,12 @@ Variables</h2></td></tr>
 
 <p>Create a regular file with error code return. </p>
 <dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_a19093f8bf45bac4a87dc6818084e3843_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a19093f8bf45bac4a87dc6818084e3843_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -352,7 +366,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a32714102a524a6f980eac4fd048b3604_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a32714102a524a6f980eac4fd048b3604_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -440,7 +454,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a0411923a55f520a77d6497349fd7acf6_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a0411923a55f520a77d6497349fd7acf6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 3 -->
 </div>
 
 </div>
@@ -466,6 +480,12 @@ Here is the call graph for this function:</div>
 
 <p>Create a subdirectory with error code return. </p>
 <dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_a4e062ba9d7ffaca41f17dce1644388a8_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a4e062ba9d7ffaca41f17dce1644388a8_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -494,7 +514,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_aebf94bc8bbd1d4da9adf682e10e082de_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_aebf94bc8bbd1d4da9adf682e10e082de_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 5 -->
 </div>
 
 </div>
@@ -544,7 +564,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_a739270d15fe1ac6f5a0e21d0c2e20123_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_a739270d15fe1ac6f5a0e21d0c2e20123_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 3 -->
+<!-- MAP 6 -->
 </div>
 
 </div>
@@ -569,7 +589,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_aaf0cf262c173f6848095480880c1cbc9_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_aaf0cf262c173f6848095480880c1cbc9_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 4 -->
+<!-- MAP 7 -->
 </div>
 
 </div>
@@ -633,7 +653,44 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ad31548f035d75326ab34f5fd3fce896a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 5 -->
+<!-- MAP 8 -->
+</div>
+
+</div>
+</div>
+<a id="aab245675b2cdacc0a60a0576dcb4e267" name="aab245675b2cdacc0a60a0576dcb4e267"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab245675b2cdacc0a60a0576dcb4e267">&#9670;&#160;</a></span>resolve_parent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vnode * kernel::vfs::resolve_parent </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>path</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&amp;</td>          <td class="paramname"><span class="paramname"><em>out_name</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Resolve the parent vnode and leaf name from a path. Handles both absolute ("/foo/bar") and relative ("bar") paths by delegating sub-path resolution to <a class="el" href="#a11645e6a37081ee178777f682740736d" title="Resolve an absolute or relative path to a vnode.">resolve()</a>, which already handles CWD, mount points, .., . etc. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">path</td><td>The full path to parse. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">out_name</td><td>Set to the final path component (leaf name). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The parent vnode, or nullptr if it cannot be resolved. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_aab245675b2cdacc0a60a0576dcb4e267_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_aab245675b2cdacc0a60a0576dcb4e267_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 9 -->
 </div>
 
 </div>
@@ -717,7 +774,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_ab8191b68620f64ca864fad18239e5bce_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 6 -->
+<!-- MAP 10 -->
 </div>
 
 </div>
@@ -739,6 +796,12 @@ Here is the call graph for this function:</div>
 
 <p>Remove a file or empty directory with error code return. </p>
 <dl class="section return"><dt>Returns</dt><dd>VfsError code. </dd></dl>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph.png" border="0" usemap="#anamespacekernel_1_1vfs_af555f6cb1ba4c592ec31fcf5902e367f_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 11 -->
+</div>
 
 </div>
 </div>

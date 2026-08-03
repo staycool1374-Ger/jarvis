@@ -103,7 +103,7 @@ var searchData=
   ['isdigit_100',['isdigit',['../ctype_8c.html#a3fa45b35c8abf67a950b6d3d4063dede',1,'isdigit(int c):&#160;ctype.c'],['../ctype_8h.html#a3fa45b35c8abf67a950b6d3d4063dede',1,'isdigit(int c):&#160;ctype.c']]],
   ['islower_101',['islower',['../ctype_8c.html#a7b8f652a0423a80922dd89d8829db5f2',1,'islower(int c):&#160;ctype.c'],['../ctype_8h.html#a7b8f652a0423a80922dd89d8829db5f2',1,'islower(int c):&#160;ctype.c']]],
   ['isprint_102',['isprint',['../ctype_8c.html#a99355d8f0fb41ec43effb95189db0ed4',1,'isprint(int c):&#160;ctype.c'],['../ctype_8h.html#a99355d8f0fb41ec43effb95189db0ed4',1,'isprint(int c):&#160;ctype.c']]],
-  ['isr_5fnesting_5fdepth_103',['isr_nesting_depth',['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'kernel.cpp']]],
+  ['isr_5fnesting_5fdepth_103',['isr_nesting_depth',['../structkernel_1_1_cpu_context.html#aa924234f3ea16f826e2cc01b6b84b840',1,'kernel::CpuContext::isr_nesting_depth'],['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'isr_nesting_depth:&#160;kernel.cpp']]],
   ['isspace_104',['isspace',['../ctype_8c.html#a56be4166e4673843042a548a7f513dbc',1,'isspace(int c):&#160;ctype.c'],['../ctype_8h.html#a56be4166e4673843042a548a7f513dbc',1,'isspace(int c):&#160;ctype.c']]],
   ['isupper_105',['isupper',['../ctype_8c.html#adadd6582d46775aab6a51e29d16d9f77',1,'isupper(int c):&#160;ctype.c'],['../ctype_8h.html#adadd6582d46775aab6a51e29d16d9f77',1,'isupper(int c):&#160;ctype.c']]]
 ];

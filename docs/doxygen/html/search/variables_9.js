@@ -19,5 +19,5 @@ var searchData=
   ['irq_5fvirtio3_16',['IRQ_VIRTIO3',['../namespacearch.html#abafa01b25d7e7e2b081d6ecc5058eb5d',1,'arch']]],
   ['irq_5fvirtio4_17',['IRQ_VIRTIO4',['../namespacearch.html#a9c39a084cebdfc926cd28dd5ac4bd7f1',1,'arch']]],
   ['is_5fdir_18',['is_dir',['../structinitrd_1_1_initrd_entry.html#a48e95a6e7d3e3e0f77113e60847c9670',1,'initrd::InitrdEntry']]],
-  ['isr_5fnesting_5fdepth_19',['isr_nesting_depth',['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'kernel.cpp']]]
+  ['isr_5fnesting_5fdepth_19',['isr_nesting_depth',['../structkernel_1_1_cpu_context.html#aa924234f3ea16f826e2cc01b6b84b840',1,'kernel::CpuContext::isr_nesting_depth'],['../kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926',1,'isr_nesting_depth:&#160;kernel.cpp']]]
 ];

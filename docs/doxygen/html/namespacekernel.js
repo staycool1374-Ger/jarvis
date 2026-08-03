@@ -39,8 +39,8 @@ var namespacekernel =
       [ "sg_reset", "namespacekernel_1_1dma.html#a3694e0ff7a283647c1638774454314f2", null ]
     ] ],
     [ "elf", "namespacekernel_1_1elf.html", [
-      [ "exec_into_current", "namespacekernel_1_1elf.html#a7dd0cac7dac7cb71e52673b90af2caae", null ],
-      [ "load", "namespacekernel_1_1elf.html#a77a09264ac49cf4578d49338007c28fc", null ],
+      [ "exec_into_current", "namespacekernel_1_1elf.html#a8587c966825c28717e2e90c6c754b87c", null ],
+      [ "load", "namespacekernel_1_1elf.html#ae81746671637a90991ec1b98cef60dc4", null ],
       [ "validate_header", "namespacekernel_1_1elf.html#a53980ddec04e380da13a0325a465a554", null ]
     ] ],
     [ "errors", "namespacekernel_1_1errors.html", [
@@ -109,6 +109,7 @@ var namespacekernel =
       [ "set_vfsd_pid", "namespacekernel_1_1vfsd.html#acec8fc6583c65a737e190937b9062703", null ]
     ] ],
     [ "AllTasksRegistry", "classkernel_1_1_all_tasks_registry.html", "classkernel_1_1_all_tasks_registry" ],
+    [ "CpuContext", "structkernel_1_1_cpu_context.html", "structkernel_1_1_cpu_context" ],
     [ "CRC32", "classkernel_1_1_c_r_c32.html", null ],
     [ "DeadlineList", "classkernel_1_1_deadline_list.html", "classkernel_1_1_deadline_list" ],
     [ "ErrorOr", "structkernel_1_1_error_or.html", "structkernel_1_1_error_or" ],
@@ -119,8 +120,10 @@ var namespacekernel =
     [ "ReadyQueueManager", "classkernel_1_1_ready_queue_manager.html", "classkernel_1_1_ready_queue_manager" ],
     [ "ReadyQueuePOD", "structkernel_1_1_ready_queue_p_o_d.html", "structkernel_1_1_ready_queue_p_o_d" ],
     [ "Rlimit", "structkernel_1_1_rlimit.html", "structkernel_1_1_rlimit" ],
+    [ "SchedulerConfig", "structkernel_1_1_scheduler_config.html", "structkernel_1_1_scheduler_config" ],
     [ "SignalFrame", "structkernel_1_1_signal_frame.html", "structkernel_1_1_signal_frame" ],
     [ "TaskQueue", "classkernel_1_1_task_queue.html", "classkernel_1_1_task_queue" ],
+    [ "TestContext", "structkernel_1_1_test_context.html", "structkernel_1_1_test_context" ],
     [ "Timeval", "structkernel_1_1_timeval.html", "structkernel_1_1_timeval" ],
     [ "Utsname", "structkernel_1_1_utsname.html", "structkernel_1_1_utsname" ],
     [ "Version", "structkernel_1_1_version.html", null ],
@@ -198,6 +201,7 @@ var namespacekernel =
     [ "atomic_release_fence", "namespacekernel.html#a694a81cf88aaa57b10bbb8850672ef0c", null ],
     [ "atomic_store", "namespacekernel.html#a990823fa4f88496f91379344984fe8d5", null ],
     [ "atomic_store", "namespacekernel.html#a6150ab02de411dbe57ab81bb5b9ff39a", null ],
+    [ "current_cpu", "namespacekernel.html#a777bca6dec383faa735ebe34c5bdf749", null ],
     [ "for", "namespacekernel.html#a1dae18e023980d3a17ebc183f9986bd3", null ],
     [ "init_task_common", "namespacekernel.html#abb9b26c8d76b814b9ed2a3c78bad290e", null ],
     [ "random_fill", "namespacekernel.html#a3a9da091bb2229af08f856b08498fa51", null ],

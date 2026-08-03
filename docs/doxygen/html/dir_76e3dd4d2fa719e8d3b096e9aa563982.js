@@ -6,6 +6,7 @@ var dir_76e3dd4d2fa719e8d3b096e9aa563982 =
     [ "x86_64", "dir_7c4c796ec9937bed8074dafcec3d25e4.html", "dir_7c4c796ec9937bed8074dafcec3d25e4" ],
     [ "apic.hpp", "apic_8hpp.html", null ],
     [ "context.hpp", "context_8hpp.html", null ],
+    [ "cpu_context.hpp", "cpu__context_8hpp.html", "cpu__context_8hpp" ],
     [ "cpuid.hpp", "cpuid_8hpp.html", null ],
     [ "gdt.hpp", "gdt_8hpp.html", null ],
     [ "idt.hpp", "idt_8hpp.html", null ],

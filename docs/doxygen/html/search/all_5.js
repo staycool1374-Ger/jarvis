@@ -48,7 +48,7 @@ var searchData=
   ['eventgroup_2ehpp_45',['eventgroup.hpp',['../eventgroup_8hpp.html',1,'']]],
   ['exception_5fentry_46',['exception_entry',['../namespacearch.html#a46488b8cc19b71e9d4bd3d8ea44603e4',1,'arch']]],
   ['exceptionsignalmap_47',['ExceptionSignalMap',['../structkernel_1_1_exception_signal_map.html',1,'kernel']]],
-  ['exec_5finto_5fcurrent_48',['exec_into_current',['../namespacekernel_1_1elf.html#a7dd0cac7dac7cb71e52673b90af2caae',1,'kernel::elf']]],
+  ['exec_5finto_5fcurrent_48',['exec_into_current',['../namespacekernel_1_1elf.html#a8587c966825c28717e2e90c6c754b87c',1,'kernel::elf']]],
   ['execute_49',['execute',['../classkernel_1_1test_1_1_test_base.html#a2dbb31c427fe664032adff15e728f668',1,'kernel::test::TestBase::execute()'],['../classservice_1_1_shell.html#abb9dbef3f563347dc1498f555291ede7',1,'service::Shell::execute()']]],
   ['exit_50',['exit',['../stdlib_8c.html#a55e99c539cf7723ec15e856b7e0a8cee',1,'exit(int status):&#160;stdlib.c'],['../stdlib_8h.html#a55e99c539cf7723ec15e856b7e0a8cee',1,'exit(int status):&#160;stdlib.c']]],
   ['exit_5ffailure_51',['EXIT_FAILURE',['../stdlib_8h.html#a73efe787c131b385070f25d18b7c9aa4',1,'stdlib.h']]],

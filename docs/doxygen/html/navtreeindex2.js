@@ -1,5 +1,7 @@
 var NAVTREEINDEX2 =
 {
+"dma_8hpp.html":[3,0,0,1,4,8],
+"dma_8hpp_source.html":[3,0,0,1,4,8],
 "dmesg_8cpp.html":[3,0,0,1,8,0],
 "dmesg_8hpp.html":[3,0,0,1,8,1],
 "dmesg_8hpp_source.html":[3,0,0,1,8,1],
@@ -165,8 +167,8 @@ var NAVTREEINDEX2 =
 "gcov__handler_8cpp.html#a7e19dd463d2afcef730efc915d034736":[3,0,0,1,6,0,2],
 "gcov__handler_8cpp.html#ad1654ced9bcc36245fe19075b868c1ae":[3,0,0,1,6,0,0],
 "gdt_8cpp.html":[3,0,0,1,0,3,0,3],
-"gdt_8hpp.html":[3,0,0,1,0,7],
-"gdt_8hpp_source.html":[3,0,0,1,0,7],
+"gdt_8hpp.html":[3,0,0,1,0,8],
+"gdt_8hpp_source.html":[3,0,0,1,0,8],
 "gic_8hpp.html":[3,0,0,1,0,0,0,1],
 "gic_8hpp_source.html":[3,0,0,1,0,0,0,1],
 "globals.html":[3,1,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX2 =
 "hal_2idt_8hpp.html":[3,0,0,1,0,1,4],
 "hal_2idt_8hpp_source.html":[3,0,0,1,0,1,4],
 "hal_2interrupt__controller_8hpp.html":[3,0,0,1,0,1,5],
-"hal_2interrupt__controller_8hpp_source.html":[3,0,0,1,0,1,5],
-"hal_2io_8hpp.html":[3,0,0,1,0,1,6],
-"hal_2io_8hpp_source.html":[3,0,0,1,0,1,6]
+"hal_2interrupt__controller_8hpp_source.html":[3,0,0,1,0,1,5]
 };

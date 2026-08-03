@@ -5,5 +5,6 @@ var searchData=
   ['classsection_2',['ClassSection',['../structkernel_1_1test_1_1_class_section.html',1,'kernel::test']]],
   ['command_3',['Command',['../structservice_1_1_shell_1_1_command.html',1,'service::Shell']]],
   ['cpionewcheader_4',['CpioNewcHeader',['../structinitrd_1_1_cpio_newc_header.html',1,'initrd']]],
-  ['crc32_5',['CRC32',['../classkernel_1_1_c_r_c32.html',1,'kernel']]]
+  ['cpucontext_5',['CpuContext',['../structkernel_1_1_cpu_context.html',1,'kernel']]],
+  ['crc32_6',['CRC32',['../classkernel_1_1_c_r_c32.html',1,'kernel']]]
 ];

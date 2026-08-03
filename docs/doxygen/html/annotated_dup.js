@@ -43,6 +43,7 @@ var annotated_dup =
         [ "TmpfsEntry", "structkernel_1_1vfs_1_1_tmpfs_entry.html", "structkernel_1_1vfs_1_1_tmpfs_entry" ]
       ] ],
       [ "AllTasksRegistry", "classkernel_1_1_all_tasks_registry.html", "classkernel_1_1_all_tasks_registry" ],
+      [ "CpuContext", "structkernel_1_1_cpu_context.html", "structkernel_1_1_cpu_context" ],
       [ "CRC32", "classkernel_1_1_c_r_c32.html", null ],
       [ "DeadlineList", "classkernel_1_1_deadline_list.html", "classkernel_1_1_deadline_list" ],
       [ "ErrorOr", "structkernel_1_1_error_or.html", "structkernel_1_1_error_or" ],
@@ -53,8 +54,10 @@ var annotated_dup =
       [ "ReadyQueueManager", "classkernel_1_1_ready_queue_manager.html", "classkernel_1_1_ready_queue_manager" ],
       [ "ReadyQueuePOD", "structkernel_1_1_ready_queue_p_o_d.html", "structkernel_1_1_ready_queue_p_o_d" ],
       [ "Rlimit", "structkernel_1_1_rlimit.html", "structkernel_1_1_rlimit" ],
+      [ "SchedulerConfig", "structkernel_1_1_scheduler_config.html", "structkernel_1_1_scheduler_config" ],
       [ "SignalFrame", "structkernel_1_1_signal_frame.html", "structkernel_1_1_signal_frame" ],
       [ "TaskQueue", "classkernel_1_1_task_queue.html", "classkernel_1_1_task_queue" ],
+      [ "TestContext", "structkernel_1_1_test_context.html", "structkernel_1_1_test_context" ],
       [ "Timeval", "structkernel_1_1_timeval.html", "structkernel_1_1_timeval" ],
       [ "Utsname", "structkernel_1_1_utsname.html", "structkernel_1_1_utsname" ],
       [ "Version", "structkernel_1_1_version.html", null ]

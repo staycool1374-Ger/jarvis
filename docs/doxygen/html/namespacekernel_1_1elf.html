@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
    </div>
   </td>
  </tr>
@@ -123,12 +123,12 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('namespacekerne
 Functions</h2></td></tr>
 <tr class="memitem:a53980ddec04e380da13a0325a465a554" id="r_a53980ddec04e380da13a0325a465a554"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a53980ddec04e380da13a0325a465a554">validate_header</a> (const ELF64Header *hdr)</td></tr>
 <tr class="memdesc:a53980ddec04e380da13a0325a465a554"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate an ELF64 header (magic, class, endianness, machine, bounds).  <br /></td></tr>
-<tr class="memitem:a77a09264ac49cf4578d49338007c28fc" id="r_a77a09264ac49cf4578d49338007c28fc"><td class="memItemLeft">TaskControlBlock *&#160;</td><td class="memItemRight"><a class="el" href="#a77a09264ac49cf4578d49338007c28fc">load</a> (const ELF64Header *hdr, const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *file_data)</td></tr>
-<tr class="memitem:a7dd0cac7dac7cb71e52673b90af2caae" id="r_a7dd0cac7dac7cb71e52673b90af2caae"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a7dd0cac7dac7cb71e52673b90af2caae">exec_into_current</a> (const ELF64Header *hdr, const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *data, const char *const *argv, const char *const *envp, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *regs)</td></tr>
+<tr class="memitem:ae81746671637a90991ec1b98cef60dc4" id="r_ae81746671637a90991ec1b98cef60dc4"><td class="memItemLeft">TaskControlBlock *&#160;</td><td class="memItemRight"><a class="el" href="#ae81746671637a90991ec1b98cef60dc4">load</a> (const ELF64Header *hdr, const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *file_data, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> file_size)</td></tr>
+<tr class="memitem:a8587c966825c28717e2e90c6c754b87c" id="r_a8587c966825c28717e2e90c6c754b87c"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a8587c966825c28717e2e90c6c754b87c">exec_into_current</a> (const ELF64Header *hdr, const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *data, const char *const *argv, const char *const *envp, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *regs, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> file_size)</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="a7dd0cac7dac7cb71e52673b90af2caae" name="a7dd0cac7dac7cb71e52673b90af2caae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7dd0cac7dac7cb71e52673b90af2caae">&#9670;&#160;</a></span>exec_into_current()</h2>
+<a id="a8587c966825c28717e2e90c6c754b87c" name="a8587c966825c28717e2e90c6c754b87c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8587c966825c28717e2e90c6c754b87c">&#9670;&#160;</a></span>exec_into_current()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,47 +156,26 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *</td>          <td class="paramname"><span class="paramname"><em>regs</em></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> *</td>          <td class="paramname"><span class="paramname"><em>regs</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>file_size</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1elf_a7dd0cac7dac7cb71e52673b90af2caae_cgraph.png" border="0" usemap="#anamespacekernel_1_1elf_a7dd0cac7dac7cb71e52673b90af2caae_cgraph" loading="lazy" alt=""/></div>
-<map name="anamespacekernel_1_1elf_a7dd0cac7dac7cb71e52673b90af2caae_cgraph" id="anamespacekernel_1_1elf_a7dd0cac7dac7cb71e52673b90af2caae_cgraph">
-<area shape="rect" title=" " alt="" coords="5,181,148,224"/>
-<area shape="rect" href="classkernel_1_1VMM.html#a385de660f1f7a0aab86ad1a31cb4971b" title="Creates a fresh PML4: zeroes user entries (0&#45;255), copies kernel entries (256&#45;511)...." alt="" coords="228,5,362,48"/>
-<area shape="poly" title=" " alt="" coords="89,180,132,123,161,92,194,65,216,53,212,57,197,69,165,96,136,127,94,182"/>
-<area shape="rect" href="classkernel_1_1Scheduler.html#ac094d7e0ec9c48c58637e36fce587be2" title="Returns the currently running task." alt="" coords="467,192,597,235"/>
-<area shape="poly" title=" " alt="" coords="148,202,453,209,451,214,148,207"/>
-<area shape="rect" href="classkernel_1_1PMM.html#a0daaa2d1b36579ff9c0eb60caddee59d" title="Frees a page regardless of ownership." alt="" coords="452,76,612,103"/>
-<area shape="poly" title=" " alt="" coords="95,179,138,141,165,123,195,108,256,91,319,81,380,77,439,80,434,82,381,83,319,86,257,96,197,113,168,127,142,145,100,183"/>
-<area shape="rect" href="classkernel_1_1VMM.html#ab204c9d0ee0ad66661be51ce72280bff" title="Frees all user&#45;space pages and page tables from a user PML4. Used during exec() to clean up the old a..." alt="" coords="216,123,374,165"/>
-<area shape="poly" title=" " alt="" coords="147,181,203,167,199,171,149,186"/>
-<area shape="rect" href="classkernel_1_1VMM.html#a41f6aadd3a5d784d8324a8b1e0e11789" title="Returns the physical address of the kernel PML4." alt="" coords="196,240,394,267"/>
-<area shape="poly" title=" " alt="" coords="148,216,222,235,217,237,148,222"/>
-<area shape="rect" href="namespacekernel_1_1vfs.html#a11645e6a37081ee178777f682740736d" title=" " alt="" coords="229,291,361,317"/>
-<area shape="poly" title=" " alt="" coords="106,222,149,250,197,276,216,285,211,286,195,281,146,255,106,227"/>
-<area shape="rect" href="namespacekernel_1_1elf.html#a53980ddec04e380da13a0325a465a554" title=" " alt="" coords="229,341,360,384"/>
-<area shape="poly" title=" " alt="" coords="94,222,137,275,166,303,197,327,218,340,212,340,194,332,162,307,133,279,92,227"/>
-<area shape="rect" href="classkernel_1_1PMM.html#acd322564470938305549042daa42732d" title="Allocates a single 4 KiB page (KERNEL ownership)." alt="" coords="450,13,615,40"/>
-<area shape="poly" title=" " alt="" coords="361,24,436,26,431,28,363,29"/>
-<area shape="poly" title=" " alt="" coords="373,123,459,106,454,108,375,128"/>
-<area shape="rect" href="classkernel_1_1PMM.html#a25790262d20157b6e9919d423937e52d" title="Returns true if the page was allocated as USER ownership." alt="" coords="442,131,622,157"/>
-<area shape="poly" title=" " alt="" coords="373,141,429,143,424,145,374,147"/>
-<area shape="poly" title=" " alt="" coords="357,288,393,276,474,243,479,241,395,281,358,293"/>
-<area shape="rect" href="string_8hpp.html#aa383452fe445bfae989358c9d7d96f4f" title="Returns the length of a null&#45;terminated string." alt="" coords="506,280,559,307"/>
-<area shape="poly" title=" " alt="" coords="361,298,493,295,487,296,362,304"/>
-<area shape="rect" href="string_8hpp.html#a617eed2430471abc2c2ac192bd280869" title=" " alt="" coords="498,331,566,357"/>
-<area shape="poly" title=" " alt="" coords="362,312,485,335,480,336,361,318"/>
-</map>
+<div class="center"><img src="namespacekernel_1_1elf_a8587c966825c28717e2e90c6c754b87c_cgraph.png" border="0" usemap="#anamespacekernel_1_1elf_a8587c966825c28717e2e90c6c754b87c_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 0 -->
 </div>
 
 </div>
 </div>
-<a id="a77a09264ac49cf4578d49338007c28fc" name="a77a09264ac49cf4578d49338007c28fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77a09264ac49cf4578d49338007c28fc">&#9670;&#160;</a></span>load()</h2>
+<a id="ae81746671637a90991ec1b98cef60dc4" name="ae81746671637a90991ec1b98cef60dc4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae81746671637a90991ec1b98cef60dc4">&#9670;&#160;</a></span>load()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -209,15 +188,20 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *</td>          <td class="paramname"><span class="paramname"><em>file_data</em></span>&#160;)</td>
+          <td class="paramtype">const <a class="el" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *</td>          <td class="paramname"><span class="paramname"><em>file_data</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>file_size</em></span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <div class="dynheader">
 Here is the call graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><img src="namespacekernel_1_1elf_a77a09264ac49cf4578d49338007c28fc_cgraph.png" border="0" usemap="#anamespacekernel_1_1elf_a77a09264ac49cf4578d49338007c28fc_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<div class="center"><img src="namespacekernel_1_1elf_ae81746671637a90991ec1b98cef60dc4_cgraph.png" border="0" usemap="#anamespacekernel_1_1elf_ae81746671637a90991ec1b98cef60dc4_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
 </div>
 
 </div>

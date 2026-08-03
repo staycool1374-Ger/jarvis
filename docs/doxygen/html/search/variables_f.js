@@ -23,5 +23,6 @@ var searchData=
   ['poisoned_20',['poisoned',['../structkernel_1_1test_1_1_pt_pool_snapshot.html#a0012ea8428b1d77822dc667ce16da4c3',1,'kernel::test::PtPoolSnapshot']]],
   ['post_5fconditions_21',['post_conditions',['../struct_test_meta.html#ad7055871a2e0a71cf806cfc5d65df99c',1,'TestMeta']]],
   ['pre_5fconditions_22',['pre_conditions',['../struct_test_meta.html#a94d1080f0b11b281af802f69e3349ea0',1,'TestMeta']]],
-  ['proc_5ffs_23',['proc_fs',['../namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856',1,'kernel::vfs']]]
+  ['preempt_5fenabled_23',['preempt_enabled',['../structkernel_1_1_scheduler_config.html#a8d2e838e1311ae86fcbc56083a6e32c5',1,'kernel::SchedulerConfig']]],
+  ['proc_5ffs_24',['proc_fs',['../namespacekernel_1_1vfs.html#a8049afbb25873d95c723f015f6c61856',1,'kernel::vfs']]]
 ];

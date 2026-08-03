@@ -26,5 +26,6 @@ var searchData=
   ['create_5fnamed_5ftask_23',['create_named_task',['../namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0',1,'kernel::test']]],
   ['create_5fpipe_24',['create_pipe',['../namespacekernel_1_1vfs.html#a63004773b8b1cae833b25ae477c4b956',1,'kernel::vfs']]],
   ['create_5ftest_5ftask_25',['create_test_task',['../test__sched__helpers_8hpp.html#adaf685bd992e296e30fb7358c5f28b9a',1,'test_sched_helpers.hpp']]],
-  ['current_5ftest_5fname_26',['current_test_name',['../classkernel_1_1test_1_1_registry.html#a2e184916c79d80372a39ee0de29aaeb8',1,'kernel::test::Registry']]]
+  ['current_5fcpu_26',['current_cpu',['../namespacekernel.html#a777bca6dec383faa735ebe34c5bdf749',1,'kernel']]],
+  ['current_5ftest_5fname_27',['current_test_name',['../classkernel_1_1test_1_1_registry.html#a2e184916c79d80372a39ee0de29aaeb8',1,'kernel::test::Registry']]]
 ];

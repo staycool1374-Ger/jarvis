@@ -26,6 +26,7 @@ var namespacekernel_1_1vfs =
     [ "reset_and_remount", "namespacekernel_1_1vfs.html#aaf0cf262c173f6848095480880c1cbc9", null ],
     [ "resolve", "namespacekernel_1_1vfs.html#a11645e6a37081ee178777f682740736d", null ],
     [ "resolve_err", "namespacekernel_1_1vfs.html#ad31548f035d75326ab34f5fd3fce896a", null ],
+    [ "resolve_parent", "namespacekernel_1_1vfs.html#aab245675b2cdacc0a60a0576dcb4e267", null ],
     [ "set_root_vnode", "namespacekernel_1_1vfs.html#a83a4478d7ebf71e6b21b38dd91fb1502", null ],
     [ "set_root_vnode_err", "namespacekernel_1_1vfs.html#abf5c58a8fb7ecb09a275d19b1029b125", null ],
     [ "tmpfs_reset_root", "namespacekernel_1_1vfs.html#ad97a3b4278a3acc170ad8a0f457bc350", null ],

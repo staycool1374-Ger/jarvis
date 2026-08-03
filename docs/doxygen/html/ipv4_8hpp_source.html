@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.6</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
    </div>
   </td>
  </tr>
@@ -196,17 +196,19 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('ipv4_8hpp_sour
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>};</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span></div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="keyword">inline</span> <a class="code hl_typedef" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> ipv4_checksum(<span class="keyword">const</span> Ipv4Header *hdr) {</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_typedef" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> sum = 0;</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keyword">auto</span> *words = <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><a class="code hl_typedef" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> *<span class="keyword">&gt;</span>(hdr);</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i) { <span class="comment">// first 20 bytes = 10 half-words</span></div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        sum += words[i];</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    }</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">while</span> (sum &gt;&gt; 16)</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        sum = (sum &amp; 0xFFFF) + (sum &gt;&gt; 16);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code hl_typedef" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a><span class="keyword">&gt;</span>(~sum &amp; 0xFFFF);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>}</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>} <span class="comment">// namespace net</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keyword">const</span> <span class="keyword">auto</span> *bytes = <span class="keyword">reinterpret_cast&lt;</span><span class="keyword">const </span><a class="code hl_typedef" href="types_8hpp.html#a0ba18cab9bd5513695cbe748e9bb4879">uint8_t</a> *<span class="keyword">&gt;</span>(hdr);</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <a class="code hl_typedef" href="types_8hpp.html#a398ec93d6bf48539b258a3dd78e32c82">uint32_t</a> sum = 0;</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <a class="code hl_typedef" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a> word = 0;</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 20; i += 2) { <span class="comment">// first 20 bytes = 10 half-words</span></div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        __builtin_memcpy(&amp;word, bytes + i, <span class="keyword">sizeof</span>(word));</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        sum += word;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    }</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="keywordflow">while</span> (sum &gt;&gt; 16)</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        sum = (sum &amp; 0xFFFF) + (sum &gt;&gt; 16);</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code hl_typedef" href="types_8hpp.html#a64be82add362de7c99ce6671d7f4f0a6">uint16_t</a><span class="keyword">&gt;</span>(~sum &amp; 0xFFFF);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>}</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>} <span class="comment">// namespace net</span></div>
 <div class="ttc" id="agcov__handler_8cpp_html_a0e89cf6b9f6cd3125470b1bed2b823df"><div class="ttname"><a href="gcov__handler_8cpp.html#a0e89cf6b9f6cd3125470b1bed2b823df">addr</a></div><div class="ttdeci">uint64_t addr</div><div class="ttdef"><b>Definition</b> gcov_handler.cpp:59</div></div>
 <div class="ttc" id="anamespaceinitrd_html_a00c53aee04ed1b36b1a86a010b49ef61"><div class="ttname"><a href="namespaceinitrd.html#a00c53aee04ed1b36b1a86a010b49ef61">initrd::__attribute__</a></div><div class="ttdeci">struct initrd::CpioNewcHeader __attribute__((packed))</div></div>
 <div class="ttc" id="anamespacenet_html"><div class="ttname"><a href="namespacenet.html">net</a></div><div class="ttdef"><b>Definition</b> arp.cpp:25</div></div>
