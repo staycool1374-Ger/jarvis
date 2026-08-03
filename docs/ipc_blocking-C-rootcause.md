@@ -64,6 +64,25 @@ One of:
 Until the single-slot buffer is fixed, `ipc_blocking` (a stress test of rapid
 back-to-back IPC-driven switches) will remain flaky.
 
+## 2026-08-03 — Deterministic reproduction + attempted fixes (see also
+## `docs/ipc_blocking-analysis.md` §Next steps)
+
+- `ipc` class hangs 3/3 at `ipc_send_sync_roundtrip` with the trace ON:
+  `[DIAG] pre-save: idx=3 id=1 cur_rsp=0xFFFF8000... owners: (empty)` — the
+  harness (PID 1) runs on the boot stack, no TCB owns the live RSP.
+- Attempted (ALL REVERTED, none stable): harness-slot fallback in
+  `switch_to_task`; early-return on a pending switch in
+  `rate_monotonic_schedule`; clear `scheduler_next_task_id` in
+  `remove_task`; harness-nonpreempt guard returning unconditionally
+  (this last one broke idle_cleanup / timer_rate_monotonic — the guard must
+  keep its `highest_ready < cur_prio` check).
+- **Open question (CR3 on the harness-return path):** switching harness
+  (boot stack, kernel PML4) → user task loads the user CR3; switching BACK
+  must reload the kernel PML4.  If `scheduler_load_cr3_from` for the harness
+  is stale/zero, the harness resumes on the sender's user PML4 → freeze.
+  Verify the CR3 reload at isr_stubs.asm ~150-165 before/with the
+  generation-based atomic publish fix.
+
 ## Files
 - src/kernel/task/scheduler.cpp: switch_to_task (1496-1539), on_context_switch (2143-2150)
 - src/kernel/arch/x86_64/isr_stubs.asm:106-171

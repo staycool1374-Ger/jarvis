@@ -117,13 +117,24 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 ## Active Development — v0.3.8
 
 ### Test Hygiene & Flaky-Test Remediation
-- [ ] **`microkernel_transition` KernelApiPureFunctions** — re-enable the
-      disabled test (memcpy stack corruption at `all` class position ~657).
-      Root cause unclear (likely test-code stack/buffer overflow); currently
-      commented out in `register_microkernel_transition_tests()`.
-- [ ] **`jitter_under_idle` flaky LEAK** — intermittent
-      `[LEAK: PMM +32, Tasks +2, MsgQueues +2, ...]` in `all-1` (~test 439).
-      Known-flaky; needs deterministic cleanup / teardown.
+- [x] **`microkernel_transition` KernelApiPureFunctions** — re-enabled
+      (was `#if 0` + unregistered).  No memcpy corruption reproduces in
+      isolation: `bench` 12/23 PASS, `bench` 23/23 PASS.
+- [x] **`jitter_under_idle` flaky LEAK** — root causes found and fixed:
+      (1) `JARVIS_ASSERT`'s `return;` skipped task cleanup on a failing
+      bound (leaked 2 TCBs + msgqueues/notifies/eventgroups); cleanup now
+      runs before the assertion.  (2) The tight `max <= min*10+1000` bound
+      was tripped by a timer ISR preempting the rdtsc window; replaced with
+      a robust average-jitter sanity cap (< 1M cycles).  20/20 isolated
+      runs clean, 0 leaks.
+- [x] **`ss_deadline` hang** — the isolated class hung ~100% (and blocked
+      `all-1` at ~test 457).  Root causes: the kernel priority convention is
+      higher number = higher priority (docs/scheduler-spec.md §0), so an
+      EXHAUSTED sporadic task at bg_prio=42 outranks the harness (prio 10)
+      and is preemptively dispatched mid-test; and calling `on_tick()` in a
+      TEST_CLASS body runs rate_monotonic_schedule which dispatches the
+      helper.  Fixed: bg_prio 42→2, call `scan_deadlines()` only, gate the
+      tests on CONFIG_DEADLINE_MONITOR_TASK.  16/16 clean.
 
 ## Active Development — v0.3.9
 
@@ -149,7 +160,23 @@ development gate keeps the trace ON until this is fixed.
       `save_target` stays `&TASK_STACK_PTR(current)` and the ISR saves a
       boot-stack RSP into the harness TCB.  `scheduler_diag_pre_save()`
       (scheduler.cpp ~2480) catches it as `cur_rsp` outside
-      `kstack=[...] owners: (empty)`.
+      `kstack=[...] owners: (empty)`.  Deterministic reproduction: `ipc`
+      class hangs 3/3 at `ipc_send_sync_roundtrip` with the trace ON, ending
+      in `[DIAG] pre-save: idx=3 id=1 cur_rsp=0xFFFF8000... owners: (empty)`
+      — the harness (PID 1) on the boot stack, no TCB owns the live RSP.
+- [ ] **Attempted fixes (2026-08-03, ALL REVERTED — none stable):**
+      (a) harness-slot fallback in `switch_to_task` owner-resolution
+          (no-owner ⇒ save into harness TCB) — did not reduce ipc hang;
+      (b) early-return in `rate_monotonic_schedule` when a deferred switch
+          is pending (do not clobber) — no change;
+      (c) clear `scheduler_next_task_id` in `remove_task` (cancel pending
+          switch to a removed task) — changed the ss_deadline manifestation
+          but did not fix;
+      (d) harness-nonpreempt guard return unconditionally while the harness
+          is RUNNING in a test body — fixed ss_deadline BUT broke
+          idle_cleanup / timer_rate_monotonic (RT tasks never dispatched),
+          so reverted.  The guard must keep the `highest_ready < cur_prio`
+          check (idle_cleanup relies on equal/higher-prio dispatch).
 - [ ] **Fix candidates (from analysis doc §Next steps):**
       (1) make the deferred-switch pair atomic — publish RSP+CR3 under a
       single generation so the ISR never applies a half-written pair
@@ -158,6 +185,12 @@ development gate keeps the trace ON until this is fixed.
       save entirely for the harness/idle path); (3) fix the
       `current_task_ptr_`/runq desync (INV-2) that leaves a live task out of
       the runq and not `current`.
+      **Open question for the next session:** the switch from harness
+      (boot stack) to a user task loads a user CR3; switching BACK must
+      reload the kernel CR3 for the harness.  If `scheduler_load_cr3_from`
+      for the harness is stale/zero, the harness resumes on the sender's
+      user PML4 → freeze.  Verify CR3 correctness on the return path
+      (isr_stubs.asm ~150-165) before/with the generation fix.
 - [ ] **Verification:** debug `all` must pass 881/881 with the trace **off**;
       then re-verify `release all` (84/84) and `check-style` Errors: 0.
 

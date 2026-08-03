@@ -115,9 +115,39 @@ kernel's priority convention is **higher number = higher priority**
 (`docs/scheduler-spec.md` §0).  The harness (init/PID 1) runs at prio 10 during
 a test cycle; a sporadic task that is EXHAUSTED drops to `bg_priority_`, and if
 that `bg_prio` is numerically HIGHER than the harness (e.g. base=10,
-bg_prio=42) it preemptively dispatches the exhausted task mid-test.  The
-harness-nonpreempt guard (BUGS.md#021) previously only blocked LOWER-priority
-preemption; it now returns unconditionally while the harness is RUNNING in a
-test body (unless the harness explicitly requested a reschedule), and test
-code must keep `bg_prio < base` and `< 10`.  Fixed: harness-nonpreempt guard +
-`SsExhaustionTriggersDeadline`/`SsDeadlineMissDuringReplenish` bg_prio 42→2.
+bg_prio=42) it preemptively dispatches the exhausted task mid-test.  Test code
+must keep `bg_prio < base` and `< 10`.  Fixed: `SsExhaustionTriggersDeadline` /
+`SsDeadlineMissDuringReplenish` bg_prio 42→2 (the harness-nonpreempt guard is
+UNCHANGED — it keeps the `highest_ready < cur_prio` check; idle_cleanup relies
+on equal/higher-priority dispatch, so the guard cannot return unconditionally).
+
+**2026-08-03 — deterministic reproduction (ipc class):** `ipc` hangs 3/3 at
+`ipc_send_sync_roundtrip` with the trace ON, ending in:
+```
+[DIAG] pre-save: idx=3 id=1 cur_rsp=0xFFFF800000A23EA8 ctx_rsp=0xFFFF900000034920
+                 state=0 kstack=[0xFFFF900000025000-0xFFFF900000035000] owners:
+```
+i.e. the harness (PID 1) physically runs on the boot stack
+(`0xFFFF8000...`, kernel-image space), which is not any TCB's kernel stack, so
+`switch_to_task`'s owner-resolution finds no owner.  A timer ISR applying the
+deferred switch then saves the boot-stack RSP into a peer TCB's `context.rsp`
+and/or resumes the harness with a stale/wrong CR3.
+
+**2026-08-03 — attempted fixes (ALL REVERTED, none stable):**
+- (a) harness-slot fallback in `switch_to_task` owner-resolution (no-owner ⇒
+      save into the harness TCB) — did not reduce the ipc hang.
+- (b) early-return in `rate_monotonic_schedule` when a deferred switch is
+      pending — no change.
+- (c) clear `scheduler_next_task_id` in `remove_task` (cancel a pending switch
+      to a removed task) — changed the ss_deadline manifestation, did not fix.
+- (d) harness-nonpreempt guard returning unconditionally while the harness is
+      RUNNING in a test body — fixed ss_deadline but broke
+      `idle_cleanup`/`timer_rate_monotonic` (equal-priority RT tasks never
+      dispatched; they must be able to preempt the harness during hlt()).
+
+**Open question for the next session (CR3 on the harness-return path):** the
+switch from the harness (boot stack, kernel PML4) to a user task loads the
+user's CR3.  Switching BACK to the harness must reload the kernel PML4; if
+`scheduler_load_cr3_from` for the harness is stale/zero, the harness resumes on
+the sender's user PML4 → freeze.  Verify the CR3 reload on the return path
+(isr_stubs.asm ~150-165) before/with the generation-based atomic publish fix.
