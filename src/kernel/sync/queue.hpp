@@ -139,6 +139,8 @@ class Queue {
     bool add_recv_waiter(TaskControlBlock &task);
     void wake_send_one();
     void wake_recv_one();
+    void remove_send_waiter(TaskControlBlock &task);
+    void remove_recv_waiter(TaskControlBlock &task);
 
     /// @brief Boost the last receiver when a high-prio sender blocks.
     void boost_receiver(TaskControlBlock &blocked_sender);

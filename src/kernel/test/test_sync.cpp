@@ -208,9 +208,10 @@ JARVIS_TEST(queue_send_receive_block, "PRE: none | POST: none") {
 // Runmode: kernel
 // Testidea: Verifies that Queue::send blocks the sender when the queue is full.
 // Input: Fill queue to capacity, create sender task that blocks on send,
-// verify blocking behavior.
-// Expect: Sender becomes BLOCKED when queue is full; becomes READY after
-// receiver drains.
+// dispatch it through the real scheduler, verify blocking behavior.
+// Expect: Sender becomes BLOCKED when queue is full; becomes TERMINATED after
+// receiver drains (its blocked send completes and the trampoline exits).
+// Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
@@ -222,28 +223,45 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     }
     JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT);
 
+    // The sender genuinely runs (dispatched by the timer ISR) and blocks
+    // inside Queue::send() on the full queue.
     auto *sender = TaskControlBlock::create(
         []() {
             sync::Queue *q = reinterpret_cast<sync::Queue *>(
                 Scheduler::current_task()->user_data);
-            q->send((uint8_t *)"test", 4);
+            bool ok = q->send((uint8_t *)"test", 4);
+            JARVIS_ASSERT(ok);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
     auto *original = Scheduler::current_task();
-    Scheduler::set_current(*sender);
-    queue.send((uint8_t *)"test", 4);
+    // Do NOT yield_as(*sender): next_task() skips the current task, so that
+    // would make the only test task current and never dispatch it.  A plain
+    // reschedule() picks the higher-priority sender (11 > harness 10) on the
+    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
+    // acquire the scheduler lock without contention.
+    Scheduler::reschedule();
+    while (sender->state != TaskState::BLOCKED) {
+        asm volatile("pause");
+    }
+
+    // The sender genuinely blocked on the full queue (its lambda ran).
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    // Drain one message
-    Scheduler::set_current(*original);
+    // Drain one message — wakes the blocked sender, which completes its send
+    // and terminates.
     uint8_t buf[32];
     size_t size = 32;
-    JARVIS_ASSERT(queue.try_receive(buf, &size));
-    JARVIS_ASSERT(sender->state == TaskState::READY);
+    JARVIS_ASSERT(queue.receive(buf, &size));
+    while (sender->state != TaskState::TERMINATED) {
+        asm volatile("pause");
+    }
+
+    Scheduler::set_current(*original);
+    JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();
@@ -254,39 +272,55 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
 // Runmode: kernel
 // Testidea: Verifies that Queue::receive blocks the receiver when the queue
 // is empty.
-// Input: Create receiver task that blocks on receive from empty queue,
-// verify blocking behavior.
-// Expect: Receiver becomes BLOCKED when queue is empty; becomes READY after
-// sender adds message.
+// Input: Create receiver task that blocks on receive from empty queue, dispatch
+// it through the real scheduler, verify blocking behavior.
+// Expect: Receiver becomes BLOCKED when queue is empty; becomes TERMINATED
+// after sender adds a message (its blocked receive completes and the trampoline
+// exits).
+// Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
     JARVIS_ASSERT(queue.available() == 0);
 
+    // The receiver genuinely runs (dispatched by the timer ISR) and blocks
+    // inside Queue::receive() on the empty queue.
     auto *receiver = TaskControlBlock::create(
         []() {
             sync::Queue *q = reinterpret_cast<sync::Queue *>(
                 Scheduler::current_task()->user_data);
             uint8_t buf[32];
             size_t size = 32;
-            q->receive(buf, &size);
+            bool ok = q->receive(buf, &size);
+            JARVIS_ASSERT(ok);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     receiver->user_data = &queue;
     Scheduler::add_task(*receiver);
 
     auto *original = Scheduler::current_task();
-    Scheduler::set_current(*receiver);
-    uint8_t buf[32];
-    size_t size = 32;
-    queue.receive(buf, &size);
+    // Do NOT yield_as(*receiver): next_task() skips the current task.  A plain
+    // reschedule() picks the higher-priority receiver (11 > harness 10) on the
+    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
+    // acquire the scheduler lock without contention.
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::BLOCKED) {
+        asm volatile("pause");
+    }
+
+    // The receiver genuinely blocked on the empty queue (its lambda ran).
     JARVIS_ASSERT(receiver->state == TaskState::BLOCKED);
 
-    // Add a message to unblock
-    Scheduler::set_current(*original);
+    // Add a message — wakes the blocked receiver, which completes its receive
+    // and terminates.
     JARVIS_ASSERT(queue.try_send((uint8_t *)"data", 4));
-    JARVIS_ASSERT(receiver->state == TaskState::READY);
+    while (receiver->state != TaskState::TERMINATED) {
+        asm volatile("pause");
+    }
+
+    Scheduler::set_current(*original);
+    JARVIS_ASSERT(receiver->state == TaskState::TERMINATED);
 
     Scheduler::remove_task(*receiver);
     receiver->cleanup();
@@ -298,9 +332,10 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
 // Testidea: Verifies that a blocked sender is woken when a receiver consumes
 // from the queue.
 // Input: Fill queue, block sender on send, drain via receiver, verify sender
-// becomes READY.
-// Expect: Sender is BLOCKED after failed send, becomes READY after receiver
-// calls receive.
+// becomes TERMINATED (its blocked send completes).
+// Expect: Sender is BLOCKED after failed send, runs to TERMINATED after
+// receiver calls receive.
+// Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
@@ -311,28 +346,42 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
         JARVIS_ASSERT(queue.try_send(d, 1));
     }
 
+    // The sender genuinely runs and blocks inside Queue::send() on the full
+    // queue.
     auto *sender = TaskControlBlock::create(
         []() {
             sync::Queue *q = reinterpret_cast<sync::Queue *>(
                 Scheduler::current_task()->user_data);
-            q->send((uint8_t *)"wake", 4);
+            bool ok = q->send((uint8_t *)"wake", 4);
+            JARVIS_ASSERT(ok);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
     auto *original = Scheduler::current_task();
-    Scheduler::set_current(*sender);
-    queue.send((uint8_t *)"wake", 4);
+    // Do NOT yield_as(*sender): next_task() skips the current task.  A plain
+    // reschedule() picks the higher-priority sender (11 > harness 10) on the
+    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
+    // acquire the scheduler lock without contention.
+    Scheduler::reschedule();
+    while (sender->state != TaskState::BLOCKED) {
+        asm volatile("pause");
+    }
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    // Receiver drains one
-    Scheduler::set_current(*original);
+    // Receiver drains one — wakes the blocked sender, which completes its
+    // send and terminates.
     uint8_t buf[32];
     size_t size = 32;
     JARVIS_ASSERT(queue.receive(buf, &size));
-    JARVIS_ASSERT(sender->state == TaskState::READY);
+    while (sender->state != TaskState::TERMINATED) {
+        asm volatile("pause");
+    }
+
+    Scheduler::set_current(*original);
+    JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 
     Scheduler::remove_task(*sender);
     sender->cleanup();

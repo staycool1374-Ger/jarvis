@@ -23,6 +23,7 @@
 #include <kernel/sync/queue.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/sync/spinlock_guard.hpp>
+#include <kernel/arch/io.hpp>
 #include <string.hpp>
 
 namespace kernel {
@@ -134,38 +135,88 @@ void Queue::wake_recv_one() {
     recv_waiter_gens_[best] = recv_waiter_gens_[recv_waiters_count_];
 }
 
+/// @brief Remove a specific task from the send-waiter array (caller must hold
+///        lock_).  Used to roll back a block attempt when interrupts are
+///        disabled and the deferred switch can never apply.
+void Queue::remove_send_waiter(TaskControlBlock &task) {
+    for (size_t i = 0; i < send_waiters_count_;) {
+        if (send_waiters_[i] == &task &&
+            send_waiter_gens_[i] == task.generation) {
+            send_waiters_[i] = send_waiters_[--send_waiters_count_];
+            send_waiter_gens_[i] = send_waiter_gens_[send_waiters_count_];
+            return;
+        }
+        ++i;
+    }
+}
+
+/// @brief Remove a specific task from the recv-waiter array (caller must hold
+///        lock_).  Used to roll back a block attempt when interrupts are
+///        disabled and the deferred switch can never apply.
+void Queue::remove_recv_waiter(TaskControlBlock &task) {
+    for (size_t i = 0; i < recv_waiters_count_;) {
+        if (recv_waiters_[i] == &task &&
+            recv_waiter_gens_[i] == task.generation) {
+            recv_waiters_[i] = recv_waiters_[--recv_waiters_count_];
+            recv_waiter_gens_[i] = recv_waiter_gens_[recv_waiters_count_];
+            return;
+        }
+        ++i;
+    }
+}
+
 /// @brief Send a message, blocking if the queue is full.
 bool Queue::send(const uint8_t *data, size_t size) {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (size > QUEUE_MAX_MSG_SIZE)
         return false;
 
     auto *task = Scheduler::current_task();
-    last_sender_ = task;
 
-    while (is_full()) {
-        boost_receiver(*task);
-        if (!add_send_waiter(*task))
-            return false;
+    for (;;) {
+        {
+            SpinLockGuard<SpinLock> guard(lock_);
+            last_sender_ = task;
+            if (!is_full()) {
+                memcpy(msgs_[tail_].data, data, size);
+                msgs_[tail_].size = size;
+                tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
+                ++count_;
+                restore_receiver();
+                wake_recv_one();
+                return true;
+            }
+            boost_receiver(*task);
+            if (!add_send_waiter(*task))
+                return false;
+        }
+
+        // Block OUTSIDE the queue lock so the receiver can drain the queue and
+        // wake us (holding lock_ across the block would deadlock the drain).
         task->state = TaskState::BLOCKED;
+        Scheduler::dequeue_ready(*task);
         Scheduler::reschedule();
+
+        // reschedule() is deferred (INV-4): the current task keeps running
+        // with state=BLOCKED until the timer ISR applies the switch and the
+        // receiver drains + wakes us.  Spin-wait (mirrors IPC::send).  If
+        // interrupts are off the ISR can't fire — roll back and fail.
+        if (arch::interrupts_enabled()) {
+            while (task->state == TaskState::BLOCKED) {
+                arch::pause();
+            }
+        } else {
+            remove_send_waiter(*task);
+            task->state = TaskState::RUNNING;
+            Scheduler::enqueue_ready(*task);
+            return false;
+        }
+        // Woken — re-check for space.
     }
-
-    memcpy(msgs_[tail_].data, data, size);
-    msgs_[tail_].size = size;
-    tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
-    ++count_;
-
-    restore_receiver();
-    wake_recv_one();
-
-    return true;
 }
 
 /// @brief Send a message, blocking if full (error-returning overload).
 errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
                                   size_t *sent_bytes) {
-    SpinLockGuard<SpinLock> guard(lock_);
     if (size > QUEUE_MAX_MSG_SIZE)
         return errors::SYNC_ERR_MSG_TOO_LARGE;
 
@@ -173,28 +224,42 @@ errors::SyncError Queue::send_err(const uint8_t *data, size_t size,
     if (!task)
         return errors::SYNC_ERR_NO_TASK;
 
-    last_sender_ = task;
+    for (;;) {
+        {
+            SpinLockGuard<SpinLock> guard(lock_);
+            last_sender_ = task;
+            if (!is_full()) {
+                memcpy(msgs_[tail_].data, data, size);
+                msgs_[tail_].size = size;
+                tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
+                ++count_;
+                restore_receiver();
+                wake_recv_one();
+                if (sent_bytes)
+                    *sent_bytes = size;
+                return errors::SYNC_ERR_OK;
+            }
+            if (send_waiters_count_ >= MAX_WAITERS)
+                return errors::SYNC_ERR_MAX_WAITERS;
+            boost_receiver(*task);
+            add_send_waiter(*task);
+        }
 
-    while (is_full()) {
-        if (send_waiters_count_ >= MAX_WAITERS)
-            return errors::SYNC_ERR_MAX_WAITERS;
-        boost_receiver(*task);
-        add_send_waiter(*task);
         task->state = TaskState::BLOCKED;
+        Scheduler::dequeue_ready(*task);
         Scheduler::reschedule();
+
+        if (arch::interrupts_enabled()) {
+            while (task->state == TaskState::BLOCKED) {
+                arch::pause();
+            }
+        } else {
+            remove_send_waiter(*task);
+            task->state = TaskState::RUNNING;
+            Scheduler::enqueue_ready(*task);
+            return errors::SYNC_ERR_MAX_WAITERS;
+        }
     }
-
-    memcpy(msgs_[tail_].data, data, size);
-    msgs_[tail_].size = size;
-    tail_ = (tail_ + 1) % QUEUE_MAX_MSG_COUNT;
-    ++count_;
-
-    restore_receiver();
-    wake_recv_one();
-
-    if (sent_bytes)
-        *sent_bytes = size;
-    return errors::SYNC_ERR_OK;
 }
 
 /// @brief Send a message without blocking.
@@ -239,71 +304,107 @@ errors::SyncError Queue::try_send_err(const uint8_t *data, size_t size,
 
 /// @brief Receive a message, blocking if the queue is empty.
 bool Queue::receive(uint8_t *buf, size_t *size) {
-    SpinLockGuard<SpinLock> guard(lock_);
     auto *task = Scheduler::current_task();
-    last_receiver_ = task;
 
-    while (is_empty()) {
-        boost_sender(*task);
-        if (!add_recv_waiter(*task))
-            return false;
+    for (;;) {
+        {
+            SpinLockGuard<SpinLock> guard(lock_);
+            last_receiver_ = task;
+            if (!is_empty()) {
+                size_t copy_size = msgs_[head_].size;
+                if (buf && size) {
+                    if (*size < copy_size)
+                        copy_size = *size;
+                    memcpy(buf, msgs_[head_].data, copy_size);
+                    *size = copy_size;
+                }
+
+                head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
+                --count_;
+
+                restore_sender();
+                wake_send_one();
+                return true;
+            }
+            boost_sender(*task);
+            if (!add_recv_waiter(*task))
+                return false;
+        }
+
+        // Block OUTSIDE the queue lock so a sender can enqueue and wake us.
         task->state = TaskState::BLOCKED;
+        Scheduler::dequeue_ready(*task);
         Scheduler::reschedule();
+
+        // reschedule() is deferred (INV-4): spin-wait until the timer ISR
+        // applies the switch and the sender enqueues + wakes us.  If
+        // interrupts are off the ISR can't fire — roll back and fail.
+        if (arch::interrupts_enabled()) {
+            while (task->state == TaskState::BLOCKED) {
+                arch::pause();
+            }
+        } else {
+            remove_recv_waiter(*task);
+            task->state = TaskState::RUNNING;
+            Scheduler::enqueue_ready(*task);
+            return false;
+        }
+        // Woken — re-check for a message.
     }
-
-    size_t copy_size = msgs_[head_].size;
-    if (buf && size) {
-        if (*size < copy_size)
-            copy_size = *size;
-        memcpy(buf, msgs_[head_].data, copy_size);
-        *size = copy_size;
-    }
-
-    head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
-    --count_;
-
-    restore_sender();
-    wake_send_one();
-    return true;
 }
 
 /// @brief Receive a message, blocking if empty (error-returning overload).
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 errors::SyncError Queue::receive_err(uint8_t *buf, size_t *size,
                                      size_t *received_bytes) {
-    SpinLockGuard<SpinLock> guard(lock_);
     auto *task = Scheduler::current_task();
     if (!task)
         return errors::SYNC_ERR_NO_TASK;
 
-    last_receiver_ = task;
+    for (;;) {
+        {
+            SpinLockGuard<SpinLock> guard(lock_);
+            last_receiver_ = task;
+            if (!is_empty()) {
+                size_t copy_size = msgs_[head_].size;
+                if (buf && size) {
+                    if (*size < copy_size)
+                        copy_size = *size;
+                    memcpy(buf, msgs_[head_].data, copy_size);
+                    *size = copy_size;
+                }
 
-    while (is_empty()) {
-        if (recv_waiters_count_ >= MAX_WAITERS)
-            return errors::SYNC_ERR_MAX_WAITERS;
-        boost_sender(*task);
-        add_recv_waiter(*task);
+                head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
+                --count_;
+
+                restore_sender();
+                wake_send_one();
+
+                if (received_bytes)
+                    *received_bytes = copy_size;
+                return errors::SYNC_ERR_OK;
+            }
+            if (recv_waiters_count_ >= MAX_WAITERS)
+                return errors::SYNC_ERR_MAX_WAITERS;
+            boost_sender(*task);
+            add_recv_waiter(*task);
+        }
+
         task->state = TaskState::BLOCKED;
+        Scheduler::dequeue_ready(*task);
         Scheduler::reschedule();
+
+        if (arch::interrupts_enabled()) {
+            while (task->state == TaskState::BLOCKED) {
+                arch::pause();
+            }
+        } else {
+            remove_recv_waiter(*task);
+            task->state = TaskState::RUNNING;
+            Scheduler::enqueue_ready(*task);
+            return errors::SYNC_ERR_MAX_WAITERS;
+        }
     }
-
-    size_t copy_size = msgs_[head_].size;
-    if (buf && size) {
-        if (*size < copy_size)
-            copy_size = *size;
-        memcpy(buf, msgs_[head_].data, copy_size);
-        *size = copy_size;
-    }
-
-    head_ = (head_ + 1) % QUEUE_MAX_MSG_COUNT;
-    --count_;
-
-    restore_sender();
-    wake_send_one();
-
-    if (received_bytes)
-        *received_bytes = copy_size;
-    return errors::SYNC_ERR_OK;
 }
 
 /// @brief Receive a message without blocking.
