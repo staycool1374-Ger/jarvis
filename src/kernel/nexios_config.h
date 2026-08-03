@@ -15,7 +15,7 @@
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-#define CONFIG_VERSION "0.3.7-dev"
+#define CONFIG_VERSION "0.3.7"
 #define CONFIG_VERSION_MAJOR 0
 #define CONFIG_VERSION_MINOR 3
 #define CONFIG_VERSION_PATCH 7

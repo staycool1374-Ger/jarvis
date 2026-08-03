@@ -1,5 +1,26 @@
 # Completed Roadmap Items
 
+## v0.3.7 — PfA Concurrency Redesign (Released)
+
+Released as NexIOS v0.3.7 (2026-08-03). Full PARAMETERISE FROM ABOVE (PfA)
+remediation of the 17 shared/volatile globals from
+`docs/global-race-audit.md`, per `docs/v0.3.7-pfa-concurrency-design.md`:
+
+- **PfA-A:** `SchedulerConfig` (preempt/sporadic/suppress-log) injected via
+  `Scheduler::init(cfg)`; `TestContext` replaces `s_test_active_`,
+  `g_test_deadline_monitor_pid`, `scheduler_dummy_save_rsp`.
+- **PfA-B:** new `CpuContext` (per-CPU execution context) + `current_cpu()`
+  backs `current_task_ptr_`, ISR nesting depth, tick counter, and debug state;
+  current-task published atomically with RSP-ownership (INV-1) authoritative.
+- **Atomic discipline:** Timer ticks, Keyboard modifiers (byte-packed), MessageQueue
+  count, BufferPool cookie/page-count, `s_scan_requested_` — all unified to
+  `__atomic_*`.
+- Deferred to Phase 5 (0.4.x): per-CPU GS/TPIDR asm for `isr_nesting_depth`,
+  `hhdm_modified_` (VAR-17) SMP re-audit. Stack-guard/fork → Phase 4.5 MP6/MP7.
+
+Regression: scheduler 56/56, ipc 42/42, sporadic 25/25, memory 47/47,
+selftest 132/132, all-1 746/746, all-2 135/135; check-style Errors: 0.
+
 ## v0.3.6 — Released (rebrand + boundary audit)
 
 Released as NexIOS v0.3.6 (2026-08-02). Includes the syscall/VFS/ELF boundary

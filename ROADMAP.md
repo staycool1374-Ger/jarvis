@@ -1,6 +1,6 @@
 # Jarvis RTOS — Development Roadmap
 
-**Build:** v0.3.7-dev | **Last Release:** v0.3.6
+**Build:** v0.3.7 | **Last Release:** v0.3.7
 
 ## Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -65,7 +65,7 @@ suite (881/881) after each fix; 0 failures.  `make build` clean,
 `check-style` Errors: 0.  Implementation spec:
 `docs/v0.3.6-boundary-audit-spec.md`.
 
-## Active Development — v0.3.7
+## Released — v0.3.7
 
 ### PfA Concurrency Redesign (Global/Race Variables)
 Design spec: **`docs/v0.3.7-pfa-concurrency-design.md`** — replaces the flat
