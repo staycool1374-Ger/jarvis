@@ -124,9 +124,6 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 - [ ] **`jitter_under_idle` flaky LEAK** — intermittent
       `[LEAK: PMM +32, Tasks +2, MsgQueues +2, ...]` in `all-1` (~test 439).
       Known-flaky; needs deterministic cleanup / teardown.
-- [ ] **`ipc`/`all` H2-adjacent flakes** — the known H2 deferred-switch hang
-      region (`ipc_send_sync_roundtrip`) and any remaining flaky `ipc`/`all`
-      runs.  Full H2 root-cause fix tracked in v0.3.9.
 
 ## Active Development — v0.3.9
 
@@ -141,6 +138,10 @@ TCB when `current_task_ptr_` has drifted.  With `CONFIG_DEBUG_IPC_SCHED`
 `ipc_send_sync_roundtrip` (~test 77/78).  With the trace **on** the extra
 serial latency masks it (881/881 verified 2026-08-01).  The debug `all`
 development gate keeps the trace ON until this is fixed.
+
+- [ ] **`ipc`/`all` H2-adjacent flakes** — remaining flaky `ipc`/`all` runs in
+      the H2 region (`ipc_send_sync_roundtrip`); folded into the root-cause fix
+      below (moved from v0.3.8).
 
 - [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
       (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds

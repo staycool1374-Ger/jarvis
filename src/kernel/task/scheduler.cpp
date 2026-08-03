@@ -2642,6 +2642,6 @@ extern "C" void scheduler_on_context_switch() {
     }
 #endif
 #if defined(CONFIG_DEBUG_IPC_SCHED)
-    current_cpu().last_switch_tick = arch::Timer::ticks();
+    kernel::current_cpu().last_switch_tick = arch::Timer::ticks();
 #endif
 }

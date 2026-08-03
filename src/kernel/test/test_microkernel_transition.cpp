@@ -45,7 +45,6 @@ using namespace kernel;
 // Expect: Documented side-effects match actual observations.
 // Disabled: causes memcpy stack corruption at all class position ~657.
 // Root cause: unknown (likely stack or buffer overflow from test code).
-#if 0
 TEST_CLASS(KernelApiPureFunctions) {
     auto *cur = Scheduler::current_task();
     CT_ASSERT(cur != nullptr);
@@ -62,7 +61,6 @@ TEST_CLASS(KernelApiPureFunctions) {
     Message out;
     IPC::recv(out);
 };
-#endif
 
 // Runmode: kernel
 // Testidea: Identify all kernel functions that require ring-0 privilege
@@ -213,6 +211,7 @@ void register_microkernel_transition_tests() {
     REGISTER_CLASS(UserspaceDriverIsolation);
     REGISTER_CLASS(IpcLatencyJitter);
     REGISTER_CLASS(TimerDrift);
-    // KernelApiPureFunctions disabled:
-    // causes memcpy stack corruption at all class position ~657
+    // Re-enabled for v0.3.8 investigation (was: memcpy stack corruption at
+    // all class position ~657).
+    REGISTER_CLASS(KernelApiPureFunctions);
 }
