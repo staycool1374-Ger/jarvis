@@ -522,6 +522,126 @@ AND a buffer mapping in the same PML4.
 **Out of scope:** the H2 deferred-switch race (v0.3.9) and the T0-T6 test
 rework (v0.3.10) — this milestone is ONLY the BufferPool +1 page.
 
+## Active Development — v0.3.12
+
+### Alloc/Free Return-Value Audit — fix unhandled alloc/free results
+
+Source: full audit of `src/kernel/**` for alloc/free call sites where the
+return value is ignored, partially validated, or feeds a double-free/stale-free.
+All findings below are VERIFIED against the code (2026-08-03); no fixes landed
+yet.  `ENSURE()` panics unconditionally; `PMM::free_page()` silently no-ops on
+double-free (so a double-free pushes the same page onto the free list twice —
+corruption with no diagnostic).
+
+#### (A) CRITICAL — unchecked alloc return → NULL/0 deref (fix first)
+
+- [ ] **A1 — `init_kstack_window` (task.cpp:344, 355, 366):**
+      `PMM::alloc_page_table()` return is unchecked, then
+      `HHDM_OFFSET + pdpt_phys` is memset and `pml4[pml4_idx] = pdpt_phys|P|W`
+      is installed.  On OOM: writes to physical page 0 and maps phys 0 as
+      present+write in the live kernel PML4.  Reached lazily from the first
+      `alloc_kslot()` → every task-creation path.  Fix: guard each alloc; on
+      failure `panic()` (boot path) or return a non-fatal error.
+- [ ] **A2 — `Scheduler::init` (scheduler.cpp:421-423):**
+      `TaskControlBlock::create(idle_task_main, ...)` unchecked → `idle_task_->state`
+      derefs nullptr on MemPool OOM.  Fix: null-guard before the deref.
+- [ ] **A3 — `Scheduler::reap` (scheduler.cpp:1448-1458):**
+      `create(idle_task_main, ...)` unchecked → `created->state` null deref AND
+      the old idle TCB is freed anyway (`:1457`), leaving the system with NO
+      idle task even if the deref is guarded.  Fix: guard `created`; do NOT
+      free the old idle unless the replacement succeeded; keep `idle_task_`
+      valid.
+- [ ] **A4 — `map_page_in_pml4` RV64 (vmm.cpp:478, 492):**
+      `get_table(..., true, true)` returns nullptr on OOM; both `l1` and `l2`
+      unchecked → null deref (and `get_table(l1,...)` derefs null at vmm.cpp:122).
+      This is the USER-mapping path (ELF load, brk, BufferPool).  Fix: null-check
+      each level; return/fail on OOM.
+- [ ] **A5 — `map_page` RV64 (vmm.cpp:222, 242, 253):** same unchecked
+      `get_table` pattern in the kernel-mapping path.  Fix as A4.
+- [ ] **A6 — `map_page` x86_64 (vmm.cpp:311, 327):**
+      `pdpt`/`pd` are null-checked but the final `pt = get_table(pd, pd_idx, true)`
+      is NOT → `pt[pt_idx] = phys|flags` null write on OOM.  Fix: null-check `pt`.
+
+#### (B) HIGH / minor — ignored or partial validation
+
+- [ ] **B1 (HIGH) — `IPC::send` (ipc.cpp:240):**
+      `BufferPool::transfer(msg.buf_handle, *cur, *tcb)` return IGNORED.  On
+      failure the message is still queued with a `buf_handle`; the receiver's
+      `BufferPool::map()` validates index+generation but NOT owner → receiver
+      can map a buffer still on the SENDER's list → both `buf_list_head` chains
+      hold the same entry → list corruption / physical-page double-free.  Fix:
+      check the transfer return; on failure drop the message or roll back the
+      queued handle.
+- [ ] **B2 — `exec_into_current` (elf.cpp:489-491):**
+      on `!load_segments_and_stack(...)` the freshly cloned `new_pml4` and any
+      partially mapped segments/heap/stack LEAK (contrast `:494-499` which frees
+      them).  Fix: free `new_pml4` (and partial segments) before returning false.
+- [ ] **B3 — `create_user` (task.cpp:696-708):**
+      if `clone_kernel_pml4()` fails, `ustack_phys` was never stored in
+      `tcb->user_stack_`, so `delete tcb → cleanup()` doesn't free it → physical
+      page leak per failed user-task creation.  Fix: store the stack phys in the
+      TCB (or free it) before the clone-failure return.
+- [ ] **B4 — `virtio_net.cpp` probe (139, 150, 159, 174):**
+      `VirtioNetDevice` has NO destructor freeing `rx_desc_phys/avail/used`,
+      `tx_*`, `rx_bufs_phys[]` → each probe-failure branch leaks the pages
+      allocated so far.  Fix: add a destructor (mirror `VirtioBlkDriver`).
+- [ ] **B5 — `AhciDriver::port_init` (ahci.cpp:198-203):**
+      if a later `alloc_contiguous` fails, earlier `ct_phys_[port][0..s-1]` pages
+      (and the mapped CL/RFIS) are not freed, and `init_done_` stays false so
+      `~AhciDriver` (which early-returns) never frees them either.  Fix: roll
+      back already-allocated slots on failure.
+- [ ] **B6 — ENSURE-on-OOM → panic (vmm.cpp:139/227/289, mempool.cpp:54,
+      buffer_pool.cpp:173):** the return IS consumed but only to panic.  The
+      `get_table` huge-page split is inconsistent with the rest of `get_table`
+      (which returns nullptr).  Fix: return nullptr from the split path instead
+      of `ENSURE`, and let callers handle it (after A4-A6).
+- [ ] **B7 — `register_driver` (driver.cpp:40-45):** stores a nullptr in
+      `drivers_[count_++]` on MemPool OOM (benign today — all consumers guard
+      `!drv`).  Optional: skip the slot on alloc failure.
+
+#### (C) FREE-path double-free / stale-free risks
+
+- [ ] **C1 — `TaskControlBlock::cleanup` (task.cpp:1275):**
+      `PMM::free_page(page_table_)` is NOT gated on `!page_table_shared_`
+      (the `free_user_pages` call at `:1268-1270` IS gated).  If sharing is ever
+      re-enabled, two tasks free the same PML4 page → silent double-free.
+      Currently latent (deep-copy replaced shared page tables; scheduler.cpp:1435).
+      Fix: gate `PMM::free_page(page_table_)` on `!page_table_shared_`.
+- [ ] **C2 — `exec_into_current` (elf.cpp:563-567):** identical latent pattern —
+      `PMM::free_page(old_pml4)` not gated on `old_shared`.  Fix as C1.
+- [ ] **C3 — `BufferPool::alloc_page` (buffer_pool.cpp:190-195):**
+      `pool_pages_[]` is NOT in `capture_state`/`restore_state` (only `entries`,
+      `free_head_`, `next_cookie_`, `pool_count_`).  After a snapshot restore,
+      `pool_count_` can point at stale entries whose pages were freed/recycled.
+      `is_user_page(phys)` guard can't distinguish "stale but free" from "stale
+      and re-allocated" → `PMM::free_page(phys)` may free a foreign page.
+      Fix: include `pool_pages_[]` in the snapshot, or clear slots on free
+      (see C4).
+- [ ] **C4 — `BufferPool::free_page` (buffer_pool.cpp:209-219):** when the pool
+      is full the page goes to PMM but the array slot is not scrubbed; stale
+      entries persist and feed C3.  Fix: zero the slot after PMM-free.
+
+**Required fix discipline (per AGENTS.md Mandatory Bugfix Sequence):**
+1. Classify each: A = null-deref/OOM, B = leak/ignored-return, C = double-free
+   (all memory-safety/logic, not timing).
+2. Read the affected code + callers before editing (do not fix blind).
+3. One hypothesis per item, validated by build + the smallest applicable test
+   class (e.g. A4-A6 → `memory`/`pmm`; B1 → `ipc`; C1/C2 → `process`).
+4. Implement, `make build` clean, run the class to 0 failures.
+5. After all items: `make execute-test x86_64 debug all` — NOTE the H2 race
+   (v0.3.9) may still hang at ~test 78; use per-class gates as acceptance and
+   keep `CONFIG_DEBUG_IPC_SCHED` ON for the debug `all` gate.
+
+**Acceptance criteria (DONE when):**
+- A1-A6, B1, C1-C2 fixed (each verified by build + class gate).
+- B2-B5 leak paths closed (no new ResourceTracker deltas in `elf`/`process`/
+  `driver`/`vfs` classes).
+- `make build` clean (check-style Errors: 0), `selftest` 132/132.
+- `test-history.txt` rows appended for every class touched.
+
+**Out of scope:** H2 race (v0.3.9), test rework (v0.3.10), BufferPool +1
+(v0.3.11), and ISO 26262 certification artifacts.
+
 ## Past Releases
 
 See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.6).
