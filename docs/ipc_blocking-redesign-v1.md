@@ -86,6 +86,8 @@ See `docs/scheduler-spec.md` §3 for the complete specification.
 - `dequeue_highest()` clears `in_ready_queue_` — task is no longer in queue
 - `peek_highest()` returns head without removing
 - `remove()` bucket-scans all priorities when `rq_priority_` is stale
+- **Priority direction (see `docs/scheduler-spec.md` §0): higher number =
+  higher priority.** bit 127 = highest, bit 0 = lowest.
 
 ## 4. Sporadic Server Interaction
 

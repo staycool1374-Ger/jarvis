@@ -108,3 +108,16 @@ a userspace task should reach `IPC` via a syscall wrapper, not call kernel
 3. Fix `in_ready_queue_` desync: ensure a BLOCKED task is unlinked from the runq
    (the `next_task()` lazy rebuild heals it, but the live-lock shows it is not
    being reached for task 6).
+
+**2026-08-03 — additional root cause (harness preemption + priority direction):**
+the H2-class live-lock also fires when a test task outranks the harness.  The
+kernel's priority convention is **higher number = higher priority**
+(`docs/scheduler-spec.md` §0).  The harness (init/PID 1) runs at prio 10 during
+a test cycle; a sporadic task that is EXHAUSTED drops to `bg_priority_`, and if
+that `bg_prio` is numerically HIGHER than the harness (e.g. base=10,
+bg_prio=42) it preemptively dispatches the exhausted task mid-test.  The
+harness-nonpreempt guard (BUGS.md#021) previously only blocked LOWER-priority
+preemption; it now returns unconditionally while the harness is RUNNING in a
+test body (unless the harness explicitly requested a reschedule), and test
+code must keep `bg_prio < base` and `< 10`.  Fixed: harness-nonpreempt guard +
+`SsExhaustionTriggersDeadline`/`SsDeadlineMissDuringReplenish` bg_prio 42→2.

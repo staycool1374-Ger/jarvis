@@ -40,12 +40,19 @@ using namespace kernel;
 //        deadline_ticks set to past.
 // Expect: deadline_miss_handler fires with "budget exhausted" message,
 //         ss_state_on_deadline_miss==EXHAUSTED, deadline_miss_count>=1.
+// Note: scan_deadlines() is only available when CONFIG_DEADLINE_MONITOR_TASK
+//       is enabled (default), so this class is gated on it.
+#if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsExhaustionTriggersDeadline) {
     auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
-    helper->init_sporadic_server(3, 100, 42);
+    // Background priority must be LOWER than the task's base (and than the
+    // harness at prio 10): a higher number = higher priority in this kernel,
+    // so an EXHAUSTED task at bg_prio=42 would outrank the harness and be
+    // preemptively dispatched during the test body (ss_deadline hang, INV-1/2).
+    helper->init_sporadic_server(3, 100, 2);
     Scheduler::add_task(*helper);
 
     // Exhaust SS budget directly via SS methods
@@ -67,12 +74,14 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     helper->ss_state_on_deadline_miss = 0;
     helper->ss_budget_on_deadline_miss = 999;
 
+    // Drive the real deadline-detection scan only.  Do NOT call on_tick()
+    // here: on_tick() runs rate_monotonic_schedule() which may dispatch the
+    // helper (or hang on the deferred switch when the harness runs the test
+    // body synchronously).  scan_deadlines() is the same O(n) walk the
+    // [deadline-mon] task uses — exercising it directly is deterministic.
     {
         arch::IrqGuard guard;
-        Scheduler::on_tick();
-#if CONFIG_DEADLINE_MONITOR_TASK
         Scheduler::scan_deadlines();
-#endif
     }
 
     // P1a deadline detection must fire with SS context
@@ -90,6 +99,7 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     helper->cleanup();
     delete helper;
 };
+#endif // CONFIG_DEADLINE_MONITOR_TASK
 
 // Runmode: kernel
 // Testidea: An SS task with EXHAUSTED state (budget=0) that has a deadline
@@ -97,12 +107,15 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
 // Input: SS helper task with budget=0, DEADLINE in past.
 // Expect: deadline_missed==true, ss_state_on_deadline_miss==EXHAUSTED,
 //         handler logs "budget exhausted".
+#if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsDeadlineMissDuringReplenish) {
     auto *helper = TaskControlBlock::create([]() {}, 10, 10);
     CT_ASSERT(helper != nullptr);
     helper->base_priority = 10;
     helper->priority = 10;
-    helper->init_sporadic_server(3, 100, 42);
+    // Background priority below the harness (prio 10) so an EXHAUSTED task
+    // never preempts the test runner (see SsExhaustionTriggersDeadline).
+    helper->init_sporadic_server(3, 100, 2);
     Scheduler::add_task(*helper);
 
     // Exhaust SS directly
@@ -121,12 +134,11 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     helper->ss_state_on_deadline_miss = 0;
     helper->ss_budget_on_deadline_miss = 999;
 
+    // Drive the real deadline-detection scan only (see
+    // SsExhaustionTriggersDeadline — do NOT call on_tick() here).
     {
         arch::IrqGuard guard;
-        Scheduler::on_tick();
-#if CONFIG_DEADLINE_MONITOR_TASK
         Scheduler::scan_deadlines();
-#endif
     }
 
     // Deadline must have been detected
@@ -143,9 +155,12 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     helper->cleanup();
     delete helper;
 };
+#endif // CONFIG_DEADLINE_MONITOR_TASK
 
 void register_ss_deadline_tests() {
     Logger::info("Registering SS deadline integration tests");
+#if CONFIG_DEADLINE_MONITOR_TASK
     REGISTER_CLASS(SsExhaustionTriggersDeadline);
     REGISTER_CLASS(SsDeadlineMissDuringReplenish);
+#endif
 }

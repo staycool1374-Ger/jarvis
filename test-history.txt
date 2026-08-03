@@ -521,3 +521,5 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-03 04:00:00 release-all SKIPPED (user: testing already done) TIME: 0s STATUS: GATE-SKIPPED (v0.3.7 release)
 2026-08-03 05:00:00 jitter PASSED: 2 FAILED: 0 TIME: 80ms (v0.3.8 fix: cleanup-before-assert + robust jitter bound)
 2026-08-03 05:01:00 bench PASSED: 23 FAILED: 0 TIME: 733ms (v0.3.8: KernelApiPureFunctions re-enabled + jitter fix)
+2026-08-03 06:00:00 ss_deadline PASSED: 2 FAILED: 0 TIME: 60ms x16 (v0.3.8: bg_prio fix + scan_deadlines-only)
+2026-08-03 06:01:00 ipc PASSED: 42 FAILED: 0 TIME: 12s (v0.3.8 baseline)

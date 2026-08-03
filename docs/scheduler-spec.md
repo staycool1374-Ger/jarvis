@@ -2,6 +2,26 @@
 
 **Target:** Single-core x86_64, deferred context switch, O(1) bitmap-priority ready queue.
 
+## 0. Priority Convention (binding)
+
+**Higher numeric priority value = higher scheduling priority.**
+
+- Priority range is 0–127 (two `uint64_t` words in the `PriorityMap` bitmap).
+- `PriorityMap::get_highest_priority()` returns the **most significant set bit**
+  (`find_highest_bit` → `64 + clz-based` index for 64–127), so **bit 127 = the
+  highest priority** and **bit 0 = the lowest**.
+- Concretely: **idle runs at priority 0** (lowest — only runs when nothing else
+  is runnable); the **deadline-monitor task runs at 127** (highest); kernel
+  daemons (vfsd=80, iocd=70) outrank the shell (5) and the test harness / init
+  task (10 during a test cycle, 1 as reaper).
+- This has a direct consequence for **sporadic-server background priority**:
+  an EXHAUSTED server's `current_priority()` returns `bg_priority_`, which MUST
+  be **lower** than the task's `base_priority_` (and lower than the harness at
+  10 during tests). Setting a `bg_prio` higher than the base (e.g. base=10,
+  bg_prio=42) makes an exhausted task outrank the test runner and be
+  preemptively dispatched mid-test — see `docs/ipc_blocking-analysis.md` §H2
+  and the ss_deadline hang.
+
 ## 1. Requirements (the contract)
 
 **R1 — Exactly one physical runner.**
@@ -61,7 +81,8 @@ A task leaving the runnable states (BLOCKED/WAITING/TERMINATED) MUST be dequeued
 ## 3. Ready Queue Architecture
 
 ### 3.1 `ReadyQueueManager`
-- `PriorityMap` (two `uint64_t` words for priorities 0–127)
+- `PriorityMap` (two `uint64_t` words for priorities 0–127; **see §0 for the
+  direction: higher number = higher priority**)
 - Per-priority `TaskQueue` array (`queues_[CONFIG_PRIORITY_CEILING + 1]`)
 - O(1) enqueue/dequeue via bitmap `ctz`/`clz`
 
@@ -105,6 +126,11 @@ Orphan-halt provides deterministic evidence of stale flag / incomplete dequeue.
 ## 4. Sporadic Server Interaction
 
 ### 4.1 Priority Lifecycle
+**Priority direction (see §0): higher number = higher priority.** A sporadic
+server's `bg_priority_` (background, when EXHAUSTED) MUST be numerically LOWER
+than its `base_priority_` (normal/active). The convention therefore also
+requires `bg_priority_ < harness_priority` (10 during tests) so an exhausted
+task never preempts the test runner.
 ```
                 ┌──────────────────┐
                 │     IDLE         │  current_priority() = base_priority_
