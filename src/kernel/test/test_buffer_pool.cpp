@@ -309,31 +309,53 @@ JARVIS_TEST(buffer_pool_unmap_all, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(buffer_pool_syscall_dispatch, "PRE: none | POST: none") {
-    // BUGS.md#020: create_user() gives this task a kernel-address placeholder
-    // entry that must never execute.  Do NOT add_task() it — the BUF_ALLOC/FREE
-    // syscalls resolve the owning task via syscall_task() (the current task set
-    // by set_current below), not via the ready queue.  Enqueuing it READY let a
-    // timer tick dispatch it into a user-mode fetch of a kernel .text address
-    // (CS=0x1B) -> #PF.  SimpleTaskPtr = cleanup()+delete, no remove_task().
-    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+    // Trigger-driven: dispatch a REAL kernel task whose lambda invokes the
+    // BUF_ALLOC/BUF_FREE syscall handlers.  syscall_task() resolves to the
+    // genuinely-running task, and the handlers run via the real dispatched
+    // context.  BUGS.md#020 hazard avoided: the task runs in kernel mode (a
+    // C++ lambda cannot execute in user mode), and page_table_ is set to a
+    // clone so BufferPool::alloc (which requires page_table_ != 0) succeeds.
+    static uint64_t g_buf_handle = 0;
+    static uint64_t g_buf_free_ret = static_cast<uint64_t>(-1);
+
+    auto *task = TaskControlBlock::create(
+        []() {
+            uint64_t va = 0xB0000000;
+            g_buf_handle = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::BUF_ALLOC), va, 0, 0, 0,
+                nullptr);
+            if (g_buf_handle != 0) {
+                g_buf_free_ret = Syscall::handle(
+                    static_cast<uint64_t>(SyscallNumber::BUF_FREE), g_buf_handle,
+                    0, 0, 0, nullptr);
+            }
+        },
+        11, 10);
     JARVIS_ASSERT(task != nullptr);
+    task->page_table_ = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(task->page_table_ != 0);
+    Scheduler::add_task(*task);
+
     auto *original = Scheduler::current_task();
-    {
-        arch::IrqGuard guard;
-        Scheduler::set_current(*task);
-
-        uint64_t va = 0xB0000000;
-        uint64_t handle = Syscall::handle(
-            static_cast<uint64_t>(SyscallNumber::BUF_ALLOC), va, 0, 0, 0, nullptr);
-        JARVIS_ASSERT(handle != 0);
-
-        uint64_t result =
-            Syscall::handle(static_cast<uint64_t>(SyscallNumber::BUF_FREE), handle,
-                             0, 0, 0, nullptr);
-        JARVIS_ASSERT_EQ(0ULL, result);
-
-        Scheduler::set_current(*original);
+    // Do NOT yield_as(*task): next_task() skips the current task, so that
+    // would make the only test task current and never dispatch it.  A plain
+    // reschedule() picks the higher-priority task (11 > harness 10) on the
+    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
+    // acquire the scheduler lock and apply the deferred switch.
+    Scheduler::reschedule();
+    while (task->state != TaskState::TERMINATED) {
+        asm volatile("pause");
     }
+
+    JARVIS_ASSERT(g_buf_handle != 0);
+    JARVIS_ASSERT_EQ(0ULL, g_buf_free_ret);
+
+    Scheduler::set_current(*original);
+    // cleanup() frees page_table_ automatically (task.cpp cleanup frees
+    // user_page + page_table_).  Just remove/delete.
+    Scheduler::remove_task(*task);
+    task->cleanup();
+    delete task;
     JARVIS_TEST_PASS();
 }
 

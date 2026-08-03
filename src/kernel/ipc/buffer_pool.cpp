@@ -199,18 +199,23 @@ uint64_t BufferPool::alloc_page() {
 }
 
 /// @brief Return a physical page to the pre-allocated pool.
-///        PMM::free_page() resets ownership to KERNEL, but buffer pages are
-///        mapped as user-accessible — keep them off PMM's free list entirely.
-///        If the pool is full the page is leaked (acceptable: bounded by
-///        POOL_PAGES * max-buffer-live, practically never reached).
+///        Pages stay in the pool (USER-owned, mapped in task page tables) so
+///        they never round-trip through PMM's free list — the pool is a
+///        bounded cache sized CONFIG_BUFFER_POOL_PAGES.  If the pool is full
+///        the page is returned to PMM instead of being dropped (the old
+///        behaviour silently leaked the page AND left it allocated in PMM's
+///        owner bitmap, which drifted the ResourceTracker baseline and caused
+///        spurious +1 PMM "leaks" on every subsequent buffer_pool test).
 void BufferPool::free_page(uint64_t phys) {
     if (__atomic_load_n(&pool_count_, __ATOMIC_RELAXED) < POOL_PAGES) {
         pool_pages_[__atomic_add_fetch(&pool_count_, 1UL,
                                        __ATOMIC_RELAXED)] = phys;
+        return;
     }
-    // Pool full: silently drop the page rather than calling PMM::free_page(),
-    // which resets the owner bit to KERNEL and breaks the invariant that
-    // user-mapped pages must be USER-owned.
+    // Pool full — return the page to PMM (track_pmm_free fires inside
+    // PMM::free_page).  No new owner-bit invariant is broken: the page is no
+    // longer a live buffer, so KERNEL ownership is correct for reuse.
+    PMM::free_page(phys);
 }
 
 /// @brief Pop an entry from the free list.
