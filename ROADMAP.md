@@ -99,9 +99,10 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
       `Keyboard` mods (VAR-10) byte-atomic; `MessageQueue::count` (VAR-11)
       relaxed-atomic for unlocked readers; `BufferPool` cookie/page-count
       (VAR-12) atomic.
-- [x] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
 - [x] Delete remediated variables from `docs/global-race-audit.md`; regression
       gate: `scheduler`, `ipc`, `sporadic`, `ipc_blocking` 0-failure.
+      Deferred to SMP: `hhdm_modified_` (VAR-17) re-audit and the per-CPU
+      GS/TPIDR-relative asm for `isr_nesting_depth` — see Phase 5 (0.4.x).
 
 ### Disabled test groups (pre-existing, incompatible with snapshot isolation)
 | Group | Tests | Reason |
@@ -113,9 +114,19 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
 | `microkernel_transition` | 1 | KernelApiPureFunctions memcpy stack corruption (~657) |
 | **Total disabled** | **1** | |
 
-### Stack Guard & Fork (Deferred)
-- [ ] Stack guard page via private VA window (requires snapshot-safe page table pool)
-- [ ] `page_table_shared_` removal — complete deep-copy fork (walk all user entries, allocate new PDPT/PD/PT, copy contents). Current state: config + pool done.
+## Active Development — v0.3.8
+
+### Test Hygiene & Flaky-Test Remediation
+- [ ] **`microkernel_transition` KernelApiPureFunctions** — re-enable the
+      disabled test (memcpy stack corruption at `all` class position ~657).
+      Root cause unclear (likely test-code stack/buffer overflow); currently
+      commented out in `register_microkernel_transition_tests()`.
+- [ ] **`jitter_under_idle` flaky LEAK** — intermittent
+      `[LEAK: PMM +32, Tasks +2, MsgQueues +2, ...]` in `all-1` (~test 439).
+      Known-flaky; needs deterministic cleanup / teardown.
+- [ ] **`ipc`/`all` H2-adjacent flakes** — the known H2 deferred-switch hang
+      region (`ipc_send_sync_roundtrip`) and any remaining flaky `ipc`/`all`
+      runs.  Full H2 root-cause fix tracked in v0.3.9.
 
 ## Active Development — v0.3.9
 
@@ -164,11 +175,15 @@ See `ROADMAP_done.md` for completed items in released versions (v0.2.x — v0.3.
 - [ ] **0.4.0-MP3** — Software sentinel canaries at segment boundaries, verified on syscall + context-switch entry
 - [ ] **0.4.0-MP4** — Optional HW enforcement: SMAP/SMEP (x86_64) / PAN/PXN (aarch64) with `stac/clac` audit
 - [ ] **0.4.0-MP5** — Verification suite: cross-task #PF tests, canary-tamper detection, HHDM kernel→user read, SMAP/PAN negatives
+- [ ] **0.4.0-MP6** — Kernel stack guard page via private VA window (moved from v0.3.7; requires snapshot-safe page table pool)
+- [ ] **0.4.0-MP7** — `page_table_shared_` removal — complete deep-copy fork (walk all user entries, allocate new PDPT/PD/PT, copy contents). Current state: config + pool done.
 
 ### Phase 5: SMP + Multicore (0.4.x)
 #### 0.4.1–0.4.2 — APIC & SMP Boot
 - [ ] Local/IO APIC, X2APIC, per-CPU GDT/TSS, INIT-SIPI AP startup
 - [ ] TPR-based interrupt prioritization, core state isolation
+- [ ] **Per-CPU asm for `isr_nesting_depth`** — move from the single global symbol to GS-relative access on x86_64 (TPIDR/tp on aarch64/riscv64); the C++ side already uses `__atomic_*` (v0.3.7 PfA-B). CpuContext plumbing (`current_cpu()`) is in place.
+- [ ] **`hhdm_modified_` (VAR-17) re-audit** — task-context only today (single-core safe); re-audit under SMP with per-CPU ownership or atomics.
 
 #### 0.4.3–0.4.4 — Per-CPU Scheduling & Cache
 - [ ] Distributed run queues, real-time load balancer, SYS_SET/GET_AFFINITY
