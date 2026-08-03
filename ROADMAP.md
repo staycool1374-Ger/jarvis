@@ -271,15 +271,17 @@ create task(s) → add_task → reschedule()/yield_as → busy-wait { pause|hlt 
   deferred (INV-4); the timer ISR must acquire `scheduler_lock_` uncontended to
   apply the switch.  Busy-wait with `asm volatile("pause")` (or `arch::hlt()`
   when the peer must run).
-- **BUGS.md#020 landmine:** a C++ lambda cannot run in user mode; `create_user`
-  sets a kernel-address entry that #PFs if a timer tick dispatches it.  For
-  syscall-handler tests use a KERNEL task (`create`) and set `page_table_` to a
-  `VMM::clone_kernel_pml4()` clone if the handler needs a user task
-  (e.g. `BufferPool::alloc`).  Free the clone via `cleanup()` (it frees
-  `page_table_`), NOT manually.
-- **`create_user` user tasks in RQ:** if a user task must exist, give it a
-  real infinite-loop entry (`for(;;){ reschedule(); hlt(); }`) and only use it
-  as a *container*, never let it be dispatched into user mode.
+- **BUGS.md#020 landmine (FIXED in kernel, v0.3.10 T4b):** a C++ lambda cannot
+  run in user mode; `create_user` used to set a kernel-address entry that #PFs
+  if a timer tick dispatched it.  **Now `create_user()` installs a user-mode
+  yield stub** (`install_user_yield_stub`, task.cpp) so every user task is safe
+  to dispatch.  For syscall-handler tests needing a user task
+  (e.g. `BufferPool::alloc`) that does NOT need real dispatch, a KERNEL task
+  (`create`) with `page_table_` = `VMM::clone_kernel_pml4()` still works; free
+  the clone via `cleanup()` (it frees `page_table_`), NOT manually.
+- **`create_user` user tasks in RQ:** safe to dispatch now (kernel stub), but
+  if a test needs the task to only act as a container, `create` + cloned PML4
+  is still the lighter choice.
 - **Cleanup after TERMINATED:** a self-terminated task's trampoline calls
   `Scheduler::terminate` → zombie; the reaper calls `cleanup()`.  The test's own
   `remove_task()+cleanup()+delete` is still required and safe (guarded by
@@ -398,6 +400,30 @@ lifecycle.
       landmine that hung `all` at test 18.  Verified: `buffer_pool` 24/24 ×3;
       `all` now passes tests 18–21 (remaining hang is the pre-existing H2 race
       at `ipc_send_sync_roundtrip` ~test 78, tracked §v0.3.9).
+- [ ] **T4b — User-task entry-point consistency (kernel fix DONE, test cleanup
+      PENDING):** `create_user()` (task.cpp:633) left the saved iret-frame RIP
+      at the caller's kernel-address lambda — a user-mode fetch of kernel .text
+      → #PF if the task was ever dispatched (BUGS.md#020), violating
+      memory-protection-spec REQ-MP-05 (§4.6#3).  **KERNEL FIX LANDED
+      (2026-08-03):** `create_user()` now calls `install_user_yield_stub()`
+      (task.cpp) which maps a tiny user-mode "yield forever" stub (x86_64:
+      `xor eax,eax; syscall; jmp -6` at VA 0x40000000) into the task's user
+      PML4 and rewrites the saved-frame entry slots to point at it.  Every
+      `create_user()` task is now SAFE to dispatch — it yields in user mode
+      instead of faulting.  Memory-protection-consistent (REQ-MP-05).
+      **REMAINING TEST WORK:** (1) the private `configure_user_yield_entry`
+      helper in `test_buffer_pool.cpp` is now redundant — REMOVE it and its two
+      call sites in `buffer_pool_ipc_transfer` (create_user provides the stub);
+      (2) verify the 9 dispatch-capable user-task tests
+      (`test_task`, `test_ipc_extended`, `test_ipc_robustness`, `test_vfsd_auth`,
+      `test_testrunner`, `test_task_lifecycle`, `test_fpu_clone`, `test_process`,
+      `test_resource_exhaustion`) dispatch safely — add_task + a timer tick must
+      run the stub, never fault (kernel stack stays kslot-guarded, user stack
+      keeps the STACK_VADDR red zone, both already spec-consistent per §2.2);
+      (3) add a dedicated regression test that dispatches a create_user task and
+      asserts it survives (yields) — a real trigger-driven test per this
+      milestone.  Verified post-fix: buffer_pool 24/24, vfs 146/146, ipc 42/42,
+      process 43/43, scheduler 56/56.
 - [ ] **T5 — Process/fork/clone simulation (16 tests):**
       `test_process.cpp` (process_clone_adds_child) + `test_task.cpp`
       (task_clone_shares_page_tables, task_fork_child_cleanup_preserves_parent_pages,

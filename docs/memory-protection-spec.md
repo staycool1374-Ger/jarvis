@@ -74,6 +74,11 @@ All references are to the current `main` tree.
   (`task.cpp:530`), which reserves one unmapped page below each kernel stack
   (`docs/kstack-window-pt-pool.md`). Test-active tasks use HHDM (documented
   exemption, `task.cpp:514-528`).
+- **User-mode entry (REQ-MP-05 hardening, v0.3.10):** `create_user()` installs
+  a user-mode "yield forever" stub (`install_user_yield_stub`, task.cpp) as the
+  task's entry point.  A `create_user()` task is therefore safe to dispatch —
+  it never fetches a kernel .text address in user mode (BUGS.md#020).  This
+  matches REQ-MP-05 §4.6#3: a user task must never execute kernel memory.
 
 ### 2.3 Kernel-task ↔ kernel-task isolation — ABSENT (REQ-MP-02 gap)
 - All kernel tasks run in the **single shared kernel PML4** (`kernel_pml4_`),

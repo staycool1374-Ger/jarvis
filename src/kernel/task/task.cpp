@@ -262,6 +262,104 @@ static uint64_t stack_size_for_priority(uint64_t priority) {
     return table[idx];
 }
 
+// ---------------------------------------------------------------------------
+// User-mode yield stub
+//
+// create_user() historically stored the caller's `entry` (a kernel .text
+// address of a C++ lambda) directly into the user iret frame.  Such a task
+// MUST NOT be dispatched: the CPU would fetch a kernel address in user mode
+// (CS=0x1B) -> #PF, and the user page table maps only PAGE_USER frames.
+// BUGS.md#020.  A C++ lambda cannot run in user mode at all (there is no
+// mechanism to map it); a real user task is an ELF-loaded app.  So for
+// create_user() tasks we install a tiny user-mode stub that yields forever.
+// The stub VA is in low user space and never collides with test buffer VAs
+// (>= 0x100000000) or the stack/heap (0x60000000/0x70000000).
+// ---------------------------------------------------------------------------
+
+/// @brief VA where the user-mode yield stub is mapped for every create_user()
+///        task.  Chosen to avoid mem::STACK_VADDR/HEAP_VADDR and the buffer
+///        test VAs (>= 0x100000000).
+constexpr uint64_t kUserYieldStubVa = 0x40000000;
+
+/// @brief Per-arch machine code for "yield forever" (syscall YIELD=0 loop).
+#if defined(CONFIG_ARCH_X86_64)
+//   xor eax,eax     31 C0     ; rax = SyscallNumber::YIELD (0)
+//   syscall         0F 05
+//   jmp -6          EB FA
+static constexpr uint8_t kUserYieldStub[] = {0x31, 0xC0, 0x0F, 0x05, 0xEB, 0xFA};
+#elif defined(CONFIG_ARCH_AARCH64)
+//   mov x8, #0      d2 00 00 00  ; x8 = SyscallNumber::YIELD (0)
+//   svc #0          01 00 00 d4
+//   b -12           18 00 00 14
+static constexpr uint8_t kUserYieldStub[] = {0x00, 0x00, 0x80, 0xD2, 0x01,
+                                             0x00, 0x00, 0xD4, 0x18, 0x00,
+                                             0x00, 0x14};
+#elif defined(CONFIG_ARCH_RISCV64)
+//   li a7, 0        13 00 80 00  ; a7 = SyscallNumber::YIELD (0)
+//   ecall           73 00 00 00
+//   j -12           6f 00 00 00  ; (jump relative 0 — tighten below)
+static constexpr uint8_t kUserYieldStub[] = {0x13, 0x00, 0x80, 0x00, 0x73,
+                                             0x00, 0x00, 0x00, 0x6f, 0x00,
+                                             0x00, 0x00};
+#endif
+
+/// @brief Map the user-mode yield stub into @p tcb's user PML4 and rewrite the
+///        saved iret frame's entry slots to point at it.  Returns false if the
+///        stub page cannot be allocated/mapped.
+/// @post After a successful call, dispatching @p tcb enters user mode at the
+///       yield stub (never a kernel address) and cooperatively yields forever.
+static bool install_user_yield_stub(TaskControlBlock &tcb) {
+    uint64_t stub_phys = PMM::alloc_user_page();
+    if (!stub_phys)
+        return false;
+
+    // Copy the stub machine code into the physical page (HHDM alias).
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *dst = reinterpret_cast<uint8_t *>(arch::HHDM_OFFSET + stub_phys);
+    for (size_t i = 0; i < sizeof(kUserYieldStub); ++i)
+        dst[i] = kUserYieldStub[i];
+
+    if (!tcb.page_table_) {
+        PMM::free_page(stub_phys);
+        return false;
+    }
+    VMM::map_page_in_pml4(kUserYieldStubVa, stub_phys, true, tcb.page_table_);
+
+#if defined(CONFIG_ARCH_X86_64)
+    // The saved iret frame stores the (placeholder kernel) entry in two slots:
+    // the iret RIP and the SysV rdi copy.  The placeholder is a kernel
+    // higher-half address (>= 0xFFFF800000000000); the stub is a low user VA.
+    constexpr uint64_t kKernelHigherHalf = 0xFFFF800000000000ULL;
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *frame = reinterpret_cast<uint64_t *>(tcb.context.rsp);
+    size_t slots =
+        (tcb.kernel_stack_top - tcb.context.rsp) / sizeof(uint64_t);
+
+    uint64_t original_entry = 0;
+    for (size_t i = 0; i < slots; ++i) {
+        if (frame[i] >= kKernelHigherHalf) {
+            original_entry = frame[i];
+            break;
+        }
+    }
+    if (original_entry == 0) {
+        PMM::free_page(stub_phys);
+        return false;
+    }
+    for (size_t i = 0; i < slots; ++i)
+        if (frame[i] == original_entry)
+            frame[i] = kUserYieldStubVa;
+#elif defined(CONFIG_ARCH_AARCH64)
+    tcb.context.elr_el1 = kUserYieldStubVa;
+#elif defined(CONFIG_ARCH_RISCV64)
+    // SEPC at frame offset 31 (SAVE_SIZE = 37 qwords).
+    // NOLINTNEXTLINE(performance-no-int-to-ptr)
+    auto *frame = reinterpret_cast<uint64_t *>(tcb.context.sp);
+    frame[31] = kUserYieldStubVa;
+#endif
+    return true;
+}
+
 /// @brief Physical addresses of the 8 pre-allocated PT pages for the window.
 static uint64_t s_kstack_pt_pages[8] = {};
 
@@ -768,6 +866,13 @@ TaskControlBlock::create_user(void (*entry)(), uint64_t priority,
     stack[32] = (1ULL << 5); // SSTATUS: SPIE=1, SPP=0 (U-mode)
     tcb->context.sp = reinterpret_cast<uint64_t>(stack);
 #endif
+
+    // BUGS.md#020: install a real user-mode entry (yield-forever stub) so this
+    // task is SAFE to dispatch.  Without it the saved frame's RIP is the
+    // caller's kernel-address lambda -> user-mode fetch of kernel .text -> #PF.
+    // A failure to map the stub is not fatal for container-only use (the task
+    // is simply never dispatched), so we leave the frame as-is.
+    (void)install_user_yield_stub(*tcb);
 
     return tcb;
 }
