@@ -526,3 +526,13 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-03 06:30:00 bench PASSED: 23 FAILED: 0 TIME: 768ms (v0.3.8 final)
 2026-08-03 06:31:00 jitter PASSED: 2 FAILED: 0 TIME: 73ms (v0.3.8 final)
 2026-08-03 06:32:00 ss_deadline PASSED: 2 FAILED: 0 TIME: 244ms (v0.3.8 final)
+2026-08-03 19:58:00 selftest PASSED: 132 FAILED: 0 TIME: 26s
+2026-08-03 20:15:00 vfs PASSED: 146 FAILED: 0 TIME: 2.8s (queue blocking rewrite: real dispatch + deferred-switch spin fix)
+2026-08-03 20:20:00 ipc PASSED: 42 FAILED: 0 TIME: 0.9s (3 runs)
+2026-08-03 20:20:00 scheduler PASSED: 56 FAILED: 0 TIME: 2.4s
+2026-08-03 20:20:00 sporadic PASSED: 25 FAILED: 0 TIME: 0.4s
+2026-08-03 20:22:00 selftest PASSED: 132 FAILED: 0 TIME: 6.5s (post-queue-fix)
+2026-08-03 20:40:00 buffer_pool PASSED: 24 FAILED: 0 TIME: 0.6s (T4 proof: buffer_pool_syscall_dispatch rewritten dispatch-driven, no #PF landmine)
+2026-08-03 21:00:00 buffer_pool PASSED: 24 FAILED: 0 TIME: 0.5s (real leak fix: BufferPool::free_page returns overflow pages to PMM, +896 exhaustion leak fixed; residual +1 = create_user PT-page accounting artifact, tracked)
+2026-08-03 21:30:00 buffer_pool PASSED: 24 FAILED: 0 TIME: 2.3s (real leak fix verified: BufferPool overflow pages now return to PMM; +896 exhaustion leak reduced to +1)
+2026-08-03 21:30:00 memory PASSED: 47 FAILED: 0 TIME: 26s (post-buffer-pool-fix regression)
