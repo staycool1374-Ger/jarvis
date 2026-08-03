@@ -50,27 +50,32 @@ ROADMAP v0.3.7.
 
 ---
 
-## ⚠️ MAYBE — needs closer per-variable review (ROADMAP v0.3.7)
+## ⚠️ MAYBE — per-variable review (v0.3.7 PfA remediation)
 
-| VAR | Variable | Declaration | Concern | Candidate fix |
-|---|---|---|---|---|
-| VAR-01 | `current_task_ptr_` | `static constinit TaskControlBlock *` | Plain pointer: written task-context (`set_current`, `terminate`) AND ISR (switch epilogue via `scheduler_on_context_switch`), read in ISR+task. No atomic. | Read under `IrqGuard` or `__atomic_load`; reconcile with scheduler-spec INV-1 (RSP-authoritative vs cache) |
-| VAR-02 | `isr_nesting_depth` | `extern "C" uint64_t` | asm `inc`/`dec` (non-atomic RMW) + `__atomic_store` reset (scheduler.cpp:2094) + plain read (dump.cpp) — mixed access kinds | Make all C++ accesses atomic; asm inc/dec OK (IRQ-off in ISR) |
-| VAR-03 | `s_scan_requested_` | `volatile bool` | line 2318 plain `= false` alongside `__atomic_store`/`__atomic_exchange` — mixed atomic/plain | Unify to atomics (drop volatile or use atomics consistently) |
-| VAR-04 | `s_test_active_` | `bool` | task write (test.cpp:402/484), ISR read (on_tick:1104, RMS:1832) | IrqGuard or atomic |
-| VAR-05 | `preempt_enabled_` | `constinit bool` | boot/restore write (421,2074), ISR read (on_tick:878) | Atomic or IrqGuard |
-| VAR-06 | `sporadic_task_count_` | `constinit uint64_t` | restore write (2075), ISR read (on_tick:1209 loop bound) | Atomic |
-| VAR-07 | `suppress_terminated_log_` | `constinit bool` | task write, read in `reap_orphans` (ISR+task) | Atomic or gate |
-| VAR-08 | `s_deferred_kill_count` + `s_deferred_kill_tasks[]` | `static uint64_t` + `static TaskControlBlock*[16]` | plain RMW: `defer_kill` (deadline-miss ISR + tests) vs `process_deferred_kills` (on_tick, now gated) | Atomic count / fully gated |
-| VAR-09 | `Timer::ticks_` | `constinit volatile uint64_t` | RMW `ticks_ = ticks_+1` in ISR, volatile read in task; 64-bit RMW/read not guaranteed atomic on aarch64/riscv | `__atomic` load/store, or align+document |
-| VAR-10 | `Keyboard::shift_/ctrl_/alt_/caps_` | `constinit bool` | ISR write / task read, plain bools | Atomic byte or gate |
-| VAR-11 | `MessageQueue::head/tail/count` | `volatile size_t` | `is_empty()/is_full()` read `count` without `lock_` | Guard unlocked readers or atomics |
-| VAR-12 | `BufferPool::next_cookie_/pool_count_` | `constinit uint32_t/size_t` | plain RMW (`++`/`--`), no lock, task-context callers only | IrqGuard/lock or document single-core invariant |
-| VAR-13 | `s_wedge_emitted_`, `s_last_switch_tick_` | `static uint64_t` (CONFIG_DEBUG) | on_tick + `scheduler_on_context_switch` (ISR) | Atomic or gate under single context |
-| VAR-14 | `s_lk0_count`, `s_last_holder` | `static` (CONFIG_DEBUG, on_tick locals) | ISR or task-context on_tick overlap | Gate on single on_tick context |
-| VAR-15 | `g_test_deadline_monitor_pid` | `extern uint64_t` | task write, ISR read (deadline_miss_handler) | Atomic |
-| VAR-16 | `scheduler_dummy_save_rsp` | `extern uint64_t` | task write (reschedule) / ISR read | Atomic or gate |
-| VAR-17 | `hhdm_modified_` | `static bool` | task write (map_page) / task read (test_isolate) — same context, no lock | Atomic or document single-core |
+Remediation status (2026-08-03, `docs/v0.3.7-pfa-concurrency-design.md` steps 1–10):
+- **DONE** — variable remediated in the v0.3.7 PfA work.
+- **BY-DESIGN** — already single-owner under an explicit lock/context; documented, no code change needed.
+- **PHASE-8** — full per-CPU GS/TPIDR-relative asm access deferred to SMP groundwork.
+
+| VAR | Variable | Status | Candidate fix applied |
+|---|---|---|---|
+| VAR-01 | `current_task_ptr_` | DONE | Backed by `CpuContext::current`; published via `set_current_ptr()`; RSP-ownership scan stays authoritative (INV-1) |
+| VAR-02 | `isr_nesting_depth` | DONE (PHASE-8 asm) | All C++ access `__atomic_*`; asm inc/dec IRQ-off (GS-relative per-CPU deferred to Phase 8) |
+| VAR-03 | `s_scan_requested_` | DONE | All accesses `__atomic_*`; plain `= false` writes removed; `volatile` dropped |
+| VAR-04 | `s_test_active_` | DONE | Moved to injected `TestContext::test_active`; no scheduler global |
+| VAR-05 | `preempt_enabled_` | DONE | `SchedulerConfig::preempt_enabled` via `Scheduler::init(cfg)`; runtime toggles via existing setters (snapshot/restore state) |
+| VAR-06 | `sporadic_task_count_` | DONE | `SchedulerConfig::sporadic_task_count`; runtime inc/dec already atomic |
+| VAR-07 | `suppress_terminated_log_` | DONE | `SchedulerConfig::suppress_terminated_log` via `init(cfg)` |
+| VAR-08 | `s_deferred_kill_count` + `s_deferred_kill_tasks[]` | BY-DESIGN | All access already under `scheduler_lock_` (on_tick/scan_deadlines guarded tail); documented |
+| VAR-09 | `Timer::ticks_` | DONE | `__atomic_fetch_add`/`load`; accessor `Timer::ticks()` unchanged |
+| VAR-10 | `Keyboard::shift_/ctrl_/alt_/caps_` | DONE | Packed into one byte-atomic `mods_` with `__atomic_fetch_or/and` |
+| VAR-11 | `MessageQueue::head/tail/count` | DONE | Unlocked `is_empty()/is_full()` use `__atomic_load_n(RELAXED)`; RMW remain under `lock_` |
+| VAR-12 | `BufferPool::next_cookie_/pool_count_` | DONE | `__atomic_fetch_add` cookie; `__atomic_add/sub_fetch` page count |
+| VAR-13 | `s_wedge_emitted_`, `s_last_switch_tick_` | DONE | Folded into `CpuContext::wedge_emitted` / `last_switch_tick` (per-CPU debug) |
+| VAR-14 | `s_lk0_count`, `s_last_holder` | DONE | Folded into `CpuContext::lk0_count` / `last_holder` |
+| VAR-15 | `g_test_deadline_monitor_pid` | DONE | Moved to `TestContext::deadline_monitor_pid` |
+| VAR-16 | `scheduler_dummy_save_rsp` | DONE | Removed (write-only dead global); TestContext `dummy_save_rsp` reserved |
+| VAR-17 | `hhdm_modified_` | PHASE-8 | Task-context only, single-core safe; re-audit under SMP (no change in v0.3.7) |
 
 ---
 

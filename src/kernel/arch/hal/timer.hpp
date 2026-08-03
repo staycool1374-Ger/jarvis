@@ -73,7 +73,7 @@ class Timer {
     static void calibrate_tsc(uint32_t frequency_hz);
     /// @brief PIT base input frequency (1.193182 MHz).
     static constexpr uint32_t PIT_BASE_FREQ = 1193182;
-    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t ticks_;
     static constinit uint64_t tsc_freq_hz_;
 };
 
@@ -105,7 +105,7 @@ class Timer {
     static uint64_t remaining();
 
   private:
-    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t ticks_;
     static constinit uint64_t counter_freq_hz_;
 };
 
@@ -137,7 +137,7 @@ class Timer {
     static uint64_t remaining();
 
   private:
-    static constinit volatile uint64_t ticks_;
+    static constinit uint64_t ticks_;
     static constinit uint64_t timer_freq_hz_;
 };
 

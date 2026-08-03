@@ -27,6 +27,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler_config.hpp>
 #include <kernel/task/test_context.hpp>
+#include <kernel/arch/cpu_context.hpp>
 #include <kernel/sync/spinlock.hpp>
 #include <kernel/nexios_config.h>
 #include <kernel/task/scheduler_errors.hpp>
@@ -214,7 +215,7 @@ class Scheduler {
     /// @brief Resets the scan-requested flag (used by snapshot_restore to
     ///        clear stale flags).
     static void reset_scan_requested() noexcept {
-        s_scan_requested_ = false;
+        __atomic_store_n(&s_scan_requested_, 0, __ATOMIC_RELEASE);
     }
     /// @brief Returns the deadline-monitor task pointer, or nullptr.
     static TaskControlBlock *get_monitor_task() noexcept {
@@ -518,8 +519,13 @@ class Scheduler {
     ///        intrusive doubly-linked lists with O(1) bitmap lookup.
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static AllTasksRegistry all_tasks_;
-    /// @brief Pointer to the currently executing task.
-    static constinit TaskControlBlock *current_task_ptr_;
+    /// @brief Pointer to the currently executing task.  PfA-B: backed by
+    ///        CpuContext::current (per-CPU).  Reads use current_task();
+    ///        writes use set_current_ptr().  INV-1: the RSP-ownership scan in
+    ///        switch_to_task remains authoritative.
+    static void set_current_ptr(TaskControlBlock *t) noexcept {
+        current_cpu().current = t;
+    }
     static constinit TaskControlBlock *id_table_[ID_TABLE_SIZE];
     static constinit uint64_t next_task_id_;
     static constinit uint64_t sporadic_task_count_;
@@ -558,7 +564,7 @@ class Scheduler {
     /// @brief Atomic handoff flag — on_tick() sets it, monitor_task_entry()
     ///        consumes it via atomic exchange (lock-free, no spinlock needed).
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
-    static volatile bool s_scan_requested_;
+    static bool s_scan_requested_;
     /// @brief Set by the test runner before executing test functions; cleared
     ///        afterward.  When true, on_tick() skips the monitor-wake path
     ///        (preventing the timer ISR from switching to the monitor during

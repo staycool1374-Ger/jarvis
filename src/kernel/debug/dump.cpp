@@ -173,7 +173,8 @@ void dump_scheduler_info() {
     pkd("next_switch_id", scheduler_next_task_id);
 
     // ISR / corruption tracking
-    pkd("isr_nesting", isr_nesting_depth);
+    pkd("isr_nesting",
+        __atomic_load_n(&isr_nesting_depth, __ATOMIC_ACQUIRE));
     pkd("corruption_count", scheduler_corruption_count);
 
     L::raw_write("[DUMP] === end scheduler ===\n");

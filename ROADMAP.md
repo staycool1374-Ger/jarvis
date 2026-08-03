@@ -78,29 +78,29 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
   (threaded from above, Phase 8 SMP groundwork); remaining sharing uses
   atomics/seqlock with **one discipline per variable**.
 
-- [ ] **PfA-A: `SchedulerConfig`** — `preempt_enabled_` (VAR-05),
+- [x] **PfA-A: `SchedulerConfig`** — `preempt_enabled_` (VAR-05),
       `sporadic_task_count_` (VAR-06), `suppress_terminated_log_` (VAR-07)
       → config fields passed to `Scheduler::init(cfg)`, read-only after.
-- [ ] **PfA-A: `TestContext`** — `s_test_active_` (VAR-04),
+- [x] **PfA-A: `TestContext`** — `s_test_active_` (VAR-04),
       `g_test_deadline_monitor_pid` (VAR-15), `scheduler_dummy_save_rsp`
       (VAR-16) → injected struct; `nullptr` in production ⇒ flags false.
-- [ ] **PfA-B: per-CPU debug state** — `s_wedge_emitted_`,
+- [x] **PfA-B: per-CPU debug state** — `s_wedge_emitted_`,
       `s_last_switch_tick_` (VAR-13), `s_lk0_count`, `s_last_holder`
       (VAR-14) → fold into `CpuContext::debug`.
-- [ ] **PfA-B: `CpuContext::current`** — `current_task_ptr_` (VAR-01) per-CPU,
+- [x] **PfA-B: `CpuContext::current`** — `current_task_ptr_` (VAR-01) per-CPU,
       atomic publish, RSP-ownership stays authoritative (INV-1).
-- [ ] **PfA-B: `CpuContext::isr_nesting_depth`** — `isr_nesting_depth`
+- [x] **PfA-B: `CpuContext::isr_nesting_depth`** — `isr_nesting_depth`
       (VAR-02) per-CPU (asm GS/TPIDR-relative); unify all C++ access to
       `__atomic_*`.
-- [ ] **PfA-B: `Timer::ticks_`** — per-CPU atomic (VAR-09); `Timer::ticks()`
+- [x] **PfA-B: `Timer::ticks_`** — per-CPU atomic (VAR-09); `Timer::ticks()`
       accessor unchanged for 87 readers.
-- [ ] **Single-owner/discipline:** `s_scan_requested_` (VAR-03) all-atomic;
+- [x] **Single-owner/discipline:** `s_scan_requested_` (VAR-03) all-atomic;
       `s_deferred_kill_*` (VAR-08) under `scheduler_lock_`;
       `Keyboard` mods (VAR-10) byte-atomic; `MessageQueue::count` (VAR-11)
       relaxed-atomic for unlocked readers; `BufferPool` cookie/page-count
       (VAR-12) atomic.
-- [ ] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
-- [ ] Delete remediated variables from `docs/global-race-audit.md`; regression
+- [x] **Deferred to Phase 8:** `hhdm_modified_` (VAR-17) re-audit under SMP.
+- [x] Delete remediated variables from `docs/global-race-audit.md`; regression
       gate: `scheduler`, `ipc`, `sporadic`, `ipc_blocking` 0-failure.
 
 ### Disabled test groups (pre-existing, incompatible with snapshot isolation)

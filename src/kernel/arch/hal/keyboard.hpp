@@ -56,27 +56,34 @@ class Keyboard {
     static void flush();
     /// @return true if Shift is held.
     static bool is_shifted() {
-        return shift_;
+        return (atomic_mods() & MOD_SHIFT) != 0;
     }
     /// @return true if Ctrl is held.
     static bool is_ctrl() {
-        return ctrl_;
+        return (atomic_mods() & MOD_CTRL) != 0;
     }
     /// @return true if Alt is held.
     static bool is_alt() {
-        return alt_;
+        return (atomic_mods() & MOD_ALT) != 0;
     }
 
   private:
+    /// @brief Modifier flag bits packed in the single atomic byte.
+    static constexpr uint8_t MOD_SHIFT = 1U << 0;
+    static constexpr uint8_t MOD_CTRL = 1U << 1;
+    static constexpr uint8_t MOD_ALT = 1U << 2;
+    static constexpr uint8_t MOD_CAPS = 1U << 3;
     static constexpr size_t RING_SIZE = 256;
     static constexpr uint16_t DATA_PORT = 0x60;
     static constexpr uint16_t STATUS_PORT = 0x64;
     // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
     static SPSCRing<char, RING_SIZE> ring_;
-    static constinit bool shift_;
-    static constinit bool ctrl_;
-    static constinit bool alt_;
-    static constinit bool caps_;
+    /// @brief Packed Shift/Ctrl/Alt/Caps state (byte-atomic, PfA-B VAR-10).
+    static constinit uint8_t mods_;
+    /// @brief Read the modifier byte atomically (task context).
+    static uint8_t atomic_mods() {
+        return __atomic_load_n(&mods_, __ATOMIC_ACQUIRE);
+    }
     /// @brief Push a character into the ring buffer.
     static bool push_ring(char c);
     /// @brief Update Shift/Ctrl/Alt/Caps state from a scancode.

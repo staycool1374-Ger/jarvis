@@ -85,8 +85,12 @@ struct MessageQueue {
     bool push(const Message &msg);
     bool pop(Message &msg);
 
-    bool is_empty() const { return count == 0; }
-    bool is_full() const { return count >= IPC_MAX_QUEUE_MSG; }
+    bool is_empty() const {
+        return __atomic_load_n(&count, __ATOMIC_RELAXED) == 0;
+    }
+    bool is_full() const {
+        return __atomic_load_n(&count, __ATOMIC_RELAXED) >= IPC_MAX_QUEUE_MSG;
+    }
     bool is_full_locked() {
         SpinLockGuard<sync::SpinLock> guard(lock_);
         return count >= IPC_MAX_QUEUE_MSG;

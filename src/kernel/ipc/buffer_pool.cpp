@@ -180,8 +180,10 @@ void BufferPool::init() {
 /// @brief Pop a physical page from the pre-allocated pool.
 ///        Falls back to PMM::alloc_user_page() when the pool is exhausted.
 uint64_t BufferPool::alloc_page() {
-    if (pool_count_ > 0) {
-        uint64_t phys = pool_pages_[--pool_count_];
+    if (__atomic_load_n(&pool_count_, __ATOMIC_RELAXED) > 0) {
+        uint64_t phys =
+            pool_pages_[__atomic_sub_fetch(&pool_count_, 1UL,
+                                           __ATOMIC_RELAXED)];
         // Pool pages may have been freed via PMM::free_page() in a prior
         // lifecycle (before the pool-only reclaim below), which resets the
         // owner bit to KERNEL.  Ensure USER ownership.
@@ -202,8 +204,9 @@ uint64_t BufferPool::alloc_page() {
 ///        If the pool is full the page is leaked (acceptable: bounded by
 ///        POOL_PAGES * max-buffer-live, practically never reached).
 void BufferPool::free_page(uint64_t phys) {
-    if (pool_count_ < POOL_PAGES) {
-        pool_pages_[pool_count_++] = phys;
+    if (__atomic_load_n(&pool_count_, __ATOMIC_RELAXED) < POOL_PAGES) {
+        pool_pages_[__atomic_add_fetch(&pool_count_, 1UL,
+                                       __ATOMIC_RELAXED)] = phys;
     }
     // Pool full: silently drop the page rather than calling PMM::free_page(),
     // which resets the owner bit to KERNEL and breaks the invariant that
@@ -302,7 +305,8 @@ uint64_t BufferPool::alloc(TaskControlBlock &task, uint64_t va) {
     VMM::map_page_in_pml4(va, phys, true, task.page_table_);
 
     entries[idx].phys_addr = phys;
-    entries[idx].generation = next_cookie_++;
+    entries[idx].generation =
+        __atomic_fetch_add(&next_cookie_, 1U, __ATOMIC_RELAXED);
     entries[idx].owner_task = static_cast<uint32_t>(task.id);
     entries[idx].mapped_va = va;
 

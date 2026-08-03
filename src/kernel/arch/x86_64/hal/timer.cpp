@@ -30,7 +30,7 @@
 namespace arch {
 
 /// @brief Monotonic tick counter, incremented on each timer IRQ.
-constinit volatile uint64_t Timer::ticks_ = 0;
+constinit uint64_t Timer::ticks_ = 0;
 /// @brief Calibrated TSC frequency in Hz.
 constinit uint64_t Timer::tsc_freq_hz_ = 0;
 
@@ -89,12 +89,12 @@ void Timer::set_frequency(uint32_t frequency_hz) {
 /// @brief Return the current tick count.
 /// @return Number of PIT IRQs received since initialisation.
 uint64_t Timer::ticks() {
-    return ticks_;
+    return __atomic_load_n(&ticks_, __ATOMIC_ACQUIRE);
 }
 
 /// @brief PIT IRQ handler — increments the tick counter.
 void Timer::handle_irq() {
-    ticks_ = ticks_ + 1;
+    __atomic_fetch_add(&ticks_, 1UL, __ATOMIC_RELAXED);
 }
 
 /// @brief Calibrate the TSC frequency using the PIT as a reference.
@@ -160,7 +160,7 @@ uint64_t Timer::ns() {
 /// @brief Override the tick counter (test support).
 /// @param value Value to assign to the tick counter.
 void Timer::set_ticks_for_test(uint64_t value) {
-    ticks_ = value;
+    __atomic_store_n(&ticks_, value, __ATOMIC_RELEASE);
 }
 
 } // namespace arch

@@ -27,14 +27,8 @@ namespace arch {
 
 /// @brief Ring buffer for queued input characters.
 SPSCRing<char, Keyboard::RING_SIZE> Keyboard::ring_;
-/// @brief Current state of the Shift modifier key.
-constinit bool Keyboard::shift_ = false;
-/// @brief Current state of the Ctrl modifier key.
-constinit bool Keyboard::ctrl_ = false;
-/// @brief Current state of the Alt modifier key.
-constinit bool Keyboard::alt_ = false;
-/// @brief Current state of the Caps Lock toggle.
-constinit bool Keyboard::caps_ = false;
+/// @brief Packed Shift/Ctrl/Alt/Caps state (byte-atomic).
+constinit uint8_t Keyboard::mods_ = 0;
 
 /// @brief Scancode-to-ASCII lookup table for unshifted (lowercase) keys.
 /// @note Indexed by scancode & 0x7F. Zero entries indicate unmapped or special
@@ -71,9 +65,7 @@ static const char scancode_upper[128] = {
 /// all modifier key states.
 void Keyboard::init() {
     ring_.reset();
-    shift_ = false;
-    ctrl_ = false;
-    alt_ = false;
+    __atomic_store_n(&mods_, 0, __ATOMIC_RELEASE);
 
     outb(0x64, 0xAE);
     io_wait();
@@ -132,7 +124,8 @@ void Keyboard::handle_irq() {
         return;
     }
 
-    bool use_shift = (shift_ && !caps_) || (!shift_ && caps_);
+    uint8_t m = atomic_mods();
+    bool use_shift = ((m & MOD_SHIFT) != 0) != ((m & MOD_CAPS) != 0);
     char c = use_shift ? scancode_upper[code] : scancode_lower[code];
     if (c)
         push_ring(c);
@@ -171,17 +164,32 @@ void Keyboard::update_modifiers(uint8_t scancode, bool pressed) {
     switch (code) {
     case 0x2A:
     case 0x36:
-        shift_ = pressed;
+        if (pressed)
+            __atomic_fetch_or(&mods_, MOD_SHIFT, __ATOMIC_RELEASE);
+        else
+            __atomic_fetch_and(&mods_, static_cast<uint8_t>(~MOD_SHIFT),
+                               __ATOMIC_RELEASE);
         break;
     case 0x1D:
-        ctrl_ = pressed;
+        if (pressed)
+            __atomic_fetch_or(&mods_, MOD_CTRL, __ATOMIC_RELEASE);
+        else
+            __atomic_fetch_and(&mods_, static_cast<uint8_t>(~MOD_CTRL),
+                               __ATOMIC_RELEASE);
         break;
     case 0x38:
-        alt_ = pressed;
+        if (pressed)
+            __atomic_fetch_or(&mods_, MOD_ALT, __ATOMIC_RELEASE);
+        else
+            __atomic_fetch_and(&mods_, static_cast<uint8_t>(~MOD_ALT),
+                               __ATOMIC_RELEASE);
         break;
     case 0x3A:
-        if (pressed)
-            caps_ = !caps_;
+        if (pressed) {
+            uint8_t old = atomic_mods();
+            __atomic_store_n(
+                &mods_, old ^ MOD_CAPS, __ATOMIC_RELEASE);
+        }
         break;
     default:
         break;
