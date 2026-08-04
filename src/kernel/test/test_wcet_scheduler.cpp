@@ -32,6 +32,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
@@ -54,8 +55,11 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     const uint64_t kIters = 300;
 
     // --- Build one population of 40 REAL tasks that genuinely overrun their
-    //     2-tick deadline (busy-wait 5 real ticks) and then terminate.
-    TaskControlBlock *tasks[64];
+    //     2-tick deadline (busy-wait 5 real ticks) and then block.  Keeping
+    //     them live lets the real monitor scan observe the expired set.
+    sync::Semaphore gate;
+    gate.init(0, 64);
+    TaskControlBlock *tasks[64] = {};
     uint64_t made = 0;
     for (uint64_t k = 0; k < 40; ++k) {
         arch::IrqGuard guard;
@@ -63,13 +67,16 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
             break; // headroom below MAX_TASKS
         auto *t = TaskControlBlock::create(
             []() {
+                auto *self = Scheduler::current_task();
                 uint64_t start = arch::Timer::ticks();
                 while (arch::Timer::ticks() - start < 5)
                     arch::pause();
+                reinterpret_cast<sync::Semaphore *>(self->user_data)->wait();
             },
             11, 2);
         if (t == nullptr)
             break;
+        t->user_data = &gate;
         Scheduler::add_task(*t);
         tasks[made++] = t;
     }
@@ -85,12 +92,9 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
         }
     });
 
-    // Give the tasks real time to genuinely overrun their deadlines (they
-    // were created with deadline = now + 2; busy-waiting 5 real ticks per
-    // task guarantees the deadline has passed by the time we measure).
-    {
-        uint64_t start = arch::Timer::ticks();
-        while (arch::Timer::ticks() - start < 20)
+    Scheduler::reschedule();
+    for (uint64_t k = 0; k < made; ++k) {
+        while (tasks[k]->state != TaskState::BLOCKED)
             asm volatile("pause");
     }
 
@@ -98,9 +102,8 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     auto measure = [&]() -> uint64_t {
         uint64_t max_cycles = 0;
         for (uint64_t it = 0; it < kIters; ++it) {
-            arch::IrqGuard guard;
             uint64_t const s = arch::rdtsc();
-            Scheduler::scan_deadlines();
+            kernel::test::trigger_deadline_monitor_scan();
             uint64_t const e = arch::rdtsc();
             uint64_t const d = (e > s) ? (e - s) : 0;
             if (d > max_cycles)
@@ -115,6 +118,13 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     Logger::info("[WCET] scan_deadlines 40-task worst=");
     Logger::print_dec(c40);
     Logger::info(" cyc");
+
+    for (uint64_t k = 0; k < made; ++k)
+        gate.post();
+    for (uint64_t k = 0; k < made; ++k) {
+        while (tasks[k]->state != TaskState::TERMINATED)
+            asm volatile("pause");
+    }
 
     JARVIS_TEST_PASS();
 }

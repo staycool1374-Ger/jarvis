@@ -35,6 +35,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/memory/pmm.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <constants.hpp>
 
 using namespace kernel;
@@ -417,25 +418,31 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers, "PRE: none | POST: none") {
 // kernel::PMM
 JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers,
             "PRE: none | POST: none") {
-    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+    auto *task = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
     JARVIS_ASSERT(task != nullptr);
 
     // Drive the alloc through a REAL dispatched kernel task (BUGS.md#020-safe:
     // kernel-mode lambda with a cloned PML4).
     static uint64_t g_handle = 0;
+    struct ExecContext {
+        TaskControlBlock *target_;
+    } context{task};
     auto *worker = TaskControlBlock::create(
         []() {
-            g_handle = BufferPool::alloc(*Scheduler::current_task(),
-                                         0xF0000000);
+            auto *self = Scheduler::current_task();
+            auto *ctx = reinterpret_cast<ExecContext *>(self->user_data);
+            g_handle = BufferPool::alloc(*ctx->target_, 0xF0000000);
         },
         11, 10);
     JARVIS_ASSERT(worker != nullptr);
     worker->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(worker->page_table_ != 0);
+    worker->user_data = &context;
     Scheduler::add_task(*worker);
     Scheduler::reschedule();
     while (worker->state != TaskState::TERMINATED)
         asm volatile("pause");
+
     Scheduler::remove_task(*worker);
     worker->cleanup();
     delete worker;
@@ -472,6 +479,9 @@ JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers,
     JARVIS_ASSERT(BufferPool::entries[idx].phys_addr == 0);
     JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0);
     JARVIS_ASSERT(task->buf_list_head == -1);
+
+    task->cleanup();
+    delete task;
 
     JARVIS_TEST_PASS();
 }

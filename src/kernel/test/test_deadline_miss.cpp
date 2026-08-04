@@ -99,7 +99,7 @@ TEST_CLASS(DeadlineMissWhileBlocked) {
     // Genuine overrun: the real deadline (now+2 at create) is long past.
     CT_ASSERT(helper->deadline_ticks < arch::Timer::ticks());
 
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     // deadline_missed may be cleared by re-arm (P1b) — count is the stable
     // check.
@@ -131,7 +131,7 @@ TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
 
     // Task genuinely terminated; its deadline (now+2) has long passed.
     uint64_t count_before = helper->deadline_miss_count;
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     // Must NOT fire for TERMINATED tasks.
     CT_ASSERT(helper->deadline_miss_count == count_before);
@@ -160,7 +160,7 @@ TEST_CLASS(DeadlineRearmOnPeriodRollover) {
     uint64_t period = helper->period_ticks;
     CT_ASSERT(period > 0);
 
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     // Deadline miss fired.
     CT_ASSERT(helper->deadline_miss_count >= 1);
@@ -205,7 +205,7 @@ TEST_CLASS(DeadlineMonitorDetectsMiss) {
     auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
 
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     CT_ASSERT(helper->deadline_miss_count >= 1);
 

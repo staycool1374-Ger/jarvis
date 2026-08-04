@@ -320,7 +320,7 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
 
     // Genuine overrun: the real deadline (now+2 at create) is long past.
     JARVIS_ASSERT(helper->deadline_ticks < arch::Timer::ticks());
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
     // deadline_missed is reset to false by re-arm; the persistent count is
     // the stable check.
     JARVIS_ASSERT(helper->deadline_miss_count >= 1);
@@ -365,7 +365,7 @@ JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
 
     // Real future deadline: 10000 ticks from creation — not yet passed.
     JARVIS_ASSERT(helper->deadline_ticks > arch::Timer::ticks());
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     JARVIS_ASSERT(helper->deadline_miss_count == 0);
 
@@ -413,12 +413,12 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
     while (helper->deadline_ticks >= arch::Timer::ticks())
         asm volatile("pause");
 
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
     JARVIS_ASSERT(helper->deadline_miss_count == 1);
 
     // Second scan: the re-arm (deadline += 100) put the deadline in the
     // future — no second event for the same overrun window.
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
     JARVIS_ASSERT(helper->deadline_miss_count == 1);
 
     gate.post();
@@ -461,7 +461,7 @@ JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
     while (helper->state != TaskState::BLOCKED)
         asm volatile("pause");
 
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     // period == 0 ⇒ the scan's "not a periodic task" guard skips it.
     JARVIS_ASSERT(helper->deadline_miss_count == 0);

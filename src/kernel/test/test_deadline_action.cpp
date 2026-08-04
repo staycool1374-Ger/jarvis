@@ -85,11 +85,9 @@ void release_overrun_blocked(TaskControlBlock *helper, sync::Semaphore &gate) {
     delete helper;
 }
 
-/// @brief Run the detection path the way production tests do: the same
-///        scan_deadlines() the [deadline-mon] task executes (on_tick only
-///        wakes the monitor, which is suppressed during tests).
+/// @brief Run the detection path through the real timer-woken monitor task.
 void run_detection() {
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 }
 
 } // namespace
@@ -154,10 +152,12 @@ TEST_CLASS(DeadlineActionKill) {
     run_detection();
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT(helper->state == TaskState::TERMINATED);
-    // Flush the deferred kill list (mirrors on_tick() post-lock path).
-    Scheduler::process_deferred_kills();
-    // helper is now freed; leak verified by test isolation restore.
-    (void)gate;
+    // The next real timer tick flushes the deferred kill list.  Do not touch
+    // helper after the monitor has marked it for deferred destruction.
+    const uint64_t helper_id = helper->id;
+    gate.post();
+    while (Scheduler::find_task(helper_id) != nullptr)
+        arch::hlt();
 };
 #endif
 

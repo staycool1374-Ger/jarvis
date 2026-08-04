@@ -35,6 +35,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/sporadic_server.hpp>
 #include <kernel/arch/timer.hpp>
+#include <kernel/sync/semaphore.hpp>
 
 using namespace kernel;
 
@@ -42,9 +43,9 @@ namespace {
 
 /// @brief Create a REAL kernel task with a SporadicServer, dispatch it, and
 ///        have its dispatched lambda genuinely exhaust the SS budget.  The
-///        task then blocks on nothing — it terminates after exhausting.
+///        task remains blocked until the harness releases it after scanning.
 ///        Returns the TCB (caller must release).
-TaskControlBlock *spawn_ss_exhausted() {
+TaskControlBlock *spawn_ss_exhausted(sync::Semaphore &gate) {
     auto *helper = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
@@ -53,18 +54,20 @@ TaskControlBlock *spawn_ss_exhausted() {
             self->sporadic_server->on_activation(arch::Timer::ticks());
             for (int i = 0; i < 5; ++i)
                 self->sporadic_server->consume(arch::Timer::ticks());
+            while (arch::Timer::ticks() <= self->deadline_ticks)
+                arch::pause();
+            reinterpret_cast<sync::Semaphore *>(self->user_data)->wait();
         },
         11, 10);
     if (helper == nullptr)
         return nullptr;
-    helper->base_priority = 11;
-    helper->priority = 11;
+    helper->user_data = &gate;
     // Background priority BELOW the harness (prio 10 → bg 2): an EXHAUSTED
     // task at bg_prio 2 would not outrank the test runner.
     helper->init_sporadic_server(3, 100, 2);
     Scheduler::add_task(*helper);
     Scheduler::reschedule();
-    while (helper->state != TaskState::TERMINATED)
+    while (helper->state != TaskState::BLOCKED)
         asm volatile("pause");
     return helper;
 }
@@ -92,7 +95,9 @@ void release_task(TaskControlBlock *t) {
 //       is enabled (default), so this class is gated on it.
 #if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsExhaustionTriggersDeadline) {
-    auto *helper = spawn_ss_exhausted();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_ss_exhausted(gate);
     CT_ASSERT(helper != nullptr);
     CT_ASSERT(helper->sporadic_server != nullptr);
     CT_ASSERT(helper->sporadic_server->state() ==
@@ -103,15 +108,8 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     // the time the task exhausted and terminated.
     CT_ASSERT(helper->deadline_ticks < arch::Timer::ticks());
 
-    helper->deadline_miss_count = 0;
-    helper->ss_state_on_deadline_miss = 0;
-    helper->ss_budget_on_deadline_miss = 999;
-
     // Drive the real deadline-detection scan (the [deadline-mon] entry).
-    {
-        arch::IrqGuard guard;
-        Scheduler::scan_deadlines();
-    }
+    kernel::test::trigger_deadline_monitor_scan();
 
     // P1a deadline detection must fire with SS context.
     CT_ASSERT(helper->deadline_miss_count >= 1);
@@ -123,6 +121,9 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     // P4a: Budget captured as 0.
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
+    gate.post();
+    while (helper->state != TaskState::TERMINATED)
+        asm volatile("pause");
     release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
@@ -136,23 +137,18 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
 //         handler logs "budget exhausted".
 #if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsDeadlineMissDuringReplenish) {
-    auto *helper = spawn_ss_exhausted();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_ss_exhausted(gate);
     CT_ASSERT(helper != nullptr);
     CT_ASSERT(helper->sporadic_server != nullptr);
     CT_ASSERT(helper->sporadic_server->state() ==
               task::SporadicServer::State::EXHAUSTED);
     CT_ASSERT(helper->sporadic_server->remaining_budget() == 0);
 
-    helper->deadline_miss_count = 0;
-    helper->ss_state_on_deadline_miss = 0;
-    helper->ss_budget_on_deadline_miss = 999;
-
     // Drive the real deadline-detection scan only (see
     // SsExhaustionTriggersDeadline — do NOT call on_tick() here).
-    {
-        arch::IrqGuard guard;
-        Scheduler::scan_deadlines();
-    }
+    kernel::test::trigger_deadline_monitor_scan();
 
     // Deadline must have been detected.
     CT_ASSERT(helper->deadline_miss_count >= 1);
@@ -163,6 +159,9 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     // state assertion and only check budget fields.
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
+    gate.post();
+    while (helper->state != TaskState::TERMINATED)
+        asm volatile("pause");
     release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK

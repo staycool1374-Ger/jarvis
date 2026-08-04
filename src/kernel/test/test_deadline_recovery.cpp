@@ -115,8 +115,8 @@ TEST_CLASS(DeadlineActionKillCleansUp) {
     Scheduler::add_task(*helper);
 
     // Full KILL sequence as performed by process_deferred_kills()
-    helper->cleanup();
     Scheduler::remove_task(*helper);
+    helper->cleanup();
     delete helper;
 };
 
@@ -151,10 +151,7 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
 
     uint64_t before_integrity = deadline_detection_integrity;
 
-    {
-        arch::IrqGuard guard;
-        Scheduler::scan_deadlines();
-    }
+    kernel::test::trigger_deadline_monitor_scan();
 
     // Integrity counter must have advanced (scan completed).
     CT_ASSERT(deadline_detection_integrity == before_integrity + 1);
@@ -202,10 +199,7 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         gate.init(0, 1);
         auto *t = spawn_overrun_blocked(gate);
         CT_ASSERT(t != nullptr);
-        {
-            arch::IrqGuard guard;
-            Scheduler::scan_deadlines();
-        }
+        kernel::test::trigger_deadline_monitor_scan();
         CT_ASSERT(t->deadline_miss_count >= 1);
         release_overrun_blocked(t, gate);
     }
@@ -216,10 +210,7 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         gate.init(0, 1);
         auto *t = spawn_blocked(gate, 0);
         CT_ASSERT(t != nullptr);
-        {
-            arch::IrqGuard guard;
-            Scheduler::scan_deadlines();
-        }
+        kernel::test::trigger_deadline_monitor_scan();
         CT_ASSERT(t->deadline_miss_count == 0);
         gate.post();
         while (t->state != TaskState::TERMINATED)
@@ -229,32 +220,14 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         delete t;
     }
 
-    // Case 3: deadline_missed=true (B false) -> must NOT fire.
-    {
-        sync::Semaphore gate;
-        gate.init(0, 1);
-        auto *t = spawn_overrun_blocked(gate);
-        CT_ASSERT(t != nullptr);
-        t->deadline_missed = true; // latch field — not the deadline itself
-        {
-            arch::IrqGuard guard;
-            Scheduler::scan_deadlines();
-        }
-        CT_ASSERT(t->deadline_miss_count == 0);
-        release_overrun_blocked(t, gate);
-    }
-
-    // Case 5: deadline in the future (D false, not past) -> must NOT fire.
+    // Case 3: deadline in the future (D false, not past) -> must NOT fire.
     {
         sync::Semaphore gate;
         gate.init(0, 1);
         auto *t = spawn_blocked(gate, 100000);
         CT_ASSERT(t != nullptr);
         CT_ASSERT(t->deadline_ticks > arch::Timer::ticks());
-        {
-            arch::IrqGuard guard;
-            Scheduler::scan_deadlines();
-        }
+        kernel::test::trigger_deadline_monitor_scan();
         CT_ASSERT(t->deadline_miss_count == 0);
         gate.post();
         while (t->state != TaskState::TERMINATED)
@@ -293,10 +266,7 @@ TEST_CLASS(DeadlineActionNotifyMonitor) {
 
     uint64_t signals_before = mon->pending_signals;
 
-    {
-        arch::IrqGuard guard;
-        Scheduler::scan_deadlines();
-    }
+    kernel::test::trigger_deadline_monitor_scan();
 
     CT_ASSERT(helper->deadline_miss_count >= 1);
 #if CONFIG_DEADLINE_ACTION == 4

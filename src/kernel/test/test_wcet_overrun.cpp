@@ -139,7 +139,7 @@ TEST_CLASS(DeadlineMissWithinWcet) {
         asm volatile("pause");
 
     // Deadline genuinely passed while the task was running/blocked.
-    Scheduler::scan_deadlines();
+    kernel::test::trigger_deadline_monitor_scan();
 
     // Deadline must fire; WCET must NOT fire (budget not exceeded).
     CT_ASSERT(helper->deadline_miss_count >= 1);

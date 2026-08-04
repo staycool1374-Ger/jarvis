@@ -151,6 +151,25 @@ inline void wait_for_termination(TaskControlBlock &task) {
     }
 }
 
+#if CONFIG_DEADLINE_MONITOR_TASK
+/// @brief Trigger one deadline scan through the real timer/monitor path.
+///        Test execution normally suppresses monitor wakeups to keep snapshot
+///        isolation deterministic, so briefly release that gate and wait for
+///        the monitor's completion counter instead of calling scan_deadlines()
+///        directly from the harness.
+inline void trigger_deadline_monitor_scan() {
+    const bool was_test_active = Scheduler::is_test_active();
+    const uint64_t before =
+        __atomic_load_n(&deadline_detection_integrity, __ATOMIC_ACQUIRE);
+    Scheduler::set_test_active(false);
+    while (__atomic_load_n(&deadline_detection_integrity, __ATOMIC_ACQUIRE) ==
+           before) {
+        arch::hlt();
+    }
+    Scheduler::set_test_active(was_test_active);
+}
+#endif
+
 } // namespace kernel::test
 
 /// @brief  Create a TCB for test use and register it with the scheduler WITHOUT
