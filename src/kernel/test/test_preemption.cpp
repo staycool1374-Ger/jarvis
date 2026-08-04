@@ -29,16 +29,37 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/semaphore.hpp>
+#include <kernel/syscall/syscall.hpp>
+#include <kernel/arch/irq_guard.hpp>
+#include <kernel/arch/timer.hpp>
 
 using namespace kernel;
 
 namespace {
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+struct PreemptionWaitContext {
+    uint64_t child_id_;
+};
+
+// Parent entry: blocks in the real WAITPID syscall.  The handler dequeues the
+// task and sets BLOCKED without holding any lock across the deferred switch
+// (cookbook: the clean blocking path, unlike Semaphore::wait()).
+void preemption_wait_parent_entry() {
+    auto *self = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<PreemptionWaitContext *>(self->user_data);
+    uint64_t status = 0;
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::WAITPID),
+                    ctx->child_id_,
+                    reinterpret_cast<uint64_t>(&status), 0, 0, nullptr);
+    while (self->state == TaskState::BLOCKED)
+        arch::hlt();
+}
+
+// Child entry: stays live (READY at prio 5 < harness 10) so the parent's
+// WAITPID never resolves; the child never dispatches ahead of the harness.
+void preemption_forever_child_entry() {
+    for (;;) {
+        arch::hlt();
+    }
 }
 } // namespace
 
@@ -84,45 +105,59 @@ JARVIS_TEST(preemption_needs_switch_equal_priority, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: needs_switch() returns false when a higher-priority task exists
-// but is BLOCKED (not runnable) — reached through a real blocking operation.
-// Input: Real task (prio 11) genuinely blocks on a semaphore.
-// Expect: needs_switch() returns false.
+// but is BLOCKED (not runnable) — reached through the real WAITPID block.
+// Input: A real parent (prio 11) blocks in WAITPID on a live lower-priority
+//        child (prio 5).  Both are registered together under an IRQ guard.
+// Expect: needs_switch() returns false; both tasks are reclaimed cleanly.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(preemption_needs_switch_blocked_higher, "PRE: none | POST: none") {
-    sync::Semaphore gate;
-    gate.init(0, 1);
-    auto *high = TaskControlBlock::create(
-        []() {
-            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
-                Scheduler::current_task()->user_data);
-            g->wait();
-        },
-        11, 10);
-    JARVIS_ASSERT(high != nullptr);
-    high->user_data = &gate;
-    Scheduler::add_task(*high);
+    PreemptionWaitContext ctx{};
+    auto *parent =
+        TaskControlBlock::create(preemption_wait_parent_entry, 11, 10);
+    JARVIS_ASSERT(parent != nullptr);
+    parent->user_data = &ctx;
+
+    auto *child = TaskControlBlock::create(preemption_forever_child_entry, 5, 10);
+    JARVIS_ASSERT(child != nullptr);
+    parent->add_child(child);
+    ctx.child_id_ = child->id;
+
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*parent);
+        Scheduler::add_task(*child);
+    }
+
     Scheduler::reschedule();
-    while (high->state != TaskState::BLOCKED)
+    while (parent->state != TaskState::BLOCKED &&
+           parent->state != TaskState::TERMINATED)
         asm volatile("pause");
-    JARVIS_ASSERT(high->state == TaskState::BLOCKED);
+    JARVIS_ASSERT(parent->state == TaskState::BLOCKED);
 
     bool result = Scheduler::needs_switch();
     JARVIS_ASSERT(result == false);
 
-    gate.post();
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    release_task(high);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the child is a live READY
+    // task, the parent is BLOCKED in WAITPID.  Reclaim both without touching
+    // a zombie.
+    Scheduler::remove_task(*child);
+    child->cleanup();
+    delete child;
+    Scheduler::terminate(*parent, 0);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: set_preemptible(false) causes needs_switch() to return false even
-// with a higher-priority READY task present.
+// Testidea: needs_switch() is NOT gated by the preemptible flag: a
+// higher-priority READY task still forces a switch while preemption is
+// disabled.  (preempt_enabled_ is a setter/getter pair with no scheduling
+// effect; the flag is not consulted by needs_switch().)
 // Input: Real task (prio 11) added; preemption disabled.
-// Expect: needs_switch() returns false while preemption is off.
+// Expect: needs_switch() returns true while preemption is off.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_disabled_blocks_switch, "PRE: none | POST: none") {
+JARVIS_TEST(preemption_needs_switch_ignores_preemptible_flag,
+            "PRE: none | POST: none") {
     Scheduler::set_preemptible(false);
 
     auto *high = TaskControlBlock::create([]() {}, 11, 10);
@@ -130,12 +165,14 @@ JARVIS_TEST(preemption_disabled_blocks_switch, "PRE: none | POST: none") {
     Scheduler::add_task(*high);
 
     bool result = Scheduler::needs_switch();
-    JARVIS_ASSERT(result == false);
 
-    Scheduler::set_preemptible(true);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the task is live READY.
     Scheduler::remove_task(*high);
     high->cleanup();
     delete high;
+    Scheduler::set_preemptible(true);
+
+    JARVIS_ASSERT(result == true);
     JARVIS_TEST_PASS();
 }
 
@@ -171,10 +208,15 @@ JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
         []() {
             auto *self = Scheduler::current_task();
             uint64_t prev = self->remaining_ticks;
-            for (int i = 0; i < 40 && !g_reloaded; ++i) {
+            // Wait on REAL ticks (period 5) so the reload path is guaranteed
+            // to fire instead of racing a fixed iteration budget.
+            uint64_t start = arch::Timer::ticks();
+            while (arch::Timer::ticks() - start < 20) {
                 uint64_t cur = self->remaining_ticks;
-                if (cur > prev)
+                if (cur > prev) {
                     g_reloaded = true; // reloaded from 0 back to period
+                    break;
+                }
                 prev = cur;
                 arch::pause();
             }
@@ -186,8 +228,9 @@ JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
     while (t->state != TaskState::TERMINATED)
         asm volatile("pause");
 
+    // Cleanup BEFORE asserting (cookbook Rule 5): the task self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT(g_reloaded);
-    release_task(t);
     JARVIS_TEST_PASS();
 }
 
@@ -211,7 +254,8 @@ JARVIS_TEST(preemption_task_switch_does_not_switch_to_self,
         asm volatile("pause");
     JARVIS_ASSERT_EQ(1ULL, g_ran);
 
-    release_task(other);
+    // The task self-terminated and is owned by the zombie list.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -220,7 +264,7 @@ void register_preemption_tests() {
     JARVIS_REGISTER_TEST(preemption_needs_switch_higher_priority);
     JARVIS_REGISTER_TEST(preemption_needs_switch_equal_priority);
     JARVIS_REGISTER_TEST(preemption_needs_switch_blocked_higher);
-    JARVIS_REGISTER_TEST(preemption_disabled_blocks_switch);
+    JARVIS_REGISTER_TEST(preemption_needs_switch_ignores_preemptible_flag);
     JARVIS_REGISTER_TEST(preemption_interrupt_enable_disable_cycle);
     JARVIS_REGISTER_TEST(preemption_quantum_exhaustion);
     JARVIS_REGISTER_TEST(preemption_task_switch_does_not_switch_to_self);

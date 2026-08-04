@@ -579,3 +579,7 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-04 18:00:01 buffer_pool PASSED: 24 FAILED: 0 TIME: 572ms (test-side exec target corrected)
 2026-08-04 18:04:24 scheduler PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (zombie teardown ownership in waitpid-driven test)
 2026-08-04 18:11:45 scheduler PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (third test-fix attempt; parent/child deferred-switch teardown hang)
+2026-08-04 18:41:19 scheduler PASSED: 7 FAILED: 0 TIME: 120s STATUS: TIMEOUT (corrected waitpid test child dispatched before parent wait)
+2026-08-05 00:05:44 scheduler PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (corrected waitpid parent blocked but child terminate did not wake parent)
+2026-08-05 00:08:54 scheduler PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (scheduler_waitpid_wakes_parent passes; later hang at ~test 24; pre-existing clone +17 leaks at tests 19/21/22/23)
+2026-08-05 00:54:57 scheduler PASSED: 63 FAILED: 0 TIME: 2642ms (cookbook rules applied: IRQ-guarded registration, drain-before-assert, WAITPID block; full class green)

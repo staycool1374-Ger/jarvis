@@ -36,17 +36,56 @@
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/syscall/syscall.hpp>
 
 using namespace kernel;
 
 namespace {
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+struct WaitContext {
+    uint64_t child_id_;
+    uint64_t status_;
+    uint64_t result_;
+};
+
+static bool wait_for_child(WaitContext &ctx) {
+    auto *self = Scheduler::current_task();
+    uint64_t ret = Syscall::handle(
+        static_cast<uint64_t>(SyscallNumber::WAITPID), ctx.child_id_,
+        reinterpret_cast<uint64_t>(&ctx.status_), 0, 0, nullptr);
+    if (ret == static_cast<uint64_t>(-1)) {
+        while (self->state == TaskState::BLOCKED)
+            arch::hlt();
+        return self->waiting_child_pid == 0;
+    }
+    return ret == ctx.child_id_;
 }
+
+static void waitpid_parent_entry() {
+    auto *self = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<WaitContext *>(self->user_data);
+    ctx->result_ = wait_for_child(*ctx) ? 1 : 0;
+}
+
+struct SequentialWaitContext {
+    uint64_t child1_id_;
+    uint64_t child2_id_;
+    uint64_t status1_;
+    uint64_t status2_;
+    uint64_t result_;
+};
+
+static void sequential_wait_parent_entry() {
+    auto *self = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<SequentialWaitContext *>(self->user_data);
+    WaitContext first{ctx->child1_id_, 0, 0};
+    WaitContext second{ctx->child2_id_, 0, 0};
+    bool first_ok = wait_for_child(first);
+    ctx->status1_ = first.status_;
+    bool second_ok = wait_for_child(second);
+    ctx->status2_ = second.status_;
+    ctx->result_ = (first_ok && second_ok) ? 1 : 0;
+}
+
 } // namespace
 
 // Runmode: kernel
@@ -59,35 +98,32 @@ void release_task(TaskControlBlock *t) {
 // Expect: The parent's waiting_child_status receives 42; the child is
 //         removed from the scheduler; the parent's wait is cleared.
 JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 11, 10);
+    WaitContext ctx{};
+    auto *parent = TaskControlBlock::create(waitpid_parent_entry, 20, 10);
     JARVIS_ASSERT(parent != nullptr);
+    parent->user_data = &ctx;
     Scheduler::add_task(*parent);
 
     auto *child = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child != nullptr);
-    child->parent_id = parent->id;
     parent->add_child(child);
     Scheduler::add_task(*child);
-    uint64_t child_id = child->id;
+    ctx.child_id_ = child->id;
 
-    // Parent blocks in waitpid for this child.
-    uint64_t status = 0;
-    parent->waiting_child_pid = child_id;
-    parent->waiting_child_status = &status;
-
-    // Real child exit: dispatch the child (its trampoline terminates it with
-    // exit code 0); the wake_waiting_parent path delivers the status.
+    // The parent blocks in the real WAITPID handler; the child then runs and
+    // exits through the trampoline.
     Scheduler::reschedule();
-    while (child->state != TaskState::TERMINATED)
+    while (parent->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
-    // Real wake path: child exit code (0) delivered to the waiting parent;
-    // the child is reaped and the parent's wait is cleared.
-    JARVIS_ASSERT(parent->waiting_child_pid == 0);
-    JARVIS_ASSERT(status == 0);
-    JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
+    JARVIS_ASSERT_EQ(1ULL, ctx.result_);
+    JARVIS_ASSERT_EQ(0ULL, ctx.status_);
+    JARVIS_ASSERT(Scheduler::find_task(ctx.child_id_) == nullptr);
 
-    release_task(parent);
+    // The parent self-terminated and is owned by the zombie list.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -101,51 +137,34 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
 // Expect: Each child's status is delivered to the parent and reaped; no
 // zombies remain in the scheduler.
 JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 11, 10);
+    SequentialWaitContext ctx{};
+    auto *parent = TaskControlBlock::create(sequential_wait_parent_entry, 20, 10);
     JARVIS_ASSERT(parent != nullptr);
+    parent->user_data = &ctx;
     Scheduler::add_task(*parent);
 
-    // --- Round 1: child1 ---
     auto *child1 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child1 != nullptr);
-    child1->parent_id = parent->id;
     parent->add_child(child1);
     Scheduler::add_task(*child1);
-    uint64_t child1_id = child1->id;
+    ctx.child1_id_ = child1->id;
 
-    uint64_t status1 = 0;
-    parent->waiting_child_pid = child1_id;
-    parent->waiting_child_status = &status1;
-
-    Scheduler::reschedule();
-    while (child1->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
-    JARVIS_ASSERT(parent->waiting_child_pid == 0);
-    JARVIS_ASSERT(status1 == 0);
-    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
-
-    // --- Round 2: child2 ---
     auto *child2 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child2 != nullptr);
-    child2->parent_id = parent->id;
     parent->add_child(child2);
     Scheduler::add_task(*child2);
-    uint64_t child2_id = child2->id;
-
-    uint64_t status2 = 0;
-    parent->waiting_child_pid = child2_id;
-    parent->waiting_child_status = &status2;
+    ctx.child2_id_ = child2->id;
 
     Scheduler::reschedule();
-    while (child2->state != TaskState::TERMINATED)
+    while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
-    JARVIS_ASSERT(parent->waiting_child_pid == 0);
-    JARVIS_ASSERT(status2 == 0);
-    JARVIS_ASSERT(Scheduler::find_task(child2_id) == nullptr);
+    JARVIS_ASSERT_EQ(1ULL, ctx.result_);
+    JARVIS_ASSERT_EQ(0ULL, ctx.status1_);
+    JARVIS_ASSERT_EQ(0ULL, ctx.status2_);
 
-    release_task(parent);
+    // The parent self-terminated and is owned by the zombie list.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

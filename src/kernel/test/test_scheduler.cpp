@@ -23,11 +23,42 @@
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/syscall/syscall.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/irq_guard.hpp>
 
 using namespace kernel;
+
+namespace {
+struct WaitpidTestContext {
+    uint64_t child_id_ = 0;
+    uint64_t status_ = 0;
+    volatile uint64_t blocked_ = 0;
+    volatile uint64_t woke_ = 0;
+};
+
+void scheduler_waitpid_parent_entry() {
+    auto *self = Scheduler::current_task();
+    auto *ctx = reinterpret_cast<WaitpidTestContext *>(self->user_data);
+    Syscall::handle(static_cast<uint64_t>(SyscallNumber::WAITPID),
+                    ctx->child_id_,
+                    reinterpret_cast<uint64_t>(&ctx->status_), 0, 0, nullptr);
+    if (self->state == TaskState::BLOCKED) {
+        ctx->blocked_ = 1;
+        while (self->state == TaskState::BLOCKED)
+            arch::hlt();
+    }
+    ctx->woke_ = 1;
+}
+
+void scheduler_waitpid_child_entry() {
+    Scheduler::terminate(*Scheduler::current_task(), 42);
+    for (;;) {
+        arch::hlt();
+    }
+}
+} // namespace
 
 // Runmode: kernel
 // Testidea: Validates that the scheduler reports at least one task running.
@@ -179,46 +210,55 @@ JARVIS_TEST(scheduler_quantum_exhaustion, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that deferred reaping respects parent wait status -
-// child not reaped while parent waits.
-// Input: Create parent and child. Parent sets waiting_child_pid. Child
-// exits. Reap orphans.
-// Expect: Child is NOT reaped while parent waits; reaped after parent clears
-// wait.
+// Testidea: Verifies the real waitpid wake and zombie cleanup path.
+// Input: A dispatched parent blocks in WAITPID; a dispatched child terminates
+//        with exit status 42; wake_waiting_parent resumes the parent.
+// Expect: Parent receives status 42, child leaves the live task table, and
+//         both TCBs are reclaimed by the real zombie drain.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(scheduler_reap_orphans_can_reap_deferred,
+JARVIS_TEST(scheduler_waitpid_wakes_parent,
             "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
+    WaitpidTestContext context;
+    auto *parent =
+        TaskControlBlock::create(scheduler_waitpid_parent_entry, 20, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(*parent);
+    parent->user_data = &context;
 
-    auto *child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child =
+        TaskControlBlock::create(scheduler_waitpid_child_entry, 12, 10);
     JARVIS_ASSERT(child != nullptr);
-    Scheduler::add_task(*child);
-    child->parent_id = parent->id;
     parent->add_child(child);
+    context.child_id_ = child->id;
 
-    uint64_t child_id = child->id;
-    uint64_t status = 0;
-    parent->waiting_child_pid = child_id;
-    parent->waiting_child_status = &status;
+    // Add both tasks under an IRQ guard so a timer tick cannot dispatch the
+    // parent before the child is registered.  The parent (prio 20) then blocks
+    // in WAITPID while the child is present; the child (prio 12) runs next,
+    // self-terminates with status 42, and wake_waiting_parent resumes it.
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*parent);
+        Scheduler::add_task(*child);
+    }
 
-    Scheduler::terminate(*child, 42);
+    Scheduler::reschedule();
+    while (parent->state != TaskState::BLOCKED &&
+           parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // terminate() calls release_zombie which appends to the zombie list.
-    // Drain synchronously to free resources before the test ends.
+    bool child_removed = Scheduler::find_task(context.child_id_) == nullptr;
+    if (!child_removed) {
+        Scheduler::terminate(*child, 0);
+    }
     Scheduler::drain_zombie_list();
 
-    // Child should now be reaped (parent's wait satisfied).
-    JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
+    JARVIS_ASSERT(context.blocked_ == 1);
+    JARVIS_ASSERT(context.woke_ == 1);
+    JARVIS_ASSERT(child_removed);
+    JARVIS_ASSERT_EQ(42ULL, context.status_);
 
-    // Parent was notified: its wait was cleared and it received the status.
-    JARVIS_ASSERT(parent->waiting_child_pid == 0);
-    JARVIS_ASSERT(status == 42);
-
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
+    Scheduler::drain_zombie_list();
 
     JARVIS_TEST_PASS();
 }
@@ -438,7 +478,7 @@ void register_scheduler_tests() {
     JARVIS_REGISTER_TEST(scheduler_reap_orphans);
     JARVIS_REGISTER_TEST(scheduler_preemptive_priority);
     JARVIS_REGISTER_TEST(scheduler_quantum_exhaustion);
-    JARVIS_REGISTER_TEST(scheduler_reap_orphans_can_reap_deferred);
+    JARVIS_REGISTER_TEST(scheduler_waitpid_wakes_parent);
     JARVIS_REGISTER_TEST(scheduler_alloc_id_sequential);
     JARVIS_REGISTER_TEST(scheduler_task_at_bounds);
     JARVIS_REGISTER_TEST(scheduler_find_task_nonexistent);

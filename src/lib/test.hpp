@@ -183,6 +183,98 @@ struct TestClass {
 bool register_class(const char* name);
 void dump_class_counts();
 
+// ============================================================================
+// DRIVEN-TEST COOKBOOK — reference skeletons (documentation only, never called)
+//
+// Every kernel test must DRIVE the system to a state through real dispatch,
+// then TRIGGER a real event (timer tick / ISR / syscall / real terminate),
+// then VERIFY the reaction.  These skeletons capture the exact patterns that
+// fix the observed parent/child and blocked-sender HANG classes.  A test that
+// copies them is deterministic, leak-free, and cannot wedge the scheduler.
+//
+// MANDATORY RULES (each one stopped a real hang):
+//   1. CREATE both TCBs first and set every field/queue BEFORE registering
+//      either task with the scheduler.  The timer ISR fires between arbitrary
+//      instructions, so a task added early can be dispatched (and terminate)
+//      before the harness finishes arranging the scenario.
+//   2. REGISTER multiple cooperating tasks under one `arch::IrqGuard` so no
+//      timer tick can split the registration.  The higher-priority task that
+//      must BLOCK runs first; the lower-priority peer runs after it blocks.
+//   3. WAIT on observed task state (`task->state == TaskState::BLOCKED`) with
+//      `asm volatile("pause")`.  Never assume ordering.
+//   4. RECLAIM self-terminated tasks via `Scheduler::drain_zombie_list()`.
+//      `Scheduler::terminate()` only marks a task TERMINATED and moves it to
+//      the zombie list — it does NOT free the TCB.  Never follow it with
+//      `remove_task()+cleanup()+delete` (double-free on a poisoned block).
+//   5. CLEANUP BEFORE ASSERT: drain zombies / terminate stray live peers
+//      BEFORE `JARVIS_ASSERT*`.  Assertions `return` on failure, so asserting
+//      before cleanup leaks the TCB (observed as `PMM +17, Tasks +1`) or
+//      leaves a live task that hangs the whole class.
+//   6. Never externally terminate a task that is blocked in
+//      `Semaphore::wait()` — the semaphore keeps a raw TCB in its waiter list
+//      that is not unlinked by cleanup (tracked in ROADMAP v0.3.9).
+// ============================================================================
+
+/// @brief Reference skeleton for a REAL parent-WAITPID / child-exit pattern.
+///        Blueprint for tests such as scheduler_waitpid_wakes_parent and
+///        scheduler_reap_respects_parent_wait.
+///
+///        create parent + child TCBs (no add_task)
+///        parent->add_child(child)                 // sets child->parent_id
+///        ctx.child_id_ = child->id; parent->user_data = &ctx
+///        {
+///            arch::IrqGuard guard;                // register atomically
+///            Scheduler::add_task(*parent);        // prio 20 (blocks first)
+///            Scheduler::add_task(*child);         // prio 12 (runs after)
+///        }
+///        Scheduler::reschedule();
+///        while (parent->state != BLOCKED && parent->state != TERMINATED)
+///            asm volatile("pause");
+///        while (parent->state != TERMINATED)
+///            asm volatile("pause");               // child exited, parent woke
+///        child_removed = find_task(ctx.child_id_) == nullptr;
+///        if (!child_removed) Scheduler::terminate(*child, 0);  // cleanup
+///        Scheduler::drain_zombie_list();          // reclaim BEFORE assert
+///        JARVIS_ASSERT(ctx.woke_ == 1);
+///        JARVIS_ASSERT(child_removed);
+///        JARVIS_ASSERT_EQ(exit_status, ctx.status_);
+inline void __reference_parent_wait_child() {}
+
+/// @brief Reference skeleton for ONE self-terminating dispatched task.
+///        Blueprint for task_exit_cleans_all_ipc_objects and lifecycle_*.
+///
+///        t = TaskControlBlock::create(entry, prio, period);  // no add_task
+///        // set page_table_/user_stack_/user_stack_size_/etc BEFORE add_task
+///        Scheduler::add_task(*t);
+///        Scheduler::reschedule();
+///        while (t->state != TERMINATED) asm volatile("pause");
+///        Scheduler::drain_zombie_list();          // terminate() alone frees
+///                                                 // nothing; drain reclaims
+///        JARVIS_ASSERT(...);                      // never deref the freed TCB
+inline void __reference_single_terminating_task() {}
+
+/// @brief Reference skeleton for a REAL blocked-sender / receiver-cleanup
+///        pattern.  Blueprint for task_exit_wakes_blocked_senders and
+///        task_cleanup_frees_msg_queue_with_blocked_senders.
+///
+///        receiver = create(receiver_entry, 11, 10)     // no add_task
+///        fill receiver->msg_queue to IPC_MAX_QUEUE_MSG // BEFORE register
+///        sender = create(sender_entry, 12, 10); sender->user_data = &sctx
+///        {
+///            arch::IrqGuard guard;                // register atomically
+///            Scheduler::add_task(*receiver);
+///            Scheduler::add_task(*sender);        // sender blocks on full q
+///        }
+///        Scheduler::reschedule();
+///        while (sender->state != BLOCKED) asm volatile("pause");
+///        Scheduler::reschedule();                 // dispatch receiver
+///        while (receiver->state != TERMINATED) asm volatile("pause");
+///        Scheduler::drain_zombie_list();          // cleanup wakes sender
+///        while (sender->state != TERMINATED) asm volatile("pause");
+///        Scheduler::drain_zombie_list();
+///        JARVIS_ASSERT_EQ(0ULL, send_result);     // woken sender fast-fails
+inline void __reference_blocked_sender_cleanup() {}
+
 } // namespace test
 } // namespace kernel
 

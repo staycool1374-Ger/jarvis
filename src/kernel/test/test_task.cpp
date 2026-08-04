@@ -110,20 +110,21 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     JARVIS_ASSERT(parent != nullptr);
     parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
-    parent->user_stack_ = 0x80000000; // mark as user-like for clone path
+    parent->user_stack_ = 0x80000000;  // mark as user-like for clone path
+    parent->user_stack_size_ = 32_KiB; // clone() needs a real size to succeed
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
     while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
+    // The parent self-terminated and is owned by the zombie list.  Reclaim it
+    // BEFORE asserting so a failure cannot leak the parent TCB.
+    Scheduler::drain_zombie_list();
+
     JARVIS_ASSERT_EQ(1ULL, g_child_ok);
     JARVIS_ASSERT(g_child_pt != 0);
     JARVIS_ASSERT_EQ(0ULL, g_child_shared);
     JARVIS_ASSERT(g_child_stack != 0);
-
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
     JARVIS_TEST_PASS();
 }
 
@@ -201,17 +202,16 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages,
     parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
     parent->user_stack_ = 0x80000000;
+    parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
     while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
+    Scheduler::drain_zombie_list();
+
     JARVIS_ASSERT_EQ(1ULL, g_preserved);
     JARVIS_ASSERT(g_parent_pt != 0);
-
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
     JARVIS_TEST_PASS();
 }
 
@@ -245,16 +245,15 @@ JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
     parent->user_stack_ = 0x80000000;
+    parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
     while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
-    JARVIS_ASSERT_EQ(1ULL, g_ran);
+    Scheduler::drain_zombie_list();
 
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
+    JARVIS_ASSERT_EQ(1ULL, g_ran);
     JARVIS_TEST_PASS();
 }
 

@@ -189,8 +189,16 @@ development gate keeps the trace ON until this is fixed.
       (boot stack) to a user task loads a user CR3; switching BACK must
       reload the kernel CR3 for the harness.  If `scheduler_load_cr3_from`
       for the harness is stale/zero, the harness resumes on the sender's
-      user PML4 → freeze.  Verify CR3 correctness on the return path
-      (isr_stubs.asm ~150-165) before/with the generation fix.
+       user PML4 → freeze.  Verify CR3 correctness on the return path
+       (isr_stubs.asm ~150-165) before/with the generation fix.
+- [ ] **Blocked semaphore waiter teardown gap (separate from H2):**
+      `Semaphore::wait()` stores a raw TCB in `waiters_` and leaves the task
+      linked while the deferred switch is applied. `TaskControlBlock::cleanup()`
+      currently unlinks IPC blocked-sender lists but has no equivalent
+      semaphore-waiter unlink before zombie cleanup. Investigate an explicit,
+      lock-safe detach on termination/cleanup and add a regression test; do not
+      use external termination of a semaphore-blocked task as a scheduler test
+      workaround.
 - [ ] **Verification:** debug `all` must pass 881/881 with the trace **off**;
       then re-verify `release all` (84/84) and `check-style` Errors: 0.
 
