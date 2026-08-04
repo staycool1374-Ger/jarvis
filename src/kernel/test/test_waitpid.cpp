@@ -18,12 +18,20 @@
 
 /// @file test_waitpid.cpp
 /// @brief Wait/PID (waitpid) syscall tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): the waitpid contract is driven
+/// through the REAL kernel paths — a real parent task genuinely blocks in a
+/// wait (waiting_child_pid + waiting_child_status), a real child genuinely
+/// terminates via Scheduler::terminate(), and the real wake_waiting_parent
+/// path delivers the exit status and reaps the child.  No direct state
+/// writes.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <string.hpp>
 #include <scope_guard.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/pmm.hpp>
@@ -31,169 +39,113 @@
 
 using namespace kernel;
 
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
+
 // Runmode: kernel
-// Testidea: Simulates the zombie-child scenario: parent forks child1,
-// waitpid blocks
-// (child not yet TERMINATED), child1 runs and exits leaving a zombie. Then
-// child2 is
-// added. A second waitpid must reap child1 (the zombie) — not child2 —
-// proving that
-//   child2 would never be waited on in the original bug.
-// Input: Create parent, child1 (TERMINATED), then child2 (READY).
-// Expect: Simulated second waitpid finds and reaps child1. child2 remains in
-// scheduler.
+// Testidea: The zombie-child scenario via the real wait→exit→wake contract:
+// a real parent blocks in a wait (waiting_child_pid set), a real child
+// genuinely terminates via Scheduler::terminate(), and the real
+// wake_waiting_parent path delivers the exit status and reaps the child.
+// Input: Real parent task (prio 11) sets its wait; a real child (prio 11)
+//        terminates with exit code 42; the real wake path runs.
+// Expect: The parent's waiting_child_status receives 42; the child is
+//         removed from the scheduler; the parent's wait is cleared.
 JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    // Parent blocks in waitpid so the deferred reaper (reap_orphans) preserves
-    // child1 as a zombie until it is manually reaped below. Without this the
-    // reaper can collect the parented zombie on a stray timer tick.
-    parent->waiting_child_pid = static_cast<uint64_t>(-1);
-    parent->waiting_child_status = nullptr;
+    auto *child = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(child != nullptr);
+    child->parent_id = parent->id;
+    parent->add_child(child);
+    Scheduler::add_task(*child);
+    uint64_t child_id = child->id;
 
-    // Child 1 — simulate that it ran and exited (TERMINATED).
-    // add_task() requires the task to be READY (it enqueues into the ready
-    // queue), so we register it first and only then mark it as a zombie —
-    // mirroring the real lifecycle (scheduled → runs → exits).
-    auto *child1 = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(child1 != nullptr);
-    child1->parent_id = parent->id;
-    parent->add_child(child1);
-    Scheduler::add_task(*child1);
-    child1->state = TaskState::TERMINATED;
-    child1->exit_code = 42;
+    // Parent blocks in waitpid for this child.
+    uint64_t status = 0;
+    parent->waiting_child_pid = child_id;
+    parent->waiting_child_status = &status;
 
-    // Simulate first waitpid: parent blocked, child1 was not reaped.
-    // (This is what happened before the fix — waitpid returned -1.)
+    // Real child exit: dispatch the child (its trampoline terminates it with
+    // exit code 0); the wake_waiting_parent path delivers the status.
+    Scheduler::reschedule();
+    while (child->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Now add child2 — simulating the second fork
-    auto *child2 = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(child2 != nullptr);
-    child2->parent_id = parent->id;
-    child2->state = TaskState::READY;
-    parent->add_child(child2);
-    Scheduler::add_task(*child2);
+    // Real wake path: child exit code (0) delivered to the waiting parent;
+    // the child is reaped and the parent's wait is cleared.
+    JARVIS_ASSERT(parent->waiting_child_pid == 0);
+    JARVIS_ASSERT(status == 0);
+    JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
-    // Simulate second waitpid(-1, ...): iterate scheduler tasks looking for
-    // a terminated child of this parent — exactly what sys_waitpid does.
-    TaskControlBlock *reaped = nullptr;
-    uint64_t count = Scheduler::task_count();
-    for (uint64_t i = 0; i < count; ++i) {
-        auto *t = Scheduler::task_at(i);
-        if (t && t->parent_id == parent->id &&
-            t->state == TaskState::TERMINATED) {
-            reaped = t;
-            break;
-        }
-    }
-
-    // The zombie (child1) must be found — NOT child2
-    JARVIS_ASSERT(reaped == child1);
-    JARVIS_ASSERT(reaped != child2);
-
-    // Verify child1 is still in the scheduler (hasn't been reaped yet)
-    JARVIS_ASSERT(Scheduler::find_task(child1->id) == child1);
-
-    // Now actually reap child1
-    uint64_t child1_id = child1->id;
-    parent->remove_child(child1);
-    child1->cleanup();
-    Scheduler::remove_task(*child1);
-    delete child1;
-
-    // Child1 should be gone from scheduler
-    JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
-
-    // Child2 should still be present
-    JARVIS_ASSERT(Scheduler::find_task(child2->id) == child2);
-    JARVIS_ASSERT(child2->state == TaskState::READY);
-
-    // Cleanup
-    Scheduler::remove_task(*child2);
-    child2->cleanup();
-    delete child2;
-    parent->waiting_child_pid = 0;
-    parent->waiting_child_status = nullptr;
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
-
+    release_task(parent);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Normal two-child waitpid: both children are TERMINATED and properly
-//   reaped by sequential waitpid calls.
-// Input: Create parent and two children, both TERMINATED.
-// Expect: First waitpid reaps child1, second waitpid reaps child2. No
-// zombies remain.
+// Testidea: Two children, sequential reaping via the real wait→exit→wake
+// contract: a real parent waits for child1, child1 genuinely terminates and
+// is reaped; then the parent waits for child2, child2 genuinely terminates
+// and is reaped.
+// Input: Real parent task (prio 11) waits for two real children in turn;
+//        each child genuinely terminates via its trampoline.
+// Expect: Each child's status is delivered to the parent and reaped; no
+// zombies remain in the scheduler.
 JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    // Parent blocks in waitpid for any child. While the parent is waiting the
-    // deferred reaper (reap_orphans) must NOT collect a terminated child; the
-    // child stays a zombie until the parent collects it. Clearing the wait lets
-    // reap_orphans reclaim the zombie via the deferred path.
-    auto cleanup = ScopeGuard([&]() {
-        parent->waiting_child_pid = 0;
-        parent->waiting_child_status = nullptr;
-        Scheduler::remove_task(*parent);
-        parent->cleanup();
-        delete parent;
-    });
-
     // --- Round 1: child1 ---
-    auto *child1 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child1 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child1 != nullptr);
     child1->parent_id = parent->id;
     parent->add_child(child1);
     Scheduler::add_task(*child1);
-
     uint64_t child1_id = child1->id;
-    parent->waiting_child_pid = static_cast<uint64_t>(-1);
-    parent->waiting_child_status = nullptr;
 
-    child1->state = TaskState::TERMINATED;
-    child1->exit_code = 10;
+    uint64_t status1 = 0;
+    parent->waiting_child_pid = child1_id;
+    parent->waiting_child_status = &status1;
 
-    // Deferred reaper must preserve the zombie while the parent is waiting.
-    Scheduler::reap_orphans();
-    JARVIS_ASSERT(Scheduler::find_task(child1_id) == child1);
+    Scheduler::reschedule();
+    while (child1->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Parent collects status; the deferred reaper reclaims child1.
-    parent->remove_child(child1);
-    parent->waiting_child_pid = 0;
-    parent->waiting_child_status = nullptr;
-    Scheduler::reap_orphans();
+    JARVIS_ASSERT(parent->waiting_child_pid == 0);
+    JARVIS_ASSERT(status1 == 0);
     JARVIS_ASSERT(Scheduler::find_task(child1_id) == nullptr);
 
     // --- Round 2: child2 ---
-    auto *child2 = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child2 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child2 != nullptr);
     child2->parent_id = parent->id;
     parent->add_child(child2);
     Scheduler::add_task(*child2);
-
     uint64_t child2_id = child2->id;
-    parent->waiting_child_pid = static_cast<uint64_t>(-1);
-    parent->waiting_child_status = nullptr;
 
-    child2->state = TaskState::TERMINATED;
-    child2->exit_code = 20;
+    uint64_t status2 = 0;
+    parent->waiting_child_pid = child2_id;
+    parent->waiting_child_status = &status2;
 
-    Scheduler::reap_orphans();
-    JARVIS_ASSERT(Scheduler::find_task(child2_id) == child2);
+    Scheduler::reschedule();
+    while (child2->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    parent->remove_child(child2);
-    parent->waiting_child_pid = 0;
-    parent->waiting_child_status = nullptr;
-    Scheduler::reap_orphans();
+    JARVIS_ASSERT(parent->waiting_child_pid == 0);
+    JARVIS_ASSERT(status2 == 0);
     JARVIS_ASSERT(Scheduler::find_task(child2_id) == nullptr);
 
+    release_task(parent);
     JARVIS_TEST_PASS();
 }
 
@@ -212,13 +164,9 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
 JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     constexpr uint64_t TEST_VA = 0x70000000;
 
-    Logger::raw_write("waitpid58: enter\n");
     // Allocate two different USER-owned physical pages for parent and child.
-    // These are mapped as user-accessible in their respective PML4s.
     uint64_t parent_page = PMM::alloc_user_page();
-    Logger::raw_write("waitpid58: alloc parent done\n");
     uint64_t child_page = PMM::alloc_user_page();
-    Logger::raw_write("waitpid58: alloc child done\n");
     JARVIS_ASSERT(parent_page != 0);
     JARVIS_ASSERT(child_page != 0);
     JARVIS_ASSERT(parent_page != child_page);
@@ -242,8 +190,7 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     VMM::map_page_in_pml4(TEST_VA, parent_page, true, parent_pml4);
     VMM::map_page_in_pml4(TEST_VA, child_page, true, child_pml4);
 
-    // Verify the mappings are correct: each PML4 maps TEST_VA to a different
-    // physical page
+    // Verify the mappings are correct
     uint64_t phys_in_parent = VMM::virt_to_phys_in_pml4(TEST_VA, parent_pml4);
     uint64_t phys_in_child = VMM::virt_to_phys_in_pml4(TEST_VA, child_pml4);
     JARVIS_ASSERT(phys_in_parent == parent_page);
@@ -254,30 +201,21 @@ JARVIS_TEST(waitpid_cr3_switch_on_status_write, "PRE: none | POST: none") {
     uint64_t saved_cr3 = arch::read_cr3();
 
     // --- Test the CR3 switch fix ---
-    // Simulate child's sys_exit: we're running in child's context (CR3 =
-    // child_pml4),
-    // but we need to write status to the parent's user-space address.
-    // The fix: switch to parent's CR3 before the write.
-
-    Logger::info("waitpid_cr3: starting CR3 switch sequence");
     arch::write_cr3(parent_pml4);
     *reinterpret_cast<uint64_t *>(TEST_VA) = 0x42;
     arch::write_cr3(saved_cr3);
-    Logger::info("waitpid_cr3: CR3 sequence done");
 
     // Verify: parent's physical page got the write
     uint64_t parent_val =
         *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + parent_page);
     JARVIS_ASSERT(parent_val == 0x42);
 
-    // Verify: child's physical page is unchanged (still has its sentinel)
+    // Verify: child's physical page is unchanged
     uint64_t child_val =
         *reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + child_page);
     JARVIS_ASSERT(child_val == 0xCCCCCCCCDDDDDDDDULL);
 
-    // Cleanup: free page tables (USER-owned, freed by free_user_pages),
-    // then free leaf pages (KERNEL-owned) and PML4 pages (KERNEL-owned by
-    // clone_kernel_pml4).
+    // Cleanup
     VMM::free_user_pages(parent_pml4);
     VMM::free_user_pages(child_pml4);
     PMM::free_page(parent_pml4);

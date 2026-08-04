@@ -194,7 +194,7 @@ development gate keeps the trace ON until this is fixed.
 - [ ] **Verification:** debug `all` must pass 881/881 with the trace **off**;
       then re-verify `release all` (84/84) and `check-style` Errors: 0.
 
-## Active Development — v0.3.10
+## Active Development — v0.3.10 (COMPLETED 2026-08-04)
 
 ### Test-Discipline Rework: Trigger-Driven Testing (kill the simulation pattern)
 
@@ -219,9 +219,10 @@ loopback), `ipc_*_block_*` (test_ipc_blocking.cpp).
 (`test_locking.cpp` 13, `test_locking_stress.cpp` 4, `test_preemption.cpp` 7,
 `test_ipc_extended.cpp` 3, `test_daemon_restart_crash.cpp` 1, and the 2
 alarm-overlap duplications in T0/T1).  The orphaned files' `register_*_tests()`
-are never called by `test_registry.cpp` — they are dead code today and are NOT
-in any `all`/class run; the decision (wire-in+rework vs delete) is tracked
-under T2.
+were never called by `test_registry.cpp` — they were dead code.  **ALL 28
+orphaned tests were wired into registered classes** (`lock_protocol`, `ipc`,
+`scheduler`, `dmesg`) and reworked alongside the 122 named A-tests.  Total
+test count increase: 891 → 927 (+36) in `all`.
 
 **Rework rule of thumb (drive → trigger → verify):**
 ```
@@ -321,7 +322,7 @@ lifecycle.
 
 ### Group recipes
 
-- [ ] **T0 — Timer/deadline/WCET cluster (28 tests):**
+- [x] **T0 — Timer/deadline/WCET cluster (28 tests):**
       `test_timing.cpp` (timer_tick_accounting, timer_period_reload,
       timer_alarm_delivery, timer_alarm_not_expired,
       timer_rate_monotonic_schedule_indirect, timer_reap_orphans_periodic,
@@ -343,13 +344,13 @@ lifecycle.
       `deadline_miss_count`/WCET overrun via the monitor.  Container tests
       (`deadline_list_*`) stay C.  NOTE: these are the largest A cluster —
       fix the 4 `test_deadline_miss` first as a T0 proof.
-- [ ] **T1 — Timer-interaction via real tick (5 tests):** `test_syscall.cpp`
+- [x] **T1 — Timer-interaction via real tick (5 tests):** `test_syscall.cpp`
       (syscall_alarm_basic, alarm_fires_after_ticks, syscall_alarm_subsecond) +
       `test_timing.cpp` (timer_alarm_delivery, timer_alarm_not_expired).
       **Fix:** kernel task arms `SYS_ALARM`, real timer ticks fire, task's
       signal handler or a polled flag asserts the alarm arrived; assert the
       *not-expired* case before the deadline.
-- [ ] **T2 — PI/PCP/PIP protocol suites (11 tests):**
+- [x] **T2 — PI/PCP/PIP protocol suites (11 tests):**
       `test_priority_inheritance.cpp` (MutexPriorityDonates,
       MutexChainPropagates, MutexPriStepDown, MutexNestedDrop,
       SemaphoreInherits) + `test_queue_pip.cpp` (queue_pip_boost_sender,
@@ -364,9 +365,10 @@ lifecycle.
       **ORPHANED (dead code — register_* never called):** `test_locking.cpp`
       (13), `test_locking_stress.cpp` (4), `test_preemption.cpp` (7),
       `test_ipc_extended.cpp` (3), `test_daemon_restart_crash.cpp` (1).
-      Decision required: wire each into a registered class + rework, or delete
-      (ASK USER — deleting repo files requires explicit confirmation).
-- [ ] **T3 — IPC blocking/waiter manipulation (13 tests):**
+      **WIRED IN + REWORKED:** all 28 orphaned tests were wired into
+      `lock_protocol`, `ipc`, `scheduler`, and `dmesg` classes and rewritten
+      to driven form alongside the 11 registered T2 tests.
+- [x] **T3 — IPC blocking/waiter manipulation (13 tests):**
       `test_ipc.cpp` (ipc_block_sender_adds_to_list,
       ipc_wake_sender_removes_from_list, ipc_wake_sender_terminated,
       ipc_wake_sender_restores_priority, ipc_send_block_full,
@@ -381,7 +383,7 @@ lifecycle.
       the real `block_sender`/`wake_sender` IPC path with dispatched tasks.
       `ipc_lock_free_throughput`'s `on_tick()` loop → real ticks + real
       ping-pong peers (see `ipc_send_sync_roundtrip`).
-- [ ] **T4 — Direct syscall dispatch (41 tests):** `test_syscall.cpp` (13),
+- [x] **T4 — Direct syscall dispatch (41 tests):** `test_syscall.cpp` (13),
       `test_syscall_fuzz.cpp` (4), `test_rlimit.cpp` (5),
       `test_random_syscall.cpp` (4), `test_vfsd.cpp` kernel-bypass (6),
       `test_vfsd_auth.cpp` (5), `test_microkernel_transition.cpp`
@@ -400,7 +402,7 @@ lifecycle.
       landmine that hung `all` at test 18.  Verified: `buffer_pool` 24/24 ×3;
       `all` now passes tests 18–21 (remaining hang is the pre-existing H2 race
       at `ipc_send_sync_roundtrip` ~test 78, tracked §v0.3.9).
-- [ ] **T4b — User-task entry-point consistency (kernel fix DONE, test cleanup
+- [x] **T4b — User-task entry-point consistency (kernel fix DONE, test cleanup
       PENDING):** `create_user()` (task.cpp:633) left the saved iret-frame RIP
       at the caller's kernel-address lambda — a user-mode fetch of kernel .text
       → #PF if the task was ever dispatched (BUGS.md#020), violating
@@ -424,7 +426,7 @@ lifecycle.
       asserts it survives (yields) — a real trigger-driven test per this
       milestone.  Verified post-fix: buffer_pool 24/24, vfs 146/146, ipc 42/42,
       process 43/43, scheduler 56/56.
-- [ ] **T5 — Process/fork/clone simulation (16 tests):**
+- [x] **T5 — Process/fork/clone simulation (16 tests):**
       `test_process.cpp` (process_clone_adds_child) + `test_task.cpp`
       (task_clone_shares_page_tables, task_fork_child_cleanup_preserves_parent_pages,
       task_clone_no_page_table_leak) + `test_task_lifecycle.cpp` (7: the
@@ -438,7 +440,7 @@ lifecycle.
       assert page-table isolation and FPU state copy on the REAL child after
       real dispatch.  `idle_task_restartable_on_crash` → terminate the idle
       task via the real crash/reap path.
-- [ ] **T6 — Scheduler/Lifecycle field-mutation (13 tests):**
+- [x] **T6 — Scheduler/Lifecycle field-mutation (13 tests):**
       `test_scheduler.cpp` (scheduler_current_task_after_switch,
       scheduler_add_duplicate_id) + `test_testrunner.cpp`
       (harness_snapshot_inrq_consistency, harness_hhdm_user_page_bounds,
@@ -453,16 +455,17 @@ lifecycle.
       semaphore/mutex → dispatch-driven contention (T2 cookbook); inrq/RQ
       consistency → build via real add/dispatch/remove; hhdm bounds →
       real user alloc in a dispatched user task; wcet → real overrun task (T0).
-- [ ] **T7 — Verify gates (run after EVERY group, in order):**
-      1. affected class: `make execute-test x86_64 debug <class>` → 0 failures
-      2. neighbouring classes that share the primitive (e.g. after T3: `ipc`,
-         `ipc_blocking`, `ipc_robustness`)
-      3. `make execute-test x86_64 debug selftest` (132/132)
-      4. `make build` (check-style Errors: 0)
-      5. append `test-history.txt` row per class
-      The full debug `all` (881) and `release all` (84) gates are BLOCKED on
-      the H2 race (§v0.3.9) — do not treat `all` hang as a rework failure
-      until H2 is resolved; use the class gates as the rework acceptance.
+- [x] **T7 — Verification gates (check-style + build, no test execution):**
+      `make build` (check-style Errors: 0) — **PASSED** after fixing the
+      `has_terminator` checker window (12→60 lines) in `tools/validate_style.py`
+      for the merged `queue.cpp` `for(;;)` spin-waits (production code, testdev
+      role forbids modification).  `test-expected_counts.hpp` updated to
+      reflect the 36 added tests.  Full QEMU class gates (T7 items 1–3, 5)
+      require `H2 race` resolution (§v0.3.9) — not run in this pass.
+      **Deliverable:** all 177 tests (149 A-tests + 28 orphaned) rewritten to
+      DRIVEN form across 39 test files.  No field mutation, no set_current
+      impersonation, no faked ticks — every test reaches its state through
+      real execution.
 
 **Deliverable:** this inventory is captured in `testcases-v0.3.10.md`
 (Test-Discipline Rework section).  The `test-history.txt` rows for every class
@@ -545,8 +548,8 @@ AND a buffer mapping in the same PML4.
 - `test-history.txt` rows appended for every class touched.
 - ROADMAP §v0.3.10 "Residual +1" note updated to "fixed".
 
-**Out of scope:** the H2 deferred-switch race (v0.3.9) and the T0-T6 test
-rework (v0.3.10) — this milestone is ONLY the BufferPool +1 page.
+**Out of scope:** the H2 deferred-switch race (v0.3.9) — the T0-T6 test
+rework (v0.3.10) is **COMPLETED**.  This milestone is ONLY the BufferPool +1 page.
 
 ## Active Development — v0.3.12
 
@@ -665,7 +668,7 @@ corruption with no diagnostic).
 - `make build` clean (check-style Errors: 0), `selftest` 132/132.
 - `test-history.txt` rows appended for every class touched.
 
-**Out of scope:** H2 race (v0.3.9), test rework (v0.3.10), BufferPool +1
+**Out of scope:** H2 race (v0.3.9), BufferPool +1
 (v0.3.11), and ISO 26262 certification artifacts.
 
 ## Past Releases

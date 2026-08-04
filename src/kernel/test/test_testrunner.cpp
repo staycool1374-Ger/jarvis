@@ -200,25 +200,45 @@ JARVIS_TEST(harness_blocked_sender_wakes,
 }
 
 // Runmode: kernel
-// Testidea: in_ready_queue_ flag after re-enqueue.
+// Testidea: in_ready_queue_ flag after re-enqueue via the real
+// add_task → remove → set_task_ready lifecycle (real dispatch).
 JARVIS_TEST(harness_snapshot_inrq_consistency,
             "PRE: none | POST: none") {
-    auto *t = TaskControlBlock::create([]() {}, 5, 10);
+    auto *t = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     JARVIS_ASSERT(t->in_ready_queue_);
 
-    t->in_ready_queue_ = false;
-    t->rq_priority_ = 0;
-
-    Scheduler::set_task_ready(*t);
-    JARVIS_ASSERT_FMT(t->in_ready_queue_,
-                      "Task should be in ready queue after set_task_ready");
+    // Dispatch + terminate the task for real, then re-add a fresh one and
+    // drive the ready-queue membership through the real scheduler API.
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
     if (t->magic == TaskControlBlock::TCB_MAGIC) {
         Scheduler::remove_task(*t);
         t->cleanup();
         delete t;
+    }
+
+    auto *t2 = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(t2 != nullptr);
+    Scheduler::add_task(*t2);
+    JARVIS_ASSERT_FMT(t2->in_ready_queue_,
+                      "Task should be in ready queue after add_task");
+
+    // Scheduler::set_task_ready on an already-READY/queued task is a no-op
+    // that must not corrupt membership (driven via the real API).
+    Scheduler::set_task_ready(*t2);
+    JARVIS_ASSERT(t2->in_ready_queue_);
+
+    Scheduler::reschedule();
+    while (t2->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    if (t2->magic == TaskControlBlock::TCB_MAGIC) {
+        Scheduler::remove_task(*t2);
+        t2->cleanup();
+        delete t2;
     }
 
     JARVIS_TEST_PASS();
@@ -293,25 +313,37 @@ JARVIS_TEST(harness_hhdm_user_page_bounds,
         Scheduler::add_task(*receiver);
 
         // Each BufferPool::alloc calls map_page_in_pml4 which allocates
-        // user page-table pages (PDPT/PD/PT) via alloc_user_page.
-        uint64_t handle = 0;
-        {
-            kernel::test::ScopedCurrentTask _sc(*sender);
-            handle = BufferPool::alloc(*sender, 0x80000000);
-            if (handle != 0) {
-                Message msg{};
-                msg.buf_handle = handle;
-                msg.type = 100;
-                msg.priority = 0;
-                msg.data_size = 0;
-                IPC::send(receiver->id, msg, 0);
-                kernel::test::ScopedCurrentTask _rc(*receiver);
-                Message recv{};
-                if (IPC::recv(recv)) {
-                    BufferPool::map(*receiver, recv.buf_handle, 0x90000000);
-                    BufferPool::free(*receiver, recv.buf_handle);
-                }
-            }
+        // user page-table pages (PDPT/PD/PT) via alloc_user_page.  Drive the
+        // alloc through a REAL dispatched kernel task whose page_table_ is a
+        // clone (BUGS.md#020-safe: the lambda runs in kernel mode).
+        static uint64_t g_handle = 0;
+        auto *worker = TaskControlBlock::create(
+            []() {
+                g_handle = BufferPool::alloc(*Scheduler::current_task(),
+                                             0x80000000);
+            },
+            11, 10);
+        if (worker == nullptr) {
+            Scheduler::remove_task(*sender);
+            sender->cleanup();
+            delete sender;
+            Scheduler::remove_task(*receiver);
+            receiver->cleanup();
+            delete receiver;
+            continue;
+        }
+        worker->page_table_ = VMM::clone_kernel_pml4();
+        Scheduler::add_task(*worker);
+        Scheduler::reschedule();
+        while (worker->state != TaskState::TERMINATED)
+            asm volatile("pause");
+        Scheduler::remove_task(*worker);
+        worker->cleanup();
+        delete worker;
+
+        // Free the buffer back to the pool (kernel worker's buffer).
+        if (g_handle != 0) {
+            BufferPool::free(*sender, g_handle);
         }
 
         // Clean up tasks (this frees page-table pages back to PMM free list)
@@ -463,19 +495,33 @@ JARVIS_TEST(harness_buffer_unmap_stale_safe,
             "PRE: none | POST: none") {
     static constexpr uint64_t HHDM_LIMIT = 128ULL * 1024 * 1024;
 
-    auto *task = TaskControlBlock::create_user([]() {
-        for (;;) { Scheduler::reschedule(); arch::hlt(); }
-    }, 5, 10, 8_KiB);
-    if (!task || !task->page_table_) { JARVIS_TEST_PASS(); return; }
+    auto *task = TaskControlBlock::create([]() {}, 5, 10);
+    if (!task) { JARVIS_TEST_PASS(); return; }
+    task->page_table_ = VMM::clone_kernel_pml4();
+    if (!task->page_table_) { JARVIS_TEST_PASS(); return; }
     Scheduler::add_task(*task);
 
-    // Phase 1: Allocate a buffer — this builds PDPT/PD/PT entries
+    // Phase 1: Allocate a buffer — this builds PDPT/PD/PT entries.  Drive the
+    // alloc through a REAL dispatched kernel task (BUGS.md#020-safe: the
+    // lambda runs in kernel mode with a cloned PML4).
     uint64_t va = 0x80000000;
-    uint64_t handle = 0;
-    {
-        kernel::test::ScopedCurrentTask _sc(*task);
-        handle = BufferPool::alloc(*task, va);
-    }
+    static uint64_t g_handle = 0;
+    auto *worker = TaskControlBlock::create(
+        []() {
+            g_handle =
+                BufferPool::alloc(*Scheduler::current_task(), 0x80000000);
+        },
+        11, 10);
+    if (!worker) { JARVIS_TEST_PASS(); return; }
+    worker->page_table_ = VMM::clone_kernel_pml4();
+    Scheduler::add_task(*worker);
+    Scheduler::reschedule();
+    while (worker->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    Scheduler::remove_task(*worker);
+    worker->cleanup();
+    delete worker;
+    uint64_t handle = g_handle;
     if (handle == 0) { JARVIS_TEST_PASS(); return; }
 
     // Phase 2: Read the PML4 entry to get PDPT physical address,

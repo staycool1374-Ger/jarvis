@@ -18,6 +18,12 @@
 
 /// @file test_sync.cpp
 /// @brief Synchronisation primitive tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): blocking tests use REAL kernel tasks
+/// (prio ≥ 11) dispatched by the real timer ISR.  The worker genuinely blocks
+/// in semaphore.wait()/mutex.lock() in its own running context; the harness
+/// (as a real IPC peer) performs the wake action.  No set_current
+/// impersonation.
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -35,44 +41,140 @@
 
 using namespace kernel;
 
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
+
 // Runmode: kernel
-// Testidea: Verifies that semaphore.wait() blocks a task and
-// semaphore.post() wakes it.
-// Input: Semaphore initialized to 0/1, worker task calls wait(), then
-// original task calls post()
-// Expect: Worker state is BLOCKED after wait, READY after post
+// Testidea: Verifies that a REAL task blocks in semaphore.wait() when the
+// count is 0 and wakes when semaphore.post() is called.
+// Input: Worker task (prio 11) genuinely dispatches and blocks inside
+//        sem.wait(); the harness (a real peer) posts.
+// Expect: Worker state is BLOCKED after wait, then TERMINATED after post.
 // Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
     sync::Semaphore sem;
     sem.init(0, 1);
+    static uint64_t g_woken = 0;
 
     auto *worker = TaskControlBlock::create(
         []() {
             sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
                 Scheduler::current_task()->user_data);
             s->wait();
+            __atomic_store_n(&g_woken, 1, __ATOMIC_RELEASE);
         },
-        5, 10);
+        11, 10);
     JARVIS_ASSERT(worker != nullptr);
     worker->user_data = &sem;
     Scheduler::add_task(*worker);
 
     auto *original = Scheduler::current_task();
-    (void)original;
-    Scheduler::set_current(*worker);
+    Scheduler::reschedule();
 
-    sem.wait();
-
+    // The worker genuinely blocks inside sem.wait().
+    while (worker->state != TaskState::BLOCKED)
+        asm volatile("pause");
     JARVIS_ASSERT(worker->state == TaskState::BLOCKED);
 
-    Scheduler::set_current(*original);
+    // Wake it (real post).
     sem.post();
+    while (worker->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(1ULL, g_woken);
 
-    JARVIS_ASSERT(worker->state == TaskState::READY);
+    Scheduler::set_current(*original);
+    release_task(worker);
+    JARVIS_TEST_PASS();
+}
 
-    Scheduler::remove_task(*worker);
-    worker->cleanup();
-    delete worker;
+// Runmode: kernel
+// Testidea: Verifies mutex lock/unlock with owner tracking and waiter handoff
+// using a REAL owner task that holds the mutex and blocks on a gate, plus a
+// REAL contender that blocks on the mutex and acquires after release.
+// Input: Owner (prio 11) locks mutex then blocks on gate; contender (prio 20)
+//        blocks on the mutex; harness posts the gate.
+// Expect: Mutex correctly tracks owner/locked state across lock/unlock cycles
+// and the contender acquires after the owner releases.
+// Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
+JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
+    sync::Mutex mutex;
+    mutex.init();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    static uint64_t g_owner_acquired = 0;
+    static uint64_t g_contender_acquired = 0;
+
+    struct OCtx {
+        uint64_t mutex_;
+        uint64_t gate_;
+    } octx;
+    octx.mutex_ = reinterpret_cast<uint64_t>(&mutex);
+    octx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    auto *owner = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<OCtx *>(self->user_data);
+            auto *m = reinterpret_cast<sync::Mutex *>(c->mutex_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
+            m->lock();
+            __atomic_store_n(&g_owner_acquired, 1, __ATOMIC_RELEASE);
+            g->wait();
+            m->unlock();
+        },
+        11, 10);
+    JARVIS_ASSERT(owner != nullptr);
+    owner->user_data = &octx;
+    Scheduler::add_task(*owner);
+    Scheduler::reschedule();
+    while (owner->state != TaskState::BLOCKED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT(mutex.owner() == owner);
+    JARVIS_ASSERT(mutex.is_locked());
+    JARVIS_ASSERT_EQ(1ULL, g_owner_acquired);
+
+    // Contender blocks on the mutex.
+    uint64_t cslot[2];
+    cslot[0] = reinterpret_cast<uint64_t>(&mutex);
+    cslot[1] = reinterpret_cast<uint64_t>(&g_contender_acquired);
+    auto *waiter = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *s = reinterpret_cast<uint64_t *>(self->user_data);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            m->lock();
+            __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
+            m->unlock();
+        },
+        20, 10);
+    JARVIS_ASSERT(waiter != nullptr);
+    waiter->user_data = cslot;
+    Scheduler::add_task(*waiter);
+    Scheduler::reschedule();
+    while (waiter->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(mutex.owner() == owner);
+
+    // Release: owner wakes, unlocks (direct ownership transfer to waiter).
+    gate.post();
+    while (owner->state != TaskState::TERMINATED ||
+           waiter->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT(!mutex.is_locked());
+    JARVIS_ASSERT(mutex.owner() == nullptr);
+    JARVIS_ASSERT_EQ(1ULL, g_contender_acquired);
+
+    release_task(owner);
+    release_task(waiter);
     JARVIS_TEST_PASS();
 }
 
@@ -123,48 +225,6 @@ JARVIS_TEST(semaphore_multi_post, "PRE: none | POST: none") {
     sem.post();
     sem.post();
     JARVIS_ASSERT(sem.value() == 3);
-    JARVIS_TEST_PASS();
-}
-
-JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
-    sync::Mutex mutex;
-    mutex.init();
-
-    auto *owner = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(owner != nullptr);
-    Scheduler::add_task(*owner);
-
-    auto *original = Scheduler::current_task();
-    Scheduler::set_current(*owner);
-    mutex.lock();
-
-    JARVIS_ASSERT(mutex.owner() == owner);
-    JARVIS_ASSERT(mutex.is_locked());
-
-    mutex.unlock();
-
-    JARVIS_ASSERT(!mutex.is_locked());
-    JARVIS_ASSERT(mutex.owner() == nullptr);
-
-    mutex.lock();
-    JARVIS_ASSERT(mutex.owner() == owner);
-    mutex.unlock();
-
-    auto *waiter = TaskControlBlock::create([]() {}, 6, 10);
-    JARVIS_ASSERT(waiter != nullptr);
-    Scheduler::add_task(*waiter);
-
-    Scheduler::set_current(*waiter);
-    mutex.lock();
-    JARVIS_ASSERT(mutex.owner() == waiter);
-
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*waiter);
-    waiter->cleanup();
-    delete waiter;
-    Scheduler::remove_task(*owner);
-    owner->cleanup();
-    delete owner;
     JARVIS_TEST_PASS();
 }
 

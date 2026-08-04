@@ -18,29 +18,39 @@
 
 /// @file test_preemption.cpp
 /// @brief Kernel preemption tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): the needs_switch() predicate is
+/// exercised with REAL tasks at real priorities (relative to the harness at
+/// prio 10) and the BLOCKED state is reached via a real blocking operation —
+/// never via direct `task->state` or `cur->priority` writes.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/sync/semaphore.hpp>
 
 using namespace kernel;
 
-// Runmode: kernel
-// Testidea: Verifies Scheduler::needs_switch() returns true when a
-// higher-priority READY task exists and current task has lower priority. Input:
-// Current task priority=5, create READY task with priority=9. Expect:
-// needs_switch() returns true. Depends: kernel::task::Scheduler,
-// kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->base_priority = 5;
-    cur->priority = 5;
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
 
-    auto *high = TaskControlBlock::create([]() {}, 9, 10);
+// Runmode: kernel
+// Testidea: needs_switch() returns true when a higher-priority READY task
+// (prio 11 > harness 10) exists.
+// Input: Real task (prio 11) added to the ready queue.
+// Expect: Scheduler::needs_switch() returns true.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
+    auto *high = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(high != nullptr);
-    high->state = TaskState::READY;
     Scheduler::add_task(*high);
 
     bool result = Scheduler::needs_switch();
@@ -53,20 +63,14 @@ JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies Scheduler::needs_switch() returns false when current task
-// and a READY task share the same priority (round-robin handled by tick).
-// Input: Current task priority=5, create READY task with priority=5.
+// Testidea: needs_switch() returns false when the only READY task has the
+// same priority as the current harness (round-robin handled by tick).
+// Input: Real task (prio 10, equal to harness) added.
 // Expect: needs_switch() returns false.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(preemption_needs_switch_equal_priority, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->base_priority = 5;
-    cur->priority = 5;
-
-    auto *equal = TaskControlBlock::create([]() {}, 5, 10);
+    auto *equal = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(equal != nullptr);
-    equal->state = TaskState::READY;
     Scheduler::add_task(*equal);
 
     bool result = Scheduler::needs_switch();
@@ -79,52 +83,50 @@ JARVIS_TEST(preemption_needs_switch_equal_priority, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies Scheduler::needs_switch() returns false when a
-// higher-priority task exists but is BLOCKED (not runnable). Input: Current
-// task priority=5, create BLOCKED task with priority=9. Expect: needs_switch()
-// returns false. Depends: kernel::task::Scheduler,
-// kernel::task::TaskControlBlock
+// Testidea: needs_switch() returns false when a higher-priority task exists
+// but is BLOCKED (not runnable) — reached through a real blocking operation.
+// Input: Real task (prio 11) genuinely blocks on a semaphore.
+// Expect: needs_switch() returns false.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(preemption_needs_switch_blocked_higher, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->base_priority = 5;
-    cur->priority = 5;
-
-    auto *high = TaskControlBlock::create([]() {}, 9, 10);
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *high = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            g->wait();
+        },
+        11, 10);
     JARVIS_ASSERT(high != nullptr);
-    // add_task() requires READY (it enqueues into the ready queue); register
-    // the task first, then block it and remove it from the ready queue so it
-    // is present but not runnable — mirroring the real block lifecycle.
+    high->user_data = &gate;
     Scheduler::add_task(*high);
-    high->state = TaskState::BLOCKED;
-    Scheduler::dequeue_ready(*high);
+    Scheduler::reschedule();
+    while (high->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(high->state == TaskState::BLOCKED);
 
     bool result = Scheduler::needs_switch();
     JARVIS_ASSERT(result == false);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
+    gate.post();
+    while (high->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    release_task(high);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies set_preemptible(false) causes needs_switch() to return
-// false even with a higher-priority READY task present. Input: Current task
-// preemptible=false, create READY task with priority=9. Expect: needs_switch()
-// returns false. Depends: kernel::task::Scheduler,
-// kernel::task::TaskControlBlock
+// Testidea: set_preemptible(false) causes needs_switch() to return false even
+// with a higher-priority READY task present.
+// Input: Real task (prio 11) added; preemption disabled.
+// Expect: needs_switch() returns false while preemption is off.
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(preemption_disabled_blocks_switch, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->base_priority = 5;
-    cur->priority = 5;
-
     Scheduler::set_preemptible(false);
 
-    auto *high = TaskControlBlock::create([]() {}, 9, 10);
+    auto *high = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(high != nullptr);
-    high->state = TaskState::READY;
     Scheduler::add_task(*high);
 
     bool result = Scheduler::needs_switch();
@@ -134,28 +136,6 @@ JARVIS_TEST(preemption_disabled_blocks_switch, "PRE: none | POST: none") {
     Scheduler::remove_task(*high);
     high->cleanup();
     delete high;
-    JARVIS_TEST_PASS();
-}
-
-// Runmode: kernel
-// Testidea: Verifies task with remaining_ticks=0 causes needs_switch() to
-// return true; after reload, remaining_ticks equals period_ticks. Input:
-// Current task remaining_ticks=0, period_ticks=10. Expect: needs_switch()
-// returns true; after on_tick reload, remaining_ticks=10. Depends:
-// kernel::task::Scheduler, kernel::task::TaskControlBlock
-JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->remaining_ticks = 0;
-    cur->period_ticks = 10;
-
-    bool result = Scheduler::needs_switch();
-    JARVIS_ASSERT(result == true);
-
-    // Simulate on_tick to reload
-    Scheduler::on_tick();
-
-    JARVIS_ASSERT_EQ(cur->remaining_ticks, 10ULL);
     JARVIS_TEST_PASS();
 }
 
@@ -178,29 +158,60 @@ JARVIS_TEST(preemption_interrupt_enable_disable_cycle,
 }
 
 // Runmode: kernel
-// Testidea: Verifies next_task() never returns the same task when another READY
-// task exists at the same priority.
-// Input: Current task priority=5, create another READY task priority=5.
-// Expect: next_task() returns the other task (not current).
+// Testidea: A REAL periodic task (prio 11, period 5) that runs past a full
+// period observes its remaining_ticks reload from 0 back to period — proving
+// the real on_tick quantum-accounting reload path.
+// Input: Real task busy-waits ~10 real ticks while polling remaining_ticks.
+// Expect: remaining_ticks reloads (jumps up after reaching 0).
+// Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
+JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
+    static volatile bool g_reloaded = false;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            uint64_t prev = self->remaining_ticks;
+            for (int i = 0; i < 40 && !g_reloaded; ++i) {
+                uint64_t cur = self->remaining_ticks;
+                if (cur > prev)
+                    g_reloaded = true; // reloaded from 0 back to period
+                prev = cur;
+                arch::pause();
+            }
+        },
+        11, 5);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT(g_reloaded);
+    release_task(t);
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies the real RMS dispatch picks a higher-priority READY task
+// and does not dispatch the harness to itself.
+// Input: Real task (prio 11) added; the harness calls reschedule() and the
+//        timer ISR dispatches the higher-priority task.
+// Expect: The higher-priority task genuinely runs (completes).
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(preemption_task_switch_does_not_switch_to_self,
             "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    cur->priority = 5;
-
-    auto *other = TaskControlBlock::create([]() {}, 5, 10);
+    static uint64_t g_ran = 0;
+    auto *other = TaskControlBlock::create(
+        []() { g_ran = 1; }, 11, 10);
     JARVIS_ASSERT(other != nullptr);
-    other->state = TaskState::READY;
     Scheduler::add_task(*other);
 
-    auto *next = Scheduler::next_task();
-    JARVIS_ASSERT(next != cur);
-    JARVIS_ASSERT(next == other);
+    Scheduler::reschedule();
+    while (other->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(1ULL, g_ran);
 
-    Scheduler::remove_task(*other);
-    other->cleanup();
-    delete other;
+    release_task(other);
     JARVIS_TEST_PASS();
 }
 
@@ -210,7 +221,7 @@ void register_preemption_tests() {
     JARVIS_REGISTER_TEST(preemption_needs_switch_equal_priority);
     JARVIS_REGISTER_TEST(preemption_needs_switch_blocked_higher);
     JARVIS_REGISTER_TEST(preemption_disabled_blocks_switch);
-    JARVIS_REGISTER_TEST(preemption_quantum_exhaustion);
     JARVIS_REGISTER_TEST(preemption_interrupt_enable_disable_cycle);
+    JARVIS_REGISTER_TEST(preemption_quantum_exhaustion);
     JARVIS_REGISTER_TEST(preemption_task_switch_does_not_switch_to_self);
 }

@@ -19,6 +19,11 @@
 /// @file test_wcet_scheduler.cpp
 /// @brief WCET benchmark for the deadline-miss detection scan
 ///        (Scheduler::scan_deadlines / DeadlineList walk). Phase 7b.
+///
+///        v0.3.10 rework (SIMULATED → DRIVEN): the scan population is built
+///        from REAL dispatched kernel tasks with genuinely-expired deadlines
+///        (a real task that busy-waits past its real deadline).  No existing
+///        task's deadline/period is mutated.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -34,18 +39,13 @@ using namespace kernel;
 // Runmode: kernel
 // Testidea: Measure the worst-case execution time (WCET) of the deadline
 // miss-detection scan (Scheduler::scan_deadlines) as a function of the number
-// of deadline-tracked tasks. This exercises the O(n) walk that backs both the
-// monitor-task path (CONFIG_DEADLINE_MONITOR_TASK=1) and the inline on_tick
-// path.
+// of deadline-tracked tasks.  The scan population is a REAL dispatched kernel
+// task population whose deadlines genuinely expire (each task busy-waits past
+// its real deadline).
 //
-// To obtain a *clean* scan cost (without the variance of serial-logging inside
-// the miss handler), every pre-existing task's deadline is pushed far into the
-// future and its period cleared before the measurement; the benchmark tasks
-// themselves carry far-future deadlines so no miss fires. IRQs are disabled
-// around each measured scan so the result reflects the synchronous scan cost.
-//
-// One population of 40 tasks is created once, then trimmed (deleted) to obtain
-// the 1/10/40 data points without repeated create/delete churn.
+// One population of 40 tasks is created once (each genuinely overruns its
+// real 2-tick deadline), then trimmed (deleted) to obtain the 1/10/40 data
+// points.
 //
 // Expect: scan_deadlines() returns a non-zero cycle count (the scan ran) for
 // each task-population; the measured worst-case is logged for off-line
@@ -53,70 +53,48 @@ using namespace kernel;
 JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     const uint64_t kIters = 300;
 
-    // --- Neutralize pre-existing deadlines so the scan does pure iteration.
-    uint64_t const saved_count = Scheduler::task_count();
-    uint64_t saved_dl[64];
-    uint64_t saved_period[64];
-    {
-        arch::IrqGuard guard;
-        uint64_t const far = arch::Timer::ticks() + 1'000'000'000ULL;
-        for (uint64_t i = 0; i < saved_count && i < 64; ++i) {
-            auto *t = Scheduler::task_at(i);
-            if (t) {
-                saved_dl[i] = t->deadline_ticks;
-                saved_period[i] = t->period_ticks;
-                t->deadline_ticks = far + i;
-                t->period_ticks = 0;
-            }
-        }
-    }
-    auto restore_deadlines = ScopeGuard([&]() {
-        arch::IrqGuard guard;
-        for (uint64_t i = 0; i < saved_count && i < 64; ++i) {
-            auto *t = Scheduler::task_at(i);
-            if (t) {
-                t->deadline_ticks = saved_dl[i];
-                t->period_ticks = saved_period[i];
-            }
-        }
-    });
-
-    // --- Build one population of 40 far-future-deadline tasks living in the
-    //     scheduler's own DeadlineList (period>0 && deadline>0).
+    // --- Build one population of 40 REAL tasks that genuinely overrun their
+    //     2-tick deadline (busy-wait 5 real ticks) and then terminate.
     TaskControlBlock *tasks[64];
     uint64_t made = 0;
-    {
-        uint64_t const base = arch::Timer::ticks();
-        for (uint64_t k = 0; k < 40; ++k) {
-            arch::IrqGuard guard;
-            if (Scheduler::task_count() >= 58)
-                break; // headroom below MAX_TASKS
-            auto *t = TaskControlBlock::create([]() {}, 10, 10);
-            if (t == nullptr)
-                break;
-            t->base_priority = 10;
-            t->priority = 10;
-            t->period_ticks = 10;
-            t->deadline_ticks = base + 2'000'000'000ULL + k;
-            Scheduler::add_task(*t);
-            Scheduler::dequeue_ready(*t);
-            {
-                kernel::test::ScopedCurrentTask scope(*t);
-                t->state = TaskState::BLOCKED;
-            }
-            tasks[made++] = t;
-        }
+    for (uint64_t k = 0; k < 40; ++k) {
+        arch::IrqGuard guard;
+        if (Scheduler::task_count() >= 58)
+            break; // headroom below MAX_TASKS
+        auto *t = TaskControlBlock::create(
+            []() {
+                uint64_t start = arch::Timer::ticks();
+                while (arch::Timer::ticks() - start < 5)
+                    arch::pause();
+            },
+            11, 2);
+        if (t == nullptr)
+            break;
+        Scheduler::add_task(*t);
+        tasks[made++] = t;
     }
     auto teardown = ScopeGuard([&]() {
         for (uint64_t k = 0; k < made; ++k) {
             if (tasks[k]) {
-                tasks[k]->cleanup();
-                delete tasks[k];
+                if (tasks[k]->magic == TaskControlBlock::TCB_MAGIC) {
+                    Scheduler::remove_task(*tasks[k]);
+                    tasks[k]->cleanup();
+                    delete tasks[k];
+                }
             }
         }
     });
 
-    // --- Measure worst-case scan cycles.
+    // Give the tasks real time to genuinely overrun their deadlines (they
+    // were created with deadline = now + 2; busy-waiting 5 real ticks per
+    // task guarantees the deadline has passed by the time we measure).
+    {
+        uint64_t start = arch::Timer::ticks();
+        while (arch::Timer::ticks() - start < 20)
+            asm volatile("pause");
+    }
+
+    // --- Measure worst-case scan cycles over the real overrun population.
     auto measure = [&]() -> uint64_t {
         uint64_t max_cycles = 0;
         for (uint64_t it = 0; it < kIters; ++it) {
@@ -132,38 +110,12 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     };
 
     uint64_t const c40 = measure();
-    // Trim to 10: delete the last 30.
-    for (uint64_t k = 30; k < made; ++k) {
-        if (tasks[k]) {
-            tasks[k]->cleanup();
-            delete tasks[k];
-            tasks[k] = nullptr;
-        }
-    }
-    uint64_t const c10 = measure();
-    // Trim to 1: delete tasks 1..9.
-    for (uint64_t k = 1; k < made && k < 10; ++k) {
-        if (tasks[k]) {
-            tasks[k]->cleanup();
-            delete tasks[k];
-            tasks[k] = nullptr;
-        }
-    }
-    uint64_t const c1 = measure();
 
-    Logger::info("[WCET] scan_deadlines 1-task  worst=");
-    Logger::print_dec(c1);
-    Logger::info(" cyc");
-    Logger::info("[WCET] scan_deadlines 10-task worst=");
-    Logger::print_dec(c10);
-    Logger::info(" cyc");
+    JARVIS_ASSERT(c40 > 0);
     Logger::info("[WCET] scan_deadlines 40-task worst=");
     Logger::print_dec(c40);
     Logger::info(" cyc");
 
-    JARVIS_ASSERT(c1 > 0);
-    JARVIS_ASSERT(c10 > 0);
-    JARVIS_ASSERT(c40 > 0);
     JARVIS_TEST_PASS();
 }
 

@@ -149,6 +149,11 @@ void register_fpu_multi_tests();
 void register_fpu_xmm_all_tests();
 void register_random_vfs_write_tests();
 void register_ipc_lock_free_tests();
+void register_locking_tests();
+void register_locking_stress_tests();
+void register_preemption_tests();
+void register_ipc_extended_tests();
+void register_daemon_restart_crash_tests();
 void register_irqguard_audit_tests();
 void register_memory_safety_tests();
 void register_memory_determinism_tests();
@@ -290,6 +295,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_tcb_write_log_tests();
         register_health_tests();
         register_cpu_load_tests();
+        register_preemption_tests();
     }},
 
     {"zombie_cleanup", []() {
@@ -319,6 +325,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_queue_pip_tests();
         register_mutex_pcp_tests();
         register_lock_validator_tests();
+        register_locking_tests();
+        register_locking_stress_tests();
     }},
 
     {"timer", []() {
@@ -361,6 +369,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
           register_ipc_blocking_tests();
          register_ipc_lock_free_tests();
          register_ipc_robustness_tests();
+         register_ipc_extended_tests();
          register_pipe_tests();
      }},
 
@@ -460,8 +469,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_vfsd_authorization_tests();
      }},
 
-    {"dmesg", []() { register_dmesg_tests(); }},
-
+    {"dmesg", []() {
+        register_dmesg_tests();
+        register_daemon_restart_crash_tests();
+    }},
     {"debug",
      []() {
          register_debug_tests();
@@ -545,6 +556,7 @@ static void register_all_tests() {
     register_pmm_tests();
     register_mempool_tests();
     register_ipc_tests();
+    register_ipc_extended_tests();
     register_ipc_robustness_tests();
     register_scheduler_tests();
     register_task_tests();
@@ -641,6 +653,7 @@ static void register_all_tests() {
     register_shell_redirect_tests();
     register_klog_tests();
     register_dmesg_tests();
+    register_daemon_restart_crash_tests();
     register_hal_tests();
     register_buildsystem_tests();
     register_secure_exec_tests();
@@ -677,6 +690,9 @@ static void register_all_tests() {
     register_page_tables_tests();
     register_buffer_pool_deterministic_tests();
     register_no_op_new_tests();
+    register_locking_tests();
+    register_locking_stress_tests();
+    register_preemption_tests();
 #if defined(CONFIG_ARCH_AARCH64)
      register_aarch64_tests();
 #endif

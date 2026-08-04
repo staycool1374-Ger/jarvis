@@ -36,6 +36,7 @@
 /// across reboot_from_table() because the dmesg buffer is never cleared.
 
 #include <test.hpp>
+#include <logger.hpp>
 #include <kernel/test/test_isolate.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/task/scheduler.hpp>
@@ -67,4 +68,9 @@ JARVIS_TEST(daemon_restart_after_cleanup_crash, "PRE: vfsd,iocd") {
     }
 
     JARVIS_TEST_PASS();
+}
+
+void register_daemon_restart_crash_tests() {
+    Logger::info("Registering daemon restart crash tests");
+    JARVIS_REGISTER_TEST(daemon_restart_after_cleanup_crash);
 }

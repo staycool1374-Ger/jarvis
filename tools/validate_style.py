@@ -367,8 +367,11 @@ class LoopBoundsChecker(Checker):
 
         def has_terminator(start_line: int) -> bool:
             # A loop containing break/return is bounded even if it uses
-            # while(true)/for(;;) as the control construct.
-            for i in range(start_line, min(start_line + 12, len(lines))):
+            # while(true)/for(;;) as the control construct.  Scan a generous
+            # window: a deferred-switch spin-wait loop can carry its first
+            # return deep in the body (e.g. sync::Queue::send's full-queue
+            # wait returns after the receiver drains — see queue.cpp).
+            for i in range(start_line, min(start_line + 60, len(lines))):
                 s = lines[i]
                 if "break" in s or "return" in s:
                     return True

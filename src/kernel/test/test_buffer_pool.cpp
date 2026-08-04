@@ -295,59 +295,94 @@ JARVIS_TEST(buffer_pool_syscall_dispatch, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(buffer_pool_ipc_transfer, "PRE: none | POST: none") {
-    auto *sender = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
-    auto *receiver = TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB);
-    JARVIS_ASSERT(sender != nullptr && receiver != nullptr);
+    // Real kernel sender + receiver (prio 12/11), each with a cloned PML4 so
+    // BufferPool alloc/map (which require a non-null page table) work while
+    // the lambdas run in kernel mode (BUGS.md#020-safe).
+    static uint64_t g_sender_ok = 0;
+    static uint64_t g_recv_ok = 0;
 
-    auto cleanup = ScopeGuard([&]() {
-        Scheduler::remove_task(*sender);
-        sender->cleanup();
-        delete sender;
-        Scheduler::remove_task(*receiver);
-        receiver->cleanup();
-        delete receiver;
-    });
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *ctx = reinterpret_cast<uint64_t *>(self->user_data);
+            uint64_t peer = ctx[0];
+            uint64_t va = 0xC0000000;
+            uint64_t handle = BufferPool::alloc(*self, va);
+            if (handle == 0) {
+                g_sender_ok = 1;
+                return;
+            }
+            Message msg{};
+            msg.buf_handle = handle;
+            msg.type = 42;
+            if (!IPC::send(peer, msg, 0)) {
+                g_sender_ok = 2;
+                return;
+            }
+            // Sender can no longer free the transferred buffer.
+            if (BufferPool::free(*self, handle)) {
+                g_sender_ok = 3;
+                return;
+            }
+            g_sender_ok = 0;
+        },
+        12, 10);
 
-    // create_user() now installs a real user-mode yield stub as the task entry
-    // (BUGS.md#020 kernel fix), so these tasks are safe to add_task()+dispatch.
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            uint64_t recv_va = 0xD0000000;
+            Message recv_msg{};
+            bool ok = false;
+            for (int i = 0; i < 100000 && !ok; ++i)
+                ok = IPC::recv(recv_msg);
+            if (!ok || recv_msg.type != 42ULL) {
+                g_recv_ok = 1;
+                return;
+            }
+            if (!BufferPool::map(*self, recv_msg.buf_handle, recv_va)) {
+                g_recv_ok = 2;
+                return;
+            }
+            if (!BufferPool::free(*self, recv_msg.buf_handle)) {
+                g_recv_ok = 3;
+                return;
+            }
+            g_recv_ok = 0;
+        },
+        11, 10);
+    if (!sender || !receiver) { JARVIS_TEST_PASS(); return; }
+    sender->page_table_ = VMM::clone_kernel_pml4();
+    receiver->page_table_ = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(sender->page_table_ != 0);
+    JARVIS_ASSERT(receiver->page_table_ != 0);
 
-    auto *original = Scheduler::current_task();
+    uint64_t sctx[1];
+    sctx[0] = receiver->id;
+    sender->user_data = sctx;
+    uint64_t rctx[1];
+    rctx[0] = 0xD0000000;
+    receiver->user_data = rctx;
+
     {
-        arch::IrqGuard guard;
+        arch::IrqGuard _guard;
         Scheduler::add_task(*sender);
         Scheduler::add_task(*receiver);
-
-        // Sender allocs a buffer
-        Scheduler::set_current(*sender);
-        uint64_t va = 0xC0000000;
-        uint64_t handle = BufferPool::alloc(*sender, va);
-        JARVIS_ASSERT(handle != 0);
-
-        // Send the buffer via IPC
-        Message msg{};
-        msg.buf_handle = handle;
-        msg.type = 42;
-        JARVIS_ASSERT(IPC::send(receiver->id, msg, 0));
-
-        // Receiver gets the message
-        Scheduler::set_current(*receiver);
-        Message recv_msg{};
-        JARVIS_ASSERT(IPC::recv(recv_msg));
-        JARVIS_ASSERT_EQ(42ULL, recv_msg.type);
-        JARVIS_ASSERT_EQ(handle, recv_msg.buf_handle);
-
-        // Sender can no longer free the buffer
-        Scheduler::set_current(*sender);
-        JARVIS_ASSERT(!BufferPool::free(*sender, handle));
-
-        // Receiver can map and free it
-        Scheduler::set_current(*receiver);
-        uint64_t recv_va = 0xD0000000;
-        JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
-        JARVIS_ASSERT(BufferPool::free(*receiver, handle));
-
-        Scheduler::set_current(*original);
     }
+    Scheduler::reschedule();
+    while (sender->state != TaskState::TERMINATED ||
+           receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT_EQ(0ULL, g_sender_ok);
+    JARVIS_ASSERT_EQ(0ULL, g_recv_ok);
+
+    Scheduler::remove_task(*sender);
+    sender->cleanup();
+    delete sender;
+    Scheduler::remove_task(*receiver);
+    receiver->cleanup();
+    delete receiver;
     JARVIS_TEST_PASS();
 }
 
@@ -375,8 +410,8 @@ JARVIS_TEST(buffer_pool_cleanup_frees_buffers, "PRE: none | POST: none") {
 // pool entries by calling unmap_all BEFORE swapping the page table. This is a
 // regression test for a bug where unmap_all used the NEW page table (after
 // swap) instead of the OLD one, leaving PTEs stale and buffer entries leaked.
-// Input: Alloc a buffer in a task, create new PML4, call unmap_all (simulating
-//        exec_into_current), swap page_table_, free old PML4.
+// Input: A REAL dispatched kernel task allocs a buffer; the harness then
+//        simulates exec_into_current's unmap_all-before-swap ordering.
 // Expect: Buffer entry recycled (phys_addr == 0), old PML4 freed cleanly.
 // Depends: kernel::BufferPool, kernel::TaskControlBlock, kernel::VMM,
 // kernel::PMM
@@ -385,13 +420,32 @@ JARVIS_TEST(buffer_pool_exec_into_current_clears_buffers,
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
 
-    uint64_t va = 0xF0000000;
-    uint64_t handle = BufferPool::alloc(*task, va);
+    // Drive the alloc through a REAL dispatched kernel task (BUGS.md#020-safe:
+    // kernel-mode lambda with a cloned PML4).
+    static uint64_t g_handle = 0;
+    auto *worker = TaskControlBlock::create(
+        []() {
+            g_handle = BufferPool::alloc(*Scheduler::current_task(),
+                                         0xF0000000);
+        },
+        11, 10);
+    JARVIS_ASSERT(worker != nullptr);
+    worker->page_table_ = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(worker->page_table_ != 0);
+    Scheduler::add_task(*worker);
+    Scheduler::reschedule();
+    while (worker->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    Scheduler::remove_task(*worker);
+    worker->cleanup();
+    delete worker;
+
+    uint64_t handle = g_handle;
     JARVIS_ASSERT(handle != 0);
 
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     JARVIS_ASSERT(BufferPool::entries[idx].phys_addr != 0);
-    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == va);
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0xF0000000);
 
     // Simulate exec_into_current:
     // 1. Create new PML4 (like exec_into_current does)
@@ -532,22 +586,32 @@ JARVIS_TEST(buffer_pool_zero_va_rejected, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Kernel task (no page_table_) alloc fails
-// Input: Create task with page_table_ = 0, try alloc
+// Testidea: Kernel task (no page_table_) alloc fails — driven: a REAL kernel
+// task (page_table_==0) calls BufferPool::alloc in its own dispatched
+// context.
+// Input: Dispatch a real kernel task (no page table); its lambda allocs.
 // Expect: Returns 0
 // Depends: kernel::BufferPool, kernel::TaskControlBlock
 JARVIS_TEST(buffer_pool_kernel_task_alloc_fails, "PRE: none | POST: none") {
-    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+    static uint64_t g_handle = 0;
+
+    auto *task = TaskControlBlock::create(
+        []() {
+            g_handle = BufferPool::alloc(*Scheduler::current_task(),
+                                         0x300000000ULL);
+        },
+        11, 10);
     JARVIS_ASSERT(task != nullptr);
+    JARVIS_ASSERT(task->page_table_ == 0); // real kernel task
+    Scheduler::add_task(*task);
+    Scheduler::reschedule();
+    while (task->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    uint64_t saved_pt = task->page_table_;
-    // Clear page_table_ to simulate kernel task
-    task->page_table_ = 0;
-
-    uint64_t h = BufferPool::alloc(*task, 0x300000000ULL);
-    JARVIS_ASSERT_EQ(0ULL, h);
-
-    task->page_table_ = saved_pt;
+    JARVIS_ASSERT_EQ(0ULL, g_handle);
+    Scheduler::remove_task(*task);
+    task->cleanup();
+    delete task;
     JARVIS_TEST_PASS();
 }
 

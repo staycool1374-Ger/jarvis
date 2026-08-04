@@ -19,6 +19,14 @@
 /// @file test_deadline_miss.cpp
 /// @brief Deadline miss detection tests — Phase 1: BLOCKED/WAITING coverage,
 ///        TERMINATED exclusion, and periodic re-arm.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every test now dispatches a REAL
+/// kernel task (prio ≥ 11) whose lambda GENUINELY overruns its real deadline
+/// (busy-waits past `period_ticks` using the real timer) and then either
+/// blocks on a real semaphore (staying live for the scan) or terminates.
+/// The detection scan `Scheduler::scan_deadlines()` is the exact entry the
+/// [deadline-mon] task executes — it observes a state reached through real
+/// execution, never through direct field mutation.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -30,88 +38,105 @@
 
 using namespace kernel;
 
+/// @brief  Body shared by the "overrun then block" helpers: busy-wait past
+///         the real deadline (2-tick period ⇒ 40 real ticks is ~20 periods
+///         of genuine overrun), then block on the semaphore handed via
+///         `user_data` so the task stays live (BLOCKED) when the scan runs.
+static void overrun_then_block_body() {
+    sync::Semaphore *gate = reinterpret_cast<sync::Semaphore *>(
+        Scheduler::current_task()->user_data);
+    uint64_t start = arch::Timer::ticks();
+    while (arch::Timer::ticks() - start < 40)
+        arch::pause();
+    gate->wait();
+}
+
+/// @brief  Create the overrun-then-block task and dispatch it for real.
+/// @return Pointer to the live BLOCKED task, or nullptr on failure.
+static TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
+    auto *t = TaskControlBlock::create(overrun_then_block_body, 11, 2);
+    if (t == nullptr)
+        return nullptr;
+    t->user_data = &gate;
+    Scheduler::add_task(*t);
+    // Defer the switch; the timer ISR dispatches the prio-11 task on the
+    // next tick.  It busy-waits 40 real ticks (genuine overrun) then blocks
+    // on the semaphore — at which point the harness resumes.
+    Scheduler::reschedule();
+    while (t->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    return t;
+}
+
+/// @brief  Teardown: wake the blocked task (real semaphore post), wait for
+///         genuine termination, then release the TCB (mirrors
+///         test_ipc_blocking.cpp).
+static void release_overrun_blocked(TaskControlBlock *t, sync::Semaphore &gate) {
+    gate.post();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
 // Runmode: kernel
 // Testidea: A task in BLOCKED state must still trigger deadline miss
 // detection when its deadline passes.
-// Input: Helper task created, then placed in BLOCKED state (via direct
-//        state manipulation inside ScopedCurrentTask, matching the
-//        established pattern from PriorityInversionChain5).  A semaphore
-//        is created as the primitive that would be the blocking point.
-//        Deadline set to past.  on_tick() fires.
+// Input: Real kernel task (prio 11, period 2) is dispatched, genuinely
+//        overruns its deadline (busy-waits 40 real ticks), then blocks on a
+//        real semaphore.  The harness waits for the genuine block, then runs
+//        the detection scan (the exact entry the [deadline-mon] task uses).
 // Expect: deadline_missed==true, deadline_miss_count>=1.
 TEST_CLASS(DeadlineMissWhileBlocked) {
-    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
-    CT_ASSERT(helper != nullptr);
-    helper->base_priority = 10;
-    helper->priority = 10;
-    Scheduler::add_task(*helper);
-    Scheduler::dequeue_ready(*helper);
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    {
-        arch::IrqGuard outer;
-        kernel::test::ScopedCurrentTask scope(*helper);
-        helper->state = TaskState::BLOCKED;
-    }
+    auto *helper = spawn_overrun_blocked(gate);
+    CT_ASSERT(helper != nullptr);
     CT_ASSERT(helper->state == TaskState::BLOCKED);
 
-    // Set deadline in the past
-    helper->deadline_ticks = arch::Timer::ticks() - 1;
-    helper->deadline_missed = false;
-    helper->deadline_miss_count = 0;
+    // Genuine overrun: the real deadline (now+2 at create) is long past.
+    CT_ASSERT(helper->deadline_ticks < arch::Timer::ticks());
 
-    {
-        arch::IrqGuard guard;
-        Scheduler::on_tick();
-#if CONFIG_DEADLINE_MONITOR_TASK
-        Scheduler::scan_deadlines();
-#endif
-    }
+    Scheduler::scan_deadlines();
 
     // deadline_missed may be cleared by re-arm (P1b) — count is the stable
-    // check
+    // check.
     CT_ASSERT(helper->deadline_miss_count >= 1);
 
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_overrun_blocked(helper, gate);
 };
 
 // Runmode: kernel
 // Testidea: A TERMINATED task must NOT trigger deadline miss detection
 // even if its deadline is in the past.
-// Input: Helper task created and placed in TERMINATED state.
-//        Deadline set to past.  on_tick() fires.
+// Input: Real kernel task (prio 11, period 2) is dispatched, genuinely
+//        overruns its deadline, then terminates via the trampoline (REAPED /
+//        zombie — removed from the live scan set).  The detection scan runs.
 // Expect: deadline_missed stays false, deadline_miss_count stays 0.
 TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
-    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
+    auto *helper = TaskControlBlock::create([]() {
+        uint64_t start = arch::Timer::ticks();
+        while (arch::Timer::ticks() - start < 40)
+            arch::pause();
+    }, 11, 2);
     CT_ASSERT(helper != nullptr);
-    helper->base_priority = 10;
-    helper->priority = 10;
     Scheduler::add_task(*helper);
-    Scheduler::dequeue_ready(*helper);
 
-    {
-        arch::IrqGuard outer;
-        kernel::test::ScopedCurrentTask scope(*helper);
-        helper->state = TaskState::TERMINATED;
-    }
-    CT_ASSERT(helper->state == TaskState::TERMINATED);
+    auto *original = Scheduler::current_task();
+    Scheduler::reschedule();
+    while (helper->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Set deadline in the past
-    helper->deadline_ticks = arch::Timer::ticks() - 1;
-    helper->deadline_missed = false;
-    helper->deadline_miss_count = 0;
+    // Task genuinely terminated; its deadline (now+2) has long passed.
+    uint64_t count_before = helper->deadline_miss_count;
+    Scheduler::scan_deadlines();
 
-    {
-        arch::IrqGuard guard;
-        Scheduler::on_tick();
-    }
+    // Must NOT fire for TERMINATED tasks.
+    CT_ASSERT(helper->deadline_miss_count == count_before);
 
-    // Must NOT fire for TERMINATED tasks
-    CT_ASSERT(helper->deadline_missed == false);
-    CT_ASSERT(helper->deadline_miss_count == 0);
-
+    Scheduler::set_current(*original);
     Scheduler::remove_task(*helper);
     helper->cleanup();
     delete helper;
@@ -120,51 +145,31 @@ TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
 // Runmode: kernel
 // Testidea: For periodic tasks, after a deadline miss the detection
 // block re-arms deadline_ticks += period_ticks and clears deadline_missed.
-// Input: Current task has period_ticks=10, deadline_ticks just past.
-//        on_tick() fires, then checks re-arm.
-// Expect: deadline_ticks advanced by period_ticks, deadline_missed cleared.
+// Input: Real kernel task (prio 11, period 2) genuinely overruns and blocks.
+//        The detection scan fires once; the re-arm advances the deadline.
+// Expect: deadline_miss_count>=1; deadline_ticks advanced by period_ticks;
+// deadline_missed cleared (re-armed for the next period).
 TEST_CLASS(DeadlineRearmOnPeriodRollover) {
-    auto *cur = Scheduler::current_task();
-    CT_ASSERT(cur != nullptr);
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    uint64_t saved_ticks = cur->deadline_ticks;
-    bool saved_missed = cur->deadline_missed;
-    uint64_t saved_period = cur->period_ticks;
-    uint64_t saved_count = cur->deadline_miss_count;
-    uint64_t saved_remaining = cur->remaining_ticks;
+    auto *helper = spawn_overrun_blocked(gate);
+    CT_ASSERT(helper != nullptr);
 
-    // Trigger deadline miss + period rollover: set deadline in the past
-    // and remaining_ticks to 0 so the next tick wraps.
-    cur->period_ticks = 10;
-    cur->deadline_ticks = arch::Timer::ticks() - 1;
-    cur->deadline_missed = false;
-    cur->deadline_miss_count = 0;
-    cur->remaining_ticks = 0;
+    uint64_t deadline_before = helper->deadline_ticks;
+    uint64_t period = helper->period_ticks;
+    CT_ASSERT(period > 0);
 
-    uint64_t pre_ticks = cur->deadline_ticks;
+    Scheduler::scan_deadlines();
 
-    {
-        arch::IrqGuard guard;
-        Scheduler::on_tick();
-#if CONFIG_DEADLINE_MONITOR_TASK
-        Scheduler::scan_deadlines();
-#endif
-    }
+    // Deadline miss fired.
+    CT_ASSERT(helper->deadline_miss_count >= 1);
+    // Re-arm: deadline advanced by period_ticks.
+    CT_ASSERT(helper->deadline_ticks == deadline_before + period);
+    // Latch cleared for the next period.
+    CT_ASSERT(helper->deadline_missed == false);
 
-    // Deadline miss fired (detected before rollover re-arm)
-    CT_ASSERT(cur->deadline_miss_count >= 1);
-
-    // Re-arm: deadline advanced by period_ticks on rollover
-    CT_ASSERT(cur->deadline_ticks == pre_ticks + 10);
-
-    // Latch cleared for next period by rollover
-    CT_ASSERT(cur->deadline_missed == false);
-
-    cur->deadline_ticks = saved_ticks;
-    cur->deadline_missed = saved_missed;
-    cur->period_ticks = saved_period;
-    cur->deadline_miss_count = saved_count;
-    cur->remaining_ticks = saved_remaining;
+    release_overrun_blocked(helper, gate);
 };
 
 #if CONFIG_DEADLINE_MONITOR_TASK
@@ -189,33 +194,22 @@ TEST_CLASS(DeadlineMonitorTaskSpawned) {
 // Runmode: kernel
 // Testidea: The deadline monitor's scan_deadlines() detects a task with
 // deadline in the past.
-// Input: A helper task with period>0, deadline_ticks < current ticks,
-// deadline_missed=false.  Calls scan_deadlines().
+// Input: A real kernel task (prio 11, period 2) genuinely overruns and
+//        blocks on a real semaphore; its real deadline is past.  The
+//        monitor's scan (Scheduler::scan_deadlines) runs.
 // Expect: deadline_missed==true, deadline_miss_count>=1.
 TEST_CLASS(DeadlineMonitorDetectsMiss) {
-    // Use the current task as the target (creates no new tasks)
-    auto *cur = Scheduler::current_task();
-    CT_ASSERT(cur != nullptr);
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    // Save original values
-    uint64_t saved_period = cur->period_ticks;
-    uint64_t saved_dl_ticks = cur->deadline_ticks;
-    bool saved_missed = cur->deadline_missed;
-    uint64_t saved_count = cur->deadline_miss_count;
-
-    cur->period_ticks = 10;
-    cur->deadline_ticks = arch::Timer::ticks() - 1;
-    cur->deadline_missed = false;
-    cur->deadline_miss_count = 0;
+    auto *helper = spawn_overrun_blocked(gate);
+    CT_ASSERT(helper != nullptr);
 
     Scheduler::scan_deadlines();
 
-    CT_ASSERT(cur->deadline_miss_count >= 1);
+    CT_ASSERT(helper->deadline_miss_count >= 1);
 
-    cur->period_ticks = saved_period;
-    cur->deadline_ticks = saved_dl_ticks;
-    cur->deadline_missed = saved_missed;
-    cur->deadline_miss_count = saved_count;
+    release_overrun_blocked(helper, gate);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 

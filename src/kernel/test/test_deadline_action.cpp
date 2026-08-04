@@ -29,10 +29,17 @@
 ///
 ///        action == 1 (PANIC) has no in-suite test: the handler halts the
 ///        kernel, so the matrix treats that build as an expected-fail.
+///
+///        v0.3.10 rework (SIMULATED → DRIVEN): the offending task is a REAL
+///        kernel task (prio 11, period 2) that genuinely overruns its real
+///        deadline (busy-waits 40 real ticks) and then blocks on a real
+///        semaphore — the detection scan (the exact entry the [deadline-mon]
+///        task runs) observes a state reached through real execution.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/test/test_sched_helpers.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/arch/timer.hpp>
@@ -42,58 +49,47 @@ using namespace kernel;
 
 namespace {
 
-/// @brief Create a helper task, park it BLOCKED, and arm a deadline in the
-///        past so the next detection scan fires a miss on it (and only it).
+/// @brief Create a REAL task that genuinely overruns its 2-tick deadline
+///        (busy-waits 40 real ticks) then blocks on the semaphore so it stays
+///        live (BLOCKED) for the detection scan.  Returns the live task.
 ///        Callers must CT_ASSERT the returned pointer (CT_ASSERT is only valid
 ///        inside a TEST_CLASS, not here).
-TaskControlBlock *arm_past_deadline_helper() {
-    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
+TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
+    auto *helper = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            uint64_t start = arch::Timer::ticks();
+            while (arch::Timer::ticks() - start < 40)
+                arch::pause();
+            g->wait();
+        },
+        11, 2);
     if (helper == nullptr)
         return nullptr;
-    helper->base_priority = 10;
-    helper->priority = 10;
+    helper->user_data = &gate;
     Scheduler::add_task(*helper);
-    Scheduler::dequeue_ready(*helper);
-    {
-        arch::IrqGuard outer;
-        kernel::test::ScopedCurrentTask scope(*helper);
-        helper->state = TaskState::BLOCKED;
-    }
-    helper->period_ticks = 10;
-    helper->deadline_ticks = arch::Timer::ticks() - 1;
-    helper->deadline_missed = false;
-    helper->deadline_miss_count = 0;
+    Scheduler::reschedule();
+    while (helper->state != TaskState::BLOCKED)
+        asm volatile("pause");
     return helper;
 }
 
-/// @brief Run the detection path the way production tests do: on_tick() then
-///        scan_deadlines() (the latter only exists under
-///        CONFIG_DEADLINE_MONITOR_TASK, which is the default).
-void run_detection() {
-    arch::IrqGuard guard;
-    Scheduler::on_tick();
-#if CONFIG_DEADLINE_MONITOR_TASK
-    Scheduler::scan_deadlines();
-#endif
+/// @brief Wake the blocked helper (real semaphore post) and reap it.
+void release_overrun_blocked(TaskControlBlock *helper, sync::Semaphore &gate) {
+    gate.post();
+    while (helper->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    Scheduler::remove_task(*helper);
+    helper->cleanup();
+    delete helper;
 }
 
-/// @brief Push every other live task's deadline far into the future so the
-///        detection scan can only fire on `helper`. Under the monitor-task
-///        path scan_deadlines() walks ALL tasks; during tests the monitor is
-///        suppressed (s_test_active_) so boot tasks do not auto-re-arm and a
-///        stray past deadline would otherwise be acted on too (catastrophic
-///        for KILL). Field restoration at test teardown reverts this by id.
-void neutralize_other_deadlines(TaskControlBlock *helper) {
-    for (uint64_t i = 0; i < Scheduler::task_count(); ++i) {
-        auto *t = Scheduler::task_at(i);
-        if (t == nullptr || t->magic != TaskControlBlock::TCB_MAGIC)
-            continue;
-        if (t == helper)
-            continue;
-        if (t->state == TaskState::TERMINATED)
-            continue;
-        t->deadline_ticks = UINT64_MAX - 1000000000ULL;
-    }
+/// @brief Run the detection path the way production tests do: the same
+///        scan_deadlines() the [deadline-mon] task executes (on_tick only
+///        wakes the monitor, which is suppressed during tests).
+void run_detection() {
+    Scheduler::scan_deadlines();
 }
 
 } // namespace
@@ -102,21 +98,20 @@ void neutralize_other_deadlines(TaskControlBlock *helper) {
 // Runmode: kernel
 // Testidea: LOG_ONLY (action=0, default build) records the miss and leaves
 // the task alive with unchanged priority.
-// Input: BLOCKED helper with past deadline; detection run.
+// Input: Real kernel task genuinely overruns its deadline and blocks; the
+//        detection scan fires.
 // Expect: deadline_miss_count>=1, state != TERMINATED, priority unchanged.
 TEST_CLASS(DeadlineActionLogOnly) {
-    auto *helper = arm_past_deadline_helper();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
     uint64_t saved_prio = helper->priority;
-    neutralize_other_deadlines(helper);
     run_detection();
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT(helper->state != TaskState::TERMINATED);
     CT_ASSERT(helper->priority == saved_prio);
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_overrun_blocked(helper, gate);
 };
 #endif
 
@@ -124,21 +119,20 @@ TEST_CLASS(DeadlineActionLogOnly) {
 // Runmode: kernel
 // Testidea: DEMOTE (action=2) halves the offending task's priority (floored
 // at 1) on miss.
-// Input: BLOCKED helper priority 10, past deadline; detection run.
+// Input: Real kernel task genuinely overruns its deadline and blocks; the
+//        detection scan fires.
 // Expect: deadline_miss_count>=1, priority == 10>>1 == 5, priority >= 1.
 TEST_CLASS(DeadlineActionDemote) {
-    auto *helper = arm_past_deadline_helper();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
     uint64_t saved_prio = helper->priority;
-    neutralize_other_deadlines(helper);
     run_detection();
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT(helper->priority == (saved_prio >> 1));
     CT_ASSERT(helper->priority >= 1);
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_overrun_blocked(helper, gate);
 };
 #endif
 
@@ -148,19 +142,22 @@ TEST_CLASS(DeadlineActionDemote) {
 // The deferred kill is flushed by process_deferred_kills() (the same call
 // on_tick() makes after returning) and must be leak-free (framework
 // snapshot/restore checks ResourceTracker).
-// Input: BLOCKED helper, past deadline; detection run; flush deferred kills.
+// Input: Real kernel task genuinely overruns its deadline and blocks; the
+//        detection scan fires and KILLs it.
 // Expect: deadline_miss_count>=1, state == TERMINATED. Helper is freed by
 //         the flush — do NOT dereference afterwards.
 TEST_CLASS(DeadlineActionKill) {
-    auto *helper = arm_past_deadline_helper();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
-    neutralize_other_deadlines(helper);
     run_detection();
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT(helper->state == TaskState::TERMINATED);
     // Flush the deferred kill list (mirrors on_tick() post-lock path).
     Scheduler::process_deferred_kills();
     // helper is now freed; leak verified by test isolation restore.
+    (void)gate;
 };
 #endif
 
@@ -170,28 +167,25 @@ TEST_CLASS(DeadlineActionKill) {
 // The test-only hook (TestContext::deadline_monitor_pid) is pointed at the
 // live [deadline-mon] task so the compile-time CONFIG_DEADLINE_MONITOR_PID (0
 // by default) is bypassed.
-// Input: BLOCKED helper, past deadline; hook set to monitor id; detection run.
+// Input: Real kernel task genuinely overruns its deadline and blocks; hook
+//        set to monitor id; detection scan fires.
 // Expect: deadline_miss_count>=1, monitor pending_signals has SIGUSR1.
 TEST_CLASS(DeadlineActionNotifyProbe) {
-    auto *helper = arm_past_deadline_helper();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
     auto *mon = Scheduler::get_monitor_task();
     CT_ASSERT(mon != nullptr);
     auto *tctx = Scheduler::get_test_context();
     CT_ASSERT(tctx != nullptr);
     tctx->deadline_monitor_pid = mon->id;
-    uint64_t before = mon->pending_signals;
-    (void)before;
-    neutralize_other_deadlines(helper);
     run_detection();
     CT_ASSERT(helper->deadline_miss_count >= 1);
     CT_ASSERT((mon->pending_signals &
                (1ULL << static_cast<uint64_t>(Signal::SIGUSR1))) != 0);
     tctx->deadline_monitor_pid = 0;
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_overrun_blocked(helper, gate);
 };
 #endif
 
@@ -202,13 +196,15 @@ TEST_CLASS(DeadlineActionNotifyProbe) {
 // and expects the handler to call panic() BEFORE the test completes — the
 // config matrix treats the presence of the "action=PANIC" message as the
 // success signal (the kernel intentionally does not return here).
-// Input: BLOCKED helper, past deadline; detection run.
+// Input: Real kernel task genuinely overruns its deadline and blocks; the
+//        detection scan fires.
 // Expect: kernel panics with [DMD] ... action=PANIC (verified by the matrix,
 //         not by an in-test assertion).
 TEST_CLASS(DeadlineActionPanics) {
-    auto *helper = arm_past_deadline_helper();
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *helper = spawn_overrun_blocked(gate);
     CT_ASSERT(helper != nullptr);
-    neutralize_other_deadlines(helper);
     run_detection();
     // Reached only if PANIC did NOT fire — that is a failure of the action.
     CT_ASSERT(false);

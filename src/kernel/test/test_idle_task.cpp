@@ -147,28 +147,30 @@ JARVIS_TEST(kernel_hlt_idle_still_exists, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a crashed idle task can be respawned by reap_orphans.
-// Input: Terminate the idle task, call reap_orphans, verify new idle exists.
+// Testidea: Verifies that a crashed idle task can be respawned by
+// reap_orphans via the REAL crash/reap path (terminate → reap → recreate).
+// Input: Terminate the idle task through the real Scheduler::terminate path,
+// then run the real reap_orphans; verify a fresh idle exists.
 // Expect: New idle task is created and placed at tasks_[0].
 JARVIS_TEST(idle_task_restartable_on_crash, "PRE: none | POST: none") {
     auto *old_idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(old_idle != nullptr);
     JARVIS_ASSERT_EQ(old_idle, Scheduler::task_at(0));
 
-    // Terminate idle task
-    old_idle->state = TaskState::TERMINATED;
-    old_idle->exit_code = 0;
+    // Real termination path: terminate() dequeues, marks TERMINATED, and
+    // releases the task into the zombie list.
+    Scheduler::terminate(*old_idle, 0);
 
-    // Reap orphans should handle crashed idle
+    // The real reaper recreates the idle task (scheduler.cpp reap_orphans).
     Scheduler::reap_orphans();
 
-    // New idle should exist at index 0
+    // New idle should exist at index 0.
     auto *new_idle = Scheduler::get_idle_task();
     JARVIS_ASSERT(new_idle != nullptr);
     JARVIS_ASSERT_EQ(new_idle, Scheduler::task_at(0));
     JARVIS_ASSERT(new_idle->kernel_stack != nullptr);
     JARVIS_ASSERT(new_idle->user_stack_ == 0);
-    // Should be a different TCB (old one was deleted)
+    // Should be a different TCB (old one was cleaned up).
     JARVIS_ASSERT(new_idle != old_idle);
 
     JARVIS_TEST_PASS();

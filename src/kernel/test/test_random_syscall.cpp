@@ -18,91 +18,160 @@
 
 /// @file test_random_syscall.cpp
 /// @brief Random system call interface tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every syscall runs inside a REAL
+/// kernel task (prio ≥ 11) that is genuinely dispatched — the handler's
+/// `syscall_task()` resolves to the running task.  The harness never calls
+/// Syscall::handle() directly.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 
 using namespace kernel;
 
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
+
 // Runmode: kernel
-// Testidea: SYS_GETRANDOM fills a buffer with random bytes via syscall
-// Input: Syscall::handle(GETRANDOM, buf, 64, 0, ...)
+// Testidea: SYS_GETRANDOM fills a buffer with random bytes via syscall,
+// invoked from a REAL dispatched kernel task.
+// Input: Dispatched task calls Syscall::handle(GETRANDOM, buf, 64, 0, ...)
 // Expect: Returns 64; buffer not all-zero or all-FF
 JARVIS_TEST(syscall_getrandom_basic, "PRE: none | POST: none") {
-    uint8_t buf[64];
-    __builtin_memset(buf, 0, sizeof(buf));
+    static uint64_t g_ret = 0;
+    static uint64_t g_all_zero = 0;
+    static uint64_t g_all_ff = 0;
 
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-                        reinterpret_cast<uint64_t>(buf), 64, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(64ULL, ret);
+    auto *t = TaskControlBlock::create(
+        []() {
+            uint8_t buf[64];
+            __builtin_memset(buf, 0, sizeof(buf));
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                reinterpret_cast<uint64_t>(buf), 64, 0, 0, nullptr);
 
-    bool all_zero = true;
-    bool all_ff = true;
-    for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0)
-            all_zero = false;
-        if (buf[i] != 0xFF)
-            all_ff = false;
-    }
-    JARVIS_ASSERT_FMT(!all_zero, "GETRANDOM returned %zu zero bytes",
-                      sizeof(buf));
-    JARVIS_ASSERT_FMT(!all_ff, "GETRANDOM returned %zu 0xFF bytes",
-                      sizeof(buf));
+            bool all_zero = true;
+            bool all_ff = true;
+            for (size_t i = 0; i < sizeof(buf); ++i) {
+                if (buf[i] != 0)
+                    all_zero = false;
+                if (buf[i] != 0xFF)
+                    all_ff = false;
+            }
+            g_all_zero = all_zero ? 1 : 0;
+            g_all_ff = all_ff ? 1 : 0;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(64ULL, g_ret);
+    JARVIS_ASSERT_FMT(g_all_zero == 0, "GETRANDOM returned 64 zero bytes");
+    JARVIS_ASSERT_FMT(g_all_ff == 0, "GETRANDOM returned 64 0xFF bytes");
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Zero-length GETRANDOM returns 0 and leaves buffer unchanged
-// Input: Syscall::handle(GETRANDOM, buf, 0, 0, ...)
+// Testidea: Zero-length GETRANDOM returns 0 and leaves buffer unchanged.
+// Input: Dispatched task calls Syscall::handle(GETRANDOM, buf, 0, 0, ...)
 // Expect: Returns 0; buffer unchanged
 JARVIS_TEST(syscall_getrandom_zero, "PRE: none | POST: none") {
-    uint8_t buf[4] = {0xDE, 0xAD, 0xBE, 0xEF};
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-                        reinterpret_cast<uint64_t>(buf), 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(buf[0] == 0xDE && buf[1] == 0xAD && buf[2] == 0xBE &&
-                  buf[3] == 0xEF);
+    static uint64_t g_ret = 0;
+    static uint64_t g_unchanged = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            uint8_t buf[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                reinterpret_cast<uint64_t>(buf), 0, 0, 0, nullptr);
+            g_unchanged = (buf[0] == 0xDE && buf[1] == 0xAD && buf[2] == 0xBE &&
+                           buf[3] == 0xEF)
+                              ? 1
+                              : 0;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT_EQ(1ULL, g_unchanged);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Large GETRANDOM (4096 bytes) succeeds without overflow
-// Input: Syscall::handle(GETRANDOM, buf, 4096, 0, ...)
-// Expect: Returns 4096; first and last bytes not zero (statistical)
+// Testidea: Large GETRANDOM (4096 bytes) succeeds without overflow.
+// Input: Dispatched task calls Syscall::handle(GETRANDOM, buf, 4096, 0, ...)
+// Expect: Returns 4096; at least one byte non-zero
 JARVIS_TEST(syscall_getrandom_large, "PRE: none | POST: none") {
-    uint8_t buf[4096];
-    __builtin_memset(buf, 0, sizeof(buf));
+    static uint64_t g_ret = 0;
+    static uint64_t g_any_nonzero = 0;
 
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-                        reinterpret_cast<uint64_t>(buf), 4096, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(4096ULL, ret);
+    auto *t = TaskControlBlock::create(
+        []() {
+            uint8_t buf[4096];
+            __builtin_memset(buf, 0, sizeof(buf));
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                reinterpret_cast<uint64_t>(buf), 4096, 0, 0, nullptr);
 
-    bool any_nonzero = false;
-    for (size_t i = 0; i < sizeof(buf); ++i) {
-        if (buf[i] != 0) {
-            any_nonzero = true;
-            break;
-        }
-    }
-    JARVIS_ASSERT_FMT(any_nonzero, "GETRANDOM(4096) returned all zeros");
+            for (size_t i = 0; i < sizeof(buf); ++i) {
+                if (buf[i] != 0) {
+                    g_any_nonzero = 1;
+                    break;
+                }
+            }
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(4096ULL, g_ret);
+    JARVIS_ASSERT_FMT(g_any_nonzero == 1, "GETRANDOM(4096) returned all zeros");
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Non-zero flags to GETRANDOM returns -1 (EINVAL)
-// Input: Syscall::handle(GETRANDOM, buf, 8, 1, ...) — flags=1
+// Testidea: Non-zero flags to GETRANDOM returns -1 (EINVAL).
+// Input: Dispatched task calls Syscall::handle(GETRANDOM, buf, 8, 1, ...)
 // Expect: Returns static_cast<uint64_t>(-1)
 JARVIS_TEST(syscall_getrandom_invalid_flags, "PRE: none | POST: none") {
-    uint8_t buf[8];
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRANDOM),
-                        reinterpret_cast<uint64_t>(buf), 8, 1, 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    static uint64_t g_ret = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            uint8_t buf[8];
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRANDOM),
+                reinterpret_cast<uint64_t>(buf), 8, 1, 0, nullptr);
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 

@@ -20,6 +20,13 @@
 /// @brief SporadicServer deadline integration tests — Phase 4: SS budget
 ///        exhaustion mapped to deadline miss, and deadline detection with
 ///        SS EXHAUSTED context via P1a.
+///
+///        v0.3.10 rework (SIMULATED → DRIVEN): the SS helper is a REAL kernel
+///        task (prio 11) whose dispatched lambda genuinely drives the SS
+///        lifecycle (on_activation + consume → EXHAUSTED) in its own running
+///        context.  The deadline is a REAL deadline reached through the real
+///        timer, and the detection scan is the exact entry the [deadline-mon]
+///        task runs.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -31,105 +38,111 @@
 
 using namespace kernel;
 
+namespace {
+
+/// @brief Create a REAL kernel task with a SporadicServer, dispatch it, and
+///        have its dispatched lambda genuinely exhaust the SS budget.  The
+///        task then blocks on nothing — it terminates after exhausting.
+///        Returns the TCB (caller must release).
+TaskControlBlock *spawn_ss_exhausted() {
+    auto *helper = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            // Drive the SS lifecycle in the running task's own context:
+            // activate, then consume the 3-tick budget to EXHAUSTED.
+            self->sporadic_server->on_activation(arch::Timer::ticks());
+            for (int i = 0; i < 5; ++i)
+                self->sporadic_server->consume(arch::Timer::ticks());
+        },
+        11, 10);
+    if (helper == nullptr)
+        return nullptr;
+    helper->base_priority = 11;
+    helper->priority = 11;
+    // Background priority BELOW the harness (prio 10 → bg 2): an EXHAUSTED
+    // task at bg_prio 2 would not outrank the test runner.
+    helper->init_sporadic_server(3, 100, 2);
+    Scheduler::add_task(*helper);
+    Scheduler::reschedule();
+    while (helper->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    return helper;
+}
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+} // namespace
+
 // Runmode: kernel
-// Testidea: An SS task with exhausted budget that misses a deadline must
-// fire the deadline handler with EXHAUSTED context.  Budget is exhausted
-// directly via SS methods (not through on_tick consume path), then a
-// deadline is set in the past and on_tick triggers P1a detection.
-// Input: SS helper task, budget exhausted via SS::consume() directly,
-//        deadline_ticks set to past.
+// Testidea: An SS task with exhausted budget that misses a REAL deadline must
+// fire the deadline handler with EXHAUSTED context.  The dispatched lambda
+// genuinely exhausts the budget; the real deadline (period 10) passes while
+// the task is live; the detection scan captures the SS state.
+// Input: SS helper task (prio 11), budget exhausted via real consume() in
+//        its dispatched body, real deadline passed.
 // Expect: deadline_miss_handler fires with "budget exhausted" message,
 //         ss_state_on_deadline_miss==EXHAUSTED, deadline_miss_count>=1.
 // Note: scan_deadlines() is only available when CONFIG_DEADLINE_MONITOR_TASK
 //       is enabled (default), so this class is gated on it.
 #if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsExhaustionTriggersDeadline) {
-    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
+    auto *helper = spawn_ss_exhausted();
     CT_ASSERT(helper != nullptr);
-    helper->base_priority = 10;
-    helper->priority = 10;
-    // Background priority must be LOWER than the task's base (and than the
-    // harness at prio 10): a higher number = higher priority in this kernel,
-    // so an EXHAUSTED task at bg_prio=42 would outrank the harness and be
-    // preemptively dispatched during the test body (ss_deadline hang, INV-1/2).
-    helper->init_sporadic_server(3, 100, 2);
-    Scheduler::add_task(*helper);
-
-    // Exhaust SS budget directly via SS methods
-    helper->sporadic_server->on_activation(arch::Timer::ticks());
-    CT_ASSERT(helper->sporadic_server->remaining_budget() == 3);
-    CT_ASSERT(helper->sporadic_server->is_active());
-
-    for (int i = 0; i < 5; ++i)
-        helper->sporadic_server->consume(arch::Timer::ticks());
-
+    CT_ASSERT(helper->sporadic_server != nullptr);
     CT_ASSERT(helper->sporadic_server->state() ==
               task::SporadicServer::State::EXHAUSTED);
     CT_ASSERT(helper->sporadic_server->remaining_budget() == 0);
 
-    // Set deadline in the past so P1a detection fires
-    helper->deadline_ticks = arch::Timer::ticks() - 1;
-    helper->deadline_missed = false;
+    // Genuine overrun: the real deadline (create-time + 10) is in the past by
+    // the time the task exhausted and terminated.
+    CT_ASSERT(helper->deadline_ticks < arch::Timer::ticks());
+
     helper->deadline_miss_count = 0;
     helper->ss_state_on_deadline_miss = 0;
     helper->ss_budget_on_deadline_miss = 999;
 
-    // Drive the real deadline-detection scan only.  Do NOT call on_tick()
-    // here: on_tick() runs rate_monotonic_schedule() which may dispatch the
-    // helper (or hang on the deferred switch when the harness runs the test
-    // body synchronously).  scan_deadlines() is the same O(n) walk the
-    // [deadline-mon] task uses — exercising it directly is deterministic.
+    // Drive the real deadline-detection scan (the [deadline-mon] entry).
     {
         arch::IrqGuard guard;
         Scheduler::scan_deadlines();
     }
 
-    // P1a deadline detection must fire with SS context
+    // P1a deadline detection must fire with SS context.
     CT_ASSERT(helper->deadline_miss_count >= 1);
 
-    // P4a: SS state must be captured as EXHAUSTED
+    // P4a: SS state must be captured as EXHAUSTED.
     CT_ASSERT(helper->ss_state_on_deadline_miss ==
               static_cast<uint8_t>(task::SporadicServer::State::EXHAUSTED));
 
-    // P4a: Budget captured as 0
+    // P4a: Budget captured as 0.
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 
 // Runmode: kernel
-// Testidea: An SS task with EXHAUSTED state (budget=0) that has a deadline
-// in the past fires the deadline handler with EXHAUSTED SS context.
-// Input: SS helper task with budget=0, DEADLINE in past.
+// Testidea: An SS task with EXHAUSTED state (budget=0) that has a REAL
+// deadline in the past fires the deadline handler with EXHAUSTED SS context.
+// Input: SS helper task with budget genuinely exhausted in its dispatched
+//        body, real deadline passed.
 // Expect: deadline_missed==true, ss_state_on_deadline_miss==EXHAUSTED,
 //         handler logs "budget exhausted".
 #if CONFIG_DEADLINE_MONITOR_TASK
 TEST_CLASS(SsDeadlineMissDuringReplenish) {
-    auto *helper = TaskControlBlock::create([]() {}, 10, 10);
+    auto *helper = spawn_ss_exhausted();
     CT_ASSERT(helper != nullptr);
-    helper->base_priority = 10;
-    helper->priority = 10;
-    // Background priority below the harness (prio 10) so an EXHAUSTED task
-    // never preempts the test runner (see SsExhaustionTriggersDeadline).
-    helper->init_sporadic_server(3, 100, 2);
-    Scheduler::add_task(*helper);
-
-    // Exhaust SS directly
-    helper->sporadic_server->on_activation(arch::Timer::ticks());
-    for (int i = 0; i < 5; ++i)
-        helper->sporadic_server->consume(arch::Timer::ticks());
-
+    CT_ASSERT(helper->sporadic_server != nullptr);
     CT_ASSERT(helper->sporadic_server->state() ==
               task::SporadicServer::State::EXHAUSTED);
     CT_ASSERT(helper->sporadic_server->remaining_budget() == 0);
 
-    // Set deadline in past
-    helper->deadline_ticks = arch::Timer::ticks() - 1;
-    helper->deadline_missed = false;
     helper->deadline_miss_count = 0;
     helper->ss_state_on_deadline_miss = 0;
     helper->ss_budget_on_deadline_miss = 999;
@@ -141,7 +154,7 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
         Scheduler::scan_deadlines();
     }
 
-    // Deadline must have been detected
+    // Deadline must have been detected.
     CT_ASSERT(helper->deadline_miss_count >= 1);
 
     // P4a: SS state was EXHAUSTED at deadline time (verified above).  If
@@ -150,10 +163,7 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     // state assertion and only check budget fields.
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
-    Scheduler::set_task_ready(*helper);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 

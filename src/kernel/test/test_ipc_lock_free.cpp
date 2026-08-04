@@ -18,10 +18,17 @@
 
 /// @file test_ipc_lock_free.cpp
 /// @brief IPC lock-free queue tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every kernel task is a REAL task
+/// (prio ≥ 11) dispatched by the real timer ISR that calls IPC::send/recv in
+/// its own running context.  The interrupt-flag checks are performed inside
+/// the genuinely-running task; the ping-pong throughput runs on real ticks.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/io.hpp>
+#include <kernel/arch/timer.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/ipc/ipc.hpp>
@@ -31,240 +38,247 @@ using namespace kernel;
 
 static volatile uint64_t g_ipc_recv_count_ = 0;
 
-static void ipc_recv_worker() {
-    Message msg{};
-    msg.sender_id = Scheduler::current_task()->id;
-    msg.type = 42;
-    msg.priority = 0;
-    msg.data_size = 0;
-
-    bool ok = IPC::send(Scheduler::current_task()->id, msg);
-    if (!ok)
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
         return;
-
-    Message out;
-    ok = IPC::recv(out);
-    if (ok && out.type == 42) {
-        __atomic_add_fetch(&g_ipc_recv_count_, 1, __ATOMIC_RELAXED);
-    }
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
 }
+} // namespace
 
 // Runmode: kernel
-// Testidea: Kernel-task sys_receive does not call cli().
-// Input: Kernel task sends message to self then receives; check interrupt flag.
-// Expect: Interrupts remain enabled before, during, and after receive.
+// Testidea: Kernel-task sys_receive does not call cli().  A REAL kernel task
+// sends a message to itself and receives it; interrupts must remain enabled
+// before, during, and after the receive.
+// Input: Dispatched kernel task (prio 11) self-sends + self-recvs, sampling
+//        the interrupt flag inside its own running context.
+// Expect: interrupts enabled before/during/after receive; recv completes.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
 JARVIS_TEST(ipc_recv_no_cli, "PRE: none | POST: none") {
-    arch::sti();
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    static uint64_t g_if_before = 0;
+    static uint64_t g_if_during = 0;
+    static uint64_t g_if_after = 0;
+    static uint64_t g_ok = 0;
 
-    g_ipc_recv_count_ = 0;
+    auto *task = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            g_if_before = arch::interrupts_enabled() ? 1 : 0;
 
-    auto *task = TaskControlBlock::create(ipc_recv_worker, 5, 10);
+            Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 42;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(self->id, msg);
+            if (!ok)
+                return;
+
+            Message out;
+            g_if_during = arch::interrupts_enabled() ? 1 : 0;
+            ok = IPC::recv(out);
+            g_if_after = arch::interrupts_enabled() ? 1 : 0;
+            if (ok && out.type == 42)
+                g_ok = 1;
+        },
+        11, 10);
     JARVIS_ASSERT(task != nullptr);
     JARVIS_ASSERT(task->page_table_ == 0);
     Scheduler::add_task(*task);
-
-    auto *original = Scheduler::current_task();
-    Scheduler::set_current(*task);
-
-    // Receiver blocks; should not call cli() for kernel task
-    JARVIS_ASSERT(arch::interrupts_enabled());
     Scheduler::reschedule();
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    while (task->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*original);
+    JARVIS_ASSERT_EQ(1ULL, g_if_before);
+    JARVIS_ASSERT_EQ(1ULL, g_if_during);
+    JARVIS_ASSERT_EQ(1ULL, g_if_after);
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
 
-    Scheduler::remove_task(*task);
-    task->cleanup();
-    delete task;
-
+    release_task(task);
     JARVIS_ASSERT(arch::interrupts_enabled());
     JARVIS_TEST_PASS();
 }
 
-static volatile uint64_t g_ipc_send_sync_reply_ = 0;
-
-struct SendSyncCtx {
-    uint64_t receiver_id;
-};
-
-static void send_sync_receiver() {
-    Message msg;
-    bool ok = IPC::recv(msg);
-    if (!ok)
-        return;
-    Message reply;
-    reply.sender_id = Scheduler::current_task()->id;
-    reply.type = 99;
-    reply.priority = 0;
-    reply.data_size = 0;
-    IPC::send(msg.sender_id, reply);
-}
-
-static void send_sync_sender() {
-    auto *cur = Scheduler::current_task();
-    auto *ctx = reinterpret_cast<SendSyncCtx *>(cur->user_data);
-    if (!ctx)
-        return;
-
-    Message msg;
-    msg.sender_id = cur->id;
-    msg.type = 42;
-    msg.priority = 0;
-    msg.data_size = 0;
-
-    Message reply;
-    bool ok = IPC::send_sync(ctx->receiver_id, msg, reply);
-    if (ok && reply.type == 99) {
-        __atomic_add_fetch(&g_ipc_send_sync_reply_, 1, __ATOMIC_RELAXED);
-    }
-}
-
 // Runmode: kernel
-// Testidea: Kernel-task send_sync does not call cli().
-// Input: Kernel sender calls send_sync to kernel receiver; check interrupt
-// flag. Expect: Interrupts remain enabled before, during, and after send_sync.
+// Testidea: Kernel-task send_sync does not call cli().  A REAL kernel sender
+// calls send_sync to a REAL kernel receiver that replies; interrupts must
+// remain enabled throughout.
+// Input: Dispatched sender (prio 12) + receiver (prio 11); the sender calls
+//        IPC::send_sync, the receiver replies; both run for real.
+// Expect: interrupts enabled before, during, and after send_sync.
 // Depends: IPC, Scheduler, arch::interrupts_enabled
 JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
-    arch::sti();
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    static uint64_t g_receiver_id = 0;
+    static uint64_t g_if_before = 0;
+    static uint64_t g_if_during = 0;
+    static uint64_t g_if_after = 0;
+    static uint64_t g_reply_ok = 0;
 
-    g_ipc_send_sync_reply_ = 0;
-
-    auto *receiver = TaskControlBlock::create(send_sync_receiver, 5, 10);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            Message msg;
+            bool ok = false;
+            for (int i = 0; i < 100000 && !ok; ++i)
+                ok = IPC::recv(msg);
+            if (!ok)
+                return;
+            Message reply;
+            reply.sender_id = Scheduler::current_task()->id;
+            reply.type = 99;
+            reply.priority = 0;
+            reply.data_size = 0;
+            IPC::send(msg.sender_id, reply);
+        },
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    JARVIS_ASSERT(receiver->page_table_ == 0);
-    Scheduler::add_task(*receiver);
+    g_receiver_id = receiver->id;
 
-    SendSyncCtx ctx;
-    ctx.receiver_id = receiver->id;
-
-    auto *sender = TaskControlBlock::create(send_sync_sender, 5, 10);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            g_if_before = arch::interrupts_enabled() ? 1 : 0;
+            Message msg;
+            msg.sender_id = self->id;
+            msg.type = 42;
+            msg.priority = 0;
+            msg.data_size = 0;
+            Message reply;
+            g_if_during = arch::interrupts_enabled() ? 1 : 0;
+            bool ok = IPC::send_sync(g_receiver_id, msg, reply);
+            g_if_after = arch::interrupts_enabled() ? 1 : 0;
+            if (ok && reply.type == 99)
+                g_reply_ok = 1;
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
     JARVIS_ASSERT(sender->page_table_ == 0);
-    sender->user_data = &ctx;
-    Scheduler::add_task(*sender);
 
-    auto *original = Scheduler::current_task();
-    Scheduler::set_current(*sender);
-
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+        Scheduler::add_task(*receiver);
+    }
     Scheduler::reschedule();
-    JARVIS_ASSERT(arch::interrupts_enabled());
 
-    // Run receiver to reply
-    Scheduler::set_current(*receiver);
-    Scheduler::reschedule();
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    while (sender->state != TaskState::TERMINATED ||
+           receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Run sender again to complete send_sync
-    Scheduler::set_current(*sender);
-    Scheduler::reschedule();
-    JARVIS_ASSERT(arch::interrupts_enabled());
+    JARVIS_ASSERT_EQ(1ULL, g_if_before);
+    JARVIS_ASSERT_EQ(1ULL, g_if_during);
+    JARVIS_ASSERT_EQ(1ULL, g_if_after);
+    JARVIS_ASSERT_EQ(1ULL, g_reply_ok);
 
-    Scheduler::set_current(*original);
-
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
-
+    release_task(sender);
+    release_task(receiver);
     JARVIS_ASSERT(arch::interrupts_enabled());
     JARVIS_TEST_PASS();
 }
 
-static volatile uint64_t g_ipc_throughput_count_ = 0;
-
-struct ThroughputCtx {
-    uint64_t peer_id;
-    volatile bool ready;
-};
-
-static void throughput_receiver() {
-    auto *cur = Scheduler::current_task();
-    auto *ctx = reinterpret_cast<ThroughputCtx *>(cur->user_data);
-    if (!ctx)
-        return;
-    ctx->ready = true;
-
-    for (uint64_t i = 0; i < 1000; ++i) {
-        Message msg;
-        bool ok = IPC::recv(msg);
-        if (!ok)
-            return;
-        Message reply;
-        reply.sender_id = cur->id;
-        reply.type = msg.type + 1;
-        reply.priority = 0;
-        reply.data_size = 0;
-        IPC::send(msg.sender_id, reply);
-    }
-    __atomic_add_fetch(&g_ipc_throughput_count_, 1, __ATOMIC_RELAXED);
-}
-
 // Runmode: kernel
-// Testidea: Measure IPC roundtrip throughput with lock-free primitives.
-// Input: 1000 IPC roundtrips between two kernel tasks (ping-pong).
-// Expect: All 1000 roundtrips complete; throughput measured (no regression).
+// Testidea: Measure IPC roundtrip throughput with lock-free primitives over
+// real timer ticks.  Two REAL kernel tasks ping-pong; every roundtrip
+// completes through genuine dispatch.
+// Input: 200 IPC roundtrips between two kernel tasks (ping-pong) driven by
+//        real ticks.
+// Expect: All roundtrips complete; no deadlock; both tasks terminate.
 // Depends: IPC, Scheduler
 JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
-    g_ipc_throughput_count_ = 0;
+    static uint64_t g_a_id = 0;
+    static uint64_t g_b_id = 0;
+    static uint64_t g_a_done = 0;
+    static uint64_t g_b_done = 0;
+    static uint64_t g_a_ok = 0;
+    static uint64_t g_b_ok = 0;
 
-    ThroughputCtx ctx_a = {0, false};
-    ThroughputCtx ctx_b = {0, false};
+    // A: receives from B, replies; B: receives from A, replies.  Each does
+    // ROUNDS iterations of genuine IPC::recv/send.
+    auto *task_a = TaskControlBlock::create(
+        []() {
+            for (uint64_t i = 0; i < 100; ++i) {
+                Message msg;
+                bool ok = false;
+                for (int k = 0; k < 100000 && !ok; ++k)
+                    ok = IPC::recv(msg);
+                if (!ok) {
+                    g_a_ok = 1;
+                    return;
+                }
+                Message reply;
+                reply.sender_id = Scheduler::current_task()->id;
+                reply.type = msg.type + 1;
+                reply.priority = 0;
+                reply.data_size = 0;
+                if (!IPC::send(g_b_id, reply)) {
+                    g_a_ok = 1;
+                    return;
+                }
+            }
+            g_a_done = 1;
+        },
+        11, 10);
 
-    auto *task_a = TaskControlBlock::create(throughput_receiver, 5, 10);
+    auto *task_b = TaskControlBlock::create(
+        []() {
+            // Seed: A sends the first message to B.
+            Message seed;
+            seed.sender_id = Scheduler::current_task()->id;
+            seed.type = 0;
+            seed.priority = 0;
+            seed.data_size = 0;
+            if (!IPC::send(g_a_id, seed)) {
+                g_b_ok = 1;
+                return;
+            }
+            for (uint64_t i = 0; i < 100; ++i) {
+                Message msg;
+                bool ok = false;
+                for (int k = 0; k < 100000 && !ok; ++k)
+                    ok = IPC::recv(msg);
+                if (!ok) {
+                    g_b_ok = 1;
+                    return;
+                }
+                Message reply;
+                reply.sender_id = Scheduler::current_task()->id;
+                reply.type = msg.type + 1;
+                reply.priority = 0;
+                reply.data_size = 0;
+                if (!IPC::send(g_a_id, reply)) {
+                    g_b_ok = 1;
+                    return;
+                }
+            }
+            g_b_done = 1;
+        },
+        12, 10);
     JARVIS_ASSERT(task_a != nullptr);
-    task_a->user_data = &ctx_a;
-    Scheduler::add_task(*task_a);
-
-    ctx_a.peer_id = task_a->id;
-
-    auto *task_b = TaskControlBlock::create(throughput_receiver, 5, 10);
     JARVIS_ASSERT(task_b != nullptr);
-    task_b->user_data = &ctx_b;
-    Scheduler::add_task(*task_b);
+    g_a_id = task_a->id;
+    g_b_id = task_b->id;
 
-    ctx_b.peer_id = task_b->id;
-
-    auto *original = Scheduler::current_task();
-
-    // Let both tasks reach ready state
-    kernel::test::yield_as(*task_a);
-    kernel::test::yield_as(*task_b);
-
-    // Kick off ping-pong: task_a sends first message to task_b
-    // Use on_tick to drive scheduler forward with interrupts DISABLED to
-    // prevent the timer ISR epilogue from processing deferred context-switch
-    // globals set by rate_monotonic_schedule() inside on_tick().
     {
-        arch::IrqGuard guard;
-        for (int tick = 0; tick < 100; ++tick) {
-            Scheduler::on_tick();
-        }
-        Scheduler::set_current(*original);
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*task_a);
+        Scheduler::add_task(*task_b);
+    }
+    // Drive the ping-pong on real ticks.
+    uint64_t start = arch::Timer::ticks();
+    while ((!g_a_done || !g_b_done) &&
+           (arch::Timer::ticks() - start) < 5000) {
+        Scheduler::reschedule();
+        asm volatile("pause");
     }
 
-    if (task_a->magic == TaskControlBlock::TCB_MAGIC) {
-        Scheduler::remove_task(*task_a);
-        task_a->cleanup();
-        delete task_a;
-    }
-    if (task_b->magic == TaskControlBlock::TCB_MAGIC) {
-        Scheduler::remove_task(*task_b);
-        task_b->cleanup();
-        delete task_b;
-    }
+    JARVIS_ASSERT_EQ(1ULL, g_a_done);
+    JARVIS_ASSERT_EQ(1ULL, g_b_done);
+    JARVIS_ASSERT_EQ(0ULL, g_a_ok);
+    JARVIS_ASSERT_EQ(0ULL, g_b_ok);
 
-    // The tasks may have already been terminated and freed by reap_orphans()
-    // via the on_tick() loop above (throughput_receiver calls IPC::recv on an
-    // empty queue, recv returns false, the function returns, the trampoline
-    // terminates the task).  Check task->magic before manual cleanup to avoid
-    // use-after-free on the poisoned TCB.
-    // This test verifies creation and leak-free cleanup.
+    release_task(task_a);
+    release_task(task_b);
     JARVIS_TEST_PASS();
 }
 

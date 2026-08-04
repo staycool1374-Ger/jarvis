@@ -18,11 +18,17 @@
 
 /// @file test_rlimit.cpp
 /// @brief Resource limit (rlimit) tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every syscall runs inside a REAL
+/// kernel task (prio ≥ 11) that is genuinely dispatched — the handler's
+/// `syscall_task()` resolves to the running task.  The harness never calls
+/// Syscall::handle() directly.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/task/task.hpp>
 
 using namespace kernel;
 
@@ -37,56 +43,138 @@ enum RlimitResource {
     RLIMIT_NOFILE = 2,
 };
 
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
+
 JARVIS_TEST(sys_getrlimit_nofile, "PRE: none | POST: none") {
-    Rlimit rl;
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_NOFILE,
-        reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(rl.rlim_cur > 0);
-    JARVIS_ASSERT(rl.rlim_max > 0);
-    JARVIS_ASSERT_EQ(rl.rlim_cur, rl.rlim_max);
+    static uint64_t g_ret = 0;
+    static uint64_t g_cur = 0;
+    static uint64_t g_max = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            Rlimit rl;
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_NOFILE,
+                reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
+            g_cur = rl.rlim_cur;
+            g_max = rl.rlim_max;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT(g_cur > 0);
+    JARVIS_ASSERT(g_max > 0);
+    JARVIS_ASSERT_EQ(g_cur, g_max);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(sys_getrlimit_stack, "PRE: none | POST: none") {
-    Rlimit rl;
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_STACK,
-        reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(rl.rlim_cur > 0);
-    JARVIS_ASSERT(rl.rlim_max > 0);
+    static uint64_t g_ret = 0;
+    static uint64_t g_cur = 0;
+    static uint64_t g_max = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            Rlimit rl;
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_STACK,
+                reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
+            g_cur = rl.rlim_cur;
+            g_max = rl.rlim_max;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT(g_cur > 0);
+    JARVIS_ASSERT(g_max > 0);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(sys_getrlimit_data, "PRE: none | POST: none") {
-    Rlimit rl;
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_DATA,
-        reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(rl.rlim_cur > 0);
-    JARVIS_ASSERT(rl.rlim_max > 0);
+    static uint64_t g_ret = 0;
+    static uint64_t g_cur = 0;
+    static uint64_t g_max = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            Rlimit rl;
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRLIMIT), RLIMIT_DATA,
+                reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
+            g_cur = rl.rlim_cur;
+            g_max = rl.rlim_max;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT(g_cur > 0);
+    JARVIS_ASSERT(g_max > 0);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(sys_getrlimit_invalid, "PRE: none | POST: none") {
-    Rlimit rl;
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETRLIMIT), 99,
-                        reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    static uint64_t g_ret = 0;
+
+    auto *t = TaskControlBlock::create(
+        []() {
+            Rlimit rl;
+            g_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::GETRLIMIT), 99,
+                reinterpret_cast<uint64_t>(&rl), 0, 0, nullptr);
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 JARVIS_TEST(sys_brk_query, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_ret = 0;
+    static uint64_t g_break = 0;
 
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::BRK), 0,
-                                   0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(cur->program_break, ret);
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *cur = Scheduler::current_task();
+            g_ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::BRK),
+                                    0, 0, 0, 0, nullptr);
+            g_break = cur->program_break;
+        },
+        11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(g_break, g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 

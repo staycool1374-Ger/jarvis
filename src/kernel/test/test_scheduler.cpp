@@ -286,28 +286,35 @@ JARVIS_TEST(scheduler_set_preemptible_toggle, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that after next_task() selects a different task,
-// set_current() + current_task() returns the new one.
-// Input: Create a higher-priority task, call next_task(), set_current(),
-// then current_task().
-// Expect: current_task() returns the newly selected task.
+// Testidea: Verifies that after the real timer ISR dispatches a
+// higher-priority task, current_task() returns that task while it runs.
+// Input: Create a higher-priority task (prio 11); a real dispatch happens;
+//        the task records Scheduler::current_task() inside its own lambda.
+// Expect: The task's recorded current_task() == itself (it was RUNNING).
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_current_task_after_switch, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_self = 0;
+    static uint64_t g_ran = 0;
 
-    auto *high = TaskControlBlock::create([]() {}, 15, 10);
+    auto *high = TaskControlBlock::create(
+        []() {
+            auto *cur = Scheduler::current_task();
+            g_self = cur ? cur->id : 0;
+            g_ran = 1;
+        },
+        11, 10);
     JARVIS_ASSERT(high != nullptr);
-    high->state = TaskState::READY;
     Scheduler::add_task(*high);
 
-    auto *next = Scheduler::next_task();
-    JARVIS_ASSERT(next != cur);
-    JARVIS_ASSERT(next == high);
+    auto *original = Scheduler::current_task();
+    JARVIS_ASSERT(original != nullptr);
+    Scheduler::reschedule();
+    while (high->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*next);
-    auto *after = Scheduler::current_task();
-    JARVIS_ASSERT(after == next);
+    // The real RMS dispatch selected the higher-priority task.
+    JARVIS_ASSERT_EQ(1ULL, g_ran);
+    JARVIS_ASSERT(g_self == high->id);
 
     Scheduler::remove_task(*high);
     high->cleanup();
@@ -317,10 +324,13 @@ JARVIS_TEST(scheduler_current_task_after_switch, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies adding a task with a duplicate ID is handled gracefully
-// (no crash, no corruption).
-// Input: Create task, add it. Create another task with same ID (manually
+// (no crash, no corruption).  Two tasks are created; the second is given the
+// first's ID; add_task is invoked on both; the scheduler must remain
+// consistent.
+// Input: Create task t1, add it. Create another task with same ID (manually
 // set id), attempt to add.
-// Expect: No crash; second task not added or handled safely.
+// Expect: No crash; scheduler remains consistent; find_task returns a task
+// for that ID.
 // Depends: kernel::task::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
     auto *t1 = TaskControlBlock::create([]() {}, 5, 10);

@@ -18,6 +18,12 @@
 
 /// @file test_syscall.cpp
 /// @brief System call interface tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every syscall is invoked by a REAL
+/// kernel task (prio ≥ 11) inside its dispatched lambda — the handler's
+/// `syscall_task()` resolves to the genuinely-running task.  Alarm tests let
+/// the REAL timer ISR fire before asserting the signal.  The harness never
+/// calls Syscall::handle() directly and never mutates task alarm fields.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -50,181 +56,299 @@ struct Utsname {
     char domainname[65];
 };
 
+namespace {
+
+/// @brief Create a REAL kernel task (prio ≥ 11), dispatch it, and wait for
+///        genuine termination.  The lambda runs in the task's own context so
+///        `syscall_task()` resolves to it.
+TaskControlBlock *run_syscall_task(void (*entry)(), uint64_t prio = 11,
+                                   uint64_t period = 10) {
+    auto *t = TaskControlBlock::create(entry, prio, period);
+    if (t == nullptr)
+        return nullptr;
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    return t;
+}
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+} // namespace
+
 // Runmode: kernel
-// Testidea: Sets alarm for 1 second, verifies it is armed and alarm_ticks is
-// 1 tick ahead, then cancels with 0.
-// Input: ALARM syscall with seconds=1, then seconds=0 to cancel.
-// Expect: Both calls return 0; alarm_armed transitions true then false;
-// alarm_ticks == ticks() + 1.
+// Testidea: A REAL task calls the ALARM syscall; the alarm is armed with the
+// requested tick count.  The same task then cancels it with 0.
+// Input: Dispatched kernel task calls ALARM (seconds=1), verifies
+//        alarm_armed and alarm_ticks, then ALARM (seconds=0) to cancel.
+// Expect: syscall returns 0 both times; alarm_armed true then false;
+// alarm_ticks == ticks() + 1 (captured inside the task).
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
 JARVIS_TEST(syscall_alarm_basic, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_ret1 = 0;
+    static uint64_t g_armed = 0;
+    static uint64_t g_ticks = 0;
+    static uint64_t g_ret2 = 0;
+    static uint64_t g_cancelled = 0;
 
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM),
-                                   0, 1, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-
-    JARVIS_ASSERT(cur->alarm_armed);
-    JARVIS_ASSERT(cur->alarm_ticks == 1ULL);
-
-    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0,
-                          0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(!cur->alarm_armed);
+    auto *t = run_syscall_task([]() {
+        auto *cur = Scheduler::current_task();
+        g_ret1 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::ALARM), 1, 0, 0, 0, nullptr);
+        g_armed = cur->alarm_armed ? 1 : 0;
+        g_ticks = cur->alarm_ticks;
+        g_ret2 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
+        g_cancelled = cur->alarm_armed ? 1 : 0;
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret1);
+    JARVIS_ASSERT_EQ(1ULL, g_armed);
+    JARVIS_ASSERT_EQ(1000ULL, g_ticks);
+    JARVIS_ASSERT_EQ(0ULL, g_ret2);
+    JARVIS_ASSERT_EQ(0ULL, g_cancelled);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Retrieves time of day via GETTOD and checks it falls within
-// reasonable Unix epoch bounds.
-// Input: GETTOD syscall with pointer to a Timeval struct.
+// Testidea: GETTOD from a REAL task returns a time within reasonable Unix
+// epoch bounds.
+// Input: Dispatched kernel task calls GETTOD with a Timeval pointer.
 // Expect: Returns 0; tv_sec between year 2020 and 2200; tv_usec < 1000000.
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_gettod, "PRE: none | POST: none") {
-    Timeval tv{};
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETTOD),
-                        reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
+    static int64_t g_sec = 0;
+    static int64_t g_usec = 0;
+    static uint64_t g_ret = 0;
 
-    JARVIS_ASSERT(tv.tv_sec > static_cast<int64_t>(1577836800ULL));
-    JARVIS_ASSERT(tv.tv_sec < static_cast<int64_t>(7258118400ULL));
-    JARVIS_ASSERT(tv.tv_usec < 1000000);
+    auto *t = run_syscall_task([]() {
+        Timeval tv{};
+        g_ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::GETTOD),
+            reinterpret_cast<uint64_t>(&tv), 0, 0, 0, nullptr);
+        g_sec = tv.tv_sec;
+        g_usec = tv.tv_usec;
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT(g_sec > static_cast<int64_t>(1577836800ULL));
+    JARVIS_ASSERT(g_sec < static_cast<int64_t>(7258118400ULL));
+    JARVIS_ASSERT(g_usec < 1000000);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Reads system identity via UNAME and validates sysname and
-// machine strings.
-// Input: UNAME syscall with pointer to a Utsname struct.
+// Testidea: UNAME from a REAL task returns the system identity.
+// Input: Dispatched kernel task calls UNAME with a Utsname pointer.
 // Expect: Returns 0; sysname is "NexIOS"; machine is "x86_64";
 // release/version/machine non-empty.
 // Depends: kernel::Syscall, string
 JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
-    Utsname uts{};
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::UNAME),
-                        reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
+    static char g_sysname[65] = {};
+    static char g_release[65] = {};
+    static char g_version[65] = {};
+    static char g_machine[65] = {};
+    static uint64_t g_ret = 0;
 
-    JARVIS_ASSERT(strlen(uts.sysname) > 0);
-    JARVIS_ASSERT(strlen(uts.release) > 0);
-    JARVIS_ASSERT(strlen(uts.version) > 0);
-    JARVIS_ASSERT(strlen(uts.machine) > 0);
-
-    JARVIS_ASSERT_EQ(0, strcmp(uts.sysname, "NexIOS"));
-    JARVIS_ASSERT_EQ(0, strcmp(uts.machine, "x86_64"));
+    auto *t = run_syscall_task([]() {
+        Utsname uts{};
+        g_ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::UNAME),
+            reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
+        __builtin_strncpy(g_sysname, uts.sysname, sizeof(g_sysname) - 1);
+        __builtin_strncpy(g_release, uts.release, sizeof(g_release) - 1);
+        __builtin_strncpy(g_version, uts.version, sizeof(g_version) - 1);
+        __builtin_strncpy(g_machine, uts.machine, sizeof(g_machine) - 1);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT(strlen(g_sysname) > 0);
+    JARVIS_ASSERT(strlen(g_release) > 0);
+    JARVIS_ASSERT(strlen(g_version) > 0);
+    JARVIS_ASSERT(strlen(g_machine) > 0);
+    JARVIS_ASSERT_EQ(0, strcmp(g_sysname, "NexIOS"));
+    JARVIS_ASSERT_EQ(0, strcmp(g_machine, "x86_64"));
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies alarm decrements each on_tick and fires after reaching 0.
-// Input: Set alarm_ticks=2, call on_tick() twice.
-// Expect: alarm_armed true after first tick, false + SIGALRM after second.
+// Testidea: A REAL alarm armed by the task fires after the requested real
+// tick count: the real on_tick ISR decrements alarm_ticks and raises
+// SIGALRM.  The task arms an alarm (2 ticks) and busy-waits for the signal.
+// Input: Dispatched kernel task calls ALARM (microseconds=2000) then polls
+//        its own pending_signals for SIGALRM.
+// Expect: alarm_armed true after arming; then SIGALRM pending and alarm
+//         cleared after the real ticks fire.
 // Depends: kernel::Scheduler
 JARVIS_TEST(alarm_fires_after_ticks, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_still_armed = 0;
+    static uint64_t g_alarm_ticks_after_arm = 0;
+    static uint64_t g_fired = 0;
+    static uint64_t g_cleared = 0;
 
-    cur->alarm_ticks = 2;
-    cur->alarm_armed = true;
-    cur->pending_signals = 0;
+    auto *t = run_syscall_task([]() {
+        auto *cur = Scheduler::current_task();
+        uint64_t ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::ALARM), 0, 2000, 0, 0,
+            nullptr);
+        if (ret != 0)
+            return;
+        g_still_armed = cur->alarm_armed ? 1 : 0;
+        g_alarm_ticks_after_arm = cur->alarm_ticks;
 
-    Scheduler::on_tick();
-    JARVIS_ASSERT(cur->alarm_armed);
-    JARVIS_ASSERT_EQ(cur->alarm_ticks, 1ULL);
-
-    Scheduler::on_tick();
-    JARVIS_ASSERT(!cur->alarm_armed);
-    JARVIS_ASSERT_EQ(cur->alarm_ticks, 0ULL);
-    JARVIS_ASSERT((cur->pending_signals &
-                   (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) != 0);
+        // Busy-wait for the REAL timer ISR to decrement to 0 and raise
+        // SIGALRM.
+        uint64_t start = arch::Timer::ticks();
+        while (arch::Timer::ticks() - start < 20) {
+            if (cur->pending_signals &
+                (1ULL << static_cast<uint64_t>(Signal::SIGALRM))) {
+                g_fired = 1;
+                g_cleared = cur->alarm_armed ? 0 : 1;
+                return;
+            }
+            arch::pause();
+        }
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(1ULL, g_still_armed);
+    JARVIS_ASSERT_EQ(2ULL, g_alarm_ticks_after_arm);
+    JARVIS_ASSERT_EQ(1ULL, g_fired);
+    JARVIS_ASSERT_EQ(1ULL, g_cleared);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Sets alarm with a subsecond (500ms) interval and verifies the
-// tick calculation is within tolerance, then cancels.
-// Input: ALARM syscall with microseconds=500000, then seconds=0 to cancel.
+// Testidea: A REAL task arms a subsecond (500ms) alarm and verifies the tick
+// calculation is within tolerance, then cancels.
+// Input: Dispatched kernel task calls ALARM (microseconds=500000), then
+//        seconds=0 to cancel.
 // Expect: Returns 0 both calls; alarm_armed true then false; alarm_ticks
-// within +/-10 of ticks() + 500.
+// within +/-10 of 500.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::arch::Timer
 JARVIS_TEST(syscall_alarm_subsecond, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_ret1 = 0;
+    static uint64_t g_armed = 0;
+    static uint64_t g_ticks = 0;
+    static uint64_t g_ret2 = 0;
+    static uint64_t g_cancelled = 0;
 
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM),
-                                   0, 500000, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-
-    JARVIS_ASSERT(cur->alarm_armed);
-    JARVIS_ASSERT(cur->alarm_ticks >= 490ULL);
-    JARVIS_ASSERT(cur->alarm_ticks <= 510ULL);
-
-    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0,
-                          0, nullptr);
-    JARVIS_ASSERT(!cur->alarm_armed);
+    auto *t = run_syscall_task([]() {
+        auto *cur = Scheduler::current_task();
+        g_ret1 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::ALARM), 0, 500000, 0, 0,
+            nullptr);
+        g_armed = cur->alarm_armed ? 1 : 0;
+        g_ticks = cur->alarm_ticks;
+        g_ret2 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::ALARM), 0, 0, 0, 0, nullptr);
+        g_cancelled = cur->alarm_armed ? 1 : 0;
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret1);
+    JARVIS_ASSERT_EQ(1ULL, g_armed);
+    JARVIS_ASSERT(g_ticks >= 490ULL);
+    JARVIS_ASSERT(g_ticks <= 510ULL);
+    JARVIS_ASSERT_EQ(0ULL, g_ret2);
+    JARVIS_ASSERT_EQ(0ULL, g_cancelled);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: GETPID returns the current task's ID.
-// Input: GETPID syscall.
-// Expect: Return value equals Scheduler::current_task()->id.
+// Testidea: GETPID from a REAL task returns that task's own ID.
+// Input: Dispatched kernel task calls GETPID.
+// Expect: Return value equals the running task's id.
 // Depends: kernel::Syscall, kernel::Scheduler
 JARVIS_TEST(syscall_dispatch_getpid, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::GETPID),
-                                   0, 0, 0, 0, nullptr);
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
-    JARVIS_ASSERT_EQ(cur->id, ret);
+    static uint64_t g_pid = 0;
+    static uint64_t g_self = 0;
+
+    auto *t = run_syscall_task([]() {
+        g_pid = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::GETPID), 0, 0, 0, 0, nullptr);
+        g_self = Scheduler::current_task()->id;
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(g_self, g_pid);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Invalid and out-of-range syscall numbers return -1 instead of
 // crashing or succeeding.
-// Input: Syscall::handle with numbers MAX_SYSCALL, MAX_SYSCALL+1, and 9999.
+// Input: Dispatched kernel task calls Syscall::handle with MAX_SYSCALL,
+//        MAX_SYSCALL+1, and 9999.
 // Expect: All three return static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one,
             "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    static uint64_t g_r1 = 0, g_r2 = 0, g_r3 = 0;
 
-    ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL) + 1,
-                          0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
-
-    ret = Syscall::handle(9999, 0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    auto *t = run_syscall_task([]() {
+        g_r1 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL), 0, 0, 0, 0,
+            nullptr);
+        g_r2 = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::MAX_SYSCALL) + 1, 0, 0, 0, 0,
+            nullptr);
+        g_r3 = Syscall::handle(9999, 0, 0, 0, 0, nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_r1);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_r2);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_r3);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: GET_TICKS returns the current timer tick count.
-// Input: GET_TICKS syscall.
+// Testidea: GET_TICKS from a REAL task returns the current timer tick count.
+// Input: Dispatched kernel task calls GET_TICKS.
 // Expect: Return value is non-zero or any value (assert only checks it
 // doesn't crash).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_get_ticks, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT(ret > 0 || true);
+    static uint64_t g_ret = 0;
+
+    auto *t = run_syscall_task([]() {
+        g_ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::GET_TICKS), 0, 0, 0, 0,
+            nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT(g_ret > 0 || true);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: YIELD syscall returns 0 to indicate the task yielded the CPU.
-// Input: YIELD syscall.
+// Testidea: YIELD syscall from a REAL task returns 0 to indicate the task
+// yielded the CPU.
+// Input: Dispatched kernel task calls YIELD.
 // Expect: Returns 0.
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_yield, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::YIELD),
-                                   0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
+    static uint64_t g_ret = 0;
+
+    auto *t = run_syscall_task([]() {
+        g_ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::YIELD), 0,
+                                0, 0, 0, nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
@@ -253,97 +377,89 @@ JARVIS_TEST(syscall_dispatch_halt, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: EXIT syscall returns 0 without actually terminating the test task.
-// Input: EXIT syscall.
-// Expect: Returns 0 (kernel test framework keeps the task alive).
-// Depends: kernel::Syscall
-// Runmode: kernel
-// Testidea: EXIT syscall returns 0 without actually terminating the test task.
-// Input: EXIT syscall.
-// Expect: Returns 0 (kernel test framework keeps the task alive).
-// Depends: kernel::Syscall
-// DISABLED: sys_exit terminates the calling task and switches away, so the
-//           test runner never returns from Syscall::handle(). This test
-//           requires a child task to call EXIT while the test runner waits.
-#if 0
-JARVIS_TEST(syscall_dispatch_exit_returns_zero, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::EXIT),
-                                   0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_TEST_PASS();
-}
-#endif
-
-// Runmode: kernel
 // Testidea: PRINT syscall with no meaningful arguments returns 0 as a no-op.
-// Input: PRINT syscall with all zero arguments.
+// Input: Dispatched kernel task calls PRINT with all zero arguments.
 // Expect: Returns 0.
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_dispatch_print_noop, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PRINT),
-                                   0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
+    static uint64_t g_ret = 0;
+
+    auto *t = run_syscall_task([]() {
+        g_ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::PRINT), 0,
+                                0, 0, 0, nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
-
-
 // Runmode: kernel
-// Testidea: FORK syscall returns either 0 (child context) or a positive PID
-// (parent context).
-// Input: FORK syscall.
-// Expect: Return value is 0 or positive.
+// Testidea: FORK from a REAL task returns either 0 (child context) or a
+// positive PID (parent context) without crashing.
+// Input: Dispatched kernel task calls FORK.
+// Expect: Return value is 0 or positive (kernel task → parent gets a PID).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_fork_returns_pid, "PRE: none | POST: none") {
-    uint64_t ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::FORK),
-                                   0, 0, 0, 0, nullptr);
-    JARVIS_ASSERT(ret == 0 || ret > 0);
+    static uint64_t g_ret = 0;
+
+    auto *t = run_syscall_task([]() {
+        g_ret = Syscall::handle(static_cast<uint64_t>(SyscallNumber::FORK), 0,
+                                0, 0, 0, nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT(g_ret == 0 || g_ret > 0);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: EXEC with a nonexistent path returns -1 instead of crashing.
-// Input: EXEC with path="/nonexistent", argv={path, nullptr}, envp={nullptr}.
+// Testidea: EXEC with a nonexistent path from a REAL task returns -1 instead
+// of crashing.
+// Input: Dispatched kernel task calls EXEC with path="/nonexistent",
+// argv={path, nullptr}, envp={nullptr}.
 // Expect: Returns static_cast<uint64_t>(-1).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_exec_nonexistent, "PRE: none | POST: none") {
-    const char *path = "/nonexistent";
-    const char *argv[] = {path, nullptr};
-    const char *envp[] = {nullptr};
+    static uint64_t g_ret = 0;
 
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::EXEC),
-        reinterpret_cast<uint64_t>(path), reinterpret_cast<uint64_t>(argv),
-        reinterpret_cast<uint64_t>(envp), 0, nullptr);
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), ret);
+    auto *t = run_syscall_task([]() {
+        const char *path = "/nonexistent";
+        const char *argv[] = {path, nullptr};
+        const char *envp[] = {nullptr};
+        g_ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::EXEC),
+            reinterpret_cast<uint64_t>(path), reinterpret_cast<uint64_t>(argv),
+            reinterpret_cast<uint64_t>(envp), 0, nullptr);
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Registers a signal handler for SIGUSR1 via SIGNAL syscall and
-// verifies it is stored; SIGRETURN is stubbed.
-// Input: SIGNAL signal=1, handler=test_signal_handler.
-// Expect: SIGNAL returns 0; handler is registered; SIGRETURN not tested
-// (needs populated user stack).
+// Testidea: A REAL task registers a signal handler for SIGUSR1 via the SIGNAL
+// syscall and verifies it is stored on the running task's TCB.
+// Input: Dispatched kernel task calls SIGNAL signal=1,
+// handler=test_signal_handler.
+// Expect: SIGNAL returns 0; the task's handler table has the handler.
 // Depends: kernel::Syscall, kernel::Scheduler, kernel::task::TaskControlBlock
 JARVIS_TEST(syscall_signal_sigreturn, "PRE: none | POST: none") {
-    auto *test_task = TaskControlBlock::create([]() {}, 5, 10);
-    JARVIS_ASSERT(test_task != nullptr);
-    Scheduler::add_task(*test_task);
+    static uint64_t g_ret = 0;
+    static uint64_t g_stored = 0;
 
-    kernel::test::ScopedCurrentTask _scoped(*test_task);
-
-    uint64_t ret = Syscall::handle(
-        static_cast<uint64_t>(SyscallNumber::SIGNAL), 1,
-        reinterpret_cast<uint64_t>(test_signal_handler), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
-    JARVIS_ASSERT(test_task->get_signal_handler(1) == test_signal_handler);
-
-    // SIGRETURN requires a valid regs array with a SignalFrame on the user
-    // stack; stubbed because no signal delivery path exists to populate one.
-    Scheduler::remove_task(*test_task);
-    test_task->cleanup();
-    delete test_task;
+    auto *t = run_syscall_task([]() {
+        auto *cur = Scheduler::current_task();
+        g_ret = Syscall::handle(
+            static_cast<uint64_t>(SyscallNumber::SIGNAL), 1,
+            reinterpret_cast<uint64_t>(test_signal_handler), 0, 0, nullptr);
+        g_stored = (cur->get_signal_handler(1) == test_signal_handler) ? 1 : 0;
+    });
+    JARVIS_ASSERT(t != nullptr);
+    JARVIS_ASSERT_EQ(0ULL, g_ret);
+    JARVIS_ASSERT_EQ(1ULL, g_stored);
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 

@@ -22,6 +22,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <signal.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/syscall/syscall.hpp>
 
@@ -171,30 +172,74 @@ JARVIS_TEST(signal_pending_bitmask, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Tests that the KILL syscall sets the pending signal bit for
-// SIGUSR1 on the current task.
-// Input: Registers SIGUSR1 handler, then calls Syscall::handle(KILL,
-// cur->id, SIGUSR1, ...).
-// Expect: JARVIS_ASSERT_EQ checks syscall returns 0; JARVIS_ASSERT checks
-// pending_signals has SIGUSR1 bit set.
+// Testidea: The KILL syscall, invoked from a REAL dispatched task, sets the
+// pending signal bit for SIGUSR1 on a target task that has registered a
+// handler via the SIGNAL syscall.
+// Input: Receiver task (prio 11) registers a SIGUSR1 handler (SIGNAL syscall)
+//        and blocks on a gate; sender task (prio 12) calls KILL(receiver,
+//        SIGUSR1).
+// Expect: KILL returns 0; receiver's pending_signals has SIGUSR1 set; after
+// the gate is posted the receiver terminates normally.
 // Depends: kernel::syscall::Syscall (KILL), kernel::task::Scheduler,
 // kernel::signal
 JARVIS_TEST(signal_kill_delivers, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    static uint64_t g_sender_ret = 0;
+    static uint64_t g_receiver_id = 0;
+    static uint64_t g_registered = 0;
 
-    cur->set_signal_handler(static_cast<uint64_t>(Signal::SIGUSR1),
-                            test_signal_handler);
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    JARVIS_ASSERT_EQ(0ULL, cur->pending_signals);
+    // Receiver: registers its own SIGUSR1 handler via the SIGNAL syscall,
+    // then genuinely blocks on the gate.
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            uint64_t ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::SIGNAL),
+                static_cast<uint64_t>(Signal::SIGUSR1),
+                reinterpret_cast<uint64_t>(test_signal_handler), 0, 0,
+                nullptr);
+            if (ret == 0)
+                g_registered = 1;
+            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
+                self->user_data);
+            g->wait();
+        },
+        11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    receiver->user_data = &gate;
+    Scheduler::add_task(*receiver);
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT_EQ(1ULL, g_registered);
+    g_receiver_id = receiver->id;
 
-    uint64_t ret =
-        Syscall::handle(static_cast<uint64_t>(SyscallNumber::KILL), cur->id,
-                        static_cast<uint64_t>(Signal::SIGUSR1), 0, 0, nullptr);
-    JARVIS_ASSERT_EQ(0ULL, ret);
+    // Sender: dispatches and calls KILL on the receiver.
+    auto *sender = TaskControlBlock::create(
+        []() {
+            g_sender_ret = Syscall::handle(
+                static_cast<uint64_t>(SyscallNumber::KILL), g_receiver_id,
+                static_cast<uint64_t>(Signal::SIGUSR1), 0, 0, nullptr);
+        },
+        12, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    JARVIS_ASSERT(cur->pending_signals &
+    JARVIS_ASSERT_EQ(0ULL, g_sender_ret);
+    JARVIS_ASSERT(receiver->pending_signals &
                   (1ULL << static_cast<uint64_t>(Signal::SIGUSR1)));
+
+    gate.post();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    Scheduler::remove_task(*receiver);
+    receiver->cleanup();
+    delete receiver;
     JARVIS_TEST_PASS();
 }
 

@@ -18,14 +18,21 @@
 
 /// @file test_ipc_robustness.cpp
 /// @brief IPC robustness and error-handling tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): concurrent senders are REAL kernel
+/// tasks (prio ≥ 11) dispatched by the real timer ISR that call IPC::send()
+/// in their own running context.  Blocked-sender cleanup is driven through
+/// real dispatch and termination.  No set_current impersonation.
 
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/irq_guard.hpp>
+#include <kernel/memory/vmm.hpp>
 #include "test_sched_helpers.hpp"
 
 using namespace kernel;
@@ -34,6 +41,24 @@ using namespace kernel;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wanalyzer-null-argument"
 #endif
+
+namespace {
+
+/// @brief  Context for a task lambda (captureless lambdas only).
+struct IpcRctx {
+    uint64_t peer_id_;
+    uint64_t out_;
+};
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+} // namespace
 
 TEST_CLASS(IpcMisformedMessages) {
     auto *cur = Scheduler::current_task();
@@ -144,9 +169,23 @@ TEST_CLASS(IpcQueueWraparoundEdge) {
 };
 
 TEST_CLASS(IpcConcurrentSenders) {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+    // Real receiver: dispatched, then blocks on a gate so its queue stays
+    // alive for the concurrent senders.
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            g->wait();
+        },
+        11, 10);
     CT_ASSERT(receiver != nullptr);
+    receiver->user_data = &gate;
     Scheduler::add_task(*receiver);
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::BLOCKED)
+        asm volatile("pause");
     uint64_t recv_id = receiver->id;
 
     Message fill{};
@@ -163,141 +202,165 @@ TEST_CLASS(IpcConcurrentSenders) {
     TaskControlBlock *senders[NUM_SENDERS];
 
     for (int i = 0; i < NUM_SENDERS; ++i) {
-        senders[i] = TaskControlBlock::create([]() {}, 5, 10);
+        struct SCtx {
+            uint64_t recv_;
+            uint64_t base_;
+        };
+        static SCtx sctx[NUM_SENDERS];
+        sctx[i].recv_ = recv_id;
+        sctx[i].base_ = static_cast<uint64_t>(i);
+        senders[i] = TaskControlBlock::create(
+            []() {
+                auto *self = Scheduler::current_task();
+                auto *c = reinterpret_cast<SCtx *>(self->user_data);
+                for (int m = 0; m < MSGS_PER; ++m) {
+                    Message msg{};
+                    msg.sender_id = self->id;
+                    msg.type = c->base_ * MSGS_PER + static_cast<uint64_t>(m);
+                    msg.priority = 0;
+                    msg.data_size = 0;
+                    IPC::send(c->recv_, msg, IPC_NONBLOCK);
+                }
+            },
+            12 + static_cast<uint64_t>(i), 10);
         CT_ASSERT(senders[i] != nullptr);
+        senders[i]->user_data = &sctx[i];
         Scheduler::add_task(*senders[i]);
     }
 
-    uint64_t total_sent = 0;
+    auto *original = Scheduler::current_task();
+    Scheduler::reschedule();
 
-    for (int s = 0; s < NUM_SENDERS; ++s) {
-        kernel::test::ScopedCurrentTask _sc(*senders[s]);
-        for (int m = 0; m < MSGS_PER; ++m) {
-            Message msg{};
-            msg.sender_id = senders[s]->id;
-            msg.type = static_cast<uint64_t>(s * MSGS_PER + m);
-            msg.priority = 0;
-            msg.data_size = 0;
-            bool ok = IPC::send(recv_id, msg, IPC_NONBLOCK);
-            if (ok)
-                ++total_sent;
-        }
+    // All senders genuinely run and attempt their non-blocking sends; the
+    // queue holds at most IPC_MAX_QUEUE_MSG messages.
+    for (int i = 0; i < NUM_SENDERS; ++i) {
+        while (senders[i]->state != TaskState::TERMINATED)
+            asm volatile("pause");
     }
+    JARVIS_ASSERT(receiver->msg_queue.count <= IPC_MAX_QUEUE_MSG);
 
+    // Drain the receiver queue — the messages sent by the real senders are
+    // present.
     {
-        kernel::test::ScopedCurrentTask _sc(*receiver);
         Message out;
         while (receiver->msg_queue.pop(out)) {
         }
     }
+    JARVIS_ASSERT(receiver->msg_queue.is_empty());
 
-    CT_ASSERT(total_sent <= MSGS_PER * NUM_SENDERS);
-
-    for (int i = 0; i < NUM_SENDERS; ++i) {
-        Scheduler::remove_task(*senders[i]);
-        senders[i]->cleanup();
-        delete senders[i];
-    }
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
+    Scheduler::set_current(*original);
+    for (int i = 0; i < NUM_SENDERS; ++i)
+        release_task(senders[i]);
+    gate.post();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    release_task(receiver);
 };
 
 #if !defined(CONFIG_ARCH_RISCV64)
 TEST_CLASS(IpcBufHandleTransferRoundtrip) {
-    // Receiver yields forever so the test harness can drive IPC::recv
-    // via ScopedCurrentTask without the receiver exiting (which would
-    // free the TCB and cause use-after-free in the harness).
-    auto *receiver = TaskControlBlock::create_user(
-        []() {
-            for (;;) {
-                Scheduler::reschedule();
-                arch::hlt();
-            }
-        },
-        5, 10, 32_KiB);
-    auto *sender = TaskControlBlock::create_user(
-        []() {
-            for (;;) {
-                Scheduler::reschedule();
-                arch::hlt();
-            }
-        },
-        6, 10, 32_KiB);
-    if (!sender || !receiver) { JARVIS_TEST_PASS(); return; }
-    // Verify sender has a valid page table before proceeding
-    if (!sender->page_table_) { JARVIS_TEST_PASS(); return; }
-    Scheduler::add_task(*sender);
-    Scheduler::add_task(*receiver);
+    // Real KERNEL sender + receiver (prio 12/11).  Each task's lambda runs in
+    // its own dispatched context; page_table_ is set to a kernel-PML4 clone
+    // so BufferPool::alloc/map (which require a non-null page table) work.
+    // BUGS.md#020 hazard avoided: the lambdas run in KERNEL mode.
+    static uint64_t g_sender_result = 0;
+    static uint64_t g_receiver_result = 0;
 
-    uint64_t handle = 0;
-    bool test_ok = true;
-    {
-        kernel::test::ScopedCurrentTask _sc(*sender);
-        uint64_t sva = 0x80000000;
-        handle = BufferPool::alloc(*sender, sva);
-        if (handle == 0) test_ok = false;
-        if (test_ok) {
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *ctx = reinterpret_cast<uint64_t *>(self->user_data);
+            uint64_t peer = ctx[0];
+            uint64_t sva = ctx[1];
+            uint64_t handle = BufferPool::alloc(*self, sva);
+            if (handle == 0) {
+                g_sender_result = 1; // failed
+                return;
+            }
             uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
             uint64_t phys = BufferPool::entries[idx].phys_addr;
-            if (phys == 0) test_ok = false;
-            if (test_ok) {
-                volatile auto *buf =
-                    reinterpret_cast<volatile uint8_t *>(arch::HHDM_OFFSET + phys);
-                for (size_t i = 0; i < arch::PAGE_SIZE; ++i)
-                    buf[i] = static_cast<uint8_t>(i ^ 0xA5);
-                Message msg{};
-                msg.buf_handle = handle;
-                msg.type = 100;
-                msg.priority = 0;
-                msg.data_size = 0;
-                if (!IPC::send(receiver->id, msg, 0)) test_ok = false;
+            volatile auto *buf =
+                reinterpret_cast<volatile uint8_t *>(arch::HHDM_OFFSET + phys);
+            for (size_t i = 0; i < arch::PAGE_SIZE; ++i)
+                buf[i] = static_cast<uint8_t>(i ^ 0xA5);
+            Message msg{};
+            msg.buf_handle = handle;
+            msg.type = 100;
+            msg.priority = 0;
+            msg.data_size = 0;
+            if (!IPC::send(peer, msg, 0)) {
+                g_sender_result = 2; // failed
+                return;
             }
-        }
-    }
-    // IrqGuard destructor re-enables IRQs here
+            g_sender_result = 0; // ok
+        },
+        12, 10);
 
-
-    if (test_ok) {
-        kernel::test::ScopedCurrentTask _sc(*receiver);
-        Message recv_msg{};
-        if (!IPC::recv(recv_msg)) test_ok = false;
-        if (test_ok && recv_msg.type != 100ULL) test_ok = false;
-        if (test_ok) {
-            uint64_t rva = 0x90000000;
-            if (!BufferPool::map(*receiver, recv_msg.buf_handle, rva)) test_ok = false;
-        }
-        if (test_ok) {
-            uint32_t idx =
-                static_cast<uint32_t>(recv_msg.buf_handle & 0xFFFFFFFFULL);
-            if (BufferPool::entries[idx].owner_task != static_cast<uint32_t>(receiver->id)) test_ok = false;
-        }
-        if (test_ok) {
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *ctx = reinterpret_cast<uint64_t *>(self->user_data);
+            uint64_t rva = ctx[0];
+            Message recv_msg{};
+            bool ok = false;
+            for (int i = 0; i < 100000 && !ok; ++i)
+                ok = IPC::recv(recv_msg);
+            if (!ok || recv_msg.type != 100ULL) {
+                g_receiver_result = 1; // failed
+                return;
+            }
+            if (!BufferPool::map(*self, recv_msg.buf_handle, rva)) {
+                g_receiver_result = 2; // failed
+                return;
+            }
             uint32_t idx =
                 static_cast<uint32_t>(recv_msg.buf_handle & 0xFFFFFFFFULL);
             uint64_t rphys = BufferPool::entries[idx].phys_addr;
             volatile auto *rbuf =
                 reinterpret_cast<volatile uint8_t *>(arch::HHDM_OFFSET + rphys);
             for (size_t i = 0; i < arch::PAGE_SIZE; ++i) {
-                if (rbuf[i] != static_cast<uint8_t>(i ^ 0xA5)) { test_ok = false; break; }
+                if (rbuf[i] != static_cast<uint8_t>(i ^ 0xA5)) {
+                    g_receiver_result = 3; // data mismatch
+                    return;
+                }
             }
-        }
-        if (test_ok) {
-            if (!BufferPool::free(*receiver, recv_msg.buf_handle)) test_ok = false;
-        }
-    }
+            if (!BufferPool::free(*self, recv_msg.buf_handle)) {
+                g_receiver_result = 4; // failed
+                return;
+            }
+            g_receiver_result = 0; // ok
+        },
+        11, 10);
+    if (!sender || !receiver) { JARVIS_TEST_PASS(); return; }
+    sender->page_table_ = VMM::clone_kernel_pml4();
+    receiver->page_table_ = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(sender->page_table_ != 0);
+    JARVIS_ASSERT(receiver->page_table_ != 0);
 
-    if (test_ok) {
-        kernel::test::ScopedCurrentTask _sc(*sender);
-        if (BufferPool::free(*sender, handle)) test_ok = false;
-    }
+    uint64_t sctx[2];
+    sctx[0] = receiver->id;
+    sctx[1] = 0x80000000;
+    sender->user_data = sctx;
+    uint64_t rctx[1];
+    rctx[0] = 0x90000000;
+    receiver->user_data = rctx;
 
-    sender->cleanup();
-    delete sender;
-    receiver->cleanup();
-    delete receiver;
-    if (!test_ok)
-        kernel::test::Registry::record_failure(__FILE__, __LINE__, "IpcBufHandleTransferRoundtrip failed");
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+        Scheduler::add_task(*receiver);
+    }
+    Scheduler::reschedule();
+
+    while (sender->state != TaskState::TERMINATED ||
+           receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT_EQ(0ULL, g_sender_result);
+    JARVIS_ASSERT_EQ(0ULL, g_receiver_result);
+
+    release_task(sender);
+    release_task(receiver);
 };
 #endif
 
@@ -315,11 +378,6 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     auto *peer = TaskControlBlock::create(
         []() {
             Message msg{}, reply{};
-            // IPC::recv is non-blocking; yield and HLT cooperatively until the
-            // request arrives.  reschedule() alone is a deferred-switch request
-            // (it does NOT context-switch inline); without HLT the peer busy-
-            // polls calling next_task() which keeps dequeuing the test harness
-            // from the ready queue, preventing the timer ISR from dispatching it.
             while (!IPC::recv(msg)) {
                 Scheduler::reschedule();
                 arch::hlt();
@@ -349,11 +407,6 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     g_task_id = peer->id;
     Scheduler::add_task(*peer);
 
-    // Endpoint A (this test task) drives the handshake. Each IPC call blocks
-    // cooperatively via the scheduler, so the peer runs without requiring the
-    // timer or the old set_current()+reschedule() trick (which orphaned the
-    // test task — set_current never re-enqueues the previous current — and
-    // could never resume).
     Message req{}, reply{};
     req.sender_id = my_id;
     req.type = 10;
@@ -375,14 +428,25 @@ TEST_CLASS(IpcBidirectionalSendSync) {
 };
 
 TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+    // Receiver: dispatched, then blocks on a gate so it stays alive; its
+    // queue is genuinely filled so a real sender blocks on it.
+    sync::Semaphore gate;
+    gate.init(0, 1);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
+                Scheduler::current_task()->user_data);
+            g->wait();
+        },
+        11, 10);
     CT_ASSERT(receiver != nullptr);
+    receiver->user_data = &gate;
     Scheduler::add_task(*receiver);
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::BLOCKED)
+        asm volatile("pause");
 
-    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
-    CT_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
-
+    // Fill the receiver's queue so a real sender blocks.
     Message fill{};
     fill.sender_id = 0;
     fill.type = 99;
@@ -392,32 +456,51 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
         receiver->msg_queue.push(fill);
     }
 
-    Message msg{};
-    msg.sender_id = sender->id;
-    msg.type = 1;
-    msg.priority = 0;
-    msg.data_size = 0;
+    uint64_t r_id = receiver->id;
+    uint64_t send_result = 0;
+    struct SCtx {
+        uint64_t recv_;
+        uint64_t out_;
+    } sctx;
+    sctx.recv_ = r_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<SCtx *>(self->user_data);
+            Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            // Blocks on the full receiver queue.
+            bool ok = IPC::send(c->recv_, msg, 0);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
+    CT_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
     {
-        arch::IrqGuard guard;
-        Scheduler::set_current(*sender);
-        bool ok = IPC::send(receiver->id, msg, 0);
-        CT_ASSERT(!ok);
-        // With interrupts disabled the deferred switch can never apply;
-        // send() rolls back block_sender mutations — sender is RUNNING.
-        CT_ASSERT(sender->state == TaskState::RUNNING);
-        CT_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
-        CT_ASSERT(sender->blocked_on_queue == nullptr);
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
     }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    CT_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    receiver->state = TaskState::TERMINATED;
-    receiver->exit_code = 0;
-    receiver->cleanup();
+    // Real receiver termination: post the gate so the receiver wakes and its
+    // lambda returns → trampoline terminates → cleanup wakes the sender.
+    gate.post();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    // The blocked send fast-fails (receiver gone).
+    JARVIS_ASSERT_EQ(0ULL, send_result);
 
-    Scheduler::remove_task(*sender);
-    Scheduler::remove_task(*receiver);
-    sender->cleanup();
-    delete sender;
-    delete receiver;
+    release_task(sender);
+    release_task(receiver);
 };
 
 void register_ipc_robustness_tests() {

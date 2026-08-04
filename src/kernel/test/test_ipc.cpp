@@ -18,6 +18,13 @@
 
 /// @file test_ipc.cpp
 /// @brief IPC (Inter-Process Communication) tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): waiter-list and blocking tests use
+/// REAL kernel tasks (prio ≥ 11) dispatched by the real timer ISR.  A real
+/// sender genuinely blocks in IPC::send() on a full receiver queue and a real
+/// receiver (or the harness as a real IPC peer) drains it — the block/wake
+/// transitions are reached through real execution, never via set_current
+/// impersonation or direct state writes.
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -34,6 +41,37 @@
 #include "test_sched_helpers.hpp"
 
 using namespace kernel;
+
+namespace {
+
+/// @brief  Context for a task lambda (captureless lambdas only).
+struct IpcCtx {
+    uint64_t peer_id_;
+    uint64_t out_;
+};
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+/// @brief  Fill a task's queue to capacity (setup: the queue is genuinely
+///         full so a real sender blocks on it).
+void fill_queue(TaskControlBlock &dst) {
+    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
+        kernel::Message fill{};
+        fill.sender_id = 0;
+        fill.type = 99;
+        fill.priority = 0;
+        fill.data_size = 0;
+        dst.msg_queue.push(fill);
+    }
+}
+
+} // namespace
 
 // Runmode: kernel
 // Testidea: Verifies that a freshly initialized MessageQueue reports empty,
@@ -428,184 +466,319 @@ JARVIS_TEST(ipc_eventgroup_try_wait, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::block_sender adds a sender TCB to the
-// MessageQueue's blocked-senders linked list.
-// Input: Two sender tasks created and blocked via IPC::block_sender
-// Expect: blocked_senders_head/tail point to correct senders, blocked_next
-// links are set
+// Testidea: Verifies that a REAL sender blocked on a full receiver queue is
+// linked into the receiver's blocked-senders list.
+// Input: Receiver task (prio 11) with a genuinely-full queue; a real sender
+//        (prio 12) dispatches and blocks inside IPC::send().
+// Expect: blocked_senders_head == sender, blocked_next == nullptr; after the
+// receiver drains, the sender wakes and both terminate.
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    fill_queue(*receiver);
+    uint64_t recv_id = receiver->id;
 
-    auto sender_ptr = create_test_task(5, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    MessageQueue &q = cur->msg_queue;
-    JARVIS_ASSERT(q.blocked_senders_head == nullptr);
-    JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
+    // Dispatch both atomically so the timer ISR always sees both ready; the
+    // higher-priority sender (12) blocks first, then the receiver drains.
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
 
-    IPC::block_sender(q, *sender);
+    // Wait for the real block inside IPC::send().
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
 
-    JARVIS_ASSERT(q.blocked_senders_head == sender);
-    JARVIS_ASSERT(q.blocked_senders_tail == sender);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_tail == sender);
     JARVIS_ASSERT(sender->blocked_next == nullptr);
 
-    auto sender2_ptr = create_test_task(5, 10);
-    auto *sender2 = sender2_ptr.get();
-    JARVIS_ASSERT(sender2 != nullptr);
-    IPC::block_sender(q, *sender2);
+    // Drain one message (the harness is a real IPC peer): the receiver's
+    // queue now has space; IPC::recv wakes the blocked sender.
+    kernel::Message drain;
+    JARVIS_ASSERT(IPC::recv(drain));
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    JARVIS_ASSERT(q.blocked_senders_head == sender);
-    JARVIS_ASSERT(q.blocked_senders_tail == sender2);
-    JARVIS_ASSERT(sender->blocked_next == sender2);
-    JARVIS_ASSERT(sender2->blocked_next == nullptr);
+    JARVIS_ASSERT(send_result == 1);
 
-    IPC::wake_sender(q, *cur);
-    IPC::wake_sender(q, *cur);
-
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender removes a blocked sender from the
-// list and sets its state to READY.
-// Input: Block one sender, then wake it
-// Expect: blocked_senders_head/tail become nullptr, sender state is
-// TaskState::READY
+// Testidea: Verifies that IPC::recv() wakes a blocked sender and removes it
+// from the receiver's blocked-senders list (real wake_sender path).
+// Input: Receiver (prio 11) with a full queue; a real sender (prio 12)
+//        blocks inside IPC::send().  The harness drains via IPC::recv.
+// Expect: blocked_senders_head becomes nullptr after the wake; sender state
+// reaches READY (then TERMINATED).
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    fill_queue(*receiver);
+    uint64_t recv_id = receiver->id;
 
-    auto sender_ptr = create_test_task(5, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    MessageQueue &q = cur->msg_queue;
-    q.blocked_senders_head = nullptr;
-    q.blocked_senders_tail = nullptr;
-    IPC::block_sender(q, *sender);
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    JARVIS_ASSERT(q.blocked_senders_head == sender);
+    // Drain one — IPC::recv calls wake_sender → removes from list, READY.
+    kernel::Message drain;
+    JARVIS_ASSERT(IPC::recv(drain));
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    IPC::wake_sender(q, *cur);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_tail == nullptr);
+    JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
+    JARVIS_ASSERT(send_result == 1);
 
-    JARVIS_ASSERT(q.blocked_senders_head == nullptr);
-    JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
-    JARVIS_ASSERT(sender->state == TaskState::READY);
-
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender handles a terminated sender
-// gracefully by removing it from the list.
-// Input: Block a sender, mark it TERMINATED, then wake it
-// Expect: blocked_senders_head/tail become nullptr (sender removed from list
-// despite terminated state)
+// Testidea: Verifies that when the receiver terminates with blocked senders,
+// the real cleanup path wakes them (MessageQueue::~MessageQueue fast-fail).
+// Input: Receiver (prio 11) with a full queue; a real sender (prio 12)
+//        blocked inside IPC::send().  The receiver terminates and is
+//        cleaned up; the sender's blocked send fails and it terminates.
+// Expect: Sender reaches TERMINATED without hanging; list emptied.
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            // Empty lambda: dispatches, then the trampoline terminates it —
+            // the real exit path runs cleanup() which wakes blocked senders.
+        },
+        11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    fill_queue(*receiver);
+    uint64_t recv_id = receiver->id;
 
-    auto sender_ptr = create_test_task(5, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            // The receiver terminates below; the blocked send must
+            // fast-fail (return false) rather than hang forever.
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    MessageQueue &q = cur->msg_queue;
-    q.blocked_senders_head = nullptr;
-    q.blocked_senders_tail = nullptr;
-    IPC::block_sender(q, *sender);
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    sender->state = TaskState::TERMINATED;
+    // Dispatch the receiver: its lambda returns → trampoline terminates it
+    // → cleanup() → MessageQueue::~MessageQueue wakes the blocked sender.
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    IPC::wake_sender(q, *cur);
+    // The sender's spin-wait sees its own queue/blocked state cleared by the
+    // destructor wake; it re-looks-up the (now gone) destination and fails.
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    JARVIS_ASSERT(q.blocked_senders_head == nullptr);
-    JARVIS_ASSERT(q.blocked_senders_tail == nullptr);
+    JARVIS_ASSERT(send_result == 0);
 
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::wake_sender restores the receiver's priority
-// to its base_priority.
-// Input: Set cur->base_priority=5, cur->priority=10, block/wake a sender
-// Expect: After wake_sender, cur->priority == 5 (base_priority)
+// Testidea: Verifies that a REAL sender blocked on a full receiver queue is
+// woken when the receiver drains (priority restored on wake).
+// Input: Receiver (prio 11) with a full queue; a real sender (prio 12)
+//        blocks in IPC::send().  The receiver's priority is boosted while
+//        the sender is blocked; after the drain it is restored to base.
+// Expect: After the drain, the sender terminates and the receiver's priority
+//         is its base_priority.
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    uint64_t recv_id = receiver->id;
+    fill_queue(*receiver);
 
-    cur->base_priority = 5;
-    cur->priority = 10;
-
-    auto sender_ptr = create_test_task(5, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    MessageQueue &q = cur->msg_queue;
-    IPC::block_sender(q, *sender);
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
 
-    IPC::wake_sender(q, *cur);
+    // The receiver is boosted while a higher-priority sender is blocked.
+    JARVIS_ASSERT(receiver->priority >= sender->priority);
 
-    JARVIS_ASSERT_EQ(5ULL, cur->priority);
+    // Drain: wake_sender restores the receiver's priority.
+    kernel::Message drain;
+    JARVIS_ASSERT(IPC::recv(drain));
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
+    JARVIS_ASSERT(receiver->priority == receiver->base_priority);
+    JARVIS_ASSERT(send_result == 1);
+
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies IPC::send rollback when called with interrupts disabled
-// and the target queue is full.  With IRQs off the deferred switch can never
-// apply, so send() rolls back block_sender mutations and returns false.
-// Input: Fill own queue, create sender task, switch to sender under IrqGuard
-// and attempt send; switch back to receiver and recv.
-// Expect: send returns false; sender is RUNNING (not BLOCKED) after rollback
-// and is not linked into any blocked-senders list.
+// Testidea: Verifies IPC::send blocks a REAL sender when the target queue is
+// full, then completes once the queue has space (real block/wake).
+// Input: Own queue filled; a real sender (prio 12) dispatches and blocks
+//        inside IPC::send().  The harness drains one message.
+// Expect: sender is BLOCKED while the queue is full; after the drain it wakes,
+// completes the send, and TERMINATES with result==1.
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler, IPC_MAX_QUEUE_MSG
-JARVIS_TEST(ipc_send_block_full, "PRE: irq_shield | POST: none") {
-    auto *cur = Scheduler::current_task();
-    JARVIS_ASSERT(cur != nullptr);
+JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    fill_queue(*receiver);
+    uint64_t recv_id = receiver->id;
 
-    Message msg;
-    msg.sender_id = cur->id;
-    msg.type = 0;
-    msg.priority = 0;
-    msg.data_size = 0;
-
-    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
-        JARVIS_ASSERT(IPC::send(cur->id, msg));
-    }
-    JARVIS_ASSERT(cur->msg_queue.is_full());
-
-    auto sender_ptr = create_test_task(5, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    // send + block + restore under IrqGuard: with interrupts disabled the
-    // deferred switch can never apply, so send() rolls back the block_sender
-    // mutations and returns false.  The sender is restored to RUNNING.
     {
-        arch::IrqGuard guard;
-        Scheduler::set_current(*sender);
-        bool ok = IPC::send(cur->id, msg);
-        JARVIS_ASSERT(!ok);
-        JARVIS_ASSERT(sender->state == TaskState::RUNNING);
-        JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
-        Scheduler::set_current(*cur);
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
     }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    Message out;
+    // Drain one message — the blocked sender's send completes.
+    kernel::Message out;
     JARVIS_ASSERT(IPC::recv(out));
-    JARVIS_ASSERT(sender->state == TaskState::RUNNING);
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
+    JARVIS_ASSERT(send_result == 1);
+
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
@@ -698,94 +871,125 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies that IPC::send rolls back block_sender mutations when
-// called with interrupts disabled (IrqGuard / ScopedCurrentTask).  Sender is
-// restored to RUNNING and removed from blocked-senders list.
-// Input: Fill receiver's queue, sender tries to send under IrqGuard.
-// Terminate receiver and cleanup.
-// Expect: send returns false; sender is RUNNING (never left BLOCKED after
-// rollback) and blocked_on_queue is null.
-JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: irq_shield | POST: none") {
-    auto receiver_ptr = create_test_task(5, 10);
-    auto *receiver = receiver_ptr.get();
+// Testidea: Verifies that a REAL sender blocked on a receiver that then
+// terminates is unblocked via the real cleanup path (fast-fail).
+// Input: Receiver (prio 11) with a full queue; a real sender (prio 12)
+//        blocks inside IPC::send().  The receiver is dispatched, terminates,
+//        and its cleanup wakes the sender.
+// Expect: sender terminates; the send returns false (destination gone).
+JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            // Real exit: dispatched, lambda returns, trampoline terminates.
+        },
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
+    Scheduler::add_task(*receiver);
+    fill_queue(*receiver);
+    uint64_t recv_id = receiver->id;
 
-    auto sender_ptr = create_test_task(6, 10);
-    auto *sender = sender_ptr.get();
+    IpcCtx sctx{};
+    uint64_t send_result = 0;
+    sctx.peer_id_ = recv_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->peer_id_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
     JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
 
-    kernel::Message msg{};
-    msg.sender_id = sender->id;
-    msg.type = 1;
-    msg.priority = 0;
-    msg.data_size = 0;
-
-    // Fill receiver's queue to force sender to block
-    for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
-        kernel::Message fill_msg{};
-        fill_msg.sender_id = 0;
-        fill_msg.type = 99;
-        fill_msg.priority = 0;
-        fill_msg.data_size = 0;
-        receiver->msg_queue.push(fill_msg);
-    }
-
-    // Now send from sender - should fail because with interrupts disabled
-    // (ScopedCurrentTask cli) the deferred switch can never apply.  send()
-    // rolls back block_sender mutations and returns false.  The sender
-    // is restored to RUNNING, not left BLOCKED.
     {
-        kernel::test::ScopedCurrentTask scoped(*sender);
-        bool ok = kernel::IPC::send(receiver->id, msg, 0);
-        JARVIS_ASSERT(!ok);
-        // Rollback removed sender from blocked list and restored RUNNING
-        JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
-        JARVIS_ASSERT(sender->state == TaskState::RUNNING);
-        JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
-
-        // Now terminate receiver and cleanup
-        receiver->state = TaskState::TERMINATED;
-        receiver->exit_code = 0;
-        receiver->cleanup();
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
     }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
+    // Dispatch the receiver → real termination + cleanup.
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    // Sender fast-fails once the receiver's cleanup woke it.
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT(send_result == 0);
+
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Registers all IPC unit tests with the test framework.
-// Input: None
-// Expect: All ipc_* tests are registered via JARVIS_REGISTER_TEST
-// Depends: kernel test framework
-// Runmode: kernel
-// Testidea: Verifies that IPC::send() wakes a BLOCKED destination task (bug
-// #014).
-// When a task is blocked on its own queue (e.g. waiting for a reply in
-// send_sync)
-// and another task sends it a message, the blocked task must be set to READY.
-// Input: Create receiver, block it on its own queue. Send it a message.
-// Expect: Receiver transitions from BLOCKED to READY after the send.
+// Testidea: Verifies that IPC::send() wakes a genuinely BLOCKED destination
+// task (bug #014): a task blocked waiting for a reply in send_sync() is made
+// READY when a reply arrives.
+// Input: Receiver task (prio 11) blocks in IPC::send_sync() (real blocking).
+//        The harness sends it a reply message via IPC::send().
+// Expect: The receiver transitions from BLOCKED to RUNNING/TERMINATED after
+//         the send (its send_sync completes).
 JARVIS_TEST(ipc_send_wakes_blocked_destination, "PRE: none | POST: none") {
-    auto receiver_ptr = create_test_task(5, 10);
-    auto *receiver = receiver_ptr.get();
+    // A real peer that receives the request and sends a reply — drives the
+    // request phase so the receiver genuinely blocks in send_sync.
+    uint64_t peer_id = Scheduler::current_task()->id;
+
+    IpcCtx rctx{};
+    uint64_t recv_done = 0;
+    rctx.peer_id_ = peer_id;
+    rctx.out_ = reinterpret_cast<uint64_t>(&recv_done);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message req{};
+            req.sender_id = self->id;
+            req.type = 42;
+            req.priority = 0;
+            req.data_size = 0;
+            kernel::Message reply{};
+            // Block until the harness delivers the reply.
+            bool ok = IPC::send_sync(c->peer_id_, req, reply);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
+    receiver->user_data = &rctx;
+    Scheduler::add_task(*receiver);
+    Scheduler::reschedule();
 
-    // Manually block the receiver task on its own queue
-    Scheduler::set_current(*receiver);
-    receiver->state = TaskState::BLOCKED;
+    // Wait until the receiver genuinely blocks in send_sync (reply_wait).
+    while (receiver->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(receiver->reply_wait);
 
-    // Send a message to the blocked receiver
-    Message msg{};
-    msg.sender_id = 1;
-    msg.type = 42;
-    msg.priority = 0;
-    msg.data_size = 0;
-    bool sent = IPC::send(receiver->id, msg, 0);
-    JARVIS_ASSERT(sent);
+    // The harness is the request peer: deliver the reply to the blocked
+    // receiver — the real IPC::send reply-wakeup path.
+    kernel::Message reply{};
+    reply.sender_id = peer_id;
+    reply.type = 99;
+    reply.priority = 0;
+    reply.data_size = 0;
+    JARVIS_ASSERT(IPC::send(receiver->id, reply));
 
-    // Receiver should now be READY
-    JARVIS_ASSERT(receiver->state == TaskState::READY);
+    // The receiver wakes, completes send_sync, and terminates.
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT(recv_done == 1);
 
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 

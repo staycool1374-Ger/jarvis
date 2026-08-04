@@ -18,6 +18,12 @@
 
 /// @file test_queue_pip.cpp
 /// @brief Priority Inheritance Protocol tests for sync::Queue.
+///
+///        v0.3.10 rework (SIMULATED → DRIVEN): the sender and receiver are
+///        REAL kernel tasks (prio ≥ 11) dispatched by the real timer ISR.
+///        One blocks on the queue (full send / empty receive) while the
+///        other holds the queue — the PIP boost is observed through genuine
+///        blocking, never through set_current impersonation.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -27,181 +33,274 @@
 
 using namespace kernel;
 
+namespace {
+
+/// @brief  Context for a task lambda (captureless lambdas only).
+struct QueueCtx {
+    uint64_t queue_;
+    uint64_t out_;
+};
+
+/// @brief  Create a REAL kernel task (prio ≥ 11) whose lambda calls
+///         @p fn(queue_ptr, out_ptr).  Dispatch and wait for BLOCKED state.
+/// @param  fn  Function: `void(TaskControlBlock *self, sync::Queue *q,
+///         uint64_t *out)`.
+template <void (*Fn)(TaskControlBlock *, sync::Queue *, uint64_t *)>
+TaskControlBlock *spawn_queue_task(sync::Queue &queue, uint64_t prio,
+                                   QueueCtx &ctx, uint64_t *out) {
+    ctx.queue_ = reinterpret_cast<uint64_t>(&queue);
+    ctx.out_ = reinterpret_cast<uint64_t>(out);
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<QueueCtx *>(self->user_data);
+            auto *q = reinterpret_cast<sync::Queue *>(c->queue_);
+            auto *o = reinterpret_cast<uint64_t *>(c->out_);
+            Fn(self, q, o);
+        },
+        prio, 10);
+    if (t == nullptr)
+        return nullptr;
+    t->user_data = &ctx;
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    return t;
+}
+
+/// @brief  Create a REAL kernel task (prio ≥ 11) whose lambda calls a
+///         NON-blocking @p fn, then wait for genuine termination.
+template <void (*Fn)(TaskControlBlock *, sync::Queue *, uint64_t *)>
+TaskControlBlock *spawn_queue_task_nonblocking(sync::Queue &queue,
+                                               uint64_t prio, QueueCtx &ctx,
+                                               uint64_t *out) {
+    ctx.queue_ = reinterpret_cast<uint64_t>(&queue);
+    ctx.out_ = reinterpret_cast<uint64_t>(out);
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<QueueCtx *>(self->user_data);
+            auto *q = reinterpret_cast<sync::Queue *>(c->queue_);
+            auto *o = reinterpret_cast<uint64_t *>(c->out_);
+            Fn(self, q, o);
+        },
+        prio, 10);
+    if (t == nullptr)
+        return nullptr;
+    t->user_data = &ctx;
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    return t;
+}
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+} // namespace
+
 // ---------------------------------------------------------------------------
 // Queue PIP — boost sender when high-pri receiver blocks on empty queue
 // ---------------------------------------------------------------------------
-// Low-pri sender (5) sends, then high-pri receiver (15) blocks on empty
-// queue.  Sender's priority should be boosted to the receiver's priority.
-// NOTE: restore_sender() runs inside the blocked receiver's receive() when
-// it completes, which is deferred until the next context switch.  We assert
-// only the boost, not the deferred restore.
+// Low-pri sender (11) sends, then high-pri receiver (20) blocks on empty
+// queue.  The last sender's priority is boosted to the receiver's priority.
+static void recv_blocks_body(TaskControlBlock *, sync::Queue *q,
+                             uint64_t *out) {
+    uint8_t buf[32];
+    size_t sz = sizeof(buf);
+    bool ok = q->receive(buf, &sz); // blocks while the queue is empty
+    __atomic_store_n(out, ok ? 1 : 0, __ATOMIC_RELEASE);
+}
+
+static void send_body(TaskControlBlock *, sync::Queue *q, uint64_t *out) {
+    bool ok = q->try_send(reinterpret_cast<const uint8_t *>("x"), 1);
+    __atomic_store_n(out, ok ? 1 : 0, __ATOMIC_RELEASE);
+}
+
 JARVIS_TEST(queue_pip_boost_sender, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
-    auto *low = TaskControlBlock::create([]() {}, 5, 10);
+    // Low sender (prio 11) genuinely sends a message.
+    QueueCtx sctx;
+    uint64_t sent = 0;
+    auto *low = spawn_queue_task_nonblocking<send_body>(queue, 11, sctx, &sent);
     JARVIS_ASSERT(low != nullptr);
-    low->base_priority = 5;
-    low->priority = 5;
-    Scheduler::add_task(*low);
+    (void)sent;
+    JARVIS_ASSERT(queue.available() == 1);
 
-    auto *high = TaskControlBlock::create([]() {}, 15, 10);
-    JARVIS_ASSERT(high != nullptr);
-    high->base_priority = 15;
-    high->priority = 15;
-    Scheduler::add_task(*high);
-
-    // Low sends → last_sender_ = low
-    uint8_t msg[4] = {1, 2, 3, 4};
-    Scheduler::set_current(*low);
-    JARVIS_ASSERT(queue.try_send(msg, 4));
-
-    // Drain queue so receive will block
+    // High receiver (prio 20) genuinely blocks on the (now empty after
+    // drain) queue — drain first so receive blocks.
     uint8_t buf[32];
-    size_t sz = 32;
+    size_t sz = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &sz));
+    JARVIS_ASSERT(queue.available() == 0);
 
-    // High blocks on empty queue → boost_sender boosts low
-    Scheduler::set_current(*high);
-    queue.receive(buf, &sz);
+    uint64_t recvd = 0;
+    QueueCtx rctx;
+    auto *high = spawn_queue_task<recv_blocks_body>(queue, 20, rctx, &recvd);
+    JARVIS_ASSERT(high != nullptr);
     JARVIS_ASSERT(high->state == TaskState::BLOCKED);
-    JARVIS_ASSERT_FMT(low->priority >= high->priority,
-                      "low->priority=%lu high->priority=%lu",
-                      low->priority, high->priority);
 
-    // Low sends to unblock high
-    Scheduler::set_current(*low);
-    JARVIS_ASSERT(queue.try_send(msg, 4));
-    JARVIS_ASSERT(high->state == TaskState::READY);
+    // The last sender (low, prio 11) is boosted to the receiver's priority.
+    JARVIS_ASSERT(low->priority >= high->priority);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
+    // Low sends to unblock high.
+    JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("y"), 1));
+    while (high->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT(recvd == 1);
+
+    if (low->state != TaskState::TERMINATED) {
+        release_task(low);
+    } else {
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+    }
+    release_task(high);
     JARVIS_TEST_PASS();
 }
 
 // ---------------------------------------------------------------------------
 // Queue PIP — boost receiver when high-pri sender blocks on full queue
 // ---------------------------------------------------------------------------
-// Low-pri receiver (5) receives, then queue filled, high-pri sender (15)
-// blocks on full queue.  Receiver's priority should be boosted to sender's.
+// Low-pri receiver (11) receives, then queue filled, high-pri sender (20)
+// blocks on full queue.  The last receiver's priority is boosted to the
+// sender's priority.
+static void send_blocks_body(TaskControlBlock *, sync::Queue *q,
+                             uint64_t *out) {
+    bool ok = q->send(reinterpret_cast<const uint8_t *>("blocked"), 7);
+    __atomic_store_n(out, ok ? 1 : 0, __ATOMIC_RELEASE);
+}
+
+static void recv_body(TaskControlBlock *, sync::Queue *q, uint64_t *out) {
+    uint8_t buf[32];
+    size_t sz = sizeof(buf);
+    bool ok = q->try_receive(buf, &sz);
+    __atomic_store_n(out, ok ? 1 : 0, __ATOMIC_RELEASE);
+}
+
 JARVIS_TEST(queue_pip_boost_receiver, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
-    auto *low = TaskControlBlock::create([]() {}, 5, 10);
+    // Low receiver (prio 11) genuinely receives one seed message.
+    JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("s"), 1));
+    QueueCtx rctx;
+    uint64_t got = 0;
+    auto *low =
+        spawn_queue_task_nonblocking<recv_body>(queue, 11, rctx, &got);
     JARVIS_ASSERT(low != nullptr);
-    low->base_priority = 5;
-    low->priority = 5;
-    Scheduler::add_task(*low);
+    (void)got;
+    JARVIS_ASSERT(queue.available() == 0);
 
-    auto *high = TaskControlBlock::create([]() {}, 15, 10);
-    JARVIS_ASSERT(high != nullptr);
-    high->base_priority = 15;
-    high->priority = 15;
-    Scheduler::add_task(*high);
-
-    // Seed a message so low's receive succeeds → last_receiver_ = low
-    uint8_t seed[4] = {0};
-    JARVIS_ASSERT(queue.try_send(seed, 1));
-
-    uint8_t buf[32];
-    size_t sz = 32;
-    Scheduler::set_current(*low);
-    JARVIS_ASSERT(queue.try_receive(buf, &sz));
-
-    // Fill queue to capacity
+    // Fill the queue to capacity.
     for (size_t i = 0; i < sync::QUEUE_MAX_MSG_COUNT; ++i) {
         uint8_t d[4] = {static_cast<uint8_t>(i)};
         JARVIS_ASSERT(queue.try_send(d, 1));
     }
+    JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT);
 
-    // High blocks on full queue → boost_receiver boosts low
-    Scheduler::set_current(*high);
-    queue.send((uint8_t *)"test", 4);
+    // High sender (prio 20) genuinely blocks on the full queue.
+    uint64_t done = 0;
+    QueueCtx sctx;
+    auto *high = spawn_queue_task<send_blocks_body>(queue, 20, sctx, &done);
+    JARVIS_ASSERT(high != nullptr);
     JARVIS_ASSERT(high->state == TaskState::BLOCKED);
-    JARVIS_ASSERT_FMT(low->priority >= high->priority,
-                      "low->priority=%lu high->priority=%lu",
-                      low->priority, high->priority);
 
-    // Drain one → unblocks high
-    sz = 32;
+    // The last receiver (low, prio 11) is boosted to the sender's priority.
+    JARVIS_ASSERT(low->priority >= high->priority);
+
+    // Drain one → unblocks high (its blocked send completes).
+    uint8_t buf[32];
+    size_t sz = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &sz));
-    JARVIS_ASSERT(high->state == TaskState::READY);
+    while (high->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT(done == 1);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
+    if (low->state != TaskState::TERMINATED) {
+        release_task(low);
+    } else {
+        Scheduler::remove_task(*low);
+        low->cleanup();
+        delete low;
+    }
+    release_task(high);
     JARVIS_TEST_PASS();
 }
 
 // ---------------------------------------------------------------------------
 // Queue PIP — multiple senders, boost highest
 // ---------------------------------------------------------------------------
-// Two low-pri senders (5, 8) send.  Queue drained.  High-pri receiver (20)
-// blocks on empty queue.  The last sender (prio 8) should be boosted.
+// Two low-pri senders (11, 14) send.  Queue drained.  High-pri receiver (20)
+// blocks on empty queue.  The last sender (prio 14) is boosted.
 JARVIS_TEST(queue_pip_multiple_senders, "PRE: none | POST: none") {
     sync::Queue queue;
     queue.init();
 
-    auto *low1 = TaskControlBlock::create([]() {}, 5, 10);
+    // Low1 (prio 11) and Low2 (prio 14) genuinely send.
+    QueueCtx s1ctx;
+    uint64_t s1done = 0;
+    auto *low1 =
+        spawn_queue_task_nonblocking<send_body>(queue, 11, s1ctx, &s1done);
     JARVIS_ASSERT(low1 != nullptr);
-    low1->base_priority = 5;
-    low1->priority = 5;
-    Scheduler::add_task(*low1);
 
-    auto *low2 = TaskControlBlock::create([]() {}, 8, 10);
+    QueueCtx s2ctx;
+    uint64_t s2done = 0;
+    auto *low2 =
+        spawn_queue_task_nonblocking<send_body>(queue, 14, s2ctx, &s2done);
     JARVIS_ASSERT(low2 != nullptr);
-    low2->base_priority = 8;
-    low2->priority = 8;
-    Scheduler::add_task(*low2);
 
-    uint8_t msg[4] = {0};
-    Scheduler::set_current(*low1);
-    JARVIS_ASSERT(queue.try_send(msg, 4));
-    Scheduler::set_current(*low2);
-    JARVIS_ASSERT(queue.try_send(msg, 4));
+    JARVIS_ASSERT(queue.available() == 2);
 
-    // Drain queue
+    // Drain the queue so receive will block.
     uint8_t buf[32];
-    size_t sz = 32;
+    size_t sz = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &sz));
     JARVIS_ASSERT(queue.try_receive(buf, &sz));
+    JARVIS_ASSERT(queue.available() == 0);
 
-    // High blocks on empty queue → boost_sender boosts last sender (low2)
-    auto *high = TaskControlBlock::create([]() {}, 20, 10);
+    // High receiver (prio 20) blocks on the empty queue → the last sender
+    // (low2, prio 14) is boosted.
+    uint64_t recvd = 0;
+    QueueCtx rctx;
+    auto *high = spawn_queue_task<recv_blocks_body>(queue, 20, rctx, &recvd);
     JARVIS_ASSERT(high != nullptr);
-    high->base_priority = 20;
-    high->priority = 20;
-    Scheduler::add_task(*high);
-
-    Scheduler::set_current(*high);
-    queue.receive(buf, &sz);
     JARVIS_ASSERT(high->state == TaskState::BLOCKED);
-    JARVIS_ASSERT_FMT(low2->priority >= high->priority,
-                      "low2->priority=%lu high->priority=%lu",
-                      low2->priority, high->priority);
+    JARVIS_ASSERT(low2->priority >= high->priority);
 
-    // Send to unblock
-    Scheduler::set_current(*low1);
-    JARVIS_ASSERT(queue.try_send(msg, 4));
-    JARVIS_ASSERT(high->state == TaskState::READY);
+    // Send to unblock.
+    JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("z"), 1));
+    while (high->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    JARVIS_ASSERT(recvd == 1);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low2);
-    low2->cleanup();
-    delete low2;
-    Scheduler::remove_task(*low1);
-    low1->cleanup();
-    delete low1;
+    auto cleanup = [](TaskControlBlock *t) {
+        if (t == nullptr)
+            return;
+        if (t->state != TaskState::TERMINATED) {
+            Scheduler::remove_task(*t);
+            t->cleanup();
+            delete t;
+        } else {
+            Scheduler::remove_task(*t);
+            t->cleanup();
+            delete t;
+        }
+    };
+    cleanup(high);
+    cleanup(low2);
+    cleanup(low1);
     JARVIS_TEST_PASS();
 }
 

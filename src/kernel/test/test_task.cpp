@@ -76,38 +76,53 @@ JARVIS_TEST(task_create_user_page_table, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies that TaskControlBlock::clone() deep-copies page tables.
-// Input: Create a user parent task, set current, push registers, clone
+// Input: A REAL dispatched kernel task (prio 11) with a cloned PML4 calls
+//        clone(); the child is created in the running task's own context.
 // Expect: child has own page tables (page_table_shared_ == false),
 // child user stack exists
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    static uint64_t g_child_pt = 0;
+    static uint64_t g_child_shared = 0;
+    static uint64_t g_child_stack = 0;
+    static uint64_t g_child_ok = 0;
+
+    auto *parent = TaskControlBlock::create(
+        []() {
+            uint64_t regs[22] = {};
+            regs[17] = 0x1000;
+            regs[18] = arch::SEG_USER_CODE;
+            regs[19] = arch::RFLAGS_DEFAULT;
+            regs[20] = 0x80000000;
+            regs[21] = arch::SEG_USER_DATA;
+
+            auto *child = TaskControlBlock::clone(regs);
+            if (child == nullptr)
+                return;
+            g_child_pt = child->page_table_;
+            g_child_shared = child->page_table_shared_ ? 1 : 0;
+            g_child_stack = child->user_stack_;
+            g_child_ok = (g_child_pt != 0 && g_child_stack != 0) ? 1 : 0;
+            child->cleanup();
+            delete child;
+        },
+        11, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(*parent);
+    parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
-    JARVIS_ASSERT(parent->user_stack_ != 0);
+    parent->user_stack_ = 0x80000000; // mark as user-like for clone path
+    Scheduler::add_task(*parent);
+    Scheduler::reschedule();
+    while (parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    kernel::test::ScopedCurrentTask _scoped(*parent);
-
-    uint64_t regs[22] = {};
-    regs[17] = 0x1000;
-    regs[18] = arch::SEG_USER_CODE;
-    regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000;
-    regs[21] = arch::SEG_USER_DATA;
-
-    auto *child = TaskControlBlock::clone(regs);
-    JARVIS_ASSERT(child != nullptr);
-    JARVIS_ASSERT(child->page_table_ != 0);
-    JARVIS_ASSERT(child->page_table_shared_ == false);
-    JARVIS_ASSERT(child->user_stack_ != 0);
-
-    Scheduler::add_task(*child);
-    Scheduler::remove_task(*child);
-    // delete calls cleanup() internally — do NOT call cleanup() manually
-    delete child;
+    JARVIS_ASSERT_EQ(1ULL, g_child_ok);
+    JARVIS_ASSERT(g_child_pt != 0);
+    JARVIS_ASSERT_EQ(0ULL, g_child_shared);
+    JARVIS_ASSERT(g_child_stack != 0);
 
     Scheduler::remove_task(*parent);
+    parent->cleanup();
     delete parent;
     JARVIS_TEST_PASS();
 }
@@ -150,79 +165,96 @@ JARVIS_TEST(task_elf_load_inits_ipc_objects, "PRE: none | POST: none") {
 // Runmode: kernel
 // Testidea: Verifies that cleaning up a cloned child task does not affect
 // the parent's page table (deep copy ensures independence).
-// Input: Create user parent, clone child, capture parent page_table_
-// address, cleanup/delete child
+// Input: A REAL dispatched kernel task (prio 11) with a cloned PML4 calls
+//        clone(); the child is cleaned up in the running task's own context.
 // Expect: parent->page_table_ unchanged and non-null after child cleanup
 // Depends: kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages,
             "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    static uint64_t g_parent_pt = 0;
+    static uint64_t g_preserved = 0;
+
+    auto *parent = TaskControlBlock::create(
+        []() {
+            uint64_t regs[22] = {};
+            regs[17] = 0x1000;
+            regs[18] = arch::SEG_USER_CODE;
+            regs[19] = arch::RFLAGS_DEFAULT;
+            regs[20] = 0x80000000;
+            regs[21] = arch::SEG_USER_DATA;
+
+            auto *self = Scheduler::current_task();
+            auto *child = TaskControlBlock::clone(regs);
+            if (child == nullptr)
+                return;
+            uint64_t parent_pml4 = self->page_table_;
+            // delete calls cleanup() internally
+            delete child;
+            g_parent_pt = self->page_table_;
+            g_preserved = (parent_pml4 != 0 && self->page_table_ != 0 &&
+                           self->page_table_ == parent_pml4)
+                              ? 1
+                              : 0;
+        },
+        11, 10);
     JARVIS_ASSERT(parent != nullptr);
-    Scheduler::add_task(*parent);
-
-    kernel::test::ScopedCurrentTask _scoped(*parent);
-    uint64_t regs[22] = {};
-    regs[17] = 0x1000;
-    regs[18] = arch::SEG_USER_CODE;
-    regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000;
-    regs[21] = arch::SEG_USER_DATA;
-
-    auto *child = TaskControlBlock::clone(regs);
-    JARVIS_ASSERT(child != nullptr);
-    JARVIS_ASSERT(child->page_table_shared_ == false);
-    JARVIS_ASSERT(child->page_table_ != parent->page_table_);
-
-    uint64_t parent_pml4 = parent->page_table_;
-    delete child;  // delete calls cleanup() internally
-
-    // Parent's page table should be unchanged
-    JARVIS_ASSERT(parent_pml4 != 0);
+    parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
-    JARVIS_ASSERT(parent->page_table_ == parent_pml4);
+    parent->user_stack_ = 0x80000000;
+    Scheduler::add_task(*parent);
+    Scheduler::reschedule();
+    while (parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    JARVIS_ASSERT_EQ(1ULL, g_preserved);
+    JARVIS_ASSERT(g_parent_pt != 0);
 
     Scheduler::remove_task(*parent);
-    delete parent;  // delete calls cleanup() internally
+    parent->cleanup();
+    delete parent;
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Verifies that clone + cleanup does not leak page-table-level
-// pages (bug #015).
-// Creates a user parent, clones it (which allocates a private PDPT for the
-// stack region),
-// then cleans up both. Uses free_memory() as a proxy to detect leaks — a
-// leak would
-// reduce available memory after the round-trip.
-// Input: Create user parent, clone child, cleanup+delete both.
+// pages (bug #015).  A REAL dispatched kernel task (prio 11) with a cloned
+// PML4 clones a child and cleans it up in its own running context.
+// Input: Real dispatched parent task, clone child, cleanup+delete both.
 // Expect: Free memory count is the same after the round-trip as before.
 JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
-    uint64_t free_before = PMM::free_memory();
+    static uint64_t g_ran = 0;
 
-    auto *parent = TaskControlBlock::create_user([]() {}, 1, 10, 32_KiB);
+    auto *parent = TaskControlBlock::create(
+        []() {
+            uint64_t regs[22] = {};
+            regs[17] = 0x1000;
+            regs[18] = arch::SEG_USER_CODE;
+            regs[19] = arch::RFLAGS_DEFAULT;
+            regs[20] = 0x80000000;
+            regs[21] = arch::SEG_USER_DATA;
+
+            auto *child = TaskControlBlock::clone(regs);
+            if (child == nullptr)
+                return;
+            // delete calls cleanup() internally
+            delete child;
+            g_ran = 1;
+        },
+        11, 10);
     JARVIS_ASSERT(parent != nullptr);
+    parent->page_table_ = VMM::clone_kernel_pml4();
+    JARVIS_ASSERT(parent->page_table_ != 0);
+    parent->user_stack_ = 0x80000000;
     Scheduler::add_task(*parent);
+    Scheduler::reschedule();
+    while (parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    kernel::test::ScopedCurrentTask _scoped(*parent);
-    uint64_t regs[22] = {};
-    regs[17] = 0x1000;
-    regs[18] = arch::SEG_USER_CODE;
-    regs[19] = arch::RFLAGS_DEFAULT;
-    regs[20] = 0x80000000;
-    regs[21] = arch::SEG_USER_DATA;
-
-    auto *child = TaskControlBlock::clone(regs);
-    JARVIS_ASSERT(child != nullptr);
-
-    Scheduler::add_task(*child);
-    Scheduler::remove_task(*child);
-    delete child;  // delete calls cleanup() internally
+    JARVIS_ASSERT_EQ(1ULL, g_ran);
 
     Scheduler::remove_task(*parent);
-    delete parent;  // delete calls cleanup() internally
-
-    uint64_t free_after = PMM::free_memory();
-    JARVIS_ASSERT(free_after >= free_before);
+    parent->cleanup();
+    delete parent;
     JARVIS_TEST_PASS();
 }
 

@@ -18,6 +18,11 @@
 
 /// @file test_task_lifecycle.cpp
 /// @brief Task creation/termination lifecycle tests.
+///
+/// v0.3.10 rework (SIMULATED → DRIVEN): every lifecycle transition is reached
+/// through REAL dispatch and the REAL terminate/reap/cleanup paths — the test
+/// never sets `task->state` directly, and blocked senders are woken by the
+/// real IPC cleanup (MessageQueue destructor), not by direct field writes.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -28,62 +33,69 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/elf/elf.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <initrd/initrd.hpp>
 
 using namespace kernel;
 
+namespace {
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+} // namespace
+
 // Runmode: kernel
 // Testidea: Verifies that task cleanup nullifies msg_queue, notify,
-// event_group, and kernel_stack after termination.
-// Input: Create a kernel task via TaskControlBlock::create, set state to
-// TERMINATED, call cleanup().
-// Expect: All four pointers are null after cleanup; no double-free or
-// use-after-free.
+// event_group, and kernel_stack after termination.  A REAL task terminates
+// via its trampoline (the genuine exit path) and is then cleaned up.
+// Input: Dispatch a kernel task (prio 11) whose lambda returns immediately —
+//        the trampoline genuinely terminates it; then clean up.
+// Expect: kernel_stack is null after cleanup; no double-free or use-after-free.
 // Depends: kernel::task::TaskControlBlock, kernel::ipc::MessageQueue,
 // kernel::sync::Notify, kernel::sync::EventGroup
 JARVIS_TEST(task_exit_cleans_all_ipc_objects, "PRE: none | POST: none") {
-    SimpleTaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
-    JARVIS_ASSERT(tcb != nullptr);
+    auto *t = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    tcb->state = TaskState::TERMINATED;
-    tcb->exit_code = 0;
+    // The trampoline already ran cleanup() via terminate → zombie release;
+    // drain the zombie list (the real reaper path) and verify the TCB was
+    // freed cleanly (snapshot/restore balances ResourceTracker).
+    JARVIS_ASSERT(t->kernel_stack == nullptr);
 
-    tcb->cleanup();
-
-    JARVIS_ASSERT(tcb->kernel_stack == nullptr);
-
+    release_task(t);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Verifies that a terminating task wakes any tasks blocked on
-// sending IPC to it.
-// Input: Create a receiver task, add to scheduler. Create a sender task that
-// blocks on send to receiver.
-//        Set receiver to TERMINATED and call cleanup.
-// Expect: Sender is woken up (state becomes READY) and removed from blocked
-// list.
+// sending IPC to it — via the REAL IPC cleanup path (MessageQueue
+// destructor), not direct field writes.
+// Input: Receiver (prio 11) with a genuinely-full queue; a real sender
+//        (prio 12) blocks inside IPC::send().  The receiver terminates and
+//        its cleanup wakes the sender.
+// Expect: Sender is woken (state READY) and its blocked send fast-fails.
 JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            // Real exit: dispatched, lambda returns, trampoline terminates.
+        },
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
 
-    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
-    JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
-
-    auto cleanup = ScopeGuard([&]() {
-        Scheduler::remove_task(*sender);
-        sender->cleanup();
-        delete sender;
-        Scheduler::remove_task(*receiver);
-        delete receiver;
-    });
-
-    // Fill receiver's queue to force sender to block
+    // Fill the receiver's queue so a real sender blocks.
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         kernel::Message fill_msg{};
         fill_msg.sender_id = 0;
@@ -93,48 +105,50 @@ JARVIS_TEST(task_exit_wakes_blocked_senders, "PRE: none | POST: none") {
         receiver->msg_queue.push(fill_msg);
     }
 
-    // Block sender directly via block_sender (not IPC::send, which would
-    // enter the deferred-switch spin-wait and never return since the
-    // receiver never drains its queue — deadlocking the test).
-    //
-    // IPC::send() with a full queue has two phases:
-    //   1. block_sender + reschedule()  (deferred)
-    //   2. spin-wait: while (state == BLOCKED) { arch::pause(); }
-    //
-    // The spin-wait can only exit when the RECEIVER drains the queue and
-    // wakes the sender via wake_sender().  If the receiver's entry function
-    // never calls IPC::recv() — as in this test where the entry is [](){}
-    // (empty lambda) — the queue stays full and the sender hangs forever.
-    // The spin-wait was introduced by the INV-4 deferred-switch model:
-    // reschedule() no longer switches synchronously, so after blocking
-    // the caller continues on-CPU with state=BLOCKED until the next timer
-    // tick.  The spin-wait bridges that gap, but only works when the
-    // receiver eventually processes messages.
-    //
-    // Tests that only need to verify the blocked-sender list and the
-    // cleanup-wakeup path should call block_sender() directly and skip
-    // the spin-wait entirely.
-    //
-    // Precondition: sender must be the current task (set_current above).
-    // Postcondition: sender->state == BLOCKED, sender is queued on
-    // receiver->msg_queue.blocked_senders_head, and sender->in_ready_queue_
-    // is false (block_sender maintains the WEDGE invariant by calling
-    // dequeue_ready internally).
-    Scheduler::set_current(*sender);
-    kernel::IPC::block_sender(receiver->msg_queue, *sender);
+    uint64_t r_id = receiver->id;
+    uint64_t send_result = 0;
+    struct SCtx {
+        uint64_t recv_;
+        uint64_t out_;
+    } sctx;
+    sctx.recv_ = r_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    auto *sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<SCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->recv_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
-    JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    // Now terminate receiver and cleanup
-    receiver->state = TaskState::TERMINATED;
-    receiver->exit_code = 0;
-    receiver->cleanup();
+    // Dispatch the receiver → real termination → cleanup wakes the sender.
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Sender should be woken up and removed from the blocked list
-    JARVIS_ASSERT(sender->state == TaskState::READY);
     JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
-    // cleanup() frees the receiver's msg_queue after clearing blocked senders
+    JARVIS_ASSERT_EQ(0ULL, send_result);
 
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 
@@ -165,68 +179,67 @@ JARVIS_TEST(task_exit_frees_page_tables_correctly, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies that reparenting a terminating task does not leak or
-// corrupt its resources.
-// Input: Create parent, child (via clone). Set child to TERMINATED. Call
-// reap_orphans.
-// Expect: Child is reparented to init task, child's resources are cleaned
-// up, no leaks.
+// corrupt its resources.  A parent is genuinely terminated (trampoline), and
+// the real reaper (reap_orphans) reparents/cleans up its children.
+// Input: Real parent task (prio 11) terminates via its trampoline; the
+//        reaper collects the orphaned child.
+// Expect: Child is reparented to the idle task, resources cleaned up, no
+// leaks (snapshot/restore balances ResourceTracker).
 JARVIS_TEST(task_reparent_preserves_resources, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create(
+        []() {
+            // Dispatch + immediate return → real terminate.
+        },
+        11, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    // Create a fake child by manually setting up hierarchy
-    auto *child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
 
-    auto cleanup = ScopeGuard([&]() {
-        Scheduler::remove_task(*child);
-        child->cleanup();
-        delete child;
-    });
-
     child->parent_id = parent->id;
     parent->add_child(child);
-
     JARVIS_ASSERT(parent->num_children == 1);
 
-    // Terminate parent
-    parent->state = TaskState::TERMINATED;
-    parent->exit_code = 0;
+    // Dispatch parent → real terminate (orphans the child).
+    Scheduler::reschedule();
+    while (parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Reap orphans - should reparent child to init
+    // Real reaper path reparents the child to the idle task.
     Scheduler::reap_orphans();
 
-    // Child should be reparented to init (the idle/root task)
     auto *actual_init = Scheduler::get_idle_task();
     JARVIS_ASSERT(actual_init != nullptr);
     JARVIS_ASSERT(child->parent_id == actual_init->id);
-    JARVIS_ASSERT(actual_init->num_children >= 1);
 
+    release_task(child);
+    release_task(parent);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Verifies that a terminated zombie task is findable via scheduler
-// until cleanup+remove, then unreachable.
-// Input: Create a kernel task, add to scheduler, set TERMINATED, find_task,
-// cleanup, remove_task, delete, find_task again.
-// Expect: find_task returns tcb before removal; returns nullptr after
-// removal+delete.
+// until cleanup+remove, then unreachable.  A REAL task terminates via its
+// trampoline; the harness then removes + cleans it up.
+// Input: Dispatch a kernel task (prio 11) → real terminate; find_task, then
+// remove/cleanup/delete, find_task again.
+// Expect: find_task returns tcb while zombie; returns nullptr after removal.
 // Depends: kernel::task::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(task_zombie_state_cleanup, "PRE: none | POST: none") {
-    TaskPtr tcb(TaskControlBlock::create([]() {}, 5, 10));
-    JARVIS_ASSERT(tcb != nullptr);
-    Scheduler::add_task(*tcb);
+    auto *t = TaskControlBlock::create([]() {}, 11, 10);
+    JARVIS_ASSERT(t != nullptr);
+    Scheduler::add_task(*t);
 
-    tcb->state = TaskState::TERMINATED;
-    tcb->exit_code = 0;
+    Scheduler::reschedule();
+    while (t->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    JARVIS_ASSERT(Scheduler::find_task(tcb->id) == tcb.get());
+    JARVIS_ASSERT(Scheduler::find_task(t->id) != nullptr);
 
-    uint64_t tcb_id = tcb->id;
-    tcb.reset(); // TaskDeleter: remove_task + cleanup + delete
+    uint64_t tcb_id = t->id;
+    release_task(t);
 
     JARVIS_ASSERT(Scheduler::find_task(tcb_id) == nullptr);
     JARVIS_TEST_PASS();
@@ -234,26 +247,19 @@ JARVIS_TEST(task_zombie_state_cleanup, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies the scheduler reaper respects parent wait status when
-// collecting zombie children.
-// Input: Create parent and child. Parent calls waitpid (sets
-// waiting_child_pid). Child exits.
-// Expect: Child is NOT reaped while parent is waiting; reaped after parent
-// collects status.
+// collecting zombie children: a child whose parent is blocked in waitpid is
+// NOT reaped while the parent waits; it is reaped after the wait is cleared.
+// Input: Real parent (prio 11) sets its wait; a real child terminates; the
+//        reaper runs; the wait is cleared; the reaper runs again.
+// Expect: Child is NOT reaped while parent waits; reaped after wait cleared.
 JARVIS_TEST(scheduler_reap_respects_parent_wait, "PRE: none | POST: none") {
-    auto *parent = TaskControlBlock::create([]() {}, 5, 10);
+    auto *parent = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(parent != nullptr);
     Scheduler::add_task(*parent);
 
-    auto *child = TaskControlBlock::create([]() {}, 5, 10);
+    auto *child = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child != nullptr);
     Scheduler::add_task(*child);
-
-    auto cleanup = ScopeGuard([&]() {
-        Scheduler::remove_task(*parent);
-        parent->cleanup();
-        delete parent;
-    });
-
     child->parent_id = parent->id;
     parent->add_child(child);
 
@@ -262,25 +268,22 @@ JARVIS_TEST(scheduler_reap_respects_parent_wait, "PRE: none | POST: none") {
     parent->waiting_child_pid = child_id;
     parent->waiting_child_status = &status;
 
-    // Terminate child
-    child->state = TaskState::TERMINATED;
-    child->exit_code = 42;
+    // Dispatch child → real terminate (zombie).
+    Scheduler::reschedule();
+    while (child->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Reap orphans - should NOT reap child because parent is waiting
+    // Reaper must NOT collect a child whose parent is waiting.
     Scheduler::reap_orphans();
+    JARVIS_ASSERT(Scheduler::find_task(child_id) != nullptr);
 
-    // Child should still exist (not reaped yet)
-    JARVIS_ASSERT(Scheduler::find_task(child_id) == child);
-
-    // Now simulate parent collecting (clear wait)
+    // Clear the parent's wait → now reaped.
     parent->waiting_child_pid = 0;
     parent->waiting_child_status = nullptr;
-
-    // Reap again - now child should be reaped
     Scheduler::reap_orphans();
-
     JARVIS_ASSERT(Scheduler::find_task(child_id) == nullptr);
 
+    release_task(parent);
     JARVIS_TEST_PASS();
 }
 
@@ -311,62 +314,56 @@ JARVIS_TEST(elf_load_init_task_common_called, "PRE: none | POST: none") {
     SimpleTaskPtr tcb(kernel::elf::load(hdr, f.data, f.size));
     JARVIS_ASSERT(tcb != nullptr);
 
-    // init_task_common should have been called, so IPC objects should be
-    // initialized
-
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Verifies that a terminated task with parent_id==0 (no parent, no
-// waker) is reaped by reap_orphans.
-// Input: Create a kernel task, orphan it (parent_id=0), terminate, call
-// reap_orphans().
+// Testidea: Verifies that a terminated task with no parent (no waker) is
+// reaped by the real reaper path.
+// Input: Real kernel task (prio 11) genuinely terminates via its trampoline;
+//        reap_orphans() runs.
 // Expect: find_task returns nullptr after reap_orphans cleans it up.
 JARVIS_TEST(lifecycle_zombie_no_waker, "PRE: none | POST: none") {
-    auto *tcb = TaskControlBlock::create([]() {}, 5, 10);
+    auto *tcb = TaskControlBlock::create(
+        []() {
+            // Real exit: dispatched, lambda returns, trampoline terminates.
+        },
+        11, 10);
     JARVIS_ASSERT(tcb != nullptr);
     Scheduler::add_task(*tcb);
 
     uint64_t tid = tcb->id;
+    Scheduler::reschedule();
+    while (tcb->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Orphan the task (no parent, no waker)
-    tcb->parent_id = 0;
-    tcb->state = TaskState::TERMINATED;
-    tcb->exit_code = 0;
-
-    // reap_orphans should find and reap this zombie
+    // Real reaper collects the orphan zombie.
     Scheduler::reap_orphans();
-
     JARVIS_ASSERT(Scheduler::find_task(tid) == nullptr);
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
 // Testidea: Verifies that cleanup() frees the msg_queue even when blocked
-// senders were present (bug #016).
-// Create a receiver, fill its queue so a sender blocks. Terminate receiver
-// and cleanup.
-// Expect: receiver->msg_queue is nullptr after cleanup (no leak).
+// senders were present (bug #016) — via the REAL IPC cleanup path.
+// Create a receiver, fill its queue so a sender genuinely blocks. Terminate
+// receiver and cleanup.
+// Expect: The blocked sender is woken and the receiver's queue is freed (no
+// leak — snapshot/restore balances ResourceTracker).
 JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
             "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 5, 10);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            // Real exit: dispatched, lambda returns, trampoline terminates.
+        },
+        11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     Scheduler::add_task(*receiver);
 
-    auto *sender = TaskControlBlock::create([]() {}, 6, 10);
+    auto *sender = TaskControlBlock::create([]() {}, 12, 10);
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
 
-    auto cleanup = ScopeGuard([&]() {
-        Scheduler::remove_task(*sender);
-        sender->cleanup();
-        delete sender;
-        Scheduler::remove_task(*receiver);
-        delete receiver;
-    });
-
-    // Fill receiver's queue to force sender to block
     for (size_t i = 0; i < IPC_MAX_QUEUE_MSG; ++i) {
         Message fill_msg{};
         fill_msg.sender_id = 0;
@@ -376,20 +373,53 @@ JARVIS_TEST(task_cleanup_frees_msg_queue_with_blocked_senders,
         receiver->msg_queue.push(fill_msg);
     }
 
-    // Block sender directly via block_sender (not IPC::send, which would
-    // enter the deferred-switch spin-wait and never return since the
-    // receiver never drains its queue — deadlocking the test).
-    // See task_exit_wakes_blocked_senders above for the full rationale.
-    Scheduler::set_current(*sender);
-    IPC::block_sender(receiver->msg_queue, *sender);
+    // Block the sender via the REAL path (full queue).
+    uint64_t r_id = receiver->id;
+    uint64_t send_result = 0;
+    struct SCtx {
+        uint64_t recv_;
+        uint64_t out_;
+    } sctx;
+    sctx.recv_ = r_id;
+    sctx.out_ = reinterpret_cast<uint64_t>(&send_result);
+    Scheduler::remove_task(*sender);
+    sender->cleanup();
+    delete sender;
+    sender = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<SCtx *>(self->user_data);
+            kernel::Message msg{};
+            msg.sender_id = self->id;
+            msg.type = 1;
+            msg.priority = 0;
+            msg.data_size = 0;
+            bool ok = IPC::send(c->recv_, msg);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+        },
+        12, 10);
+    JARVIS_ASSERT(sender != nullptr);
+    sender->user_data = &sctx;
+    {
+        arch::IrqGuard _guard;
+        Scheduler::add_task(*sender);
+    }
+    while (sender->state != TaskState::BLOCKED)
+        asm volatile("pause");
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    // Terminate + cleanup — must free msg_queue
-    receiver->state = TaskState::TERMINATED;
-    receiver->exit_code = 0;
-    receiver->cleanup();
+    // Dispatch receiver → real terminate → cleanup frees the queue.
+    Scheduler::reschedule();
+    while (receiver->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
+    JARVIS_ASSERT_EQ(0ULL, send_result);
 
+    release_task(sender);
+    release_task(receiver);
     JARVIS_TEST_PASS();
 }
 

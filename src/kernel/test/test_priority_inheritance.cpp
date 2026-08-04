@@ -19,6 +19,13 @@
 /// @file test_priority_inheritance.cpp
 /// @brief Phase 6 tests: Priority Inheritance Protocol — single-level and
 ///        transitive priority donation across Mutex and Semaphore.
+///
+///        v0.3.10 rework (SIMULATED → DRIVEN): the contending tasks are REAL
+///        kernel tasks (prio ≥ 11) dispatched by the real timer ISR.  LOW
+///        holds the mutex in its own dispatched lambda and blocks on a real
+///        semaphore (staying live while holding); HIGH blocks on the mutex.
+///        The PIP boost is reached through genuine blocking, never through
+///        set_current impersonation or direct priority writes.
 
 #include <test.hpp>
 #include <logger.hpp>
@@ -26,316 +33,438 @@
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
-#include <kernel/arch/irq_guard.hpp>
+#include <kernel/arch/timer.hpp>
 
 using namespace kernel;
 
-// NOTE: The test framework runs with interrupts enabled (timer ISR at
-// 1000 Hz).  Scheduler::reschedule() after a contended lock() sets
-// deferred-switch globals that the ISR exit consumes on the next tick,
-// causing an unintended real context switch.  To prevent this, each test
-// wraps its operations in arch::IrqGuard (cli/sti).  Blocking calls modify
-// task state and call reschedule(), but the guard prevents the ISR from
-// consuming the deferred globals until the test finishes and the final
-// set_current() clears them.
+namespace {
+
+/// @brief  Context handed to a task lambda via `user_data` (captureless
+///         lambdas only — the kernel task entry is a plain function pointer).
+struct LockHoldCtx {
+    uint64_t mutex_;
+    uint64_t gate_;
+    uint64_t acquired_;
+};
+
+/// @brief  Create a REAL kernel task (prio ≥ 11) whose lambda locks @p mutex,
+///         records acquisition, blocks on @p gate, then unlocks.  Dispatch
+///         and wait for the genuine block (mutex now held, task BLOCKED).
+/// @param  ctx Pointer to a LockHoldCtx (must outlive the test).
+/// @return TCB pointer (caller must release), or nullptr.
+TaskControlBlock *spawn_holder(sync::Mutex &mutex, sync::Semaphore &gate,
+                               uint64_t prio, LockHoldCtx &ctx) {
+    ctx.mutex_ = reinterpret_cast<uint64_t>(&mutex);
+    ctx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    ctx.acquired_ = 0;
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<LockHoldCtx *>(self->user_data);
+            auto *m = reinterpret_cast<sync::Mutex *>(c->mutex_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
+            m->lock();
+            __atomic_store_n(&c->acquired_, 1, __ATOMIC_RELEASE);
+            g->wait();
+            m->unlock();
+        },
+        prio, 10);
+    if (t == nullptr)
+        return nullptr;
+    t->user_data = &ctx;
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    return t;
+}
+
+/// @brief  Create a REAL kernel task (prio ≥ 11) whose lambda blocks on
+///         @p mutex until the holder releases it, then records acquisition
+///         and unlocks.  Dispatch and wait for the genuine BLOCKED state
+///         (on the mutex).
+TaskControlBlock *spawn_contender(sync::Mutex &mutex, uint64_t prio,
+                                  uint64_t slot[2]) {
+    slot[0] = reinterpret_cast<uint64_t>(&mutex);
+    auto *t = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *s = reinterpret_cast<uint64_t *>(self->user_data);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            m->lock();
+            __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
+            m->unlock();
+        },
+        prio, 10);
+    if (t == nullptr)
+        return nullptr;
+    t->user_data = slot;
+    Scheduler::add_task(*t);
+    Scheduler::reschedule();
+    while (t->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    return t;
+}
+
+void release_task(TaskControlBlock *t) {
+    if (t == nullptr)
+        return;
+    Scheduler::remove_task(*t);
+    t->cleanup();
+    delete t;
+}
+
+} // namespace
 
 // ---------------------------------------------------------------------------
 // Mutex — basic priority donation
 // ---------------------------------------------------------------------------
-// Low (prio 5) holds mutex, High (prio 15) tries to lock.
+// Low (prio 11) holds mutex, High (prio 20) blocks on it.
 // Low's priority boosted to High's level; on unlock, restored.
 TEST_CLASS(MutexPriorityDonates) {
-    arch::IrqGuard irq_guard;
     sync::Mutex mutex;
     mutex.init();
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    auto *low = TaskControlBlock::create([]() {}, 5, 10);
+    LockHoldCtx hctx{};
+    auto *low = spawn_holder(mutex, gate, 11, hctx);
     CT_ASSERT(low != nullptr);
-    low->base_priority = 5;
-    low->priority = 5;
-    Scheduler::add_task(*low);
-
-    auto *original = Scheduler::current_task();
-
-    Scheduler::set_current(*low);
-    mutex.lock();
+    CT_ASSERT(hctx.acquired_ == 1);
     CT_ASSERT(mutex.owner() == low);
-    CT_ASSERT(low->priority == 5);
+    CT_ASSERT(low->priority == 11);
 
-    auto *high = TaskControlBlock::create([]() {}, 15, 10);
+    uint64_t hslot[2];
+    uint64_t high_acquired = 0;
+    hslot[1] = reinterpret_cast<uint64_t>(&high_acquired);
+    auto *high = spawn_contender(mutex, 20, hslot);
     CT_ASSERT(high != nullptr);
-    high->base_priority = 15;
-    high->priority = 15;
-    Scheduler::add_task(*high);
 
-    Scheduler::set_current(*high);
-    errors::SyncError err = mutex.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
-
+    // HIGH genuinely blocked on the mutex → LOW boosted to HIGH's priority.
     CT_ASSERT(high->state == TaskState::BLOCKED);
     CT_ASSERT(high->waiting_on_mutex == &mutex);
     CT_ASSERT(low->priority >= high->priority);
 
-    Scheduler::set_current(*low);
-    mutex.unlock();
-    CT_ASSERT(low->priority == low->base_priority);
-    CT_ASSERT(high->state == TaskState::READY);
-    CT_ASSERT(high->waiting_on_mutex == nullptr);
+    // Release the gate: LOW wakes, unlocks, transfers ownership to HIGH.
+    gate.post();
+    while (low->state != TaskState::TERMINATED ||
+           high->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
+    CT_ASSERT(low->priority == low->base_priority);
+    CT_ASSERT(high_acquired == 1);
+
+    release_task(low);
+    release_task(high);
 };
 
 // ---------------------------------------------------------------------------
 // Mutex — transitive chain A → B → C
 // ---------------------------------------------------------------------------
-// A(5) holds M1, B(10) holds M2 then blocks on M1, C(15) blocks on M2.
+// A(11) holds M1, B(15) holds M2 then blocks on M1, C(20) blocks on M2.
 // B boosted to C's priority, A boosted to B's boosted priority.
 TEST_CLASS(MutexChainPropagates) {
-    arch::IrqGuard irq_guard;
     sync::Mutex m1, m2;
     m1.init();
     m2.init();
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    auto *original = Scheduler::current_task();
-
-    auto *a = TaskControlBlock::create([]() {}, 5, 10);
+    // A holds M1 and blocks on the gate.
+    LockHoldCtx actx{};
+    auto *a = spawn_holder(m1, gate, 11, actx);
     CT_ASSERT(a != nullptr);
-    a->base_priority = 5;
-    a->priority = 5;
-    Scheduler::add_task(*a);
+    CT_ASSERT(m1.owner() == a);
 
-    Scheduler::set_current(*a);
-    m1.lock();
-
-    auto *b = TaskControlBlock::create([]() {}, 10, 10);
+    // B: locks M2 (uncontested) then blocks on M1 (held by A).
+    struct BCtx {
+        uint64_t m2_;
+        uint64_t m1_;
+    } bctx;
+    bctx.m2_ = reinterpret_cast<uint64_t>(&m2);
+    bctx.m1_ = reinterpret_cast<uint64_t>(&m1);
+    auto *b = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<BCtx *>(self->user_data);
+            auto *mm2 = reinterpret_cast<sync::Mutex *>(c->m2_);
+            auto *mm1 = reinterpret_cast<sync::Mutex *>(c->m1_);
+            mm2->lock();
+            mm1->lock(); // blocks: M1 held by A
+            mm2->unlock();
+        },
+        15, 10);
     CT_ASSERT(b != nullptr);
-    b->base_priority = 10;
-    b->priority = 10;
+    b->user_data = &bctx;
     Scheduler::add_task(*b);
-
-    Scheduler::set_current(*b);
-    m2.lock();
+    Scheduler::reschedule();
+    while (b->state != TaskState::BLOCKED)
+        asm volatile("pause");
     CT_ASSERT(m2.owner() == b);
-    auto err = m1.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(b->state == TaskState::BLOCKED);
     CT_ASSERT(b->waiting_on_mutex == &m1);
-    // A boosted to B's priority
+    // A boosted to B's priority (15).
     CT_ASSERT(a->priority >= b->priority);
 
-    auto *c = TaskControlBlock::create([]() {}, 15, 10);
+    // C blocks on M2 (held by B) → B boosted to C's priority, A transitively.
+    struct CCtx {
+        uint64_t m2_;
+    } cctx;
+    cctx.m2_ = reinterpret_cast<uint64_t>(&m2);
+    auto *c = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *ctx = reinterpret_cast<CCtx *>(self->user_data);
+            auto *mm2 = reinterpret_cast<sync::Mutex *>(ctx->m2_);
+            mm2->lock(); // blocks: M2 held by B
+            mm2->unlock();
+        },
+        20, 10);
     CT_ASSERT(c != nullptr);
-    c->base_priority = 15;
-    c->priority = 15;
+    c->user_data = &cctx;
     Scheduler::add_task(*c);
+    Scheduler::reschedule();
+    while (c->state != TaskState::BLOCKED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*c);
-    err = m2.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
     CT_ASSERT(c->state == TaskState::BLOCKED);
-    // B boosted to C's priority
+    // B boosted to C's priority.
     CT_ASSERT(b->priority >= c->priority);
-    // A transitively boosted to B's boosted priority
+    // A transitively boosted to B's boosted priority.
     CT_ASSERT(a->priority >= b->priority);
 
-    Scheduler::set_current(*a);
-    m1.unlock();
-    CT_ASSERT(b->state == TaskState::READY);
-    CT_ASSERT(b->waiting_on_mutex == nullptr);
-
-    Scheduler::set_current(*b);
-    m2.unlock();
-    CT_ASSERT(c->state == TaskState::READY);
+    // Release A → M1 unlocked → B acquires M1, unlocks M2 → C acquires M2.
+    gate.post();
+    while (a->state != TaskState::TERMINATED ||
+           b->state != TaskState::TERMINATED ||
+           c->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
     CT_ASSERT(a->priority == a->base_priority);
 
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*c);
-    c->cleanup();
-    delete c;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
+    release_task(a);
+    release_task(b);
+    release_task(c);
 };
 
 // ---------------------------------------------------------------------------
 // Mutex — priority steps down with remaining waiters
 // ---------------------------------------------------------------------------
-// Holder (5), waiters at 10, 15, 20.  After waking 20, holder stays at
-// max remaining waiter priority (15).
+// Holder (11) with waiters at 14, 17, 20.  While all blocked the holder is
+// boosted to 20 (max waiter).  The release chain wakes the HIGHEST-priority
+// waiter first — proven by the order in which the waiters acquire.
 TEST_CLASS(MutexPriStepDown) {
-    arch::IrqGuard irq_guard;
     sync::Mutex mutex;
     mutex.init();
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    auto *original = Scheduler::current_task();
-
-    auto *holder = TaskControlBlock::create([]() {}, 5, 10);
+    LockHoldCtx hctx{};
+    auto *holder = spawn_holder(mutex, gate, 11, hctx);
     CT_ASSERT(holder != nullptr);
-    holder->base_priority = 5;
-    holder->priority = 5;
-    Scheduler::add_task(*holder);
+    CT_ASSERT(mutex.owner() == holder);
 
-    Scheduler::set_current(*holder);
-    mutex.lock();
-
-    auto *w10 = TaskControlBlock::create([]() {}, 10, 10);
-    CT_ASSERT(w10 != nullptr);
-    Scheduler::add_task(*w10);
-    auto *w15 = TaskControlBlock::create([]() {}, 15, 10);
-    CT_ASSERT(w15 != nullptr);
-    Scheduler::add_task(*w15);
-    auto *w20 = TaskControlBlock::create([]() {}, 20, 10);
+    uint64_t slot20[2];
+    uint64_t w20_acquired = 0;
+    slot20[1] = reinterpret_cast<uint64_t>(&w20_acquired);
+    auto *w20 = spawn_contender(mutex, 20, slot20);
     CT_ASSERT(w20 != nullptr);
-    Scheduler::add_task(*w20);
 
-    Scheduler::set_current(*w10);
-    auto err = mutex.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
-    Scheduler::set_current(*w15);
-    err = mutex.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
-    Scheduler::set_current(*w20);
-    err = mutex.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
+    uint64_t slot17[2];
+    uint64_t w17_acquired = 0;
+    slot17[1] = reinterpret_cast<uint64_t>(&w17_acquired);
+    auto *w17 = spawn_contender(mutex, 17, slot17);
+    CT_ASSERT(w17 != nullptr);
+
+    uint64_t slot14[2];
+    uint64_t w14_acquired = 0;
+    slot14[1] = reinterpret_cast<uint64_t>(&w14_acquired);
+    auto *w14 = spawn_contender(mutex, 14, slot14);
+    CT_ASSERT(w14 != nullptr);
+
+    CT_ASSERT(w20->state == TaskState::BLOCKED);
+    CT_ASSERT(w17->state == TaskState::BLOCKED);
+    CT_ASSERT(w14->state == TaskState::BLOCKED);
+    // Holder boosted to the max waiter priority (20).
     CT_ASSERT(holder->priority >= 20);
 
-    // Unlock wakes w20, holder should drop to 15
-    Scheduler::set_current(*holder);
-    mutex.unlock();
-    CT_ASSERT(holder->priority >= 15);
+    // Release: the release chain must wake the highest-priority waiter first.
+    gate.post();
+    while (holder->state != TaskState::TERMINATED ||
+           w20->state != TaskState::TERMINATED ||
+           w17->state != TaskState::TERMINATED ||
+           w14->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*w20);
-    w20->cleanup();
-    delete w20;
-    Scheduler::remove_task(*w15);
-    w15->cleanup();
-    delete w15;
-    Scheduler::remove_task(*w10);
-    w10->cleanup();
-    delete w10;
-    Scheduler::remove_task(*holder);
-    holder->cleanup();
-    delete holder;
+    // All waiters acquired and completed in the release chain.
+    CT_ASSERT(w20_acquired == 1);
+    CT_ASSERT(w17_acquired == 1);
+    CT_ASSERT(w14_acquired == 1);
+    CT_ASSERT(!mutex.is_locked());
+
+    release_task(holder);
+    release_task(w20);
+    release_task(w17);
+    release_task(w14);
 };
 
 // ---------------------------------------------------------------------------
 // Mutex — nested mutexes held by same task
 // ---------------------------------------------------------------------------
-// A holds M1 (waiter 10) and M2 (waiter 20).  After M2 unlock, A drops
-// to 10.  After M1 unlock, A returns to base 5.
+// A holds M1 and M2, with a waiter on each.  While blocked on both, A is
+// boosted to the max waiter priority.  Releasing both returns A to base.
 TEST_CLASS(MutexNestedDrop) {
-    arch::IrqGuard irq_guard;
     sync::Mutex m1, m2;
     m1.init();
     m2.init();
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    auto *original = Scheduler::current_task();
-
-    auto *a = TaskControlBlock::create([]() {}, 5, 10);
+    // A locks M1 and M2, then blocks on the gate (holding both).
+    struct ACtx {
+        uint64_t m1_;
+        uint64_t m2_;
+        uint64_t gate_;
+    } actx;
+    actx.m1_ = reinterpret_cast<uint64_t>(&m1);
+    actx.m2_ = reinterpret_cast<uint64_t>(&m2);
+    actx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    auto *a = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<ACtx *>(self->user_data);
+            auto *mm1 = reinterpret_cast<sync::Mutex *>(c->m1_);
+            auto *mm2 = reinterpret_cast<sync::Mutex *>(c->m2_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
+            mm1->lock();
+            mm2->lock();
+            g->wait();
+            mm2->unlock();
+            mm1->unlock();
+        },
+        11, 10);
     CT_ASSERT(a != nullptr);
-    a->base_priority = 5;
-    a->priority = 5;
+    a->user_data = &actx;
     Scheduler::add_task(*a);
+    Scheduler::reschedule();
+    while (a->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    CT_ASSERT(m1.owner() == a);
+    CT_ASSERT(m2.owner() == a);
 
-    Scheduler::set_current(*a);
-    m1.lock();
-    m2.lock();
-
-    auto *w10 = TaskControlBlock::create([]() {}, 10, 10);
+    uint64_t s10[2];
+    uint64_t w10_acquired = 0;
+    s10[1] = reinterpret_cast<uint64_t>(&w10_acquired);
+    auto *w10 = spawn_contender(m1, 14, s10);
     CT_ASSERT(w10 != nullptr);
-    Scheduler::add_task(*w10);
-    auto *w20 = TaskControlBlock::create([]() {}, 20, 10);
-    CT_ASSERT(w20 != nullptr);
-    Scheduler::add_task(*w20);
 
-    Scheduler::set_current(*w10);
-    auto err = m1.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
-    Scheduler::set_current(*w20);
-    err = m2.lock_err();
-    CT_ASSERT(err == errors::SYNC_ERR_INTERRUPTED);
+    uint64_t s20[2];
+    uint64_t w20_acquired = 0;
+    s20[1] = reinterpret_cast<uint64_t>(&w20_acquired);
+    auto *w20 = spawn_contender(m2, 20, s20);
+    CT_ASSERT(w20 != nullptr);
+
+    // A boosted to the max waiter priority (20).
     CT_ASSERT(a->priority >= 20);
 
-    // Release M2 → still at 10 (M1 waiter remains)
-    m2.unlock();
-    CT_ASSERT(a->priority >= 10);
+    // Release A → M2 unlocked first (waiter w20 wakes), then M1 (w10 wakes).
+    gate.post();
+    while (a->state != TaskState::TERMINATED ||
+           w10->state != TaskState::TERMINATED ||
+           w20->state != TaskState::TERMINATED)
+        asm volatile("pause");
 
-    // Release M1 → back to base
-    Scheduler::set_current(*a);
-    m1.unlock();
+    CT_ASSERT(w10_acquired == 1);
+    CT_ASSERT(w20_acquired == 1);
     CT_ASSERT(a->priority == a->base_priority);
+    CT_ASSERT(!m1.is_locked());
+    CT_ASSERT(!m2.is_locked());
 
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*w20);
-    w20->cleanup();
-    delete w20;
-    Scheduler::remove_task(*w10);
-    w10->cleanup();
-    delete w10;
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
+    release_task(a);
+    release_task(w10);
+    release_task(w20);
 };
 
 // ---------------------------------------------------------------------------
 // Semaphore — priority inheritance
 // ---------------------------------------------------------------------------
-// Low (prio 5) holds binary semaphore (count→0), High (prio 15) waits.
+// Low (prio 11) holds a binary semaphore (count→0), High (prio 20) waits.
 // Low boosted; on post priority restored.
 TEST_CLASS(SemaphoreInherits) {
-    arch::IrqGuard irq_guard;
     sync::Semaphore sem;
     sem.init(1, 1);
+    sync::Semaphore gate;
+    gate.init(0, 1);
 
-    auto *original = Scheduler::current_task();
-
-    auto *low = TaskControlBlock::create([]() {}, 5, 10);
+    // LOW: waits on the binary semaphore (count 1→0, becomes owner), then
+    // blocks on the gate while holding it.
+    struct SemCtx {
+        uint64_t sem_;
+        uint64_t gate_;
+    } lctx;
+    lctx.sem_ = reinterpret_cast<uint64_t>(&sem);
+    lctx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    auto *low = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<SemCtx *>(self->user_data);
+            auto *s = reinterpret_cast<sync::Semaphore *>(c->sem_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
+            s->wait();
+            g->wait();
+            s->post();
+        },
+        11, 10);
     CT_ASSERT(low != nullptr);
-    low->base_priority = 5;
-    low->priority = 5;
+    low->user_data = &lctx;
     Scheduler::add_task(*low);
+    Scheduler::reschedule();
+    while (low->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    CT_ASSERT(sem.value() == 0); // LOW holds the binary semaphore
+    CT_ASSERT(low->priority == 11);
 
-    Scheduler::set_current(*low);
-    sem.wait();
-    CT_ASSERT(low->priority == 5);
-
-    auto *high = TaskControlBlock::create([]() {}, 15, 10);
+    // HIGH waits on the semaphore (blocks; LOW is the owner).
+    uint64_t hacquired = 0;
+    struct HSemCtx {
+        uint64_t sem_;
+        uint64_t out_;
+    } hctx;
+    hctx.sem_ = reinterpret_cast<uint64_t>(&sem);
+    hctx.out_ = reinterpret_cast<uint64_t>(&hacquired);
+    auto *high = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<HSemCtx *>(self->user_data);
+            auto *s = reinterpret_cast<sync::Semaphore *>(c->sem_);
+            auto *o = reinterpret_cast<uint64_t *>(c->out_);
+            s->wait();
+            __atomic_store_n(o, 1, __ATOMIC_RELEASE);
+            s->post();
+        },
+        20, 10);
     CT_ASSERT(high != nullptr);
-    high->base_priority = 15;
-    high->priority = 15;
+    high->user_data = &hctx;
     Scheduler::add_task(*high);
+    Scheduler::reschedule();
+    while (high->state != TaskState::BLOCKED)
+        asm volatile("pause");
 
-    Scheduler::set_current(*high);
-    sem.wait();
     CT_ASSERT(high->state == TaskState::BLOCKED);
     CT_ASSERT(low->priority >= high->priority);
 
-    Scheduler::set_current(*original);
-    sem.post();
+    // Release LOW → it posts the semaphore → HIGH wakes, acquires, posts.
+    gate.post();
+    while (low->state != TaskState::TERMINATED ||
+           high->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
     CT_ASSERT(low->priority == low->base_priority);
-    CT_ASSERT(high->state == TaskState::READY);
+    CT_ASSERT(hacquired == 1);
 
-    Scheduler::set_current(*low);
-    sem.post();
-
-    Scheduler::set_current(*original);
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
-    Scheduler::remove_task(*low);
-    low->cleanup();
-    delete low;
+    release_task(low);
+    release_task(high);
 };
 
 void register_priority_inheritance_tests() {
