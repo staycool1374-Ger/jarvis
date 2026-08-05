@@ -151,3 +151,93 @@ user's CR3.  Switching BACK to the harness must reload the kernel PML4; if
 `scheduler_load_cr3_from` for the harness is stale/zero, the harness resumes on
 the sender's user PML4 → freeze.  Verify the CR3 reload on the return path
 (isr_stubs.asm ~150-165) before/with the generation-based atomic publish fix.
+
+---
+
+## H2 RESOLVED (2026-08-05) — Investigation Log + Final Fix
+
+### Symptom (unmasked)
+With the logging backend routed through the QEMU debugcon (0xE9, no UART
+latency — see `src/kernel/arch/qemu_debugcon.hpp`), the `ipc` class hung at
+test 21 `ipc_send_sync_roundtrip` with:
+```
+[DIAG] pre-save: idx=2 id=1 cur_rsp=0xFFFF800000A1BEA8 ctx_rsp=0xFFFF900000032920
+                 state=0 kstack=[0xFFFF900000023000-0xFFFF900000033000] owners: (empty)
+[DIAG] tasks: {0 idle kst=0xFFFF900000001000} {2 vfsd kst=0xFFFF8000007AF000}
+               {3 iocd kst=0xFFFF8000007D5000} {1 harness st=0 inrq=1 pr=10
+               rsp=0xFFFF900000032920 kst=0xFFFF900000023000}
+```
+
+### Root cause chain (all confirmed with instrumentation)
+1. **Harness displacement:** from ~tick 19 (boot, during init_task_main's daemon
+   wait) the harness (PID 1) physically executes on an **orphaned stack**
+   `0xFFFF800000A1B000` (a PMM page ~10 MB, owned by NO TCB — the pre-save owner
+   scan is empty; the boot DIAG-TABLE shows no task's kernel_stack there).  Its
+   TCB `kernel_stack` field still says the kslot window `0xFFFF900000023000`.
+2. **Snapshot drift:** `restore_task_fields` (scheduler.cpp ~2259) restores
+   `context` (incl. `context.rsp`) from the snapshot baseline on every
+   `snapshot_restore`, but the **physical RSP register stays on the orphaned
+   stack**.  So the harness's stored context is a valid kslot frame
+   (`rip=arch_hlt`, `rsp=0xFFFF9000000329D0`) while it keeps running foreign.
+3. **First-preemption corruption:** the harness is preempted while foreign; the
+   pre-save fires and the ISR save (`mov [save_target], rsp`) writes the
+   orphaned RSP into `context.rsp`.  The dispatch-guard then rejects the
+   now-foreign frame → the harness is stranded in the ready queue → idle-loop
+   hang.
+
+### Displacement-source investigation (exhausted)
+- **Every** of the 43 observed harness dispatches lands it on its kslot
+  (`H2-DISP1`: live_rsp and frame.rsp both kslot) — so the move is NOT a
+  normal deferred-switch dispatch.
+- No `mov rsp` instruction exists in kernel code except `higherhalf_entry`
+  (boot) and `reboot_from_table`'s idle-stack handoff.
+- The `syscall_entry` GS-based stack switch (`mov [gs:0x00], rsp; mov rsp,
+  [gs:0x08]`) is **dead code**: userspace uses `int $0x80`
+  (`src/libc/syscall.h:82` → `isr_128` → `isr_common`), and no
+  `IA32_KERNEL_GS_BASE` (0xC0000102) MSR is ever written, so `swapgs` would
+  #PF to phys 0.
+- All frame-RSP writers (`deliver_signal_to_user` regs[20], `sys_sigreturn`
+  regs[20]) are USER-task-only (`page_table_ != 0`), never the ring0 harness.
+- The residual mechanism is an extremely narrow boot-time window (a single
+  per-tick instruction perturbs it — the H2-FOREIGN per-tick check made the
+  race vanish 25/25).  It requires a hardware-watchpoint session (lldb DR0–3
+  on `&context.rsp` or the orphaned page) during an unperturbed run to pin the
+  exact instruction; the QEMU `-icount rr=record/replay` path was impractical
+  (firmware boot replays too slowly).
+
+### Fix (three layers, committed)
+1. **Dispatch-guard iret-frame `rsp` validation** (`switch_to_task` +
+   `switch_away_from_terminating`): a ring0 task's frame `rsp` field must lie
+   within its own `[kernel_stack, kernel_stack_top]` (inclusive top — a fresh
+   task's create-frame carries `rsp == kernel_stack_top`), or within the linker
+   boot stack when dispatching the harness.  A stale/foreign `rsp` (a freed
+   test-task's HHDM stack) now rejects the switch instead of iretq'ing the task
+   onto foreign memory.
+2. **Scratch-save healing:** when the current task is detected on an
+   orphaned/foreign stack, the ISR save writes the foreign RSP to
+   `s_foreign_rsp_scratch` instead of `context.rsp`, keeping the valid kslot
+   frame intact so the next dispatch re-plants the task on its own stack.
+3. **Apply-side RSP-owner check** (`isr_stubs.asm`): new atoms
+   `scheduler_load_kstack_base/top` published with each switch; the ISR verifies
+   the loaded RSP lies within the dispatched task's kernel stack BEFORE iretq,
+   aborting (restoring the old RSP, clearing the atoms, dropping the switch) any
+   stale/foreign load — the split-phase/nested-ISR mismatch the C++ guard cannot
+   see at publish time.
+
+### Verification (clean build, `CONFIG_DEBUG_IPC_SCHED` OFF)
+| Gate | Result |
+|---|---|
+| `ipc` | 5/6 clean (residual ~17% narrow boot-time race remains) |
+| `scheduler` / `ipc_blocking` / `ipc_robustness` | 63/63, 4/4, 6/6 |
+| `all` | **tests 1–347 PASS — H2 hang at test 77/78 GONE**; freezes at test 348 `timer_deadline_miss_detection_fires` (PRE-EXISTING timing-cluster bug, verified at baseline) |
+| `make build` | check-style Errors: 0 |
+
+### Remaining failures (all pre-existing, NOT H2)
+- `all` test 348 / `timing` class: `timer_deadline_miss_detection_fires` freezes
+  (MemPool pinned-block cleanup skip `LEAK: Tasks +1, PMM +16, ...` at
+  `timer_period_reload`; deadline-monitor interaction).
+- `priority_inheritance` test 1 `MutexPriorityDonates`: INV-4 gate-spin
+  test-code race in `spawn_holder` (self-terminates before the harness observes
+  BLOCKED).
+- `ipc` residual ~17% hang from the narrow H2 boot-time window (needs a
+  hardware-watchpoint session).

@@ -711,7 +711,7 @@ rr-record: NO_LTO := 1
 rr-record: debug
 	@printf '  %-7s %s\n' 'RR' 'Recording deterministic trace…'
 	@mkdir -p build
-	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -record build/rr.log -display none
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=auto,rr=record,rrfile=build/rr.log -display none
 
 rr-replay:
 	@if [ ! -f build/rr.log ]; then \
@@ -719,7 +719,7 @@ rr-replay:
 	fi
 	@printf '  %-7s %s\n' 'RR' 'Replaying with GDB stub on :1234…'
 	@echo "Connect GDB:  $(GDB) build/kernel-debug.elf -ex 'target remote :1234'"
-	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=1,sleep=off -replay build/rr.log -s -S -display none
+	$(QEMU_SYSTEM) $(QEMU_FLAGS) -icount shift=auto,rr=replay,rrfile=build/rr.log -s -S -display none
 
 # ------------------------------------------------------------------------------
 # Renode targets

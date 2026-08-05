@@ -434,6 +434,13 @@ uint64_t *scheduler_save_rsp_to = nullptr;
 uint64_t scheduler_load_rsp_from = 0;
 uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = UINT64_MAX;
+/// @brief Kernel-stack range of the task being dispatched.  isr_stubs.asm
+///        verifies scheduler_load_rsp_from lies within
+///        [scheduler_load_kstack_base, scheduler_load_kstack_top) before
+///        iretq, refusing to dispatch a task onto a foreign RSP (the H2
+///        harness-displacement race).
+uint64_t scheduler_load_kstack_base = 0;
+uint64_t scheduler_load_kstack_top = 0;
 /// @brief Generation sequence counter for the deferred-switch pair
 ///        (load_rsp_from / load_cr3_from).  A publisher bumps it after writing
 ///        the pair and before arming save_rsp_to; isr_stubs.asm captures it and

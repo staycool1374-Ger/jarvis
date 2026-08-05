@@ -596,6 +596,13 @@ extern uint64_t scheduler_load_cr3_from;
 /// @brief Task ID to set as current after the context switch completes.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint64_t scheduler_next_task_id;
+/// @brief Kernel-stack range of the task being dispatched.  isr_stubs.asm
+///        verifies scheduler_load_rsp_from lies within
+///        [scheduler_load_kstack_base, scheduler_load_kstack_top) before iretq.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_load_kstack_base;
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_load_kstack_top;
 /// @brief Generation sequence counter for the deferred-switch pair.  A
 ///        publisher bumps it after writing load_rsp_from / load_cr3_from and
 ///        before arming scheduler_save_rsp_to; isr_stubs.asm captures it and

@@ -18,8 +18,11 @@ extern handle_interrupt_c
 extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
 extern scheduler_load_cr3_from
+extern scheduler_load_kstack_base
+extern scheduler_load_kstack_top
 extern scheduler_switch_generation
 extern scheduler_kernel_cr3
+extern scheduler_next_task_id
 extern scheduler_on_context_switch
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
@@ -166,9 +169,25 @@ isr_common:
     jz .restore
 
     mov [rax], rsp
+    ; Hold the old RSP for the apply-side abort (RBX is restored by the
+    ; .restore pops below, so clobbering it here is safe).
+    mov rbx, rsp
     mov rsp, [rel scheduler_load_rsp_from]
     mov qword [rel scheduler_load_rsp_from], 0
     mov qword [rel scheduler_save_rsp_to], 0
+
+    ; Apply-side RSP-owner check (H2): the deferred switch must resume the
+    ; dispatched task ON ITS OWN kernel stack.  If the loaded RSP is outside
+    ; [scheduler_load_kstack_base, scheduler_load_kstack_top) — a stale/foreign
+    ; value from a split-phase or nested-ISR switch — refuse to iretq onto it.
+    ; Restore the original RSP and fall through to .restore (iretq back to the
+    ; current task); the dropped switch is harmless and retried next tick.
+    mov rcx, [rel scheduler_load_kstack_base]
+    mov rdx, [rel scheduler_load_kstack_top]
+    cmp rsp, rcx
+    jb .abort_switch
+    cmp rsp, rdx
+    jae .abort_switch
 
     ; Context switch complete — update current_index_ to the next task
     push rax
@@ -209,6 +228,17 @@ isr_common:
 .load_cr3:
     mov cr3, rax
     mov qword [rel scheduler_load_cr3_from], 0
+    jmp .restore
+
+.abort_switch:
+    ; The deferred switch's load RSP is outside the dispatched task's kernel
+    ; stack (stale/foreign pair — H2).  Abort: restore the original RSP, clear
+    ; the pending-switch atoms so the next tick publishes fresh, and iretq back
+    ; to the current task.  RBX still holds the original RSP.
+    mov qword [rel scheduler_save_rsp_to], 0
+    mov qword [rel scheduler_load_cr3_from], 0
+    mov qword [rel scheduler_next_task_id], -1
+    mov rsp, rbx
 
 .restore:
     ; NOTE: do NOT clear scheduler_save_rsp_to here.  If we reach .restore via

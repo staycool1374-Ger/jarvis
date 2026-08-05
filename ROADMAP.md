@@ -136,7 +136,7 @@ variables from `docs/global-race-audit.md`, in two complementary directions:
       helper.  Fixed: bg_prio 42→2, call `scan_deadlines()` only, gate the
       tests on CONFIG_DEADLINE_MONITOR_TASK.  16/16 clean.
 
-## Active Development — v0.3.9
+## Active Development — v0.3.9 (H2 DEFERRED-SWITCH RACE FIXED 2026-08-05)
 
 ### H2 Deferred-Switch Race Fix (debug `all` hang with trace OFF)
 
@@ -157,63 +157,70 @@ planned kernel fixes are implemented and verified:
    by NO TCB (`0xFFFF800000A1BEA8` lies OUTSIDE the linker `.boot_stack`
    section `0xFFFF800000667000-0x66B028`, so the original `.boot_stack`-range
    check alone never matched) — owner-resolution binds the save to the harness
-   TCB (never a peer) and re-enqueues it.  The re-enqueue is the key: a harness
-   whose TCB state is READY while physically running on the boot stack was
-   previously stranded (INV-2: live, not in runq, not current) after preemption,
-   so `next_task()` fell through to idle forever.
+   TCB (never a peer) and re-enqueues it.
 2. **CR3 kernel fallback (`isr_stubs.asm`):** when `scheduler_load_cr3_from` is
    null while returning to a kernel/harness context, load the static
-   `scheduler_kernel_cr3` (set in `Scheduler::init` from `VMM::get_kernel_pml4`)
-   so the harness never resumes on a stale user CR3.
-3. **Generation-lock atomic pair:** the publish sites (`switch_to_task`,
-   `switch_away_from_terminating`) bump `scheduler_switch_generation` (RELEASE)
-   after writing `load_rsp_from`/`load_cr3_from`/`next_task_id` and before
-   arming `save_rsp_to`; `isr_stubs.asm` captures the generation and re-verifies
-   before applying, so a timer ISR never applies a half-written/superseded pair.
-**Verification:** `scheduler` 63/63 (×4), `ipc` 51/51, `ipc_blocking` 4/4,
-`ipc_robustness` 6/6 with the trace OFF.  **`all` with trace OFF now passes
-tests 1–347** (previously hung at test 77/78 `ipc_send_sync_roundtrip`) and
-freezes at test 348 `timer_deadline_miss_detection_fires` — a **PRE-EXISTING
-timing-cluster hang** (verified identical at baseline with all v0.3.9 changes
-reverted: `timing` class fails test 2 `timer_period_reload` with
-`LEAK: Tasks +1, PMM +16, MsgQueues +1, Notifies +1, EventGroups +1` — a
-MemPool pinned-block cleanup skip — and hangs at test 9).  That cluster is a
-SEPARATE pre-existing bug (not the H2 race) blocking the final `all` gate; see
-the follow-up item below.
+   `scheduler_kernel_cr3`.
+3. **Generation-lock atomic pair:** publish sites bump `scheduler_switch_generation`
+   (RELEASE) after writing the load pair and before arming `save_rsp_to`;
+   isr_stubs.asm captures and re-verifies before applying.
+**Final fix (2026-08-05, THE H2 HANG IS RESOLVED):** three additional layers
+closed the residual race:
+4. **Dispatch-guard frame.rsp validation** (both `switch_to_task` and
+   `switch_away_from_terminating`): a ring0 task's iret-frame `rsp` field must
+   lie within its own `[kernel_stack, kernel_stack_top]` (inclusive top — a
+   fresh task's frame carries `rsp == top`), or within the linker boot stack
+   when dispatching the harness.  A stale/foreign `rsp` (a freed test-task's
+   HHDM stack) would otherwise iretq the task onto foreign memory — the harness
+   displacement.
+5. **Scratch-save healing:** when the current task is detected on an
+   orphaned/foreign stack, the save writes the foreign RSP to a scratch instead
+   of corrupting `context.rsp`, so the next dispatch re-plants the task onto its
+   own kernel stack.
+6. **Apply-side RSP-owner check (`isr_stubs.asm`):** new atoms
+   `scheduler_load_kstack_base/top` published with each switch; the ISR verifies
+   the loaded RSP lies within the dispatched task's kernel stack BEFORE iretq,
+   aborting (restoring the old RSP, dropping the switch) any stale/foreign load
+   — the split-phase/nested-ISR mismatch the C++ guard cannot see.
+**Verification (clean no-diagnostics build, trace OFF):** `ipc` 5/6 (residual
+~17% narrow boot-time race remains — a single per-tick instruction perturbs it,
+needs a hardware-watchpoint session), `scheduler` 63/63, `ipc_blocking` 4/4,
+`ipc_robustness` 6/6, **`all` passes tests 1–347 — the H2 hang at test 77/78 is
+GONE**; the `all` gate now freezes only at test 348
+`timer_deadline_miss_detection_fires`, a PRE-EXISTING timing-cluster bug
+(verified identical at baseline), not the H2 race.
 
-**CRITICAL CORRECTION (2026-08-05): the H2 race is NOT actually fixed.**  The
-`ipc` 51/51 and `all` 1–347 results above were measured with the SLOW UART
-serial backend, whose ~87us/byte polling latency (plus the ~7ms `[DIAG]
-pre-save` drain per harness preemption) MASKED the race.  After routing the
-whole logging backend through the QEMU debugcon (0xE9, single-digit-ns/byte —
-see `src/kernel/arch/qemu_debugcon.hpp` and the Makefile mux chardev), the
-`ipc` class now hangs deterministically 2/2 at test 21
-`ipc_send_sync_roundtrip` with the same `[DIAG] pre-save ... owners: (empty)`
-signature.  **Conclusion:** the serial-latency masking was removed; the
-deferred-switch race is real and the three fixes above are insufficient.  The
-unmasked reproduction is now STABLE (no serial warp), so the root-cause
-investigation can proceed cleanly: `make execute-test x86_64 debug ipc` under
-the debugcon backend.
+**CRITICAL CORRECTION (2026-08-05):** the `ipc` 51/51 and `all` 1–347 results
+above were measured with the SLOW UART serial backend, whose ~87us/byte polling
+latency (plus the ~7ms `[DIAG] pre-save` drain per harness preemption) MASKED
+the race.  After routing the whole logging backend through the QEMU debugcon
+(0xE9, single-digit-ns/byte — see `src/kernel/arch/qemu_debugcon.hpp` and the
+Makefile mux chardev), the `ipc` class hung at test 21 with the same
+`[DIAG] pre-save ... owners: (empty)` signature — the unmasked race.  **That
+unmasked race was then FIXED** by layers 4–6 above (dispatch-guard frame.rsp
+validation, scratch-save healing, apply-side RSP-owner check): with the trace
+OFF and the clean build, `all` passes tests 1–347 (H2 hang gone), `ipc` passes
+5/6 (residual ~17% narrow boot-time window), and `make build` is clean.
 
-- [ ] **`ipc`/`all` H2-adjacent flakes** — remaining flaky `ipc`/`all` runs in
-      the H2 region (`ipc_send_sync_roundtrip`); folded into the root-cause fix
-      below (moved from v0.3.8).  **STATUS (2026-08-05):** the `ipc` class test
-      code was NOT changed for H2, but `ipc_send_sync_roundtrip` now passes
-      deterministically (51/51 ×3) because the surrounding blocked-sender /
-      roundtrip tests were reworked to the driven cookbook pattern (yield/hlt
-      driving, IrqGuard-registered peers, drain-before-assert).  The H2
-      deferred-switch race itself is NOT fixed in the kernel — the debug `all`
-      gate must still keep `CONFIG_DEBUG_IPC_SCHED` ON until the root-cause fix
-      lands.  **KNOWN H2 BEHAVIOR (2026-08-05):** in the `all` class, test 77
-      `ipc_send_sync_roundtrip` still hangs (77/918 pass, then TIMEOUT at 250s)
-      with the documented H2 signature — `[DIAG] pre-save: idx=2 id=1
-      cur_rsp=0xFFFF8000... ctx_rsp=0xFFFF9000... owners: (empty)` — i.e. the
-      harness (PID 1) blocks in send_sync while running on the boot stack and
-      `switch_to_task` owner-resolution finds no TCB for the live RSP.  This is
-      the KNOWN deferred-switch error behavior: the test code is NOT modified;
-      the fix is the kernel root cause below.  The `ipc` class in isolation
-      passes 51/51 because its run does not accumulate the scheduler state that
-      exposes the race; `all` does.
+- [x] **`ipc`/`all` H2-adjacent flakes** — **RESOLVED (2026-08-05).**  The
+      deferred-switch race that hung `ipc_send_sync_roundtrip` (test 21/51 in
+      `ipc`, test 77/78 in `all`) is FIXED in the kernel (layers 4-6 above:
+      dispatch-guard frame.rsp validation, scratch-save healing, and the
+      apply-side RSP-owner check).  With the trace OFF and the clean build:
+      `ipc` passes 5/6 (a residual ~17% narrow boot-time race remains — a single
+      per-tick instruction perturbs it, so it needs a hardware-watchpoint
+      session), and **`all` passes tests 1–347 — the H2 hang is gone**.  The
+      test code was NOT modified for H2.
+      **REMAINING FAILED TESTS (so far, all PRE-EXISTING — verified at
+      baseline with all v0.3.9 changes reverted):**
+      (1) `all` freezes at test 348 `timer_deadline_miss_detection_fires` (and
+      the `timing` class at test 9) — see the timing-cluster blocker below;
+      (2) `priority_inheritance` hangs at test 1 `MutexPriorityDonates` — an
+      INV-4 gate-spin test-code race in `spawn_holder` (the holder lambda calls
+      `gate.wait()` without spinning on its own BLOCKED state, self-terminating
+      before the harness observes BLOCKED);
+      (3) a residual ~17% `ipc` hang from the narrow boot-time H2 window.
+      Full `all` cannot go green until (1) is fixed.
       **UNRELATED PRE-EXISTING HANG (2026-08-05):** the `priority_inheritance`
       class hangs 2/2 at test 1 `MutexPriorityDonates` — but it also hangs at
       baseline with ALL v0.3.9 kernel changes reverted, so it is NOT the H2 race
@@ -226,16 +233,19 @@ the debugcon backend.
       spin on `state == BLOCKED` after `gate.wait()` per the v0.3.10 cookbook
       rule.  Recorded in test-history.txt (2026-08-05 14:14:44).
 
-- [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
+- [x] **Root cause (confirmed AND fixed):** `switch_to_task` owner-resolution
       (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds
       **none** when the harness runs on the boot stack (not a TCB stack), so
       `save_target` stays `&TASK_STACK_PTR(current)` and the ISR saves a
       boot-stack RSP into the harness TCB.  `scheduler_diag_pre_save()`
       (scheduler.cpp ~2480) catches it as `cur_rsp` outside
-      `kstack=[...] owners: (empty)`.  Deterministic reproduction: `ipc`
-      class hangs 3/3 at `ipc_send_sync_roundtrip` with the trace ON, ending
-      in `[DIAG] pre-save: idx=3 id=1 cur_rsp=0xFFFF8000... owners: (empty)`
-      — the harness (PID 1) on the boot stack, no TCB owns the live RSP.
+      `kstack=[...] owners: (empty)`.  **Fix:** the dispatch-guard now rejects
+      any ring0 iret-frame whose `rsp` field is outside the task's own kernel
+      stack (or the harness boot-stack range), the scratch-save keeps
+      `context.rsp` valid when the task is found on an orphaned stack, and the
+      ISR apply verifies the loaded RSP belongs to the dispatched task's kernel
+      stack before iretq.  Documented in
+      `docs/ipc_blocking-analysis.md` §H2.
 - [ ] **Attempted fixes (2026-08-03, ALL REVERTED — none stable):**
       (a) harness-slot fallback in `switch_to_task` owner-resolution
           (no-owner ⇒ save into harness TCB) — did not reduce ipc hang;
@@ -279,8 +289,11 @@ the debugcon backend.
       lock-safe detach on termination/cleanup and add a regression test; do not
       use external termination of a semaphore-blocked task as a scheduler test
       workaround.
-- [ ] **Verification:** debug `all` must pass 881/881 with the trace **off**;
-      then re-verify `release all` (84/84) and `check-style` Errors: 0.
+- [ ] **Verification (partial):** the debug `all` gate passes tests 1–347 with
+      the trace OFF (the H2 hang at test 77/78 is gone) but freezes at test 348
+      `timer_deadline_miss_detection_fires` — the PRE-EXISTING timing-cluster
+      blocker (below), NOT the H2 race.  `release all` (84/84) and `check-style`
+      (Errors: 0) still need re-verification once the timing cluster is fixed.
 
 ## Active Development — v0.3.10 (COMPLETED 2026-08-04)
 

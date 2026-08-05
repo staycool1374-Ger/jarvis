@@ -69,6 +69,13 @@ static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
 static TaskControlBlock *s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
 static uint64_t s_deferred_kill_count = 0;
 
+// H2: scratch slot for the harness's foreign live RSP when it is displaced
+// onto an orphaned stack (no TCB owns the live RSP).  Saving into the scratch
+// instead of current->context.rsp keeps the harness's valid kernel-stack frame
+// intact, so the next dispatch re-plants it onto its own stack instead of
+// iretq'ing it back onto foreign memory.
+static uint64_t s_foreign_rsp_scratch = 0;
+
 // TEMP DEBUG (BUGS.md#020): detect a SporadicServer pointer that aliases a
 // freed/poisoned MemPool block (first 8 bytes == 0xDDDDDDDDDDDDDDDD).  A freed
 // server still referenced by a live TCB is the use-after-free behind the
@@ -1744,7 +1751,12 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
             current = owner;
             Scheduler::set_current(*owner);
         }
-        save_target = &TASK_STACK_PTR(current);
+        // H2: when the current task physically runs on an orphaned/foreign
+        // stack, do NOT save the foreign RSP into its context.rsp (that would
+        // overwrite the valid kernel-stack frame and strand the task).  Save to
+        // a scratch so the next dispatch re-plants it on its own kernel stack.
+        save_target = cur_is_boot_stack ? &s_foreign_rsp_scratch
+                                        : &TASK_STACK_PTR(current);
     }
 
 #ifdef CONFIG_DEBUG
@@ -1796,6 +1808,29 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
                     return false;
                 if (ring3 && (ss != 0x23 || rsp == 0))
                     return false;
+                // H2 root cause: the iret-frame RSP field is what iretq loads
+                // to resume the task.  For a KERNEL (ring0) task it must lie
+                // within its own kernel stack — or, when dispatching the
+                // harness, within the linker boot-stack window (it may
+                // legitimately run on the boot stack in test mode).  A stale/
+                // foreign rsp (e.g. a freed test task's HHDM stack) otherwise
+                // passes this guard and iretq resumes the task on foreign
+                // memory — the harness displacement that strands it on a freed
+                // stack (docs/ipc_blocking-analysis.md H2).  ring3 rsp is the
+                // user stack and is checked elsewhere.  Note the frame's rsp
+                // field is INCLUSIVE of kernel_stack_top: a freshly-created
+                // task's frame carries rsp == kernel_stack_top (its initial
+                // stack pointer before any push).
+                if (ring0) {
+                    const bool in_own =
+                        rsp >= nbase && rsp <= next.kernel_stack_top;
+                    const bool harness_boot =
+                        (&next == Scheduler::get_harness_task() &&
+                         rsp >= reinterpret_cast<uint64_t>(_stack_start) &&
+                         rsp < reinterpret_cast<uint64_t>(_stack_end));
+                    if (!in_own && !harness_boot)
+                        return false;
+                }
                 return true;
             };
             if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
@@ -1855,6 +1890,11 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
         }
     }
     __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(&next),
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_kstack_base,
+                     reinterpret_cast<uint64_t>(next.kernel_stack),
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&scheduler_load_kstack_top, next.kernel_stack_top,
                      __ATOMIC_RELEASE);
     if (next.page_table_) {
         __atomic_store_n(&scheduler_load_cr3_from, next.page_table_,
@@ -2073,6 +2113,22 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
                         return false;
                     if (ring3 && (ss != 0x23 || rsp == 0))
                         return false;
+                    // H2 root cause: a ring0 task's iret-frame RSP must lie
+                    // within its own kernel stack (inclusive of the top — a
+                    // fresh task's frame carries rsp == kernel_stack_top), or
+                    // within the linker boot stack when dispatching the
+                    // harness; a foreign rsp would iretq the task onto foreign
+                    // memory (see switch_to_task).
+                    if (ring0) {
+                        const bool in_own =
+                            rsp >= nbase && rsp <= next->kernel_stack_top;
+                        const bool harness_boot =
+                            (next == Scheduler::get_harness_task() &&
+                             rsp >= reinterpret_cast<uint64_t>(_stack_start) &&
+                             rsp < reinterpret_cast<uint64_t>(_stack_end));
+                        if (!in_own && !harness_boot)
+                            return false;
+                    }
                     return true;
                 };
                 if (!frame_ok(rip_a, cs_a, rsp_a, ss_a) &&
@@ -2087,6 +2143,11 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
 
         // Publish the deferred switch globals (load side only under lock).
         __atomic_store_n(&scheduler_load_rsp_from, TASK_STACK_PTR(next),
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_kstack_base,
+                         reinterpret_cast<uint64_t>(next->kernel_stack),
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_load_kstack_top, next->kernel_stack_top,
                          __ATOMIC_RELEASE);
         if (next->page_table_) {
             __atomic_store_n(&scheduler_load_cr3_from, next->page_table_,

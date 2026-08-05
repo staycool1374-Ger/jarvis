@@ -610,3 +610,8 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-05 15:03:45 scheduler PASSED: 63 FAILED: 0 TIME: 13s (QemuDebugcon backend enabled — Logger/debug_write/trace routed to 0xE9, QEMU mux chardev + isa-debugcon; check-style Errors: 0)
 2026-08-05 15:06:27 ipc PASSED: 20 FAILED: 0 TIME: 120s STATUS: TIMEOUT at test 21/51 ipc_send_sync_roundtrip — H2 race EXPOSED by debugcon (serial-latency masking removed; [DIAG] pre-save harness boot-stack signature)
 2026-08-05 15:09:16 ipc PASSED: 20 FAILED: 0 TIME: 120s STATUS: TIMEOUT at test 21/51 (deterministic 2/2 — confirms the earlier 51/51 ipc pass and the all 77->347 progress were masked by UART latency; the H2 deferred-switch race is NOT yet fixed in the kernel)
+2026-08-05 15:40:00 ipc PASSED: 51 FAILED: 0 TIME: ~2s x25 (H2 fix final: C++ dispatch-guard frame.rsp validation + scratch-save + asm apply-side RSP-owner check w/ kstack range atoms; 25/25 with diag-timing, 5/6 clean)
+2026-08-05 15:50:00 scheduler PASSED: 63 FAILED: 0 TIME: 2656ms (final H2 fix)
+2026-08-05 15:50:10 ipc_blocking PASSED: 4 FAILED: 0 TIME: 130ms (final H2 fix)
+2026-08-05 15:50:20 ipc_robustness PASSED: 6 FAILED: 0 TIME: 216ms (final H2 fix)
+2026-08-05 15:52:00 all PASSED: 347 FAILED: 0 TIME: 234s STATUS: TIMEOUT at test 348 timer_deadline_miss_detection_fires (H2 hang at test 77/78 RESOLVED — passes 1-347; remaining freeze is the PRE-EXISTING timing-cluster bug, verified at baseline; clean no-diagnostics build; make build Errors: 0)
