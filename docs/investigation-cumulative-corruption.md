@@ -687,3 +687,103 @@ modifications of that TCB — including the corrupting write and its caller.
 Alternatively: use hardware watchpoints via lldb (see AGENTS-KERNEL-BRIEFING.md
 §14) on the specific TCB address. This is the most direct approach but requires
 the corruption to be reproducible under the debugger.
+
+---
+
+## H2 Residual-Race Displacement — Hardware-Watchpoint Session (2026-08-06)
+
+Investigation of the residual H2 race (the `all` gate hanging at test 77/78
+`ipc_send_sync_roundtrip`; `ipc` class ~5-17% flake).  Prior state: the H2 fix
+(f7b2278a) layers 4-6 (dispatch-guard frame.rsp validation, scratch-save
+healing, apply-side RSP-owner check) contained but did NOT eliminate the
+displacement — the harness (PID 1) physically executes on an orphaned page
+while its TCB still owns a valid kslot stack.  See ROADMAP v0.3.9 "RESIDUAL H2
+RACE — Investigation Log".
+
+### Tooling established (committed)
+
+- `tools/gdb/h2_walk_pt.py` / `h2_walk_pt.txt` — lldb driver: finds the harness
+  TCB (id 1), walks its kslot-stack 4-level page table via direct-map reads of
+  phys tables, prints the phys base + HHDM alias range.  Globals are resolved
+  at session start; TCB offsets (id=0x360, state=0x370, ctx.rsp=0x478,
+  kst=0x488, kst_top=0x490) verified stable across two builds.
+- `tools/gdb/h2_wp2.py` / `h2_wp2.txt` — lldb write-watchpoint driver on the
+  harness's `context.rsp` field (SBWatchpointOptions API for lldb-2100).
+- `[H2W]` kernel recorder in `src/kernel/task/scheduler.cpp` `switch_to_task`
+  (CONFIG_DEBUG-only): fires ONCE per run, only when the harness is detected on
+  the orphaned displacement (cur_is_boot_stack AND live RSP outside the linker
+  boot stack — never on the normal boot-stack phase).  Dumps tick, live RSP,
+  stored context.rsp, callsite, kslot range, the full 56-qword orphaned-stack
+  window, the harness's stored kslot iret frame, and an in-kernel PTE walk of
+  the kslot VA (verifies which phys the kslot stack maps at that instant).
+  This recorder fires ~1/9-12 `ipc` runs (only in runs that would hang).
+
+### Key dead end: QEMU gdb-stub hardware watchpoints do NOT fire
+
+Both lldb (`SBWatchpointOptions` → `WatchpointCreateByAddress`) and
+x86_64-elf-gdb (`watch *(unsigned long long*)0x...`) accept the watchpoint
+without error but it NEVER fires over the `-s` stub — the process runs to
+completion (QEMU_EXIT).  Breakpoints fire normally (verified on
+`rate_monotonic_schedule`).  Conclusion: DR0-3 watchpoints are unusable against
+this QEMU stub; the kernel-side `[H2W]` recorder is the working instrument.
+
+### Facts captured (2026-08-06)
+
+**FACT 1 — ALIAS HYPOTHESIS REFUTED.**  The hypothesis that the "orphaned page"
+is the harness's own kslot stack seen through the HHDM alias (phys 0x7BF000 =
+HHDM 0xFFFF8000007BF000) is DISPROVEN.  The lldb page-table walk showed the
+harness's kslot stack maps phys **0x7BF000**; at displacement time the
+in-kernel PTE walk in the SAME run printed `kslot maps-phys=0x7BF000
+orphan-phys=0xA5BD90 SAME=0`.  The orphaned page is genuinely different.
+
+**FACT 2 — the orphaned page is freed/reused memory, and it VARIES per run.**
+Captured orphaned live RSPs: `0xFFFF800000A1BEA8` and `0xFFFF800000A5BEA8`
+(phys ~0xA1B000 and ~0xA5B000, i.e. ~10.6-10.9 MB).  No task's
+`kernel_stack` covers it (pre-save owner scan empty), consistent with a
+post-snapshot allocation freed by the PMM bitmap rewind in `snapshot_restore`.
+
+**FACT 3 — the displacement happens DURING a test's daemon wait, not at boot.**
+Both captures occurred mid-suite (test 20 `ipc_send_block_full` in a 51-test
+`ipc` run), while the harness executes its `wait_for_termination` →
+`arch::hlt()` loop (`hlt; ret`).  The orphaned stack at capture holds the full
+timer-ISR chain: `isr_common` → `arch::IDT::handle_interrupt` →
+`Scheduler::on_tick` → `AllTasksRegistry::next_ptr` → `switch_to_task`
+(callsite `rate_monotonic_schedule`), plus the harness TCB pointer
+(0xFFFF800000731000), a data struct (0xFFFF80000072F000), a kslot pointer
+(0xFFFF900000032A18), and `arch_hlt` return addresses.
+
+**FACT 4 — the harness's stored kslot iret frame stays VALID.**  At capture:
+`ctx-frame: rip=arch_hlt cs=0x8 rflags=0x10297 rsp=0xFFFF9000000329D0 ss=0x10`.
+So the harness is NOT dispatched onto the orphaned page — layers 4/6 reject
+foreign frames (verified in `switch_to_task` and `isr_stubs.asm`).  The live
+RSP was set to the orphaned page by some other path.
+
+### Analysis
+
+Given the only RSP-setting instructions in the kernel are boot-only
+(`higherhalf_entry` mov %r12,%rsp; `reboot_from_table` mov 0x490(%r12)→rsp),
+dead code (`syscall_entry` mov %rsp,%gs:0x0), the dispatch apply
+(`isr_stubs.asm` mov [scheduler_load_rsp_from],%rsp), `iretq`, and `ret`, the
+displacement must originate at an ISR-epilogue `iretq` whose loaded frame's
+`rsp` field pointed into the freed stack region.  The current layers validate
+(a) the frame pointer (scheduler_load_rsp_from) against
+[scheduler_load_kstack_base, scheduler_load_kstack_top) in asm, and (b) the
+frame's `rsp` field at `context.rsp+160` in C++ at switch_to_task time — but
+nothing re-validates the frame's `rsp` field at the iretq instant.
+
+**LEADING HYPOTHESIS (unconfirmed):** a test task is dispatched onto its HHDM
+stack (phys ~0xA5B000); its stack is subsequently freed (task termination +
+snapshot PMM rewind); the harness's logical execution then continues with a
+physical RSP on those freed pages (current-task drift), so `current_task()` =
+harness while the CPU runs on freed memory.  The exact RSP-setting instruction
+has NOT yet been captured.
+
+### Planned next step (NOT yet implemented)
+
+Instrument the ISR apply path (`isr_stubs.asm` `.restore`, immediately before
+`iretq`) to re-validate the iret frame's `rsp` field (`[rsp+24]` after the
+register pops) against the published `scheduler_load_kstack_base/top` and print
+a diagnostic when foreign.  CAUTION: the earlier per-tick `H2-FOREIGN` check
+made the race vanish 25/25, so any hot-path addition may mask the race; keep it
+as a diagnostic and evaluate on a clean build before considering it a fix.
+

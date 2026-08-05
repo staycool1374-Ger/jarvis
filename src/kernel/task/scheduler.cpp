@@ -1758,6 +1758,86 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
         // a scratch so the next dispatch re-plants it on its own kernel stack.
         save_target = cur_is_boot_stack ? &s_foreign_rsp_scratch
                                         : &TASK_STACK_PTR(current);
+#ifdef CONFIG_DEBUG
+        // H2 residual-race recorder (debug-only, fires ONLY on the orphaned
+        // displacement — the harness physically executing on a non-boot-stack,
+        // non-TCB page — never on the normal linker-boot-stack phase).  The
+        // iret frame at cur_rsp+136..168 is the CPU-pushed pre-interrupt frame:
+        // rip/cs/rflags/rsp/ss of the displaced execution.
+        if (cur_is_boot_stack && !is_boot_stack_rsp(cur_rsp)) {
+            static bool s_h2w_fired = false;
+            if (!s_h2w_fired) {
+                s_h2w_fired = true;
+                Logger::raw_write("[H2W] orphan-displaced tick=");
+                Logger::print_dec(current_cpu().ticks);
+                Logger::raw_write(" cur_rsp=0x");
+                Logger::print_hex(cur_rsp);
+                Logger::raw_write(" ctx_rsp=0x");
+                Logger::print_hex(TASK_STACK_PTR(current));
+                Logger::raw_write(" callsite=0x");
+                Logger::print_hex(
+                    reinterpret_cast<uint64_t>(__builtin_return_address(0)));
+                Logger::raw_write(" kst=0x");
+                Logger::print_hex(
+                    reinterpret_cast<uint64_t>(current->kernel_stack));
+                Logger::raw_write("-0x");
+                Logger::print_hex(current->kernel_stack_top);
+                Logger::raw_write("\n");
+                const uint64_t *s =
+                    reinterpret_cast<const uint64_t *>(cur_rsp);
+                for (unsigned i = 0; i < 56; ++i) {
+                    Logger::raw_write("  [rsp+");
+                    Logger::print_hex(static_cast<uint64_t>(i * 8));
+                    Logger::raw_write("]=0x");
+                    Logger::print_hex(s[i]);
+                    Logger::raw_write("\n");
+                }
+                // The harness's stored kslot iret frame — the rsp field at
+                // +160 is what the NEXT dispatch's iretq would load.
+                const uint64_t *cf =
+                    reinterpret_cast<const uint64_t *>(TASK_STACK_PTR(current));
+                Logger::raw_write("  ctx-frame: rip=0x");
+                Logger::print_hex(cf[136 / 8]);
+                Logger::raw_write(" cs=0x");
+                Logger::print_hex(cf[144 / 8]);
+                Logger::raw_write(" rflags=0x");
+                Logger::print_hex(cf[152 / 8]);
+                Logger::raw_write(" rsp=0x");
+                Logger::print_hex(cf[160 / 8]);
+                Logger::raw_write(" ss=0x");
+                Logger::print_hex(cf[168 / 8]);
+                Logger::raw_write("\n");
+                // Walk the harness's kslot stack PTE chain (read via the
+                // direct map) to see WHICH phys the kslot VA maps right now.
+                uint64_t cr3 = 0;
+                asm volatile("mov %%cr3, %0" : "=r"(cr3));
+                uint64_t kva = reinterpret_cast<uint64_t>(current->kernel_stack);
+                const uint64_t HHDM = 0xFFFF800000000000ULL;
+                uint64_t l4e = *reinterpret_cast<const uint64_t *>(
+                    HHDM + (cr3 & 0xFFFFFFFFFF000ULL) +
+                    ((kva >> 39) & 0x1FF) * 8);
+                uint64_t l3e = *reinterpret_cast<const uint64_t *>(
+                    HHDM + (l4e & 0xFFFFFFFFFF000ULL) +
+                    ((kva >> 30) & 0x1FF) * 8);
+                uint64_t l2e = *reinterpret_cast<const uint64_t *>(
+                    HHDM + (l3e & 0xFFFFFFFFFF000ULL) +
+                    ((kva >> 21) & 0x1FF) * 8);
+                uint64_t l1e = *reinterpret_cast<const uint64_t *>(
+                    HHDM + (l2e & 0xFFFFFFFFFF000ULL) +
+                    ((kva >> 12) & 0x1FF) * 8);
+                uint64_t kphys = l1e & 0xFFFFFFFFFF000ULL;
+                Logger::raw_write("  kslot-kva=0x");
+                Logger::print_hex(kva);
+                Logger::raw_write(" maps-phys=0x");
+                Logger::print_hex(kphys);
+                Logger::raw_write(" orphan-phys=0x");
+                Logger::print_hex(cur_rsp - HHDM);
+                Logger::raw_write(" SAME=");
+                Logger::print_dec(kphys == (cur_rsp & ~0xFFFULL) ? 1u : 0u);
+                Logger::raw_write("\n");
+            }
+        }
+#endif
     }
 
 #ifdef CONFIG_DEBUG
