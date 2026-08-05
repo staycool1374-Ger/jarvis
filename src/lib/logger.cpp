@@ -17,6 +17,7 @@
  */
 
 #include <logger.hpp>
+#include <kernel/arch/qemu_debugcon.hpp>
 #include <kernel/arch/serial.hpp>
 #include <kernel/log/ring_buffer.hpp>
 
@@ -37,14 +38,24 @@ void Logger::set_level(LogLevel level) {
 }
 
 void Logger::putchar(char c) {
+    // Debugcon on x86_64 (lock-free, ~ns per byte — no UART baud pacing that
+    // warps microsecond-scale scheduler/IPC timing); UART elsewhere.
+#if defined(CONFIG_ARCH_X86_64)
+    arch::QemuDebugcon::putc(c);
+#else
     arch::Serial::putchar(c);
+#endif
     if (initialized_) {
         kernel::log::g_klog.putchar(c);
     }
 }
 
 void Logger::puts(const char* s) {
+#if defined(CONFIG_ARCH_X86_64)
+    arch::QemuDebugcon::write(s);
+#else
     arch::Serial::puts(s);
+#endif
     if (initialized_) {
         kernel::log::g_klog.puts(s);
     }

@@ -150,6 +150,51 @@ TCB when `current_task_ptr_` has drifted.  With `CONFIG_DEBUG_IPC_SCHED`
 serial latency masks it (881/881 verified 2026-08-01).  The debug `all`
 development gate keeps the trace ON until this is fixed.
 
+**STATUS (2026-08-05, FIX LANDED — H2 hang at test 77/78 RESOLVED):** the three
+planned kernel fixes are implemented and verified:
+1. **Boot-stack boundary / ownership fallback (`switch_to_task`):** when the
+   live RSP belongs to the harness's boot stack — including foreign stacks owned
+   by NO TCB (`0xFFFF800000A1BEA8` lies OUTSIDE the linker `.boot_stack`
+   section `0xFFFF800000667000-0x66B028`, so the original `.boot_stack`-range
+   check alone never matched) — owner-resolution binds the save to the harness
+   TCB (never a peer) and re-enqueues it.  The re-enqueue is the key: a harness
+   whose TCB state is READY while physically running on the boot stack was
+   previously stranded (INV-2: live, not in runq, not current) after preemption,
+   so `next_task()` fell through to idle forever.
+2. **CR3 kernel fallback (`isr_stubs.asm`):** when `scheduler_load_cr3_from` is
+   null while returning to a kernel/harness context, load the static
+   `scheduler_kernel_cr3` (set in `Scheduler::init` from `VMM::get_kernel_pml4`)
+   so the harness never resumes on a stale user CR3.
+3. **Generation-lock atomic pair:** the publish sites (`switch_to_task`,
+   `switch_away_from_terminating`) bump `scheduler_switch_generation` (RELEASE)
+   after writing `load_rsp_from`/`load_cr3_from`/`next_task_id` and before
+   arming `save_rsp_to`; `isr_stubs.asm` captures the generation and re-verifies
+   before applying, so a timer ISR never applies a half-written/superseded pair.
+**Verification:** `scheduler` 63/63 (×4), `ipc` 51/51, `ipc_blocking` 4/4,
+`ipc_robustness` 6/6 with the trace OFF.  **`all` with trace OFF now passes
+tests 1–347** (previously hung at test 77/78 `ipc_send_sync_roundtrip`) and
+freezes at test 348 `timer_deadline_miss_detection_fires` — a **PRE-EXISTING
+timing-cluster hang** (verified identical at baseline with all v0.3.9 changes
+reverted: `timing` class fails test 2 `timer_period_reload` with
+`LEAK: Tasks +1, PMM +16, MsgQueues +1, Notifies +1, EventGroups +1` — a
+MemPool pinned-block cleanup skip — and hangs at test 9).  That cluster is a
+SEPARATE pre-existing bug (not the H2 race) blocking the final `all` gate; see
+the follow-up item below.
+
+**CRITICAL CORRECTION (2026-08-05): the H2 race is NOT actually fixed.**  The
+`ipc` 51/51 and `all` 1–347 results above were measured with the SLOW UART
+serial backend, whose ~87us/byte polling latency (plus the ~7ms `[DIAG]
+pre-save` drain per harness preemption) MASKED the race.  After routing the
+whole logging backend through the QEMU debugcon (0xE9, single-digit-ns/byte —
+see `src/kernel/arch/qemu_debugcon.hpp` and the Makefile mux chardev), the
+`ipc` class now hangs deterministically 2/2 at test 21
+`ipc_send_sync_roundtrip` with the same `[DIAG] pre-save ... owners: (empty)`
+signature.  **Conclusion:** the serial-latency masking was removed; the
+deferred-switch race is real and the three fixes above are insufficient.  The
+unmasked reproduction is now STABLE (no serial warp), so the root-cause
+investigation can proceed cleanly: `make execute-test x86_64 debug ipc` under
+the debugcon backend.
+
 - [ ] **`ipc`/`all` H2-adjacent flakes** — remaining flaky `ipc`/`all` runs in
       the H2 region (`ipc_send_sync_roundtrip`); folded into the root-cause fix
       below (moved from v0.3.8).  **STATUS (2026-08-05):** the `ipc` class test
@@ -169,6 +214,17 @@ development gate keeps the trace ON until this is fixed.
       the fix is the kernel root cause below.  The `ipc` class in isolation
       passes 51/51 because its run does not accumulate the scheduler state that
       exposes the race; `all` does.
+      **UNRELATED PRE-EXISTING HANG (2026-08-05):** the `priority_inheritance`
+      class hangs 2/2 at test 1 `MutexPriorityDonates` — but it also hangs at
+      baseline with ALL v0.3.9 kernel changes reverted, so it is NOT the H2 race
+      and NOT caused by the H2 fix.  Signature: the `spawn_holder` lambda
+      (`test_priority_inheritance.cpp:66-69`) calls `gate.wait()`
+      (`Semaphore::wait()` sets BLOCKED then returns — INV-4), does not spin on
+      its own BLOCKED state, and self-terminates before the harness's
+      `while (t->state != BLOCKED)` observes it → the harness spins forever.
+      Fix (test code, deferred to a test-only session): make the holder lambda
+      spin on `state == BLOCKED` after `gate.wait()` per the v0.3.10 cookbook
+      rule.  Recorded in test-history.txt (2026-08-05 14:14:44).
 
 - [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
       (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds
@@ -193,20 +249,28 @@ development gate keeps the trace ON until this is fixed.
           idle_cleanup / timer_rate_monotonic (RT tasks never dispatched),
           so reverted.  The guard must keep the `highest_ready < cur_prio`
           check (idle_cleanup relies on equal/higher-prio dispatch).
-- [ ] **Fix candidates (from analysis doc §Next steps):**
-      (1) make the deferred-switch pair atomic — publish RSP+CR3 under a
-      single generation so the ISR never applies a half-written pair
-      (isr_stubs.asm:106-171); (2) treat a boot-stack harness RSP as valid
-      (no-owner ⇒ save into the physically-running harness, or skip the
-      save entirely for the harness/idle path); (3) fix the
+- [x] **Fix candidates (from analysis doc §Next steps):**
+      (1) make the deferred-switch pair atomic — **DONE (generation-lock)**;
+      (2) treat a boot-stack harness RSP as valid — **DONE (owner-resolution
+      binds harness + re-enqueue; covers foreign no-owner stacks)**; (3) fix the
       `current_task_ptr_`/runq desync (INV-2) that leaves a live task out of
-      the runq and not `current`.
-      **Open question for the next session:** the switch from harness
-      (boot stack) to a user task loads a user CR3; switching BACK must
-      reload the kernel CR3 for the harness.  If `scheduler_load_cr3_from`
-      for the harness is stale/zero, the harness resumes on the sender's
-       user PML4 → freeze.  Verify CR3 correctness on the return path
-       (isr_stubs.asm ~150-165) before/with the generation fix.
+      the runq and not `current` — the harness re-enqueue addresses the
+      boot-stack stranding; the general INV-2 desync remains open.
+      **Open question (2026-08-05, RESOLVED):** CR3 correctness on the
+      harness-return path — implemented via `scheduler_kernel_cr3` fallback in
+      isr_stubs.asm.
+- [ ] **NEW BLOCKER (pre-existing, separate from H2): `timing` cluster hangs.**
+      `all` reaches test 348 `timer_deadline_miss_detection_fires` (after the
+      H2 fix) and freezes silently; the `timing` class in isolation fails test 2
+      `timer_period_reload` (`LEAK: Tasks +1, PMM +16, MsgQueues +1,
+      Notifies +1, EventGroups +1` — the task TCB is MemPool-PINNED so
+      `cleanup()` skips teardown) and hangs at test 9 (same test).  Verified
+      identical at baseline (all v0.3.9 changes reverted), so it predates this
+      session.  Suspects: MemPool pinned-bitmap state surviving
+      snapshot_restore (v0.3.12 PoolMeta fix incomplete), and the deadline
+      monitor (CONFIG_DEADLINE_ACTION=0 LOG_ONLY) interacting with the
+      prio-11 period-2 helper's genuine overrun.  Needs a dedicated
+      investigation (next session).
 - [ ] **Blocked semaphore waiter teardown gap (separate from H2):**
       `Semaphore::wait()` stores a raw TCB in `waiters_` and leaves the task
       linked while the deferred switch is applied. `TaskControlBlock::cleanup()`

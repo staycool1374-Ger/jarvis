@@ -18,6 +18,8 @@ extern handle_interrupt_c
 extern scheduler_save_rsp_to
 extern scheduler_load_rsp_from
 extern scheduler_load_cr3_from
+extern scheduler_switch_generation
+extern scheduler_kernel_cr3
 extern scheduler_on_context_switch
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
@@ -125,6 +127,11 @@ isr_common:
     cmp qword [rel isr_nesting_depth], 2
     ja .restore
 
+    ; Generation-lock: capture the generation that published this deferred-switch
+    ; pair (load_rsp_from / load_cr3_from).  RCX is preserved across the
+    ; diagnostic call below (the push/pop block includes RCX).
+    mov rcx, [rel scheduler_switch_generation]
+
     ; Diagnostic: check RSP before saving (preserve caller-saved regs)
     push rax
     push rcx
@@ -145,6 +152,18 @@ isr_common:
     pop rdx
     pop rcx
     pop rax
+
+    ; Verify the deferred switch is still the one we captured.  If the
+    ; generation advanced, a concurrent publisher superseded/partially
+    ; overwrote this pair — applying it would use a half-written RSP/CR3 pair
+    ; (the H2 race).  Skip the apply and leave the atoms untouched: a
+    ; superseding publisher's own arm is in place, and a stale arm is ignored
+    ; by the next ISR's fresh generation check.
+    cmp rcx, [rel scheduler_switch_generation]
+    jne .restore
+    mov rax, [rel scheduler_save_rsp_to]
+    test rax, rax
+    jz .restore
 
     mov [rax], rsp
     mov rsp, [rel scheduler_load_rsp_from]
@@ -177,9 +196,17 @@ isr_common:
     ; must start from a clean depth so its own ISRs nest correctly.
     mov qword [rel isr_nesting_depth], 1
 
+    ; Load the next task's CR3.  If no CR3 was published for this switch
+    ; (kernel/harness context) or it was consumed, fall back to the static
+    ; kernel PML4 so the harness can never resume on a stale user CR3 from a
+    ; previous task (the H2 freeze path).
     mov rax, [rel scheduler_load_cr3_from]
     test rax, rax
+    jnz .load_cr3
+    mov rax, [rel scheduler_kernel_cr3]
+    test rax, rax
     jz .restore
+.load_cr3:
     mov cr3, rax
     mov qword [rel scheduler_load_cr3_from], 0
 

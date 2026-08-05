@@ -592,4 +592,21 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-05 08:38:30 process PASSED: 43 FAILED: 0 TIME: 3938ms (process_clone_adds_child: user_stack_size_ before clone; signal_kill_delivers: gate-spin + drain; waitpid tests: create-both-first + IrqGuard registration per cookbook; rlimit: drain-before-assert)
 2026-08-05 08:39:15 arch PASSED: 59 FAILED: 0 TIME: 4032ms (all 59 pass; was 58/4 ERR2 in the pre-fix sweep)
 2026-08-05 08:43:37 sweep deadlock=15 lock_protocol=53 memory=47 ipc_robustness=6 ipc=51 vfs=146 process=43 arch=59 all PASS 0 FAIL (ipc timeout in first sweep pass was a back-to-back artifact; passes 51/51 isolated)
-2026-08-05 13:36:34 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 77/918 ipc_send_sync_roundtrip — H2 deferred-switch race (pre-save cur_rsp on harness boot stack, no TCB owner; ROADMAP v0.3.9; trace ON)
+2026-08-05 13:36:34 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 77/918 ipc_send_sync_roundtrip — H2 deferred-switch race (pre-save cur_rsp on harness boot stack, no TCB owner; ROADMAP v0.3.9; trace ON)2026-08-05 14:07:58 scheduler PASSED: 63 FAILED: 0 TIME: 2546ms (boot-stack owner-resolution boundary check + generation-lock deferred-switch publish + asm CR3 kernel fallback; first run had flaky test 57 leak from a diag-timing change, reverted)
+2026-08-05 14:09:51 scheduler PASSED: 63 FAILED: 0 TIME: 3050ms
+2026-08-05 14:10:09 scheduler PASSED: 63 FAILED: 0 TIME: 2571ms
+2026-08-05 14:11:27 scheduler PASSED: 63 FAILED: 0 TIME: 2795ms (owner-resolution #else branch now matches #ifndef short-circuit: peer scan only when current kernel_stack does not contain the live RSP)
+2026-08-05 14:11:59 ipc PASSED: 51 FAILED: 0 TIME: 8279ms
+2026-08-05 14:12:16 ipc_blocking PASSED: 4 FAILED: 0 TIME: 115ms
+2026-08-05 14:12:33 ipc_robustness PASSED: 6 FAILED: 0 TIME: 204ms
+2026-08-05 14:14:44 priority_inheritance PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (test 1 MutexPriorityDonates — pre-existing INV-4 gate-spin race in spawn_holder: holder lambda gate.wait() self-terminates before harness observes BLOCKED; REPRODUCED AT BASELINE with all v0.3.9 steps reverted; not caused by this session's kernel changes)
+2026-08-05 14:34:50 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 77/918 (before foreign-stack no-owner re-enqueue; H2 harness boot-stack strand)
+2026-08-05 14:44:20 all PASSED: 347 FAILED: 0 TIME: 234s STATUS: TIMEOUT (H2 hang FIXED — passes test 77 ipc_send_sync_roundtrip and all of ipc cluster; freezes at test 348 timer_deadline_miss_detection_fires, PRE-EXISTING timing-cluster hang)
+2026-08-05 14:47:59 timing PASSED: 8 FAILED: 1 TIME: 120s STATUS: TIMEOUT at test 9 timer_deadline_miss_detection_fires (test 2 timer_period_reload LEAK Tasks+1 PMM+16 — pre-existing MemPool pinned-block cleanup skip; identical at baseline)
+2026-08-05 14:50:21 timing PASSED: 8 FAILED: 1 TIME: 120s STATUS: TIMEOUT at test 9 (BASELINE — all v0.3.9 steps reverted; identical failure => PRE-EXISTING, not caused by H2 fixes)
+2026-08-05 14:51:42 ipc PASSED: 51 FAILED: 0 TIME: 8318ms
+2026-08-05 14:30:31 scheduler PASSED: 63 FAILED: 0 TIME: 10763ms (harness re-enqueue on boot-stack preempt — first revision)
+2026-08-05 14:40:18 scheduler PASSED: 63 FAILED: 0 TIME: 2605ms (final owner-resolution restructure: foreign-stack no-owner -> harness bind + re-enqueue)
+2026-08-05 15:03:45 scheduler PASSED: 63 FAILED: 0 TIME: 13s (QemuDebugcon backend enabled — Logger/debug_write/trace routed to 0xE9, QEMU mux chardev + isa-debugcon; check-style Errors: 0)
+2026-08-05 15:06:27 ipc PASSED: 20 FAILED: 0 TIME: 120s STATUS: TIMEOUT at test 21/51 ipc_send_sync_roundtrip — H2 race EXPOSED by debugcon (serial-latency masking removed; [DIAG] pre-save harness boot-stack signature)
+2026-08-05 15:09:16 ipc PASSED: 20 FAILED: 0 TIME: 120s STATUS: TIMEOUT at test 21/51 (deterministic 2/2 — confirms the earlier 51/51 ipc pass and the all 77->347 progress were masked by UART latency; the H2 deferred-switch race is NOT yet fixed in the kernel)

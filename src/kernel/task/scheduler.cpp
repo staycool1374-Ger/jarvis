@@ -431,6 +431,10 @@ void Scheduler::init(const SchedulerConfig &cfg) {
     preempt_enabled_ = cfg.preempt_enabled;
     suppress_terminated_log_ = cfg.suppress_terminated_log;
 
+    // Static kernel CR3 for the isr_stubs.asm fallback when returning to the
+    // kernel/harness context (VMM::init has already captured kernel_pml4_).
+    scheduler_kernel_cr3 = VMM::get_kernel_pml4();
+
 #if CONFIG_DEADLINE_MONITOR_TASK
     ensure_monitor();
 #endif
@@ -1562,6 +1566,23 @@ static bool rsp_in_stack_range(uint64_t rsp, const TaskControlBlock *t,
     return false;
 }
 
+// Boot stack (section .boot_stack, bounded by the linker's _stack_start /
+// _stack_end symbols).  The harness (init, PID 1) physically runs on this
+// stack in test mode — it is never switched onto its TCB kernel_stack, so no
+// task's kernel_stack range covers the live RSP while the harness executes.
+extern "C" {
+extern char _stack_start[];
+extern char _stack_end[];
+}
+
+/// @brief Returns true when the live RSP belongs to the kernel boot stack
+///        (kernel-image space), i.e. the physically-running harness.
+static inline bool is_boot_stack_rsp(uint64_t rsp) noexcept {
+    const uint64_t base = reinterpret_cast<uint64_t>(_stack_start);
+    const uint64_t end = reinterpret_cast<uint64_t>(_stack_end);
+    return rsp >= base && rsp < end;
+}
+
 static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
                             const char *label) {
     if (!current) {
@@ -1669,14 +1690,33 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
     }
 
     uint64_t *save_target = &TASK_STACK_PTR(current);
+    bool cur_is_boot_stack = false;
     {
         uint64_t cur_rsp{};
         asm volatile("mov %%rsp, %0" : "=r"(cur_rsp));
         TaskControlBlock *owner = nullptr;
-#ifndef CONFIG_DEBUG
-        uint64_t base = reinterpret_cast<uint64_t>(current->kernel_stack);
-        if (!current->kernel_stack || !current->kernel_stack_top ||
-            cur_rsp < base || cur_rsp >= current->kernel_stack_top) {
+        const uint64_t cbase = reinterpret_cast<uint64_t>(current->kernel_stack);
+        const bool cur_in_own_stack =
+            current->kernel_stack && current->kernel_stack_top &&
+            cur_rsp >= cbase && cur_rsp < current->kernel_stack_top;
+        if (is_boot_stack_rsp(cur_rsp)) {
+            // H2 (docs/ipc_blocking-analysis.md): the live RSP is on the kernel
+            // boot stack — the harness (init/PID 1) runs there in test mode and
+            // never switched onto its TCB kernel_stack, so NO TCB kernel_stack
+            // covers this RSP.  Owner-resolution must NOT scan peers here: if
+            // current_task() has drifted onto a peer TCB, saving into
+            // `&TASK_STACK_PTR(current)` would write the boot-stack RSP into the
+            // peer's context.rsp (deferred-switch corruption).  Bind the save to
+            // the harness TCB explicitly; the boot stack belongs to the harness,
+            // not to any peer.
+            auto *h = Scheduler::get_harness_task();
+            owner = (h && h->magic == TaskControlBlock::TCB_MAGIC) ? h : current;
+            cur_is_boot_stack = true;
+        } else if (!cur_in_own_stack) {
+            // The live RSP is not on the current task's own kernel stack.  Scan
+            // all tasks for the real owner (drift correction: current_task()
+            // may point at a peer TCB while the CPU actually runs on another
+            // task's stack).
             for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
                 auto *tt = Scheduler::task_at(ti);
                 if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
@@ -1688,20 +1728,18 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
                     break;
                 }
             }
-        }
-#else
-        for (uint64_t ti = 0; ti < Scheduler::task_count(); ++ti) {
-            auto *tt = Scheduler::task_at(ti);
-            if (!tt || tt->magic != TaskControlBlock::TCB_MAGIC)
-                continue;
-            uint64_t tb = reinterpret_cast<uint64_t>(tt->kernel_stack);
-            if (tt->kernel_stack && tt->kernel_stack_top &&
-                cur_rsp >= tb && cur_rsp < tt->kernel_stack_top) {
-                owner = tt;
-                break;
+            if (owner == nullptr) {
+                // The RSP sits on a foreign stack owned by NO TCB — the harness
+                // (PID 1) running in test mode on a non-TCB boot stack (e.g.
+                // outside the linker .boot_stack section).  Bind the save to the
+                // harness and mark it for re-enqueue below so it is not stranded
+                // (INV-2) when preempted.
+                auto *h = Scheduler::get_harness_task();
+                owner = (h && h->magic == TaskControlBlock::TCB_MAGIC) ? h
+                                                                       : current;
+                cur_is_boot_stack = true;
             }
         }
-#endif
         if (owner && owner != current) {
             current = owner;
             Scheduler::set_current(*owner);
@@ -1843,7 +1881,16 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
 #endif
     }
 
-    if (current->state == TaskState::RUNNING) {
+    // Re-enqueue the current task if it must remain schedulable.  A task with
+    // state RUNNING is always re-queued (normal preemption).  The boot-stack
+    // harness is a special case: its TCB state can be READY while it physically
+    // runs on the boot stack (it was never dispatched via a switch_to_task that
+    // set RUNNING — snapshot restore leaves it READY).  If it is preempted
+    // without re-enqueueing, it is stranded (INV-2: live but not in the runq
+    // and not current after the switch) and next_task() falls through to idle,
+    // freezing the `all` suite.  enqueue_ready() refuses double-enqueues, so
+    // this is safe even if the harness is already queued.
+    if (current->state == TaskState::RUNNING || cur_is_boot_stack) {
         current->state = TaskState::READY;
         Scheduler::enqueue_ready(*current);
     }
@@ -1853,7 +1900,19 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
         arch::IrqGuard ig{};
         release_lock();
         __atomic_store_n(&scheduler_next_task_id, next.id, __ATOMIC_RELEASE);
-        __atomic_store_n(&scheduler_save_rsp_to, save_target, __ATOMIC_RELEASE);
+        // Generation-lock: commit the deferred-switch pair.  The generation is
+        // bumped only after load_rsp_from / load_cr3_from / next_task_id are
+        // visible (all written before this IRQ-guarded block), and the arm
+        // (save_rsp_to) is published after the bump — so any ISR that observes
+        // the arm also observes the complete pair and the current generation.
+        // isr_stubs.asm re-verifies this generation before applying, so it
+        // never applies a half-written / superseded pair.
+        uint64_t gen =
+            __atomic_load_n(&scheduler_switch_generation, __ATOMIC_RELAXED);
+        __atomic_store_n(&scheduler_switch_generation, gen + 1,
+                         __ATOMIC_RELEASE);
+        __atomic_store_n(&scheduler_save_rsp_to, save_target,
+                         __ATOMIC_RELEASE);
 
         uint64_t cr0 = arch::read_cr0();
         cr0 |= (1ULL << 3);
@@ -2051,6 +2110,13 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
     {
         arch::IrqGuard ig{};
         __atomic_store_n(&scheduler_next_task_id, next->id, __ATOMIC_RELEASE);
+        // Generation-lock: bump the generation after the load side is published
+        // (written above under the lock) and before arming save_rsp_to.  The
+        // ISR epilogue verifies the generation before applying the pair.
+        uint64_t gen =
+            __atomic_load_n(&scheduler_switch_generation, __ATOMIC_RELAXED);
+        __atomic_store_n(&scheduler_switch_generation, gen + 1,
+                         __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, &exiting.context.rsp,
                          __ATOMIC_RELEASE);
         uint64_t cr0 = arch::read_cr0();

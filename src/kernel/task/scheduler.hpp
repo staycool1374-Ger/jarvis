@@ -596,6 +596,18 @@ extern uint64_t scheduler_load_cr3_from;
 /// @brief Task ID to set as current after the context switch completes.
 // NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
 extern uint64_t scheduler_next_task_id;
+/// @brief Generation sequence counter for the deferred-switch pair.  A
+///        publisher bumps it after writing load_rsp_from / load_cr3_from and
+///        before arming scheduler_save_rsp_to; isr_stubs.asm captures it and
+///        re-verifies before applying so a timer ISR never applies a
+///        half-written / superseded pair.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_switch_generation;
+/// @brief Static kernel PML4 (physical).  isr_stubs.asm falls back to this when
+///        scheduler_load_cr3_from is null/outdated while returning to the
+///        kernel/harness context.
+// NOLINTNEXTLINE(bugprone-dynamic-static-initializers)
+extern uint64_t scheduler_kernel_cr3;
 /// @brief Reschedule request flag.  Set by task-context callers (reschedule(),
 ///        terminate(), yield_as) to ask the timer ISR to (re)publish a deferred
 ///        switch.  The timer ISR is the SOLE publisher of the deferred switch

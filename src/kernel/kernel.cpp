@@ -27,6 +27,7 @@
 #include <kernel/arch/rtc.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/keyboard.hpp>
+#include <kernel/arch/qemu_debugcon.hpp>
 #include <kernel/arch/serial.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
@@ -379,14 +380,10 @@ void init_task_main() {
 
 static void debug_putchar(char c) {
 #if defined(CONFIG_ARCH_X86_64)
-    if (c == '\n') {
-        while ((inb(arch::COM1_LSR) & 0x20) == 0)
-            ;
-        outb(arch::COM1, '\r');
-    }
-    while ((inb(arch::COM1_LSR) & 0x20) == 0)
-        ;
-    outb(arch::COM1, c);
+    // Debugcon (port 0xE9): lock-free, single-digit ns per byte.  The UART
+    // path below busy-waits on LSR.THRE for ~87us/byte at 115200 baud, which
+    // measurably warps scheduler/IPC timing (H2 investigation).
+    arch::QemuDebugcon::putc(c);
 #else
     arch::Serial::putchar(c);
 #endif
@@ -437,6 +434,17 @@ uint64_t *scheduler_save_rsp_to = nullptr;
 uint64_t scheduler_load_rsp_from = 0;
 uint64_t scheduler_load_cr3_from = 0;
 uint64_t scheduler_next_task_id = UINT64_MAX;
+/// @brief Generation sequence counter for the deferred-switch pair
+///        (load_rsp_from / load_cr3_from).  A publisher bumps it after writing
+///        the pair and before arming save_rsp_to; isr_stubs.asm captures it and
+///        re-verifies before applying so a timer ISR never applies a
+///        half-written / superseded pair.
+uint64_t scheduler_switch_generation = 0;
+/// @brief Static kernel PML4 (physical).  isr_stubs.asm falls back to this when
+///        scheduler_load_cr3_from is null/outdated while returning to the
+///        kernel/harness context, so the harness never resumes on a stale user
+///        CR3.  Initialised in Scheduler::init from VMM::get_kernel_pml4().
+uint64_t scheduler_kernel_cr3 = 0;
 bool scheduler_need_resched = false;
 uint64_t isr_nesting_depth = 0;
 uint64_t irq_entry_tsc = 0;

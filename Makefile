@@ -237,8 +237,15 @@ FAT32_DISK     := build/fat32.img
 QEMU_NET       := -netdev user,id=net0 -device virtio-net-pci,netdev=net0,disable-legacy=on
 # Recursive evaluation (use `=`) so that DEBUG_ISO can be overridden
 # per-target (e.g. release tests) via target-specific variables or $(eval).
-QEMU_FLAGS     = -cdrom $(DEBUG_ISO) -m 256M -serial mon:stdio $(QEMU_NET) \
-                $(QEMU_ARCH_FLAGS)
+# Kernel debug output goes to the QEMU debugcon port (0xE9) instead of the
+# UART, so logging does not warp microsecond-scale scheduling/IPC timing (H2
+# investigation).  stdio can be used only by ONE chardev, so serial + debugcon
+# + monitor are multiplexed onto a single mux chardev; the test harness still
+# parses the combined stream for the TEST SUMMARY.
+QEMU_FLAGS     = -cdrom $(DEBUG_ISO) -m 256M \
+                -chardev stdio,id=dbg,mux=on \
+                -serial chardev:dbg -device isa-debugcon,chardev=dbg -mon chardev=dbg \
+                $(QEMU_NET) $(QEMU_ARCH_FLAGS)
 
 # For x86_64 add IDE drive for FAT32
 ifeq ($(ARCH),x86_64)

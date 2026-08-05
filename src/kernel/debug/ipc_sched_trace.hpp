@@ -26,11 +26,12 @@
 
 #pragma once
 
+#include <kernel/arch/qemu_debugcon.hpp>
 #include <kernel/arch/serial.hpp>
 #include <lib/types.hpp>
 
 // DEBUGGING ONLY — comment out to deactivate (release procedure requires this).
-#define CONFIG_DEBUG_IPC_SCHED 1
+// #define CONFIG_DEBUG_IPC_SCHED 1
 
 // The formatting helpers (fmt_u64/fmt_str/trace) are ALWAYS available: they are
 // tiny, side-effect-free buffer formatters reused by tcb_write_log.cpp.  Only
@@ -39,10 +40,17 @@
 
 namespace kernel::debug {
 
-/// @brief Emit a raw trace line to the serial console (COM1).
+/// @brief Emit a raw trace line to the debug console.  On x86_64 the QEMU
+///        debugcon (0xE9) is used — lock-free, no UART baud pacing — so the
+///        per-tick/per-switch traces do not perturb timing.  UART elsewhere.
 inline void trace(const char *msg) {
+#if defined(CONFIG_ARCH_X86_64)
+    arch::QemuDebugcon::write(msg);
+    arch::QemuDebugcon::putc('\n');
+#else
     arch::Serial::puts(msg);
     arch::Serial::puts("\n");
+#endif
 }
 
 /// @brief Print an integer (decimal, unsigned) appended at buf[pos].
