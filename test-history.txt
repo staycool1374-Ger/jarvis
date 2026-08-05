@@ -592,3 +592,4 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-05 08:38:30 process PASSED: 43 FAILED: 0 TIME: 3938ms (process_clone_adds_child: user_stack_size_ before clone; signal_kill_delivers: gate-spin + drain; waitpid tests: create-both-first + IrqGuard registration per cookbook; rlimit: drain-before-assert)
 2026-08-05 08:39:15 arch PASSED: 59 FAILED: 0 TIME: 4032ms (all 59 pass; was 58/4 ERR2 in the pre-fix sweep)
 2026-08-05 08:43:37 sweep deadlock=15 lock_protocol=53 memory=47 ipc_robustness=6 ipc=51 vfs=146 process=43 arch=59 all PASS 0 FAIL (ipc timeout in first sweep pass was a back-to-back artifact; passes 51/51 isolated)
+2026-08-05 13:36:34 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 77/918 ipc_send_sync_roundtrip — H2 deferred-switch race (pre-save cur_rsp on harness boot stack, no TCB owner; ROADMAP v0.3.9; trace ON)

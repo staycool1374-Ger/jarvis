@@ -159,7 +159,16 @@ development gate keeps the trace ON until this is fixed.
       driving, IrqGuard-registered peers, drain-before-assert).  The H2
       deferred-switch race itself is NOT fixed in the kernel — the debug `all`
       gate must still keep `CONFIG_DEBUG_IPC_SCHED` ON until the root-cause fix
-      lands.
+      lands.  **KNOWN H2 BEHAVIOR (2026-08-05):** in the `all` class, test 77
+      `ipc_send_sync_roundtrip` still hangs (77/918 pass, then TIMEOUT at 250s)
+      with the documented H2 signature — `[DIAG] pre-save: idx=2 id=1
+      cur_rsp=0xFFFF8000... ctx_rsp=0xFFFF9000... owners: (empty)` — i.e. the
+      harness (PID 1) blocks in send_sync while running on the boot stack and
+      `switch_to_task` owner-resolution finds no TCB for the live RSP.  This is
+      the KNOWN deferred-switch error behavior: the test code is NOT modified;
+      the fix is the kernel root cause below.  The `ipc` class in isolation
+      passes 51/51 because its run does not accumulate the scheduler state that
+      exposes the race; `all` does.
 
 - [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
       (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds
