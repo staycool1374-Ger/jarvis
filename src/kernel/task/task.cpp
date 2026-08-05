@@ -1399,6 +1399,14 @@ void TaskControlBlock::cleanup() noexcept {
         vfs::vnode_ref_dec(cwd_vnode);
     cwd_vnode = nullptr;
     kernel::test::ResourceTracker::instance().track_task_remove();
+    // If this block was the deadline-monitor task's TCB, clear the scheduler's
+    // pointer so s_monitor_task_ can never dangle into a reused block (the
+    // on_tick wake path would otherwise write state + enqueue_ready into
+    // foreign memory — a corruption time bomb).
+#if CONFIG_DEADLINE_MONITOR_TASK
+    if (this == Scheduler::get_monitor_task())
+        Scheduler::reset_monitor_task();
+#endif
 }
 
 } // namespace kernel

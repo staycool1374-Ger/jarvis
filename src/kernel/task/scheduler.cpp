@@ -1129,6 +1129,7 @@ void Scheduler::on_tick() noexcept {
             // block — no half-blocked task can be re-enqueued (the [WEDGE] INV-5
             // violation).  Do NOT take the lock again here (non-recursive).
             if (s_monitor_task_ &&
+                s_monitor_task_->magic == TaskControlBlock::TCB_MAGIC &&
                 s_monitor_task_->state == TaskState::BLOCKED) {
                 s_monitor_task_->state = TaskState::READY;
                 enqueue_ready(*s_monitor_task_);

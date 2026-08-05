@@ -128,6 +128,10 @@ TEST_CLASS(DeadlineMissWithinWcet) {
             while (arch::Timer::ticks() - start < 5)
                 arch::pause();
             g->wait();
+            // INV-4: wait() sets BLOCKED then returns (deferred switch).  Spin
+            // on BLOCKED so the harness observes it before self-termination.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 2);
     CT_ASSERT(helper != nullptr);

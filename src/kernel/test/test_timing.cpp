@@ -106,7 +106,10 @@ JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
     auto *t = run_real_task([]() {
         auto *self = Scheduler::current_task();
         uint64_t prev = self->remaining_ticks;
-        for (int i = 0; i < 40 && !g_period_reloaded; ++i) {
+        // Wait ~2.5 real periods (period=5 ticks) so remaining_ticks reaches 0
+        // and on_tick reloads it to period_ticks — a genuine observed reload.
+        uint64_t start = arch::Timer::ticks();
+        while (arch::Timer::ticks() - start < 13 && !g_period_reloaded) {
             uint64_t cur = self->remaining_ticks;
             if (cur > prev)
                 g_period_reloaded = true; // reloaded from 0 back to period
@@ -309,6 +312,12 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
             while (arch::Timer::ticks() - start < 40)
                 arch::pause();
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (the switch is deferred).  Spin on our own BLOCKED state so the
+            // harness can observe it before we would self-terminate; the
+            // harness's gate.post() wakes us (state != BLOCKED) and we return.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 2);
     JARVIS_ASSERT(helper != nullptr);
@@ -354,6 +363,11 @@ JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
             sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
                 Scheduler::current_task()->user_data);
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (deferred switch).  Spin on BLOCKED so the harness observes it
+            // before we self-terminate; gate.post() wakes us and we return.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 10000);
     JARVIS_ASSERT(helper != nullptr);
@@ -400,6 +414,11 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
             sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
                 Scheduler::current_task()->user_data);
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (deferred switch).  Spin on BLOCKED so the harness observes it
+            // before we self-terminate; gate.post() wakes us and we return.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 100);
     JARVIS_ASSERT(helper != nullptr);
@@ -452,6 +471,11 @@ JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
             while (arch::Timer::ticks() - start < 20)
                 arch::pause();
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (deferred switch).  Spin on BLOCKED so the harness observes it
+            // before we self-terminate; gate.post() wakes us and we return.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 0);
     JARVIS_ASSERT(helper != nullptr);

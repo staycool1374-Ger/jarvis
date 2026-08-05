@@ -615,3 +615,8 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-05 15:50:10 ipc_blocking PASSED: 4 FAILED: 0 TIME: 130ms (final H2 fix)
 2026-08-05 15:50:20 ipc_robustness PASSED: 6 FAILED: 0 TIME: 216ms (final H2 fix)
 2026-08-05 15:52:00 all PASSED: 347 FAILED: 0 TIME: 234s STATUS: TIMEOUT at test 348 timer_deadline_miss_detection_fires (H2 hang at test 77/78 RESOLVED — passes 1-347; remaining freeze is the PRE-EXISTING timing-cluster bug, verified at baseline; clean no-diagnostics build; make build Errors: 0)
+2026-08-05 16:20:00 timing PASSED: 18 FAILED: 0 TIME: ~1.5s x3 (timing-cluster FIX: monitor dangling-pointer reset in cleanup() + on_tick magic check + direct scan_deadlines trigger; INV-4 gate-spin in tests 9/10/11/12; timer_period_reload real-tick busy-wait)
+2026-08-05 16:21:00 deadline_miss PASSED: 5 FAILED: 0 TIME: 3.4s (INV-4 gate-spin fix in overrun_then_block_body)
+2026-08-05 16:21:10 deadline_action PASSED: 1 FAILED: 0 TIME: 238ms
+2026-08-05 16:21:20 deadline_recovery PASSED: 4 FAILED: 0 TIME: 707ms (gate-spin fixes)
+2026-08-05 16:21:30 wcet_overrun PASSED: 2 FAILED: 0 TIME: 104ms (gate-spin fix)

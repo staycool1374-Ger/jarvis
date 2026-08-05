@@ -212,6 +212,14 @@ class Scheduler {
     ///        during snapshot restore).  Safe to call multiple times.
     static void ensure_monitor() noexcept;
 #if CONFIG_DEADLINE_MONITOR_TASK
+    /// @brief Forces a fresh deadline-monitor task on the next ensure_monitor().
+    ///        The monitor's TCB is killed by reboot_from_table (which rebuilds
+    ///        the task table from g_task_defs and does not include the monitor);
+    ///        s_monitor_task_ then dangles to a freed/reused block whose magic
+    ///        reads are unreliable, so ensure_monitor()'s validity check can
+    ///        wrongly decide the monitor still exists.  Resetting the pointer
+    ///        forces a clean re-spawn.
+    static void reset_monitor_task() noexcept { s_monitor_task_ = nullptr; }
     /// @brief Resets the scan-requested flag (used by snapshot_restore to
     ///        clear stale flags).
     static void reset_scan_requested() noexcept {

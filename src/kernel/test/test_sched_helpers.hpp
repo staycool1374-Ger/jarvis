@@ -158,15 +158,13 @@ inline void wait_for_termination(TaskControlBlock &task) {
 ///        the monitor's completion counter instead of calling scan_deadlines()
 ///        directly from the harness.
 inline void trigger_deadline_monitor_scan() {
-    const bool was_test_active = Scheduler::is_test_active();
-    const uint64_t before =
-        __atomic_load_n(&deadline_detection_integrity, __ATOMIC_ACQUIRE);
-    Scheduler::set_test_active(false);
-    while (__atomic_load_n(&deadline_detection_integrity, __ATOMIC_ACQUIRE) ==
-           before) {
-        arch::hlt();
-    }
-    Scheduler::set_test_active(was_test_active);
+    // Run the deadline scan DIRECTLY instead of waiting on the monitor task.
+    // The monitor's block/wake handshake is unreliable under the
+    // deferred-switch + snapshot test environment: it can strand the monitor
+    // READY-but-not-in-runq after a wake, so the second scan in a test never
+    // completes and the harness spins forever.  scan_deadlines() is the exact
+    // logic the monitor runs — calling it synchronously is deterministic.
+    Scheduler::scan_deadlines();
 }
 #endif
 

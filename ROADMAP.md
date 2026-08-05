@@ -202,6 +202,134 @@ validation, scratch-save healing, apply-side RSP-owner check): with the trace
 OFF and the clean build, `all` passes tests 1–347 (H2 hang gone), `ipc` passes
 5/6 (residual ~17% narrow boot-time window), and `make build` is clean.
 
+### RESIDUAL H2 RACE — Investigation Log (2026-08-05)
+
+The six layers above reduce but do NOT fully eliminate the H2 hang: a narrow,
+timing-dependent residual remains at `ipc` test 21 and `all` test 77/78
+(`ipc_send_sync_roundtrip`).  Every fact below was established with DEBUG
+instrumentation on the debugcon backend (timing-neutral); nothing is
+speculative.
+
+**Signature (the same as the pre-fix H2):**
+```
+[DIAG] pre-save: idx=2 id=1 cur_rsp=0xFFFF800000A1BEA8 ctx_rsp=0xFFFF900000032920
+                 state=0 kstack=[0xFFFF900000023000-0xFFFF900000033000] owners: (empty)
+```
+
+**The harness displacement (confirmed):**
+- From ~tick 17–19 (boot, during `init_task_main`'s daemon wait) the harness
+  (PID 1) physically executes on an **orphaned stack** `0xFFFF800000A1B000` (a
+  PMM page at ~10 MB phys, owned by NO TCB — the pre-save owner scan is empty,
+  and the boot DIAG-TABLE shows no task's `kernel_stack` there).  Its TCB
+  `kernel_stack` field still says the kslot window `0xFFFF900000023000`.
+- The orphaned stack's contents at the anomaly decode to `isr_common` /
+  `lapic_wr` (APIC timer ISR) frames plus the harness's OWN kslot base
+  (`0xFFFF900000023000`) and an `arch::IrqGuard::IrqGuard()` return address —
+  the harness is executing ISR-wrapped code on the foreign stack.
+- The harness's STORED iret frame (at `context.rsp`) parses as a fully valid
+  kslot frame: `rip=arch_hlt, rsp=0xFFFF9000000329D0, cs=0x8, ss=0x10`.
+- **`snapshot_restore` drift:** `restore_task_fields` (scheduler.cpp ~2259)
+  restores `context.rsp` to the snapshot baseline every test, but the physical
+  RSP register stays on the orphaned stack — so the harness's stored context is
+  a valid kslot `arch_hlt` frame while it keeps running foreign.
+
+**Why the six layers don't fully fix it:**
+- Every observed harness dispatch (43/43 `H2-DISP1` traces, ticks 9–21) loads
+  `context.rsp` = kslot and iretq resumes on kslot (`frame.rsp` = kslot).  The
+  harness is NOT displaced via a normal deferred-switch dispatch — so the
+  C++ dispatch-guard (layer 4) and the asm apply-side check (layer 6) never
+  fire for the displacement itself.  The layers only contain the CONSEQUENCES
+  (scratch-save keeps `context.rsp` valid; the guard/asm refuse foreign loads),
+  which reduces the hang to a residual ~17% clean (up to ~50% after the
+  2026-08-05 timing-cluster kernel changes — the boot interleaving shifted).
+- The scratch-save healing alone (layer 5 without the guard/asm) made the hang
+  DETERMINISTIC: the harness re-plants onto its stale snapshot-baseline
+  (`arch_hlt`), re-entering the wrong point of the test runner.
+
+**Displacement-source hunt (exhausted — the exact instruction is UNKNOWN):**
+- No `mov rsp` instruction exists in kernel code except `higherhalf_entry`
+  (boot) and `reboot_from_table`'s idle-stack handoff.
+- The `syscall_entry` GS-based stack switch (`mov [gs:0x00], rsp;
+  mov rsp, [gs:0x08]`) is **dead code**: userspace uses `int $0x80`
+  (`src/libc/syscall.h:82` → `isr_128` → `isr_common`), and no
+  `IA32_KERNEL_GS_BASE` (0xC0000102) MSR is ever written, so `swapgs` would
+  #PF to phys 0.
+- All frame-RSP writers (`deliver_signal_to_user` regs[20], `sys_sigreturn`
+  regs[20]) are USER-task-only (`page_table_ != 0`), never the ring0 harness.
+- The harness is dispatched onto kslot and iretq resumes on kslot at EVERY
+  dispatch (verified 43/43), so the RSP moves to the orphaned stack DURING the
+  harness's boot-time execution — the only remaining candidates are an iretq
+  restoring a corrupted frame's `rsp` field from a nested-ISR / split-phase
+  switch, or a `mov rsp` hidden in the instruction stream.
+
+**Extreme timing sensitivity (why it is hard to catch):**
+- A SINGLE per-tick instruction (an `H2-FOREIGN` RSP-range check in
+  `rate_monotonic_schedule`) made the race vanish 25/25.  Any perturbation —
+  the `[DIAG] pre-save` serial drain, per-tick checks, the 2026-08-05 monitor
+  `cleanup()` reset, the debugger's ISR-path slowdown — changes the boot
+  interleaving and either masks it (diagnostics ON) or exposes it (clean).
+- This makes it non-reproducible under GDB/lldb breakpoints (they slow the ISR
+  path and prevent the race).  The QEMU `-icount rr=record/replay` path was
+  attempted but impractical: the OVMF firmware boot replays too slowly to reach
+  tick ~19, and the 2.7 GB record log made breakpoints unreachable.
+
+**What is needed to fully fix it:**
+- A **hardware-watchpoint session** (lldb DR0–3) on the harness's
+  `context.rsp` field (or the orphaned page) during an UNPERTURBED run, to pin
+  the first write/instruction that moves the harness's RSP to `0xFFFF800000A1B000`
+  at tick ~19.  Tooling prepared: `tools/gdb/h2_watchpoint.py`,
+  `tools/gdb/h2_replay_driver*.py`, `tools/gdb/h2_replay_lldb.*`.
+- Once pinned, the fix should PREVENT the displacement (not just contain it):
+  the harness must never physically run on a non-TCB stack at boot.
+
+**Status after the 2026-08-05 timing-cluster investigation:**
+- The timing-cluster freeze (test 348) is FIXED (timing 18/18, deadline classes
+  green) — see the v0.3.9 timing-cluster note below.
+- The residual H2 rate in the `ipc` class is ~50% (3/6) with the current
+  tree (was ~17% before the timing-cluster kernel changes).  The `all` gate
+  therefore hangs at test 77/78 (residual H2) and cannot yet validate the
+  timing-cluster fix end-to-end.
+- `ss_deadline` (separate, pre-existing): an EXHAUSTED SS task drops to
+  bg_prio 2 and cannot be re-dispatched after `gate.post()`, so the harness's
+  `while (state != TERMINATED)` spins forever.  Needs a dedicated test redesign.
+
+### Timing-Cluster Freeze at test 348 — ROOT CAUSE + FIX (2026-08-05)
+
+The `all` freeze at test 348 `timer_deadline_miss_detection_fires` (and the
+`timing` class at test 9, plus the `timer_period_reload` leak at test 2) was a
+PRE-EXISTING bug, separate from the H2 race.  Three independent causes, all
+verified:
+
+1. **Deadline-monitor dangling pointer (the freeze).**  `reboot_from_table()`
+   kills the deadline-monitor task created by `Scheduler::init` (it rebuilds
+   from `g_task_defs`, which has no monitor); `s_monitor_task_` dangles into a
+   freed/reused MemPool block (verified: `id` read a kernel address
+   `0xFFFF8000...`, `magic` read inconsistently).  The `on_tick` wake path then
+   WRITES `state=READY` + `enqueue_ready()` into that reused block — a
+   corruption time bomb (worse in release where `!is_test_active()` is always
+   true).  `trigger_deadline_monitor_scan` waited for the monitor to scan, which
+   never happened → silent freeze.
+   **Fix:** `cleanup()` clears `s_monitor_task_` when the monitor's own TCB is
+   freed (universal safety net); `on_tick` validates `magic == TCB_MAGIC` before
+   waking; `trigger_deadline_monitor_scan` now calls `scan_deadlines()` directly
+   (deterministic, identical logic, no reliance on the fragile monitor wake).
+2. **INV-4 gate-spin races (tests 9–12 + all deadline classes).**  Every
+   gate-blocked helper called `Semaphore::wait()` (sets BLOCKED, returns
+   immediately — deferred switch) then returned → self-terminated before the
+   harness observed BLOCKED → the harness spun forever.  **Fix:** post-wait
+   BLOCKED-spin in the helper lambdas (timing + deadline_miss/action/recovery/
+   wcet_overrun).
+3. **`timer_period_reload` leak (test 2).**  The lambda busy-waited only 40
+   `pause()` iterations (~µs) — not enough to span the 5-tick reload, so the
+   assertion failed and `release_task` was skipped → the
+   `LEAK: Tasks +1, PMM +16, ...`.  **Fix:** busy-wait on real timer ticks
+   (~2.5 periods).
+
+**Verification:** `timing` 18/18 (×3), `deadline_miss` 5, `deadline_action` 1,
+`deadline_recovery` 4, `wcet_overrun` 2 — all green; `make build` Errors: 0.
+The `all` gate cannot yet validate this end-to-end because the residual H2 race
+(above) blocks it at test 77/78.
+
 - [x] **`ipc`/`all` H2-adjacent flakes** — **RESOLVED (2026-08-05).**  The
       deferred-switch race that hung `ipc_send_sync_roundtrip` (test 21/51 in
       `ipc`, test 77/78 in `all`) is FIXED in the kernel (layers 4-6 above:
@@ -213,14 +341,20 @@ OFF and the clean build, `all` passes tests 1–347 (H2 hang gone), `ipc` passes
       test code was NOT modified for H2.
       **REMAINING FAILED TESTS (so far, all PRE-EXISTING — verified at
       baseline with all v0.3.9 changes reverted):**
-      (1) `all` freezes at test 348 `timer_deadline_miss_detection_fires` (and
-      the `timing` class at test 9) — see the timing-cluster blocker below;
+      (1) ~~`all` freezes at test 348 `timer_deadline_miss_detection_fires`~~ —
+      **FIXED 2026-08-05** (timing-cluster: dangling deadline-monitor pointer +
+      INV-4 gate-spin races; `timing` 18/18, deadline classes green) — see the
+      timing-cluster note below;
       (2) `priority_inheritance` hangs at test 1 `MutexPriorityDonates` — an
       INV-4 gate-spin test-code race in `spawn_holder` (the holder lambda calls
       `gate.wait()` without spinning on its own BLOCKED state, self-terminating
       before the harness observes BLOCKED);
-      (3) a residual ~17% `ipc` hang from the narrow boot-time H2 window.
-      Full `all` cannot go green until (1) is fixed.
+      (3) a residual ~17–50% `ipc` hang from the narrow boot-time H2 window
+      (see the RESIDUAL H2 RACE log above); this now blocks `all` at test 77/78
+      before the fixed timing cluster can be validated end-to-end;
+      (4) `ss_deadline` — an EXHAUSTED SS task at bg_prio 2 cannot be
+      re-dispatched after `gate.post()` (the harness's TERMINATED wait spins).
+      Full `all` cannot go green until (3) is fully resolved.
       **UNRELATED PRE-EXISTING HANG (2026-08-05):** the `priority_inheritance`
       class hangs 2/2 at test 1 `MutexPriorityDonates` — but it also hangs at
       baseline with ALL v0.3.9 kernel changes reverted, so it is NOT the H2 race
@@ -269,18 +403,30 @@ OFF and the clean build, `all` passes tests 1–347 (H2 hang gone), `ipc` passes
       **Open question (2026-08-05, RESOLVED):** CR3 correctness on the
       harness-return path — implemented via `scheduler_kernel_cr3` fallback in
       isr_stubs.asm.
-- [ ] **NEW BLOCKER (pre-existing, separate from H2): `timing` cluster hangs.**
-      `all` reaches test 348 `timer_deadline_miss_detection_fires` (after the
-      H2 fix) and freezes silently; the `timing` class in isolation fails test 2
+- [x] **NEW BLOCKER (pre-existing, separate from H2): `timing` cluster hangs.**
+      `all` reached test 348 `timer_deadline_miss_detection_fires` (after the
+      H2 fix) and froze silently; the `timing` class in isolation failed test 2
       `timer_period_reload` (`LEAK: Tasks +1, PMM +16, MsgQueues +1,
       Notifies +1, EventGroups +1` — the task TCB is MemPool-PINNED so
-      `cleanup()` skips teardown) and hangs at test 9 (same test).  Verified
+      `cleanup()` skips teardown) and hung at test 9 (same test).  Verified
       identical at baseline (all v0.3.9 changes reverted), so it predates this
       session.  Suspects: MemPool pinned-bitmap state surviving
       snapshot_restore (v0.3.12 PoolMeta fix incomplete), and the deadline
       monitor (CONFIG_DEADLINE_ACTION=0 LOG_ONLY) interacting with the
       prio-11 period-2 helper's genuine overrun.  Needs a dedicated
       investigation (next session).
+      **RESOLVED 2026-08-05** — root cause was NOT MemPool: the deadline-monitor
+      task's TCB dangles after `reboot_from_table()` (kills the monitor, rebuilds
+      from `g_task_defs` which lacks it); `s_monitor_task_` points into a
+      reused MemPool block and the `on_tick` wake path WRITES into it; plus
+      INV-4 gate-spin races (helpers self-terminated before the harness observed
+      BLOCKED) and a too-short busy-wait in `timer_period_reload`.  Fixes:
+      `cleanup()` clears `s_monitor_task_`, `on_tick` validates magic,
+      `trigger_deadline_monitor_scan` calls `scan_deadlines()` directly, and the
+      helper lambdas spin on BLOCKED after `wait()`.  `timing` 18/18,
+      `deadline_miss` 5, `deadline_action` 1, `deadline_recovery` 4,
+      `wcet_overrun` 2 — all green.  Full details in the "Timing-Cluster Freeze
+      at test 348" note above.
 - [ ] **Blocked semaphore waiter teardown gap (separate from H2):**
       `Semaphore::wait()` stores a raw TCB in `waiters_` and leaves the task
       linked while the deferred switch is applied. `TaskControlBlock::cleanup()`

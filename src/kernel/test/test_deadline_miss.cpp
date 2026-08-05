@@ -49,6 +49,11 @@ static void overrun_then_block_body() {
     while (arch::Timer::ticks() - start < 40)
         arch::pause();
     gate->wait();
+    // INV-4: Semaphore::wait() sets BLOCKED then returns immediately (deferred
+    // switch).  Spin on BLOCKED so the harness observes it before we would
+    // self-terminate; the harness's gate.post() wakes us and we return.
+    while (Scheduler::current_task()->state == TaskState::BLOCKED)
+        asm volatile("pause");
 }
 
 /// @brief  Create the overrun-then-block task and dispatch it for real.

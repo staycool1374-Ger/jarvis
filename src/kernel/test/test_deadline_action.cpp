@@ -63,6 +63,10 @@ TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
             while (arch::Timer::ticks() - start < 40)
                 arch::pause();
             g->wait();
+            // INV-4: wait() sets BLOCKED then returns (deferred switch).  Spin
+            // on BLOCKED so the harness observes it before self-termination.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 2);
     if (helper == nullptr)
