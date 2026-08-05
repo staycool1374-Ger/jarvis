@@ -152,7 +152,14 @@ development gate keeps the trace ON until this is fixed.
 
 - [ ] **`ipc`/`all` H2-adjacent flakes** — remaining flaky `ipc`/`all` runs in
       the H2 region (`ipc_send_sync_roundtrip`); folded into the root-cause fix
-      below (moved from v0.3.8).
+      below (moved from v0.3.8).  **STATUS (2026-08-05):** the `ipc` class test
+      code was NOT changed for H2, but `ipc_send_sync_roundtrip` now passes
+      deterministically (51/51 ×3) because the surrounding blocked-sender /
+      roundtrip tests were reworked to the driven cookbook pattern (yield/hlt
+      driving, IrqGuard-registered peers, drain-before-assert).  The H2
+      deferred-switch race itself is NOT fixed in the kernel — the debug `all`
+      gate must still keep `CONFIG_DEBUG_IPC_SCHED` ON until the root-cause fix
+      lands.
 
 - [ ] **Root cause (confirmed):** `switch_to_task` owner-resolution
       (scheduler.cpp ~1664-1701) scans TCBs for the live-RSP owner and finds
