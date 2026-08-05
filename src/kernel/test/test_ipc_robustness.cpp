@@ -50,14 +50,6 @@ struct IpcRctx {
     uint64_t out_;
 };
 
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
-}
-
 } // namespace
 
 TEST_CLASS(IpcMisformedMessages) {
@@ -169,23 +161,15 @@ TEST_CLASS(IpcQueueWraparoundEdge) {
 };
 
 TEST_CLASS(IpcConcurrentSenders) {
-    // Real receiver: dispatched, then blocks on a gate so its queue stays
-    // alive for the concurrent senders.
-    sync::Semaphore gate;
-    gate.init(0, 1);
-    auto *receiver = TaskControlBlock::create(
-        []() {
-            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
-                Scheduler::current_task()->user_data);
-            g->wait();
-        },
-        11, 10);
+    // Real receiver: a forever-spinning container task so its queue stays
+    // alive for the concurrent senders.  It must NOT block on a gate: IPC::send
+    // (ipc.cpp:244) wakes ANY BLOCKED destination, so a gate-blocked receiver
+    // is woken by the first sender, self-terminates, and leaves a freed TCB in
+    // the semaphore waiter list (ROADMAP v0.3.9 teardown gap).  A forever task
+    // is never BLOCKED, so sends never spuriously wake it.
+    auto *receiver = kernel::test::create_forever_task(11, 10, "recv-container");
     CT_ASSERT(receiver != nullptr);
-    receiver->user_data = &gate;
-    Scheduler::add_task(*receiver);
     Scheduler::reschedule();
-    while (receiver->state != TaskState::BLOCKED)
-        asm volatile("pause");
     uint64_t recv_id = receiver->id;
 
     Message fill{};
@@ -228,7 +212,6 @@ TEST_CLASS(IpcConcurrentSenders) {
         Scheduler::add_task(*senders[i]);
     }
 
-    auto *original = Scheduler::current_task();
     Scheduler::reschedule();
 
     // All senders genuinely run and attempt their non-blocking sends; the
@@ -248,13 +231,11 @@ TEST_CLASS(IpcConcurrentSenders) {
     }
     JARVIS_ASSERT(receiver->msg_queue.is_empty());
 
-    Scheduler::set_current(*original);
-    for (int i = 0; i < NUM_SENDERS; ++i)
-        release_task(senders[i]);
-    gate.post();
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the senders self-terminated,
+    // so reclaim them via the zombie list.  The receiver is a forever task —
+    // terminate it explicitly, then drain.
+    Scheduler::drain_zombie_list();
+    kernel::test::terminate_and_drain(*receiver);
 };
 
 #if !defined(CONFIG_ARCH_RISCV64)
@@ -359,8 +340,8 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     JARVIS_ASSERT_EQ(0ULL, g_sender_result);
     JARVIS_ASSERT_EQ(0ULL, g_receiver_result);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
 };
 #endif
 
@@ -421,30 +402,23 @@ TEST_CLASS(IpcBidirectionalSendSync) {
     JARVIS_ASSERT(ok);
     JARVIS_ASSERT(reply.type == 40ULL);
 
-    Scheduler::remove_task(*peer);
-    peer->cleanup();
-    delete peer;
+    // The peer self-terminated after its two recv/reply cycles — reclaim via
+    // the zombie list (cookbook Rule 4/5).
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 };
 
 TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
-    // Receiver: dispatched, then blocks on a gate so it stays alive; its
-    // queue is genuinely filled so a real sender blocks on it.
-    sync::Semaphore gate;
-    gate.init(0, 1);
-    auto *receiver = TaskControlBlock::create(
-        []() {
-            sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
-                Scheduler::current_task()->user_data);
-            g->wait();
-        },
-        11, 10);
+    // Reference pattern (test.hpp __reference_blocked_sender_cleanup):
+    // create BOTH TCBs first, fill the receiver's queue, then register both
+    // under one arch::IrqGuard.  The receiver uses an EMPTY lambda — it must
+    // NOT block on a gate: a gate-blocked task stays physically in the ready
+    // queue (INV-2, Semaphore::wait never dequeues) and the scheduler
+    // re-selects it, producing the H2-family runq desync.  The sender (prio
+    // 12) runs first, blocks on the full queue; the receiver then runs its
+    // empty lambda to termination, whose cleanup wakes the blocked sender.
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
     CT_ASSERT(receiver != nullptr);
-    receiver->user_data = &gate;
-    Scheduler::add_task(*receiver);
-    Scheduler::reschedule();
-    while (receiver->state != TaskState::BLOCKED)
-        asm volatile("pause");
 
     // Fill the receiver's queue so a real sender blocks.
     Message fill{};
@@ -483,24 +457,26 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
     sender->user_data = &sctx;
     {
         arch::IrqGuard _guard;
+        Scheduler::add_task(*receiver);
         Scheduler::add_task(*sender);
     }
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
     CT_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    // Real receiver termination: post the gate so the receiver wakes and its
-    // lambda returns → trampoline terminates → cleanup wakes the sender.
-    gate.post();
+    // Dispatch the receiver → real terminate → drain runs its cleanup, whose
+    // MessageQueue teardown wakes the blocked sender (fast-fail).
+    Scheduler::reschedule();
     while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
+    Scheduler::drain_zombie_list();
     while (sender->state != TaskState::TERMINATED)
         asm volatile("pause");
     // The blocked send fast-fails (receiver gone).
     JARVIS_ASSERT_EQ(0ULL, send_result);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
 };
 
 void register_ipc_robustness_tests() {

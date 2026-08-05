@@ -50,14 +50,6 @@ struct IpcCtx {
     uint64_t out_;
 };
 
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
-}
-
 /// @brief  Fill a task's queue to capacity (setup: the queue is genuinely
 ///         full so a real sender blocks on it).
 void fill_queue(TaskControlBlock &dst) {
@@ -69,6 +61,55 @@ void fill_queue(TaskControlBlock &dst) {
         fill.data_size = 0;
         dst.msg_queue.push(fill);
     }
+}
+
+/// @brief  Register a receiver task in BLOCKED state (create_test_task
+///         pattern): find_task() resolves its id for IPC routing, but the
+///         scheduler NEVER dispatches it (not in the ready queue), so the
+///         harness can deterministically observe a blocked sender BEFORE
+///         releasing the receiver via set_task_ready().  Without this, the
+///         prio-11 receiver is dispatched by the timer the tick after the
+///         prio-12 sender blocks, completing the whole drain before the
+///         prio-10 harness gets CPU to observe BLOCKED.
+void register_blocked_receiver(TaskControlBlock &t) {
+    t.state = TaskState::BLOCKED;
+    Scheduler::register_task(t);
+}
+
+/// @brief  Create a draining receiver (prio 11) that stays ALIVE after
+///         draining until the blocked sender's completing re-push arrives.
+///         IPC::recv wakes the blocked sender (wake_sender); the poll loop
+///         keeps the receiver running (not terminated) so the sender's
+///         re-lookup in IPC::send finds a live destination and the send
+///         SUCCEEDS (send_result == 1).  Mirrors the poll pattern of the
+///         passing ipc_send_sync_was_blocked_restores_state receiver.
+/// @param  recv_ok Out-param set to 1 iff the first drain popped a message.
+TaskControlBlock *spawn_draining_receiver(uint64_t &recv_ok) {
+    static IpcCtx rctx;
+    rctx.peer_id_ = 0;
+    rctx.out_ = reinterpret_cast<uint64_t>(&recv_ok);
+    auto *receiver = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            auto *c = reinterpret_cast<IpcCtx *>(self->user_data);
+            kernel::Message m;
+            // First pop also calls wake_sender (blocked sender becomes READY).
+            bool ok = IPC::recv(m);
+            __atomic_store_n(reinterpret_cast<uint64_t *>(c->out_),
+                             ok ? 1 : 0, __ATOMIC_RELEASE);
+            // Stay alive until the sender's completing re-push arrives, then
+            // consume it, so the sender's send succeeds.
+            for (int i = 0; i < 100000; ++i) {
+                kernel::Message m2;
+                if (IPC::recv(m2) && m2.type == 1)
+                    break;
+            }
+        },
+        11, 10);
+    if (receiver == nullptr)
+        return nullptr;
+    receiver->user_data = &rctx;
+    return receiver;
 }
 
 } // namespace
@@ -475,11 +516,16 @@ JARVIS_TEST(ipc_eventgroup_try_wait, "PRE: none | POST: none") {
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    // Receiver registered BLOCKED (never dispatched by the timer) so the
+    // harness can deterministically observe the blocked sender; the receiver
+    // drains via IPC::recv (waking the sender) and stays ALIVE until the
+    // sender's completing re-push arrives, so the send SUCCEEDS.
+    uint64_t recv_ok = 0;
+    auto *receiver = spawn_draining_receiver(recv_ok);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     fill_queue(*receiver);
     uint64_t recv_id = receiver->id;
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -501,13 +547,8 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    // Dispatch both atomically so the timer ISR always sees both ready; the
-    // higher-priority sender (12) blocks first, then the receiver drains.
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
 
     // Wait for the real block inside IPC::send().
     while (sender->state != TaskState::BLOCKED)
@@ -517,17 +558,19 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_tail == sender);
     JARVIS_ASSERT(sender->blocked_next == nullptr);
 
-    // Drain one message (the harness is a real IPC peer): the receiver's
-    // queue now has space; IPC::recv wakes the blocked sender.
-    kernel::Message drain;
-    JARVIS_ASSERT(IPC::recv(drain));
+    // Release the receiver: it drains one message via IPC::recv (waking the
+    // sender), stays alive until the sender's re-push arrives; both terminate.
+    Scheduler::set_task_ready(*receiver);
     while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
 
     JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -541,11 +584,15 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    // Receiver registered BLOCKED; sender blocks on the full queue; the
+    // harness observes the block, then releases the receiver to drain (waking
+    // the sender, which stays alive until the sender's re-push arrives).
+    uint64_t recv_ok = 0;
+    auto *receiver = spawn_draining_receiver(recv_ok);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     fill_queue(*receiver);
     uint64_t recv_id = receiver->id;
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -567,28 +614,28 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    // Drain one — IPC::recv calls wake_sender → removes from list, READY.
-    kernel::Message drain;
-    JARVIS_ASSERT(IPC::recv(drain));
+    // Release the receiver: its IPC::recv pops one → wake_sender removes the
+    // sender from the list and makes it READY.
+    Scheduler::set_task_ready(*receiver);
     while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
 
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_tail == nullptr);
     JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
     JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup AFTER the zombie-field asserts, then drain.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -602,16 +649,15 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create(
-        []() {
-            // Empty lambda: dispatches, then the trampoline terminates it —
-            // the real exit path runs cleanup() which wakes blocked senders.
-        },
-        11, 10);
+    // Receiver registered BLOCKED; sender blocks on the full queue; the
+    // harness observes the block, then releases the receiver whose empty
+    // lambda runs → trampoline terminates it → cleanup() →
+    // MessageQueue::~MessageQueue wakes the blocked sender (fast-fail).
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     fill_queue(*receiver);
     uint64_t recv_id = receiver->id;
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -635,20 +681,19 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    // Dispatch the receiver: its lambda returns → trampoline terminates it
-    // → cleanup() → MessageQueue::~MessageQueue wakes the blocked sender.
-    Scheduler::reschedule();
+    // Release the receiver: empty lambda → trampoline terminates it → drain
+    // runs its cleanup() → MessageQueue::~MessageQueue wakes the blocked
+    // sender.
+    Scheduler::set_task_ready(*receiver);
     while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
+    Scheduler::drain_zombie_list();
 
     // The sender's spin-wait sees its own queue/blocked state cleared by the
     // destructor wake; it re-looks-up the (now gone) destination and fails.
@@ -657,8 +702,8 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
 
     JARVIS_ASSERT(send_result == 0);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -673,11 +718,15 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler
 JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    // Receiver registered BLOCKED; sender blocks on the full queue; the
+    // harness observes the boost, then releases the receiver to drain (which
+    // also restores the receiver's priority via wake_sender).
+    uint64_t recv_ok = 0;
+    auto *receiver = spawn_draining_receiver(recv_ok);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     uint64_t recv_id = receiver->id;
     fill_queue(*receiver);
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -699,28 +748,28 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
 
     // The receiver is boosted while a higher-priority sender is blocked.
     JARVIS_ASSERT(receiver->priority >= sender->priority);
 
-    // Drain: wake_sender restores the receiver's priority.
-    kernel::Message drain;
-    JARVIS_ASSERT(IPC::recv(drain));
+    // Release the receiver: its IPC::recv drains → wake_sender restores the
+    // receiver's priority; both terminate.
+    Scheduler::set_task_ready(*receiver);
     while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
 
     JARVIS_ASSERT(receiver->priority == receiver->base_priority);
     JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -734,11 +783,15 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
 // Depends: kernel::MessageQueue, kernel::IPC, kernel::TaskControlBlock,
 // kernel::Scheduler, IPC_MAX_QUEUE_MSG
 JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
+    // Receiver registered BLOCKED; sender blocks on the full queue; the
+    // harness observes the block, then releases the receiver to drain via
+    // IPC::recv → the blocked sender's send completes.
+    uint64_t recv_ok = 0;
+    auto *receiver = spawn_draining_receiver(recv_ok);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     fill_queue(*receiver);
     uint64_t recv_id = receiver->id;
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -760,25 +813,25 @@ JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
-    // Drain one message — the blocked sender's send completes.
-    kernel::Message out;
-    JARVIS_ASSERT(IPC::recv(out));
+    // Release the receiver: its IPC::recv drains one message → the blocked
+    // sender's send completes; both terminate.
+    Scheduler::set_task_ready(*receiver);
     while (sender->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
 
     JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -878,15 +931,15 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
 //        and its cleanup wakes the sender.
 // Expect: sender terminates; the send returns false (destination gone).
 JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
-    auto *receiver = TaskControlBlock::create(
-        []() {
-            // Real exit: dispatched, lambda returns, trampoline terminates.
-        },
-        11, 10);
+    // Receiver registered BLOCKED; sender blocks on the full queue; the
+    // harness observes the block, then releases the receiver whose empty
+    // lambda runs → real exit: trampoline terminates → cleanup wakes the
+    // sender (fast-fail).
+    auto *receiver = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(receiver != nullptr);
-    Scheduler::add_task(*receiver);
     fill_queue(*receiver);
     uint64_t recv_id = receiver->id;
+    register_blocked_receiver(*receiver);
 
     IpcCtx sctx{};
     uint64_t send_result = 0;
@@ -908,27 +961,25 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
     sender->user_data = &sctx;
-
-    {
-        arch::IrqGuard _guard;
-        Scheduler::add_task(*sender);
-    }
+    Scheduler::add_task(*sender);
+    Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED)
         asm volatile("pause");
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == sender);
 
-    // Dispatch the receiver → real termination + cleanup.
-    Scheduler::reschedule();
+    // Release the receiver → real termination + cleanup.
+    Scheduler::set_task_ready(*receiver);
     while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
+    Scheduler::drain_zombie_list();
 
     // Sender fast-fails once the receiver's cleanup woke it.
     while (sender->state != TaskState::TERMINATED)
         asm volatile("pause");
     JARVIS_ASSERT(send_result == 0);
 
-    release_task(sender);
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -989,7 +1040,8 @@ JARVIS_TEST(ipc_send_wakes_blocked_destination, "PRE: none | POST: none") {
         asm volatile("pause");
     JARVIS_ASSERT(recv_done == 1);
 
-    release_task(receiver);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the receiver self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

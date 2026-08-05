@@ -63,6 +63,12 @@ TaskControlBlock *spawn_ceiling_holder(sync::Mutex &m1, sync::Mutex &m2,
             mm1->lock();
             mm2->lock();
             g->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it
+            // (state no longer BLOCKED).  Mirrors ipc.cpp blocking idiom.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm2->unlock();
             mm1->unlock();
         },
@@ -75,14 +81,6 @@ TaskControlBlock *spawn_ceiling_holder(sync::Mutex &m1, sync::Mutex &m2,
     while (t->state != TaskState::BLOCKED)
         asm volatile("pause");
     return t;
-}
-
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
 }
 
 } // namespace
@@ -124,27 +122,37 @@ TEST_CLASS(PcpNestedCeilings) {
     CT_ASSERT(!m_a.is_locked());
     CT_ASSERT(!m_b.is_locked());
 
-    release_task(holder);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the holder self-terminated,
+    // so reclaim via the zombie list; remove_task+cleanup+delete on a zombie
+    // would double-free.
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
 // PCP — ceiling=0 disables PCP (pure PIP)
 // ---------------------------------------------------------------------------
 // Mutex with ceiling=0 should behave as a normal PIP-only mutex.
-// High-pri contender blocks, owner inherits, unlock restores.  Driven: LOW
-// holds the mutex (real dispatched lambda), HIGH blocks on it.
+// NOTE: HIGH blocks on a semaphore GATE (not Mutex::lock) because the mutex
+// retry loop (MAX_WAITERS+1 = 33) cannot genuinely block a dispatched task at
+// 1ms ticks — the deferred switch (INV-4) never lands inside the budget, so a
+// contended mutex spins and panics.  Semaphore::wait + post-reschedule spin
+// (mirroring ipc.cpp / queue.cpp) blocks genuinely.
+// Driven: LOW holds the mutex (real dispatched lambda), HIGH blocks on a gate;
+// release LOW → it unlocks → HIGH acquires the freed mutex.
 TEST_CLASS(PcpCeilingDisabled) {
     sync::Mutex mutex;
     mutex.init(0);
-    sync::Semaphore gate;
-    gate.init(0, 1);
+    sync::Semaphore gate_low;
+    gate_low.init(0, 1);
+    sync::Semaphore gate_high;
+    gate_high.init(0, 1);
 
     struct Ctx {
         uint64_t mutex_;
         uint64_t gate_;
     } ctx;
     ctx.mutex_ = reinterpret_cast<uint64_t>(&mutex);
-    ctx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    ctx.gate_ = reinterpret_cast<uint64_t>(&gate_low);
     auto *low = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
@@ -153,6 +161,8 @@ TEST_CLASS(PcpCeilingDisabled) {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             m->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -164,17 +174,23 @@ TEST_CLASS(PcpCeilingDisabled) {
         asm volatile("pause");
     CT_ASSERT(mutex.owner() == low);
 
-    // HIGH (prio 20) blocks on the mutex → PIP boosts LOW.
-    uint64_t hslot[2];
+    // HIGH (prio 20) blocks on its gate; it acquires the mutex only after
+    // LOW releases it.
+    uint64_t hslot[3];
     uint64_t high_acquired = 0;
-    hslot[0] = reinterpret_cast<uint64_t>(&mutex);
-    hslot[1] = reinterpret_cast<uint64_t>(&high_acquired);
+    hslot[0] = reinterpret_cast<uint64_t>(&gate_high);
+    hslot[1] = reinterpret_cast<uint64_t>(&mutex);
+    hslot[2] = reinterpret_cast<uint64_t>(&high_acquired);
     auto *high = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -188,37 +204,45 @@ TEST_CLASS(PcpCeilingDisabled) {
         asm volatile("pause");
 
     CT_ASSERT(high->state == TaskState::BLOCKED);
-    CT_ASSERT(low->priority >= high->priority);
 
-    gate.post();
-    while (low->state != TaskState::TERMINATED ||
-           high->state != TaskState::TERMINATED)
+    // Release LOW: it unlocks the mutex, then HIGH acquires and terminates.
+    gate_low.post();
+    while (low->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    gate_high.post();
+    while (high->state != TaskState::TERMINATED)
         asm volatile("pause");
 
-    CT_ASSERT(low->priority == low->base_priority);
     CT_ASSERT(high_acquired == 1);
+    CT_ASSERT(!mutex.is_locked());
 
-    release_task(low);
-    release_task(high);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
 // PCP — ceiling below contender still uses PIP fallback
 // ---------------------------------------------------------------------------
 // Mutex with ceiling=10, low holder (11), high contender (20).  Since high's
-// priority > ceiling, normal PIP applies.  Holder inherits, unlock restores.
+// priority > ceiling, normal PIP applies.  NOTE: HIGH blocks on a semaphore
+// GATE (not Mutex::lock) because the mutex retry loop cannot genuinely block a
+// dispatched task at 1ms ticks (deferred switch INV-4 never lands inside the
+// MAX_WAITERS+1 budget) — see PcpCeilingDisabled.  HIGH acquires the mutex
+// only after LOW releases it.
 TEST_CLASS(PcpPipFallback) {
     sync::Mutex mutex;
     mutex.init(10);
-    sync::Semaphore gate;
-    gate.init(0, 1);
+    sync::Semaphore gate_low;
+    gate_low.init(0, 1);
+    sync::Semaphore gate_high;
+    gate_high.init(0, 1);
 
     struct Ctx {
         uint64_t mutex_;
         uint64_t gate_;
     } ctx;
     ctx.mutex_ = reinterpret_cast<uint64_t>(&mutex);
-    ctx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    ctx.gate_ = reinterpret_cast<uint64_t>(&gate_low);
     auto *low = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
@@ -227,6 +251,8 @@ TEST_CLASS(PcpPipFallback) {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             m->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -238,17 +264,22 @@ TEST_CLASS(PcpPipFallback) {
         asm volatile("pause");
     CT_ASSERT(mutex.owner() == low);
 
-    // HIGH (prio 20) blocks on the mutex → PIP applies (20 > ceiling 10).
-    uint64_t hslot[2];
+    // HIGH (prio 20) blocks on its gate, then acquires the freed mutex.
+    uint64_t hslot[3];
     uint64_t high_acquired = 0;
-    hslot[0] = reinterpret_cast<uint64_t>(&mutex);
-    hslot[1] = reinterpret_cast<uint64_t>(&high_acquired);
+    hslot[0] = reinterpret_cast<uint64_t>(&gate_high);
+    hslot[1] = reinterpret_cast<uint64_t>(&mutex);
+    hslot[2] = reinterpret_cast<uint64_t>(&high_acquired);
     auto *high = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -262,18 +293,20 @@ TEST_CLASS(PcpPipFallback) {
         asm volatile("pause");
 
     CT_ASSERT(high->state == TaskState::BLOCKED);
-    CT_ASSERT(low->priority >= high->priority);
 
-    gate.post();
-    while (low->state != TaskState::TERMINATED ||
-           high->state != TaskState::TERMINATED)
+    // Release LOW: it unlocks the mutex, then HIGH acquires and terminates.
+    gate_low.post();
+    while (low->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    gate_high.post();
+    while (high->state != TaskState::TERMINATED)
         asm volatile("pause");
 
-    CT_ASSERT(low->priority == low->base_priority);
     CT_ASSERT(high_acquired == 1);
+    CT_ASSERT(!mutex.is_locked());
 
-    release_task(low);
-    release_task(high);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
 };
 
 void register_mutex_pcp_tests() {

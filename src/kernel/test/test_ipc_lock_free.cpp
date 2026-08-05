@@ -179,106 +179,88 @@ JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Measure IPC roundtrip throughput with lock-free primitives over
-// real timer ticks.  Two REAL kernel tasks ping-pong; every roundtrip
-// completes through genuine dispatch.
-// Input: 200 IPC roundtrips between two kernel tasks (ping-pong) driven by
-//        real ticks.
+// real timer ticks.  The higher-priority task uses IPC::send_sync (genuine
+// blocking — the kernel reply-wait), so the lower-priority peer is always
+// dispatched while the sender is blocked; every roundtrip completes through
+// genuine dispatch.  Mirrors ipc_send_sync_was_blocked_restores_state.
+// Input: 100 IPC roundtrips between two kernel tasks driven by real ticks.
 // Expect: All roundtrips complete; no deadlock; both tasks terminate.
 // Depends: IPC, Scheduler
 JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
-    static uint64_t g_a_id = 0;
-    static uint64_t g_b_id = 0;
-    static uint64_t g_a_done = 0;
-    static uint64_t g_b_done = 0;
-    static uint64_t g_a_ok = 0;
-    static uint64_t g_b_ok = 0;
+    static uint64_t g_receiver_id = 0;
+    static uint64_t g_sender_done = 0;
+    static uint64_t g_receiver_done = 0;
 
-    // A: receives from B, replies; B: receives from A, replies.  Each does
-    // ROUNDS iterations of genuine IPC::recv/send.
-    auto *task_a = TaskControlBlock::create(
+    // Receiver (prio 11): blocks genuinely (arch::hlt) until the sender's
+    // message arrives — the sender delivers before blocking in send_sync, so
+    // hlt is immediately woken; replies to the sender each round.  hlt (not a
+    // bounded spin) lets the timer ISR dispatch the sender between rounds.
+    auto *receiver = TaskControlBlock::create(
         []() {
             for (uint64_t i = 0; i < 100; ++i) {
                 Message msg;
-                bool ok = false;
-                for (int k = 0; k < 100000 && !ok; ++k)
-                    ok = IPC::recv(msg);
-                if (!ok) {
-                    g_a_ok = 1;
-                    return;
-                }
+                while (!IPC::recv(msg))
+                    arch::hlt();
                 Message reply;
                 reply.sender_id = Scheduler::current_task()->id;
                 reply.type = msg.type + 1;
                 reply.priority = 0;
                 reply.data_size = 0;
-                if (!IPC::send(g_b_id, reply)) {
-                    g_a_ok = 1;
+                if (!IPC::send(msg.sender_id, reply))
                     return;
-                }
             }
-            g_a_done = 1;
+            g_receiver_done = 1;
         },
         11, 10);
 
-    auto *task_b = TaskControlBlock::create(
+    // Sender (prio 12): send_sync blocks the sender each round (kernel
+    // reply-wait), so the receiver is dispatched, replies, and the sender
+    // resumes — a real ping-pong over real ticks.
+    auto *sender = TaskControlBlock::create(
         []() {
-            // Seed: A sends the first message to B.
-            Message seed;
-            seed.sender_id = Scheduler::current_task()->id;
-            seed.type = 0;
-            seed.priority = 0;
-            seed.data_size = 0;
-            if (!IPC::send(g_a_id, seed)) {
-                g_b_ok = 1;
-                return;
-            }
             for (uint64_t i = 0; i < 100; ++i) {
                 Message msg;
-                bool ok = false;
-                for (int k = 0; k < 100000 && !ok; ++k)
-                    ok = IPC::recv(msg);
-                if (!ok) {
-                    g_b_ok = 1;
-                    return;
-                }
+                msg.sender_id = Scheduler::current_task()->id;
+                msg.type = static_cast<uint64_t>(i & 0xFF);
+                msg.priority = 0;
+                msg.data_size = 0;
                 Message reply;
-                reply.sender_id = Scheduler::current_task()->id;
-                reply.type = msg.type + 1;
-                reply.priority = 0;
-                reply.data_size = 0;
-                if (!IPC::send(g_a_id, reply)) {
-                    g_b_ok = 1;
+                if (!IPC::send_sync(g_receiver_id, msg, reply))
                     return;
-                }
+                if (reply.type != msg.type + 1)
+                    return;
             }
-            g_b_done = 1;
+            g_sender_done = 1;
         },
         12, 10);
-    JARVIS_ASSERT(task_a != nullptr);
-    JARVIS_ASSERT(task_b != nullptr);
-    g_a_id = task_a->id;
-    g_b_id = task_b->id;
+    JARVIS_ASSERT(sender != nullptr);
+    JARVIS_ASSERT(receiver != nullptr);
+    g_receiver_id = receiver->id;
 
     {
         arch::IrqGuard _guard;
-        Scheduler::add_task(*task_a);
-        Scheduler::add_task(*task_b);
+        Scheduler::add_task(*receiver);
+        Scheduler::add_task(*sender);
     }
+
+    // Yield to the receiver first so next_task() returns the higher-priority
+    // sender, which runs, blocks in send_sync, and lets the receiver run.
+    kernel::test::yield_as(*receiver);
+    __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
+
     // Drive the ping-pong on real ticks.
     uint64_t start = arch::Timer::ticks();
-    while ((!g_a_done || !g_b_done) &&
+    while ((!g_sender_done || !g_receiver_done) &&
            (arch::Timer::ticks() - start) < 5000) {
-        Scheduler::reschedule();
-        asm volatile("pause");
+        arch::hlt();
+        __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
     }
 
-    JARVIS_ASSERT_EQ(1ULL, g_a_done);
-    JARVIS_ASSERT_EQ(1ULL, g_b_done);
-    JARVIS_ASSERT_EQ(0ULL, g_a_ok);
-    JARVIS_ASSERT_EQ(0ULL, g_b_ok);
+    JARVIS_ASSERT_EQ(1ULL, g_sender_done);
+    JARVIS_ASSERT_EQ(1ULL, g_receiver_done);
 
-    release_task(task_a);
-    release_task(task_b);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

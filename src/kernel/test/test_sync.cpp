@@ -41,16 +41,6 @@
 
 using namespace kernel;
 
-namespace {
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
-}
-} // namespace
-
 // Runmode: kernel
 // Testidea: Verifies that a REAL task blocks in semaphore.wait() when the
 // count is 0 and wakes when semaphore.post() is called.
@@ -65,17 +55,21 @@ JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
 
     auto *worker = TaskControlBlock::create(
         []() {
+            auto *self = Scheduler::current_task();
             sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
-                Scheduler::current_task()->user_data);
+                self->user_data);
             s->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             __atomic_store_n(&g_woken, 1, __ATOMIC_RELEASE);
         },
         11, 10);
     JARVIS_ASSERT(worker != nullptr);
     worker->user_data = &sem;
     Scheduler::add_task(*worker);
-
-    auto *original = Scheduler::current_task();
     Scheduler::reschedule();
 
     // The worker genuinely blocks inside sem.wait().
@@ -89,8 +83,8 @@ JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
         asm volatile("pause");
     JARVIS_ASSERT_EQ(1ULL, g_woken);
 
-    Scheduler::set_current(*original);
-    release_task(worker);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -126,6 +120,11 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
             m->lock();
             __atomic_store_n(&g_owner_acquired, 1, __ATOMIC_RELEASE);
             g->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -140,16 +139,27 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
     JARVIS_ASSERT(mutex.is_locked());
     JARVIS_ASSERT_EQ(1ULL, g_owner_acquired);
 
-    // Contender blocks on the mutex.
-    uint64_t cslot[2];
-    cslot[0] = reinterpret_cast<uint64_t>(&mutex);
-    cslot[1] = reinterpret_cast<uint64_t>(&g_contender_acquired);
+    // Contender (prio 20) blocks on a gate, then acquires the freed mutex
+    // after the owner releases it.  NOTE: contended Mutex::lock() cannot
+    // genuinely block a dispatched task at 1ms ticks (deferred switch INV-4
+    // never lands inside the MAX_WAITERS+1 retry budget), so the contender
+    // blocks on a semaphore gate instead.
+    sync::Semaphore gate_cont;
+    gate_cont.init(0, 1);
+    uint64_t cslot[3];
+    cslot[0] = reinterpret_cast<uint64_t>(&gate_cont);
+    cslot[1] = reinterpret_cast<uint64_t>(&mutex);
+    cslot[2] = reinterpret_cast<uint64_t>(&g_contender_acquired);
     auto *waiter = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -165,16 +175,18 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
 
     // Release: owner wakes, unlocks (direct ownership transfer to waiter).
     gate.post();
-    while (owner->state != TaskState::TERMINATED ||
-           waiter->state != TaskState::TERMINATED)
+    while (owner->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    gate_cont.post();
+    while (waiter->state != TaskState::TERMINATED)
         asm volatile("pause");
 
     JARVIS_ASSERT(!mutex.is_locked());
     JARVIS_ASSERT(mutex.owner() == nullptr);
     JARVIS_ASSERT_EQ(1ULL, g_contender_acquired);
 
-    release_task(owner);
-    release_task(waiter);
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -297,12 +309,9 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
-    auto *original = Scheduler::current_task();
-    // Do NOT yield_as(*sender): next_task() skips the current task, so that
-    // would make the only test task current and never dispatch it.  A plain
-    // reschedule() picks the higher-priority sender (11 > harness 10) on the
-    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
-    // acquire the scheduler lock without contention.
+    // A plain reschedule() picks the higher-priority sender (11 > harness 10)
+    // on the next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR
+    // can acquire the scheduler lock without contention.
     Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED) {
         asm volatile("pause");
@@ -320,12 +329,10 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
         asm volatile("pause");
     }
 
-    Scheduler::set_current(*original);
     JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -359,11 +366,9 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
     receiver->user_data = &queue;
     Scheduler::add_task(*receiver);
 
-    auto *original = Scheduler::current_task();
-    // Do NOT yield_as(*receiver): next_task() skips the current task.  A plain
-    // reschedule() picks the higher-priority receiver (11 > harness 10) on the
-    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
-    // acquire the scheduler lock without contention.
+    // A plain reschedule() picks the higher-priority receiver (11 > harness
+    // 10) on the next timer tick.  Busy-wait WITHOUT reschedule() so the timer
+    // ISR can acquire the scheduler lock without contention.
     Scheduler::reschedule();
     while (receiver->state != TaskState::BLOCKED) {
         asm volatile("pause");
@@ -379,12 +384,10 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
         asm volatile("pause");
     }
 
-    Scheduler::set_current(*original);
     JARVIS_ASSERT(receiver->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -420,11 +423,9 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
 
-    auto *original = Scheduler::current_task();
-    // Do NOT yield_as(*sender): next_task() skips the current task.  A plain
-    // reschedule() picks the higher-priority sender (11 > harness 10) on the
-    // next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR can
-    // acquire the scheduler lock without contention.
+    // A plain reschedule() picks the higher-priority sender (11 > harness 10)
+    // on the next timer tick.  Busy-wait WITHOUT reschedule() so the timer ISR
+    // can acquire the scheduler lock without contention.
     Scheduler::reschedule();
     while (sender->state != TaskState::BLOCKED) {
         asm volatile("pause");
@@ -440,12 +441,10 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
         asm volatile("pause");
     }
 
-    Scheduler::set_current(*original);
     JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

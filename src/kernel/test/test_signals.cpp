@@ -205,6 +205,11 @@ JARVIS_TEST(signal_kill_delivers, "PRE: none | POST: none") {
             sync::Semaphore *g = reinterpret_cast<sync::Semaphore *>(
                 self->user_data);
             g->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 10);
     JARVIS_ASSERT(receiver != nullptr);
@@ -237,9 +242,8 @@ JARVIS_TEST(signal_kill_delivers, "PRE: none | POST: none") {
     gate.post();
     while (receiver->state != TaskState::TERMINATED)
         asm volatile("pause");
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
+    // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

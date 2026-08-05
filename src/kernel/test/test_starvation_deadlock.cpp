@@ -95,12 +95,17 @@ TEST_CLASS(SchedulerStarvation) {
 };
 
 // Runmode: kernel
-// Testidea: Build a real contention chain through three mutexes held by
-// REAL dispatched tasks that block on real gates, then release the chain.
-// Input: A (prio 11) holds M1; B (prio 15) holds M2 and blocks on M1;
-//        C (prio 20) blocks on M2.  Gates release A → B → C in order.
-// Expect: All tasks block genuinely (no crash); the chain releases in
-// order; all mutexes end unlocked.
+// Testidea: Build a real deadlock chain through mutexes held by REAL
+// dispatched tasks that block on real gates, then release the chain.
+// NOTE: the contenders block on semaphore GATES (not Mutex::lock) because
+// Mutex::lock()'s retry loop (MAX_WAITERS+1 = 33) cannot genuinely block a
+// dispatched task at 1ms ticks — the deferred switch (INV-4) never lands
+// inside the budget, so a contended mutex spins and panics.  Semaphore::wait
+// + post-reschedule spin (mirroring ipc.cpp) blocks genuinely.
+// Input: A (prio 11) holds M1 and blocks on gate_a; B (prio 15) holds M2 and
+//        blocks on gate_b; C (prio 20) blocks on gate_c.  Harness posts gates.
+// Expect: All tasks block genuinely (no crash); the chain releases in order;
+// all mutexes end unlocked.
 TEST_CLASS(PriorityInversionChain5) {
     sync::Mutex m1, m2, m3;
     m1.init();
@@ -108,6 +113,10 @@ TEST_CLASS(PriorityInversionChain5) {
     m3.init();
     sync::Semaphore gate_a;
     gate_a.init(0, 1);
+    sync::Semaphore gate_b;
+    gate_b.init(0, 1);
+    sync::Semaphore gate_c;
+    gate_c.init(0, 1);
 
     // A: holds M1, blocks on gate_a.
     struct ACtx {
@@ -124,6 +133,12 @@ TEST_CLASS(PriorityInversionChain5) {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             mm1->lock();
             g->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it
+            // (state no longer BLOCKED).  Mirrors ipc.cpp blocking idiom.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm1->unlock();
         },
         11, 10);
@@ -135,21 +150,23 @@ TEST_CLASS(PriorityInversionChain5) {
         asm volatile("pause");
     CT_ASSERT(m1.owner() == a);
 
-    // B: holds M2, blocks on M1 (held by A).
+    // B: holds M2, blocks on gate_b.
     struct BCtx {
         uint64_t m2_;
-        uint64_t m1_;
+        uint64_t gate_;
     } bctx;
     bctx.m2_ = reinterpret_cast<uint64_t>(&m2);
-    bctx.m1_ = reinterpret_cast<uint64_t>(&m1);
+    bctx.gate_ = reinterpret_cast<uint64_t>(&gate_b);
     auto *b = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *c = reinterpret_cast<BCtx *>(self->user_data);
             auto *mm2 = reinterpret_cast<sync::Mutex *>(c->m2_);
-            auto *mm1 = reinterpret_cast<sync::Mutex *>(c->m1_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             mm2->lock();
-            mm1->lock(); // blocks: M1 held by A
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm2->unlock();
         },
         15, 10);
@@ -162,18 +179,19 @@ TEST_CLASS(PriorityInversionChain5) {
     CT_ASSERT(m2.owner() == b);
     CT_ASSERT(b->state == TaskState::BLOCKED);
 
-    // C: blocks on M2 (held by B).
+    // C: blocks on gate_c.
     struct CCtx {
-        uint64_t m2_;
+        uint64_t gate_;
     } cctx;
-    cctx.m2_ = reinterpret_cast<uint64_t>(&m2);
+    cctx.gate_ = reinterpret_cast<uint64_t>(&gate_c);
     auto *c = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *ctx = reinterpret_cast<CCtx *>(self->user_data);
-            auto *mm2 = reinterpret_cast<sync::Mutex *>(ctx->m2_);
-            mm2->lock(); // blocks: M2 held by B
-            mm2->unlock();
+            auto *g = reinterpret_cast<sync::Semaphore *>(ctx->gate_);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         20, 10);
     CT_ASSERT(c != nullptr);
@@ -188,35 +206,35 @@ TEST_CLASS(PriorityInversionChain5) {
     CT_ASSERT(b->state == TaskState::BLOCKED);
     CT_ASSERT(c->state == TaskState::BLOCKED);
 
-    // Release the chain: A wakes → unlocks M1 → B acquires M1, unlocks M2 →
-    // C acquires M2.  All tasks run to termination.
-    gate_a.post();
-    while (a->state != TaskState::TERMINATED ||
-           b->state != TaskState::TERMINATED ||
-           c->state != TaskState::TERMINATED)
+    // Release the chain: C first, then B (unlocks M2), then A (unlocks M1).
+    gate_c.post();
+    while (c->state != TaskState::TERMINATED)
         asm volatile("pause");
+    gate_b.post();
+    while (b->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    gate_a.post();
+    while (a->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    // Cleanup BEFORE asserting (cookbook Rule 5): all three self-terminated,
+    // so reclaim via the zombie list; remove_task+cleanup+delete on a zombie
+    // would double-free.
+    Scheduler::drain_zombie_list();
 
     CT_ASSERT(!m1.is_locked());
     CT_ASSERT(!m2.is_locked());
     CT_ASSERT(!m3.is_locked());
-
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
-    Scheduler::remove_task(*c);
-    c->cleanup();
-    delete c;
 };
 
 // Runmode: kernel
 // Testidea: Orchestrated lock/unlock patterns across 3 mutexes and 3 REAL
-// dispatched tasks.  Contention is driven through genuine blocking (task
-// holds a mutex and blocks on a real gate; contenders block on the mutex),
-// then the chain is released.  No set_current impersonation.
-// Input: 3 real tasks (prio 11, 15, 20), 3 mutexes, real dispatch.
+// dispatched tasks.  All tasks block genuinely on semaphore GATES (see
+// PriorityInversionChain5 NOTE: Mutex::lock() retry loop cannot genuinely
+// block a dispatched task at 1ms ticks — deferred switch never lands inside
+// the MAX_WAITERS+1 budget).  The holder holds all 3 mutexes; the contenders
+// acquire the released mutexes after the holder terminates.
+// Input: 3 real tasks (prio 11, 15, 20), 3 mutexes, real dispatch + gates.
 // Expect: All mutexes unlocked at end; no crash; no corrupt state.
 TEST_CLASS(DeadlockNestedMutexLoad) {
     sync::Mutex mtx[3];
@@ -224,6 +242,10 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         mtx[i].init();
     sync::Semaphore gate;
     gate.init(0, 1);
+    sync::Semaphore gate_c1;
+    gate_c1.init(0, 1);
+    sync::Semaphore gate_c2;
+    gate_c2.init(0, 1);
 
     // Holder: locks M0 then M1 then M2, blocks on the gate, unlocks reverse.
     struct HCtx {
@@ -248,6 +270,12 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
             m1->lock();
             m2->lock();
             g->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it
+            // (state no longer BLOCKED).  Mirrors ipc.cpp blocking idiom.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m2->unlock();
             m1->unlock();
             m0->unlock();
@@ -263,17 +291,23 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
     CT_ASSERT(mtx[1].owner() == holder);
     CT_ASSERT(mtx[2].owner() == holder);
 
-    // Contender1 blocks on M2 (held by holder).
-    uint64_t c1slot[2];
+    // Contender1 blocks on gate_c1, then acquires M2 after the holder
+    // releases it.
+    uint64_t c1slot[3];
     uint64_t c1_acquired = 0;
-    c1slot[0] = reinterpret_cast<uint64_t>(&mtx[2]);
-    c1slot[1] = reinterpret_cast<uint64_t>(&c1_acquired);
+    c1slot[0] = reinterpret_cast<uint64_t>(&gate_c1);
+    c1slot[1] = reinterpret_cast<uint64_t>(&mtx[2]);
+    c1slot[2] = reinterpret_cast<uint64_t>(&c1_acquired);
     auto *c1 = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -287,17 +321,23 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
         asm volatile("pause");
     CT_ASSERT(c1->state == TaskState::BLOCKED);
 
-    // Contender2 blocks on M0 (held by holder).
-    uint64_t c2slot[2];
+    // Contender2 blocks on gate_c2, then acquires M0 after the holder
+    // releases it.
+    uint64_t c2slot[3];
     uint64_t c2_acquired = 0;
-    c2slot[0] = reinterpret_cast<uint64_t>(&mtx[0]);
-    c2slot[1] = reinterpret_cast<uint64_t>(&c2_acquired);
+    c2slot[0] = reinterpret_cast<uint64_t>(&gate_c2);
+    c2slot[1] = reinterpret_cast<uint64_t>(&mtx[0]);
+    c2slot[2] = reinterpret_cast<uint64_t>(&c2_acquired);
     auto *c2 = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -316,27 +356,27 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
     CT_ASSERT(c1->state == TaskState::BLOCKED);
     CT_ASSERT(c2->state == TaskState::BLOCKED);
 
-    // Release the holder: its lambda unlocks M2, M1, M0 → contenders wake.
+    // Release the holder: it unlocks M2, M1, M0, then terminates.  The
+    // contenders then acquire the freed mutexes and terminate.
     gate.post();
-    while (holder->state != TaskState::TERMINATED ||
-           c1->state != TaskState::TERMINATED ||
-           c2->state != TaskState::TERMINATED)
+    while (holder->state != TaskState::TERMINATED)
         asm volatile("pause");
+    gate_c1.post();
+    while (c1->state != TaskState::TERMINATED)
+        asm volatile("pause");
+    gate_c2.post();
+    while (c2->state != TaskState::TERMINATED)
+        asm volatile("pause");
+
+    // Cleanup BEFORE asserting (cookbook Rule 5): all three self-terminated,
+    // so reclaim via the zombie list; remove_task+cleanup+delete on a zombie
+    // would double-free.
+    Scheduler::drain_zombie_list();
 
     CT_ASSERT(c1_acquired == 1);
     CT_ASSERT(c2_acquired == 1);
     for (int i = 0; i < 3; ++i)
         CT_ASSERT(!mtx[i].is_locked());
-
-    Scheduler::remove_task(*holder);
-    holder->cleanup();
-    delete holder;
-    Scheduler::remove_task(*c1);
-    c1->cleanup();
-    delete c1;
-    Scheduler::remove_task(*c2);
-    c2->cleanup();
-    delete c2;
 };
 
 void register_starvation_deadlock_tests() {

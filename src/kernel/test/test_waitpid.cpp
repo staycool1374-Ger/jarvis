@@ -99,21 +99,33 @@ static void sequential_wait_parent_entry() {
 //         removed from the scheduler; the parent's wait is cleared.
 JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     WaitContext ctx{};
+    // Create BOTH TCBs first (cookbook Rule 1) so a timer tick cannot
+    // dispatch the parent before the child is registered — otherwise the
+    // WAITPID handler finds no child and returns -1 immediately.
     auto *parent = TaskControlBlock::create(waitpid_parent_entry, 20, 10);
     JARVIS_ASSERT(parent != nullptr);
     parent->user_data = &ctx;
-    Scheduler::add_task(*parent);
 
     auto *child = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child != nullptr);
     parent->add_child(child);
-    Scheduler::add_task(*child);
     ctx.child_id_ = child->id;
+
+    // Register both under one IrqGuard (cookbook Rule 2); the parent (prio
+    // 20) blocks in WAITPID while the child is present; the child runs next,
+    // self-terminates via the trampoline, and wake_waiting_parent resumes the
+    // parent.
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*parent);
+        Scheduler::add_task(*child);
+    }
 
     // The parent blocks in the real WAITPID handler; the child then runs and
     // exits through the trampoline.
     Scheduler::reschedule();
-    while (parent->state != TaskState::BLOCKED)
+    while (parent->state != TaskState::BLOCKED &&
+           parent->state != TaskState::TERMINATED)
         asm volatile("pause");
     while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
@@ -122,7 +134,7 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, ctx.status_);
     JARVIS_ASSERT(Scheduler::find_task(ctx.child_id_) == nullptr);
 
-    // The parent self-terminated and is owned by the zombie list.
+    // Cleanup BEFORE asserting (cookbook Rule 5): the parent self-terminated.
     Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
@@ -138,24 +150,34 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
 // zombies remain in the scheduler.
 JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     SequentialWaitContext ctx{};
+    // Create ALL TCBs first (cookbook Rule 1); the parent's WAITPID must find
+    // each child registered, otherwise it returns -1 immediately.
     auto *parent = TaskControlBlock::create(sequential_wait_parent_entry, 20, 10);
     JARVIS_ASSERT(parent != nullptr);
     parent->user_data = &ctx;
-    Scheduler::add_task(*parent);
 
     auto *child1 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child1 != nullptr);
     parent->add_child(child1);
-    Scheduler::add_task(*child1);
     ctx.child1_id_ = child1->id;
 
     auto *child2 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(child2 != nullptr);
     parent->add_child(child2);
-    Scheduler::add_task(*child2);
     ctx.child2_id_ = child2->id;
 
+    // Register all three under one IrqGuard (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*parent);
+        Scheduler::add_task(*child1);
+        Scheduler::add_task(*child2);
+    }
+
     Scheduler::reschedule();
+    while (parent->state != TaskState::BLOCKED &&
+           parent->state != TaskState::TERMINATED)
+        asm volatile("pause");
     while (parent->state != TaskState::TERMINATED)
         asm volatile("pause");
 
@@ -163,7 +185,7 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, ctx.status1_);
     JARVIS_ASSERT_EQ(0ULL, ctx.status2_);
 
-    // The parent self-terminated and is owned by the zombie list.
+    // Cleanup BEFORE asserting (cookbook Rule 5): the parent self-terminated.
     Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }

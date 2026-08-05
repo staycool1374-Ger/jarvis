@@ -346,6 +346,11 @@ JARVIS_TEST(process_clone_adds_child, "PRE: none | POST: none") {
     // the lambda runs in kernel mode (BUGS.md#020-safe).
     parent->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(parent->page_table_ != 0);
+    // clone() needs a real user-stack size/phys to succeed (the clone path
+    // allocates and copies the stack); without these, TASK_ERR_USTACK_ALLOC
+    // fires and the child leaks.
+    parent->user_stack_ = 0x80000000;
+    parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
     while (parent->state != TaskState::TERMINATED)
@@ -355,9 +360,8 @@ JARVIS_TEST(process_clone_adds_child, "PRE: none | POST: none") {
     JARVIS_ASSERT(g_child_id != 0);
     JARVIS_ASSERT_EQ(1ULL, g_found);
 
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    delete parent;
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

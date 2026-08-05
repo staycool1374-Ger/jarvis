@@ -43,16 +43,6 @@ enum RlimitResource {
     RLIMIT_NOFILE = 2,
 };
 
-namespace {
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
-}
-} // namespace
-
 JARVIS_TEST(sys_getrlimit_nofile, "PRE: none | POST: none") {
     static uint64_t g_ret = 0;
     static uint64_t g_cur = 0;
@@ -77,7 +67,8 @@ JARVIS_TEST(sys_getrlimit_nofile, "PRE: none | POST: none") {
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
     JARVIS_ASSERT_EQ(g_cur, g_max);
-    release_task(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -104,7 +95,8 @@ JARVIS_TEST(sys_getrlimit_stack, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
-    release_task(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -131,7 +123,8 @@ JARVIS_TEST(sys_getrlimit_data, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
-    release_task(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -152,7 +145,8 @@ JARVIS_TEST(sys_getrlimit_invalid, "PRE: none | POST: none") {
     while (t->state != TaskState::TERMINATED)
         asm volatile("pause");
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
-    release_task(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -174,7 +168,8 @@ JARVIS_TEST(sys_brk_query, "PRE: none | POST: none") {
     while (t->state != TaskState::TERMINATED)
         asm volatile("pause");
     JARVIS_ASSERT_EQ(g_break, g_ret);
-    release_task(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

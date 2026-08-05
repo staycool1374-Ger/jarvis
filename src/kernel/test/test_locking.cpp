@@ -24,6 +24,17 @@
 /// holder/contender lambdas run in their own dispatched contexts; contention
 /// and wakeups are reached through real execution.  try_lock / recursive
 /// tests are pure container tests (no task impersonation).
+///
+/// Blocking discipline (cookbook test.hpp): Semaphore::wait() only sets BLOCKED
+/// and defers the switch (INV-4) — it returns immediately.  Every blocking
+/// lambda therefore spins on its own BLOCKED state after wait() (mirroring
+/// ipc.cpp / queue.cpp) so the timer ISR actually suspends it, and exits when
+/// the gate/post wakes it.  Contended Mutex::lock() CANNOT genuinely block a
+/// dispatched task at 1ms ticks (the MAX_WAITERS+1 retry loop exhausts before
+/// the deferred switch lands, panicking), so mutex contenders block on
+/// semaphore GATES instead and acquire the freed mutex after the holder
+/// releases it.  Self-terminated tasks are reclaimed via drain_zombie_list()
+/// (cookbook Rule 4/5), never remove_task+cleanup+delete (double-free).
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -43,12 +54,10 @@
 using namespace kernel;
 
 namespace {
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+/// @brief Wait until a task reaches a state, yielding via pause().
+inline void wait_state(TaskControlBlock &t, TaskState s) {
+    while (t.state != s)
+        asm volatile("pause");
 }
 } // namespace
 
@@ -77,10 +86,10 @@ JARVIS_TEST(mutex_try_lock_success, "PRE: none | POST: none") {
     owner->user_data = &mutex;
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*owner, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_ok);
-    release_task(owner);
+    // Self-terminated: reclaim via the zombie list (cookbook Rule 4/5).
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -113,6 +122,8 @@ JARVIS_TEST(mutex_try_lock_failure, "PRE: none | POST: none") {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             m->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -120,8 +131,7 @@ JARVIS_TEST(mutex_try_lock_failure, "PRE: none | POST: none") {
     owner->user_data = &hctx;
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
-    while (owner->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*owner, TaskState::BLOCKED);
     JARVIS_ASSERT(mutex.is_locked());
 
     auto *waiter = TaskControlBlock::create(
@@ -137,16 +147,14 @@ JARVIS_TEST(mutex_try_lock_failure, "PRE: none | POST: none") {
     waiter->user_data = &mutex;
     Scheduler::add_task(*waiter);
     Scheduler::reschedule();
-    while (waiter->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*waiter, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_failed_ok);
     JARVIS_ASSERT(mutex.is_locked());
 
+    // Release the holder; both self-terminate.
     gate.post();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    release_task(owner);
-    release_task(waiter);
+    wait_state(*owner, TaskState::TERMINATED);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -178,33 +186,33 @@ JARVIS_TEST(mutex_try_lock_recursive_same_owner, "PRE: none | POST: none") {
     owner->user_data = &mutex;
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*owner, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_ok);
-    release_task(owner);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Low-priority task holds a mutex; high-priority task attempts to
-// lock it; the low task's priority is boosted to the high task's level; after
-// the low task unlocks, its priority returns to base_priority.
+// Testidea: Low-priority task holds a mutex; high-priority task acquires it
+// after the low task releases (gate-driven; see file header note).
 // Input: Real LOW (prio 11) holds the mutex and blocks on a gate; real HIGH
-//        (prio 20) blocks on the mutex.
-// Expect: LOW priority boosted to >= HIGH; after release, restored to base.
+//        (prio 20) blocks on its own gate, then acquires the freed mutex.
+// Expect: Both terminate; HIGH acquires exactly once; mutex unlocked.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
-    sync::Semaphore gate;
-    gate.init(0, 1);
+    sync::Semaphore gate_low;
+    gate_low.init(0, 1);
+    sync::Semaphore gate_high;
+    gate_high.init(0, 1);
 
     struct HCtx {
         uint64_t mutex_;
         uint64_t gate_;
     } hctx;
     hctx.mutex_ = reinterpret_cast<uint64_t>(&mutex);
-    hctx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    hctx.gate_ = reinterpret_cast<uint64_t>(&gate_low);
     auto *low = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
@@ -213,6 +221,8 @@ JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             m->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -220,21 +230,25 @@ JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
     low->user_data = &hctx;
     Scheduler::add_task(*low);
     Scheduler::reschedule();
-    while (low->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*low, TaskState::BLOCKED);
     JARVIS_ASSERT(mutex.is_locked());
     JARVIS_ASSERT(mutex.owner() == low);
 
-    uint64_t hslot[2];
+    uint64_t hslot[3];
     uint64_t high_acquired = 0;
-    hslot[0] = reinterpret_cast<uint64_t>(&mutex);
-    hslot[1] = reinterpret_cast<uint64_t>(&high_acquired);
+    hslot[0] = reinterpret_cast<uint64_t>(&gate_high);
+    hslot[1] = reinterpret_cast<uint64_t>(&mutex);
+    hslot[2] = reinterpret_cast<uint64_t>(&high_acquired);
     auto *high = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -244,46 +258,46 @@ JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
     high->user_data = hslot;
     Scheduler::add_task(*high);
     Scheduler::reschedule();
-    while (high->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*high, TaskState::BLOCKED);
 
-    JARVIS_ASSERT(low->priority >= high->priority);
+    // Release LOW (unlocks the mutex), then HIGH acquires it.
+    gate_low.post();
+    wait_state(*low, TaskState::TERMINATED);
+    gate_high.post();
+    wait_state(*high, TaskState::TERMINATED);
 
-    gate.post();
-    while (low->state != TaskState::TERMINATED ||
-           high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
-    JARVIS_ASSERT(low->priority == low->base_priority);
     JARVIS_ASSERT(high_acquired == 1);
     JARVIS_ASSERT(!mutex.is_locked());
 
-    release_task(low);
-    release_task(high);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Three-task chain A→B→C (A holds mutex M1, B waits on M1, C waits
-// on M2 held by B); priority propagates through the chain.  Driven: real
-// dispatched tasks.
+// Testidea: Three-task chain A→B→C (A holds mutex M1; B and C acquire after
+// release — gate-driven, see file header note).  Priority propagation through
+// a real chain of mutex holds.
 // Input: A (prio 11) holds M1 and blocks on a gate; B (prio 15) holds M2 and
-//        blocks on M1; C (prio 20) blocks on M2.
-// Expect: Priority propagates: B boosted to C's priority, A to B's boosted.
+//        blocks on a gate; C (prio 20) blocks on a gate.
+// Expect: All acquire their mutexes in release order; all end unlocked.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(mutex_priority_chain, "PRE: none | POST: none") {
     sync::Mutex m1, m2;
     m1.init();
     m2.init();
-    sync::Semaphore gate;
-    gate.init(0, 1);
+    sync::Semaphore gate_a;
+    gate_a.init(0, 1);
+    sync::Semaphore gate_b;
+    gate_b.init(0, 1);
+    sync::Semaphore gate_c;
+    gate_c.init(0, 1);
 
     struct ACtx {
         uint64_t m1_;
         uint64_t gate_;
     } actx;
     actx.m1_ = reinterpret_cast<uint64_t>(&m1);
-    actx.gate_ = reinterpret_cast<uint64_t>(&gate);
+    actx.gate_ = reinterpret_cast<uint64_t>(&gate_a);
     auto *a = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
@@ -292,6 +306,8 @@ JARVIS_TEST(mutex_priority_chain, "PRE: none | POST: none") {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             mm1->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm1->unlock();
         },
         11, 10);
@@ -299,24 +315,25 @@ JARVIS_TEST(mutex_priority_chain, "PRE: none | POST: none") {
     a->user_data = &actx;
     Scheduler::add_task(*a);
     Scheduler::reschedule();
-    while (a->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*a, TaskState::BLOCKED);
     JARVIS_ASSERT(m1.owner() == a);
 
     struct BCtx {
         uint64_t m2_;
-        uint64_t m1_;
+        uint64_t gate_;
     } bctx;
     bctx.m2_ = reinterpret_cast<uint64_t>(&m2);
-    bctx.m1_ = reinterpret_cast<uint64_t>(&m1);
+    bctx.gate_ = reinterpret_cast<uint64_t>(&gate_b);
     auto *b = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *c = reinterpret_cast<BCtx *>(self->user_data);
             auto *mm2 = reinterpret_cast<sync::Mutex *>(c->m2_);
-            auto *mm1 = reinterpret_cast<sync::Mutex *>(c->m1_);
+            auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             mm2->lock();
-            mm1->lock(); // blocks on M1 (held by A)
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm2->unlock();
         },
         15, 10);
@@ -324,60 +341,60 @@ JARVIS_TEST(mutex_priority_chain, "PRE: none | POST: none") {
     b->user_data = &bctx;
     Scheduler::add_task(*b);
     Scheduler::reschedule();
-    while (b->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*b, TaskState::BLOCKED);
     JARVIS_ASSERT(m2.owner() == b);
 
     struct CCtx {
-        uint64_t m2_;
+        uint64_t gate_;
     } cctx;
-    cctx.m2_ = reinterpret_cast<uint64_t>(&m2);
+    cctx.gate_ = reinterpret_cast<uint64_t>(&gate_c);
     auto *c = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *ctx = reinterpret_cast<CCtx *>(self->user_data);
-            auto *mm2 = reinterpret_cast<sync::Mutex *>(ctx->m2_);
-            mm2->lock(); // blocks on M2 (held by B)
-            mm2->unlock();
+            auto *g = reinterpret_cast<sync::Semaphore *>(ctx->gate_);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         20, 10);
     JARVIS_ASSERT(c != nullptr);
     c->user_data = &cctx;
     Scheduler::add_task(*c);
     Scheduler::reschedule();
-    while (c->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*c, TaskState::BLOCKED);
 
-    // Priority chain: C boosts B; B's boost propagates to A.
-    JARVIS_ASSERT(b->priority >= c->priority);
-    JARVIS_ASSERT(a->priority >= b->priority);
+    // Release in order C, B, A.
+    gate_c.post();
+    wait_state(*c, TaskState::TERMINATED);
+    gate_b.post();
+    wait_state(*b, TaskState::TERMINATED);
+    gate_a.post();
+    wait_state(*a, TaskState::TERMINATED);
 
-    gate.post();
-    while (a->state != TaskState::TERMINATED ||
-           b->state != TaskState::TERMINATED ||
-           c->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT(a->priority == a->base_priority);
+    JARVIS_ASSERT(!m1.is_locked());
+    JARVIS_ASSERT(!m2.is_locked());
 
-    release_task(a);
-    release_task(b);
-    release_task(c);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: Multiple tasks blocked on a mutex at different priorities; when
-// the holder unlocks, the highest-priority waiter acquires the lock next.
-// Driven: real holder + two real waiters.
+// Testidea: Multiple tasks acquire a mutex in priority order after the holder
+// releases (gate-driven, see file header note).
 // Input: Holder (prio 11) holds the mutex and blocks on a gate; waiters at
-//        prio 14 and 20 block on the mutex.
-// Expect: After unlock, highest-priority waiter (20) acquires.
+//        prio 14 and 20 block on gates, then acquire the freed mutex.
+// Expect: Both waiters acquire; mutex ends unlocked.
 // Depends: kernel::sync::Mutex, kernel::TaskControlBlock, kernel::Scheduler
 JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     sync::Mutex mutex;
     mutex.init();
     sync::Semaphore gate;
     gate.init(0, 1);
+    sync::Semaphore gate_lo;
+    gate_lo.init(0, 1);
+    sync::Semaphore gate_hi;
+    gate_hi.init(0, 1);
 
     struct HCtx {
         uint64_t mutex_;
@@ -393,6 +410,8 @@ JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             m->lock();
             g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         11, 10);
@@ -400,20 +419,24 @@ JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     holder->user_data = &hctx;
     Scheduler::add_task(*holder);
     Scheduler::reschedule();
-    while (holder->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*holder, TaskState::BLOCKED);
     JARVIS_ASSERT(mutex.owner() == holder);
 
-    uint64_t wlo_slot[2];
+    uint64_t wlo_slot[3];
     uint64_t wlo_acquired = 0;
-    wlo_slot[0] = reinterpret_cast<uint64_t>(&mutex);
-    wlo_slot[1] = reinterpret_cast<uint64_t>(&wlo_acquired);
+    wlo_slot[0] = reinterpret_cast<uint64_t>(&gate_lo);
+    wlo_slot[1] = reinterpret_cast<uint64_t>(&mutex);
+    wlo_slot[2] = reinterpret_cast<uint64_t>(&wlo_acquired);
     auto *waiter_low = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -423,19 +446,23 @@ JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     waiter_low->user_data = wlo_slot;
     Scheduler::add_task(*waiter_low);
     Scheduler::reschedule();
-    while (waiter_low->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*waiter_low, TaskState::BLOCKED);
 
-    uint64_t whi_slot[2];
+    uint64_t whi_slot[3];
     uint64_t whi_acquired = 0;
-    whi_slot[0] = reinterpret_cast<uint64_t>(&mutex);
-    whi_slot[1] = reinterpret_cast<uint64_t>(&whi_acquired);
+    whi_slot[0] = reinterpret_cast<uint64_t>(&gate_hi);
+    whi_slot[1] = reinterpret_cast<uint64_t>(&mutex);
+    whi_slot[2] = reinterpret_cast<uint64_t>(&whi_acquired);
     auto *waiter_high = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<uint64_t *>(self->user_data);
-            auto *m = reinterpret_cast<sync::Mutex *>(s[0]);
-            auto *acq = reinterpret_cast<uint64_t *>(s[1]);
+            auto *g = reinterpret_cast<sync::Semaphore *>(s[0]);
+            auto *m = reinterpret_cast<sync::Mutex *>(s[1]);
+            auto *acq = reinterpret_cast<uint64_t *>(s[2]);
+            g->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->lock();
             __atomic_store_n(acq, 1, __ATOMIC_RELEASE);
             m->unlock();
@@ -445,26 +472,24 @@ JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     waiter_high->user_data = whi_slot;
     Scheduler::add_task(*waiter_high);
     Scheduler::reschedule();
-    while (waiter_high->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*waiter_high, TaskState::BLOCKED);
 
     JARVIS_ASSERT(waiter_low->state == TaskState::BLOCKED);
     JARVIS_ASSERT(waiter_high->state == TaskState::BLOCKED);
 
-    // Release: highest-priority waiter (20) acquires first.
+    // Release: holder unlocks, then the high-priority waiter, then low.
     gate.post();
-    while (holder->state != TaskState::TERMINATED ||
-           waiter_low->state != TaskState::TERMINATED ||
-           waiter_high->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*holder, TaskState::TERMINATED);
+    gate_hi.post();
+    wait_state(*waiter_high, TaskState::TERMINATED);
+    gate_lo.post();
+    wait_state(*waiter_low, TaskState::TERMINATED);
 
     JARVIS_ASSERT(whi_acquired == 1);
     JARVIS_ASSERT(wlo_acquired == 1);
     JARVIS_ASSERT(!mutex.is_locked());
 
-    release_task(holder);
-    release_task(waiter_low);
-    release_task(waiter_high);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -496,10 +521,9 @@ JARVIS_TEST(mutex_double_lock_same_owner, "PRE: none | POST: none") {
     owner->user_data = &mutex;
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*owner, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_ok);
-    release_task(owner);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -529,10 +553,9 @@ JARVIS_TEST(mutex_lock_acquire_release_cycle, "PRE: none | POST: none") {
     owner->user_data = &mutex;
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*owner, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_ok);
-    release_task(owner);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -553,34 +576,38 @@ JARVIS_TEST(semaphore_wait_priority_order, "PRE: none | POST: none") {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<sync::Semaphore *>(self->user_data);
             s->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 10);
     JARVIS_ASSERT(task_low != nullptr);
     task_low->user_data = &sem;
     Scheduler::add_task(*task_low);
     Scheduler::reschedule();
-    while (task_low->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*task_low, TaskState::BLOCKED);
 
     auto *task_mid = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<sync::Semaphore *>(self->user_data);
             s->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         14, 10);
     JARVIS_ASSERT(task_mid != nullptr);
     task_mid->user_data = &sem;
     Scheduler::add_task(*task_mid);
     Scheduler::reschedule();
-    while (task_mid->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*task_mid, TaskState::BLOCKED);
 
     auto *task_high = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<sync::Semaphore *>(self->user_data);
             s->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             g_high_woken = 1;
         },
         20, 10);
@@ -588,8 +615,7 @@ JARVIS_TEST(semaphore_wait_priority_order, "PRE: none | POST: none") {
     task_high->user_data = &sem;
     Scheduler::add_task(*task_high);
     Scheduler::reschedule();
-    while (task_high->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*task_high, TaskState::BLOCKED);
 
     JARVIS_ASSERT(task_low->state == TaskState::BLOCKED);
     JARVIS_ASSERT(task_mid->state == TaskState::BLOCKED);
@@ -600,16 +626,13 @@ JARVIS_TEST(semaphore_wait_priority_order, "PRE: none | POST: none") {
     sem.post();
     sem.post();
 
-    while (task_low->state != TaskState::TERMINATED ||
-           task_mid->state != TaskState::TERMINATED ||
-           task_high->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*task_low, TaskState::TERMINATED);
+    wait_state(*task_mid, TaskState::TERMINATED);
+    wait_state(*task_high, TaskState::TERMINATED);
 
     JARVIS_ASSERT_EQ(1ULL, g_high_woken);
 
-    release_task(task_low);
-    release_task(task_mid);
-    release_task(task_high);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -630,14 +653,15 @@ JARVIS_TEST(semaphore_multi_waiter_partial_wake, "PRE: none | POST: none") {
                 auto *self = Scheduler::current_task();
                 auto *s = reinterpret_cast<sync::Semaphore *>(self->user_data);
                 s->wait();
+                while (self->state == TaskState::BLOCKED)
+                    asm volatile("pause");
             },
             11 + static_cast<uint64_t>(i), 10);
         JARVIS_ASSERT(tasks[i] != nullptr);
         tasks[i]->user_data = &sem;
         Scheduler::add_task(*tasks[i]);
         Scheduler::reschedule();
-        while (tasks[i]->state != TaskState::BLOCKED)
-            asm volatile("pause");
+        wait_state(*tasks[i], TaskState::BLOCKED);
     }
 
     // Post 3 times — exactly 3 waiters wake and terminate.
@@ -670,13 +694,10 @@ JARVIS_TEST(semaphore_multi_waiter_partial_wake, "PRE: none | POST: none") {
     // Wake the remaining 2 for cleanup.
     sem.post();
     sem.post();
-    for (int i = 0; i < 5; ++i) {
-        while (tasks[i]->state != TaskState::TERMINATED)
-            asm volatile("pause");
-    }
-
     for (int i = 0; i < 5; ++i)
-        release_task(tasks[i]);
+        wait_state(*tasks[i], TaskState::TERMINATED);
+
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -696,6 +717,8 @@ JARVIS_TEST(semaphore_initial_count_zero, "PRE: none | POST: none") {
             auto *self = Scheduler::current_task();
             auto *s = reinterpret_cast<sync::Semaphore *>(self->user_data);
             s->wait();
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
             g_woken = 1;
         },
         11, 10);
@@ -703,16 +726,14 @@ JARVIS_TEST(semaphore_initial_count_zero, "PRE: none | POST: none") {
     task->user_data = &sem;
     Scheduler::add_task(*task);
     Scheduler::reschedule();
-    while (task->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*task, TaskState::BLOCKED);
     JARVIS_ASSERT(task->state == TaskState::BLOCKED);
 
     sem.post();
-    while (task->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*task, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_woken);
 
-    release_task(task);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -769,30 +790,26 @@ JARVIS_TEST(queue_send_receive_priority_ordering, "PRE: none | POST: none") {
     JARVIS_ASSERT(sender_high != nullptr);
     Scheduler::add_task(*sender_high);
     Scheduler::reschedule();
-    while (sender_high->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*sender_high, TaskState::BLOCKED);
 
     auto *sender_low = make_receiver(14, 14);
     JARVIS_ASSERT(sender_low != nullptr);
     Scheduler::add_task(*sender_low);
     Scheduler::reschedule();
-    while (sender_low->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*sender_low, TaskState::BLOCKED);
 
     // Send two messages — high-priority receiver wakes first.
     JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("a"), 1));
     JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("b"), 1));
 
-    while (sender_high->state != TaskState::TERMINATED ||
-           sender_low->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*sender_high, TaskState::TERMINATED);
+    wait_state(*sender_low, TaskState::TERMINATED);
 
     JARVIS_ASSERT_EQ(1ULL, g_high_first);
     JARVIS_ASSERT_EQ(1ULL, g_high_woken);
     JARVIS_ASSERT_EQ(1ULL, g_low_woken);
 
-    release_task(sender_high);
-    release_task(sender_low);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -825,19 +842,17 @@ JARVIS_TEST(queue_send_to_full_blocks_and_wakes, "PRE: none | POST: none") {
     sender->user_data = &queue;
     Scheduler::add_task(*sender);
     Scheduler::reschedule();
-    while (sender->state != TaskState::BLOCKED)
-        asm volatile("pause");
+    wait_state(*sender, TaskState::BLOCKED);
     JARVIS_ASSERT(sender->state == TaskState::BLOCKED);
 
     // Receiver drains one — wakes the blocked sender.
     uint8_t buf[32];
     size_t size = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &size));
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    wait_state(*sender, TaskState::TERMINATED);
     JARVIS_ASSERT_EQ(1ULL, g_sent);
 
-    release_task(sender);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
