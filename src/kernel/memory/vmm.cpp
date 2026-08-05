@@ -24,6 +24,7 @@
 #include <kernel/arch/page_table.hpp>
 #include <assert.hpp>
 #include <kernel/memory/vmm_errors.hpp>
+#include <kernel/arch/qemu_debugcon.hpp>
 
 namespace kernel {
 
@@ -690,13 +691,38 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
     // NOLINTNEXTLINE(performance-no-int-to-ptr)
     auto *pml4 = reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET +
                                               (pml4_phys & ~0xFFFULL));
+    // v0.3.11: bounded diagnostic — log page-table pages skipped because their
+    // owner bit is KERNEL (free_user_pages only frees USER-owned table pages).
+    static uint64_t s_fup_skip_log = 0;
+    auto log_skip = [](const char *lvl, uint64_t phys) {
+        if (__atomic_load_n(&s_fup_skip_log, __ATOMIC_RELAXED) >= 24)
+            return;
+        __atomic_fetch_add(&s_fup_skip_log, 1UL, __ATOMIC_RELAXED);
+        arch::QemuDebugcon::write(lvl);
+        char buf[24];
+        int p = 0;
+        buf[p++] = '0';
+        buf[p++] = 'x';
+        bool started = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((phys >> sh) & 0xF);
+            if (nib || started || sh == 0) {
+                buf[p++] = "0123456789abcdef"[nib];
+                started = true;
+            }
+        }
+        buf[p++] = '\n';
+        arch::QemuDebugcon::write(buf, static_cast<size_t>(p));
+    };
     for (int pml4_idx = 0; pml4_idx < static_cast<int>(arch::PML4_USER_COUNT);
          ++pml4_idx) {
         if (!(pml4[pml4_idx] & PAGE_PRESENT))
             continue;
         uint64_t pdpt_phys = pml4[pml4_idx] & ~0xFFFULL;
-        if (!PMM::is_user_page(pdpt_phys))
+        if (!PMM::is_user_page(pdpt_phys)) {
+            log_skip("[FUP-SKIP] pdpt p4=", pdpt_phys);
             continue;
+        }
         // NOLINTNEXTLINE(performance-no-int-to-ptr)
         auto *pdpt =
             reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pdpt_phys);
@@ -716,8 +742,10 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                 continue;
             }
             uint64_t pd_phys = pdpt[pdpt_idx] & ~0xFFFULL;
-            if (!PMM::is_user_page(pd_phys))
+            if (!PMM::is_user_page(pd_phys)) {
+                log_skip("[FUP-SKIP] pd   p4=", pd_phys);
                 continue;
+            }
             // NOLINTNEXTLINE(performance-no-int-to-ptr)
             auto *pd =
                 reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pd_phys);
@@ -737,8 +765,10 @@ void VMM::free_user_pages(uint64_t pml4_phys) {
                     continue;
                 }
                 uint64_t pt_phys = pd[pd_idx] & ~0xFFFULL;
-                if (!PMM::is_user_page(pt_phys))
+                if (!PMM::is_user_page(pt_phys)) {
+                    log_skip("[FUP-SKIP] pt   p4=", pt_phys);
                     continue;
+                }
                 // NOLINTNEXTLINE(performance-no-int-to-ptr)
                 auto *pt =
                     reinterpret_cast<uint64_t *>(arch::HHDM_OFFSET + pt_phys);

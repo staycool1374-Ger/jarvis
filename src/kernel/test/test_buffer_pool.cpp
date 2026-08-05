@@ -26,6 +26,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <scope_guard.hpp>
+#include <kernel/test/resource_tracker.hpp>
 #include <kernel/test/task_ptr.hpp>
 #include <kernel/ipc/buffer_pool.hpp>
 #include <kernel/ipc/ipc.hpp>
@@ -37,6 +38,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/sync/semaphore.hpp>
 #include <constants.hpp>
+#include <kernel/arch/qemu_debugcon.hpp>
 
 using namespace kernel;
 
@@ -131,28 +133,280 @@ JARVIS_TEST(buffer_pool_invalid_handle, "PRE: none | POST: none") {
 }
 
 JARVIS_TEST(buffer_pool_exhaustion, "PRE: none | POST: none") {
-    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
-    JARVIS_ASSERT(task != nullptr);
+    // v0.3.11 leak-pin instrumentation (TUI delta run):
+    // 1. Snapshot the PMM allocation bitmap + record every buffer's phys page
+    //    IMMEDIATELY BEFORE / DURING this test.
+    // 2. After the task's cleanup completes, check each buffer phys against
+    //    the bitmap (is it REALLY freed?) and print the net PMM delta via the
+    //    fast QEMU debugcon.
+    const uint64_t bsz = PMM::bitmap_bytes();
+    static uint8_t s_before_bitmap[16 * 1024];
+    static uint64_t s_buf_phys[BufferPool::MAX_BUFFERS];
+    static size_t s_before_pool_count = 0;
+    if (bsz <= sizeof(s_before_bitmap))
+        __builtin_memcpy(s_before_bitmap, PMM::bitmap_ptr(), bsz);
+    else
+        arch::QemuDebugcon::write("[LEAK] bitmap too large for snapshot\n");
+    s_before_pool_count = BufferPool::pool_count_debug();
 
-    int alloc_count = 0;
-    uint64_t va = 0x40000000;
-    for (size_t i = 0; i < BufferPool::MAX_BUFFERS + 1; ++i) {
-        uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
-        if (h == 0)
-            break;
-        alloc_count++;
+    {
+        SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+        JARVIS_ASSERT(task != nullptr);
+
+        int alloc_count = 0;
+        // v0.3.11: buffer VAs must be >= 0x100000000 (documented convention).
+        // 0x40000000 collided with kUserYieldStubVa (task.cpp) and orphaned
+        // the stub page (Root Cause 2).
+        uint64_t va = 0x100000000;
+        for (size_t i = 0; i < BufferPool::MAX_BUFFERS + 1; ++i) {
+            uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
+            if (h == 0)
+                break;
+            s_buf_phys[alloc_count] =
+                BufferPool::entries[static_cast<uint32_t>(h & 0xFFFFFFFFULL)]
+                    .phys_addr;
+            alloc_count++;
+        }
+        JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+
+        // Free all
+        int32_t idx = task->buf_list_head;
+        while (idx != -1) {
+            int32_t next = BufferPool::entries[idx].list_next;
+            uint32_t gen = BufferPool::entries[idx].generation;
+            uint64_t h = (static_cast<uint64_t>(gen) << 32) |
+                         static_cast<uint64_t>(idx);
+            JARVIS_ASSERT(BufferPool::free(*task, h));
+            idx = next;
+        }
     }
-    JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+    // SimpleTaskPtr destroyed here -> task->cleanup() completed.
 
-    // Free all
-    int32_t idx = task->buf_list_head;
-    while (idx != -1) {
-        int32_t next = BufferPool::entries[idx].list_next;
-        uint32_t gen = BufferPool::entries[idx].generation;
-        uint64_t h =
-            (static_cast<uint64_t>(gen) << 32) | static_cast<uint64_t>(idx);
-        JARVIS_ASSERT(BufferPool::free(*task, h));
-        idx = next;
+    {
+        // Surgical: which buffer data pages are STILL allocated after cleanup?
+        uint64_t buf_still_alloc = 0;
+        uint64_t buf_total = 0;
+        for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
+            uint64_t phys = s_buf_phys[i];
+            if (phys == 0)
+                continue;
+            ++buf_total;
+            if ((PMM::bitmap_ptr()[phys / 4096ULL / 8] >>
+                 (phys / 4096ULL % 8)) &
+                1ULL) {
+                char buf[64];
+                int p = 0;
+                const char *hdr = "[BUFLEAK] phys=0x";
+                while (*hdr)
+                    buf[p++] = *hdr++;
+                bool started = false;
+                for (int sh = 60; sh >= 0; sh -= 4) {
+                    unsigned nib =
+                        static_cast<unsigned>((phys >> sh) & 0xF);
+                    if (nib || started || sh == 0) {
+                        buf[p++] = "0123456789abcdef"[nib];
+                        started = true;
+                    }
+                }
+                buf[p++] = '\n';
+                arch::QemuDebugcon::write(buf, static_cast<size_t>(p));
+                ++buf_still_alloc;
+            }
+        }
+        char t[72];
+        int tp = 0;
+        const char *s0 = "[BUF] total=";
+        while (*s0)
+            t[tp++] = *s0++;
+        uint64_t lv = buf_total;
+        char rev[24];
+        int rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t[tp++] = rev[--rp];
+        const char *s1 = " still-alloc=";
+        while (*s1)
+            t[tp++] = *s1++;
+        lv = buf_still_alloc;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t[tp++] = rev[--rp];
+        const char *s2 = " pool_count=";
+        while (*s2)
+            t[tp++] = *s2++;
+        lv = BufferPool::pool_count_debug();
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t[tp++] = rev[--rp];
+        t[tp++] = '\n';
+        arch::QemuDebugcon::write(t, static_cast<size_t>(tp));
+
+        // Net PMM delta from the full bitmap.
+        uint64_t before_alloc = 0;
+        uint64_t after_alloc = 0;
+        for (uint64_t i = 0; i < bsz; ++i) {
+            uint8_t b = s_before_bitmap[i];
+            uint8_t n = PMM::bitmap_ptr()[i];
+            for (unsigned bi = 0; bi < 8; ++bi) {
+                before_alloc += static_cast<uint64_t>((b >> bi) & 1);
+                after_alloc += static_cast<uint64_t>((n >> bi) & 1);
+            }
+        }
+        char t2[72];
+        int q = 0;
+        const char *u0 = "[NET] before=";
+        while (*u0)
+            t2[q++] = *u0++;
+        lv = before_alloc;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t2[q++] = rev[--rp];
+        const char *u1 = " after=";
+        while (*u1)
+            t2[q++] = *u1++;
+        lv = after_alloc;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t2[q++] = rev[--rp];
+        const char *u2 = " pool_before=";
+        while (*u2)
+            t2[q++] = *u2++;
+        lv = s_before_pool_count;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t2[q++] = rev[--rp];
+        t2[q++] = '\n';
+        arch::QemuDebugcon::write(t2, static_cast<size_t>(q));
+
+        // Find the net-new page(s): allocated now, free before, no same-phys
+        // free counterpart.  With the pool fix the pool is stable, so this
+        // isolates the residual +1.
+        uint64_t new_alloc = 0;
+        uint64_t new_free = 0;
+        uint64_t first_leak_phys = 0;
+        uint64_t first_freed_phys = 0;
+        for (uint64_t i = 0; i < bsz; ++i) {
+            uint8_t b = s_before_bitmap[i];
+            uint8_t n = PMM::bitmap_ptr()[i];
+            uint8_t nl = n & static_cast<uint8_t>(~b);
+            uint8_t nf = b & static_cast<uint8_t>(~n);
+            while (nl) {
+                unsigned bit = __builtin_ctz(nl);
+                uint64_t pg = i * 8 + bit;
+                if (first_leak_phys == 0)
+                    first_leak_phys = pg * 4096ULL;
+                ++new_alloc;
+                nl = static_cast<uint8_t>(nl & (nl - 1));
+            }
+            while (nf) {
+                unsigned bit = __builtin_ctz(nf);
+                uint64_t pg = i * 8 + bit;
+                if (first_freed_phys == 0)
+                    first_freed_phys = pg * 4096ULL;
+                ++new_free;
+                nf = static_cast<uint8_t>(nf & (nf - 1));
+            }
+        }
+        char t3[96];
+        int r = 0;
+        const char *v0 = "[DIFF] new=";
+        while (*v0)
+            t3[r++] = *v0++;
+        lv = new_alloc;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t3[r++] = rev[--rp];
+        const char *v1 = " freed=";
+        while (*v1)
+            t3[r++] = *v1++;
+        lv = new_free;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (lv % 10));
+            lv /= 10;
+        } while (lv);
+        while (rp)
+            t3[r++] = rev[--rp];
+        const char *v2 = " first-leak=0x";
+        while (*v2)
+            t3[r++] = *v2++;
+        uint64_t fv = first_leak_phys;
+        bool started = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((fv >> sh) & 0xF);
+            if (nib || started || sh == 0) {
+                t3[r++] = "0123456789abcdef"[nib];
+                started = true;
+            }
+        }
+        const char *v3 = " first-freed=0x";
+        while (*v3)
+            t3[r++] = *v3++;
+        fv = first_freed_phys;
+        started = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((fv >> sh) & 0xF);
+            if (nib || started || sh == 0) {
+                t3[r++] = "0123456789abcdef"[nib];
+                started = true;
+            }
+        }
+        t3[r++] = '\n';
+        arch::QemuDebugcon::write(t3, static_cast<size_t>(r));
+
+        // Print every newly-allocated page (the pool replacement + the leak).
+        for (uint64_t i = 0; i < bsz; ++i) {
+            uint8_t n = PMM::bitmap_ptr()[i];
+            uint8_t nl = n & static_cast<uint8_t>(~s_before_bitmap[i]);
+            while (nl) {
+                unsigned bit = __builtin_ctz(nl);
+                uint64_t pg = i * 8 + bit;
+                uint64_t pv = pg * 4096ULL;
+                char pb[32];
+                int q2 = 0;
+                const char *ph = "[NEW] 0x";
+                while (*ph)
+                    pb[q2++] = *ph++;
+                bool st2 = false;
+                for (int sh = 60; sh >= 0; sh -= 4) {
+                    unsigned nib = static_cast<unsigned>((pv >> sh) & 0xF);
+                    if (nib || st2 || sh == 0) {
+                        pb[q2++] = "0123456789abcdef"[nib];
+                        st2 = true;
+                    }
+                }
+                pb[q2++] = '\n';
+                arch::QemuDebugcon::write(pb, static_cast<size_t>(q2));
+                nl = static_cast<uint8_t>(nl & (nl - 1));
+            }
+        }
     }
 
     JARVIS_TEST_PASS();
@@ -686,39 +940,291 @@ JARVIS_TEST(buffer_pool_realloc_recycles_entry, "PRE: none | POST: none") {
 // Depends: kernel::BufferPool
 JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free,
             "PRE: none | POST: none") {
-    SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
-    JARVIS_ASSERT(task != nullptr);
+    // v0.3.11 final-leak instrumentation (24 GB test): isolate entry 512's
+    // phys before/after the mid-test free + re-alloc, snapshot the PMM bitmap,
+    // and print the net delta + escaping page after cleanup.
+    const uint64_t bsz = PMM::bitmap_bytes();
+    static uint8_t s_before_bitmap[16 * 1024];
+    static uint64_t s_e512_orig = 0;
+    static uint64_t s_e512_new = 0;
+    static size_t s_before_pool_count = 0;
+    static kernel::test::ResourceCounters s_before_rsrc = {};
+    if (bsz <= sizeof(s_before_bitmap))
+        __builtin_memcpy(s_before_bitmap, PMM::bitmap_ptr(), bsz);
+    else
+        arch::QemuDebugcon::write("[L512] bitmap too large\n");
+    s_before_pool_count = BufferPool::pool_count_debug();
+    kernel::test::ResourceTracker::instance().capture(s_before_rsrc);
 
-    uint64_t handles[BufferPool::MAX_BUFFERS];
-    uint64_t va = 0x600000000ULL;
-    int alloc_count = 0;
-    for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
-        uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
-        if (h == 0)
-            break;
-        handles[i] = h;
-        alloc_count++;
+    {
+        SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
+        JARVIS_ASSERT(task != nullptr);
+
+        uint64_t handles[BufferPool::MAX_BUFFERS];
+        uint64_t va = 0x600000000ULL;
+        int alloc_count = 0;
+        for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
+            uint64_t h = BufferPool::alloc(*task, va + i * arch::PAGE_SIZE);
+            if (h == 0)
+                break;
+            handles[i] = h;
+            alloc_count++;
+        }
+        JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+
+        // Free the middle entry (index 512)
+        uint64_t freed = handles[512];
+        uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
+        s_e512_orig = BufferPool::entries[freed_idx].phys_addr;
+        JARVIS_ASSERT(BufferPool::free(*task, freed));
+
+        // Alloc again - should reuse the freed entry
+        uint64_t h = BufferPool::alloc(*task, va + 512 * arch::PAGE_SIZE);
+        JARVIS_ASSERT(h != 0);
+        uint32_t new_idx = static_cast<uint32_t>(h & 0xFFFFFFFFULL);
+        JARVIS_ASSERT_EQ(freed_idx, new_idx);
+        s_e512_new = BufferPool::entries[new_idx].phys_addr;
+
+        // Cleanup
+        for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
+            if (i != 512 && handles[i] != 0) {
+                BufferPool::free(*task, handles[i]);
+            }
+        }
+        BufferPool::free(*task, h);
     }
-    JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+    // SimpleTaskPtr destroyed here -> task->cleanup() completed.
 
-    // Free the middle entry (index 512)
-    uint64_t freed = handles[512];
-    uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
-    JARVIS_ASSERT(BufferPool::free(*task, freed));
+    // Check whether the leaked pages are inside the BufferPool cache.
+    {
+        size_t pc = BufferPool::pool_count_debug();
+        uint64_t l1 = 0x6bc3000;
+        uint64_t l2 = 0x6dc3000;
+        bool l1_in_pool = false;
+        bool l2_in_pool = false;
+        for (size_t i = 0; i < pc; ++i) {
+            uint64_t pp = BufferPool::pool_page_debug(i);
+            if (pp == l1)
+                l1_in_pool = true;
+            if (pp == l2)
+                l2_in_pool = true;
+        }
+        char t[96];
+        int p = 0;
+        const char *a0 = "[L512P] pool_count=";
+        while (*a0)
+            t[p++] = *a0++;
+        uint64_t v = pc;
+        char rev[24];
+        int rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a1 = " 0x6bc3000_in_pool=";
+        while (*a1)
+            t[p++] = *a1++;
+        t[p++] = l1_in_pool ? '1' : '0';
+        const char *a2 = " 0x6dc3000_in_pool=";
+        while (*a2)
+            t[p++] = *a2++;
+        t[p++] = l2_in_pool ? '1' : '0';
+        t[p++] = '\n';
+        arch::QemuDebugcon::write(t, static_cast<size_t>(p));
+    }
 
-    // Alloc again - should reuse the freed entry
-    uint64_t h = BufferPool::alloc(*task, va + 512 * arch::PAGE_SIZE);
-    JARVIS_ASSERT(h != 0);
-    uint32_t new_idx = static_cast<uint32_t>(h & 0xFFFFFFFFULL);
-    JARVIS_ASSERT_EQ(freed_idx, new_idx);
+    // ---- post-cleanup delta (before snapshot_restore's rewind) ----
+    {
+        uint64_t before_alloc = 0;
+        uint64_t after_alloc = 0;
+        uint64_t new_pages = 0;
+        uint64_t freed_pages = 0;
+        uint64_t first_new = 0;
+        for (uint64_t i = 0; i < bsz; ++i) {
+            uint8_t b = s_before_bitmap[i];
+            uint8_t n = PMM::bitmap_ptr()[i];
+            for (unsigned bi = 0; bi < 8; ++bi) {
+                before_alloc += static_cast<uint64_t>((b >> bi) & 1);
+                after_alloc += static_cast<uint64_t>((n >> bi) & 1);
+            }
+            uint8_t nl = n & static_cast<uint8_t>(~b);
+            while (nl) {
+                unsigned bit = __builtin_ctz(nl);
+                uint64_t pg = i * 8 + bit;
+                if (first_new == 0)
+                    first_new = pg * 4096ULL;
+                ++new_pages;
+                nl = static_cast<uint8_t>(nl & (nl - 1));
+            }
+            uint8_t nf = b & static_cast<uint8_t>(~n);
+            while (nf) {
+                nf = static_cast<uint8_t>(nf & (nf - 1));
+                ++freed_pages;
+            }
+        }
+        char t[120];
+        int p = 0;
+        const char *a0 = "[L512] e512_orig=0x";
+        while (*a0)
+            t[p++] = *a0++;
+        uint64_t v = s_e512_orig;
+        bool st = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((v >> sh) & 0xF);
+            if (nib || st || sh == 0) {
+                t[p++] = "0123456789abcdef"[nib];
+                st = true;
+            }
+        }
+        const char *a1 = " e512_new=0x";
+        while (*a1)
+            t[p++] = *a1++;
+        v = s_e512_new;
+        st = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((v >> sh) & 0xF);
+            if (nib || st || sh == 0) {
+                t[p++] = "0123456789abcdef"[nib];
+                st = true;
+            }
+        }
+        const char *a2 = " before=";
+        while (*a2)
+            t[p++] = *a2++;
+        v = before_alloc;
+        char rev[24];
+        int rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a3 = " after=";
+        while (*a3)
+            t[p++] = *a3++;
+        v = after_alloc;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a4 = " new=";
+        while (*a4)
+            t[p++] = *a4++;
+        v = new_pages;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a5 = " freed=";
+        while (*a5)
+            t[p++] = *a5++;
+        v = freed_pages;
+        rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a6 = " first_new=0x";
+        while (*a6)
+            t[p++] = *a6++;
+        v = first_new;
+        st = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((v >> sh) & 0xF);
+            if (nib || st || sh == 0) {
+                t[p++] = "0123456789abcdef"[nib];
+                st = true;
+            }
+        }
+        {
+            kernel::test::ResourceCounters after_rsrc = {};
+            kernel::test::ResourceTracker::instance().capture(after_rsrc);
+            const char *a7 = " pool_before=";
+            while (*a7)
+                t[p++] = *a7++;
+            v = s_before_pool_count;
+            char rev2[24];
+            int rp2 = 0;
+            do {
+                rev2[rp2++] = static_cast<char>('0' + (v % 10));
+                v /= 10;
+            } while (v);
+            while (rp2)
+                t[p++] = rev2[--rp2];
+            const char *a8 = " pool_after=";
+            while (*a8)
+                t[p++] = *a8++;
+            v = BufferPool::pool_count_debug();
+            rp2 = 0;
+            do {
+                rev2[rp2++] = static_cast<char>('0' + (v % 10));
+                v /= 10;
+            } while (v);
+            while (rp2)
+                t[p++] = rev2[--rp2];
+            const char *a9 = " tracker_pmm_before=";
+            while (*a9)
+                t[p++] = *a9++;
+            v = s_before_rsrc.pmm_pages_used;
+            rp2 = 0;
+            do {
+                rev2[rp2++] = static_cast<char>('0' + (v % 10));
+                v /= 10;
+            } while (v);
+            while (rp2)
+                t[p++] = rev2[--rp2];
+            const char *aa = " tracker_pmm_after=";
+            while (*aa)
+                t[p++] = *aa++;
+            v = after_rsrc.pmm_pages_used;
+            rp2 = 0;
+            do {
+                rev2[rp2++] = static_cast<char>('0' + (v % 10));
+                v /= 10;
+            } while (v);
+            while (rp2)
+                t[p++] = rev2[--rp2];
+        }
+        t[p++] = '\n';
+        arch::QemuDebugcon::write(t, static_cast<size_t>(p));
 
-    // Cleanup
-    for (size_t i = 0; i < BufferPool::MAX_BUFFERS; ++i) {
-        if (i != 512 && handles[i] != 0) {
-            BufferPool::free(*task, handles[i]);
+        for (uint64_t i = 0; i < bsz; ++i) {
+            uint8_t n = PMM::bitmap_ptr()[i];
+            uint8_t nl = n & static_cast<uint8_t>(~s_before_bitmap[i]);
+            while (nl) {
+                unsigned bit = __builtin_ctz(nl);
+                uint64_t pg = i * 8 + bit;
+                uint64_t pv = pg * 4096ULL;
+                char pb[32];
+                int q2 = 0;
+                const char *ph = "[L512N] 0x";
+                while (*ph)
+                    pb[q2++] = *ph++;
+                bool st2 = false;
+                for (int sh = 60; sh >= 0; sh -= 4) {
+                    unsigned nib = static_cast<unsigned>((pv >> sh) & 0xF);
+                    if (nib || st2 || sh == 0) {
+                        pb[q2++] = "0123456789abcdef"[nib];
+                        st2 = true;
+                    }
+                }
+                pb[q2++] = '\n';
+                arch::QemuDebugcon::write(pb, static_cast<size_t>(q2));
+                nl = static_cast<uint8_t>(nl & (nl - 1));
+            }
         }
     }
-    BufferPool::free(*task, h);
 
     JARVIS_TEST_PASS();
 }

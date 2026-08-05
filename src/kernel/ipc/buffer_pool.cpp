@@ -193,6 +193,11 @@ uint64_t BufferPool::alloc_page() {
             if (!phys)
                 return 0;
         }
+        // v0.3.11: the pool is a tracked cache — a page pulled from the pool
+        // is a tracked alloc (balances free_page()'s tracked push) so a
+        // PMM-allocated buffer page absorbed into the pool does not read as a
+        // leaked PMM allocation (buffer_pool_alloc_after_exhaustion_and_free).
+        kernel::test::ResourceTracker::instance().track_pmm_alloc(1);
         return phys;
     }
     return PMM::alloc_user_page();
@@ -210,6 +215,9 @@ void BufferPool::free_page(uint64_t phys) {
     if (__atomic_load_n(&pool_count_, __ATOMIC_RELAXED) < POOL_PAGES) {
         pool_pages_[__atomic_add_fetch(&pool_count_, 1UL,
                                        __ATOMIC_RELAXED)] = phys;
+        // v0.3.11: tracked push — balances alloc_page()'s tracked pop so a
+        // page cached in the pool does not read as a leaked PMM allocation.
+        kernel::test::ResourceTracker::instance().track_pmm_free(1);
         return;
     }
     // Pool full — return the page to PMM (track_pmm_free fires inside
@@ -415,6 +423,13 @@ void BufferPool::capture_state(uint8_t *dst, size_t max_bytes) {
     __builtin_memcpy(dst, &next_cookie_, sizeof(next_cookie_));
     dst += sizeof(next_cookie_);
     __builtin_memcpy(dst, &pool_count_, sizeof(pool_count_));
+    dst += sizeof(pool_count_);
+    // pool_pages_ must be captured too: without it, snapshot_restore leaves the
+    // pool holding whatever phys the LAST test cached, while the rewound PMM
+    // bitmap frees those pages — the pool double-books free pages and the
+    // ResourceTracker drifts (+1..+3 PMM pages per buffer_pool test, +128 when
+    // the whole pool is replaced).  v0.3.11 root cause.
+    __builtin_memcpy(dst, pool_pages_, sizeof(pool_pages_));
 }
 
 /// @brief Restore pool state from a flat buffer (test isolation).
@@ -427,6 +442,8 @@ void BufferPool::restore_state(const uint8_t *src, size_t max_bytes) {
     __builtin_memcpy(&next_cookie_, src, sizeof(next_cookie_));
     src += sizeof(next_cookie_);
     __builtin_memcpy(&pool_count_, src, sizeof(pool_count_));
+    src += sizeof(pool_count_);
+    __builtin_memcpy(pool_pages_, src, sizeof(pool_pages_));
 }
 
 /// @brief Unmap and free all buffers owned by a task (called from

@@ -110,7 +110,13 @@ class BufferPool {
     /// @brief Bytes needed for BufferPool state capture.
     static constexpr size_t state_bytes() {
         return sizeof(entries) + sizeof(free_head_) + sizeof(next_cookie_) +
-               sizeof(pool_count_);
+               sizeof(pool_count_) + sizeof(pool_pages_);
+    }
+    /// @brief Debug-only: current cached page count (v0.3.11 leak pinning).
+    static size_t pool_count_debug() noexcept { return pool_count_; }
+    /// @brief Debug-only: read the i-th cached page phys (v0.3.11).
+    static uint64_t pool_page_debug(size_t i) noexcept {
+        return (i < POOL_PAGES) ? pool_pages_[i] : 0;
     }
 
   private:
