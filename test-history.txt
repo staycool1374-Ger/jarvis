@@ -621,3 +621,7 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-05 16:21:20 deadline_recovery PASSED: 4 FAILED: 0 TIME: 707ms (gate-spin fixes)
 2026-08-05 16:21:30 wcet_overrun PASSED: 2 FAILED: 0 TIME: 104ms (gate-spin fix)
 2026-08-06 00:42:34 buffer_pool PASSED: 24 FAILED: 0 TIME: ~0.6s (v0.3.11: pool_pages_ snapshot fix + exhaustion VA collision fix -> buffer_pool_exhaustion 0 PMM leak; 1 WARN remains: alloc_after_exhaustion_and_free 24GB test, untouchable per instruction)
+2026-08-06 12:49:26 buffer_pool PASSED: 24 FAILED: 0 TIME: ~0.6s x3 (v0.3.11 COMPLETE: pool_pages_ snapshot sync + exhaustion VA fix + pool push off-by-one fix (__atomic_add_fetch->__atomic_fetch_add) -> ZERO PMM WARNs)
+2026-08-06 12:49:26 memory PASSED: 47 FAILED: 0 TIME: ~2s (0 PMM WARNs, regression check after buffer_pool fix)
+2026-08-06 12:49:26 selftest PASSED: 132 FAILED: 0 TIME: ~2s (0 PMM WARNs)
+2026-08-06 12:49:26 vfs PASSED: 146 FAILED: 0 TIME: ~3s (0 PMM WARNs)

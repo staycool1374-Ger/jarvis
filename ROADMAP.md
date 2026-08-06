@@ -720,7 +720,45 @@ touched must be appended per the mandatory logging rule.
 
 ## Active Development — v0.3.11
 
-### BufferPool user-stack PT-page +1 leak (investigate + fix)
+### BufferPool user-stack PT-page +1 leak (FIXED 2026-08-06 — ZERO PMM WARNs)
+
+**STATUS: RESOLVED.**  `make execute-test x86_64 debug buffer_pool` → **24/24 PASS,
+ZERO `[RESOURCE] PMM pages` WARN lines** (×3 stable runs).  `memory` 47/47,
+`selftest` 132/132, `vfs` 146/146 — all green, 0 PMM WARNs.  `make build`
+Errors: 0.
+
+**Three root causes, all fixed:**
+1. **Pool_pages_ snapshot drift (the +1..+128 residual):** `capture_state`/
+   `restore_state`/`state_bytes()` did NOT capture `pool_pages_[]`, so
+   `snapshot_restore` left the pool holding whatever phys the LAST test cached
+   while the rewound PMM bitmap freed those pages — the pool double-booked
+   free pages and the tracker drifted.  Fixed by adding `pool_pages_` to the
+   snapshot.
+2. **Buffer VA collision (`buffer_pool_exhaustion`):** the test mapped buffer 0
+   at VA 0x40000000 = `kUserYieldStubVa` (task.cpp), overwriting the yield-stub
+   PTE and orphaning the stub page (`map_page_in_pml4` has no remap handling)
+   → +1.  Fixed by moving the exhaustion test's base VA to 0x100000000 (the
+   documented buffer-VA convention).
+3. **Pool push off-by-one (the final +1):** `free_page()` used
+   `__atomic_add_fetch` (returns the post-increment index), storing a pushed
+   page at slot `old+1` while `alloc_page()`'s `__atomic_sub_fetch` pop reads
+   slot `old-1`.  A page pushed into a non-full pool was "lost" to a slot the
+   pop never reads; the entry-512 free/re-alloc in
+   `buffer_pool_alloc_after_exhaustion_and_free` popped the stale slot 0
+   instead → +1 tracker drift.  Fixed with `__atomic_fetch_add`.  Confirmed by
+   in-kernel instrumentation: `pre-free pool=0` → `post-free pool=1` yet the
+   re-alloc returned a DIFFERENT page (the stale slot-0), proving the mismatch.
+
+**Verification data (QemuDebugcon instrumentation):**
+`[L512] e512_orig=0x6dc3000 e512_new=0x6dc3000 before=2866 after=2866 new=0
+freed=0 pool_before=128 pool_after=128 tracker_pmm_before=1040
+tracker_pmm_after=1040` — the re-alloc now correctly reuses the same page, and
+the bitmap/tracker deltas are exactly zero.
+
+**Diagnostics retained:** `[BUF]`/`[NET]`/`[DIFF]`/`[L512]`/`[L512S]`/
+`[L512P]` instrumentation in `test_buffer_pool.cpp`; `[FUP-SKIP]` owner-bit
+skip logging in `free_user_pages`; `pool_count_debug()`/`pool_page_debug()`
+accessors.
 
 **Symptom:** every `buffer_pool` test that does `create_user` + `BufferPool::alloc`
 reports a **+1 PMM page** residual after `snapshot_restore` (ResourceTracker

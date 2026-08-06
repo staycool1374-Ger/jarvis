@@ -213,7 +213,15 @@ uint64_t BufferPool::alloc_page() {
 ///        spurious +1 PMM "leaks" on every subsequent buffer_pool test).
 void BufferPool::free_page(uint64_t phys) {
     if (__atomic_load_n(&pool_count_, __ATOMIC_RELAXED) < POOL_PAGES) {
-        pool_pages_[__atomic_add_fetch(&pool_count_, 1UL,
+        // v0.3.11 FIX: use __atomic_fetch_add (returns the OLD count) so the
+        // page is stored at the slot being filled, then the count increments.
+        // The previous __atomic_add_fetch (returns the NEW count) stored at
+        // old+1 — off-by-one against alloc_page()'s __atomic_sub_fetch pop
+        // (reads old-1).  A pushed page therefore landed at a slot the pop
+        // never reads (pool grew, tracker drifted +1 in
+        // buffer_pool_alloc_after_exhaustion_and_free; stale slot 0 was
+        // popped by the entry-512 re-alloc).
+        pool_pages_[__atomic_fetch_add(&pool_count_, 1UL,
                                        __ATOMIC_RELAXED)] = phys;
         // v0.3.11: tracked push — balances alloc_page()'s tracked pop so a
         // page cached in the pool does not read as a leaked PMM allocation.

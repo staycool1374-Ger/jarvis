@@ -970,13 +970,82 @@ JARVIS_TEST(buffer_pool_alloc_after_exhaustion_and_free,
             handles[i] = h;
             alloc_count++;
         }
-        JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
+    JARVIS_ASSERT_EQ(static_cast<int>(BufferPool::MAX_BUFFERS), alloc_count);
 
-        // Free the middle entry (index 512)
-        uint64_t freed = handles[512];
-        uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
-        s_e512_orig = BufferPool::entries[freed_idx].phys_addr;
-        JARVIS_ASSERT(BufferPool::free(*task, freed));
+    // Free the middle entry (index 512)
+    uint64_t freed = handles[512];
+    uint32_t freed_idx = static_cast<uint32_t>(freed & 0xFFFFFFFFULL);
+    s_e512_orig = BufferPool::entries[freed_idx].phys_addr;
+    {
+        // v0.3.11: log pool state around the mid-test free + re-alloc.
+        char t[100];
+        int p = 0;
+        const char *a0 = "[L512S] pre-free pool=";
+        while (*a0)
+            t[p++] = *a0++;
+        uint64_t v = BufferPool::pool_count_debug();
+        char rev[24];
+        int rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a1 = " e512_orig=0x";
+        while (*a1)
+            t[p++] = *a1++;
+        v = s_e512_orig;
+        bool st = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((v >> sh) & 0xF);
+            if (nib || st || sh == 0) {
+                t[p++] = "0123456789abcdef"[nib];
+                st = true;
+            }
+        }
+        t[p++] = '\n';
+        arch::QemuDebugcon::write(t, static_cast<size_t>(p));
+    }
+    JARVIS_ASSERT(BufferPool::free(*task, freed));
+    {
+        char t[120];
+        int p = 0;
+        const char *a0 = "[L512S] post-free pool=";
+        while (*a0)
+            t[p++] = *a0++;
+        uint64_t v = BufferPool::pool_count_debug();
+        char rev[24];
+        int rp = 0;
+        do {
+            rev[rp++] = static_cast<char>('0' + (v % 10));
+            v /= 10;
+        } while (v);
+        while (rp)
+            t[p++] = rev[--rp];
+        const char *a1 = " owner_e512=0x";
+        while (*a1)
+            t[p++] = *a1++;
+        v = s_e512_orig;
+        bool st = false;
+        for (int sh = 60; sh >= 0; sh -= 4) {
+            unsigned nib = static_cast<unsigned>((v >> sh) & 0xF);
+            if (nib || st || sh == 0) {
+                t[p++] = "0123456789abcdef"[nib];
+                st = true;
+            }
+        }
+        const char *a2 = " is_user=";
+        while (*a2)
+            t[p++] = *a2++;
+        {
+            uint8_t *own = PMM::owner_bitmap_ptr();
+            uint64_t pg = s_e512_orig / 4096ULL;
+            t[p++] = ((own[pg / 8] >> (pg % 8)) & 1) ? '1' : '0';
+        }
+        t[p++] = '\n';
+        arch::QemuDebugcon::write(t, static_cast<size_t>(p));
+    }
 
         // Alloc again - should reuse the freed entry
         uint64_t h = BufferPool::alloc(*task, va + 512 * arch::PAGE_SIZE);
