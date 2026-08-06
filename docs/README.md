@@ -19,6 +19,7 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
 | `specs/deadline.md` | deadline model, `scan_deadlines`, deadline-monitor task (dangling-pointer hazard), WCET overrun, miss actions |
 | `specs/test-harness.md` | driven-test discipline (INV-4 cookbook), snapshot isolation, ResourceTracker, registry/class system, watchdog |
 | `specs/drivers.md` | block-device abstraction, AHCI/ATA-PIO/virtio-blk, DMA contract, interrupt dispatch, binding invariants + open FLAW ledger |
+| `specs/configuration.md` | `nexios_config.h` tunables (categories, ranges, arch gates), the 48-combo `run_config_matrix.sh` sweep, `tools/deadline_matrix.sh`, `tools/check-config.py` validator, matrix semantics |
 | `zombie-list-spec.md` | zombie / reaper lifecycle detail (referenced by `specs/scheduler.md` §6) |
 | `debugging.md` | GDB/lldb tooling workflow (operational, not a spec) |
 
@@ -54,7 +55,12 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
  │  vfsd proto,  │  │  lines, monitor│  │  snapshot, Resource-│  │ (block dev,  │
  │  TOCTOU)      │  │  task, WCET)   │  │  Tracker, watchdog) │  │  AHCI/DMA,   │
  └───────────────┘  └────────────────┘  └─────────────────────┘  │  interrupts)  │
-                                                                 └──────────────┘
+                                                                 └──────┬───────┘
+ ┌──────────────────────┐                                          ┌──────┴───────┐
+ │ specs/configuration  │── feeds/validates ─▶ nexios_config.h     │              │
+ │ (nexios_config.h +   │◀── check-config.py, run_config_matrix,   │              │
+ │  matrix runners)     │    deadline_matrix.sh                    │              │
+ └──────────────────────┘                                          │              │
 ```
 
 ```
@@ -82,11 +88,16 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
 
  Deadline (specs/deadline.md)
    ├─ reads: specs/scheduler.md (priority/INV-6), specs/oom-rt.md (WCET)
-   └─ read-by: specs/test-harness.md (trigger_deadline_monitor_scan)
+   ├─ read-by: specs/test-harness.md (trigger_deadline_monitor_scan)
+   └─ read-by: specs/configuration.md (CONFIG_DEADLINE_ACTION dispatch)
 
  Drivers (specs/drivers.md)
    ├─ reads: specs/memory.md (DMA/contiguous), specs/scheduler.md (wake)
    └─ audit: audits/hardware_ahci.md (FLAW ledger)
+
+ Configuration (specs/configuration.md)
+   ├─ reads: specs/deadline.md (action dispatch), specs/memory.md (pool pages)
+   └─ governs: nexios_config.h via check-config.py + the matrix runners
 ```
 
 ## Source Material (archived)
