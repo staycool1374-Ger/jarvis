@@ -243,6 +243,10 @@ void Mutex::lock() {
             lock_.unlock();
             task->state = TaskState::BLOCKED;
             Scheduler::reschedule();
+            // INV-4 wait for the deferred switch (see the non-ceiling path
+            // below) — never burn the retry budget spinning for it.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                arch::pause();
             lock_.lock();
             if (owner_ == task) {
                 ++lock_count_;
@@ -278,6 +282,15 @@ void Mutex::lock() {
 
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
+        // INV-4 (deferred switch): reschedule() returns immediately and the
+        // context switch is applied on the NEXT timer tick.  Do NOT re-enter
+        // the retry loop here — the task would burn the PCP retry budget
+        // spinning for the switch (observed panic "Mutex::lock() exhausted
+        // PCP retry budget" in priority_inheritance).  Wait until the deferred
+        // switch actually puts us away (state stays BLOCKED); unlock/transfer
+        // wakes us (state != BLOCKED) with ownership ours.
+        while (Scheduler::current_task()->state == TaskState::BLOCKED)
+            arch::pause();
         lock_.lock();
     }
 
@@ -324,6 +337,10 @@ errors::SyncError Mutex::lock_err() {
             lock_.unlock();
             task->state = TaskState::BLOCKED;
             Scheduler::reschedule();
+            // INV-4 wait for the deferred switch (see the non-ceiling path
+            // below) — never burn the retry budget spinning for it.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                arch::pause();
             lock_.lock();
             if (owner_ == task) {
                 ++lock_count_;
@@ -364,6 +381,15 @@ errors::SyncError Mutex::lock_err() {
 
         task->state = TaskState::BLOCKED;
         Scheduler::reschedule();
+        // INV-4 (deferred switch): reschedule() returns immediately and the
+        // context switch is applied on the NEXT timer tick.  Do NOT re-enter
+        // the retry loop here — the task would burn the PCP retry budget
+        // spinning for the switch (observed panic "Mutex::lock() exhausted
+        // PCP retry budget" in priority_inheritance).  Wait until the deferred
+        // switch actually puts us away (state stays BLOCKED); unlock/transfer
+        // wakes us (state != BLOCKED) with ownership ours.
+        while (Scheduler::current_task()->state == TaskState::BLOCKED)
+            arch::pause();
         lock_.lock();
     }
 

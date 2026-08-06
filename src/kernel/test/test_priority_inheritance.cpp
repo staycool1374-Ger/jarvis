@@ -347,6 +347,11 @@ TEST_CLASS(MutexNestedDrop) {
             mm1->lock();
             mm2->lock();
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately;
+            // spin on our own BLOCKED state so the harness observes it before
+            // we would self-terminate.  gate.post() wakes us and we unlock.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
             mm2->unlock();
             mm1->unlock();
         },
@@ -420,6 +425,11 @@ TEST_CLASS(SemaphoreInherits) {
             auto *g = reinterpret_cast<sync::Semaphore *>(c->gate_);
             s->wait();
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately;
+            // spin on our own BLOCKED state so the harness observes it before
+            // we would self-terminate.  gate.post() wakes us and we release.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
             s->post();
         },
         11, 10);
@@ -447,6 +457,11 @@ TEST_CLASS(SemaphoreInherits) {
             auto *s = reinterpret_cast<sync::Semaphore *>(c->sem_);
             auto *o = reinterpret_cast<uint64_t *>(c->out_);
             s->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately;
+            // spin on our own BLOCKED state so the harness observes it before
+            // we would self-terminate.  LOW's post wakes us and we acquire.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
             __atomic_store_n(o, 1, __ATOMIC_RELEASE);
             s->post();
         },

@@ -667,3 +667,11 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 20:52:00 wcet PASSED: 1 FAILED: 0 TIME: 5003ms (FIXED: population 40->30 < CONFIG_SYNC_MAX_WAITERS=32 semaphore waiter cap; helper lambda BLOCKED-spin after wait() so harness observes BLOCKED before self-termination)
 2026-08-06 20:55:00 priority_inheritance PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (MutexPriorityDonates hangs — harness resumed on stale restored context.rsp 0xFFFF900000032550 at test 477; harness context.rsp reset by restore_task_fields every snapshot_restore; INV-4 holder spin added but mutex ceiling-0 spins (PCP retry panic) vs test's genuine-blocking expectation, audits/deep-analysis-h2-ssdeadline-v0.3.9.md §4.2, T2-3)
 2026-08-06 20:56:00 priority_inheritance PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (after harness context.rsp live-save + dispatch-guard harness-boot exemption; now mutex ceiling-0 PCP retry panic matched as expected-panic, spurious PASS)
+2026-08-06 21:10:00 priority_inheritance PASSED: 11 FAILED: 0 TIME: 607ms (FIXED: Mutex::lock/lock_err INV-4 spin-wait after BLOCKED+reschedule so the PCP retry budget is not consumed spinning for the deferred switch; BLOCKED-spin added to MutexNestedDrop + SemaphoreInherits lambdas)
+2026-08-06 21:11:00 lock_protocol PASSED: 53 FAILED: 0 TIME: 1621ms
+2026-08-06 21:11:30 lock PASSED: 5 FAILED: 0 TIME: 120ms
+2026-08-06 21:12:00 deadlock PASSED: 15 FAILED: 0 TIME: 53671ms
+2026-08-06 21:12:30 starvation_deadlock PASSED: 3 FAILED: 0 TIME: 8505ms
+2026-08-06 21:12:45 resource_exhaustion PASSED: 5 FAILED: 0 TIME: 5480ms
+2026-08-06 21:13:00 queue_pip PASSED: 0 FAILED: 0 TIME: 2s STATUS: QEMU_EXIT no tests registered (INVALID class name — queue_pip is not standalone; tests live in priority_inheritance which passed 11/11)
+2026-08-06 21:13:00 mutex_pcp PASSED: 0 FAILED: 0 TIME: 2s STATUS: QEMU_EXIT no tests registered (INVALID class name — mutex_pcp is not standalone; tests live in priority_inheritance which passed 11/11)
