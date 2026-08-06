@@ -191,3 +191,81 @@ dispatch-guard harness-boot exemption reduced the ipc-class H2W flake from
 ~1-in-3 to clean across 8 consecutive runs; the `all` gate now passes tests
 1–476 (including the ipc cluster at 77/78, ss_deadline 469/470, wcet 476)
 before reaching the priority_inheritance blocker at 477.
+
+### 4.4 Hardware-watchpoint session (2026-08-06) — H2 residual live capture
+Attempted to pin the residual with hardware watchpoints per ROADMAP §v0.3.9.
+
+**QEMU gdb-stub hardware watchpoints are confirmed BROKEN** (as documented):
+- lldb `WatchpointCreateByAddress` on `scheduler_next_task_id` (0xFFFF8000002E52B0)
+  creates successfully but never fires during a full boot + ipc class run.
+- x86_64-elf-gdb `watch *(uint64*)0x...` likewise sets "Hardware watchpoint 1"
+  but never triggers.
+So the documented "working instrument" is the kernel recorder + caller tracing,
+not the QEMU stub.
+
+**Live capture (kernel-side caller tags on every [SW] arm; ipc class, run 10):**
+```
+[SW] cur=1 next=6 rsp=0xFFFF9000...24224 caller=0xFFFF800000294395   # arm A
+[SW] cur=1 next=0 rsp=0xFFFF8000...310160 caller=0xFFFF800000294395   # arm B
+[APPLY] id=0 cur=0                                                    # idle → harness stranded
+```
+- **Two deferred-switch arms published back-to-back from the SAME call site**
+  (identical return address), with NO [APPLY] or [TICK] between them.
+- The second arm selects **idle** — `next_task()` returns idle because the first
+  arm's `next_task()` already DEQUEUED task 6 (which is never re-dispatched).
+- Applying the idle arm iretq's the harness into `idle_task_main` → the
+  `[DIAG] idle loop count=186A0` hang.
+- An `[ARM-SUPER]` probe (publish while `save_rsp_to != 0`) does **not** fire:
+  the atoms are already cleared between the two arms (RMS clears pending arms
+  every tick — `[RMS-CLR] pending=...`), so it is not a simple pending-supersede.
+- `reap_orphans()` is confirmed NOT running during tests (entry probe REAP=0
+  across 5 runs) — the addr2line hit on `reap_orphans()` for the arm caller was
+  a stack/inlining artifact.
+- Every added diagnostic (caller field, ARM-SUPER, RMS-CLR, REAP) perturbs the
+  race away (repro rate drops to ~0/5), consistent with the documented
+  "a single per-tick instruction perturbs it" (ROADMAP_done).
+
+**Mechanism (refined):** a runnable task (task 6) is dequeued by
+`next_task()` during an arm publish, the arm is then skipped/cleared before its
+ISR epilogue applies it (generation change / RMS clear / set_current), and the
+next `next_task()` falls through to idle — the dequeued task is stranded
+(INV-2) and the harness is iretq'd into the idle loop.  The definitive fix
+requires re-enqueueing the dequeued target when an arm is dropped, or a
+hardware-watchpoint session on a host that supports it (QEMU's stub does not).
+Tracked in ROADMAP §v0.3.9.
+
+### 4.5 Global H2 event ring (implemented) — root cause pinned
+Extended the per-TCB `debug_switch_ring[4]` idiom into a GLOBAL in-memory
+event ring (kernel::debug::g_h2_ring[512], 6×uint64 per record), recording
+every deferred-switch event with the atoms + generation + ISR depth:
+`ARM`, `APPLY`, `SKIP` (asm gen-skip → scheduler_record_skip), `CLR-RMS`,
+`CLR-SET`, `CLR-MISC`, `IDLE-ARM`, `REENQ`.  No serial I/O in the hot path
+(the perturbation that made the race vanish); dump post-hang via
+`h2_dump_ring()` or `x/120gx &kernel::debug::g_h2_ring`.
+
+**The ring CAUGHT the root cause.**  Live capture at `ipc` test 21:
+```
+[ARM]     a=0x6 b=0xFFFF800000A4FF40   # arm harness→task6; its context.rsp is a
+                                        #   direct-map address (displaced)
+[CLR-MISC]a=0x6                          # apply-side validation aborted the arm
+[ARM]     a=0x0                          # next arm selects idle — task6 stranded
+[IDLE-ARM]a=0x1                          #   (next_task() skipped the harness)
+[APPLY]   a=0x0                          # harness iretq'd into the idle loop → hang
+```
+The validation abort (drop of a stale arm) left the preempted harness READY +
+still in the runq (INV-4) — so `next_task()` skipped it (a RUNNING-current
+task) and fell through to idle.  The `t==null` path (target already removed)
+did the same.
+
+**Fixes (from the ring evidence):**
+1. `scheduler_validate_pending_switch` drop_arm now restores the CURRENT task
+   to RUNNING + dequeues it from the runq (undoing switch_to_task's
+   READY+enqueue side effects) on EVERY abort path, and
+2. re-enqueues the dequeued target via `set_task_ready` when it is still alive.
+
+Effect: ipc flake drops from ~1-in-3 to ~1-in-14 hangs (direct-QEMU runs);
+the idle-apply sequence is eliminated (the harness is RUNNING, so the
+`!(next==idle && current RUNNING)` RMS guard protects it).  A rarer residual
+remains (~7% direct / ~30% under the UART+expect harness) where the harness
+hlt-waits with no further arms — a post-abort task-lifecycle state still under
+investigation.  ROADMAP §v0.3.9 stays open.

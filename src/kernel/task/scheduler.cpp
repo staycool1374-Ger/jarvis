@@ -64,6 +64,85 @@ extern "C" void debug_write_dec(uint64_t value);
 
 namespace kernel {
 
+// Deferred-switch event codes for the H2 ring (see kernel::debug::H2Event).
+inline constexpr uint64_t H2_EV_ARM      = 1;
+inline constexpr uint64_t H2_EV_APPLY    = 2;
+inline constexpr uint64_t H2_EV_SKIP     = 3;
+inline constexpr uint64_t H2_EV_CLR_RMS  = 4;
+inline constexpr uint64_t H2_EV_CLR_SET  = 5;
+inline constexpr uint64_t H2_EV_CLR_MISC = 6;
+inline constexpr uint64_t H2_EV_IDLE_ARM = 7;
+inline constexpr uint64_t H2_EV_REENQ    = 8;
+
+// ---------------------------------------------------------------------------
+// Global deferred-switch event ring (H2 instrumentation, CONFIG_DEBUG).
+// Extends the per-TCB debug_switch_ring[4] idiom to the GLOBAL scheduler event
+// stream: every ARM / APPLY / SKIP / CLEAR of the deferred-switch pair, with
+// the atoms (load_rsp_from / save_rsp_to / next_task_id) + generation + ISR
+// depth.  In-memory only (no serial writes in the hot path — QEMU gdb-stub
+// hardware watchpoints are broken and per-event serial output perturbs the
+// race away).  Dump post-hang via GDB memory read, e.g.:
+//   x/120gx &kernel::debug::g_h2_ring
+// (entries indexed by g_h2_idx % H2_RING_SIZE; see h2_dump_ring()).
+// ---------------------------------------------------------------------------
+#ifdef CONFIG_DEBUG
+namespace debug {
+inline constexpr size_t H2_RING_SIZE = 512;
+
+/// @brief One deferred-switch event.  `ev` selects the meaning of a/b/c:
+///        ARM=1 (a=next.id, b=load_rsp_from, c=save_target),
+///        APPLY=2 (a=applied id), SKIP=3 (a=captured gen, b=current gen),
+///        CLR-RMS=4 / CLR-SET=5 / CLR-MISC=6 (a=pending next_task_id),
+///        IDLE-ARM=7 (a=current id).
+struct H2Event {
+    uint64_t ev;
+    uint64_t a;
+    uint64_t b;
+    uint64_t c;
+    uint64_t gen;   ///< scheduler_switch_generation at record time
+    uint64_t depth; ///< isr_nesting_depth at record time
+};
+H2Event g_h2_ring[H2_RING_SIZE];
+uint64_t g_h2_idx = 0;
+
+inline void h2_record(uint64_t ev, uint64_t a, uint64_t b, uint64_t c) noexcept {
+    uint64_t idx = g_h2_idx++;
+    g_h2_ring[idx % H2_RING_SIZE] = {
+        ev, a, b, c,
+        __atomic_load_n(&kernel::scheduler_switch_generation, __ATOMIC_RELAXED),
+        __atomic_load_n(&kernel::isr_nesting_depth, __ATOMIC_RELAXED)};
+}
+
+/// @brief Dump the most recent H2_RING_SIZE events to the debug console.
+void h2_dump_ring() noexcept {
+    uint64_t idx = g_h2_idx;
+    uint64_t start = (idx > H2_RING_SIZE) ? (idx - H2_RING_SIZE) : 0;
+    for (uint64_t i = start; i < idx; ++i) {
+        const H2Event &r = g_h2_ring[i % H2_RING_SIZE];
+        Logger::raw_write("[H2EV] i=");
+        Logger::print_dec(i);
+        Logger::raw_write(" ev=");
+        Logger::print_dec(r.ev);
+        Logger::raw_write(" a=0x");
+        Logger::print_hex(r.a);
+        Logger::raw_write(" b=0x");
+        Logger::print_hex(r.b);
+        Logger::raw_write(" c=0x");
+        Logger::print_hex(r.c);
+        Logger::raw_write(" gen=");
+        Logger::print_dec(r.gen);
+        Logger::raw_write(" depth=");
+        Logger::print_dec(r.depth);
+        Logger::raw_write("\n");
+    }
+}
+}  // namespace debug
+
+#define H2_REC(ev, a, b, c) kernel::debug::h2_record((ev), (a), (b), (c))
+#else
+#define H2_REC(ev, a, b, c) ((void)0)
+#endif
+
 // P5a: Deferred-kill list.
 static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
 static TaskControlBlock *s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
@@ -148,6 +227,9 @@ void Scheduler::set_priority(TaskControlBlock &task,
 ///        save_rsp_to==0.  Called from the apply-side liveness re-check and
 ///        from task removal paths.
 void Scheduler::cancel_pending_switch() noexcept {
+    H2_REC(H2_EV_CLR_MISC,
+           __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_RELAXED),
+           0, 0);
     __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t *)nullptr,
                      __ATOMIC_RELEASE);
     __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0,
@@ -742,6 +824,9 @@ TaskControlBlock *Scheduler::next_task() noexcept {
 void Scheduler::set_current(TaskControlBlock &task) noexcept {
     auto *old = current_task();
     if (old == &task) {
+        H2_REC(H2_EV_CLR_SET,
+               __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0,
+               0);
         __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
@@ -764,6 +849,8 @@ void Scheduler::set_current(TaskControlBlock &task) noexcept {
         // (pop_front dereferences a freed/reused TCB → #GP) once old is freed.
         ready_queue_.remove(*old, old->rq_priority_);
     }
+    H2_REC(H2_EV_CLR_SET,
+           __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0, 0);
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
@@ -2095,6 +2182,16 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
     {
         arch::IrqGuard ig{};
         release_lock();
+        // H2 ring: an ARM published while a previous arm is still pending
+        // (save_rsp_to != 0) strands the previous arm's dequeued target; an
+        // IDLE arm aimed at the harness strands the harness itself.
+        H2_REC(H2_EV_ARM, next.id,
+               __atomic_load_n(&scheduler_load_rsp_from, __ATOMIC_RELAXED),
+               reinterpret_cast<uint64_t>(save_target));
+        if (&next == Scheduler::get_idle_task() &&
+            current == Scheduler::get_harness_task()) {
+            H2_REC(H2_EV_IDLE_ARM, current->id, 0, 0);
+        }
         __atomic_store_n(&scheduler_next_task_id, next.id, __ATOMIC_RELEASE);
         // Generation-lock: commit the deferred-switch pair.  The generation is
         // bumped only after load_rsp_from / load_cr3_from / next_task_id are
@@ -2158,6 +2255,9 @@ void Scheduler::rate_monotonic_schedule() noexcept {
 
     // Clear any pending deferred switch.
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
+        H2_REC(H2_EV_CLR_RMS,
+               __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0,
+               0);
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                          __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
@@ -2907,14 +3007,57 @@ SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
 ///        aborts (clear atoms + bump generation) on any mismatch.
 /// @return 1 = apply the switch, 0 = abort it (atoms already invalidated).
 /// @note Runs with IRQs disabled (interrupt gate); must not re-enable them.
+/// @brief Record an ISR-epilogue generation-skip (isr_stubs.asm): an ISR that
+///        captured generation @p captured_gen at entry found it changed before
+///        its epilogue, so it skipped applying the deferred switch — leaving
+///        the dequeued target stranded until the next tick.  H2 ring event.
+/// @note Runs with IF=0 (interrupt gate); must not re-enable IRQs.
+extern "C" void scheduler_record_skip(uint64_t captured_gen,
+                                      uint64_t current_gen) {
+    H2_REC(kernel::H2_EV_SKIP, captured_gen, current_gen, 0);
+}
+
 extern "C" int scheduler_validate_pending_switch() {
     uint64_t id =
         __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
     if (id == UINT64_MAX)
         return 0;
+
+    // Abort path shared by every drop reason below: cancel the arm AND undo
+    // switch_to_task's current-task side effects.  switch_to_task set the
+    // preempted task READY + enqueued it; when the apply is refused we abort
+    // back into that task, so restore RUNNING + remove it from the runq.
+    // Otherwise next_task() skips it (a RUNNING-current task) and falls
+    // through to idle, iretq'ing the harness into the idle loop (the observed
+    // H2 hang: [ARM a=6] -> [CLR-MISC] -> [ARM a=0] -> [IDLE-ARM] ->
+    // [APPLY a=0]).  IF=0 here (interrupt gate) — the runq is not concurrently
+    // modified, and dequeue_ready/set_task_ready are lock-free.
+    auto drop_arm = [&](kernel::TaskControlBlock *target) {
+        kernel::Scheduler::cancel_pending_switch();
+        auto *cur = kernel::Scheduler::current_task();
+        if (cur && cur->magic == kernel::TaskControlBlock::TCB_MAGIC) {
+            if (cur->in_ready_queue_) {
+                kernel::Scheduler::dequeue_ready(*cur);
+            }
+            cur->state = kernel::TaskState::RUNNING;
+        }
+        // Re-enqueue the dequeued target (if still alive) so it is not
+        // stranded (INV-2); a dead/removed target is left to the reaper.
+        if (target && target != kernel::Scheduler::get_idle_task() &&
+            target != cur &&
+            (target->state == kernel::TaskState::READY ||
+             target->state == kernel::TaskState::RUNNING)) {
+            H2_REC(kernel::H2_EV_REENQ, target->id,
+                   static_cast<uint64_t>(target->state),
+                   target->in_ready_queue_ ? 1u : 0u);
+            kernel::Scheduler::set_task_ready(*target);
+        }
+    };
+
     auto *t = kernel::Scheduler::find_task(id);
     if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC) {
-        kernel::Scheduler::cancel_pending_switch();
+        // Target removed/freed — a stale arm to a dead task.  Drop it.
+        drop_arm(nullptr);
         return 0;
     }
     uint64_t rsp =
@@ -2927,7 +3070,10 @@ extern "C" int scheduler_validate_pending_switch() {
          rsp >= reinterpret_cast<uint64_t>(kernel::_stack_start) &&
          rsp < reinterpret_cast<uint64_t>(kernel::_stack_end));
     if (!in_own && !harness_boot) {
-        kernel::Scheduler::cancel_pending_switch();
+        // Stale arm: the published RSP no longer lies inside the target's
+        // CURRENT kernel stack (it drifted to a foreign/direct-map address —
+        // the H2 displacement).  Drop the arm and re-enqueue the target.
+        drop_arm(t);
         return 0;
     }
     return 1;
@@ -2957,6 +3103,7 @@ extern "C" void scheduler_abort_switch_fixup() {
 extern "C" void scheduler_on_context_switch() {
     uint64_t id =
         __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    H2_REC(kernel::H2_EV_APPLY, id, 0, 0);
     if (id == UINT64_MAX)
         return;
     __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX,

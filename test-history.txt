@@ -675,3 +675,15 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 21:12:45 resource_exhaustion PASSED: 5 FAILED: 0 TIME: 5480ms
 2026-08-06 21:13:00 queue_pip PASSED: 0 FAILED: 0 TIME: 2s STATUS: QEMU_EXIT no tests registered (INVALID class name — queue_pip is not standalone; tests live in priority_inheritance which passed 11/11)
 2026-08-06 21:13:00 mutex_pcp PASSED: 0 FAILED: 0 TIME: 2s STATUS: QEMU_EXIT no tests registered (INVALID class name — mutex_pcp is not standalone; tests live in priority_inheritance which passed 11/11)
+2026-08-06 21:20:00 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 78 ipc_send_sync_roundtrip (trace OFF; H2 residual — two deferred-switch arms from harness (→task6 then →idle) supersede, stranding task6 dequeued + harness switched to idle; documented open item ROADMAP v0.3.9)
+2026-08-06 21:25:00 all PASSED: 77 FAILED: 0 TIME: 250s STATUS: TIMEOUT at test 78 (trace ON; same two-arm supersede: [SW] cur=1 next=6 then [SW] cur=1 next=0 then [APPLY] id=0 → harness in idle loop)
+2026-08-06 21:26:00 ipc PASSED: 51 FAILED: 0 TIME: 2229ms
+2026-08-06 21:26:20 ipc PASSED: 51 FAILED: 0 TIME: 9631ms
+2026-08-06 21:27:00 vfs PASSED: 149 FAILED: 0 TIME: 2952ms
+2026-08-06 21:27:20 safe PASSED: 132 FAILED: 0 TIME: 7261ms
+2026-08-06 21:27:40 scheduler PASSED: 63 FAILED: 0 TIME: 12017ms
+2026-08-06 21:35:00 ipc PASSED: 51 FAILED: 0 TIME: 8456ms
+2026-08-06 21:35:20 ipc PASSED: 51 FAILED: 0 TIME: 2074ms
+2026-08-06 21:35:40 ipc PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT x3 (pending-arm guard experiment in switch_to_task — REVERTED: guard blocked legitimate second arms (terminate switch-away), worsened ipc flake; hypothesis disproven, revert discipline applied)
+2026-08-06 23:20:00 H2-watchpoint session: QEMU gdb-stub hardware watchpoints confirmed BROKEN (lldb WatchpointCreateByAddress + gdb watch both set but never fire). Kernel-side caller tracing CAUGHT the residual live at ipc test 21: two [SW] arms cur=1 next=6 then cur=1 next=0 from the SAME call site before any [APPLY]; second selects idle because next_task() already dequeued task 6 (stranded INV-2); [APPLY] id=0 iretq's harness into idle loop -> hang. [ARM-SUPER] probe does not fire (atoms cleared between arms by RMS/set_current); reap_orphans confirmed NOT running. Diagnostics perturb the race away. audits/deep-analysis-h2-ssdeadline-v0.3.9.md §4.4
+2026-08-06 23:50:00 H2 ring implemented (kernel::debug::g_h2_ring[512] global deferred-switch event ring extending debug_switch_ring idiom; ARM/APPLY/SKIP/CLR/IDLE/REENQ + atoms + gen + depth; asm SKIP hook scheduler_record_skip; dump via h2_dump_ring or GDB x/120gx). Ring caught root cause: ARM(6, direct-map rsp) -> CLR-MISC(validation abort) -> ARM(idle) -> IDLE-ARM -> APPLY(0) harness stranded in idle loop; abort left preempted harness READY+in-runq (INV-4). Fix: drop_arm restores current RUNNING+dequeue + re-enqueues dequeued target. ipc flake 1-in-3 -> ~1-in-14 (direct-QEMU). audits/deep-analysis-h2-ssdeadline-v0.3.9.md §4.5

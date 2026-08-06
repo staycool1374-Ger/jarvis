@@ -25,6 +25,7 @@ extern scheduler_kernel_cr3
 extern scheduler_next_task_id
 extern scheduler_on_context_switch
 extern scheduler_validate_pending_switch
+extern scheduler_record_skip
 extern scheduler_abort_switch_fixup
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
@@ -165,7 +166,32 @@ isr_common:
     ; superseding publisher's own arm is in place, and a stale arm is ignored
     ; by the next ISR's fresh generation check.
     cmp rcx, [rel scheduler_switch_generation]
-    jne .restore
+    je .gen_ok
+    ; H2 ring: record the generation-skip (captured vs current) before
+    ; abandoning the apply.  Cold path.  Preserve every GPR that .restore pops.
+    push rax
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    mov rdi, rcx
+    mov rsi, [rel scheduler_switch_generation]
+    call scheduler_record_skip
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdi
+    pop rsi
+    pop rdx
+    pop rcx
+    pop rax
+    jmp .restore
+.gen_ok:
     mov rax, [rel scheduler_save_rsp_to]
     test rax, rax
     jz .restore
