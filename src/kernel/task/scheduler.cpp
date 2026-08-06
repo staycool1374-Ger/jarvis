@@ -2810,6 +2810,28 @@ SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
 
 } // namespace kernel
 
+/// @brief ISR-epilogue callback for the `.abort_switch` path
+///        (isr_stubs.asm): the deferred switch was refused because its load RSP
+///        fell outside the dispatched task's kernel stack.  The arm side may
+///        have already repointed TSS.RSP0 at the aborted `next` task's kernel
+///        stack top (scheduler.cpp:1991, user-task dispatch).  Rebind RSP0 to
+///        the CONTINUING task's own kernel stack so the next ring-3→ring-0
+///        transition (int $0x80 trap gate) cannot push its iretq frame onto a
+///        freed/foreign stack.  Harmless for ring-0-only runs (no privilege
+///        transition ever consumes RSP0).
+/// @note Runs with IF=0 (interrupt gate); must not re-enable IRQs.
+extern "C" void scheduler_abort_switch_fixup() {
+#if defined(CONFIG_ARCH_X86_64)
+    auto *cur = kernel::Scheduler::current_task();
+    if (cur && cur->magic == kernel::TaskControlBlock::TCB_MAGIC &&
+        cur->kernel_stack && cur->kernel_stack_top) {
+        arch::GDT::set_tss_rsp0(cur->kernel_stack_top);
+    }
+#else
+    (void)0;
+#endif
+}
+
 extern "C" void scheduler_on_context_switch() {
     uint64_t id =
         __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);

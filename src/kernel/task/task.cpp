@@ -290,9 +290,12 @@ constexpr uint64_t kUserYieldStubVa = 0x40000000;
 /// @brief Per-arch machine code for "yield forever" (syscall YIELD=0 loop).
 #if defined(CONFIG_ARCH_X86_64)
 //   xor eax,eax     31 C0     ; rax = SyscallNumber::YIELD (0)
-//   syscall         0F 05
+//   int $0x80        CD 80    ; trap gate vector 0x80 (isr_128) — GS-free path.
+//                             ; NOT `syscall` (0F 05): MSR_KERNEL_GS_BASE is
+//                             ; never written, so syscall_entry's swapgs would
+//                             ; #PF to phys 0 (see audits/gs-base-swapgs-audit-v0.3.9.md F-1).
 //   jmp -6          EB FA
-static constexpr uint8_t kUserYieldStub[] = {0x31, 0xC0, 0x0F, 0x05, 0xEB, 0xFA};
+static constexpr uint8_t kUserYieldStub[] = {0x31, 0xC0, 0xCD, 0x80, 0xEB, 0xFA};
 #elif defined(CONFIG_ARCH_AARCH64)
 //   mov x8, #0      d2 00 00 00  ; x8 = SyscallNumber::YIELD (0)
 //   svc #0          01 00 00 d4

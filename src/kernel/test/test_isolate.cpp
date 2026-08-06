@@ -532,6 +532,18 @@ void snapshot_restore(const char *test_name) {
     if (!g_snapshot)
         return;
     arch::IrqGuard guard;
+#if defined(CONFIG_DEBUG)
+    // Invariant (SIL3 audit F-5): snapshot_restore must run with IF=0 so no
+    // maskable interrupt can re-arm a deferred switch mid-restore.  The
+    // IrqGuard above guarantees it; this is a detection net for a nested
+    // guard that silently re-enabled IRQs.  Log-only (no `return`) — a
+    // mid-restore abort would leave the kernel half-restored.
+    if (arch::interrupts_enabled()) {
+        Logger::raw_write("[IRQ-INV] snapshot_restore running with IF=1 at \"");
+        Logger::raw_write(test_name ? test_name : "?");
+        Logger::raw_write("\"\n");
+    }
+#endif
 
     // Check canaries around nu field — corruption means a stray write
     // to the snapshot buffer occurred during the previous test.

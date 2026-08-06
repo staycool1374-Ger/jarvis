@@ -629,3 +629,13 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 15:57:58 scheduler PASSED: 63 FAILED: 0 TIME: 11349ms (fix pre-existing flake in scheduler_preemptive_priority + preemption_needs_switch_higher_priority: empty-lambda tasks self-terminated when timer ISR dispatched them before assertion — IrqGuard around add_task+assert; 4/4 runs green)
 2026-08-06 15:57:58 vfs PASSED: 149 FAILED: 0 TIME: 2998ms (mutex/eventgroup/queue waiter teardown fixes + regression tests; 3/3 runs green)
 2026-08-06 15:57:58 lock_protocol PASSED: 53 FAILED: 0 TIME: 6318ms (mutex/queue waiter teardown hardening; 3/3 runs green)
+2026-08-06 19:36:05 timing PASSED: 18 FAILED: 0 TIME: 5202ms
+2026-08-06 19:37:10 process PASSED: 43 FAILED: 0 TIME: 930ms
+2026-08-06 19:37:30 syscall PASSED: 19 FAILED: 0 TIME: 2117ms
+2026-08-06 19:37:55 sporadic PASSED: 25 FAILED: 0 TIME: 1869ms
+2026-08-06 19:38:25 deadline_miss PASSED: 5 FAILED: 0 TIME: 3550ms
+2026-08-06 19:38:30 deadline_action PASSED: 1 FAILED: 0 TIME: 985ms
+2026-08-06 19:38:33 deadline_recovery PASSED: 4 FAILED: 0 TIME: 733ms
+2026-08-06 19:38:36 wcet_overrun PASSED: 2 FAILED: 0 TIME: 135ms
+2026-08-06 19:38:50 scheduler PASSED: 63 FAILED: 0 TIME: 2861ms
+2026-08-06 19:38:55 atomic PASSED: 12 FAILED: 0 TIME: 1195ms

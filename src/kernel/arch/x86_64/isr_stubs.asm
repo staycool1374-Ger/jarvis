@@ -24,6 +24,7 @@ extern scheduler_switch_generation
 extern scheduler_kernel_cr3
 extern scheduler_next_task_id
 extern scheduler_on_context_switch
+extern scheduler_abort_switch_fixup
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
 extern irq_entry_tsc
@@ -239,6 +240,33 @@ isr_common:
     mov qword [rel scheduler_load_cr3_from], 0
     mov qword [rel scheduler_next_task_id], -1
     mov rsp, rbx
+
+    ; Rebind TSS.RSP0 to the continuing task's kernel stack: the arm side may
+    ; have set it to the aborted next-task's stack (user-task dispatch).  A
+    ; subsequent ring-3→ring-0 transition would otherwise push its iretq frame
+    ; onto a freed/foreign stack.  Preserve every GPR that .restore pops below
+    ; (including RBX) across the call — RSP already points at the ISR frame.
+    push rax
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    push rbx
+    call scheduler_abort_switch_fixup
+    pop rbx
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdi
+    pop rsi
+    pop rdx
+    pop rcx
+    pop rax
 
 .restore:
     ; NOTE: do NOT clear scheduler_save_rsp_to here.  If we reach .restore via
