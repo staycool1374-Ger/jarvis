@@ -85,6 +85,14 @@ Read and update the `lessons.md` file **only** when a debugging situation occurs
 - Commit: `git add -A && git commit -m "bump: v$(next)-dev"`
 - Push: `git push origin main`
 
+## PARALLEL AUDIT TRIGGER RULE:
+You are running concurrently with a SIL 3 Audit Subagent via MCP. 
+For every code modification you plan:
+1. Write the intended changes to `audits/pending_patch.diff` FIRST.
+2. Call the subagent explicitly using: `@sil3_auditor analyze the pending patch for entry 512.`
+3. Do not apply the changes to the real src/ directory until the subagent replies with 'APPROVED'. 
+If it replies 'REJECTED', resolve its objections in a new iteration.
+
 ---
 
 # New Test Infrastructure (v0.2.19+)

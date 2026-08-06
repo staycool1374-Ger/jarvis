@@ -1,14 +1,27 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "model": "nvidia/nemotron-3-ultra-free",
-  "lsp": true,
-  "provider": {
-    "nvidia": {
-      "options": {
-        "timeout": 600000,
-        "chunkTimeout": 60000,
-        "setCacheKey": true
-      }
-    }
-  }
+"$schema": "https://opencode.ai/config.json",
+"model": "nvidia/nemotron-3-ultra-free",
+"lsp": true,
+"provider": {
+"nvidia": {
+"options": {
+"timeout": 600000,
+"chunkTimeout": 60000,
+"setCacheKey": true
+}
+}
+},
+"mcp": {
+"shared_context_bridge": {
+"type": "local",
+"enabled": true,
+"command": "npx",
+"args": [
+"-y",
+"@modelcontextprotocol/server-filesystem",
+"src/",
+"audits/"
+]
+}
+}
 }
