@@ -15,6 +15,10 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
 | `specs/memory.md` | PMM / MemPool / VMM / kstack guard / snapshot-isolation contracts + REQ-MP-01..06 |
 | `specs/boundary.md` | syscall / VFS / ELF trust-boundary contracts (6 principles, VULN ledger) |
 | `specs/oom-rt.md` | OOM admission control, allocation-failure contract, WCET bounding |
+| `specs/vfs.md` | VFS subsystem: vnode model, mount model, vfsd protocol, path resolution + TOCTOU closure, FdTable, filesystem backends |
+| `specs/deadline.md` | deadline model, `scan_deadlines`, deadline-monitor task (dangling-pointer hazard), WCET overrun, miss actions |
+| `specs/test-harness.md` | driven-test discipline (INV-4 cookbook), snapshot isolation, ResourceTracker, registry/class system, watchdog |
+| `specs/drivers.md` | block-device abstraction, AHCI/ATA-PIO/virtio-blk, DMA contract, interrupt dispatch, binding invariants + open FLAW ledger |
 | `zombie-list-spec.md` | zombie / reaper lifecycle detail (referenced by `specs/scheduler.md` §6) |
 | `debugging.md` | GDB/lldb tooling workflow (operational, not a spec) |
 
@@ -42,6 +46,15 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
  │ spec         │   │ (admission,  │   │ (alloc/free return-   │  │ (GDB/lldb)   │
  └──────────────┘   │  WCET)       │   │  value audit, A1-A4)  │  └──────────────┘
                     └──────────────┘   └───────────────────────┘
+
+ New (gap-closing) specs:
+ ┌───────────────┐  ┌────────────────┐  ┌─────────────────────┐  ┌──────────────┐
+ │ specs/vfs.md  │  │ specs/deadline │  │ specs/test-harness  │  │ specs/       │
+ │ (vnode/mount, │  │ (scan_dead-    │  │ (driven discipline, │  │ drivers.md   │
+ │  vfsd proto,  │  │  lines, monitor│  │  snapshot, Resource-│  │ (block dev,  │
+ │  TOCTOU)      │  │  task, WCET)   │  │  Tracker, watchdog) │  │  AHCI/DMA,   │
+ └───────────────┘  └────────────────┘  └─────────────────────┘  │  interrupts)  │
+                                                                 └──────────────┘
 ```
 
 ```
@@ -50,15 +63,30 @@ retained for traceability).  Open issues are tracked in `ROADMAP.md` →
  Scheduler (specs/scheduler.md)
    ├─ reads: zombie-list-spec.md (termination)   specs/ipc.md (send_sync RQ rows)
    ├─ read-by: specs/ipc.md (deferred-switch), specs/memory.md (snapshot RQ)
+   ├─ read-by: specs/deadline.md (INV-6 move_priority), specs/test-harness.md (INV set)
    └─ read-by: ROADMAP.md Open Issues (H2, ss_deadline)
 
  IPC (specs/ipc.md)
    ├─ reads: specs/scheduler.md (INV-5, move_priority)
-   └─ read-by: specs/boundary.md (VULN-W2/W3 blocking), specs/oom-rt.md (WCET)
+   ├─ read-by: specs/boundary.md (VULN-W2/W3 blocking), specs/oom-rt.md (WCET)
+   └─ read-by: specs/vfs.md (send_sync authorization), specs/test-harness.md (blocking)
 
  Memory (specs/memory.md)
    ├─ reads: specs/scheduler.md (snapshot rebuild), specs/oom-rt.md (budget)
-   └─ read-by: specs/boundary.md (W^X map_page), specs/ipc.md (pool/owner)
+   └─ read-by: specs/boundary.md (W^X map_page), specs/ipc.md (pool/owner),
+               specs/drivers.md (DMA buffers)
+
+ VFS (specs/vfs.md)
+   ├─ reads: specs/ipc.md (send_sync), specs/boundary.md (CheckedPtr)
+   └─ read-by: specs/test-harness.md (g_vfs_touched), specs/oom-rt.md (WCET envelope)
+
+ Deadline (specs/deadline.md)
+   ├─ reads: specs/scheduler.md (priority/INV-6), specs/oom-rt.md (WCET)
+   └─ read-by: specs/test-harness.md (trigger_deadline_monitor_scan)
+
+ Drivers (specs/drivers.md)
+   ├─ reads: specs/memory.md (DMA/contiguous), specs/scheduler.md (wake)
+   └─ audit: audits/hardware_ahci.md (FLAW ledger)
 ```
 
 ## Source Material (archived)

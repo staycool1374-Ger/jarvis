@@ -72,10 +72,8 @@ Timer-RTC → `/sbin/iocd`; Shell is already userspace `sh.c`.
 
 ## 4. Gaps
 
-- **No design-level VFS spec.** The boundary audit fixes the syscall layer, but
-  the VFS core (mount model, vnode lifecycle, vfsd message protocol) has no
-  normative specification — only the audit fixes.  **GAP: create
-  `specs/vfs.md`.**
+- **VFS design spec [RESOLVED]:** created `specs/vfs.md` (vnode model, mount
+  model, vfsd protocol, path resolution + TOCTOU closure, FdTable, backends).
 - **`sys_receive` timeout (VULN-W3)** verification status unconfirmed.
 - **Syscall ABI header** (`src/kernel/syscall/syscall.h` with documented trap
   vectors/IRQ numbers + register conventions) — deferred to Phase 6 (0.5.x,
