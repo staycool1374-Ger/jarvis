@@ -72,9 +72,16 @@ void preemption_forever_child_entry() {
 JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
     auto *high = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(high != nullptr);
-    Scheduler::add_task(*high);
-
-    bool result = Scheduler::needs_switch();
+    // IRQs off across add_task + assert: the empty-lambda task must stay READY
+    // in the queue.  A timer ISR dispatching it mid-window would run the empty
+    // body and self-terminate it, making needs_switch() return false (flake —
+    // widened by add_task's serial Logger::info inside the lock).
+    bool result;
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*high);
+        result = Scheduler::needs_switch();
+    }
     JARVIS_ASSERT(result == true);
 
     Scheduler::remove_task(*high);

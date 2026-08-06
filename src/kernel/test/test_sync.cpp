@@ -148,6 +148,122 @@ JARVIS_TEST(semaphore_waiter_teardown_on_terminate,
 }
 
 // Runmode: kernel
+// Testidea: Verifies the blocked-event-group-waiter teardown gap is closed: a
+// REAL task blocked in EventGroup::wait_bits() is externally terminated and
+// reaped, and cleanup() unlinks it from the group's waiter list so a later
+// set_bits() cannot re-queue the freed TCB.
+// Input: Worker (prio 11) genuinely blocks in eg.wait_bits(0x1); harness
+//        externally terminates + drains it, then sets the bit.
+// Expect: After reap, eg.waiter_count() == 0 and get_bits() reflects the bit
+//         (wake path not taken on the freed TCB); no ResourceTracker delta.
+// Depends: kernel::sync::EventGroup, kernel::TaskControlBlock, kernel::Scheduler
+JARVIS_TEST(eventgroup_waiter_teardown_on_terminate,
+            "PRE: none | POST: none") {
+    sync::EventGroup eg;
+    eg.init();
+
+    auto *worker = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            sync::EventGroup *e = reinterpret_cast<sync::EventGroup *>(
+                self->user_data);
+            e->wait_bits(0x1);
+            // INV-4: wait_bits sets BLOCKED and defers the switch; it returns
+            // immediately.  Spin until the timer ISR actually suspends this
+            // task, then exit when set_bits() wakes it.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
+        },
+        11, 10);
+    JARVIS_ASSERT(worker != nullptr);
+    worker->user_data = &eg;
+    Scheduler::add_task(*worker);
+    Scheduler::reschedule();
+
+    // The worker genuinely blocks inside eg.wait_bits() and is linked.
+    while (worker->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(worker->state == TaskState::BLOCKED);
+    JARVIS_ASSERT(eg.waiter_count() == 1);
+    JARVIS_ASSERT(worker->waiting_on_eventgroup == &eg);
+
+    // External termination while blocked on the event group.
+    Scheduler::terminate(*worker, 0);
+    Scheduler::drain_zombie_list();
+
+    // The reaped task must no longer be linked.  set_bits() must take the
+    // no-waiter path: the bit is set directly (no set_task_ready on the freed
+    // TCB).
+    JARVIS_ASSERT(eg.waiter_count() == 0);
+    eg.set_bits(0x1);
+    JARVIS_ASSERT_EQ(0x1ULL, eg.get_bits());
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
+// Testidea: Verifies the blocked-queue-waiter teardown gap is closed: a REAL
+// task blocked in Queue::send() on a full queue is externally terminated and
+// reaped, and cleanup() unlinks it from the queue's send-waiter list so a
+// later receive() cannot wake the freed TCB.
+// Input: Worker (prio 11) genuinely blocks in queue.send() on a full queue;
+//        harness externally terminates + drains it, then drains a message.
+// Expect: After reap, queue.waiter_count() == 0; the subsequent receive()
+//         takes the no-waiter path (no set_task_ready on the freed TCB).
+// Depends: kernel::sync::Queue, kernel::TaskControlBlock, kernel::Scheduler
+JARVIS_TEST(queue_waiter_teardown_on_terminate, "PRE: none | POST: none") {
+    sync::Queue queue;
+    queue.init();
+
+    // Fill the queue so the worker genuinely blocks in Queue::send().
+    for (size_t i = 0; i < sync::QUEUE_MAX_MSG_COUNT; ++i) {
+        uint8_t d[32] = {static_cast<uint8_t>(i)};
+        JARVIS_ASSERT(queue.try_send(d, 1));
+    }
+    JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT);
+
+    auto *worker = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            sync::Queue *q = reinterpret_cast<sync::Queue *>(self->user_data);
+            q->send((uint8_t *)"data", 4);
+            // INV-4: send sets BLOCKED and defers the switch; spin until the
+            // timer ISR actually suspends this task.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
+        },
+        11, 10);
+    JARVIS_ASSERT(worker != nullptr);
+    worker->user_data = &queue;
+    Scheduler::add_task(*worker);
+    Scheduler::reschedule();
+
+    // The worker genuinely blocks inside queue.send() and is linked as a
+    // send waiter.
+    while (worker->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(worker->state == TaskState::BLOCKED);
+    JARVIS_ASSERT(queue.waiter_count() == 1);
+    JARVIS_ASSERT(worker->waiting_on_queue == &queue);
+
+    // External termination while blocked on the full queue.
+    Scheduler::terminate(*worker, 0);
+    Scheduler::drain_zombie_list();
+
+    // The reaped task must no longer be linked.  A receive() must take the
+    // no-send-waiter path: it drains and calls wake_send_one(), which finds
+    // no waiter (no set_task_ready on the freed TCB).
+    JARVIS_ASSERT(queue.waiter_count() == 0);
+    uint8_t buf[32];
+    size_t size = 32;
+    JARVIS_ASSERT(queue.receive(buf, &size));
+    JARVIS_ASSERT(queue.available() == sync::QUEUE_MAX_MSG_COUNT - 1);
+    JARVIS_ASSERT(queue.waiter_count() == 0);
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Verifies mutex lock/unlock with owner tracking and waiter handoff
 // using a REAL owner task that holds the mutex and blocks on a gate, plus a
 // REAL contender that blocks on the mutex and acquires after release.
@@ -517,6 +633,8 @@ void register_sync_tests() {
     Logger::info("Registering sync tests");
     JARVIS_REGISTER_TEST(semaphore_wait_post);
     JARVIS_REGISTER_TEST(semaphore_waiter_teardown_on_terminate);
+    JARVIS_REGISTER_TEST(eventgroup_waiter_teardown_on_terminate);
+    JARVIS_REGISTER_TEST(queue_waiter_teardown_on_terminate);
     JARVIS_REGISTER_TEST(mutex_double_unlock);
     JARVIS_REGISTER_TEST(mutex_recursive_lock);
     JARVIS_REGISTER_TEST(semaphore_timeout);

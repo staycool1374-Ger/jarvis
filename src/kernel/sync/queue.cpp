@@ -65,6 +65,7 @@ bool Queue::add_send_waiter(TaskControlBlock &task) {
         return false;
     send_waiters_[send_waiters_count_] = &task;
     send_waiter_gens_[send_waiters_count_] = task.generation;
+    task.waiting_on_queue = this;
     ++send_waiters_count_;
     return true;
 }
@@ -75,6 +76,7 @@ bool Queue::add_recv_waiter(TaskControlBlock &task) {
         return false;
     recv_waiters_[recv_waiters_count_] = &task;
     recv_waiter_gens_[recv_waiters_count_] = task.generation;
+    task.waiting_on_queue = this;
     ++recv_waiters_count_;
     return true;
 }
@@ -101,8 +103,13 @@ void Queue::wake_send_one() {
         if (send_waiters_[i]->priority > send_waiters_[best]->priority)
             best = i;
     }
-    if (send_waiters_[best]->state != TaskState::TERMINATED)
+    // Harden: a cleaned-up task is REAPED, not TERMINATED.  Never feed a
+    // freed TCB to set_task_ready (ready-queue corruption / UAF).
+    if (send_waiters_[best]->state != TaskState::TERMINATED &&
+        send_waiters_[best]->state != TaskState::REAPED) {
+        send_waiters_[best]->waiting_on_queue = nullptr;
         Scheduler::set_task_ready(*send_waiters_[best]);
+    }
     send_waiters_[best] = send_waiters_[--send_waiters_count_];
     send_waiter_gens_[best] = send_waiter_gens_[send_waiters_count_];
 }
@@ -129,8 +136,13 @@ void Queue::wake_recv_one() {
         if (recv_waiters_[i]->priority > recv_waiters_[best]->priority)
             best = i;
     }
-    if (recv_waiters_[best]->state != TaskState::TERMINATED)
+    // Harden: a cleaned-up task is REAPED, not TERMINATED.  Never feed a
+    // freed TCB to set_task_ready (ready-queue corruption / UAF).
+    if (recv_waiters_[best]->state != TaskState::TERMINATED &&
+        recv_waiters_[best]->state != TaskState::REAPED) {
+        recv_waiters_[best]->waiting_on_queue = nullptr;
         Scheduler::set_task_ready(*recv_waiters_[best]);
+    }
     recv_waiters_[best] = recv_waiters_[--recv_waiters_count_];
     recv_waiter_gens_[best] = recv_waiter_gens_[recv_waiters_count_];
 }
@@ -144,6 +156,7 @@ void Queue::remove_send_waiter(TaskControlBlock &task) {
             send_waiter_gens_[i] == task.generation) {
             send_waiters_[i] = send_waiters_[--send_waiters_count_];
             send_waiter_gens_[i] = send_waiter_gens_[send_waiters_count_];
+            task.waiting_on_queue = nullptr;
             return;
         }
         ++i;
@@ -159,10 +172,23 @@ void Queue::remove_recv_waiter(TaskControlBlock &task) {
             recv_waiter_gens_[i] == task.generation) {
             recv_waiters_[i] = recv_waiters_[--recv_waiters_count_];
             recv_waiter_gens_[i] = recv_waiter_gens_[recv_waiters_count_];
+            task.waiting_on_queue = nullptr;
             return;
         }
         ++i;
     }
+}
+
+/// @brief Detach a task from the send- or recv-waiter array (lock-safe).
+///        Verifies pointer AND generation match so a recycled TCB that now
+///        occupies the slot is never removed.
+/// @return true if the task was found and removed.
+bool Queue::remove_waiter(TaskControlBlock &task) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    size_t before = send_waiters_count_ + recv_waiters_count_;
+    remove_send_waiter(task);
+    remove_recv_waiter(task);
+    return (send_waiters_count_ + recv_waiters_count_) != before;
 }
 
 /// @brief Send a message, blocking if the queue is full.

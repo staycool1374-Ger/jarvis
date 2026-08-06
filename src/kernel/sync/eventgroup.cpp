@@ -32,8 +32,11 @@ EventGroup::~EventGroup() {
     SpinLockGuard<SpinLock> guard(lock_);
     for (size_t i = 0; i < wait_count_; ++i) {
         if (waiters_[i].task &&
-            waiters_[i].task->state != TaskState::TERMINATED)
+            waiters_[i].task->state != TaskState::TERMINATED &&
+            waiters_[i].task->state != TaskState::REAPED) {
+            waiters_[i].task->waiting_on_eventgroup = nullptr;
             Scheduler::set_task_ready(*waiters_[i].task);
+        }
     }
     wait_count_ = 0;
     bits_ = 0;
@@ -94,8 +97,27 @@ bool EventGroup::add_waiter(TaskControlBlock &task, uint64_t wanted,
     waiters_[wait_count_].wanted_bits = wanted;
     waiters_[wait_count_].clear_on_exit = clear;
     waiters_[wait_count_].generation = task.generation;
+    task.waiting_on_eventgroup = this;
     ++wait_count_;
     return true;
+}
+
+/// @brief Detach a task from the waiter array (lock-safe).  Verifies pointer
+///        AND generation match so a recycled TCB that now occupies the slot is
+///        never removed.
+/// @return true if the task was found and removed.
+bool EventGroup::remove_waiter(TaskControlBlock &task) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    for (size_t i = 0; i < wait_count_;) {
+        if (waiters_[i].task == &task &&
+            waiters_[i].generation == task.generation) {
+            waiters_[i] = waiters_[--wait_count_];
+            task.waiting_on_eventgroup = nullptr;
+            return true;
+        }
+        ++i;
+    }
+    return false;
 }
 
 /// @brief Wake all waiters whose conditions are satisfied (caller must hold
@@ -110,8 +132,15 @@ void EventGroup::wake_matching() {
             if (waiters_[i].clear_on_exit) {
                 bits_ &= ~waiters_[i].wanted_bits;
             }
-            if (waiters_[i].task->state != TaskState::TERMINATED)
+            // Harden: a cleaned-up task is REAPED, not TERMINATED.  Never
+            // feed a freed TCB to set_task_ready (ready-queue corruption /
+            // UAF).  Note this drops the entry even for dead waiters (the
+            // swap-remove below), keeping the array consistent.
+            if (waiters_[i].task->state != TaskState::TERMINATED &&
+                waiters_[i].task->state != TaskState::REAPED) {
+                waiters_[i].task->waiting_on_eventgroup = nullptr;
                 Scheduler::set_task_ready(*waiters_[i].task);
+            }
             waiters_[i] = waiters_[--wait_count_];
         } else {
             ++i;

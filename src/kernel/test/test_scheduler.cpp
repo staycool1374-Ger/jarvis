@@ -166,13 +166,22 @@ JARVIS_TEST(scheduler_reap_orphans, "PRE: none | POST: none") {
 JARVIS_TEST(scheduler_preemptive_priority, "PRE: none | POST: none") {
     auto *low = TaskControlBlock::create([]() {}, 5, 5);
     JARVIS_ASSERT(low != nullptr);
-    Scheduler::add_task(*low);
 
     auto *high = TaskControlBlock::create([]() {}, 15, 5);
     JARVIS_ASSERT(high != nullptr);
-    Scheduler::add_task(*high);
 
-    auto *next = Scheduler::next_task();
+    // IRQs off across both add_task calls + next_task(): both empty-lambda
+    // tasks must stay READY in the queue.  A timer ISR dispatching either one
+    // mid-window would run its empty body and self-terminate it, so next_task()
+    // would no longer see `high` (flake — widened by add_task's serial
+    // Logger::info inside the lock).
+    TaskControlBlock *next;
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*low);
+        Scheduler::add_task(*high);
+        next = Scheduler::next_task();
+    }
     JARVIS_ASSERT(next == high);
 
     Scheduler::remove_task(*low);

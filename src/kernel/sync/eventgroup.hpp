@@ -26,6 +26,7 @@
 
 #include <types.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
@@ -67,6 +68,19 @@ class EventGroup {
     uint64_t get_bits() const {
         return bits_;
     }
+
+    /// @brief Number of tasks currently blocked on this event group.
+    size_t waiter_count() {
+        SpinLockGuard<SpinLock> guard(lock_);
+        return wait_count_;
+    }
+
+    /// @brief Detach a task from this event group's waiter list (lock-safe).
+    ///        Used by TaskControlBlock::cleanup() to unlink a reaped task
+    ///        before its TCB is freed.  Verifies pointer AND generation
+    ///        match (guards against a recycled TCB occupying the slot).
+    /// @return true if the task was found and removed.
+    bool remove_waiter(TaskControlBlock &task);
 
     /// @brief Block until any of the requested bits are set.
     /// @param bits Bitmask of bits to wait for.

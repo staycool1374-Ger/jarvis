@@ -102,6 +102,8 @@ struct MessageQueue {
 namespace sync {
 class Mutex;
 class Semaphore;
+class EventGroup;
+class Queue;
 } // namespace sync
 
 namespace task {
@@ -221,6 +223,8 @@ struct TaskControlBlock {
           blocked_on_queue(nullptr), reply_wait(false),
           waiting_on_mutex(nullptr),
           waiting_on_semaphore(nullptr),
+          waiting_on_eventgroup(nullptr),
+          waiting_on_queue(nullptr),
           held_ceiling_depth_(0), system_ceiling_(0),
           first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
           num_children(0), generation(0) {
@@ -382,6 +386,21 @@ struct TaskControlBlock {
     /// from a semaphore's waiter list before the TCB is freed, preventing a
     /// dangling waiter entry from being re-queued by a later post().
     sync::Semaphore *waiting_on_semaphore;
+
+    /// @brief Pointer to the event group this task is blocked on (as a waiter).
+    /// Non-null only while the task is in an EventGroup's waiter array.
+    /// Set in EventGroup::add_waiter(), cleared in EventGroup::wake_matching(),
+    /// ~EventGroup() and EventGroup::remove_waiter().  Used by cleanup() to
+    /// detach a reaped task before the TCB is freed, preventing a dangling
+    /// waiter entry from being re-queued by a later set_bits().
+    sync::EventGroup *waiting_on_eventgroup;
+
+    /// @brief Pointer to the message queue this task is blocked on (as a
+    /// sender or receiver).  Non-null only while the task is in a Queue's
+    /// send- or recv-waiter array.  Set in Queue::add_send_waiter() /
+    /// add_recv_waiter(), cleared in the wake/remove paths.  Used by cleanup()
+    /// to detach a reaped task before the TCB is freed.
+    sync::Queue *waiting_on_queue;
 
     /// @brief Number of mutexes currently held by this task (for PCP ceiling
     /// tracking).

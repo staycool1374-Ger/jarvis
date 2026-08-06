@@ -38,6 +38,8 @@
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
 #include <kernel/sync/semaphore.hpp>
+#include <kernel/sync/mutex.hpp>
+#include <kernel/sync/queue.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
 #include <assert.hpp>
@@ -147,6 +149,8 @@ void init_task_common(TaskControlBlock &tcb) {
     tcb.blocked_prev = nullptr;
     tcb.blocked_on_queue = nullptr;
     tcb.waiting_on_semaphore = nullptr;
+    tcb.waiting_on_eventgroup = nullptr;
+    tcb.waiting_on_queue = nullptr;
     tcb.stack_pdpt_phys_ = 0;
     tcb.page_table_shared_ = false;
     tcb.user_stack_ = 0;
@@ -1311,18 +1315,35 @@ void TaskControlBlock::cleanup() noexcept {
         blocked_on_queue = nullptr;
     }
 
-    // Detach from any semaphore's waiter list before freeing the TCB.
-    // Semaphore::wait() stores a raw TCB in waiters_[] with no cleanup
-    // unlink (v0.3.9 teardown gap); a later post() on a reaped task would
-    // feed the freed block to Scheduler::set_task_ready (ready-queue
-    // corruption / use-after-free).  remove_waiter acquires the semaphore's
-    // own lock_ — safe here: cleanup() holds no scheduler lock (see
-    // drain_zombie_list/cleanup_step), preserving the sem.lock_ ->
-    // scheduler_lock_ order of the wake path.
+    // Detach from any sync-object waiter list before freeing the TCB.
+    // Semaphore/Mutex/EventGroup/Queue wait paths store a raw TCB in their
+    // waiter arrays with no cleanup unlink (v0.3.9 teardown gap); a later
+    // post()/unlock()/set_bits()/send()/receive() on a reaped task would feed
+    // the freed block to Scheduler::set_task_ready (ready-queue corruption /
+    // use-after-free).  Each remove_waiter acquires the object's own lock_ —
+    // safe here: cleanup() holds no scheduler lock (see
+    // drain_zombie_list/cleanup_step), preserving the lock ordering of the
+    // wake paths.  The higher-half range check mirrors the blocked_on_queue
+    // validation above (objects live in kernel/HHDM space, never low VA).
+    if (waiting_on_mutex &&
+        reinterpret_cast<uintptr_t>(waiting_on_mutex) >= 0xFFFF800000000000ULL) {
+        waiting_on_mutex->remove_waiter(*this);
+        waiting_on_mutex = nullptr;
+    }
     if (waiting_on_semaphore &&
         reinterpret_cast<uintptr_t>(waiting_on_semaphore) >= 0xFFFF800000000000ULL) {
         waiting_on_semaphore->remove_waiter(*this);
         waiting_on_semaphore = nullptr;
+    }
+    if (waiting_on_eventgroup &&
+        reinterpret_cast<uintptr_t>(waiting_on_eventgroup) >= 0xFFFF800000000000ULL) {
+        waiting_on_eventgroup->remove_waiter(*this);
+        waiting_on_eventgroup = nullptr;
+    }
+    if (waiting_on_queue &&
+        reinterpret_cast<uintptr_t>(waiting_on_queue) >= 0xFFFF800000000000ULL) {
+        waiting_on_queue->remove_waiter(*this);
+        waiting_on_queue = nullptr;
     }
 
     // Notify the daemon manager so registered daemon PIDs are reset to 0.

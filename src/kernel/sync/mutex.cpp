@@ -88,8 +88,27 @@ bool Mutex::add_waiter(TaskControlBlock &task) {
         return false;
     waiters_[wait_count_] = &task;
     waiter_gens_[wait_count_] = task.generation;
+    task.waiting_on_mutex = this;
     ++wait_count_;
     return true;
+}
+
+/// @brief Detach a task from the waiter array (lock-safe).  Verifies pointer
+///        AND generation match so a recycled TCB that now occupies the slot is
+///        never removed.  Mirrors Queue::remove_send_waiter / Semaphore::remove_waiter.
+/// @return true if the task was found and removed.
+bool Mutex::remove_waiter(TaskControlBlock &task) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    for (size_t i = 0; i < wait_count_;) {
+        if (waiters_[i] == &task && waiter_gens_[i] == task.generation) {
+            waiters_[i] = waiters_[--wait_count_];
+            waiter_gens_[i] = waiter_gens_[wait_count_];
+            task.waiting_on_mutex = nullptr;
+            return true;
+        }
+        ++i;
+    }
+    return false;
 }
 
 /// @brief Wake the highest-priority waiter.
@@ -98,6 +117,11 @@ void Mutex::wake_one() {
     for (size_t i = 0; i < wait_count_; ++i) {
         if (waiters_[i]->generation != waiter_gens_[i])
             continue; // stale — TCB was recycled
+        // Harden: a cleaned-up task is REAPED, not TERMINATED.  Never feed a
+        // freed TCB to set_task_ready (ready-queue corruption / UAF).
+        if (waiters_[i]->state == TaskState::TERMINATED ||
+            waiters_[i]->state == TaskState::REAPED)
+            continue;
         if (best == wait_count_ ||
             waiters_[i]->priority > waiters_[best]->priority)
             best = i;
@@ -105,10 +129,8 @@ void Mutex::wake_one() {
     if (best >= wait_count_)
         return;
 
-    if (waiters_[best]->state != TaskState::TERMINATED) {
-        waiters_[best]->waiting_on_mutex = nullptr;
-        Scheduler::set_task_ready(*waiters_[best]);
-    }
+    waiters_[best]->waiting_on_mutex = nullptr;
+    Scheduler::set_task_ready(*waiters_[best]);
     waiters_[best] = waiters_[--wait_count_];
     waiter_gens_[best] = waiter_gens_[wait_count_];
 }
@@ -462,6 +484,12 @@ void Mutex::unlock() {
         for (size_t i = 0; i < wait_count_; ++i) {
             if (waiters_[i]->generation != waiter_gens_[i])
                 continue;
+            // Harden: never transfer ownership to a dead waiter (a cleaned-up
+            // task is REAPED, not TERMINATED) — set_task_ready on a freed TCB
+            // is ready-queue corruption / UAF.
+            if (waiters_[i]->state == TaskState::TERMINATED ||
+                waiters_[i]->state == TaskState::REAPED)
+                continue;
             if (best == wait_count_ ||
                 waiters_[i]->priority > waiters_[best]->priority)
                 best = i;
@@ -523,6 +551,10 @@ errors::SyncError Mutex::unlock_err() {
         size_t best = wait_count_;
         for (size_t i = 0; i < wait_count_; ++i) {
             if (waiters_[i]->generation != waiter_gens_[i])
+                continue;
+            // Harden: never transfer ownership to a dead waiter (REAPED task).
+            if (waiters_[i]->state == TaskState::TERMINATED ||
+                waiters_[i]->state == TaskState::REAPED)
                 continue;
             if (best == wait_count_ ||
                 waiters_[i]->priority > waiters_[best]->priority)

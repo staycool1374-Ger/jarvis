@@ -27,6 +27,7 @@
 #include <types.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/sync/spinlock.hpp>
+#include <kernel/sync/spinlock_guard.hpp>
 #include <kernel/sync/sync_errors.hpp>
 
 namespace kernel {
@@ -110,6 +111,21 @@ class Queue {
     size_t available() const {
         return count_;
     }
+
+    /// @brief Total number of tasks currently blocked on this queue (senders
+    ///        + receivers).
+    size_t waiter_count() {
+        SpinLockGuard<SpinLock> guard(lock_);
+        return send_waiters_count_ + recv_waiters_count_;
+    }
+
+    /// @brief Detach a task from this queue's send- or recv-waiter list
+    ///        (lock-safe).  Used by TaskControlBlock::cleanup() to unlink a
+    ///        reaped task before its TCB is freed.  Verifies pointer AND
+    ///        generation match (guards against a recycled TCB occupying the
+    ///        slot).
+    /// @return true if the task was found and removed.
+    bool remove_waiter(TaskControlBlock &task);
 
   private:
     SpinLock lock_;                          ///< Protects all queue state.

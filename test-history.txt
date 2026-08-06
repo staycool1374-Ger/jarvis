@@ -626,3 +626,6 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 12:49:26 selftest PASSED: 132 FAILED: 0 TIME: ~2s (0 PMM WARNs)
 2026-08-06 12:49:26 vfs PASSED: 146 FAILED: 0 TIME: ~3s (0 PMM WARNs)
 2026-08-06 15:11:33 vfs PASSED: 147 FAILED: 0 TIME: 3024ms (semaphore waiter teardown fix + regression test semaphore_waiter_teardown_on_terminate)
+2026-08-06 15:57:58 scheduler PASSED: 63 FAILED: 0 TIME: 11349ms (fix pre-existing flake in scheduler_preemptive_priority + preemption_needs_switch_higher_priority: empty-lambda tasks self-terminated when timer ISR dispatched them before assertion — IrqGuard around add_task+assert; 4/4 runs green)
+2026-08-06 15:57:58 vfs PASSED: 149 FAILED: 0 TIME: 2998ms (mutex/eventgroup/queue waiter teardown fixes + regression tests; 3/3 runs green)
+2026-08-06 15:57:58 lock_protocol PASSED: 53 FAILED: 0 TIME: 6318ms (mutex/queue waiter teardown hardening; 3/3 runs green)
