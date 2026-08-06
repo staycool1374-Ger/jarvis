@@ -42,6 +42,13 @@
 extern "C" void debug_write(const char *s);
 extern "C" void debug_write_hex(uint64_t value);
 
+namespace kernel {
+extern "C" {
+extern char _stack_start[];
+extern char _stack_end[];
+}
+}
+
 namespace kernel::test {
 
 #ifdef __x86_64__
@@ -1069,7 +1076,16 @@ void snapshot_restore(const char *test_name) {
             if (base == 0)
                 continue;
             uint64_t rsp = TASK_STACK_PTR(t);
-            if (rsp < base || rsp > t->kernel_stack_top) {
+            // The harness's context.rsp is a LIVE boot-stack RSP (its genuine
+            // test-mode stack, kept current by the boot-stack save in
+            // switch_to_task) — outside its TCB kernel_stack by design.  Do
+            // not reinitialize it.
+            bool harness_boot_ctx =
+                (t == Scheduler::get_harness_task() && rsp != 0 &&
+                 rsp >= reinterpret_cast<uint64_t>(kernel::_stack_start) &&
+                 rsp < reinterpret_cast<uint64_t>(kernel::_stack_end));
+            if (!harness_boot_ctx &&
+                (rsp < base || rsp > t->kernel_stack_top)) {
                 static bool fixup_dumped = false;
                 if (!fixup_dumped) {
                     debug_write("[DIAG-FIXUP] id=");

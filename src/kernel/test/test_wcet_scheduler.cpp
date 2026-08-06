@@ -44,9 +44,15 @@ using namespace kernel;
 // task population whose deadlines genuinely expire (each task busy-waits past
 // its real deadline).
 //
-// One population of 40 tasks is created once (each genuinely overruns its
-// real 2-tick deadline), then trimmed (deleted) to obtain the 1/10/40 data
+// One population of 30 tasks is created once (each genuinely overruns its
+// real 2-tick deadline), then trimmed (deleted) to obtain the 1/10/30 data
 // points.
+//
+// Note: the population is capped at 30 because every task blocks on the SAME
+// gate semaphore, whose waiter array is bounded by CONFIG_SYNC_MAX_WAITERS
+// (32).  A population above that limit makes the 33rd wait() fail
+// add_waiter() → ENSURE(added) panic (observed at baseline; masked by the
+// earlier `all`-gate hangs).
 //
 // Expect: scan_deadlines() returns a non-zero cycle count (the scan ran) for
 // each task-population; the measured worst-case is logged for off-line
@@ -54,14 +60,14 @@ using namespace kernel;
 JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     const uint64_t kIters = 300;
 
-    // --- Build one population of 40 REAL tasks that genuinely overrun their
+    // --- Build one population of 30 REAL tasks that genuinely overrun their
     //     2-tick deadline (busy-wait 5 real ticks) and then block.  Keeping
     //     them live lets the real monitor scan observe the expired set.
     sync::Semaphore gate;
     gate.init(0, 64);
     TaskControlBlock *tasks[64] = {};
     uint64_t made = 0;
-    for (uint64_t k = 0; k < 40; ++k) {
+    for (uint64_t k = 0; k < 30; ++k) {
         arch::IrqGuard guard;
         if (Scheduler::task_count() >= 58)
             break; // headroom below MAX_TASKS
@@ -72,6 +78,13 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
                 while (arch::Timer::ticks() - start < 5)
                     arch::pause();
                 reinterpret_cast<sync::Semaphore *>(self->user_data)->wait();
+                // INV-4: Semaphore::wait() sets BLOCKED then returns
+                // immediately (the switch is deferred); returning from the
+                // lambda would self-terminate before the harness observes
+                // BLOCKED.  Spin on our own BLOCKED state so the harness can
+                // observe it; gate.post() wakes us and we return + terminate.
+                while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                    asm volatile("pause");
             },
             11, 2);
         if (t == nullptr)
@@ -115,7 +128,7 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     uint64_t const c40 = measure();
 
     JARVIS_ASSERT(c40 > 0);
-    Logger::info("[WCET] scan_deadlines 40-task worst=");
+    Logger::info("[WCET] scan_deadlines 30-task worst=");
     Logger::print_dec(c40);
     Logger::info(" cyc");
 

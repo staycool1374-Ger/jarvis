@@ -476,6 +476,12 @@ class Scheduler {
     ///        Precondition: task.state == TERMINATED, task NOT in ready queue.
     static void release_zombie(TaskControlBlock &task) noexcept;
 
+    /// @brief Invalidate the pending deferred-switch arm (clear all switch
+    ///        atoms + bump the switch generation).  Used by the apply-side
+    ///        liveness re-check (scheduler_validate_pending_switch) and by
+    ///        release_zombie/reap_orphans when the armed target is removed.
+    static void cancel_pending_switch() noexcept;
+
     /// @brief Drain up to @p max_flush zombies from the zombie list,
     ///        calling cleanup() + MemPool::free() on each.
     ///        Used by the on_tick watchdog when zombie_count_ exceeds

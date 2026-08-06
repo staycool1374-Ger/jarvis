@@ -69,13 +69,6 @@ static constexpr uint64_t MAX_DEFERRED_KILLS = 16;
 static TaskControlBlock *s_deferred_kill_tasks[MAX_DEFERRED_KILLS] = {};
 static uint64_t s_deferred_kill_count = 0;
 
-// H2: scratch slot for the harness's foreign live RSP when it is displaced
-// onto an orphaned stack (no TCB owns the live RSP).  Saving into the scratch
-// instead of current->context.rsp keeps the harness's valid kernel-stack frame
-// intact, so the next dispatch re-plants it onto its own stack instead of
-// iretq'ing it back onto foreign memory.
-static uint64_t s_foreign_rsp_scratch = 0;
-
 // TEMP DEBUG (BUGS.md#020): detect a SporadicServer pointer that aliases a
 // freed/poisoned MemPool block (first 8 bytes == 0xDDDDDDDDDDDDDDDD).  A freed
 // server still referenced by a live TCB is the use-after-free behind the
@@ -149,6 +142,56 @@ void Scheduler::set_priority(TaskControlBlock &task,
     task.base_priority = new_prio;
 }
 
+/// @brief Clear every deferred-switch atom and bump the switch generation.
+///        Any ISR that captured the pre-clear generation fails its re-check
+///        (isr_stubs.asm jne .restore); any ISR entering after sees
+///        save_rsp_to==0.  Called from the apply-side liveness re-check and
+///        from task removal paths.
+void Scheduler::cancel_pending_switch() noexcept {
+    __atomic_store_n(&kernel::scheduler_save_rsp_to, (uint64_t *)nullptr,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_load_rsp_from, (uint64_t)0,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_load_cr3_from, (uint64_t)0,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_next_task_id, UINT64_MAX,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_load_kstack_base, (uint64_t)0,
+                     __ATOMIC_RELEASE);
+    __atomic_store_n(&kernel::scheduler_load_kstack_top, (uint64_t)0,
+                     __ATOMIC_RELEASE);
+    uint64_t gen =
+        __atomic_load_n(&kernel::scheduler_switch_generation, __ATOMIC_RELAXED);
+    __atomic_store_n(&kernel::scheduler_switch_generation, gen + 1,
+                     __ATOMIC_RELEASE);
+}
+
+/// @brief Invalidate a pending deferred-switch arm that targets @p task_id.
+///        The deferred-switch pair (save_rsp_to / load_rsp_from / load_cr3_from
+///        / next_task_id / load_kstack_base-top) is published by
+///        switch_to_task() and normally consumed by the same ISR epilogue.  When
+///        the epilogue skips the apply (nested-ISR depth guard or the
+///        generation re-check in isr_stubs.asm), the arm survives into a later
+///        ISR, and the target task can be terminated + freed in between (IRQs on).
+///        terminate() → release_zombie() removed the target from id_table_ but
+///        never cleared the arm, so the later ISR iretq'd onto the freed task's
+///        context.rsp — find_task(id)==null in scheduler_on_context_switch,
+///        current-cache divergence, and the [H2W] harness displacement
+///        (docs/specs/ipc.md §4, ROADMAP §v0.3.9).
+///        Clearing the atoms makes ISRs entering after the invalidation skip
+///        (save_rsp_to==0); bumping the generation makes an ISR that captured
+///        the pre-invalidation generation fail its re-check (jne .restore).
+/// @param task_id ID of the task being removed/freed.  A no-op unless the
+///        pending switch targets it (a self-terminating CURRENT task's own
+///        switch-away arm targets a successor, so it is preserved).
+static void invalidate_pending_switch_to(uint64_t task_id) noexcept {
+    uint64_t pending =
+        __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    if (pending == UINT64_MAX || pending != task_id)
+        return;
+    Scheduler::cancel_pending_switch();
+}
+
 void Scheduler::release_zombie(TaskControlBlock &task) noexcept {
     // Invariant: a zombie must never be in the ready queue.  terminate()
     // calls dequeue_ready() before reaching us; self-termination also
@@ -159,6 +202,14 @@ void Scheduler::release_zombie(TaskControlBlock &task) noexcept {
     deadline_list_.remove(task);
     all_tasks_.remove(task);
     id_table_remove(&task);
+    // H2 (docs/specs/ipc.md §4): invalidate any pending deferred-switch arm
+    // targeting this task.  terminate() removes the target from id_table_
+    // without clearing the switch atoms, so a surviving arm would iretq a
+    // later ISR onto the task's freed stack (find_task null at apply →
+    // current-cache lag → [H2W] harness displacement).  A self-terminating
+    // current task's own switch-away arm targets a successor, so this is a
+    // no-op for that path.
+    invalidate_pending_switch_to(task.id);
 
     task.zombie_next_ = nullptr;
     if (zombie_tail_) {
@@ -1457,6 +1508,9 @@ void Scheduler::reap_orphans() noexcept {
         all_tasks_.remove(*t);
         id_table_remove(t);
         deadline_list_.remove(*t);
+        // H2: the task is leaving id_table_ — a pending deferred-switch arm to
+        // it must not survive the free below (see release_zombie).
+        invalidate_pending_switch_to(t->id);
         if (t == idle_task_) {
             auto *created = TaskControlBlock::create(
                 kernel::integrity::idle_task_main, 0,
@@ -1752,12 +1806,20 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
             current = owner;
             Scheduler::set_current(*owner);
         }
-        // H2: when the current task physically runs on an orphaned/foreign
-        // stack, do NOT save the foreign RSP into its context.rsp (that would
-        // overwrite the valid kernel-stack frame and strand the task).  Save to
-        // a scratch so the next dispatch re-plants it on its own kernel stack.
-        save_target = cur_is_boot_stack ? &s_foreign_rsp_scratch
-                                        : &TASK_STACK_PTR(current);
+        // H2: keep the resolved owner's context.rsp LIVE.  The original
+        // scratch-save (layer 2) sent the harness's RSP to
+        // s_foreign_rsp_scratch whenever it was not detected on the linker
+        // boot stack, permanently freezing context.rsp at the FIRST switch-out
+        // frame (e.g. arch_hlt in the daemon wait).  A later deferred switch
+        // TO the harness then iretq'd it onto that stale frame, freezing the
+        // suite (observed at `all` test 78 / 477, priority_inheritance).  The
+        // harness's live RSP IS its true context regardless of which region it
+        // runs on — always save it into the owner's own context.rsp.  The
+        // apply-side liveness + ownership re-check
+        // (scheduler_validate_pending_switch) and the dispatch-guard both
+        // reject a stale/foreign arm before it can iretq, so keeping
+        // context.rsp current is safe.
+        save_target = &TASK_STACK_PTR(current);
 #ifdef CONFIG_DEBUG
         // H2 residual-race recorder (debug-only, fires ONLY on the orphaned
         // displacement — the harness physically executing on a non-boot-stack,
@@ -1862,8 +1924,21 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
         uint64_t nsp = TASK_STACK_PTR(&next);
         uint64_t nbase = reinterpret_cast<uint64_t>(next.kernel_stack);
         uint64_t npg = reinterpret_cast<uint64_t>(next.page_table_);
-        bool bad = (!nsp || nsp < nbase || nsp >= next.kernel_stack_top ||
-                    (npg != 0 && (npg & 0xFFF) != 0));
+        // The harness's context.rsp may be a LIVE boot-stack RSP (its genuine
+        // test-mode stack, kept current by the boot-stack save in
+        // switch_to_task) rather than a TCB kernel-stack address — that is
+        // valid, not bad.  Exempt it from the initial nsp-vs-kernel_stack
+        // check; frame_ok() below still validates the frame fields (with its
+        // own harness boot-stack allowance).
+        bool harness_boot_ctx =
+            (&next == Scheduler::get_harness_task() && nsp != 0 &&
+             nsp >= reinterpret_cast<uint64_t>(kernel::_stack_start) &&
+             nsp < reinterpret_cast<uint64_t>(kernel::_stack_end));
+        bool bad =
+            (!nsp ||
+             (!harness_boot_ctx &&
+              (nsp < nbase || nsp >= next.kernel_stack_top)) ||
+             (npg != 0 && (npg & 0xFFF) != 0));
         uint64_t f_rflags = 0;
         if (!bad) {
             const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
@@ -2173,10 +2248,17 @@ void Scheduler::switch_away_from_terminating(TaskControlBlock &exiting) noexcept
         {
             uint64_t nsp = TASK_STACK_PTR(next);
             uint64_t nbase = reinterpret_cast<uint64_t>(next->kernel_stack);
-            bool bad = (!nsp || nsp < nbase ||
-                        nsp >= next->kernel_stack_top ||
-                        (next->page_table_ != 0 &&
-                         (next->page_table_ & 0xFFF) != 0));
+            // Harness boot-stack context.rsp is valid (see switch_to_task).
+            bool harness_boot_ctx =
+                (next == Scheduler::get_harness_task() && nsp != 0 &&
+                 nsp >= reinterpret_cast<uint64_t>(kernel::_stack_start) &&
+                 nsp < reinterpret_cast<uint64_t>(kernel::_stack_end));
+            bool bad =
+                (!nsp ||
+                 (!harness_boot_ctx &&
+                  (nsp < nbase || nsp >= next->kernel_stack_top)) ||
+                 (next->page_table_ != 0 &&
+                  (next->page_table_ & 0xFFF) != 0));
             if (!bad) {
                 const uint64_t *f = reinterpret_cast<const uint64_t *>(nsp);
                 uint64_t rip_a = f[136 / 8], cs_a = f[144 / 8],
@@ -2810,6 +2892,47 @@ SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
 
 } // namespace kernel
 
+/// @brief Apply-side liveness + ownership re-check for the deferred switch
+///        (called from isr_stubs.asm BEFORE `mov rsp,[load_rsp_from]`).  The
+///        arm side (switch_to_task) validates the target's frame at publish
+///        time, but the arm can survive past its ISR (nested-ISR depth guard or
+///        generation-skip) into a later ISR, and in between the target task can
+///        be terminated/freed (IRQs on) or the published RSP can drift from the
+///        target's CURRENT kernel stack (snapshot restore / free+reuse).  The
+///        [H2W] orphan-displacement fires when the apply then iretq's onto the
+///        freed/foreign RSP (find_task(id)==null → current-cache lag).  This
+///        re-checks BOTH liveness (id_table_) AND ownership (the published RSP
+///        lies inside the target's live kernel_stack, or the harness boot
+///        stack) with IRQs disabled — so no task-context removal can interleave — and
+///        aborts (clear atoms + bump generation) on any mismatch.
+/// @return 1 = apply the switch, 0 = abort it (atoms already invalidated).
+/// @note Runs with IRQs disabled (interrupt gate); must not re-enable them.
+extern "C" int scheduler_validate_pending_switch() {
+    uint64_t id =
+        __atomic_load_n(&kernel::scheduler_next_task_id, __ATOMIC_ACQUIRE);
+    if (id == UINT64_MAX)
+        return 0;
+    auto *t = kernel::Scheduler::find_task(id);
+    if (!t || t->magic != kernel::TaskControlBlock::TCB_MAGIC) {
+        kernel::Scheduler::cancel_pending_switch();
+        return 0;
+    }
+    uint64_t rsp =
+        __atomic_load_n(&kernel::scheduler_load_rsp_from, __ATOMIC_ACQUIRE);
+    uint64_t base = reinterpret_cast<uint64_t>(t->kernel_stack);
+    uint64_t top = t->kernel_stack_top;
+    bool in_own = (base && top && rsp >= base && rsp <= top);
+    bool harness_boot =
+        (t == kernel::Scheduler::get_harness_task() &&
+         rsp >= reinterpret_cast<uint64_t>(kernel::_stack_start) &&
+         rsp < reinterpret_cast<uint64_t>(kernel::_stack_end));
+    if (!in_own && !harness_boot) {
+        kernel::Scheduler::cancel_pending_switch();
+        return 0;
+    }
+    return 1;
+}
+
 /// @brief ISR-epilogue callback for the `.abort_switch` path
 ///        (isr_stubs.asm): the deferred switch was refused because its load RSP
 ///        fell outside the dispatched task's kernel stack.  The arm side may
@@ -2819,13 +2942,12 @@ SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
 ///        transition (int $0x80 trap gate) cannot push its iretq frame onto a
 ///        freed/foreign stack.  Harmless for ring-0-only runs (no privilege
 ///        transition ever consumes RSP0).
-/// @note Runs with IF=0 (interrupt gate); must not re-enable IRQs.
+/// @note Runs with IRQs disabled (interrupt gate); must not re-enable them.
 extern "C" void scheduler_abort_switch_fixup() {
 #if defined(CONFIG_ARCH_X86_64)
     auto *cur = kernel::Scheduler::current_task();
     if (cur && cur->magic == kernel::TaskControlBlock::TCB_MAGIC &&
-        cur->kernel_stack && cur->kernel_stack_top) {
-        arch::GDT::set_tss_rsp0(cur->kernel_stack_top);
+        cur->kernel_stack && cur->kernel_stack_top) {        arch::GDT::set_tss_rsp0(cur->kernel_stack_top);
     }
 #else
     (void)0;

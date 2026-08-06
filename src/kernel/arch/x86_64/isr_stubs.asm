@@ -24,6 +24,7 @@ extern scheduler_switch_generation
 extern scheduler_kernel_cr3
 extern scheduler_next_task_id
 extern scheduler_on_context_switch
+extern scheduler_validate_pending_switch
 extern scheduler_abort_switch_fixup
 extern scheduler_diag_pre_save
 extern isr_nesting_depth
@@ -173,6 +174,39 @@ isr_common:
     ; Hold the old RSP for the apply-side abort (RBX is restored by the
     ; .restore pops below, so clobbering it here is safe).
     mov rbx, rsp
+
+    ; Apply-side liveness + ownership re-check (H2, IF=0): the arm side
+    ; validated the target's frame at publish time, but the arm can survive
+    ; past its ISR (nested-ISR depth guard / generation-skip) and the target
+    ; task can be terminated + freed in between (IF=1) or the published RSP can
+    ; drift from its CURRENT kernel stack (snapshot restore / free+reuse).
+    ; Verify the target still exists (id_table_) AND the published RSP lies
+    ; within its live kernel stack (or the harness boot stack) BEFORE loading
+    ; it — otherwise the iretq would resume on freed/foreign memory (the [H2W]
+    ; orphan displacement).  Runs with IF=0, so no task-context removal can
+    ; interleave.  RAX is the C return value (1=apply, 0=abort) and is NOT in
+    ; the preserve set; the original RAX sits deeper in the ISR frame.  RBX is
+    ; callee-saved and still holds the abort RSP.
+    push rcx
+    push rdx
+    push rsi
+    push rdi
+    push r8
+    push r9
+    push r10
+    push r11
+    call scheduler_validate_pending_switch
+    pop r11
+    pop r10
+    pop r9
+    pop r8
+    pop rdi
+    pop rsi
+    pop rdx
+    pop rcx
+    test rax, rax
+    jz .abort_switch
+
     mov rsp, [rel scheduler_load_rsp_from]
     mov qword [rel scheduler_load_rsp_from], 0
     mov qword [rel scheduler_save_rsp_to], 0

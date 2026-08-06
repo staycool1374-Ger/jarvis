@@ -66,6 +66,13 @@ TaskControlBlock *spawn_holder(sync::Mutex &mutex, sync::Semaphore &gate,
             m->lock();
             __atomic_store_n(&c->acquired_, 1, __ATOMIC_RELEASE);
             g->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (the switch is deferred); returning would self-terminate before
+            // the harness observes BLOCKED.  Spin on our own BLOCKED state so
+            // the harness can observe it; gate.post() wakes us, we unlock and
+            // return + terminate.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
             m->unlock();
         },
         prio, 10);

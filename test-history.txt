@@ -639,3 +639,31 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 19:38:36 wcet_overrun PASSED: 2 FAILED: 0 TIME: 135ms
 2026-08-06 19:38:50 scheduler PASSED: 63 FAILED: 0 TIME: 2861ms
 2026-08-06 19:38:55 atomic PASSED: 12 FAILED: 0 TIME: 1195ms
+2026-08-06 20:14:25 all PASSED: 77 FAILED: 0 TIME: 227s STATUS: TIMEOUT at test 78 (H2W orphan-displaced cur_rsp=0xFFFF800000A57B80 during ipc cluster; documented residual H2 race ROADMAP v0.3.9, reproduced 2026-08-05 at 77/78; my SIL3 changes confined to .abort_switch path, disasm-verified) [HOST] start=1786039855s end=1786040082s elapsed=227s
+2026-08-06 20:22:03 ss_deadline PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT before S: line (test 1 SsExhaustionTriggersDeadline: EXHAUSTED SS task at bg_prio 2 never re-dispatched below harness prio 10 — helper stuck READY, harness spins while(state!=BLOCKED); matches ROADMAP_done.md v0.3.9 issue (4)) [HOST] start=1786040523s end=1786040643s
+2026-08-06 20:21:05 ss_deadline PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT BASELINE (my 4 source changes reverted via git checkout HEAD~1; identical hang before S: line — confirms ss_deadline timeout is pre-existing, NOT caused by SIL3 audit changes) [HOST] start=1786040744s end=1786040864s
+2026-08-06 20:37:15 ss_deadline PASSED: 2 FAILED: 0 TIME: 370ms (FIXED: helper busy-waits at nominal prio before exhausting SS budget; harness waits use reschedule() to dispatch exhausted eff-prio-2 helper; audits/deep-analysis-h2-ssdeadline-v0.3.9.md §2)
+2026-08-06 20:38:10 deadline_miss PASSED: 5 FAILED: 0 TIME: 833ms
+2026-08-06 20:38:13 deadline_recovery PASSED: 4 FAILED: 0 TIME: 753ms
+2026-08-06 20:38:16 deadline_action PASSED: 1 FAILED: 0 TIME: 227ms
+2026-08-06 20:38:19 wcet_overrun PASSED: 2 FAILED: 0 TIME: 509ms
+2026-08-06 20:38:22 sporadic PASSED: 25 FAILED: 0 TIME: 1853ms
+2026-08-06 20:38:25 timing PASSED: 18 FAILED: 0 TIME: 1440ms
+2026-08-06 20:38:50 ipc_blocking PASSED: 4 FAILED: 0 TIME: 554ms
+2026-08-06 20:38:52 ipc_robustness PASSED: 6 FAILED: 0 TIME: 223ms
+2026-08-06 20:38:55 ipc PASSED: 51 FAILED: 0 TIME: 2247ms
+2026-08-06 20:40:30 task_lifecycle PASSED: 0 FAILED: 0 TIME: 2s STATUS: QEMU_EXIT no tests registered (INVALID class name — task_lifecycle is not a standalone registry class; its tests live in the 'scheduler' class which passed 63/63; not a kernel regression)
+2026-08-06 20:45:00 ipc PASSED: 51 FAILED: 0 TIME: 2282ms
+2026-08-06 20:45:20 ipc PASSED: 51 FAILED: 0 TIME: 2290ms
+2026-08-06 20:45:40 ipc PASSED: 51 FAILED: 0 TIME: 9376ms
+2026-08-06 20:46:30 ipc PASSED: 51 FAILED: 0 TIME: 2074ms
+2026-08-06 20:46:50 ipc PASSED: 51 FAILED: 0 TIME: 2073ms
+2026-08-06 20:47:10 ipc PASSED: 51 FAILED: 0 TIME: 2036ms
+2026-08-06 20:47:30 scheduler PASSED: 63 FAILED: 0 TIME: 899ms
+2026-08-06 20:47:50 scheduler PASSED: 63 FAILED: 0 TIME: 2624ms
+2026-08-06 20:48:10 ss_deadline PASSED: 2 FAILED: 0 TIME: 192ms
+2026-08-06 20:48:15 deadline_miss PASSED: 5 FAILED: 0 TIME: 3599ms
+2026-08-06 20:48:30 timing PASSED: 18 FAILED: 0 TIME: 1375ms
+2026-08-06 20:52:00 wcet PASSED: 1 FAILED: 0 TIME: 5003ms (FIXED: population 40->30 < CONFIG_SYNC_MAX_WAITERS=32 semaphore waiter cap; helper lambda BLOCKED-spin after wait() so harness observes BLOCKED before self-termination)
+2026-08-06 20:55:00 priority_inheritance PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (MutexPriorityDonates hangs — harness resumed on stale restored context.rsp 0xFFFF900000032550 at test 477; harness context.rsp reset by restore_task_fields every snapshot_restore; INV-4 holder spin added but mutex ceiling-0 spins (PCP retry panic) vs test's genuine-blocking expectation, audits/deep-analysis-h2-ssdeadline-v0.3.9.md §4.2, T2-3)
+2026-08-06 20:56:00 priority_inheritance PASSED: 0 FAILED: 0 TIME: 120s STATUS: TIMEOUT (after harness context.rsp live-save + dispatch-guard harness-boot exemption; now mutex ceiling-0 PCP retry panic matched as expected-panic, spurious PASS)

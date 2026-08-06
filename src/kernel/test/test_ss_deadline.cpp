@@ -49,14 +49,25 @@ TaskControlBlock *spawn_ss_exhausted(sync::Semaphore &gate) {
     auto *helper = TaskControlBlock::create(
         []() {
             auto *self = Scheduler::current_task();
-            // Drive the SS lifecycle in the running task's own context:
-            // activate, then consume the 3-tick budget to EXHAUSTED.
+            // Busy-wait past the real deadline at NOMINAL priority (prio 11 >
+            // harness 10).  Do NOT activate the SS yet: an ACTIVE server
+            // auto-consumes in on_tick (budget 3), which would demote us to
+            // bg_prio 2 mid-wait and starve us below the harness (the v0.3.9
+            // ss_deadline hang — see audits/deep-analysis-h2-ssdeadline-v0.3.9.md §2).
+            while (arch::Timer::ticks() <= self->deadline_ticks)
+                arch::pause();
+            // Now genuinely exhaust the budget in the running task's own
+            // context: activate, then consume the 3-tick budget to EXHAUSTED.
             self->sporadic_server->on_activation(arch::Timer::ticks());
             for (int i = 0; i < 5; ++i)
                 self->sporadic_server->consume(arch::Timer::ticks());
-            while (arch::Timer::ticks() <= self->deadline_ticks)
-                arch::pause();
             reinterpret_cast<sync::Semaphore *>(self->user_data)->wait();
+            // INV-4: Semaphore::wait() sets BLOCKED then returns immediately
+            // (the switch is deferred).  Spin on our own BLOCKED state so the
+            // harness can observe it before we would self-terminate; the
+            // harness's gate.post() wakes us (state != BLOCKED) and we return.
+            while (Scheduler::current_task()->state == TaskState::BLOCKED)
+                asm volatile("pause");
         },
         11, 10);
     if (helper == nullptr)
@@ -67,8 +78,11 @@ TaskControlBlock *spawn_ss_exhausted(sync::Semaphore &gate) {
     helper->init_sporadic_server(3, 100, 2);
     Scheduler::add_task(*helper);
     Scheduler::reschedule();
+    // Yield to the helper via reschedule(): after SS exhaustion its effective
+    // priority (bg 2) is below the harness (10), so only an explicit yield
+    // dispatches it for the final gate.wait().
     while (helper->state != TaskState::BLOCKED)
-        asm volatile("pause");
+        Scheduler::reschedule();
     return helper;
 }
 
@@ -122,8 +136,10 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
     gate.post();
+    // Yield via reschedule(): the helper is EXHAUSTED (eff prio 2 < harness 10)
+    // and needs a dispatch to exit its BLOCKED-spin and self-terminate.
     while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+        Scheduler::reschedule();
     release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
@@ -160,8 +176,10 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     CT_ASSERT(helper->ss_budget_on_deadline_miss == 0);
 
     gate.post();
+    // Yield via reschedule(): the helper is EXHAUSTED (eff prio 2 < harness 10)
+    // and needs a dispatch to exit its BLOCKED-spin and self-terminate.
     while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+        Scheduler::reschedule();
     release_task(helper);
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
