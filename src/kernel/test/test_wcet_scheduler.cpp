@@ -50,7 +50,7 @@ using namespace kernel;
 //
 // Expect: scan_deadlines() returns a non-zero cycle count (the scan ran) for
 // each task-population; the measured worst-case is logged for off-line
-// analysis (see docs/wcet_analysis.md).
+// analysis (see docs/specs/oom-rt.md §4).
 JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     const uint64_t kIters = 300;
 

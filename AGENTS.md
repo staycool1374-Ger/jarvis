@@ -155,7 +155,7 @@ evidence-backed. Do not stack changes across steps.
   (`make execute-test x86_64 release all`, 84/84) passes with the trace OFF.
   The *debug* `all` class (881 tests) passes 881/881 with the trace **ON**;
   with it OFF, the pre-existing H2 deferred-switch race
-  (`docs/ipc_blocking-analysis.md`) becomes deterministic and hangs at
+  (`docs/specs/ipc.md` §4) becomes deterministic and hangs at
   `ipc_send_sync_roundtrip` (~test 77/78).  Fix tracked in ROADMAP §v0.3.9.
   The earlier claim that "`all` only passes 881/881 with the trace off" was
   made in commit `4644d795` without ever running a full debug `all` in that

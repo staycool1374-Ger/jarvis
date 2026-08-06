@@ -198,7 +198,7 @@ __attribute__((weak)) void register_external_test_classes() {}
 // Helper functions for split "all" / "all-1" / "all-2" classes.
 // all-1 and all-2 work around the cumulative kernel page-table
 // corruption that occurs after ~850 snapshot-restore cycles
-// (resolved in v0.3.6, docs/kstack-window-pt-pool.md).
+// (resolved in v0.3.6, docs/specs/memory.md §3.1).
 static void register_all_tests();
 static void register_all_tests_first_half();
 static void register_all_tests_second_half();

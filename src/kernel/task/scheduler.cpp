@@ -724,8 +724,8 @@ void Scheduler::set_current(TaskControlBlock &task) noexcept {
     // again — it is not in the ready queue and not current, so the scheduler
     // has no path to dispatch it (lazy rebuild in next_task only runs when
     // dequeue_highest returns null, which never happens while the receiver
-    // sits in the queue).  See docs/ipc_blocking-analysis.md §H2/B and
-    // docs/task-lifecycle-review.md §VIOL-1.
+    // sits in the queue).  See docs/specs/ipc.md §4 (H2) and
+    // docs/specs/scheduler.md §6 (VIOL-1).
     if (old && old != &task && old != idle_task_ &&
         old->magic == TaskControlBlock::TCB_MAGIC &&
         (old->state == TaskState::READY ||
@@ -1708,7 +1708,7 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
             current->kernel_stack && current->kernel_stack_top &&
             cur_rsp >= cbase && cur_rsp < current->kernel_stack_top;
         if (is_boot_stack_rsp(cur_rsp)) {
-            // H2 (docs/ipc_blocking-analysis.md): the live RSP is on the kernel
+            // H2 (docs/specs/ipc.md §4): the live RSP is on the kernel
             // boot stack — the harness (init/PID 1) runs there in test mode and
             // never switched onto its TCB kernel_stack, so NO TCB kernel_stack
             // covers this RSP.  Owner-resolution must NOT scan peers here: if
@@ -1897,7 +1897,7 @@ static void switch_to_task(TaskControlBlock *current, TaskControlBlock &next,
                 // foreign rsp (e.g. a freed test task's HHDM stack) otherwise
                 // passes this guard and iretq resumes the task on foreign
                 // memory — the harness displacement that strands it on a freed
-                // stack (docs/ipc_blocking-analysis.md H2).  ring3 rsp is the
+                // stack (docs/specs/ipc.md §4 H2).  ring3 rsp is the
                 // user stack and is checked elsewhere.  Note the frame's rsp
                 // field is INCLUSIVE of kernel_stack_top: a freshly-created
                 // task's frame carries rsp == kernel_stack_top (its initial
