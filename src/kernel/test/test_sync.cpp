@@ -89,6 +89,65 @@ JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
+// Testidea: Verifies the v0.3.9 "blocked semaphore waiter teardown gap" is
+// closed: a REAL task blocked in Semaphore::wait() is externally terminated
+// and reaped, and TaskControlBlock::cleanup() unlinks it from the semaphore's
+// waiter list so a later post() cannot re-queue the freed TCB (ready-queue
+// corruption / use-after-free).
+// Input: Worker (prio 11) genuinely blocks in sem.wait(); the harness
+//        externally terminates it via the real Scheduler::terminate() +
+//        drain_zombie_list() path (cookbook Rule 6 previously forbade this).
+// Expect: After reap, sem.waiter_count() == 0 and the reaped task is no longer
+//         linked; a post() after teardown takes the count-increment path
+//         (no set_task_ready on the freed TCB) and no ResourceTracker delta.
+// Depends: kernel::sync::Semaphore, kernel::TaskControlBlock, kernel::Scheduler
+JARVIS_TEST(semaphore_waiter_teardown_on_terminate,
+            "PRE: none | POST: none") {
+    sync::Semaphore sem;
+    sem.init(0, 1);
+
+    auto *worker = TaskControlBlock::create(
+        []() {
+            auto *self = Scheduler::current_task();
+            sync::Semaphore *s = reinterpret_cast<sync::Semaphore *>(
+                self->user_data);
+            s->wait();
+            // Semaphore::wait() only sets BLOCKED and defers the switch
+            // (INV-4); it returns immediately.  Spin until the timer ISR
+            // actually suspends this task, then exit when post() wakes it.
+            while (self->state == TaskState::BLOCKED)
+                asm volatile("pause");
+        },
+        11, 10);
+    JARVIS_ASSERT(worker != nullptr);
+    worker->user_data = &sem;
+    Scheduler::add_task(*worker);
+    Scheduler::reschedule();
+
+    // The worker genuinely blocks inside sem.wait() and is linked as a waiter.
+    while (worker->state != TaskState::BLOCKED)
+        asm volatile("pause");
+    JARVIS_ASSERT(worker->state == TaskState::BLOCKED);
+    JARVIS_ASSERT(sem.waiter_count() == 1);
+    JARVIS_ASSERT(worker->waiting_on_semaphore == &sem);
+
+    // External termination while blocked on the semaphore — the v0.3.9 gap.
+    // terminate() + drain runs cleanup(), which must unlink the waiter before
+    // the TCB is freed.
+    Scheduler::terminate(*worker, 0);
+    Scheduler::drain_zombie_list();
+
+    // The reaped task must no longer be linked: the waiter array is empty and
+    // the back-pointer was cleared.  A post() must take the count path (not
+    // wake the freed TCB), so value() becomes 1.
+    JARVIS_ASSERT(sem.waiter_count() == 0);
+    sem.post();
+    JARVIS_ASSERT_EQ(1ULL, sem.value());
+
+    JARVIS_TEST_PASS();
+}
+
+// Runmode: kernel
 // Testidea: Verifies mutex lock/unlock with owner tracking and waiter handoff
 // using a REAL owner task that holds the mutex and blocks on a gate, plus a
 // REAL contender that blocks on the mutex and acquires after release.
@@ -457,6 +516,7 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
 void register_sync_tests() {
     Logger::info("Registering sync tests");
     JARVIS_REGISTER_TEST(semaphore_wait_post);
+    JARVIS_REGISTER_TEST(semaphore_waiter_teardown_on_terminate);
     JARVIS_REGISTER_TEST(mutex_double_unlock);
     JARVIS_REGISTER_TEST(mutex_recursive_lock);
     JARVIS_REGISTER_TEST(semaphore_timeout);

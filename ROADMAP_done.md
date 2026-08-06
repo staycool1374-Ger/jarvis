@@ -762,14 +762,19 @@ The `all` gate cannot yet validate this end-to-end because the residual H2 race
       `deadline_miss` 5, `deadline_action` 1, `deadline_recovery` 4,
       `wcet_overrun` 2 — all green.  Full details in the "Timing-Cluster Freeze
       at test 348" note above.
-- [ ] **Blocked semaphore waiter teardown gap (separate from H2):**
+- [x] **Blocked semaphore waiter teardown gap (separate from H2):**
       `Semaphore::wait()` stores a raw TCB in `waiters_` and leaves the task
       linked while the deferred switch is applied. `TaskControlBlock::cleanup()`
       currently unlinks IPC blocked-sender lists but has no equivalent
       semaphore-waiter unlink before zombie cleanup. Investigate an explicit,
       lock-safe detach on termination/cleanup and add a regression test; do not
       use external termination of a semaphore-blocked task as a scheduler test
-      workaround.
+      workaround.  **RESOLVED v0.3.12:** `waiting_on_semaphore` TCB back-pointer
+      + `Semaphore::remove_waiter()` (pointer+generation swap-remove under
+      lock_) hooked into `cleanup()`; `wake_one()` hardened to reject REAPED;
+      regression test `semaphore_waiter_teardown_on_terminate` (`test_sync.cpp`),
+      `vfs` class 147/147 PASS.  Audit: `audits/done/semaphore_waiter_teardown_audit-06-08-2026.md`.
+      Mutex/EventGroup/Queue share the latent asymmetry — tracked for follow-up.
 - [ ] **Verification (partial):** the debug `all` gate passes tests 1–347 with
       the trace OFF (the H2 hang at test 77/78 is gone) but freezes at test 348
       `timer_deadline_miss_detection_fires` — the PRE-EXISTING timing-cluster

@@ -625,3 +625,4 @@ SUMMARY: total=68 ok=67 fail=1
 2026-08-06 12:49:26 memory PASSED: 47 FAILED: 0 TIME: ~2s (0 PMM WARNs, regression check after buffer_pool fix)
 2026-08-06 12:49:26 selftest PASSED: 132 FAILED: 0 TIME: ~2s (0 PMM WARNs)
 2026-08-06 12:49:26 vfs PASSED: 146 FAILED: 0 TIME: ~3s (0 PMM WARNs)
+2026-08-06 15:11:33 vfs PASSED: 147 FAILED: 0 TIME: 3024ms (semaphore waiter teardown fix + regression test semaphore_waiter_teardown_on_terminate)

@@ -101,6 +101,7 @@ struct MessageQueue {
 
 namespace sync {
 class Mutex;
+class Semaphore;
 } // namespace sync
 
 namespace task {
@@ -219,6 +220,7 @@ struct TaskControlBlock {
           blocked_next(nullptr), blocked_prev(nullptr),
           blocked_on_queue(nullptr), reply_wait(false),
           waiting_on_mutex(nullptr),
+          waiting_on_semaphore(nullptr),
           held_ceiling_depth_(0), system_ceiling_(0),
           first_child(nullptr), next_sibling(nullptr), prev_sibling(nullptr),
           num_children(0), generation(0) {
@@ -372,6 +374,14 @@ struct TaskControlBlock {
     /// Non-null only while the task is in a Mutex's waiter array.
     /// Set in Mutex::lock(), cleared in Mutex::wake_one().
     sync::Mutex *waiting_on_mutex;
+
+    /// @brief Pointer to the semaphore this task is blocked on (as a waiter).
+    /// Non-null only while the task is in a Semaphore's waiter array.
+    /// Set in Semaphore::add_waiter(), cleared in Semaphore::wake_one() and
+    /// Semaphore::remove_waiter().  Used by cleanup() to detach a reaped task
+    /// from a semaphore's waiter list before the TCB is freed, preventing a
+    /// dangling waiter entry from being re-queued by a later post().
+    sync::Semaphore *waiting_on_semaphore;
 
     /// @brief Number of mutexes currently held by this task (for PCP ceiling
     /// tracking).

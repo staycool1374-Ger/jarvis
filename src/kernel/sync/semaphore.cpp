@@ -59,8 +59,28 @@ bool Semaphore::add_waiter(TaskControlBlock &task) {
         return false;
     waiters_[waiter_count_] = &task;
     waiter_gens_[waiter_count_] = task.generation;
+    task.waiting_on_semaphore = this;
     ++waiter_count_;
     return true;
+}
+
+/// @brief Detach a task from the waiter array (caller must hold lock_).
+///        Verifies pointer AND generation match so a recycled TCB that now
+///        occupies the slot is never removed.  Mirrors the swap-remove
+///        pattern of Queue::remove_send_waiter / IPC::unblock_sender_rollback.
+/// @return true if the task was found and removed.
+bool Semaphore::remove_waiter(TaskControlBlock &task) {
+    SpinLockGuard<SpinLock> guard(lock_);
+    for (size_t i = 0; i < waiter_count_;) {
+        if (waiters_[i] == &task && waiter_gens_[i] == task.generation) {
+            waiters_[i] = waiters_[--waiter_count_];
+            waiter_gens_[i] = waiter_gens_[waiter_count_];
+            task.waiting_on_semaphore = nullptr;
+            return true;
+        }
+        ++i;
+    }
+    return false;
 }
 
 /// @brief Wake the highest-priority waiter (caller must hold lock_).
@@ -86,13 +106,21 @@ void Semaphore::wake_one() {
             if (waiters_[i]->priority > waiters_[best]->priority)
                 best = i;
         }
-        if (waiters_[best]->state != TaskState::TERMINATED)
+        // Harden: a cleaned-up task is REAPED, not TERMINATED.  Never feed a
+        // freed TCB to set_task_ready (ready-queue corruption / UAF).
+        if (waiters_[best]->state != TaskState::TERMINATED &&
+            waiters_[best]->state != TaskState::REAPED) {
+            waiters_[best]->waiting_on_semaphore = nullptr;
             Scheduler::set_task_ready(*waiters_[best]);
+        }
         waiters_[best] = waiters_[--waiter_count_];
         waiter_gens_[best] = waiter_gens_[waiter_count_];
     } else {
-        if (waiters_[0]->state != TaskState::TERMINATED)
+        if (waiters_[0]->state != TaskState::TERMINATED &&
+            waiters_[0]->state != TaskState::REAPED) {
+            waiters_[0]->waiting_on_semaphore = nullptr;
             Scheduler::set_task_ready(*waiters_[0]);
+        }
         waiter_count_ = 0;
     }
 }

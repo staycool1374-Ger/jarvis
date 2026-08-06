@@ -37,6 +37,7 @@
 #include <kernel/daemon/daemon_mgr.hpp>
 #include <kernel/sync/notify.hpp>
 #include <kernel/sync/eventgroup.hpp>
+#include <kernel/sync/semaphore.hpp>
 #include <kernel/test/resource_tracker.hpp>
 #include <kernel/arch/hal/irq_guard.hpp>
 #include <assert.hpp>
@@ -145,6 +146,7 @@ void init_task_common(TaskControlBlock &tcb) {
     tcb.blocked_next = nullptr;
     tcb.blocked_prev = nullptr;
     tcb.blocked_on_queue = nullptr;
+    tcb.waiting_on_semaphore = nullptr;
     tcb.stack_pdpt_phys_ = 0;
     tcb.page_table_shared_ = false;
     tcb.user_stack_ = 0;
@@ -1307,6 +1309,20 @@ void TaskControlBlock::cleanup() noexcept {
         }
         blocked_next = nullptr;
         blocked_on_queue = nullptr;
+    }
+
+    // Detach from any semaphore's waiter list before freeing the TCB.
+    // Semaphore::wait() stores a raw TCB in waiters_[] with no cleanup
+    // unlink (v0.3.9 teardown gap); a later post() on a reaped task would
+    // feed the freed block to Scheduler::set_task_ready (ready-queue
+    // corruption / use-after-free).  remove_waiter acquires the semaphore's
+    // own lock_ — safe here: cleanup() holds no scheduler lock (see
+    // drain_zombie_list/cleanup_step), preserving the sem.lock_ ->
+    // scheduler_lock_ order of the wake path.
+    if (waiting_on_semaphore &&
+        reinterpret_cast<uintptr_t>(waiting_on_semaphore) >= 0xFFFF800000000000ULL) {
+        waiting_on_semaphore->remove_waiter(*this);
+        waiting_on_semaphore = nullptr;
     }
 
     // Notify the daemon manager so registered daemon PIDs are reset to 0.

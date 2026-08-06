@@ -210,9 +210,12 @@ void dump_class_counts();
 //      BEFORE `JARVIS_ASSERT*`.  Assertions `return` on failure, so asserting
 //      before cleanup leaks the TCB (observed as `PMM +17, Tasks +1`) or
 //      leaves a live task that hangs the whole class.
-//   6. Never externally terminate a task that is blocked in
-//      `Semaphore::wait()` — the semaphore keeps a raw TCB in its waiter list
-//      that is not unlinked by cleanup (tracked in ROADMAP v0.3.9).
+//   6. External termination of a task blocked in `Semaphore::wait()` is SAFE
+//      since v0.3.12: `TaskControlBlock::cleanup()` unlinks the task from the
+//      semaphore's waiter list via the `waiting_on_semaphore` back-pointer
+//      (v0.3.9 teardown gap closed).  Verify teardown with
+//      `semaphore_waiter_teardown_on_terminate` — do not re-add the old
+//      workaround (avoiding the scenario instead of testing it).
 // ============================================================================
 
 /// @brief Reference skeleton for a REAL parent-WAITPID / child-exit pattern.
