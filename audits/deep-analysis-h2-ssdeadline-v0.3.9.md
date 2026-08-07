@@ -269,3 +269,63 @@ the idle-apply sequence is eliminated (the harness is RUNNING, so the
 remains (~7% direct / ~30% under the UART+expect harness) where the harness
 hlt-waits with no further arms — a post-abort task-lifecycle state still under
 investigation.  ROADMAP §v0.3.9 stays open.
+
+### 4.6 Residual-flaw trace (2026-08-07) — full task-state capture
+The ring tail plus a full id_table + TCB-state dump at the residual hang
+(`ipc` test 21, harness stuck):
+```
+current task ptr = 0xFFFF800000725000 (id=1 state=READY ctx.rsp=0xFFFF900000032920
+  inrq=0 kst=[0xFFFF900000023000-0xFFFF900000033000])
+task table: id=1 READY inrq=0   id=2 BLOCKED   id=3 BLOCKED   id=5 BLOCKED
+  (tasks 6 and 7 ABSENT — terminated, in the zombie list, id_table cleared)
+ring tail: ... [ARM a=6 b=0xFFFF800000A4FF40] -> [CLR-MISC a=6] -> (silence)
+```
+Characterization:
+1. Tasks 6/7 (sender/receiver) self-terminate and leave the id_table; nothing
+   runnable remains but idle.
+2. The harness (current, physically running the test-21 wait loop) is in
+   `state=READY, in_ready_queue_=0` — the INV-4 anomaly persists on the
+   preempted task in this path, so it is not RUNNING (the idle-switch RMS guard
+   is off) but it is also never re-dispatched.
+3. The harness's `context.rsp` = 0xFFFF900000032920 — the snapshot-restored
+   frame whose RIP is `arch_hlt` (the daemon-wait).  Resuming it there resumes
+   the tight `hlt` loop, so the test-21 wait loop never re-observes
+   `sender->state`/`receiver->state` (whose TCBs are now zombies) — the
+   harness spins in `arch_hlt` forever, with the timer ISR firing but no task
+   ever runnable.
+
+Attempted: a `snapshot_restore` harness-binding fixup (set the harness's
+context.rsp to the live RSP when no TCB kernel_stack contains it) — did NOT
+reduce the residual (variance), and binding context.rsp to a non-iretq-frame
+address is semantically suspect, so it was REVERTED.  The residual is a
+harness-resume-on-snapshot-frame + terminated-task-zombie interaction that
+needs either a context.rsp fixup to a *valid* harness frame or a wait-loop
+that tolerates zombie TCBs.  ROADMAP §v0.3.9 stays open.
+
+**2026-08-07 follow-up (replace-the-frame attempt, REVERTED):** re-applied the
+harness-binding fixup cleanly and measured 3×14 runs — **9/14, 9/14, 10/14**,
+consistently WORSE than the 13/14 baseline without it.  Root reason: the
+harness's live RSP inside `snapshot_restore` (task context, boot stack) is
+call-frame data, NOT a valid iretq frame — a deferred-switch resume TO the
+harness via `context.rsp = live_rsp` iretq's garbage, adding a new failure
+mode.  Conclusion: the harness's `context.rsp` must stay a proper ISR-style
+frame; the residual freeze cannot be fixed by re-pointing it.  The harness is
+the test runner and should never be a deferred-switch TARGET in test mode —
+it should always continue as the physically-running current task.  A correct
+fix therefore belongs in the switch-selection / harness-nonpreempt path, not
+in a context.rsp patch.  Reverted; ROADMAP §v0.3.9 stays open.
+
+**2026-08-07 follow-up (harness non-selection guard, TESTED + REVERTED):** per
+the §4.6 hypothesis, implemented a guard in `Scheduler::next_task()` that
+dequeues-and-skips the harness (`is_test_active() && candidate == harness`) so
+it is never selected as a deferred-switch target.  Result: **0/10 ipc runs pass
+— deterministic suite hang** at test 2/15 (the harness is never resumed after
+the first test task yields, so the runq-wait stalls).  This DISPROVES the
+"never a deferred-switch target" hypothesis: the harness IS a legitimate resume
+target (it is switched away to dispatch test tasks and must be switched back).
+The residual is therefore NOT that the harness is selected, but that its
+resume frame is occasionally STALE (the snapshot-restored arch_hlt frame).
+Correct direction: keep the harness's `context.rsp` fresh across
+`restore_task_fields` (the write that reintroduces the stale frame at every
+snapshot boundary) or validate/repair the harness resume frame at apply time.
+REVERTED; ROADMAP §v0.3.9 stays open.
