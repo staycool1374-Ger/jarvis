@@ -710,6 +710,11 @@ bool Scheduler::unregister_task(TaskControlBlock &task) noexcept {
 // Current-task / lookup
 // ---------------------------------------------------------------------------
 
+// Defined below (near switch_to_task); used by set_current / rate_monotonic
+// schedule to restore state when a deferred-switch arm is cleared un-applied.
+static void restore_preempted_current(TaskControlBlock *current,
+                                      uint64_t armed_target_id) noexcept;
+
 TaskControlBlock *Scheduler::current_task() noexcept {
     return current_cpu().current;
 }
@@ -824,13 +829,18 @@ TaskControlBlock *Scheduler::next_task() noexcept {
 void Scheduler::set_current(TaskControlBlock &task) noexcept {
     auto *old = current_task();
     if (old == &task) {
-        H2_REC(H2_EV_CLR_SET,
-               __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0,
-               0);
+        // Same-task set_current: a no-op, but a pending deferred-switch arm
+        // must not survive — and if the preempted current was set READY +
+        // enqueued by switch_to_task (boot-stack harness), restore it to
+        // RUNNING so next_task() cannot skip it and fall to idle (INV-4).
+        uint64_t armed = __atomic_load_n(&scheduler_next_task_id,
+                                         __ATOMIC_RELAXED);
+        H2_REC(H2_EV_CLR_SET, armed, 0, 0);
         __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                          __ATOMIC_RELEASE);
+        restore_preempted_current(old, armed);
         return;
     }
     // Invariant: a task that is physically executing (current) must never sit
@@ -849,12 +859,17 @@ void Scheduler::set_current(TaskControlBlock &task) noexcept {
         // (pop_front dereferences a freed/reused TCB → #GP) once old is freed.
         ready_queue_.remove(*old, old->rq_priority_);
     }
-    H2_REC(H2_EV_CLR_SET,
-           __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0, 0);
+    // State symmetry: a pending deferred-switch arm is being discarded here.
+    // If the preempted current (the boot-stack harness) was set READY +
+    // enqueued by switch_to_task, restore it to RUNNING and re-enqueue the
+    // armed target so neither is stranded (INV-4 / INV-2, H2 residual).
+    uint64_t armed = __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED);
+    H2_REC(H2_EV_CLR_SET, armed, 0, 0);
     __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_load_cr3_from, (uint64_t)0, __ATOMIC_RELEASE);
     __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                      __ATOMIC_RELEASE);
+    restore_preempted_current(old, armed);
 
     // Re-enqueue the previous task if it is still runnable but NOT current
     // or idle.  Without this, a higher-priority task that was preempted by a
@@ -1732,6 +1747,63 @@ static inline bool is_boot_stack_rsp(uint64_t rsp) noexcept {
     return rsp >= base && rsp < end;
 }
 
+/// @brief Restore scheduler state after a deferred-switch arm is cleared
+///        WITHOUT being applied (CLR-RMS / CLR-SET / CLR-MISC symmetry).
+///
+/// switch_to_task() performs two side effects on the preempted current task
+/// before publishing the arm (scheduler.cpp:2176-2178): it sets the current
+/// task READY and enqueues it (when it was RUNNING or on the boot stack), and
+/// sets the target RUNNING.  When the arm is later cleared instead of applied,
+/// those side effects must be undone, otherwise the physically-running harness
+/// (boot-stack current) is left `state=READY, in_ready_queue_=true` — INV-4 —
+/// so next_task() skips it and falls through to idle (the H2 residual hang).
+///
+/// Caller must hold scheduler_lock_ or have IRQs disabled.  All runq ops used
+/// here are lock-free and idempotent (TaskQueue::remove early-returns for a
+/// node not physically in the queue; enqueue_ready refuses double-enqueues),
+/// matching the drop_arm path (scheduler.cpp:3054-3074).
+///
+/// @param current        The preempted current task (the physical runner).
+/// @param armed_target_id The `scheduler_next_task_id` captured BEFORE the
+///                        atoms were cleared; UINT64_MAX if none.
+static void restore_preempted_current(TaskControlBlock *current,
+                                      uint64_t armed_target_id) noexcept {
+    if (current && current->magic == TaskControlBlock::TCB_MAGIC) {
+        if (current->in_ready_queue_) {
+            Scheduler::dequeue_ready(*current);
+        }
+        // Only undo switch_to_task's publish side effect (READY) — never
+        // resurrect a TERMINATED or BLOCKED current (self-terminated trampoline
+        // task or a blocked-impersonated peer); forcing those to RUNNING would
+        // re-enqueue them at the next switch_to_task and dispatch a zombie.
+        if (current->state == TaskState::READY) {
+#ifdef CONFIG_DEBUG
+            if (current == Scheduler::get_harness_task()) {
+                kernel::debug::trace("[H2-RESTORE] harness READY->RUNNING armed=");
+                // trace() takes one uint64; format the id into a small buffer.
+                char buf[24];
+                int p = 0;
+                kernel::debug::fmt_u64(buf, p, armed_target_id);
+                buf[p] = 0;
+                kernel::debug::trace(buf);
+            }
+#endif
+            current->state = TaskState::RUNNING;
+        }
+    }
+    // Re-enqueue the armed target (undo switch_to_task's RUNNING + the dequeue
+    // next_task() performed when selecting it) so it is not stranded (INV-2).
+    if (armed_target_id != UINT64_MAX && armed_target_id != 0) {
+        auto *target = Scheduler::find_task(armed_target_id);
+        if (target && target != current && target != Scheduler::get_idle_task() &&
+            target->magic == TaskControlBlock::TCB_MAGIC &&
+            (target->state == TaskState::READY ||
+             target->state == TaskState::RUNNING)) {
+            Scheduler::set_task_ready(*target);
+        }
+    }
+}
+
 static bool validate_switch(TaskControlBlock *current, TaskControlBlock *next,
                             const char *label) {
     if (!current) {
@@ -2253,11 +2325,16 @@ void Scheduler::rate_monotonic_schedule() noexcept {
             return;
     }
 
-    // Clear any pending deferred switch.
+    // Clear any pending deferred switch.  State symmetry: switch_to_task()
+    // set the preempted current READY + enqueued it (and the target RUNNING);
+    // clearing the arm without applying it must undo BOTH, or the
+    // physically-running harness stays READY+queued (INV-4) and next_task()
+    // skips it, falling through to idle (H2 residual hang).  This mirrors the
+    // drop_arm restore in scheduler_validate_pending_switch (CLR-MISC).
     if (__atomic_load_n(&scheduler_save_rsp_to, __ATOMIC_ACQUIRE) != 0) {
-        H2_REC(H2_EV_CLR_RMS,
-               __atomic_load_n(&scheduler_next_task_id, __ATOMIC_RELAXED), 0,
-               0);
+        uint64_t armed = __atomic_load_n(&scheduler_next_task_id,
+                                         __ATOMIC_RELAXED);
+        H2_REC(H2_EV_CLR_RMS, armed, 0, 0);
         __atomic_store_n(&scheduler_save_rsp_to, (uint64_t *)nullptr,
                          __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_load_rsp_from, (uint64_t)0,
@@ -2266,6 +2343,7 @@ void Scheduler::rate_monotonic_schedule() noexcept {
                          __ATOMIC_RELEASE);
         __atomic_store_n(&scheduler_next_task_id, (uint64_t)-1,
                          __ATOMIC_RELEASE);
+        restore_preempted_current(current, armed);
     }
 
     auto *next = next_task();
@@ -2278,8 +2356,18 @@ void Scheduler::rate_monotonic_schedule() noexcept {
                         r6 ? (uint64_t)r6->in_ready_queue_ : 9u);
     }
 #endif
+    // Defense-in-depth (H2 residual): never iretq the physically-running test
+    // harness into the idle loop.  If the harness were left READY (INV-4) and
+    // skipped by next_task(), the guard below would fall through to idle and
+    // strand it; the harness must continue as the current task instead.  The
+    // state-restore symmetry in the CLR paths above keeps it RUNNING, so this
+    // is belt-and-braces for any residual path that still leaves it READY.
+    bool harness_current =
+        (is_test_active() && harness_task_ptr_ != nullptr &&
+         current == harness_task_ptr_);
     if (next && next != current &&
-        !(next == idle_task_ && current->state == TaskState::RUNNING)) {
+        !(next == idle_task_ &&
+          (current->state == TaskState::RUNNING || harness_current))) {
         switch_to_task(current, *next, nullptr);
     }
 
@@ -2600,6 +2688,21 @@ void Scheduler::capture_task_fields(TaskFields *out) {
 }
 
 void Scheduler::restore_task_fields(const TaskFields *saved) {
+    // Direction 1 (H2 §4.6): the harness (PID 1, the physically-running test
+    // runner) must keep its ACTIVE context.rsp.  restore_task_fields otherwise
+    // overwrites every task's context (incl. context.rsp) with the snapshot-time
+    // value — for the harness that frame is the stale daemon-wait arch_hlt, so a
+    // later deferred-switch resume of the harness iretq's the stale frame and
+    // freezes the suite (the residual H2 hang).  Capture the harness's live RSP
+    // (only meaningful when the harness is the current task, i.e. snapshot_restore
+    // is running on it) and re-apply it after the field restore.
+    TaskControlBlock *harness = Scheduler::get_harness_task();
+    uint64_t harness_live_rsp = 0;
+    if (harness && harness->magic == TaskControlBlock::TCB_MAGIC &&
+        harness == Scheduler::current_task()) {
+        asm volatile("mov %%rsp, %0" : "=r"(harness_live_rsp));
+    }
+
     uint64_t t_idx = 0;
     for (auto *t = all_tasks_.first_ptr(); t; t = all_tasks_.next_ptr(t)) {
         // NOTE: t->magic is NOT checked here.  If a TCB's block was freed
@@ -2628,6 +2731,10 @@ void Scheduler::restore_task_fields(const TaskFields *saved) {
             t->remaining_ticks = saved[j].remaining_ticks;
             t->exit_code = saved[j].exit_code;
             t->context = saved[j].context;
+            // Direction 1: keep the harness's ACTIVE context.rsp (see above).
+            if (t == harness && harness_live_rsp != 0) {
+                TASK_STACK_PTR(t) = harness_live_rsp;
+            }
             TCB_WRITE(t, kernel_stack,
                       reinterpret_cast<uint8_t *>(saved[j].kernel_stack));
             t->kernel_stack_top = saved[j].kernel_stack_top;
@@ -3039,7 +3146,12 @@ extern "C" int scheduler_validate_pending_switch() {
             if (cur->in_ready_queue_) {
                 kernel::Scheduler::dequeue_ready(*cur);
             }
-            cur->state = kernel::TaskState::RUNNING;
+            // Only undo switch_to_task's READY publish side effect; never
+            // resurrect a TERMINATED/BLOCKED current (see
+            // restore_preempted_current).
+            if (cur->state == kernel::TaskState::READY) {
+                cur->state = kernel::TaskState::RUNNING;
+            }
         }
         // Re-enqueue the dequeued target (if still alive) so it is not
         // stranded (INV-2); a dead/removed target is left to the reaper.
@@ -3076,6 +3188,7 @@ extern "C" int scheduler_validate_pending_switch() {
         drop_arm(t);
         return 0;
     }
+
     return 1;
 }
 

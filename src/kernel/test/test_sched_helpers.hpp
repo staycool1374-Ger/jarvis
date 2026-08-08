@@ -138,15 +138,66 @@ inline TaskControlBlock *create_forever_task(uint64_t priority,
 /// @brief Safely terminate a forever-task and drain its zombie.
 ///        Handles the common case where terminate + drain_zombie_list
 ///        is needed.
+/// @note  `terminate()` on an ALREADY-TERMINATED task re-appends it to the
+///        zombie list (release_zombie has no idempotency guard); on a task a
+///        PRIOR drain already reaped (block 0xDD-poisoned), reading state and
+///        calling terminate() dereferences freed memory (ENSURE panic).  Guard
+///        on magic (is_valid) FIRST, then live state — an already-reaped block
+///        is skipped entirely.
 inline void terminate_and_drain(TaskControlBlock &task) {
-    Scheduler::terminate(task, 0);
+    if (TaskControlBlock::is_valid(&task) &&
+        task.state != TaskState::TERMINATED)
+        Scheduler::terminate(task, 0);
     Scheduler::drain_zombie_list();
 }
 
-/// @brief Wait until a task reaches TERMINATED state, yielding the CPU
-///        via hlt() to let the scheduler dispatch other tasks.
-inline void wait_for_termination(TaskControlBlock &task) {
-    while (task.state != TaskState::TERMINATED) {
+/// @brief Terminate one task ONLY if it is still live.  Safe for tasks that
+///        self-terminated (already TERMINATED and sitting in the zombie list):
+///        terminate() is skipped, so no double zombie-append and no
+///        dereference of a block a prior drain may have freed.  Checks magic
+///        first so an already-reaped (0xDD-poisoned) block is skipped without
+///        touching freed memory.
+inline void terminate_if_live(TaskControlBlock *task) {
+    if (task && TaskControlBlock::is_valid(task) &&
+        task->state != TaskState::TERMINATED)
+        Scheduler::terminate(*task, 0);
+}
+
+/// @brief Teardown for a pair of tasks: terminate the still-live ones, then
+///        reclaim ALL zombies exactly once.  This is the correct pattern for
+///        two self-terminated tasks — calling terminate_and_drain() per task
+///        re-drains (and the second call derefs a block the first drain
+///        freed).
+inline void terminate_and_drain2(TaskControlBlock *a, TaskControlBlock *b) {
+    terminate_if_live(a);
+    terminate_if_live(b);
+    Scheduler::drain_zombie_list();
+}
+
+/// @brief Teardown for a triple of tasks (see terminate_and_drain2).
+inline void terminate_and_drain3(TaskControlBlock *a, TaskControlBlock *b,
+                                 TaskControlBlock *c) {
+    terminate_if_live(a);
+    terminate_if_live(b);
+    terminate_if_live(c);
+    Scheduler::drain_zombie_list();
+}
+
+/// @brief Safely wait for task termination in a test harness.  The raw
+///        `while (t->state != TERMINATED) hlt()` pattern reads the TCB even
+///        after the zombie reaper has freed + 0xDD-poisoned it (e.g. when the
+///        scheduler is momentarily idle between test tasks) — the poisoned
+///        state is never TERMINATED, so the harness spins forever (H2 residual
+///        hang).  is_valid() checks magic FIRST (task.hpp), so a freed block
+///        reads magic != TCB_MAGIC and the wait exits.  Also re-arms
+///        scheduler_need_resched so the timer ISR keeps driving the suite.
+inline void wait_for_termination_safe(TaskControlBlock *task) {
+    if (!task)
+        return;
+    while (TaskControlBlock::is_valid(task) &&
+           task->state != TaskState::TERMINATED) {
+        __atomic_store_n(&kernel::scheduler_need_resched, true,
+                         __ATOMIC_RELEASE);
         arch::hlt();
     }
 }
