@@ -513,7 +513,7 @@ endif
 	(printf '  %-7s %s\n' 'ERROR' 'grub-mkrescue failed'; echo $(PKG_HINT); exit 1)
 	@mkdir -p $(dir $(RELEASE_ISO))
 	@printf '%s\n' "$$(cat initrd/tests/test-config.txt 2>/dev/null || printf safe)" > release/.baked-test-config
-	@printf '  %-7s %s\n' 'DONE' 'Release ISO: $(RELEASE_ISO) (tests: $$(cat release/.baked-test-config))'
+	@printf '  %-7s %s\n' 'DONE' "Release ISO: $(RELEASE_ISO) (tests: $$(cat release/.baked-test-config))"
 	@echo ""
 	@echo "  Validate with:  make release-test"
 
