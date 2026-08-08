@@ -202,10 +202,6 @@ build/kernel/test/test_hal.o: src/kernel/test/test_hal.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_capability.o: src/kernel/test/test_capability.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_syscall.o: src/kernel/test/test_syscall.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -239,10 +235,6 @@ build/kernel/test/test_locking_stress.o: src/kernel/test/test_locking_stress.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_fat32.o: src/kernel/test/test_fat32.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_stress.o: src/kernel/test/test_stress.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -286,10 +278,6 @@ build/kernel/test/test_idle_cleanup.o: src/kernel/test/test_idle_cleanup.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_pic.o: src/kernel/test/test_pic.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_slab_reclaim.o: src/kernel/test/test_slab_reclaim.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -302,19 +290,11 @@ build/kernel/test/test_ipc.o: src/kernel/test/test_ipc.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_multiboot.o: src/kernel/test/test_multiboot.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_shell_redirect.o: src/kernel/test/test_shell_redirect.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_virtio.o: src/kernel/test/test_virtio.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_irq_alloc.o: src/kernel/test/test_irq_alloc.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -342,10 +322,6 @@ build/kernel/test/test_init.o: src/kernel/test/test_init.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_bootparams.o: src/kernel/test/test_bootparams.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_memory_determinism.o: src/kernel/test/test_memory_determinism.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -367,10 +343,6 @@ build/kernel/test/test_net.o: src/kernel/test/test_net.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_random_syscall.o: src/kernel/test/test_random_syscall.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_keyboard.o: src/kernel/test/test_keyboard.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -410,10 +382,6 @@ build/kernel/test/test_process.o: src/kernel/test/test_process.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_mlock.o: src/kernel/test/test_mlock.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_random.o: src/kernel/test/test_random.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -422,15 +390,7 @@ build/kernel/test/test_lock_validator.o: src/kernel/test/test_lock_validator.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_tmpfs_io_timeout.o: src/kernel/test/test_tmpfs_io_timeout.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_vfsd_auth.o: src/kernel/test/test_vfsd_auth.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_tmpfs_corrupted_metadata.o: src/kernel/test/test_tmpfs_corrupted_metadata.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -499,10 +459,6 @@ build/kernel/test/test_preemption_under_syscall.o: src/kernel/test/test_preempti
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_pipe.o: src/kernel/test/test_pipe.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_wfg.o: src/kernel/test/test_wfg.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -582,14 +538,6 @@ build/kernel/test/test_spinlock_stress.o: src/kernel/test/test_spinlock_stress.c
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_serial.o: src/kernel/test/test_serial.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_integration.o: src/kernel/test/test_integration.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_health.o: src/kernel/test/test_health.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
@@ -622,27 +570,11 @@ build/kernel/test/test_watchdog.o: src/kernel/test/test_watchdog.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_plic.o: src/kernel/test/test_plic.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_queue_pip.o: src/kernel/test/test_queue_pip.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_gic.o: src/kernel/test/test_gic.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_address.o: src/kernel/test/test_address.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_task_lifecycle.o: src/kernel/test/test_task_lifecycle.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_threaded_irqs.o: src/kernel/test/test_threaded_irqs.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -658,15 +590,7 @@ build/kernel/test/test_vfs_fat32.o: src/kernel/test/test_vfs_fat32.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_vfs_internal.o: src/kernel/test/test_vfs_internal.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_buffer_pool.o: src/kernel/test/test_buffer_pool.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_deadlock_detect.o: src/kernel/test/test_deadlock_detect.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -691,14 +615,6 @@ build/kernel/test/test_weak_stubs.o: src/kernel/test/test_weak_stubs.cpp
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 build/kernel/test/test_fstab.o: src/kernel/test/test_fstab.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_deadlock_recovery.o: src/kernel/test/test_deadlock_recovery.cpp
-	@mkdir -p $(dir $@)
-	@printf "  %s %s\n" CC $@
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-build/kernel/test/test_gdt.o: src/kernel/test/test_gdt.cpp
 	@mkdir -p $(dir $@)
 	@printf "  %s %s\n" CC $@
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
