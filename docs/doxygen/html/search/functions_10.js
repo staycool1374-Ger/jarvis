@@ -37,6 +37,7 @@ var searchData=
   ['printf_34',['printf',['../stdio_8c.html#a55f3d956bb2ba20b5059e9e25484a47f',1,'printf(const char *fmt,...):&#160;stdio.c'],['../stdio_8h.html#a55f3d956bb2ba20b5059e9e25484a47f',1,'printf(const char *fmt,...):&#160;stdio.c']]],
   ['prioritymap_35',['PriorityMap',['../classkernel_1_1_priority_map.html#a2d3e3d8feecbcb4b31dfb67a8adee94d',1,'kernel::PriorityMap']]],
   ['push_5fback_36',['push_back',['../classkernel_1_1_task_queue.html#a921f7a683bc08d9016cf18fa58b59f99',1,'kernel::TaskQueue']]],
-  ['putchar_37',['putchar',['../classservice_1_1_terminal.html#a2cdeef541005d6fe951835a03107ee48',1,'service::Terminal::putchar()'],['../stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a',1,'putchar(int c):&#160;stdio.c'],['../stdio_8h.html#af4de2514b7778805db3815e8dd6cf09a',1,'putchar(int c):&#160;stdio.c']]],
-  ['puts_38',['puts',['../classservice_1_1_terminal.html#a990cbcebc0f5826d941979d8da67b8c8',1,'service::Terminal::puts()'],['../stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f',1,'puts(const char *s):&#160;stdio.c'],['../stdio_8h.html#ad41876f99f190c7488e64ef39c50a23f',1,'puts(const char *s):&#160;stdio.c']]]
+  ['putc_37',['putc',['../classarch_1_1_qemu_debugcon.html#a49f6a51be9c63d005b4fcdeafb4c21cb',1,'arch::QemuDebugcon']]],
+  ['putchar_38',['putchar',['../classservice_1_1_terminal.html#a2cdeef541005d6fe951835a03107ee48',1,'service::Terminal::putchar()'],['../stdio_8c.html#af4de2514b7778805db3815e8dd6cf09a',1,'putchar(int c):&#160;stdio.c'],['../stdio_8h.html#af4de2514b7778805db3815e8dd6cf09a',1,'putchar(int c):&#160;stdio.c']]],
+  ['puts_39',['puts',['../classservice_1_1_terminal.html#a990cbcebc0f5826d941979d8da67b8c8',1,'service::Terminal::puts()'],['../stdio_8c.html#ad41876f99f190c7488e64ef39c50a23f',1,'puts(const char *s):&#160;stdio.c'],['../stdio_8h.html#ad41876f99f190c7488e64ef39c50a23f',1,'puts(const char *s):&#160;stdio.c']]]
 ];

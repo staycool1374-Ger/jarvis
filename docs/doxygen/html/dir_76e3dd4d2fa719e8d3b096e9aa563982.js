@@ -21,6 +21,7 @@ var dir_76e3dd4d2fa719e8d3b096e9aa563982 =
     [ "pci.cpp", "pci_8cpp.html", "pci_8cpp" ],
     [ "pci.hpp", "pci_8hpp.html", null ],
     [ "pci_errors.hpp", "pci__errors_8hpp.html", null ],
+    [ "qemu_debugcon.hpp", "qemu__debugcon_8hpp.html", "qemu__debugcon_8hpp" ],
     [ "rand.hpp", "rand_8hpp.html", null ],
     [ "rtc.hpp", "rtc_8hpp.html", null ],
     [ "serial.hpp", "serial_8hpp.html", null ],

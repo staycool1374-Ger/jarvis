@@ -1,10 +1,18 @@
 var searchData=
 [
-  ['head_0',['head',['../namespacekernel.html#aec37532c2fb1a123d928e41e13297533',1,'kernel']]],
-  ['heads_5f_1',['heads_',['../namespacekernel.html#afdea84e7e6716009ab17af4b202b8271',1,'kernel']]],
-  ['heap_5fsize_2',['HEAP_SIZE',['../namespacemem.html#a8e71bca99a7bdd8712f80891bcbee986',1,'mem']]],
-  ['heap_5fvaddr_3',['HEAP_VADDR',['../namespacemem.html#aaedfe55f27a0e1a673a6f5f26479be85',1,'mem']]],
-  ['height_4',['height',['../structservice_1_1_framebuffer_info.html#a7d35b7bdf9b164dd5776671a4fd8ff90',1,'service::FramebufferInfo']]],
-  ['help_5',['help',['../structservice_1_1_shell_1_1_command.html#af82239ce8a4ba81645b6da7b8d3374b7',1,'service::Shell::Command']]],
-  ['hhdm_5foffset_6',['HHDM_OFFSET',['../namespacearch.html#a57c6bb74fdc3ee11eecab91b0142e95b',1,'arch']]]
+  ['h2_5fev_5fapply_0',['H2_EV_APPLY',['../namespacekernel.html#a810111e89e31e78c3e32f99355db7234',1,'kernel']]],
+  ['h2_5fev_5farm_1',['H2_EV_ARM',['../namespacekernel.html#a6d73afdfa1f338f65d85c38585f1e1f2',1,'kernel']]],
+  ['h2_5fev_5fclr_5fmisc_2',['H2_EV_CLR_MISC',['../namespacekernel.html#a574a90ebc327d46aa6aab426a829176b',1,'kernel']]],
+  ['h2_5fev_5fclr_5frms_3',['H2_EV_CLR_RMS',['../namespacekernel.html#afb3fbd193a09fbd36b7f12f104aec2e7',1,'kernel']]],
+  ['h2_5fev_5fclr_5fset_4',['H2_EV_CLR_SET',['../namespacekernel.html#aed0b1c34672fd84a78533c4247ea343f',1,'kernel']]],
+  ['h2_5fev_5fidle_5farm_5',['H2_EV_IDLE_ARM',['../namespacekernel.html#ae4d880161f4292f9476f0da08c2493c7',1,'kernel']]],
+  ['h2_5fev_5freenq_6',['H2_EV_REENQ',['../namespacekernel.html#aaf4c44145fd44721026b6f4c4b6466e6',1,'kernel']]],
+  ['h2_5fev_5fskip_7',['H2_EV_SKIP',['../namespacekernel.html#a4257e9fd5d09c0baf1cd2301d27355be',1,'kernel']]],
+  ['head_8',['head',['../namespacekernel.html#aec37532c2fb1a123d928e41e13297533',1,'kernel']]],
+  ['heads_5f_9',['heads_',['../namespacekernel.html#afdea84e7e6716009ab17af4b202b8271',1,'kernel']]],
+  ['heap_5fsize_10',['HEAP_SIZE',['../namespacemem.html#a8e71bca99a7bdd8712f80891bcbee986',1,'mem']]],
+  ['heap_5fvaddr_11',['HEAP_VADDR',['../namespacemem.html#aaedfe55f27a0e1a673a6f5f26479be85',1,'mem']]],
+  ['height_12',['height',['../structservice_1_1_framebuffer_info.html#a7d35b7bdf9b164dd5776671a4fd8ff90',1,'service::FramebufferInfo']]],
+  ['help_13',['help',['../structservice_1_1_shell_1_1_command.html#af82239ce8a4ba81645b6da7b8d3374b7',1,'service::Shell::Command']]],
+  ['hhdm_5foffset_14',['HHDM_OFFSET',['../namespacearch.html#a57c6bb74fdc3ee11eecab91b0142e95b',1,'arch']]]
 ];

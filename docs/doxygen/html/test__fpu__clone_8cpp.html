@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__fpu__clo
 <a href="#details">More...</a></p>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>FPU state preservation across fork/clone tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): a REAL dispatched kernel task (prio ≥ 11, with a cloned PML4 so clone() exercises the user path) uses the FPU and clones in its own running context. The FPU owner / fpu_used / child FXSAVE state are captured by the genuinely-running task, not the harness. </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

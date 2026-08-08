@@ -22,9 +22,13 @@ var kernel_8cpp =
     [ "isr_nesting_depth", "kernel_8cpp.html#a749dfb81c6c748a8fe63fae0d81f2926", null ],
     [ "kernel_virt_end", "kernel_8cpp.html#acf393da2fe85b8d9fa8cd83ff83a6a0c", null ],
     [ "scheduler_corruption_count", "kernel_8cpp.html#a0f9de4949789f8c2d559e134c0bca614", null ],
+    [ "scheduler_kernel_cr3", "kernel_8cpp.html#acf3d43b7766a9a34a8eb7c6020ca4be8", null ],
     [ "scheduler_load_cr3_from", "kernel_8cpp.html#a267d71f6467066b1a2df5d1c390f014a", null ],
+    [ "scheduler_load_kstack_base", "kernel_8cpp.html#a026faf3c3debae610cdbc4ebbc41295d", null ],
+    [ "scheduler_load_kstack_top", "kernel_8cpp.html#a44b5cc49c445a145e3b4d20712ec2360", null ],
     [ "scheduler_load_rsp_from", "kernel_8cpp.html#a0bfda50437b4177036ebf965a8ae9735", null ],
     [ "scheduler_need_resched", "kernel_8cpp.html#a0cd8a9e394bdaa6d815168f5208a85fa", null ],
     [ "scheduler_next_task_id", "kernel_8cpp.html#ac624c3223df92f059074d6001ef70e60", null ],
-    [ "scheduler_save_rsp_to", "kernel_8cpp.html#aa7ffada5937bf60f2ad11eb7c57a9dcc", null ]
+    [ "scheduler_save_rsp_to", "kernel_8cpp.html#aa7ffada5937bf60f2ad11eb7c57a9dcc", null ],
+    [ "scheduler_switch_generation", "kernel_8cpp.html#a358324b930c3d48b8613572314e94320", null ]
 ];

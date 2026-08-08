@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -182,8 +182,14 @@ Functions</h2></td></tr>
 <tr class="memdesc:afc3a2ab344e9fd124b6995c4332a1067"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a task with the forever-loop entry. The task never auto-terminates — it must be explicitly terminated via <a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123" title="Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain...">terminate_and_drain()</a>.  <br /></td></tr>
 <tr class="memitem:a93254b4e527b1ef044a6f9fb022f1123" id="r_a93254b4e527b1ef044a6f9fb022f1123"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123">terminate_and_drain</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task)</td></tr>
 <tr class="memdesc:a93254b4e527b1ef044a6f9fb022f1123"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain_zombie_list is needed.  <br /></td></tr>
-<tr class="memitem:ac86464678a0416364344c9be40496e41" id="r_ac86464678a0416364344c9be40496e41"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac86464678a0416364344c9be40496e41">wait_for_termination</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;task)</td></tr>
-<tr class="memdesc:ac86464678a0416364344c9be40496e41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait until a task reaches TERMINATED state, yielding the CPU via hlt() to let the scheduler dispatch other tasks.  <br /></td></tr>
+<tr class="memitem:a0ac2a4e8b9b409a3f6023d7b1705ca0c" id="r_a0ac2a4e8b9b409a3f6023d7b1705ca0c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0ac2a4e8b9b409a3f6023d7b1705ca0c">terminate_if_live</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *task)</td></tr>
+<tr class="memdesc:a0ac2a4e8b9b409a3f6023d7b1705ca0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Terminate one task ONLY if it is still live. Safe for tasks that self-terminated (already TERMINATED and sitting in the zombie list): terminate() is skipped, so no double zombie-append and no dereference of a block a prior drain may have freed. Checks magic first so an already-reaped (0xDD-poisoned) block is skipped without touching freed memory.  <br /></td></tr>
+<tr class="memitem:a89714861e1c19a6975ca08da1f2b2cc6" id="r_a89714861e1c19a6975ca08da1f2b2cc6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a89714861e1c19a6975ca08da1f2b2cc6">terminate_and_drain2</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *a, <a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *b)</td></tr>
+<tr class="memdesc:a89714861e1c19a6975ca08da1f2b2cc6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Teardown for a pair of tasks: terminate the still-live ones, then reclaim ALL zombies exactly once. This is the correct pattern for two self-terminated tasks — calling <a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123" title="Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain...">terminate_and_drain()</a> per task re-drains (and the second call derefs a block the first drain freed).  <br /></td></tr>
+<tr class="memitem:aed16b217483080d1d9bfec6f56472775" id="r_aed16b217483080d1d9bfec6f56472775"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aed16b217483080d1d9bfec6f56472775">terminate_and_drain3</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *a, <a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *b, <a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *c)</td></tr>
+<tr class="memdesc:aed16b217483080d1d9bfec6f56472775"><td class="mdescLeft">&#160;</td><td class="mdescRight">Teardown for a triple of tasks (see terminate_and_drain2).  <br /></td></tr>
+<tr class="memitem:a5fe8e4fe371af9ccda6c34673f1d6133" id="r_a5fe8e4fe371af9ccda6c34673f1d6133"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5fe8e4fe371af9ccda6c34673f1d6133">wait_for_termination_safe</a> (<a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *task)</td></tr>
+<tr class="memdesc:a5fe8e4fe371af9ccda6c34673f1d6133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safely wait for task termination in a test harness. The raw <span class="tt"><a class="el" href="namespacekernel.html#a058eeb27b3f54e789e5f17935940c161">while</a> (t-&gt;state != TERMINATED) hlt()</span> pattern reads the TCB even after the zombie reaper has freed + 0xDD-poisoned it (e.g. when the scheduler is momentarily idle between test tasks) — the poisoned state is never TERMINATED, so the harness spins forever (H2 residual hang). is_valid() checks magic FIRST (<a class="el" href="task_8hpp.html" title="Task control block and state definitions for the kernel scheduler.">task.hpp</a>), so a freed block reads magic != TCB_MAGIC and the wait exits. Also re-arms scheduler_need_resched so the timer ISR keeps driving the suite.  <br /></td></tr>
 <tr class="memitem:a3682848fa74834ef280e24ea7c67ff5e" id="r_a3682848fa74834ef280e24ea7c67ff5e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3682848fa74834ef280e24ea7c67ff5e">watchdog_arm</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> ms, const char *test_name)</td></tr>
 <tr class="memdesc:a3682848fa74834ef280e24ea7c67ff5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arm the watchdog with both TSC-based and PIT-based timers. PIT channel 1 one-shot (~55ms) + TSC deadline.  <br /></td></tr>
 <tr class="memitem:a0a6da7c5576fe1c48584026927954c24" id="r_a0a6da7c5576fe1c48584026927954c24"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a6da7c5576fe1c48584026927954c24">watchdog_disarm</a> ()</td></tr>
@@ -210,6 +216,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a0fb9d643d01186cc11f1c2868176b39c" id="r_a0fb9d643d01186cc11f1c2868176b39c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0fb9d643d01186cc11f1c2868176b39c">print_report</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> start_ns, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> end_ns)</td></tr>
 <tr class="memitem:a47ad5e6d76deb150bf2cb8bf66bd3450" id="r_a47ad5e6d76deb150bf2cb8bf66bd3450"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a47ad5e6d76deb150bf2cb8bf66bd3450">register_class</a> (const char *name)</td></tr>
 <tr class="memitem:a528c863464ccdb09e9f57510adee048d" id="r_a528c863464ccdb09e9f57510adee048d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a528c863464ccdb09e9f57510adee048d">dump_class_counts</a> ()</td></tr>
+<tr class="memitem:afa45bf4b825aaa40d82b153beaa60142" id="r_afa45bf4b825aaa40d82b153beaa60142"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afa45bf4b825aaa40d82b153beaa60142">__reference_parent_wait_child</a> ()</td></tr>
+<tr class="memdesc:afa45bf4b825aaa40d82b153beaa60142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for a REAL parent-WAITPID / child-exit pattern. Blueprint for tests such as scheduler_waitpid_wakes_parent and scheduler_reap_respects_parent_wait.  <br /></td></tr>
+<tr class="memitem:ab584113a25d60b899d516fe3897879a3" id="r_ab584113a25d60b899d516fe3897879a3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab584113a25d60b899d516fe3897879a3">__reference_single_terminating_task</a> ()</td></tr>
+<tr class="memdesc:ab584113a25d60b899d516fe3897879a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for ONE self-terminating dispatched task. Blueprint for task_exit_cleans_all_ipc_objects and lifecycle_*.  <br /></td></tr>
+<tr class="memitem:a68c5cfee0683071fada1d3dc75bdf640" id="r_a68c5cfee0683071fada1d3dc75bdf640"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a68c5cfee0683071fada1d3dc75bdf640">__reference_blocked_sender_cleanup</a> ()</td></tr>
+<tr class="memdesc:a68c5cfee0683071fada1d3dc75bdf640"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for a REAL blocked-sender / receiver-cleanup pattern. Blueprint for task_exit_wakes_blocked_senders and task_cleanup_frees_msg_queue_with_blocked_senders.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -260,6 +272,90 @@ Variables</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="a68c5cfee0683071fada1d3dc75bdf640" name="a68c5cfee0683071fada1d3dc75bdf640"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68c5cfee0683071fada1d3dc75bdf640">&#9670;&#160;</a></span>__reference_blocked_sender_cleanup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::__reference_blocked_sender_cleanup </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reference skeleton for a REAL blocked-sender / receiver-cleanup pattern. Blueprint for task_exit_wakes_blocked_senders and task_cleanup_frees_msg_queue_with_blocked_senders. </p>
+<p>receiver = create(receiver_entry, 11, 10) // no add_task fill receiver-&gt;msg_queue to IPC_MAX_QUEUE_MSG // BEFORE register sender = create(sender_entry, 12, 10); sender-&gt;user_data = &amp;sctx { arch::IrqGuard guard; // register atomically Scheduler::add_task(*receiver); Scheduler::add_task(*sender); // sender blocks on full q } Scheduler::reschedule(); while (sender-&gt;state != BLOCKED) asm volatile("pause"); Scheduler::reschedule(); // dispatch receiver while (receiver-&gt;state != TERMINATED) asm volatile("pause"); Scheduler::drain_zombie_list(); // cleanup wakes sender while (sender-&gt;state != TERMINATED) asm volatile("pause"); Scheduler::drain_zombie_list(); <a class="el" href="test_8hpp.html#a49403c168ea4b3a44b7cebd4eb5178b8">JARVIS_ASSERT_EQ(0ULL, send_result)</a>; // woken sender fast-fails </p>
+
+</div>
+</div>
+<a id="afa45bf4b825aaa40d82b153beaa60142" name="afa45bf4b825aaa40d82b153beaa60142"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa45bf4b825aaa40d82b153beaa60142">&#9670;&#160;</a></span>__reference_parent_wait_child()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::__reference_parent_wait_child </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reference skeleton for a REAL parent-WAITPID / child-exit pattern. Blueprint for tests such as scheduler_waitpid_wakes_parent and scheduler_reap_respects_parent_wait. </p>
+<p>create parent + child TCBs (no add_task) parent-&gt;add_child(child) // sets child-&gt;parent_id ctx.child_id_ = child-&gt;id; parent-&gt;user_data = &amp;ctx { arch::IrqGuard guard; // register atomically Scheduler::add_task(*parent); // prio 20 (blocks first) Scheduler::add_task(*child); // prio 12 (runs after) } Scheduler::reschedule(); while (parent-&gt;state != BLOCKED &amp;&amp; parent-&gt;state != TERMINATED) asm volatile("pause"); while (parent-&gt;state != TERMINATED) asm volatile("pause"); // child exited, parent woke child_removed = find_task(ctx.child_id_) == nullptr; if (!child_removed) Scheduler::terminate(*child, 0); // cleanup Scheduler::drain_zombie_list(); // reclaim BEFORE assert JARVIS_ASSERT(ctx.woke_ == 1); <a class="el" href="test_8hpp.html#a6be5a5c3dd0c6a401f58b591b07914f3">JARVIS_ASSERT(child_removed)</a>; JARVIS_ASSERT_EQ(exit_status, ctx.status_); </p>
+
+</div>
+</div>
+<a id="ab584113a25d60b899d516fe3897879a3" name="ab584113a25d60b899d516fe3897879a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab584113a25d60b899d516fe3897879a3">&#9670;&#160;</a></span>__reference_single_terminating_task()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::__reference_single_terminating_task </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reference skeleton for ONE self-terminating dispatched task. Blueprint for task_exit_cleans_all_ipc_objects and lifecycle_*. </p>
+<p>t = TaskControlBlock::create(entry, prio, period); // no add_task // set page_table_/user_stack_/user_stack_size_/etc BEFORE add_task Scheduler::add_task(*t); Scheduler::reschedule(); while (t-&gt;state != TERMINATED) asm volatile("pause"); Scheduler::drain_zombie_list(); // terminate() alone frees // nothing; drain reclaims <a class="el" href="test_8hpp.html#a6be5a5c3dd0c6a401f58b591b07914f3">JARVIS_ASSERT(...)</a>; // never deref the freed TCB </p>
+
+</div>
+</div>
 <a id="a2f2ad7408a2984ebbc8a46b37f1e6f5f" name="a2f2ad7408a2984ebbc8a46b37f1e6f5f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f2ad7408a2984ebbc8a46b37f1e6f5f">&#9670;&#160;</a></span>add_task_named()</h2>
 
@@ -873,7 +969,38 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 14 -->
+<map name="anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph" id="anamespacekernel_1_1test_ac69baaa93109936ecff8ff06f6fb827a_cgraph">
+<area shape="rect" title=" " alt="" coords="5,240,153,267"/>
+<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ae1c6719a50dda5616660226460c8fbdf" title=" " alt="" coords="201,5,344,48"/>
+<area shape="poly" title=" " alt="" coords="84,238,126,159,159,110,199,65,214,55,211,59,203,69,163,113,130,162,89,241"/>
+<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a67e0bf935731e851c5130bab1b6c1861" title=" " alt="" coords="392,56,535,99"/>
+<area shape="poly" title=" " alt="" coords="85,238,102,210,127,174,160,138,199,108,242,90,288,79,334,72,379,72,374,74,334,78,289,84,244,95,202,113,163,142,131,177,106,213,90,241"/>
+<area shape="rect" href="classkernel_1_1Logger.html#ac55cd7a631b4e76a2293edf8b8bb0bd4" title=" " alt="" coords="206,240,338,267"/>
+<area shape="poly" title=" " alt="" coords="152,251,193,252,189,255,154,256"/>
+<area shape="rect" href="namespacekernel_1_1test.html#afe67f03cec26eaf04ba601e548d6761d" title=" " alt="" coords="213,123,332,165"/>
+<area shape="poly" title=" " alt="" coords="103,237,199,182,221,172,217,175,202,186,106,241"/>
+<area shape="rect" href="classkernel_1_1Logger.html#ad4ae5d24650cf692a9d70d545eaa1867" title=" " alt="" coords="398,189,530,232"/>
+<area shape="poly" title=" " alt="" coords="137,237,200,225,294,216,384,212,379,214,295,221,201,231,139,242"/>
+<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a3706a331b1f53a82cec9a9020a1efdc4" title=" " alt="" coords="201,291,344,333"/>
+<area shape="poly" title=" " alt="" coords="125,265,188,284,183,287,126,270"/>
+<area shape="rect" href="string_8hpp.html#a14e6581584b7433c4440fdc7ecf86aea" title=" " alt="" coords="242,357,303,384"/>
+<area shape="poly" title=" " alt="" coords="95,265,142,303,202,343,229,357,224,357,199,348,139,307,95,270"/>
+<area shape="rect" href="classkernel_1_1test_1_1Registry.html#a290fced036e79169734ae8b01c424f83" title=" " alt="" coords="201,408,344,451"/>
+<area shape="poly" title=" " alt="" coords="90,265,135,326,167,362,202,394,208,400,203,399,199,398,163,365,131,329,89,270"/>
+<area shape="rect" href="classkernel_1_1Logger.html#a789c5af9e2c7393712ff3bfdae709afa" title=" " alt="" coords="203,475,342,501"/>
+<area shape="poly" title=" " alt="" coords="85,265,101,305,125,357,158,412,179,438,202,461,209,467,203,466,199,465,175,442,154,415,120,359,96,307,84,270"/>
+<area shape="rect" href="classkernel_1_1Logger.html#a12794441edd7245c8a81bfe5b9a6dd14" title=" " alt="" coords="392,365,535,392"/>
+<area shape="poly" title=" " alt="" coords="320,265,345,276,398,314,441,355,436,354,395,318,343,281,320,270"/>
+<area shape="rect" href="classkernel_1_1Logger.html#ad2aea07eb751fad2fb738fe4123c7e7b" title=" " alt="" coords="583,340,748,367"/>
+<area shape="poly" title=" " alt="" coords="535,367,570,365,565,366,536,372"/>
+<area shape="rect" href="classkernel_1_1Logger.html#ae7f9fd488685463ec9810c40d6f907c7" title=" " alt="" coords="583,391,748,417"/>
+<area shape="poly" title=" " alt="" coords="536,385,570,392,565,392,536,390"/>
+<area shape="poly" title=" " alt="" coords="331,121,388,103,384,106,334,126"/>
+<area shape="rect" href="classkernel_1_1test_1_1Registry.html#ad30c0be8d7ba6161c038aa562c3ac885" title=" " alt="" coords="392,123,535,165"/>
+<area shape="poly" title=" " alt="" coords="331,142,379,143,374,145,333,146"/>
+<area shape="poly" title=" " alt="" coords="332,162,389,183,384,185,333,167"/>
+<area shape="poly" title=" " alt="" coords="317,472,343,460,391,430,432,403,437,401,394,435,345,465,319,477"/>
+</map>
 </div>
 
 </div>
@@ -932,7 +1059,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ac77ca03eec1fc93ea4a740b9566588d7_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 15 -->
+<!-- MAP 14 -->
 </div>
 
 </div>
@@ -991,7 +1118,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a5b61544ff1676d3f6d4a777c3211be31_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 16 -->
+<!-- MAP 15 -->
 </div>
 
 </div>
@@ -1031,7 +1158,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aa2a58a012f3f56d28d6e0df037fd66a6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 17 -->
+<!-- MAP 16 -->
 </div>
 
 </div>
@@ -1060,6 +1187,113 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 
 <p>Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain_zombie_list is needed. </p>
+<dl class="section note"><dt>Note</dt><dd><span class="tt">terminate()</span> on an ALREADY-TERMINATED task re-appends it to the zombie list (release_zombie has no idempotency guard); on a task a PRIOR drain already reaped (block 0xDD-poisoned), reading state and calling terminate() dereferences freed memory (ENSURE panic). Guard on magic (is_valid) FIRST, then live state — an already-reaped block is skipped entirely. </dd></dl>
+
+</div>
+</div>
+<a id="a89714861e1c19a6975ca08da1f2b2cc6" name="a89714861e1c19a6975ca08da1f2b2cc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89714861e1c19a6975ca08da1f2b2cc6">&#9670;&#160;</a></span>terminate_and_drain2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::terminate_and_drain2 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>b</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Teardown for a pair of tasks: terminate the still-live ones, then reclaim ALL zombies exactly once. This is the correct pattern for two self-terminated tasks — calling <a class="el" href="#a93254b4e527b1ef044a6f9fb022f1123" title="Safely terminate a forever-task and drain its zombie. Handles the common case where terminate + drain...">terminate_and_drain()</a> per task re-drains (and the second call derefs a block the first drain freed). </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_a89714861e1c19a6975ca08da1f2b2cc6_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a89714861e1c19a6975ca08da1f2b2cc6_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 17 -->
+</div>
+
+</div>
+</div>
+<a id="aed16b217483080d1d9bfec6f56472775" name="aed16b217483080d1d9bfec6f56472775"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed16b217483080d1d9bfec6f56472775">&#9670;&#160;</a></span>terminate_and_drain3()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::terminate_and_drain3 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>b</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>c</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Teardown for a triple of tasks (see terminate_and_drain2). </p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="namespacekernel_1_1test_aed16b217483080d1d9bfec6f56472775_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aed16b217483080d1d9bfec6f56472775_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 18 -->
+</div>
+
+</div>
+</div>
+<a id="a0ac2a4e8b9b409a3f6023d7b1705ca0c" name="a0ac2a4e8b9b409a3f6023d7b1705ca0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ac2a4e8b9b409a3f6023d7b1705ca0c">&#9670;&#160;</a></span>terminate_if_live()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void kernel::test::terminate_if_live </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Terminate one task ONLY if it is still live. Safe for tasks that self-terminated (already TERMINATED and sitting in the zombie list): terminate() is skipped, so no double zombie-append and no dereference of a block a prior drain may have freed. Checks magic first so an already-reaped (0xDD-poisoned) block is skipped without touching freed memory. </p>
 
 </div>
 </div>
@@ -1084,7 +1318,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a2116b98892188c36c2a9b053bdca9df5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 18 -->
+<!-- MAP 19 -->
 </div>
 
 </div>
@@ -1115,7 +1349,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_aebdef3f581d2b87696f34fa1a77a20d5_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 19 -->
+<!-- MAP 20 -->
 </div>
 
 </div>
@@ -1150,13 +1384,13 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_ad187fb124266bd89f9f48be1d22ba617_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 20 -->
+<!-- MAP 21 -->
 </div>
 
 </div>
 </div>
-<a id="ac86464678a0416364344c9be40496e41" name="ac86464678a0416364344c9be40496e41"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac86464678a0416364344c9be40496e41">&#9670;&#160;</a></span>wait_for_termination()</h2>
+<a id="a5fe8e4fe371af9ccda6c34673f1d6133" name="a5fe8e4fe371af9ccda6c34673f1d6133"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fe8e4fe371af9ccda6c34673f1d6133">&#9670;&#160;</a></span>wait_for_termination_safe()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1165,9 +1399,9 @@ Here is the call graph for this function:</div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void kernel::test::wait_for_termination </td>
+          <td class="memname">void kernel::test::wait_for_termination_safe </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="#af219b4b081470c65fb5140fbabdd424c">TaskControlBlock</a> *</td>          <td class="paramname"><span class="paramname"><em>task</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1178,7 +1412,7 @@ Here is the call graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Wait until a task reaches TERMINATED state, yielding the CPU via hlt() to let the scheduler dispatch other tasks. </p>
+<p>Safely wait for task termination in a test harness. The raw <span class="tt"><a class="el" href="namespacekernel.html#a058eeb27b3f54e789e5f17935940c161">while</a> (t-&gt;state != TERMINATED) hlt()</span> pattern reads the TCB even after the zombie reaper has freed + 0xDD-poisoned it (e.g. when the scheduler is momentarily idle between test tasks) — the poisoned state is never TERMINATED, so the harness spins forever (H2 residual hang). is_valid() checks magic FIRST (<a class="el" href="task_8hpp.html" title="Task control block and state definitions for the kernel scheduler.">task.hpp</a>), so a freed block reads magic != TCB_MAGIC and the wait exits. Also re-arms scheduler_need_resched so the timer ISR keeps driving the suite. </p>
 
 </div>
 </div>
@@ -1225,7 +1459,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_abfb7a4e797c8023392967822f5451ab1_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 21 -->
+<!-- MAP 22 -->
 </div>
 
 </div>
@@ -1265,7 +1499,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="namespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph.png" border="0" usemap="#anamespacekernel_1_1test_a6dbac4eb3cd0354a626677222a8c6a35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 22 -->
+<!-- MAP 23 -->
 </div>
 
 </div>

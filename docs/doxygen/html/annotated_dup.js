@@ -2,7 +2,8 @@ var annotated_dup =
 [
     [ "arch", "namespacearch.html", [
       [ "APIC", "classarch_1_1_a_p_i_c.html", null ],
-      [ "Caps", "structarch_1_1_caps.html", "structarch_1_1_caps" ]
+      [ "Caps", "structarch_1_1_caps.html", "structarch_1_1_caps" ],
+      [ "QemuDebugcon", "classarch_1_1_qemu_debugcon.html", null ]
     ] ],
     [ "crypto", "namespacecrypto.html", [
       [ "ChaChaState", "structcrypto_1_1_cha_cha_state.html", "structcrypto_1_1_cha_cha_state" ]
@@ -90,14 +91,12 @@ var annotated_dup =
     [ "Rlimit", "struct_rlimit.html", "struct_rlimit" ],
     [ "rlimit", "structrlimit.html", "structrlimit" ],
     [ "ScopeGuard", "class_scope_guard.html", "class_scope_guard" ],
-    [ "SendSyncCtx", "struct_send_sync_ctx.html", "struct_send_sync_ctx" ],
     [ "SimpleTaskDeleter", "struct_simple_task_deleter.html", "struct_simple_task_deleter" ],
     [ "SpinLockGuard", "class_spin_lock_guard.html", "class_spin_lock_guard" ],
     [ "stat", "structstat.html", "structstat" ],
     [ "TaskDeleter", "struct_task_deleter.html", "struct_task_deleter" ],
     [ "TestMeta", "struct_test_meta.html", "struct_test_meta" ],
     [ "TestStruct", "struct_test_struct.html", "struct_test_struct" ],
-    [ "ThroughputCtx", "struct_throughput_ctx.html", "struct_throughput_ctx" ],
     [ "timespec", "structtimespec.html", "structtimespec" ],
     [ "Timeval", "struct_timeval.html", "struct_timeval" ],
     [ "timeval", "structtimeval.html", "structtimeval" ],

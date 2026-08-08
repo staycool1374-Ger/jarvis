@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__rlimit_8
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_rlimit.cpp:</div>
 <div class="dyncontent">
@@ -154,6 +156,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Resource limit (rlimit) tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): every syscall runs inside a REAL kernel task (prio ≥ 11) that is genuinely dispatched — the handler's <span class="tt"><a class="el" href="namespacekernel.html#aa7278439c20dc6234a77d3b08290701f" title="Get the currently running task from the scheduler.">syscall_task()</a></span> resolves to the running task. The harness never calls Syscall::handle() directly. </p>
 </div><a name="doc-enum-members" id="doc-enum-members"></a><h2 id="header-doc-enum-members" class="groupheader">Enumeration Type Documentation</h2>
 <a id="a2e9c5fc5c5951f5059e407b4c707195d" name="a2e9c5fc5c5951f5059e407b4c707195d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2e9c5fc5c5951f5059e407b4c707195d">&#9670;&#160;</a></span>RlimitResource</h2>
@@ -193,6 +196,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__rlimit_8cpp_a33f52ae3273938cbd4b5644b8b1e882b_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_a33f52ae3273938cbd4b5644b8b1e882b_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -214,6 +223,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__rlimit_8cpp_a63f7e9f8793ca422e06bee4c6319f874_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_a63f7e9f8793ca422e06bee4c6319f874_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -235,6 +250,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__rlimit_8cpp_ae835b3874be8b80fdfb27179d047ca8d_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_ae835b3874be8b80fdfb27179d047ca8d_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -256,6 +277,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__rlimit_8cpp_ac06f284387d9cc4648d81f17b3a4216a_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_ac06f284387d9cc4648d81f17b3a4216a_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -277,6 +304,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__rlimit_8cpp_ad37416060488708804e587539d14c55e_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_ad37416060488708804e587539d14c55e_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 5 -->
+</div>
 
 </div>
 </div>
@@ -298,7 +331,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__rlimit_8cpp_a766305e82a091800bb2b9ea6ba6270cb_cgraph.png" border="0" usemap="#atest__rlimit_8cpp_a766305e82a091800bb2b9ea6ba6270cb_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 6 -->
 </div>
 
 </div>

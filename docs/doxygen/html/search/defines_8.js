@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['max_5ffunctions_0',['MAX_FUNCTIONS',['../gcov__handler_8cpp.html#ad1654ced9bcc36245fe19075b868c1ae',1,'gcov_handler.cpp']]]
+  ['kernel_5fversion_5fstring_0',['KERNEL_VERSION_STRING',['../version_8hpp.html#abba67610a81ec56f7d1f834e9bfdbec3',1,'version.hpp']]]
 ];

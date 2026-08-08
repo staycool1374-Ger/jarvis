@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__deadline
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="timer_8hpp_source.html">kernel/arch/timer.hpp</a>&gt;</code><br />
@@ -145,6 +146,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Phase 5 tests: Asymmetric Recovery &amp; Safety Protocols — safe KILL cleanup, NOTIFY_MONITOR delivery, magic-check structural isolation, and MC/DC coverage of the detection predicate. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): detection is driven by REAL kernel tasks (prio ≥ 11) that genuinely overrun their real deadlines (busy-wait on the real timer) and block on real semaphores; the detection scan is the exact entry the [deadline-mon] task runs. No task field is hand-mutated to reach the overrun state. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a7d0bf1cfc05383d34d52b0b74509d180" name="a7d0bf1cfc05383d34d52b0b74509d180"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d0bf1cfc05383d34d52b0b74509d180">&#9670;&#160;</a></span>register_deadline_recovery_tests()</h2>
@@ -183,6 +185,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__deadline__recovery_8cpp_a8a2abd5d9ea747b69855d2dd02741d53_cgraph.png" border="0" usemap="#atest__deadline__recovery_8cpp_a8a2abd5d9ea747b69855d2dd02741d53_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -217,6 +225,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__deadline__recovery_8cpp_a46ea7f1ac5467a34a90f2c0e7cb3bedb_cgraph.png" border="0" usemap="#atest__deadline__recovery_8cpp_a46ea7f1ac5467a34a90f2c0e7cb3bedb_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -234,6 +248,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__deadline__recovery_8cpp_a0444f461a01c2b1dc0ce24c0425d13d6_cgraph.png" border="0" usemap="#atest__deadline__recovery_8cpp_a0444f461a01c2b1dc0ce24c0425d13d6_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>

@@ -34,6 +34,9 @@ var test_8hpp =
       [ "kernel::test::TF_USER", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a6ef6b63d678fd3b18029892f6956a47c", null ],
       [ "kernel::test::TF_BENCH", "namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a99ab7f179010344acb627e851eae44d8", null ]
     ] ],
+    [ "kernel::test::__reference_blocked_sender_cleanup", "namespacekernel_1_1test.html#a68c5cfee0683071fada1d3dc75bdf640", null ],
+    [ "kernel::test::__reference_parent_wait_child", "namespacekernel_1_1test.html#afa45bf4b825aaa40d82b153beaa60142", null ],
+    [ "kernel::test::__reference_single_terminating_task", "namespacekernel_1_1test.html#ab584113a25d60b899d516fe3897879a3", null ],
     [ "kernel::test::add_task_named", "namespacekernel_1_1test.html#a2f2ad7408a2984ebbc8a46b37f1e6f5f", null ],
     [ "kernel::test::create_named_task", "namespacekernel_1_1test.html#a0393b984f5bd8f8fa3e1014037f2dcd0", null ],
     [ "kernel::test::dump_class_counts", "namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d", null ],
