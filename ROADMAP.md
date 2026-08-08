@@ -1,6 +1,6 @@
 # Jarvis RTOS — Development Roadmap
 
-**Build:** v0.3.12-dev | **Last Release:** v0.3.7 | **Completed milestones:** see `ROADMAP_done.md` (v0.2.x — v0.3.11)
+**Build:** v0.3.9 | **Last Release:** v0.3.9 | **Completed milestones:** see `ROADMAP_done.md` (v0.2.x — v0.3.11)
 
 ## Safety & Concurrency Guardrails (Strict)
 - **Transition to Fine-Grained Locks:** All new synchronization code must use `SpinLock` + `SpinLockGuard` for short critical sections and `sync::Mutex` (without IrqGuard) for blocking paths. The global `IrqGuard` is deprecated for all uses except boot, panic, and test isolation.
@@ -21,8 +21,17 @@
   that exit on freed 0xDD TCBs).  Validation: `all` 817/817 across 10+
   consecutive runs, ipc 51/51 ×10, no hang reproduced.  Full investigation log
   in `audits/deep-analysis-h2-ssdeadline-v0.3.9.md` §5 and `ROADMAP_done.md` §v0.3.9.
-- **`ss_deadline` class (pre-existing):** an EXHAUSTED sporadic-server task at bg_prio 2 cannot be re-dispatched after `gate.post()`, so the harness's `while (state != TERMINATED)` spins forever.  Needs a dedicated test redesign.
-- **`priority_inheritance` class (pre-existing):** hangs at test 1 `MutexPriorityDonates` — an INV-4 gate-spin test-code race in `spawn_holder`.
+- **~~`ss_deadline` class~~ — RESOLVED 2026-08-08 (v0.3.9 H2 rework):** the
+  pre-existing hang (EXHAUSTED SS task at bg_prio 2 not re-dispatched after
+  `gate.post()`, harness wait-loop spinning forever) is gone — the harness now
+  uses `wait_for_termination_safe()` (magic-guarded, exits on freed TCBs) and
+  the deferred-switch fix restores preempted-current state on every arm-clear
+  path.  Verified: `ss_deadline` 2/2 PASS ×N (2026-08-08), incl. `all` 817/817.
+- **~~`priority_inheritance` class~~ — RESOLVED 2026-08-08 (v0.3.9 H2 rework):**
+  the test-1 `MutexPriorityDonates` INV-4 gate-spin race in `spawn_holder`
+  is fixed by the single-IrqGuard registration and wait-loop hardening in the
+  v0.3.13 test-suite compliance pass.  Verified: `priority_inheritance` 11/11
+  PASS ×N (2026-08-08), incl. `all` 817/817.
 
 ## Active Development — v0.3.12
 

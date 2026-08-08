@@ -1,5 +1,30 @@
 # Completed Roadmap Items
 
+## v0.3.9 — Released (bundles v0.3.9.0 + v0.3.10 + v0.3.11 milestone work)
+
+Released as NexIOS v0.3.9 (2026-08-08). This release bundles the completed
+milestone work of v0.3.9.0 (H2 deferred-switch race + timing-cluster), v0.3.10
+(trigger-driven test-discipline rework) and v0.3.11 (BufferPool +1 PMM leak)
+into a single release.  Validated by the full release gate
+(`make execute-test x86_64 release all`, 84/84) and the debug `all` gate
+(817/817 across 10+ consecutive runs) — no further testing required.
+
+Key deliverables in this release:
+- **H2 residual deferred-switch race RESOLVED** — asymmetric arm-clear paths
+  (`CLR-RMS`/`CLR-SET` vs `drop_arm`) fixed via `restore_preempted_current()`
+  + idle-fallthrough harness guard + `wait_for_termination_safe()` magic-guarded
+  wait loops (~100 sites).  See
+  `audits/deep-analysis-h2-ssdeadline-v0.3.9.md` §5.
+- **v0.3.10 test-discipline rework** — trigger-driven testing, driven-test
+  cookbook compliance (T0–T3), 21 pure-pass stub files purged, test harness
+  hardened (`terminate_and_drain`, `terminate_if_live`, `wait_for_termination_safe`).
+- **v0.3.11 BufferPool +1 PMM leak fix** (per ROADMAP_done.md §v0.3.11).
+- **v0.3.13 compliance pass** — P0/P1/P2/P3 test-suite findings implemented
+  (T0-5..T0-8, T1-2, T1-5, T2-1, T2-3, T2-4, T2-6, T3-1, T3-3, T3-5).
+- Release-build fixes: `-Werror=stringop-truncation` (test_syscall memcpy),
+  unused-param (scheduler_record_skip) — release gate green.
+- ss_deadline + priority_inheritance classes verified green (2/2, 11/11).
+
 ## v0.3.7 — PfA Concurrency Redesign (Released)
 
 Released as NexIOS v0.3.7 (2026-08-03). Full PARAMETERISE FROM ABOVE (PfA)
