@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['wait_5ffor_5ftermination_0',['wait_for_termination',['../namespacekernel_1_1test.html#ac86464678a0416364344c9be40496e41',1,'kernel::test']]],
+  ['wait_5ffor_5ftermination_5fsafe_0',['wait_for_termination_safe',['../namespacekernel_1_1test.html#a5fe8e4fe371af9ccda6c34673f1d6133',1,'kernel::test']]],
   ['waitpid_1',['waitpid',['../unistd_8c.html#a77de8005691d1f125540d66032a3cc62',1,'waitpid(pid_t pid, int *status, int options):&#160;unistd.c'],['../unistd_8h.html#a77de8005691d1f125540d66032a3cc62',1,'waitpid(pid_t pid, int *status, int options):&#160;unistd.c']]],
   ['warn_2',['WARN',['../namespacekernel.html#a608b4a9ee1c4d240362c930be12ae9f2a32bd8a1db2275458673903bdb84cb277',1,'kernel']]],
   ['warn_3',['warn',['../classkernel_1_1_logger.html#a789c5af9e2c7393712ff3bfdae709afa',1,'kernel::Logger']]],
@@ -12,7 +12,7 @@ var searchData=
   ['wedge_20invariant_9',['Scheduling contract (WEDGE-invariant)',['..//Users/arnold/jarvis/src/kernel/ipc/ipc.cpp#autotoc_md0',1,'']]],
   ['while_10',['while',['../namespacekernel.html#a058eeb27b3f54e789e5f17935940c161',1,'kernel']]],
   ['width_11',['width',['../structservice_1_1_framebuffer_info.html#a580af621e2f16f41bc64ac03ba5807d3',1,'service::FramebufferInfo::width'],['../classservice_1_1_framebuffer.html#a2edd5f53009a8e1a00d7d6bebdb8ca6a',1,'service::Framebuffer::width()']]],
-  ['write_12',['write',['../classservice_1_1_terminal.html#af69ff19b8c2a30f67c02701775fdc285',1,'service::Terminal::write(const char *str)'],['../classservice_1_1_terminal.html#ad4e08ccc7b8b654e02efd7ca6b356c22',1,'service::Terminal::write(const char *data, size_t len)'],['../unistd_8c.html#abb39b21888372e95ad3e5c59b166f5c8',1,'write(int fd, const void *buf, size_t count):&#160;unistd.c'],['../unistd_8h.html#abb39b21888372e95ad3e5c59b166f5c8',1,'write(int fd, const void *buf, size_t count):&#160;unistd.c']]],
+  ['write_12',['write',['../classarch_1_1_qemu_debugcon.html#aa59637719c89f3ed60a4e01eb13b2503',1,'arch::QemuDebugcon::write(const char *str) noexcept'],['../classarch_1_1_qemu_debugcon.html#a492e4d8c9fc0f7a594854fd8accea8ba',1,'arch::QemuDebugcon::write(const char *data, size_t size) noexcept'],['../classservice_1_1_terminal.html#af69ff19b8c2a30f67c02701775fdc285',1,'service::Terminal::write(const char *str)'],['../classservice_1_1_terminal.html#ad4e08ccc7b8b654e02efd7ca6b356c22',1,'service::Terminal::write(const char *data, size_t len)'],['../unistd_8c.html#abb39b21888372e95ad3e5c59b166f5c8',1,'write(int fd, const void *buf, size_t count):&#160;unistd.c'],['../unistd_8h.html#abb39b21888372e95ad3e5c59b166f5c8',1,'write(int fd, const void *buf, size_t count):&#160;unistd.c']]],
   ['write_5fclosed_13',['write_closed',['../structkernel_1_1vfs_1_1_pipe_buffer.html#a6d680699587040ef5d23eff5093940e4',1,'kernel::vfs::PipeBuffer']]],
   ['write_5fpos_14',['write_pos',['../structkernel_1_1vfs_1_1_pipe_buffer.html#af552d711224e3c2fd4dcaef1a489eda7',1,'kernel::vfs::PipeBuffer']]]
 ];

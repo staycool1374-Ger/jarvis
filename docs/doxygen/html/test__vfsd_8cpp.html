@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__vfsd_8cp
 <code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="daemon__mgr_8hpp_source.html">kernel/daemon/daemon_mgr.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_vfsd.cpp:</div>
 <div class="dyncontent">
@@ -161,6 +162,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>VFS daemon tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): every kernel-bypass syscall runs inside a REAL kernel task (prio ≥ 11) that is genuinely dispatched — the handler's <span class="tt"><a class="el" href="namespacekernel.html#aa7278439c20dc6234a77d3b08290701f" title="Get the currently running task from the scheduler.">syscall_task()</a></span> resolves to the running task and the bypass path is exercised through real execution. The harness never calls Syscall::handle() directly. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a692cc01d3c8145961da97078ce8872a3" name="a692cc01d3c8145961da97078ce8872a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a692cc01d3c8145961da97078ce8872a3">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/18]</span></h2>

@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -204,6 +204,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ac6959c848d7b1df0ba4eea129c708171" id="r_ac6959c848d7b1df0ba4eea129c708171"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ac6959c848d7b1df0ba4eea129c708171">kernel::test::set_class_auto_shutdown</a> (bool enabled)</td></tr>
 <tr class="memitem:a47ad5e6d76deb150bf2cb8bf66bd3450" id="r_a47ad5e6d76deb150bf2cb8bf66bd3450"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a47ad5e6d76deb150bf2cb8bf66bd3450">kernel::test::register_class</a> (const char *name)</td></tr>
 <tr class="memitem:a528c863464ccdb09e9f57510adee048d" id="r_a528c863464ccdb09e9f57510adee048d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a528c863464ccdb09e9f57510adee048d">kernel::test::dump_class_counts</a> ()</td></tr>
+<tr class="memitem:afa45bf4b825aaa40d82b153beaa60142" id="r_afa45bf4b825aaa40d82b153beaa60142"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#afa45bf4b825aaa40d82b153beaa60142">kernel::test::__reference_parent_wait_child</a> ()</td></tr>
+<tr class="memdesc:afa45bf4b825aaa40d82b153beaa60142"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for a REAL parent-WAITPID / child-exit pattern. Blueprint for tests such as scheduler_waitpid_wakes_parent and scheduler_reap_respects_parent_wait.  <br /></td></tr>
+<tr class="memitem:ab584113a25d60b899d516fe3897879a3" id="r_ab584113a25d60b899d516fe3897879a3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#ab584113a25d60b899d516fe3897879a3">kernel::test::__reference_single_terminating_task</a> ()</td></tr>
+<tr class="memdesc:ab584113a25d60b899d516fe3897879a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for ONE self-terminating dispatched task. Blueprint for task_exit_cleans_all_ipc_objects and lifecycle_*.  <br /></td></tr>
+<tr class="memitem:a68c5cfee0683071fada1d3dc75bdf640" id="r_a68c5cfee0683071fada1d3dc75bdf640"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel_1_1test.html#a68c5cfee0683071fada1d3dc75bdf640">kernel::test::__reference_blocked_sender_cleanup</a> ()</td></tr>
+<tr class="memdesc:a68c5cfee0683071fada1d3dc75bdf640"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference skeleton for a REAL blocked-sender / receiver-cleanup pattern. Blueprint for task_exit_wakes_blocked_senders and task_cleanup_frees_msg_queue_with_blocked_senders.  <br /></td></tr>
 </table>
 <a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
 <a id="aa54f4bdd6c8fab31d7b1c3f9a778f440" name="aa54f4bdd6c8fab31d7b1c3f9a778f440"></a>
@@ -394,7 +400,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line"><a class="code hl_define" href="#a374771e8d81b5baa372492a3979e5f73">JARVIS_REGISTER_TEST_FLAGS</a>(name, <a class="code hl_enumvalue" href="namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8">kernel::test::TF_RELEASE</a>)</div>
 <div class="ttc" id="anamespacekernel_1_1test_html_a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8"><div class="ttname"><a href="namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8">kernel::test::TF_RELEASE</a></div><div class="ttdeci">@ TF_RELEASE</div><div class="ttdef"><b>Definition</b> test.hpp:39</div></div>
-<div class="ttc" id="atest_8hpp_html_a374771e8d81b5baa372492a3979e5f73"><div class="ttname"><a href="#a374771e8d81b5baa372492a3979e5f73">JARVIS_REGISTER_TEST_FLAGS</a></div><div class="ttdeci">#define JARVIS_REGISTER_TEST_FLAGS(name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:251</div></div>
+<div class="ttc" id="atest_8hpp_html_a374771e8d81b5baa372492a3979e5f73"><div class="ttname"><a href="#a374771e8d81b5baa372492a3979e5f73">JARVIS_REGISTER_TEST_FLAGS</a></div><div class="ttdeci">#define JARVIS_REGISTER_TEST_FLAGS(name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:346</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -417,7 +423,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line"><a class="code hl_define" href="#a898e9992b56f0e0b33e86dba5b5afa59">JARVIS_REGISTER_TEST_SUITE_FLAGS</a>(suite, name, <a class="code hl_enumvalue" href="namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924ae3d35c95598236fc836dc51c0e3982c8">kernel::test::TF_RELEASE</a>)</div>
-<div class="ttc" id="atest_8hpp_html_a898e9992b56f0e0b33e86dba5b5afa59"><div class="ttname"><a href="#a898e9992b56f0e0b33e86dba5b5afa59">JARVIS_REGISTER_TEST_SUITE_FLAGS</a></div><div class="ttdeci">#define JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:265</div></div>
+<div class="ttc" id="atest_8hpp_html_a898e9992b56f0e0b33e86dba5b5afa59"><div class="ttname"><a href="#a898e9992b56f0e0b33e86dba5b5afa59">JARVIS_REGISTER_TEST_SUITE_FLAGS</a></div><div class="ttdeci">#define JARVIS_REGISTER_TEST_SUITE_FLAGS(suite, name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:360</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -607,7 +613,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line"><a class="code hl_define" href="#ace9d865ef1ecb142666cd0beb9c51af3">REGISTER_CLASS_FLAGS</a>(name, <a class="code hl_enumvalue" href="namespacekernel_1_1test.html#a3c3d9504ac5a18a5220063a8e94b0924a758901b7d4ff562bfcf86fd8d1a08252">kernel::test::TF_KERNEL</a>)</div>
-<div class="ttc" id="atest_8hpp_html_ace9d865ef1ecb142666cd0beb9c51af3"><div class="ttname"><a href="#ace9d865ef1ecb142666cd0beb9c51af3">REGISTER_CLASS_FLAGS</a></div><div class="ttdeci">#define REGISTER_CLASS_FLAGS(name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:303</div></div>
+<div class="ttc" id="atest_8hpp_html_ace9d865ef1ecb142666cd0beb9c51af3"><div class="ttname"><a href="#ace9d865ef1ecb142666cd0beb9c51af3">REGISTER_CLASS_FLAGS</a></div><div class="ttdeci">#define REGISTER_CLASS_FLAGS(name, flags_)</div><div class="ttdef"><b>Definition</b> test.hpp:398</div></div>
 </div><!-- fragment -->
 </div>
 </div>

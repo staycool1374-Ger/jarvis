@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__wcet__ov
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="timer_8hpp_source.html">kernel/arch/timer.hpp</a>&gt;</code><br />
@@ -142,6 +143,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>WCET overrun detection tests — Phase 3: distinguish execution- time overrun from deadline miss. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): the task GENUINELY runs past its WCET on real timer ticks. wcet_ticks is a static per-task configuration (set at create time, like period_ticks — it is NOT a runtime state field). The real on_tick ISR fires the WCET handler and latches <span class="tt">wcet_overrun_fired</span>; the task busy-waits until it observes its own latch set by real execution. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a853f018ba08d6aa906e5ca927dcb4b0b" name="a853f018ba08d6aa906e5ca927dcb4b0b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a853f018ba08d6aa906e5ca927dcb4b0b">&#9670;&#160;</a></span>register_wcet_overrun_tests()</h2>
@@ -180,6 +182,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__wcet__overrun_8cpp_a56b7064223eff4dae2aac212a12b980d_cgraph.png" border="0" usemap="#atest__wcet__overrun_8cpp_a56b7064223eff4dae2aac212a12b980d_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>

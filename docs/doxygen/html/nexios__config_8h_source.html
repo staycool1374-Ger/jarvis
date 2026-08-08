@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -127,10 +127,10 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('nexios__config
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment">// Version</span></div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">// ---------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l00018" name="l00018"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#a33fbd7e91d033fa1e09b4ed4de899c02">   18</a></span><span class="preprocessor">#define CONFIG_VERSION &quot;0.3.7&quot;</span></div>
+<div class="line"><a id="l00018" name="l00018"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#a33fbd7e91d033fa1e09b4ed4de899c02">   18</a></span><span class="preprocessor">#define CONFIG_VERSION &quot;0.3.10-dev&quot;</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#aa1a69b49aa134e3a3c303489bccca599">   19</a></span><span class="preprocessor">#define CONFIG_VERSION_MAJOR 0</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#acd02978616d37355da2ade116edf7bde">   20</a></span><span class="preprocessor">#define CONFIG_VERSION_MINOR 3</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#ad5dc4c87864bde8898026a5c2e00cb59">   21</a></span><span class="preprocessor">#define CONFIG_VERSION_PATCH 7</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#ad5dc4c87864bde8898026a5c2e00cb59">   21</a></span><span class="preprocessor">#define CONFIG_VERSION_PATCH 10</span></div>
 <div class="foldopen" id="foldopen00022" data-start="" data-end="">
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#a9a1d7f74c8a2af39bd2b1c5b6f0fe5c5">   22</a></span><span class="preprocessor">#define CONFIG_VERSION_NUM ((CONFIG_VERSION_MAJOR &lt;&lt; 16) | \</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">                            (CONFIG_VERSION_MINOR &lt;&lt; 8) |  \</span></div>
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('nexios__config
 <div class="line"><a id="l00533" name="l00533"></a><span class="lineno">  533</span><span class="preprocessor">#ifndef CONFIG_STACK_SIZE_TABLE</span></div>
 <div class="foldopen" id="foldopen00534" data-start="" data-end="">
 <div class="line"><a id="l00534" name="l00534"></a><span class="lineno"><a class="line" href="nexios__config_8h.html#ac1f84c6931f570beff33eb70e30cbe4e">  534</a></span><span class="preprocessor">#define CONFIG_STACK_SIZE_TABLE \</span></div>
-<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span><span class="preprocessor">    { 4096, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</span></div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span><span class="preprocessor">    { 65536, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</span></div>
 </div>
 <div class="line"><a id="l00536" name="l00536"></a><span class="lineno">  536</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00537" name="l00537"></a><span class="lineno">  537</span></div>
@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('nexios__config
 <div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span> </div>
 <div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span><span class="preprocessor">#endif </span><span class="comment">// JARVIS_CONFIG_H</span></div>
-<div class="ttc" id="anexios__config_8h_html_ae22655ba6f328217f1ebd6248ed82727"><div class="ttname"><a href="nexios__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a></div><div class="ttdeci">void panic(const char *msg)</div><div class="ttdoc">Overridable assertion macro. Default calls panic on failure.</div><div class="ttdef"><b>Definition</b> kernel.cpp:985</div></div>
+<div class="ttc" id="anexios__config_8h_html_ae22655ba6f328217f1ebd6248ed82727"><div class="ttname"><a href="nexios__config_8h.html#ae22655ba6f328217f1ebd6248ed82727">panic</a></div><div class="ttdeci">void panic(const char *msg)</div><div class="ttdoc">Overridable assertion macro. Default calls panic on failure.</div><div class="ttdef"><b>Definition</b> kernel.cpp:939</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

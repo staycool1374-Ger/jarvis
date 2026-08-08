@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -131,6 +131,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__syscall_
 <code>#include &lt;<a class="el" href="checked__ptr_8hpp_source.html">kernel/memory/checked_ptr.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="signal_8hpp_source.html">signal.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_syscall_fuzz.cpp:</div>
 <div class="dyncontent">
@@ -148,6 +149,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>System call fuzz testing. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): every fuzz case runs inside a REAL kernel task (prio ≥ 11) that is genuinely dispatched — the handler's <span class="tt"><a class="el" href="namespacekernel.html#aa7278439c20dc6234a77d3b08290701f" title="Get the currently running task from the scheduler.">syscall_task()</a></span> resolves to the running task. The harness never invokes Syscall::handle() directly and never mutates task state. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a55d556ff57d85f8b5f058302d943612c" name="a55d556ff57d85f8b5f058302d943612c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a55d556ff57d85f8b5f058302d943612c">&#9670;&#160;</a></span>register_syscall_fuzz_tests()</h2>
@@ -209,6 +211,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__syscall__fuzz_8cpp_a4d3726bc4cfb48f0642dd9bcc5aa3a3f_cgraph.png" border="0" usemap="#atest__syscall__fuzz_8cpp_a4d3726bc4cfb48f0642dd9bcc5aa3a3f_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -226,6 +234,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__syscall__fuzz_8cpp_ae8cfe2429c9d96eb1d0b6af80e4de249_cgraph.png" border="0" usemap="#atest__syscall__fuzz_8cpp_ae8cfe2429c9d96eb1d0b6af80e4de249_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -243,6 +257,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__syscall__fuzz_8cpp_ad6e9365afe54f0971239020844c74dc4_cgraph.png" border="0" usemap="#atest__syscall__fuzz_8cpp_ad6e9365afe54f0971239020844c74dc4_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 5 -->
+</div>
 
 </div>
 </div>

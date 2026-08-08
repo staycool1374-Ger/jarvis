@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__buffer__
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scope__guard_8hpp_source.html">scope_guard.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="resource__tracker_8hpp_source.html">kernel/test/resource_tracker.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task__ptr_8hpp_source.html">kernel/test/task_ptr.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="buffer__pool_8hpp_source.html">kernel/ipc/buffer_pool.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="ipc_8hpp_source.html">kernel/ipc/ipc.hpp</a>&gt;</code><br />
@@ -133,7 +134,10 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__buffer__
 <code>#include &lt;<a class="el" href="vmm_8hpp_source.html">kernel/memory/vmm.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="irq__guard_8hpp_source.html">kernel/arch/irq_guard.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="constants_8hpp_source.html">constants.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="qemu__debugcon_8hpp_source.html">kernel/arch/qemu_debugcon.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_buffer_pool.cpp:</div>
 <div class="dyncontent">
@@ -191,6 +195,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_a5beef3eb42e945c72bc7ea9d0904f1fe_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_a5beef3eb42e945c72bc7ea9d0904f1fe_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -275,6 +285,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_a437ca7db3a182e72a509094dbd5e3e69_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_a437ca7db3a182e72a509094dbd5e3e69_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -296,6 +312,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_ac50d9bf322261b4a3cf450e7dd161a48_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_ac50d9bf322261b4a3cf450e7dd161a48_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -380,6 +402,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_a127a1ea64d5da0f8afec4e35b2879bbb_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_a127a1ea64d5da0f8afec4e35b2879bbb_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -401,6 +429,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_aa702d1d054edaca2a46f83ae98ff5dec_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_aa702d1d054edaca2a46f83ae98ff5dec_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 5 -->
+</div>
 
 </div>
 </div>
@@ -506,6 +540,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__buffer__pool_8cpp_aa529ed2a4b225cf044b8960756ff85a3_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_aa529ed2a4b225cf044b8960756ff85a3_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 6 -->
+</div>
 
 </div>
 </div>
@@ -697,7 +737,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__buffer__pool_8cpp_aafca8a4a2c2a9e7a9ef7d14f7f577c35_cgraph.png" border="0" usemap="#atest__buffer__pool_8cpp_aafca8a4a2c2a9e7a9ef7d14f7f577c35_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 7 -->
 </div>
 
 </div>

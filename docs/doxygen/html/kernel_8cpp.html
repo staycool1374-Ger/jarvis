@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('kernel_8cpp.ht
 <code>#include &lt;<a class="el" href="rtc_8hpp_source.html">kernel/arch/rtc.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="io_8hpp_source.html">kernel/arch/io.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="keyboard_8hpp_source.html">kernel/arch/keyboard.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="qemu__debugcon_8hpp_source.html">kernel/arch/qemu_debugcon.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="serial_8hpp_source.html">kernel/arch/serial.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="pmm_8hpp_source.html">kernel/memory/pmm.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vmm_8hpp_source.html">kernel/memory/vmm.hpp</a>&gt;</code><br />
@@ -200,6 +201,13 @@ Variables</h2></td></tr>
 <tr class="memitem:a0bfda50437b4177036ebf965a8ae9735" id="r_a0bfda50437b4177036ebf965a8ae9735"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a0bfda50437b4177036ebf965a8ae9735">scheduler_load_rsp_from</a> = 0</td></tr>
 <tr class="memitem:a267d71f6467066b1a2df5d1c390f014a" id="r_a267d71f6467066b1a2df5d1c390f014a"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a267d71f6467066b1a2df5d1c390f014a">scheduler_load_cr3_from</a> = 0</td></tr>
 <tr class="memitem:ac624c3223df92f059074d6001ef70e60" id="r_ac624c3223df92f059074d6001ef70e60"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#ac624c3223df92f059074d6001ef70e60">scheduler_next_task_id</a> = <a class="el" href="constants_8hpp.html#a5e5cc8e5f3f386f8eb0ab1012de4f0db">UINT64_MAX</a></td></tr>
+<tr class="memitem:a026faf3c3debae610cdbc4ebbc41295d" id="r_a026faf3c3debae610cdbc4ebbc41295d"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a026faf3c3debae610cdbc4ebbc41295d">scheduler_load_kstack_base</a> = 0</td></tr>
+<tr class="memdesc:a026faf3c3debae610cdbc4ebbc41295d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel-stack range of the task being dispatched. isr_stubs.asm verifies scheduler_load_rsp_from lies within [scheduler_load_kstack_base, scheduler_load_kstack_top) before iretq, refusing to dispatch a task onto a foreign RSP (the H2 harness-displacement race).  <br /></td></tr>
+<tr class="memitem:a44b5cc49c445a145e3b4d20712ec2360" id="r_a44b5cc49c445a145e3b4d20712ec2360"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a44b5cc49c445a145e3b4d20712ec2360">scheduler_load_kstack_top</a> = 0</td></tr>
+<tr class="memitem:a358324b930c3d48b8613572314e94320" id="r_a358324b930c3d48b8613572314e94320"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a358324b930c3d48b8613572314e94320">scheduler_switch_generation</a> = 0</td></tr>
+<tr class="memdesc:a358324b930c3d48b8613572314e94320"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generation sequence counter for the deferred-switch pair (load_rsp_from / load_cr3_from). A publisher bumps it after writing the pair and before arming save_rsp_to; isr_stubs.asm captures it and re-verifies before applying so a timer ISR never applies a half-written / superseded pair.  <br /></td></tr>
+<tr class="memitem:acf3d43b7766a9a34a8eb7c6020ca4be8" id="r_acf3d43b7766a9a34a8eb7c6020ca4be8"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#acf3d43b7766a9a34a8eb7c6020ca4be8">scheduler_kernel_cr3</a> = 0</td></tr>
+<tr class="memdesc:acf3d43b7766a9a34a8eb7c6020ca4be8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static kernel PML4 (physical). isr_stubs.asm falls back to this when scheduler_load_cr3_from is null/outdated while returning to the kernel/harness context, so the harness never resumes on a stale user CR3. Initialised in Scheduler::init from VMM::get_kernel_pml4().  <br /></td></tr>
 <tr class="memitem:a0cd8a9e394bdaa6d815168f5208a85fa" id="r_a0cd8a9e394bdaa6d815168f5208a85fa"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a0cd8a9e394bdaa6d815168f5208a85fa">scheduler_need_resched</a> = false</td></tr>
 <tr class="memitem:a749dfb81c6c748a8fe63fae0d81f2926" id="r_a749dfb81c6c748a8fe63fae0d81f2926"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#a749dfb81c6c748a8fe63fae0d81f2926">isr_nesting_depth</a> = 0</td></tr>
 <tr class="memitem:aeb543e504861746afd26a43391444494" id="r_aeb543e504861746afd26a43391444494"><td class="memItemLeft"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="#aeb543e504861746afd26a43391444494">irq_entry_tsc</a> = 0</td></tr>
@@ -713,6 +721,22 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="acf3d43b7766a9a34a8eb7c6020ca4be8" name="acf3d43b7766a9a34a8eb7c6020ca4be8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf3d43b7766a9a34a8eb7c6020ca4be8">&#9670;&#160;</a></span>scheduler_kernel_cr3</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_kernel_cr3 = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Static kernel PML4 (physical). isr_stubs.asm falls back to this when scheduler_load_cr3_from is null/outdated while returning to the kernel/harness context, so the harness never resumes on a stale user CR3. Initialised in Scheduler::init from VMM::get_kernel_pml4(). </p>
+
+</div>
+</div>
 <a id="a267d71f6467066b1a2df5d1c390f014a" name="a267d71f6467066b1a2df5d1c390f014a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a267d71f6467066b1a2df5d1c390f014a">&#9670;&#160;</a></span>scheduler_load_cr3_from</h2>
 
@@ -721,6 +745,36 @@ Here is the call graph for this function:</div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_load_cr3_from = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a026faf3c3debae610cdbc4ebbc41295d" name="a026faf3c3debae610cdbc4ebbc41295d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a026faf3c3debae610cdbc4ebbc41295d">&#9670;&#160;</a></span>scheduler_load_kstack_base</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_load_kstack_base = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Kernel-stack range of the task being dispatched. isr_stubs.asm verifies scheduler_load_rsp_from lies within [scheduler_load_kstack_base, scheduler_load_kstack_top) before iretq, refusing to dispatch a task onto a foreign RSP (the H2 harness-displacement race). </p>
+
+</div>
+</div>
+<a id="a44b5cc49c445a145e3b4d20712ec2360" name="a44b5cc49c445a145e3b4d20712ec2360"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44b5cc49c445a145e3b4d20712ec2360">&#9670;&#160;</a></span>scheduler_load_kstack_top</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_load_kstack_top = 0</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -780,6 +834,22 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a358324b930c3d48b8613572314e94320" name="a358324b930c3d48b8613572314e94320"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a358324b930c3d48b8613572314e94320">&#9670;&#160;</a></span>scheduler_switch_generation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> scheduler_switch_generation = 0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Generation sequence counter for the deferred-switch pair (load_rsp_from / load_cr3_from). A publisher bumps it after writing the pair and before arming save_rsp_to; isr_stubs.asm captures it and re-verifies before applying so a timer ISR never applies a half-written / superseded pair. </p>
 
 </div>
 </div>

@@ -2,6 +2,7 @@ var namespacearch =
 [
     [ "APIC", "classarch_1_1_a_p_i_c.html", null ],
     [ "Caps", "structarch_1_1_caps.html", "structarch_1_1_caps" ],
+    [ "QemuDebugcon", "classarch_1_1_qemu_debugcon.html", null ],
     [ "exception_entry", "namespacearch.html#a46488b8cc19b71e9d4bd3d8ea44603e4", null ],
     [ "gic_v3_read_iar", "namespacearch.html#abe825a3f67343b75c57efa83cb71feec", null ],
     [ "gic_v3_set_igrpen1", "namespacearch.html#a0e66b1a01d873e894c6676c2d63657c4", null ],

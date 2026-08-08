@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__starvati
 <code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="timer_8hpp_source.html">kernel/arch/timer.hpp</a>&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_starvation_deadlock.cpp:</div>
 <div class="dyncontent">
@@ -145,6 +146,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Starvation and deadlock scenario tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): all contention is driven by REAL kernel tasks (prio ≥ 11) dispatched by the real timer ISR. Tasks hold mutexes / wait on semaphores in their own running lambdas and block on real gates; no set_current impersonation, no direct priority/state writes. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a80c729bcf212eaa73d84d83f215f32b4" name="a80c729bcf212eaa73d84d83f215f32b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a80c729bcf212eaa73d84d83f215f32b4">&#9670;&#160;</a></span>register_starvation_deadlock_tests()</h2>
@@ -183,6 +185,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__starvation__deadlock_8cpp_a450bcf91bb24182075f91ad13a2f27f9_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a450bcf91bb24182075f91ad13a2f27f9_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -200,6 +208,12 @@ Here is the call graph for this function:</div>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__starvation__deadlock_8cpp_a5d5e7976fb497b89976675e5134c97cf_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a5d5e7976fb497b89976675e5134c97cf_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -221,7 +235,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__starvation__deadlock_8cpp_a409a2eafb0ab679b34313a853fc06fdf_cgraph.png" border="0" usemap="#atest__starvation__deadlock_8cpp_a409a2eafb0ab679b34313a853fc06fdf_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 4 -->
 </div>
 
 </div>

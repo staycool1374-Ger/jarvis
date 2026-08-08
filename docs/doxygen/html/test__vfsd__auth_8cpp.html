@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -127,6 +127,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__vfsd__au
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="vfsd_8hpp_source.html">kernel/vfs/vfsd.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_vfsd_auth.cpp:</div>
 <div class="dyncontent">
@@ -146,6 +147,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>VFS daemon authorisation tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): every VFS syscall runs inside a REAL kernel task (prio ≥ 11) that is genuinely dispatched — the handler's <span class="tt"><a class="el" href="namespacekernel.html#aa7278439c20dc6234a77d3b08290701f" title="Get the currently running task from the scheduler.">syscall_task()</a></span> resolves to the running task and the kernel-bypass / daemon authorisation path is exercised through real execution. The harness never calls Syscall::handle() directly. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a25e5508c0633231b71d0492d7b8c06c4" name="a25e5508c0633231b71d0492d7b8c06c4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a25e5508c0633231b71d0492d7b8c06c4">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/5]</span></h2>
@@ -170,6 +172,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__vfsd__auth_8cpp_a25e5508c0633231b71d0492d7b8c06c4_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a25e5508c0633231b71d0492d7b8c06c4_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -196,6 +204,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__vfsd__auth_8cpp_aead38b3debb4e71b899d7bf0b96a60a9_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_aead38b3debb4e71b899d7bf0b96a60a9_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -222,6 +236,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__vfsd__auth_8cpp_a98fa3730ce3dbbcb804c18d9687cd52b_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a98fa3730ce3dbbcb804c18d9687cd52b_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -248,6 +268,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__vfsd__auth_8cpp_ae8d2dbc91211b91671fae6c1240cb4cf_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_ae8d2dbc91211b91671fae6c1240cb4cf_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -274,6 +300,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__vfsd__auth_8cpp_a7f1105c16cb72c68ab85bded186432f5_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a7f1105c16cb72c68ab85bded186432f5_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 5 -->
+</div>
 
 </div>
 </div>
@@ -297,7 +329,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__vfsd__auth_8cpp_a6b203c2ce630993d8d83e48588e18b0b_cgraph.png" border="0" usemap="#atest__vfsd__auth_8cpp_a6b203c2ce630993d8d83e48588e18b0b_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 6 -->
 </div>
 
 </div>

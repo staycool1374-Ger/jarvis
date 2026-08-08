@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -133,10 +133,10 @@ This graph shows which files directly or indirectly include this file:</div>
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a6cbad48473f7f79a39d324ee988c0d46" id="r_a6cbad48473f7f79a39d324ee988c0d46"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a6cbad48473f7f79a39d324ee988c0d46">JARVIS_CONFIG_H</a></td></tr>
-<tr class="memitem:a33fbd7e91d033fa1e09b4ed4de899c02" id="r_a33fbd7e91d033fa1e09b4ed4de899c02"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a33fbd7e91d033fa1e09b4ed4de899c02">CONFIG_VERSION</a>&#160;&#160;&#160;&quot;0.3.7&quot;</td></tr>
+<tr class="memitem:a33fbd7e91d033fa1e09b4ed4de899c02" id="r_a33fbd7e91d033fa1e09b4ed4de899c02"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a33fbd7e91d033fa1e09b4ed4de899c02">CONFIG_VERSION</a>&#160;&#160;&#160;&quot;0.3.10-dev&quot;</td></tr>
 <tr class="memitem:aa1a69b49aa134e3a3c303489bccca599" id="r_aa1a69b49aa134e3a3c303489bccca599"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aa1a69b49aa134e3a3c303489bccca599">CONFIG_VERSION_MAJOR</a>&#160;&#160;&#160;0</td></tr>
 <tr class="memitem:acd02978616d37355da2ade116edf7bde" id="r_acd02978616d37355da2ade116edf7bde"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#acd02978616d37355da2ade116edf7bde">CONFIG_VERSION_MINOR</a>&#160;&#160;&#160;3</td></tr>
-<tr class="memitem:ad5dc4c87864bde8898026a5c2e00cb59" id="r_ad5dc4c87864bde8898026a5c2e00cb59"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad5dc4c87864bde8898026a5c2e00cb59">CONFIG_VERSION_PATCH</a>&#160;&#160;&#160;7</td></tr>
+<tr class="memitem:ad5dc4c87864bde8898026a5c2e00cb59" id="r_ad5dc4c87864bde8898026a5c2e00cb59"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ad5dc4c87864bde8898026a5c2e00cb59">CONFIG_VERSION_PATCH</a>&#160;&#160;&#160;10</td></tr>
 <tr class="memitem:a9a1d7f74c8a2af39bd2b1c5b6f0fe5c5" id="r_a9a1d7f74c8a2af39bd2b1c5b6f0fe5c5"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a9a1d7f74c8a2af39bd2b1c5b6f0fe5c5">CONFIG_VERSION_NUM</a></td></tr>
 <tr class="memitem:a5a04f42c5fbcca541aeb36ade1671c80" id="r_a5a04f42c5fbcca541aeb36ade1671c80"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a5a04f42c5fbcca541aeb36ade1671c80">CONFIG_MAX_TASKS</a>&#160;&#160;&#160;64</td></tr>
 <tr class="memitem:a5c72f011f94e171f3516246cb40236d8" id="r_a5c72f011f94e171f3516246cb40236d8"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a5c72f011f94e171f3516246cb40236d8">CONFIG_TICK_HZ</a>&#160;&#160;&#160;1000</td></tr>
@@ -235,7 +235,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:a5412009bb80bc2aac94e2a2121f9a02f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base virtual address of the kernel-stack window (guard page capable).  <br /></td></tr>
 <tr class="memitem:a0bef3e0da616c80c28e1f7671b03401d" id="r_a0bef3e0da616c80c28e1f7671b03401d"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a0bef3e0da616c80c28e1f7671b03401d">CONFIG_KSTACK_WINDOW_SIZE</a>&#160;&#160;&#160;0x1000000ULL</td></tr>
 <tr class="memdesc:a0bef3e0da616c80c28e1f7671b03401d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total VA space reserved for kernel stacks.  <br /></td></tr>
-<tr class="memitem:ac1f84c6931f570beff33eb70e30cbe4e" id="r_ac1f84c6931f570beff33eb70e30cbe4e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ac1f84c6931f570beff33eb70e30cbe4e">CONFIG_STACK_SIZE_TABLE</a>&#160;&#160;&#160;{ 4096, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</td></tr>
+<tr class="memitem:ac1f84c6931f570beff33eb70e30cbe4e" id="r_ac1f84c6931f570beff33eb70e30cbe4e"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ac1f84c6931f570beff33eb70e30cbe4e">CONFIG_STACK_SIZE_TABLE</a>&#160;&#160;&#160;{ 65536, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</td></tr>
 <tr class="memdesc:ac1f84c6931f570beff33eb70e30cbe4e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kernel stack sizes per priority tier (bytes). Indexed by priority.  <br /></td></tr>
 <tr class="memitem:ab44671d00a3c95ec864336d0fd40979d" id="r_ab44671d00a3c95ec864336d0fd40979d"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ab44671d00a3c95ec864336d0fd40979d">CONFIG_ZOMBIE_STARVATION_LIMIT</a>&#160;&#160;&#160;32</td></tr>
 <tr class="memitem:aac30e89938cc6eef8d1516f75c2c3fc7" id="r_aac30e89938cc6eef8d1516f75c2c3fc7"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aac30e89938cc6eef8d1516f75c2c3fc7">CONFIG_IRQ_LATENCY_HISTOGRAM</a>&#160;&#160;&#160;1</td></tr>
@@ -1612,7 +1612,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define CONFIG_STACK_SIZE_TABLE&#160;&#160;&#160;{ 4096, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</td>
+          <td class="memname">#define CONFIG_STACK_SIZE_TABLE&#160;&#160;&#160;{ 65536, 16384, 65536, 65536, 65536, 65536, 65536, 65536 }</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1819,7 +1819,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define CONFIG_VERSION&#160;&#160;&#160;&quot;0.3.7&quot;</td>
+          <td class="memname">#define CONFIG_VERSION&#160;&#160;&#160;&quot;0.3.10-dev&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1881,7 +1881,7 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define CONFIG_VERSION_PATCH&#160;&#160;&#160;7</td>
+          <td class="memname">#define CONFIG_VERSION_PATCH&#160;&#160;&#160;10</td>
         </tr>
       </table>
 </div><div class="memdoc">

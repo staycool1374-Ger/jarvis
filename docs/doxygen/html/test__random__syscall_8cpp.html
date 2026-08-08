@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__random__
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="syscall_8hpp_source.html">kernel/syscall/syscall.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
+<code>#include &quot;<a class="el" href="test__sched__helpers_8hpp_source.html">test_sched_helpers.hpp</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for test_random_syscall.cpp:</div>
 <div class="dyncontent">
@@ -142,6 +144,7 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Random system call interface tests. </p>
+<p>v0.3.10 rework (SIMULATED → DRIVEN): every syscall runs inside a REAL kernel task (prio ≥ 11) that is genuinely dispatched — the handler's <span class="tt"><a class="el" href="namespacekernel.html#aa7278439c20dc6234a77d3b08290701f" title="Get the currently running task from the scheduler.">syscall_task()</a></span> resolves to the running task. The harness never calls Syscall::handle() directly. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a83bce0d42e081fc6ffcff1c16a4e89b7" name="a83bce0d42e081fc6ffcff1c16a4e89b7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a83bce0d42e081fc6ffcff1c16a4e89b7">&#9670;&#160;</a></span>JARVIS_TEST() <span class="overload">[1/4]</span></h2>
@@ -161,6 +164,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__random__syscall_8cpp_a83bce0d42e081fc6ffcff1c16a4e89b7_cgraph.png" border="0" usemap="#atest__random__syscall_8cpp_a83bce0d42e081fc6ffcff1c16a4e89b7_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 1 -->
+</div>
 
 </div>
 </div>
@@ -182,6 +191,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__random__syscall_8cpp_a6cb8e09634e3ef309c4f56bbc6096fd4_cgraph.png" border="0" usemap="#atest__random__syscall_8cpp_a6cb8e09634e3ef309c4f56bbc6096fd4_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 2 -->
+</div>
 
 </div>
 </div>
@@ -203,6 +218,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__random__syscall_8cpp_a123c3abd226d6956346638e4c04371d2_cgraph.png" border="0" usemap="#atest__random__syscall_8cpp_a123c3abd226d6956346638e4c04371d2_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 3 -->
+</div>
 
 </div>
 </div>
@@ -224,6 +245,12 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><img src="test__random__syscall_8cpp_a53215621115cb52bf72a009ebb4ddaf1_cgraph.png" border="0" usemap="#atest__random__syscall_8cpp_a53215621115cb52bf72a009ebb4ddaf1_cgraph" loading="lazy" alt=""/></div>
+<!-- MAP 4 -->
+</div>
 
 </div>
 </div>
@@ -245,7 +272,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="test__random__syscall_8cpp_a4921c33ddb21c6cce3124ac1516af0f0_cgraph.png" border="0" usemap="#atest__random__syscall_8cpp_a4921c33ddb21c6cce3124ac1516af0f0_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 5 -->
 </div>
 
 </div>

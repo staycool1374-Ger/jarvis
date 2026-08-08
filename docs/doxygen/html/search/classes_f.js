@@ -1,9 +1,4 @@
 var searchData=
 [
-  ['udpheader_0',['UdpHeader',['../structnet_1_1_udp_header.html',1,'net']]],
-  ['uniqueptr_1',['UniquePtr',['../class_unique_ptr.html',1,'']]],
-  ['uniqueptr_3c_20taskcontrolblock_2c_20simpletaskdeleter_20_3e_2',['UniquePtr&lt; TaskControlBlock, SimpleTaskDeleter &gt;',['../class_unique_ptr.html',1,'']]],
-  ['uniqueptr_3c_20taskcontrolblock_2c_20taskdeleter_20_3e_3',['UniquePtr&lt; TaskControlBlock, TaskDeleter &gt;',['../class_unique_ptr.html',1,'']]],
-  ['utsname_4',['Utsname',['../structkernel_1_1_utsname.html',1,'kernel::Utsname'],['../struct_utsname.html',1,'Utsname']]],
-  ['utsname_5',['utsname',['../structutsname.html',1,'']]]
+  ['version_0',['Version',['../structkernel_1_1_version.html',1,'kernel']]]
 ];

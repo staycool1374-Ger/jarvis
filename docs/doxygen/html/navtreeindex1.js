@@ -1,5 +1,7 @@
 var NAVTREEINDEX1 =
 {
+"classkernel_1_1_ready_queue_manager.html#adf2703f42a211a644adc440ae6fab7a1":[2,0,3,13,4],
+"classkernel_1_1_task_queue.html":[0,0,3,32],
 "classkernel_1_1_task_queue.html":[2,0,3,18],
 "classkernel_1_1_task_queue.html#a11497a31721fe4d5c95973e534261b5b":[0,0,3,32,2],
 "classkernel_1_1_task_queue.html#a11497a31721fe4d5c95973e534261b5b":[2,0,3,18,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX1 =
 "dir_cbd7f246bdf7dc0a50281a272327e6ed.html":[3,0,0,1],
 "dir_cfddc3e4738eb751c9ecb1dcd81b4d56.html":[3,0,0,1,9],
 "dir_e6831a010a70b45193b3a12653a74c5e.html":[3,0,0,1,7],
-"dir_ee3448fa1dc3d93b4fb7d6fba5be0d5c.html":[3,0,0,3],
-"dir_f2d2daf3e7e7133833e8ca3e96c20a92.html":[3,0,0,1,3],
-"dma_8cpp.html":[3,0,0,1,4,7]
+"dir_ee3448fa1dc3d93b4fb7d6fba5be0d5c.html":[3,0,0,3]
 };

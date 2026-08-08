@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -147,36 +147,16 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('scheduler_8cpp
 Include dependency graph for scheduler.cpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="scheduler_8cpp__incl.png" border="0" usemap="#asrc_2kernel_2task_2scheduler_8cpp" loading="lazy" alt=""/></div>
-<map name="asrc_2kernel_2task_2scheduler_8cpp" id="asrc_2kernel_2task_2scheduler_8cpp">
-<area shape="rect" title=" " alt="" coords="206,5,397,32"/>
-<area shape="rect" href="scheduler_8hpp.html" title="Rate&#45;monotonic scheduler for task management and dispatching." alt="" coords="6,80,175,107"/>
-<area shape="poly" title=" " alt="" coords="263,35,144,77,141,72,266,30"/>
-<area shape="rect" href="gdt_8hpp.html" title="Global Descriptor Table and Task State Segment definitions." alt="" coords="185,155,317,181"/>
-<area shape="poly" title=" " alt="" coords="299,31,262,141,258,139,295,34"/>
-<area shape="rect" href="vmm_8hpp.html" title="Virtual Memory Manager — x86&#45;64 page table management." alt="" coords="341,155,507,181"/>
-<area shape="poly" title=" " alt="" coords="313,30,407,142,401,143,311,35"/>
-<area shape="rect" href="assert_8hpp.html" title="Debug assertion macros and the panic handler declaration." alt="" coords="476,80,559,107"/>
-<area shape="poly" title=" " alt="" coords="339,30,468,74,463,76,339,35"/>
-<area shape="rect" href="types_8hpp.html" title="Fundamental type definitions for the kernel (no standard library)." alt="" coords="222,304,301,331"/>
-<area shape="poly" title=" " alt="" coords="61,110,35,129,22,141,12,156,8,170,10,185,23,217,50,254,87,277,128,294,169,304,209,313,204,313,168,309,126,299,84,282,46,258,18,220,5,187,3,169,7,154,18,138,31,124,64,105"/>
-<area shape="rect" href="task_8hpp.html" title="Task control block and state definitions for the kernel scheduler." alt="" coords="21,155,160,181"/>
-<area shape="poly" title=" " alt="" coords="91,105,93,139,88,139,90,110"/>
-<area shape="poly" title=" " alt="" coords="79,184,61,218,57,237,62,255,92,282,129,299,169,309,209,316,204,317,168,315,127,304,89,286,58,257,51,237,56,216,81,179"/>
-<area shape="rect" href="vfs_8hpp.html" title=" " alt="" coords="72,229,197,256"/>
-<area shape="poly" title=" " alt="" coords="99,179,122,216,117,216,98,184"/>
-<area shape="rect" href="signal_8hpp.html" title="Signal definitions used by the kernel for user exception delivery." alt="" coords="221,229,302,256"/>
-<area shape="poly" title=" " alt="" coords="121,179,220,221,215,224,120,185"/>
-<area shape="poly" title=" " alt="" coords="158,254,229,295,224,297,156,259"/>
-<area shape="poly" title=" " alt="" coords="263,255,264,290,259,287,260,258"/>
-<area shape="poly" title=" " alt="" coords="271,179,296,200,316,228,319,247,314,265,291,296,288,291,309,262,314,246,311,230,293,204,270,184"/>
-<area shape="poly" title=" " alt="" coords="414,181,335,258,290,296,287,292,332,254,409,183"/>
-<area shape="poly" title=" " alt="" coords="523,105,530,142,528,163,521,183,502,209,479,231,425,267,368,292,317,308,315,302,367,287,423,262,476,227,498,205,516,180,523,162,525,142,520,109"/>
-</map>
+<!-- MAP 0 -->
 </div>
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:kernel" id="r_kernel"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html">kernel</a></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:a9347125ae567ba5097e323ce1d5f8066" id="r_a9347125ae567ba5097e323ce1d5f8066"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a9347125ae567ba5097e323ce1d5f8066">H2_REC</a>(ev,  a,  b,  c)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -184,11 +164,62 @@ Functions</h2></td></tr>
 <tr class="memitem:afc833d2926e5dca3c9fbed32f7a7656a" id="r_afc833d2926e5dca3c9fbed32f7a7656a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afc833d2926e5dca3c9fbed32f7a7656a">debug_write_hex</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> value)</td></tr>
 <tr class="memitem:ac9b08212c79ab5465098caa93a4188bd" id="r_ac9b08212c79ab5465098caa93a4188bd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac9b08212c79ab5465098caa93a4188bd">debug_write_dec</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> value)</td></tr>
 <tr class="memitem:a776f2e51260c582da13e92d833060e5d" id="r_a776f2e51260c582da13e92d833060e5d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a776f2e51260c582da13e92d833060e5d">scheduler_diag_pre_save</a> ()</td></tr>
+<tr class="memitem:ac8d9dded3428810519f4aeefc1bde66d" id="r_ac8d9dded3428810519f4aeefc1bde66d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac8d9dded3428810519f4aeefc1bde66d">scheduler_record_skip</a> (<a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> captured_gen, <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a> current_gen)</td></tr>
+<tr class="memdesc:ac8d9dded3428810519f4aeefc1bde66d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply-side liveness + ownership re-check for the deferred switch (called from isr_stubs.asm BEFORE <span class="tt">mov rsp,[load_rsp_from]</span>). The arm side (switch_to_task) validates the target's frame at publish time, but the arm can survive past its ISR (nested-ISR depth guard or generation-skip) into a later ISR, and in between the target task can be terminated/freed (IRQs on) or the published RSP can drift from the target's CURRENT kernel stack (snapshot restore / free+reuse). The [H2W] orphan-displacement fires when the apply then iretq's onto the freed/foreign RSP (find_task(id)==null → current-cache lag). This re-checks BOTH liveness (id_table_) AND ownership (the published RSP lies inside the target's live kernel_stack, or the harness boot stack) with IRQs disabled — so no task-context removal can interleave — and aborts (clear atoms + bump generation) on any mismatch.  <br /></td></tr>
+<tr class="memitem:a0e38d7ed475eef604801c9554887ec62" id="r_a0e38d7ed475eef604801c9554887ec62"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a0e38d7ed475eef604801c9554887ec62">scheduler_validate_pending_switch</a> ()</td></tr>
+<tr class="memitem:aafecc39c6fc98fe8758b15727196ae92" id="r_aafecc39c6fc98fe8758b15727196ae92"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aafecc39c6fc98fe8758b15727196ae92">scheduler_abort_switch_fixup</a> ()</td></tr>
+<tr class="memdesc:aafecc39c6fc98fe8758b15727196ae92"><td class="mdescLeft">&#160;</td><td class="mdescRight">ISR-epilogue callback for the <span class="tt">.abort_switch</span> path (isr_stubs.asm): the deferred switch was refused because its load RSP fell outside the dispatched task's kernel stack. The arm side may have already repointed TSS.RSP0 at the aborted <span class="tt">next</span> task's kernel stack top (<a class="el" href="scheduler_8cpp.html" title="Scheduler implementation: task lifecycle, ready-queue management, rate-monotonic dispatch,...">scheduler.cpp</a>:1991, user-task dispatch). Rebind RSP0 to the CONTINUING task's own kernel stack so the next ring-3→ring-0 transition (int $0x80 trap gate) cannot push its iretq frame onto a freed/foreign stack. Harmless for ring-0-only runs (no privilege transition ever consumes RSP0).  <br /></td></tr>
 <tr class="memitem:aa045e907eeb1893918a7f28260eed3d6" id="r_aa045e907eeb1893918a7f28260eed3d6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa045e907eeb1893918a7f28260eed3d6">scheduler_on_context_switch</a> ()</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a6d73afdfa1f338f65d85c38585f1e1f2" id="r_a6d73afdfa1f338f65d85c38585f1e1f2"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a6d73afdfa1f338f65d85c38585f1e1f2">kernel::H2_EV_ARM</a> = 1</td></tr>
+<tr class="memitem:a810111e89e31e78c3e32f99355db7234" id="r_a810111e89e31e78c3e32f99355db7234"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a810111e89e31e78c3e32f99355db7234">kernel::H2_EV_APPLY</a> = 2</td></tr>
+<tr class="memitem:a4257e9fd5d09c0baf1cd2301d27355be" id="r_a4257e9fd5d09c0baf1cd2301d27355be"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a4257e9fd5d09c0baf1cd2301d27355be">kernel::H2_EV_SKIP</a> = 3</td></tr>
+<tr class="memitem:afb3fbd193a09fbd36b7f12f104aec2e7" id="r_afb3fbd193a09fbd36b7f12f104aec2e7"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#afb3fbd193a09fbd36b7f12f104aec2e7">kernel::H2_EV_CLR_RMS</a> = 4</td></tr>
+<tr class="memitem:aed0b1c34672fd84a78533c4247ea343f" id="r_aed0b1c34672fd84a78533c4247ea343f"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#aed0b1c34672fd84a78533c4247ea343f">kernel::H2_EV_CLR_SET</a> = 5</td></tr>
+<tr class="memitem:a574a90ebc327d46aa6aab426a829176b" id="r_a574a90ebc327d46aa6aab426a829176b"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a574a90ebc327d46aa6aab426a829176b">kernel::H2_EV_CLR_MISC</a> = 6</td></tr>
+<tr class="memitem:ae4d880161f4292f9476f0da08c2493c7" id="r_ae4d880161f4292f9476f0da08c2493c7"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#ae4d880161f4292f9476f0da08c2493c7">kernel::H2_EV_IDLE_ARM</a> = 7</td></tr>
+<tr class="memitem:aaf4c44145fd44721026b6f4c4b6466e6" id="r_aaf4c44145fd44721026b6f4c4b6466e6"><td class="memItemLeft">constexpr <a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a>&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#aaf4c44145fd44721026b6f4c4b6466e6">kernel::H2_EV_REENQ</a> = 8</td></tr>
+<tr class="memitem:a25351510936e6c130b0678097e493b2a" id="r_a25351510936e6c130b0678097e493b2a"><td class="memItemLeft">char&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a25351510936e6c130b0678097e493b2a">kernel::_stack_start</a> []</td></tr>
+<tr class="memitem:a2dc76afa8886a7fe002c3ca8fd481a42" id="r_a2dc76afa8886a7fe002c3ca8fd481a42"><td class="memItemLeft">char&#160;</td><td class="memItemRight"><a class="el" href="namespacekernel.html#a2dc76afa8886a7fe002c3ca8fd481a42">kernel::_stack_end</a> []</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Scheduler implementation: task lifecycle, ready-queue management, rate-monotonic dispatch, context switching, and test isolation. </p>
-</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+</div><a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a id="a9347125ae567ba5097e323ce1d5f8066" name="a9347125ae567ba5097e323ce1d5f8066"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9347125ae567ba5097e323ce1d5f8066">&#9670;&#160;</a></span>H2_REC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define H2_REC</td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>ev</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>b</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>c</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">((void)0)</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a80e920b60042b6c2750fd88974610e99" name="a80e920b60042b6c2750fd88974610e99"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a80e920b60042b6c2750fd88974610e99">&#9670;&#160;</a></span>debug_write()</h2>
 
@@ -224,7 +255,7 @@ Functions</h2></td></tr>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="scheduler_8cpp_ac9b08212c79ab5465098caa93a4188bd_cgraph.png" border="0" usemap="#ascheduler_8cpp_ac9b08212c79ab5465098caa93a4188bd_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 0 -->
+<!-- MAP 1 -->
 </div>
 
 </div>
@@ -246,6 +277,26 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a id="aafecc39c6fc98fe8758b15727196ae92" name="aafecc39c6fc98fe8758b15727196ae92"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aafecc39c6fc98fe8758b15727196ae92">&#9670;&#160;</a></span>scheduler_abort_switch_fixup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void scheduler_abort_switch_fixup </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>ISR-epilogue callback for the <span class="tt">.abort_switch</span> path (isr_stubs.asm): the deferred switch was refused because its load RSP fell outside the dispatched task's kernel stack. The arm side may have already repointed TSS.RSP0 at the aborted <span class="tt">next</span> task's kernel stack top (<a class="el" href="scheduler_8cpp.html" title="Scheduler implementation: task lifecycle, ready-queue management, rate-monotonic dispatch,...">scheduler.cpp</a>:1991, user-task dispatch). Rebind RSP0 to the CONTINUING task's own kernel stack so the next ring-3→ring-0 transition (int $0x80 trap gate) cannot push its iretq frame onto a freed/foreign stack. Harmless for ring-0-only runs (no privilege transition ever consumes RSP0). </p>
+<dl class="section note"><dt>Note</dt><dd>Runs with IRQs disabled (interrupt gate); must not re-enable them. </dd></dl>
+
+</div>
+</div>
 <a id="a776f2e51260c582da13e92d833060e5d" name="a776f2e51260c582da13e92d833060e5d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a776f2e51260c582da13e92d833060e5d">&#9670;&#160;</a></span>scheduler_diag_pre_save()</h2>
 
@@ -264,7 +315,7 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="scheduler_8cpp_a776f2e51260c582da13e92d833060e5d_cgraph.png" border="0" usemap="#ascheduler_8cpp_a776f2e51260c582da13e92d833060e5d_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 1 -->
+<!-- MAP 2 -->
 </div>
 
 </div>
@@ -287,8 +338,51 @@ Here is the call graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><img src="scheduler_8cpp_aa045e907eeb1893918a7f28260eed3d6_cgraph.png" border="0" usemap="#ascheduler_8cpp_aa045e907eeb1893918a7f28260eed3d6_cgraph" loading="lazy" alt=""/></div>
-<!-- MAP 2 -->
+<!-- MAP 3 -->
 </div>
+
+</div>
+</div>
+<a id="ac8d9dded3428810519f4aeefc1bde66d" name="ac8d9dded3428810519f4aeefc1bde66d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac8d9dded3428810519f4aeefc1bde66d">&#9670;&#160;</a></span>scheduler_record_skip()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void scheduler_record_skip </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>captured_gen</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="types_8hpp.html#a4fd212339282cce62b0d2700490de00f">uint64_t</a></td>          <td class="paramname"><span class="paramname"><em>current_gen</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Apply-side liveness + ownership re-check for the deferred switch (called from isr_stubs.asm BEFORE <span class="tt">mov rsp,[load_rsp_from]</span>). The arm side (switch_to_task) validates the target's frame at publish time, but the arm can survive past its ISR (nested-ISR depth guard or generation-skip) into a later ISR, and in between the target task can be terminated/freed (IRQs on) or the published RSP can drift from the target's CURRENT kernel stack (snapshot restore / free+reuse). The [H2W] orphan-displacement fires when the apply then iretq's onto the freed/foreign RSP (find_task(id)==null → current-cache lag). This re-checks BOTH liveness (id_table_) AND ownership (the published RSP lies inside the target's live kernel_stack, or the harness boot stack) with IRQs disabled — so no task-context removal can interleave — and aborts (clear atoms + bump generation) on any mismatch. </p>
+<dl class="section return"><dt>Returns</dt><dd>1 = apply the switch, 0 = abort it (atoms already invalidated). </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Runs with IRQs disabled (interrupt gate); must not re-enable them.</dd></dl>
+<p>Record an ISR-epilogue generation-skip (isr_stubs.asm): an ISR that captured generation <code class="param">captured_gen</code> at entry found it changed before its epilogue, so it skipped applying the deferred switch — leaving the dequeued target stranded until the next tick. H2 ring event. </p><dl class="section note"><dt>Note</dt><dd>Runs with IF=0 (interrupt gate); must not re-enable IRQs. </dd></dl>
+
+</div>
+</div>
+<a id="a0e38d7ed475eef604801c9554887ec62" name="a0e38d7ed475eef604801c9554887ec62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0e38d7ed475eef604801c9554887ec62">&#9670;&#160;</a></span>scheduler_validate_pending_switch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int scheduler_validate_pending_switch </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>

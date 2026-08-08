@@ -12,9 +12,12 @@ var searchData=
   ['_5f_5fdivti3_9',['__divti3',['../cxxabi_8cpp.html#ac54bb08c2f5c60fbd8d476cd453af8cc',1,'cxxabi.cpp']]],
   ['_5f_5fgxx_5fpersonality_5fv0_10',['__gxx_personality_v0',['../cxxabi_8cpp.html#a8b32ba65f2ead2d5cfc4fece79b59fc5',1,'cxxabi.cpp']]],
   ['_5f_5fmodti3_11',['__modti3',['../cxxabi_8cpp.html#a2ee27fefe5a394ea86328b104d1c6867',1,'cxxabi.cpp']]],
-  ['_5f_5fstack_5fchk_5ffail_12',['__stack_chk_fail',['../cxxabi_8cpp.html#af3a016f35467bc7acff35a40eda13fbf',1,'cxxabi.cpp']]],
-  ['_5f_5fudivti3_13',['__udivti3',['../cxxabi_8cpp.html#a3e1c129ff252048540fe83c7c50c0e90',1,'cxxabi.cpp']]],
-  ['_5f_5fumodti3_14',['__umodti3',['../cxxabi_8cpp.html#a081cdb7ca990c2f2ddd1fbaf17b0dd48',1,'cxxabi.cpp']]],
-  ['_5fexit_15',['_exit',['../unistd_8c.html#abc96bd69b58b2deaddb484478d911c1b',1,'_exit(int status):&#160;unistd.c'],['../unistd_8h.html#abc96bd69b58b2deaddb484478d911c1b',1,'_exit(int status):&#160;unistd.c']]],
-  ['_5funwind_5fresume_16',['_Unwind_Resume',['../cxxabi_8cpp.html#a5f67d1acf0b3b73d101a562d2e9f659b',1,'cxxabi.cpp']]]
+  ['_5f_5freference_5fblocked_5fsender_5fcleanup_12',['__reference_blocked_sender_cleanup',['../namespacekernel_1_1test.html#a68c5cfee0683071fada1d3dc75bdf640',1,'kernel::test']]],
+  ['_5f_5freference_5fparent_5fwait_5fchild_13',['__reference_parent_wait_child',['../namespacekernel_1_1test.html#afa45bf4b825aaa40d82b153beaa60142',1,'kernel::test']]],
+  ['_5f_5freference_5fsingle_5fterminating_5ftask_14',['__reference_single_terminating_task',['../namespacekernel_1_1test.html#ab584113a25d60b899d516fe3897879a3',1,'kernel::test']]],
+  ['_5f_5fstack_5fchk_5ffail_15',['__stack_chk_fail',['../cxxabi_8cpp.html#af3a016f35467bc7acff35a40eda13fbf',1,'cxxabi.cpp']]],
+  ['_5f_5fudivti3_16',['__udivti3',['../cxxabi_8cpp.html#a3e1c129ff252048540fe83c7c50c0e90',1,'cxxabi.cpp']]],
+  ['_5f_5fumodti3_17',['__umodti3',['../cxxabi_8cpp.html#a081cdb7ca990c2f2ddd1fbaf17b0dd48',1,'cxxabi.cpp']]],
+  ['_5fexit_18',['_exit',['../unistd_8c.html#abc96bd69b58b2deaddb484478d911c1b',1,'_exit(int status):&#160;unistd.c'],['../unistd_8h.html#abc96bd69b58b2deaddb484478d911c1b',1,'_exit(int status):&#160;unistd.c']]],
+  ['_5funwind_5fresume_19',['_Unwind_Resume',['../cxxabi_8cpp.html#a5f67d1acf0b3b73d101a562d2e9f659b',1,'cxxabi.cpp']]]
 ];

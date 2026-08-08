@@ -30,7 +30,7 @@ mermaid.initialize({ startOnLoad: true, theme: theme });
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.7</span>
+   <div id="projectname">Jarvis RTOS<span id="projectnumber">&#160;0.3.10-dev</span>
    </div>
   </td>
  </tr>
@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('test__deadline
 <div class="textblock"><code>#include &lt;<a class="el" href="test_8hpp_source.html">test.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="logger_8hpp_source.html">logger.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="test__sched__helpers_8hpp_source.html">kernel/test/test_sched_helpers.hpp</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="semaphore_8hpp_source.html">kernel/sync/semaphore.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="scheduler_8hpp_source.html">kernel/task/scheduler.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="task_8hpp_source.html">kernel/task/task.hpp</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="timer_8hpp_source.html">kernel/arch/timer.hpp</a>&gt;</code><br />
@@ -151,7 +152,13 @@ Functions</h2></td></tr>
    and the `all`/per-class expected counts stay stable.
 
    action == 1 (PANIC) has no in-suite test: the handler halts the
-   kernel, so the matrix treats that build as an expected-fail. 
+   kernel, so the matrix treats that build as an expected-fail.
+
+   v0.3.10 rework (SIMULATED → DRIVEN): the offending task is a REAL
+   kernel task (prio 11, period 2) that genuinely overruns its real
+   deadline (busy-waits 40 real ticks) and then blocks on a real
+   semaphore — the detection scan (the exact entry the [deadline-mon]
+   task runs) observes a state reached through real execution. 
 </pre> </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="a67f697b8d2e13c94e9532016627c1e14" name="a67f697b8d2e13c94e9532016627c1e14"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a67f697b8d2e13c94e9532016627c1e14">&#9670;&#160;</a></span>register_deadline_action_tests()</h2>
