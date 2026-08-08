@@ -89,9 +89,7 @@ TaskControlBlock *spawn_ss_exhausted(sync::Semaphore &gate) {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 } // namespace
@@ -138,9 +136,9 @@ TEST_CLASS(SsExhaustionTriggersDeadline) {
     gate.post();
     // Yield via reschedule(): the helper is EXHAUSTED (eff prio 2 < harness 10)
     // and needs a dispatch to exit its BLOCKED-spin and self-terminate.
-    while (helper->state != TaskState::TERMINATED)
-        Scheduler::reschedule();
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 
@@ -178,9 +176,9 @@ TEST_CLASS(SsDeadlineMissDuringReplenish) {
     gate.post();
     // Yield via reschedule(): the helper is EXHAUSTED (eff prio 2 < harness 10)
     // and needs a dispatch to exit its BLOCKED-spin and self-terminate.
-    while (helper->state != TaskState::TERMINATED)
-        Scheduler::reschedule();
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
 };
 #endif // CONFIG_DEADLINE_MONITOR_TASK
 

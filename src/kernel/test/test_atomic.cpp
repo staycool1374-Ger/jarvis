@@ -172,43 +172,58 @@ JARVIS_TEST(atomic_sb_litmus, "PRE: none | POST: none") {
         g_sb_r1 = 99;
         g_sb_r2 = 99;
 
-        auto *task_a = TaskControlBlock::create(sb_worker_a, 5, 10);
+        // Workers must outrank the harness (prio 10) so the ISR epilogue
+        // dispatches them via the real ready-queue path.  Prio 11 is the
+        // driven-test floor (ipc_blocking uses 11/12) and stays below the
+        // vfsd/iocd daemons (20) and the deadline monitor (127).
+        auto *task_a = TaskControlBlock::create(sb_worker_a, 11, 10);
         JARVIS_ASSERT(task_a != nullptr);
-        Scheduler::add_task(*task_a);
-
-        auto *task_b = TaskControlBlock::create(sb_worker_b, 5, 10);
+        auto *task_b = TaskControlBlock::create(sb_worker_b, 11, 10);
         JARVIS_ASSERT(task_b != nullptr);
-        Scheduler::add_task(*task_b);
 
+        // Defensive net for early returns: terminate only tasks still live
+        // (terminate() on a self-terminated task double-inserts into the
+        // zombie list), then reclaim.  Guard is dismissed right after the
+        // drain below — the sentinel asserts that follow may `return` on
+        // failure, and a live guard would dereference the freed TCBs.
         auto cleanup = ScopeGuard([&]() {
-            Scheduler::remove_task(*task_a);
-            task_a->cleanup();
-            delete task_a;
-            Scheduler::remove_task(*task_b);
-            task_b->cleanup();
-            delete task_b;
+            if (task_a && task_a->state != TaskState::TERMINATED) {
+                Scheduler::terminate(*task_a, 0);
+            }
+            if (task_b && task_b->state != TaskState::TERMINATED) {
+                Scheduler::terminate(*task_b, 0);
+            }
+            Scheduler::drain_zombie_list();
         });
 
-        for (int t = 0; t < 10; ++t) {
-            if (task_a->state != TaskState::TERMINATED) {
-                kernel::test::yield_as(*task_a);
-            }
-            if (task_b->state != TaskState::TERMINATED) {
-                kernel::test::yield_as(*task_b);
-            }
+        {
+            arch::IrqGuard guard; // register atomically (cookbook Rule 2)
+            Scheduler::add_task(*task_a);
+            Scheduler::add_task(*task_b);
         }
+
+        // Real dispatch: 11 > harness 10, so reschedule() + the next timer
+        // tick run task_a, then task_b (FIFO).  Each self-terminates via
+        // _task_trampoline; terminate() arms the switch to the next
+        // highest-priority ready task, returning to the harness last.
+        Scheduler::reschedule();
+        kernel::test::wait_for_termination_safe(task_a);
+        kernel::test::wait_for_termination_safe(task_b);
+        // Reclaim BEFORE any assertion (cookbook Rule 5).  Both workers
+        // self-terminated — drain only, never terminate() twice.  Dismiss the
+        // guard here: the sentinel asserts below `return` on failure, and a
+        // live guard would deref the just-freed TCBs (use-after-free).
+        Scheduler::drain_zombie_list();
+        cleanup.dismiss();
+
+        // Sentinel 99 survives only if a worker body never ran (vacuous-pass
+        // regression guard).  TCBs are freed above — assert globals only.
+        JARVIS_ASSERT(g_sb_r1 != 99);
+        JARVIS_ASSERT(g_sb_r2 != 99);
 
         if (g_sb_r1 == 0 && g_sb_r2 == 0) {
             ++forbidden_count;
         }
-
-        cleanup.dismiss();
-        Scheduler::remove_task(*task_a);
-        task_a->cleanup();
-        delete task_a;
-        Scheduler::remove_task(*task_b);
-        task_b->cleanup();
-        delete task_b;
     }
 
     JARVIS_ASSERT_FMT(

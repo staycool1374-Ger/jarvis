@@ -27,6 +27,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/mempool.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -108,16 +109,11 @@ JARVIS_TEST(sse_mxcsr_context_switch, "PRE: none | POST: none") {
                       (unsigned long long)g_sse_test_a_done);
 
     uint32_t mxcsr = g_mxcsr_result;
+
+    kernel::test::terminate_and_drain2(task_a, task_b);
     JARVIS_ASSERT_FMT(mxcsr == MXCSR_ROUND_ZERO,
                       "MXCSR after switch 0x%08x != expected 0x%08x", mxcsr,
                       MXCSR_ROUND_ZERO);
-
-    Scheduler::remove_task(*task_a);
-    Scheduler::remove_task(*task_b);
-    task_a->cleanup();
-    task_b->cleanup();
-    MemPool::free(task_a);
-    MemPool::free(task_b);
 
     JARVIS_TEST_PASS();
 }
@@ -193,6 +189,8 @@ JARVIS_TEST(sse_xmm_context_switch, "PRE: none | POST: none") {
                       "Task A did not reach verification step (state=%llu)",
                       (unsigned long long)g_xmm_test_a_done);
 
+
+    kernel::test::terminate_and_drain2(task_a, task_b);
     JARVIS_ASSERT_FMT(g_xmm_result.d[0] == SSE_PATTERN_A.d[0],
                       "XMM0[0] after switch 0x%016llx != expected 0x%016llx",
                       (unsigned long long)g_xmm_result.d[0],
@@ -201,13 +199,6 @@ JARVIS_TEST(sse_xmm_context_switch, "PRE: none | POST: none") {
                       "XMM0[1] after switch 0x%016llx != expected 0x%016llx",
                       (unsigned long long)g_xmm_result.d[1],
                       (unsigned long long)SSE_PATTERN_A.d[1]);
-
-    Scheduler::remove_task(*task_a);
-    Scheduler::remove_task(*task_b);
-    task_a->cleanup();
-    task_b->cleanup();
-    MemPool::free(task_a);
-    MemPool::free(task_b);
 
     JARVIS_TEST_PASS();
 }

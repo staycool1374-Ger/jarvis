@@ -68,17 +68,14 @@ TaskControlBlock *run_syscall_task(void (*entry)(), uint64_t prio = 11,
         return nullptr;
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     return t;
 }
 
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 } // namespace
@@ -115,6 +112,7 @@ JARVIS_TEST(syscall_alarm_basic, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, g_ret2);
     JARVIS_ASSERT_EQ(0ULL, g_cancelled);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -143,6 +141,7 @@ JARVIS_TEST(syscall_gettod, "PRE: none | POST: none") {
     JARVIS_ASSERT(g_sec < static_cast<int64_t>(7258118400ULL));
     JARVIS_ASSERT(g_usec < 1000000);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -178,6 +177,7 @@ JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0, strcmp(g_sysname, "NexIOS"));
     JARVIS_ASSERT_EQ(0, strcmp(g_machine, "x86_64"));
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -225,6 +225,7 @@ JARVIS_TEST(alarm_fires_after_ticks, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(1ULL, g_fired);
     JARVIS_ASSERT_EQ(1ULL, g_cleared);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -262,6 +263,7 @@ JARVIS_TEST(syscall_alarm_subsecond, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, g_ret2);
     JARVIS_ASSERT_EQ(0ULL, g_cancelled);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -282,6 +284,7 @@ JARVIS_TEST(syscall_dispatch_getpid, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT_EQ(g_self, g_pid);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -310,6 +313,7 @@ JARVIS_TEST(syscall_dispatch_invalid_returns_minus_one,
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_r2);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_r3);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -328,8 +332,10 @@ JARVIS_TEST(syscall_dispatch_get_ticks, "PRE: none | POST: none") {
             nullptr);
     });
     JARVIS_ASSERT(t != nullptr);
-    JARVIS_ASSERT(g_ret > 0 || true);
+    // GET_TICKS returns the monotonic tick count (> 0 since boot init).
+    JARVIS_ASSERT(g_ret > 0);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -349,6 +355,7 @@ JARVIS_TEST(syscall_dispatch_yield, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -391,14 +398,17 @@ JARVIS_TEST(syscall_dispatch_print_noop, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
 // Runmode: kernel
-// Testidea: FORK from a REAL task returns either 0 (child context) or a
-// positive PID (parent context) without crashing.
-// Input: Dispatched kernel task calls FORK.
-// Expect: Return value is 0 or positive (kernel task → parent gets a PID).
+// Testidea: FORK from a REAL kernel task with null regs returns -1
+// (syscall_handlers_process.cpp: sys_fork returns -1 when regs==nullptr).
+// The old test asserted `g_ret == 0 || g_ret > 0` — a tautology that also
+// accepts UINT64_MAX, masking the real contract.
+// Input: Dispatched kernel task calls FORK with null regs.
+// Expect: Return value is -1 (regs == nullptr path).
 // Depends: kernel::Syscall
 JARVIS_TEST(syscall_fork_returns_pid, "PRE: none | POST: none") {
     static uint64_t g_ret = 0;
@@ -408,8 +418,9 @@ JARVIS_TEST(syscall_fork_returns_pid, "PRE: none | POST: none") {
                                 0, 0, 0, nullptr);
     });
     JARVIS_ASSERT(t != nullptr);
-    JARVIS_ASSERT(g_ret == 0 || g_ret > 0);
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -435,6 +446,7 @@ JARVIS_TEST(syscall_exec_nonexistent, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -460,6 +472,7 @@ JARVIS_TEST(syscall_signal_sigreturn, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT_EQ(1ULL, g_stored);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

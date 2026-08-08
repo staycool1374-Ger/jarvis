@@ -55,8 +55,7 @@ static TaskControlBlock *run_real_task(void (*entry)(), uint64_t prio = 11,
         return nullptr;
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     return t;
 }
 
@@ -64,9 +63,7 @@ static TaskControlBlock *run_real_task(void (*entry)(), uint64_t prio = 11,
 static void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 // Runmode: kernel
@@ -89,6 +86,7 @@ JARVIS_TEST(timer_tick_accounting, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT(g_ticks_seen >= 2);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -120,6 +118,7 @@ JARVIS_TEST(timer_period_reload, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT(g_period_reloaded);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -151,6 +150,7 @@ JARVIS_TEST(timer_alarm_delivery, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT(g_alarm_fired);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -187,6 +187,7 @@ JARVIS_TEST(timer_alarm_not_expired, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(1ULL, g_still_armed);
     JARVIS_ASSERT_EQ(0ULL, g_alarm_pending);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -205,6 +206,7 @@ JARVIS_TEST(timer_rate_monotonic_schedule_indirect, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT(g_high_ran);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -221,9 +223,7 @@ JARVIS_TEST(timer_reap_orphans_periodic, "PRE: none | POST: none") {
     uint64_t child_id = child->id;
     Scheduler::add_task(*child);
     Scheduler::reschedule();
-    while (child->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(child);
     // Real reaper path: drain the zombie list (what on_tick's periodic
     // reap_orphans does; it is suppressed during tests, so we invoke the
     // same API the reaper uses).
@@ -251,6 +251,7 @@ JARVIS_TEST(timer_no_side_effects_on_idle, "PRE: none | POST: none") {
     JARVIS_ASSERT(Scheduler::current_task() != nullptr);
     JARVIS_ASSERT_EQ(corruption_before, kernel::scheduler_corruption_count);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -335,9 +336,9 @@ JARVIS_TEST(timer_deadline_miss_detection_fires, "PRE: none | POST: none") {
     JARVIS_ASSERT(helper->deadline_miss_count >= 1);
 
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -384,9 +385,9 @@ JARVIS_TEST(timer_deadline_miss_skips_future, "PRE: none | POST: none") {
     JARVIS_ASSERT(helper->deadline_miss_count == 0);
 
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -441,9 +442,9 @@ JARVIS_TEST(timer_deadline_miss_only_once, "PRE: none | POST: none") {
     JARVIS_ASSERT(helper->deadline_miss_count == 1);
 
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -491,9 +492,9 @@ JARVIS_TEST(timer_deadline_miss_skips_zero, "PRE: none | POST: none") {
     JARVIS_ASSERT(helper->deadline_miss_count == 0);
 
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -615,10 +616,25 @@ JARVIS_TEST(deadline_list_remove_absent, "PRE: none | POST: none") {
     auto *a = dl_make(dl, base + 10);
     auto *b = dl_make(dl, base + 20);
     JARVIS_ASSERT(a && b);
-    auto *ghost = dl_make(dl, base + 999); // member, then removed as "absent"
+
+    // A task that is NEVER inserted into the list (created + parked exactly
+    // like dl_make, minus the dl.insert()).  Removing it must be a no-op.
+    arch::IrqGuard guard;
+    auto *ghost = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(ghost != nullptr);
+    ghost->base_priority = 10;
+    ghost->priority = 10;
+    ghost->period_ticks = 0;
+    ghost->deadline_ticks = base + 999;
+    Scheduler::add_task(*ghost);
+    Scheduler::dequeue_ready(*ghost);
+    {
+        kernel::test::ScopedCurrentTask scope(*ghost);
+        ghost->state = TaskState::BLOCKED;
+    }
+
     dl.remove(*a); // remove real member
-    dl.remove(*ghost);
+    dl.remove(*ghost); // remove non-member -> no-op
     JARVIS_ASSERT(dl.size() == 1);
     JARVIS_ASSERT(dl.peek_earliest() == b);
     dl_free(a);

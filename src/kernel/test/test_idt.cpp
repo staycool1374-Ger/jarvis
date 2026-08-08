@@ -23,6 +23,7 @@
 #include <test.hpp>
 #include <logger.hpp>
 #include <kernel/arch/idt.hpp>
+#include <kernel/arch/x86_64/hal/msr_impl.hpp>
 
 using namespace kernel;
 
@@ -57,12 +58,21 @@ JARVIS_TEST(idt_irq_remapped, "PRE: iocd | POST: none") {
     }
 }
 
-/// @brief Verifies interrupt 0x80 handler points to syscall dispatch.
-/// @input Initialize IDT
-/// @expect Vector 0x80 handler is syscall entry point
-/// @depends kernel::arch::IDT, syscall
+/// @brief Verifies the SYSCALL fast path is installed via IA32_LSTAR.
+/// @input Read the LSTAR MSR programmed by Syscall::init()
+/// @expect LSTAR is non-zero (points at syscall_entry) — x86_64 syscalls use
+///         MSR STAR/LSTAR → syscall_entry, NOT int 0x80.  The old test
+///         asserted IDT::has_handler(0x80), which was vacuous for this
+///         contract (the 0x80 IDT slot is unrelated to the syscall path).
+/// @depends kernel::arch::rdmsr, Syscall::init
 JARVIS_TEST(idt_syscall_handler_installed, "PRE: iocd | POST: none") {
-    JARVIS_ASSERT(arch::IDT::has_handler(0x80));
+#if defined(CONFIG_ARCH_X86_64)
+    uint64_t lstar = arch::rdmsr(arch::IA32_LSTAR);
+    JARVIS_ASSERT(lstar != 0);
+    JARVIS_ASSERT(lstar >= 0xFFFF800000000000ULL);
+#else
+    JARVIS_TEST_PASS();
+#endif
 }
 
 /// @brief Verifies double fault handler uses TSS IST stack (not kernel stack).

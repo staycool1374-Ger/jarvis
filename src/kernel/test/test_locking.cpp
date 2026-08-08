@@ -87,9 +87,9 @@ JARVIS_TEST(mutex_try_lock_success, "PRE: none | POST: none") {
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
     wait_state(*owner, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_ok);
     // Self-terminated: reclaim via the zombie list (cookbook Rule 4/5).
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -187,8 +187,8 @@ JARVIS_TEST(mutex_try_lock_recursive_same_owner, "PRE: none | POST: none") {
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
     wait_state(*owner, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_ok);
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -266,10 +266,10 @@ JARVIS_TEST(mutex_priority_inheritance_indirect, "PRE: none | POST: none") {
     gate_high.post();
     wait_state(*high, TaskState::TERMINATED);
 
-    JARVIS_ASSERT(high_acquired == 1);
     JARVIS_ASSERT(!mutex.is_locked());
 
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(high_acquired == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -485,11 +485,11 @@ JARVIS_TEST(mutex_waiter_priority_order, "PRE: none | POST: none") {
     gate_lo.post();
     wait_state(*waiter_low, TaskState::TERMINATED);
 
-    JARVIS_ASSERT(whi_acquired == 1);
-    JARVIS_ASSERT(wlo_acquired == 1);
     JARVIS_ASSERT(!mutex.is_locked());
 
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(whi_acquired == 1);
+    JARVIS_ASSERT(wlo_acquired == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -522,8 +522,8 @@ JARVIS_TEST(mutex_double_lock_same_owner, "PRE: none | POST: none") {
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
     wait_state(*owner, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_ok);
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -554,8 +554,8 @@ JARVIS_TEST(mutex_lock_acquire_release_cycle, "PRE: none | POST: none") {
     Scheduler::add_task(*owner);
     Scheduler::reschedule();
     wait_state(*owner, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_ok);
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -630,9 +630,9 @@ JARVIS_TEST(semaphore_wait_priority_order, "PRE: none | POST: none") {
     wait_state(*task_mid, TaskState::TERMINATED);
     wait_state(*task_high, TaskState::TERMINATED);
 
-    JARVIS_ASSERT_EQ(1ULL, g_high_woken);
 
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_high_woken);
     JARVIS_TEST_PASS();
 }
 
@@ -731,9 +731,9 @@ JARVIS_TEST(semaphore_initial_count_zero, "PRE: none | POST: none") {
 
     sem.post();
     wait_state(*task, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_woken);
 
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_woken);
     JARVIS_TEST_PASS();
 }
 
@@ -805,11 +805,11 @@ JARVIS_TEST(queue_send_receive_priority_ordering, "PRE: none | POST: none") {
     wait_state(*sender_high, TaskState::TERMINATED);
     wait_state(*sender_low, TaskState::TERMINATED);
 
+
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(1ULL, g_high_first);
     JARVIS_ASSERT_EQ(1ULL, g_high_woken);
     JARVIS_ASSERT_EQ(1ULL, g_low_woken);
-
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -850,9 +850,9 @@ JARVIS_TEST(queue_send_to_full_blocks_and_wakes, "PRE: none | POST: none") {
     size_t size = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &size));
     wait_state(*sender, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_sent);
 
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_sent);
     JARVIS_TEST_PASS();
 }
 

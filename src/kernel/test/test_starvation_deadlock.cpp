@@ -52,7 +52,6 @@ TEST_CLASS(SchedulerStarvation) {
     auto *low = TaskControlBlock::create(
         []() { ++g_starvation_counter; }, 5, 10);
     CT_ASSERT(low != nullptr);
-    Scheduler::add_task(*low);
 
     auto *high = TaskControlBlock::create(
         []() {
@@ -62,15 +61,26 @@ TEST_CLASS(SchedulerStarvation) {
         },
         10, 10);
     CT_ASSERT(high != nullptr);
-    Scheduler::add_task(*high);
+
+    // Register both cooperating tasks under one IrqGuard so a timer tick
+    // cannot split the registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*low);
+        Scheduler::add_task(*high);
+    }
 
     g_starvation_counter = 0;
 
-    // Dispatch both for real; the timer ISR drives scheduling.
+    // Dispatch both for real; the timer ISR drives scheduling.  Exit early if
+    // a TCB was reaped + 0xDD-poisoned (is_valid false) so the poll never
+    // spins on freed memory.
     Scheduler::reschedule();
     uint64_t start = arch::Timer::ticks();
-    while ((low->state != TaskState::TERMINATED ||
-            high->state != TaskState::TERMINATED) &&
+    while (((TaskControlBlock::is_valid(low) &&
+             low->state != TaskState::TERMINATED) ||
+            (TaskControlBlock::is_valid(high) &&
+             high->state != TaskState::TERMINATED)) &&
            arch::Timer::ticks() - start < 2000)
         asm volatile("pause");
 
@@ -82,6 +92,12 @@ TEST_CLASS(SchedulerStarvation) {
                      "starvation confirmed");
     }
 
+    // A starved task is still READY and queued.  terminate()→release_zombie
+    // ENSUREs !in_ready_queue_; the ready queue may have been lazily rebuilt
+    // (next_task) leaving a stale flag that dequeue_ready's early-return
+    // path cannot clear → kernel panic (scheduler.cpp:281).  For tasks that
+    // never ran, the direct remove_task+cleanup+delete teardown is the safe
+    // pattern (it dequeues explicitly and never touches the zombie list).
     if (low->state != TaskState::TERMINATED) {
         Scheduler::remove_task(*low);
         low->cleanup();
@@ -97,11 +113,13 @@ TEST_CLASS(SchedulerStarvation) {
 // Runmode: kernel
 // Testidea: Build a real deadlock chain through mutexes held by REAL
 // dispatched tasks that block on real gates, then release the chain.
-// NOTE: the contenders block on semaphore GATES (not Mutex::lock) because
-// Mutex::lock()'s retry loop (MAX_WAITERS+1 = 33) cannot genuinely block a
-// dispatched task at 1ms ticks — the deferred switch (INV-4) never lands
-// inside the budget, so a contended mutex spins and panics.  Semaphore::wait
-// + post-reschedule spin (mirroring ipc.cpp) blocks genuinely.
+// NOTE: this chain uses semaphore GATES (not Mutex::lock) as the release
+// point so the harness controls wake-up order deterministically.  The claim
+// in the original comment that "Mutex::lock() cannot genuinely block a
+// dispatched task" is STALE — since the deferred-switch wait was added
+// (mutex.cpp:283-293) Mutex::lock() blocks genuinely; test_priority_inheritance
+// relies on exactly that.  The gate-based chain is kept because it exercises
+// the cross-mutex deadlock topology, not because mutex blocking is impossible.
 // Input: A (prio 11) holds M1 and blocks on gate_a; B (prio 15) holds M2 and
 //        blocks on gate_b; C (prio 20) blocks on gate_c.  Harness posts gates.
 // Expect: All tasks block genuinely (no crash); the chain releases in order;
@@ -208,15 +226,11 @@ TEST_CLASS(PriorityInversionChain5) {
 
     // Release the chain: C first, then B (unlocks M2), then A (unlocks M1).
     gate_c.post();
-    while (c->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(c);
     gate_b.post();
-    while (b->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(b);
     gate_a.post();
-    while (a->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(a);
     // Cleanup BEFORE asserting (cookbook Rule 5): all three self-terminated,
     // so reclaim via the zombie list; remove_task+cleanup+delete on a zombie
     // would double-free.
@@ -359,15 +373,11 @@ TEST_CLASS(DeadlockNestedMutexLoad) {
     // Release the holder: it unlocks M2, M1, M0, then terminates.  The
     // contenders then acquire the freed mutexes and terminate.
     gate.post();
-    while (holder->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(holder);
     gate_c1.post();
-    while (c1->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(c1);
     gate_c2.post();
-    while (c2->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(c2);
     // Cleanup BEFORE asserting (cookbook Rule 5): all three self-terminated,
     // so reclaim via the zombie list; remove_task+cleanup+delete on a zombie
     // would double-free.

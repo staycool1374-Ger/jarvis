@@ -34,6 +34,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/timer.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -117,9 +118,10 @@ TaskControlBlock *spawn_contender(sync::Mutex &mutex, uint64_t prio,
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    // terminate-if-live: a blocked/READY contender is genuinely terminated;
+    // an already-self-terminated one is skipped (no double zombie-append).
+    // Callers drain once after all release_task() calls.
+    kernel::test::terminate_if_live(t);
 }
 
 } // namespace
@@ -155,15 +157,15 @@ TEST_CLASS(MutexPriorityDonates) {
 
     // Release the gate: LOW wakes, unlocks, transfers ownership to HIGH.
     gate.post();
-    while (low->state != TaskState::TERMINATED ||
-           high->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(low);
+kernel::test::wait_for_termination_safe(high);
 
     CT_ASSERT(low->priority == low->base_priority);
     CT_ASSERT(high_acquired == 1);
 
     release_task(low);
     release_task(high);
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
@@ -243,16 +245,16 @@ TEST_CLASS(MutexChainPropagates) {
 
     // Release A → M1 unlocked → B acquires M1, unlocks M2 → C acquires M2.
     gate.post();
-    while (a->state != TaskState::TERMINATED ||
-           b->state != TaskState::TERMINATED ||
-           c->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(a);
+kernel::test::wait_for_termination_safe(b);
+kernel::test::wait_for_termination_safe(c);
 
     CT_ASSERT(a->priority == a->base_priority);
 
     release_task(a);
     release_task(b);
     release_task(c);
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
@@ -298,11 +300,10 @@ TEST_CLASS(MutexPriStepDown) {
 
     // Release: the release chain must wake the highest-priority waiter first.
     gate.post();
-    while (holder->state != TaskState::TERMINATED ||
-           w20->state != TaskState::TERMINATED ||
-           w17->state != TaskState::TERMINATED ||
-           w14->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(holder);
+kernel::test::wait_for_termination_safe(w20);
+kernel::test::wait_for_termination_safe(w17);
+kernel::test::wait_for_termination_safe(w14);        asm volatile("pause");
 
     // All waiters acquired and completed in the release chain.
     CT_ASSERT(w20_acquired == 1);
@@ -314,6 +315,7 @@ TEST_CLASS(MutexPriStepDown) {
     release_task(w20);
     release_task(w17);
     release_task(w14);
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
@@ -382,10 +384,9 @@ TEST_CLASS(MutexNestedDrop) {
 
     // Release A → M2 unlocked first (waiter w20 wakes), then M1 (w10 wakes).
     gate.post();
-    while (a->state != TaskState::TERMINATED ||
-           w10->state != TaskState::TERMINATED ||
-           w20->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(a);
+kernel::test::wait_for_termination_safe(w10);
+kernel::test::wait_for_termination_safe(w20);
 
     CT_ASSERT(w10_acquired == 1);
     CT_ASSERT(w20_acquired == 1);
@@ -396,6 +397,7 @@ TEST_CLASS(MutexNestedDrop) {
     release_task(a);
     release_task(w10);
     release_task(w20);
+    Scheduler::drain_zombie_list();
 };
 
 // ---------------------------------------------------------------------------
@@ -478,15 +480,15 @@ TEST_CLASS(SemaphoreInherits) {
 
     // Release LOW → it posts the semaphore → HIGH wakes, acquires, posts.
     gate.post();
-    while (low->state != TaskState::TERMINATED ||
-           high->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(low);
+kernel::test::wait_for_termination_safe(high);
 
     CT_ASSERT(low->priority == low->base_priority);
     CT_ASSERT(hacquired == 1);
 
     release_task(low);
     release_task(high);
+    Scheduler::drain_zombie_list();
 };
 
 void register_priority_inheritance_tests() {

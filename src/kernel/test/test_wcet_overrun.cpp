@@ -73,17 +73,14 @@ TaskControlBlock *run_wcet_task(uint64_t wcet_ticks, uint64_t period,
     t->wcet_ticks = wcet_ticks;
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     return t;
 }
 
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 } // namespace
@@ -106,6 +103,7 @@ TEST_CLASS(WcetOverrunDetectionFires) {
     // Deadline detection was never invoked, so no miss was recorded.
     CT_ASSERT(helper->deadline_miss_count == 0);
     release_task(helper);
+    Scheduler::drain_zombie_list();
 };
 
 // Runmode: kernel
@@ -151,9 +149,9 @@ TEST_CLASS(DeadlineMissWithinWcet) {
     CT_ASSERT(g_latch == 0);
 
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
     release_task(helper);
+    Scheduler::drain_zombie_list();
 };
 
 void register_wcet_overrun_tests() {

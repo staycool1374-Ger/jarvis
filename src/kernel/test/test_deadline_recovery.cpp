@@ -72,11 +72,8 @@ TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
 /// @brief Wake a blocked overrun task (real post) and reap it.
 void release_overrun_blocked(TaskControlBlock *helper, sync::Semaphore &gate) {
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    kernel::test::wait_for_termination_safe(helper);
+    kernel::test::terminate_and_drain(*helper);
 }
 
 /// @brief Create a REAL kernel task with the given period and an optional
@@ -123,9 +120,7 @@ TEST_CLASS(DeadlineActionKillCleansUp) {
     Scheduler::add_task(*helper);
 
     // Full KILL sequence as performed by process_deferred_kills()
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    kernel::test::terminate_and_drain(*helper);
 };
 
 // Runmode: kernel
@@ -153,8 +148,7 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
     CT_ASSERT(gone != nullptr);
     Scheduler::add_task(*gone);
     Scheduler::reschedule();
-    while (gone->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(gone);
     uint64_t gone_count_before = gone->deadline_miss_count;
 
     uint64_t before_integrity = deadline_detection_integrity;
@@ -171,9 +165,7 @@ TEST_CLASS(DeadlineDetectionMagicCheck) {
     CT_ASSERT(gone->deadline_miss_count == gone_count_before);
 
     release_overrun_blocked(valid, gate);
-    Scheduler::remove_task(*gone);
-    gone->cleanup();
-    delete gone;
+    kernel::test::terminate_and_drain(*gone);
 };
 
 // Runmode: kernel
@@ -221,11 +213,8 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         kernel::test::trigger_deadline_monitor_scan();
         CT_ASSERT(t->deadline_miss_count == 0);
         gate.post();
-        while (t->state != TaskState::TERMINATED)
-            asm volatile("pause");
-        Scheduler::remove_task(*t);
-        t->cleanup();
-        delete t;
+        kernel::test::wait_for_termination_safe(t);
+        kernel::test::terminate_and_drain(*t);
     }
 
     // Case 3: deadline in the future (D false, not past) -> must NOT fire.
@@ -238,11 +227,8 @@ TEST_CLASS(DeadlineDetectionMcdcCoverage) {
         kernel::test::trigger_deadline_monitor_scan();
         CT_ASSERT(t->deadline_miss_count == 0);
         gate.post();
-        while (t->state != TaskState::TERMINATED)
-            asm volatile("pause");
-        Scheduler::remove_task(*t);
-        t->cleanup();
-        delete t;
+        kernel::test::wait_for_termination_safe(t);
+        kernel::test::terminate_and_drain(*t);
     }
 };
 

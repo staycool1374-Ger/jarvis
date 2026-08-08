@@ -31,12 +31,12 @@ using task::SporadicServer;
 // Expect: All accessors return the configured values; state is IDLE.
 JARVIS_TEST(sporadic_server_init, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(10, 100, 42);
+    ss.init(10, 100, 2);
     JARVIS_ASSERT_EQ(10ULL, ss.max_budget());
     JARVIS_ASSERT_EQ(100ULL, ss.period());
     JARVIS_ASSERT_EQ(10ULL, ss.remaining_budget());
-    ss.set_base_priority(42);
-    JARVIS_ASSERT_EQ(42ULL, ss.current_priority());
+    ss.set_base_priority(2);
+    JARVIS_ASSERT_EQ(2ULL, ss.current_priority());
     JARVIS_ASSERT(ss.state() == SporadicServer::IDLE);
     JARVIS_ASSERT(!ss.is_active());
     JARVIS_ASSERT(ss.has_budget());
@@ -49,7 +49,7 @@ JARVIS_TEST(sporadic_server_init, "PRE: none | POST: none") {
 // Expect: state is ACTIVE, is_active returns true, budget unchanged.
 JARVIS_TEST(sporadic_server_activation, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(10, 100, 42);
+    ss.init(10, 100, 2);
     ss.on_activation(50);
     JARVIS_ASSERT(ss.state() == SporadicServer::ACTIVE);
     JARVIS_ASSERT(ss.is_active());
@@ -63,7 +63,7 @@ JARVIS_TEST(sporadic_server_activation, "PRE: none | POST: none") {
 // Expect: State remains ACTIVE; budget same as after first activation.
 JARVIS_TEST(sporadic_server_double_activation, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(10, 100, 42);
+    ss.init(10, 100, 2);
     ss.on_activation(50);
     uint64_t budget_after_first = ss.remaining_budget();
     // Second activation while already active — should be no-op
@@ -79,7 +79,7 @@ JARVIS_TEST(sporadic_server_double_activation, "PRE: none | POST: none") {
 //         and a replenishment event is scheduled.
 JARVIS_TEST(sporadic_server_consumption_exhaustion, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.on_activation(10);
 
     for (uint64_t i = 0; i < 4; i++) {
@@ -95,7 +95,7 @@ JARVIS_TEST(sporadic_server_consumption_exhaustion, "PRE: none | POST: none") {
     // Should have one pending replenishment at t=10+100=110, amount=5
     JARVIS_ASSERT_EQ(1ULL, ss.pending_count());
     // Priority should now be background
-    JARVIS_ASSERT_EQ(42ULL, ss.current_priority());
+    JARVIS_ASSERT_EQ(2ULL, ss.current_priority());
     JARVIS_TEST_PASS();
 }
 
@@ -107,7 +107,7 @@ JARVIS_TEST(sporadic_server_consumption_exhaustion, "PRE: none | POST: none") {
 JARVIS_TEST(sporadic_server_completion_schedules_replenishment,
             "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(10, 100, 42);
+    ss.init(10, 100, 2);
     ss.on_activation(20);
 
     ss.consume(20);
@@ -130,7 +130,7 @@ JARVIS_TEST(sporadic_server_completion_schedules_replenishment,
 JARVIS_TEST(sporadic_server_replenishment_restores_budget,
             "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.on_activation(10);
 
     // Exhaust all 5 ticks
@@ -161,7 +161,7 @@ JARVIS_TEST(sporadic_server_replenishment_restores_budget,
 //         after second, replenishment at t=210 amount=5.
 JARVIS_TEST(sporadic_server_two_cycles, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
 
     // ---- Cycle 1 ----
     ss.on_activation(10);
@@ -200,7 +200,7 @@ JARVIS_TEST(sporadic_server_two_cycles, "PRE: none | POST: none") {
 //         budget does not exceed C = 8.
 JARVIS_TEST(sporadic_server_budget_capped_at_C, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(8, 50, 42);
+    ss.init(8, 50, 2);
     ss.on_activation(10);
 
     // Consume 3 ticks then complete — schedule repl at 60 for amount 3
@@ -232,7 +232,7 @@ JARVIS_TEST(sporadic_server_budget_capped_at_C, "PRE: none | POST: none") {
 // Expect: After activation -> immediate completion (no consume), 0 pending.
 JARVIS_TEST(sporadic_server_completion_no_consume, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.on_activation(10);
     ss.on_completion(10);
     JARVIS_ASSERT(ss.state() == SporadicServer::IDLE);
@@ -246,7 +246,7 @@ JARVIS_TEST(sporadic_server_completion_no_consume, "PRE: none | POST: none") {
 // Expect: consume() on idle server returns false, state stays IDLE.
 JARVIS_TEST(sporadic_server_consume_idle, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     bool ok = ss.consume(10);
     JARVIS_ASSERT(!ok);
     JARVIS_ASSERT(ss.state() == SporadicServer::IDLE);
@@ -259,7 +259,7 @@ JARVIS_TEST(sporadic_server_consume_idle, "PRE: none | POST: none") {
 // Expect: on_completion() called twice has no effect.
 JARVIS_TEST(sporadic_server_double_completion, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.on_activation(10);
     ss.consume(10);
     ss.consume(11);
@@ -278,7 +278,7 @@ JARVIS_TEST(sporadic_server_double_completion, "PRE: none | POST: none") {
 // Expect: No crash, state unchanged, budget unchanged.
 JARVIS_TEST(sporadic_server_process_empty_queue, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.process_replenishments(999);
     JARVIS_ASSERT(ss.state() == SporadicServer::IDLE);
     JARVIS_ASSERT_EQ(5ULL, ss.remaining_budget());
@@ -291,7 +291,7 @@ JARVIS_TEST(sporadic_server_process_empty_queue, "PRE: none | POST: none") {
 // Expect: Insertions succeed until full; further insertions return false.
 JARVIS_TEST(sporadic_server_queue_limits, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(10, 10, 42);
+    ss.init(10, 10, 2);
 
     // Each activation+completion adds one replenishment
     for (uint64_t i = 0; i < SporadicServer::MAX_REPLENISHMENTS; i++) {
@@ -313,19 +313,19 @@ JARVIS_TEST(sporadic_server_queue_limits, "PRE: none | POST: none") {
 // Testidea: Priority after exhaustion returns bg_priority; after replenishment
 //           and reactivation, priority returns to base_priority (set
 //           externally).
-// Expect: When EXHAUSTED, current_priority == bg_priority (42).
+// Expect: When EXHAUSTED, current_priority == bg_priority (2).
 //         Set base_priority externally, after replenishment fires,
 //         current_priority == base.
 JARVIS_TEST(sporadic_server_priority_transitions, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42);
+    ss.init(5, 100, 2);
     ss.set_base_priority(1);
 
     ss.on_activation(10);
     for (uint64_t i = 0; i < 5; i++)
         ss.consume(10 + i);
     JARVIS_ASSERT(ss.state() == SporadicServer::EXHAUSTED);
-    JARVIS_ASSERT_EQ(42ULL, ss.current_priority());
+    JARVIS_ASSERT_EQ(2ULL, ss.current_priority());
 
     ss.process_replenishments(110);
     JARVIS_ASSERT(ss.state() == SporadicServer::ACTIVE);
@@ -391,7 +391,7 @@ JARVIS_TEST(sporadic_server_granularity_exhaustion, "PRE: none | POST: none") {
 // Expect: Granularity=7 is accepted; consume behavior reflects it.
 JARVIS_TEST(sporadic_server_init_with_granularity, "PRE: none | POST: none") {
     SporadicServer ss;
-    ss.init(5, 100, 42, 7);
+    ss.init(5, 100, 2, 7);
     ss.set_base_priority(1);
     ss.on_activation(10);
     // First 6 consume calls are skipped (7%7==0 on the 7th)

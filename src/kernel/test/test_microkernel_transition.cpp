@@ -32,6 +32,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/driver/driver.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -92,12 +93,9 @@ TEST_CLASS(MinimalPrivilegedSurface) {
     CT_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     CT_ASSERT(g_ran == 1);
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_and_drain(*t);
 };
 
 // Runmode: kernel
@@ -114,17 +112,14 @@ TEST_CLASS(UserspaceDriverIsolation) {
     CT_ASSERT(driver_task != nullptr);
     Scheduler::add_task(*driver_task);
     Scheduler::reschedule();
-    while (driver_task->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(driver_task);
     CT_ASSERT(g_ran == 1);
 
     // Verify scheduler is still consistent.
     CT_ASSERT(Scheduler::current_task() != nullptr);
     CT_ASSERT(Scheduler::task_count() >= 1);
 
-    Scheduler::remove_task(*driver_task);
-    driver_task->cleanup();
-    delete driver_task;
+    kernel::test::terminate_and_drain(*driver_task);
 };
 
 // Runmode: kernel
@@ -170,11 +165,13 @@ TEST_CLASS(IpcLatencyJitter) {
     Logger::info("IPC latency: min=%llu, max=%llu, avg=%llu ticks", min_lat,
                  max_lat, avg_lat);
 
-    // No hard assertion on bounds — just collect data.
-    // On QEMU with emulated TSC, min_lat may be 0 if consecutive rdtsc
-    // return the same value (especially on macOS/Apple Silicon host).
-    // Only verify max is consistent.
+    // Consistency: max must never be below min (a corrupt sample set would
+    // trip this).  avg_lat > 0 confirms the self-send actually round-tripped
+    // (not a degenerate zero-cost path).  No tight bound: on QEMU with
+    // emulated TSC, min_lat may be 0 if consecutive rdtsc return the same
+    // value (macOS/Apple Silicon host).
     CT_ASSERT(max_lat >= min_lat);
+    CT_ASSERT(avg_lat > 0);
 };
 
 // Runmode: kernel

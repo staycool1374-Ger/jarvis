@@ -51,11 +51,11 @@ JARVIS_TEST(buffer_pool_deterministic_no_dynamic_alloc,
             "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
-    uint64_t handle = BufferPool::alloc(*task, 0x10000000);
+    uint64_t handle = BufferPool::alloc(*task, 0x100000000);
     JARVIS_ASSERT(handle != 0);
     uint32_t idx = static_cast<uint32_t>(handle & 0xFFFFFFFFULL);
     JARVIS_ASSERT(BufferPool::entries[idx].phys_addr != 0);
-    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0x10000000);
+    JARVIS_ASSERT(BufferPool::entries[idx].mapped_va == 0x100000000);
     JARVIS_ASSERT(BufferPool::free(*task, handle));
     JARVIS_TEST_PASS();
 }
@@ -70,7 +70,7 @@ JARVIS_TEST(buffer_pool_deterministic_exhaustion_returns_zero,
             "PRE: none | POST: none") {
     SimpleTaskPtr task(TaskControlBlock::create_user([]() {}, 5, 10, 32_KiB));
     JARVIS_ASSERT(task != nullptr);
-    uint64_t va = 0x20000000;
+    uint64_t va = 0x200000000;
 
     uint64_t handles[BufferPool::MAX_BUFFERS];
     uint64_t n_alloced = 0;
@@ -106,7 +106,7 @@ JARVIS_TEST(buffer_pool_deterministic_zero_copy_transfer,
         receiver->cleanup();
         delete receiver;
     });
-    uint64_t va = 0x30000000;
+    uint64_t va = 0x300000000;
     uint64_t handle = BufferPool::alloc(*sender, va);
     JARVIS_ASSERT(handle != 0);
     JARVIS_ASSERT(BufferPool::transfer(handle, *sender, *receiver));
@@ -119,7 +119,9 @@ JARVIS_TEST(buffer_pool_deterministic_zero_copy_transfer,
                       "Sender still owns VA 0x%lx (phys 0x%lx) after transfer",
                       va, sender_va_phys);
 
-    uint64_t recv_va = 0x40000000;
+    // Buffer VAs must be >= 0x100000000 (memory.md §5.3): 0x40000000
+    // collides with kUserYieldStubVa (task.cpp) and orphans the stub page.
+    uint64_t recv_va = 0x400000000;
     JARVIS_ASSERT(BufferPool::map(*receiver, handle, recv_va));
     JARVIS_ASSERT(BufferPool::free(*receiver, handle));
     JARVIS_TEST_PASS();

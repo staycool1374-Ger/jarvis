@@ -38,6 +38,7 @@
 #include <kernel/sync/queue.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -79,12 +80,10 @@ JARVIS_TEST(semaphore_wait_post, "PRE: none | POST: none") {
 
     // Wake it (real post).
     sem.post();
-    while (worker->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT_EQ(1ULL, g_woken);
-
+    kernel::test::wait_for_termination_safe(worker);
     // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_woken);
     JARVIS_TEST_PASS();
 }
 
@@ -350,18 +349,15 @@ JARVIS_TEST(mutex_lock_unlock, "PRE: none | POST: none") {
 
     // Release: owner wakes, unlocks (direct ownership transfer to waiter).
     gate.post();
-    while (owner->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(owner);
     gate_cont.post();
-    while (waiter->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(waiter);
     JARVIS_ASSERT(!mutex.is_locked());
     JARVIS_ASSERT(mutex.owner() == nullptr);
-    JARVIS_ASSERT_EQ(1ULL, g_contender_acquired);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_contender_acquired);
     JARVIS_TEST_PASS();
 }
 
@@ -500,9 +496,7 @@ JARVIS_TEST(sync_queue_send_blocks_when_full, "PRE: none | POST: none") {
     uint8_t buf[32];
     size_t size = 32;
     JARVIS_ASSERT(queue.receive(buf, &size));
-    while (sender->state != TaskState::TERMINATED) {
-        asm volatile("pause");
-    }
+    kernel::test::wait_for_termination_safe(sender);
 
     JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 
@@ -555,9 +549,7 @@ JARVIS_TEST(sync_queue_receive_blocks_when_empty, "PRE: none | POST: none") {
     // Add a message — wakes the blocked receiver, which completes its receive
     // and terminates.
     JARVIS_ASSERT(queue.try_send((uint8_t *)"data", 4));
-    while (receiver->state != TaskState::TERMINATED) {
-        asm volatile("pause");
-    }
+    kernel::test::wait_for_termination_safe(receiver);
 
     JARVIS_ASSERT(receiver->state == TaskState::TERMINATED);
 
@@ -612,9 +604,7 @@ JARVIS_TEST(sync_queue_wake_sender_on_receive, "PRE: none | POST: none") {
     uint8_t buf[32];
     size_t size = 32;
     JARVIS_ASSERT(queue.receive(buf, &size));
-    while (sender->state != TaskState::TERMINATED) {
-        asm volatile("pause");
-    }
+    kernel::test::wait_for_termination_safe(sender);
 
     JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
 

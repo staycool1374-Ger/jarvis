@@ -25,6 +25,7 @@
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -232,16 +233,13 @@ JARVIS_TEST(signal_kill_delivers, "PRE: none | POST: none") {
     JARVIS_ASSERT(sender != nullptr);
     Scheduler::add_task(*sender);
     Scheduler::reschedule();
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(sender);
     JARVIS_ASSERT_EQ(0ULL, g_sender_ret);
     JARVIS_ASSERT(receiver->pending_signals &
                   (1ULL << static_cast<uint64_t>(Signal::SIGUSR1)));
 
     gate.post();
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(receiver);
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();

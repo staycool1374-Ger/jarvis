@@ -42,9 +42,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 } // namespace
 
@@ -88,15 +86,14 @@ JARVIS_TEST(ipc_recv_no_cli, "PRE: none | POST: none") {
     JARVIS_ASSERT(task->page_table_ == 0);
     Scheduler::add_task(*task);
     Scheduler::reschedule();
-    while (task->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(task);
     JARVIS_ASSERT_EQ(1ULL, g_if_before);
     JARVIS_ASSERT_EQ(1ULL, g_if_during);
     JARVIS_ASSERT_EQ(1ULL, g_if_after);
     JARVIS_ASSERT_EQ(1ULL, g_ok);
 
     release_task(task);
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT(arch::interrupts_enabled());
     JARVIS_TEST_PASS();
 }
@@ -162,9 +159,8 @@ JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
     }
     Scheduler::reschedule();
 
-    while (sender->state != TaskState::TERMINATED ||
-           receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+kernel::test::wait_for_termination_safe(receiver);
 
     JARVIS_ASSERT_EQ(1ULL, g_if_before);
     JARVIS_ASSERT_EQ(1ULL, g_if_during);
@@ -173,6 +169,7 @@ JARVIS_TEST(ipc_send_sync_no_cli, "PRE: none | POST: none") {
 
     release_task(sender);
     release_task(receiver);
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT(arch::interrupts_enabled());
     JARVIS_TEST_PASS();
 }
@@ -257,10 +254,10 @@ JARVIS_TEST(ipc_lock_free_throughput, "PRE: none | POST: none") {
     }
 
     JARVIS_ASSERT_EQ(1ULL, g_sender_done);
-    JARVIS_ASSERT_EQ(1ULL, g_receiver_done);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_receiver_done);
     JARVIS_TEST_PASS();
 }
 

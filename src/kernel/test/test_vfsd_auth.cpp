@@ -37,6 +37,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/vfs/vfsd.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -46,9 +47,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 } // namespace
 
@@ -69,6 +68,7 @@ JARVIS_TEST(vfsd_self_authorization, "PRE: vfsd, iocd | POST: none") {
     Scheduler::add_task(*t);
     JARVIS_ASSERT(t->id != daemon_pid);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -104,12 +104,12 @@ JARVIS_TEST(vfsd_self_authorization_fd_op, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT(static_cast<int64_t>(g_fd) >= 0);
     JARVIS_ASSERT_EQ(0ULL, g_read);
     JARVIS_ASSERT_EQ(0ULL, g_close);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -133,10 +133,10 @@ JARVIS_TEST(vfsd_absent_authorize_fails, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -159,13 +159,12 @@ JARVIS_TEST(vfsd_absent_syscall_fails, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    // Null path: resolution fails → -1, or a valid fd if the handler treats
-    // null as cwd — both are graceful (no crash).
-    JARVIS_ASSERT(static_cast<int64_t>(g_ret) == -1 ||
-                  static_cast<int64_t>(g_ret) >= 0);
+    kernel::test::wait_for_termination_safe(t);
+    // Null path: resolution fails → -1.  (The old assert `== -1 || >= 0`
+    // accepted every value — a tautology.)
+    JARVIS_ASSERT(static_cast<int64_t>(g_ret) == -1);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -188,10 +187,10 @@ JARVIS_TEST(vfsd_authorize_null_path, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(1ULL, g_ran);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

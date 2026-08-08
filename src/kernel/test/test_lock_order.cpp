@@ -19,7 +19,6 @@ JARVIS_TEST(lock_order_consistent_nesting, "PRE: none | POST: none") {
     {
         SpinLockGuard<sync::SpinLock> g1(a);
         SpinLockGuard<sync::SpinLock> g2(b);
-        JARVIS_ASSERT(true);
     }
     JARVIS_TEST_PASS();
 }
@@ -68,7 +67,6 @@ JARVIS_TEST(lock_order_three_way, "PRE: none | POST: none") {
     a.lock();
     b.lock();
     c.lock();
-    JARVIS_ASSERT(true);
     c.unlock();
     b.unlock();
     a.unlock();

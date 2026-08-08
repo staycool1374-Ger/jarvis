@@ -19,7 +19,7 @@ static constexpr size_t LOAD_ITERATIONS = 200;
 // Runmode: kernel
 // Testidea: Measure reschedule() jitter via rdtsc (idle system).
 // Input: two same-priority tasks, measure reschedule cycle jitter.
-// Expect: Average jitter recorded; jitter is bounded (< 10× min).
+// Expect: Average jitter recorded; avg jitter < 1M cycles (healthy reschedule).
 // Depends: Scheduler, arch::rdtsc
 JARVIS_TEST(jitter_under_idle, "PRE: isolate | POST: none") {
 #if defined(CONFIG_DEBUG_IPC_SCHED)
@@ -73,12 +73,7 @@ JARVIS_TEST(jitter_under_idle, "PRE: isolate | POST: none") {
     // assertion: a failing bound assert does `return;` and would otherwise
     // leak the two TCBs (tasks/msgqueues/notifies/eventgroups).
     Scheduler::set_current(*original);
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
+    kernel::test::terminate_and_drain2(a, b);
 
     JARVIS_ASSERT(avg_jitter > 0);
     // Sanity cap: a single outlier sample can be inflated by a timer ISR
@@ -150,12 +145,7 @@ JARVIS_TEST(jitter_under_load, "PRE: isolate | POST: none") {
         load[i]->cleanup();
         delete load[i];
     }
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
+    kernel::test::terminate_and_drain2(a, b);
 
     JARVIS_TEST_PASS();
 #endif

@@ -27,6 +27,7 @@
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/irq_guard.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -116,14 +117,12 @@ JARVIS_TEST(scheduler_remove_task, "PRE: none | POST: none") {
     Scheduler::add_task(*new_task);
     JARVIS_ASSERT_EQ(cnt_before + 1, Scheduler::task_count());
 
-    Scheduler::remove_task(*new_task);
+    kernel::test::terminate_and_drain(*new_task);
     JARVIS_ASSERT_EQ(cnt_before, Scheduler::task_count());
 
     auto *after = Scheduler::current_task();
     JARVIS_ASSERT(after != nullptr);
 
-    new_task->cleanup();
-    delete new_task;
     JARVIS_TEST_PASS();
 }
 
@@ -182,14 +181,18 @@ JARVIS_TEST(scheduler_preemptive_priority, "PRE: none | POST: none") {
         Scheduler::add_task(*high);
         next = Scheduler::next_task();
     }
-    JARVIS_ASSERT(next == high);
 
+    // Cleanup BEFORE assert (cookbook Rule 5): both never-dispatched
+    // (next_task() dequeued `high`); direct remove_task+cleanup+delete is the
+    // leak-free teardown for never-running tasks.
     Scheduler::remove_task(*low);
     low->cleanup();
     delete low;
     Scheduler::remove_task(*high);
     high->cleanup();
     delete high;
+
+    JARVIS_ASSERT(next == high);
     JARVIS_TEST_PASS();
 }
 
@@ -203,18 +206,29 @@ JARVIS_TEST(scheduler_quantum_exhaustion, "PRE: none | POST: none") {
     auto *t1 = TaskControlBlock::create([]() {}, 15, 5);
     auto *t2 = TaskControlBlock::create([]() {}, 15, 5);
     JARVIS_ASSERT(t1 && t2);
-    Scheduler::add_task(*t1);
-    Scheduler::add_task(*t2);
 
-    auto *next = Scheduler::next_task();
-    JARVIS_ASSERT(next == t1 || next == t2);
+    // Register AND select under one IrqGuard (cookbook Rule 2): a tick between
+    // add_task and next_task dispatches one empty-lambda task (self-terminates),
+    // so next_task() returns idle instead of a prio-15 pick.
+    TaskControlBlock *next;
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*t1);
+        Scheduler::add_task(*t2);
+        next = Scheduler::next_task();
+    }
 
+    // Cleanup BEFORE assert (cookbook Rule 5): both never-dispatched
+    // (next_task dequeued the pick); direct remove_task+cleanup+delete is
+    // leak-free for never-running tasks.
     Scheduler::remove_task(*t1);
     t1->cleanup();
     delete t1;
     Scheduler::remove_task(*t2);
     t2->cleanup();
     delete t2;
+
+    JARVIS_ASSERT(next == t1 || next == t2);
     JARVIS_TEST_PASS();
 }
 
@@ -253,9 +267,7 @@ JARVIS_TEST(scheduler_waitpid_wakes_parent,
     while (parent->state != TaskState::BLOCKED &&
            parent->state != TaskState::TERMINATED)
         asm volatile("pause");
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
     bool child_removed = Scheduler::find_task(context.child_id_) == nullptr;
     if (!child_removed) {
         Scheduler::terminate(*child, 0);
@@ -358,16 +370,13 @@ JARVIS_TEST(scheduler_current_task_after_switch, "PRE: none | POST: none") {
     auto *original = Scheduler::current_task();
     JARVIS_ASSERT(original != nullptr);
     Scheduler::reschedule();
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(high);
     // The real RMS dispatch selected the higher-priority task.
-    JARVIS_ASSERT_EQ(1ULL, g_ran);
-    JARVIS_ASSERT(g_self == high->id);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
+    const auto high_id = high->id;
+    kernel::test::terminate_and_drain(*high);
+    JARVIS_ASSERT_EQ(1ULL, g_ran);
+    JARVIS_ASSERT(g_self == high_id);
     JARVIS_TEST_PASS();
 }
 
@@ -397,15 +406,21 @@ JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
 
     // Verify we can still find a task with that ID
     auto *found = Scheduler::find_task(t1->id);
-    JARVIS_ASSERT(found != nullptr);
 
-    // Cleanup both
+    // Cleanup both.  t1 was never dispatched (create + add_task only) — the
+    // direct remove_task+cleanup+delete pattern is leak-free for never-running
+    // tasks (terminate_and_drain's zombie path can strand them).
     Scheduler::remove_task(*t1);
     t1->cleanup();
     delete t1;
+    JARVIS_ASSERT(found != nullptr);
     // Remove t2 from scheduler if present — a direct iteration is needed
     // because the hash-table probe chain may be broken by the tombstone
-    // left by remove_task(t1) when both tasks share the same ID.
+    // left by remove_task(t1) when both tasks share the same ID.  The
+    // unconditional cleanup below is load-bearing: if add_task(t2) failed to
+    // register (duplicate id), t2 is an unregistered orphan and still needs
+    // cleanup+delete; if it was registered, the loop removed it.  Either way
+    // exactly one free happens.
     for (uint64_t _i = 0; _i < Scheduler::task_count(); ++_i) {
         if (Scheduler::task_at(_i) == t2) {
             Scheduler::remove_task(*t2);
@@ -418,31 +433,43 @@ JARVIS_TEST(scheduler_add_duplicate_id, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verify that a task with period_ticks set is scheduled before
-// it misses its deadline.  Creates a task with a very short period and
-// verifies next_task() prefers it over a task with a longer period at
-// the same priority.
-// Input: Two tasks with same priority (5) but different periods (5, 20).
-// Expect: next_task() returns the task with the shorter period.
-JARVIS_TEST(scheduler_shorter_period_preferred, "PRE: none | POST: none") {
+// Testidea: Verify next_task() at equal priority preserves FIFO enqueue order.
+// (scheduler.md: next_task() is a priority-bitmap + per-level FIFO bucket —
+// there is NO same-priority period tiebreak.  The old
+// scheduler_shorter_period_preferred asserted a period preference that does
+// not exist and passed only because t1 was enqueued first.)
+// Input: Two tasks, same priority (15), different periods (5, 20).
+// Expect: next_task() returns the first-enqueued task (t1), FIFO order.
+JARVIS_TEST(scheduler_equal_priority_fifo, "PRE: none | POST: none") {
     auto *t1 =
         TaskControlBlock::create([]() {}, 15, 5); // priority=15, period=5
     auto *t2 =
         TaskControlBlock::create([]() {}, 15, 20); // priority=15, period=20
     JARVIS_ASSERT(t1 && t2);
-    Scheduler::add_task(*t1);
-    Scheduler::add_task(*t2);
 
-    // RM scheduling: same priority, shorter period should be preferred
-    auto *next = Scheduler::next_task();
-    JARVIS_ASSERT(next == t1);
+    // Register AND select under one IrqGuard (cookbook Rule 2): a timer tick
+    // between add_task and next_task would dispatch one empty-lambda task
+    // (self-terminates), so next_task() returns idle instead of the FIFO pick.
+    TaskControlBlock *next;
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*t1);
+        Scheduler::add_task(*t2);
+        next = Scheduler::next_task();
+    }
 
+    // Cleanup BEFORE assert (cookbook Rule 5): both never-dispatched (next_task
+    // dequeued the pick); direct remove_task+cleanup+delete is leak-free for
+    // never-running tasks.
     Scheduler::remove_task(*t1);
     t1->cleanup();
     delete t1;
     Scheduler::remove_task(*t2);
     t2->cleanup();
     delete t2;
+
+    // FIFO at equal priority: the first-enqueued task is selected.
+    JARVIS_ASSERT(next == t1);
     JARVIS_TEST_PASS();
 }
 
@@ -494,6 +521,6 @@ void register_scheduler_tests() {
     JARVIS_REGISTER_TEST(scheduler_set_preemptible_toggle);
     JARVIS_REGISTER_TEST(scheduler_current_task_after_switch);
     JARVIS_REGISTER_TEST(scheduler_add_duplicate_id);
-    JARVIS_REGISTER_TEST(scheduler_shorter_period_preferred);
+    JARVIS_REGISTER_TEST(scheduler_equal_priority_fifo);
     JARVIS_REGISTER_TEST(scheduler_no_spurious_switch);
 }

@@ -34,6 +34,7 @@
 #include <kernel/memory/checked_ptr.hpp>
 #include <constants.hpp>
 #include <signal.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -41,9 +42,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 } // namespace
 
@@ -101,10 +100,10 @@ TEST_CLASS(SyscallFuzzBounds) {
     CT_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     CT_ASSERT(g_fuzz_failed == 0);
     release_task(t);
+    Scheduler::drain_zombie_list();
 };
 
 // Runmode: kernel
@@ -163,10 +162,10 @@ TEST_CLASS(SyscallFuzzFlags) {
     CT_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     CT_ASSERT(g_failed == 0);
     release_task(t);
+    Scheduler::drain_zombie_list();
 };
 
 // Runmode: kernel
@@ -192,11 +191,11 @@ TEST_CLASS(SyscallFuzzStates) {
     CT_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     CT_ASSERT(g_ok == 1);
     CT_ASSERT(Scheduler::current_task() != nullptr);
     release_task(t);
+    Scheduler::drain_zombie_list();
 };
 
 // Runmode: kernel
@@ -248,10 +247,10 @@ TEST_CLASS(SyscallFuzzPrivilege) {
     CT_ASSERT(ktask->page_table_ == 0); // kernel task
     Scheduler::add_task(*ktask);
     Scheduler::reschedule();
-    while (ktask->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(ktask);
     CT_ASSERT(g_failed == 0);
     release_task(ktask);
+    Scheduler::drain_zombie_list();
 };
 
 void register_syscall_fuzz_tests() {

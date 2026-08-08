@@ -114,9 +114,7 @@ JARVIS_TEST(task_clone_shares_page_tables, "PRE: none | POST: none") {
     parent->user_stack_size_ = 32_KiB; // clone() needs a real size to succeed
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
     // The parent self-terminated and is owned by the zombie list.  Reclaim it
     // BEFORE asserting so a failure cannot leak the parent TCB.
     Scheduler::drain_zombie_list();
@@ -205,9 +203,7 @@ JARVIS_TEST(task_fork_child_cleanup_preserves_parent_pages,
     parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
     Scheduler::drain_zombie_list();
 
     JARVIS_ASSERT_EQ(1ULL, g_preserved);
@@ -248,9 +244,7 @@ JARVIS_TEST(task_clone_no_page_table_leak, "PRE: none | POST: none") {
     parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
     Scheduler::drain_zombie_list();
 
     JARVIS_ASSERT_EQ(1ULL, g_ran);

@@ -185,31 +185,36 @@ TEST_CLASS(IpcConcurrentSenders) {
     static const int MSGS_PER = 5;
     TaskControlBlock *senders[NUM_SENDERS];
 
-    for (int i = 0; i < NUM_SENDERS; ++i) {
-        struct SCtx {
-            uint64_t recv_;
-            uint64_t base_;
-        };
-        static SCtx sctx[NUM_SENDERS];
-        sctx[i].recv_ = recv_id;
-        sctx[i].base_ = static_cast<uint64_t>(i);
-        senders[i] = TaskControlBlock::create(
-            []() {
-                auto *self = Scheduler::current_task();
-                auto *c = reinterpret_cast<SCtx *>(self->user_data);
-                for (int m = 0; m < MSGS_PER; ++m) {
-                    Message msg{};
-                    msg.sender_id = self->id;
-                    msg.type = c->base_ * MSGS_PER + static_cast<uint64_t>(m);
-                    msg.priority = 0;
-                    msg.data_size = 0;
-                    IPC::send(c->recv_, msg, IPC_NONBLOCK);
-                }
-            },
-            12 + static_cast<uint64_t>(i), 10);
-        CT_ASSERT(senders[i] != nullptr);
-        senders[i]->user_data = &sctx[i];
-        Scheduler::add_task(*senders[i]);
+    // Register all cooperating senders under one IrqGuard so no timer tick
+    // can split the registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        for (int i = 0; i < NUM_SENDERS; ++i) {
+            struct SCtx {
+                uint64_t recv_;
+                uint64_t base_;
+            };
+            static SCtx sctx[NUM_SENDERS];
+            sctx[i].recv_ = recv_id;
+            sctx[i].base_ = static_cast<uint64_t>(i);
+            senders[i] = TaskControlBlock::create(
+                []() {
+                    auto *self = Scheduler::current_task();
+                    auto *c = reinterpret_cast<SCtx *>(self->user_data);
+                    for (int m = 0; m < MSGS_PER; ++m) {
+                        Message msg{};
+                        msg.sender_id = self->id;
+                        msg.type = c->base_ * MSGS_PER + static_cast<uint64_t>(m);
+                        msg.priority = 0;
+                        msg.data_size = 0;
+                        IPC::send(c->recv_, msg, IPC_NONBLOCK);
+                    }
+                },
+                12 + static_cast<uint64_t>(i), 10);
+            CT_ASSERT(senders[i] != nullptr);
+            senders[i]->user_data = &sctx[i];
+            Scheduler::add_task(*senders[i]);
+        }
     }
 
     Scheduler::reschedule();
@@ -217,7 +222,8 @@ TEST_CLASS(IpcConcurrentSenders) {
     // All senders genuinely run and attempt their non-blocking sends; the
     // queue holds at most IPC_MAX_QUEUE_MSG messages.
     for (int i = 0; i < NUM_SENDERS; ++i) {
-        while (senders[i]->state != TaskState::TERMINATED)
+        while (TaskControlBlock::is_valid(senders[i]) &&
+               senders[i]->state != TaskState::TERMINATED)
             asm volatile("pause");
     }
     JARVIS_ASSERT(receiver->msg_queue.count <= IPC_MAX_QUEUE_MSG);
@@ -312,7 +318,7 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
             g_receiver_result = 0; // ok
         },
         11, 10);
-    if (!sender || !receiver) { JARVIS_TEST_PASS(); return; }
+    if (!sender || !receiver) { JARVIS_FAIL("task create failed (OOM)"); return; }
     sender->page_table_ = VMM::clone_kernel_pml4();
     receiver->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(sender->page_table_ != 0);
@@ -333,15 +339,14 @@ TEST_CLASS(IpcBufHandleTransferRoundtrip) {
     }
     Scheduler::reschedule();
 
-    while (sender->state != TaskState::TERMINATED ||
-           receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+kernel::test::wait_for_termination_safe(receiver);
 
-    JARVIS_ASSERT_EQ(0ULL, g_sender_result);
-    JARVIS_ASSERT_EQ(0ULL, g_receiver_result);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(0ULL, g_sender_result);
+    JARVIS_ASSERT_EQ(0ULL, g_receiver_result);
 };
 #endif
 
@@ -399,12 +404,12 @@ TEST_CLASS(IpcBidirectionalSendSync) {
 
     req.type = 30;
     ok = IPC::send_sync(g_task_id, req, reply);
-    JARVIS_ASSERT(ok);
-    JARVIS_ASSERT(reply.type == 40ULL);
 
     // The peer self-terminated after its two recv/reply cycles — reclaim via
     // the zombie list (cookbook Rule 4/5).
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(ok);
+    JARVIS_ASSERT(reply.type == 40ULL);
     JARVIS_TEST_PASS();
 };
 
@@ -467,16 +472,14 @@ TEST_CLASS(IpcBlockedSenderOnReceiverCleanup) {
     // Dispatch the receiver → real terminate → drain runs its cleanup, whose
     // MessageQueue teardown wakes the blocked sender (fast-fail).
     Scheduler::reschedule();
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(receiver);
     Scheduler::drain_zombie_list();
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
     // The blocked send fast-fails (receiver gone).
-    JARVIS_ASSERT_EQ(0ULL, send_result);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(0ULL, send_result);
 };
 
 void register_ipc_robustness_tests() {

@@ -19,23 +19,23 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     // Class name           x86_64  aarch64  riscv64
     {"safe",                132,    0,       0      },  // curated TF_RELEASE subset
     {"selftest",            132,    0,       0      },  // same as safe
-    {"all",                 927,    0,       0      },  // 891 + locking(13) + locking_stress(6) + preemption(7) + ipc_extended(9) + daemon_restart_crash(1)
-    {"dmesg",                16,    0,       0      },  // DmesgBuffer + error strings + suppression + daemon_restart_crash(1)
+    {"all",                 810,    0,       0      },  // 891 + locking(13) + locking_stress(6) + preemption(7) + ipc_extended(9)  (daemon_restart_crash gated, T0-7)
+    {"dmesg",                15,    0,       0      },  // DmesgBuffer + error strings + suppression  (daemon_restart_crash gated, T0-7)
     {"scheduler",            62,    0,       0      },  // sched + task + lifecycle + idle_task + zombie_cleanup + health + cpu_load + preemption(7)
-    {"deadlock",             15,    0,       0      },  // deadlock_detect + deadlock_recovery + starvation_deadlock
+    {"deadlock",              1,    0,       0      },  // starvation_deadlock (detect/recovery stubs deleted, T3-1)
     {"lock_protocol",        53,    0,       0      },  // lock_order + budget + pip + pcp + queue_pip + mutex_pcp + lock_validator + locking(13) + locking_stress(6)
     {"timer",                 5,    0,       0      },  // timer tests
-    {"wfg",                   4,    0,       0      },  // wfg tests
-    {"lock",                  5,    0,       0      },  // mlock (MCS lock)
+    {"wfg",                   0,    0,       0      },  // wfg tests
+    {"lock",                  0,    0,       0      },  // (mlock stubs deleted, T3-1)
     {"memory",              51,     0,       0      },  // composite: pmm(5) + mempool(4) + slab_reclaim(5) + checked_ptr(4) + buffer_pool(24) + resource_exhaustion(5) + memory_determinism(2) + vmm(4 via all)
     {"memory_determinism",   2,     0,       0      },  // PMM exhaustion cycle tests
     {"ipc",                 55,     0,       0      },  // IPC + pipe + ipc_blocking + lock-free + robustness + ipc_extended(9)
     {"ipc_blocking",         4,     0,       0      },  // IPC blocking send_sync/handshake tests
     {"zombie_cleanup",       4,     0,       0      },  // zombie list deferred cleanup
-    {"vfs",                 143,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd
+    {"vfs",                 132,    0,       0      },  // vfs + tmpfs + fat32 + block + fstab + sync + vfsd + iocd (vfs_internal/tmpfs stubs deleted, T3-1)
     {"process",             43,     0,       0      },  // process + elf + signals + rlimit + waitpid + pml4_clone
     {"syscall",             28,     0,       0      },  // syscall + syscall_fuzz
-    {"arch",                59,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
+    {"arch",                31,     0,       0      },  // cross_arch + GDT + IDT + bootparams + multiboot + address + PIC + HAL
     {"cross_arch",          16,     0,       0      },  // cross-architecture tests
     {"vmm",                 11,     0,       0      },  // VMM unit tests (7 original + 2 unconditional + 2 x86_64 = 11 on x86_64)
     {"pmm",                  5,     0,       0      },  // PMM alloc/free unit tests
@@ -43,12 +43,12 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"slab_reclaim",         5,     0,       0      },  // Slab reclaim tests
     {"checked_ptr",          4,     0,       0      },  // Checked pointer + signal frame tests
     {"resource_exhaustion",  5,     0,       0      },  // FdTable, TaskLimit, MaxBuffers, MempoolFrag, PmmExhaustion
-    {"device",              33,     0,       0      },  // serial + keyboard + spsc + irq_guard + framebuffer + rtc + driver
+    {"device",              22,     0,       0      },  // spsc + irq_guard + framebuffer + rtc + driver (serial/keyboard stubs deleted, T3-1)
     {"shell",               22,     0,       0      },  // shell_interaction + shell_redirect + textutils
     {"net",                 42,     0,       0      },  // net + PCI + virtio + DMA
-    {"security",            31,     0,       0      },  // capability + secure_exec + vfsd_authorization
+    {"security",            10,     0,       0      },  // secure_exec + vfsd_authorization (capability stubs deleted, T3-1)
     {"debug",               14,     0,       0      },  // debug + gcov + klog
-    {"integration",          1,     0,       0      },  // integration smoke tests
+    {"integration",          0,     0,       0      },  // integration smoke tests
     {"starvation_deadlock",  4,     0,       0      },  // SchedulerStarvation + PriorityInversionChain5 + DeadlockNestedMutexLoad + DeadlockRecoveryResourceReclamation
 #if CONFIG_DEADLINE_MONITOR_TASK
     {"deadline_miss",        5,     0,       0      },  // + DeadlineMonitorTaskSpawned + DeadlineMonitorDetectsMiss
@@ -62,7 +62,7 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"wcet",                 1,     0,       0      },  // WCET benchmark for scan_deadlines (P7b)
     {"priority_inheritance", 11,    0,       0      },  // MutexPriorityDonates + MutexChainPropagates + MutexPriStepDown + MutexNestedDrop + SemaphoreInherits + queue_pip(3) + mutex_pcp(3)
     {"preemption_under_syscall", 4,  0,       0      },  // preemption during syscall, tmpfs write, brk, starvation
-    {"stress",              10,     0,       0      },  // stress + starvation_deadlock
+    {"stress",               3,     0,       0      },  // starvation_deadlock (stress stubs deleted, T3-1)
     {"init",                 3,     0,       0      },  // init tests
     {"build",                5,     0,       0      },  // buildsystem tests
     {"bench",               23,     0,       0      },  // IPC + microkernel + syscall + IRQ latency + APIC timer + jitter benchmarks
@@ -70,11 +70,11 @@ static constexpr ExpectedCounts k_expected_counts[] = {
     {"sporadic",            25,     0,       0      },  // sporadic server tests
     {"atomic",              12,     0,       0      },  // atomic operation tests
     {"apic_timer",           3,     0,       0      },  // APIC timer tick rate, one-shot, stop
-    {"irq_alloc",            3,     0,       0      },  // Allocation-free IRQ paths (stubs)
+    {"irq_alloc",            0,     0,       0      },  // (IRQ-alloc stubs deleted, T3-1)
     {"jitter",               2,     0,       0      },  // Schedule-to-schedule jitter benchmarks
-    {"threaded_irq",         3,     0,       0      },  // Deferred IRQ handling (stubs)
-    {"gic",                  3,     0,       0      },  // ARM64 GICv3/v4 (stubs — x86_64 pass)
-    {"plic",                 3,     0,       0      },  // RISC-V64 PLIC (stubs — x86_64 pass)
+    {"threaded_irq",         0,     0,       0      },  // (threaded-irq stubs deleted, T3-1)
+    {"gic",                  0,     0,       0      },  // (GIC stubs deleted, T3-1)
+    {"plic",                 0,     0,       0      },  // (PLIC stubs deleted, T3-1)
 #if CONFIG_STATIC_POOLS_ONLY
     {"static_pools",          6,     0,       0      },  // CONFIG_STATIC_POOLS_ONLY, MemPool::reserve
 #else

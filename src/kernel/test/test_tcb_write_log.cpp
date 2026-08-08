@@ -23,26 +23,47 @@ using namespace kernel::test;
 // Run with CONFIG_TCB_WRITE_LOG and grep the serial log for
 // "[TCB-WRITE-LOG]" to confirm the dump was emitted.
 JARVIS_TEST(test_tcb_write_log_catches_stray_write, "PRE: none | POST: none") {
-    auto *t = Scheduler::current_task();
+    // Dedicated ORPHAN TCB: created via TaskControlBlock::create() but NEVER
+    // registered with the scheduler (no register_task/add_task). It sits in
+    // no scheduler table or queue, so no timer ISR / scheduler magic check
+    // (scheduler.cpp:646, task.cpp:1253) can ever observe the corruption
+    // window below. The live harness task's TCB is never touched.
+    auto *t = TaskControlBlock::create([]() {}, 5, 10);
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT(t->magic == TaskControlBlock::TCB_MAGIC);
 
     // Simulate a STRAY WRITE that corrupts a TCB field, bypassing TCB_WRITE.
+    // (A plain field write — exactly what a real stray write looks like to
+    // the tracer: NOT recorded. That is the point of the post-hoc dump.)
     const uint64_t off = offsetof(TaskControlBlock, magic);
     *reinterpret_cast<uint64_t *>(reinterpret_cast<uint8_t *>(t) + off) =
         0xDDDDDDDDDDDDDDDDULL;
 
     // Trigger the poison-detection path. cleanup() sees the invalid magic,
-    // prints "[CLEANUP] poisoned TCB" and calls
-    // kernel::diag::dump_tcb_write_log(). The dump goes to the serial log.
+    // prints "[CLEANUP] skip poisoned TCB", calls
+    // kernel::diag::dump_tcb_write_log("[CLEANUP] poisoned TCB") and
+    // early-returns: no teardown, no tracker calls, state stays READY.
     t->cleanup();
 
-    // Restore the running task's magic so the scheduler keeps functioning.
+    // Restore magic BEFORE any teardown/free. operator delete silently
+    // SKIPS MemPool::free for blocks whose magic is neither TCB_MAGIC nor 0
+    // (task.cpp:1498-1500) — deleting while poisoned would leak the block
+    // and trip the ResourceTracker mempool check at snapshot_restore.
     t->magic = TaskControlBlock::TCB_MAGIC;
 
-    // Confirm the tracer is wired: dump_tcb_write_log must be callable and
-    // must have recorded the legitimate create/restore writes of this TCB.
+    // Confirm the tracer is wired: dump_tcb_write_log must be callable and,
+    // under CONFIG_TCB_WRITE_LOG, shows the legitimate create-time writes
+    // of this TCB (the suspects list a real investigation would use).
     kernel::diag::dump_tcb_write_log("[TEST] explicit dump after stray write");
+
+    // Full teardown now that magic is valid: state=REAPED, frees the kernel
+    // stack pages and destroys msg_queue/notify/event_group (balancing the
+    // ResourceTracker adds from create/init_task_common). With state REAPED,
+    // operator delete skips re-cleanup (task.cpp:1490) and only returns the
+    // block to MemPool. unregister_task on this never-registered orphan is
+    // a safe no-op (AllTasksRegistry::remove early-return, non-member).
+    t->cleanup();
+    delete t;
 
     JARVIS_TEST_PASS();
 }

@@ -28,6 +28,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -122,12 +123,7 @@ JARVIS_TEST(spinlock_contention, "PRE: none | POST: none") {
     Scheduler::add_task(*b);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*a);
-        a->cleanup();
-        delete a;
-        Scheduler::remove_task(*b);
-        b->cleanup();
-        delete b;
+        kernel::test::terminate_and_drain2(a, b);
     });
 
     // Yield repeatedly so the scheduler picks workers over the boot-stack

@@ -78,11 +78,8 @@ static TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
 ///         test_ipc_blocking.cpp).
 static void release_overrun_blocked(TaskControlBlock *t, sync::Semaphore &gate) {
     gate.post();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::wait_for_termination_safe(t);
+    kernel::test::terminate_and_drain(*t);
 }
 
 // Runmode: kernel
@@ -131,8 +128,7 @@ TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
 
     auto *original = Scheduler::current_task();
     Scheduler::reschedule();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(helper);
 
     // Task genuinely terminated; its deadline (now+2) has long passed.
     uint64_t count_before = helper->deadline_miss_count;
@@ -142,9 +138,7 @@ TEST_CLASS(DeadlineMissWhileTerminatedSkipped) {
     CT_ASSERT(helper->deadline_miss_count == count_before);
 
     Scheduler::set_current(*original);
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    kernel::test::terminate_and_drain(*helper);
 };
 
 // Runmode: kernel

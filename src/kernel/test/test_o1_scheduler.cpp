@@ -9,6 +9,7 @@
 #include <kernel/task/task_queue.hpp>
 #include <kernel/task/ready_queue_manager.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/arch/irq_guard.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/test/task_ptr.hpp>
@@ -243,6 +244,10 @@ JARVIS_TEST(o1_scheduler_dequeues_highest, "PRE: none | POST: none") {
     SimpleTaskPtr high(TaskControlBlock::create([]() {}, 15, 20));
     JARVIS_ASSERT(low && high);
 
+    // Register AND select under one IrqGuard (cookbook Rule 2): a timer tick
+    // between add_task and next_task would dispatch the prio-15 empty-lambda
+    // task (self-terminates), so next_task() then returns idle.
+    arch::IrqGuard guard;
     Scheduler::add_task(*low);
     Scheduler::add_task(*high);
 
@@ -258,6 +263,9 @@ JARVIS_TEST(o1_scheduler_add_remove_ready_queue, "PRE: none | POST: none") {
     SimpleTaskPtr t1(TaskControlBlock::create([]() {}, 10, 20));
     JARVIS_ASSERT(t1);
 
+    // Register + select atomically: without the guard a tick can dispatch the
+    // empty-lambda task between add_task and next_task (returns idle).
+    arch::IrqGuard guard;
     Scheduler::add_task(*t1);
     // t1 was enqueued by add_task
     auto *next = Scheduler::next_task();

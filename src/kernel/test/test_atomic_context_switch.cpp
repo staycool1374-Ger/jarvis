@@ -48,12 +48,7 @@ JARVIS_TEST(atomic_globals_set_on_reschedule, "PRE: none | POST: none") {
     Scheduler::add_task(*task_b);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*task_a);
-        task_a->cleanup();
-        delete task_a;
-        Scheduler::remove_task(*task_b);
-        task_b->cleanup();
-        delete task_b;
+        kernel::test::terminate_and_drain2(task_a, task_b);
     });
 
     auto *original = Scheduler::current_task();
@@ -90,12 +85,7 @@ JARVIS_TEST(atomic_globals_set_on_reschedule, "PRE: none | POST: none") {
     Scheduler::set_current(*original);
 
     guard.dismiss();
-    Scheduler::remove_task(*task_a);
-    task_a->cleanup();
-    delete task_a;
-    Scheduler::remove_task(*task_b);
-    task_b->cleanup();
-    delete task_b;
+    kernel::test::terminate_and_drain2(task_a, task_b);
 
     JARVIS_TEST_PASS();
 }
@@ -148,12 +138,7 @@ JARVIS_TEST(atomic_idempotent_null_handling, "PRE: none | POST: none") {
     Scheduler::add_task(*task_b);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*task_a);
-        task_a->cleanup();
-        delete task_a;
-        Scheduler::remove_task(*task_b);
-        task_b->cleanup();
-        delete task_b;
+        kernel::test::terminate_and_drain2(task_a, task_b);
     });
 
     auto *original = Scheduler::current_task();
@@ -197,12 +182,7 @@ JARVIS_TEST(atomic_idempotent_null_handling, "PRE: none | POST: none") {
 
     Scheduler::set_current(*original);
     guard.dismiss();
-    Scheduler::remove_task(*task_a);
-    task_a->cleanup();
-    delete task_a;
-    Scheduler::remove_task(*task_b);
-    task_b->cleanup();
-    delete task_b;
+    kernel::test::terminate_and_drain2(task_a, task_b);
 
     JARVIS_TEST_PASS();
 }
@@ -264,9 +244,7 @@ JARVIS_TEST(atomics_assembly_bridge, "PRE: none | POST: none") {
     Scheduler::set_current(*original);
     __atomic_store_n(&kernel::scheduler_next_task_id, old_id, __ATOMIC_RELEASE);
 
-    Scheduler::remove_task(*task);
-    task->cleanup();
-    delete task;
+    kernel::test::terminate_and_drain(*task);
 
     JARVIS_TEST_PASS();
 }

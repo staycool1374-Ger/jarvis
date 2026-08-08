@@ -29,6 +29,7 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -36,9 +37,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 } // namespace
 
@@ -75,12 +74,12 @@ JARVIS_TEST(syscall_getrandom_basic, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(64ULL, g_ret);
     JARVIS_ASSERT_FMT(g_all_zero == 0, "GETRANDOM returned 64 zero bytes");
     JARVIS_ASSERT_FMT(g_all_ff == 0, "GETRANDOM returned 64 0xFF bytes");
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -107,11 +106,11 @@ JARVIS_TEST(syscall_getrandom_zero, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT_EQ(1ULL, g_unchanged);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -142,11 +141,11 @@ JARVIS_TEST(syscall_getrandom_large, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(4096ULL, g_ret);
     JARVIS_ASSERT_FMT(g_any_nonzero == 1, "GETRANDOM(4096) returned all zeros");
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -168,10 +167,10 @@ JARVIS_TEST(syscall_getrandom_invalid_flags, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
     release_task(t);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

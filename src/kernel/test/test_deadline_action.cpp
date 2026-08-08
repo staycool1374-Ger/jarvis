@@ -82,11 +82,8 @@ TaskControlBlock *spawn_overrun_blocked(sync::Semaphore &gate) {
 /// @brief Wake the blocked helper (real semaphore post) and reap it.
 void release_overrun_blocked(TaskControlBlock *helper, sync::Semaphore &gate) {
     gate.post();
-    while (helper->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    Scheduler::remove_task(*helper);
-    helper->cleanup();
-    delete helper;
+    kernel::test::wait_for_termination_safe(helper);
+    kernel::test::terminate_and_drain(*helper);
 }
 
 /// @brief Run the detection path through the real timer-woken monitor task.

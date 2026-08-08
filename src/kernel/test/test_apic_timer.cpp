@@ -66,8 +66,17 @@ JARVIS_TEST(apic_timer_oneshot, "PRE: isolate | POST: none") {
         asm volatile("pause");
     }
 
-    // Restart periodic system tick
-    arch::APIC::timer_start();
+    // Restore the periodic system tick.  set_timer_oneshot() zeroes
+    // periodic_ns_ (apic.cpp), so timer_start() alone no-ops — re-init at the
+    // boot tick rate re-arms the periodic timer, then start it.  Assert the
+    // rate is non-zero: a zero boot_hz would leave the tick dead for every
+    // subsequent test in the class.
+    uint64_t boot_hz = BootParams::instance().timer_hz;
+    JARVIS_ASSERT(boot_hz != 0);
+    if (boot_hz != 0) {
+        arch::APIC::timer_init(static_cast<uint32_t>(boot_hz));
+        arch::APIC::timer_start();
+    }
 
     Logger::info("apic_timer_oneshot: one-shot programmed, no crash");
 #else
@@ -99,11 +108,22 @@ JARVIS_TEST(apic_timer_stop_restart, "PRE: isolate | POST: none") {
     }
 
     uint64_t after = arch::Timer::ticks();
-    JARVIS_ASSERT_EQ(after, before);
 
-    // Restart the system tick
-    arch::APIC::timer_init(1000);
-    arch::APIC::timer_start();
+    // Restart the system tick BEFORE asserting (cookbook Rule 5): an early
+    // assert failure would otherwise return with the tick still masked,
+    // deadlocking the whole class.  Re-init at the boot tick rate re-arms the
+    // periodic timer (timer_stop() masked the LVT and zeroed periodic_ns_).
+    uint64_t boot_hz = BootParams::instance().timer_hz;
+    JARVIS_ASSERT(boot_hz != 0);
+    if (boot_hz != 0) {
+        arch::APIC::timer_init(static_cast<uint32_t>(boot_hz));
+        arch::APIC::timer_start();
+    }
+    // At most ONE tick may land in the window between reading `before` and the
+    // LVT mask taking effect (an in-flight ISR already incremented ticks_).
+    // timer_stop() then freezes the counter, so a larger delta is a real stop
+    // failure.
+    JARVIS_ASSERT(after - before <= 1);
 
     Logger::info("apic_timer_stop_restart: ticks frozen at %lu, restarted", before);
 #else

@@ -31,6 +31,7 @@
 #include <kernel/sync/semaphore.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -113,9 +114,7 @@ TEST_CLASS(PcpNestedCeilings) {
     // post-release state on the terminated task's TCB (fields survive until
     // cleanup — the unlock sequence ran inside the task).
     gate.post();
-    while (holder->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(holder);
     // After the lambda completed (unlock M2 then M1), the ceiling depth is 0.
     CT_ASSERT(holder->held_ceiling_depth_ == 0);
     CT_ASSERT(holder->system_ceiling_ == 0);
@@ -207,12 +206,9 @@ TEST_CLASS(PcpCeilingDisabled) {
 
     // Release LOW: it unlocks the mutex, then HIGH acquires and terminates.
     gate_low.post();
-    while (low->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(low);
     gate_high.post();
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(high);
     CT_ASSERT(high_acquired == 1);
     CT_ASSERT(!mutex.is_locked());
 
@@ -296,12 +292,9 @@ TEST_CLASS(PcpPipFallback) {
 
     // Release LOW: it unlocks the mutex, then HIGH acquires and terminates.
     gate_low.post();
-    while (low->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(low);
     gate_high.post();
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(high);
     CT_ASSERT(high_acquired == 1);
     CT_ASSERT(!mutex.is_locked());
 

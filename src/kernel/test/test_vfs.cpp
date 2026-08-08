@@ -398,8 +398,10 @@ JARVIS_TEST(vfs_pipe_read_write, "PRE: vfsd, iocd | POST: none") {
     JARVIS_ASSERT_EQ('p', buf[2]);
     JARVIS_ASSERT_EQ('e', buf[3]);
 
-    rnode->ops->close(*rnode);
-    wnode->ops->close(*wnode);
+    // Single-close FdTable path: FdTable::free() ref-decs the vnode and
+    // calls ops->close only when the last reference is released.  Manual
+    // ops->close on both ends would free the vnodes, then fd_table.free
+    // would ref-dec the freed blocks (use-after-free, vfs.md §6).
     cur->fd_table.free(fds[0]);
     cur->fd_table.free(fds[1]);
     JARVIS_TEST_PASS();

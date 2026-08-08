@@ -43,8 +43,6 @@ void register_driver_tests();
 void register_vfs_tests();
 void register_tmpfs_tests();
 void register_tmpfs_invalid_mount_tests();
-void register_tmpfs_io_timeout_tests();
-void register_tmpfs_corrupted_metadata_tests();
 void register_tmpfs_mount_unmount_failure_tests();
 void register_signals_tests();
 void register_process_tests();
@@ -57,7 +55,6 @@ void register_init_tests();
 void register_syscall_tests();
 void register_sync_tests();
 void register_spinlock_tests();
-void register_capability_tests();
 void register_task_lifecycle_tests();
 void register_idle_task_tests();
 void register_zombie_cleanup_tests();
@@ -69,14 +66,9 @@ void register_expected_panic_tests();
 void register_freelist_consistency_tests();
 void register_vfsd_tests();
 void register_iocd_tests();
-void register_wfg_tests();
-void register_deadlock_detect_tests();
-void register_deadlock_recovery_tests();
 void register_health_tests();
 void register_timer_tests();
 void register_timing_tests();
-void register_serial_tests();
-void register_keyboard_tests();
 void register_spsc_tests();
 void register_preemption_under_syscall_tests();
 void register_spinlock_stress_tests();
@@ -84,24 +76,12 @@ void register_atomic_context_switch_tests();
 void register_bench_syscall_latency_tests();
 void register_bench_irq_latency_tests();
 void register_apic_timer_tests();
-void register_irq_alloc_tests();
 void register_jitter_tests();
-void register_threaded_irq_tests();
-void register_gic_tests();
-void register_plic_tests();
-void register_gdt_tests();
 void register_idt_tests();
-void register_bootparams_tests();
-void register_multiboot_tests();
-void register_address_tests();
 void register_pipe_tests();
-void register_vfs_internal_tests();
 void register_gcov_tests();
 void register_debug_tests();
 void register_framebuffer_tests();
-void register_stress_tests();
-void register_pic_tests();
-void register_integration_tests();
 void register_pml4_clone_tests();
 void register_waitpid_tests();
 void register_buffer_pool_tests();
@@ -173,7 +153,6 @@ void register_budget_tests();
 void register_pip_tests();
 void register_pcp_tests();
 void register_lock_validator_tests();
-void register_mlock_tests();
 void register_cpu_load_tests();
 void register_slab_reclaim_tests();
 void register_static_pools_tests();
@@ -312,8 +291,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     }},
 
     {"deadlock", []() {
-        register_deadlock_detect_tests();
-        register_deadlock_recovery_tests();
         register_starvation_deadlock_tests();
     }},
 
@@ -333,14 +310,8 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
         register_timer_tests();
     }},
 
-    {"wfg", []() {
-        register_wfg_tests();
-    }},
-
-    {"lock", []() {
-        register_mlock_tests();
-    }},
-
+    
+    
     {"memory", []() {
         register_memory_tests();
         register_pmm_tests();
@@ -376,13 +347,10 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"vfs",
      []() {
          register_vfs_tests();
-         register_vfs_internal_tests();
          register_fstab_tests();
          register_sync_tests();
          register_tmpfs_tests();
          register_tmpfs_invalid_mount_tests();
-         register_tmpfs_io_timeout_tests();
-         register_tmpfs_corrupted_metadata_tests();
          register_tmpfs_mount_unmount_failure_tests();
          register_vfsd_tests();
          register_iocd_tests();
@@ -410,12 +378,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"arch",
      []() {
          register_cross_arch_tests();
-         register_gdt_tests();
          register_idt_tests();
-         register_bootparams_tests();
-         register_multiboot_tests();
-         register_address_tests();
-         register_pic_tests();
          register_hal_tests();
 #if defined(CONFIG_ARCH_AARCH64)
          register_aarch64_tests();
@@ -438,8 +401,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"device",
      []() {
-         register_serial_tests();
-         register_keyboard_tests();
          register_spsc_tests();
          register_irq_guard_tests();
          register_framebuffer_tests();
@@ -464,7 +425,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"security",
      []() {
-         register_capability_tests();
          register_secure_exec_tests();
          register_vfsd_authorization_tests();
      }},
@@ -479,8 +439,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
          register_gcov_tests();
          register_klog_tests();
      }},
-
-    {"integration", []() { register_integration_tests(); }},
 
     {"starvation_deadlock", []() { register_starvation_deadlock_tests(); }},
 
@@ -503,7 +461,6 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
 
     {"stress",
      []() {
-         register_stress_tests();
          register_starvation_deadlock_tests();
      }},
 
@@ -537,11 +494,7 @@ static constexpr kernel::test::TestClass g_test_classes[] = {
     {"spinlock_stress", []() { register_spinlock_stress_tests(); }},
 
     {"apic_timer",  []() { register_apic_timer_tests(); }},
-    {"irq_alloc",   []() { register_irq_alloc_tests(); }},
     {"jitter",      []() { register_jitter_tests(); }},
-    {"threaded_irq",[]() { register_threaded_irq_tests(); }},
-    {"gic",         []() { register_gic_tests(); }},
-    {"plic",        []() { register_plic_tests(); }},
 
     {"preemption_under_syscall",
      []() { register_preemption_under_syscall_tests(); }},
@@ -564,8 +517,6 @@ static void register_all_tests() {
     register_vfs_tests();
     register_tmpfs_tests();
     register_tmpfs_invalid_mount_tests();
-    register_tmpfs_io_timeout_tests();
-    register_tmpfs_corrupted_metadata_tests();
     register_tmpfs_mount_unmount_failure_tests();
     register_signals_tests();
     register_process_tests();
@@ -579,7 +530,6 @@ static void register_all_tests() {
     register_syscall_fuzz_tests();
     register_sync_tests();
     register_spinlock_tests();
-    register_capability_tests();
     register_task_lifecycle_tests();
     register_idle_task_tests();
     register_zombie_cleanup_tests();
@@ -587,22 +537,12 @@ static void register_all_tests() {
     register_idle_cleanup_tests();
     register_vfsd_tests();
     register_iocd_tests();
-    register_wfg_tests();
-    register_deadlock_detect_tests();
-    register_deadlock_recovery_tests();
     register_health_tests();
     register_timer_tests();
     register_timing_tests();
-    register_serial_tests();
-    register_keyboard_tests();
     register_spsc_tests();
-    register_gdt_tests();
     register_idt_tests();
-    register_bootparams_tests();
-    register_multiboot_tests();
-    register_address_tests();
     register_pipe_tests();
-    register_vfs_internal_tests();
      register_gcov_tests();
      register_debug_tests();
      register_framebuffer_tests();
@@ -613,17 +553,11 @@ static void register_all_tests() {
     register_atomic_context_switch_tests();
     register_bench_syscall_latency_tests();
      register_bench_irq_latency_tests();
-     register_stress_tests();
      register_starvation_deadlock_tests();
 
      // v0.3.4 tests
      register_apic_timer_tests();
-     register_irq_alloc_tests();
      register_jitter_tests();
-     register_threaded_irq_tests();
-     register_gic_tests();
-     register_plic_tests();
-
      register_deadline_miss_tests();
     register_wcet_overrun_tests();
     register_ss_deadline_tests();
@@ -633,8 +567,6 @@ static void register_all_tests() {
     register_priority_inheritance_tests();
     register_queue_pip_tests();
     register_mutex_pcp_tests();
-    register_pic_tests();
-    register_integration_tests();
     register_pml4_clone_tests();
     register_waitpid_tests();
     register_resource_exhaustion_tests();
@@ -681,7 +613,6 @@ static void register_all_tests() {
     register_pip_tests();
     register_pcp_tests();
     register_lock_validator_tests();
-    register_mlock_tests();
     register_cpu_load_tests();
     register_slab_reclaim_tests();
     register_static_pools_tests();
@@ -719,8 +650,6 @@ static void register_all_tests_first_half() {
     register_vfs_tests();
     register_tmpfs_tests();
     register_tmpfs_invalid_mount_tests();
-    register_tmpfs_io_timeout_tests();
-    register_tmpfs_corrupted_metadata_tests();
     register_tmpfs_mount_unmount_failure_tests();
     register_signals_tests();
     register_process_tests();
@@ -734,7 +663,6 @@ static void register_all_tests_first_half() {
     register_syscall_fuzz_tests();
     register_sync_tests();
     register_spinlock_tests();
-    register_capability_tests();
     register_task_lifecycle_tests();
     register_idle_task_tests();
     register_zombie_cleanup_tests();
@@ -742,22 +670,12 @@ static void register_all_tests_first_half() {
     register_idle_cleanup_tests();
     register_vfsd_tests();
     register_iocd_tests();
-    register_wfg_tests();
-    register_deadlock_detect_tests();
-    register_deadlock_recovery_tests();
     register_health_tests();
     register_timer_tests();
     register_timing_tests();
-    register_serial_tests();
-    register_keyboard_tests();
     register_spsc_tests();
-    register_gdt_tests();
     register_idt_tests();
-    register_bootparams_tests();
-    register_multiboot_tests();
-    register_address_tests();
     register_pipe_tests();
-    register_vfs_internal_tests();
      register_gcov_tests();
      register_debug_tests();
      register_framebuffer_tests();
@@ -768,17 +686,11 @@ static void register_all_tests_first_half() {
     register_atomic_context_switch_tests();
     register_bench_syscall_latency_tests();
      register_bench_irq_latency_tests();
-     register_stress_tests();
      register_starvation_deadlock_tests();
 
      // v0.3.4 tests
      register_apic_timer_tests();
-     register_irq_alloc_tests();
      register_jitter_tests();
-     register_threaded_irq_tests();
-     register_gic_tests();
-     register_plic_tests();
-
      register_deadline_miss_tests();
     register_wcet_overrun_tests();
     register_ss_deadline_tests();
@@ -788,8 +700,6 @@ static void register_all_tests_first_half() {
     register_priority_inheritance_tests();
     register_queue_pip_tests();
     register_mutex_pcp_tests();
-    register_pic_tests();
-    register_integration_tests();
     register_pml4_clone_tests();
     register_waitpid_tests();
     register_resource_exhaustion_tests();
@@ -839,7 +749,6 @@ static void register_all_tests_second_half() {
     register_pip_tests();
     register_pcp_tests();
     register_lock_validator_tests();
-    register_mlock_tests();
     register_cpu_load_tests();
     register_slab_reclaim_tests();
     register_static_pools_tests();

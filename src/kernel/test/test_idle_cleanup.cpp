@@ -59,13 +59,20 @@ JARVIS_TEST(idle_cleanup_no_deadline_impact,
     for (int i = 0; i < 4; ++i) {
         rt[i] = TaskControlBlock::create(rt_task_entry, 10, 10);
         JARVIS_ASSERT(rt[i] != nullptr);
-        Scheduler::add_task(*rt[i]);
     }
 
     // Create a large never-terminating task at priority 5.
     auto *large = TaskControlBlock::create(forever_entry, 5, 100);
     JARVIS_ASSERT(large != nullptr);
-    Scheduler::add_task(*large);
+
+    // Register all cooperating tasks under one IrqGuard so no timer tick can
+    // split the registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        for (int i = 0; i < 4; ++i)
+            Scheduler::add_task(*rt[i]);
+        Scheduler::add_task(*large);
+    }
 
     // Let all tasks run briefly via timer-driven scheduling.
     for (int h = 0; h < 50; ++h)

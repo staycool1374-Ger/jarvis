@@ -27,6 +27,7 @@
 #include <kernel/memory/vmm.hpp>
 #include <kernel/arch/timer.hpp>
 #include <kernel/syscall/syscall.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -117,16 +118,21 @@ JARVIS_TEST(idle_task_calls_pause_syscall, "PRE: none | POST: none") {
 JARVIS_TEST(idle_task_yields_to_higher_priority, "PRE: none | POST: none") {
     auto *high_prio = TaskControlBlock::create([]() {}, 10, 10);
     JARVIS_ASSERT(high_prio != nullptr);
-    Scheduler::add_task(*high_prio);
 
-    // Idle is at priority 0, high_prio at 10 - scheduler should pick high_prio
-    auto *next = Scheduler::next_task();
-    JARVIS_ASSERT(next != nullptr);
+    // Idle is at priority 0, high_prio at 10 - scheduler should pick high_prio.
+    // Register AND select under one IrqGuard: a tick between add_task and
+    // next_task would dispatch the empty-lambda task (self-terminates), so
+    // next_task() then returns idle (flake).
+    TaskControlBlock *next;
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*high_prio);
+        next = Scheduler::next_task();
+    }
     JARVIS_ASSERT(next->priority >= high_prio->priority);
 
-    Scheduler::remove_task(*high_prio);
-    high_prio->cleanup();
-    delete high_prio;
+    kernel::test::terminate_and_drain(*high_prio);
+    JARVIS_ASSERT(next != nullptr);
     JARVIS_TEST_PASS();
 }
 
@@ -190,9 +196,7 @@ JARVIS_TEST(multiple_idle_tasks_prevented, "PRE: none | POST: none") {
     JARVIS_ASSERT_EQ(Scheduler::task_at(0), Scheduler::get_idle_task());
 
     // Cleanup
-    Scheduler::remove_task(*another);
-    another->cleanup();
-    delete another;
+    kernel::test::terminate_and_drain(*another);
 
     JARVIS_TEST_PASS();
 }

@@ -26,6 +26,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/mempool.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -106,9 +107,14 @@ JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
     JARVIS_ASSERT(task_b != nullptr);
     JARVIS_ASSERT(task_c != nullptr);
 
-    Scheduler::add_task(*task_a);
-    Scheduler::add_task(*task_b);
-    Scheduler::add_task(*task_c);
+    // Register all three cooperating tasks under one IrqGuard so a timer tick
+    // cannot split the registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*task_a);
+        Scheduler::add_task(*task_b);
+        Scheduler::add_task(*task_c);
+    }
 
     // Wait for all tasks to reach verification step (done == 2)
     for (int i = 0; i < 600; ++i) {
@@ -124,6 +130,8 @@ JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
     JARVIS_ASSERT_FMT(g_multi_c_done == 2, "Task C did not finish (state=%d)",
                       g_multi_c_done);
 
+
+    kernel::test::terminate_and_drain3(task_a, task_b, task_c);
     JARVIS_ASSERT_FMT(
         g_multi_a_result == FPU_PI_BITS, "Task A 0x%016llx != pi 0x%016llx",
         (unsigned long long)g_multi_a_result, (unsigned long long)FPU_PI_BITS);
@@ -135,16 +143,6 @@ JARVIS_TEST(fpu_multi_context_switch, "PRE: none | POST: none") {
                       "Task C 0x%016llx != sqrt2 0x%016llx",
                       (unsigned long long)g_multi_c_result,
                       (unsigned long long)FPU_SQRT2_BITS);
-
-    Scheduler::remove_task(*task_a);
-    Scheduler::remove_task(*task_b);
-    Scheduler::remove_task(*task_c);
-    task_a->cleanup();
-    task_b->cleanup();
-    task_c->cleanup();
-    MemPool::free(task_a);
-    MemPool::free(task_b);
-    MemPool::free(task_c);
 
     JARVIS_TEST_PASS();
 }

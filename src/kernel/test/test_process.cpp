@@ -25,6 +25,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <constants.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -71,18 +72,15 @@ JARVIS_TEST(process_find_child, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Validates that the current task's num_children count is
-// accessible and non-negative (implicitly true for unsigned).
+// Testidea: Validates that the current task's num_children is zero when no
+// child has been added (the harness has no children in the test runner).
 // Input: Current task from Scheduler::current_task()
-// Expect: JARVIS_ASSERT checks parent non-null and num_children is accessible
+// Expect: num_children == 0
 // Depends: test, scheduler
 JARVIS_TEST(process_num_children_count, "PRE: none | POST: none") {
     auto *parent = Scheduler::current_task();
     JARVIS_ASSERT(parent != nullptr);
-
-    // num_children is unsigned, so it's implicitly >= 0
-    // Just verify it's accessible
-    (void)parent->num_children;
+    JARVIS_ASSERT_EQ(0ULL, parent->num_children);
     JARVIS_TEST_PASS();
 }
 
@@ -353,15 +351,12 @@ JARVIS_TEST(process_clone_adds_child, "PRE: none | POST: none") {
     parent->user_stack_size_ = 32_KiB;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(1ULL, g_child_num);
     JARVIS_ASSERT(g_child_id != 0);
     JARVIS_ASSERT_EQ(1ULL, g_found);
-
-    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

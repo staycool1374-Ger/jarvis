@@ -104,7 +104,6 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
         11, 10);
     JARVIS_ASSERT(receiver != nullptr);
     g_receiver_id = receiver->id;
-    Scheduler::add_task(*receiver);
 
     auto *sender = TaskControlBlock::create(
         []() {
@@ -121,7 +120,14 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
         },
         12, 10);
     JARVIS_ASSERT(sender != nullptr);
-    Scheduler::add_task(*sender);
+
+    // Register both cooperating tasks under one IrqGuard so a timer tick
+    // cannot split the registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        Scheduler::add_task(*receiver);
+        Scheduler::add_task(*sender);
+    }
 
     auto *original = Scheduler::current_task();
     // Yield to the *receiver* (not the sender): next_task() skips whatever is
@@ -136,10 +142,8 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
     // peer tasks on subsequent ticks.  Busy-wait WITHOUT reschedule()
     // so the timer ISR can acquire the scheduler lock without contention.
     Scheduler::reschedule();
-    while (sender->state != TaskState::TERMINATED ||
-           receiver->state != TaskState::TERMINATED) {
-        asm volatile("pause");
-    }
+    kernel::test::wait_for_termination_safe(sender);
+    kernel::test::wait_for_termination_safe(receiver);
 
     Scheduler::set_current(*original);
 
@@ -148,12 +152,7 @@ JARVIS_TEST(ipc_send_sync_was_blocked_restores_state,
     JARVIS_ASSERT(sender->state == TaskState::TERMINATED);
     JARVIS_ASSERT(receiver->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
+    kernel::test::terminate_and_drain2(sender, receiver);
     JARVIS_TEST_PASS();
 }
 
@@ -208,18 +207,15 @@ JARVIS_TEST(ipc_userspace_block_uses_sti_hlt_cli, "PRE: none | POST: none") {
     // the peer task on the next tick.  Busy-wait WITHOUT reschedule()
     // so the timer ISR can acquire the scheduler lock without contention.
     Scheduler::reschedule();
-    while (user_task->state != TaskState::TERMINATED) {
-        asm volatile("pause");
-    }
+    kernel::test::wait_for_termination_safe(user_task);
 
     Scheduler::set_current(*original);
 
     // Task should have run to completion (sent to itself, received).
-    JARVIS_ASSERT(user_task->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*user_task);
-    user_task->cleanup();
-    delete user_task;
+    const auto user_task_state = user_task->state;
+    kernel::test::terminate_and_drain(*user_task);
+    JARVIS_ASSERT(user_task_state == TaskState::TERMINATED);
     JARVIS_TEST_PASS();
 }
 
@@ -266,18 +262,15 @@ JARVIS_TEST(ipc_kernel_block_skips_sti, "PRE: none | POST: none") {
     // ISR), so IRQs MUST stay enabled here for the timer ISR to apply the
     // deferred context switch; an IrqGuard would starve the switch and the
     // task would never run.  Wait (unbounded) until the task terminates.
-    while (kernel_task->state != TaskState::TERMINATED) {
-        Scheduler::reschedule();
-    }
+    kernel::test::wait_for_termination_safe(kernel_task);
 
     Scheduler::set_current(*original);
 
     // Kernel task should have run to completion.
-    JARVIS_ASSERT(kernel_task->state == TaskState::TERMINATED);
 
-    Scheduler::remove_task(*kernel_task);
-    kernel_task->cleanup();
-    delete kernel_task;
+    const auto kernel_task_state = kernel_task->state;
+    kernel::test::terminate_and_drain(*kernel_task);
+    JARVIS_ASSERT(kernel_task_state == TaskState::TERMINATED);
     JARVIS_TEST_PASS();
 }
 

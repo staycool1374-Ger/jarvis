@@ -34,6 +34,7 @@
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/memory/vmm.hpp>
 #include <kernel/syscall/syscall.hpp>
@@ -127,15 +128,13 @@ JARVIS_TEST(waitpid_zombie_over_new_child, "PRE: none | POST: none") {
     while (parent->state != TaskState::BLOCKED &&
            parent->state != TaskState::TERMINATED)
         asm volatile("pause");
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
-    JARVIS_ASSERT_EQ(1ULL, ctx.result_);
-    JARVIS_ASSERT_EQ(0ULL, ctx.status_);
+    kernel::test::wait_for_termination_safe(parent);
     JARVIS_ASSERT(Scheduler::find_task(ctx.child_id_) == nullptr);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): the parent self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, ctx.result_);
+    JARVIS_ASSERT_EQ(0ULL, ctx.status_);
     JARVIS_TEST_PASS();
 }
 
@@ -178,15 +177,12 @@ JARVIS_TEST(waitpid_two_children_sequential_reap, "PRE: none | POST: none") {
     while (parent->state != TaskState::BLOCKED &&
            parent->state != TaskState::TERMINATED)
         asm volatile("pause");
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(parent);
+    // Cleanup BEFORE asserting (cookbook Rule 5): the parent self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(1ULL, ctx.result_);
     JARVIS_ASSERT_EQ(0ULL, ctx.status1_);
     JARVIS_ASSERT_EQ(0ULL, ctx.status2_);
-
-    // Cleanup BEFORE asserting (cookbook Rule 5): the parent self-terminated.
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 

@@ -29,6 +29,7 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -61,14 +62,13 @@ JARVIS_TEST(sys_getrlimit_nofile, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
     JARVIS_ASSERT_EQ(g_cur, g_max);
-    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -90,13 +90,12 @@ JARVIS_TEST(sys_getrlimit_stack, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
-    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -118,13 +117,12 @@ JARVIS_TEST(sys_getrlimit_data, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
+    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
+    Scheduler::drain_zombie_list();
     JARVIS_ASSERT_EQ(0ULL, g_ret);
     JARVIS_ASSERT(g_cur > 0);
     JARVIS_ASSERT(g_max > 0);
-    // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
-    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -142,11 +140,10 @@ JARVIS_TEST(sys_getrlimit_invalid, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
+    kernel::test::wait_for_termination_safe(t);
     // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(static_cast<uint64_t>(-1), g_ret);
     JARVIS_TEST_PASS();
 }
 
@@ -165,11 +162,10 @@ JARVIS_TEST(sys_brk_query, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT_EQ(g_break, g_ret);
+    kernel::test::wait_for_termination_safe(t);
     // Cleanup BEFORE asserting (cookbook Rule 5): self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(g_break, g_ret);
     JARVIS_TEST_PASS();
 }
 

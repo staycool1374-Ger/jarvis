@@ -129,12 +129,7 @@ JARVIS_TEST(preemption_during_syscall, "PRE: none | POST: none") {
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
-        Scheduler::remove_task(*high);
-        high->cleanup();
-        delete high;
+        kernel::test::terminate_and_drain2(low, high);
     });
 
     // Let the timer ISR drive scheduling naturally — high (pri 10) preempts low
@@ -172,12 +167,7 @@ JARVIS_TEST(preempt_highpri_during_tmpfs_write,
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*high);
-        high->cleanup();
-        delete high;
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
+        kernel::test::terminate_and_drain2(high, low);
         vfs::unlink("/tmp_preempt_prio/data.bin");
     });
 
@@ -210,12 +200,7 @@ JARVIS_TEST(preempt_highpri_during_brk, "PRE: none | POST: none") {
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*high);
-        high->cleanup();
-        delete high;
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
+        kernel::test::terminate_and_drain2(high, low);
     });
 
     for (int h = 0; h < 200 && !brk_done_; ++h)
@@ -250,15 +235,7 @@ JARVIS_TEST(preempt_lowpri_not_starved, "PRE: none | POST: none") {
     Scheduler::add_task(*low);
 
     auto guard = ScopeGuard([&]() {
-        Scheduler::remove_task(*high_a);
-        high_a->cleanup();
-        delete high_a;
-        Scheduler::remove_task(*high_b);
-        high_b->cleanup();
-        delete high_b;
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
+        kernel::test::terminate_and_drain3(high_a, high_b, low);
     });
 
     // FIX(pret-test4): reschedule()+hlt() is REQUIRED here, not just hlt().

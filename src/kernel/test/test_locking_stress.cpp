@@ -32,6 +32,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
 #include <kernel/arch/timer.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -44,9 +45,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 /// @brief Wait until a task reaches a state, yielding via pause().
@@ -97,6 +96,7 @@ JARVIS_TEST(mutex_stress_high_contention, "PRE: none | POST: none") {
 
     for (int i = 0; i < NUM_TASKS; ++i)
         release_task(tasks[i]);
+    Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -162,6 +162,7 @@ JARVIS_TEST(semaphore_producer_consumer, "PRE: none | POST: none") {
     for (int i = 0; i < NUM_CONSUMERS; ++i)
         release_task(consumers[i]);
     release_task(producer);
+        Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
 }
 
@@ -306,11 +307,11 @@ JARVIS_TEST(priority_inversion_under_contention, "PRE: none | POST: none") {
     gate_high.post();
     wait_state(*high, TaskState::TERMINATED);
 
-    JARVIS_ASSERT(high_acquired == 1);
     JARVIS_ASSERT(!mutex.is_locked());
 
     // Both self-terminated — reclaim via the zombie list.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(high_acquired == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -342,9 +343,9 @@ JARVIS_TEST(mutex_recursive_deadlock, "PRE: none | POST: none") {
     Scheduler::add_task(*t);
     Scheduler::reschedule();
     wait_state(*t, TaskState::TERMINATED);
-    JARVIS_ASSERT_EQ(1ULL, g_ok);
     // Self-terminated — reclaim via the zombie list.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, g_ok);
     JARVIS_TEST_PASS();
 }
 

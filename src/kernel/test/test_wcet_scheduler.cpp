@@ -135,7 +135,8 @@ JARVIS_TEST(wcet_scan_deadlines, "PRE: none | POST: none") {
     for (uint64_t k = 0; k < made; ++k)
         gate.post();
     for (uint64_t k = 0; k < made; ++k) {
-        while (tasks[k]->state != TaskState::TERMINATED)
+        while (TaskControlBlock::is_valid(tasks[k]) &&
+               tasks[k]->state != TaskState::TERMINATED)
             asm volatile("pause");
     }
 

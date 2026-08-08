@@ -32,6 +32,7 @@
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/arch/timer.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -84,9 +85,7 @@ JARVIS_TEST(preemption_needs_switch_higher_priority, "PRE: none | POST: none") {
     }
     JARVIS_ASSERT(result == true);
 
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
+    kernel::test::terminate_and_drain(*high);
     JARVIS_TEST_PASS();
 }
 
@@ -102,11 +101,9 @@ JARVIS_TEST(preemption_needs_switch_equal_priority, "PRE: none | POST: none") {
     Scheduler::add_task(*equal);
 
     bool result = Scheduler::needs_switch();
-    JARVIS_ASSERT(result == false);
 
-    Scheduler::remove_task(*equal);
-    equal->cleanup();
-    delete equal;
+    kernel::test::terminate_and_drain(*equal);
+    JARVIS_ASSERT(result == false);
     JARVIS_TEST_PASS();
 }
 
@@ -147,9 +144,7 @@ JARVIS_TEST(preemption_needs_switch_blocked_higher, "PRE: none | POST: none") {
     // Cleanup BEFORE asserting (cookbook Rule 5): the child is a live READY
     // task, the parent is BLOCKED in WAITPID.  Reclaim both without touching
     // a zombie.
-    Scheduler::remove_task(*child);
-    child->cleanup();
-    delete child;
+    kernel::test::terminate_and_drain(*child);
     Scheduler::terminate(*parent, 0);
     Scheduler::drain_zombie_list();
     JARVIS_TEST_PASS();
@@ -174,9 +169,7 @@ JARVIS_TEST(preemption_needs_switch_ignores_preemptible_flag,
     bool result = Scheduler::needs_switch();
 
     // Cleanup BEFORE asserting (cookbook Rule 5): the task is live READY.
-    Scheduler::remove_task(*high);
-    high->cleanup();
-    delete high;
+    kernel::test::terminate_and_drain(*high);
     Scheduler::set_preemptible(true);
 
     JARVIS_ASSERT(result == true);
@@ -232,9 +225,7 @@ JARVIS_TEST(preemption_quantum_exhaustion, "PRE: none | POST: none") {
     JARVIS_ASSERT(t != nullptr);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(t);
     // Cleanup BEFORE asserting (cookbook Rule 5): the task self-terminated.
     Scheduler::drain_zombie_list();
     JARVIS_ASSERT(g_reloaded);
@@ -257,8 +248,7 @@ JARVIS_TEST(preemption_task_switch_does_not_switch_to_self,
     Scheduler::add_task(*other);
 
     Scheduler::reschedule();
-    while (other->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(other);
     JARVIS_ASSERT_EQ(1ULL, g_ran);
 
     // The task self-terminated and is owned by the zombie list.

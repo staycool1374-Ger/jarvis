@@ -38,8 +38,8 @@ JARVIS_TEST(memory_safety_mempool_free_null, "PRE: none | POST: none") {
 
 // Runmode: kernel
 // Testidea: Verifies MemPool::alloc rejects sizes larger than any pool.
-// The largest pool is 4480 bytes. Allocating 4481 should fail.
-// Input: MemPool::alloc(4481)
+// The largest pool is 8192 bytes (mempool.cpp). Allocating 8193 should fail.
+// Input: MemPool::alloc(8193)
 // Expect: Returns nullptr
 // Depends: MemPool
 JARVIS_TEST(memory_safety_mempool_alloc_large_rejected,
@@ -52,11 +52,11 @@ JARVIS_TEST(memory_safety_mempool_alloc_large_rejected,
 // Runmode: kernel
 // Testidea: Verifies MemPool alloc/free at exact pool size boundaries
 // returns valid pointers and cleans up correctly.
-// Input: Alloc at 16, 32, 64, 128, 256, 512, 1024, 2048, 4480 bytes
+// Input: Alloc at 16, 32, 64, 128, 256, 512, 1024, 2048, 8192 bytes
 // Expect: All return non-null pointers, free succeeds
 // Depends: MemPool
 JARVIS_TEST(memory_safety_mempool_exact_edge_sizes, "PRE: none | POST: none") {
-    static const size_t sizes[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4480};
+    static const size_t sizes[] = {16, 32, 64, 128, 256, 512, 1024, 2048, 8192};
     void *ptrs[9];
     for (size_t i = 0; i < 9; ++i) {
         ptrs[i] = MemPool::alloc(sizes[i]);
@@ -70,14 +70,17 @@ JARVIS_TEST(memory_safety_mempool_exact_edge_sizes, "PRE: none | POST: none") {
 }
 
 // Runmode: kernel
-// Testidea: Verifies PMM::free_page(0) is a safe no-op. Page index 0
-// either refers to a reserved BIOS page (bitmap set) or an unallocated page
-// (bitmap clear) — either way the call must not panic.
-// Input: PMM::free_page(0)
-// Expect: No crash or assertion
+// Testidea: Asserts the reserved-range invariant (memory.md, oom-rt.md §3):
+// physical page 0 lies in the PMM reserved range [0, kernel_start_page),
+// bitmap_set at init (pmm.cpp), and must always report allocated.
+// NOTE: PMM::free_page(0) is NOT a safe no-op today — it clears the
+// reserved bit and pushes page 0 onto the free list. This test therefore
+// observes the invariant via is_allocated() without invoking free_page.
+// Input: PMM::is_allocated(0)
+// Expect: true — page 0 is reserved/allocated, never on the free list
 // Depends: PMM
-JARVIS_TEST(memory_safety_pmm_free_zero, "PRE: none | POST: none") {
-    PMM::free_page(0);
+JARVIS_TEST(memory_safety_pmm_free_zero, "PRE: PMM init | POST: none") {
+    JARVIS_ASSERT(PMM::is_allocated(0));
     JARVIS_TEST_PASS();
 }
 

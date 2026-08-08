@@ -34,6 +34,7 @@
 #include <kernel/arch/io.hpp>
 #include <kernel/arch/irq_guard.hpp>
 #include <kernel/memory/vmm.hpp>
+#include <kernel/test/test_sched_helpers.hpp>
 
 using namespace kernel;
 
@@ -229,15 +230,13 @@ JARVIS_TEST(ipc_priority_inversion, "PRE: none | POST: none") {
 
     // Release the receiver: it drains one → the blocked sender completes.
     Scheduler::set_task_ready(*receiver);
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT_EQ(1ULL, send_result);
-    JARVIS_ASSERT_EQ(1ULL, g_recv_ok);
+    kernel::test::wait_for_termination_safe(high);
+    kernel::test::wait_for_termination_safe(receiver);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, send_result);
+    JARVIS_ASSERT_EQ(1ULL, g_recv_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -352,7 +351,7 @@ JARVIS_TEST(ipc_buf_handle_max_size, "PRE: none | POST: none") {
             g_recv_ok = 0;
         },
         11, 10);
-    if (!sender || !receiver) { JARVIS_TEST_PASS(); return; }
+    if (!sender || !receiver) { JARVIS_FAIL("task create failed (OOM)"); return; }
     sender->page_table_ = VMM::clone_kernel_pml4();
     receiver->page_table_ = VMM::clone_kernel_pml4();
     JARVIS_ASSERT(sender->page_table_ != 0);
@@ -371,15 +370,14 @@ JARVIS_TEST(ipc_buf_handle_max_size, "PRE: none | POST: none") {
         Scheduler::add_task(*receiver);
     }
     Scheduler::reschedule();
-    while (sender->state != TaskState::TERMINATED ||
-           receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+kernel::test::wait_for_termination_safe(receiver);
 
-    JARVIS_ASSERT_EQ(0ULL, g_sender_ok);
-    JARVIS_ASSERT_EQ(0ULL, g_recv_ok);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(0ULL, g_sender_ok);
+    JARVIS_ASSERT_EQ(0ULL, g_recv_ok);
     JARVIS_TEST_PASS();
 }
 
@@ -456,15 +454,13 @@ JARVIS_TEST(ipc_priority_inheritance_send, "PRE: none | POST: none") {
 
     // Release the low receiver: it drains one → the blocked sender completes.
     Scheduler::set_task_ready(*low);
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (low->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT_EQ(1ULL, send_result);
-    JARVIS_ASSERT_EQ(1ULL, g_recv_ok);
+    kernel::test::wait_for_termination_safe(high);
+    kernel::test::wait_for_termination_safe(low);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT_EQ(1ULL, send_result);
+    JARVIS_ASSERT_EQ(1ULL, g_recv_ok);
     JARVIS_TEST_PASS();
 }
 

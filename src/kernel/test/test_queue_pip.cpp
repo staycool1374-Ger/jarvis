@@ -30,6 +30,7 @@
 #include <kernel/sync/queue.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/task/scheduler.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -91,17 +92,8 @@ TaskControlBlock *spawn_queue_task_nonblocking(sync::Queue &queue,
     t->user_data = &ctx;
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     return t;
-}
-
-void release_task(TaskControlBlock *t) {
-    if (t == nullptr)
-        return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
 }
 
 } // namespace
@@ -154,19 +146,11 @@ JARVIS_TEST(queue_pip_boost_sender, "PRE: none | POST: none") {
 
     // Low sends to unblock high.
     JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("y"), 1));
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(high);
 
+
+    kernel::test::terminate_and_drain2(low, high);
     JARVIS_ASSERT(recvd == 1);
-
-    if (low->state != TaskState::TERMINATED) {
-        release_task(low);
-    } else {
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
-    }
-    release_task(high);
     JARVIS_TEST_PASS();
 }
 
@@ -224,18 +208,10 @@ JARVIS_TEST(queue_pip_boost_receiver, "PRE: none | POST: none") {
     uint8_t buf[32];
     size_t sz = sizeof(buf);
     JARVIS_ASSERT(queue.try_receive(buf, &sz));
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT(done == 1);
+    kernel::test::wait_for_termination_safe(high);
 
-    if (low->state != TaskState::TERMINATED) {
-        release_task(low);
-    } else {
-        Scheduler::remove_task(*low);
-        low->cleanup();
-        delete low;
-    }
-    release_task(high);
+    kernel::test::terminate_and_drain2(low, high);
+    JARVIS_ASSERT(done == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -281,26 +257,10 @@ JARVIS_TEST(queue_pip_multiple_senders, "PRE: none | POST: none") {
 
     // Send to unblock.
     JARVIS_ASSERT(queue.try_send(reinterpret_cast<const uint8_t *>("z"), 1));
-    while (high->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT(recvd == 1);
+    kernel::test::wait_for_termination_safe(high);
 
-    auto cleanup = [](TaskControlBlock *t) {
-        if (t == nullptr)
-            return;
-        if (t->state != TaskState::TERMINATED) {
-            Scheduler::remove_task(*t);
-            t->cleanup();
-            delete t;
-        } else {
-            Scheduler::remove_task(*t);
-            t->cleanup();
-            delete t;
-        }
-    };
-    cleanup(high);
-    cleanup(low2);
-    cleanup(low1);
+    JARVIS_ASSERT(recvd == 1);
+    kernel::test::terminate_and_drain3(high, low2, low1);
     JARVIS_TEST_PASS();
 }
 

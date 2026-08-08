@@ -80,12 +80,7 @@ JARVIS_TEST(bench_reschedule_latency, "PRE: none | POST: none") {
 
     Logger::info("reschedule: min=%lu, avg=%lu, max=%lu", r.min, r.avg, r.max);
 
-    Scheduler::remove_task(*a);
-    a->cleanup();
-    delete a;
-    Scheduler::remove_task(*b);
-    b->cleanup();
-    delete b;
+    kernel::test::terminate_and_drain2(a, b);
 
     JARVIS_ASSERT(r.avg > 0);
     JARVIS_TEST_PASS();

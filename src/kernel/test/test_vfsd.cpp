@@ -34,6 +34,7 @@
 #include <kernel/ipc/ipc.hpp>
 #include <kernel/syscall/syscall.hpp>
 #include <kernel/daemon/daemon_mgr.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -41,9 +42,7 @@ namespace {
 void release_task(TaskControlBlock *t) {
     if (t == nullptr)
         return;
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_if_live(t);
 }
 
 /// @brief Dispatch a REAL kernel task (prio ≥ 11) running @p entry and wait
@@ -54,9 +53,9 @@ void run_kernel_task(void (*entry)()) {
     JARVIS_ASSERT(t->page_table_ == 0);
     Scheduler::add_task(*t);
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t);
     release_task(t);
+    Scheduler::drain_zombie_list();
 }
 } // namespace
 

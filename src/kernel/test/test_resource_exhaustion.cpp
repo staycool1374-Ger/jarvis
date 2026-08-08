@@ -28,6 +28,7 @@
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/pmm.hpp>
 #include <kernel/vfs/vfs.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -122,9 +123,7 @@ TEST_CLASS(TaskLimitReached) {
     auto *extra = kernel::test::create_named_task([]() {}, 5, 10, "limit");
     CHECK_NONFATAL(extra == nullptr);
     if (extra) {
-        Scheduler::remove_task(*extra);
-        extra->cleanup();
-        delete extra;
+        kernel::test::terminate_and_drain(*extra);
     }
 
     // Cleanup all created (unconditional — never skip teardown).

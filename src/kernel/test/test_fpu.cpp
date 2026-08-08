@@ -27,6 +27,7 @@
 #include <kernel/task/scheduler.hpp>
 #include <kernel/task/task.hpp>
 #include <kernel/memory/mempool.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -164,8 +165,11 @@ JARVIS_TEST(fpu_context_switch, "PRE: none | POST: none") {
     JARVIS_ASSERT(task_a != nullptr);
     JARVIS_ASSERT(task_b != nullptr);
 
-    Scheduler::add_task(*task_a);
-    Scheduler::add_task(*task_b);
+    {
+        arch::IrqGuard guard; // register atomically (cookbook Rule 2)
+        Scheduler::add_task(*task_a);
+        Scheduler::add_task(*task_b);
+    }
 
     for (int i = 0; i < 200 && !g_fpu_test_b_done; ++i) {
         Scheduler::reschedule();
@@ -186,17 +190,12 @@ JARVIS_TEST(fpu_context_switch, "PRE: none | POST: none") {
     JARVIS_ASSERT_FMT(
         result != ~0ULL,
         "Task A FPU value was all-ones (context switch corruption)");
+
+    kernel::test::terminate_and_drain2(task_a, task_b);
     JARVIS_ASSERT_FMT(result == FPU_PI_BITS,
                       "Task A FPU value 0x%016llx != expected 0x%016llx",
                       (unsigned long long)result,
                       (unsigned long long)FPU_PI_BITS);
-
-    Scheduler::remove_task(*task_a);
-    Scheduler::remove_task(*task_b);
-    task_a->cleanup();
-    task_b->cleanup();
-    MemPool::free(task_a);
-    MemPool::free(task_b);
 
     JARVIS_TEST_PASS();
 }

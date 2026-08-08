@@ -61,9 +61,7 @@ JARVIS_TEST(harness_snapshot_bitmap_consistency,
     Scheduler::add_task(*t);
     JARVIS_ASSERT(t->in_ready_queue_);
 
-    Scheduler::remove_task(*t);
-    t->cleanup();
-    delete t;
+    kernel::test::terminate_and_drain(*t);
 
     JARVIS_TEST_PASS();
 }
@@ -127,9 +125,7 @@ JARVIS_TEST(harness_priority_ordered_wakeup,
                       (uint64_t)IPC_MAX_QUEUE_MSG, (uint64_t)ipc_recv_count_);
 
     if (receiver && receiver->magic == TaskControlBlock::TCB_MAGIC) {
-        Scheduler::remove_task(*receiver);
-        receiver->cleanup();
-        delete receiver;
+        kernel::test::terminate_and_drain(*receiver);
     }
 
     JARVIS_TEST_PASS();
@@ -190,6 +186,10 @@ JARVIS_TEST(harness_blocked_sender_wakes,
                       (uint64_t)ipc_recv_count_,
                       (uint64_t)(IPC_MAX_QUEUE_MSG + 1));
 
+    // Forever-loop receiver (ipc_test_done_ never set): terminate()+drain can
+    // strand it if the deferred switch is mid-flight (receiver calls
+    // reschedule() in its loop).  Direct remove_task+cleanup+delete is the
+    // leak-free pattern for never-terminating tasks (baseline).
     if (receiver && receiver->magic == TaskControlBlock::TCB_MAGIC) {
         Scheduler::remove_task(*receiver);
         receiver->cleanup();
@@ -206,15 +206,19 @@ JARVIS_TEST(harness_snapshot_inrq_consistency,
             "PRE: none | POST: none") {
     auto *t = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(t != nullptr);
-    Scheduler::add_task(*t);
-    JARVIS_ASSERT(t->in_ready_queue_);
+    {
+        // Register + assert membership atomically: a tick firing between
+        // add_task and the assert could dispatch t (prio 11 > harness 10),
+        // dequeue it, and self-terminate it before the membership is read.
+        arch::IrqGuard guard;
+        Scheduler::add_task(*t);
+        JARVIS_ASSERT(t->in_ready_queue_);
+    }
 
     // Dispatch + terminate the task for real, then re-add a fresh one and
     // drive the ready-queue membership through the real scheduler API.
     Scheduler::reschedule();
-    while (t->state != TaskState::TERMINATED)
-        asm volatile("pause");
-
+    kernel::test::wait_for_termination_safe(t);
     if (t->magic == TaskControlBlock::TCB_MAGIC) {
         Scheduler::remove_task(*t);
         t->cleanup();
@@ -223,18 +227,22 @@ JARVIS_TEST(harness_snapshot_inrq_consistency,
 
     auto *t2 = TaskControlBlock::create([]() {}, 11, 10);
     JARVIS_ASSERT(t2 != nullptr);
-    Scheduler::add_task(*t2);
-    JARVIS_ASSERT_FMT(t2->in_ready_queue_,
-                      "Task should be in ready queue after add_task");
+    {
+        // Same atomicity: no tick may dispatch t2 before the membership
+        // asserts below (see the t registration above).
+        arch::IrqGuard guard;
+        Scheduler::add_task(*t2);
+        JARVIS_ASSERT_FMT(t2->in_ready_queue_,
+                          "Task should be in ready queue after add_task");
 
-    // Scheduler::set_task_ready on an already-READY/queued task is a no-op
-    // that must not corrupt membership (driven via the real API).
-    Scheduler::set_task_ready(*t2);
-    JARVIS_ASSERT(t2->in_ready_queue_);
+        // Scheduler::set_task_ready on an already-READY/queued task is a no-op
+        // that must not corrupt membership (driven via the real API).
+        Scheduler::set_task_ready(*t2);
+        JARVIS_ASSERT(t2->in_ready_queue_);
+    }
 
     Scheduler::reschedule();
-    while (t2->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(t2);
     if (t2->magic == TaskControlBlock::TCB_MAGIC) {
         Scheduler::remove_task(*t2);
         t2->cleanup();
@@ -264,10 +272,15 @@ JARVIS_TEST(harness_multi_task_spawn_cleanup,
             "PRE: none | POST: none") {
     static constexpr uint64_t NUM_WORKERS = 5;
     TaskControlBlock *workers[NUM_WORKERS] = {};
-    for (uint64_t i = 0; i < NUM_WORKERS; ++i) {
-        workers[i] = TaskControlBlock::create([]() {}, 5, 10);
-        JARVIS_ASSERT(workers[i] != nullptr);
-        Scheduler::add_task(*workers[i]);
+    // Register all workers under one IrqGuard so no timer tick splits the
+    // registration (cookbook Rule 2).
+    {
+        arch::IrqGuard guard;
+        for (uint64_t i = 0; i < NUM_WORKERS; ++i) {
+            workers[i] = TaskControlBlock::create([]() {}, 5, 10);
+            JARVIS_ASSERT(workers[i] != nullptr);
+            Scheduler::add_task(*workers[i]);
+        }
     }
 
     for (uint64_t i = 0; i < NUM_WORKERS; ++i) {
@@ -324,22 +337,14 @@ JARVIS_TEST(harness_hhdm_user_page_bounds,
             },
             11, 10);
         if (worker == nullptr) {
-            Scheduler::remove_task(*sender);
-            sender->cleanup();
-            delete sender;
-            Scheduler::remove_task(*receiver);
-            receiver->cleanup();
-            delete receiver;
+            kernel::test::terminate_and_drain2(sender, receiver);
             continue;
         }
         worker->page_table_ = VMM::clone_kernel_pml4();
         Scheduler::add_task(*worker);
         Scheduler::reschedule();
-        while (worker->state != TaskState::TERMINATED)
-            asm volatile("pause");
-        Scheduler::remove_task(*worker);
-        worker->cleanup();
-        delete worker;
+        kernel::test::wait_for_termination_safe(worker);
+        kernel::test::terminate_and_drain(*worker);
 
         // Free the buffer back to the pool (kernel worker's buffer).
         if (g_handle != 0) {
@@ -347,12 +352,7 @@ JARVIS_TEST(harness_hhdm_user_page_bounds,
         }
 
         // Clean up tasks (this frees page-table pages back to PMM free list)
-        Scheduler::remove_task(*sender);
-        sender->cleanup();
-        delete sender;
-        Scheduler::remove_task(*receiver);
-        receiver->cleanup();
-        delete receiver;
+        kernel::test::terminate_and_drain2(sender, receiver);
 
         // After each cycle, verify that a fresh user page allocation
         // lands within the HHDM window.  If the free list drifts beyond
@@ -516,11 +516,8 @@ JARVIS_TEST(harness_buffer_unmap_stale_safe,
     worker->page_table_ = VMM::clone_kernel_pml4();
     Scheduler::add_task(*worker);
     Scheduler::reschedule();
-    while (worker->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    Scheduler::remove_task(*worker);
-    worker->cleanup();
-    delete worker;
+    kernel::test::wait_for_termination_safe(worker);
+    kernel::test::terminate_and_drain(*worker);
     uint64_t handle = g_handle;
     if (handle == 0) { JARVIS_TEST_PASS(); return; }
 
@@ -555,9 +552,7 @@ JARVIS_TEST(harness_buffer_unmap_stale_safe,
 
     // Cleanup
     if (task->magic == TaskControlBlock::TCB_MAGIC) {
-        Scheduler::remove_task(*task);
-        task->cleanup();
-        delete task;
+        kernel::test::terminate_and_drain(*task);
     }
     JARVIS_TEST_PASS();
 }

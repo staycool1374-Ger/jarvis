@@ -561,16 +561,14 @@ JARVIS_TEST(ipc_block_sender_adds_to_list, "PRE: none | POST: none") {
     // Release the receiver: it drains one message via IPC::recv (waking the
     // sender), stays alive until the sender's re-push arrives; both terminate.
     Scheduler::set_task_ready(*receiver);
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+    kernel::test::wait_for_termination_safe(receiver);
 
-    JARVIS_ASSERT(send_result == 1);
-    JARVIS_ASSERT(recv_ok == 1);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -623,19 +621,17 @@ JARVIS_TEST(ipc_wake_sender_removes_from_list, "PRE: none | POST: none") {
     // Release the receiver: its IPC::recv pops one → wake_sender removes the
     // sender from the list and makes it READY.
     Scheduler::set_task_ready(*receiver);
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+    kernel::test::wait_for_termination_safe(receiver);
 
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_head == nullptr);
     JARVIS_ASSERT(receiver->msg_queue.blocked_senders_tail == nullptr);
     JARVIS_ASSERT(sender->blocked_on_queue == nullptr);
-    JARVIS_ASSERT(send_result == 1);
-    JARVIS_ASSERT(recv_ok == 1);
 
     // Cleanup AFTER the zombie-field asserts, then drain.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -691,19 +687,17 @@ JARVIS_TEST(ipc_wake_sender_terminated, "PRE: none | POST: none") {
     // runs its cleanup() → MessageQueue::~MessageQueue wakes the blocked
     // sender.
     Scheduler::set_task_ready(*receiver);
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(receiver);
     Scheduler::drain_zombie_list();
 
     // The sender's spin-wait sees its own queue/blocked state cleared by the
     // destructor wake; it re-looks-up the (now gone) destination and fails.
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
 
-    JARVIS_ASSERT(send_result == 0);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 0);
     JARVIS_TEST_PASS();
 }
 
@@ -759,17 +753,15 @@ JARVIS_TEST(ipc_wake_sender_restores_priority, "PRE: none | POST: none") {
     // Release the receiver: its IPC::recv drains → wake_sender restores the
     // receiver's priority; both terminate.
     Scheduler::set_task_ready(*receiver);
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+    kernel::test::wait_for_termination_safe(receiver);
 
     JARVIS_ASSERT(receiver->priority == receiver->base_priority);
-    JARVIS_ASSERT(send_result == 1);
-    JARVIS_ASSERT(recv_ok == 1);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -822,16 +814,14 @@ JARVIS_TEST(ipc_send_block_full, "PRE: none | POST: none") {
     // Release the receiver: its IPC::recv drains one message → the blocked
     // sender's send completes; both terminate.
     Scheduler::set_task_ready(*receiver);
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(sender);
+    kernel::test::wait_for_termination_safe(receiver);
 
-    JARVIS_ASSERT(send_result == 1);
-    JARVIS_ASSERT(recv_ok == 1);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 1);
+    JARVIS_ASSERT(recv_ok == 1);
     JARVIS_TEST_PASS();
 }
 
@@ -908,18 +898,18 @@ JARVIS_TEST(ipc_send_sync_roundtrip, "PRE: none | POST: none") {
     // runs, replies, and both terminate — at which point the harness
     // resumes from HLT and exits the loop.
     __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
-    while (sender->state != TaskState::TERMINATED ||
-           receiver->state != TaskState::TERMINATED) {
+    // Both self-terminate via the trampoline; the zombie reaper may free +
+    // 0xDD-poison their TCBs before the harness polls — the safe wait exits
+    // on freed (magic != TCB_MAGIC) blocks instead of spinning forever.
+    while ((TaskControlBlock::is_valid(sender) &&
+            sender->state != TaskState::TERMINATED) ||
+           (TaskControlBlock::is_valid(receiver) &&
+            receiver->state != TaskState::TERMINATED)) {
         arch::hlt();
         __atomic_store_n(&scheduler_need_resched, true, __ATOMIC_RELEASE);
     }
 
-    Scheduler::remove_task(*sender);
-    sender->cleanup();
-    delete sender;
-    Scheduler::remove_task(*receiver);
-    receiver->cleanup();
-    delete receiver;
+    kernel::test::terminate_and_drain2(sender, receiver);
     JARVIS_TEST_PASS();
 }
 
@@ -969,17 +959,15 @@ JARVIS_TEST(ipc_sender_unblocked_on_receiver_exit, "PRE: none | POST: none") {
 
     // Release the receiver → real termination + cleanup.
     Scheduler::set_task_ready(*receiver);
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(receiver);
     Scheduler::drain_zombie_list();
 
     // Sender fast-fails once the receiver's cleanup woke it.
-    while (sender->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT(send_result == 0);
+    kernel::test::wait_for_termination_safe(sender);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): both self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(send_result == 0);
     JARVIS_TEST_PASS();
 }
 
@@ -1036,12 +1024,11 @@ JARVIS_TEST(ipc_send_wakes_blocked_destination, "PRE: none | POST: none") {
     JARVIS_ASSERT(IPC::send(receiver->id, reply));
 
     // The receiver wakes, completes send_sync, and terminates.
-    while (receiver->state != TaskState::TERMINATED)
-        asm volatile("pause");
-    JARVIS_ASSERT(recv_done == 1);
+    kernel::test::wait_for_termination_safe(receiver);
 
     // Cleanup BEFORE asserting (cookbook Rule 5): the receiver self-terminated.
     Scheduler::drain_zombie_list();
+    JARVIS_ASSERT(recv_done == 1);
     JARVIS_TEST_PASS();
 }
 

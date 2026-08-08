@@ -28,6 +28,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <string.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -169,12 +170,7 @@ JARVIS_TEST(sse_xmm_all_registers, "PRE: none | POST: none") {
             (unsigned long long)XMM_PATTERN_A[i].d[1]);
     }
 
-    Scheduler::remove_task(*task_a);
-    Scheduler::remove_task(*task_b);
-    task_a->cleanup();
-    task_b->cleanup();
-    MemPool::free(task_a);
-    MemPool::free(task_b);
+    kernel::test::terminate_and_drain2(task_a, task_b);
 
     JARVIS_TEST_PASS();
 }

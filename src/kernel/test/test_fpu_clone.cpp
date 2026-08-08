@@ -33,6 +33,7 @@
 #include <kernel/task/task.hpp>
 #include <kernel/memory/mempool.hpp>
 #include <kernel/memory/vmm.hpp>
+#include "test_sched_helpers.hpp"
 
 using namespace kernel;
 
@@ -90,20 +91,17 @@ JARVIS_TEST(fpu_clone_copies_state, "PRE: none | POST: none") {
     parent->user_stack_ = 0x80000000;
     Scheduler::add_task(*parent);
     Scheduler::reschedule();
-    while (parent->state != TaskState::TERMINATED)
-        asm volatile("pause");
+    kernel::test::wait_for_termination_safe(parent);
 
+    // FXSAVE abridged tag word at offset 4: bit 0 = ST0 (1 = non-empty).
+
+    kernel::test::terminate_and_drain(*parent);
     JARVIS_ASSERT_EQ(1ULL, g_ran);
     JARVIS_ASSERT_EQ(1ULL, g_owner_ok);
     JARVIS_ASSERT_EQ(1ULL, g_parent_fpu_used);
     JARVIS_ASSERT_EQ(1ULL, g_child_fpu_used);
-    // FXSAVE abridged tag word at offset 4: bit 0 = ST0 (1 = non-empty).
     JARVIS_ASSERT_EQ(1ULL, g_child_tag);
     JARVIS_ASSERT_EQ(1ULL, g_parent_tag);
-
-    Scheduler::remove_task(*parent);
-    parent->cleanup();
-    MemPool::free(parent);
 
     // Re-init FPU to leave clean state for subsequent tests.
     asm volatile("finit" ::: "memory");

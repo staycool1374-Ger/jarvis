@@ -49,6 +49,15 @@ using namespace kernel;
 // Input: reload_daemon_tasks then restart_stale_daemons
 // Expect: New daemon tasks die silently on first context switch
 // Depends: kernel::daemon, kernel::Scheduler, kernel::test::reload_daemon_tasks
+//
+// GATED OUT (ROADMAP v0.3.13 T0-7): this test asserted only that the
+// restarted daemons are PRESENT in the scheduler while its own docstring
+// documents they crash on first dispatch — codifying a latent kernel
+// daemon-restart bug as PASS.  Fixing the bug (teardown-state corruption in
+// reload_daemon_tasks / daemon_mgr) is a kernel change tracked separately.
+// Re-enable only together with that fix AND an execution-evidence assertion
+// (e.g. the restarted vfsd/iocd reach their startup message).
+#if 0
 JARVIS_TEST(daemon_restart_after_cleanup_crash, "PRE: vfsd,iocd") {
     // Kill all tasks including daemons
     test::reload_daemon_tasks();
@@ -69,8 +78,11 @@ JARVIS_TEST(daemon_restart_after_cleanup_crash, "PRE: vfsd,iocd") {
 
     JARVIS_TEST_PASS();
 }
+#endif
 
 void register_daemon_restart_crash_tests() {
     Logger::info("Registering daemon restart crash tests");
+#if 0
     JARVIS_REGISTER_TEST(daemon_restart_after_cleanup_crash);
+#endif
 }
