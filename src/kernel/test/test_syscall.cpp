@@ -163,10 +163,10 @@ JARVIS_TEST(syscall_uname, "PRE: none | POST: none") {
         g_ret = Syscall::handle(
             static_cast<uint64_t>(SyscallNumber::UNAME),
             reinterpret_cast<uint64_t>(&uts), 0, 0, 0, nullptr);
-        __builtin_strncpy(g_sysname, uts.sysname, sizeof(g_sysname) - 1);
-        __builtin_strncpy(g_release, uts.release, sizeof(g_release) - 1);
-        __builtin_strncpy(g_version, uts.version, sizeof(g_version) - 1);
-        __builtin_strncpy(g_machine, uts.machine, sizeof(g_machine) - 1);
+        __builtin_memcpy(g_sysname, uts.sysname, sizeof(g_sysname));
+        __builtin_memcpy(g_release, uts.release, sizeof(g_release));
+        __builtin_memcpy(g_version, uts.version, sizeof(g_version));
+        __builtin_memcpy(g_machine, uts.machine, sizeof(g_machine));
     });
     JARVIS_ASSERT(t != nullptr);
     JARVIS_ASSERT_EQ(0ULL, g_ret);

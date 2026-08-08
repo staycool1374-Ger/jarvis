@@ -3121,6 +3121,8 @@ SchedulerError Scheduler::alloc_id_err(uint64_t &out_id) {
 /// @note Runs with IF=0 (interrupt gate); must not re-enable IRQs.
 extern "C" void scheduler_record_skip(uint64_t captured_gen,
                                       uint64_t current_gen) {
+    (void)captured_gen;
+    (void)current_gen;
     H2_REC(kernel::H2_EV_SKIP, captured_gen, current_gen, 0);
 }
 

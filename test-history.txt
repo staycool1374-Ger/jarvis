@@ -1059,3 +1059,7 @@ SUMMARY: total=61 ok=60 fail=1
 2026-08-08 14:13:00 all PASSED: 817 FAILED: 0 TIME: 44752ms (H2 fix batch G run3)
 2026-08-08 14:14:00 all PASSED: 817 FAILED: 0 TIME: 45842ms (H2 fix batch G run4)
 2026-08-08 14:15:00 all PASSED: 817 FAILED: 0 TIME: 46844ms (H2 fix batch G run5)
+2026-08-08 14:20:00 ss_deadline PASSED: 2 FAILED: 0 TIME: 152ms (verify after H2 fix, ROADMAP stale check)
+2026-08-08 14:37:00 priority_inheritance PASSED: 11 FAILED: 0 TIME: 497ms (verify after H2 fix, ROADMAP stale check)
+2026-08-08 14:43:00 release_all PASSED: 84 FAILED: 0 TIME: 4068ms (release gate after memcpy/scheduler_record_skip -Werror fixes)
+2026-08-08 14:45:00 debug_all PASSED: 817 FAILED: 0 TIME: 45468ms (debug all after memcpy/scheduler_record_skip fixes)
