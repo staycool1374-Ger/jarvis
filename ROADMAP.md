@@ -30,10 +30,10 @@
 - **~~`priority_inheritance` class~~ — RESOLVED 2026-08-08 (v0.3.9 H2 rework):**
   the test-1 `MutexPriorityDonates` INV-4 gate-spin race in `spawn_holder`
   is fixed by the single-IrqGuard registration and wait-loop hardening in the
-  v0.3.13 test-suite compliance pass.  Verified: `priority_inheritance` 11/11
+  v0.3.11 test-suite compliance pass.  Verified: `priority_inheritance` 11/11
   PASS ×N (2026-08-08), incl. `all` 817/817.
 
-## Active Development — v0.3.12
+## Active Development — v0.3.10
 
 ### Alloc/Free Return-Value Audit — fix unhandled alloc/free results
 
@@ -152,7 +152,7 @@ corruption with no diagnostic).
 **Out of scope:** ~~H2 race (v0.3.9)~~ (RESOLVED 2026-08-08), BufferPool +1
 (v0.3.11), and ISO 26262 certification artifacts.
 
-## Active Development — v0.3.13
+## Active Development — v0.3.11
 
 ### Test-Suite Compliance Audit — implement every finding of `audits/test-suite-v0.3.10.md`
 
@@ -268,7 +268,7 @@ the kernel specs.  All findings below are VERIFIED against the code
       `test_priority_inheritance.cpp:90-107` which relies on genuine mutex
       blocking.  One is stale — resolve against the real `Mutex::lock` retry
       budget semantics.
-- [ ] **T2-4 — Update `docs/specs/test-harness.md:54-55`** to match the v0.3.12
+- [ ] **T2-4 — Update `docs/specs/test-harness.md:54-55`** to match the v0.3.10
       cookbook rule 6 (external termination of a semaphore-blocked task is now
       SAFE via the `waiting_on_semaphore` teardown).
 - [ ] **T2-5 — De-QEMU-specific hard asserts:** replace machine-specific
