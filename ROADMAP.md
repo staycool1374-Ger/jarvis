@@ -7,32 +7,6 @@
 - **Reference-Enforced Tasks:** When manipulating task blocks or IPC endpoints within the new init system or system calls, strictly enforce reference passing over raw pointers to prevent dangling lookups.
 - **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
 
-## Open Issues (known, not yet fixed)
-- **~~Residual H2 deferred-switch race (v0.3.9)~~ — RESOLVED 2026-08-08:** the
-  root cause was an asymmetry between the deferred-switch arm-clear paths:
-  `CLR-MISC` (`drop_arm`) restored the preempted task's state, but `CLR-RMS`
-  (`rate_monotonic_schedule`) and `CLR-SET` (`set_current`) cleared the atoms
-  without undoing `switch_to_task`'s READY+enqueue side effect — leaving the
-  physically-running boot-stack harness `READY`+queued (INV-4), so
-  `next_task()` skipped it and iretq'd it into the idle loop.  Fixed by
-  `restore_preempted_current()` (state-symmetric undo on every clear path) +
-  an idle-fallthrough guard (the test-mode harness is never a deferred-switch
-  target into idle) + `wait_for_termination_safe()` (magic-guarded wait loops
-  that exit on freed 0xDD TCBs).  Validation: `all` 817/817 across 10+
-  consecutive runs, ipc 51/51 ×10, no hang reproduced.  Full investigation log
-  in `audits/deep-analysis-h2-ssdeadline-v0.3.9.md` §5 and `ROADMAP_done.md` §v0.3.9.
-- **~~`ss_deadline` class~~ — RESOLVED 2026-08-08 (v0.3.9 H2 rework):** the
-  pre-existing hang (EXHAUSTED SS task at bg_prio 2 not re-dispatched after
-  `gate.post()`, harness wait-loop spinning forever) is gone — the harness now
-  uses `wait_for_termination_safe()` (magic-guarded, exits on freed TCBs) and
-  the deferred-switch fix restores preempted-current state on every arm-clear
-  path.  Verified: `ss_deadline` 2/2 PASS ×N (2026-08-08), incl. `all` 817/817.
-- **~~`priority_inheritance` class~~ — RESOLVED 2026-08-08 (v0.3.9 H2 rework):**
-  the test-1 `MutexPriorityDonates` INV-4 gate-spin race in `spawn_holder`
-  is fixed by the single-IrqGuard registration and wait-loop hardening in the
-  v0.3.11 test-suite compliance pass.  Verified: `priority_inheritance` 11/11
-  PASS ×N (2026-08-08), incl. `all` 817/817.
-
 ## Active Development — v0.3.10
 
 ### Alloc/Free Return-Value Audit — fix unhandled alloc/free results
