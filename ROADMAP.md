@@ -8,7 +8,19 @@
 - **Zero-Allocation tmpfs Operations:** Ensure the initial `tmpfs` implementation relies on the pre-existing fixed `MemPool` / `BufferPool` infrastructure for its nodes to avoid unbounded allocations that violate resource tracking limits.
 
 ## Open Issues (known, not yet fixed)
-- **Residual H2 deferred-switch race (v0.3.9):** the harness is intermittently displaced onto an orphaned page during a test's daemon wait; layers 4-6 (dispatch-guard, scratch-save, apply-side RSP-owner check) contain but do NOT eliminate it (~17-50% ipc flake; `all` can hang at test 77/78).  Full investigation log in `ROADMAP_done.md` §v0.3.9.  Needs a hardware-watchpoint session (QEMU gdb-stub watchpoints are broken; the `[H2W]` kernel recorder + `tools/gdb/h2_walk_pt.py` are the working instruments).
+- **~~Residual H2 deferred-switch race (v0.3.9)~~ — RESOLVED 2026-08-08:** the
+  root cause was an asymmetry between the deferred-switch arm-clear paths:
+  `CLR-MISC` (`drop_arm`) restored the preempted task's state, but `CLR-RMS`
+  (`rate_monotonic_schedule`) and `CLR-SET` (`set_current`) cleared the atoms
+  without undoing `switch_to_task`'s READY+enqueue side effect — leaving the
+  physically-running boot-stack harness `READY`+queued (INV-4), so
+  `next_task()` skipped it and iretq'd it into the idle loop.  Fixed by
+  `restore_preempted_current()` (state-symmetric undo on every clear path) +
+  an idle-fallthrough guard (the test-mode harness is never a deferred-switch
+  target into idle) + `wait_for_termination_safe()` (magic-guarded wait loops
+  that exit on freed 0xDD TCBs).  Validation: `all` 817/817 across 10+
+  consecutive runs, ipc 51/51 ×10, no hang reproduced.  Full investigation log
+  in `audits/deep-analysis-h2-ssdeadline-v0.3.9.md` §5 and `ROADMAP_done.md` §v0.3.9.
 - **`ss_deadline` class (pre-existing):** an EXHAUSTED sporadic-server task at bg_prio 2 cannot be re-dispatched after `gate.post()`, so the harness's `while (state != TERMINATED)` spins forever.  Needs a dedicated test redesign.
 - **`priority_inheritance` class (pre-existing):** hangs at test 1 `MutexPriorityDonates` — an INV-4 gate-spin test-code race in `spawn_holder`.
 
@@ -118,9 +130,8 @@ corruption with no diagnostic).
 3. One hypothesis per item, validated by build + the smallest applicable test
    class (e.g. A4-A6 → `memory`/`pmm`; B1 → `ipc`; C1/C2 → `process`).
 4. Implement, `make build` clean, run the class to 0 failures.
-5. After all items: `make execute-test x86_64 debug all` — NOTE the H2 race
-   (v0.3.9) may still hang at ~test 78; use per-class gates as acceptance and
-   keep `CONFIG_DEBUG_IPC_SCHED` ON for the debug `all` gate.
+5. After all items: `make execute-test x86_64 debug all` — the H2 race
+   (v0.3.9) is RESOLVED (2026-08-08); `all` 817/817 across 10+ runs.
 
 **Acceptance criteria (DONE when):**
 - A1-A6, B1, C1-C2 fixed (each verified by build + class gate).
@@ -129,7 +140,7 @@ corruption with no diagnostic).
 - `make build` clean (check-style Errors: 0), `selftest` 132/132.
 - `test-history.txt` rows appended for every class touched.
 
-**Out of scope:** H2 race (v0.3.9), BufferPool +1
+**Out of scope:** ~~H2 race (v0.3.9)~~ (RESOLVED 2026-08-08), BufferPool +1
 (v0.3.11), and ISO 26262 certification artifacts.
 
 ## Active Development — v0.3.13
@@ -314,8 +325,9 @@ the kernel specs.  All findings below are VERIFIED against the code
    `ipc_blocking`, `memory` to 0 failures.
 3. P2 spec/doc alignment; P3 purge last (removes registered-test counts — update
    `test_expected_counts.hpp` / CI expectations when deleting).
-4. Keep `CONFIG_DEBUG_IPC_SCHED` OFF for per-class gates; ON only for the debug
-   `all` gate (H2 race, ROADMAP v0.3.9).
+4. Keep `CONFIG_DEBUG_IPC_SCHED` OFF for per-class gates; ON only for targeted
+   debug analysis (the H2 race that required it for the debug `all` gate is
+   RESOLVED, ROADMAP v0.3.9).
 
 **Acceptance criteria (DONE when):**
 - T0-1..T0-8 fixed and each verified by a class gate (no ResourceTracker deltas).
@@ -328,7 +340,7 @@ the kernel specs.  All findings below are VERIFIED against the code
 - `make build` clean (Errors: 0); `selftest` green; every touched class 0 failures;
   `test-history.txt` rows appended.
 
-**Out of scope:** H2 race (v0.3.9), BufferPool +1 (v0.3.11),
+**Out of scope:** ~~H2 race (v0.3.9)~~ (RESOLVED 2026-08-08), BufferPool +1 (v0.3.11),
 ISO 26262 certification artifacts, and kernel-behavior changes not directly
 required to make a test match its documented contract.
 

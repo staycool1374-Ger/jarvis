@@ -781,6 +781,34 @@ The `all` gate cannot yet validate this end-to-end because the residual H2 race
       blocker (below), NOT the H2 race.  `release all` (84/84) and `check-style`
       (Errors: 0) still need re-verification once the timing cluster is fixed.
 
+### H2 Residual — RESOLVED 2026-08-08 (arm-clear state symmetry)
+
+The residual H2 race (intermittent `all` hang at `ipc_send_sync_roundtrip`,
+~7-30%) was root-caused and fixed.  **Root cause:** the deferred-switch arm
+clear paths were asymmetric — `CLR-MISC` (`drop_arm`) restored the preempted
+current task's state, but `CLR-RMS` (`rate_monotonic_schedule`) and `CLR-SET`
+(`set_current`) cleared the atoms without undoing `switch_to_task`'s
+READY+enqueue side effect on the boot-stack harness, leaving it INV-4
+(`READY`+queued while physically running) so `next_task()` skipped it and
+iretq'd it into the idle loop; the reaper then freed the test-task TCBs and
+the harness's raw wait loops polled 0xDD-poisoned memory forever.
+
+**Fixes:** `restore_preempted_current()` (state-symmetric undo on every clear
+path, READY-gated so TERMINATED/BLOCKED currents are never resurrected);
+idle-fallthrough guard (test-mode harness never a deferred-switch target into
+idle); `wait_for_termination_safe()` (magic-guarded wait loops) applied to
+~100 poll sites.  Also fixed 3 pre-existing test races surfaced by the change
+(o1/idle add_task→next_task IrqGuard, testrunner membership-assert IrqGuard,
+apic_timer in-flight-tick tolerance).
+
+**Validation:** `make build` Errors 0; per-class gates all PASS
+(ipc 51, scheduler 63, vfs 139, testrunner, priority_inheritance, buffer_pool,
+ipc_blocking, process, starvation_deadlock, timing, lock_protocol,
+deadline_recovery, ss_deadline, wcet_overrun, random, o1_scheduler);
+`all` 817/817 across 10+ consecutive runs with **no hang reproduced**
+(pre-fix ~7-30%; the one pre-fix hang occurred in 31 runs at 3.2% and 0 times
+in the final 10).  Full detail: `audits/deep-analysis-h2-ssdeadline-v0.3.9.md` §5.
+
 ## v0.3.10 — Test-Discipline Rework: Trigger-Driven Testing (Completed 2026-08-04)
 
 ### Test-Discipline Rework: Trigger-Driven Testing (kill the simulation pattern)

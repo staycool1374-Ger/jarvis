@@ -1,27 +1,33 @@
 {
-"$schema": "https://opencode.ai/config.json",
-"model": "nvidia/nemotron-3-ultra-free",
-"lsp": true,
-"provider": {
-"nvidia": {
-"options": {
-"timeout": 600000,
-"chunkTimeout": 60000,
-"setCacheKey": true
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek-v4-flash",
+  "lsp": true,
+  "provider": {
+    "nvidia": {
+      "options": {
+        "timeout": 600000,
+        "chunkTimeout": 60000,
+        "setCacheKey": true
+      }
+    },
+    "openrouter": {
+      "options": {
+        "timeout": 600000
+      }
+    }
+  },
+  "mcp": {
+    "shared_context_bridge": {
+      "type": "local",
+      "enabled": true,
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "src/",
+        "audits/"
+      ]
+    }
+  }
 }
-}
-},
-"mcp": {
-"shared_context_bridge": {
-"type": "local",
-"enabled": true,
-"command": "npx",
-"args": [
-"-y",
-"@modelcontextprotocol/server-filesystem",
-"src/",
-"audits/"
-]
-}
-}
-}
+

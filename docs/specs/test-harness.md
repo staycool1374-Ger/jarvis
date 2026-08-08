@@ -51,8 +51,12 @@ instructions, so a half-arranged scenario can be dispatched prematurely.
    TERMINATED + moves to the zombie list; never follow with manual free.
 5. **Cleanup BEFORE assert** (assertions `return` on failure — asserting first
    leaks the TCB / hangs the class).
-6. **Never externally terminate a task blocked in `Semaphore::wait()`** — the
-   semaphore keeps a raw TCB in its waiter list that cleanup does not unlink.
+6. **Externally terminating a task blocked in `Semaphore::wait()` is SAFE
+   since v0.3.12** — `TaskControlBlock::cleanup()` unlinks the task from the
+   semaphore's waiter list via the `waiting_on_semaphore` back-pointer
+   (v0.3.9 teardown gap closed).  Verify teardown with
+   `semaphore_waiter_teardown_on_terminate`; do not re-add the old workaround
+   (avoiding the scenario instead of testing it).
 
 ### Gate-blocked-lambda + post-wait BLOCKED spin (canonical pattern)
 ```cpp

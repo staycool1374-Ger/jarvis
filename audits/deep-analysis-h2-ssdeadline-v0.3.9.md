@@ -329,3 +329,141 @@ Correct direction: keep the harness's `context.rsp` fresh across
 `restore_task_fields` (the write that reintroduces the stale frame at every
 snapshot boundary) or validate/repair the harness resume frame at apply time.
 REVERTED; ROADMAP §v0.3.9 stays open.
+
+**2026-08-07 Direction 1 (restore_task_fields harness bypass) — IMPLEMENTED.**
+`scheduler.cpp::restore_task_fields()` now captures the harness's live RSP
+(when the harness is the current task, i.e. snapshot_restore is running on it)
+and re-applies it to `context.rsp` after the snapshot-field restore, so the
+snapshot's stale daemon-wait arch_hlt frame is never reintroduced into the
+harness's resume frame.  SIL-3 review (inline; the sil3_auditor subagent is
+registered pending an opencode restart):
+- Rule 5 (critical-section interference): runs inside snapshot_restore's
+  `arch::IrqGuard` (IF=0); only reads RSP (`mov %rsp`) and writes the harness
+  TCB `context.rsp`; no locks, no runq mutation — no interference.
+- Rule 6 (no #ifdef asymmetry): unconditional code; `get_harness_task()` +
+  `harness == current_task()` + `harness_live_rsp != 0` guards make it a no-op
+  in every path where restore_task_fields is not driven by snapshot isolation
+  (release never calls it), so no asymmetric branch behavior.
+Empirical result (28-run direct-QEMU batches, identical methodology):
+**baseline 24/28 (86%) vs with-fix 25/28 (89%)** — within noise; the fix does
+not regress ipc and does not clearly improve it (consistent with §4.6: the
+live RSP in task context is call-frame data, not a valid iretq frame).  Full
+regression suite green: safe, scheduler, lock_protocol, ss_deadline, wcet,
+priority_inheritance, timing, vfs — all PASS.  Kept as defense-in-depth.
+ROADMAP §v0.3.9 stays open (the residual requires a real-iretq-frame strategy
+or a wait-loop tolerant of zombie TCBs).
+
+**2026-08-07 Save-path audit + rescue hook — TESTED + REVERTED (decisive
+negative).**  Save-path audit: the commit-to-RAM is `mov [rax], rsp`
+(isr_stubs.asm:199), gated by the generation check; `is_boot_stack_rsp` does
+NOT drop the save (`save_target = &TASK_STACK_PTR(current)` unconditionally,
+scheduler.cpp:1909).  Implemented the user-approved C-side rescue hook
+`scheduler_rescue_current_frame(isr_rsp)` (commits the live ISR-frame RSP into
+the harness's context.rsp at every ISR epilogue, before the generation check),
+verified linked + called in the disassembly.  Result: **21/28 (75%) — WORSE
+than baseline (24/28) and Direction-1-only (25/28).**  The ring confirms the
+hook keeps context.rsp fresh (~0x032920, the harness's live shallow hlt-loop
+RSP), yet the residual hangs persist.  **This DISPROVES the "stale
+context.rsp is the root cause" hypothesis**: even with a fresh resume frame,
+the harness hlt-waits in test 21 and the sender/receiver termination is not
+observed.  The residual lives in the harness wait-loop / task-termination
+observation path (or a deeper task-lifecycle interaction), NOT in the
+save-target.  All save-path variants REVERTED; only the within-noise Direction 1
+remains.  ROADMAP §v0.3.9 stays open.
+
+**2026-08-07 Option 1 (post-frame `ret`-target validation) — TESTED, REVERTED,
+and ROOT-CAUSED.**  Implemented the user-specified ungated check first:
+`ret_target = *(uint64_t*)(rsp+160)` must be in `.text`, else drop.  Result:
+**10/10 hangs** — `[rsp+160]` is only a `ret` target when the resumed RIP is
+`arch_hlt`; for any other harness frame it is a local/data/stack slot, so the
+ungated check false-drops every legitimate resume.  Corrected with a RIP gate
+(`f_rip ∈ [&arch_hlt, &arch_pause)`), then measured **6/6 deterministic hangs**
+at test 21.  The ring capture was decisive:
+```
+f_rip=0xFFFF8000002A0F1F   (= arch_hlt+1, the `ret` instruction)
+rsp   =0xFFFF900000032920   (harness context.rsp, CONSTANT — the snapshot frame)
+ret_target=0xFFFF9000000329D0  (∉ .text → check fires correctly)
+```
+The gated check CORRECTLY DETECTS the stale frame, but dropping it only
+converts the garbage-resume hang into a never-resume hang — it cannot repair
+the stale frame.  **Definitive root cause:** the harness's `context.rsp` is
+PERMANENTLY the snapshot frame (0x032920, arch_hlt's `ret`) during test 21 —
+neither the live-save (switch_to_task save-target) nor Direction 1 keeps it
+fresh.  The live-save does not reach the harness's `context.rsp` in this path;
+that save-target path is the next required investigation (why the harness
+switch-away save never updates context.rsp).  All Option-1 variants REVERTED.
+
+**2026-08-07 Patch Concept A1 (harness-frame structural validation) — TESTED
++ REVERTED.**  Per the approved "hlt; ret return-garbage" root cause, added an
+unconditional harness-frame check in `scheduler_validate_pending_switch`:
+RIP within `.text`, CS==0x8, RFLAGS IF set, else drop the arm (no iretq).
+Empirical result (28-run batch): **20/28 (71%) — WORSE** than baseline
+(24/28) and Direction-1-only (25/28).  Reason (confirmed by the earlier H2W
+frame dump): the stale snapshot frame is `rip=arch_hlt (∈ .text), cs=0x8,
+rflags=0x10297 (IF set)` — it PASSES all three structural checks, so A1
+cannot detect it, and the added frame reads + drop path perturb/drop
+legitimate harness resumes, regressing the race.  REVERTED per discipline.
+The garbage source is the POST-frame `ret` target at `[context.rsp+160]`, not
+the RIP/CS/RFLAGS triple — any effective check must validate that slot (or
+the harness's context.rsp must never carry a snapshot frame at all).
+
+---
+
+## 5. H2 RESOLVED — asymmetric arm-clear paths were the residual root cause (2026-08-08)
+
+### 5.1 Root cause (static analysis, verified in code)
+The deferred-switch arm has THREE clear paths with asymmetric behavior:
+
+| Path | Site | Restores preempted current? |
+|---|---|---|
+| `CLR-MISC` | `drop_arm` (scheduler_validate_pending_switch) | YES — RUNNING + dequeue + re-enqueue target |
+| `CLR-RMS` | `rate_monotonic_schedule()` pending-arm clear | **NO** — atoms cleared only |
+| `CLR-SET` | `set_current()` both branches | **NO** — atoms cleared only |
+
+`switch_to_task()` (scheduler.cpp:2231-2235) sets the preempted current task
+READY + enqueues it (when RUNNING or `cur_is_boot_stack` — the test harness
+always qualifies) and sets the target RUNNING, THEN publishes the arm.  When
+`CLR-RMS`/`CLR-SET` cleared that arm without undoing the side effects, the
+physically-running harness stayed `state=READY, in_ready_queue_=true` (INV-4).
+`next_task()` then dequeued-and-skipped it (candidate == current_task()),
+fell through to idle, and the idle-switch guard
+`!(next==idle && current->state==RUNNING)` PASSED (state was READY, not
+RUNNING) — the harness was iretq'd into the idle loop.  The idle reaper then
+freed + 0xDD-poisoned the sender/receiver TCBs, and the harness's raw
+`while (X->state != TERMINATED)` wait loops polled freed memory forever.
+Ring signature: `[ARM a=6] -> [CLR-* a=6] -> [ARM a=0 idle] -> [IDLE-ARM] -> [APPLY a=0]`.
+
+### 5.2 Fixes (all three)
+1. **`restore_preempted_current(current, armed_target_id)`** — shared helper
+   that undoes switch_to_task's publish side effects on ANY un-applied clear:
+   dequeue the current if queued, restore `state=RUNNING` **only if READY**
+   (never resurrect TERMINATED/BLOCKED currents — the F-1 SIL3 finding), and
+   re-enqueue the armed target if still alive (INV-2).  Used by `CLR-RMS` and
+   both `CLR-SET` branches; `drop_arm` got the same READY gate.
+2. **Idle-fallthrough guard** — `rate_monotonic_schedule()` refuses to
+   dispatch idle when the test-mode harness is the current task, regardless
+   of its state field (defense-in-depth for any residual READY-leak).
+3. **`wait_for_termination_safe()`** — test harness wait loops poll
+   `TaskControlBlock::is_valid(task) && state != TERMINATED` (magic first,
+   per the reaper's own idiom), exiting on freed 0xDD blocks.  ~100 raw
+   `while (X->state != TERMINATED) pause;` loops across 25 test files
+   converted; 3 pre-existing test-race flakes surfaced by the change fixed
+   (o1/idle add_task→next_task IrqGuard, testrunner membership assert
+   IrqGuard, apic_timer in-flight-tick tolerance).
+
+### 5.3 Validation
+- `make build` green (Errors 0).
+- Class gates (CONFIG_DEBUG_IPC_SCHED OFF): ipc 51, scheduler 63, vfs 139,
+  testrunner, priority_inheritance 11, buffer_pool 24, ipc_blocking 4,
+  process 43, starvation_deadlock 3, timing 18, lock_protocol 53,
+  deadline_recovery 4, ss_deadline 2, wcet_overrun 2, random 17,
+  o1_scheduler 20 — all PASS.
+- `all` 817/817: **10+ consecutive runs without a hang** (pre-fix ~7-30%);
+  the single pre-fix hang@78 occurred once in 31 runs (3.2%) and 0 times in
+  the final 10 runs.
+- The pre-fix H2W residual signature `[CLR-* a=6] -> [ARM a=0]` was not
+  observed in any post-fix ring.
+
+**Status: H2 deferred-switch residual — CLOSED.**  ROADMAP v0.3.9 marked done.
+The `ss_deadline` and `priority_inheritance` open issues are separate
+pre-existing items (see ROADMAP "Open Issues").

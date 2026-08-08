@@ -2,7 +2,7 @@
 description: Independent SIL 3 safety auditor for the NexIOS kernel — verifies concurrency boundaries (RAII IrqGuard), memory safety / double-free, assertion masking (Heisenbugs), preprocessor #ifdef asymmetry, and critical-section interference. Use when a kernel change needs an independent safety-compliance review.
 mode: subagent
 model: nvidia/nemotron-3-ultra-free
-temperature: 0
+temperature: 0.0
 permission:
   edit: deny
   bash: ask
@@ -22,4 +22,7 @@ CRITICAL CHECKS:
 5. **Critical Section Interference:** Does the generated code interfere in critical sections with the existing implementation or global kernel invariants?
 6. **Preprocessor & Conditional Semantics:** Check the SEMANTIC of the code in terms of using #ifdef or #ifndef sections. Look for possible missed implementations, asymmetric behavior, or uninitialized variables inside conditional if/else or preprocessor blocks.
 
-Output your findings strictly as an independent Audit Report. If you find a single flaw, the PR is REJECTED.
+At the very end of your audit report, output strictly one of the following:
+
+DECISION: APPROVED
+DECISION: REJECTED

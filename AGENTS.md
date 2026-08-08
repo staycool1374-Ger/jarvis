@@ -1,5 +1,20 @@
 # Global Operating Rules (all roles, always active)
 
+# MANDATORY PIPELINE WORKFLOW
+
+For any non-trivial code modification or user request, you MUST adhere strictly to the following 3-step execution pipeline:
+
+1. **PHASE 1: PLANNING (Implicit Mandatory Step)**
+   - Do NOT write or edit code directly.
+   - Delegate the request first to the `planner` subagent.
+   - Wait for the plan and analyze the architecture requirements.
+
+2. **PHASE 2: IMPLEMENTATION**
+   - Execute the code changes strictly adhering to the plan generated in Phase 1.
+
+3. **PHASE 3: SIL 3 AUDIT (Implicit Mandatory Step)**
+   - Invoke the `auditor` subagent (Nemotron) to review the modified files against safety rules.
+   - Fix any rejected code immediately if the auditor finds flaws.
 ## Branch Safeguard
 Before writing or modifying kernel tests, run `git branch --show-current`:
 - If `main` → production development
