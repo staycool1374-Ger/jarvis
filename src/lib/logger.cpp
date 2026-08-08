@@ -20,6 +20,7 @@
 #include <kernel/arch/qemu_debugcon.hpp>
 #include <kernel/arch/serial.hpp>
 #include <kernel/log/ring_buffer.hpp>
+#include <kernel/task/scheduler.hpp>
 
 namespace kernel {
 
@@ -38,10 +39,24 @@ void Logger::set_level(LogLevel level) {
 }
 
 void Logger::putchar(char c) {
-    // Debugcon on x86_64 (lock-free, ~ns per byte — no UART baud pacing that
-    // warps microsecond-scale scheduler/IPC timing); UART elsewhere.
+    // Debugcon on x86_64 during TEST runs (lock-free, ~ns per byte — no UART
+    // baud pacing that warps microsecond-scale scheduler/IPC timing).  When
+    // the suite is NOT actively running (interactive shell phase, incl. the
+    // intended post-selftest shell) route to the UART: the QEMU mux chardev
+    // gives input focus to the frontend that last wrote, and constant
+    // debugcon writes steal the keystroke stream away from the shell's COM1
+    // polling (run-release-mode input-dead regression, 2026-08-08).
 #if defined(CONFIG_ARCH_X86_64)
-    arch::QemuDebugcon::putc(c);
+#if CONFIG_DEADLINE_MONITOR_TASK
+    if (Scheduler::is_test_active()) {
+        arch::QemuDebugcon::putc(c);
+        if (initialized_) {
+            kernel::log::g_klog.putchar(c);
+        }
+        return;
+    }
+#endif
+    arch::Serial::putchar(c);
 #else
     arch::Serial::putchar(c);
 #endif
@@ -52,7 +67,16 @@ void Logger::putchar(char c) {
 
 void Logger::puts(const char* s) {
 #if defined(CONFIG_ARCH_X86_64)
-    arch::QemuDebugcon::write(s);
+#if CONFIG_DEADLINE_MONITOR_TASK
+    if (Scheduler::is_test_active()) {
+        arch::QemuDebugcon::write(s);
+        if (initialized_) {
+            kernel::log::g_klog.puts(s);
+        }
+        return;
+    }
+#endif
+    arch::Serial::puts(s);
 #else
     arch::Serial::puts(s);
 #endif

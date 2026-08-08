@@ -382,8 +382,19 @@ static void debug_putchar(char c) {
 #if defined(CONFIG_ARCH_X86_64)
     // Debugcon (port 0xE9): lock-free, single-digit ns per byte.  The UART
     // path below busy-waits on LSR.THRE for ~87us/byte at 115200 baud, which
-    // measurably warps scheduler/IPC timing (H2 investigation).
-    arch::QemuDebugcon::putc(c);
+    // measurably warps scheduler/IPC timing (H2 investigation) — but ONLY
+    // while the test suite is actively running.  When the suite is done (the
+    // intended post-selftest interactive shell) route to the UART: the QEMU
+    // mux chardev gives input focus to the frontend that last wrote, and
+    // constant debugcon writes steal the keystroke stream from the shell's
+    // COM1 polling (run-release-mode input-dead regression, 2026-08-08).
+#if CONFIG_DEADLINE_MONITOR_TASK
+    if (kernel::Scheduler::is_test_active()) {
+        arch::QemuDebugcon::putc(c);
+        return;
+    }
+#endif
+    arch::Serial::putchar(c);
 #else
     arch::Serial::putchar(c);
 #endif

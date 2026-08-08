@@ -511,7 +511,9 @@ endif
 	@printf '  %-7s %s\n' 'ISO' '$(RELEASE_ISO)'
 	@grub-mkrescue -o $(RELEASE_ISO) iso 2>/dev/null || \
 	(printf '  %-7s %s\n' 'ERROR' 'grub-mkrescue failed'; echo $(PKG_HINT); exit 1)
-	@printf '  %-7s %s\n' 'DONE' 'Release ISO: $(RELEASE_ISO)'
+	@mkdir -p $(dir $(RELEASE_ISO))
+	@printf '%s\n' "$$(cat initrd/tests/test-config.txt 2>/dev/null || printf safe)" > release/.baked-test-config
+	@printf '  %-7s %s\n' 'DONE' 'Release ISO: $(RELEASE_ISO) (tests: $$(cat release/.baked-test-config))'
 	@echo ""
 	@echo "  Validate with:  make release-test"
 
@@ -610,11 +612,13 @@ _do_execute_test:
 	_class_file=$(CLASS); \
 	[ "$${_class_file}" = "selftest" ] && _class_file=safe; \
 	printf '%s\n' "$${_class_file}" > initrd/tests/test-config.txt; \
-	if [ "$(CLASS)" = "none" ]; then \
-	    if [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ] && [ -f "$(RELEASE_ISO)" ]; then \
-	        :; \
-	    elif [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ]; then \
-	        $(MAKE) release ARCH=$(ARCH) || exit 1; \
+ 	if [ "$(CLASS)" = "none" ]; then \
+ 	    if [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ] && \
+ 	       [ -f "$(RELEASE_ISO)" ] && [ -f "release/.baked-test-config" ] && \
+ 	       [ "$$(cat release/.baked-test-config)" = "none" ]; then \
+ 	        :; \
+ 	    elif [ "$(BUILD)" = "release" ] && [ "$(ARCH)" = "x86_64" ]; then \
+ 	        $(MAKE) release ARCH=$(ARCH) || exit 1; \
 	    elif [ "$(BUILD)" = "release" ]; then \
 	        $(MAKE) $(KERNEL) ARCH=$(ARCH) || exit 1; \
 	        if [ "$(ARCH)" = "riscv64" ]; then \
